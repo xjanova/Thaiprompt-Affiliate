@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "The Hanged Man",
+    "name_th": "ชายผู้ถูกแขวนคอ",
+    "number": 12,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คุณกำลังอยู่ในช่วงต้องหยุดและมองสิ่งต่างๆ จากมุมใหม่",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน ชายผู้ถูกแขวนคอหัวตั้งบ่งบอกว่าคุณกำลังอยู่ในช่วงพักรอ - ไม่ใช่หยุดนิ่งโดยเปล่าประโยชน์ แต่เป็นการหยุดเพื่อเห็นชัดเจน คุณต้องการเวลาพิจารณา ดูสิ่งต่างๆ จากมุมที่แตกต่าง ปล่อยวางบางสิ่งเพื่อเห็นภาพใหญ่ การยอมรับสถานการณ์ปัจจุบันคือพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The High Priestess = ปัญญาภายใน, Death = การปล่อยวาง",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก, Two of Swords = พิจารณา",
+            "pentacles": "Knight of Pentacles = อดทน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอในปัจจุบัน คือ 'หยุดเพื่อเห็นชัด'",
+          "advice_th": "อย่าเร่งตัดสินใจ ใช้เวลาพิจารณา มองจากมุมใหม่ ปล่อยวางการควบคุม ยอมรับสถานการณ์",
+          "keywords_th": ["หยุด", "พิจารณา", "มุมใหม่", "ปล่อยวาง"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์อยู่ในช่วงต้องพักและทบทวน",
+          "detailed_interpretation_th": "ในรักปัจจุบัน คุณอยู่ในช่วงพักรอ - ไม่ก้าวต่อ ไม่ถอย แต่ใช้เวลาทบทวนความสัมพันธ์ มองจากมุมใหม่ ปล่อยความคาดหวัง ความเข้าใจที่ลึกอาจมา",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, Two of Swords = สมดุล",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอในปัจจุบันรัก คือ 'พักทบทวน'",
+          "advice_th": "ไม่บีบความสัมพันธ์ ให้เวลาทั้งคู่คิด มองจากมุมของคู่ ปล่อยความคาดหวังเก่า",
+          "keywords_th": ["พักรัก", "ทบทวน", "มุมใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานอยู่ในช่วงชะลอ - ต้องเปลี่ยนกลยุทธ์",
+          "detailed_interpretation_th": "ในการงาน-การเงิน คุณอยู่ในช่วงชะลอ - โครงการไม่ก้าวหน้า การตัดสินใจค้าง ไม่ใช่เวลาเร่ง แต่เป็นเวลาทบทวนกลยุทธ์ มองจากมุมใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = พิจารณา, Two of Swords = ตัดสินใจไม่ได้",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "King of Swords = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอในปัจจุบันงาน-เงิน คือ 'เปลี่ยนกลยุทธ์'",
+          "advice_th": "ใช้เวลาทบทวนกลยุทธ์ - กำลังไปทิศไหน? วิธีนี้ใช่ไหม? ปรึกษา mentor มองจากมุมใหม่",
+          "keywords_th": ["ชะลอ", "ทบทวนกลยุทธ์", "มุมใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ช่วงของการตื่นรู้ผ่านการพักและพิจารณา",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณอยู่ในช่วงตื่นรู้ผ่านความสงบ - การทำสมาธิ การพักจากกิจกรรม การยอมรับสิ่งที่ปล่อยไม่ได้ ปัญญาเกิดจากการหยุด ไม่ใช่จากการทำ",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Hermit = สมาธิ",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Knight of Pentacles = อดทน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอในปัจจุบันจิตวิญญาณ คือ 'ปัญญาจากการหยุด'",
+          "advice_th": "ฝึกสมาธิทุกวัน ใช้เวลาในความสงบ ปัญญาจะมาในความเงียบ ไม่ใช่จากการเสาะหา",
+          "keywords_th": ["ตื่นรู้", "สมาธิ", "ปัญญาจากการหยุด"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องพักและฟื้นฟูร่างกายอย่างจริงจัง",
+          "detailed_interpretation_th": "ในสุขภาพ ร่างกายของคุณต้องการการพัก ไม่ใช่การฝืน ความเหนื่อยล้าสะสมต้องการเวลาฟื้นฟู การพักไม่ใช่ความขี้เกียจ แต่เป็นการรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Four of Swords = พัก",
+            "wands": "Wands กลับหัว = ลด",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พักผ่อน",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอในปัจจุบันสุขภาพ คือ 'พัก = ฟื้นฟู'",
+          "advice_th": "หยุดทำงานหนัก ใช้เวลาพักผ่อนจริงๆ การพักคือยาที่จำเป็น",
+          "keywords_th": ["พักผ่อน", "ฟื้นฟู", "หยุด"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ติดอยู่และไม่ยอมเปลี่ยนแปลง",
+          "detailed_interpretation_th": "ชายแขวนคอกลับหัวในปัจจุบัน บ่งบอกถึงการติดอยู่ในที่เดิม - ไม่ยอมเปลี่ยน ไม่ยอมปล่อย ไม่ยอมรับสถานการณ์ การยึดติดทำให้ทุกข์ ต้องยอมรับและก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความคาดหวัง, The Tower = วิกฤต",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight of Wands กลับหัว = หยุดนิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวในปัจจุบัน คือ 'ปล่อยและก้าวต่อ'",
+          "advice_th": "ยอมรับสิ่งที่เปลี่ยนไม่ได้ ปล่อยสิ่งที่ไม่ใช่ของคุณ ก้าวต่อ การติดอยู่ทำให้ทุกข์",
+          "keywords_th": ["ติดอยู่", "ไม่ยอมเปลี่ยน", "ปล่อย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ติดอยู่ในความสัมพันธ์ที่ไม่ก้าวหน้า",
+          "detailed_interpretation_th": "ในรัก คุณติดอยู่ - ในความสัมพันธ์ที่ไม่ดี ในความทรงจำเก่า ในความคาดหวังที่ไม่จริง ต้องยอมรับและตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวรัก คือ 'ตัดสินใจ'",
+          "advice_th": "หยุดรอ ตัดสินใจ - ปรับหรือออก ความติดอยู่ทำลายทั้งสองคน",
+          "keywords_th": ["ติดในรัก", "ไม่ก้าวหน้า", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ติดอยู่ในงานเก่าหรือกลัวเปลี่ยน",
+          "detailed_interpretation_th": "ในงาน-เงิน ติดอยู่ในงานเก่า กลัวเปลี่ยน กลัวเสียงาน กลัวความไม่แน่นอน แต่การติดอยู่ทำให้ไม่เติบโต ต้องตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man เสริม",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวงาน-เงิน คือ 'กล้าเปลี่ยน'",
+          "advice_th": "วางแผนเปลี่ยนงาน - ทักษะใหม่ networking emergency fund การติดอยู่คือเสี่ยงไม่เติบโต",
+          "keywords_th": ["ติดในงาน", "กลัวเปลี่ยน", "วางแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หลีกเลี่ยงการเปลี่ยนแปลงและติดในรูปแบบเก่า",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ติดในรูปแบบเก่า - ความคิดเก่า นิสัยเก่า ค่านิยมเก่า ไม่ยอมเติบโต ต้องปล่อยและเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในกรอบ",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวจิตวิญญาณ คือ 'ปล่อยรูปแบบเก่า'",
+          "advice_th": "ทดลองสิ่งใหม่ - ครูใหม่ เทคนิคใหม่ ความเชื่อใหม่ การติดในรูปแบบเก่าทำให้หยุด",
+          "keywords_th": ["ติดในเก่า", "หลีกเลี่ยง", "ทดลองใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ไม่ยอมพักแม้ร่างกายต้องการ",
+          "detailed_interpretation_th": "ในสุขภาพ คุณไม่ยอมพักแม้ร่างกายต้องการ - ฝืนทำงาน ฝืนออกกำลังกาย ฝืนเข้าสังคม ความเหนื่อยล้าสะสมจะระเบิด ต้องยอมพัก",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในการฝืน",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ, Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวสุขภาพ คือ 'พักก่อนพัง'",
+          "advice_th": "หยุดและพักจริงๆ - 1 สัปดาห์ไม่ทำงาน ฟื้นฟูร่างกาย ก่อนจะระเบิด",
+          "keywords_th": ["ไม่ยอมพัก", "ฝืน", "burnout"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องอดทนรอจังหวะที่ใช่",
+          "detailed_interpretation_th": "ในตำแหน่งอุปสรรค ชายแขวนคอ (ตีความตั้งตรงเสมอ) บ่งบอกว่าความท้าทายคือการรอ - ทุกอย่างใช้เวลา การเร่งทำให้ผิดพลาด ความอดทนคือทักษะที่ต้องฝึก",
+          "adjacent_influences": {
+            "major_arcana": "Seven of Pentacles = อดทน, The Hermit = ปัญญา",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = ลงทุน",
+            "court_cards": "Knight of Pentacles = อดทน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอในอุปสรรค คือ 'อดทนรอ'",
+          "advice_th": "ฝึกอดทน ทุกอย่างมีจังหวะของมัน การเร่งทำลายผลลัพธ์ ใช้เวลาเตรียมตัว",
+          "keywords_th": ["อดทน", "รอจังหวะ", "ใช้เวลา"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องอดทนกับช่วงยากในความสัมพันธ์",
+          "detailed_interpretation_th": "อุปสรรคในรักคือการอดทนกับช่วงยาก - คู่กำลังเปลี่ยน ความสัมพันธ์ติด ความรักไม่ก้าวหน้าตามที่หวัง การบีบทำให้แย่ลง อดทน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hermit = ปัญญา",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Seven of Pentacles = อดทน",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออุปสรรครัก คือ 'อดทนผ่านช่วงยาก'",
+          "advice_th": "อดทนกับคู่ในช่วงเปลี่ยน อย่าบีบ ให้พื้นที่ ความสัมพันธ์ที่ดีรอด้วยกัน",
+          "keywords_th": ["อดทนรัก", "ช่วงยาก", "ให้พื้นที่"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องอดทนรอผลของการลงทุนหรือโครงการ",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือการอดทนรอผล - ลงทุนแล้วยังไม่เห็นผล โครงการต้องใช้เวลา การสร้างธุรกิจช้า ความสำเร็จยั่งยืนต้องการเวลา",
+          "adjacent_influences": {
+            "major_arcana": "Seven of Pentacles = ลงทุน, The Hermit = อดทน",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = อดทน, Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Knight of Pentacles = ช้าๆ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออุปสรรคงาน-เงิน คือ 'compound effect'",
+          "advice_th": "อดทนกับการลงทุนระยะยาว ทำสม่ำเสมอ compound effect จะให้ผลใหญ่",
+          "keywords_th": ["อดทน", "compound effect", "ระยะยาว"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องอดทนกับกระบวนการเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือความไม่อดทนกับการเติบโต - อยากบรรลุเร็ว อยากเปลี่ยนทันที ปัญญาต้องการเวลา ทุกการฝึกสะสม",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Seven of Pentacles = ลงทุน",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออุปสรรคจิตวิญญาณ คือ 'การเดินทางคือจุดหมาย'",
+          "advice_th": "ยอมรับว่าการเติบโตช้า เพลิดเพลินกับการเดินทาง ไม่ใช่แค่จุดหมาย",
+          "keywords_th": ["อดทน", "การเดินทาง", "compound"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องอดทนกับการรักษาที่ใช้เวลา",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคือการอดทนกับการรักษา - ผลไม่มาทันที diet ใช้เวลา การฟื้นฟูจากบาดเจ็บช้า ต้องอดทน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = อดทน",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออุปสรรคสุขภาพ คือ 'สม่ำเสมอชนะรวดเร็ว'",
+          "advice_th": "ทำกิจวัตรสุขภาพสม่ำเสมอ ผลลัพธ์มาในระยะกลาง อย่าหยุดก่อนเห็นผล",
+          "keywords_th": ["อดทน", "สม่ำเสมอ", "ฟื้นฟู"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ไม่ยอมเรียนรู้บทเรียนและซ้ำรอยเดิม",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือการไม่ยอมเรียนรู้ - ซ้ำรอยเก่า ไม่เปลี่ยนรูปแบบ ติดในวงจรเดิม ต้องตื่นรู้และเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในวงจร, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'เรียนรู้และเปลี่ยน'",
+          "advice_th": "ทบทวนรูปแบบที่ซ้ำ - คุณทำอะไรเหมือนเดิม? เปลี่ยนหนึ่งสิ่ง ดูผลลัพธ์",
+          "keywords_th": ["ซ้ำรอย", "ไม่เรียนรู้", "เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ดึงดูดคนแบบเดิมและซ้ำรอยความสัมพันธ์",
+          "detailed_interpretation_th": "ในรัก ดึงดูดคนแบบเดิม - คนที่ไม่ดี คนที่ไม่จริงจัง คนที่ทำร้าย รูปแบบนี้ซ้ำเพราะคุณไม่เปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = วงจรซ้ำ, The Moon = สับสน",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจซ้ำ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกันใจ",
+            "court_cards": "Knight of Cups กลับหัว = ดึงดูดผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'ปลดล็อกรูปแบบ'",
+          "advice_th": "ระบุรูปแบบ - ดึงดูดคนแบบไหน? ทำไม? ทำงานกับ inner child ปลดล็อก",
+          "keywords_th": ["รูปแบบซ้ำ", "ดึงดูดผิด", "ปลดล็อก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ลงทุนผิดซ้ำหรือทำผิดพลาดเดิมในงาน",
+          "detailed_interpretation_th": "ในงาน-เงิน ผิดพลาดซ้ำๆ - ลงทุนผิดเหมือนเดิม เลือกงานผิดแบบเดิม ทำผิดในธุรกิจซ้ำ ต้องเรียนรู้และเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤตซ้ำ, The Devil = ติดในรูปแบบ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "King of Pentacles กลับหัว = ลงทุนผิดซ้ำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'วิเคราะห์ผิดพลาด'",
+          "advice_th": "วิเคราะห์ผิดพลาดในอดีต - ทำอะไรซ้ำๆ ที่ไม่ดี? เปลี่ยนกลยุทธ์",
+          "keywords_th": ["ผิดพลาดซ้ำ", "วิเคราะห์", "เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่เรียนรู้จากบทเรียนชีวิต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ บทเรียนซ้ำๆ ที่ไม่เรียน - สถานการณ์เดิม คนเดิม ปัญหาเดิม จักรวาลให้บทเรียนซ้ำจนกว่าจะเรียน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในวงจร, The Hanged Man เสริม",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'จักรวาลให้บทเรียนซ้ำ'",
+          "advice_th": "ถามตัวเอง - บทเรียนนี้สอนอะไร? ทำไมมาซ้ำ? เมื่อเรียน จักรวาลให้บทเรียนใหม่",
+          "keywords_th": ["บทเรียนซ้ำ", "เรียนรู้", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อาการกลับมาเพราะไม่เปลี่ยนนิสัย",
+          "detailed_interpretation_th": "ในสุขภาพ อาการกลับมาซ้ำๆ - บาดเจ็บเดิม ภูมิแพ้กลับ ปัญหาเดิม เพราะไม่เปลี่ยนต้นเหตุ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายเรียกร้อง",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'แก้ที่ต้นเหตุ'",
+          "advice_th": "อาการกลับซ้ำเพราะไม่เปลี่ยนนิสัย - ระบุนิสัยที่ทำให้กลับ เปลี่ยน",
+          "keywords_th": ["อาการกลับ", "ต้นเหตุ", "เปลี่ยนนิสัย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เคยมีช่วงพักรอที่นำมาซึ่งปัญญา",
+          "detailed_interpretation_th": "ชายแขวนคอหัวตั้งในอดีต บ่งบอกถึงช่วงที่คุณเคยพักรอและได้รับปัญญา - อาจเป็นการลาออกจากงาน การพักเรียน การเงียบ ประสบการณ์นั้นเปลี่ยนมุมมอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = แสง",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = ลงทุน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอในอดีต คือ 'ปัญญาจากการหยุด'",
+          "advice_th": "ระลึกช่วงพักในอดีต - สอนอะไร? ใช้ปัญญานั้นในปัจจุบัน",
+          "keywords_th": ["พักเก่า", "ปัญญา", "มุมใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยใช้เวลาคนเดียวเรียนรู้เรื่องความรัก",
+          "detailed_interpretation_th": "ในรักอดีต เคยมีช่วงโสดที่ทำความรู้จักตัวเอง เรียนรู้สิ่งที่ต้องการในความรัก ปัญญานี้ใช้ในความสัมพันธ์ปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Hermit = อยู่คนเดียว",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "Queen of Cups = ปัญญาในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออดีตรัก คือ 'รู้จักตัวก่อนรัก'",
+          "advice_th": "ใช้สิ่งที่เรียนรู้จากช่วงโสด - ใช้เป็นมาตรฐานในความรักปัจจุบัน",
+          "keywords_th": ["โสดเก่า", "รู้จักตัว", "ปัญญา"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยพักจากงานเพื่อหาทิศทางใหม่",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต เคยพักจากอาชีพ - gap year, sabbatical, ลาออก ใช้เวลาคิดและกลับมาด้วยทิศทางใหม่ การพักนั้นมีค่า",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ค้นหา, The Star = แรงบันดาลใจ",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = ลงทุน",
+            "court_cards": "King of Swords = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออดีตงาน-เงิน คือ 'พักเพื่อทิศใหม่'",
+          "advice_th": "ระลึกตอนพักจากงาน - เรียนรู้อะไร? ใช้ในงานปัจจุบัน",
+          "keywords_th": ["พักงาน", "ทิศใหม่", "ปัญญา"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยมีช่วงสมาธิที่ลึกซึ้งและตื่นรู้",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต เคยมีช่วงสมาธิลึก retreat การปลีกตัว ประสบการณ์ตื่นรู้ที่เปลี่ยนชีวิต ปัญญานี้ยังเป็นรากฐาน",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = แสง",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออดีตจิตวิญญาณ คือ 'ประสบการณ์ตื่นรู้'",
+          "advice_th": "กลับไปสู่การฝึกในอดีต - สมาธิ retreat ปัญญาที่ได้ใช้ในปัจจุบัน",
+          "keywords_th": ["ตื่นรู้เก่า", "สมาธิ", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีช่วงพักฟื้นที่จำเป็นและฟื้นฟูได้",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยพักฟื้นจากอาการ - ป่วยหนัก burnout ใช้เวลาฟื้นฟู ร่างกายกลับมาแข็งแรง บทเรียนคือพักผ่อนสำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Four of Swords = พัก",
+            "wands": "Wands กลับหัว = ลดกิจกรรม",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พักผ่อน",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออดีตสุขภาพ คือ 'ฟื้นฟูได้แล้ว'",
+          "advice_th": "ระลึกตอนพักฟื้น - ทำอะไร? นำกลับมาใช้ในการดูแลปัจจุบัน",
+          "keywords_th": ["พักฟื้นเก่า", "ฟื้นฟู", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยติดอยู่กับสถานการณ์นานเกินไป",
+          "detailed_interpretation_th": "ชายแขวนคอกลับหัวในอดีต บ่งบอกถึงช่วงที่ติดอยู่ - งานที่ไม่ใช่ ความสัมพันธ์ที่ไม่ดี สถานการณ์ที่ไม่เปลี่ยน บทเรียนคือต้องกล้าก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Tower = ระเบิด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติด",
+            "court_cards": "Knight กลับหัว = หยุดนิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวอดีต คือ 'บทเรียนจากการติด'",
+          "advice_th": "ใช้บทเรียนจากการติดในอดีต - คราวนี้กล้าก้าวต่อ ไม่ยอมติดนาน",
+          "keywords_th": ["ติดเก่า", "บทเรียน", "กล้าก้าว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยติดในรักที่ไม่ดีนานเกินไป",
+          "detailed_interpretation_th": "ในรักอดีต ติดในความสัมพันธ์ที่ไม่ดีนาน - กลัวเลิก กลัวอยู่คนเดียว ยอมทุกอย่าง บทเรียนสอนให้กล้าออก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ทำลาย, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวอดีตรัก คือ 'รู้จักออกตอนต้น'",
+          "advice_th": "ใช้บทเรียน - ในรักครั้งใหม่ ถ้าไม่ดี ออกเร็ว ไม่ยอมติดนาน",
+          "keywords_th": ["ติดในรักเก่า", "บทเรียน", "ออกเร็ว"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยติดในงานเก่าและกลัวเปลี่ยน",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต ติดในงานเดิมนาน - ไม่กล้าเปลี่ยน กลัวความไม่แน่นอน พลาดโอกาส บทเรียนสอนให้กล้าก้าว",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man เสริม, The Devil = ติด",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวอดีตงาน-เงิน คือ 'กล้าเปลี่ยนเร็ว'",
+          "advice_th": "ใช้บทเรียน - คราวนี้ติดตามตลาด พัฒนาทักษะ ไม่ติดในงานนานเกิน",
+          "keywords_th": ["ติดงาน", "กล้าเปลี่ยน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยติดในรูปแบบความคิดเก่า",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต ติดในรูปแบบเก่า - ความเชื่อจำกัด นิสัยที่ทำลาย ค่านิยมเก่า ใช้เวลานานกว่าจะปล่อย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวอดีตจิตวิญญาณ คือ 'รับรู้ก่อนติดนาน'",
+          "advice_th": "ใช้บทเรียน - ตื่นรู้กับรูปแบบเก่าเร็วขึ้น ปล่อยก่อนติดนาน",
+          "keywords_th": ["รูปแบบเก่า", "ติดนาน", "ปล่อยเร็ว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยฝืนร่างกายนานเกินไป",
+          "detailed_interpretation_th": "ในสุขภาพอดีต ฝืนร่างกายนานเกิน - ทำงานหนักจน burnout ละเลยอาการเรื้อรัง บทเรียนคือต้องฟังร่างกายเร็วขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในการฝืน",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวอดีตสุขภาพ คือ 'ฟังร่างกายเร็ว'",
+          "advice_th": "ใช้บทเรียน - คราวนี้ฟังร่างกายตั้งแต่แรก พักเมื่อต้องการ ไม่ฝืนจนพัง",
+          "keywords_th": ["ฝืนเก่า", "ฟังร่างกาย", "พักเร็ว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ช่วงพักรอที่จำเป็นจะมาในอนาคต",
+          "detailed_interpretation_th": "ชายแขวนคอหัวตั้งในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า จะมีช่วงพักรอที่จำเป็น - บางสิ่งจะชะลอ ต้องรอจังหวะ ใช้เวลาทบทวน ปัญญาจะมา",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = แสง",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = ลงทุน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออนาคต คือ 'ช่วงพักที่จำเป็น'",
+          "advice_th": "เตรียมตัวสำหรับช่วงพัก - ไม่ใช่ความล้มเหลว แต่เป็นโอกาสคิดและเตรียมตัวสำหรับช่วงต่อไป",
+          "keywords_th": ["พักรอ", "ทบทวน", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะอยู่ในช่วงเงียบและทบทวน",
+          "detailed_interpretation_th": "ในรักอนาคต ความสัมพันธ์จะอยู่ในช่วงเงียบ - ไม่ใช่ปัญหา แต่เป็นการพัก ทบทวน ก่อนก้าวต่อ การพักนี้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Hermit = เงียบ",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออนาคตรัก คือ 'ช่วงเงียบดี'",
+          "advice_th": "ยอมรับช่วงเงียบในความรัก - ใช้เวลาพิจารณา ความเข้าใจที่ลึกจะมา",
+          "keywords_th": ["รักเงียบ", "ทบทวน", "เข้าใจลึก"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานจะชะลอเพื่อทบทวนกลยุทธ์",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต โครงการจะชะลอ การลงทุนต้องรอ การเลื่อนตำแหน่งช้า ใช้เวลาทบทวนกลยุทธ์ มองภาพใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = พิจารณา, Two of Swords = สมดุล",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "King of Swords = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออนาคตงาน-เงิน คือ 'ทบทวนก่อนเร่ง'",
+          "advice_th": "ใช้ช่วงชะลอเตรียมตัว - ทักษะใหม่ networking แผนใหม่ ก่อนเริ่มเร่งอีกครั้ง",
+          "keywords_th": ["ชะลอ", "ทบทวนกลยุทธ์", "เตรียมตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ช่วงตื่นรู้ทางจิตวิญญาณกำลังมา",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ช่วงตื่นรู้ผ่านการเงียบ - การพัก การสมาธิ การปลีกตัว จะนำมาซึ่งปัญญาใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = บรรลุ, Judgement = ตื่นรู้",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "Queen ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออนาคตจิตวิญญาณ คือ 'ตื่นรู้ผ่านความเงียบ'",
+          "advice_th": "เตรียมตัวสำหรับการตื่นรู้ - ฝึกสมาธิ จด journal สังเกตความฝัน",
+          "keywords_th": ["ตื่นรู้", "ความเงียบ", "ปัญญา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายต้องการการพักฟื้นในอนาคต",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ร่างกายจะต้องการพักฟื้น - อาจมีอาการที่ต้องดูแล หรือต้องลดกิจกรรม ใช้เวลาฟื้นฟูจริงๆ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Four of Swords = พัก",
+            "wands": "Wands กลับหัว = ลด",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พักผ่อน",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคออนาคตสุขภาพ คือ 'พักฟื้นจริง'",
+          "advice_th": "วางแผนพักผ่อน - วันหยุดยาว retreat ลดงาน ร่างกายต้องการพัก",
+          "keywords_th": ["พักฟื้น", "ฟื้นฟู", "ดูแล"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ติดอยู่ในช่วงไม่ก้าวหน้านานในอนาคต",
+          "detailed_interpretation_th": "ชายแขวนคอกลับหัวในอนาคต เตือนว่าใน 3-6 เดือนข้างหน้า อาจติดในช่วงไม่ก้าวหน้า - ทุกอย่างหยุดนิ่ง รู้สึกไร้ทิศ ต้องตื่นรู้และตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man เสริม",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติด",
+            "court_cards": "Knight กลับหัว = หยุดนิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวอนาคต คือ 'หลีกเลี่ยงการติด'",
+          "advice_th": "เตรียมตัวรับช่วงยาก - มีแผน B กิจกรรมที่ทำให้ก้าวหน้า ไม่ติดนาน",
+          "keywords_th": ["ติดอยู่", "ไม่ก้าวหน้า", "ตัดสินใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะติดอยู่ในวงจรเดิม",
+          "detailed_interpretation_th": "ในรักอนาคต ระวังการติดในวงจรเดิม - ทะเลาะแบบเดิม คืนดีแบบเดิม ไม่ก้าวหน้า ต้องเปลี่ยนรูปแบบ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, The Hanged Man เสริม",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวอนาคตรัก คือ 'เปลี่ยนรูปแบบ'",
+          "advice_th": "เปลี่ยนวิธีในความสัมพันธ์ - ทำกิจกรรมใหม่ คุยเรื่องที่ไม่เคย เขย่าวงจรเดิม",
+          "keywords_th": ["ติดในรัก", "วงจรเดิม", "เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานหยุดนิ่งและไม่มีโอกาสใหม่",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต ระวังการหยุดนิ่ง - รายได้คงที่ ตำแหน่งไม่เปลี่ยน ทักษะล้าสมัย ต้องเริ่มสิ่งใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man เสริม, The Devil = ติดในงาน",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวอนาคตงาน-เงิน คือ 'เริ่มสิ่งใหม่'",
+          "advice_th": "เริ่มเรียนทักษะใหม่ side hustle networking อย่ารอให้งานเปลี่ยน คุณต้องขยับ",
+          "keywords_th": ["หยุดนิ่ง", "ไม่มีโอกาส", "เริ่มใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตหยุดและซ้ำรูปแบบเดิม",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ระวังการเติบโตหยุด - อ่านอันเดิม ฝึกเหมือนเดิม ไม่มีอะไรเปลี่ยน ต้องลองสิ่งใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man เสริม, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวอนาคตจิตวิญญาณ คือ 'ลองใหม่'",
+          "advice_th": "ลองครูใหม่ เทคนิคใหม่ ชุมชนใหม่ การเติบโตต้องการการเขย่า",
+          "keywords_th": ["หยุด", "ซ้ำเก่า", "ลองใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ฝืนร่างกายต่อไปจนพัง",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ระวังการฝืน - ไม่ยอมพักแม้ร่างกายขอ การไม่ยอมพักจะทำให้พัง burnout เรื้อรัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในการฝืน",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวอนาคตสุขภาพ คือ 'พักก่อนพัง'",
+          "advice_th": "วางแผนพักผ่อนตอนนี้ก่อนร่างกายบังคับ ฟังสัญญาณ",
+          "keywords_th": ["ฝืน", "พัง", "พัก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องการบรรลุปัญญาผ่านการพักและการมองจากมุมต่าง",
+          "detailed_interpretation_th": "ชายแขวนคอหัวตั้งในเป้าหมาย สะท้อนความปรารถนา - ต้องการปัญญาจากการพัก เห็นชีวิตจากมุมใหม่ ปล่อยวางการควบคุม ใช้ชีวิตที่มีความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The World = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอเป้าหมาย คือ 'ปัญญาจากความสงบ'",
+          "advice_th": "เป้าหมายนี้ดี ฝึกสมาธิ ปล่อยวาง พักผ่อน ปัญญาจะมา",
+          "keywords_th": ["ปัญญา", "ความสงบ", "ปล่อยวาง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการความรักที่ลึกซึ้งโดยไม่บีบ",
+          "detailed_interpretation_th": "เป้าหมายในรักคือความสัมพันธ์ที่ลึกแต่ไม่บีบ - ทั้งคู่มีพื้นที่ของตัวเอง รักโดยไม่ครอบงำ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The High Priestess = ปัญญา",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอเป้าหมายรัก คือ 'รักไม่บีบ'",
+          "advice_th": "หาคู่ที่มีพลังของตัวเอง รักโดยให้พื้นที่ ความรักที่ลึกแต่ไม่ครอบงำ",
+          "keywords_th": ["รักลึก", "พื้นที่", "ไม่บีบ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการสมดุลระหว่างงานกับความหมาย",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายคืออาชีพที่มีความหมาย - ไม่ใช่แค่เงิน แต่เป็นการสร้างผลกระทบ มีเวลาคิดและพัก",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ความหวัง",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "King of Cups = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอเป้าหมายงาน-เงิน คือ 'งานมีความหมาย'",
+          "advice_th": "เลือกอาชีพที่มีความหมาย ไม่ใช่แค่เงินเดือนสูง คุณภาพชีวิตสำคัญ",
+          "keywords_th": ["ความหมาย", "สมดุล", "คุณภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการเป็นผู้รู้แจ้งและปล่อยวางได้",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายคือการรู้แจ้ง - เข้าใจชีวิต ปล่อยวางได้ ใช้ชีวิตอย่างมีปัญญา ไม่ติดในความอยาก",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = บรรลุ, The World = สมบูรณ์",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอเป้าหมายจิตวิญญาณ คือ 'รู้แจ้ง'",
+          "advice_th": "ฝึกปฏิบัติทุกวัน การรู้แจ้งคือการเดินทาง ไม่ใช่จุดหมาย",
+          "keywords_th": ["รู้แจ้ง", "ปล่อยวาง", "ปัญญา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการสุขภาพที่สมดุลและมีเวลาพัก",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพคือการมีสมดุล - ทำงานและพัก ออกกำลังกายและฟื้นฟู ไม่ฝืน ไม่ละเลย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอเป้าหมายสุขภาพ คือ 'สมดุลกับพัก'",
+          "advice_th": "วางแผนสุขภาพให้มีเวลาพักเท่ากับเวลาทำงาน การพักคือลงทุน",
+          "keywords_th": ["สมดุล", "พัก", "ฟื้นฟู"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ต้องการหลีกหนีความรับผิดชอบ",
+          "detailed_interpretation_th": "ชายแขวนคอกลับหัวในเป้าหมาย บ่งบอกว่าเป้าหมายอาจเป็นการหลีกหนี - อยากพัก ไม่อยากทำงาน อยากปล่อยทุกอย่าง ทบทวนแรงจูงใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการหนี, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวเป้าหมาย คือ 'พัก vs หนี'",
+          "advice_th": "ความแตกต่างระหว่างพักจริงกับหนีจากชีวิต - พักให้พลัง หนีให้อ่อนแอ",
+          "keywords_th": ["หลีกหนี", "พัก vs หนี", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการอยู่คนเดียวเพื่อหลีกเลี่ยงปัญหา",
+          "detailed_interpretation_th": "เป้าหมายในรักอาจเป็นการอยู่คนเดียวเพื่อหลีกเลี่ยง - กลัวความรับผิดชอบ กลัวเจ็บ ตรวจสอบแรงจูงใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวเป้าหมายรัก คือ 'อิสระจริงหรือหนี'",
+          "advice_th": "อิสระจริงต่างจากการหนี ตรวจสอบเหตุผลที่อยากอยู่คนเดียว",
+          "keywords_th": ["อยู่คนเดียว", "หนีปัญหา", "ตรวจสอบ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อยากเลิกทำงานเพื่อหนีความรับผิดชอบ",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายอาจเป็นการ retire ก่อนเวลา หรือ FIRE เพื่อหนีงาน แต่ไม่มีแผนอะไรจะทำหลัง ตรวจสอบเหตุผล",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มใหม่, The Devil = ติดในการหนี",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในเงิน",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวเป้าหมายงาน-เงิน คือ 'เป้าหมายชัดหลังเลิก'",
+          "advice_th": "ก่อน FIRE/retire ตอบให้ชัด - หลังเลิกจะทำอะไร? ถ้าไม่มีเป้า อยู่ในงานต่อ",
+          "keywords_th": ["เลิกงาน", "หนีความรับผิดชอบ", "วางแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ใช้จิตวิญญาณหลีกหนีโลกจริง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ spiritual bypassing - ใช้การฝึกหลีกเลี่ยงปัญหา 'ปล่อยวาง' ทุกอย่างโดยไม่จัดการ ปัญญาที่แท้คือใช้ในชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ไม่จัดการชีวิต",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวเป้าหมายจิตวิญญาณ คือ 'ปัญญาในชีวิตจริง'",
+          "advice_th": "ปัญญาคือใช้ในการทำงาน เลี้ยงครอบครัว ดูแลตัวเอง ไม่ใช่หลบหนี",
+          "keywords_th": ["spiritual bypassing", "หลีกหนี", "ในชีวิตจริง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อยากพักนานเกินไปจนกลายเป็นนิ่ง",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายอาจเป็นการพักมากเกิน - นอนเยอะไป กินสบายๆ ไม่เคลื่อนไหว ความสบายเกินทำลายร่างกายเหมือนกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความสบาย, The Hanged Man เสริม",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Nine of Cups = สบายเกิน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ไม่อยากเปลี่ยน",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวเป้าหมายสุขภาพ คือ 'พัก vs นิ่ง'",
+          "advice_th": "การพักคือเพื่อพลัง การนิ่งทำลาย ออกกำลังกายเบาๆ ทุกวัน",
+          "keywords_th": ["พักเกิน", "นิ่ง", "เคลื่อนไหว"],
+          "intensity_level": 2,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความสามารถมองจากมุมต่างและปล่อยวางฝังในแกน",
+          "detailed_interpretation_th": "ชายแขวนคอหัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีความสามารถมองจากมุมต่าง ปล่อยวาง อดทน คุณเป็นคนที่เข้าใจสถานการณ์ในระดับลึก พลังนี้คือพรสวรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = อดทน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอรากฐาน คือ 'มองมุมต่างในแกน'",
+          "advice_th": "ใช้ความสามารถมองมุมต่าง - ในการแก้ปัญหา ในการเข้าใจคน พลังนี้คือพรสวรรค์",
+          "keywords_th": ["มองมุมต่าง", "ปล่อยวาง", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสามารถเข้าใจคู่จากมุมของเขาฝังในแกน",
+          "detailed_interpretation_th": "ในรัก รากฐานคือความสามารถเข้าใจคู่จากมุมของเขา - empathy ที่ลึก เห็นในสิ่งที่คู่ไม่บอก ความสามารถนี้สร้างความสัมพันธ์ลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The High Priestess = ปัญญา",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = นักรักลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอรากฐานรัก คือ 'empathy ลึก'",
+          "advice_th": "ใช้ความสามารถเข้าใจ แต่อย่าลืมว่าตัวเองก็มีความต้องการ",
+          "keywords_th": ["empathy", "เข้าใจคู่", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความสามารถมองภาพใหญ่และคิดเชิงกลยุทธ์",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือความสามารถมองภาพใหญ่ - คิดเชิงกลยุทธ์ เห็นโอกาสที่คนอื่นไม่เห็น พลังนี้สร้างความสำเร็จ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = ผู้นำ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปัญญาการเงิน",
+            "court_cards": "King ทุกชุด = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอรากฐานงาน-เงิน คือ 'คิดเชิงกลยุทธ์'",
+          "advice_th": "ใช้ความสามารถคิดเชิงกลยุทธ์ในงาน คุณเห็นภาพใหญ่ที่คนอื่นไม่เห็น",
+          "keywords_th": ["ภาพใหญ่", "กลยุทธ์", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความสามารถปลีกตัวและไตร่ตรองฝังในแกน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือความสามารถปลีกตัว ไตร่ตรอง ใช้เวลาคนเดียว คุณเกิดมาเพื่อเข้าใจชีวิตในระดับลึก",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Hermit = ปัญญาเงียบ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอรากฐานจิตวิญญาณ คือ 'นักไตร่ตรอง'",
+          "advice_th": "ใช้ความสามารถปลีกตัวเป็นพลัง ฝึกสมาธิทุกวัน ปัญญาในตัวอยู่แล้ว",
+          "keywords_th": ["ปลีกตัว", "ไตร่ตรอง", "ปัญญา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ความสามารถฟังร่างกายและพักผ่อนเมื่อต้องการ",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือความสามารถฟังร่างกาย รู้ว่าเมื่อไรต้องพัก เมื่อไรต้องทำงาน พลังนี้สร้างสุขภาพยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Queen of Cups = ฟังอารมณ์",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอรากฐานสุขภาพ คือ 'ฟังร่างกาย'",
+          "advice_th": "ใช้ความสามารถฟังร่างกาย - พักเมื่อเหนื่อย ทำงานเมื่อมีพลัง ฟังเสียงในตัว",
+          "keywords_th": ["ฟังร่างกาย", "พักเมื่อต้อง", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "นิสัยติดอยู่กับสิ่งที่เปลี่ยนไม่ได้",
+          "detailed_interpretation_th": "ชายแขวนคอกลับหัวในรากฐาน บ่งบอกถึงนิสัยติดอยู่ - กับอดีต กับความคาดหวัง กับสิ่งที่ควบคุมไม่ได้ ฝังลึกในจิตใต้สำนึก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight กลับหัว = หยุดนิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวรากฐาน คือ 'ฝึกปล่อยวาง'",
+          "advice_th": "ฝึกปล่อยวางในเรื่องเล็กก่อน - ของไม่ใช้ ความคิดเก่า ค่อยๆ ขยาย",
+          "keywords_th": ["ติดอยู่", "ฝังลึก", "ปล่อย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ติดในความคาดหวังของความรัก",
+          "detailed_interpretation_th": "ในรัก รากฐานคือการติดในความคาดหวัง - คู่ต้องเป็นอย่างไร ความรักต้องดีอย่างไร ความคาดหวังที่ไม่จริงทำลายความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความคาดหวัง, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Queen of Swords กลับหัว = ขมขื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวรากฐานรัก คือ 'ปล่อยความคาดหวัง'",
+          "advice_th": "ปล่อยความคาดหวังในรัก รักคู่ที่เป็นจริง ไม่ใช่ในจินตนาการ",
+          "keywords_th": ["ความคาดหวัง", "ปล่อย", "ความจริง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ติดในกลยุทธ์เก่าที่ไม่ใช้ได้",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือการติดในกลยุทธ์เก่า - ทำเหมือนเดิม คิดเหมือนเดิม โลกเปลี่ยนแต่คุณไม่ ต้องเปิดใจรับใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man เสริม",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่เห็นโอกาส",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "King of Pentacles กลับหัว = ไม่ปรับ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวรากฐานงาน-เงิน คือ 'ปรับกลยุทธ์'",
+          "advice_th": "ทบทวนกลยุทธ์ - โลกเปลี่ยน คุณเปลี่ยน? เปิดใจรับวิธีใหม่",
+          "keywords_th": ["กลยุทธ์เก่า", "ไม่ปรับ", "เปิดใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในความคิดและไม่ลงมือ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือการติดในความคิด - คิดมากแต่ไม่ทำ วางแผนแต่ไม่เริ่ม ไตร่ตรองแต่ไม่ปฏิบัติ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man เสริม, The Devil = ติดในการคิด",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวรากฐานจิตวิญญาณ คือ 'ลงมือ'",
+          "advice_th": "หยุดคิด ลงมือ ทำเล็กๆ ทุกวัน การปฏิบัติคือกุญแจ",
+          "keywords_th": ["คิดมากไม่ทำ", "ติด", "ลงมือ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "นิสัยเลื่อนการดูแลสุขภาพ",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือนิสัยเลื่อน - 'พรุ่งนี้เริ่มออกกำลังกาย' 'อาทิตย์หน้าเริ่ม diet' ความเลื่อนเป็นนิสัยที่ทำลาย",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man เสริม, The Devil = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวรากฐานสุขภาพ คือ 'เริ่มวันนี้'",
+          "advice_th": "ทำสิ่งเล็กๆ วันนี้ - เดิน 5 นาที ดื่มน้ำเพิ่ม 1 แก้ว 'พรุ่งนี้' ไม่มีจริง",
+          "keywords_th": ["เลื่อน", "นิสัย", "เริ่มวันนี้"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ใช้เวลาพักและมองสิ่งต่างๆ จากมุมใหม่",
+          "detailed_interpretation_th": "คำแนะนำจากชายแขวนคอหัวตั้ง: หยุดและพิจารณา ใช้เวลาพัก มองจากมุมที่แตกต่าง ปล่อยวางการควบคุม ความเข้าใจมาจากการหยุด ไม่ใช่จากการเร่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Four of Swords = พัก",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอคำแนะนำ คือ 'หยุดเพื่อเห็น'",
+          "advice_th": "หาเวลาพักเงียบ 1 สัปดาห์ - ไม่ทำงาน ไม่ดูจอ ใช้เวลาคิด ปัญญาจะมา",
+          "keywords_th": ["พัก", "พิจารณา", "มุมใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ใช้เวลาทบทวนความสัมพันธ์อย่างสงบ",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ใช้เวลาทบทวน - ความสัมพันธ์เป็นอย่างไร? ต้องการอะไร? ไม่เร่ง การคิดอย่างสงบนำมาซึ่งคำตอบ",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Hermit = อยู่คนเดียว",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอคำแนะนำในรัก คือ 'ทบทวน'",
+          "advice_th": "ใช้ 1 สัปดาห์คิดเรื่องความสัมพันธ์ - บอกคู่ว่าต้องการเวลา ปัญญาจะมา",
+          "keywords_th": ["ทบทวน", "สงบ", "คิด"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หยุดและทบทวนกลยุทธ์ก่อนเดินหน้า",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: หยุดทำงานเร่งด่วน ใช้เวลาทบทวนกลยุทธ์ - ทำอะไรอยู่? เพื่ออะไร? ปัญญาเชิงกลยุทธ์มาจากการหยุด",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = พิจารณา, The Hanged Man เสริม",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "King of Swords = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอคำแนะนำงาน-เงิน คือ 'พักก่อนเร่ง'",
+          "advice_th": "ใช้เวลา 1 วันต่อสัปดาห์ทบทวนกลยุทธ์ ไม่ทำงานเร่งด่วน คิดภาพใหญ่",
+          "keywords_th": ["ทบทวนกลยุทธ์", "พักคิด", "ภาพใหญ่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ฝึกสมาธิและปล่อยวาง",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ฝึกสมาธิทุกวัน ปล่อยวางสิ่งที่ควบคุมไม่ได้ ปัญญามาจากความสงบ ไม่ใช่จากการเสาะหา",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Hermit = สมาธิ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอคำแนะนำการเติบโต คือ 'สมาธิทุกวัน'",
+          "advice_th": "นั่งสมาธิ 20 นาทีต่อวัน ปล่อยวางความคิด ปัญญาจะมาในความสงบ",
+          "keywords_th": ["สมาธิ", "ปล่อยวาง", "ปัญญา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "พักผ่อนและฟังร่างกาย",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: พักผ่อนจริงๆ - 1-2 วันต่อสัปดาห์ไม่ทำงาน ไม่ดูจอ ฟังร่างกาย การพักคือยา",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Four of Swords = พัก",
+            "wands": "Wands กลับหัว = ลด",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พักผ่อน",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอคำแนะนำสุขภาพ คือ 'พักจริงๆ'",
+          "advice_th": "วันอาทิตย์ไม่ทำงาน นอนเยอะ อยู่ในธรรมชาติ ฟังร่างกาย",
+          "keywords_th": ["พัก", "ฟังร่างกาย", "ฟื้นฟู"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หยุดผัดวันประกันพรุ่ง - ลงมือทำ",
+          "detailed_interpretation_th": "คำแนะนำชายแขวนคอกลับหัว: ถ้าผัดวันประกันพรุ่ง รอเวลาที่เหมาะ ฝึกการพักนานเกิน หยุด ลงมือทำ ตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Chariot = ขับเคลื่อน, The Magician = ทักษะ",
+            "wands": "Knight of Wands = ลงมือ",
+            "cups": "Ace of Cups = ลงมือ",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Knight ทุกชุด = ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวคำแนะนำ คือ 'ลงมือทำ'",
+          "advice_th": "หยุดรอ ลงมือทำ การพักเป็นช่วง ไม่ใช่ทาง การลงมือสร้างชีวิต",
+          "keywords_th": ["ลงมือ", "ไม่ผัด", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หยุดรอและลงมือในความรัก",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ถ้าชอบใคร บอก ถ้าอยากแก้ปัญหา คุย ถ้าอยากไป ไป การรอไม่นำมาซึ่งความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, Knight of Wands = กล้า",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Knight of Cups = แสดง",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Knight ทุกชุด = ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวคำแนะนำในรัก คือ 'ลงมือ'",
+          "advice_th": "วันนี้ทำสิ่งหนึ่งเพื่อความสัมพันธ์ - บอกรัก คุยปัญหา ส่งของขวัญ การลงมือคือกุญแจ",
+          "keywords_th": ["ลงมือรัก", "ไม่รอ", "ทำเลย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หยุดวางแผนและเริ่มลงมือ",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ถ้าวางแผนมานานแต่ไม่เริ่ม หยุด ลงมือทำเล็กๆ ก้าวแรกสำคัญกว่าแผนสมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Chariot = พลัง",
+            "wands": "Knight of Wands = ลงมือ",
+            "cups": "Knight of Cups = แสดง",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Knight ทุกชุด = ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวคำแนะนำงาน-เงิน คือ 'ก้าวแรกสำคัญ'",
+          "advice_th": "วันนี้ลงมือทำก้าวแรก - ส่ง CV เริ่มเรียน เปิดธุรกิจเล็ก แผนสมบูรณ์ไม่มีจริง",
+          "keywords_th": ["ลงมือ", "ก้าวแรก", "ไม่รอ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ปฏิบัติแทนการอ่าน",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: หยุดอ่านหนังสือใหม่ ลงมือฝึกสิ่งที่อ่านมา 90 วัน ปัญญามาจากการทำ ไม่ใช่จากการรู้",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, Knight of Pentacles = วินัย",
+            "wands": "Knight of Wands = ลงมือ",
+            "cups": "Knight of Cups = ฝึก",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Knight ทุกชุด = ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวคำแนะนำการเติบโต คือ 'ปฏิบัติ'",
+          "advice_th": "เลือกหนึ่งเทคนิคที่อ่านมาและฝึก 90 วัน ผลลัพธ์จากการทำ ไม่ใช่จากการรู้",
+          "keywords_th": ["ปฏิบัติ", "ลงมือ", "90 วัน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เริ่มออกกำลังกายและดูแลตัวเองเดี๋ยวนี้",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ถ้ารอจังหวะที่เหมาะออกกำลังกาย กินดี ทุกอย่างพร้อม - หยุด เริ่มวันนี้กับสิ่งที่มี",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, Strength = พลัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Knight ทุกชุด = ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวคำแนะนำสุขภาพ คือ 'เริ่มวันนี้'",
+          "advice_th": "เดิน 10 นาทีวันนี้ ดื่มน้ำเพิ่มวันนี้ ไม่รอ 'พรุ่งนี้' ไม่มีจริง",
+          "keywords_th": ["เริ่มวันนี้", "ไม่รอ", "ลงมือ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างเห็นคุณเป็นคนใจเย็นและมีปัญญา",
+          "detailed_interpretation_th": "ชายแขวนคอหัวตั้งในภายนอก บ่งบอกว่าคนรอบข้างเห็นคุณเป็นคนใจเย็น มีปัญญา รอบคอบ มาขอคำปรึกษา ใช้พลังของชื่อเสียงนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ครู, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "Knight of Pentacles = อดทน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอภายนอก คือ 'คนเห็นปัญญา'",
+          "advice_th": "ใช้ภาพลักษณ์ดี - คนมาขอคำปรึกษา ให้คำแนะนำที่ดี",
+          "keywords_th": ["ใจเย็น", "ปัญญา", "ที่ปรึกษา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่หรือเพื่อนเห็นคุณเป็นคนเข้าใจและรอบคอบ",
+          "detailed_interpretation_th": "ในรัก คู่และเพื่อนเห็นคุณเป็นคนเข้าใจ รอบคอบ ไว้ใจได้ คุณคือที่พึ่งทางใจของพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ครอบครัว, The Lovers = รัก",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = นักรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอภายนอกรัก คือ 'ที่พึ่งทางใจ'",
+          "advice_th": "ใช้ความสามารถเข้าใจในความสัมพันธ์ คุณคือที่พึ่งที่ดี",
+          "keywords_th": ["เข้าใจ", "ที่พึ่ง", "ไว้ใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เพื่อนร่วมงานและลูกค้าไว้ใจปัญญาของคุณ",
+          "detailed_interpretation_th": "ในงาน-เงิน เพื่อนร่วมงาน ลูกค้า พันธมิตรไว้ใจปัญญาและการตัดสินใจของคุณ ใช้พลังนี้สร้างโอกาส",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Hierophant = ครู",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ที่ปรึกษา",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "King of Pentacles = ผู้น่าเชื่อถือ",
+            "court_cards": "King ทุกชุด = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอภายนอกงาน-เงิน คือ 'ไว้ใจปัญญา'",
+          "advice_th": "ใช้ชื่อเสียงเป็นที่ปรึกษา - ขยายธุรกิจที่ปรึกษา รับงาน mentor coach",
+          "keywords_th": ["ไว้ใจ", "ที่ปรึกษา", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ครูจิตวิญญาณช่วยให้พักและเข้าใจ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ มีครูที่ช่วยให้คุณพักและเข้าใจชีวิต ฟังคำแนะนำ ใช้พลังของพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ครูทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอภายนอกจิตวิญญาณ คือ 'ครูช่วยพัก'",
+          "advice_th": "เข้า retreat อยู่กับครู ใช้เวลากับคนที่ช่วยให้สงบ",
+          "keywords_th": ["ครูช่วย", "retreat", "สงบ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมอหรือ healer สนับสนุนการพักและฟื้นฟู",
+          "detailed_interpretation_th": "ในสุขภาพ มีหมอ healer ที่สนับสนุนการพักผ่อน ฟื้นฟู - massage spa retreat รักษาทางเลือก ลงทุนกับพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Four of Swords = พัก",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ดูแล",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Queen of Pentacles = ผู้ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอภายนอกสุขภาพ คือ 'การพัก holistic'",
+          "advice_th": "ลงทุน massage นวด spa retreat การพักคุณภาพคุ้มค่า",
+          "keywords_th": ["พัก", "ฟื้นฟู", "holistic"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างไม่เข้าใจการพักของคุณ",
+          "detailed_interpretation_th": "ชายแขวนคอกลับหัวในภายนอก เตือนว่าคนรอบข้างอาจไม่เข้าใจ - คิดว่าคุณขี้เกียจ ไม่ทำงาน ไม่ก้าวหน้า ทั้งที่คุณกำลังพักรอจังหวะ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดัน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Five of Swords = ทะเลาะ",
+            "pentacles": "Four of Pentacles = ผู้กดดัน",
+            "court_cards": "King of Swords กลับหัว = วิจารณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวภายนอก คือ 'คนไม่เข้าใจ'",
+          "advice_th": "ไม่ต้องอธิบายให้คนที่ไม่ฟัง - การพักของคุณเป็นของคุณ",
+          "keywords_th": ["คนไม่เข้าใจ", "พักของคุณ", "ไม่ต้องอธิบาย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่ไม่เข้าใจว่าคุณต้องการพื้นที่",
+          "detailed_interpretation_th": "ในรัก คู่ไม่เข้าใจว่าคุณต้องการพื้นที่ คิดว่าคุณห่างเหิน คุณต้องอธิบายและตั้งขีดจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Knight of Cups กลับหัว = ไม่เข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวภายนอกรัก คือ 'อธิบายความต้องการ'",
+          "advice_th": "บอกคู่ว่าต้องการพื้นที่ - ไม่ใช่หนีจาก แต่เพื่อเข้าใจ ความรักต้องการการสื่อสาร",
+          "keywords_th": ["คู่ไม่เข้าใจ", "พื้นที่", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เพื่อนร่วมงานคิดว่าคุณขี้เกียจหรือไม่ก้าวหน้า",
+          "detailed_interpretation_th": "ในงาน-เงิน เพื่อนร่วมงานอาจตัดสินว่าคุณไม่ทำงาน ขี้เกียจ ไม่ก้าวหน้า ทั้งที่คุณกำลังคิดเชิงกลยุทธ์",
+          "adjacent_influences": {
+            "major_arcana": "Justice กลับหัว = ตัดสินผิด, The Devil = แรงกดดัน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Five of Swords = ทะเลาะ",
+            "pentacles": "Four of Pentacles = ผู้กดดัน",
+            "court_cards": "King of Swords กลับหัว = วิจารณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวภายนอกงาน-เงิน คือ 'ผลงานพูดเอง'",
+          "advice_th": "อย่าอธิบาย ทำผลงานให้ดี ผลลัพธ์พูดเอง การคิดเชิงกลยุทธ์จะให้ผล",
+          "keywords_th": ["ถูกวิจารณ์", "ผลงานพูดเอง", "ไม่ฟัง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "คนรอบข้างไม่เข้าใจการเติบโตทางจิตวิญญาณ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คนรอบข้างอาจตัดสินการเปลี่ยนแปลงของคุณ - 'แปลก' 'ไม่ใช่คนเดิม' เติบโตของคุณคือของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = อยู่คนเดียว, The Devil = ดึงกลับ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ฝึกตัว",
+            "court_cards": "Page กลับหัว = คนรอบไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวภายนอกจิตวิญญาณ คือ 'เติบโตของคุณ'",
+          "advice_th": "หาเพื่อนใหม่ที่อยู่ในเส้นทางเดียวกัน คนเก่าอาจไม่ตามไปด้วย",
+          "keywords_th": ["ไม่เข้าใจ", "เติบโตของคุณ", "เพื่อนใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ครอบครัวกดดันให้ทำงานหนัก ไม่ให้พัก",
+          "detailed_interpretation_th": "ในสุขภาพ ครอบครัวหรือสังคมกดดันให้คุณทำงานหนัก ไม่อนุญาตให้พัก - 'ต้องเลี้ยงครอบครัว' 'ต้องทำงานหาเงิน' การพักเป็นสิทธิ์ของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดัน, The Tower = ระเบิด",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หักโหม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวภายนอกสุขภาพ คือ 'พักคือสิทธิ์'",
+          "advice_th": "ตั้งขีดจำกัด - การพักไม่ใช่ความเกียจคร้าน ร่างกายต้องการ ดูแลตัวเองก่อน",
+          "keywords_th": ["ถูกกดดัน", "พักคือสิทธิ์", "ขีดจำกัด"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes",
+      "position_name_th": "ความหวัง",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังความสงบและปัญญาจากการพัก",
+          "detailed_interpretation_th": "ชายแขวนคอหัวตั้งในความหวัง สะท้อนความปรารถนา - หวังความสงบ ปัญญา การปล่อยวาง ใช้ชีวิตที่ไม่บีบจากความเร่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The World = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "Queen ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอความหวัง คือ 'สงบและปัญญา'",
+          "advice_th": "เก็บความหวังนี้ ฝึกสมาธิ ปัญญาและความสงบมาจากการฝึก",
+          "keywords_th": ["สงบ", "ปัญญา", "ปล่อยวาง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความสัมพันธ์ที่สงบและไม่บีบ",
+          "detailed_interpretation_th": "ในรัก ความหวังคือคู่ที่ใจเย็น ไม่บีบ มีพื้นที่ของตัวเอง ความรักที่สงบและลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The High Priestess = ปัญญา",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ใจเย็น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอความหวังรัก คือ 'รักสงบ'",
+          "advice_th": "หาคู่ที่ใจเย็น อย่ายอมรับคู่ที่บีบหรือเร่งเกินไป",
+          "keywords_th": ["รักสงบ", "ใจเย็น", "พื้นที่"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังอาชีพที่มีความหมายและไม่กดดันเกิน",
+          "detailed_interpretation_th": "ในงาน-เงิน ความหวังคืออาชีพที่มีความหมาย - มีเวลาคิด พัก สมดุลกับชีวิต ไม่เป็นทาสของงาน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ความหวัง",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "King of Cups = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอความหวังงาน-เงิน คือ 'งานที่ไม่บีบ'",
+          "advice_th": "เลือกอาชีพที่มีเวลาคิดและพัก คุณภาพชีวิตสำคัญกว่าเงินเดือนสูง",
+          "keywords_th": ["งานสมดุล", "ความหมาย", "อิสระ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังปัญญาที่ลึกและการรู้แจ้ง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความหวังคือการรู้แจ้ง เข้าใจชีวิตในระดับลึก ปล่อยวางความอยาก ใช้ชีวิตอย่างมีปัญญา",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The World = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอความหวังจิตวิญญาณ คือ 'รู้แจ้ง'",
+          "advice_th": "ฝึกปฏิบัติทุกวัน รู้แจ้งคือการเดินทาง ไม่ใช่จุดหมาย",
+          "keywords_th": ["รู้แจ้ง", "ปัญญา", "ปล่อยวาง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพที่สมดุลและมีเวลาพัก",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือสมดุล - มีเวลาทำงานและพัก ไม่ฝืน ไม่ละเลย ดูแลตัวเองด้วยปัญญา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอความหวังสุขภาพ คือ 'สมดุลและพัก'",
+          "advice_th": "วางแผนสุขภาพให้มีเวลาพัก การพักคือลงทุน ไม่ใช่ความขี้เกียจ",
+          "keywords_th": ["สมดุล", "พัก", "ดูแล"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวการหยุดเพราะกลัวเสียโอกาส",
+          "detailed_interpretation_th": "ชายแขวนคอกลับหัวในความหวัง บ่งบอกถึงความกลัวการหยุด - กลัวเสียโอกาส กลัวคนแซง กลัวล้มเหลว ความกลัวขังคุณจากการพัก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวความหวัง คือ 'พักคือฉลาด'",
+          "advice_th": "การพักคือลงทุน คนที่ทำงานหนักไม่พักแพ้คนที่พักและทำฉลาด",
+          "keywords_th": ["กลัวหยุด", "เสียโอกาส", "พักฉลาด"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวว่ารักจะหายถ้าให้พื้นที่",
+          "detailed_interpretation_th": "ในรัก กลัวให้พื้นที่ - ถ้าให้คู่ห่างจะหายไป ความกลัวทำให้บีบ ความรักหายในความบีบ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ตามอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวความหวังรัก คือ 'ให้พื้นที่คือพลัง'",
+          "advice_th": "ฝึกให้พื้นที่คู่ ความรักที่ดีต้องการการหายใจ การบีบทำลาย",
+          "keywords_th": ["กลัวให้พื้นที่", "บีบ", "ปล่อย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวเสียรายได้ถ้าพัก",
+          "detailed_interpretation_th": "ในงาน-เงิน กลัวเสียรายได้ถ้าพัก - ทำงาน 7 วันต่อสัปดาห์ ไม่หยุด การไม่พักทำลายสุขภาพและคุณภาพงาน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการทำงาน, The Tower = burnout",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ติดในเงิน",
+            "court_cards": "Knight of Wands กลับหัว = หักโหม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวความหวังงาน-เงิน คือ 'พักให้ได้มากขึ้น'",
+          "advice_th": "พักเพื่อมีพลังทำงานดีขึ้น คนที่พักดีทำงานได้มากกว่าคนที่ไม่พัก",
+          "keywords_th": ["กลัวเสียเงิน", "ไม่พัก", "พักได้มากขึ้น"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่เชื่อว่าจะบรรลุปัญญาได้",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ไม่เชื่อว่าตัวเองจะบรรลุปัญญา 'การรู้แจ้งสำหรับคนอื่น' ทุกคนสามารถบรรลุในระดับของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = imposter"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวความหวังจิตวิญญาณ คือ 'ทุกคนได้'",
+          "advice_th": "เริ่มฝึกแม้ยังไม่เชื่อ การฝึกสร้างปัญญา ไม่ใช่ความเชื่อสร้าง",
+          "keywords_th": ["ไม่เชื่อ", "ทุกคนได้", "ฝึก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ไม่เชื่อว่าการพักจะให้ผล",
+          "detailed_interpretation_th": "ในสุขภาพ ความเชื่อ 'ฉันต้องทำงานหนักตลอด ไม่งั้นจะตามไม่ทัน' ขัดขวางการพัก ร่างกายต้องการพัก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Tower = ร่างกายพัง",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวความหวังสุขภาพ คือ 'พักให้แข็งแกร่ง'",
+          "advice_th": "การพักทำให้ร่างกายฟื้นฟู คนที่พักดีแข็งแกร่งกว่าคนที่ไม่พัก",
+          "keywords_th": ["ไม่เชื่อพัก", "ฟื้นฟู", "แข็งแกร่ง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือปัญญาและความเข้าใจชีวิตในมุมใหม่",
+          "detailed_interpretation_th": "ชายแขวนคอหัวตั้งในผลลัพธ์ บ่งบอกว่าถ้าดำเนินต่อ ผลลัพธ์คือปัญญา - เข้าใจชีวิตในมุมใหม่ ปล่อยวางได้ ใช้ชีวิตที่มีความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอผลลัพธ์ คือ 'ปัญญาและมุมใหม่'",
+          "advice_th": "ดำเนินฝึกตัวเองต่อ ผลลัพธ์คือชีวิตที่มีปัญญา",
+          "keywords_th": ["ปัญญา", "มุมใหม่", "เข้าใจ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความสัมพันธ์ที่ลึกซึ้งและสงบ",
+          "detailed_interpretation_th": "ในรัก ผลลัพธ์คือความสัมพันธ์ที่ลึกซึ้ง - ทั้งคู่เข้าใจกันโดยไม่ต้องพูดเยอะ ความรักที่สงบและลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The High Priestess = ปัญญา",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอผลลัพธ์รัก คือ 'รักลึกสงบ'",
+          "advice_th": "ดำเนินรักษาความรักที่สงบและลึก ผลลัพธ์คือความสัมพันธ์ที่ยั่งยืน",
+          "keywords_th": ["รักลึก", "สงบ", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คืออาชีพที่มีความหมายและสมดุล",
+          "detailed_interpretation_th": "เส้นทางนี้นำไปสู่อาชีพที่มีความหมาย - มีเวลาคิด พัก ทำงานที่รัก สมดุลกับชีวิต ความสำเร็จที่ไม่ทำลายสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = อิสระ, Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอผลลัพธ์งาน-เงิน คือ 'งานสมดุล'",
+          "advice_th": "ดำเนินสร้างอาชีพที่สมดุล มีเวลาทำสิ่งที่รัก",
+          "keywords_th": ["งานสมดุล", "ความหมาย", "อิสระ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการรู้แจ้งและปล่อยวางได้",
+          "detailed_interpretation_th": "เส้นทางจิตวิญญาณนี้นำไปสู่การรู้แจ้ง - เข้าใจชีวิต ปล่อยวางความอยาก ใช้ชีวิตด้วยปัญญา กลายเป็นแบบอย่าง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = บรรลุ, The World = สมบูรณ์",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอผลลัพธ์จิตวิญญาณ คือ 'รู้แจ้ง'",
+          "advice_th": "ดำเนินฝึกปฏิบัติต่อ ผลลัพธ์คือชีวิตที่มีปัญญาและสงบ",
+          "keywords_th": ["รู้แจ้ง", "ปล่อยวาง", "สงบ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพสมดุลและร่างกายที่พักฟื้นได้ดี",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์คือสมดุล - ร่างกายแข็งแรง อารมณ์สงบ มีเวลาพัก สุขภาพยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอผลลัพธ์สุขภาพ คือ 'สมดุลและพัก'",
+          "advice_th": "ดำเนินการดูแลสมดุล ผลลัพธ์คือร่างกายที่อยู่ได้นาน",
+          "keywords_th": ["สมดุล", "พัก", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ติดอยู่ในที่เดิมตลอดถ้าไม่เปลี่ยน",
+          "detailed_interpretation_th": "ชายแขวนคอกลับหัวในผลลัพธ์ เตือนว่าถ้ายังคงติดอยู่ - ไม่เปลี่ยน ไม่ปล่อย ไม่ลงมือ ผลลัพธ์คือชีวิตที่หยุดนิ่ง ความเสียดาย ต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man เสริม, The Devil = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวผลลัพธ์ คือ 'เปลี่ยนหรือติดตลอด'",
+          "advice_th": "ลงมือเปลี่ยนเดี๋ยวนี้ ก้าวเล็กๆ การติดอยู่ตลอดคือเส้นทางที่เลือก ไม่ใช่โชค",
+          "keywords_th": ["ติดตลอด", "ไม่เปลี่ยน", "ลงมือ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ไม่ไปไหนถ้าไม่ตัดสินใจ",
+          "detailed_interpretation_th": "ในรัก ผลลัพธ์ไม่ดีถ้ายังคงรอ - ไม่ตัดสินใจ ไม่คุย ความสัมพันธ์ติดอยู่ ทั้งคู่ทุกข์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man เสริม",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวผลลัพธ์รัก คือ 'ตัดสินใจ'",
+          "advice_th": "คุยกับคู่ ตัดสินใจ ปรับหรือออก ความติดอยู่ทำลายทั้งสองคน",
+          "keywords_th": ["รักติด", "ไม่ตัดสินใจ", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ติดในงานเดิมโดยไม่เติบโต",
+          "detailed_interpretation_th": "ในงาน-เงิน ผลลัพธ์ไม่ดีถ้ายังคงติดในงานเดิม - ทักษะล้าสมัย รายได้คงที่ ไม่ก้าวหน้า ต้องเริ่มเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man เสริม, The Devil = ติดในงาน",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวผลลัพธ์งาน-เงิน คือ 'เริ่มสิ่งใหม่'",
+          "advice_th": "เริ่มเรียนทักษะใหม่วันนี้ side hustle networking การติดในงานเดิมคือทาง",
+          "keywords_th": ["ติดงาน", "ไม่เติบโต", "เริ่มใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่เติบโตเพราะติดในการคิดไม่ทำ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ผลลัพธ์ไม่ดีถ้ายังคงคิดไม่ทำ - อ่านเยอะ ฝึกน้อย ความรู้สะสมแต่ชีวิตไม่เปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man เสริม, The Devil = ติดในความคิด",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวผลลัพธ์จิตวิญญาณ คือ 'ลงมือ ไม่คิด'",
+          "advice_th": "เลือกเทคนิคหนึ่งและฝึก 90 วัน ผลลัพธ์มาจากการทำ ไม่ใช่จากการรู้",
+          "keywords_th": ["คิดไม่ทำ", "ไม่เติบโต", "ปฏิบัติ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายพังจากการไม่พักหรือไม่ดูแล",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์ไม่ดีถ้ายังคงฝืน - ทำงานหนัก ไม่พัก ไม่ออกกำลังกาย ร่างกายจะเรียกร้องในที่สุด - burnout บาดเจ็บ อาการเรื้อรัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในการฝืน",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ, Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ชายแขวนคอกลับหัวผลลัพธ์สุขภาพ คือ 'พักหรือพัง'",
+          "advice_th": "เริ่มพักเดี๋ยวนี้ ก่อนร่างกายบังคับ การพักคือป้องกัน burnout",
+          "keywords_th": ["ร่างกายพัง", "burnout", "พักเดี๋ยวนี้"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    }
+  }
+}
