@@ -125,7 +125,7 @@ trait CelticCrossConversationTrait
     {
         $ackMessage = "🌙 *แม่หมอกำลังเชื่อมจิตกับไพ่ของเจ้าชะตา...*\n"
             ."ขอเวลา 1-2 นาที ✨\n\n"
-            ."(อย่าเพิ่งพิมพ์ซ้ำนะคะ — แม่หมอกำลังตั้งสมาธิ 🙏)";
+            .'(อย่าเพิ่งพิมพ์ซ้ำนะคะ — แม่หมอกำลังตั้งสมาธิ 🙏)';
 
         if (! empty($reading->facebook_user_id)) {
             try {
@@ -217,9 +217,9 @@ trait CelticCrossConversationTrait
             // Celtic-only — intro tone (ไม่บังคับ ลูกค้าเลือกเองได้ พร้อมจะอ่านราคาก่อน)
             $introLine = FortuneLocaleService::lo(
                 "ตอนนี้แม่หมอเปิดบริการ *Celtic Cross* เพียงแพคเกจเดียวค่ะ\n"
-                    ."ลองอ่านรายละเอียดด้านล่างก่อน — ถ้าพร้อมค่อยเริ่มได้เลย 👇",
+                    .'ลองอ่านรายละเอียดด้านล่างก่อน — ถ้าพร้อมค่อยเริ่มได้เลย 👇',
                 "ຕອນນີ້ແມ່ໝໍເປີດບໍລິການ *Celtic Cross* ພຽງແພັກເກດດຽວເດີ\n"
-                    ."ລອງອ່ານລາຍລະອຽດດ້ານລຸ່ມກ່ອນ — ຖ້າພ້ອມຄ່ອຍເລີ່ມໄດ້ເລີຍ 👇"
+                    .'ລອງອ່ານລາຍລະອຽດດ້ານລຸ່ມກ່ອນ — ຖ້າພ້ອມຄ່ອຍເລີ່ມໄດ້ເລີຍ 👇'
             );
         } else {
             $introLine = FortuneLocaleService::lo(
@@ -333,10 +333,10 @@ trait CelticCrossConversationTrait
             $message .= FortuneLocaleService::lo(
                 "✦ ถ้าพร้อม — พิมพ์ *\"เริ่มเลย\"* / *\"celtic\"* / *\"{$celticPrice}\"*\n"
                     ."✦ ถ้าอยากถามอะไรก่อน — พิมพ์มาได้เลย แม่หมอตอบให้\n"
-                    ."✦ ถ้ายังไม่พร้อม — พิมพ์ *\"ไว้คราวหน้า\"* หรือ *\"ยกเลิก\"* ก็ได้ ไม่เป็นไรค่ะ 🙏",
+                    .'✦ ถ้ายังไม่พร้อม — พิมพ์ *"ไว้คราวหน้า"* หรือ *"ยกเลิก"* ก็ได้ ไม่เป็นไรค่ะ 🙏',
                 "✦ ຖ້າພ້ອມ — ພິມ *\"ເລີ່ມເລີຍ\"* / *\"celtic\"* / *\"{$celticPrice}\"*\n"
                     ."✦ ຖ້າຢາກຖາມຫຍັງກ່ອນ — ພິມມາໄດ້ເລີຍ ແມ່ໝໍຕອບໃຫ້\n"
-                    ."✦ ຖ້າຍັງບໍ່ພ້ອມ — ພິມ *\"ໄວ້ຄາວໜ້າ\"* ຫຼື *\"ຍົກເລີກ\"* ກໍ່ໄດ້ ບໍ່ເປັນຫຍັງເດີ 🙏"
+                    .'✦ ຖ້າຍັງບໍ່ພ້ອມ — ພິມ *"ໄວ້ຄາວໜ້າ"* ຫຼື *"ຍົກເລີກ"* ກໍ່ໄດ້ ບໍ່ເປັນຫຍັງເດີ 🙏'
             );
         } else {
             $ctaHeader = FortuneLocaleService::lo(
@@ -542,7 +542,7 @@ trait CelticCrossConversationTrait
         if ($celticEnabledHint) {
             $stepHintCompact .= "🔮 *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท (10 ใบ + คุยจุใจ {$qaWindow} นาที)\n";
         }
-        $stepHintCompact .= "❌ *\"ยกเลิก\"* — หากไม่ต้องการตอนนี้";
+        $stepHintCompact .= '❌ *"ยกเลิก"* — หากไม่ต้องการตอนนี้';
 
         // 🛡️ Safe guard — ถ้า looksLikeMetaOrChitchat/buildAIAssistedStepReminder ไม่มี (trait isolation)
         //   หรือ throw exception → fallback re-show menu ปกติ ไม่ทำให้ flow crash
@@ -681,11 +681,13 @@ trait CelticCrossConversationTrait
             $resumable = $this->findResumableCelticReading($reading);
             if ($resumable && $resumable->id !== $reading->id) {
                 $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
                 return $this->buildCelticResumeResponse($resumable, false);
             }
             $pending = $this->findPendingCelticBill($reading);
             if ($pending && $pending->id !== $reading->id) {
                 $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
                 return $this->buildCelticPendingPaymentReuseResponse($pending);
             }
 
@@ -1567,7 +1569,7 @@ trait CelticCrossConversationTrait
             // fallback ถ้า AI fail — แม่หมอทักทายแบบ static (กัน UX แตก)
             : "🌙✨ *แม่หมอจันทราพร้อมแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
                 ."🃏 ไพ่ทั้ง 10 ใบของเจ้าชะตาเปิดออกแล้ว — แม่หมอเห็นพลังงานที่ห่อหุ้มเจ้าชะตาอยู่\n\n"
-                ."💬 เล่าให้แม่หมอฟังได้เลย — ตอนนี้มีเรื่องอะไรคาใจที่สุด?";
+                .'💬 เล่าให้แม่หมอฟังได้เลย — ตอนนี้มีเรื่องอะไรคาใจที่สุด?';
 
         // 🌙 (2026-05-23 v3) Start QA window only — เก็บแค่ timestamp ไม่ bump counter
         //    เดิม: markCelticAnswered(1) → celtic_questions_used = 1 (offset 1 คำถามผิด)
@@ -1658,85 +1660,15 @@ trait CelticCrossConversationTrait
         // 🛑 (2026-05-13) ลบ max_questions enforcement — flow ใหม่เป็น free chat
         //   user spec: คุยเรื่อยๆ จนถึง time_expired หรือ "พอแค่นี้"
 
-        // 📦 (2026-05-20 Phase 4a) Message Debounce — รวมข้อความที่ลูกค้าพิมพ์ติด ๆ
-        //   User spec 2026-05-20: "ลูกค้าอาจพิมพ์ยังไม่ครบ ให้ใช้ช่วงเวลาดีเลย์นี้
-        //     คอยดูว่าเขาพิมพ์อะไรมา แล้วค่อยนำมารวมแล้วคุยต่อ"
-        //
-        //   เงื่อนไข:
-        //     • debounce_seconds > 0 (admin เปิด feature)
-        //     • celtic_questions_used >= 1 (Q2+ เท่านั้น — Q1 ตอบทันทีเพราะลูกค้าจ่ายแพง)
-        //     • ผ่าน keyword checks แล้ว (ยุติ/restart/time_expired)
-        //
-        //   Flow:
-        //     1. Append message ลง buffer (Cache, TTL 5 min)
-        //     2. Dispatch ProcessBufferedCelticMessageJob delayed N+1 sec
-        //     3. Return silent_skip — ไม่ตอบทันที (job จะ flush + AI ตอบ)
-        //     4. ถ้าลูกค้าพิมพ์เพิ่ม → append + dispatch อีก job
-        //        Job ตัวก่อนหน้าจะเห็น last_at ยังใหม่ → skip (job ตัวสุดท้าย flush)
-        $debounceSeconds = (int) ($this->settings->message_debounce_seconds ?? 3);
-        $celticQuestionsUsed = (int) ($reading->celtic_questions_used ?? 0);
-
-        // 🚨 (2026-05-20 hotfix) ถ้า queue=sync → delay() ไม่ทำงาน → job รัน immediate
-        //    → isReadyToFlush returns false → bot silent ตลอดกาล
-        //    Workaround: bypass debounce ใน sync mode → reply ทันที
-        //    Permanent: เปลี่ยน QUEUE_CONNECTION เป็น database/redis + queue:work
-        if ($debounceSeconds > 0 && config('queue.default') === 'sync') {
-            \Illuminate\Support\Facades\Log::warning(
-                'Celtic Q2+: queue=sync detected — bypass debounce กัน bot silent',
-                ['reading_id' => $reading->id, 'window' => $debounceSeconds]
-            );
-            $debounceSeconds = 0;
-        }
-
-        if ($debounceSeconds > 0 && $celticQuestionsUsed >= 1) {
-            try {
-                $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';
-                $bufferUserId = $reading->facebook_user_id ?: $reading->line_user_id;
-
-                if (! empty($bufferUserId)) {
-                    $buffer = app(\App\Services\Fortune\MessageBuffer::class);
-                    $stats = $buffer->append('celtic_q', (string) $bufferUserId, $question);
-
-                    // Dispatch job delayed (+1 sec buffer เผื่อ race condition)
-                    \App\Jobs\ProcessBufferedCelticMessageJob::dispatch(
-                        $reading->id,
-                        $platform,
-                        (string) $bufferUserId,
-                        $debounceSeconds
-                    )->delay(now()->addSeconds($debounceSeconds + 1));
-
-                    // ส่ง typing indicator (FB only) — ลูกค้าเห็นว่ารับ message แล้ว
-                    if ($platform === 'facebook') {
-                        try {
-                            app(\App\Services\FacebookWebhookService::class)
-                                ->sendTypingOn((string) $bufferUserId);
-                        } catch (\Throwable $typingErr) {
-                            // ignore
-                        }
-                    }
-
-                    \Log::info('Celtic: message buffered (debounce)', [
-                        'reading_id' => $reading->id,
-                        'platform' => $platform,
-                        'sequence_used' => $celticQuestionsUsed,
-                        'buffer_count' => $stats['count'],
-                        'window_sec' => $debounceSeconds,
-                    ]);
-
-                    return [
-                        'action' => 'silent_skip', // ChannelManager จะ skip การส่ง
-                        'message' => '',
-                        'reading' => $reading,
-                    ];
-                }
-            } catch (\Throwable $bufErr) {
-                // Buffer fail = fall through ไปใช้ logic เดิม (ตอบทันที) — zero regression
-                \Log::warning('Celtic: buffer/dispatch fail (fall through to immediate)', [
-                    'reading_id' => $reading->id,
-                    'error' => $bufErr->getMessage(),
-                ]);
-            }
-        }
+        // 🌙 (2026-05-29) Single-bot — ลบ Message Debounce buffer (ProcessBufferedCelticMessageJob)
+        //   user spec: "ใช้ตัวเดียวคุยเลย เหมือนพูดคุยกับหมอ แล้วแยกแยะคำถาม สรุปคำถาม"
+        //   เดิม (2026-05-20 Phase 4a): Q2+ (celtic_questions_used >= 1) → buffer 3 วิ + dispatch
+        //     ProcessBufferedCelticMessageJob (job แยก) → flush + AI ตอบทีหลัง
+        //     = path คนละทางกับ Q1 (immediate) → flow ไม่สม่ำเสมอ + เสี่ยง delivered_at ไม่ถูก mark
+        //       (เคสจริง reading 4191 สมร: Q2 ครอบครัวถูก redeliver ซ้ำ)
+        //   ใหม่: ทุกคำถามไป immediate path เดียวด้านล่าง (askQuestion sync) — หมอคนเดียวตอบสด
+        //     สม่ำเสมอ + ChannelManager mark delivered ครบทุกข้อ
+        //   หมายเหตุ: ProcessBufferedCelticMessageJob ยังคงไฟล์ไว้ (เผื่อ job ค้างใน queue) แต่ไม่ dispatch ใหม่
 
         // ส่งให้ AI Pool — ทุก message ส่งเข้า askQuestion (chat-style follow-up)
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
@@ -2000,6 +1932,24 @@ trait CelticCrossConversationTrait
         // 🔄 reset state กลับ COMPLETED → normal loop พร้อมรับ "ดูดวง" ใหม่ได้
         $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
+        // 🐛 (2026-05-29) กัน redeliver cron ส่งคำตอบรายข้อซ้ำหลัง session จบ
+        //   เคสจริง reading 4191 (สมร มนต์คาถา): Q2 "ครอบครัว" push แรก delivered_at ไม่ถูก set
+        //   (FB confirm false-negative) → fortune:celtic-redeliver จับ → ส่งซ้ำ 12:18
+        //   หลัง Grand Finale (12:17) ไปแล้ว → ลูกค้าเห็น "ครอบครัว" โผล่ซ้ำหลังสรุป
+        //   Fix: session จบ = Grand Finale รวมคำตอบทุกข้อแล้ว → mark ทุก answered question
+        //        เป็น delivered กัน cron จับมา re-push (idempotent: เฉพาะที่ delivered_at ยังว่าง)
+        try {
+            $reading->celticQuestions()
+                ->whereNotNull('answered_at')
+                ->whereNull('delivered_at')
+                ->update(['delivered_at' => now()]);
+        } catch (\Throwable $markErr) {
+            \Log::debug('Celtic: mark-all-delivered on session end fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $markErr->getMessage(),
+            ]);
+        }
+
         // 🃏 (2026-05-16) off_topic_repick — ลูกค้าถามนอกเรื่องเดิม → ชวนจับไพ่ใหม่
         //   ใช้ $aiMessage ที่ส่งเข้ามาตรงๆ (รวม response + ชวนจับใหม่ไว้แล้ว) — skip Grand Finale
         //   เหตุผล: ลูกค้าจะไป flow "ดูดวง" ใหม่ — Grand Finale ไม่เกี่ยว
@@ -2095,7 +2045,7 @@ trait CelticCrossConversationTrait
             // 🌙 (2026-05-23 v3) เหตุผลการจบ — บอกชัดว่าครบกติกาแล้ว (5 คำถาม / 15 นาที)
             //   🌙 (2026-05-24) เพิ่ม customer_said_done — บอกชัดว่าลูกค้าขอจบเอง
             $reasonNotice = match ($reason) {
-                'max_questions_reached' => "✅ *ครบ ".max(1, $maxQ)." คำถามตามกติกาแล้ว* — แม่หมอส่งบทสรุปท้ายให้ค่ะ\n\n",
+                'max_questions_reached' => '✅ *ครบ '.max(1, $maxQ)." คำถามตามกติกาแล้ว* — แม่หมอส่งบทสรุปท้ายให้ค่ะ\n\n",
                 'time_expired' => "⏰ *ครบ {$qaWindow} นาทีตามกติกาแล้ว* — แม่หมอส่งบทสรุปท้ายให้ค่ะ\n\n",
                 'customer_said_done' => "💝 *เจ้าชะตาขอจบรอบนี้* — แม่หมอส่งบทสรุปท้ายให้ค่ะ\n\n",
                 default => '',
@@ -2273,7 +2223,7 @@ trait CelticCrossConversationTrait
      *      → "ไม่"/"ขอคุยต่อ" / CELTIC_END_NO → clear flag + กลับ Q&A
      *      → อย่างอื่น → clear flag + ปล่อยให้ caller handle ปกติ
      *
-     * @return array|null  array = handled, null = ไม่เกี่ยว (caller จัดการต่อ)
+     * @return array|null array = handled, null = ไม่เกี่ยว (caller จัดการต่อ)
      */
     protected function handleCelticEndConfirmation(FortuneReading $reading, string $messageText): ?array
     {
@@ -2463,7 +2413,7 @@ trait CelticCrossConversationTrait
             // เปิดครบ 10 แล้ว — รอคำถาม
             $message = $header
                 ."✨ เปิดไพ่ครบ 10 ใบแล้ว — แม่หมอพร้อมรับฟัง\n"
-                ."💬 พิมพ์คำถามที่อยากรู้มาได้เลยค่ะ";
+                .'💬 พิมพ์คำถามที่อยากรู้มาได้เลยค่ะ';
         } else {
             // กลางทาง — บอกใบล่าสุด + ใบถัดไป
             $message = $header

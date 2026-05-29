@@ -16,7 +16,13 @@ use Illuminate\Support\Facades\Log;
 /**
  * 📦 (2026-05-20 Phase 4a) Process buffered Celtic Q2+ messages
  *
- * Flow:
+ * ⚠️ DEPRECATED (2026-05-29): เลิก dispatch job นี้แล้ว — Celtic รวมเป็น immediate path เดียว
+ *   (Single-bot spec: "ใช้ตัวเดียวคุยเลย เหมือนพูดคุยกับหมอ"). handleCelticAwaitingQuestion
+ *   เอา debounce buffer ออกแล้ว → ทุกคำถามตอบสด (askQuestion sync). เก็บ class ไว้เผื่อ job
+ *   ที่ค้างใน queue ตอน deploy — handle() ยัง drain ได้ปลอดภัย (buffer ว่าง/state mismatch → skip).
+ *   ลบ class ได้เมื่อมั่นใจว่า queue ไม่มี job ค้าง.
+ *
+ * Flow (legacy):
  *   1. handleCelticAwaitingQuestion append message ลง buffer + dispatch job (delayed N sec)
  *   2. ถ้าลูกค้าพิมพ์อีก → append + dispatch job อีกตัว
  *   3. Job ตัวแรก fire → เห็น last_at ยังใหม่ → skip (return)
@@ -28,10 +34,10 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /** @var int  Max retry — buffer feature ไม่ critical, fail = ข้าม */
+    /** @var int Max retry — buffer feature ไม่ critical, fail = ข้าม */
     public int $tries = 1;
 
-    /** @var int  Job timeout — flush + AI call + reply */
+    /** @var int Job timeout — flush + AI call + reply */
     public int $timeout = 180;
 
     public function __construct(

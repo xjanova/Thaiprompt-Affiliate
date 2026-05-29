@@ -84,6 +84,18 @@ class FortuneCelticRedeliver extends Command
                 continue;
             }
 
+            // 🐛 (2026-05-29) Safety net — session จบแล้ว (completed) ไม่ต้อง re-deliver รายข้อ
+            //   Grand Finale ตอนจบรวมคำตอบทุกข้อให้แล้ว — ถ้า cron ส่งคำตอบรายข้อซ้ำ
+            //   ลูกค้าจะเห็นคำตอบเก่าโผล่ "หลังสรุป" (เคสจริง reading 4191 สมร: ครอบครัวซ้ำ)
+            //   mark delivered กัน cron วนจับทุกนาทีจน maxAttempts (terminal state — ไม่ต้องส่งแล้ว)
+            //   หมายเหตุ: endCelticSession ก็ mark ให้แล้ว — นี่คือ safety net เผื่อ legacy/race
+            if ($reading->conversation_status === FortuneReading::STATUS_COMPLETED) {
+                $q->markDelivered();
+                $skipped++;
+
+                continue;
+            }
+
             // resolve platform + userId (pattern เดียวกับทั้งระบบ — platform field ก่อน แล้ว ID pattern)
             $platform = $reading->platform;
             if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {

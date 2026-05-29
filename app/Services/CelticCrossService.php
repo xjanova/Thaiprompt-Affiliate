@@ -174,47 +174,18 @@ class CelticCrossService
             //   fallback chain: prediction_celtic → prediction → any → null
             //   → ลูกค้า Celtic จ่ายแพง (99฿) — admin มาร์ค key คุณภาพสูงเฉพาะแพคนี้ได้
             //
-            // 🌟 (2026-05-07) Sensitive AI Mode — สแกนคำถามลูกค้าก่อน generate
-            //   ถ้าเข้าข่ายละเอียดอ่อน (อารมณ์ร้าย/หัวข้อหนัก/ซับซ้อน)
-            //   → ใช้ purpose='sensitive' เลือก Pro key (Gemini Pro/GPT-5+)
-            //   เลื่อนใช้แค่ใน Q2+ (followup) เพราะ Q1 + __PREDICT_ALL__ ไม่มีคำถามเฉพาะ
+            // 🌙 (2026-05-29) Single-bot — Celtic ใช้ key เดียว prediction_celtic + openai เสมอ
+            //   user spec: "ใช้ตัวเดียวคุยเลย เหมือนพูดคุยกับหมอ แยกแยะคำถาม สรุป ขอข้อมูลเพิ่มในตัว"
+            //   เดิม: resolveSensitiveDecision (heuristic keyword/regex) pre-scan คำถาม
+            //         → สลับ purpose='sensitive' (Pro model) ตอนคำถามหนัก
+            //         = ลูกค้ารู้สึกเหมือนมี "บอทแยกคำถาม" + tone อาจ drift ข้าม provider
+            //   ใหม่: ทำนายทุกคำถามด้วย key prediction_celtic + openai เสมอ → persona "แม่หมอจันทรา"
+            //         คงเส้น ลื่นเหมือนหมอคนเดียว. การ "แยกแยะ/ขอข้อมูลเพิ่ม" จัดการใน prompt อยู่แล้ว
+            //         (buildEnrichmentDirective + buildLifeCoachDirective + TYPE:A/B token)
+            //   ⚠️ ขอบเขต: เอา sensitive ออกเฉพาะ Celtic — purpose 'sensitive' ยังใช้ที่อื่น
+            //      (Vision/รับรูป, Deep 39, Pro Session) จึงไม่แตะ AiApiKey::PURPOSES dropdown
             $celticPurpose = 'prediction_celtic';
-            $celticDecision = null;
-            if (! $isPredictAll && ! empty($userQuestion)) {
-                $celticPlatform = $reading->platform ?? 'facebook';
-                $celticUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
-
-                $convService = new FortuneConversationService($this->settings);
-                $celticDecision = $convService->resolveSensitiveDecision(
-                    (string) $userQuestion,
-                    (string) $celticUserId,
-                    $celticPlatform,
-                    'celtic',
-                    [],
-                    []
-                );
-                if ($celticDecision['use_pro']) {
-                    $celticPurpose = 'sensitive';
-                    Log::info('Celtic: คำถาม sequence='.$sequence.' เข้าข่ายละเอียดอ่อน → ใช้ Pro model', [
-                        'reading_id' => $reading->id,
-                        'reasons' => $celticDecision['detection']['reasons'] ?? [],
-                        'mood' => $celticDecision['detection']['mood_level'] ?? null,
-                        'complexity' => $celticDecision['detection']['complexity'] ?? null,
-                    ]);
-                }
-            }
-
-            // 🎯 (2026-05-16) Lock OpenAI as primary for Celtic 99฿ followup
-            //   user spec: "ตั้งให้ใช้ openai เป็นหลัก ถ้ามันไม่ fall จริงๆ ก็ไม่ควรสลับโมเดล"
-            //   ก่อน fix: preferredProvider=null → pool ranking ใช้ load score
-            //             → ลูกค้า 2 คนพร้อมกัน → คนที่ 2 ได้ Gemini (tone drift)
-            //   ใหม่: 'openai' preferred → ตรงกับ generateOpeningGreeting (FCS:518)
-            //         persona "แม่หมอจันทรา" คงเส้นทุกคำถาม
-            //
-            //   ⚠️ Sensitive questions ($celticPurpose='sensitive') → ไม่ล็อค
-            //      เพราะ Pro Key (Gemini Pro/GPT-5+) อาจอยู่ provider อื่น
-            //      → ปล่อย pool เลือก purpose='sensitive' key ที่มี
-            $preferredProvider = ($celticPurpose === 'sensitive') ? null : 'openai';
+            $preferredProvider = 'openai';
             $aiService = new FortuneAIService($this->settings, $celticPurpose, $preferredProvider);
             $result = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
@@ -233,31 +204,10 @@ class CelticCrossService
             $aiModel = $result['model'] ?? null;
             $responseTimeMs = (int) round((microtime(true) - $startTime) * 1000);
 
-            // 🌟 (2026-05-07) Sensitive Mode — log + budget tracking ถ้าใช้ Pro
-            if ($celticPurpose === 'sensitive' && $celticDecision !== null) {
-                $celticPlatform = $reading->platform ?? 'facebook';
-                $celticUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
-                $celticCostThb = \App\Services\Fortune\FortuneSensitiveBudgetGuard::estimateCostThb(
-                    $tokensUsed,
-                    $aiModel ?? ''
-                );
-                app(\App\Services\Fortune\FortuneSensitiveBudgetGuard::class)
-                    ->recordUse($celticPlatform, (string) $celticUserId, $celticCostThb);
-                (new FortuneConversationService($this->settings))->logSensitiveEvent(
-                    $celticPlatform,
-                    (string) $celticUserId,
-                    'celtic_turn',
-                    (string) $userQuestion,
-                    $celticDecision['detection'],
-                    [
-                        'used_pro_model' => true,
-                        'pro_provider' => $aiProvider,
-                        'pro_model' => $aiModel,
-                        'tokens_used' => $tokensUsed,
-                        'cost_thb' => $celticCostThb,
-                    ]
-                );
-            }
+            // 🌙 (2026-05-29) ลบ Sensitive Mode logging/budget tracking ใน Celtic
+            //   เดิม: ถ้า purpose='sensitive' → บันทึก cost + logSensitiveEvent
+            //   ตอนนี้ Celtic ใช้ prediction_celtic + openai เสมอ (ดู block ด้านบน) → ไม่มี sensitive turn
+            //   (Sensitive Mode สำหรับ Vision/Deep/Pro Session ยังทำงานปกติที่ FortuneConversationService)
 
             // 🛡️ (2026-05-21) Sequence-aware threshold
             //   Q1 (sequence=1): form prediction → ต้อง >= 100 chars (9 sections)
