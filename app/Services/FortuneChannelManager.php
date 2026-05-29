@@ -1018,10 +1018,16 @@ class FortuneChannelManager
                     $reading = $result['reading'] ?? null;
                     if ($ok && $reading) {
                         try {
-                            $reading->celticQuestions()
-                                ->whereNotNull('answered_at')
-                                ->orderByDesc('sequence')
-                                ->first()?->markDelivered();
+                            // 🐛 (2026-05-29) mark delivered ตรง row by sequence — เลิกเดา orderByDesc
+                            //   เคสจริง reading 4211 (บิล H8518): race admin ask + ลูกค้าพิมพ์พร้อมกัน
+                            //   + orphan record (AI fail) → orderByDesc mark ผิด row → row ที่ push จริง
+                            //   ไม่ถูก mark → cron redeliver ส่งซ้ำ → ลูกค้าเห็นคำตอบ 2 ครั้ง
+                            //   ใหม่: mark ตาม sequence ที่ push จริง (ส่งจาก trait/admin) — fallback orderByDesc
+                            $seq = $result['sequence'] ?? null;
+                            $q = $seq !== null
+                                ? $reading->celticQuestions()->where('sequence', (int) $seq)->whereNotNull('answered_at')->first()
+                                : $reading->celticQuestions()->whereNotNull('answered_at')->orderByDesc('sequence')->first();
+                            $q?->markDelivered();
                         } catch (\Throwable $e) {
                             \Log::debug('FB Celtic: markDelivered fail (non-blocking)', ['error' => $e->getMessage()]);
                         }
@@ -2408,12 +2414,14 @@ class FortuneChannelManager
                     }
 
                     // 🐛 (2026-05-28) mark delivered เมื่อส่งสำเร็จ — กัน cron re-deliver ซ้ำ
+                    // 🐛 (2026-05-29) mark ตรง row by sequence — เลิกเดา orderByDesc (กัน race/orphan → mark ผิด row → ซ้ำ)
                     if ($textOk && $reading) {
                         try {
-                            $reading->celticQuestions()
-                                ->whereNotNull('answered_at')
-                                ->orderByDesc('sequence')
-                                ->first()?->markDelivered();
+                            $seq = $result['sequence'] ?? null;
+                            $q = $seq !== null
+                                ? $reading->celticQuestions()->where('sequence', (int) $seq)->whereNotNull('answered_at')->first()
+                                : $reading->celticQuestions()->whereNotNull('answered_at')->orderByDesc('sequence')->first();
+                            $q?->markDelivered();
                         } catch (\Throwable $e) {
                             \Log::debug('LINE Celtic: markDelivered fail (non-blocking)', ['error' => $e->getMessage()]);
                         }

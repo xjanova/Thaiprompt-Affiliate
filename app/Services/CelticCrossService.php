@@ -580,6 +580,9 @@ class CelticCrossService
                     'action' => 'celtic_question_answered',
                     'message' => $response.$followupOffer,
                     'reading' => $reading,
+                    // 🐛 (2026-05-29) ส่ง sequence ให้ ChannelManager mark delivered ตรง row นี้
+                    //   admin ask + ลูกค้าพิมพ์พร้อมกัน → หลาย records → orderByDesc mark ผิด → redeliver ซ้ำ
+                    'sequence' => $sequence,
                 ], [
                     'from_admin' => true,
                     'message_tag' => 'POST_PURCHASE_UPDATE',
