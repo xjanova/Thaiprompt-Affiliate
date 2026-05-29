@@ -101,6 +101,16 @@ class FortuneCustomerPersona extends Model
     public const SCORE_INJECT_THRESHOLD = 40;
 
     /**
+     * 🆕 (2026-05-29) Free-chat daily cap — content-agnostic wind-down
+     *
+     * จำนวน free-chat turns สูงสุด/วัน (ไม่จ่าย + ไม่มี buy-intent) ก่อนเงียบ
+     * ใช้แก้ช่องโหว่ Hook C เดิมที่พึ่ง keyword detector — เคส venter/ผู้สูงอายุ
+     * พิมพ์เรื่องแปลกๆ (พระเจ้า/บาป/บุญ/ขายยา) ที่ keyword จับไม่ได้ → ไม่เคยเงียบ
+     * (เคสสนิท สาม่าน 87 turns/วัน 0฿). ปรับค่าได้ที่นี่
+     */
+    public const FREECHAT_DAILY_CAP = 25;
+
+    /**
      * 🛒 Keyword bypass — ถ้าข้อความลูกค้ามี keyword พวกนี้ → ข้าม silence
      *
      * เหตุผล: ลูกค้าอยากซื้อจริง / พร้อมจ่าย / กลับมาถามดูดวง → ต้องตอบ

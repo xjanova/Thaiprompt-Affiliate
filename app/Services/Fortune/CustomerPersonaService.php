@@ -489,6 +489,107 @@ class CustomerPersonaService
     }
 
     /**
+     * 🆕 (2026-05-29) Content-agnostic free-chat turn cap — wind-down เชิงระบบ
+     *
+     * ปัญหา: Hook C เดิม (recordChitchatAfterPitch) พึ่ง keyword detector
+     *   (looksLikeMetaOrChitchat / looksLikeLowValueRamble) + ต้องมี last_pitch_at
+     *   ใน window → เคส venter/ผู้สูงอายุพิมพ์เรื่องแปลกๆ (พระเจ้า/บาป/บุญ/ขายยา)
+     *   ที่ keyword จับไม่ได้ → failed_count ค้าง → ไม่เคยเงียบ → บอทตอบ AI ไม่เลิก
+     *   (เคสสนิท สาม่าน 87 turns/วัน, 0฿)
+     *
+     * วิธี: นับ free-chat turns/วัน ด้วย Cache counter (ไม่อิง keyword/pitch)
+     *   เกิน FREECHAT_DAILY_CAP + ไม่มี buy-intent + ไม่วิกฤต → trigger silence
+     *   + ส่ง goodbye สุภาพ 1 ครั้ง
+     *
+     * ⚠️ Caller ต้องเช็ค hasPaidActiveReading ก่อนเรียก (ลูกค้าจ่าย = bypass ทั้งหมด)
+     *
+     * @return array{triggered: bool, goodbye_message: ?string}
+     *   triggered = true → silence เริ่ม → caller ส่ง goodbye_message แทน AI response
+     */
+    public function recordFreeChatTurn(string $platform, string $userId, string $messageText): array
+    {
+        $result = ['triggered' => false, 'goodbye_message' => null];
+
+        try {
+            // buy-intent (ดูดวง/จ่าย/celtic...) → ไม่นับ + reset counter (ลูกค้าอาจพร้อมซื้อ)
+            if (FortuneCustomerPersona::shouldBypassSilence($messageText)) {
+                $this->clearFreeChatCounter($platform, $userId);
+
+                return $result;
+            }
+
+            // วิกฤต (อยากตาย/หมดหวัง...) → ห้าม silence (ต้อง empathy ไม่ตัดบทเงียบ)
+            if ($this->hasCriticalKeyword($messageText)) {
+                return $result;
+            }
+
+            $cap = FortuneCustomerPersona::FREECHAT_DAILY_CAP;
+            $key = $this->freeChatCounterKey($platform, $userId);
+
+            // increment daily counter (TTL = สิ้นวัน → พรุ่งนี้เริ่มนับใหม่)
+            $count = (int) Cache::get($key, 0) + 1;
+            Cache::put($key, $count, now()->endOfDay());
+
+            if ($count < $cap) {
+                return $result;
+            }
+
+            // ถึง cap → silence + goodbye สุภาพ (content-agnostic)
+            $persona = FortuneCustomerPersona::findByPlatformUser($platform, $userId);
+            if ($persona) {
+                $persona->triggerSilence(sprintf(
+                    'free-chat daily cap reached (%d turns/day, unpaid, no buy-intent)',
+                    $count
+                ));
+                $goodbye = $persona->buildGoodbyeMessage();
+                $this->invalidateCache($platform, $userId);
+            } else {
+                $goodbye = '🌙 ขอบคุณที่พูดคุยกับแม่หมอวันนี้นะคะ 🙏 ถ้าอยากดูดวง พิมพ์ "ดูดวง" ได้เลยค่ะ เดี๋ยวกลับมาคุยกันใหม่ ✨';
+            }
+
+            $result['triggered'] = true;
+            $result['goodbye_message'] = $goodbye;
+
+            Log::info('CustomerPersonaService: free-chat turn cap reached → silence', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'count' => $count,
+                'cap' => $cap,
+            ]);
+
+            return $result;
+        } catch (\Throwable $e) {
+            Log::warning('CustomerPersonaService: recordFreeChatTurn ล้มเหลว (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $result;
+        }
+    }
+
+    /**
+     * 🆕 (2026-05-29) Cache key สำหรับ free-chat daily counter (reset สิ้นวัน)
+     */
+    private function freeChatCounterKey(string $platform, string $userId): string
+    {
+        return "fortune:freechat_count:{$platform}:{$userId}:".now()->format('Ymd');
+    }
+
+    /**
+     * 🆕 (2026-05-29) ล้าง free-chat counter — เรียกตอน buy-intent / paid event
+     */
+    public function clearFreeChatCounter(string $platform, string $userId): void
+    {
+        try {
+            Cache::forget($this->freeChatCounterKey($platform, $userId));
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+    }
+
+    /**
      * 📝 Export persona เป็น Obsidian markdown
      */
     public function toObsidianMarkdown(FortuneCustomerPersona $persona): string

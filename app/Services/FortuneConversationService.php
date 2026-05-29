@@ -13718,6 +13718,43 @@ PROMPT;
                 }
             }
 
+            // 🆕 (2026-05-29) Turn-cap guard — content-agnostic free-chat wind-down
+            //   ปัญหา: Hook C (ข้างบน) พึ่ง keyword detector + pitch window → เคส venter/
+            //     ผู้สูงอายุพิมพ์เรื่องแปลกๆ (พระเจ้า/บาป/บุญ/ขายยา) ที่ keyword จับไม่ได้
+            //     → failed_count ค้าง → ไม่เคยเงียบ → บอทตอบ AI ไม่เลิก
+            //     (เคสสนิท สาม่าน 87 turns/วัน 0฿). ใช้ counter นับ free-chat turns/วันแทน
+            //   🛡️ paid bypass: เช็ค hasPaidActiveReading ก่อน (ลูกค้าจ่าย = ห้ามตัดราย)
+            //      buy-intent + วิกฤต ถูกเช็คใน recordFreeChatTurn เอง
+            if (! $this->hasPaidActiveReading($userId)) {
+                try {
+                    $turnCapResult = app(\App\Services\Fortune\CustomerPersonaService::class)
+                        ->recordFreeChatTurn($platformForSilence, $userId, $messageText);
+
+                    if (! empty($turnCapResult['triggered'])) {
+                        $goodbye = $turnCapResult['goodbye_message']
+                            ?? '🌙 ขอบคุณที่คุยกับแม่หมอวันนี้นะคะ พิมพ์ "ดูดวง" เมื่อพร้อม เดี๋ยวกลับมาคุยใหม่ค่ะ ✨';
+
+                        $this->saveConversationMessage($userId, 'user', $messageText);
+                        $this->saveConversationMessage($userId, 'assistant', $goodbye);
+
+                        Log::info('Fortune: free-chat turn cap → sent goodbye + silence', [
+                            'platform' => $platformForSilence,
+                            'user_id' => $userId,
+                        ]);
+
+                        return [
+                            'action' => 'ai_chat_response',
+                            'message' => $goodbye,
+                            'reading' => null,
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    Log::debug('Fortune: turn-cap guard failed (non-blocking)', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             // ✅ Gatekeeper: เช็คทราฟฟิค AI ทั้งระบบก่อนเรียก
             if (! LineGatekeeperService::canCallAI('fortune')) {
                 Log::warning('Fortune: AI Chat ถูก throttle โดย Gatekeeper', ['user_id' => $userId]);
