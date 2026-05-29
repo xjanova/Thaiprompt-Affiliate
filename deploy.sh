@@ -1790,6 +1790,43 @@ if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
 fi
 print_success "Configuration cached"
 
+# ⭐ Validation Guard (FIX 2026-05-29): ป้องกัน "config พิษ"
+# เคยเกิด: deploy cache ค่า DB_USERNAME=your_username (placeholder จาก .env.example)
+# → queue worker ต่อ DB ไม่ได้ → comment→DM funnel ตาย ~7 นาที (brain note 36a56e6c42d0)
+# ตรวจว่า DB username ที่ cache ไว้ไม่ใช่ค่า placeholder — ถ้าใช่ ให้กู้ .env จาก backup แล้ว re-cache
+print_info "→ ตรวจสอบ DB credentials หลัง config:cache (กัน config พิษ)..."
+CACHED_DB_USER=$(php artisan tinker --execute="echo config('database.connections.mysql.username');" 2>/dev/null | tail -1 | tr -d '[:space:]')
+if echo "$CACHED_DB_USER" | grep -qiE "your_username|your-db-user|changeme"; then
+    print_critical "❌ DB username ที่ cache เป็นค่า placeholder ('$CACHED_DB_USER') — .env เพี้ยนระหว่าง deploy!"
+    print_info "→ กำลังกู้ .env จาก backup แล้ว re-cache..."
+
+    # กู้ .env จาก critical backup (เฉพาะเมื่อ backup ไม่ใช่ placeholder ด้วย — กันกู้ของพังทับ)
+    if [ -f "/tmp/deploy_backup_path_$$" ]; then
+        RESTORE_PATH=$(cat /tmp/deploy_backup_path_$$)
+        if [ -f "$RESTORE_PATH/.env" ] && grep -qE "^DB_USERNAME=" "$RESTORE_PATH/.env" && ! grep -qiE "^DB_USERNAME=(your_username|changeme)" "$RESTORE_PATH/.env"; then
+            cp "$RESTORE_PATH/.env" .env && print_success "✓ กู้ .env จาก backup สำเร็จ ($RESTORE_PATH/.env)"
+        else
+            print_error "✗ backup .env ก็เป็น placeholder/ไม่มี — ต้องแก้ .env ด้วยมือ"
+        fi
+    else
+        print_warning "⚠ ไม่พบ backup path สำหรับกู้ .env — ข้ามการกู้"
+    fi
+
+    # re-cache จาก .env ที่กู้คืนแล้ว
+    php artisan config:clear >/dev/null 2>&1 || true
+    rm -f bootstrap/cache/config.php 2>/dev/null || true
+    php artisan config:cache >/dev/null 2>&1 || true
+
+    # ตรวจซ้ำ — ถ้ายัง placeholder ให้หยุด deploy (อย่าปล่อยขึ้น live ทั้งที่ DB พัง)
+    CACHED_DB_USER=$(php artisan tinker --execute="echo config('database.connections.mysql.username');" 2>/dev/null | tail -1 | tr -d '[:space:]')
+    if echo "$CACHED_DB_USER" | grep -qiE "your_username|your-db-user|changeme"; then
+        error_exit "DB credentials ยังเป็น placeholder ('$CACHED_DB_USER') หลังกู้คืน — หยุด deploy เพื่อความปลอดภัย กรุณาตรวจ .env ด้วยมือ"
+    fi
+    print_success "✓ กู้ DB credentials สำเร็จ (user: $CACHED_DB_USER)"
+else
+    print_success "✓ DB credentials ถูกต้อง (user: $CACHED_DB_USER)"
+fi
+
 # Step 16: Cache Routes (with verification!)
 print_step 16 22 "Caching Routes (with Verification)"
 php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
@@ -1832,6 +1869,24 @@ print_success "Views cached"
 print_step 18 22 "Optimizing Autoloader"
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
+
+# ⭐ Hard-restart Fortune Queue Worker (FIX 2026-05-29) — ต้องทำ "หลัง" config:cache เสมอ
+# ปัญหาเดิม: queue:restart (Step ก่อนหน้า) ยิง signal ก่อน config:cache → worker (comment→DM
+# funnel) respawn อ่าน config ตอนยังไม่นิ่ง → ค้าง DB creds เก่า/พิษในหน่วยความจำ จน respawn
+# ครั้งถัดไป (สูงสุด 1 ชม.). hard restart supervisor ตรงนี้ = worker อ่าน config สุดท้ายที่ถูกต้องเสมอ
+print_info "→ Restart Fortune Queue Worker (ให้ worker อ่าน config ที่ settle แล้ว)..."
+if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files 2>/dev/null | grep -q '^fortune-queue-worker\.service'; then
+    if sudo systemctl restart fortune-queue-worker.service 2>/dev/null; then
+        print_success "✓ Restarted fortune-queue-worker.service (worker อ่าน config ใหม่)"
+        QUEUE_STATUS="$QUEUE_STATUS | fortune-worker: ✅ restarted"
+    else
+        print_warning "⚠ Restart fortune-queue-worker.service ล้มเหลว — รันเอง: sudo systemctl restart fortune-queue-worker.service"
+        QUEUE_STATUS="$QUEUE_STATUS | fortune-worker: ⚠️ restart failed"
+    fi
+else
+    print_info "  ℹ ไม่พบ fortune-queue-worker.service (ข้าม — เซิร์ฟเวอร์นี้อาจไม่ได้ใช้ supervisor นี้)"
+fi
+echo ""
 
 # Step 19: Final ENV Verification
 print_step 19 22 "Verifying Environment Configuration"
