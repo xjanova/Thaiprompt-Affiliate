@@ -1,0 +1,1792 @@
+{
+  "card_identifier": {
+    "name_en": "The Moon",
+    "name_th": "ดวงจันทร์",
+    "number": 18,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ภาพลวงและความไม่ชัดเจนปกคลุมสถานการณ์",
+          "detailed_interpretation_th": "ดวงจันทร์ในปัจจุบัน บอกว่าคุณกำลังอยู่ในช่วงที่ภาพลวงและความไม่ชัดเจนปกคลุมสถานการณ์ - สิ่งต่างๆ ไม่เป็นอย่างที่เห็น มีความลับซ่อนอยู่ ความกลัวและความสงสัยอาจครอบงำใจ ไพ่หนุนให้คุณเชื่อสัญชาตญาณและรอจนภาพชัดขึ้นก่อนตัดสินใจใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Devil = ภาพลวง",
+            "wands": "Seven of Cups = ความฝัน",
+            "cups": "Seven of Cups = ภาพลวง",
+            "swords": "Two of Swords = ไม่เห็นชัด",
+            "pentacles": "Five of Pentacles = ความไม่แน่นอน",
+            "court_cards": "Queen of Cups = สัญชาตญาณ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ปัจจุบัน คือ 'รอภาพชัดก่อนตัดสิน'",
+          "advice_th": "เชื่อสัญชาตญาณและรอ - สถานการณ์ไม่ชัด มีความลับซ่อน อย่ารีบตัดสินใจใหญ่",
+          "keywords_th": ["ภาพลวง", "ไม่ชัดเจน", "สัญชาตญาณ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์มีความลับและภาพลวงตา",
+          "detailed_interpretation_th": "ในความรัก ดวงจันทร์ปัจจุบันชี้ว่ามีความลับและภาพลวงตาในความสัมพันธ์ - คุณอาจไม่เห็นความจริงทั้งหมด มีสิ่งที่ซ่อนไว้ หรืออารมณ์ที่สับสน ไพ่แนะให้คุณฟังสัญชาตญาณ ระวังการตัดสินจากภายนอก และให้เวลาความจริงปรากฏ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือกรัก, The Devil = ลวงตา",
+            "wands": "Seven of Cups = ฝันรัก",
+            "cups": "Seven of Cups = ภาพลวง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Five of Pentacles = ขาดความมั่นใจ",
+            "court_cards": "Queen of Cups = สัญชาตญาณ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ปัจจุบันความรัก คือ 'ฟังสัญชาตญาณ ระวังภาพลวง'",
+          "advice_th": "ฟังสัญชาตญาณในความรัก - มีสิ่งที่ซ่อนไว้ อย่ารีบตัดสินจากภายนอก รอความจริงปรากฏ",
+          "keywords_th": ["ลับซ่อน", "ลวงตา", "สัญชาตญาณ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "การงานหรือการเงินมีความไม่แน่นอนและซับซ้อน",
+          "detailed_interpretation_th": "ในการงาน ดวงจันทร์ปัจจุบันบอกว่ามีความไม่แน่นอนและซับซ้อน - ข้อมูลไม่ชัด การเมืองในที่ทำงาน หรือสถานการณ์ที่คุณรู้ไม่ทั้งหมด ไพ่แนะให้คุณระวัง ทำการบ้านมาก ไม่ตัดสินใจการเงินใหญ่จนกว่าจะเห็นภาพชัดขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ไม่แน่นอน, The Devil = หมกมุ่น",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Cups (rev) = หลอกลวง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ปัจจุบันงาน คือ 'ระวังข้อมูลที่ไม่ชัด'",
+          "advice_th": "ระวังในงาน - ข้อมูลไม่ชัด การเมืองซับซ้อน ทำการบ้าน อย่าตัดสินใจใหญ่จนเห็นชัด",
+          "keywords_th": ["ไม่แน่นอน", "ซับซ้อน", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การสำรวจจิตใต้สำนึกและด้านมืดในตน",
+          "detailed_interpretation_th": "ในการเติบโต ดวงจันทร์ปัจจุบันชี้ว่าคุณกำลังสำรวจจิตใต้สำนึกและด้านมืดในตัวเอง - ความกลัวเก่า ความฝัน ความเชื่อที่ฝังลึก ไพ่หนุนให้คุณกล้าเผชิญสิ่งที่ค้นพบ ใช้สัญชาตญาณนำทาง และเชื่อมโยงกับปัญญาภายในที่ลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Hermit = ปัญญาภายใน",
+            "wands": "Page of Cups = ความฝัน",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Nine of Swords = เผชิญความกลัว",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ปัจจุบันเติบโต คือ 'สำรวจจิตใต้สำนึกอย่างกล้าหาญ'",
+          "advice_th": "สำรวจจิตใต้สำนึก - กล้าเผชิญด้านมืดในตัว ใช้สัญชาตญาณนำทาง เชื่อมโยงปัญญาภายใน",
+          "keywords_th": ["จิตใต้สำนึก", "ด้านมืด", "ปัญญาภายใน"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพมีอาการไม่ชัดเจนหรือเชื่อมโยงกับใจ",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงจันทร์ปัจจุบันบอกว่าสุขภาพมีอาการไม่ชัดเจนหรือเชื่อมโยงกับสภาพจิตใจ - ความเครียดสะสม วิตกกังวล ฝันร้าย หรือโรคที่หาสาเหตุยาก ไพ่แนะให้คุณดูแลสุขภาพจิต ฟังร่างกาย และอาจต้องปรึกษาผู้เชี่ยวชาญหลายด้าน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดยึด, The Star = ฟื้นฟู",
+            "wands": "Seven of Cups = ความฝัน",
+            "cups": "Five of Cups = อารมณ์หม่น",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Cups = อารมณ์ลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ปัจจุบันสุขภาพ คือ 'กายเชื่อมโยงกับใจ'",
+          "advice_th": "ดูแลสุขภาพจิตและกาย - อาการอาจเชื่อมโยงกับใจ ฟังร่างกาย ปรึกษาผู้เชี่ยวชาญ",
+          "keywords_th": ["อาการไม่ชัด", "เชื่อมโยงใจ", "ดูแลรอบด้าน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ภาพลวงเริ่มจางและความจริงปรากฏ",
+          "detailed_interpretation_th": "ดวงจันทร์กลับหัวในปัจจุบัน บอกว่าภาพลวงเริ่มจางและความจริงปรากฏ - ความสับสนคลี่คลาย ความลับถูกเปิดเผย คุณเริ่มเห็นสถานการณ์ชัดเจนขึ้น ไพ่หนุนให้คุณใช้ความชัดเจนนี้ตัดสินใจอย่างมั่นใจ และปล่อยความกลัวที่เคยครอบงำ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ทางสว่าง, Justice = ความจริง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = โอกาสชัด",
+            "court_cards": "Queen of Swords = เห็นชัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวปัจจุบัน คือ 'ความจริงปรากฏ ปล่อยความกลัว'",
+          "advice_th": "ใช้ความชัดเจน - ภาพลวงจาง ความจริงปรากฏ ตัดสินใจอย่างมั่นใจ ปล่อยความกลัว",
+          "keywords_th": ["ภาพลวงจาง", "ความจริงปรากฏ", "ชัดเจน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความลับในรักถูกเปิดเผยและความจริงชัดขึ้น",
+          "detailed_interpretation_th": "ในความรัก ดวงจันทร์กลับหัวชี้ว่าความลับในความสัมพันธ์ถูกเปิดเผยและความจริงชัดขึ้น - ภาพลวงที่ปกคลุมจาง คุณเห็นคู่และความสัมพันธ์อย่างที่เป็นจริง ไพ่หนุนให้คุณใช้ความชัดเจนนี้ตัดสินใจว่าจะไปต่อหรือก้าวออก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจรัก, Justice = ความจริง",
+            "wands": "Ace of Wands = กล้าตัดสินใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ความจริงชัด",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวปัจจุบันความรัก คือ 'เห็นคู่อย่างที่เป็นจริง'",
+          "advice_th": "ใช้ความชัดเจนตัดสินใจ - เห็นคู่และความสัมพันธ์อย่างที่เป็นจริง ไปต่อหรือก้าวออก",
+          "keywords_th": ["ความลับเปิด", "ความจริงชัด", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "สถานการณ์งานหรือเงินชัดเจนขึ้น",
+          "detailed_interpretation_th": "ในการงาน ดวงจันทร์กลับหัวบอกว่าสถานการณ์การงานหรือการเงินชัดเจนขึ้น - การเมืองในที่ทำงานปรากฏ ข้อมูลเข้ามาครบ คุณเห็นภาพรวมของการเงิน ไพ่หนุนให้คุณใช้ความชัดเจนนี้ตัดสินใจ ลงทุน หรือเปลี่ยนงานอย่างมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ตัดสินใจ, The Sun = ความสำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาสชัด",
+            "court_cards": "King of Swords = วิเคราะห์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวปัจจุบันงาน คือ 'ภาพรวมชัด ตัดสินใจมั่นใจ'",
+          "advice_th": "ใช้ความชัดเจนการเงิน - ข้อมูลครบ การเมืองปรากฏ ตัดสินใจลงทุนหรือเปลี่ยนงานมั่นใจ",
+          "keywords_th": ["สถานการณ์ชัด", "ภาพรวม", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ปลดความกลัวและภาพลวงในตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต ดวงจันทร์กลับหัวชี้ว่าคุณกำลังปลดความกลัวและภาพลวงในตัวเอง - การเผชิญหน้ากับเงาในใจ การเปิดเผยสิ่งที่ซ่อนไว้ การปลดความเชื่อจำกัด ไพ่หนุนให้คุณใช้ความกล้านี้เติบโตเป็นตัวเองที่ลึกซึ้งและมั่นคงกว่าเดิม",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Sun = สว่าง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Three of Pentacles = สร้างตัวตน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวปัจจุบันเติบโต คือ 'เผชิญเงาคือปัญญา'",
+          "advice_th": "ปลดความกลัวและภาพลวง - เผชิญเงาในใจ เปิดเผยสิ่งซ่อน เติบโตเป็นตัวเองที่ลึกซึ้ง",
+          "keywords_th": ["ปลดกลัว", "เผชิญเงา", "เติบโตลึก"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สาเหตุของอาการสุขภาพปรากฏชัด",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงจันทร์กลับหัวบอกว่าสาเหตุของอาการสุขภาพปรากฏชัด - การวินิจฉัยที่ชัดเจน การค้นพบต้นเหตุของอาการ ความเข้าใจในความเชื่อมโยงระหว่างกายและใจ ไพ่หนุนให้คุณใช้ความชัดเจนนี้รักษาอย่างตรงจุดและฟื้นฟูได้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ฟื้นพลัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = วินิจฉัยชัด",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวปัจจุบันสุขภาพ คือ 'รู้สาเหตุรักษาตรงจุด'",
+          "advice_th": "ใช้ความชัดเจนรักษา - สาเหตุปรากฏ รักษาตรงจุด ดูแลกายและใจไปพร้อมกัน",
+          "keywords_th": ["สาเหตุชัด", "รักษาตรงจุด", "ฟื้นฟู"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือความสับสนและภาพลวง",
+          "detailed_interpretation_th": "ดวงจันทร์ในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือความสับสนและภาพลวง - ไม่รู้ว่าอะไรจริง อะไรเท็จ ความกลัวครอบงำใจ ข้อมูลไม่ครบ อุปสรรคนี้ต้องการความอดทนและการฟังสัญชาตญาณ ไม่ใช่การพยายามคิดให้ออก",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Devil = ภาพลวง",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Seven of Cups = ทางเลือกลวง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups = สัญชาตญาณ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อุปสรรค คือ 'ฟังสัญชาตญาณไม่ใช่คิด'",
+          "advice_th": "ฟังสัญชาตญาณ - ความสับสนไม่ได้แก้ด้วยการคิดมาก รอ ใช้ใจ ภาพจะชัด",
+          "keywords_th": ["สับสน", "ภาพลวง", "ฟังใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือความไม่ชัดเจนในความสัมพันธ์",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือความไม่ชัดเจนในความสัมพันธ์ - คู่ที่ไม่เปิดใจ ความรู้สึกที่สับสน ความลับซ่อน ไพ่บอกว่าอุปสรรคนี้ไม่ได้แก้ด้วยการบังคับ ต้องใช้เวลา ความอดทน และความซื่อสัตย์กับสัญชาตญาณตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือกรัก, The Moon = สับสน",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Five of Pentacles = ขาดมั่นคง",
+            "court_cards": "Queen of Cups = สัญชาตญาณ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อุปสรรคความรัก คือ 'ใช้เวลาและสัญชาตญาณ'",
+          "advice_th": "ใช้เวลาในความรัก - อย่าบังคับ ฟังสัญชาตญาณ ปล่อยให้ความจริงปรากฏเอง",
+          "keywords_th": ["ไม่ชัดเจน", "อดทน", "สัญชาตญาณ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือข้อมูลไม่ครบและการเมืองซับซ้อน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือข้อมูลไม่ครบและการเมืองที่ซับซ้อน - สถานการณ์ไม่ชัด มีคนเล่นเกม ตัดสินใจยาก ไพ่แนะให้คุณรวบรวมข้อมูลให้มาก ระวังการเล่นพรรคพวก และไม่ตัดสินใจการเงินใหญ่จนกว่าจะมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ไม่แน่นอน, The Devil = หมกมุ่น",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Seven of Cups = ภาพลวง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Cups (rev) = หลอกลวง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อุปสรรคงาน คือ 'ระวังการเมืองซับซ้อน'",
+          "advice_th": "ระวังในงาน - รวบรวมข้อมูลให้ครบ ระวังการเมือง ไม่ตัดสินใจการเงินจนมั่นใจ",
+          "keywords_th": ["ข้อมูลไม่ครบ", "การเมือง", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือเงาในใจที่ต้องเผชิญ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือเงาในใจที่ต้องเผชิญ - ความกลัวที่ฝังลึก ความเชื่อจำกัด ด้านมืดที่ปฏิเสธ ไพ่บอกว่าอุปสรรคนี้ไม่ใช่ศัตรู เป็นกุญแจสู่การเติบโตในระดับลึก กล้าเผชิญและรวมเข้าเป็นพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Nine of Swords = เผชิญ",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อุปสรรคเติบโต คือ 'เงาคือกุญแจสู่ปัญญา'",
+          "advice_th": "เผชิญเงาในใจ - ไม่ใช่ศัตรู เป็นกุญแจสู่การเติบโตลึก กล้าเผชิญและรวมเข้าเป็นพลัง",
+          "keywords_th": ["เงาในใจ", "เผชิญ", "รวมเป็นพลัง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคืออาการที่หาสาเหตุยาก",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคืออาการที่หาสาเหตุยาก - ความเครียดสะสม วิตกกังวลเรื้อรัง อาการทางจิตและกายที่เชื่อมโยงกัน ไพ่แนะให้คุณดูแลทั้งสุขภาพจิตและกาย อาจต้องปรึกษาผู้เชี่ยวชาญหลายด้าน อดทนกับกระบวนการรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดยึด, Temperance = สมดุล",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = อารมณ์หม่น",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Cups = อารมณ์ลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อุปสรรคสุขภาพ คือ 'ดูแลกายและใจไปพร้อมกัน'",
+          "advice_th": "อดทนกับการรักษา - อาการเชื่อมโยงกายและใจ ปรึกษาผู้เชี่ยวชาญหลายด้าน",
+          "keywords_th": ["อาการซับซ้อน", "กายใจเชื่อม", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการปฏิเสธความจริงที่ปรากฏ",
+          "detailed_interpretation_th": "ดวงจันทร์ในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือการปฏิเสธความจริงที่ปรากฏ - แม้ภาพลวงจางลงและความจริงเริ่มชัด คุณยังไม่อยากยอมรับ ไพ่เตือนว่าการยึดติดภาพลวงเดิมต่อไปจะทำให้คุณติดอยู่ กล้ายอมรับสิ่งที่เห็น",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant (rev) = ทิ้งกรอบ, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ต้านความจริง",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ปิดตา",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Swords = บุ่มบ่าม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อุปสรรค คือ 'ยอมรับความจริงที่ปรากฏ'",
+          "advice_th": "ยอมรับความจริง - ภาพลวงจางแล้ว การปฏิเสธความจริงทำให้ติดอยู่ กล้ามอง",
+          "keywords_th": ["ปฏิเสธจริง", "ยึดภาพลวง", "กล้ายอม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือไม่ยอมรับความจริงในความสัมพันธ์",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการไม่ยอมรับความจริงในความสัมพันธ์ - เห็นแล้วว่าคู่เป็นอย่างไรหรือความสัมพันธ์ไปทางไหน แต่ยังหลอกตัวเอง ไพ่บอกว่าการยอมรับความจริงคือก้าวแรกของการเปลี่ยนแปลง ไม่ว่าจะปรับหรือก้าวออก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ปฏิเสธจริง, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ต้านจริง",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ปิดตา",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Cups (rev) = หลอกใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อุปสรรคความรัก คือ 'ยอมรับเปลี่ยน หลอกตัวขังไว้'",
+          "advice_th": "ยอมรับความจริงในรัก - คุณเห็นแล้ว หยุดหลอกตัวเอง ยอมรับคือก้าวแรก",
+          "keywords_th": ["ไม่ยอมรับ", "หลอกตัวเอง", "กล้ายอม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือเพิกเฉยสัญญาณในงาน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือการเพิกเฉยสัญญาณในงาน - เห็นว่าบริษัทมีปัญหา การลงทุนเสี่ยง หรือเส้นทางไม่ใช่ แต่ไม่ยอมรับ ไพ่บอกว่าการปฏิเสธสัญญาณจะนำสู่วิกฤต ใช้ปัญญาตัดสินใจตามความจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤตจะมา, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ต้าน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเงิน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อุปสรรคงาน คือ 'เพิกเฉยนำสู่วิกฤต'",
+          "advice_th": "อย่าเพิกเฉยสัญญาณ - คุณเห็นปัญหาแล้ว ตัดสินใจตามความจริง ก่อนวิกฤตเกิด",
+          "keywords_th": ["เพิกเฉย", "ปฏิเสธสัญญาณ", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือปฏิเสธเงาที่เห็นในตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการปฏิเสธเงาที่เห็นในตัวเอง - คุณค้นพบด้านมืด ความเชื่อจำกัด หรือนิสัยที่ทำลาย แต่ไม่ยอมรับและทำงานกับมัน ไพ่หนุนให้คุณกล้ายอมรับและรวมเงาเข้าเป็นส่วนหนึ่งของตัวตน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ต้านเงา",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ปิดตา",
+            "pentacles": "Four of Pentacles = ยึดเก่า",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อุปสรรคเติบโต คือ 'ยอมรับเงา รวมเป็นพลัง'",
+          "advice_th": "ยอมรับเงาในตัว - คุณเห็นแล้ว ปฏิเสธทำให้ติด ยอมรับและรวมเงาเข้าเป็นพลัง",
+          "keywords_th": ["ปฏิเสธเงา", "ติดยึด", "ยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือเพิกเฉยอาการที่ชัดเจน",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือการเพิกเฉยอาการที่ชัดเจน - ร่างกายส่งสัญญาณชัด แต่คุณไม่ยอมไปพบแพทย์หรือเปลี่ยนวิถีชีวิต ไพ่บอกว่าการเพิกเฉยทำให้อาการแย่ลง เข้าหาแพทย์และดูแลตัวเองตอนนี้",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Seven of Wands = ปฏิเสธพัก",
+            "cups": "Four of Cups = ไม่สนใจ",
+            "swords": "Two of Swords = ปิดตา",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Cups = ตามใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อุปสรรคสุขภาพ คือ 'เพิกเฉยแย่ลง'",
+          "advice_th": "หยุดเพิกเฉย - ร่างกายส่งสัญญาณชัด เข้าหาแพทย์ ดูแลตัวเองตอนนี้",
+          "keywords_th": ["เพิกเฉย", "สัญญาณชัด", "เข้าแพทย์"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยมีช่วงสับสนและภาพลวงตา",
+          "detailed_interpretation_th": "ดวงจันทร์ในอดีต เผยว่าคุณเคยผ่านช่วงสับสนและภาพลวงตา - ช่วงเวลาที่ไม่รู้ว่าอะไรจริง การตัดสินใจในความไม่ชัด หรือการถูกหลอกลวง ประสบการณ์นี้สอนคุณให้ฟังสัญชาตญาณและระวังการตัดสินจากภายนอก",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Devil = ลวงตา",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups = สัญชาตญาณ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อดีต คือ 'บทเรียนเรื่องการฟังใจ'",
+          "advice_th": "ใช้บทเรียนการสับสน - ฟังสัญชาตญาณ ระวังภาพลวง คุณรู้แล้วว่าอะไรจริง",
+          "keywords_th": ["สับสนเก่า", "ภาพลวง", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่เต็มไปด้วยความลับ",
+          "detailed_interpretation_th": "ในความรัก ดวงจันทร์อดีตเผยว่าคุณเคยมีความรักที่เต็มไปด้วยความลับและภาพลวง - คู่ที่ไม่ซื่อสัตย์ ความสัมพันธ์ที่ซับซ้อน หรือการถูกหลอกในรัก ประสบการณ์นี้สอนให้คุณระวังในการเลือกคู่และฟังสัญชาตญาณเสมอ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = เลือกผิด, The Devil = ติดยึด",
+            "wands": "Seven of Cups = ลวงตา",
+            "cups": "Three of Swords = ใจสลาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Cups (rev) = คนหลอก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อดีตความรัก คือ 'ระวังในการเลือกคู่'",
+          "advice_th": "ใช้บทเรียนรักลวง - ฟังสัญชาตญาณในการเลือกคู่ ระวังคนที่ไม่ซื่อสัตย์",
+          "keywords_th": ["รักลวง", "ลับซ่อน", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยเจอการเงินที่ไม่แน่นอนหรือถูกหลอก",
+          "detailed_interpretation_th": "ในการงาน ดวงจันทร์อดีตเผยว่าคุณเคยเจอการเงินที่ไม่แน่นอนหรือถูกหลอก - การลงทุนที่ไม่ใช่ ธุรกิจที่ซับซ้อน หรือการเมืองในที่ทำงานที่ทำให้ตัดสินใจยาก บทเรียนคือคุณรู้แล้วว่าต้องตรวจสอบและไม่เชื่อง่ายๆ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = โชคพลิก, The Devil = หมกมุ่น",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ถูกเอาเปรียบ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Cups (rev) = หลอกลวง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อดีตงาน คือ 'ตรวจสอบก่อนเชื่อ'",
+          "advice_th": "ใช้บทเรียนการเงินลวง - ตรวจสอบทุกอย่าง ไม่เชื่อง่ายๆ ฟังสัญชาตญาณ",
+          "keywords_th": ["การเงินลวง", "ตรวจสอบ", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยสำรวจจิตใต้สำนึกอย่างลึกซึ้ง",
+          "detailed_interpretation_th": "ในการเติบโต ดวงจันทร์อดีตชี้ว่าคุณเคยสำรวจจิตใต้สำนึกอย่างลึกซึ้ง - การเผชิญเงาในใจ การปลดความเชื่อจำกัด การเชื่อมโยงกับสัญชาตญาณ ประสบการณ์นี้เป็นรากฐานของปัญญาที่คุณมี",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The High Priestess = ญาณ",
+            "wands": "Page of Cups = ความฝัน",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Nine of Swords = เผชิญ",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อดีตเติบโต คือ 'สำรวจลึกเป็นรากฐานปัญญา'",
+          "advice_th": "ใช้ปัญญาจากการสำรวจ - คุณเคยเผชิญเงาในใจ ใช้ประสบการณ์นี้เป็นรากฐานนำทาง",
+          "keywords_th": ["สำรวจลึก", "ปัญญา", "รากฐาน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยเผชิญอาการสุขภาพที่หาสาเหตุยาก",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงจันทร์อดีตเผยว่าคุณเคยเผชิญอาการสุขภาพที่หาสาเหตุยาก - ความเครียดเรื้อรัง วิตกกังวล อาการที่เชื่อมโยงกายและใจ ประสบการณ์นี้สอนให้คุณดูแลสุขภาพทั้งสองด้านและฟังร่างกายเป็นพิเศษ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดยึด, Temperance = สมดุล",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = อารมณ์หม่น",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Cups = อารมณ์ลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อดีตสุขภาพ คือ 'กายและใจเชื่อมโยงกัน'",
+          "advice_th": "ใช้บทเรียนสุขภาพเก่า - ดูแลกายและใจไปพร้อมกัน ฟังร่างกายเป็นพิเศษ",
+          "keywords_th": ["อาการลึก", "กายใจ", "ฟังร่าง"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยปลดภาพลวงและพบความจริง",
+          "detailed_interpretation_th": "ดวงจันทร์กลับหัวในอดีต เผยว่าคุณเคยปลดภาพลวงและพบความจริง - การตื่นรู้ที่เปลี่ยนชีวิต การเห็นสถานการณ์อย่างที่เป็นจริง การปลดเงาในใจ ประสบการณ์นี้ทำให้คุณมีปัญญามองเห็นและไม่หลงในภาพลวงเดิม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, Justice = ความจริง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวอดีต คือ 'ปลดลวงคือปัญญาถาวร'",
+          "advice_th": "ใช้ปัญญาจากการปลดลวง - คุณเห็นจริงแล้ว ใช้ปัญญานี้นำทางในปัจจุบัน",
+          "keywords_th": ["ปลดลวง", "เห็นจริง", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยเปิดเผยความจริงในความสัมพันธ์",
+          "detailed_interpretation_th": "ในความรัก ดวงจันทร์กลับหัวในอดีตเผยว่าคุณเคยเปิดเผยความจริงในความสัมพันธ์ - การพบความลับ การเห็นคู่อย่างที่เป็นจริง การตัดสินใจจากความจริง บทเรียนคือคุณรู้ค่าของการซื่อสัตย์และเปิดใจในความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Justice = ความจริง",
+            "wands": "Knight of Wands = กล้าตัดสินใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ความจริงชัด",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวอดีตความรัก คือ 'ซื่อสัตย์คือรากฐาน'",
+          "advice_th": "ใช้บทเรียนความจริง - คุณรู้ค่าของการซื่อสัตย์ในรัก ใช้ความจริงเป็นรากฐาน",
+          "keywords_th": ["เปิดเผยจริง", "ซื่อสัตย์", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยเห็นความจริงของการงานและการเงิน",
+          "detailed_interpretation_th": "ในการงาน ดวงจันทร์กลับหัวในอดีตเผยว่าคุณเคยเห็นความจริงของการงานและการเงิน - การค้นพบการเมืองที่ซ่อน การเปิดเผยข้อมูลสำคัญ การตัดสินใจจากภาพรวมที่ชัด บทเรียนคือคุณรู้วิธีอ่านสถานการณ์ลึก",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ตัดสินใจ, The Hermit = ปัญญา",
+            "wands": "Three of Wands = วางแผน",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Swords = วิเคราะห์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวอดีตงาน คือ 'อ่านสถานการณ์ลึกคือทักษะ'",
+          "advice_th": "ใช้ทักษะอ่านสถานการณ์ - คุณรู้วิธีเห็นความจริง ใช้ปัญญานี้ในการตัดสินใจ",
+          "keywords_th": ["เห็นจริง", "อ่านลึก", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยรวมเงาเข้าเป็นพลัง",
+          "detailed_interpretation_th": "ในการเติบโต ดวงจันทร์กลับหัวในอดีตเผยว่าคุณเคยรวมเงาในใจเข้าเป็นพลัง - ยอมรับด้านมืด ปลดความเชื่อจำกัด เปลี่ยนความอ่อนแอเป็นความแกร่ง บทเรียนคือคุณรู้ว่าการเติบโตจริงต้องผ่านการเผชิญตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The Hermit = ปัญญา",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Three of Pentacles = สร้างตัวตน",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวอดีตเติบโต คือ 'รวมเงาคือพลัง'",
+          "advice_th": "ใช้พลังจากการรวมเงา - คุณเปลี่ยนความอ่อนแอเป็นแกร่ง ใช้พลังนี้ในชีวิตปัจจุบัน",
+          "keywords_th": ["รวมเงา", "ปลดจำกัด", "พลัง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยพบสาเหตุและรักษาอาการได้",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงจันทร์กลับหัวในอดีตเผยว่าคุณเคยพบสาเหตุและรักษาอาการที่ซับซ้อนได้ - การวินิจฉัยที่ชัดเจน การค้นพบความเชื่อมโยงกายและใจ การฟื้นตัวสำเร็จ บทเรียนคือคุณรู้ว่าการรักษาตรงจุดนำสู่การฟื้นที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ฟื้นพลัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวอดีตสุขภาพ คือ 'รักษาตรงจุดนำสู่ฟื้นแท้'",
+          "advice_th": "ใช้บทเรียนการฟื้น - คุณรู้วิธีค้นสาเหตุและรักษา ใช้ทักษะนี้ในปัจจุบัน",
+          "keywords_th": ["พบสาเหตุ", "รักษาตรงจุด", "ฟื้นสำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีช่วงสับสนและภาพลวง",
+          "detailed_interpretation_th": "ดวงจันทร์ในอนาคต เตือนว่าจะมีช่วงสับสนและภาพลวงเข้ามา - สถานการณ์ที่ไม่ชัด ความลับที่ซ่อน หรือการต้องตัดสินใจในความไม่แน่นอน ไพ่หนุนให้คุณเตรียมใจ เชื่อสัญชาตญาณ และอย่ารีบตัดสินใจใหญ่ในช่วงนี้",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Devil = ลวงตา",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Seven of Cups = ทางเลือกลวง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups = สัญชาตญาณ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อนาคต คือ 'รอภาพชัดก่อนตัดสิน'",
+          "advice_th": "เตรียมรับช่วงสับสน - เชื่อสัญชาตญาณ อย่ารีบตัดสิน รอภาพชัดขึ้น",
+          "keywords_th": ["สับสนอนาคต", "ภาพลวง", "รอ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะเจอช่วงสับสน",
+          "detailed_interpretation_th": "ในความรัก ดวงจันทร์อนาคตเตือนว่าความสัมพันธ์จะเจอช่วงสับสน - ความลับที่อาจปรากฏ การตีความผิด หรืออารมณ์ที่ผันผวน ไพ่แนะให้คุณใช้การสื่อสารเปิด ฟังสัญชาตญาณ และไม่ตัดสินใจใหญ่ในช่วงอารมณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The Moon = ลวงตา",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Five of Pentacles = ขาดมั่นคง",
+            "court_cards": "Knight of Cups (rev) = หลอกลวง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อนาคตความรัก คือ 'สื่อสารเปิด ฟังใจ'",
+          "advice_th": "เตรียมรับช่วงสับสนในรัก - ใช้การสื่อสารเปิด ฟังสัญชาตญาณ ไม่ตัดสินใจในอารมณ์",
+          "keywords_th": ["สับสนรัก", "สื่อสาร", "ฟังใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "การงานหรือการเงินจะมีช่วงไม่แน่นอน",
+          "detailed_interpretation_th": "ในการงาน ดวงจันทร์อนาคตเตือนว่าการงานหรือการเงินจะมีช่วงไม่แน่นอน - ข้อมูลไม่ครบ การเมืองซับซ้อน การลงทุนเสี่ยง ไพ่หนุนให้คุณเตรียมตัว รวบรวมข้อมูล และไม่ลงทุนใหญ่จนกว่าจะมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ไม่แน่นอน, The Devil = หมกมุ่น",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Swords = วิเคราะห์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อนาคตงาน คือ 'รวบรวมข้อมูลรอความชัด'",
+          "advice_th": "เตรียมรับความไม่แน่นอน - รวบรวมข้อมูล ระวังลงทุน รอความชัดเจน",
+          "keywords_th": ["ไม่แน่นอน", "เตรียมตัว", "รอชัด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "จะมีการสำรวจจิตใต้สำนึกลึกซึ้ง",
+          "detailed_interpretation_th": "ในการเติบโต ดวงจันทร์อนาคตชี้ว่าจะมีการสำรวจจิตใต้สำนึกลึกซึ้ง - การเผชิญเงาในใจ การค้นพบความเชื่อจำกัด การทำงานกับความฝันและสัญชาตญาณ ไพ่หนุนให้คุณเปิดใจรับกระบวนการ และเชื่อมั่นในปัญญาภายในที่จะนำทาง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Hermit = ปัญญา",
+            "wands": "Page of Cups = ความฝัน",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Nine of Swords = เผชิญ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อนาคตเติบโต คือ 'สำรวจลึกนำสู่ปัญญาแท้'",
+          "advice_th": "เตรียมใจสำรวจลึก - เผชิญเงาในใจ ทำงานกับความฝัน เชื่อมั่นในปัญญาภายใน",
+          "keywords_th": ["สำรวจลึก", "เผชิญเงา", "ปัญญา"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอาจมีอาการที่ต้องสำรวจลึก",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงจันทร์อนาคตเตือนว่าสุขภาพอาจมีอาการที่ต้องสำรวจลึก - อาการที่หาสาเหตุยาก ความเชื่อมโยงกายและใจ ความเครียดสะสม ไพ่แนะให้คุณดูแลสุขภาพจิตอย่างจริงจัง ปรึกษาผู้เชี่ยวชาญหลายด้าน และฟังสัญญาณของร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดยึด, Temperance = สมดุล",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = อารมณ์หม่น",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Cups = อารมณ์ลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์อนาคตสุขภาพ คือ 'ฟังร่างกายและใจอย่างละเอียด'",
+          "advice_th": "เตรียมดูแลสุขภาพรอบด้าน - ดูแลสุขภาพจิต ปรึกษาผู้เชี่ยวชาญ ฟังสัญญาณกายและใจ",
+          "keywords_th": ["อาการลึก", "กายใจ", "ดูแลรอบด้าน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีการเปิดเผยความจริง",
+          "detailed_interpretation_th": "ดวงจันทร์กลับหัวในอนาคต เป็นข่าวดี - อนาคตจะมีการเปิดเผยความจริง ความสับสนคลี่คลาย ภาพลวงจาง คุณจะเห็นสถานการณ์ชัดเจน ไพ่หนุนให้คุณเตรียมใจรับความจริง ใช้ความชัดเจนนี้ตัดสินใจอย่างมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ทางสว่าง, Justice = ความจริง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Swords = เห็นชัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวอนาคต คือ 'ความจริงปรากฏ ใช้ความชัดเจน'",
+          "advice_th": "เตรียมรับความจริง - ภาพลวงจะจาง ใช้ความชัดเจนตัดสินใจอย่างมั่นใจ",
+          "keywords_th": ["ความจริงปรากฏ", "ภาพลวงจาง", "ชัดเจน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักจะมีความชัดเจนและความจริงปรากฏ",
+          "detailed_interpretation_th": "ในความรัก ดวงจันทร์กลับหัวอนาคตเป็นข่าวดี - ความสัมพันธ์จะมีความชัดเจนและความจริงปรากฏ คุณจะรู้ว่าคู่เป็นอย่างไรจริงๆ และเส้นทางของความสัมพันธ์ ไพ่หนุนให้คุณใช้ความชัดเจนนี้ตัดสินใจอย่างมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจรัก, Justice = ความจริง",
+            "wands": "Ace of Wands = กล้าตัดสินใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวอนาคตความรัก คือ 'ความชัดเจนนำสู่ความสุข'",
+          "advice_th": "เตรียมรับความชัดเจน - ความจริงในรักจะปรากฏ ใช้มันตัดสินใจอย่างมั่นใจ",
+          "keywords_th": ["ความรักชัด", "ความจริง", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานหรือเงินจะมีข้อมูลชัดเจน",
+          "detailed_interpretation_th": "ในการงาน ดวงจันทร์กลับหัวอนาคตเป็นข่าวดี - งานหรือเงินจะมีข้อมูลชัดเจน คุณจะเห็นภาพรวมและตัดสินใจได้ การเมืองในที่ทำงานจะปรากฏ ไพ่หนุนให้คุณใช้ความชัดเจนนี้ลงทุน เปลี่ยนงาน หรือก้าวหน้า",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ตัดสินใจ, The Sun = ความสำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Swords = วิเคราะห์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวอนาคตงาน คือ 'ภาพชัดตัดสินใจมั่นใจ'",
+          "advice_th": "ใช้ความชัดเจนการเงิน - ข้อมูลจะครบ ตัดสินใจลงทุน เปลี่ยนงาน หรือก้าวหน้า",
+          "keywords_th": ["ข้อมูลชัด", "ภาพรวม", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "จะมีการตื่นรู้และปลดความกลัวลึกซึ้ง",
+          "detailed_interpretation_th": "ในการเติบโต ดวงจันทร์กลับหัวอนาคตเป็นข่าวดียิ่ง - คุณจะมีการตื่นรู้และปลดความกลัวลึกซึ้ง การเผชิญเงาในใจสำเร็จ การปลดความเชื่อจำกัด การเชื่อมโยงกับปัญญาภายใน ไพ่ยืนยันว่าการเปลี่ยนแปลงนี้จะเปิดเส้นทางการเติบโตใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, The World = สำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Three of Pentacles = สร้างตัวตน",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวอนาคตเติบโต คือ 'ตื่นรู้ปลดความกลัว'",
+          "advice_th": "เตรียมรับการตื่นรู้ - คุณจะปลดความกลัวลึกซึ้ง เปิดเส้นทางการเติบโตใหม่",
+          "keywords_th": ["ตื่นรู้", "ปลดกลัว", "เติบโตใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะมีสาเหตุชัดและฟื้นตัว",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงจันทร์กลับหัวอนาคตเป็นข่าวดี - สุขภาพจะมีสาเหตุของอาการชัดเจน การรักษาตรงจุด การฟื้นตัวอย่างเต็มที่ ไพ่หนุนให้คุณเชื่อในกระบวนการรักษา ปรึกษาผู้เชี่ยวชาญ และดูแลทั้งกายและใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ฟื้นพลัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = วินิจฉัยชัด",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวอนาคตสุขภาพ คือ 'รักษาตรงจุดนำสู่ฟื้นเต็มที่'",
+          "advice_th": "เชื่อในการฟื้น - สาเหตุชัด รักษาตรงจุด ดูแลกายและใจไปพร้อมกัน",
+          "keywords_th": ["สาเหตุชัด", "ฟื้นเต็มที่", "รักษาตรง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือพัฒนาสัญชาตญาณและปัญญาญาณ",
+          "detailed_interpretation_th": "ดวงจันทร์ในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือการพัฒนาสัญชาตญาณและปัญญาญาณ - ฝึกฟังเสียงภายใน ใช้ความฝันเป็นแนวทาง เชื่อมโยงกับจิตใต้สำนึก เป้าหมายนี้จะทำให้คุณเป็นคนที่มองเห็นสิ่งที่คนอื่นไม่เห็นและตัดสินใจจากปัญญาลึก",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Hermit = ปัญญา",
+            "wands": "Page of Cups = ความฝัน",
+            "cups": "Queen of Cups = ลึกซึ้ง",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = สัญชาตญาณ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์เป้าหมาย คือ 'พัฒนาสัญชาตญาณคือพลัง'",
+          "advice_th": "ตั้งเป้าพัฒนาสัญชาตญาณ - ฝึกฟังเสียงภายใน ใช้ความฝัน เชื่อมโยงกับปัญญาลึก",
+          "keywords_th": ["สัญชาตญาณ", "ปัญญาญาณ", "ฟังใน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือความสัมพันธ์ที่ลึกซึ้งทางจิตใจ",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือความสัมพันธ์ที่ลึกซึ้งทางจิตใจ - การเชื่อมโยงในระดับจิตวิญญาณ การเข้าใจคู่โดยไม่ต้องพูด การมีพันธะทางอารมณ์ที่ลึก ไพ่หนุนให้คุณสร้างความสัมพันธ์บนพื้นฐานการเข้าใจที่เหนือคำพูด",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The High Priestess = ญาณ",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่นลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์เป้าหมายความรัก คือ 'รักลึกระดับจิตวิญญาณ'",
+          "advice_th": "ตั้งเป้าความรักลึกซึ้ง - เชื่อมโยงในระดับจิตวิญญาณ เข้าใจกันโดยไม่ต้องพูด",
+          "keywords_th": ["รักลึก", "จิตวิญญาณ", "เข้าใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือทำงานในสาขาที่เกี่ยวข้องกับจิตใจ",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายอาจเกี่ยวข้องกับสาขาที่ลึกซึ้ง - จิตวิทยา ศิลปะ ความฝัน การวิจัย หรืองานที่ใช้สัญชาตญาณ ไพ่หนุนให้คุณตามความสนใจที่ดูเหมือนนามธรรม เพราะนั่นคือพรสวรรค์เฉพาะตัว",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Hermit = ปัญญา",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Queen of Cups = อารมณ์",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์เป้าหมายงาน คือ 'พรสวรรค์ในด้านนามธรรม'",
+          "advice_th": "ตั้งเป้างานที่ลึก - จิตวิทยา ศิลปะ ใช้สัญชาตญาณ ตามความสนใจที่ดูนามธรรม",
+          "keywords_th": ["งานลึกซึ้ง", "สัญชาตญาณ", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือเชื่อมโยงกับจิตใต้สำนึกและปัญญาญาณ",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือการเชื่อมโยงกับจิตใต้สำนึกและปัญญาญาณ - ฝึกสมาธิลึก ทำงานกับความฝัน เผชิญเงาในใจ พัฒนา intuition เป้าหมายนี้จะเปิดประตูสู่ระดับการเติบโตที่ลึกที่สุด การเป็นแสงสว่างทางจิตวิญญาณ",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The World = สำเร็จสมบูรณ์",
+            "wands": "Page of Cups = ความฝัน",
+            "cups": "Queen of Cups = ลึกซึ้ง",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์เป้าหมายเติบโต คือ 'เชื่อมจิตใต้สำนึกเปิดประตูลึก'",
+          "advice_th": "ตั้งเป้าเชื่อมโยงจิตใต้สำนึก - สมาธิลึก ทำงานกับความฝัน เผชิญเงา เปิดประตูลึกสุด",
+          "keywords_th": ["จิตใต้สำนึก", "ปัญญาญาณ", "ระดับลึก"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพแบบองค์รวม",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือสุขภาพแบบองค์รวม - ดูแลกาย ใจ จิตวิญญาณไปพร้อมกัน ใช้การแพทย์ทางเลือกร่วมกับแผนปัจจุบัน ฟังร่างกายและความฝัน ไพ่หนุนให้คุณมองสุขภาพแบบรอบด้าน ไม่แยกกายและใจ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Ace of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลรอบด้าน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์เป้าหมายสุขภาพ คือ 'องค์รวมคือสุขภาพแท้'",
+          "advice_th": "ตั้งเป้าสุขภาพองค์รวม - กาย ใจ จิตวิญญาณ ใช้การแพทย์ทางเลือกร่วม ฟังร่างกายลึก",
+          "keywords_th": ["องค์รวม", "กายใจจิต", "ดูแลรอบ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือทำลายภาพลวงและเห็นความจริง",
+          "detailed_interpretation_th": "ดวงจันทร์กลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือการทำลายภาพลวงและเห็นความจริง - ปลดความเชื่อจำกัด ออกจากการหลอกตัวเอง เห็นโลกอย่างที่เป็นจริง เป้าหมายนี้ต้องการความกล้าและพร้อมรับสิ่งที่จะค้นพบ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, Justice = ความจริง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวเป้าหมาย คือ 'กล้าเห็นความจริง'",
+          "advice_th": "ตั้งเป้าทำลายภาพลวง - ปลดความเชื่อจำกัด ออกจากการหลอกตัวเอง เห็นโลกที่เป็นจริง",
+          "keywords_th": ["ทำลายลวง", "เห็นจริง", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือความสัมพันธ์ที่ซื่อสัตย์และโปร่งใส",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือความสัมพันธ์ที่ซื่อสัตย์และโปร่งใส - ไม่มีความลับ การสื่อสารตรง การเห็นกันอย่างที่เป็นจริง ไพ่หนุนให้คุณสร้างความสัมพันธ์ที่ตั้งบนความจริง ไม่ใช่ภาพลวงหรือความคาดหวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, Justice = ความจริง",
+            "wands": "Ace of Wands = กล้าตัดสินใจ",
+            "cups": "Two of Cups = ผูกพันแท้",
+            "swords": "Ace of Swords = สื่อสารตรง",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "Queen of Swords = ซื่อสัตย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวเป้าหมายความรัก คือ 'ซื่อสัตย์คือรากฐาน'",
+          "advice_th": "ตั้งเป้าความรักซื่อสัตย์ - โปร่งใส สื่อสารตรง เห็นกันอย่างที่เป็นจริง",
+          "keywords_th": ["ซื่อสัตย์", "โปร่งใส", "ตรงไปตรงมา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือการเงินที่ชัดเจนและโปร่งใส",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือการเงินที่ชัดเจนและโปร่งใส - งบการเงินที่ละเอียด การลงทุนที่เข้าใจ ความสัมพันธ์ทางธุรกิจที่ตรงไปตรงมา ไพ่หนุนให้คุณสร้างระบบการเงินที่ไม่มีจุดบอด เห็นภาพรวมตลอด",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ตัดสินใจ, The Emperor = โครงสร้าง",
+            "wands": "Three of Wands = วางแผน",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "King of Pentacles = วางมั่นคง",
+            "court_cards": "King of Pentacles = ปรมาจารย์การเงิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวเป้าหมายงาน คือ 'การเงินไม่มีจุดบอด'",
+          "advice_th": "ตั้งเป้าการเงินโปร่งใส - งบละเอียด ลงทุนที่เข้าใจ ความสัมพันธ์ตรงไปตรงมา",
+          "keywords_th": ["การเงินชัด", "โปร่งใส", "ภาพรวม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือปลดความกลัวและความเชื่อจำกัด",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือการปลดความกลัวและความเชื่อจำกัด - เผชิญหน้ากับสิ่งที่หลีกเลี่ยง ทำลายภาพลวงเกี่ยวกับตัวเอง สร้างตัวตนใหม่บนความจริง ไพ่หนุนให้คุณก้าวข้ามความกลัวเพื่อเข้าถึงศักยภาพแท้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, Strength = พลังใจ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Three of Pentacles = สร้างตัวตน",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวเป้าหมายเติบโต คือ 'ปลดกลัวเข้าถึงศักยภาพ'",
+          "advice_th": "ตั้งเป้าปลดความกลัว - เผชิญสิ่งที่หลีก ทำลายภาพลวง สร้างตัวตนใหม่บนความจริง",
+          "keywords_th": ["ปลดกลัว", "ปลดจำกัด", "ศักยภาพ"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพที่ชัดเจนและฟื้นตัว",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือสุขภาพที่ชัดเจนและฟื้นตัว - การวินิจฉัยที่ถูกต้อง การรักษาตรงจุด การฟื้นตัวเต็มที่ ไพ่หนุนให้คุณทำงานกับผู้เชี่ยวชาญที่เก่ง ไม่ปล่อยให้อาการคลุมเครือ และเชื่อในการฟื้นที่จะเกิดขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ฟื้นพลัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = วินิจฉัยชัด",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวเป้าหมายสุขภาพ คือ 'วินิจฉัยชัดนำสู่ฟื้นแท้'",
+          "advice_th": "ตั้งเป้าสุขภาพชัดเจน - วินิจฉัยถูก รักษาตรงจุด ทำงานกับผู้เชี่ยวชาญเก่ง",
+          "keywords_th": ["สุขภาพชัด", "วินิจฉัย", "ฟื้นเต็มที่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือสัญชาตญาณและความฉลาดทางอารมณ์",
+          "detailed_interpretation_th": "ดวงจันทร์ในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือสัญชาตญาณและความฉลาดทางอารมณ์ - คุณรู้สิ่งที่คนอื่นไม่รู้ อ่านคนได้ลึก เข้าถึงปัญญาในตัว รากฐานนี้ทำให้คุณตัดสินใจถูกในสถานการณ์ที่สับสนและเป็นที่ปรึกษาที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Hermit = ปัญญา",
+            "wands": "Page of Cups = ความฝัน",
+            "cups": "Queen of Cups = ลึกซึ้ง",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = สัญชาตญาณ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์รากฐาน คือ 'สัญชาตญาณคือพลังพิเศษ'",
+          "advice_th": "ใช้สัญชาตญาณเป็นรากฐาน - คุณรู้สิ่งที่คนอื่นไม่รู้ ใช้ปัญญานี้นำทาง",
+          "keywords_th": ["สัญชาตญาณ", "อ่านคน", "ปัญญาในตน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือความรู้สึกลึกและการอ่านคู่",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความรู้สึกลึกและความสามารถในการอ่านคู่ - คุณเข้าใจอารมณ์คู่โดยไม่ต้องถาม รู้ว่าเมื่อไหร่ที่คู่ต้องการอะไร รากฐานนี้ทำให้คุณเป็นคู่ครองที่ลึกซึ้งและเข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The High Priestess = ญาณ",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Queen of Cups = อบอุ่นลึก",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์รากฐานความรัก คือ 'อ่านคู่ลึกซึ้งคือพลัง'",
+          "advice_th": "ใช้ความรู้สึกลึกเป็นรากฐาน - อ่านคู่ได้ลึก ใช้สัญชาตญาณสร้างความสัมพันธ์ที่เข้าใจ",
+          "keywords_th": ["ความรู้สึกลึก", "อ่านคู่", "เข้าใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือการอ่านสถานการณ์และคน",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือความสามารถในการอ่านสถานการณ์และคน - คุณรู้ว่าใครเล่นเกม โอกาสไหนคุ้ม สถานการณ์จะไปทางไหน ทักษะนี้ทำให้คุณตัดสินใจถูกในธุรกิจที่ซับซ้อนและเลี่ยงกับดักได้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Justice = ตัดสินใจ",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Queen of Cups = สัญชาตญาณ",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "King of Pentacles = สร้างมั่งคั่ง",
+            "court_cards": "King of Swords = วิเคราะห์ลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์รากฐานงาน คือ 'อ่านคนและสถานการณ์'",
+          "advice_th": "ใช้ทักษะอ่านลึกเป็นรากฐาน - รู้ใครเล่นเกม โอกาสไหนคุ้ม ใช้ปัญญานี้",
+          "keywords_th": ["อ่านสถานการณ์", "อ่านคน", "ตัดสินใจถูก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือการเชื่อมโยงกับจิตใต้สำนึก",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือการเชื่อมโยงกับจิตใต้สำนึก - คุณเข้าถึงปัญญาในระดับลึก ใช้ความฝันและสัญชาตญาณนำทาง เข้าใจตัวเองในระดับที่คนทั่วไปไม่เข้าถึง รากฐานนี้ทำให้คุณเติบโตลึกซึ้งและมีปัญญาเหนือกาลเวลา",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Hermit = ปัญญา",
+            "wands": "Page of Cups = ความฝัน",
+            "cups": "Queen of Cups = ลึกซึ้ง",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์รากฐานเติบโต คือ 'เชื่อมจิตใต้สำนึกคือปัญญาเหนือกาล'",
+          "advice_th": "ใช้การเชื่อมโยงเป็นรากฐาน - คุณเข้าถึงปัญญาลึก ใช้ความฝันและสัญชาตญาณนำทาง",
+          "keywords_th": ["จิตใต้สำนึก", "ปัญญาลึก", "เหนือกาล"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือการฟังร่างกายอย่างลึก",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือการฟังร่างกายอย่างลึก - คุณรู้สัญญาณของร่างกายก่อนอาการชัด เข้าใจความเชื่อมโยงกายและใจ ใช้สัญชาตญาณดูแลตัวเอง รากฐานนี้ทำให้คุณป้องกันโรคและฟื้นตัวได้ดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Queen of Cups = อารมณ์ลึก",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลรอบด้าน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์รากฐานสุขภาพ คือ 'ฟังร่างกายลึก'",
+          "advice_th": "ใช้สัญชาตญาณดูแลร่างกาย - คุณรู้สัญญาณก่อนชัด ใช้ความเข้าใจกายใจดูแลตัวเอง",
+          "keywords_th": ["ฟังร่างกาย", "สัญชาตญาณ", "ป้องกัน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความกลัวและภาพลวงเดิม",
+          "detailed_interpretation_th": "ดวงจันทร์กลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความกลัวและภาพลวงเดิม - คุณตัดสินใจจากความกลัว ติดอยู่ในเรื่องราวที่สร้างเอง ไม่ฟังสัญชาตญาณจริง รากฐานนี้ทำให้คุณติดในกรอบเก่า ถึงเวลาทำงานกับใจและปลดสิ่งเหล่านี้",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดยึด, The Moon = ลวงตา",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = หลอกใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวรากฐาน คือ 'ปลดความกลัวเก่า'",
+          "advice_th": "ทำงานกับใจ - ความกลัวและภาพลวงเดิมขังคุณ ปลดทีละชั้น ฟังสัญชาตญาณแท้",
+          "keywords_th": ["ความกลัวเก่า", "ภาพลวง", "ปลด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือกลัวรักและไม่เชื่อใจ",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความกลัวรักและไม่เชื่อใจ - บาดแผลเก่าทำให้ระแวง สงสัย ไม่เปิดใจเต็มที่ รากฐานนี้ทำให้คุณสร้างความสัมพันธ์ที่ตั้งบนความกลัว ไม่ใช่ความรัก ถึงเวลาเยียวยาบาดแผลและเรียนรู้เชื่อใจอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = บาดแผล, The Devil = กลัว",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Three of Swords = ใจสลาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวรากฐานความรัก คือ 'เยียวยาเพื่อเชื่อใจอีก'",
+          "advice_th": "เยียวยาบาดแผลเก่า - ความกลัวและไม่เชื่อใจขังคุณจากรัก เรียนรู้เชื่อใจอีกครั้ง",
+          "keywords_th": ["กลัวรัก", "ไม่เชื่อใจ", "เยียวยา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือกลัวการเงินและตัดสินใจจากความกลัว",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือความกลัวเรื่องการเงินและการตัดสินใจจากความกลัว - กลัวจะไม่มีเงินใช้ กลัวเปลี่ยนงาน กลัวเสี่ยง รากฐานนี้ทำให้คุณเลือกความปลอดภัยเหนือศักยภาพ ถึงเวลาทำงานกับความกลัวเพื่อปลดล็อกอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดยึด, Wheel of Fortune (rev) = กลัวเสี่ยง",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Four of Pentacles = ยึดเงิน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวรากฐานงาน คือ 'ปลดความกลัวเปิดศักยภาพ'",
+          "advice_th": "ทำงานกับความกลัวการเงิน - ปลดล็อกอนาคต กล้าเสี่ยงคำนวณได้ ใช้ศักยภาพเต็มที่",
+          "keywords_th": ["กลัวเงิน", "เลือกปลอด", "ปลดล็อก"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือเงาในใจที่ไม่ยอมเผชิญ",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือเงาในใจที่ไม่ยอมเผชิญ - ความกลัวลึก ความเชื่อจำกัด ด้านมืดที่ปฏิเสธ รากฐานนี้ขับเคลื่อนคุณจากเบื้องหลัง ทำให้คุณติดในกรอบเดิม ไพ่หนุนให้คุณกล้าเผชิญและรวมเงาเข้าเป็นพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดยึด, The Hermit = ต้องสำรวจ",
+            "wands": "Seven of Wands = ต่อสู้ภายใน",
+            "cups": "Eight of Cups = ต้องปล่อย",
+            "swords": "Nine of Swords = เผชิญ",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวรากฐานเติบโต คือ 'เผชิญเงาเปลี่ยนเป็นพลัง'",
+          "advice_th": "เผชิญเงาในใจ - มันขับเคลื่อนคุณจากเบื้องหลัง กล้าเผชิญ รวมเป็นพลัง",
+          "keywords_th": ["เงาในใจ", "ไม่เผชิญ", "กล้ามอง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือความวิตกและไม่เชื่อในร่างกาย",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือความวิตกและไม่เชื่อในร่างกาย - กลัวป่วย วิตกอาการที่ไม่ใช่ ไม่ไว้ใจสัญชาตญาณ รากฐานนี้สร้างความเครียดที่ทำให้สุขภาพแย่ลง ไพ่หนุนให้คุณทำงานกับใจ ฝึกสติ และเชื่อในพลังเยียวยาของร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, Temperance (rev) = ไม่สมดุล",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = กลัวป่วย",
+            "court_cards": "Queen of Cups (rev) = วิตก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวรากฐานสุขภาพ คือ 'ปลดวิตกเชื่อในร่างกาย'",
+          "advice_th": "ทำงานกับความวิตก - ฝึกสติ เชื่อในพลังเยียวยา ปลดความกลัวที่สร้างเครียด",
+          "keywords_th": ["วิตก", "ไม่เชื่อร่าง", "ปลดกลัว"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เข้าหาด้วยสัญชาตญาณและความระมัดระวัง",
+          "detailed_interpretation_th": "ดวงจันทร์ในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีที่สุดคือเข้าหาด้วยสัญชาตญาณและความระมัดระวัง - ไม่รีบ ฟังเสียงภายใน รวบรวมข้อมูล สังเกตสัญญาณที่ไม่ชัด ไพ่หนุนการเดินอย่างนุ่มนวลในความไม่แน่นอน ใช้ปัญญาในตัวนำทาง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Hermit = ปัญญา",
+            "wands": "Page of Cups = ความฝัน",
+            "cups": "Queen of Cups = สัญชาตญาณ",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งคำแนะนำ คือ 'นุ่มนวลในความไม่แน่นอน'",
+          "advice_th": "เข้าหาด้วยสัญชาตญาณ - ไม่รีบ ฟังเสียงภายใน รวบรวมข้อมูล ใช้ปัญญานำทาง",
+          "keywords_th": ["สัญชาตญาณ", "ระมัดระวัง", "ฟังใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เข้าหาความรักด้วยความลึกซึ้งและฟังอารมณ์",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าวิธีที่ดีคือเข้าหาด้วยความลึกซึ้งและฟังอารมณ์ - ไม่ตัดสินจากภายนอก ฟังสิ่งที่คู่ไม่พูด ใช้สัญชาตญาณอ่านสถานการณ์ ไพ่หนุนให้คุณเชื่อมโยงในระดับลึกและไม่รีบสรุป",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The High Priestess = ญาณ",
+            "wands": "Page of Cups = ความฝันรัก",
+            "cups": "Queen of Cups = อบอุ่นลึก",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "Queen of Cups = อ่านคู่"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งคำแนะนำความรัก คือ 'ฟังสิ่งที่ไม่ได้พูด'",
+          "advice_th": "เข้าหารักด้วยใจลึก - ฟังอารมณ์คู่ ใช้สัญชาตญาณ อย่ารีบสรุป เชื่อมโยงลึก",
+          "keywords_th": ["ลึกซึ้ง", "ฟังอารมณ์", "สัญชาตญาณ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ระมัดระวังในการตัดสินใจการเงิน",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรระมัดระวังในการตัดสินใจการเงิน - รวบรวมข้อมูล ตรวจสอบรายละเอียด ฟังสัญชาตญาณเกี่ยวกับคนและโอกาส ไพ่บอกว่าการเร่งรีบในช่วงไม่ชัดจะนำสู่ความผิดพลาด ใช้เวลาพอ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Justice = ตัดสินใจ",
+            "wands": "Seven of Pentacles = รอ",
+            "cups": "Queen of Cups = สัญชาตญาณ",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "Seven of Pentacles = อดทน",
+            "court_cards": "King of Swords = วิเคราะห์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งคำแนะนำงาน คือ 'รวบรวมข้อมูลก่อนตัดสิน'",
+          "advice_th": "ระวังในการเงิน - รวบรวมข้อมูล ตรวจสอบรายละเอียด ใช้สัญชาตญาณ ไม่เร่งรีบ",
+          "keywords_th": ["ระวัง", "ข้อมูลครบ", "สัญชาตญาณ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ทำงานกับจิตใต้สำนึกและความฝัน",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรทำงานกับจิตใต้สำนึกและความฝัน - บันทึกความฝัน ใช้สัญชาตญาณ ฝึกสมาธิลึก เผชิญเงาในใจ ไพ่หนุนการเดินทางเข้าสู่ภายในเพื่อค้นพบปัญญาที่ลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Hermit = ปัญญา",
+            "wands": "Page of Cups = ความฝัน",
+            "cups": "Queen of Cups = ลึกซึ้ง",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งคำแนะนำเติบโต คือ 'ปัญญาในความฝันและสัญชาตญาณ'",
+          "advice_th": "ทำงานกับจิตใต้สำนึก - บันทึกความฝัน สมาธิลึก เผชิญเงา ค้นพบปัญญาลึกซึ้ง",
+          "keywords_th": ["จิตใต้สำนึก", "ความฝัน", "ปัญญาลึก"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ฟังร่างกายและดูแลความเครียด",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรฟังร่างกายและดูแลความเครียด - สังเกตอาการที่ไม่ชัด จัดการความวิตก ดูแลการนอนและความฝัน ปรึกษาผู้เชี่ยวชาญทั้งกายและจิต ไพ่หนุนการดูแลแบบองค์รวม",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Queen of Cups = อารมณ์ลึก",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลรอบด้าน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งคำแนะนำสุขภาพ คือ 'ฟังร่างกายลึก'",
+          "advice_th": "ฟังร่างกาย - สังเกตอาการไม่ชัด จัดการเครียด ดูแลนอน ปรึกษาทั้งกายและจิต",
+          "keywords_th": ["ฟังร่าง", "ดูแลเครียด", "องค์รวม"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ออกจากภาพลวงและเผชิญความจริง",
+          "detailed_interpretation_th": "ดวงจันทร์กลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือออกจากภาพลวงและเผชิญความจริง - ปลดความเชื่อจำกัด ออกจากการหลอกตัวเอง ตัดสินใจจากข้อเท็จจริง ไพ่หนุนความกล้ามองและยอมรับสิ่งที่เป็นจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, Justice = ความจริง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งคำแนะนำ คือ 'กล้ามองความจริง'",
+          "advice_th": "ออกจากภาพลวง - ปลดความเชื่อจำกัด ตัดสินใจจากข้อเท็จจริง กล้ามอง",
+          "keywords_th": ["ออกจากลวง", "เผชิญจริง", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ซื่อสัตย์ในความรัก ไม่หลอกตัวเอง",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าวิธีที่ดีคือซื่อสัตย์ในความรัก ไม่หลอกตัวเอง - ยอมรับว่าคู่เป็นอย่างไรจริงๆ ยอมรับความรู้สึกของตัวเอง ไม่หาข้ออ้างให้ความสัมพันธ์ที่ไม่ใช่ ไพ่หนุนความกล้ามองความจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจรัก, Justice = ความจริง",
+            "wands": "Ace of Wands = กล้าตัดสินใจ",
+            "cups": "Eight of Cups = ออกจากเท็จ",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Swords = ตัดสินใจชัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งคำแนะนำความรัก คือ 'ซื่อสัตย์กับใจตน'",
+          "advice_th": "ซื่อสัตย์ในรัก - ยอมรับคู่อย่างที่เป็น ยอมรับความรู้สึกตน ไม่หาข้ออ้าง",
+          "keywords_th": ["ซื่อสัตย์", "ไม่หลอกตน", "ยอมรับจริง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตัดสินใจจากข้อเท็จจริงไม่ใช่ความหวัง",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวเตือนว่าคุณควรตัดสินใจจากข้อเท็จจริงไม่ใช่ความหวัง - ดูตัวเลข วิเคราะห์ตามจริง ไม่หลงในภาพลวงของผลตอบแทน ไพ่หนุนการตัดสินใจที่เป็นเหตุเป็นผล แม้จะไม่สบายใจในระยะสั้น",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ตัดสินใจ, The Hermit = ปัญญา",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "Three of Pentacles = ร่วมงาน",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "King of Pentacles = ปรมาจารย์การเงิน",
+            "court_cards": "King of Swords = วิเคราะห์เฉียบ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งคำแนะนำงาน คือ 'ข้อเท็จจริงเหนือความหวัง'",
+          "advice_th": "ตัดสินใจจากข้อเท็จจริง - ดูตัวเลข วิเคราะห์ตามจริง ไม่หลงในภาพลวงผลตอบแทน",
+          "keywords_th": ["ข้อเท็จจริง", "วิเคราะห์", "ไม่หลง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ทำลายภาพลวงเกี่ยวกับตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรทำลายภาพลวงเกี่ยวกับตัวเอง - เลิกหลอกตัวเองว่าตัวเองเป็นใคร ยอมรับด้านมืดและความเชื่อจำกัด เห็นตัวเองอย่างที่เป็นจริง ไพ่บอกว่านี่คือก้าวแรกของการเปลี่ยนแปลงที่แท้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Sun = สว่าง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Three of Pentacles = สร้างตัวตน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งคำแนะนำเติบโต คือ 'เลิกหลอกตน เห็นจริง'",
+          "advice_th": "ทำลายภาพลวงเกี่ยวกับตน - เลิกหลอกตน ยอมรับด้านมืดและจำกัด เห็นอย่างที่เป็น",
+          "keywords_th": ["ทำลายลวง", "เลิกหลอกตน", "เห็นจริง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เผชิญอาการและรักษาตรงจุด",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวเตือนว่าคุณควรเผชิญอาการและรักษาตรงจุด - ไม่ปฏิเสธอาการที่ชัดเจน ไม่ผัดวันประกันพรุ่ง เข้าหาแพทย์เก่ง ทำตามแผนการรักษา ไพ่หนุนการกล้ารับมือกับความจริงเพื่อสุขภาพดีระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ฟื้นพลัง, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = วินิจฉัยชัด",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'เผชิญและรักษาตรงจุด'",
+          "advice_th": "เผชิญอาการ - ไม่ปฏิเสธ ไม่ผัดวัน เข้าหาแพทย์ ทำตามแผน รักษาตรงจุด",
+          "keywords_th": ["เผชิญอาการ", "รักษาตรง", "ลงมือ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมเต็มไปด้วยภาพลวงและความสับสน",
+          "detailed_interpretation_th": "ดวงจันทร์ในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวเต็มไปด้วยภาพลวงและความสับสน - คนรอบข้างที่ไม่ซื่อสัตย์ สถานการณ์ที่ไม่ชัด ข้อมูลผิดๆ ไพ่เตือนให้คุณระวังในการเชื่อสิ่งที่ได้ยินจากภายนอก และพึ่งสัญชาตญาณตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, The Moon = ลวงตา",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Seven of Cups = ทางเลือกลวง",
+            "swords": "Five of Swords = หลอก",
+            "pentacles": "Five of Pentacles = ขาดข้อมูล",
+            "court_cards": "Knight of Cups (rev) = คนหลอก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งภายนอก คือ 'พึ่งสัญชาตญาณตัวเอง'",
+          "advice_th": "ระวังภายนอก - คนและสถานการณ์ที่ไม่ชัด พึ่งสัญชาตญาณ ไม่เชื่อทุกอย่างที่ได้ยิน",
+          "keywords_th": ["แวดล้อมลวง", "สับสน", "พึ่งตน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างไม่ซื่อสัตย์หรือมีวาระซ่อน",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าคนรอบข้างไม่ซื่อสัตย์หรือมีวาระซ่อน - คู่ที่มีความลับ เพื่อนที่ปั่นป่วน ครอบครัวที่ตัดสิน ไพ่เตือนให้คุณระวังในการเชื่อคนรอบข้าง ฟังสัญชาตญาณตัวเอง และปกป้องความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลวงตา, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Cups (rev) = คนทรยศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งภายนอกความรัก คือ 'พึ่งสัญชาตญาณปกป้องรัก'",
+          "advice_th": "ระวังคนรอบข้าง - มีคนที่ไม่ซื่อสัตย์ ฟังสัญชาตญาณ ปกป้องความสัมพันธ์ของคุณ",
+          "keywords_th": ["รอบข้างลวง", "วาระซ่อน", "ปกป้องรัก"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ที่ทำงานหรือตลาดมีการเมืองและภาพลวง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่าที่ทำงานหรือตลาดมีการเมืองและภาพลวง - เพื่อนร่วมงานเล่นเกม ข้อมูลตลาดที่ทำให้เข้าใจผิด การลงทุนที่ดูดี ไพ่แนะให้คุณระวัง ตรวจสอบข้อมูล และไม่เชื่อทุกอย่างที่ได้ยิน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = หมกมุ่น, Wheel of Fortune = ไม่แน่นอน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Seven of Cups = ภาพลวง",
+            "swords": "Five of Swords = ถูกหลอก",
+            "pentacles": "Seven of Cups = ภาพหลอก",
+            "court_cards": "Knight of Cups (rev) = หลอกลวง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งภายนอกงาน คือ 'ระวังการเมืองและตลาดลวง'",
+          "advice_th": "ระวังที่ทำงาน - การเมือง ข้อมูลตลาดลวง ตรวจสอบทุกอย่าง ไม่เชื่อง่ายๆ",
+          "keywords_th": ["การเมือง", "ตลาดลวง", "ตรวจสอบ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมรอบข้างสร้างความสับสนในการเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าสังคมรอบข้างสร้างความสับสนในการเติบโตของคุณ - ความคาดหวังของคนอื่น ค่านิยมที่ขัดกับตัวคุณ คำแนะนำที่หลากหลาย ไพ่หนุนให้คุณกลับมาฟังตัวเอง ไม่ปล่อยให้เสียงนอกดึงคุณออกจากเส้นทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = กรอบสังคม, The Hermit = เดินคนเดียว",
+            "wands": "Five of Wands = ความขัดแย้ง",
+            "cups": "Seven of Cups = ทางเลือกหลาก",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งภายนอกเติบโต คือ 'ฟังตน ไม่ปล่อยให้นอกดึง'",
+          "advice_th": "กลับมาฟังตัวเอง - สังคมสร้างความสับสน ไม่ปล่อยให้เสียงนอกดึงออกจากเส้นทาง",
+          "keywords_th": ["สังคมสับสน", "ฟังตน", "เส้นทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สภาพแวดล้อมสร้างความเครียดทางจิตใจ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกเตือนว่าสภาพแวดล้อมสร้างความเครียดทางจิตใจ - ความวุ่นวายในชีวิต ความสัมพันธ์ที่กดดัน งานที่เครียด ไพ่แนะให้คุณตัดสิ่งที่บั่นทอนสุขภาพจิตเท่าที่ทำได้ สร้างพื้นที่ปลอดภัย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = เครียดสะสม",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = อารมณ์ลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งภายนอกสุขภาพ คือ 'ตัดสิ่งบั่นทอนสุขภาพจิต'",
+          "advice_th": "ตัดสิ่งบั่นทอนใจ - ความวุ่นวาย ความสัมพันธ์กดดัน งานเครียด สร้างพื้นที่ปลอดภัย",
+          "keywords_th": ["แวดล้อมเครียด", "บั่นทอนใจ", "พื้นที่ปลอด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมเริ่มชัดเจนและเปิดเผย",
+          "detailed_interpretation_th": "ดวงจันทร์กลับหัวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมเริ่มชัดเจนและเปิดเผย - ความลับถูกเปิด คนแสดงตัวจริง สถานการณ์ที่สับสนเริ่มคลี่คลาย ไพ่ชี้ว่านี่คือช่วงเวลาดีที่จะตัดสินใจตามความจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ทางสว่าง, Justice = ความจริง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งภายนอก คือ 'ภายนอกชัดเจน ตัดสินใจตามจริง'",
+          "advice_th": "ใช้ความชัดเจนจากภายนอก - ความลับเปิด คนแสดงตัวจริง ตัดสินใจตามความจริง",
+          "keywords_th": ["ภายนอกชัด", "เปิดเผย", "ความจริง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์รอบตัวมีความจริงปรากฏ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าความสัมพันธ์รอบตัวมีความจริงปรากฏ - คนแสดงตัวจริง ความเข้าใจผิดคลี่คลาย ความสัมพันธ์ที่ตั้งบนความเท็จล่ม ไพ่หนุนให้คุณใช้ความชัดเจนนี้สร้างความสัมพันธ์ที่ซื่อสัตย์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, Justice = ความจริง",
+            "wands": "Ace of Wands = กล้าตัดสินใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Swords = ซื่อสัตย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งภายนอกความรัก คือ 'ความจริงปรากฏในรัก'",
+          "advice_th": "ใช้ความชัดเจน - คนแสดงตัวจริง ความเข้าใจผิดคลี่คลาย สร้างรักซื่อสัตย์",
+          "keywords_th": ["ความจริงปรากฏ", "คลี่คลาย", "ซื่อสัตย์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานหรือตลาดมีข้อมูลและทิศทางชัด",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่างานหรือตลาดมีข้อมูลและทิศทางชัด - ข่าวสารตรงไปตรงมา การเมืองในที่ทำงานคลี่คลาย ตลาดเริ่มแสดงทิศทาง ไพ่หนุนให้คุณใช้ความชัดเจนนี้ตัดสินใจอย่างมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ตัดสินใจ, The Sun = ความสำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Swords = วิเคราะห์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งภายนอกงาน คือ 'ข้อมูลและทิศทางชัด'",
+          "advice_th": "ใช้ข้อมูลตลาดที่ชัด - การเมืองคลี่คลาย ตลาดแสดงทิศทาง ตัดสินใจมั่นใจ",
+          "keywords_th": ["ข้อมูลชัด", "ทิศทาง", "มั่นใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมรอบข้างหนุนการตื่นรู้",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมรอบข้างหนุนการตื่นรู้ - คนที่เข้าใจ ครูที่ดี ชุมชนที่ฝึกฝน หนังสือและแหล่งความรู้ที่เปิดมุมมอง ไพ่หนุนให้คุณใช้แรงสนับสนุนนี้เติบโตเต็มที่",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The World = สำเร็จ",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งภายนอกเติบโต คือ 'สังคมหนุนตื่นรู้'",
+          "advice_th": "ใช้สังคมหนุนตื่นรู้ - คนเข้าใจ ครูดี ชุมชนฝึก หนังสือเปิดมุมมอง เติบโตเต็มที่",
+          "keywords_th": ["สังคมหนุน", "ครูดี", "ตื่นรู้"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมหนุนสุขภาพและการฟื้นตัว",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวบอกว่าสิ่งแวดล้อมหนุนสุขภาพและการฟื้นตัว - ความวุ่นวายลด คนช่วยเหลือ สภาพที่ปลอดภัย ไพ่ชี้ว่านี่คือช่วงเวลาดีที่จะทำงานกับสุขภาพ ใช้แรงหนุนรอบตัวอย่างเต็มที่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งภายนอกสุขภาพ คือ 'แวดล้อมหนุนฟื้น'",
+          "advice_th": "ใช้สิ่งแวดล้อมหนุนสุขภาพ - ความวุ่นวายลด คนช่วย สภาพปลอดภัย ฟื้นตัวเต็มที่",
+          "keywords_th": ["แวดล้อมหนุน", "ฟื้นตัว", "สนับสนุน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "กลัวสิ่งไม่รู้และความสับสน",
+          "detailed_interpretation_th": "ดวงจันทร์ในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวสิ่งไม่รู้และความสับสน - กลัวการตัดสินใจในความไม่ชัด กลัวสิ่งที่ซ่อนอยู่ในใจ กลัวความฝันร้าย ความกลัวนี้ขังคุณจากการสำรวจตัวเองและสถานการณ์อย่างลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Devil = ติดยึด",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ฝันร้าย",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งความหวังกลัว คือ 'กลัวสิ่งไม่รู้ขังคุณ'",
+          "advice_th": "เผชิญสิ่งไม่รู้ - ความกลัวขังคุณจากการสำรวจ กล้ามองสิ่งซ่อนในใจ",
+          "keywords_th": ["กลัวไม่รู้", "ขังจากสำรวจ", "กล้ามอง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวถูกหลอกหรือสูญเสียในความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณกลัวถูกหลอกหรือสูญเสียในความรัก - กลัวคู่มีความลับ กลัวรักจะจบ กลัวความไม่ชัดในความสัมพันธ์ ไพ่บอกว่าความกลัวสร้างจินตนาการที่อาจไม่จริง ฟังสัญชาตญาณและสื่อสารตรงๆ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = กลัวเลือก, The Moon = สับสน",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Three of Swords = กลัวเจ็บ",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = กลัวสูญ",
+            "court_cards": "Knight of Cups (rev) = กลัวคนหลอก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งความหวังกลัวความรัก คือ 'ฟังสัญชาตญาณ สื่อสารตรง'",
+          "advice_th": "ใช้สัญชาตญาณและสื่อสาร - กลัวสร้างจินตนาการอาจไม่จริง ฟังใจ พูดตรง",
+          "keywords_th": ["กลัวหลอก", "กลัวสูญรัก", "สื่อสาร"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวตัดสินใจผิดในการเงิน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณกลัวตัดสินใจผิดในการเงิน - กลัวลงทุนแล้วเสีย กลัวเปลี่ยนงานแล้วผิด กลัวข้อมูลไม่ครบ ความกลัวนี้ทำให้คุณนิ่งและพลาดโอกาส ไพ่หนุนให้คุณรวบรวมข้อมูล ใช้สัญชาตญาณ และกล้าตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ไม่แน่นอน, The Hermit = ทบทวน",
+            "wands": "Two of Swords = ไม่ตัดสิน",
+            "cups": "Five of Cups = กลัวผิดหวัง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Five of Pentacles = กลัวยาก",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งความหวังกลัวงาน คือ 'รวบรวมข้อมูลและกล้าตัดสิน'",
+          "advice_th": "รวบรวมข้อมูลและกล้า - กลัวผิดทำให้นิ่งพลาดโอกาส ใช้สัญชาตญาณตัดสินใจ",
+          "keywords_th": ["กลัวผิด", "นิ่ง", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวสิ่งที่จะค้นพบในตนเอง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณกลัวสิ่งที่จะค้นพบในตัวเอง - กลัวเห็นด้านมืด กลัวความจริงที่ไม่อยากยอมรับ กลัวต้องเปลี่ยนแปลง ไพ่บอกว่าสิ่งที่ค้นพบจะปลดปล่อย ไม่ทำลาย กล้าเดินทางเข้าสู่ภายในเถิด",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Devil = กลัวเงา",
+            "wands": "Seven of Wands = ต้านเปลี่ยน",
+            "cups": "Eight of Cups = หลีกหนี",
+            "swords": "Nine of Swords = กลัวจริง",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งความหวังกลัวเติบโต คือ 'สิ่งที่พบจะปลดปล่อย'",
+          "advice_th": "กล้าค้นพบในตน - กลัวเห็นด้านมืดและจริง แต่สิ่งที่พบจะปลดปล่อยคุณ",
+          "keywords_th": ["กลัวค้นพบ", "ด้านมืด", "กล้ามอง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวอาการที่ไม่ชัดหรือโรคซ่อน",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณกลัวอาการที่ไม่ชัดหรือโรคซ่อน - กลัวจะป่วยหนัก กลัวการวินิจฉัย กลัวความเครียดจะทำลายสุขภาพ ความกลัวนี้สร้างความวิตกที่บั่นทอน ไพ่หนุนให้คุณเข้าหาแพทย์ ตรวจสุขภาพ และทำงานกับความวิตก",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติดยึด",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = กลัวป่วย",
+            "court_cards": "Queen of Cups (rev) = วิตก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งความหวังกลัวสุขภาพ คือ 'ตรวจให้ชัดดีกว่าวิตก'",
+          "advice_th": "เข้าหาแพทย์ - กลัวอาการซ่อนแต่นิ่งทำให้วิตก ตรวจให้ชัดเจน ทำงานกับความวิตก",
+          "keywords_th": ["กลัวโรคซ่อน", "วิตก", "ตรวจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หวังความชัดเจน แต่กลัวความจริงที่จะเปิด",
+          "detailed_interpretation_th": "ดวงจันทร์กลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังความชัดเจน อยากให้ภาพลวงจาง แต่ก็กลัวความจริงที่จะเปิดเผย กลัวสิ่งที่จะค้นพบ ไพ่บอกว่าความจริงคือทางเดียวสู่อิสรภาพ กล้ารับมือกับมัน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความหวัง, The Devil = กลัวจริง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งความหวังกลัว คือ 'ความจริงคือทางสู่อิสรภาพ'",
+          "advice_th": "กล้ารับมือกับความจริง - หวังชัดเจนแต่กลัวจริง ความจริงคือทางเดียวสู่อิสรภาพ",
+          "keywords_th": ["หวังชัด", "กลัวจริง", "กล้ามอง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความซื่อสัตย์ในรัก กลัวการเปิดเผย",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณหวังความซื่อสัตย์ในรัก อยากรู้ความจริง แต่กลัวการเปิดเผยที่อาจทำให้ความสัมพันธ์เปลี่ยน ไพ่บอกว่าความซื่อสัตย์คือรากฐาน แม้เจ็บปวด การพูดความจริงดีกว่าอยู่ในภาพลวง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, Justice = ความจริง",
+            "wands": "Knight of Wands = กล้าตัดสินใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = สื่อสารตรง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Swords = ซื่อสัตย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งความหวังกลัวความรัก คือ 'ซื่อสัตย์ดีกว่าอยู่ในลวง'",
+          "advice_th": "เลือกความซื่อสัตย์ - หวังจริงใจแต่กลัวเปิดเผย ความจริงดีกว่าอยู่ในภาพลวง",
+          "keywords_th": ["หวังซื่อสัตย์", "กลัวเปิด", "ความจริง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังการเงินที่ชัด กลัวการตัดสินใจที่ตามมา",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณหวังการเงินที่ชัด อยากรู้สถานการณ์จริง แต่กลัวการตัดสินใจที่ตามมา - การเปลี่ยนงาน การลงทุน การยอมรับว่าทางปัจจุบันไม่ใช่ ไพ่หนุนให้คุณกล้าใช้ความชัดเจนตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ตัดสินใจ, The Hermit = ทบทวน",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "King of Swords = วิเคราะห์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งความหวังกลัวงาน คือ 'ใช้ความชัดเจนกล้าตัดสิน'",
+          "advice_th": "กล้าใช้ความชัดเจน - หวังการเงินชัดแต่กลัวการตัดสินใจ ความจริงเปิดทางใหม่",
+          "keywords_th": ["หวังชัด", "กลัวตัดสิน", "กล้าใช้"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังตื่นรู้ กลัวสิ่งที่จะเปลี่ยน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณหวังการตื่นรู้และเชื่อมโยงกับตัวตนแท้ แต่กลัวสิ่งที่จะเปลี่ยนหลังการตื่นรู้ - ตัวตนใหม่ ความสัมพันธ์ที่อาจต้องตัด ความรับผิดชอบใหม่ ไพ่หนุนให้คุณกล้าตื่นรู้ การเปลี่ยนแปลงคือธรรมชาติของการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, Death = แปลงร่าง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Three of Pentacles = สร้างตัวตน",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'เปลี่ยนคือธรรมชาติเติบโต'",
+          "advice_th": "กล้าตื่นรู้ - หวังตื่นรู้แต่กลัวเปลี่ยน การเปลี่ยนแปลงคือธรรมชาติของการเติบโต",
+          "keywords_th": ["หวังตื่นรู้", "กลัวเปลี่ยน", "กล้า"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังวินิจฉัยที่ชัด กลัวสิ่งที่จะรู้",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณหวังการวินิจฉัยที่ชัดเจน อยากรู้สาเหตุของอาการ แต่กลัวสิ่งที่จะรู้ - กลัวเป็นโรคร้ายแรง กลัวต้องเปลี่ยนวิถีชีวิต ไพ่บอกว่าการรู้คือก้าวแรกของการรักษา กล้าเข้าหาแพทย์",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ฟื้น, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = วินิจฉัย",
+            "pentacles": "Knight of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'รู้คือก้าวแรกรักษา'",
+          "advice_th": "กล้าเข้าหาแพทย์ - หวังรู้สาเหตุแต่กลัวสิ่งที่รู้ การรู้คือก้าวแรกของการรักษา",
+          "keywords_th": ["หวังวินิจฉัย", "กลัวรู้", "กล้าตรวจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือความสับสนและความไม่ชัดเจน",
+          "detailed_interpretation_th": "ดวงจันทร์ในตำแหน่งผลลัพธ์ บอกว่าผลลัพธ์ของสถานการณ์จะเป็นความสับสนและความไม่ชัดเจน - สิ่งที่ดูเหมือนจบไม่จบ ความจริงไม่ปรากฏเต็มที่ การตัดสินใจในความไม่แน่นอน ไพ่แนะให้คุณใช้สัญชาตญาณ อดทน และรอภาพชัดในเวลาที่เหมาะ",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Devil = ลวงตา",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Seven of Cups = ทางเลือกลวง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups = สัญชาตญาณ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งผลลัพธ์ คือ 'ใช้สัญชาตญาณรอภาพชัด'",
+          "advice_th": "เตรียมรับความไม่ชัดเจน - ใช้สัญชาตญาณ อดทน ภาพจะชัดในเวลาที่เหมาะ",
+          "keywords_th": ["สับสน", "ไม่ชัดเจน", "สัญชาตญาณ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความสัมพันธ์ที่ซับซ้อนและไม่ชัด",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เตือนว่าความสัมพันธ์จะซับซ้อนและไม่ชัด - คู่ที่ไม่ตัดสินใจ สถานการณ์ที่ยืดเยื้อ ความรู้สึกที่สับสน ไพ่บอกว่าคุณอาจต้องอดทน ใช้สัญชาตญาณ และรอจนความจริงปรากฏก่อนตัดสินใจใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The Moon = สับสน",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Cups (rev) = หลอกลวง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งผลลัพธ์ความรัก คือ 'อดทนและฟังสัญชาตญาณ'",
+          "advice_th": "อดทนในความรัก - ความสัมพันธ์ซับซ้อน ใช้สัญชาตญาณ รอความจริงปรากฏ",
+          "keywords_th": ["รักซับซ้อน", "อดทน", "ฟังใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือการเงินไม่แน่นอนและซับซ้อน",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เตือนว่าการเงินจะไม่แน่นอนและซับซ้อน - การลงทุนที่ผลลัพธ์ไม่ชัด การงานที่ยืดเยื้อ ตลาดที่ผันผวน ไพ่หนุนให้คุณใช้ความระมัดระวัง รวบรวมข้อมูล และไม่ลงทุนใหญ่ในช่วงไม่ชัด",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ไม่แน่นอน, The Devil = หมกมุ่น",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Cups (rev) = หลอกลวง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งผลลัพธ์งาน คือ 'ระวังในความไม่แน่นอน'",
+          "advice_th": "ระวังการเงิน - ผลลัพธ์ไม่แน่นอน ระวัง รวบรวมข้อมูล ไม่ลงทุนใหญ่จนชัด",
+          "keywords_th": ["ไม่แน่นอน", "ระวัง", "รวบรวมข้อมูล"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการสำรวจลึกและตื่นรู้ทางจิตวิญญาณ",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เผยว่าคุณจะสำรวจลึกและตื่นรู้ทางจิตวิญญาณ - การเผชิญเงาในใจ การปลดความเชื่อจำกัด การเชื่อมโยงกับจิตใต้สำนึก ไพ่ยืนยันว่ากระบวนการนี้ลึกซึ้งและจะเปลี่ยนคุณเป็นคนที่มีปัญญาเหนือกาลเวลา",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The World = สำเร็จสมบูรณ์",
+            "wands": "Page of Cups = ความฝัน",
+            "cups": "Queen of Cups = ลึกซึ้ง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งผลลัพธ์เติบโต คือ 'ปัญญาเหนือกาลเวลา'",
+          "advice_th": "เตรียมใจสำรวจลึก - คุณจะตื่นรู้ทางจิตวิญญาณ ปัญญาเหนือกาลเวลารออยู่",
+          "keywords_th": ["สำรวจลึก", "ตื่นรู้", "ปัญญาเหนือกาล"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพที่ต้องสำรวจและรักษานาน",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เตือนว่าสุขภาพอาจต้องสำรวจและรักษานาน - อาการที่ต้องวินิจฉัยลึก การรักษาที่ใช้เวลา ความเชื่อมโยงกายและใจ ไพ่แนะให้คุณอดทน ทำงานกับผู้เชี่ยวชาญหลายด้าน และดูแลสุขภาพจิตเป็นพิเศษ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดยึด, Temperance = ต้องสมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups = อารมณ์ลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์ตำแหน่งผลลัพธ์สุขภาพ คือ 'อดทนกับการรักษา'",
+          "advice_th": "อดทนกับสุขภาพ - การรักษาใช้เวลา ทำงานกับผู้เชี่ยวชาญหลายด้าน ดูแลใจ",
+          "keywords_th": ["รักษานาน", "อดทน", "หลายด้าน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือความจริงปรากฏและความชัดเจน",
+          "detailed_interpretation_th": "ดวงจันทร์กลับหัวในตำแหน่งผลลัพธ์ เป็นข่าวดี - ผลลัพธ์จะเป็นความจริงปรากฏและความชัดเจน ภาพลวงจาง ความสับสนคลี่คลาย คุณจะเห็นทุกอย่างอย่างที่เป็นจริง ไพ่ยืนยันว่าคุณจะใช้ความชัดเจนนี้ตัดสินใจอย่างมั่นใจและก้าวไปข้างหน้า",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ทางสว่าง, Justice = ความจริง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งผลลัพธ์ คือ 'ความจริงและความชัดเจน'",
+          "advice_th": "เชื่อมั่นในความชัดเจน - ภาพลวงจาง ความจริงปรากฏ ใช้ตัดสินใจมั่นใจ",
+          "keywords_th": ["ความจริง", "ชัดเจน", "ก้าวต่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่ชัดเจนและซื่อสัตย์",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวเป็นข่าวดี - ความสัมพันธ์จะมีความชัดเจนและซื่อสัตย์ ความลับเปิด ความเข้าใจผิดคลี่คลาย คุณจะรู้ว่าจะไปต่อหรือก้าวออก ไพ่ยืนยันว่าความชัดเจนนำสู่ความสัมพันธ์ที่ดีต่อสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจรัก, Justice = ความจริง",
+            "wands": "Ace of Wands = กล้าตัดสินใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Swords = ซื่อสัตย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'ชัดเจนนำรักดี'",
+          "advice_th": "ใช้ความชัดเจนในรัก - ความลับเปิด ตัดสินใจไปต่อหรือก้าวออก รักดีต่อสุขภาพ",
+          "keywords_th": ["รักชัด", "ซื่อสัตย์", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือการเงินชัดเจนและตัดสินใจมั่นใจ",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวเป็นข่าวดี - การเงินจะชัดเจน ข้อมูลครบ ตัดสินใจอย่างมั่นใจ การเมืองในที่ทำงานคลี่คลาย ตลาดแสดงทิศทาง ไพ่ยืนยันว่าคุณจะใช้ความชัดเจนนี้สร้างความก้าวหน้าและความมั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ตัดสินใจ, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Swords = วิเคราะห์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งผลลัพธ์งาน คือ 'ชัดเจนนำสู่มั่นคง'",
+          "advice_th": "ใช้ความชัดเจน - การเงินชัด ข้อมูลครบ ตัดสินใจมั่นใจ สร้างความก้าวหน้า",
+          "keywords_th": ["การเงินชัด", "ก้าวหน้า", "มั่นคง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการตื่นรู้และปลดความกลัว",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวเป็นชัยชนะ - คุณจะตื่นรู้และปลดความกลัวลึกซึ้ง การเผชิญเงาในใจสำเร็จ การปลดความเชื่อจำกัด การเชื่อมโยงกับตัวตนแท้ ไพ่ยืนยันว่ากระบวนการนี้นำคุณสู่ปัญญาที่ลึกและมั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, The World = สำเร็จ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'ตื่นรู้และปลดกลัว'",
+          "advice_th": "เฉลิมฉลองการตื่นรู้ - คุณปลดความกลัวลึกซึ้ง เชื่อมโยงตัวตนแท้ มีปัญญาลึก",
+          "keywords_th": ["ตื่นรู้", "ปลดกลัว", "ปัญญาลึก"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพชัดเจนและฟื้นตัว",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวเป็นข่าวดี - สุขภาพจะชัดเจน วินิจฉัยถูก รักษาตรงจุด ฟื้นตัวเต็มที่ ไพ่ยืนยันว่าการทำงานกับผู้เชี่ยวชาญและการดูแลตัวเองอย่างองค์รวมจะนำมาซึ่งสุขภาพที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ฟื้นพลัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = สุขภาพดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงจันทร์กลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'ชัดเจนนำสู่ฟื้นเต็ม'",
+          "advice_th": "เชื่อในการฟื้น - สุขภาพชัด วินิจฉัยถูก รักษาตรงจุด ฟื้นเต็มที่",
+          "keywords_th": ["สุขภาพชัด", "ฟื้นเต็มที่", "วินิจฉัยถูก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    }
+  }
+}
+
