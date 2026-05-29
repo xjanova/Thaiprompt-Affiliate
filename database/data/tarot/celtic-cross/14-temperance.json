@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "Temperance",
+    "name_th": "ความพอประมาณ",
+    "number": 14,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คุณกำลังอยู่ในช่วงของความสมดุลและการผสมผสาน",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน Temperance หัวตั้งบ่งบอกว่าคุณกำลังหาความสมดุลในชีวิต - ระหว่างงานกับครอบครัว ความฝันกับความจริง การทำกับการพัก คุณกำลังเรียนรู้ที่จะผสมผสานสิ่งต่างๆ ความอดทนและความพอประมาณคือพลัง ไม่หักโหม ไม่ละเลย",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The World = สมบูรณ์, Justice = สมดุล",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = สมดุลอารมณ์",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Two of Pentacles = สมดุล, Knight of Pentacles = อดทน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ในปัจจุบัน คือ 'สมดุลคือพลัง'",
+          "advice_th": "ใช้ความสมดุล - ทำงานและพัก กินและออกกำลังกาย รักและรักตัวเอง ทุกอย่างพอดี",
+          "keywords_th": ["สมดุล", "ผสมผสาน", "ความพอดี", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์อยู่ในช่วงสมดุลและสงบ",
+          "detailed_interpretation_th": "ในรักปัจจุบัน ความสัมพันธ์อยู่ในจังหวะที่ดี - ทั้งคู่ให้และรับสมดุล มีพื้นที่ส่วนตัวและเวลาด้วยกัน อารมณ์สงบ การสื่อสารดี ความรักที่ผ่านการเรียนรู้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน, King of Cups = ปัญญา",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ในปัจจุบันรัก คือ 'รักสมดุล'",
+          "advice_th": "รักษาความสมดุล - ให้และรับ ใส่ใจและมีพื้นที่ส่วนตัว ความรักที่สงบยั่งยืน",
+          "keywords_th": ["รักสมดุล", "สงบ", "ให้-รับ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานและการเงินอยู่ในช่วงเสถียรและก้าวหน้าค่อยๆ",
+          "detailed_interpretation_th": "ในการงาน-การเงิน อยู่ในช่วงที่งานเสถียร - ไม่หวือหวา แต่ก้าวหน้าค่อยๆ การลงทุนได้ผลตอบแทนที่สม่ำเสมอ การจัดการการเงินดี ความอดทนนำมาซึ่งความมั่งคั่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = อดทน, The Magician = ทักษะ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ, Seven of Pentacles = อดทน",
+            "court_cards": "King of Pentacles = ความมั่นคง"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ในปัจจุบันงาน-เงิน คือ 'อดทนสร้างความมั่งคั่ง'",
+          "advice_th": "ทำงานสม่ำเสมอ ลงทุนค่อยๆ ไม่หวือหวา ความมั่งคั่งสร้างจาก compound effect",
+          "keywords_th": ["เสถียร", "ค่อยๆ ก้าวหน้า", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ช่วงของการบรรลุปัญญาและการรักษาตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณอยู่ในช่วงรักษาและสมดุล - บูรณาการสิ่งที่เรียนรู้ ใช้ปัญญาในชีวิต ผสมผสาน feminine และ masculine ในตัว ช่วงของการเป็นทุนทรัพย์ของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = บรรลุ, The World = สมบูรณ์, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ในปัจจุบันจิตวิญญาณ คือ 'บูรณาการ'",
+          "advice_th": "ใช้ปัญญาที่ได้ในชีวิตจริง บูรณาการสิ่งต่างๆ - กายกับใจ ความฝันกับความจริง",
+          "keywords_th": ["บูรณาการ", "ปัญญา", "สมดุล"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอยู่ในช่วงสมดุลและฟื้นฟู",
+          "detailed_interpretation_th": "ในสุขภาพ ร่างกายอยู่ในจังหวะที่ดี - กิน นอน เคลื่อนไหวสมดุล ฟื้นฟูจากความเครียดเก่า อารมณ์สงบ ฮอร์โมนสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ในปัจจุบันสุขภาพ คือ 'สมดุลธรรมชาติ'",
+          "advice_th": "รักษาสมดุล - กินดี ออกกำลังกายเหมาะ พักผ่อนพอ ไม่หักโหม ไม่ละเลย",
+          "keywords_th": ["สมดุลร่างกาย", "ฟื้นฟู", "ฮอร์โมนดี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ขาดสมดุลและสุดโต่งในชีวิต",
+          "detailed_interpretation_th": "Temperance กลับหัวในปัจจุบัน บ่งบอกถึงความไม่สมดุล - ทำงานมากเกินไป กินมากเกินไป ดื่มมากเกินไป หรือในทางกลับกัน เกียจคร้าน หลีกเลี่ยง ทุกอย่างสุดโต่ง ต้องหาทางกลับสู่สมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups กลับหัว = สุดโต่ง",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวในปัจจุบัน คือ 'หาสมดุลกลับมา'",
+          "advice_th": "ระบุที่สุดโต่ง - ในงาน อาหาร นิสัย ความสัมพันธ์ ปรับให้สมดุล",
+          "keywords_th": ["สุดโต่ง", "ไม่สมดุล", "หาทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ไม่สมดุล - ฝ่ายหนึ่งให้มากเกินไป",
+          "detailed_interpretation_th": "ในรัก ความไม่สมดุล - ฝ่ายหนึ่งให้ตลอด อีกฝ่ายรับ ความหลงใหลมากเกินหรือเย็นชาเกินไป อารมณ์สุดโต่ง ต้องคุยและปรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, The Tower = ระเบิด",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวรัก คือ 'หาความสมดุล'",
+          "advice_th": "คุยกับคู่เรื่องสมดุล - ใครให้มาก ใครรับมาก ปรับให้สมดุล",
+          "keywords_th": ["รักไม่สมดุล", "สุดโต่ง", "ปรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทำงานหนักเกินไปหรือเสี่ยงเกินไปในการลงทุน",
+          "detailed_interpretation_th": "ในงาน-เงิน ไม่สมดุล - ทำงาน 16 ชั่วโมง ไม่พัก หรือ ลงทุนเสี่ยงสูงทั้งหมด ไม่กระจายความเสี่ยง ความสุดโต่งทำให้ burnout หรือเสียเงิน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติดในการทำงาน",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Nine of Swords = กังวล, Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "Knight of Wands กลับหัว = เสี่ยงเกิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวงาน-เงิน คือ 'กระจายความเสี่ยง'",
+          "advice_th": "ทำงานสมดุลกับพัก กระจายการลงทุน ไม่เสี่ยงทั้งหมดในที่เดียว",
+          "keywords_th": ["ทำงานหนักเกิน", "เสี่ยงเกิน", "กระจาย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อารมณ์สุดโต่งและขาดการควบคุมตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อารมณ์สุดโต่ง - มีความสุขมากเกินไป หรือซึมเศร้าหนัก โกรธรุนแรง การฝึกควบคุมอารมณ์จำเป็น",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = อารมณ์, The Devil = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวจิตวิญญาณ คือ 'ฝึกควบคุมอารมณ์'",
+          "advice_th": "ฝึกสมาธิ จัดการอารมณ์ ถ้าจำเป็นไป therapy การสุดโต่งทำให้ทุกข์",
+          "keywords_th": ["อารมณ์สุดโต่ง", "ไม่ควบคุม", "ฝึก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "นิสัยสุขภาพสุดโต่ง - กินมากหรืออดมากเกินไป",
+          "detailed_interpretation_th": "ในสุขภาพ นิสัยสุดโต่ง - กินมากไป หรืออดอาหาร ออกกำลังกายหักโหม หรือไม่ออกเลย ดื่มมาก หรืออดบุหรี่หักโหม ความสมดุลคือกุญแจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายเรียก",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวสุขภาพ คือ '80/20 rule'",
+          "advice_th": "ใช้กฎ 80/20 - ดี 80% ผ่อนปรน 20% ความสมดุลยั่งยืนกว่าสุดโต่ง",
+          "keywords_th": ["สุดโต่ง", "ไม่สมดุล", "80/20"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องหาสมดุลในชีวิตที่ซับซ้อน",
+          "detailed_interpretation_th": "ในตำแหน่งอุปสรรค Temperance บ่งบอกว่าความท้าทายคือการหาสมดุล - หลายบทบาท หลายเป้าหมาย หลายความต้องการ การจัดสรรเวลาและพลังให้พอดี",
+          "adjacent_influences": {
+            "major_arcana": "Two of Pentacles = สมดุล, The Hanged Man = พิจารณา",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ในอุปสรรค คือ 'หาสมดุล'",
+          "advice_th": "ระบุที่ไม่สมดุล - งาน ครอบครัว ตัวเอง ปรับให้ทุกอย่างพอดี",
+          "keywords_th": ["หาสมดุล", "หลายบทบาท", "ปรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องสมดุลระหว่างความใกล้ชิดกับพื้นที่ส่วนตัว",
+          "detailed_interpretation_th": "อุปสรรคในรักคือการหาสมดุล - ใกล้พอ ไม่ใกล้เกิน มีพื้นที่ตัวเอง แต่ไม่ห่างเกิน ความรักที่สมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, Two of Cups = สมดุล",
+            "wands": "Two of Wands = ตัดสินใจร่วม",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อุปสรรครัก คือ 'ใกล้พอดี'",
+          "advice_th": "หาสมดุล - เวลาด้วยกัน เวลาส่วนตัว สื่อสาร แต่ก็เคารพพื้นที่",
+          "keywords_th": ["สมดุลใกล้-ไกล", "พื้นที่", "ใกล้พอดี"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องสมดุล work-life balance",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือ work-life balance - ทำงานเพื่อรายได้ แต่ก็ต้องมีเวลาพัก ครอบครัว สุขภาพ ความสมดุลทำได้แต่ยาก",
+          "adjacent_influences": {
+            "major_arcana": "Two of Pentacles = สมดุล, The Hanged Man = พิจารณา",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อุปสรรคงาน-เงิน คือ 'work-life balance'",
+          "advice_th": "วางตารางที่สมดุล - เวลาทำงาน เวลาพัก เวลาครอบครัว ทุกอย่างจัดสรร",
+          "keywords_th": ["work-life balance", "จัดสรรเวลา", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องบูรณาการสิ่งที่เรียนรู้ในชีวิตจริง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการบูรณาการ - ปัญญาที่เรียนต้องใช้ในชีวิต ความเชื่อต้องสมดุลกับการกระทำ ทำได้ยากแต่จำเป็น",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อุปสรรคจิตวิญญาณ คือ 'บูรณาการ'",
+          "advice_th": "ใช้สิ่งที่เรียนในชีวิตจริง - ความรู้ไม่มีค่าถ้าไม่ใช้",
+          "keywords_th": ["บูรณาการ", "ปฏิบัติ", "ใช้ในชีวิต"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องสมดุลระหว่างวินัยกับความสนุก",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคือสมดุลระหว่างวินัยกับความสนุก - ออกกำลังกายแต่ก็ผ่อนปรน กินดีแต่ก็ตามใจ ความสุดโต่งไม่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Two of Pentacles = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Three of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อุปสรรคสุขภาพ คือ '80/20 rule'",
+          "advice_th": "ดี 80% สนุก 20% - อาหาร การออกกำลังกาย การพัก ความยั่งยืนสำคัญ",
+          "keywords_th": ["วินัยกับสนุก", "80/20", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ทุกอย่างสุดโต่งและขาดการควบคุม",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือทุกอย่างสุดโต่ง - ทำงานหรือพัก กินหรืออด ผูกพันหรือห่างเหิน ไม่มีจุดกลาง ความสุดโต่งทำให้ทุกข์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Tower = ระเบิด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'หาจุดกลาง'",
+          "advice_th": "ฝึกความพอประมาณในทุกเรื่อง - ไม่สุดโต่ง ไม่ละเลย หาจุดกลางที่ทำได้",
+          "keywords_th": ["สุดโต่ง", "ขาดจุดกลาง", "ความพอดี"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์สุดโต่ง - ผูกพันมากหรือห่างเหิน",
+          "detailed_interpretation_th": "ในรัก ความสุดโต่ง - คุณติดคู่จนไม่มีพื้นที่ส่วนตัว หรือห่างเหินจนเหมือนเพื่อน ต้องหาความใกล้ที่พอดี",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในรัก, The Hermit = ห่างเหิน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'ใกล้พอดี'",
+          "advice_th": "คุยกับคู่เรื่องระยะ - ใกล้พอ ไม่ใกล้เกิน ไม่ห่างเกิน",
+          "keywords_th": ["รักสุดโต่ง", "ระยะไม่ดี", "ปรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทำงานหนักเกินไปหรือใช้เงินสุดโต่ง",
+          "detailed_interpretation_th": "ในงาน-เงิน สุดโต่ง - ทำงาน 7 วันต่อสัปดาห์ หรือ ใช้เงินไม่ยั้ง หรือกอดเงินไม่ลงทุน ทุกอย่างสุดโต่งทำลายอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Tower = ระเบิด",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = หวงเงิน, Five of Pentacles = ขาด",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'สมดุลใช้-ออม'",
+          "advice_th": "ทำงาน 5 วัน พัก 2 วัน ใช้ 50% ออม 30% ลงทุน 20% สมดุลคือกุญแจ",
+          "keywords_th": ["ทำงานสุดโต่ง", "ใช้เงินสุดโต่ง", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อารมณ์ขึ้นลงมากและไม่นิ่ง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อารมณ์ขึ้นลง - มีความสุขมากแล้วซึมเศร้าหนัก โกรธจัดแล้วเสียใจ ความไม่นิ่งทางอารมณ์ทำให้ทุกข์",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = อารมณ์, The Devil = ติด",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'ฝึกสมาธิ'",
+          "advice_th": "ฝึกสมาธิ จัดการอารมณ์ ถ้าจำเป็น therapy การอารมณ์ขึ้นลงทำลายชีวิต",
+          "keywords_th": ["อารมณ์ขึ้นลง", "ไม่นิ่ง", "ฝึก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "นิสัยสุขภาพแบบ all-or-nothing",
+          "detailed_interpretation_th": "ในสุขภาพ แบบ all-or-nothing - diet เป๊ะแล้วเลิกทั้งหมด ออกกำลังกายหนักแล้วหยุดยาว ความสุดโต่งไม่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Hanged Man = ติดในการรอ",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'ค่อยๆ ไม่สุดโต่ง'",
+          "advice_th": "ทำเล็กๆ สม่ำเสมอ ดีกว่าหนักแล้วเลิก เดิน 20 นาที 5 วัน ดีกว่าวิ่ง 1 ชั่วโมง 1 วัน",
+          "keywords_th": ["all-or-nothing", "ไม่ยั่งยืน", "ค่อยๆ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เคยพบสมดุลและฟื้นฟูตัวเองได้ดี",
+          "detailed_interpretation_th": "Temperance หัวตั้งในอดีต บ่งบอกถึงช่วงที่คุณพบสมดุลและฟื้นฟู - หลังจากวิกฤต ใช้เวลาฟื้นฟู หาความพอประมาณ ปัญญานี้ติดตัวมา",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = อดทน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ในอดีต คือ 'พบสมดุลแล้ว'",
+          "advice_th": "ใช้ปัญญาสมดุลที่ได้จากอดีตในปัจจุบัน",
+          "keywords_th": ["สมดุลเก่า", "ฟื้นฟู", "ปัญญา"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความสัมพันธ์ที่สมดุลและเรียนรู้",
+          "detailed_interpretation_th": "ในรักอดีต เคยมีความสัมพันธ์ที่สอนเรื่องสมดุล - ให้และรับ ใกล้และห่าง ใช้บทเรียนในรักปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, Two of Cups = สมดุล",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อดีตรัก คือ 'รักสมดุลเก่า'",
+          "advice_th": "ใช้สูตรรักสมดุลในอดีต - ทำซ้ำในปัจจุบัน",
+          "keywords_th": ["รักสมดุลเก่า", "บทเรียน", "ใช้ซ้ำ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยทำงานหนักแต่สม่ำเสมอจนสำเร็จ",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต ทำงานสม่ำเสมอ - ไม่หวือหวาแต่ไม่หยุด ความอดทนนำมาซึ่งความสำเร็จ ทักษะและประสบการณ์สั่งสม",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, Seven of Pentacles = อดทน",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King of Pentacles = ความมั่นคง"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อดีตงาน-เงิน คือ 'compound effect'",
+          "advice_th": "ใช้ทักษะและประสบการณ์สั่งสมในปัจจุบัน ความอดทนสร้างความสำเร็จ",
+          "keywords_th": ["ทำงานสม่ำเสมอ", "ทักษะสั่งสม", "compound"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยบูรณาการบทเรียนชีวิตและเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต เคยบูรณาการบทเรียน - ใช้สิ่งที่เรียนในชีวิตจริง ผสมผสานความรู้กับประสบการณ์ ปัญญาที่ได้ใช้ปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Magician = ทักษะ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อดีตจิตวิญญาณ คือ 'บูรณาการเก่ง'",
+          "advice_th": "ใช้ความสามารถบูรณาการ - นำสิ่งที่รู้มาใช้ในชีวิตจริง",
+          "keywords_th": ["บูรณาการ", "ใช้ในชีวิต", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยฟื้นฟูสุขภาพและสร้างกิจวัตรที่ดี",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยฟื้นฟู - สร้างกิจวัตรสมดุล กิน นอน ออกกำลังกายดี ใช้สูตรเดิมในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อดีตสุขภาพ คือ 'กิจวัตรสมดุลได้'",
+          "advice_th": "นำกิจวัตรสุขภาพเก่ากลับมา ความสมดุลที่เคยทำได้ ทำได้อีก",
+          "keywords_th": ["กิจวัตรเก่าดี", "สมดุลได้", "ทำซ้ำ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยใช้ชีวิตสุดโต่งและไม่สมดุล",
+          "detailed_interpretation_th": "Temperance กลับหัวในอดีต บ่งบอกถึงช่วงที่สุดโต่ง - ทำงานหนักเกิน เที่ยวหนัก ดื่มหนัก บาดแผลและความเสียดายยังอยู่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวอดีต คือ 'บทเรียนจากความสุดโต่ง'",
+          "advice_th": "ใช้บทเรียน - คราวนี้สมดุล ไม่สุดโต่ง",
+          "keywords_th": ["สุดโต่งเก่า", "บทเรียน", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความสัมพันธ์ที่สุดโต่ง",
+          "detailed_interpretation_th": "ในรักอดีต ความสัมพันธ์สุดโต่ง - หลงใหลมาก แต่ก็ทะเลาะมาก หรือ ติดกันมากจนไม่มีพื้นที่ บทเรียนคือต้องสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, The Tower = ระเบิด",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวอดีตรัก คือ 'รักสมดุลใหม่'",
+          "advice_th": "ใช้บทเรียน - คราวนี้รักสมดุล ไม่ติดเกินไป ไม่ห่างเกินไป",
+          "keywords_th": ["รักสุดโต่งเก่า", "บทเรียน", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคย burnout จากการทำงานหนักเกินไป",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต เคย burnout - ทำงานหนักจนพัง หรือ ใช้เงินสุดโต่ง บทเรียนคือต้องสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = burnout, The Devil = ติดในการทำงาน",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "Knight of Wands กลับหัว = หักโหม"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวอดีตงาน-เงิน คือ 'สมดุลใหม่'",
+          "advice_th": "ใช้บทเรียน - คราวนี้ทำงานสมดุลกับพัก ไม่ burnout",
+          "keywords_th": ["burnout เก่า", "บทเรียน", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อารมณ์ขึ้นลงมากในอดีต",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต อารมณ์ขึ้นลงมาก - มีความสุขมาก ซึมเศร้าหนัก ความไม่นิ่งทำให้ทุกข์ ตอนนี้เรียนรู้ที่จะสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = อารมณ์, The Devil = ติด",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวอดีตจิตวิญญาณ คือ 'ฝึกอารมณ์ดีขึ้น'",
+          "advice_th": "ใช้บทเรียน - ฝึกสมาธิ จัดการอารมณ์ ปัจจุบันดีกว่า",
+          "keywords_th": ["อารมณ์ขึ้นลงเก่า", "บทเรียน", "ฝึก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยใช้ชีวิตสุดโต่งจนสุขภาพแย่",
+          "detailed_interpretation_th": "ในสุขภาพอดีต ใช้ชีวิตสุดโต่ง - ดื่มหนัก ทำงานหนัก กินมาก ผลกระทบยังอยู่ ต้องดูแลในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวอดีตสุขภาพ คือ 'ดูแลใหม่'",
+          "advice_th": "ใช้บทเรียน - คราวนี้สมดุล ไม่สุดโต่ง 80/20 rule",
+          "keywords_th": ["สุดโต่งเก่า", "ผลกระทบ", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความสมดุลและการฟื้นฟูในอนาคต",
+          "detailed_interpretation_th": "Temperance หัวตั้งในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า จะเข้าสู่ช่วงสมดุล - ฟื้นฟูจากความเครียดเก่า สร้างกิจวัตรใหม่ ความอดทนนำมาซึ่งสำเร็จ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อนาคต คือ 'สมดุลและฟื้นฟู'",
+          "advice_th": "เตรียมสร้างกิจวัตรสมดุล - การทำงาน พัก กิน นอน ทุกอย่างพอดี",
+          "keywords_th": ["สมดุล", "ฟื้นฟู", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะสงบและสมดุล",
+          "detailed_interpretation_th": "ในรักอนาคต ความสัมพันธ์จะเข้าสู่ช่วงสงบ - หลังจากผ่านความขัดแย้ง ทั้งคู่เรียนรู้ที่จะสมดุล ความรักที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, Two of Cups = สมดุล",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อนาคตรัก คือ 'รักสงบ'",
+          "advice_th": "เตรียมรักษาสมดุลในรัก - ใส่ใจคู่และให้พื้นที่",
+          "keywords_th": ["รักสมดุล", "สงบ", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความก้าวหน้าค่อยๆ และเงินมั่นคง",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต การก้าวหน้าค่อยๆ - ไม่หวือหวาแต่เสถียร รายได้สม่ำเสมอ การลงทุนให้ผลตอบแทนยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = อดทน, The Magician = ทักษะ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ, Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ความมั่นคง"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อนาคตงาน-เงิน คือ 'ก้าวหน้าสม่ำเสมอ'",
+          "advice_th": "เตรียมทำงานสม่ำเสมอ ลงทุนระยะยาว compound effect จะให้ผล",
+          "keywords_th": ["ก้าวหน้าค่อยๆ", "มั่นคง", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การบูรณาการและการรู้แจ้งกำลังมา",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต จะเกิดการบูรณาการ - ปัญญาที่เรียนใช้ในชีวิตจริง การเปลี่ยนแปลงที่ค่อยๆ การเป็นทุนทรัพย์ของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Star = ความหวัง",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อนาคตจิตวิญญาณ คือ 'บูรณาการ'",
+          "advice_th": "เตรียมใช้สิ่งที่เรียนในชีวิตจริง การบูรณาการสร้างการเปลี่ยน",
+          "keywords_th": ["บูรณาการ", "รู้แจ้ง", "ปฏิบัติ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพดีขึ้นจากกิจวัตรสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ร่างกายจะดีขึ้น - ฮอร์โมนสมดุล นอนหลับสนิท ออกกำลังกายสม่ำเสมอ กินอาหารดี ความสมดุลให้ผล",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance อนาคตสุขภาพ คือ 'สมดุลให้ผล'",
+          "advice_th": "ดำเนินกิจวัตรสมดุล - การพักผ่อนคุณภาพ การออกกำลังกายเหมาะ การกินที่สมดุล",
+          "keywords_th": ["สุขภาพดีขึ้น", "สมดุล", "ฮอร์โมนดี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความไม่สมดุลและสุดโต่งจะเกิด",
+          "detailed_interpretation_th": "Temperance กลับหัวในอนาคต เตือนถึงความไม่สมดุล - อาจ burnout จากการทำงาน สุขภาพแย่จากนิสัยไม่ดี ความสัมพันธ์สุดโต่ง ต้องระวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติด",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวอนาคต คือ 'ป้องกันสุดโต่ง'",
+          "advice_th": "เริ่มสมดุลเดี๋ยวนี้ - ก่อน burnout ความสัมพันธ์พัง สุขภาพแย่",
+          "keywords_th": ["สุดโต่งจะเกิด", "ป้องกัน", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์อาจสุดโต่งและไม่สมดุล",
+          "detailed_interpretation_th": "ในรักอนาคต ระวังความสัมพันธ์สุดโต่ง - ติดกันเกินไป หรือห่างเหินเกิน อารมณ์ขึ้นลง ต้องสร้างสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, The Moon = ลวงตา",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวอนาคตรัก คือ 'สมดุลรักก่อน'",
+          "advice_th": "ฝึกสมดุลในความสัมพันธ์ตอนนี้ - ใกล้พอดี ไม่บีบ ไม่ห่าง",
+          "keywords_th": ["รักสุดโต่ง", "ไม่สมดุล", "ปรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "burnout หรือเสียเงินจากการลงทุนเสี่ยง",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต ระวัง burnout จากการทำงานหนักเกิน หรือ เสียเงินจากการลงทุนเสี่ยง สมดุลเป็นกุญแจ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = burnout, The Devil = ติดในการทำงาน",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "Knight of Wands กลับหัว = เสี่ยงเกิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวอนาคตงาน-เงิน คือ 'work-life balance'",
+          "advice_th": "เริ่มสมดุลตอนนี้ - work-life balance กระจายความเสี่ยงในการลงทุน",
+          "keywords_th": ["burnout", "เสี่ยงเกิน", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อารมณ์ขึ้นลงและไม่นิ่ง",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ระวังอารมณ์ขึ้นลง - มีความสุขมากแล้วซึมเศร้าหนัก ฝึกสมาธิและจัดการอารมณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = อารมณ์, The Devil = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวอนาคตจิตวิญญาณ คือ 'สมาธิเดี๋ยวนี้'",
+          "advice_th": "เริ่มฝึกสมาธิเดี๋ยวนี้ ก่ออารมณ์ขึ้นลงทำลายชีวิต",
+          "keywords_th": ["อารมณ์ขึ้นลง", "ไม่นิ่ง", "สมาธิ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพแย่จากนิสัย all-or-nothing",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ระวังนิสัย all-or-nothing - diet เป๊ะแล้วเลิก ออกกำลังหนักแล้วหยุด ความสุดโต่งทำลาย",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในนิสัย",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวอนาคตสุขภาพ คือ 'ค่อยๆ ดีกว่าสุดโต่ง'",
+          "advice_th": "เริ่มทำเล็กๆ สม่ำเสมอ ไม่หักโหม การยั่งยืนสำคัญ",
+          "keywords_th": ["all-or-nothing", "ไม่ยั่งยืน", "ค่อยๆ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องการชีวิตที่สมดุลและสงบ",
+          "detailed_interpretation_th": "Temperance หัวตั้งในเป้าหมาย สะท้อนความปรารถนา - ต้องการชีวิตที่สมดุล สงบ มีความหมาย ไม่ตึงเครียดเกินไป มีเวลาสำหรับทุกอย่างที่สำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The World = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance เป้าหมาย คือ 'ชีวิตสมดุล'",
+          "advice_th": "เก็บความปรารถนานี้ - ค่อยๆ สร้างสมดุล ทุกด้านของชีวิต",
+          "keywords_th": ["สมดุล", "สงบ", "ความหมาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการรักที่สมดุลและยั่งยืน",
+          "detailed_interpretation_th": "เป้าหมายในรักคือความสัมพันธ์ที่สมดุล - ทั้งคู่รักและมีพื้นที่ส่วนตัว ให้และรับ เติบโตด้วยกันแต่ก็เป็นตัวเอง รักที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance เป้าหมายรัก คือ 'รักยั่งยืน'",
+          "advice_th": "ตั้งความสัมพันธ์ที่สมดุล - ไม่ใกล้เกิน ไม่ห่างเกิน ทั้งคู่เติบโต",
+          "keywords_th": ["รักสมดุล", "ยั่งยืน", "เติบโต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการอาชีพที่สมดุลกับชีวิต",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายคืออาชีพที่สมดุล - มีรายได้ดี มีเวลา มีความหมาย ไม่ทำลายสุขภาพ ความสำเร็จที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Star = ความหวัง",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance เป้าหมายงาน-เงิน คือ 'อาชีพสมดุล'",
+          "advice_th": "หาอาชีพที่ให้ทุกอย่าง - รายได้ ความหมาย เวลา การปรับสมดุลเป็นกุญแจ",
+          "keywords_th": ["อาชีพสมดุล", "work-life", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการบรรลุปัญญาและบูรณาการในชีวิต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายคือการบรรลุปัญญาและใช้ในชีวิต - ไม่ใช่แค่เรียนรู้ แต่ปฏิบัติ บูรณาการในทุกการกระทำ",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance เป้าหมายจิตวิญญาณ คือ 'รู้แจ้งในชีวิต'",
+          "advice_th": "บูรณาการสิ่งที่เรียน - ใช้ในการทำงาน ในความสัมพันธ์ ในการดูแลตัวเอง",
+          "keywords_th": ["บูรณาการ", "รู้แจ้ง", "ปฏิบัติ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการสุขภาพสมดุลทั้งกายและใจ",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพคือ holistic health - ร่างกายแข็งแรง อารมณ์สงบ ความสัมพันธ์ดี ความสมดุลทั้งหมด อายุยืนอย่างมีคุณภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance เป้าหมายสุขภาพ คือ 'holistic'",
+          "advice_th": "ดูแลทุกมิติ - กาย ใจ จิตวิญญาณ ความสัมพันธ์ ความสมดุลคือกุญแจ",
+          "keywords_th": ["holistic", "สมดุล", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ติดในวิถีสุดโต่งและไม่ยอมเปลี่ยน",
+          "detailed_interpretation_th": "Temperance กลับหัวในเป้าหมาย บ่งบอกถึงการติดในวิถีสุดโต่ง - 'ฉันชอบทำงานหนัก' 'ฉันชอบเที่ยวหนัก' การปฏิเสธความพอประมาณทำให้ทุกข์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups กลับหัว = สุดโต่ง",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Four of Pentacles = ติดในนิสัย",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวเป้าหมาย คือ 'ยอมรับสมดุล'",
+          "advice_th": "ยอมรับว่าความพอประมาณคือพลัง - ไม่ใช่ความน่าเบื่อ ฝึกสมดุล",
+          "keywords_th": ["ติดสุดโต่ง", "ปฏิเสธสมดุล", "ฝึก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ชอบความรักหวือหวาแม้รู้ว่าไม่ยั่งยืน",
+          "detailed_interpretation_th": "ในรัก ชอบความสัมพันธ์หวือหวา - ดราม่า ขึ้นลง แม้รู้ว่าไม่ยั่งยืน ความสมดุลดูน่าเบื่อ ต้องเปลี่ยนความเชื่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในดราม่า, The Tower = ระเบิด",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวเป้าหมายรัก คือ 'รักสงบดี'",
+          "advice_th": "ความรักที่สงบดูน่าเบื่อแต่ยั่งยืน หวือหวาไม่ใช่ความรัก คือดราม่า",
+          "keywords_th": ["รักดราม่า", "หวือหวา", "สงบ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ชอบความหวือหวาในงานและการเงิน",
+          "detailed_interpretation_th": "ในงาน-เงิน ชอบ get-rich-quick - คริปโต หุ้นเสี่ยง การลงทุนสุดโต่ง ปฏิเสธการลงทุนยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในเงิน, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = เสี่ยงเกิน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Seven of Swords = โกง",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวเป้าหมายงาน-เงิน คือ 'compound effect'",
+          "advice_th": "ความมั่งคั่งที่ยั่งยืนสร้างจากการลงทุนสม่ำเสมอ ไม่ใช่จากการเสี่ยงสุดโต่ง",
+          "keywords_th": ["get-rich-quick", "เสี่ยงสุดโต่ง", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ปฏิเสธความสงบและชอบความตื่นเต้น",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ปฏิเสธความสงบ - ชอบความตื่นเต้น ดราม่า แม้รู้ว่าทำลาย ความสงบดูน่าเบื่อ ต้องเปลี่ยนมุมมอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = พลังไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวเป้าหมายจิตวิญญาณ คือ 'สงบคือพลัง'",
+          "advice_th": "ความสงบไม่ใช่ความน่าเบื่อ แต่เป็นพลังที่ลึก ฝึกเห็นคุณค่าของความสงบ",
+          "keywords_th": ["ปฏิเสธสงบ", "ตื่นเต้น", "พลังลึก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ชอบ extreme sports หรือ extreme diet",
+          "detailed_interpretation_th": "ในสุขภาพ ชอบสุดโต่ง - extreme sports, extreme diet, no pain no gain mentality สุขภาพยั่งยืนไม่ได้จากสุดโต่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในรูปแบบ, The Tower = ร่างกายพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Four of Cups = ไม่พอใจตัว",
+            "swords": "Nine of Swords = กังวลรูปร่าง",
+            "pentacles": "Five of Pentacles = ทำลายตัว",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวเป้าหมายสุขภาพ คือ 'ความพอดียั่งยืน'",
+          "advice_th": "ความพอดียั่งยืนกว่าความสุดโต่ง - 80% ดี 20% ตามใจ ทุกอย่างพอดี",
+          "keywords_th": ["extreme", "ไม่ยั่งยืน", "พอดี"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความสามารถสร้างสมดุลฝังในแกน",
+          "detailed_interpretation_th": "Temperance หัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีความสามารถสร้างสมดุล - ผสมผสานสิ่งต่างๆ ปรับตัว หาทางสายกลาง พลังนี้คือพรสวรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, Justice = สมดุล",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = อดทน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance รากฐาน คือ 'พรสวรรค์สมดุล'",
+          "advice_th": "ใช้ความสามารถสมดุลในทุกด้าน - ความสัมพันธ์ งาน สุขภาพ",
+          "keywords_th": ["สมดุล", "ผสมผสาน", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสามารถสร้างความสัมพันธ์ที่สมดุลฝังในแกน",
+          "detailed_interpretation_th": "ในรัก รากฐานคือความสามารถสร้างความสัมพันธ์ที่สมดุล - คู่รู้สึกได้รับความใส่ใจและมีพื้นที่ส่วนตัว พลังนี้สร้างรักที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = นักรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance รากฐานรัก คือ 'รักสมดุลในแกน'",
+          "advice_th": "ใช้พลังนี้ในความสัมพันธ์ - ใส่ใจคู่และดูแลตัวเอง",
+          "keywords_th": ["รักสมดุล", "พรสวรรค์", "ดูแล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความสามารถจัดการเงินสมดุลเป็นรากความมั่งคั่ง",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือความสามารถจัดการ - ใช้ ออม ลงทุน ทุกอย่างสมดุล ทำงานสม่ำเสมอ ไม่หวือหวา ความมั่งคั่งสะสม",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Hermit = ปัญญา",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ, King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Pentacles = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance รากฐานงาน-เงิน คือ 'จัดการเก่ง'",
+          "advice_th": "ใช้พลังจัดการ - 50% ใช้ 30% ออม 20% ลงทุน",
+          "keywords_th": ["จัดการเงิน", "สม่ำเสมอ", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความสามารถบูรณาการบทเรียนชีวิตฝังในแกน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือความสามารถบูรณาการ - นำสิ่งที่เรียนใช้ในชีวิต ปัญญาที่ลึก ใช้ทักษะหลายอย่างร่วมกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance รากฐานจิตวิญญาณ คือ 'บูรณาการเก่ง'",
+          "advice_th": "ใช้ความสามารถบูรณาการ - นำทุกสิ่งที่เรียนรู้มาใช้",
+          "keywords_th": ["บูรณาการ", "ปัญญา", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายปรับตัวสมดุลและฟื้นฟูดี",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือความสามารถปรับตัว - ร่างกายฟื้นฟูเร็ว ปรับตามวัย ฟังร่างกาย ทุกอย่างสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = พลัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "King of Pentacles = ร่างกายแกร่ง",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance รากฐานสุขภาพ คือ 'ปรับตัวเก่ง'",
+          "advice_th": "ใช้ความสามารถปรับตัว - ฟังร่างกาย ปรับตามที่ต้องการ",
+          "keywords_th": ["ปรับตัวดี", "ฟื้นฟู", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "นิสัยสุดโต่งและสุดโต่งฝังลึก",
+          "detailed_interpretation_th": "Temperance กลับหัวในรากฐาน บ่งบอกถึงนิสัยสุดโต่งฝังลึก - all-or-nothing thinking ทุกอย่างสุดทาง ไม่มีจุดกลาง อาจมาจากครอบครัว",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในรูปแบบ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวรากฐาน คือ 'เปลี่ยน mindset'",
+          "advice_th": "ทำงานกับ all-or-nothing thinking - ความสมดุลคือทาง ไม่ใช่ความน่าเบื่อ",
+          "keywords_th": ["all-or-nothing", "สุดโต่ง", "เปลี่ยน mindset"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ดึงดูดความสัมพันธ์ที่สุดโต่ง",
+          "detailed_interpretation_th": "ในรัก รากฐานคือการดึงดูดสัมพันธ์สุดโต่ง - ดราม่า ขึ้นลง ติดมาก-ห่างมาก รูปแบบนี้ฝังลึก ต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = วงจรซ้ำ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจซ้ำ",
+            "swords": "Three of Swords = แผลใจซ้ำ",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Knight of Cups กลับหัว = ดึงดูดผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวรากฐานรัก คือ 'ปลดล็อกรูปแบบ'",
+          "advice_th": "ระบุรูปแบบ - ดึงดูดคนแบบไหน? ทำไม? ทำงานกับ inner child เพื่อปลดล็อก",
+          "keywords_th": ["รูปแบบสุดโต่ง", "ดึงดูดผิด", "ปลดล็อก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความเชื่อ all-or-nothing เกี่ยวกับเงิน",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือ all-or-nothing - 'รวยหรือจน' 'สำเร็จหรือล้มเหลว' ไม่มีจุดกลาง ความเชื่อนี้ขังการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในเงิน",
+            "court_cards": "Page กลับหัว = imposter"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวรากฐานงาน-เงิน คือ 'gradual progress'",
+          "advice_th": "ความก้าวหน้าค่อยๆ คือทาง ไม่ใช่ all-or-nothing เปลี่ยนความเชื่อ",
+          "keywords_th": ["all-or-nothing", "ความเชื่อจำกัด", "ค่อยๆ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่ยอมรับความพอประมาณว่าเป็นพลัง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือการปฏิเสธความพอประมาณ - คิดว่าน่าเบื่อ ไม่ใช่ของแกร่ง ความเชื่อนี้ทำให้สุดโต่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวรากฐานจิตวิญญาณ คือ 'พอประมาณคือพลัง'",
+          "advice_th": "ความพอประมาณคือพลังที่ลึก ปัญญาที่ต้องเรียน ไม่ใช่ความน่าเบื่อ",
+          "keywords_th": ["ปฏิเสธพอประมาณ", "ความเข้าใจผิด", "เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายมีนิสัยขึ้นลง - กินทีหนัก ทีอด",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือ binge-restrict cycle - กินมากแล้วอด ออกกำลังกายหนักแล้วหยุดยาว นิสัยนี้ฝังลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = กังวลรูปร่าง",
+            "pentacles": "Five of Pentacles = ทำลายตัว",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวรากฐานสุขภาพ คือ 'binge-restrict'",
+          "advice_th": "ทำงานกับนิสัย binge-restrict อาจจำเป็น therapy - intuitive eating, balanced movement",
+          "keywords_th": ["binge-restrict", "นิสัยฝัง", "therapy"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หาสมดุลและฝึกความพอประมาณ",
+          "detailed_interpretation_th": "คำแนะนำจาก Temperance หัวตั้ง: ฝึกความพอประมาณ - ทุกอย่างพอดี ไม่หักโหม ไม่ละเลย ความสมดุลคือพลัง ความอดทนคือกุญแจของความสำเร็จยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Hermit = อดทน",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance คำแนะนำ คือ 'พอประมาณคือพลัง'",
+          "advice_th": "ระบุที่สุดโต่ง - งาน อาหาร นิสัย ปรับให้พอดี ความสมดุลสร้างความสุข",
+          "keywords_th": ["พอประมาณ", "สมดุล", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รักด้วยความใส่ใจและให้พื้นที่",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ใส่ใจคู่ แต่ก็ให้พื้นที่ ใกล้พอ ไม่ใกล้เกิน ไม่ห่างเกิน ความรักที่สมดุลยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance คำแนะนำในรัก คือ 'ใกล้พอดี'",
+          "advice_th": "ฟังคู่ ใส่ใจ แต่ก็ให้พื้นที่ ทั้งคู่ต้องเป็นตัวเอง",
+          "keywords_th": ["ใกล้พอดี", "ใส่ใจ", "พื้นที่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทำงานสม่ำเสมอและลงทุนระยะยาว",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ทำงานสม่ำเสมอ ไม่หักโหม ลงทุนระยะยาว ไม่ get-rich-quick ความมั่งคั่งสร้างจาก compound effect",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Hermit = อดทน",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ, Seven of Pentacles = อดทน",
+            "court_cards": "King of Pentacles = ความซื่อสัตย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance คำแนะนำงาน-เงิน คือ 'compound effect'",
+          "advice_th": "ทำงาน 40 ชั่วโมงต่อสัปดาห์ ลงทุน 20% ของรายได้สม่ำเสมอ compound effect 10 ปี จะเห็นผล",
+          "keywords_th": ["สม่ำเสมอ", "compound", "ลงทุนระยะยาว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "บูรณาการสิ่งที่เรียนรู้ในชีวิตจริง",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ใช้สิ่งที่เรียนในชีวิตจริง - ปัญญาไม่มีค่าถ้าไม่ปฏิบัติ บูรณาการความรู้ในการทำงาน ความสัมพันธ์ การดูแลตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance คำแนะนำการเติบโต คือ 'ปฏิบัติคือกุญแจ'",
+          "advice_th": "เลือก 1 แนวคิดที่อ่านมาและฝึก 90 วัน บูรณาการในชีวิต ผลลัพธ์จากการทำ",
+          "keywords_th": ["บูรณาการ", "ปฏิบัติ", "ใช้ในชีวิต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สร้างกิจวัตรสุขภาพสมดุลที่ยั่งยืน",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: สร้างกิจวัตรที่ยั่งยืน - กินดี 80% ตามใจ 20% ออกกำลังกาย 4 วันต่อสัปดาห์ พักผ่อน 7-8 ชั่วโมง สมดุลคือกุญแจ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance คำแนะนำสุขภาพ คือ '80/20 + สม่ำเสมอ'",
+          "advice_th": "กิจวัตรที่ทำได้ทุกวัน 1 ปี - กิน นอน ออกกำลังกาย พักผ่อน ความสม่ำเสมอชนะความหักโหม",
+          "keywords_th": ["80/20", "สม่ำเสมอ", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หยุดสุดโต่งและเริ่มสมดุล",
+          "detailed_interpretation_th": "คำแนะนำ Temperance กลับหัว: ถ้าทุกอย่างสุดโต่ง หยุด เริ่มสมดุล ความสุดโต่งทำลาย ความพอประมาณสร้าง",
+          "adjacent_influences": {
+            "major_arcana": "Justice = สมดุล, The Hermit = ปัญญา",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Queen of Cups = ปัญญา",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวคำแนะนำ คือ 'หยุดสุดโต่ง'",
+          "advice_th": "ปรับวิถี - ทำงาน 5 วัน พัก 2 วัน กิน 3 มื้อ นอน 8 ชั่วโมง ความปกติคือทาง",
+          "keywords_th": ["หยุดสุดโต่ง", "สมดุล", "ปกติ"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หยุดความสัมพันธ์แบบดราม่าและสร้างความสงบ",
+          "detailed_interpretation_th": "คำแนะนำในรัก: หยุดดราม่า - ขึ้นลง ทะเลาะ คืนดี ความสัมพันธ์ที่ดีไม่ใช่ดราม่า เป็นความสงบ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = สงบ, Temperance เสริม",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Queen of Cups = ปัญญา",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวคำแนะนำในรัก คือ 'สงบดีกว่าดราม่า'",
+          "advice_th": "ความสัมพันธ์ที่ดีไม่ใช่ดราม่า - เป็นความสงบ ใส่ใจ ไว้ใจ เริ่มสร้าง",
+          "keywords_th": ["หยุดดราม่า", "สงบ", "ใส่ใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หยุดการลงทุนเสี่ยงและสร้างพื้นฐานมั่นคง",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: หยุดการลงทุนเสี่ยง - เลิก get-rich-quick ลงทุนแบบดั้งเดิม - index fund อสังหา ออม compound effect",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = อดทน, The Emperor = ผู้นำ",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King of Pentacles = ความมั่นคง"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวคำแนะนำงาน-เงิน คือ 'พื้นฐานก่อน'",
+          "advice_th": "สร้าง emergency fund 6-12 เดือน ลงทุน index fund 80% เสี่ยงสูง 20% สมดุล",
+          "keywords_th": ["หยุดเสี่ยง", "พื้นฐานมั่นคง", "ลงทุนยาว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หยุดอารมณ์ขึ้นลงและสร้างความนิ่ง",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ฝึกความนิ่ง - สมาธิทุกวัน journaling อารมณ์ขึ้นลงทำให้ทุกข์ ความสงบเป็นพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = สงบ, The High Priestess = ปัญญา",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Queen of Cups = สมดุลอารมณ์",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวคำแนะนำการเติบโต คือ 'ฝึกความนิ่ง'",
+          "advice_th": "สมาธิ 20 นาทีต่อวัน journaling การจัดการอารมณ์เป็นทักษะที่ฝึกได้",
+          "keywords_th": ["ความนิ่ง", "สมาธิ", "จัดการอารมณ์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หยุดนิสัย all-or-nothing และฝึกสมดุล",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: หยุด all-or-nothing - diet เป๊ะแล้วเลิก ออกกำลังกายหนักแล้วหยุด ทำเล็กๆ สม่ำเสมอ ดีกว่าหนักแล้วเลิก",
+          "adjacent_influences": {
+            "major_arcana": "Temperance เสริม, The Star = ฟื้นฟู",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Queen of Cups = ดูแลด้วยใจ",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวคำแนะนำสุขภาพ คือ 'เล็กๆ สม่ำเสมอ'",
+          "advice_th": "เดิน 20 นาที 5 วันต่อสัปดาห์ ดีกว่าวิ่ง 2 ชั่วโมง 1 วันต่อสัปดาห์ ความสม่ำเสมอชนะ",
+          "keywords_th": ["หยุด all-or-nothing", "สม่ำเสมอ", "เล็กๆ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างเห็นคุณเป็นคนสมดุลและน่าไว้วางใจ",
+          "detailed_interpretation_th": "Temperance หัวตั้งในภายนอก บ่งบอกว่าคนรอบข้างเห็นคุณเป็นคนสมดุล - ใจเย็น ปัญญา น่าไว้วางใจ พวกเขามาขอคำปรึกษา ใช้พลังนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ครู, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ที่ปรึกษา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความซื่อสัตย์",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ภายนอก คือ 'ไว้วางใจ'",
+          "advice_th": "ใช้ภาพลักษณ์น่าไว้วางใจ - คนมาขอคำแนะนำ ใช้พลังนี้ในการสร้างเครือข่าย",
+          "keywords_th": ["น่าไว้วางใจ", "ใจเย็น", "ที่ปรึกษา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่หรือครอบครัวสนับสนุนความสมดุลในชีวิต",
+          "detailed_interpretation_th": "ในรัก คู่และครอบครัวสนับสนุนความสมดุล - เคารพพื้นที่ส่วนตัวของคุณ ไม่บีบ ความสัมพันธ์ที่สงบและเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ภายนอกรัก คือ 'คู่สนับสนุน'",
+          "advice_th": "ขอบคุณคนรอบข้างที่ให้พื้นที่ ใช้พลังของความสัมพันธ์สมดุลในการเติบโต",
+          "keywords_th": ["คู่สนับสนุน", "เคารพ", "เติบโต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เพื่อนร่วมงานหรือลูกค้าเห็นคุณเป็นมืออาชีพที่สมดุล",
+          "detailed_interpretation_th": "ในงาน-เงิน เพื่อนร่วมงาน ลูกค้า พันธมิตรเห็นคุณเป็นมืออาชีพ - ทำงานสม่ำเสมอ ไม่ดราม่า ไว้วางใจได้ ชื่อเสียงสร้างโอกาส",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = ผู้นำ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความซื่อสัตย์",
+            "court_cards": "King ทุกชุด = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ภายนอกงาน-เงิน คือ 'มืออาชีพไว้วางใจ'",
+          "advice_th": "ใช้ชื่อเสียงสร้างโอกาส - networking ขอแนะนำ พันธมิตรใหม่",
+          "keywords_th": ["มืออาชีพ", "ไว้วางใจ", "โอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ครูหรือ mentor ที่สอนสมดุลและบูรณาการ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ มีครู mentor ที่สอนเรื่องสมดุล - การบูรณาการบทเรียน การใช้ปัญญาในชีวิต ลงทุนเรียนกับพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ครูทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ภายนอกจิตวิญญาณ คือ 'ครูสอนบูรณาการ'",
+          "advice_th": "ลงทุนกับครูที่สอนการบูรณาการ - ไม่ใช่แค่ทฤษฎี แต่การใช้ในชีวิต",
+          "keywords_th": ["ครูสมดุล", "บูรณาการ", "ปฏิบัติ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมอหรือ healer ที่เข้าใจ holistic health",
+          "detailed_interpretation_th": "ในสุขภาพ มีหมอ healer ที่เข้าใจ holistic - ดูแลทั้งกายและใจ ไม่แค่อาการ ลงทุนกับพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance เสริม",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ผู้ดูแลด้วยใจ",
+            "swords": "King of Swords = หมอฉลาด",
+            "pentacles": "King of Pentacles = expert",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ภายนอกสุขภาพ คือ 'holistic health'",
+          "advice_th": "หาหมอที่เข้าใจ functional medicine, holistic care การลงทุนคุ้มค่า",
+          "keywords_th": ["หมอ holistic", "ดูแลครบ", "ลงทุน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างกดดันให้คุณสุดโต่ง",
+          "detailed_interpretation_th": "Temperance กลับหัวในภายนอก เตือนว่าคนรอบข้างกดดันให้สุดโต่ง - 'ต้องทำงานหนัก' 'ต้องดื่ม' 'ต้องเที่ยว' ตั้งขีดจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดัน, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups กลับหัว = สังสรรค์ทำลาย",
+            "swords": "Five of Swords = ทะเลาะ",
+            "pentacles": "Four of Pentacles = ครอบครัวกดดัน",
+            "court_cards": "Knight of Wands กลับหัว = แรงกดดัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวภายนอก คือ 'ตั้งขีดจำกัด'",
+          "advice_th": "ตั้งขีดจำกัดกับคนที่กดดันให้สุดโต่ง - 'ไม่ ฉันไม่ดื่ม' 'ไม่ ฉันต้องนอน'",
+          "keywords_th": ["คนกดดัน", "สุดโต่ง", "ขีดจำกัด"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่ขึ้นลงอารมณ์และไม่สมดุล",
+          "detailed_interpretation_th": "ในรัก คู่อารมณ์ขึ้นลง - ดี-ทะเลาะ คืนดี-เลิก ความไม่นิ่งนี้ทำให้ทุกข์ ต้องคุยและจัดการ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Moon = อารมณ์",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวภายนอกรัก คือ 'คู่ต้องนิ่ง'",
+          "advice_th": "คุยกับคู่เรื่องการจัดการอารมณ์ ถ้าจำเป็นทำ couple therapy ความไม่นิ่งทำลาย",
+          "keywords_th": ["คู่ไม่นิ่ง", "อารมณ์", "therapy"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เพื่อนร่วมงานกดดันให้ทำงานหนักเกิน",
+          "detailed_interpretation_th": "ในงาน-เงิน เพื่อนร่วมงานหรือหัวหน้ากดดัน - hustle culture ทำงาน 60 ชั่วโมง ไม่เผื่อสุขภาพ ต้องตั้งขีดจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สภาพแวดล้อมพิษ, The Tower = burnout",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หักโหม"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวภายนอกงาน-เงิน คือ 'หยุด hustle culture'",
+          "advice_th": "ตั้งขีดจำกัด - ทำงานเวลาที่กำหนด ปฏิเสธ overtime ที่ไม่จำเป็น สุขภาพสำคัญกว่าคำชม",
+          "keywords_th": ["hustle culture", "กดดัน", "ขีดจำกัด"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "คนรอบข้างไม่เข้าใจการเติบโตที่ค่อยๆ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คนรอบข้างไม่เข้าใจการเติบโตค่อยๆ - 'เปลี่ยนเลย' 'ทำไมยังไม่เปลี่ยน' กดดันให้เร่ง ค่อยๆ ของคุณคือของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดัน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ฝึกตัว",
+            "court_cards": "Page กลับหัว = คนรอบไม่เข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวภายนอกจิตวิญญาณ คือ 'จังหวะของคุณ'",
+          "advice_th": "เติบโตในจังหวะของคุณ ไม่ต้องเร่งตามความคาดหวังคนอื่น compound effect ใช้เวลา",
+          "keywords_th": ["จังหวะของคุณ", "ไม่เร่ง", "ค่อยๆ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สภาพแวดล้อมไม่เอื้อต่อสุขภาพสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ สภาพแวดล้อมไม่เอื้อ - เพื่อนชวนดื่ม ครอบครัวกินไม่ดี ที่ทำงานเครียด ต้องเปลี่ยนหรือปกป้องตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = นิสัยรอบข้าง, The Tower = สุขภาพพัง",
+            "wands": "Knight of Wands กลับหัว = ตามแรง",
+            "cups": "Three of Cups กลับหัว = สังสรรค์ทำลาย",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวภายนอกสุขภาพ คือ 'เปลี่ยนสภาพแวดล้อม'",
+          "advice_th": "เปลี่ยนกลุ่มเพื่อน อาหารที่บ้าน คุยกับคู่ การเปลี่ยนสภาพแวดล้อมเปลี่ยนผลลัพธ์",
+          "keywords_th": ["สภาพแวดล้อมไม่ดี", "เปลี่ยน", "ปกป้องตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes",
+      "position_name_th": "ความหวัง",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังความสมดุลและสงบในชีวิต",
+          "detailed_interpretation_th": "Temperance หัวตั้งในความหวัง สะท้อนความปรารถนา - หวังความสมดุล สงบ ความพอประมาณ ใช้ชีวิตที่ไม่บีบจากความเร่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The World = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ความหวัง คือ 'สมดุลและสงบ'",
+          "advice_th": "เก็บความหวังนี้ - ค่อยๆ สร้างความสมดุล ทุกด้าน",
+          "keywords_th": ["สมดุล", "สงบ", "ความพอดี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความรักที่สงบและยั่งยืน",
+          "detailed_interpretation_th": "ในรัก ความหวังคือคู่ที่ใจเย็น สมดุล รักด้วยปัญญา ไม่ใช่แค่ความหลงใหล ความรักที่ลึกและยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The High Priestess = ปัญญา",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ความหวังรัก คือ 'รักที่สงบ'",
+          "advice_th": "หาคู่ที่ใจเย็น สมดุล ทั้งคู่เติบโตด้วยกัน",
+          "keywords_th": ["รักสงบ", "ใจเย็น", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังอาชีพที่สมดุลกับชีวิต",
+          "detailed_interpretation_th": "ในงาน-เงิน ความหวังคืออาชีพที่สมดุล - มีเวลา มีรายได้ มีความหมาย ความสำเร็จที่ไม่ทำลายสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Star = ความหวัง",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ความหวังงาน-เงิน คือ 'อาชีพสมดุล'",
+          "advice_th": "เลือกอาชีพที่ให้สมดุล - work-life balance สำคัญกว่าเงินเดือนสูง",
+          "keywords_th": ["อาชีพสมดุล", "work-life", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังการบรรลุปัญญาและใช้ในชีวิต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความหวังคือบรรลุปัญญาและใช้ในชีวิตจริง บูรณาการสิ่งที่เรียนรู้ ใช้ชีวิตที่มีความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ความหวังจิตวิญญาณ คือ 'รู้แจ้งในชีวิตจริง'",
+          "advice_th": "ฝึกบูรณาการ - ใช้ทุกสิ่งที่เรียนในชีวิตจริง",
+          "keywords_th": ["บูรณาการ", "รู้แจ้ง", "ปฏิบัติ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพที่สมดุลและอายุยืน",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือสุขภาพสมดุล - กายแข็งแรง ใจสงบ ความสัมพันธ์ดี อายุยืนอย่างมีคุณภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ความหวังสุขภาพ คือ 'holistic'",
+          "advice_th": "ดูแลทุกมิติ - กาย ใจ ความสัมพันธ์ ความสมดุลให้ผลในระยะยาว",
+          "keywords_th": ["holistic", "สมดุล", "อายุยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวว่าจะเบื่อกับชีวิตที่สมดุล",
+          "detailed_interpretation_th": "Temperance กลับหัวในความหวัง บ่งบอกถึงความกลัว - ว่าชีวิตสมดุลจะน่าเบื่อ คิดว่าความตื่นเต้นคือความสุข จริงๆ ความสงบสุขยั่งยืนกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเร่ง, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Four of Pentacles = ติด",
+            "court_cards": "Knight of Wands กลับหัว = พลังไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวความหวัง คือ 'สงบไม่ใช่น่าเบื่อ'",
+          "advice_th": "ความสงบสุขเป็นพลังที่ลึก ไม่ใช่ความน่าเบื่อ ลองเปลี่ยนมุมมอง",
+          "keywords_th": ["กลัวเบื่อ", "ตื่นเต้น", "สงบสุข"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ติดในความรักดราม่าและไม่เห็นค่าของความสงบ",
+          "detailed_interpretation_th": "ในรัก ติดในดราม่า - ขึ้นลง ทะเลาะ คืนดี คิดว่าเป็นความรัก จริงๆ คือการเสพอะดรีนาลีน ความสงบยั่งยืนกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวความหวังรัก คือ 'สงบดีกว่าดราม่า'",
+          "advice_th": "ดราม่าไม่ใช่ความรัก เป็นการเสพอะดรีนาลีน ความรักที่ดียั่งยืนต้องสงบ",
+          "keywords_th": ["รักดราม่า", "อะดรีนาลีน", "สงบ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังการรวยเร็วและไม่อยากทำงานสม่ำเสมอ",
+          "detailed_interpretation_th": "ในงาน-เงิน หวังรวยเร็ว - หวย คริปโต ไม่อยากทำงานสม่ำเสมอ ปฏิเสธ compound effect ความเชื่อนี้ทำให้พลาด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในเงิน, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Seven of Swords = โกง",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวความหวังงาน-เงิน คือ 'compound effect'",
+          "advice_th": "ความมั่งคั่งสร้างจากการลงทุนสม่ำเสมอ ไม่ใช่จากการเสี่ยงสุดโต่ง",
+          "keywords_th": ["รวยเร็ว", "ไม่อดทน", "compound"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ปฏิเสธว่าความสงบเป็นพลัง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ปฏิเสธความสงบ - คิดว่าเป็นความเฉื่อย ความน่าเบื่อ ความสงบจริงๆ คือพลังที่ลึกของผู้รู้แจ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเข้าใจผิด, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวความหวังจิตวิญญาณ คือ 'สงบคือพลัง'",
+          "advice_th": "ความสงบของผู้รู้แจ้งไม่ใช่ความเฉื่อย เป็นพลังที่ลึก ลองศึกษาผู้รู้แจ้ง",
+          "keywords_th": ["ปฏิเสธสงบ", "เข้าใจผิด", "พลังลึก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังการเปลี่ยนแปลงเร็วและสุดโต่ง",
+          "detailed_interpretation_th": "ในสุขภาพ หวังเปลี่ยนเร็ว - diet เป๊ะ ลด 10 กิโลใน 1 เดือน ออกกำลังกาย 2 ชั่วโมงต่อวัน ความสุดโต่งไม่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเร่ง, The Tower = ร่างกายพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ทำลายตัว",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวความหวังสุขภาพ คือ 'ค่อยๆ ยั่งยืน'",
+          "advice_th": "ลด 0.5-1 กิโลต่อสัปดาห์ ออกกำลังกาย 30-60 นาทีต่อวัน ความสม่ำเสมอชนะความหักโหม",
+          "keywords_th": ["เปลี่ยนเร็ว", "สุดโต่ง", "ค่อยๆ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือชีวิตที่สมดุลและสงบ",
+          "detailed_interpretation_th": "Temperance หัวตั้งในผลลัพธ์ บ่งบอกว่าถ้าดำเนินต่อ ผลลัพธ์คือชีวิตที่สมดุล - สงบ มีความหมาย ทุกด้านพอดี ความสำเร็จยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = บรรลุ, The Sun = สดใส, The World = สมบูรณ์",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ผลลัพธ์ คือ 'ชีวิตสมดุล'",
+          "advice_th": "ดำเนินสร้างสมดุล ผลลัพธ์คือชีวิตที่สงบและมีความหมาย",
+          "keywords_th": ["สมดุล", "สงบ", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่สงบและยั่งยืน",
+          "detailed_interpretation_th": "ในรัก ผลลัพธ์คือความสัมพันธ์ที่สงบ ลึกซึ้ง ทั้งคู่เติบโตด้วยกัน ความรักผ่านการเรียนรู้ ยั่งยืนตลอดชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ผลลัพธ์รัก คือ 'รักสงบยั่งยืน'",
+          "advice_th": "ดำเนินดูแลความสัมพันธ์ด้วยสมดุล ผลลัพธ์คือรักที่ยั่งยืน",
+          "keywords_th": ["รักสงบ", "ลึกซึ้ง", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือความมั่งคั่งที่สร้างจาก compound effect",
+          "detailed_interpretation_th": "เส้นทางนี้นำไปสู่ความมั่งคั่งยั่งยืน - การลงทุนสม่ำเสมอ การทำงานหนักแต่ไม่หักโหม รายได้สม่ำเสมอ compound 10-20 ปีให้ผลใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The World = บรรลุ, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Pentacles = ความมั่นคง"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ผลลัพธ์งาน-เงิน คือ 'compound success'",
+          "advice_th": "ดำเนินทำงานและลงทุนสม่ำเสมอ ความมั่งคั่งสะสมมาแน่",
+          "keywords_th": ["compound", "ความมั่งคั่ง", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการบรรลุปัญญาที่ใช้ในชีวิต",
+          "detailed_interpretation_th": "เส้นทางจิตวิญญาณนี้นำไปสู่การรู้แจ้งที่ใช้ในชีวิต - ปัญญาที่ลึก บูรณาการในทุกการกระทำ คุณกลายเป็นแบบอย่าง",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Star = บรรลุ, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ผลลัพธ์จิตวิญญาณ คือ 'รู้แจ้งในชีวิตจริง'",
+          "advice_th": "ดำเนินบูรณาการสิ่งที่เรียน ปัญญาที่ใช้ในชีวิตคือความสำเร็จที่แท้",
+          "keywords_th": ["รู้แจ้ง", "บูรณาการ", "ปฏิบัติ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพที่สมดุลและอายุยืน",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์คือร่างกายและจิตใจที่สมดุล - แข็งแรง อารมณ์ดี ความสัมพันธ์ดี อายุยืนอย่างมีคุณภาพ คุณเป็นแบบอย่าง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, The Sun = สดใส, The World = สมบูรณ์",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance ผลลัพธ์สุขภาพ คือ 'สมดุลยั่งยืน'",
+          "advice_th": "ดำเนินกิจวัตรสมดุล ผลลัพธ์คือร่างกายและจิตใจที่อยู่นาน",
+          "keywords_th": ["สมดุล", "อายุยืน", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "burnout และความไม่สมดุลถ้าไม่เปลี่ยน",
+          "detailed_interpretation_th": "Temperance กลับหัวในผลลัพธ์ เตือนว่าถ้ายังคงสุดโต่ง ผลลัพธ์คือ burnout - ร่างกายพัง ความสัมพันธ์พัง การเงินพัง ต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติด",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หักโหม"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวผลลัพธ์ คือ 'สมดุลก่อนพัง'",
+          "advice_th": "เริ่มสมดุลเดี๋ยวนี้ ก่อน burnout จะเกิด ปรับวิถีให้พอดี",
+          "keywords_th": ["burnout", "ไม่สมดุล", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะพังจากดราม่าและความไม่สมดุล",
+          "detailed_interpretation_th": "ในรัก ถ้ายังคงดราม่า ความสัมพันธ์จะพัง - ทะเลาะหนัก ห่างเหิน เลิก ความสงบเป็นทางออก",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = สัมพันธ์ทำลาย",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ, Eight of Cups = ออกจาก",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวผลลัพธ์รัก คือ 'สงบก่อนพัง'",
+          "advice_th": "หยุดดราม่า เริ่มสร้างความสงบ ถ้าจำเป็น couple therapy",
+          "keywords_th": ["รักพัง", "ดราม่า", "สงบ"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "burnout จากการทำงานหนักเกินไป",
+          "detailed_interpretation_th": "ในงาน-เงิน ถ้ายังคงทำงานหนัก ผลลัพธ์คือ burnout - ร่างกายพัง ความสัมพันธ์เสีย รายได้สูงแต่ไม่มีความสุข",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = burnout, The Devil = ติดในการทำงาน",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หักโหม"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวผลลัพธ์งาน-เงิน คือ 'ป้องกัน burnout'",
+          "advice_th": "ลดภาระงาน หาสมดุล สุขภาพและความสัมพันธ์สำคัญกว่าเงิน",
+          "keywords_th": ["burnout", "หักโหม", "ลดภาระ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในความตื่นเต้นและไม่บรรลุปัญญา",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ผลลัพธ์ไม่ดีถ้ายังคงปฏิเสธความสงบ - ติดในความตื่นเต้น ดราม่า ไม่สามารถพบความสงบที่ลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = พลังไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวผลลัพธ์จิตวิญญาณ คือ 'ยอมรับสงบ'",
+          "advice_th": "ยอมรับว่าความสงบเป็นพลัง ฝึกสมาธิ ลดดราม่าในชีวิต",
+          "keywords_th": ["ติดตื่นเต้น", "ไม่บรรลุ", "ยอมรับสงบ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายพังจากนิสัยสุดโต่ง",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์ไม่ดีถ้ายังคงสุดโต่ง - all-or-nothing diet, extreme exercise, hustle culture ร่างกายจะพัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในนิสัย",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ทำลายตัว",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Temperance กลับหัวผลลัพธ์สุขภาพ คือ 'ความพอดียั่งยืน'",
+          "advice_th": "หยุดสุดโต่ง เริ่มทำเล็กๆ สม่ำเสมอ ความยั่งยืนคือกุญแจ",
+          "keywords_th": ["ร่างกายพัง", "สุดโต่ง", "ความพอดี"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    }
+  }
+}
