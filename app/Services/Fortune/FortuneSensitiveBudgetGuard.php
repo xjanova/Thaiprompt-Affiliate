@@ -143,7 +143,11 @@ class FortuneSensitiveBudgetGuard
     {
         $usdPerMillion = match (true) {
             str_contains($model, 'opus') => 15.0,
-            str_contains($model, 'gpt-5') => 5.0,
+            // 🆕 (2026-05-29) แยก nano/mini ก่อน gpt-5 — ไม่งั้น gpt-5.4-mini/nano
+            //   โดนคิด $5/M เกินจริง → budget guard trip เร็วเกินเหตุ
+            str_contains($model, 'nano') => 1.0,    // gpt-5.4-nano ~$0.20/$1.25
+            str_contains($model, 'mini') => 3.0,    // gpt-5.4-mini ~$0.75/$4.50 (output-heavy avg)
+            str_contains($model, 'gpt-5') => 5.0,   // gpt-5.5 ~$5/$30
             str_contains($model, 'gpt-4o') => 5.0,
             str_contains($model, 'pro') => 5.0,
             default => 2.0,

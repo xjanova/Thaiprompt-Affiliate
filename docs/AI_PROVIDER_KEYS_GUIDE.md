@@ -1,6 +1,6 @@
 # 🔑 คู่มือเอา API Key — ทุก provider ที่ระบบรองรับ
 
-> **Version:** 1.0 | **Last Updated:** 2026-05-22
+> **Version:** 1.1 | **Last Updated:** 2026-05-29
 > ระบบรองรับ 11 providers — บางตัวฟรี บางตัวจ่าย เลือกตามงาน
 >
 > หน้า admin: `/admin/ai-api-keys` → "+ เพิ่ม Key"
@@ -110,17 +110,24 @@
 6. Copy (`sk-proj-...` หรือ `sk-...`) — ดูครั้งเดียว
 7. `/admin/ai-api-keys` → provider=`OpenAI`, paste
 
-### 💰 Pricing (Tier 1, per 1M tokens)
-| Model | Input | Output |
-|-------|-------|--------|
-| gpt-5.5-mini | $0.15 | $0.60 |
-| gpt-5.5 | $2.50 | $10 |
-| gpt-5.5-pro | $15 | $60 |
+### 💰 Pricing (per 1M tokens — verified docs ล่าสุด 2026-05-29)
+| Model | Input | Output | หมายเหตุ |
+|-------|-------|--------|----------|
+| gpt-5.4-nano | $0.20 | $1.25 | ถูกสุดในตระกูล GPT-5 |
+| gpt-5.4-mini | $0.75 | $4.50 | ⭐ คุ้มสุดสำหรับ Celtic (default ปัจจุบัน) |
+| gpt-5.4 | $2.50 | $15 | workhorse คุณภาพสูง |
+| gpt-5.5 | $5 | $30 | flagship (แพง) |
+| gpt-5.5-pro | $30 | $180 | ฉลาดสุด reasoning (แพงมาก) |
+
+> ⚠️ **ไม่มี `gpt-5.5-mini`** — ยืนยัน live แล้วว่า OpenAI คืน `400 model_not_found`.
+> "mini/nano" ที่ใช้ได้จริงอยู่ในตระกูล **5.4** → `gpt-5.4-mini`, `gpt-5.4-nano`
+> (`gpt-5-mini` legacy ส.ค. 2025 ก็ยังใช้ได้ แต่ gen เก่ากว่า)
 
 ### 🎯 Model แนะนำ
-- **Celtic 99฿:** `gpt-5.5-pro` (reasoning + agentic — ตามสเปคระบบ)
-- **Sensitive:** `gpt-5.5` (Pro model — กรณีลูกค้าหัวข้อหนัก)
-- **ทดสอบ:** `gpt-5.5-mini` (ถูกสุด)
+- **Celtic 99฿:** `gpt-5.4-mini` ⭐ (reasoning gen 5.4, ถูกกว่า 5.5 ~6.6 เท่า — default ปัจจุบัน)
+- **คุณภาพสูงขึ้น:** `gpt-5.4` ($2.50/$15) หรือ `gpt-5.5` ($5/$30) ถ้ายอมจ่ายเพิ่ม
+- **Sensitive (หัวข้อหนัก):** `gpt-5.5` (เมื่อต้องการคุณภาพสูงสุด)
+- **ประหยัดสุด:** `gpt-5.4-nano`
 
 ### 💡 Tips
 - ตั้ง **rate_limit_per_minute=500** ใน admin (Tier 1 ~500 RPM)
@@ -405,7 +412,7 @@ Deep 39฿ (prediction_deep):
   Priority  50: Free Gemini 2.5 Pro (RPM 4)
 
 Celtic 99฿ (prediction_celtic):
-  Priority 100: Paid OpenAI gpt-5.5-pro
+  Priority 100: Paid OpenAI gpt-5.4-mini   ← คุ้มสุด (เปลี่ยนจาก gpt-5.5 เมื่อ 2026-05-29)
 
 Sensitive (sensitive):
   Priority 100: Paid OpenAI gpt-5.5

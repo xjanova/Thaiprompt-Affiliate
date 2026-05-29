@@ -120,19 +120,30 @@ class AiApiKey extends Model
             'openai/gpt-oss-20b',                               // production — เร็วสุด 1000 t/s
         ],
         'openai' => [
-            // 🆕 (2026-05-08) GPT-5.x family — current generation (May 2026)
-            //   ⚠️ "preview" suffix = ยังไม่ stable — ใช้แล้วระวังเปลี่ยน
-            'gpt-5.5-pro',                    // ⭐ ฉลาดสุด — reasoning + agentic
-            'gpt-5.5',                        // ⭐ flagship multimodal
-            'gpt-5.5-mini',                   // ⭐ ถูก + เร็ว
-            'gpt-5.4-pro',                    // ก่อนหน้า 5.5 (เผื่อ admin มี key เก่า)
-            'gpt-5.4',
-            'gpt-5.4-mini',
-            'gpt-5',                          // legacy stable
+            // 🔬 (2026-05-29) Verified live กับ key prod (id 37) บน /v1/responses:
+            //   ✅ valid : gpt-5.4-mini / gpt-5.4-nano / gpt-5.4 / gpt-5.5 / gpt-5.5-pro / gpt-5-mini / gpt-5 / gpt-4o*
+            //   ❌ 400 model_not_found : gpt-5.5-mini  ← ไม่มีจริง! ลบออกแล้ว (เคยอยู่ใน dropdown ผิด)
+            //   ราคา/1M tokens (docs ล่าสุด): 5.5=$5/$30 · 5.5-pro=$30/$180 · 5.4=$2.50/$15
+            //                                  5.4-mini=$0.75/$4.50 · 5.4-nano=$0.20/$1.25
+            //   ⚠️ ตัวแรก = default ของ resolveModel() เมื่อ key ไม่ได้ตั้ง model →
+            //      วาง "ตัวคุ้มราคา" (5.4-mini) ไว้แรก กัน key ใหม่เผลอ default เป็นตัวแพงสุด
+            //
+            // GPT-5.4 family — ⭐ คุ้มราคา (current gen reasoning) — แนะนำสำหรับ Celtic 99฿
+            'gpt-5.4-mini',                   // ⭐ DEFAULT — คุ้มสุด ($0.75/$4.50) reasoning gen 5.4
+            'gpt-5.4',                        // workhorse คุณภาพสูง ($2.50/$15)
+            'gpt-5.4-nano',                   // ถูกสุดในตระกูล GPT-5 ($0.20/$1.25)
+            'gpt-5.4-pro',                    // 5.4 ตัวฉลาดสุด
+            // GPT-5.5 family — flagship ปัจจุบัน (แพง — ใช้เมื่อต้องการคุณภาพสูงสุด)
+            'gpt-5.5',                        // flagship multimodal ($5/$30)
+            'gpt-5.5-pro',                    // ฉลาดสุด reasoning+agentic ($30/$180 — แพงมาก)
+            // 🗑️ (2026-05-29) ลบ 'gpt-5.5-mini' — OpenAI ไม่มีรุ่นนี้ (ยืนยัน 400 model_not_found)
+            //    migration 2026_05_29_120000 รีแมป DB row ที่ติด gpt-5.5-mini → gpt-5.4-mini อัตโนมัติ
+            // Legacy GPT-5 (ส.ค. 2025) — ยังใช้ได้ แต่ gen เก่ากว่า 5.4
+            'gpt-5',
             'gpt-5-mini',
-            // GPT-4 family — stable (ใช้ได้ตลอด)
-            'gpt-4o',
-            'gpt-4o-mini',
+            // GPT-4 family — stable (ใช้ได้ตลอด, ถูก แต่ไม่ใช่ reasoning gen → อ่อนกับงาน premium)
+            'gpt-4o',                         // $2.50/$10
+            'gpt-4o-mini',                    // $0.15/$0.60 — ถูกสุด
             'gpt-4-turbo',
             'gpt-4',
             'gpt-3.5-turbo',
