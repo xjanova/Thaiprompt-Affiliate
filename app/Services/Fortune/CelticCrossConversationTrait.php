@@ -2269,6 +2269,29 @@ trait CelticCrossConversationTrait
             return $this->endCelticSession($reading, 'customer_said_done');
         }
 
+        // 🔚 (2026-05-29) Defense ชั้น 2 — วลีจบยาวชัดเจน → str_contains (เผื่อ exact match พลาด)
+        //   เคส R4253: ปุ่ม "📜 เลิกทำนายและสรุปผล" — ถ้า emoji แปลกใหม่ที่ normalizeUserInput
+        //   strip ไม่หมด ให้ str_contains จับซ้ำ (belt-and-suspenders คู่กับ strip emoji)
+        //   ปลอดภัย: วลี 9-18 อักษร แทบเป็นไปไม่ได้ในคำถามทำนายปกติ + กัน negation นำหน้า
+        //   ("ไม่อยากเลิกทำนาย" / "ยังไม่จบ" → ไม่ end)
+        $normalizedEnd = $this->normalizeUserInput($messageText);
+        $longEndPhrases = ['เลิกทำนายและสรุปผล', 'ยุติการทำนาย', 'จบการทำนาย', 'เลิกทำนาย'];
+        $hasNegation = (bool) preg_match('/(ไม่อยาก|ไม่ต้องการ|ยังไม่|อย่าเพิ่ง|ไม่เลิก|ไม่จบ)/u', $normalizedEnd);
+        if (! $hasNegation) {
+            foreach ($longEndPhrases as $phrase) {
+                if (str_contains($normalizedEnd, $phrase)) {
+                    Cache::forget($cacheKey);
+                    Log::info('Celtic: end phrase (str_contains defense) → endCelticSession', [
+                        'reading_id' => $reading->id,
+                        'matched_phrase' => $phrase,
+                        'raw' => mb_substr($messageText, 0, 50),
+                    ]);
+
+                    return $this->endCelticSession($reading, 'customer_said_done');
+                }
+            }
+        }
+
         // 🔄 NO keyword — เก็บไว้รองรับ user ที่กด "ขอคุยต่อ" จาก confirm prompt เก่า
         //   หลังจาก deploy แล้วระบบไม่ส่ง confirm prompt อีก → keyword นี้แทบไม่มี trigger
         $noKeywords = [

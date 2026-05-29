@@ -11225,6 +11225,19 @@ class FortuneConversationService
         // ลบ zero-width / invisible characters
         $text = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{00A0}]/u', '', $text);
 
+        // 🧹 (2026-05-29) ลบ emoji / สัญลักษณ์ภาพ ออกก่อนเทียบ keyword
+        //   เคสจริง R4253 (FTU-260529-S1369): ปุ่ม Quick Reply ส่ง title "📜 เลิกทำนายและสรุปผล"
+        //   เมื่อ FB ส่ง message.text (มี 📜 นำหน้า) แทน quick_reply.payload (CELTIC_END_ASK)
+        //   → matchesExactKeyword เทียบเป๊ะ "📜 เลิกทำนายและสรุปผล" !== "เลิกทำนายและสรุปผล" → ไม่ match
+        //   → ลูกค้ากดปุ่มสรุป 4 ครั้ง บอทไม่จบ ตอบ AI chat วนไม่สิ้นสุด (เปลือง token + q_used)
+        //   แก้: strip emoji ทุกตัว → เหลือ "เลิกทำนายและสรุปผล" → match → endCelticSession
+        //   ⚠️ range ครอบ emoji หลัก เท่านั้น — ไม่ทับภาษาไทย (U+0E00-0E7F) / ลาว (U+0E80-0EFF)
+        $text = preg_replace(
+            '/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2300}-\x{23FF}\x{2B00}-\x{2BFF}\x{2190}-\x{21FF}\x{FE00}-\x{FE0F}\x{1F1E6}-\x{1F1FF}\x{200D}\x{20E3}]/u',
+            '',
+            $text
+        );
+
         // ลบเครื่องหมายคำพูด/punctuation นำหน้า-ท้าย
         $text = trim($text, " \t\n\r\0\x0B'\"‘’“”`()[]{},.?!:;…");
 
