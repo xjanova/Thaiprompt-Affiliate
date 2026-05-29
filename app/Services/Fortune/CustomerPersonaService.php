@@ -529,28 +529,32 @@ class CustomerPersonaService
             }
 
             $cap = FortuneCustomerPersona::FREECHAT_DAILY_CAP;
-            $key = $this->freeChatCounterKey($platform, $userId);
 
-            // increment daily counter (TTL = สิ้นวัน → พรุ่งนี้เริ่มนับใหม่)
-            $count = (int) Cache::get($key, 0) + 1;
-            Cache::put($key, $count, now()->endOfDay());
+            // 🆕 (2026-05-29 Gap3) นับ free-chat turns/วัน ใน DB (เดิมอยู่ Cache → ถูกล้างทุก deploy)
+            //   auto-deploy ทุก push → deploy.sh รัน cache:clear → counter รีเซ็ตเป็น 0
+            //   วันที่ deploy บ่อย → troll ได้ free-chat เกิน cap หลายเท่า
+            //   ย้ายมา persona column (bumpFreeChatCount — reset รายวันเอง) → ทน deploy
+            $persona = FortuneCustomerPersona::getOrCreate($platform, $userId);
+            $count = $persona->bumpFreeChatCount();
+
+            // sync legacy cache key เผื่อมีโค้ดอื่นอ่าน (best-effort — DB คือ source of truth แล้ว)
+            try {
+                Cache::put($this->freeChatCounterKey($platform, $userId), $count, now()->endOfDay());
+            } catch (\Throwable $e) {
+                // ignore
+            }
 
             if ($count < $cap) {
                 return $result;
             }
 
-            // ถึง cap → silence + goodbye สุภาพ (content-agnostic)
-            $persona = FortuneCustomerPersona::findByPlatformUser($platform, $userId);
-            if ($persona) {
-                $persona->triggerSilence(sprintf(
-                    'free-chat daily cap reached (%d turns/day, unpaid, no buy-intent)',
-                    $count
-                ));
-                $goodbye = $persona->buildGoodbyeMessage();
-                $this->invalidateCache($platform, $userId);
-            } else {
-                $goodbye = '🌙 ขอบคุณที่พูดคุยกับแม่หมอวันนี้นะคะ 🙏 ถ้าอยากดูดวง พิมพ์ "ดูดวง" ได้เลยค่ะ เดี๋ยวกลับมาคุยกันใหม่ ✨';
-            }
+            // ถึง cap → silence + goodbye สุภาพ (content-agnostic) — persona โหลดแล้วจาก getOrCreate
+            $persona->triggerSilence(sprintf(
+                'free-chat daily cap reached (%d turns/day, unpaid, no buy-intent)',
+                $count
+            ));
+            $goodbye = $persona->buildGoodbyeMessage();
+            $this->invalidateCache($platform, $userId);
 
             $result['triggered'] = true;
             $result['goodbye_message'] = $goodbye;
@@ -587,8 +591,19 @@ class CustomerPersonaService
      */
     public function clearFreeChatCounter(string $platform, string $userId): void
     {
+        // legacy cache key (เก็บไว้เผื่อ in-flight value ช่วง transition)
         try {
             Cache::forget($this->freeChatCounterKey($platform, $userId));
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
+        // 🆕 (2026-05-29 Gap3) reset DB counter (source of truth ใหม่)
+        try {
+            $persona = FortuneCustomerPersona::findByPlatformUser($platform, $userId);
+            if ($persona) {
+                $persona->resetFreeChatCount();
+            }
         } catch (\Throwable $e) {
             // non-blocking
         }

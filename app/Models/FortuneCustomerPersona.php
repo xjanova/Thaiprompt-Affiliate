@@ -64,6 +64,9 @@ class FortuneCustomerPersona extends Model
         // 🚫 (2026-05-29 Fix C) Escalation / persistent ban — ผู้กระทำซ้ำข้ามวัน
         'silence_count',
         'admin_abuse_alerted_at',
+        // 🆕 (2026-05-29 Gap3) Free-chat daily counter — ย้ายจาก Cache → DB (deploy-proof)
+        'freechat_count',
+        'freechat_count_date',
     ];
 
     protected $casts = [
@@ -86,6 +89,9 @@ class FortuneCustomerPersona extends Model
         // 🚫 (2026-05-29 Fix C) Escalation casts
         'silence_count' => 'integer',
         'admin_abuse_alerted_at' => 'datetime',
+        // 🆕 (2026-05-29 Gap3) Free-chat daily counter casts
+        'freechat_count' => 'integer',
+        'freechat_count_date' => 'date',
     ];
 
     /** Window สำหรับนับ pitch ↔ chitchat (นาที) */
@@ -610,6 +616,42 @@ class FortuneCustomerPersona extends Model
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * 🆕 (2026-05-29 Gap3) เพิ่ม free-chat counter ของวันนี้ +1 (reset อัตโนมัติเมื่อข้ามวัน)
+     *
+     * ย้ายจาก Cache → DB เพื่อให้ทน deploy (cache:clear ทุก deploy เดิมล้าง counter)
+     *
+     * @return int จำนวน free-chat turns ของวันนี้ หลัง increment
+     */
+    public function bumpFreeChatCount(): int
+    {
+        $today = now()->toDateString();
+        $currentDate = $this->freechat_count_date
+            ? $this->freechat_count_date->toDateString()
+            : null;
+
+        // ข้ามวันแล้ว → reset เริ่มนับใหม่
+        if ($currentDate !== $today) {
+            $this->freechat_count = 0;
+            $this->freechat_count_date = $today;
+        }
+
+        $this->freechat_count = (int) ($this->freechat_count ?? 0) + 1;
+        $this->save();
+
+        return (int) $this->freechat_count;
+    }
+
+    /**
+     * 🆕 (2026-05-29 Gap3) รีเซ็ต free-chat counter (เรียกตอนจ่ายเงินจริง)
+     */
+    public function resetFreeChatCount(): void
+    {
+        $this->freechat_count = 0;
+        $this->freechat_count_date = now()->toDateString();
+        $this->save();
     }
 
     /**
