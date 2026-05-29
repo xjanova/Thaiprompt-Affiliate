@@ -7,6 +7,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\TarotCard;
 use App\Services\Fortune\CustomerPersonaService;
+use App\Services\Fortune\ThaiAstrologyService;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
@@ -1072,6 +1073,18 @@ class CelticCrossService
             }
         }
 
+        // 🌟 (2026-05-30) Birth-date astrology — ถ้าลูกค้าพิมพ์วันเกิดมา → คำนวณดวงดาวสด (ราศี/ดาวเจ้าชนะ/ธาตุ)
+        //   เคส bill FTU-260530-Z4397: ลูกค้าใส่วันเกิดตัวเอง+คู่ปรับใน Q1 แต่ Celtic เดิมส่ง birthDate=null
+        //   → AI เดาจากตัวเลขดิบ ไม่ได้คำนวณดวงดาวจริง (ระบบ 39฿ มี engine แต่ Celtic ไม่เรียก)
+        //   ทางแก้ B (user 2026-05-30): parse วันเกิดจาก "คำถามปัจจุบัน + คำถามเก่า" (คงข้อมูลข้ามเทิร์น)
+        //                                แล้วคำนวณสด ผสานเข้า prompt — ไม่แตะ Deep 39฿
+        //   รองรับหลายคน (เช่นถามความเข้ากันคู่รัก) — ดู ThaiAstrologyService
+        $birthAstroSourceText = $userQuestion;
+        foreach ($previousQA as $pq) {
+            $birthAstroSourceText .= "\n".(string) $pq->question;
+        }
+        $birthAstroBlock = (new ThaiAstrologyService)->buildCelticBirthAstrologyBlock($birthAstroSourceText);
+
         // 👤 (2026-05-16) Inject persona — เพศ/อายุ/บุคลิก → ให้ AI ปรับ tone กลมกลืน
         //    Guard: ถ้า persona ไม่มีข้อมูล → return '' → ไม่ inject
         //    Sanitize: bracket directive `[👤 CUSTOMER_PERSONA...]` ถูก filter ใน FortuneAIService อยู่แล้ว
@@ -1147,7 +1160,8 @@ class CelticCrossService
                 $personaBlock,
                 $remaining,
                 $preChatContextQ2,
-                $advisorDirectiveQ2
+                $advisorDirectiveQ2,
+                $birthAstroBlock
             );
         }
 
@@ -1244,6 +1258,7 @@ class CelticCrossService
             ."🃏 ไพ่ 10 ใบ (Celtic Cross) พร้อมตำแหน่ง:\n{$cardsText}\n\n"
             .$previousContext
             ."❓ คำถาม/ข้อความล่าสุดจากลูกค้า:\n\"{$userQuestion}\"\n\n"
+            .$birthAstroBlock
 
             ."━━━━━━━━━━━━━━━━━\n"
             ."🧩 โครงสร้างคำตอบ (ต้องเรียงแบบนี้)\n"
@@ -1499,7 +1514,8 @@ class CelticCrossService
         string $personaBlock,
         int $remaining = 999,
         string $preChatContext = '',
-        string $advisorDirective = ''
+        string $advisorDirective = '',
+        string $birthDateAstrology = ''
     ): string {
         // 🌙 (2026-05-23 v3) ลบ silent sandbagging block ทั้งหมด
         //    user spec ใหม่: "เปลี่ยนไม่ให้มีการดีเลย์ในการตอบ + 5 คำถาม / 15 นาที + บอกกติการให้ชัด"
@@ -1702,6 +1718,7 @@ class CelticCrossService
             ."━━━━━━━━━━━━━━━━━\n"
             .$cardsText."\n\n"
             .$previousContext
+            .$birthDateAstrology
 
             ."━━━━━━━━━━━━━━━━━\n"
             ."🚫 ห้ามทำ (เด็ดขาด)\n"
