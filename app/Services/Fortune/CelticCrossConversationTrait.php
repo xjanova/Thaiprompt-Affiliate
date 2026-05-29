@@ -69,9 +69,13 @@ trait CelticCrossConversationTrait
      */
     protected function handleCelticGenerating(FortuneReading $reading): array
     {
-        // 🆕 (2026-05-17) ขยาย threshold เป็น 240s — เพราะมี typing delay 60-120s + AI 30-60s
-        //   AI worst case 60s + delay max 120s = 180s → buffer 60s = 240s
-        $stuckThresholdSec = 240;
+        // 🆕 (2026-05-17) เดิม 240s — เพราะมี typing delay 60-120s + AI 30-60s
+        // 🐛 (2026-05-29) ลดเป็น 90s — typing delay + debounce buffer ถูกลบหมดแล้ว
+        //   (zero-delay 2026-05-23 + single-bot 2026-05-29) → ไม่มี delay บวกอีก
+        //   AI gpt-5.5 ตอบจริง 20-40s (เคส 4211: seq 21-37s) → 90s = buffer เกินพอ
+        //   เคสจริง reading 4211: status ค้าง 212s → ลูกค้าเงียบ → admin ต้องเข้าช่วยตอบเอง
+        //   ลด threshold → ลูกค้าพิมพ์ปุ๊บ recover ทันที (ถามใหม่ได้ใน 90s แทนรอ 240s)
+        $stuckThresholdSec = 90;
         $generatingForSec = $reading->updated_at
             ? abs(now()->diffInSeconds($reading->updated_at, false))
             : 0;

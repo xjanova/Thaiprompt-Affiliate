@@ -53,6 +53,16 @@ class FortuneCelticRedeliver extends Command
         $maxAttempts = max(1, (int) $this->option('max-attempts'));
         $limit = max(1, (int) $this->option('limit'));
 
+        // 🐛 (2026-05-29) Proactive recover stuck GENERATING — ไม่ต้องรอลูกค้าพิมพ์
+        //   เคสจริง reading 4211 (บิล FTU-260529-H8518): status ค้าง CELTIC_GENERATING 212s
+        //   (AI ตอบ 21s แต่ status ไม่คืน — FPM kill / race admin+webhook) → ลูกค้าพิมพ์โดน
+        //   silent_skip เงียบ → ลูกค้างง ไม่พิมพ์ต่อ → admin ต้องเข้า panel ช่วยตอบเอง
+        //   เดิม recover เป็น lazy (เช็คตอนลูกค้าพิมพ์ครั้งถัดไป) → ลูกค้าเงียบ = ไม่ recover
+        //   Fix: cron นี้ (ทุกนาที) recover reading ที่ค้าง > 90s เป็น AWAITING เชิงรุก
+        if (! $isDry) {
+            $this->recoverStuckGenerating();
+        }
+
         $candidates = FortuneCelticQuestion::query()
             ->undelivered()
             ->where('answered_at', '<=', now()->subSeconds($minSeconds))
@@ -199,5 +209,44 @@ class FortuneCelticRedeliver extends Command
         }
 
         return false;
+    }
+
+    /**
+     * 🐛 (2026-05-29) Recover reading ที่ค้างสถานะ CELTIC_GENERATING นานเกินไป (เชิงรุก)
+     *
+     * AI Celtic ตอบจริง 20-40s — ถ้าค้าง > 90s = process ตาย (FPM kill / timeout / race
+     * admin ask + webhook) → status ไม่คืน → ลูกค้าพิมพ์โดน silent_skip เงียบ → admin ต้องช่วย
+     *
+     * cron นี้รันทุกนาที → revert เป็น AWAITING_QUESTION ให้ลูกค้าพิมพ์ถามต่อได้เองโดยไม่ต้องรอ
+     * (เดิม recover เป็น lazy — เช็คตอนลูกค้าพิมพ์เท่านั้น → ถ้าลูกค้าเงียบจะค้างยาว)
+     *
+     * ขอบเขตปลอดภัย: เฉพาะ Celtic + ค้าง 90s–2hr (ไม่แตะที่ AI ยังตอบปกติ / ของเก่ามาก)
+     */
+    protected function recoverStuckGenerating(): void
+    {
+        try {
+            $stuck = FortuneReading::query()
+                ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                ->where('conversation_status', FortuneReading::STATUS_CELTIC_GENERATING)
+                ->where('updated_at', '<', now()->subSeconds(90))
+                ->where('updated_at', '>', now()->subHours(2))
+                ->limit(50)
+                ->get(['id', 'bill_reference', 'updated_at']);
+
+            foreach ($stuck as $r) {
+                $stuckSec = abs(now()->diffInSeconds($r->updated_at, false));
+                FortuneReading::where('id', $r->id)
+                    ->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+                $this->warn("  ♻️ recover stuck GENERATING: reading {$r->id} ({$r->bill_reference}) ค้าง {$stuckSec}s → AWAITING");
+                Log::warning('FortuneCelticRedeliver: recover stuck GENERATING → AWAITING', [
+                    'reading_id' => $r->id,
+                    'bill_reference' => $r->bill_reference,
+                    'stuck_seconds' => $stuckSec,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('FortuneCelticRedeliver: recoverStuckGenerating fail', ['error' => $e->getMessage()]);
+        }
     }
 }
