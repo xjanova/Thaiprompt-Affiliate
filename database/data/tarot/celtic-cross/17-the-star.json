@@ -1,0 +1,1792 @@
+{
+  "card_identifier": {
+    "name_en": "The Star",
+    "name_th": "ดวงดาว",
+    "number": 17,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความหวังและการเยียวยาหลังพายุ",
+          "detailed_interpretation_th": "ดวงดาวในปัจจุบัน บอกว่าคุณกำลังอยู่ในช่วงของความหวัง การเยียวยา และการฟื้นฟูหลังผ่านช่วงเวลายากลำบาก ใจคุณเริ่มสงบ ศรัทธาในชีวิตกลับมา และคุณเริ่มมองเห็นทางสว่างข้างหน้า ไพ่ยืนยันว่าคุณได้รับการเชื่อมโยงกับจักรวาลและพลังภายในที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ผ่านพายุ, The Moon = ยังมีสิ่งซ่อน",
+            "wands": "Four of Wands = ฉลองสงบ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "Queen of Cups = อบอุ่นใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวปัจจุบัน คือ 'เชื่อมโยงพลังบริสุทธิ์ในตน'",
+          "advice_th": "เปิดใจรับการเยียวยา - คุณอยู่ในช่วงพิเศษของความหวัง ใช้เวลานี้ฟื้นฟูและเชื่อมโยงจิตใจ",
+          "keywords_th": ["ความหวัง", "เยียวยา", "ศรัทธา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักเข้าสู่ช่วงเยียวยาและฟื้นฟู",
+          "detailed_interpretation_th": "ในความรัก ดวงดาวปัจจุบันชี้ว่าความสัมพันธ์เข้าสู่ช่วงเยียวยาและฟื้นฟูหลังผ่านช่วงยาก คุณและคู่เริ่มเข้าใจกันลึกขึ้น หากโสด มีโอกาสเจอคนที่ทำให้ใจเปิดและศรัทธาในความรักอีกครั้ง ความรักครั้งนี้บริสุทธิ์และเยียวยาใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลองคู่",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวปัจจุบันความรัก คือ 'ความรักที่เยียวยาใจ'",
+          "advice_th": "เปิดใจรับความรักที่เยียวยา - ใช้ช่วงเวลานี้สร้างความสัมพันธ์ที่ลึกซึ้งและซื่อสัตย์",
+          "keywords_th": ["รักเยียวยา", "เปิดใจ", "บริสุทธิ์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "การงานเข้าสู่ช่วงฟื้นฟูและมีความหวัง",
+          "detailed_interpretation_th": "ในการงาน ดวงดาวปัจจุบันบอกว่างานและการเงินเข้าสู่ช่วงฟื้นฟู - หลังจากผ่านความยากลำบาก โอกาสใหม่เริ่มเปิด แรงบันดาลใจกลับมา และคุณเริ่มเห็นทางที่ตรงกับวิสัยทัศน์ของตัวเอง ไพ่หนุนให้คุณทำงานด้วยใจ ไม่ใช่แค่เพื่อเงิน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Three of Wands = ขยายมองไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "King of Wands = ผู้นำสร้างสรรค์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวปัจจุบันงาน คือ 'ทำงานตรงวิสัยทัศน์'",
+          "advice_th": "ทำงานตรงกับวิสัยทัศน์ - คุณอยู่ในช่วงฟื้นฟู ใช้แรงบันดาลใจสร้างเส้นทางที่ใช่",
+          "keywords_th": ["ฟื้นฟูงาน", "วิสัยทัศน์", "แรงบันดาลใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเชื่อมโยงกับจิตวิญญาณและตัวตนแท้จริง",
+          "detailed_interpretation_th": "ในการเติบโต ดวงดาวปัจจุบันชี้ว่าคุณกำลังเชื่อมโยงกับจิตวิญญาณและตัวตนที่แท้จริง - การฟังเสียงภายใน การได้รับแรงบันดาลใจ การมีศรัทธาในเส้นทางของตัวเอง ไพ่บอกว่านี่คือช่วงเวลาทอง ที่คุณเข้าใจตัวเองและจุดหมายของชีวิตชัดเจน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญาภายใน, The High Priestess = ญาณ",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวปัจจุบันเติบโต คือ 'ฟังเสียงภายในเชื่อมโยงตัวตนแท้'",
+          "advice_th": "ฟังเสียงภายใน - คุณกำลังเชื่อมโยงกับตัวตนแท้ ใช้ช่วงเวลานี้เข้าใจจุดหมายชีวิต",
+          "keywords_th": ["เชื่อมจิตวิญญาณ", "ตัวตนแท้", "ศรัทธา"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอยู่ในช่วงเยียวยาและฟื้นฟู",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงดาวปัจจุบันบอกว่าสุขภาพของคุณอยู่ในช่วงเยียวยาและฟื้นฟู - หลังผ่านความเจ็บป่วยหรือความเครียด ร่างกายและจิตใจเริ่มฟื้นพลัง การพักผ่อน การฝึกสติ และการดูแลตัวเองอย่างนุ่มนวลคือสิ่งที่ร่างกายต้องการ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, Strength = พลังใจ",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวปัจจุบันสุขภาพ คือ 'เยียวยาด้วยความนุ่มนวล'",
+          "advice_th": "เยียวยาตัวเองอย่างนุ่มนวล - พักผ่อน ฝึกสติ ดูแลร่างกายและจิตใจอย่างใจดี",
+          "keywords_th": ["เยียวยา", "ฟื้นฟู", "นุ่มนวล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สูญเสียศรัทธาและรู้สึกหมดหวัง",
+          "detailed_interpretation_th": "ดวงดาวกลับหัวในปัจจุบัน บอกว่าคุณกำลังสูญเสียศรัทธาและรู้สึกหมดหวัง - ความเชื่อในชีวิตสั่นคลอน แรงบันดาลใจหายไป รู้สึกตัดขาดจากจิตวิญญาณและความหมาย ไพ่บอกว่านี่คือช่วงมืดมิด แต่ไม่ใช่จุดจบ ความหวังอยู่ใกล้กว่าที่คิด",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Wands (rev) = สิ่งล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ทุกข์",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวปัจจุบัน คือ 'แสงหนึ่งดวงพอจุดประกาย'",
+          "advice_th": "อย่าหมดหวัง - แม้รู้สึกมืดมิด ความหวังอยู่ใกล้ ขอความช่วยเหลือและให้เวลาตัวเอง",
+          "keywords_th": ["หมดหวัง", "สูญศรัทธา", "ตัดขาด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หมดศรัทธาในความรัก รู้สึกผิดหวัง",
+          "detailed_interpretation_th": "ในความรัก ดวงดาวกลับหัวชี้ว่าคุณหมดศรัทธาในความรัก - รู้สึกผิดหวัง ปิดใจ หรือเบื่อหน่ายความสัมพันธ์ คุณอาจคิดว่าความรักไม่มีจริงหรือไม่สมหวังในตัวคุณ ไพ่บอกว่านี่คือบาดแผลที่ต้องเยียวยา ไม่ใช่ความจริงของชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ผิดหวัง, The Moon = หลอกลวง",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวปัจจุบันความรัก คือ 'บาดแผลไม่ใช่ความจริง'",
+          "advice_th": "เยียวยาบาดแผล ไม่ปิดใจตลอด - ความรู้สึกหมดหวังเป็นบาดแผล ความรักยังมีจริง",
+          "keywords_th": ["หมดศรัทธารัก", "ปิดใจ", "บาดแผล"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "หมดแรงบันดาลใจ งานหรือเงินดูมืดมน",
+          "detailed_interpretation_th": "ในการงาน ดวงดาวกลับหัวบอกว่าคุณหมดแรงบันดาลใจ - งานดูไม่มีความหมาย โอกาสดูเหมือนปิด การเงินหดหาย ไพ่บอกว่าความรู้สึกนี้เป็นชั่วคราว ความหวังจะกลับมาเมื่อคุณเริ่มเชื่อมโยงกับสิ่งที่คุณรักและทำงานตรงคุณค่าจริงของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่งเฉย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวปัจจุบันงาน คือ 'เชื่อมโยงสิ่งที่รักเรียกแรงบันดาลใจกลับ'",
+          "advice_th": "เชื่อมโยงสิ่งที่รัก - ความหมดแรงบันดาลใจชั่วคราว เริ่มทำสิ่งที่ตรงใจเพื่อเรียกพลังกลับ",
+          "keywords_th": ["หมดแรง", "งานมืดมน", "เชื่อมโยงรัก"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ตัดขาดจากตัวตนและจิตวิญญาณ",
+          "detailed_interpretation_th": "ในการเติบโต ดวงดาวกลับหัวเผยว่าคุณรู้สึกตัดขาดจากตัวตนและจิตวิญญาณ - ไม่รู้ว่าตัวเองต้องการอะไร หมดศรัทธาในเส้นทาง รู้สึกหลงทาง ไพ่บอกว่านี่คือช่วงที่ต้องกลับมาฟังเสียงภายใน ใช้เวลาในความเงียบ และเชื่อมโยงกับตัวเองอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองภายใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวปัจจุบันเติบโต คือ 'กลับมาฟังเสียงภายใน'",
+          "advice_th": "กลับมาฟังตัวเอง - ใช้เวลาในความเงียบ ปฏิบัติสมาธิ เขียนบันทึก เพื่อเชื่อมโยงกับจิตวิญญาณ",
+          "keywords_th": ["ตัดขาดตน", "หลงทาง", "ฟังภายใน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมดแรงทั้งกายและใจ ฟื้นตัวช้า",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงดาวกลับหัวบอกว่าคุณหมดแรงทั้งกายและใจ ฟื้นตัวช้ากว่าที่หวัง - ความเหนื่อยล้าสะสม ระบบภูมิคุ้มกันอ่อน หรือซึมเศร้า ไพ่แนะให้คุณยอมรับว่าต้องใช้เวลานานในการฟื้น ขอความช่วยเหลือจากผู้เชี่ยวชาญ และให้ความสำคัญกับสุขภาพจิต",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = สับสน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลยตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวปัจจุบันสุขภาพ คือ 'ยอมรับใช้เวลาฟื้น'",
+          "advice_th": "ยอมรับการฟื้นช้า - ขอความช่วยเหลือผู้เชี่ยวชาญ ใส่ใจสุขภาพจิต อย่าเร่งเกินไป",
+          "keywords_th": ["หมดแรง", "ฟื้นช้า", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการรักษาความหวังท่ามกลางความยาก",
+          "detailed_interpretation_th": "ดวงดาวในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือการรักษาความหวังและศรัทธาท่ามกลางความยากลำบาก - การไม่ยอมจำนนต่อความมืด การมองหาแสงในความสิ้นหวัง อุปสรรคนี้ไม่ใช่ตัวความยาก แต่คือการต้องรักษาใจให้สว่างต่อไป",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ภาพลวง, Strength = พลังใจ",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอุปสรรค คือ 'รักษาแสงในความมืด'",
+          "advice_th": "รักษาความหวังต่อไป - แม้ทางจะยาก ความหวังคือพลังที่จะนำคุณผ่านไป",
+          "keywords_th": ["รักษาหวัง", "ศรัทธา", "ผ่านไปได้"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือการรักษาศรัทธาในความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการรักษาศรัทธาในความรักท่ามกลางความผิดหวังหรือบาดแผลเก่า - การเชื่อว่าความรักแท้มีจริง แม้เคยเจ็บ การเปิดใจรับคนใหม่หรือสร้างความสัมพันธ์ที่บริสุทธิ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Moon = บาดแผล",
+            "wands": "Knight of Wands = กล้ารัก",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Three of Pentacles = สร้างสัมพันธ์",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอุปสรรคความรัก คือ 'เชื่อว่ารักแท้มีจริง'",
+          "advice_th": "รักษาศรัทธาในความรัก - แม้เคยเจ็บ ความรักแท้มีจริง เปิดใจให้โอกาสมาถึง",
+          "keywords_th": ["ศรัทธารัก", "เปิดใจ", "หวังใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือการยึดมั่นในวิสัยทัศน์",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการต้องยึดมั่นในวิสัยทัศน์และจุดหมายแม้เผชิญความยาก - การไม่ยอมจำนนต่อแรงกดดันให้ทำงานที่ไม่ใช่ การเชื่อในเส้นทางที่ตรงคุณค่าแม้ผลตอบแทนยังไม่ปรากฏ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Wheel of Fortune = โชค",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอุปสรรคงาน คือ 'ยึดวิสัยทัศน์แม้ยาก'",
+          "advice_th": "ยึดวิสัยทัศน์ของคุณ - แม้ผลยังไม่ปรากฏ ความเชื่อในเส้นทางที่ใช่จะนำพา",
+          "keywords_th": ["ยึดวิสัยทัศน์", "เชื่อในตน", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือการเชื่อมโยงตัวตนแท้แม้ในความมืด",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการต้องเชื่อมโยงกับตัวตนแท้แม้ในช่วงมืดมิด - การฟังเสียงภายในแม้สับสน การเชื่อในจุดหมายชีวิตแม้ไม่เห็นทาง การเติบโตท่ามกลางความท้าทายเพื่อค้นพบความเป็นตัวเองที่ลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญาภายใน, The High Priestess = ญาณ",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอุปสรรคเติบโต คือ 'แสงนำทางอยู่ในตัวคุณ'",
+          "advice_th": "เชื่อมโยงตัวตนแท้แม้ในความมืด - แสงนำทางอยู่ในตัวคุณ ฟังเสียงภายใน",
+          "keywords_th": ["เชื่อมตัวตน", "แสงในตน", "ลึกซึ้ง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือการรักษาใจให้สงบในความเจ็บปวด",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการรักษาใจให้สงบและศรัทธาในการฟื้นตัวท่ามกลางความเจ็บปวด - การไม่ยอมหมดหวังในการรักษา การเชื่อว่าร่างกายมีพลังเยียวยา การดูแลตัวเองด้วยความเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอุปสรรคสุขภาพ คือ 'ร่างกายมีพลังเยียวยาตัวเอง'",
+          "advice_th": "รักษาศรัทธาในการฟื้น - ร่างกายมีพลังเยียวยา ดูแลด้วยความเมตตา ไม่ยอมหมดหวัง",
+          "keywords_th": ["ศรัทธาฟื้น", "เมตตา", "พลังเยียวยา"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือความหมดหวังกำลังครอบงำ",
+          "detailed_interpretation_th": "ดวงดาวในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือความหมดหวังกำลังครอบงำคุณ - ความรู้สึกตัดขาดจากความหมาย การสูญเสียศรัทธา การมองโลกในแง่ลบ ไพ่เตือนว่านี่เป็นอุปสรรคที่ต้องเผชิญด้วยการกลับมาเชื่อมโยงกับจิตวิญญาณ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสนลึก, The Devil = ติดยึด",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ทุกข์",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอุปสรรค คือ 'หมดหวังคืออุปสรรคที่ต้องสู้'",
+          "advice_th": "สู้กับความหมดหวัง - ขอความช่วยเหลือ ฝึกสติ กลับมาเชื่อมโยงกับสิ่งที่มีความหมาย",
+          "keywords_th": ["หมดหวัง", "ครอบงำ", "ต้องสู้"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือปิดใจไม่ยอมเปิดรับรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการปิดใจไม่ยอมเปิดรับความรัก - บาดแผลเก่าทำให้กลัวรักใหม่ ความผิดหวังทำให้ไม่เชื่อในความสัมพันธ์ ไพ่บอกว่าคุณต้องเยียวยาบาดแผลและกล้าเสี่ยงเปิดใจอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = กลัวเลือก, The Moon = ลวงตา",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอุปสรรคความรัก คือ 'กล้าเปิดใจอีกครั้ง'",
+          "advice_th": "เยียวยาบาดแผลและกล้าเปิดใจ - การปิดใจปกป้องชั่วคราวแต่กั้นรักไม่ให้เข้ามา",
+          "keywords_th": ["ปิดใจ", "บาดแผล", "กล้าเปิด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือหมดแรงบันดาลใจในงาน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือการหมดแรงบันดาลใจในงาน - งานที่ไม่ตรงคุณค่า ขาดทิศทาง ไม่เห็นความหมาย ไพ่บอกว่าคุณต้องกลับมาเชื่อมโยงกับสิ่งที่จุดประกายคุณ และกล้าตัดสินใจเปลี่ยนเส้นทางหากจำเป็น",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่งเฉย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอุปสรรคงาน คือ 'เชื่อมโยงสิ่งที่จุดประกาย'",
+          "advice_th": "เชื่อมโยงสิ่งที่จุดประกาย - กล้าเปลี่ยนเส้นทางหากงานไม่ตรงคุณค่า ความหมายคือพลัง",
+          "keywords_th": ["หมดแรงบันดาลใจ", "ขาดทิศ", "เชื่อมโยง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือสูญเสียการเชื่อมโยงกับตน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการสูญเสียการเชื่อมโยงกับตัวตน - ไม่รู้ว่าตัวเองต้องการอะไร หมดศรัทธาในเส้นทาง รู้สึกหลงทาง ไพ่หนุนให้คุณกลับมาฟังเสียงภายใน ใช้เวลาในความเงียบ เพื่อค้นพบความหมายอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอุปสรรคเติบโต คือ 'กลับมาเชื่อมโยงตน'",
+          "advice_th": "กลับมาเชื่อมโยงตัวตน - ใช้เวลาในความเงียบ ปฏิบัติสมาธิ เพื่อค้นพบความหมายและทิศทาง",
+          "keywords_th": ["สูญเชื่อมโยง", "หลงทาง", "ฟังภายใน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือซึมเศร้าและหมดแรงทั้งกายใจ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือซึมเศร้าและหมดแรงทั้งกายและใจ - ความเหนื่อยล้าสะสม ภูมิคุ้มกันอ่อน อารมณ์หดหู่ ไพ่แนะให้คุณยอมรับและขอความช่วยเหลือ - จากผู้เชี่ยวชาญด้านสุขภาพจิต ครอบครัว หรือเพื่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติดยึด",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = ทุกข์",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอุปสรรคสุขภาพ คือ 'ขอความช่วยเหลือไม่ใช่ความอ่อนแอ'",
+          "advice_th": "ขอความช่วยเหลือ - ซึมเศร้าและหมดแรงต้องการการดูแล ขอผู้เชี่ยวชาญ ครอบครัว เพื่อน",
+          "keywords_th": ["ซึมเศร้า", "หมดแรง", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยมีช่วงเยียวยาและฟื้นฟูศรัทธา",
+          "detailed_interpretation_th": "ดวงดาวในอดีต เผยว่าคุณเคยผ่านช่วงเยียวยาและฟื้นฟูศรัทธา - หลังจากผ่านพายุ คุณเคยพบความหวังอีกครั้ง การเชื่อมโยงกับจิตวิญญาณ การมีพลังใจกลับมา ประสบการณ์นี้สอนคุณว่าหลังความมืดมีแสง และความหวังคือพลังที่ไม่มีวันหมด",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พายุที่ผ่าน, Temperance = ฟื้นสมดุล",
+            "wands": "Four of Wands = ฉลองสงบ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "Queen of Cups = อบอุ่นใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอดีต คือ 'ความหวังคือพลังที่ไม่หมด'",
+          "advice_th": "ใช้บทเรียนจากการฟื้น - คุณเคยเยียวยามาแล้ว ใช้ศรัทธานี้รับมือกับปัจจุบัน",
+          "keywords_th": ["ฟื้นฟูเก่า", "ศรัทธา", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่เยียวยาใจ",
+          "detailed_interpretation_th": "ในความรัก ดวงดาวอดีตเผยว่าคุณเคยมีความรักที่เยียวยาใจ - ความสัมพันธ์ที่ทำให้คุณเชื่อในความรัก คนที่ช่วยให้คุณฟื้นจากบาดแผล ความรู้สึกบริสุทธิ์ที่จุดประกายศรัทธา ประสบการณ์นี้คือต้นแบบของความรักที่คุณสมควรได้รับ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, Temperance = สมดุลคู่",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอดีตความรัก คือ 'ต้นแบบรักแท้ในใจคุณ'",
+          "advice_th": "ใช้ความรักเก่าเป็นต้นแบบ - คุณเคยเจอความรักเยียวยา ใช้สิ่งนี้เป็นมาตรฐานหารักใหม่",
+          "keywords_th": ["รักเยียวยา", "ต้นแบบ", "ศรัทธา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยฟื้นฟูจากวิกฤตการเงินด้วยศรัทธา",
+          "detailed_interpretation_th": "ในการงาน ดวงดาวอดีตเผยว่าคุณเคยฟื้นฟูจากวิกฤตการเงินด้วยศรัทธาและความหวัง - หลังตกงาน บริษัทล้ม หรือการลงทุนพัง คุณเคยฟื้นตัวด้วยการเชื่อในตัวเองและทำงานตามวิสัยทัศน์ ประสบการณ์นี้สอนคุณว่าการฟื้นเป็นไปได้เสมอ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ปรับโชค, The Sun = สำเร็จ",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอดีตงาน คือ 'ฟื้นเป็นไปได้เสมอ'",
+          "advice_th": "ใช้บทเรียนการฟื้นฟู - คุณเคยฟื้นมาแล้ว นำศรัทธาและทักษะนี้มาใช้ในปัจจุบัน",
+          "keywords_th": ["ฟื้นเก่า", "ศรัทธา", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยมีช่วงเชื่อมโยงตัวตนแท้",
+          "detailed_interpretation_th": "ในการเติบโต ดวงดาวอดีตชี้ว่าคุณเคยมีช่วงเชื่อมโยงกับตัวตนแท้และจิตวิญญาณ - การฝึกสติ การค้นพบจุดหมาย การเข้าใจตัวเองในระดับลึก ประสบการณ์นี้กลายเป็นรากฐานของปัญญาที่คุณมีในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญาภายใน, The High Priestess = ญาณ",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอดีตเติบโต คือ 'เคยเชื่อมโยงตัวตนแท้'",
+          "advice_th": "ใช้ปัญญาจากการเชื่อมโยง - คุณเคยเข้าถึงตัวตนแท้ ใช้ประสบการณ์นี้นำทาง",
+          "keywords_th": ["เชื่อมตัวตน", "ปัญญา", "รากฐาน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยฟื้นฟูสุขภาพอย่างเต็มที่",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงดาวอดีตเผยว่าคุณเคยฟื้นฟูสุขภาพอย่างเต็มที่ - หลังการเจ็บป่วยหรือวิกฤต ร่างกายและจิตใจเคยฟื้นพลังเต็มที่ ประสบการณ์นี้สอนคุณว่าร่างกายมีพลังเยียวยาตัวเองและการดูแลด้วยความเมตตาช่วยฟื้น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, Strength = พลังใจ",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอดีตสุขภาพ คือ 'ร่างกายมีพลังเยียวยาตัวเอง'",
+          "advice_th": "ใช้บทเรียนการฟื้นฟู - คุณเคยฟื้นเต็มที่มาแล้ว ใช้ศรัทธาและวิธีเดิมในปัจจุบัน",
+          "keywords_th": ["ฟื้นสุขภาพ", "พลังเยียวยา", "เมตตา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยผ่านช่วงหมดหวังและสูญเสียศรัทธา",
+          "detailed_interpretation_th": "ดวงดาวกลับหัวในอดีต เผยว่าคุณเคยผ่านช่วงหมดหวังและสูญเสียศรัทธา - ความรู้สึกตัดขาดจากความหมาย การมองโลกในแง่ลบ การล้มเหลวในการฟื้น แต่ประสบการณ์นี้สอนให้คุณรู้คุณค่าของความหวังและทำให้คุณมีความเข้าใจคนที่กำลังทุกข์",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ทุกข์",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวอดีต คือ 'ความมืดสอนคุณค่าของแสง'",
+          "advice_th": "ใช้บทเรียนจากความหมดหวัง - คุณรู้คุณค่าของความหวังและเข้าใจคนที่ทุกข์",
+          "keywords_th": ["หมดหวังเก่า", "สูญศรัทธา", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่ทำให้ปิดใจ",
+          "detailed_interpretation_th": "ในความรัก ดวงดาวกลับหัวในอดีตชี้ว่าคุณเคยมีความรักที่ทำให้ปิดใจ - การถูกหักหลัง การสูญเสียศรัทธาในความรัก ประสบการณ์ผิดหวังที่ลึก แต่บทเรียนคือคุณรู้ว่าความรักแท้คืออะไรและกล้าเลือกในครั้งต่อไป",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = เลือกผิด, The Moon = ลวงตา",
+            "wands": "Nine of Wands = ระวัง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บปวด",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวอดีตความรัก คือ 'รู้แล้วว่ารักแท้ไม่ทำร้าย'",
+          "advice_th": "ใช้บทเรียนรักเก่า - คุณรู้ว่ารักแท้ไม่ทำร้าย กล้าเลือกความสัมพันธ์ที่บริสุทธิ์",
+          "keywords_th": ["รักปิดใจ", "ผิดหวัง", "รู้จริง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยล้มเหลวในการฟื้นการเงิน",
+          "detailed_interpretation_th": "ในการงาน ดวงดาวกลับหัวในอดีตเผยว่าคุณเคยล้มเหลวในการฟื้นการเงิน - ความพยายามไม่สำเร็จ การลงทุนที่หวังไว้พัง ความท้อแท้ในเส้นทาง บทเรียนคือคุณรู้ว่าศรัทธาอย่างเดียวไม่พอ ต้องมีวิสัยทัศน์ชัดและทำงานหนัก",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Hermit = ทบทวน",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวอดีตงาน คือ 'ศรัทธาต้องมาคู่กับการลงมือ'",
+          "advice_th": "ใช้บทเรียนล้มเหลว - ศรัทธาอย่างเดียวไม่พอ ต้องมีวิสัยทัศน์ชัดและลงมือทำหนัก",
+          "keywords_th": ["ล้มเหลวเก่า", "บทเรียน", "ลงมือ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยตัดขาดจากตัวตนและหลงทาง",
+          "detailed_interpretation_th": "ในการเติบโต ดวงดาวกลับหัวในอดีตเผยว่าคุณเคยตัดขาดจากตัวตนและหลงทาง - การไม่รู้ว่าตัวเองต้องการอะไร การหมดศรัทธาในเส้นทาง บทเรียนคือคุณรู้ว่าการเชื่อมโยงกับตัวเองสำคัญแค่ไหน และจะไม่ปล่อยให้ตัวเองหลงอีก",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวอดีตเติบโต คือ 'การเชื่อมโยงตนสำคัญที่สุด'",
+          "advice_th": "ใช้บทเรียนหลงทาง - การเชื่อมโยงกับตัวเองสำคัญที่สุด รักษาการเชื่อมโยงนี้",
+          "keywords_th": ["ตัดขาดเก่า", "หลงทาง", "เชื่อมโยง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยล้มเหลวในการฟื้นสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงดาวกลับหัวในอดีตเผยว่าคุณเคยล้มเหลวในการฟื้นสุขภาพ - การพยายามดูแลตัวเองแต่ไม่สำเร็จ การถอดใจกลางทาง บทเรียนคือคุณรู้ว่าการฟื้นต้องใช้เวลานานและต้องอดทน อย่ายอมแพ้ก่อนถึงจุดหมาย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = สับสน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = ทุกข์",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวอดีตสุขภาพ คือ 'ฟื้นต้องอดทน'",
+          "advice_th": "ใช้บทเรียนเก่า - การฟื้นต้องใช้เวลานานและอดทน อย่ายอมแพ้ก่อนถึงจุดหมาย",
+          "keywords_th": ["ล้มเหลวฟื้น", "ต้องอดทน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีการเยียวยาและความหวังกลับมา",
+          "detailed_interpretation_th": "ดวงดาวในอนาคต เป็นข่าวดี - คุณจะเข้าสู่ช่วงเยียวยาและความหวังกลับมา หลังผ่านความยาก ใจจะสงบ ศรัทธาในชีวิตจะฟื้น และคุณจะเห็นทางสว่างชัดขึ้น ไพ่บอกว่าจักรวาลกำลังเตรียมพื้นที่ให้คุณเชื่อมโยงกับความหมายและจุดหมายอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The World = สำเร็จสมบูรณ์",
+            "wands": "Four of Wands = ฉลองสงบ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "Queen of Cups = อบอุ่นใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอนาคต คือ 'เยียวยาและความหวังรออยู่'",
+          "advice_th": "เชื่อมั่นในอนาคต - การเยียวยาและความหวังกำลังมา ใช้ช่วงนี้เตรียมใจรับสิ่งดี",
+          "keywords_th": ["เยียวยาอนาคต", "ความหวัง", "ฟื้นฟู"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักที่เยียวยาใจกำลังมา",
+          "detailed_interpretation_th": "ในความรัก ดวงดาวอนาคตเป็นข่าวดี - ความรักที่เยียวยาใจกำลังมา หากโสด คนที่ใช่จะปรากฏและทำให้ใจคุณเปิดอีกครั้ง หากมีคู่ ความสัมพันธ์จะเข้าสู่ช่วงสงบและลึกซึ้งกว่าเดิม ไพ่บอกว่ารักครั้งนี้บริสุทธิ์และเปลี่ยนชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, Temperance = สมดุลคู่",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = ความสัมพันธ์มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอนาคตความรัก คือ 'รักบริสุทธิ์รออยู่'",
+          "advice_th": "เปิดใจรับความรักที่กำลังมา - มันจะเยียวยาบาดแผลเก่าและจุดประกายศรัทธา",
+          "keywords_th": ["รักเยียวยา", "บริสุทธิ์", "เปิดใจ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "การงานเข้าสู่ช่วงฟื้นและมีความหวัง",
+          "detailed_interpretation_th": "ในการงาน ดวงดาวอนาคตเป็นข่าวดี - การงานเข้าสู่ช่วงฟื้นและมีโอกาสใหม่ คุณจะเจอแรงบันดาลใจ การงานที่ตรงคุณค่า หรือโอกาสที่ทำให้คุณรู้สึกมีความหมาย ไพ่หนุนให้คุณทำงานด้วยใจและวิสัยทัศน์ ผลลัพธ์จะตามมา",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอนาคตงาน คือ 'งานที่ตรงคุณค่ารออยู่'",
+          "advice_th": "เตรียมใจรับโอกาสใหม่ - งานที่ตรงคุณค่าและแรงบันดาลใจกำลังมา ทำด้วยใจ",
+          "keywords_th": ["งานฟื้น", "วิสัยทัศน์", "ตรงคุณค่า"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การตื่นรู้และเชื่อมโยงจิตวิญญาณรออยู่",
+          "detailed_interpretation_th": "ในการเติบโต ดวงดาวอนาคตเป็นข่าวดียิ่ง - คุณจะมีการตื่นรู้ครั้งสำคัญและเชื่อมโยงกับจิตวิญญาณอย่างลึกซึ้ง คุณจะเข้าใจตัวเอง จุดหมายชีวิต และเส้นทางที่ใช่ ไพ่ยืนยันว่าช่วงเวลานี้จะเปลี่ยนคุณเป็นคนที่มั่นคงในตัวตนแท้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The World = สำเร็จสมบูรณ์",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอนาคตเติบโต คือ 'ตื่นรู้และเชื่อมจิตวิญญาณ'",
+          "advice_th": "เตรียมใจรับการตื่นรู้ - คุณจะเข้าใจตัวเองและจุดหมายชีวิต เปิดใจรับการเปลี่ยนแปลง",
+          "keywords_th": ["ตื่นรู้ใหญ่", "เชื่อมจิตวิญญาณ", "ตัวตนแท้"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะฟื้นฟูและมีพลังกลับมา",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงดาวอนาคตเป็นข่าวดี - สุขภาพของคุณจะฟื้นฟูและมีพลังกลับมา หลังผ่านความยาก ร่างกายจะเริ่มแข็งแรง จิตใจจะสงบ และคุณจะรู้สึกเชื่อมโยงกับชีวิตอีกครั้ง ไพ่หนุนให้คุณดูแลตัวเองอย่างนุ่มนวลและเชื่อในกระบวนการฟื้น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, Strength = พลังใจ",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวอนาคตสุขภาพ คือ 'พลังกลับมาผ่านการเยียวยานุ่มนวล'",
+          "advice_th": "เชื่อในการฟื้น - ร่างกายและจิตใจกำลังกลับมามีพลัง ดูแลตัวเองอย่างนุ่มนวลและต่อเนื่อง",
+          "keywords_th": ["สุขภาพฟื้น", "พลังกลับ", "เยียวยา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตอาจมีช่วงหมดหวังต้องผ่าน",
+          "detailed_interpretation_th": "ดวงดาวกลับหัวในอนาคต เตือนว่าอาจมีช่วงหมดหวังที่ต้องผ่าน - ความรู้สึกตัดขาดจากความหมาย การสูญเสียศรัทธาชั่วคราว ความท้อแท้ในเส้นทาง ไพ่บอกว่าช่วงเวลานี้เป็นชั่วคราว ขอความช่วยเหลือ ฝึกสติ และอย่ายอมแพ้",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ทุกข์",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวอนาคต คือ 'หมดหวังชั่วคราว ไม่ใช่ตลอดไป'",
+          "advice_th": "เตรียมรับช่วงหมดหวัง - ขอความช่วยเหลือ ฝึกสติ อย่ายอมแพ้ ความหวังจะกลับมา",
+          "keywords_th": ["หมดหวังชั่วคราว", "เตรียมใจ", "อย่ายอมแพ้"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจเข้าสู่ช่วงผิดหวังชั่วคราว",
+          "detailed_interpretation_th": "ในความรัก ดวงดาวกลับหัวอนาคตเตือนว่าความสัมพันธ์อาจเข้าสู่ช่วงผิดหวังชั่วคราว - ความคาดหวังไม่ตรงความจริง การสื่อสารผิดพลาด หรือช่วงห่างเหิน ไพ่บอกว่านี่เป็นบททดสอบ ใช้การสื่อสารและความเข้าใจกัน ความรักจะผ่านพ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ทดสอบ, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวอนาคตความรัก คือ 'บททดสอบที่ผ่านพ้นได้'",
+          "advice_th": "เตรียมความรักรับบททดสอบ - ใช้การสื่อสารและความเข้าใจ ความรักจะผ่านพ้น",
+          "keywords_th": ["ทดสอบรัก", "ผิดหวังชั่วคราว", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "การงานอาจเจอช่วงท้อแท้",
+          "detailed_interpretation_th": "ในการงาน ดวงดาวกลับหัวอนาคตเตือนว่าอาจเจอช่วงท้อแท้ - งานที่ไม่ได้รับการยอมรับ ความก้าวหน้าช้า การลงทุนที่ไม่เป็นไปตามหวัง ไพ่หนุนให้คุณรักษาวิสัยทัศน์ ทำงานหนัก และไม่ปล่อยให้ความท้อแท้ฉุดคุณลง การฟื้นจะมาในไม่ช้า",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Hermit = ทบทวน",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวอนาคตงาน คือ 'รักษาวิสัยทัศน์ผ่านท้อแท้'",
+          "advice_th": "เตรียมรับช่วงท้อแท้ - รักษาวิสัยทัศน์ ทำงานต่อเนื่อง ไม่ปล่อยความท้อฉุดลง",
+          "keywords_th": ["ท้อแท้", "ช้าๆ", "รักษาทาง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจตัดขาดจากตนเองชั่วคราว",
+          "detailed_interpretation_th": "ในการเติบโต ดวงดาวกลับหัวอนาคตเตือนว่าอาจมีช่วงตัดขาดจากตัวตนชั่วคราว - การหลงทาง ความสับสน การหมดศรัทธา ไพ่บอกว่าช่วงนี้เป็นโอกาสในการกลับมาฟังเสียงภายในอย่างจริงจัง ใช้สมาธิและการสำรวจตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวอนาคตเติบโต คือ 'กลับมาเชื่อมโยงตน'",
+          "advice_th": "เตรียมรับช่วงตัดขาด - ใช้เป็นโอกาสกลับมาฟังเสียงภายใน สมาธิ สำรวจตน",
+          "keywords_th": ["ตัดขาดชั่วคราว", "หลงทาง", "เชื่อมโยงตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอาจฟื้นช้ากว่าหวัง",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงดาวกลับหัวอนาคตบอกว่าสุขภาพอาจฟื้นช้ากว่าหวัง - ร่างกายต้องการเวลานานในการเยียวยา หรือมีอุปสรรคที่ทำให้การฟื้นไม่ราบรื่น ไพ่แนะให้คุณอดทน ขอความช่วยเหลือ และดูแลตัวเองอย่างต่อเนื่องไม่ยอมแพ้",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = สับสน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวอนาคตสุขภาพ คือ 'อดทนต่อเนื่องไม่ยอมแพ้'",
+          "advice_th": "อดทนกับการฟื้นช้า - ขอความช่วยเหลือ ดูแลต่อเนื่อง ไม่ยอมแพ้ การฟื้นจะมา",
+          "keywords_th": ["ฟื้นช้า", "อดทน", "ต่อเนื่อง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือการเป็นแสงสว่างให้ตัวเองและคนอื่น",
+          "detailed_interpretation_th": "ดวงดาวในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือการเป็นแสงสว่างให้ตัวเองและคนอื่น - การเชื่อมโยงกับจิตวิญญาณ การใช้ชีวิตด้วยศรัทธาและความหวัง การช่วยเหลือผู้อื่นด้วยความรัก เป้าหมายนี้ทำให้คุณกลายเป็นแหล่งของการเยียวยาและแรงบันดาลใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The World = สำเร็จสมบูรณ์",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = แบ่งปัน",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวเป้าหมาย คือ 'เป็นแสงสว่างให้ตนและคนอื่น'",
+          "advice_th": "ตั้งเป้าเป็นแสงสว่าง - ใช้ชีวิตด้วยศรัทธา เยียวยาตน แบ่งปันแรงบันดาลใจให้คนอื่น",
+          "keywords_th": ["เป็นแสงสว่าง", "แรงบันดาลใจ", "ช่วยเหลือ"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือความรักบริสุทธิ์และเยียวยา",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือการสร้างหรือเป็นส่วนหนึ่งของความรักที่บริสุทธิ์และเยียวยา - ความสัมพันธ์ที่ตั้งอยู่บนความเข้าใจ การเชื่อมโยงจิตวิญญาณ การช่วยให้กันและกันเติบโต ไพ่หนุนให้คุณเลือกความรักที่ทำให้ทั้งคุณและคู่ดีขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวเป้าหมายความรัก คือ 'รักที่ทำให้ทั้งคู่ดีขึ้น'",
+          "advice_th": "ตั้งเป้าความรักบริสุทธิ์ - เลือกความสัมพันธ์ที่เยียวยา เข้าใจ และช่วยให้กันเติบโต",
+          "keywords_th": ["รักบริสุทธิ์", "เยียวยา", "เติบโตคู่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือทำงานตรงวิสัยทัศน์และสร้างประโยชน์",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือการทำงานที่ตรงกับวิสัยทัศน์และสร้างประโยชน์ - งานที่ไม่ใช่แค่หาเงิน แต่เปลี่ยนแปลงโลก ใช้พรสวรรค์เป็นแสงสว่าง สร้างคุณค่าที่ยั่งยืน ไพ่หนุนให้คุณเลือกเส้นทางที่ตรงคุณค่าและความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The World = สำเร็จยิ่งใหญ่",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำสร้างสรรค์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวเป้าหมายงาน คือ 'งานที่เปลี่ยนแปลงโลก'",
+          "advice_th": "ตั้งเป้างานสร้างประโยชน์ - ทำตรงวิสัยทัศน์ ใช้พรสวรรค์เป็นแสง สร้างคุณค่ายั่งยืน",
+          "keywords_th": ["วิสัยทัศน์", "สร้างประโยชน์", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือการตื่นรู้ทางจิตวิญญาณเต็มที่",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือการตื่นรู้ทางจิตวิญญาณอย่างเต็มที่ - การเข้าถึงตัวตนแท้ การเชื่อมโยงกับจักรวาล การใช้ชีวิตด้วยปัญญาและความรัก ไพ่หนุนให้คุณก้าวสู่ระดับการเติบโตที่ลึกที่สุด ซึ่งคือการเป็นแสงสว่างให้โลก",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The World = สำเร็จสมบูรณ์",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวเป้าหมายเติบโต คือ 'ตื่นรู้จิตวิญญาณเต็มที่'",
+          "advice_th": "ตั้งเป้าตื่นรู้ทางจิตวิญญาณ - เข้าถึงตัวตนแท้ เชื่อมโยงจักรวาล เป็นแสงให้โลก",
+          "keywords_th": ["ตื่นรู้จิตวิญญาณ", "ตัวตนแท้", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพสมดุลทั้งกาย ใจ จิต",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือสุขภาพที่สมดุลทั้งกาย ใจ และจิตวิญญาณ - ร่างกายแข็งแรง จิตใจสงบ จิตวิญญาณเชื่อมโยง ไพ่หนุนให้คุณดูแลตัวเองในทุกมิติ - ออกกำลังกาย ทานอาหารดี ฝึกสมาธิ และทำสิ่งที่ทำให้ใจสว่าง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, Strength = พลังใจ",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Ace of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลรอบด้าน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวเป้าหมายสุขภาพ คือ 'สมดุลกาย ใจ จิต'",
+          "advice_th": "ตั้งเป้าสุขภาพรอบด้าน - ดูแลกาย ใจ จิต ทั้งสามมิติเพื่อสุขภาพที่แท้จริง",
+          "keywords_th": ["สมดุลรอบด้าน", "กาย ใจ จิต", "สุขภาพแท้"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือฟื้นศรัทธาที่หายไป",
+          "detailed_interpretation_th": "ดวงดาวกลับหัวในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือการฟื้นศรัทธาที่หายไป - กลับมามองโลกในแง่ดี ฟื้นความหวังในชีวิต เชื่อมโยงกับความหมายอีกครั้ง เป้าหมายนี้ต้องการความอดทนและการทำงานกับตัวเอง แต่จะนำมาซึ่งความสงบที่ลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "Queen of Cups = เปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวเป้าหมาย คือ 'ฟื้นศรัทธาเป็นกระบวนการ'",
+          "advice_th": "ตั้งเป้าฟื้นศรัทธา - ทีละก้าว ฝึกสติ ขอความช่วยเหลือ มองโลกในแง่ดีอีกครั้ง",
+          "keywords_th": ["ฟื้นศรัทธา", "ความหวัง", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือเยียวยาบาดแผลรักและเปิดใจอีกครั้ง",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือการเยียวยาบาดแผลความรักและเปิดใจอีกครั้ง - ปล่อยอดีต ฟื้นความเชื่อในความรัก กล้าเสี่ยงรักใหม่ ไพ่หนุนให้คุณทำงานกับใจตัวเอง สร้างความรักให้ตัวเองก่อน เพื่อรับความรักจากคนอื่นได้อย่างเต็มที่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Cups = รักตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวเป้าหมายความรัก คือ 'รักตัวเองก่อนรับรักคนอื่น'",
+          "advice_th": "ตั้งเป้าเยียวยารักและเปิดใจ - ปล่อยอดีต รักตัวเองก่อน กล้าเสี่ยงรักใหม่",
+          "keywords_th": ["เยียวยารัก", "เปิดใจ", "รักตน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือเรียกแรงบันดาลใจกลับมา",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือการเรียกแรงบันดาลใจกลับมา - หลังจากหมดไฟ ค้นพบสิ่งที่จุดประกาย กลับมาทำงานด้วยใจ ไพ่หนุนให้คุณสำรวจสิ่งที่เคยรัก ลองสิ่งใหม่ และอย่ายอมจำนนต่อความเบื่อหน่าย ไฟในใจรอการจุดอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, The Sun = ฟื้นพลัง",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = พลังกลับ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวเป้าหมายงาน คือ 'ไฟในใจรอการจุด'",
+          "advice_th": "ตั้งเป้าเรียกแรงบันดาลใจกลับ - สำรวจสิ่งที่รัก ลองสิ่งใหม่ ไฟในใจรอการจุดอีกครั้ง",
+          "keywords_th": ["แรงบันดาลใจ", "ไฟในใจ", "ลองใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือกลับมาเชื่อมโยงกับตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือการกลับมาเชื่อมโยงกับตัวตนหลังจากหลงทาง - ฟังเสียงภายในอีกครั้ง ใช้เวลาในความเงียบ ค้นพบจุดหมายชีวิต ไพ่หนุนให้คุณให้เวลาตัวเองในการกลับมา ไม่เร่งรีบ ไม่ตัดสินตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Four of Cups = ทบทวน",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวเป้าหมายเติบโต คือ 'กลับมาเชื่อมโยงต้องใช้เวลา'",
+          "advice_th": "ตั้งเป้ากลับมาเชื่อมโยงตน - ใช้เวลา ฝึกสมาธิ ฟังภายใน ไม่เร่งรีบ",
+          "keywords_th": ["กลับมาเชื่อมโยง", "ฟังภายใน", "ใช้เวลา"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือฟื้นพลังที่หายไป",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือการฟื้นพลังที่หายไป - หลังจากหมดแรงและซึมเศร้า กลับมามีพลังชีวิต ไพ่หนุนให้คุณดูแลสุขภาพจิตเป็นพิเศษ ขอความช่วยเหลือผู้เชี่ยวชาญ ใส่ใจการพักผ่อน และอย่ายอมแพ้ในกระบวนการฟื้น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, Strength = พลังใจ",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวเป้าหมายสุขภาพ คือ 'ฟื้นพลังต้องเวลาและความเมตตา'",
+          "advice_th": "ตั้งเป้าฟื้นพลัง - ดูแลสุขภาพจิตพิเศษ ขอช่วยผู้เชี่ยวชาญ พักผ่อน อย่ายอมแพ้",
+          "keywords_th": ["ฟื้นพลัง", "สุขภาพจิต", "ค่อยๆ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือศรัทธาและความหวังที่ไม่หาย",
+          "detailed_interpretation_th": "ดวงดาวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือศรัทธาและความหวังที่ไม่เคยหาย - แม้ผ่านความยากลำบาก คุณยังเชื่อในตัวเองและในชีวิต รากฐานนี้ทำให้คุณฟื้นตัวได้เสมอและเป็นแสงสว่างให้คนรอบข้าง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Hermit = ปัญญา",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวรากฐาน คือ 'ศรัทธาคือพลังที่ไม่หมด'",
+          "advice_th": "ใช้ศรัทธาเป็นรากฐาน - ความหวังที่ฝังในใจคือพลังที่ทำให้คุณฟื้นและเป็นแสงให้คนอื่น",
+          "keywords_th": ["ศรัทธา", "ความหวัง", "ไม่หาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือการเชื่อในรักแท้",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือการเชื่อในความรักแท้แม้ผ่านความผิดหวัง - คุณยังคงเปิดใจ ยังคงเชื่อว่ามีคนที่ใช่ ยังคงให้ความรักโดยไม่หวังตอบแทน รากฐานนี้ทำให้คุณเป็นคู่ครองที่ดีและดึงดูดความรักที่บริสุทธิ์เข้ามา",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวรากฐานความรัก คือ 'ศรัทธาในรักดึงดูดรักบริสุทธิ์'",
+          "advice_th": "รักษาศรัทธาในความรัก - คุณเป็นคู่ครองที่ดีและจะดึงดูดความรักที่บริสุทธิ์เข้ามา",
+          "keywords_th": ["เชื่อในรัก", "เปิดใจ", "ดึงดูดบริสุทธิ์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือวิสัยทัศน์และความหมายในงาน",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือวิสัยทัศน์และความหมายที่คุณยึดถือ - คุณทำงานเพื่อสิ่งที่ใหญ่กว่าตัวเอง มีจุดหมายชัด ใช้พรสวรรค์เพื่อสร้างคุณค่า รากฐานนี้ทำให้คุณรอดทุกสถานการณ์และดึงดูดโอกาสที่ตรงคุณค่า",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Hermit = ปัญญา",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวรากฐานงาน คือ 'วิสัยทัศน์ดึงดูดโอกาสตรงคุณค่า'",
+          "advice_th": "ใช้วิสัยทัศน์เป็นรากฐาน - ทำงานเพื่อสิ่งใหญ่ ใช้พรสวรรค์สร้างคุณค่า โอกาสจะตามมา",
+          "keywords_th": ["วิสัยทัศน์", "ความหมาย", "ดึงดูดโอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือการเชื่อมโยงกับจิตวิญญาณ",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือการเชื่อมโยงกับจิตวิญญาณและตัวตนแท้ - คุณรู้ว่าตัวเองเป็นใคร เชื่อมั่นในเส้นทาง มีปัญญาจากการฟังเสียงภายใน รากฐานนี้ทำให้คุณมั่นคงและเป็นตัวเองในทุกสถานการณ์",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Hermit = ปัญญา",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวรากฐานเติบโต คือ 'เชื่อมจิตวิญญาณคือพลัง'",
+          "advice_th": "ใช้การเชื่อมโยงเป็นรากฐาน - คุณเป็นตัวเองในทุกสถานการณ์ ปัญญาภายในนำทาง",
+          "keywords_th": ["เชื่อมจิตวิญญาณ", "เป็นตัวเอง", "ปัญญาภายใน"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือความเชื่อในพลังเยียวยา",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือความเชื่อในพลังเยียวยาของร่างกายและจิตใจ - คุณรู้ว่าร่างกายมีปัญญา ดูแลตัวเองด้วยความเมตตา และไม่ยอมแพ้ในกระบวนการฟื้น รากฐานนี้ทำให้คุณมีสุขภาพดีระยะยาวและฟื้นจากความเจ็บป่วยได้",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, Strength = พลังใจ",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวรากฐานสุขภาพ คือ 'ร่างกายมีปัญญาเยียวยา'",
+          "advice_th": "ใช้ความเชื่อในพลังเยียวยา - ดูแลร่างกายด้วยเมตตา เชื่อมั่นในกระบวนการฟื้น",
+          "keywords_th": ["พลังเยียวยา", "เมตตา", "ไม่ยอมแพ้"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความสงสัยและขาดศรัทธา",
+          "detailed_interpretation_th": "ดวงดาวกลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความสงสัยและขาดศรัทธา - การมองโลกในแง่ลบ ความรู้สึกตัดขาดจากความหมาย การลังเลที่จะเชื่อในสิ่งดี รากฐานนี้ทำให้คุณท้อง่ายและพลาดโอกาส ถึงเวลาทำงานกับศรัทธาในใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ทุกข์",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวรากฐาน คือ 'ทำงานกับศรัทธาในใจ'",
+          "advice_th": "สร้างศรัทธาในใจ - ขาดความเชื่อทำให้พลาดโอกาส เริ่มฟื้นความหวังทีละก้าว",
+          "keywords_th": ["สงสัย", "ขาดศรัทธา", "ต้องฟื้น"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือบาดแผลและกลัวรัก",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือบาดแผลและความกลัวที่จะรัก - การถูกหักหลังในอดีต ความผิดหวังลึก ทำให้คุณปิดใจและไม่กล้าเปิดรับ รากฐานนี้ทำให้คุณสร้างกำแพงปกป้องและขัดขวางความรักที่จะเข้ามา ถึงเวลาเยียวยาบาดแผลและกล้ารักอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = บาดแผล, The Moon = ลวงตา",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวรากฐานความรัก คือ 'กำแพงปกป้องขัดรักเข้ามา'",
+          "advice_th": "เยียวยาบาดแผลและกล้ารักอีกครั้ง - กำแพงปกป้องชั่วคราวแต่ขัดรักที่ดี กล้าเปิดใจ",
+          "keywords_th": ["บาดแผลรัก", "กลัวรัก", "กล้าเปิด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือขาดวิสัยทัศน์และไม่เชื่อในตน",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือการขาดวิสัยทัศน์และไม่เชื่อในตัวเอง - ทำงานไปวันๆ ไม่รู้จุดหมาย ไม่กล้าฝัน ขาดศรัทธาในความสามารถ รากฐานนี้ทำให้คุณไม่ก้าวหน้า ถึงเวลาค้นพบวิสัยทัศน์และเริ่มเชื่อในตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวรากฐานงาน คือ 'ค้นพบวิสัยทัศน์เริ่มเชื่อในตน'",
+          "advice_th": "ค้นพบวิสัยทัศน์ - การขาดเป้าทำให้ไม่ก้าวหน้า เริ่มฝันใหม่ เชื่อในตัวเอง",
+          "keywords_th": ["ขาดวิสัยทัศน์", "ไม่เชื่อตน", "ค้นพบ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือตัดขาดจากตน หลงทาง",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือการตัดขาดจากตัวเองและหลงทาง - ไม่รู้ว่าตัวเองต้องการอะไร หมดศรัทธาในเส้นทาง รากฐานนี้ทำให้คุณติดอยู่กับที่ ถึงเวลากลับมาฟังเสียงภายใน ใช้สมาธิ และเชื่อมโยงกับจิตวิญญาณอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวรากฐานเติบโต คือ 'กลับมาเชื่อมโยงตน'",
+          "advice_th": "กลับมาเชื่อมโยงตัวเอง - ฟังเสียงภายใน ใช้สมาธิ ค้นพบทิศทางอีกครั้ง",
+          "keywords_th": ["ตัดขาดตน", "หลงทาง", "เชื่อมโยง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือหมดศรัทธาในการฟื้น",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือการหมดศรัทธาในการฟื้นตัว - ความรู้สึกว่าร่างกายจะไม่ดีขึ้น ความเหนื่อยล้าเรื้อรัง การยอมแพ้ในการดูแล รากฐานนี้ทำให้สุขภาพแย่ลงเรื่อยๆ ถึงเวลาทำงานกับสุขภาพจิตและเชื่อในพลังเยียวยาของร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = สับสน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวรากฐานสุขภาพ คือ 'ทำงานสุขภาพจิตเพื่อกาย'",
+          "advice_th": "ทำงานกับสุขภาพจิต - ขอความช่วยเหลือ ดูแลใจ ฟื้นความเชื่อในพลังเยียวยา",
+          "keywords_th": ["หมดศรัทธา", "ฟื้นใจก่อน", "ขอช่วย"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เข้าหาด้วยศรัทธาและความหวัง",
+          "detailed_interpretation_th": "ดวงดาวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีที่สุดคือเข้าหาด้วยศรัทธาและความหวัง - เชื่อว่าทุกอย่างจะดี เปิดใจรับการเยียวยา ใช้ความหวังเป็นพลังนำทาง คุณกำลังเข้าหาด้วยใจที่สว่างและเชื่อมโยงกับสิ่งสูงกว่าตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Sun = ความสำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งคำแนะนำ คือ 'ศรัทธาเป็นพลังนำทาง'",
+          "advice_th": "เข้าหาด้วยศรัทธา - เชื่อว่าทุกอย่างจะดี เปิดใจรับการเยียวยา ใช้ความหวังนำทาง",
+          "keywords_th": ["ศรัทธา", "ความหวัง", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เข้าหาความรักด้วยใจบริสุทธิ์และเปิดกว้าง",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณกำลังเข้าหาด้วยใจบริสุทธิ์และเปิดกว้าง - ไม่ตัดสิน ไม่คาดหวังเกินไป ให้ความรักโดยไม่หวังตอบแทน ไพ่หนุนวิธีนี้ เพราะจะดึงดูดความรักที่แท้จริงและสร้างความสัมพันธ์ที่ลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งคำแนะนำความรัก คือ 'ใจบริสุทธิ์ดึงดูดรักแท้'",
+          "advice_th": "เข้าหาด้วยใจบริสุทธิ์ - ไม่ตัดสิน ไม่คาดหวังเกิน ให้รักโดยไม่หวังตอบแทน",
+          "keywords_th": ["ใจบริสุทธิ์", "เปิดกว้าง", "ดึงดูดแท้"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทำงานด้วยใจและตามวิสัยทัศน์",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรทำงานด้วยใจและตามวิสัยทัศน์ - ไม่ใช่แค่เพื่อเงิน แต่เพื่อความหมาย ใช้พรสวรรค์อย่างเต็มที่ มองอนาคตด้วยความหวัง ไพ่หนุนให้คุณเชื่อในเส้นทางและรอผลที่ตรงคุณค่า",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Hermit = ปัญญา",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งคำแนะนำงาน คือ 'ทำงานด้วยใจให้ความหมาย'",
+          "advice_th": "ทำงานด้วยใจ - ตามวิสัยทัศน์ ใช้พรสวรรค์ มองอนาคตด้วยหวัง ผลตรงคุณค่าจะตามมา",
+          "keywords_th": ["ทำด้วยใจ", "วิสัยทัศน์", "ความหมาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ฟังเสียงภายในและเชื่อมโยงจิตวิญญาณ",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรฟังเสียงภายในและเชื่อมโยงกับจิตวิญญาณ - ฝึกสมาธิ ใช้เวลาในความเงียบ ติดตามสัญชาตญาณ ไพ่บอกว่าปัญญาภายในของคุณรู้คำตอบ เพียงให้พื้นที่ให้มันพูด",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The High Priestess = ญาณ",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งคำแนะนำเติบโต คือ 'ปัญญาภายในรู้คำตอบ'",
+          "advice_th": "ฟังเสียงภายใน - ฝึกสมาธิ ใช้ความเงียบ ติดตามสัญชาตญาณ ปัญญาในตัวรู้ทาง",
+          "keywords_th": ["ฟังภายใน", "สมาธิ", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ดูแลสุขภาพด้วยความเมตตาและศรัทธา",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรดูแลตัวเองด้วยความเมตตาและศรัทธาในพลังเยียวยา - ไม่ฝืนร่างกาย ให้เวลาในการฟื้น ดูแลทั้งกาย ใจ และจิตวิญญาณ ไพ่หนุนการดูแลนุ่มนวลและการเชื่อมโยงกับสัญชาตญาณของร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, Strength = พลังใจ",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งคำแนะนำสุขภาพ คือ 'เมตตาตัวเองคือยา'",
+          "advice_th": "ดูแลด้วยเมตตา - ไม่ฝืนร่างกาย ให้เวลาฟื้น ดูแลกาย ใจ จิตทั้งสามมิติ",
+          "keywords_th": ["เมตตาตน", "ศรัทธา", "นุ่มนวล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เข้าหาด้วยความสงสัยและขาดศรัทธา",
+          "detailed_interpretation_th": "ดวงดาวกลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่คุณเข้าหาเต็มไปด้วยความสงสัยและขาดศรัทธา - คิดในแง่ลบ ไม่เชื่อในความเป็นไปได้ ทำให้พลังของคุณอ่อนแอ ไพ่เตือนให้คุณทำงานกับใจ ปลดความเชื่อจำกัด และฟื้นความหวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติดยึด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ทุกข์",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งคำแนะนำ คือ 'ปลดความเชื่อจำกัด'",
+          "advice_th": "หยุดสงสัย - ทำงานกับใจ ปลดความเชื่อจำกัด ฟื้นความหวัง เริ่มมองโลกในแง่ดี",
+          "keywords_th": ["สงสัย", "แง่ลบ", "ปลดจำกัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เข้าหาความรักด้วยความกลัวและปิดใจ",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าวิธีที่คุณเข้าหาเต็มไปด้วยความกลัวและปิดใจ - กลัวเจ็บอีก ไม่กล้าเสี่ยง สร้างกำแพง ไพ่เตือนว่ากำแพงปกป้องคุณจากเจ็บ แต่ก็ขัดรักไม่ให้เข้ามา กล้าเปิดใจให้โอกาสเข้ามาบ้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = กลัวเลือก, The Moon = ลวงตา",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งคำแนะนำความรัก คือ 'กำแพงปกป้องแต่ขัดรัก'",
+          "advice_th": "กล้าเปิดใจให้โอกาส - กำแพงปกป้องคุณจากเจ็บแต่ก็ขัดรักดีๆ ไม่ให้เข้ามา",
+          "keywords_th": ["กลัวรัก", "ปิดใจ", "กล้าเปิด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทำงานโดยไม่มีวิสัยทัศน์และความหวัง",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำเตือนว่าคุณทำงานโดยไม่มีวิสัยทัศน์และความหวัง - ทำไปวันๆ ไม่กล้าฝัน ไม่เชื่อในความสามารถ ไพ่หนุนให้คุณค้นพบวิสัยทัศน์ ลองสิ่งใหม่ และเชื่อในตัวเอง ความก้าวหน้าเริ่มจากศรัทธาในตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งคำแนะนำงาน คือ 'ศรัทธาในตนเริ่มก้าวหน้า'",
+          "advice_th": "ค้นพบวิสัยทัศน์ - ลองสิ่งใหม่ เชื่อในตัวเอง ความก้าวหน้าเริ่มจากศรัทธาในตน",
+          "keywords_th": ["ขาดวิสัยทัศน์", "ทำไปวันๆ", "ค้นพบ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่ฟังเสียงภายในและตัดขาดจากตน",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณไม่ฟังเสียงภายในและตัดขาดจากตัวเอง - เชื่อเสียงนอก ทำตามคนอื่น ไม่ใช้สัญชาตญาณ ไพ่หนุนให้คุณกลับมาฟังเสียงภายในอย่างจริงจัง ใช้สมาธิ ความเงียบ และไว้ใจปัญญาในตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งคำแนะนำเติบโต คือ 'ไว้ใจปัญญาในตัว'",
+          "advice_th": "กลับมาฟังภายใน - หยุดเชื่อเสียงนอก ใช้สมาธิ ความเงียบ ไว้ใจปัญญาในตัว",
+          "keywords_th": ["ไม่ฟังใน", "ตามคนอื่น", "ฟังตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ละเลยสุขภาพและไม่เชื่อในการฟื้น",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำเตือนว่าคุณกำลังละเลยสุขภาพและไม่เชื่อในการฟื้น - ไม่ใส่ใจอาการ ไม่กินอาหารดี ไม่ออกกำลังกาย ไม่เชื่อว่าจะดีขึ้น ไพ่หนุนให้คุณกลับมาดูแลตัวเอง ขอความช่วยเหลือ ฟื้นความเชื่อในร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'ฟื้นเชื่อในร่างกาย'",
+          "advice_th": "กลับมาดูแลตัวเอง - หยุดละเลย ขอความช่วยเหลือ ฟื้นความเชื่อในพลังเยียวยาของร่าง",
+          "keywords_th": ["ละเลย", "ไม่เชื่อฟื้น", "กลับมาดูแล"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมหนุนการเยียวยาและความหวัง",
+          "detailed_interpretation_th": "ดวงดาวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวหนุนการเยียวยาและความหวัง - คนรอบข้างที่ให้กำลังใจ ชุมชนที่สนับสนุน สถานการณ์ที่เปิดทาง ไพ่บอกว่าคุณไม่ได้สู้คนเดียว มีพลังภายนอกหนุนคุณไปสู่สิ่งดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The World = สำเร็จ",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งภายนอก คือ 'พลังภายนอกหนุนคุณ'",
+          "advice_th": "ใช้แรงหนุนจากภายนอก - คนรอบข้างให้กำลังใจ ชุมชนสนับสนุน คุณไม่ได้สู้คนเดียว",
+          "keywords_th": ["แวดล้อมหนุน", "ชุมชนช่วย", "ไม่โดดเดี่ยว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์รอบตัวอบอุ่นและหนุนความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าความสัมพันธ์รอบตัวอบอุ่นและหนุนความรักของคุณ - ครอบครัวเข้าใจ เพื่อนหนุน คู่ของคุณเปิดใจ ไพ่บอกว่าสภาพแวดล้อมเอื้อให้ความรักเติบโตและเยียวยา",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวอบอุ่น",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งภายนอกความรัก คือ 'แวดล้อมเอื้อรักเติบโต'",
+          "advice_th": "ใช้สภาพแวดล้อมหนุน - ครอบครัว เพื่อน คู่ ทุกคนเปิดใจให้ความรักเติบโตและเยียวยา",
+          "keywords_th": ["รักหนุน", "อบอุ่น", "เติบโต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสในงานเปิดและคนหนุนวิสัยทัศน์",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่าโอกาสในงานเปิดและคนหนุนวิสัยทัศน์ของคุณ - มีคนเห็นคุณค่า โอกาสร่วมงาน นักลงทุนหรือคู่ค้าใหม่ ไพ่หนุนให้คุณคว้าโอกาสและสร้างเครือข่ายที่หนุนเป้าหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีมงาน",
+            "court_cards": "King of Wands = ผู้นำเปิดทาง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งภายนอกงาน คือ 'โอกาสเปิดและคนหนุน'",
+          "advice_th": "คว้าโอกาสและสร้างเครือข่าย - มีคนเห็นคุณค่า โอกาสเปิด สร้างทีมที่หนุนวิสัยทัศน์",
+          "keywords_th": ["โอกาสเปิด", "คนหนุน", "เครือข่าย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ชุมชนทางจิตวิญญาณหนุนการเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าคุณมีชุมชนทางจิตวิญญาณที่หนุนการเติบโต - ครู เพื่อนที่เข้าใจ กลุ่มที่ฝึกฝนร่วมกัน ไพ่บอกว่าใช้แรงหนุนนี้เต็มที่ การเติบโตในชุมชนลึกซึ้งและเร็วกว่าเดิม",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The World = สำเร็จ",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งภายนอกเติบโต คือ 'ชุมชนทำให้เติบโตเร็ว'",
+          "advice_th": "ใช้ชุมชนจิตวิญญาณ - ครู เพื่อน กลุ่มฝึก เติบโตในชุมชนลึกและเร็วกว่าเดิม",
+          "keywords_th": ["ชุมชนหนุน", "ครู", "เติบโตเร็ว"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมหนุนการเยียวยาร่างกายและใจ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าสิ่งแวดล้อมรอบตัวหนุนการเยียวยา - คนคอยช่วย แพทย์ที่ดี ธรรมชาติที่ผ่อนคลาย ไพ่หนุนให้คุณใช้แรงสนับสนุนนี้เต็มที่ การเยียวยาในสภาพที่หนุนจะลึกและยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งภายนอกสุขภาพ คือ 'เยียวยาในสภาพหนุนลึกซึ้ง'",
+          "advice_th": "ใช้สิ่งแวดล้อมหนุนเยียวยา - คน แพทย์ ธรรมชาติ ทุกอย่างพร้อมช่วยให้คุณฟื้น",
+          "keywords_th": ["สิ่งแวดล้อมหนุน", "เยียวยา", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมขาดความหวังและบั่นทอน",
+          "detailed_interpretation_th": "ดวงดาวกลับหัวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวขาดความหวังและบั่นทอน - คนรอบข้างที่มองโลกในแง่ลบ สังคมที่หมดศรัทธา สถานการณ์ที่ทำให้ท้อ ไพ่เตือนให้คุณรักษาแสงในตัว และหาคนหรือกลุ่มที่หนุน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสนสังคม, The Devil = แวดล้อมพิษ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = ปิดใจสังคม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งภายนอก คือ 'รักษาแสงในตน หาคนหนุน'",
+          "advice_th": "รักษาแสงในตน - แวดล้อมบั่นทอน อย่าให้ดับใจ หาคนหรือกลุ่มที่หนุนความหวัง",
+          "keywords_th": ["แวดล้อมบั่นทอน", "หมดหวังรอบ", "รักษาแสง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างไม่หนุนความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าคนรอบข้างไม่หนุนความรักของคุณ - ครอบครัวคัดค้าน เพื่อนวิจารณ์ คู่ปิดใจ ไพ่บอกว่าคุณต้องเชื่อในความรู้สึกของตัวเอง ปกป้องความรัก และไม่ปล่อยให้เสียงนอกทำลายสิ่งที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = วิกฤตรัก, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งภายนอกความรัก คือ 'ปกป้องรักจากเสียงนอก'",
+          "advice_th": "ปกป้องความรัก - คนรอบข้างไม่หนุน เชื่อในความรู้สึกของตัวเอง ไม่ให้เสียงนอกทำลาย",
+          "keywords_th": ["รอบข้างคัดค้าน", "ปกป้องรัก", "เชื่อตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานหรือตลาดไม่เห็นคุณค่าคุณ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่างานหรือตลาดไม่เห็นคุณค่าของคุณ - ไม่ได้รับการยอมรับ โอกาสปิด คนรอบข้างไม่เชื่อในวิสัยทัศน์ ไพ่หนุนให้คุณยืนหยัด หาตลาดหรือกลุ่มที่เห็นคุณค่า และไม่ปล่อยให้การไม่ยอมรับฉุดคุณลง",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Hermit = ทบทวน",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งภายนอกงาน คือ 'หาตลาดที่เห็นคุณค่า'",
+          "advice_th": "หาตลาดที่เห็นค่า - ที่ทำงานเดิมไม่ยอมรับ มองหาที่ใหม่ ยืนหยัดในวิสัยทัศน์",
+          "keywords_th": ["ไม่ยอมรับ", "หาที่ใหม่", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมรอบข้างไม่เข้าใจการเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมรอบข้างไม่เข้าใจการเติบโตของคุณ - คนรอบข้างยังติดที่เดิม ไม่เห็นค่าการเปลี่ยนแปลง อาจถึงขั้นต่อต้าน ไพ่หนุนให้คุณรักษาเส้นทาง ไม่ถอยกลับ และหาชุมชนที่เข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Hierophant (rev) = ทิ้งกรอบสังคม",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Five of Pentacles = ขาดแรงหนุน",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งภายนอกเติบโต คือ 'หาชุมชนที่เข้าใจ'",
+          "advice_th": "รักษาเส้นทางและหาชุมชนใหม่ - สังคมเดิมไม่เข้าใจ ไม่ต้องเปลี่ยนตัวเองให้พวกเขาเข้าใจ",
+          "keywords_th": ["สังคมไม่เข้าใจ", "รักษาเส้นทาง", "ชุมชนใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมขัดการฟื้นตัว",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวเตือนว่าสิ่งแวดล้อมขัดการฟื้นตัว - มีความเครียดจากภายนอก คนรอบข้างไม่หนุน สภาพชีวิตที่บั่นทอน ไพ่แนะให้คุณปรับสภาพแวดล้อมเท่าที่ทำได้ ตัดปัจจัยทำลาย และสร้างพื้นที่ปลอดภัยสำหรับการฟื้น",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = เครียดจากนอก",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งภายนอกสุขภาพ คือ 'ปรับสิ่งแวดล้อมเพื่อฟื้น'",
+          "advice_th": "ปรับสิ่งแวดล้อม - ตัดปัจจัยทำลาย สร้างพื้นที่ปลอดภัย ขอความช่วยเหลือเพิ่ม",
+          "keywords_th": ["แวดล้อมขัด", "ปรับสภาพ", "พื้นที่ปลอด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังการเยียวยาและกลัวความหวังจะสูญ",
+          "detailed_interpretation_th": "ดวงดาวในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังการเยียวยาและความหวังกลับมา - หวังให้ใจสงบ ศรัทธาฟื้น แต่ก็กลัวว่าความหวังนี้จะสูญหายไปอีก ความขัดแย้งนี้สะท้อนความปรารถนาลึกที่จะเชื่อมโยงกับสิ่งดีในชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = ความกลัวซ่อน",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งความหวังกลัว คือ 'ความหวังคือพลังที่กล้าเชื่อ'",
+          "advice_th": "เปิดใจรับความหวัง - กลัวสูญแต่ความหวังเองคือพลัง กล้าเชื่อในสิ่งดีอีกครั้ง",
+          "keywords_th": ["หวังเยียวยา", "กลัวสูญ", "กล้าเชื่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความรักบริสุทธิ์และกลัวผิดหวัง",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังความรักที่บริสุทธิ์และเยียวยา แต่กลัวว่าจะผิดหวังอีก - กลัวคนใหม่จะไม่ใช่ กลัวความสัมพันธ์ปัจจุบันจะเปลี่ยน ไพ่บอกว่าความหวังของคุณบริสุทธิ์ ไม่ใช่ทุกสิ่งที่กลัวจะเกิด เปิดใจดีกว่าปิด",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Moon = ความกลัว",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งความหวังกลัวความรัก คือ 'หวังบริสุทธิ์ ไม่ทุกอย่างจะเกิดตามกลัว'",
+          "advice_th": "เปิดใจรับความรัก - ความหวังบริสุทธิ์ ไม่ใช่ทุกสิ่งที่กลัวจะเกิด เปิดดีกว่าปิด",
+          "keywords_th": ["หวังรักแท้", "กลัวผิดหวัง", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังงานที่ตรงคุณค่าและกลัวล้มเหลว",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังงานที่ตรงคุณค่าและสร้างความหมาย แต่กลัวว่าจะล้มเหลวหรือไม่สำเร็จในเส้นทางใหม่ ไพ่บอกว่าความหวังของคุณคือเข็มทิศ ตามมันแม้กลัว เพราะเส้นทางที่ใช่คือเส้นทางที่ตรงคุณค่า",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = โชค, The Tower = กลัวพัง",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งความหวังกลัวงาน คือ 'หวังคือเข็มทิศ ตามมันแม้กลัว'",
+          "advice_th": "ตามความหวังของคุณ - แม้กลัวล้มเหลว เส้นทางที่หวังคือเส้นทางที่ใช่",
+          "keywords_th": ["หวังตรงคุณค่า", "กลัวล้มเหลว", "ตามหวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังการตื่นรู้แต่กลัวความรับผิดชอบ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังการตื่นรู้และเชื่อมโยงกับจิตวิญญาณ แต่กลัวความรับผิดชอบที่มากับการเติบโตในระดับสูง - การต้องเป็นแสงให้คนอื่น การไม่กลับไปเหมือนเดิมได้ ไพ่หนุนให้คุณกล้าเติบโต รับผิดชอบกับศักยภาพของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ญาณ, The Hermit = ปัญญา",
+            "wands": "Page of Wands = แรงบันดาลใจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งความหวังกลัวเติบโต คือ 'รับผิดชอบกับศักยภาพตน'",
+          "advice_th": "กล้าเติบโต - หวังตื่นรู้แต่กลัวรับผิดชอบ ใช้ศักยภาพที่มี เป็นแสงให้คนอื่น",
+          "keywords_th": ["หวังตื่นรู้", "กลัวรับผิดชอบ", "เป็นแสง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพดีและกลัวจะไม่ฟื้น",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังสุขภาพดีและพลังกลับมา แต่กลัวว่าร่างกายจะไม่ฟื้นเต็มที่ หรือกลัวการกลับมาเจ็บอีก ไพ่บอกว่าความหวังของคุณคือพลังเยียวยา การเชื่อในการฟื้นช่วยให้ฟื้นเร็วขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งความหวังกลัวสุขภาพ คือ 'เชื่อในฟื้นช่วยฟื้นเร็ว'",
+          "advice_th": "เชื่อในการฟื้น - หวังสุขภาพดีแต่กลัวไม่ฟื้น ความเชื่อในการฟื้นคือพลังเยียวยาเอง",
+          "keywords_th": ["หวังสุขภาพ", "กลัวไม่ฟื้น", "เชื่อในฟื้น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวสูญสิ้นความหวังและไม่กล้าหวังอีก",
+          "detailed_interpretation_th": "ดวงดาวกลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวการสูญสิ้นความหวังจนไม่กล้าหวังอีก - เพราะกลัวผิดหวังซ้ำ คุณปิดใจ ไม่ฝัน ไม่เชื่อในความเป็นไปได้ ไพ่บอกว่าความกลัวนี้เองที่ขังคุณจากชีวิตที่เปี่ยมความหวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัวซ่อน, The Devil = ติดยึด",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ฝันร้าย",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งความหวังกลัว คือ 'กลัวหวังขังคุณ'",
+          "advice_th": "กล้าหวังอีกครั้ง - ความกลัวสูญหวังเองที่ขังคุณ เริ่มหวังทีละน้อย เปิดใจ",
+          "keywords_th": ["กลัวสูญหวัง", "ไม่กล้าหวัง", "กล้าหวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวผิดหวังในรักจนปิดใจ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวผิดหวังจนปิดใจ - ไม่กล้าเปิดรับรักใหม่ ไม่เชื่อในความสัมพันธ์ ไม่ฝันถึงคู่ครอง ไพ่บอกว่าการปิดใจปกป้องจากเจ็บ แต่ก็ปกป้องจากรักดีๆ ที่จะเข้ามา กล้าเปิดอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = บาดแผล, The Moon = ลวงตา",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งความหวังกลัวความรัก คือ 'ปิดใจปกป้องจากดี'",
+          "advice_th": "กล้าเปิดใจอีกครั้ง - กลัวผิดหวังจนปิด แต่ก็ปกป้องจากรักดีที่จะเข้ามา",
+          "keywords_th": ["กลัวรักผิด", "ปิดใจ", "กล้าเปิด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวล้มเหลวในงานจนไม่กล้าฝัน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวล้มเหลวจนไม่กล้าฝันถึงงานที่ตรงคุณค่า - ทำงานปลอดภัยไปวันๆ ไม่กล้าเสี่ยง ไม่กล้าเปลี่ยน ไพ่บอกว่าความกลัวนี้ขังคุณจากศักยภาพ กล้าฝันและลงมือ การไม่กล้าเสี่ยงคือความเสี่ยงที่ใหญ่กว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Swords = ติดกรอบ",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งความหวังกลัวงาน คือ 'ไม่เสี่ยงคือเสี่ยงใหญ่กว่า'",
+          "advice_th": "กล้าฝันและลงมือ - กลัวล้มเหลวจนปิดศักยภาพ การไม่เสี่ยงคือความเสี่ยงใหญ่กว่า",
+          "keywords_th": ["กลัวล้มเหลว", "ไม่กล้าฝัน", "กล้าลงมือ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวการเปลี่ยนแปลงตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวการเปลี่ยนแปลงตัวตน - กลัวสูญเสียอัตลักษณ์เดิม กลัวค้นพบสิ่งที่ไม่ต้องการเห็น ไพ่บอกว่าการเติบโตจริงต้องผ่านความกลัวนี้ ตัวตนที่จะเกิดใหม่ลึกซึ้งและแท้จริงกว่า",
+          "adjacent_influences": {
+            "major_arcana": "Death = กลัวเปลี่ยน, The Moon = กลัวซ่อน",
+            "wands": "Seven of Wands = ต้านเปลี่ยน",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดตัวตน",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'ตัวตนใหม่ลึกซึ้งกว่า'",
+          "advice_th": "กล้าเปลี่ยนตัวตน - กลัวสูญตัวตนเดิม แต่ตัวตนที่เกิดใหม่จะลึกซึ้งและแท้จริงกว่า",
+          "keywords_th": ["กลัวเปลี่ยนตน", "ยึดตัวตน", "กล้าเกิดใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวร่างกายจะไม่ฟื้น",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวร่างกายจะไม่ฟื้นเต็มที่ - กลัวการกลับมาเจ็บอีก กลัวต้องอยู่กับอาการไปตลอด ความกลัวนี้บั่นทอนการฟื้น ไพ่หนุนให้คุณทำงานกับใจ ฝึกสติ และเชื่อในพลังเยียวยาของร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = ความกลัว",
+            "wands": "Ten of Wands = แบกกลัว",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = กลัวป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'ใจช่วยกาย'",
+          "advice_th": "ทำงานกับความกลัว - กลัวไม่ฟื้นบั่นทอนการฟื้น ฝึกสติ เชื่อในพลังเยียวยา",
+          "keywords_th": ["กลัวไม่ฟื้น", "บั่นทอน", "ใจช่วยกาย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือความหวัง การเยียวยา และเชื่อมโยงจิตวิญญาณ",
+          "detailed_interpretation_th": "ดวงดาวในตำแหน่งผลลัพธ์ เป็นข่าวดีที่ลึกซึ้ง - ผลลัพธ์ของสถานการณ์คือความหวัง การเยียวยา และการเชื่อมโยงกับจิตวิญญาณ คุณจะผ่านความยากและเข้าสู่ช่วงของศรัทธาที่กลับมา ความสงบในใจ และความเข้าใจในจุดหมายของชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The World = สำเร็จสมบูรณ์",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่งมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่นใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งผลลัพธ์ คือ 'ความหวังคือผลลัพธ์ที่งดงาม'",
+          "advice_th": "เชื่อมั่นในผลลัพธ์ที่ดี - ความหวัง การเยียวยา และเชื่อมโยงจิตวิญญาณรออยู่ข้างหน้า",
+          "keywords_th": ["ความหวัง", "เยียวยา", "เชื่อมจิตวิญญาณ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่บริสุทธิ์และเยียวยา",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เป็นข่าวดีมาก - คุณจะพบหรือสร้างความรักที่บริสุทธิ์และเยียวยา ความสัมพันธ์ที่ตั้งบนความเข้าใจ การเชื่อมโยงจิตวิญญาณ และการช่วยให้กันเติบโต ไพ่ยืนยันว่ารักครั้งนี้คือของจริงและจะเปลี่ยนชีวิตคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลองรัก",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งผลลัพธ์ความรัก คือ 'รักที่เปลี่ยนชีวิต'",
+          "advice_th": "เปิดใจรับความรักที่จะมา - บริสุทธิ์ เยียวยา และเปลี่ยนชีวิต รักครั้งนี้คือของจริง",
+          "keywords_th": ["รักบริสุทธิ์", "เยียวยา", "เปลี่ยนชีวิต"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คืองานตรงคุณค่าและความสำเร็จที่มีความหมาย",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดี - คุณจะพบงานที่ตรงคุณค่าและสร้างความสำเร็จที่มีความหมาย ไม่ใช่แค่เงิน แต่เป็นการใช้พรสวรรค์เพื่อเปลี่ยนแปลงโลก ไพ่ยืนยันว่าวิสัยทัศน์และศรัทธาของคุณจะนำมาซึ่งความสำเร็จที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The World = สำเร็จยิ่งใหญ่",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำสร้างสรรค์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งผลลัพธ์งาน คือ 'งานเปลี่ยนโลกคือผลลัพธ์'",
+          "advice_th": "เชื่อในวิสัยทัศน์ - งานที่ตรงคุณค่า ความสำเร็จที่มีความหมายและยั่งยืนรออยู่",
+          "keywords_th": ["งานตรงคุณค่า", "ความหมาย", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการตื่นรู้ทางจิตวิญญาณเต็มที่",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นชัยชนะลึกซึ้ง - คุณจะมีการตื่นรู้ทางจิตวิญญาณเต็มที่ เข้าถึงตัวตนแท้ เชื่อมโยงกับจักรวาล และใช้ชีวิตด้วยปัญญาและความรัก ไพ่ยืนยันว่าคุณจะกลายเป็นแสงสว่างให้ตัวเองและคนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The High Priestess = ญาณ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตนสมบูรณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งผลลัพธ์เติบโต คือ 'เป็นแสงสว่างให้โลก'",
+          "advice_th": "เฉลิมฉลองการตื่นรู้ - คุณเข้าถึงตัวตนแท้ เชื่อมโยงจักรวาล เป็นแสงให้โลก",
+          "keywords_th": ["ตื่นรู้เต็มที่", "ตัวตนแท้", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพดีและพลังเต็มเปี่ยม",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดีอย่างยิ่ง - คุณจะฟื้นฟูร่างกายและจิตใจอย่างเต็มที่ มีพลังชีวิตเต็มเปี่ยม สมดุลในทุกมิติ ไพ่ยืนยันว่าการดูแลตัวเองด้วยความเมตตาและศรัทธาในพลังเยียวยาจะนำมาซึ่งสุขภาพที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลังเต็มเปี่ยม, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = สุขภาพดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวตำแหน่งผลลัพธ์สุขภาพ คือ 'พลังเต็มเปี่ยมรออยู่'",
+          "advice_th": "เชื่อในการฟื้น - คุณจะมีสุขภาพดีและพลังเต็มเปี่ยม การดูแลด้วยเมตตาจะให้ผล",
+          "keywords_th": ["สุขภาพดี", "พลังเต็ม", "สมดุล"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการสูญเสียศรัทธาและช่วงมืดมิด",
+          "detailed_interpretation_th": "ดวงดาวกลับหัวในตำแหน่งผลลัพธ์ เตือนว่าผลลัพธ์อาจเป็นการสูญเสียศรัทธาและช่วงมืดมิด - ความหมดหวัง ความรู้สึกตัดขาด การหลงทาง ไพ่บอกว่านี่ไม่ใช่จุดจบ เป็นช่วงที่ต้องผ่านเพื่อค้นพบศรัทธาที่ลึกซึ้งกว่า อย่ายอมแพ้",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ทุกข์",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งผลลัพธ์ คือ 'ผ่านมืดเพื่อค้นพบศรัทธาลึก'",
+          "advice_th": "อย่ายอมแพ้ - ช่วงมืดมิดเป็นกระบวนการ ขอความช่วยเหลือ ศรัทธาลึกซึ้งรออยู่ปลายทาง",
+          "keywords_th": ["หมดศรัทธา", "ช่วงมืด", "อย่ายอมแพ้"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือผิดหวังในความรักหรือปิดใจ",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวเตือนว่าอาจเป็นการผิดหวังในความรักหรือการปิดใจ - ความสัมพันธ์ที่ไม่ตอบสนอง ความรู้สึกตัดขาด การไม่กล้าเปิดใจ ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ การทำงานกับใจตัวเองจะเปลี่ยนผลลัพธ์ได้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = วิกฤตรัก, The Moon = ลวงตา",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'ทำงานกับใจเปลี่ยนผลลัพธ์'",
+          "advice_th": "ทำงานกับใจตัวเอง - ผิดหวังเป็นไปได้แต่ไม่หลีกเลี่ยงไม่ได้ เปิดใจเปลี่ยนผลลัพธ์",
+          "keywords_th": ["ผิดหวังรัก", "ปิดใจ", "ทำงานกับใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือความล้มเหลวในงานหรือหมดแรงบันดาลใจ",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวเตือนว่าอาจเป็นความล้มเหลวในงานหรือหมดแรงบันดาลใจ - การลงทุนพัง โอกาสปิด ความเบื่อหน่าย ไพ่บอกว่านี่ไม่ใช่จุดจบ ใช้เป็นบทเรียนค้นพบเส้นทางใหม่ที่ตรงคุณค่ายิ่งกว่า",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Hermit = ทบทวน",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งผลลัพธ์งาน คือ 'ใช้ล้มเหลวเป็นบทเรียน'",
+          "advice_th": "ใช้ล้มเหลวเป็นบทเรียน - ไม่ใช่จุดจบ ค้นพบเส้นทางใหม่ที่ตรงคุณค่ายิ่งกว่า",
+          "keywords_th": ["ล้มเหลวงาน", "หมดแรง", "ค้นใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือหลงทางและตัดขาดจากตน",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวเตือนว่าอาจหลงทางและตัดขาดจากตัวเอง - ไม่รู้ว่าตัวเองต้องการอะไร หมดศรัทธาในเส้นทาง ไพ่บอกว่านี่เป็นช่วงที่จำเป็นเพื่อกลับมาเชื่อมโยงกับตัวตนในระดับลึก ใช้เป็นโอกาสสำรวจตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สำรวจลึก",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'หลงทางเป็นโอกาสค้นพบลึก'",
+          "advice_th": "ใช้การหลงทางเป็นโอกาส - กลับมาเชื่อมโยงตัวตนในระดับลึก สำรวจตัวเองอีกครั้ง",
+          "keywords_th": ["หลงทาง", "ตัดขาด", "ค้นพบลึก"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพแย่หรือฟื้นช้า",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวเตือนว่าอาจมีสุขภาพแย่หรือฟื้นช้ากว่าหวัง - ความเจ็บป่วยเรื้อรัง ซึมเศร้า ขาดพลัง ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ ขอความช่วยเหลือผู้เชี่ยวชาญ ดูแลสุขภาพจิต และเชื่อในพลังเยียวยา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = สับสน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงดาวกลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'ขอช่วยเปลี่ยนผลลัพธ์'",
+          "advice_th": "เปลี่ยนผลลัพธ์ได้ - ขอความช่วยเหลือผู้เชี่ยวชาญ ดูแลสุขภาพจิต เชื่อในพลังเยียวยา",
+          "keywords_th": ["สุขภาพแย่", "ฟื้นช้า", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}
+
