@@ -212,7 +212,7 @@ server {
 สร้างไฟล์ `.env` สำหรับ production:
 
 ```bash
-cp .env.production .env
+cp .env.production.example .env
 ```
 
 แก้ไขค่าที่สำคัญ:

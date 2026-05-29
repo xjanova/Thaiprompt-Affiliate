@@ -488,9 +488,9 @@ backup_critical_files() {
             print_success "✓ Backed up .env"
     fi
 
-    if [ -f ".env.production" ]; then
-        cp .env.production "$CRITICAL_BACKUP_DIR/.env.production" 2>/dev/null || true
-    fi
+    # หมายเหตุ (2026-05-30): ลบการ backup .env.production ออก — เป็นไฟล์ template placeholder
+    #   (ย้ายไป .env.production.example แล้ว) ไม่ใช่ env จริง ไม่ต้อง backup
+    #   root cause: APP_ENV=production ทำให้ config:cache โหลด .env.production (your_username) แทน .env
 
     # Backup uploaded files
     if [ -d "storage/app/public" ]; then
@@ -525,13 +525,9 @@ restore_critical_files() {
                     print_success "✓ Restored .env"
             else
                 print_warning "⚠ No .env backup found!"
-                if [ -f "$backup_path/.env.production" ]; then
-                    cp "$backup_path/.env.production" .env && \
-                        print_warning "✓ Created .env from .env.production backup"
-                elif [ -f ".env.production" ]; then
-                    cp .env.production .env && \
-                        print_warning "✓ Created .env from .env.production"
-                elif [ -f ".env.example" ]; then
+                # (2026-05-30) ลบ fallback จาก .env.production — เป็น placeholder (your_username)
+                #   ที่ทำ config:cache พิษทุก deploy. เหลือ .env.example เป็น template เดียว (เตือนชัดให้แก้ creds)
+                if [ -f ".env.example" ]; then
                     cp .env.example .env && \
                         print_error "✗ Created .env from .env.example - UPDATE CREDENTIALS!"
                 else
