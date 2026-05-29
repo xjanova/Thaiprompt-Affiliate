@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "Ace of Wands",
+    "name_th": "เอซไม้เท้า",
+    "number": 1,
+    "type": "minor_arcana",
+    "suit": "wands"
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ประกายแรงบันดาลใจและโอกาสใหม่",
+          "detailed_interpretation_th": "เอซไม้เท้าในปัจจุบัน บอกว่าคุณกำลังอยู่ในช่วงของประกายแรงบันดาลใจและโอกาสใหม่ - ไฟแห่งความคิดสร้างสรรค์ถูกจุด พลังงานพุ่งสูง และมีโอกาสที่น่าตื่นเต้นรออยู่ ไพ่หนุนให้คุณคว้าพลังนี้และลงมือทำสิ่งที่ใจปรารถนา จุดเริ่มต้นที่ทรงพลังกำลังเปิดออก",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลังสร้างสรรค์, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาสวัตถุ",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าปัจจุบัน คือ 'จุดประกายและลงมือทันที'",
+          "advice_th": "คว้าพลังแรงบันดาลใจ - ไฟสร้างสรรค์ถูกจุด ลงมือทำสิ่งที่ใจปรารถนา โอกาสเปิดอยู่",
+          "keywords_th": ["แรงบันดาลใจ", "โอกาสใหม่", "พลังสร้างสรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ประกายความรักและความหลงใหลใหม่",
+          "detailed_interpretation_th": "ในความรัก เอซไม้เท้าปัจจุบันชี้ว่ามีประกายความรักและความหลงใหลใหม่ - แรงดึงดูดที่จุดขึ้น ความรู้สึกตื่นเต้น หรือพลังงานสดใหม่ในความสัมพันธ์ หากโสด มีโอกาสพบคนที่จุดไฟในใจ หากมีคู่ ความหลงใหลกลับมาเบ่งบาน ไพ่หนุนให้คุณตามพลังนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Knight of Swords = กล้าเข้าหา",
+            "pentacles": "Ace of Pentacles = สร้างฐาน",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าปัจจุบันความรัก คือ 'ไฟแห่งความหลงใหลถูกจุด'",
+          "advice_th": "ตามประกายความรัก - แรงดึงดูดจุดขึ้น ความหลงใหลเบ่งบาน กล้าเข้าหาและแสดงออก",
+          "keywords_th": ["ความหลงใหล", "ประกายรัก", "ตื่นเต้น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสใหม่ในงานและไฟในการทำงาน",
+          "detailed_interpretation_th": "ในการงาน เอซไม้เท้าปัจจุบันบอกว่ามีโอกาสใหม่และไฟในการทำงาน - โครงการที่น่าตื่นเต้น ไอเดียสร้างสรรค์ การเริ่มต้นธุรกิจ หรือพลังงานสดใหม่ในอาชีพ ไพ่หนุนให้คุณคว้าโอกาสและลงมือทำด้วยความกระตือรือร้น จุดเริ่มต้นที่ดีกำลังมา",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลังสร้างสรรค์, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาสเงิน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าปัจจุบันงาน คือ 'คว้าโอกาสด้วยความกระตือรือร้น'",
+          "advice_th": "คว้าโอกาสใหม่ - โครงการน่าตื่นเต้น ไอเดียสร้างสรรค์ ลงมือทำด้วยความกระตือรือร้น",
+          "keywords_th": ["โอกาสงาน", "ไอเดียใหม่", "กระตือรือร้น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การจุดประกายความหลงใหลและการค้นพบตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต เอซไม้เท้าปัจจุบันชี้ว่าคุณกำลังจุดประกายความหลงใหลและค้นพบสิ่งที่ทำให้ใจมีชีวิต - การพบความสนใจใหม่ การปลุกพลังสร้างสรรค์ การกล้าแสดงตัวตน ไพ่หนุนให้คุณตามไฟในใจและสำรวจสิ่งที่จุดประกายความกระตือรือร้น",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Star = แรงบันดาลใจ",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าปัจจุบันเติบโต คือ 'ตามไฟในใจสำรวจตัวเอง'",
+          "advice_th": "จุดประกายความหลงใหล - พบความสนใจใหม่ ปลุกพลังสร้างสรรค์ ตามไฟในใจ",
+          "keywords_th": ["จุดประกาย", "ความหลงใหล", "ค้นพบตน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "พลังชีวิตพุ่งสูงและความกระตือรือร้น",
+          "detailed_interpretation_th": "ในสุขภาพ เอซไม้เท้าปัจจุบันบอกว่าพลังชีวิตพุ่งสูงและคุณมีความกระตือรือร้น - ร่างกายเต็มไปด้วยพลัง ความอยากเริ่มกิจกรรมใหม่ การฟื้นพลังหลังช่วงเหนื่อยล้า ไพ่หนุนให้คุณใช้พลังนี้เริ่มออกกำลังกายหรือกิจกรรมที่ดีต่อสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Ace of Swords = กระจ่าง",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าปัจจุบันสุขภาพ คือ 'ใช้พลังเริ่มกิจกรรมใหม่'",
+          "advice_th": "ใช้พลังชีวิต - ร่างกายเต็มพลัง เริ่มออกกำลังกายหรือกิจกรรมที่ดีต่อสุขภาพ",
+          "keywords_th": ["พลังชีวิต", "กระตือรือร้น", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความล่าช้าและแรงบันดาลใจที่ติดขัด",
+          "detailed_interpretation_th": "เอซไม้เท้ากลับหัวในปัจจุบัน บอกว่าคุณกำลังเจอความล่าช้าและแรงบันดาลใจที่ติดขัด - ไอเดียที่ยังไม่เป็นรูปธรรม พลังงานที่หดหาย หรือโอกาสที่ดูเหมือนหลุดมือ ไพ่หนุนให้คุณอดทน หาสิ่งที่จุดประกายใจอีกครั้ง และไม่บังคับให้สิ่งต่างๆ เกิดเร็วเกินไป",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ติดขัด, The Hanged Man = รอ",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวปัจจุบัน คือ 'หาสิ่งที่จุดประกายใจอีกครั้ง'",
+          "advice_th": "อดทนกับความล่าช้า - แรงบันดาลใจติดขัดชั่วคราว หาสิ่งที่จุดประกายใจ ไม่บังคับเร็วเกินไป",
+          "keywords_th": ["ล่าช้า", "ติดขัด", "หาแรงบันดาลใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความหลงใหลที่จางหายหรือเริ่มต้นที่ติดขัด",
+          "detailed_interpretation_th": "ในความรัก เอซไม้เท้ากลับหัวชี้ว่าความหลงใหลจางหายหรือการเริ่มต้นติดขัด - ความรู้สึกที่ลดลง แรงดึงดูดที่หาย หรือความสัมพันธ์ใหม่ที่ไม่ก้าวหน้า ไพ่หนุนให้คุณทบทวนว่าอะไรจุดไฟในใจ และไม่ฝืนความสัมพันธ์ที่ขาดประกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ขาดประกาย, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = ผิดหวัง",
+            "pentacles": "Five of Pentacles = ขาดมั่นคง",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวปัจจุบันความรัก คือ 'ทบทวนว่าอะไรจุดไฟในใจ'",
+          "advice_th": "ทบทวนความหลงใหล - ความรู้สึกจางหาย หาสิ่งที่จุดไฟ ไม่ฝืนความสัมพันธ์ที่ขาดประกาย",
+          "keywords_th": ["ความหลงใหลจาง", "ติดขัด", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสที่หลุดมือหรือโครงการที่ชะงัก",
+          "detailed_interpretation_th": "ในการงาน เอซไม้เท้ากลับหัวบอกว่าโอกาสอาจหลุดมือหรือโครงการชะงัก - ไอเดียที่ไม่ได้ลงมือ การเริ่มต้นที่ล่าช้า หรือพลังงานที่หดหายในงาน ไพ่หนุนให้คุณทบทวนว่าอะไรขัดขวาง จัดการอุปสรรค และกลับมาเชื่อมโยงกับสิ่งที่จุดประกายความกระตือรือร้น",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Tower = ชะงัก",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวปัจจุบันงาน คือ 'จัดการอุปสรรคและกลับมาเชื่อมโยงไฟ'",
+          "advice_th": "ทบทวนอุปสรรค - โอกาสอาจหลุดมือ จัดการสิ่งขัดขวาง กลับมาเชื่อมโยงกับสิ่งที่จุดประกาย",
+          "keywords_th": ["โอกาสหลุด", "โครงการชะงัก", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ขาดทิศทางและไฟในใจหดหาย",
+          "detailed_interpretation_th": "ในการเติบโต เอซไม้เท้ากลับหัวเผยว่าคุณขาดทิศทางและไฟในใจหดหาย - ความรู้สึกหมดแรงบันดาลใจ ไม่รู้ว่าอะไรทำให้ใจมีชีวิต หรือความกระตือรือร้นที่หาย ไพ่หนุนให้คุณกลับมาสำรวจตัวเอง ลองสิ่งใหม่ และให้เวลาในการค้นพบสิ่งที่จุดประกายอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวปัจจุบันเติบโต คือ 'ลองสิ่งใหม่ค้นพบประกายอีกครั้ง'",
+          "advice_th": "กลับมาสำรวจตัวเอง - ไฟในใจหดหาย ลองสิ่งใหม่ ให้เวลาค้นพบสิ่งที่จุดประกาย",
+          "keywords_th": ["ขาดทิศ", "ไฟหดหาย", "สำรวจใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "พลังงานต่ำและความเหนื่อยล้า",
+          "detailed_interpretation_th": "ในสุขภาพ เอซไม้เท้ากลับหัวบอกว่าคุณมีพลังงานต่ำและเหนื่อยล้า - ความอ่อนเพลีย ขาดแรงจูงใจในการดูแลตัวเอง หรือกิจกรรมที่เริ่มแล้วไม่ต่อเนื่อง ไพ่หนุนให้คุณพักผ่อนให้พอ ฟื้นพลังทีละน้อย และไม่บังคับร่างกายเกินกำลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun (rev) = พลังลด, The Hanged Man = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวปัจจุบันสุขภาพ คือ 'ฟื้นพลังทีละน้อย'",
+          "advice_th": "พักผ่อนและฟื้นพลัง - พลังงานต่ำ พักให้พอ ฟื้นทีละน้อย ไม่บังคับร่างกายเกินกำลัง",
+          "keywords_th": ["พลังต่ำ", "เหนื่อยล้า", "พักผ่อน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการคว้าโอกาสและจุดประกายให้เป็นจริง",
+          "detailed_interpretation_th": "เอซไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือการต้องคว้าโอกาสและทำให้ประกายแรงบันดาลใจเป็นจริง - การกล้าเริ่มต้น การลงมือทำตามไอเดีย การไม่ปล่อยให้โอกาสผ่านไป อุปสรรคนี้คือการต้องลงมือทันทีก่อนไฟจะดับ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลังสร้างสรรค์, The Sun = ความสำเร็จ",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight of Wands = ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอุปสรรค คือ 'ลงมือทันทีก่อนไฟดับ'",
+          "advice_th": "คว้าโอกาสและลงมือ - กล้าเริ่มต้น ทำตามไอเดีย ไม่ปล่อยให้โอกาสผ่านไป",
+          "keywords_th": ["คว้าโอกาส", "ลงมือ", "ทำให้จริง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือการกล้าตามความหลงใหล",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการต้องกล้าตามความหลงใหล - การกล้าเข้าหาคนที่ชอบ การแสดงความรู้สึก การจุดประกายความสัมพันธ์ อุปสรรคนี้คือการเอาชนะความลังเลและกล้าตามไฟในใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Knight of Swords = กล้าเข้าหา",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอุปสรรคความรัก คือ 'เอาชนะความลังเลตามไฟในใจ'",
+          "advice_th": "กล้าตามความหลงใหล - กล้าเข้าหา แสดงความรู้สึก เอาชนะความลังเล จุดประกายความสัมพันธ์",
+          "keywords_th": ["กล้าตาม", "ความหลงใหล", "เอาชนะลังเล"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือการกล้าลงมือทำตามไอเดีย",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการต้องกล้าลงมือทำตามไอเดีย - การเริ่มโครงการใหม่ การคว้าโอกาส การเอาชนะความกลัวที่จะเริ่ม อุปสรรคนี้คือการแปลงไอเดียเป็นการกระทำก่อนที่โมเมนตัมจะหาย",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอุปสรรคงาน คือ 'แปลงไอเดียเป็นการกระทำ'",
+          "advice_th": "กล้าลงมือทำ - เริ่มโครงการใหม่ คว้าโอกาส เอาชนะความกลัวที่จะเริ่ม",
+          "keywords_th": ["กล้าลงมือ", "ทำตามไอเดีย", "คว้าโอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือการกล้าตามไฟในใจและสำรวจ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการต้องกล้าตามไฟในใจและสำรวจสิ่งใหม่ - การลองสิ่งที่ไม่คุ้นเคย การกล้าแสดงตัวตน การปลุกความกระตือรือร้น อุปสรรคนี้คือการเอาชนะความกลัวและตามความหลงใหลที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Star = แรงบันดาลใจ",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอุปสรรคเติบโต คือ 'เอาชนะความกลัวตามความหลงใหล'",
+          "advice_th": "กล้าตามไฟในใจ - ลองสิ่งใหม่ กล้าแสดงตัวตน ปลุกความกระตือรือร้น",
+          "keywords_th": ["ตามไฟในใจ", "สำรวจ", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือการเริ่มต้นกิจกรรมเพื่อสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการต้องเริ่มต้นกิจกรรมเพื่อสุขภาพ - การเริ่มออกกำลังกาย การปรับวิถีชีวิต การลงมือดูแลตัวเอง อุปสรรคนี้คือการเอาชนะความเฉื่อยและใช้พลังเริ่มต้นสิ่งที่ดีต่อร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังกาย, The Sun = พลัง",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอุปสรรคสุขภาพ คือ 'เอาชนะความเฉื่อยและเริ่ม'",
+          "advice_th": "เริ่มกิจกรรมเพื่อสุขภาพ - เริ่มออกกำลังกาย ปรับวิถี ใช้พลังเริ่มต้นสิ่งที่ดีต่อร่างกาย",
+          "keywords_th": ["เริ่มกิจกรรม", "เอาชนะเฉื่อย", "ดูแลตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือความลังเลและการไม่ลงมือ",
+          "detailed_interpretation_th": "เอซไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือความลังเลและการไม่ลงมือ - ความกลัวที่จะเริ่ม การผัดวันประกันพรุ่ง การปล่อยให้ไอเดียดับไป ไพ่เตือนว่าความลังเลทำให้คุณพลาดโอกาส กล้าลงมือก่อนไฟจะดับ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Tower = ชะงัก",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Seven of Pentacles = รอนาน",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอุปสรรค คือ 'ความลังเลทำให้พลาดโอกาส'",
+          "advice_th": "เอาชนะความลังเล - หยุดผัดวันประกันพรุ่ง กล้าลงมือก่อนไฟจะดับ ไม่ปล่อยให้ไอเดียดับ",
+          "keywords_th": ["ลังเล", "ไม่ลงมือ", "กล้าเริ่ม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือกลัวที่จะเปิดใจหรือเริ่มความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือความกลัวที่จะเปิดใจหรือเริ่มความรัก - การไม่กล้าแสดงความรู้สึก การลังเลที่จะเข้าหา การปล่อยให้โอกาสรักผ่านไป ไพ่หนุนให้คุณกล้าเปิดใจและตามความรู้สึก ก่อนความหลงใหลจะจาง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = กลัว",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอุปสรรคความรัก คือ 'กล้าเปิดใจก่อนความหลงใหลจาง'",
+          "advice_th": "กล้าเปิดใจ - หยุดลังเล แสดงความรู้สึก ตามไฟในใจก่อนความหลงใหลจะจาง",
+          "keywords_th": ["กลัวเปิดใจ", "ลังเล", "กล้าตาม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือกลัวเริ่มและปล่อยโอกาสผ่าน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือความกลัวเริ่มและการปล่อยโอกาสผ่าน - การไม่กล้าลงมือทำตามไอเดีย การผัดวันเริ่มโครงการ การกลัวล้มเหลว ไพ่หนุนให้คุณกล้าเริ่ม คว้าโอกาส และไม่ปล่อยให้ความกลัวขังศักยภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ชะงัก, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Seven of Pentacles = รอนาน",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอุปสรรคงาน คือ 'กล้าเริ่มไม่ให้ความกลัวขังศักยภาพ'",
+          "advice_th": "กล้าเริ่มและคว้าโอกาส - หยุดผัดวัน ลงมือทำตามไอเดีย ไม่ให้ความกลัวขังศักยภาพ",
+          "keywords_th": ["กลัวเริ่ม", "ปล่อยโอกาส", "กล้าลงมือ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือขาดแรงจูงใจและไม่กล้าสำรวจ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการขาดแรงจูงใจและไม่กล้าสำรวจ - ความเฉื่อยชา การติดอยู่ในความสบาย การกลัวลองสิ่งใหม่ ไพ่หนุนให้คุณกล้าก้าวออกจากความสบาย ลองสิ่งใหม่ และปลุกไฟในใจอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอุปสรรคเติบโต คือ 'กล้าก้าวออกจากความสบาย'",
+          "advice_th": "ปลุกแรงจูงใจ - หยุดความเฉื่อย ก้าวออกจากความสบาย ลองสิ่งใหม่ ปลุกไฟในใจ",
+          "keywords_th": ["ขาดแรงจูงใจ", "เฉื่อยชา", "กล้าลอง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือขาดพลังและไม่เริ่มดูแลตัวเอง",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือการขาดพลังและไม่เริ่มดูแลตัวเอง - ความอ่อนเพลีย การผัดวันออกกำลังกาย การปล่อยสุขภาพไป ไพ่หนุนให้คุณพักผ่อนให้พอเพื่อฟื้นพลัง แล้วเริ่มกิจกรรมเล็กๆ ที่ดีต่อร่างกายทีละก้าว",
+          "adjacent_influences": {
+            "major_arcana": "The Sun (rev) = พลังลด, The Hanged Man = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอุปสรรคสุขภาพ คือ 'ฟื้นพลังแล้วเริ่มทีละก้าว'",
+          "advice_th": "ฟื้นพลังและเริ่มเล็กๆ - พักให้พอ เริ่มกิจกรรมเล็กที่ดีต่อร่างกาย ไม่ปล่อยสุขภาพ",
+          "keywords_th": ["ขาดพลัง", "ไม่เริ่ม", "ทีละก้าว"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยมีจุดเริ่มต้นที่ทรงพลัง",
+          "detailed_interpretation_th": "เอซไม้เท้าในอดีต เผยว่าคุณเคยมีจุดเริ่มต้นที่ทรงพลัง - ช่วงเวลาที่ไฟแรงบันดาลใจถูกจุด การเริ่มต้นโครงการหรือเส้นทางใหม่ การคว้าโอกาสที่เปลี่ยนชีวิต ประสบการณ์นี้สอนคุณว่าพลังแห่งการเริ่มต้นสร้างสิ่งยิ่งใหญ่ได้",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอดีต คือ 'พลังเริ่มต้นสร้างสิ่งยิ่งใหญ่'",
+          "advice_th": "ใช้บทเรียนจุดเริ่มต้น - คุณเคยจุดไฟและเริ่มสิ่งใหม่สำเร็จ ใช้พลังนี้อีกครั้ง",
+          "keywords_th": ["จุดเริ่มต้นเก่า", "พลัง", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความหลงใหลที่จุดประกายความรัก",
+          "detailed_interpretation_th": "ในความรัก เอซไม้เท้าอดีตเผยว่าคุณเคยมีความหลงใหลที่จุดประกายความรัก - แรงดึงดูดที่รุนแรง การเริ่มต้นความสัมพันธ์ที่ตื่นเต้น ช่วงเวลาที่ไฟในใจลุกโชน ประสบการณ์นี้สอนคุณว่าความหลงใหลที่แท้จริงรู้สึกอย่างไร",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอดีตความรัก คือ 'รู้ว่าความหลงใหลแท้รู้สึกอย่างไร'",
+          "advice_th": "ใช้บทเรียนความหลงใหล - คุณรู้ว่าไฟในใจเป็นอย่างไร มองหาความรู้สึกนั้นในรักใหม่",
+          "keywords_th": ["ความหลงใหลเก่า", "จุดประกาย", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยเริ่มต้นโครงการหรือธุรกิจที่ทรงพลัง",
+          "detailed_interpretation_th": "ในการงาน เอซไม้เท้าอดีตเผยว่าคุณเคยเริ่มต้นโครงการหรือธุรกิจที่ทรงพลัง - การคว้าโอกาส การลงมือทำตามไอเดีย การสร้างสิ่งใหม่จากศูนย์ ประสบการณ์นี้กลายเป็นความรู้ว่าคุณมีพลังริเริ่มและกล้าลงมือ ใช้ความมั่นใจนี้ในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอดีตงาน คือ 'คุณมีพลังริเริ่มและกล้าลงมือ'",
+          "advice_th": "ใช้บทเรียนการริเริ่ม - คุณเคยเริ่มสิ่งใหม่สำเร็จ ใช้พลังและความกล้านี้ในปัจจุบัน",
+          "keywords_th": ["เริ่มโครงการเก่า", "พลังริเริ่ม", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยจุดประกายความหลงใหลและค้นพบตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต เอซไม้เท้าอดีตชี้ว่าคุณเคยจุดประกายความหลงใหลและค้นพบสิ่งที่ทำให้ใจมีชีวิต - การพบความสนใจที่เปลี่ยนชีวิต การปลุกพลังสร้างสรรค์ การกล้าแสดงตัวตน ประสบการณ์นี้กลายเป็นรากฐานของความเข้าใจว่าอะไรจุดไฟในใจคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Star = แรงบันดาลใจ",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอดีตเติบโต คือ 'รู้ว่าอะไรจุดไฟในใจคุณ'",
+          "advice_th": "ใช้บทเรียนการค้นพบ - คุณรู้ว่าอะไรจุดไฟในใจ ใช้ความเข้าใจนี้นำทาง",
+          "keywords_th": ["จุดประกายเก่า", "ค้นพบตน", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีพลังชีวิตเต็มเปี่ยมและกระตือรือร้น",
+          "detailed_interpretation_th": "ในสุขภาพ เอซไม้เท้าอดีตเผยว่าคุณเคยมีพลังชีวิตเต็มเปี่ยมและกระตือรือร้น - ช่วงเวลาที่ร่างกายแข็งแรง พลังล้น ความอยากเคลื่อนไหว ประสบการณ์นี้สอนคุณว่ารู้สึกอย่างไรเมื่อร่างกายมีพลัง ใช้เป็นเป้าหมายและรู้ว่ามันกลับมาได้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Ace of Swords = กระจ่าง",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอดีตสุขภาพ คือ 'พลังชีวิตกลับมาได้'",
+          "advice_th": "ใช้บทเรียนพลังชีวิต - คุณเคยมีพลังล้น ใช้เป็นเป้าหมาย รู้ว่ามันกลับมาได้",
+          "keywords_th": ["พลังเก่า", "กระตือรือร้น", "เป้าหมาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยพลาดโอกาสหรือปล่อยให้ไฟดับ",
+          "detailed_interpretation_th": "เอซไม้เท้ากลับหัวในอดีต เผยว่าคุณเคยพลาดโอกาสหรือปล่อยให้ไฟดับ - การไม่ลงมือทำตามไอเดีย การลังเลจนโอกาสผ่าน การปล่อยให้แรงบันดาลใจหายไป บทเรียนคือคุณรู้ว่าการลงมือทันเวลาสำคัญ และตอนนี้พร้อมที่จะคว้าโอกาส",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Tower = ชะงัก",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอนาน",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวอดีต คือ 'การลงมือทันเวลาสำคัญ'",
+          "advice_th": "ใช้บทเรียนการพลาด - คุณรู้ว่าต้องลงมือทันเวลา ตอนนี้พร้อมคว้าโอกาส",
+          "keywords_th": ["พลาดโอกาส", "ไฟดับ", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่ขาดประกายหรือไม่ได้เริ่ม",
+          "detailed_interpretation_th": "ในความรัก เอซไม้เท้ากลับหัวในอดีตชี้ว่าคุณเคยมีความรักที่ขาดประกายหรือไม่ได้เริ่ม - การลังเลที่จะเข้าหา ความหลงใหลที่จางเร็ว หรือโอกาสรักที่ปล่อยผ่าน บทเรียนคือคุณรู้ว่าการกล้าตามความรู้สึกสำคัญ และความรักต้องการการดูแลไฟให้ลุก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = ผิดหวัง",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวอดีตความรัก คือ 'ความรักต้องดูแลไฟให้ลุก'",
+          "advice_th": "ใช้บทเรียนรักขาดประกาย - คุณรู้ว่าต้องกล้าตามความรู้สึกและดูแลไฟให้ลุก",
+          "keywords_th": ["รักขาดประกาย", "ลังเล", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยปล่อยโอกาสงานหรือไม่ลงมือทำ",
+          "detailed_interpretation_th": "ในการงาน เอซไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยปล่อยโอกาสงานหรือไม่ลงมือทำ - ไอเดียที่ไม่ได้เริ่ม โอกาสที่ลังเลจนหลุด การกลัวล้มเหลวจนไม่กล้า บทเรียนคือคุณรู้ว่าการคว้าโอกาสและลงมือสำคัญ และตอนนี้พร้อมที่จะกล้ามากขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = พลาดโอกาส, The Tower = ชะงัก",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอนาน",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวอดีตงาน คือ 'การคว้าโอกาสและลงมือสำคัญ'",
+          "advice_th": "ใช้บทเรียนการปล่อยโอกาส - คุณรู้ว่าต้องคว้าและลงมือ ตอนนี้พร้อมกล้ามากขึ้น",
+          "keywords_th": ["ปล่อยโอกาส", "ไม่ลงมือ", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยขาดทิศทางและไฟในใจ",
+          "detailed_interpretation_th": "ในการเติบโต เอซไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยขาดทิศทางและไฟในใจ - ช่วงเวลาที่หมดแรงบันดาลใจ ไม่รู้ว่าอะไรทำให้ใจมีชีวิต หรือความกระตือรือร้นที่หาย บทเรียนคือคุณรู้ว่าการเชื่อมโยงกับความหลงใหลสำคัญแค่ไหน และจะไม่ปล่อยให้ไฟดับอีก",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวอดีตเติบโต คือ 'การเชื่อมโยงความหลงใหลสำคัญ'",
+          "advice_th": "ใช้บทเรียนขาดทิศ - คุณรู้ว่าต้องเชื่อมโยงกับความหลงใหล จะไม่ปล่อยให้ไฟดับอีก",
+          "keywords_th": ["ขาดทิศเก่า", "ไฟดับ", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีช่วงพลังงานต่ำและเหนื่อยล้า",
+          "detailed_interpretation_th": "ในสุขภาพ เอซไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยมีช่วงพลังงานต่ำและเหนื่อยล้า - ความอ่อนเพลียสะสม ขาดแรงจูงใจ หรือกิจกรรมที่เริ่มแล้วไม่ต่อเนื่อง บทเรียนคือคุณรู้ว่าการพักผ่อนและดูแลพลังงานสำคัญ และการเริ่มทีละน้อยยั่งยืนกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Sun (rev) = พลังลด, The Hanged Man = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวอดีตสุขภาพ คือ 'เริ่มทีละน้อยยั่งยืนกว่า'",
+          "advice_th": "ใช้บทเรียนพลังต่ำ - คุณรู้ว่าต้องพักและดูแลพลังงาน เริ่มทีละน้อยอย่างยั่งยืน",
+          "keywords_th": ["พลังต่ำเก่า", "เหนื่อยล้า", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีโอกาสใหม่และแรงบันดาลใจ",
+          "detailed_interpretation_th": "เอซไม้เท้าในอนาคต เป็นข่าวดี - อนาคตจะมีโอกาสใหม่และแรงบันดาลใจ ไฟแห่งความคิดสร้างสรรค์จะถูกจุด มีโครงการหรือเส้นทางที่น่าตื่นเต้นรออยู่ ไพ่หนุนให้คุณเตรียมพร้อมคว้าโอกาสและลงมือทำเมื่อมันมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอนาคต คือ 'เตรียมพร้อมคว้าโอกาส'",
+          "advice_th": "เตรียมรับโอกาสใหม่ - ไฟสร้างสรรค์จะถูกจุด โครงการน่าตื่นเต้นรออยู่ พร้อมลงมือ",
+          "keywords_th": ["โอกาสใหม่", "แรงบันดาลใจ", "เตรียมพร้อม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความหลงใหลและความรักใหม่กำลังมา",
+          "detailed_interpretation_th": "ในความรัก เอซไม้เท้าอนาคตเป็นข่าวดี - ความหลงใหลและความรักใหม่กำลังมา หากโสด มีโอกาสพบคนที่จุดไฟในใจ หากมีคู่ ความหลงใหลจะกลับมาเบ่งบาน ไพ่หนุนให้คุณเปิดใจรับพลังความรักที่สดใหม่และตื่นเต้น",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอนาคตความรัก คือ 'พลังความรักสดใหม่กำลังมา'",
+          "advice_th": "เปิดใจรับความรักใหม่ - ความหลงใหลกำลังมา พบคนที่จุดไฟ หรือไฟกลับมาเบ่งบาน",
+          "keywords_th": ["ความหลงใหลใหม่", "รักสดใหม่", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสใหม่ในงานและไฟในการทำงานกำลังมา",
+          "detailed_interpretation_th": "ในการงาน เอซไม้เท้าอนาคตเป็นข่าวดี - โอกาสใหม่และไฟในการทำงานกำลังมา โครงการที่น่าตื่นเต้น ไอเดียสร้างสรรค์ หรือการเริ่มต้นธุรกิจ ไพ่หนุนให้คุณเตรียมพร้อม คว้าโอกาส และลงมือทำด้วยความกระตือรือร้นเมื่อมันมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาสเงิน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอนาคตงาน คือ 'เตรียมคว้าโอกาสที่กำลังมา'",
+          "advice_th": "เตรียมรับโอกาสงาน - โครงการน่าตื่นเต้น ไอเดียใหม่ คว้าและลงมือด้วยความกระตือรือร้น",
+          "keywords_th": ["โอกาสงาน", "ไอเดียใหม่", "เตรียมพร้อม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การจุดประกายความหลงใหลใหม่รออยู่",
+          "detailed_interpretation_th": "ในการเติบโต เอซไม้เท้าอนาคตเป็นข่าวดี - การจุดประกายความหลงใหลใหม่รอคุณอยู่ คุณจะพบความสนใจที่ทำให้ใจมีชีวิต ปลุกพลังสร้างสรรค์ หรือกล้าแสดงตัวตน ไพ่หนุนให้คุณเปิดใจรับสิ่งใหม่และตามไฟในใจที่จะถูกจุด",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Star = แรงบันดาลใจ",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอนาคตเติบโต คือ 'ตามไฟในใจที่จะถูกจุด'",
+          "advice_th": "เปิดใจรับการจุดประกาย - พบความสนใจใหม่ ปลุกพลังสร้างสรรค์ ตามไฟในใจ",
+          "keywords_th": ["จุดประกายใหม่", "ความหลงใหล", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "พลังชีวิตจะฟื้นและกระตือรือร้น",
+          "detailed_interpretation_th": "ในสุขภาพ เอซไม้เท้าอนาคตเป็นข่าวดี - พลังชีวิตจะฟื้นและคุณจะกระตือรือร้น หลังช่วงเหนื่อยล้า ร่างกายจะกลับมามีพลัง ความอยากเริ่มกิจกรรมใหม่จะเกิด ไพ่หนุนให้คุณเตรียมใช้พลังนี้เริ่มออกกำลังกายหรือกิจกรรมที่ดีต่อสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Ace of Swords = กระจ่าง",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าอนาคตสุขภาพ คือ 'พลังชีวิตจะฟื้นกลับมา'",
+          "advice_th": "เตรียมใช้พลังที่ฟื้น - ร่างกายจะมีพลัง เริ่มออกกำลังกายหรือกิจกรรมที่ดีต่อสุขภาพ",
+          "keywords_th": ["พลังฟื้น", "กระตือรือร้น", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตอาจมีความล่าช้าหรือโอกาสที่ติดขัด",
+          "detailed_interpretation_th": "เอซไม้เท้ากลับหัวในอนาคต เตือนว่าอนาคตอาจมีความล่าช้าหรือโอกาสที่ติดขัด - ไอเดียที่ยังไม่เป็นรูปธรรม การเริ่มต้นที่ช้ากว่าคาด หรือพลังงานที่หดหาย ไพ่หนุนให้คุณอดทน เตรียมพร้อม และไม่ท้อเมื่อสิ่งต่างๆ ไม่เกิดเร็วอย่างที่หวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ติดขัด, The Hanged Man = รอ",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวอนาคต คือ 'อดทนเมื่อสิ่งต่างๆ ช้ากว่าหวัง'",
+          "advice_th": "เตรียมรับความล่าช้า - โอกาสอาจติดขัด อดทน เตรียมพร้อม ไม่ท้อเมื่อไม่เกิดเร็ว",
+          "keywords_th": ["ล่าช้า", "ติดขัด", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความหลงใหลอาจจางหรือเริ่มต้นช้า",
+          "detailed_interpretation_th": "ในความรัก เอซไม้เท้ากลับหัวอนาคตเตือนว่าความหลงใหลอาจจางหรือเริ่มต้นช้า - ความรู้สึกที่ลดลง ความสัมพันธ์ใหม่ที่ไม่ก้าวหน้าเร็ว หรือแรงดึงดูดที่ต้องใช้เวลา ไพ่หนุนให้คุณอดทน ดูแลไฟในใจ และไม่บังคับให้ความรักเกิดเร็วเกินไป",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ขาดประกาย, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = ผิดหวัง",
+            "pentacles": "Five of Pentacles = ขาดมั่นคง",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวอนาคตความรัก คือ 'ดูแลไฟในใจ ไม่บังคับเร็วเกินไป'",
+          "advice_th": "เตรียมรับความรักที่ช้า - ความหลงใหลอาจจาง ดูแลไฟในใจ ไม่บังคับให้เกิดเร็วเกินไป",
+          "keywords_th": ["ความหลงใหลจาง", "เริ่มช้า", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสงานอาจหลุดมือหรือโครงการชะงัก",
+          "detailed_interpretation_th": "ในการงาน เอซไม้เท้ากลับหัวอนาคตเตือนว่าโอกาสงานอาจหลุดมือหรือโครงการชะงัก - ไอเดียที่ไม่ได้ลงมือ การเริ่มต้นที่ล่าช้า หรืออุปสรรคที่ทำให้พลังงานหดหาย ไพ่หนุนให้คุณเตรียมพร้อม จัดการอุปสรรคล่วงหน้า และไม่ปล่อยให้ความล่าช้าทำให้ท้อ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Tower = ชะงัก",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวอนาคตงาน คือ 'จัดการอุปสรรคล่วงหน้า'",
+          "advice_th": "เตรียมรับอุปสรรค - โอกาสอาจหลุดมือ จัดการอุปสรรคล่วงหน้า ไม่ปล่อยให้ความล่าช้าทำให้ท้อ",
+          "keywords_th": ["โอกาสหลุด", "โครงการชะงัก", "เตรียมพร้อม"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจขาดทิศทางและไฟในใจหดหายชั่วคราว",
+          "detailed_interpretation_th": "ในการเติบโต เอซไม้เท้ากลับหัวอนาคตเตือนว่าคุณอาจขาดทิศทางและไฟในใจหดหายชั่วคราว - ความรู้สึกหมดแรงบันดาลใจ ไม่รู้ว่าอะไรทำให้ใจมีชีวิต ไพ่หนุนให้คุณใช้ช่วงนี้สำรวจตัวเอง ลองสิ่งใหม่ และให้เวลาในการค้นพบสิ่งที่จุดประกายอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวอนาคตเติบโต คือ 'ใช้ช่วงนี้สำรวจค้นพบประกาย'",
+          "advice_th": "เตรียมรับช่วงขาดทิศ - ไฟอาจหดหายชั่วคราว ลองสิ่งใหม่ ให้เวลาค้นพบประกาย",
+          "keywords_th": ["ขาดทิศ", "ไฟหดหาย", "สำรวจ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "พลังงานอาจต่ำและฟื้นช้า",
+          "detailed_interpretation_th": "ในสุขภาพ เอซไม้เท้ากลับหัวอนาคตบอกว่าพลังงานอาจต่ำและฟื้นช้า - ความอ่อนเพลีย ขาดแรงจูงใจในการดูแลตัวเอง ไพ่หนุนให้คุณพักผ่อนให้พอ ฟื้นพลังทีละน้อย และเริ่มกิจกรรมเล็กๆ อย่างค่อยเป็นค่อยไป ไม่บังคับร่างกายเกินกำลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun (rev) = พลังลด, The Hanged Man = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวอนาคตสุขภาพ คือ 'ฟื้นพลังค่อยเป็นค่อยไป'",
+          "advice_th": "เตรียมรับพลังต่ำ - พักให้พอ ฟื้นทีละน้อย เริ่มกิจกรรมเล็กค่อยเป็นค่อยไป",
+          "keywords_th": ["พลังต่ำ", "ฟื้นช้า", "ค่อยเป็นค่อยไป"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือจุดประกายและสร้างสิ่งใหม่",
+          "detailed_interpretation_th": "เอซไม้เท้าในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือการจุดประกายและสร้างสิ่งใหม่ - การเริ่มต้นโครงการที่มีความหมาย การตามความหลงใหล การสร้างสรรค์สิ่งที่สะท้อนตัวตน เป้าหมายนี้ขับเคลื่อนด้วยพลังและความกระตือรือร้น",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าเป้าหมาย คือ 'สร้างสิ่งที่สะท้อนตัวตน'",
+          "advice_th": "ตั้งเป้าจุดประกายและสร้าง - เริ่มโครงการที่มีความหมาย ตามความหลงใหล สร้างสรรค์",
+          "keywords_th": ["จุดประกาย", "สร้างใหม่", "ความหลงใหล"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือความรักที่เต็มไปด้วยความหลงใหล",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือความรักที่เต็มไปด้วยความหลงใหลและพลัง - ความสัมพันธ์ที่จุดไฟในใจ การมีความตื่นเต้นและความสด การเติบโตร่วมกันด้วยความกระตือรือร้น ไพ่หนุนให้คุณตั้งเป้าหมายความรักที่มีชีวิตชีวาและจริงใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าเป้าหมายความรัก คือ 'ความรักที่มีชีวิตชีวา'",
+          "advice_th": "ตั้งเป้าความรักเต็มพลัง - ความสัมพันธ์ที่จุดไฟ มีความตื่นเต้น เติบโตร่วมกัน",
+          "keywords_th": ["ความหลงใหล", "มีชีวิตชีวา", "ตื่นเต้น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือสร้างสรรค์งานที่ตรงความหลงใหล",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือการสร้างสรรค์งานที่ตรงความหลงใหล - การเริ่มธุรกิจที่รัก การทำโครงการที่จุดไฟ การใช้พลังสร้างสรรค์ในอาชีพ ไพ่หนุนให้คุณตั้งเป้าหมายที่ขับเคลื่อนด้วยความกระตือรือร้น ไม่ใช่แค่เงิน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าเป้าหมายงาน คือ 'งานที่ขับเคลื่อนด้วยความกระตือรือร้น'",
+          "advice_th": "ตั้งเป้างานตรงความหลงใหล - เริ่มธุรกิจที่รัก ทำโครงการที่จุดไฟ ใช้พลังสร้างสรรค์",
+          "keywords_th": ["งานที่รัก", "สร้างสรรค์", "ความหลงใหล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือใช้ชีวิตด้วยความหลงใหลและพลัง",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือการใช้ชีวิตด้วยความหลงใหลและพลัง - การตามสิ่งที่จุดไฟในใจ การกล้าแสดงตัวตน การสร้างชีวิตที่มีชีวิตชีวา ไพ่หนุนให้คุณตั้งเป้าหมายที่ทำให้คุณตื่นเต้นที่จะตื่นมาในแต่ละวัน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Star = แรงบันดาลใจ",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าเป้าหมายเติบโต คือ 'ชีวิตที่ตื่นเต้นจะตื่นมาในแต่ละวัน'",
+          "advice_th": "ตั้งเป้าใช้ชีวิตด้วยความหลงใหล - ตามสิ่งที่จุดไฟ กล้าแสดงตัวตน สร้างชีวิตมีชีวิตชีวา",
+          "keywords_th": ["ความหลงใหล", "พลัง", "มีชีวิตชีวา"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือร่างกายที่เต็มไปด้วยพลังชีวิต",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือร่างกายที่เต็มไปด้วยพลังชีวิต - การมีพลังกระตือรือร้น การออกกำลังกายที่สนุก การใช้ชีวิตอย่างกระฉับกระเฉง ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพที่เน้นพลังงานและความสนุก ไม่ใช่แค่การควบคุม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Ace of Swords = กระจ่าง",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าเป้าหมายสุขภาพ คือ 'เน้นพลังงานและความสนุก'",
+          "advice_th": "ตั้งเป้าร่างกายเต็มพลัง - มีพลังกระตือรือร้น ออกกำลังกายที่สนุก ใช้ชีวิตกระฉับกระเฉง",
+          "keywords_th": ["พลังชีวิต", "กระตือรือร้น", "สนุก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือปลุกแรงบันดาลใจที่หายไป",
+          "detailed_interpretation_th": "เอซไม้เท้ากลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือการปลุกแรงบันดาลใจที่หายไป - กลับมาหาสิ่งที่จุดไฟในใจ ค้นพบความหลงใหลใหม่ ปลดความเฉื่อยชา เป้าหมายนี้ต้องการการสำรวจและความอดทน แต่จะนำมาซึ่งชีวิตที่มีพลังอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Star = ฟื้นศรัทธา",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = ลองใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวเป้าหมาย คือ 'กลับมาหาสิ่งที่จุดไฟในใจ'",
+          "advice_th": "ตั้งเป้าปลุกแรงบันดาลใจ - กลับมาหาสิ่งที่จุดไฟ ค้นพบความหลงใหลใหม่ ปลดความเฉื่อย",
+          "keywords_th": ["ปลุกแรงบันดาลใจ", "ค้นพบ", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือฟื้นความหลงใหลในความรัก",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือการฟื้นความหลงใหลในความรัก - กลับมาจุดไฟในความสัมพันธ์ สร้างความสดใหม่ ค้นพบความตื่นเต้นอีกครั้ง ไพ่หนุนให้คุณลงทุนในความรักของคุณ ทำสิ่งใหม่ร่วมกัน และไม่ปล่อยให้กิจวัตรดับไฟ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = ลองใหม่",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวเป้าหมายความรัก คือ 'ไม่ปล่อยให้กิจวัตรดับไฟ'",
+          "advice_th": "ตั้งเป้าฟื้นความหลงใหล - จุดไฟในความสัมพันธ์ สร้างความสดใหม่ ทำสิ่งใหม่ร่วมกัน",
+          "keywords_th": ["ฟื้นความหลงใหล", "สดใหม่", "จุดไฟ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือเรียกไฟในการทำงานกลับมา",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือการเรียกไฟในการทำงานกลับมา - หลังจากหมดไฟ ค้นพบสิ่งที่จุดประกาย กลับมาทำงานด้วยความกระตือรือร้น ไพ่หนุนให้คุณสำรวจสิ่งที่เคยรักในงาน ลองโครงการใหม่ และปลุกพลังสร้างสรรค์อีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, The Sun = ฟื้นพลัง",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Page of Swords = ไอเดียใหม่",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight of Wands = พลังกลับ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวเป้าหมายงาน คือ 'ปลุกพลังสร้างสรรค์อีกครั้ง'",
+          "advice_th": "ตั้งเป้าเรียกไฟในงาน - สำรวจสิ่งที่เคยรัก ลองโครงการใหม่ ปลุกพลังสร้างสรรค์",
+          "keywords_th": ["เรียกไฟกลับ", "ค้นพบ", "พลังสร้างสรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือค้นพบความหลงใหลอีกครั้ง",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือการค้นพบความหลงใหลอีกครั้ง - หลังจากไฟในใจหดหาย กลับมาสำรวจสิ่งที่ทำให้ใจมีชีวิต ลองสิ่งใหม่ ปลุกความกระตือรือร้น ไพ่หนุนให้คุณให้เวลาตัวเองในการค้นพบและไม่กดดันให้ไฟลุกทันที",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = ลองใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวเป้าหมายเติบโต คือ 'ให้เวลาค้นพบไม่กดดัน'",
+          "advice_th": "ตั้งเป้าค้นพบความหลงใหล - สำรวจสิ่งที่ทำให้ใจมีชีวิต ลองสิ่งใหม่ ให้เวลาตัวเอง",
+          "keywords_th": ["ค้นพบความหลงใหล", "สำรวจ", "ให้เวลา"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือฟื้นพลังและความกระตือรือร้น",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือการฟื้นพลังและความกระตือรือร้น - หลังจากเหนื่อยล้า กลับมามีพลังชีวิต ค้นพบกิจกรรมที่สนุก ปลุกความอยากเคลื่อนไหว ไพ่หนุนให้คุณพักผ่อนให้พอ เริ่มกิจกรรมเล็กๆ ที่ชอบ และฟื้นพลังทีละน้อย",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ฟื้นพลัง, The Star = ฟื้นฟู",
+            "wands": "Page of Wands = ลองใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Knight of Wands = พลังกลับ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวเป้าหมายสุขภาพ คือ 'ฟื้นพลังด้วยกิจกรรมที่สนุก'",
+          "advice_th": "ตั้งเป้าฟื้นพลัง - พักให้พอ เริ่มกิจกรรมเล็กที่ชอบ ปลุกความอยากเคลื่อนไหว",
+          "keywords_th": ["ฟื้นพลัง", "กระตือรือร้น", "ทีละน้อย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือพลังสร้างสรรค์และความกระตือรือร้น",
+          "detailed_interpretation_th": "เอซไม้เท้าในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือพลังสร้างสรรค์และความกระตือรือร้น - คุณมีไฟในใจ ชอบเริ่มสิ่งใหม่ มีพลังในการลงมือ รากฐานนี้ทำให้คุณริเริ่มสิ่งต่างๆ และจุดประกายความตื่นเต้นในชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Sun = ความสำเร็จ",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ารากฐาน คือ 'พลังสร้างสรรค์คือพลังของคุณ'",
+          "advice_th": "ใช้พลังสร้างสรรค์เป็นรากฐาน - คุณมีไฟในใจ ชอบเริ่มสิ่งใหม่ จุดประกายความตื่นเต้น",
+          "keywords_th": ["พลังสร้างสรรค์", "กระตือรือร้น", "ริเริ่ม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือความหลงใหลและพลัง",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความหลงใหลและพลัง - คุณรักด้วยใจที่ร้อนแรง กล้าแสดงออก มีพลังในการดูแลความสัมพันธ์ รากฐานนี้ทำให้คุณเป็นคู่ครองที่มีชีวิตชีวาและจุดไฟในความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ารากฐานความรัก คือ 'ความหลงใหลคือพลังในรัก'",
+          "advice_th": "ใช้ความหลงใหลเป็นรากฐาน - รักด้วยใจร้อนแรง กล้าแสดงออก จุดไฟในความรัก",
+          "keywords_th": ["ความหลงใหล", "พลัง", "มีชีวิตชีวา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือพลังริเริ่มและความกล้าลงมือ",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือพลังริเริ่มและความกล้าลงมือ - คุณชอบเริ่มสิ่งใหม่ มีไอเดียสร้างสรรค์ กล้าคว้าโอกาส รากฐานนี้ทำให้คุณเป็นผู้ริเริ่มที่ดี สร้างโครงการใหม่ และนำพาทีมด้วยพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Emperor = ผู้นำ",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ารากฐานงาน คือ 'พลังริเริ่มคือจุดแข็ง'",
+          "advice_th": "ใช้พลังริเริ่ม - คุณชอบเริ่มสิ่งใหม่ มีไอเดีย กล้าคว้าโอกาส นำพาทีมด้วยพลัง",
+          "keywords_th": ["พลังริเริ่ม", "กล้าลงมือ", "ไอเดีย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือความหลงใหลในการสร้างและสำรวจ",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือความหลงใหลในการสร้างและสำรวจ - คุณขับเคลื่อนด้วยความอยากค้นพบ ชอบลองสิ่งใหม่ มีพลังในการแสดงตัวตน รากฐานนี้ทำให้คุณเติบโตอย่างมีชีวิตชีวาและไม่หยุดนิ่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Star = แรงบันดาลใจ",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ารากฐานเติบโต คือ 'ความหลงใหลในการสร้างคือพลัง'",
+          "advice_th": "ใช้ความหลงใหลในการสร้าง - คุณอยากค้นพบ ชอบลองใหม่ เติบโตอย่างมีชีวิตชีวา",
+          "keywords_th": ["ความหลงใหล", "สำรวจ", "มีชีวิตชีวา"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือพลังชีวิตและความกระฉับกระเฉง",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือพลังชีวิตและความกระฉับกระเฉง - คุณมีพลังงานสูง ชอบเคลื่อนไหว กระตือรือร้นในการดูแลตัวเอง รากฐานนี้ทำให้คุณมีสุขภาพดีและฟื้นจากความเหนื่อยล้าได้เร็ว",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Ace of Swords = กระจ่าง",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ารากฐานสุขภาพ คือ 'พลังชีวิตคือทุนสุขภาพ'",
+          "advice_th": "ใช้พลังชีวิตเป็นรากฐาน - คุณมีพลังสูง ชอบเคลื่อนไหว ฟื้นจากเหนื่อยล้าได้เร็ว",
+          "keywords_th": ["พลังชีวิต", "กระฉับกระเฉง", "ฟื้นเร็ว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือพลังที่ติดขัดหรือไฟที่ไม่สม่ำเสมอ",
+          "detailed_interpretation_th": "เอซไม้เท้ากลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือพลังที่ติดขัดหรือไฟที่ไม่สม่ำเสมอ - คุณมีไอเดียมากแต่ไม่ลงมือ เริ่มหลายอย่างแต่ไม่จบ หรือพลังที่หดหายง่าย รากฐานนี้ทำให้คุณขาดความต่อเนื่อง ถึงเวลาเรียนรู้ที่จะรักษาไฟและทำให้จบ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Tower = ชะงัก",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวรากฐาน คือ 'รักษาไฟและทำให้จบ'",
+          "advice_th": "เรียนรู้รักษาไฟ - มีไอเดียมากแต่ไม่ลงมือ ฝึกความต่อเนื่อง ทำสิ่งหนึ่งให้จบ",
+          "keywords_th": ["พลังติดขัด", "ไฟไม่สม่ำเสมอ", "ความต่อเนื่อง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือความหลงใหลที่ไม่ยั่งยืน",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความหลงใหลที่ไม่ยั่งยืน - คุณตื่นเต้นเร็วแต่เบื่อเร็ว ตามแรงดึงดูดแต่ไม่สร้างความลึก หรือกลัวความผูกมัด รากฐานนี้ทำให้ความสัมพันธ์ขาดความมั่นคง ถึงเวลาเรียนรู้ที่จะรักษาไฟในระยะยาวและสร้างความลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ไม่ยั่งยืน, The Moon = สับสน",
+            "wands": "Knight of Wands (rev) = ไม่ผูกมัด",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = ผิดหวัง",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่มั่นคง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวรากฐานความรัก คือ 'รักษาไฟระยะยาวสร้างความลึก'",
+          "advice_th": "สร้างความลึกในรัก - ความหลงใหลไม่ยั่งยืน เรียนรู้รักษาไฟระยะยาว สร้างความมั่นคง",
+          "keywords_th": ["ไม่ยั่งยืน", "เบื่อเร็ว", "สร้างความลึก"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือเริ่มมากแต่ไม่จบ",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือการเริ่มมากแต่ไม่จบ - คุณมีไอเดียมากมายแต่ไม่ลงมือทำให้สำเร็จ เริ่มหลายโครงการแต่ทิ้งกลางทาง หรือขาดวินัยในการต่อเนื่อง รากฐานนี้ทำให้คุณไม่เห็นผล ถึงเวลาเรียนรู้ที่จะโฟกัสและทำสิ่งหนึ่งให้สำเร็จก่อนเริ่มใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวรากฐานงาน คือ 'โฟกัสและทำให้สำเร็จก่อนเริ่มใหม่'",
+          "advice_th": "ฝึกโฟกัส - เริ่มมากแต่ไม่จบ เรียนรู้ทำสิ่งหนึ่งให้สำเร็จก่อนเริ่มใหม่ สร้างวินัย",
+          "keywords_th": ["เริ่มแต่ไม่จบ", "ขาดวินัย", "โฟกัส"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือไฟในใจที่ไม่สม่ำเสมอ",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือไฟในใจที่ไม่สม่ำเสมอ - คุณมีช่วงกระตือรือร้นสลับกับช่วงหมดไฟ ขาดความต่อเนื่องในการพัฒนาตัวเอง หรือตามความหลงใหลใหม่ไปเรื่อยโดยไม่ลึก รากฐานนี้ทำให้การเติบโตไม่ยั่งยืน ถึงเวลาเรียนรู้ที่จะรักษาไฟและพัฒนาอย่างสม่ำเสมอ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวรากฐานเติบโต คือ 'รักษาไฟพัฒนาสม่ำเสมอ'",
+          "advice_th": "รักษาไฟให้สม่ำเสมอ - ไฟในใจไม่สม่ำเสมอ ฝึกความต่อเนื่อง พัฒนาอย่างยั่งยืน",
+          "keywords_th": ["ไฟไม่สม่ำเสมอ", "ขาดต่อเนื่อง", "สม่ำเสมอ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือพลังที่ขึ้นๆ ลงๆ",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือพลังที่ขึ้นๆ ลงๆ - คุณมีช่วงกระตือรือร้นออกกำลังกายสลับกับช่วงหมดแรง เริ่มกิจกรรมแต่ไม่ต่อเนื่อง หรือใช้พลังหมดเร็ว รากฐานนี้ทำให้สุขภาพไม่สม่ำเสมอ ถึงเวลาเรียนรู้ที่จะสร้างกิจวัตรที่ยั่งยืนและรักษาพลังอย่างสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Sun (rev) = พลังขึ้นลง, Temperance = สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวรากฐานสุขภาพ คือ 'สร้างกิจวัตรยั่งยืนรักษาพลังสมดุล'",
+          "advice_th": "สร้างกิจวัตรยั่งยืน - พลังขึ้นๆ ลงๆ ฝึกความต่อเนื่อง รักษาพลังอย่างสมดุล",
+          "keywords_th": ["พลังขึ้นลง", "ไม่ต่อเนื่อง", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ลงมือทำตามแรงบันดาลใจทันที",
+          "detailed_interpretation_th": "เอซไม้เท้าในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีที่สุดคือลงมือทำตามแรงบันดาลใจทันที - คว้าโอกาส เริ่มสิ่งที่ใจปรารถนา ไม่ลังเล ไพ่หนุนให้คุณเชื่อในไฟในใจและกล้าก้าวแรก พลังของการเริ่มต้นจะนำพาคุณไปไกล",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Sun = ความสำเร็จ",
+            "wands": "Knight of Wands = ลงมือ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งคำแนะนำ คือ 'เชื่อในไฟในใจและกล้าก้าวแรก'",
+          "advice_th": "ลงมือทันที - คว้าโอกาส เริ่มสิ่งที่ใจปรารถนา ไม่ลังเล เชื่อในไฟในใจ",
+          "keywords_th": ["ลงมือ", "คว้าโอกาส", "กล้าเริ่ม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กล้าแสดงความรู้สึกและตามความหลงใหล",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณควรกล้าแสดงความรู้สึกและตามความหลงใหล - บอกความรู้สึก เข้าหาคนที่ชอบ จุดประกายความสัมพันธ์ ไพ่หนุนให้คุณนำด้วยความกระตือรือร้นและความจริงใจ อย่ารอช้าเมื่อใจบอก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Knight of Swords = กล้าเข้าหา",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งคำแนะนำความรัก คือ 'อย่ารอช้าเมื่อใจบอก'",
+          "advice_th": "กล้าแสดงความรู้สึก - บอกความรู้สึก เข้าหาคนที่ชอบ นำด้วยความจริงใจ อย่ารอช้า",
+          "keywords_th": ["กล้าแสดง", "ตามความหลงใหล", "จริงใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เริ่มโครงการและคว้าโอกาสด้วยความกล้า",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรเริ่มโครงการและคว้าโอกาสด้วยความกล้า - ลงมือทำตามไอเดีย เสนอความคิดสร้างสรรค์ ริเริ่มสิ่งใหม่ ไพ่หนุนให้คุณใช้พลังและความกระตือรือร้นนำทาง และไม่กลัวที่จะเป็นผู้เริ่ม",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งคำแนะนำงาน คือ 'ไม่กลัวที่จะเป็นผู้เริ่ม'",
+          "advice_th": "เริ่มและคว้าโอกาส - ลงมือทำตามไอเดีย เสนอความคิด ริเริ่มสิ่งใหม่ ใช้พลังนำทาง",
+          "keywords_th": ["เริ่มโครงการ", "คว้าโอกาส", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ตามไฟในใจและกล้าสำรวจสิ่งใหม่",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรตามไฟในใจและกล้าสำรวจสิ่งใหม่ - ลองสิ่งที่จุดประกายความสนใจ กล้าแสดงตัวตน ปลุกความกระตือรือร้น ไพ่หนุนให้คุณเชื่อในความหลงใหลของตัวเองและกล้าตามมันไปสู่การเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Star = แรงบันดาลใจ",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งคำแนะนำเติบโต คือ 'เชื่อในความหลงใหลและกล้าตาม'",
+          "advice_th": "ตามไฟในใจ - ลองสิ่งที่จุดประกาย กล้าแสดงตัวตน เชื่อในความหลงใหลและกล้าตาม",
+          "keywords_th": ["ตามไฟในใจ", "สำรวจ", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เริ่มกิจกรรมที่มีพลังและสนุก",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรเริ่มกิจกรรมที่มีพลังและสนุก - ออกกำลังกายที่ชอบ ลองกีฬาใหม่ ใช้พลังในการเคลื่อนไหว ไพ่หนุนให้คุณใช้ความกระตือรือร้นเริ่มดูแลร่างกาย และเลือกกิจกรรมที่จุดประกายความสนุกไม่ใช่ภาระ",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังกาย, The Sun = พลัง",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งคำแนะนำสุขภาพ คือ 'เลือกกิจกรรมที่จุดประกายความสนุก'",
+          "advice_th": "เริ่มกิจกรรมมีพลัง - ออกกำลังกายที่ชอบ ลองกีฬาใหม่ เลือกสิ่งที่สนุกไม่ใช่ภาระ",
+          "keywords_th": ["เริ่มกิจกรรม", "มีพลัง", "สนุก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ทบทวนก่อนลงมือและหาไฟในใจ",
+          "detailed_interpretation_th": "เอซไม้เท้ากลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือทบทวนก่อนลงมือและหาไฟในใจ - อย่าเพิ่งรีบเริ่มหากยังไม่ชัด หาสิ่งที่จุดประกายจริง รอจังหวะที่เหมาะ ไพ่หนุนให้คุณเชื่อมโยงกับแรงบันดาลใจที่แท้จริงก่อนลงมือ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, The Hanged Man = รอ",
+            "wands": "Seven of Wands = ทบทวน",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Page of Wands = สำรวจก่อน"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งคำแนะนำ คือ 'เชื่อมโยงแรงบันดาลใจก่อนลงมือ'",
+          "advice_th": "ทบทวนก่อนลงมือ - อย่ารีบหากยังไม่ชัด หาสิ่งที่จุดประกายจริง รอจังหวะที่เหมาะ",
+          "keywords_th": ["ทบทวน", "หาไฟในใจ", "รอจังหวะ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อย่ารีบในความรักและทบทวนความรู้สึก",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าคุณควรอย่ารีบและทบทวนความรู้สึก - อย่าตามแรงดึงดูดชั่ววูบ ดูว่าความรู้สึกนี้จริงไหม ให้เวลาความสัมพันธ์พัฒนา ไพ่หนุนให้คุณแยกแยะระหว่างความหลงใหลชั่วครู่กับความรักที่ลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ทบทวน, The Moon = ระวังลวง",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Page of Wands = สำรวจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งคำแนะนำความรัก คือ 'แยกความหลงใหลชั่วครู่กับรักลึก'",
+          "advice_th": "อย่ารีบในรัก - อย่าตามแรงดึงดูดชั่ววูบ ให้เวลา แยกความหลงใหลชั่วครู่กับรักลึก",
+          "keywords_th": ["อย่ารีบ", "ทบทวน", "แยกแยะ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "วางแผนก่อนลงมือและไม่รีบเกินไป",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวชี้ว่าคุณควรวางแผนก่อนลงมือและไม่รีบเกินไป - อย่าเริ่มโครงการโดยไม่เตรียม คิดให้รอบคอบ ดูความเป็นไปได้ ไพ่หนุนให้คุณสมดุลระหว่างความกระตือรือร้นกับการวางแผน เพื่อให้ไอเดียกลายเป็นจริงอย่างมั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, The Emperor = วางแผน",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งคำแนะนำงาน คือ 'สมดุลความกระตือรือร้นกับการวางแผน'",
+          "advice_th": "วางแผนก่อนลงมือ - อย่าเริ่มโดยไม่เตรียม คิดรอบคอบ สมดุลความกระตือรือร้นกับแผน",
+          "keywords_th": ["วางแผน", "ไม่รีบ", "รอบคอบ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หาความหลงใหลที่แท้จริงก่อนทุ่มเท",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรหาความหลงใหลที่แท้จริงก่อนทุ่มเท - อย่าตามทุกความสนใจชั่ววูบ สำรวจว่าอะไรจุดไฟจริง ให้เวลาในการค้นพบ ไพ่หนุนให้คุณแยกแยะระหว่างความตื่นเต้นชั่วคราวกับความหลงใหลที่ลึกซึ้งและยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สำรวจ",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Page of Wands = ค้นพบ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งคำแนะนำเติบโต คือ 'แยกความตื่นเต้นชั่วคราวกับความหลงใหลลึก'",
+          "advice_th": "หาความหลงใหลแท้ - อย่าตามทุกความสนใจชั่ววูบ สำรวจว่าอะไรจุดไฟจริง ให้เวลาค้นพบ",
+          "keywords_th": ["หาความหลงใหลแท้", "สำรวจ", "แยกแยะ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อย่าหักโหมและฟังร่างกายก่อนเริ่ม",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวชี้ว่าคุณควรอย่าหักโหมและฟังร่างกายก่อนเริ่ม - อย่าออกกำลังกายหนักเกินตัวด้วยความกระตือรือร้นจนบาดเจ็บ เริ่มทีละน้อย ฟังสัญญาณร่างกาย ไพ่หนุนให้คุณสมดุลระหว่างพลังกับความระมัดระวัง เพื่อสุขภาพที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hanged Man = พัก",
+            "wands": "Ten of Wands = อย่าแบกเกิน",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = ค่อยเป็นค่อยไป",
+            "court_cards": "Knight of Wands (rev) = อย่าหุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'สมดุลพลังกับความระมัดระวัง'",
+          "advice_th": "อย่าหักโหม - อย่าออกกำลังหนักเกินจนบาดเจ็บ เริ่มทีละน้อย ฟังสัญญาณร่างกาย",
+          "keywords_th": ["อย่าหักโหม", "ฟังร่างกาย", "ทีละน้อย"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมเต็มไปด้วยโอกาสและพลัง",
+          "detailed_interpretation_th": "เอซไม้เท้าในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวเต็มไปด้วยโอกาสและพลัง - มีโอกาสใหม่เปิด คนที่จุดประกายแรงบันดาลใจ บรรยากาศที่สนับสนุนการริเริ่ม ไพ่บอกว่าใช้พลังจากภายนอกนี้คว้าโอกาสและเริ่มสิ่งใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight of Wands = พลัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งภายนอก คือ 'ใช้พลังภายนอกคว้าโอกาส'",
+          "advice_th": "ใช้โอกาสจากภายนอก - มีโอกาสเปิด คนจุดประกาย บรรยากาศหนุน คว้าและเริ่มสิ่งใหม่",
+          "keywords_th": ["โอกาสรอบตัว", "พลัง", "คว้า"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "มีโอกาสพบรักหรือคนจุดประกายรอบตัว",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่ามีโอกาสพบรักหรือคนจุดประกายรอบตัว - การพบคนใหม่ที่น่าตื่นเต้น สถานการณ์ทางสังคมที่เปิดโอกาส คนรอบข้างที่หนุนความรัก ไพ่หนุนให้คุณออกไปพบผู้คนและเปิดใจรับโอกาสที่เข้ามา",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Three of Cups = สังสรรค์",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Knight of Swords = พบคนกล้า",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งภายนอกความรัก คือ 'ออกไปพบผู้คนเปิดใจรับโอกาส'",
+          "advice_th": "ใช้โอกาสทางสังคม - มีโอกาสพบคนน่าตื่นเต้น ออกไปพบผู้คน เปิดใจรับโอกาส",
+          "keywords_th": ["โอกาสพบรัก", "คนจุดประกาย", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสในงานเปิดและมีคนหนุนไอเดีย",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่าโอกาสในงานเปิดและมีคนหนุนไอเดีย - ข้อเสนอใหม่ พันธมิตรที่สนับสนุน บรรยากาศที่เอื้อต่อการริเริ่ม ไพ่หนุนให้คุณคว้าโอกาส นำเสนอไอเดีย และใช้แรงสนับสนุนจากภายนอกสร้างสิ่งใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งภายนอกงาน คือ 'ใช้แรงสนับสนุนสร้างสิ่งใหม่'",
+          "advice_th": "คว้าโอกาสงาน - ข้อเสนอใหม่ พันธมิตรหนุน นำเสนอไอเดีย ใช้แรงสนับสนุนสร้างสิ่งใหม่",
+          "keywords_th": ["โอกาสเปิด", "คนหนุนไอเดีย", "คว้า"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สภาพแวดล้อมจุดประกายแรงบันดาลใจ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าสภาพแวดล้อมจุดประกายแรงบันดาลใจ - คนที่สร้างแรงบันดาลใจ ประสบการณ์ใหม่ โอกาสในการสำรวจ ไพ่บอกว่าใช้สิ่งที่อยู่รอบตัวจุดไฟในใจ ลองสิ่งใหม่ และเติบโตจากการเปิดรับโลกภายนอก",
+          "adjacent_influences": {
+            "major_arcana": "The Star = แรงบันดาลใจ, The Magician = พลัง",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งภายนอกเติบโต คือ 'เปิดรับโลกภายนอกจุดไฟในใจ'",
+          "advice_th": "ใช้สภาพแวดล้อมจุดประกาย - คนสร้างแรงบันดาลใจ ประสบการณ์ใหม่ ลองสิ่งใหม่ เติบโต",
+          "keywords_th": ["แวดล้อมจุดประกาย", "แรงบันดาลใจ", "สำรวจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมหนุนพลังและกิจกรรม",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าสิ่งแวดล้อมหนุนพลังและกิจกรรม - กลุ่มออกกำลังกาย กิจกรรมกลางแจ้ง เพื่อนที่ชวนเคลื่อนไหว ไพ่หนุนให้คุณใช้แรงหนุนจากภายนอกเริ่มกิจกรรมที่ดีต่อสุขภาพและรักษาพลังชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Three of Cups = กลุ่มเพื่อน",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งภายนอกสุขภาพ คือ 'ใช้แรงหนุนเริ่มกิจกรรม'",
+          "advice_th": "ใช้สิ่งแวดล้อมหนุน - กลุ่มออกกำลังกาย กิจกรรมกลางแจ้ง เพื่อนชวนเคลื่อนไหว รักษาพลัง",
+          "keywords_th": ["แวดล้อมหนุน", "กิจกรรม", "พลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมขาดแรงบันดาลใจหรือบั่นทอนพลัง",
+          "detailed_interpretation_th": "เอซไม้เท้ากลับหัวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวขาดแรงบันดาลใจหรือบั่นทอนพลัง - คนที่ดับไฟในใจคุณ บรรยากาศที่น่าเบื่อ โอกาสที่ปิด ไพ่เตือนให้คุณรักษาไฟในตัวและหาสภาพแวดล้อมหรือคนที่จุดประกายพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ติดขัด, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งภายนอก คือ 'หาสภาพแวดล้อมที่จุดประกายพลัง'",
+          "advice_th": "รักษาไฟในตัว - แวดล้อมบั่นทอนพลัง หาคนหรือสภาพที่จุดประกาย ไม่ให้ไฟดับ",
+          "keywords_th": ["แวดล้อมขาดไฟ", "บั่นทอน", "หาที่จุดประกาย"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างหรือสถานการณ์ดับไฟความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าคนรอบข้างหรือสถานการณ์ดับไฟความรัก - คนที่วิจารณ์ความสัมพันธ์ บรรยากาศที่กดดัน หรือสภาพที่ไม่เอื้อต่อความหลงใหล ไพ่หนุนให้คุณปกป้องไฟในความรัก และไม่ปล่อยให้อิทธิพลภายนอกดับความตื่นเต้น",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = วิกฤต, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งภายนอกความรัก คือ 'ปกป้องไฟในความรัก'",
+          "advice_th": "ปกป้องไฟในรัก - คนรอบข้างดับไฟ ไม่ปล่อยให้อิทธิพลภายนอกดับความตื่นเต้น",
+          "keywords_th": ["ดับไฟรัก", "คนวิจารณ์", "ปกป้อง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ที่ทำงานขาดโอกาสหรือบั่นทอนความคิดสร้างสรรค์",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าที่ทำงานขาดโอกาสหรือบั่นทอนความคิดสร้างสรรค์ - บรรยากาศที่ไม่หนุนไอเดีย หัวหน้าที่ดับพลัง โอกาสที่จำกัด ไพ่หนุนให้คุณรักษาไฟในการทำงาน หาช่องทางแสดงความคิดสร้างสรรค์ หรือมองหาที่ใหม่ที่หนุนพลังของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ชะงัก, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งภายนอกงาน คือ 'หาที่ที่หนุนพลังของคุณ'",
+          "advice_th": "รักษาไฟในงาน - ที่ทำงานบั่นทอนความคิดสร้างสรรค์ หาช่องทางแสดงออก หรือที่ใหม่ที่หนุน",
+          "keywords_th": ["ขาดโอกาส", "บั่นทอน", "หาที่ใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมรอบข้างดับไฟและไม่หนุนการสำรวจ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมรอบข้างดับไฟและไม่หนุนการสำรวจ - คนที่ไม่เข้าใจความหลงใหล บรรยากาศที่กดความกระตือรือร้น ค่านิยมที่จำกัด ไพ่หนุนให้คุณรักษาไฟในใจ หาชุมชนที่จุดประกาย และไม่ปล่อยให้สังคมดับความอยากเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Five of Pentacles = ขาดแรงหนุน",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งภายนอกเติบโต คือ 'หาชุมชนที่จุดประกาย'",
+          "advice_th": "รักษาไฟในใจ - สังคมดับไฟ หาชุมชนที่จุดประกาย ไม่ปล่อยให้ดับความอยากเติบโต",
+          "keywords_th": ["สังคมดับไฟ", "ไม่หนุน", "หาชุมชน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมบั่นทอนพลังและแรงจูงใจ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวเตือนว่าสิ่งแวดล้อมบั่นทอนพลังและแรงจูงใจ - ความเครียดที่ดูดพลัง คนรอบข้างที่ไม่หนุนการดูแลตัวเอง สภาพที่ทำให้เฉื่อยชา ไพ่หนุนให้คุณปรับสภาพแวดล้อม หาเพื่อนหรือกลุ่มที่ชวนเคลื่อนไหว และสร้างพื้นที่ที่หนุนพลังชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, The Sun (rev) = พลังลด",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งภายนอกสุขภาพ คือ 'สร้างพื้นที่ที่หนุนพลังชีวิต'",
+          "advice_th": "ปรับสิ่งแวดล้อม - แวดล้อมบั่นทอนพลัง หาเพื่อนที่ชวนเคลื่อนไหว สร้างพื้นที่หนุนพลัง",
+          "keywords_th": ["บั่นทอนพลัง", "เฉื่อยชา", "ปรับสภาพ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังจุดประกายสิ่งใหม่ กลัวไฟจะดับ",
+          "detailed_interpretation_th": "เอซไม้เท้าในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังจุดประกายสิ่งใหม่และเริ่มต้นด้วยพลัง แต่ก็กลัวว่าไฟจะดับหรือแรงบันดาลใจจะหาย ไพ่บอกว่าความหวังของคุณคือพลังขับเคลื่อน กล้าลงมือและไว้ใจว่าไฟในใจจะนำทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Moon = ความกลัว",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งความหวังกลัว คือ 'ไว้ใจว่าไฟในใจจะนำทาง'",
+          "advice_th": "กล้าลงมือ - หวังจุดประกายแต่กลัวไฟดับ ความหวังคือพลัง ไว้ใจไฟในใจ",
+          "keywords_th": ["หวังจุดประกาย", "กลัวไฟดับ", "ไว้ใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความหลงใหลใหม่ กลัวมันจะไม่ยั่งยืน",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังความหลงใหลใหม่และความตื่นเต้นในรัก แต่กลัวว่ามันจะไม่ยั่งยืน - กลัวไฟจะดับ กลัวความหลงใหลจะจาง ไพ่บอกว่าความหลงใหลที่แท้จริงพัฒนาเป็นความรักลึกได้ กล้าเปิดใจและดูแลไฟไปด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Moon = ความกลัว",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งความหวังกลัวความรัก คือ 'ความหลงใหลพัฒนาเป็นรักลึกได้'",
+          "advice_th": "กล้าเปิดใจ - หวังความหลงใหลแต่กลัวไม่ยั่งยืน ความหลงใหลแท้พัฒนาเป็นรักลึกได้",
+          "keywords_th": ["หวังความหลงใหล", "กลัวไม่ยั่งยืน", "ดูแลไฟ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังเริ่มสิ่งใหม่ กลัวล้มเหลวหรือไม่ต่อเนื่อง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังเริ่มสิ่งใหม่และคว้าโอกาส แต่กลัวล้มเหลวหรือไม่สามารถทำต่อเนื่อง - กลัวไอเดียจะไม่สำเร็จ กลัวพลังจะหมดกลางทาง ไพ่บอกว่าคุณมีพลังริเริ่ม กล้าเริ่มและสร้างวินัยเพื่อให้ไอเดียกลายเป็นจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งความหวังกลัวงาน คือ 'สร้างวินัยให้ไอเดียกลายเป็นจริง'",
+          "advice_th": "กล้าเริ่มสิ่งใหม่ - หวังคว้าโอกาสแต่กลัวล้มเหลว มีพลังริเริ่ม สร้างวินัยทำให้จริง",
+          "keywords_th": ["หวังเริ่มใหม่", "กลัวล้มเหลว", "วินัย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังตามความหลงใหล กลัวไม่พบสิ่งที่ใช่",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังตามความหลงใหลและค้นพบสิ่งที่ทำให้ใจมีชีวิต แต่กลัวไม่พบสิ่งที่ใช่ - กลัวว่าจะไม่มีอะไรจุดไฟ กลัวความกระตือรือร้นจะหาย ไพ่บอกว่าการสำรวจคือกุญแจ ลองสิ่งใหม่ต่อไปและไฟในใจจะปรากฏ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = แรงบันดาลใจ, The Moon = ความกลัว",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งความหวังกลัวเติบโต คือ 'สำรวจต่อไปไฟในใจจะปรากฏ'",
+          "advice_th": "ลองสิ่งใหม่ต่อไป - หวังตามความหลงใหลแต่กลัวไม่พบ การสำรวจคือกุญแจ ไฟจะปรากฏ",
+          "keywords_th": ["หวังตามความหลงใหล", "กลัวไม่พบ", "สำรวจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังมีพลังชีวิต กลัวพลังจะหมดเร็ว",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังมีพลังชีวิตและความกระตือรือร้น แต่กลัวพลังจะหมดเร็วหรือไม่สามารถรักษาไว้ - กลัวเหนื่อยล้า กลัวกิจกรรมจะไม่ต่อเนื่อง ไพ่บอกว่าการสร้างกิจวัตรที่สมดุลและสนุกจะช่วยรักษาพลังในระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งความหวังกลัวสุขภาพ คือ 'กิจวัตรสมดุลรักษาพลังระยะยาว'",
+          "advice_th": "สร้างกิจวัตรสมดุล - หวังมีพลังแต่กลัวหมดเร็ว กิจวัตรที่สมดุลและสนุกรักษาพลังระยะยาว",
+          "keywords_th": ["หวังมีพลัง", "กลัวหมดเร็ว", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวไม่มีไฟในใจจนไม่กล้าเริ่ม",
+          "detailed_interpretation_th": "เอซไม้เท้ากลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวไม่มีไฟในใจจนไม่กล้าเริ่ม - เพราะกลัวว่าจะหมดแรงบันดาลใจหรือล้มเหลว คุณไม่กล้าลงมือ ลดความคาดหวัง ไพ่บอกว่าการไม่เริ่มเองที่ทำให้ไฟดับ กล้าก้าวเล็กๆ และไฟจะค่อยลุก",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัว, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอนาน",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งความหวังกลัว คือ 'กล้าก้าวเล็กๆ ไฟจะค่อยลุก'",
+          "advice_th": "กล้าก้าวเล็กๆ - กลัวไม่มีไฟจนไม่กล้าเริ่ม การไม่เริ่มเองที่ทำให้ไฟดับ ก้าวเล็กๆ ก่อน",
+          "keywords_th": ["กลัวไม่มีไฟ", "ไม่กล้าเริ่ม", "ก้าวเล็กๆ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวความหลงใหลจะหายจนปิดใจ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวความหลงใหลจะหายจนปิดใจ - กลัวความสัมพันธ์จะจืดจาง กลัวตื่นเต้นแล้วผิดหวัง จึงไม่กล้าเปิดใจเต็มที่ ไพ่บอกว่าการปิดใจปกป้องจากเจ็บแต่ก็กั้นความหลงใหลที่ดี กล้าเปิดและดูแลไฟ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = กลัวรัก, The Moon = สับสน",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Three of Swords = กลัวเจ็บ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งความหวังกลัวความรัก คือ 'ปิดใจกั้นความหลงใหลที่ดี'",
+          "advice_th": "กล้าเปิดใจ - กลัวความหลงใหลหายจนปิด การปิดกั้นความหลงใหลที่ดี กล้าเปิดและดูแลไฟ",
+          "keywords_th": ["กลัวความหลงใหลหาย", "ปิดใจ", "กล้าเปิด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวล้มเหลวจนไม่กล้าริเริ่ม",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวล้มเหลวจนไม่กล้าริเริ่ม - ไม่กล้าลงมือทำตามไอเดีย ไม่กล้าคว้าโอกาส เลือกความปลอดภัย ไพ่บอกว่าความกลัวนี้ขังคุณจากศักยภาพ กล้าเริ่มทีละก้าวและเรียนรู้จากการลงมือ ความล้มเหลวคือส่วนหนึ่งของการสร้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = กลัวพัง, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Swords = ติดกรอบ",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งความหวังกลัวงาน คือ 'ความล้มเหลวคือส่วนหนึ่งของการสร้าง'",
+          "advice_th": "กล้าริเริ่ม - กลัวล้มเหลวจนไม่กล้า กล้าเริ่มทีละก้าว เรียนรู้จากการลงมือ",
+          "keywords_th": ["กลัวล้มเหลว", "ไม่กล้าริเริ่ม", "กล้าเริ่ม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวไม่มีความหลงใหลจนหยุดสำรวจ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวไม่มีความหลงใหลจนหยุดสำรวจ - ความรู้สึกว่าตัวเองไม่มีไฟ การเปรียบเทียบกับคนที่ดูกระตือรือร้น การยอมแพ้ในการหาสิ่งที่ใช่ ไพ่หนุนให้คุณกลับมาสำรวจด้วยความอยากรู้ ลองสิ่งเล็กๆ และให้ไฟค่อยจุดขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'ลองสิ่งเล็กๆ ให้ไฟค่อยจุด'",
+          "advice_th": "กลับมาสำรวจ - กลัวไม่มีความหลงใหลจนหยุด ลองสิ่งเล็กๆ ด้วยความอยากรู้ ให้ไฟค่อยจุด",
+          "keywords_th": ["กลัวไม่มีไฟ", "หยุดสำรวจ", "ลองเล็กๆ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวไม่มีพลังจนไม่เริ่มดูแลตัวเอง",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวไม่มีพลังจนไม่เริ่มดูแลตัวเอง - กลัวว่าจะเหนื่อยเกินไป กลัวเริ่มแล้วทำไม่ไหว จึงไม่ลงมือ ไพ่หนุนให้คุณเริ่มจากกิจกรรมเล็กๆ ที่ทำได้ง่าย ฟื้นพลังทีละน้อย และไม่กดดันตัวเองให้ทำมากเกินไปในทันที",
+          "adjacent_influences": {
+            "major_arcana": "The Sun (rev) = พลังลด, The Hanged Man = พัก",
+            "wands": "Ten of Wands = แบกกลัว",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'เริ่มจากกิจกรรมเล็กที่ทำได้ง่าย'",
+          "advice_th": "เริ่มเล็กๆ - กลัวไม่มีพลังจนไม่เริ่ม เริ่มกิจกรรมเล็กที่ทำง่าย ฟื้นพลังทีละน้อย",
+          "keywords_th": ["กลัวไม่มีพลัง", "ไม่เริ่ม", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการเริ่มต้นใหม่ที่ทรงพลัง",
+          "detailed_interpretation_th": "เอซไม้เท้าในตำแหน่งผลลัพธ์ เป็นข่าวดี - ผลลัพธ์ของสถานการณ์คือการเริ่มต้นใหม่ที่ทรงพลัง ไฟแห่งแรงบันดาลใจถูกจุด โอกาสใหม่เปิด และคุณจะมีพลังลงมือสร้างสิ่งที่ใจปรารถนา ไพ่ยืนยันว่าจุดเริ่มต้นที่ดีกำลังเปิดออกและนำพาคุณสู่เส้นทางที่น่าตื่นเต้น",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งผลลัพธ์ คือ 'จุดเริ่มต้นที่ดีกำลังเปิดออก'",
+          "advice_th": "เชื่อมั่นในการเริ่มต้นใหม่ - ไฟแรงบันดาลใจถูกจุด โอกาสเปิด มีพลังสร้างสิ่งที่ปรารถนา",
+          "keywords_th": ["เริ่มต้นใหม่", "ทรงพลัง", "โอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่เต็มไปด้วยความหลงใหล",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เป็นข่าวดี - คุณจะมีความรักที่เต็มไปด้วยความหลงใหลและพลัง การพบคนที่จุดไฟในใจ ความสัมพันธ์ที่สดใหม่และตื่นเต้น หรือการฟื้นความหลงใหลในความรักที่มี ไพ่ยืนยันว่าพลังความรักที่สดใหม่กำลังเข้ามาในชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งผลลัพธ์ความรัก คือ 'พลังความรักสดใหม่เข้ามา'",
+          "advice_th": "เปิดใจรับความหลงใหล - พบคนที่จุดไฟ ความสัมพันธ์สดใหม่ หรือฟื้นความหลงใหลที่มี",
+          "keywords_th": ["ความหลงใหล", "รักสดใหม่", "ตื่นเต้น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือโอกาสและการเริ่มต้นที่ดีในงาน",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดี - คุณจะได้โอกาสและการเริ่มต้นที่ดีในงาน โครงการใหม่ที่น่าตื่นเต้น การเริ่มธุรกิจ หรือไอเดียที่กลายเป็นจริง ไพ่ยืนยันว่าพลังและความกระตือรือร้นของคุณจะนำพาสู่จุดเริ่มต้นที่สร้างความสำเร็จในอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาสเงิน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งผลลัพธ์งาน คือ 'จุดเริ่มต้นที่สร้างความสำเร็จในอนาคต'",
+          "advice_th": "เชื่อในโอกาสใหม่ - โครงการน่าตื่นเต้น ไอเดียกลายเป็นจริง พลังนำสู่จุดเริ่มต้นที่ดี",
+          "keywords_th": ["โอกาสงาน", "เริ่มต้นดี", "ความสำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการจุดประกายความหลงใหลและพลังชีวิต",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นข่าวดี - คุณจะจุดประกายความหลงใหลและพลังชีวิต การค้นพบสิ่งที่ทำให้ใจมีชีวิต การกล้าแสดงตัวตน การใช้ชีวิตอย่างกระตือรือร้น ไพ่ยืนยันว่าคุณจะเชื่อมโยงกับไฟในใจและก้าวสู่ชีวิตที่เต็มไปด้วยพลังและความตื่นเต้น",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Star = แรงบันดาลใจ",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = พลังลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งผลลัพธ์เติบโต คือ 'เชื่อมโยงกับไฟในใจ'",
+          "advice_th": "เฉลิมฉลองการจุดประกาย - ค้นพบสิ่งที่ทำให้ใจมีชีวิต กล้าแสดงตัวตน ชีวิตเต็มพลัง",
+          "keywords_th": ["จุดประกาย", "ความหลงใหล", "พลังชีวิต"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือพลังชีวิตและความกระฉับกระเฉง",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดี - คุณจะมีพลังชีวิตและความกระฉับกระเฉง ร่างกายฟื้นพลัง ความอยากเคลื่อนไหว กิจกรรมที่ดีต่อสุขภาพ ไพ่ยืนยันว่าพลังงานสดใหม่กำลังเข้ามา ใช้มันเริ่มต้นวิถีชีวิตที่กระฉับกระเฉงและมีชีวิตชีวา",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้าตำแหน่งผลลัพธ์สุขภาพ คือ 'พลังงานสดใหม่กำลังเข้ามา'",
+          "advice_th": "เชื่อในพลังที่ฟื้น - ร่างกายมีพลัง ความอยากเคลื่อนไหว เริ่มวิถีชีวิตกระฉับกระเฉง",
+          "keywords_th": ["พลังชีวิต", "กระฉับกระเฉง", "ฟื้นพลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการเริ่มต้นที่ล่าช้าหรือติดขัด",
+          "detailed_interpretation_th": "เอซไม้เท้ากลับหัวในตำแหน่งผลลัพธ์ เตือนว่าผลลัพธ์อาจเป็นการเริ่มต้นที่ล่าช้าหรือติดขัด - ไอเดียที่ยังไม่เป็นรูปธรรม โอกาสที่ต้องรอ หรือพลังที่ยังไม่เต็มที่ ไพ่บอกว่านี่ไม่ใช่ความล้มเหลว เพียงต้องการเวลาและการเชื่อมโยงกับแรงบันดาลใจที่แท้จริง ไฟจะลุกเมื่อจังหวะเหมาะ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = รอ, The Tower = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งผลลัพธ์ คือ 'ไฟจะลุกเมื่อจังหวะเหมาะ'",
+          "advice_th": "อดทนกับความล่าช้า - การเริ่มต้นอาจติดขัด ไม่ใช่ความล้มเหลว เชื่อมโยงแรงบันดาลใจแท้",
+          "keywords_th": ["เริ่มต้นล่าช้า", "ติดขัด", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความหลงใหลที่ยังไม่จุดหรือจางเร็ว",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวบอกว่าความหลงใหลอาจยังไม่จุดหรือจางเร็ว - ความสัมพันธ์ที่ขาดประกาย แรงดึงดูดที่ไม่ยั่งยืน หรือการเริ่มต้นที่ติดขัด ไพ่บอกว่านี่ไม่ใช่จุดจบ ทบทวนว่าอะไรจุดไฟในใจ ดูแลความสัมพันธ์ และให้เวลาความหลงใหลพัฒนา",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ขาดประกาย, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = ผิดหวัง",
+            "pentacles": "Five of Pentacles = ขาดมั่นคง",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'ให้เวลาความหลงใหลพัฒนา'",
+          "advice_th": "ดูแลความสัมพันธ์ - ความหลงใหลยังไม่จุดหรือจางเร็ว ทบทวนว่าอะไรจุดไฟ ให้เวลาพัฒนา",
+          "keywords_th": ["ความหลงใหลยังไม่จุด", "จางเร็ว", "ดูแล"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือโอกาสที่ล่าช้าหรือโครงการชะงัก",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวบอกว่าโอกาสอาจล่าช้าหรือโครงการชะงัก - ไอเดียที่ยังไม่ได้ลงมือ การเริ่มต้นที่ช้ากว่าคาด หรืออุปสรรคที่ขัดขวาง ไพ่บอกว่านี่ไม่ใช่ความล้มเหลว ทบทวนกลยุทธ์ จัดการอุปสรรค และกลับมาเชื่อมโยงกับสิ่งที่จุดประกายความกระตือรือร้น",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Tower = ชะงัก",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งผลลัพธ์งาน คือ 'จัดการอุปสรรคและเชื่อมโยงไฟ'",
+          "advice_th": "อย่าท้อ - โอกาสอาจล่าช้า ไม่ใช่ความล้มเหลว ทบทวนกลยุทธ์ จัดการอุปสรรค เชื่อมโยงไฟ",
+          "keywords_th": ["โอกาสล่าช้า", "โครงการชะงัก", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการขาดทิศทางที่ต้องค้นพบไฟอีกครั้ง",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวบอกว่าอาจขาดทิศทางที่ต้องค้นพบไฟอีกครั้ง - ความรู้สึกหมดแรงบันดาลใจ ไม่รู้ว่าอะไรทำให้ใจมีชีวิต ไพ่บอกว่านี่ไม่ใช่จุดจบ เป็นโอกาสในการสำรวจตัวเองใหม่ ลองสิ่งใหม่ และให้เวลาในการค้นพบสิ่งที่จุดประกายความหลงใหลอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สำรวจ",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'โอกาสสำรวจตัวเองใหม่'",
+          "advice_th": "ใช้เป็นโอกาสค้นพบ - ขาดทิศทางไม่ใช่จุดจบ สำรวจตัวเองใหม่ ลองสิ่งใหม่ ให้เวลาค้นพบไฟ",
+          "keywords_th": ["ขาดทิศ", "ค้นพบไฟใหม่", "สำรวจ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือพลังต่ำที่ต้องฟื้นทีละน้อย",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวบอกว่าพลังอาจต่ำและต้องฟื้นทีละน้อย - ความเหนื่อยล้า ขาดแรงจูงใจ หรือกิจกรรมที่ไม่ต่อเนื่อง ไพ่บอกว่านี่ไม่ใช่สภาพถาวร พักผ่อนให้พอ ฟื้นพลังทีละน้อย เริ่มกิจกรรมเล็กๆ ที่ชอบ และพลังจะค่อยกลับมา",
+          "adjacent_influences": {
+            "major_arcana": "The Sun (rev) = พลังลด, The Star = ฟื้นฟู",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เอซไม้เท้ากลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'พลังจะค่อยกลับมา'",
+          "advice_th": "ฟื้นพลังทีละน้อย - พลังต่ำไม่ใช่สภาพถาวร พักให้พอ เริ่มกิจกรรมเล็กที่ชอบ พลังจะกลับ",
+          "keywords_th": ["พลังต่ำ", "ฟื้นทีละน้อย", "พักผ่อน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}
