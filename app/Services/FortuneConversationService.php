@@ -7715,6 +7715,22 @@ class FortuneConversationService
             if (! $skipConfirm) {
                 // ยืนยันการชำระเงิน (มี SMS หลักฐาน OR reading paid อยู่แล้ว — confirmPayment idempotent)
                 $reading->confirmPayment($notification);
+
+                // 🆕 (2026-05-29 Fix A) จ่ายเงินจริง → ล้าง free-chat daily counter (fresh start)
+                //   ย้ายการ reset counter มาที่ "จ่ายจริง" เท่านั้น (เดิม reset ด้วยคำว่า "ดูดวง" = รั่ว)
+                //   ลูกค้าที่จ่ายแล้วสมควรได้เริ่มนับใหม่ — ส่วน paid-active ก็ bypass turn-cap อยู่แล้ว
+                try {
+                    $payerUserId = $reading->facebook_user_id ?: $reading->platform_user_id;
+                    if (! empty($payerUserId)) {
+                        app(\App\Services\Fortune\CustomerPersonaService::class)
+                            ->clearFreeChatCounter($platform, $payerUserId);
+                    }
+                } catch (\Throwable $clearErr) {
+                    // non-blocking — ห้ามให้การล้าง counter ขวาง flow จ่ายเงิน
+                    Log::debug('Fortune: clearFreeChatCounter หลังจ่ายเงินล้มเหลว (non-blocking)', [
+                        'error' => $clearErr->getMessage(),
+                    ]);
+                }
             } else {
                 Log::info('Fortune: skip confirmPayment — no SMS notification + reading not yet paid', [
                     'reading_id' => $reading->id,
@@ -10293,10 +10309,25 @@ class FortuneConversationService
      */
     protected function isRepetitiveMessage(string $userId, string $text): bool
     {
-        // 🩹 Bypass: button-tap quick reply keywords — ลูกค้ากดซ้ำเป็นเรื่องปกติของ flow
-        //    (Celtic เปิดไพ่ 10 ครั้ง / Q&A ตอบ ใช่/ไม่ใช่ ตามสถานะ / ฯลฯ)
         $normalized = mb_strtolower(trim($text));
-        $buttonTapKeywords = [
+
+        // 🩹 Bypass A: คำยืนยันสากล — สั้น/ทั่วไป ปลอดภัยทุกบริบท (dedup<3s กัน spam จริงอยู่แล้ว)
+        $universalTaps = [
+            'ใช่', 'ใช่ค่ะ', 'ใช่ครับ', 'ไม่ใช่',
+            'ok', 'okay', 'yes', 'no',
+            'เช็คสถานะ', 'เช็คสิทธิ์',
+            'ແມ່ນ', 'ບໍ່ແມ່ນ',
+        ];
+        if (in_array($normalized, $universalTaps, true)) {
+            return false;
+        }
+
+        // 🛒 Bypass B: คำสั่งใน "reading flow" (กดปุ่มซ้ำเป็นเรื่องปกติของ Celtic/Q&A)
+        //   🛡️ (2026-05-29 Fix B) เดิม whitelist คำพวกนี้ "ไม่มีเงื่อนไข" = ช่องโหว่:
+        //     ลูกค้าดูเสร็จแล้ว กลับมาพิมพ์ "อ่านคำทำนาย"/"อ่านเลย"/"พร้อม" ซ้ำๆ ไม่จำกัด
+        //     → ไม่เคยโดน repetitive filter จับ (เคสที่ user รายงาน: re-read spam บอทตอบไม่จบ)
+        //   แก้: bypass เฉพาะตอน "มี active reading จริง" — ถ้าไม่มี flow ปล่อยให้ repetitive filter จับ
+        $readingFlowTaps = [
             // Celtic Cross flow
             'พร้อม', 'พร้อมแล้ว', 'พร้อมค่ะ', 'พร้อมครับ',
             'ถามต่อ', 'พอแค่นี้', 'พอ',
@@ -10304,16 +10335,23 @@ class FortuneConversationService
             'ยุติการทำนาย', 'ยุติทำนาย', 'ยุติ',
             'เปิดไพ่ใบถัดไป', 'เปิดไพ่ใบที่ 1',
             'สับใหม่', 'เริ่มใหม่',
-            // Confirmation flow
-            'ใช่', 'ใช่ค่ะ', 'ใช่ครับ', 'ไม่ใช่',
-            'ok', 'okay', 'yes', 'no',
             'รับคำทำนาย', 'อ่านคำทำนาย', 'อ่านเลย',
-            'เช็คสถานะ', 'เช็คสิทธิ์',
-            // Lao equivalents
-            'ພ້ອມ', 'ແມ່ນ', 'ບໍ່ແມ່ນ',
+            // Lao equivalent
+            'ພ້ອມ',
         ];
-        if (in_array($normalized, $buttonTapKeywords, true)) {
-            return false;
+        if (in_array($normalized, $readingFlowTaps, true)) {
+            try {
+                $platform = $this->currentPlatform ?? $this->detectPlatformFromUserId($userId);
+                // อยู่ใน reading flow จริง (ฟรี/จ่าย) → กดซ้ำปกติ → bypass
+                if (FortuneReading::hasActiveReading($platform, $userId)
+                    || $this->hasPaidActiveReading($userId)) {
+                    return false;
+                }
+            } catch (\Throwable $e) {
+                // fail-open — ตอบดีกว่า block ผิด (เคยมี incident guard บล็อกลูกค้าจริง)
+                return false;
+            }
+            // ไม่มี active reading → ตกลงไปเช็ค repetitive ปกติด้านล่าง (re-read spam จะถูกจับ)
         }
 
         $historyKey = "fortune_history:{$userId}";

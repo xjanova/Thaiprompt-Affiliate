@@ -61,6 +61,9 @@ class FortuneCustomerPersona extends Model
         'last_pitch_at',
         'chat_silenced_until',
         'last_silence_reason',
+        // 🚫 (2026-05-29 Fix C) Escalation / persistent ban — ผู้กระทำซ้ำข้ามวัน
+        'silence_count',
+        'admin_abuse_alerted_at',
     ];
 
     protected $casts = [
@@ -80,6 +83,9 @@ class FortuneCustomerPersona extends Model
         'time_waster_score' => 'integer',
         'last_pitch_at' => 'datetime',
         'chat_silenced_until' => 'datetime',
+        // 🚫 (2026-05-29 Fix C) Escalation casts
+        'silence_count' => 'integer',
+        'admin_abuse_alerted_at' => 'datetime',
     ];
 
     /** Window สำหรับนับ pitch ↔ chitchat (นาที) */
@@ -109,6 +115,17 @@ class FortuneCustomerPersona extends Model
      * (เคสสนิท สาม่าน 87 turns/วัน 0฿). ปรับค่าได้ที่นี่
      */
     public const FREECHAT_DAILY_CAP = 25;
+
+    /**
+     * 🚫 (2026-05-29 Fix C) Escalation — โดน silence ครบกี่ครั้ง (lifetime) ถึงยืดเป็น hard block
+     *
+     * 5 ครั้ง = pattern ชัดเจน (5 วัน/รอบที่ปั่น free-chat จนเงียบ โดยไม่จ่าย ไม่ buy-intent)
+     * vulnerable users (hasCriticalKeyword) ไม่เคยมาถึง triggerSilence อยู่แล้ว (bypass upstream)
+     */
+    public const HARD_BLOCK_SILENCE_THRESHOLD = 5;
+
+    /** ระยะเวลา silence เมื่อ escalate เป็น hard block (ชั่วโมง) — 7 วัน */
+    public const HARD_BLOCK_DURATION_HOURS = 168;
 
     /**
      * 🛒 Keyword bypass — ถ้าข้อความลูกค้ามี keyword พวกนี้ → ข้าม silence
@@ -529,13 +546,70 @@ class FortuneCustomerPersona extends Model
      */
     public function triggerSilence(?string $reason = null): void
     {
-        $this->chat_silenced_until = now()->addHours(self::SILENCE_DURATION_HOURS);
+        // 🚫 (2026-05-29 Fix C) นับ silence สะสม (lifetime, ไม่ decay ตอน resume)
+        //   ใช้จับ "ผู้กระทำซ้ำข้ามวัน" ที่ time_waster_score ไม่เคยสะสมถึงเพราะ decay -10/resume
+        $this->silence_count = (int) ($this->silence_count ?? 0) + 1;
+
+        // โดน silence ครบ threshold (5 ครั้ง) → escalate เป็น hard block (ยืดเป็น 7 วัน)
+        $isHardBlock = $this->silence_count >= self::HARD_BLOCK_SILENCE_THRESHOLD;
+        $durationHours = $isHardBlock
+            ? self::HARD_BLOCK_DURATION_HOURS   // ผู้กระทำซ้ำ → 7 วัน
+            : self::SILENCE_DURATION_HOURS;     // ปกติ → 10 ชม.
+
+        $this->chat_silenced_until = now()->addHours($durationHours);
         $this->time_waster_score = min(
             100,
             (int) ($this->time_waster_score ?? 0) + self::SCORE_INCREMENT_ON_SILENCE
         );
         $this->last_silence_reason = $reason;
         $this->save();
+
+        // แจ้ง admin "ครั้งเดียว" เมื่อ escalate เป็น hard block — NO auto-ban (admin ตัดสินเอง)
+        //   สอดคล้องหลัก AbuseClapback L4 = admin alert ไม่แบนอัตโนมัติ
+        if ($isHardBlock && $this->admin_abuse_alerted_at === null) {
+            $this->admin_abuse_alerted_at = now();
+            $this->save();
+            $this->alertAdminRepeatAbuse($reason);
+        }
+    }
+
+    /**
+     * 🚨 (2026-05-29 Fix C) แจ้ง admin เมื่อลูกค้าโดน silence ซ้ำจนถึง hard block
+     *
+     * Best-effort + non-blocking — ห้าม throw ขวาง flow silence
+     * ไม่ auto-ban — แค่แจ้งให้ admin review เอง (สอดคล้องหลัก AbuseClapback L4)
+     */
+    protected function alertAdminRepeatAbuse(?string $reason = null): void
+    {
+        try {
+            $name = trim((string) ($this->display_name ?? '')) ?: '(ไม่ทราบชื่อ)';
+            $days = (int) round(self::HARD_BLOCK_DURATION_HOURS / 24);
+
+            $msg = sprintf(
+                "🚫 Repeat free-chat abuse — silence ครั้งที่ %d (hard block %d วัน)\n".
+                'ลูกค้า: %s [%s/%s]'."\n".
+                'score: %d | เหตุผล: %s'."\n".
+                '→ เงียบถึง %s (review persona #%d)',
+                (int) $this->silence_count,
+                $days,
+                $name,
+                (string) $this->platform,
+                (string) $this->platform_user_id,
+                (int) ($this->time_waster_score ?? 0),
+                $reason ?? '-',
+                $this->chat_silenced_until?->format('Y-m-d H:i') ?? '-',
+                (int) ($this->id ?? 0)
+            );
+
+            if (class_exists(\App\Services\LineAlertService::class)) {
+                app(\App\Services\LineAlertService::class)->alertSystemError($msg);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::debug('FortuneCustomerPersona: alert repeat-abuse fail (non-blocking)', [
+                'persona_id' => $this->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

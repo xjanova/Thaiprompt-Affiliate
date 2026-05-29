@@ -511,10 +511,15 @@ class CustomerPersonaService
         $result = ['triggered' => false, 'goodbye_message' => null];
 
         try {
-            // buy-intent (ดูดวง/จ่าย/celtic...) → ไม่นับ + reset counter (ลูกค้าอาจพร้อมซื้อ)
+            // buy-intent (ดูดวง/จ่าย/celtic...) → ไม่นับ + ไม่ silence (ลูกค้าอาจพร้อมซื้อ)
+            //   🛡️ (2026-05-29 Fix A) เดิม reset counter เป็น 0 ที่บรรทัดนี้ = ช่องโหว่:
+            //     troll พิมพ์คำว่า "ดูดวง"/"พร้อม"/"ไพ่"/"99" คั่นทุก ~24 ข้อความ → ล้าง counter
+            //     → วนเล่น free-chat ไม่จบ (ทำลาย turn-cap วันเดียวกัน) แถม goodbye message
+            //     ยังบอกให้พิมพ์ "ดูดวง" เอง = ยื่นวิธี bypass ให้ลูกค้า
+            //   แก้: ไม่ reset ที่นี่ — buy-intent แค่ "ไม่ถูกนับ" (ผ่านไป route tier menu ปกติ ซึ่งถูก/เบา)
+            //     counter จะถูกล้างเฉพาะตอน "จ่ายเงินจริง" (confirmPayment → clearFreeChatCounter)
+            //     ดังนั้น troll ที่พิมพ์เพ้อเจ้อ (ไม่ใช่ buy-intent) ยังถูกนับสะสมจน cap → เงียบ
             if (FortuneCustomerPersona::shouldBypassSilence($messageText)) {
-                $this->clearFreeChatCounter($platform, $userId);
-
                 return $result;
             }
 
