@@ -1,0 +1,1792 @@
+{
+  "card_identifier": {
+    "name_en": "Five of Wands",
+    "name_th": "ห้าไม้เท้า",
+    "number": 5,
+    "type": "minor_arcana",
+    "suit": "wands"
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความขัดแย้งและการแข่งขัน",
+          "detailed_interpretation_th": "ห้าไม้เท้าในปัจจุบัน บอกว่าคุณกำลังอยู่ท่ามกลางความขัดแย้งและการแข่งขัน - ความเห็นที่ไม่ตรงกัน การชิงดีชิงเด่น ความตึงเครียดในกลุ่ม ไพ่บอกว่านี่เป็นความวุ่นวายที่สร้างสรรค์ได้หากใช้พลังงานอย่างถูกทาง แต่ต้องระวังการแข่งขันที่ไร้ประโยชน์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ความวุ่นวาย, The Emperor = อำนาจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ขัดแย้ง",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Knight of Wands = บุ่มบ่าม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าปัจจุบัน คือ 'ใช้พลังงานความขัดแย้งอย่างถูกทาง'",
+          "advice_th": "จัดการความขัดแย้ง - ความเห็นไม่ตรงกัน การแข่งขัน ใช้พลังงานสร้างสรรค์ ระวังการแข่งที่ไร้ประโยชน์",
+          "keywords_th": ["ความขัดแย้ง", "การแข่งขัน", "ตึงเครียด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความขัดแย้งและความเห็นไม่ตรงในความรัก",
+          "detailed_interpretation_th": "ในความรัก ห้าไม้เท้าปัจจุบันชี้ว่ามีความขัดแย้งและความเห็นไม่ตรงในความสัมพันธ์ - การทะเลาะเล็กๆ น้อยๆ การชิงความถูก ความตึงเครียดจากความต่าง ไพ่หนุนให้คุณสื่อสารด้วยความเคารพและมองความขัดแย้งเป็นโอกาสเข้าใจกันมากขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The Tower = ปั่นป่วน",
+            "wands": "Seven of Wands = ปกป้อง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าปัจจุบันความรัก คือ 'มองความขัดแย้งเป็นโอกาสเข้าใจกัน'",
+          "advice_th": "สื่อสารด้วยความเคารพ - มีความขัดแย้ง การชิงความถูก มองเป็นโอกาสเข้าใจกันมากขึ้น",
+          "keywords_th": ["ขัดแย้ง", "ความเห็นไม่ตรง", "สื่อสาร"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "การแข่งขันและความขัดแย้งในที่ทำงาน",
+          "detailed_interpretation_th": "ในการงาน ห้าไม้เท้าปัจจุบันบอกว่ามีการแข่งขันและความขัดแย้งในที่ทำงาน - การชิงตำแหน่ง ความเห็นที่ไม่ตรงในทีม การแข่งขันในตลาด ไพ่หนุนให้คุณใช้การแข่งขันเป็นแรงผลักดัน ยืนหยัดในจุดยืน และหาทางร่วมมือแทนการทำลายกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Tower = วุ่นวาย",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = แข่งขัน",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าปัจจุบันงาน คือ 'หาทางร่วมมือแทนการทำลายกัน'",
+          "advice_th": "ใช้การแข่งขันเป็นแรงผลักดัน - ชิงตำแหน่ง ความเห็นไม่ตรง ยืนหยัด หาทางร่วมมือ",
+          "keywords_th": ["แข่งขัน", "ขัดแย้งในงาน", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความขัดแย้งภายในและการต่อสู้กับตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต ห้าไม้เท้าปัจจุบันชี้ว่าคุณกำลังเผชิญความขัดแย้งภายในและการต่อสู้กับตัวเอง - ความต้องการที่ขัดกัน เสียงในหัวที่ทะเลาะกัน ความไม่ชัดเจนในทิศทาง ไพ่หนุนให้คุณยอมรับความขัดแย้งภายในและหาความชัดเจนผ่านการสำรวจตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Tower = ปั่นป่วน",
+            "wands": "Seven of Wands = ต่อสู้ภายใน",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Five of Swords = ขัดแย้งใน",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Knight of Wands = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าปัจจุบันเติบโต คือ 'หาความชัดเจนผ่านการสำรวจตัวเอง'",
+          "advice_th": "ยอมรับความขัดแย้งภายใน - ความต้องการขัดกัน เสียงในหัวทะเลาะ หาความชัดเจน",
+          "keywords_th": ["ขัดแย้งภายใน", "ต่อสู้กับตน", "หาความชัดเจน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ความเครียดและพลังงานที่กระจัดกระจาย",
+          "detailed_interpretation_th": "ในสุขภาพ ห้าไม้เท้าปัจจุบันบอกว่าคุณมีความเครียดและพลังงานที่กระจัดกระจาย - ความวุ่นวายที่ทำให้เหนื่อย การทำหลายอย่างพร้อมกัน ความตึงเครียดสะสม ไพ่หนุนให้คุณจัดระเบียบพลังงาน ลดความวุ่นวาย และหาเวลาพักผ่อนเพื่อคืนสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ปั่นป่วน, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Ten of Wands = ภาระ",
+            "court_cards": "Knight of Wands = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าปัจจุบันสุขภาพ คือ 'จัดระเบียบพลังงานลดความวุ่นวาย'",
+          "advice_th": "จัดระเบียบพลังงาน - ความเครียด พลังกระจัดกระจาย ลดความวุ่นวาย หาเวลาพักผ่อน",
+          "keywords_th": ["เครียด", "พลังกระจาย", "จัดระเบียบ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความขัดแย้งคลี่คลายหรือหลีกเลี่ยงการเผชิญหน้า",
+          "detailed_interpretation_th": "ห้าไม้เท้ากลับหัวในปัจจุบัน บอกว่าความขัดแย้งกำลังคลี่คลายหรือคุณกำลังหลีกเลี่ยงการเผชิญหน้า - ความตึงเครียดที่ลดลง การหาทางออกร่วมกัน หรือการเก็บกดความขัดแย้งไว้ ไพ่หนุนให้คุณจัดการความขัดแย้งอย่างสร้างสรรค์ ไม่หนีปัญหา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ความหวัง",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Two of Cups = ปรองดอง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ร่วมมือ",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวปัจจุบัน คือ 'จัดการความขัดแย้งไม่หนีปัญหา'",
+          "advice_th": "จัดการอย่างสร้างสรรค์ - ความขัดแย้งคลี่คลาย หรือกำลังหลีกเลี่ยง ไม่หนีปัญหา",
+          "keywords_th": ["ขัดแย้งคลี่คลาย", "หลีกเลี่ยง", "จัดการ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความขัดแย้งในรักคลี่คลายหรือถูกเก็บกด",
+          "detailed_interpretation_th": "ในความรัก ห้าไม้เท้ากลับหัวชี้ว่าความขัดแย้งในความสัมพันธ์คลี่คลายหรือถูกเก็บกด - การปรองดอง การหาทางออก หรือการเก็บความไม่พอใจไว้ ไพ่หนุนให้คุณสื่อสารความรู้สึกอย่างเปิดเผยและไม่เก็บกดความขัดแย้งจนระเบิด",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Cups = ปรองดอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวปัจจุบันความรัก คือ 'ไม่เก็บกดความขัดแย้งจนระเบิด'",
+          "advice_th": "สื่อสารเปิดเผย - ความขัดแย้งคลี่คลายหรือถูกเก็บกด อย่าเก็บความไม่พอใจจนระเบิด",
+          "keywords_th": ["คลี่คลาย", "เก็บกด", "สื่อสารเปิด"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "การแข่งขันลดลงหรือความขัดแย้งซ่อนเร้น",
+          "detailed_interpretation_th": "ในการงาน ห้าไม้เท้ากลับหัวบอกว่าการแข่งขันลดลงหรือความขัดแย้งซ่อนเร้น - บรรยากาศที่สงบลง การร่วมมือมากขึ้น หรือความตึงเครียดที่ซ่อนใต้ผิว ไพ่หนุนให้คุณจัดการความขัดแย้งที่ซ่อนอยู่และสร้างความร่วมมือที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ความหวัง",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวปัจจุบันงาน คือ 'จัดการความขัดแย้งที่ซ่อนอยู่'",
+          "advice_th": "สร้างความร่วมมือแท้ - การแข่งขันลดลง หรือขัดแย้งซ่อนเร้น จัดการความขัดแย้งที่ซ่อน",
+          "keywords_th": ["แข่งขันลด", "ขัดแย้งซ่อน", "ร่วมมือ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความขัดแย้งภายในคลี่คลายและพบความชัดเจน",
+          "detailed_interpretation_th": "ในการเติบโต ห้าไม้เท้ากลับหัวเผยว่าความขัดแย้งภายในกำลังคลี่คลายและคุณพบความชัดเจน - การเข้าใจความต้องการของตัวเอง การหาทิศทาง การสงบศึกในใจ ไพ่หนุนให้คุณใช้ความชัดเจนนี้ก้าวต่อด้วยความมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, Temperance = สมดุล",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Two of Cups = ปรองดอง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวปัจจุบันเติบโต คือ 'สงบศึกในใจก้าวต่อมั่นใจ'",
+          "advice_th": "ใช้ความชัดเจน - ความขัดแย้งภายในคลี่คลาย เข้าใจความต้องการตน ก้าวต่อมั่นใจ",
+          "keywords_th": ["คลี่คลายภายใน", "ความชัดเจน", "ก้าวต่อ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ความเครียดลดลงและพลังงานกลับมาสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ ห้าไม้เท้ากลับหัวบอกว่าความเครียดลดลงและพลังงานกลับมาสมดุล - ความวุ่นวายที่คลี่คลาย การจัดระเบียบชีวิต การพักผ่อนที่เพียงพอ ไพ่หนุนให้คุณรักษาความสมดุลนี้และไม่กลับไปสู่ความวุ่นวายเดิม",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวปัจจุบันสุขภาพ คือ 'ไม่กลับไปสู่ความวุ่นวายเดิม'",
+          "advice_th": "รักษาความสมดุล - ความเครียดลดลง พลังกลับมาสมดุล จัดระเบียบชีวิต พักผ่อนพอ",
+          "keywords_th": ["เครียดลดลง", "พลังสมดุล", "จัดระเบียบ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือความขัดแย้งและการแข่งขัน",
+          "detailed_interpretation_th": "ห้าไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือความขัดแย้งและการแข่งขัน - ความเห็นที่ไม่ตรงกัน การต่อสู้แย่งชิง ความตึงเครียดในกลุ่ม อุปสรรคนี้คือการเรียนรู้ที่จะจัดการความขัดแย้งและใช้พลังงานอย่างสร้างสรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วุ่นวาย, The Emperor = อำนาจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ขัดแย้ง",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Knight of Wands = บุ่มบ่าม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอุปสรรค คือ 'จัดการความขัดแย้งใช้พลังงานสร้างสรรค์'",
+          "advice_th": "จัดการความขัดแย้ง - ความเห็นไม่ตรง การต่อสู้แย่งชิง ใช้พลังงานอย่างสร้างสรรค์",
+          "keywords_th": ["ความขัดแย้ง", "แข่งขัน", "จัดการ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือความขัดแย้งในความสัมพันธ์",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือความขัดแย้งในความสัมพันธ์ - การทะเลาะ ความเห็นไม่ตรง การชิงความถูก อุปสรรคนี้คือการเรียนรู้สื่อสารด้วยความเคารพและหาจุดร่วมแทนการเอาชนะ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The Tower = ปั่นป่วน",
+            "wands": "Seven of Wands = ปกป้อง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอุปสรรคความรัก คือ 'หาจุดร่วมแทนการเอาชนะ'",
+          "advice_th": "สื่อสารด้วยความเคารพ - ทะเลาะ ความเห็นไม่ตรง หาจุดร่วมแทนการเอาชนะ",
+          "keywords_th": ["ขัดแย้งรัก", "ชิงความถูก", "หาจุดร่วม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือการแข่งขันและความขัดแย้งในงาน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการแข่งขันและความขัดแย้งในงาน - การชิงตำแหน่ง ความเห็นไม่ตรงในทีม การแข่งขันรุนแรง อุปสรรคนี้คือการเรียนรู้ที่จะยืนหยัดในจุดยืนและหาทางร่วมมือ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Tower = วุ่นวาย",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = แข่งขัน",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอุปสรรคงาน คือ 'ยืนหยัดในจุดยืนและหาทางร่วมมือ'",
+          "advice_th": "ยืนหยัดและร่วมมือ - การชิงตำแหน่ง ความเห็นไม่ตรง ยืนหยัด หาทางร่วมมือ",
+          "keywords_th": ["แข่งขัน", "ขัดแย้งในงาน", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือความขัดแย้งภายในที่ต้องแก้",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือความขัดแย้งภายในที่ต้องแก้ - ความต้องการที่ขัดกัน ค่านิยมที่ชนกัน ความไม่ชัดเจนในทิศทาง อุปสรรคนี้คือการเรียนรู้ที่จะเข้าใจตัวเองและหาความสามัคคีภายใน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Tower = ปั่นป่วน",
+            "wands": "Seven of Wands = ต่อสู้ภายใน",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Five of Swords = ขัดแย้งใน",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Knight of Wands = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอุปสรรคเติบโต คือ 'เข้าใจตัวเองหาความสามัคคีภายใน'",
+          "advice_th": "แก้ความขัดแย้งภายใน - ความต้องการขัดกัน ค่านิยมชนกัน เข้าใจตัวเอง หาความสามัคคีใน",
+          "keywords_th": ["ขัดแย้งภายใน", "ต้องแก้", "สามัคคีใน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือความเครียดและพลังงานกระจัดกระจาย",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือความเครียดและพลังงานกระจัดกระจาย - ความวุ่นวายที่ทำให้เหนื่อย การทำหลายอย่างพร้อมกัน ความตึงเครียดสะสม อุปสรรคนี้คือการเรียนรู้ที่จะจัดระเบียบพลังงานและหาความสงบ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ปั่นป่วน, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Knight of Wands = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอุปสรรคสุขภาพ คือ 'จัดระเบียบพลังงานหาความสงบ'",
+          "advice_th": "จัดระเบียบพลังงาน - ความเครียด พลังกระจัดกระจาย ความวุ่นวาย หาความสงบ",
+          "keywords_th": ["เครียด", "พลังกระจาย", "หาความสงบ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการหลีกเลี่ยงความขัดแย้งจนเก็บกด",
+          "detailed_interpretation_th": "ห้าไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือการหลีกเลี่ยงความขัดแย้งจนเก็บกด - การไม่กล้าเผชิญหน้า การกลืนความไม่พอใจ การหลบปัญหา ไพ่เตือนว่าการหลีกเลี่ยงทำให้ความขัดแย้งสะสมและระเบิดในที่สุด กล้าเผชิญอย่างสร้างสรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = หลบเลี่ยง, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Seven of Pentacles = นิ่ง",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอุปสรรค คือ 'หลีกเลี่ยงทำให้ความขัดแย้งสะสมและระเบิด'",
+          "advice_th": "กล้าเผชิญอย่างสร้างสรรค์ - หลีกเลี่ยงความขัดแย้งจนเก็บกด ความขัดแย้งจะระเบิดในที่สุด",
+          "keywords_th": ["หลีกเลี่ยง", "เก็บกด", "กล้าเผชิญ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือเก็บกดความไม่พอใจในความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการเก็บกดความไม่พอใจ - การไม่กล้าบอกความรู้สึก การกลืนความขัดแย้ง การหลีกเลี่ยงการคุยเรื่องยาก ไพ่หนุนให้คุณกล้าสื่อสารความรู้สึกอย่างเปิดเผยก่อนความเก็บกดทำลายความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = หลบเลี่ยง",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Four of Pentacles = เก็บกด",
+            "court_cards": "Queen of Cups (rev) = เก็บอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอุปสรรคความรัก คือ 'สื่อสารก่อนความเก็บกดทำลาย'",
+          "advice_th": "กล้าสื่อสาร - เก็บกดความไม่พอใจ ไม่กล้าบอกความรู้สึก สื่อสารเปิดเผยก่อนทำลายความสัมพันธ์",
+          "keywords_th": ["เก็บกด", "ไม่กล้าบอก", "สื่อสาร"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือความขัดแย้งซ่อนเร้นในที่ทำงาน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือความขัดแย้งซ่อนเร้น - การเมืองใต้ดิน ความไม่พอใจที่ไม่พูดออกมา การแข่งขันลับๆ ไพ่หนุนให้คุณสังเกตสัญญาณ จัดการความขัดแย้งที่ซ่อนอยู่ และสร้างความโปร่งใสในทีม",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ซ่อนเร้น, The Devil = การเมือง",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Seven of Swords = หลอกลวง",
+            "pentacles": "Three of Pentacles (rev) = ทีมแตก",
+            "court_cards": "Knight of Swords (rev) = ลับๆ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอุปสรรคงาน คือ 'สร้างความโปร่งใสในทีม'",
+          "advice_th": "จัดการความขัดแย้งซ่อน - การเมืองใต้ดิน ความไม่พอใจที่ไม่พูด สร้างความโปร่งใส",
+          "keywords_th": ["ขัดแย้งซ่อน", "การเมืองใต้ดิน", "โปร่งใส"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือเก็บกดความขัดแย้งภายใน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการเก็บกดความขัดแย้งภายใน - การปฏิเสธความรู้สึกที่ขัดกัน การไม่ยอมเผชิญความจริงในใจ การหลบความไม่ลงตัว ไพ่หนุนให้คุณกล้ายอมรับความขัดแย้งภายในและทำงานกับมันอย่างซื่อสัตย์",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ซ่อนเร้น, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Seven of Pentacles = นิ่ง",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอุปสรรคเติบโต คือ 'กล้ายอมรับความขัดแย้งภายในและทำงานกับมัน'",
+          "advice_th": "ยอมรับความขัดแย้งภายใน - เก็บกดความรู้สึกขัดกัน ไม่เผชิญความจริงในใจ ทำงานกับมันซื่อสัตย์",
+          "keywords_th": ["เก็บกดภายใน", "ปฏิเสธ", "กล้ายอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือความเครียดสะสมที่ไม่ระบาย",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือความเครียดสะสมที่ไม่ระบาย - การกลืนความตึงเครียด การไม่จัดการความเครียด การเก็บกดอารมณ์ ไพ่หนุนให้คุณหาวิธีระบายความเครียดอย่างสร้างสรรค์ - ออกกำลังกาย พูดคุย หรือทำกิจกรรมที่ปลดปล่อย",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เก็บกด, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Four of Pentacles = เก็บกด",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอุปสรรคสุขภาพ คือ 'หาวิธีระบายความเครียดอย่างสร้างสรรค์'",
+          "advice_th": "ระบายความเครียด - ความเครียดสะสมไม่ระบาย ออกกำลังกาย พูดคุย ทำกิจกรรมปลดปล่อย",
+          "keywords_th": ["เครียดสะสม", "ไม่ระบาย", "ปลดปล่อย"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยผ่านความขัดแย้งที่หล่อหลอม",
+          "detailed_interpretation_th": "ห้าไม้เท้าในอดีต เผยว่าคุณเคยผ่านความขัดแย้งและการแข่งขันที่หล่อหลอม - การต่อสู้ที่สอนคุณ ความเห็นไม่ตรงที่ทำให้เติบโต การแข่งขันที่ผลักดันให้พัฒนา ประสบการณ์นี้สอนคุณวิธีจัดการความขัดแย้งและยืนหยัด",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ผ่านวุ่นวาย, Strength = พลังใจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Knight of Wands = บุ่มบ่าม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอดีต คือ 'ความขัดแย้งเก่าหล่อหลอมความแกร่ง'",
+          "advice_th": "ใช้บทเรียนความขัดแย้ง - คุณผ่านการต่อสู้และเรียนรู้ ใช้ความรู้นี้ในปัจจุบัน",
+          "keywords_th": ["ขัดแย้งเก่า", "หล่อหลอม", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความขัดแย้งในรักที่เรียนรู้",
+          "detailed_interpretation_th": "ในความรัก ห้าไม้เท้าอดีตเผยว่าคุณเคยมีความขัดแย้งในรักที่เรียนรู้ - การทะเลาะ ความเข้าใจผิด การต่อสู้ในความสัมพันธ์ ประสบการณ์นี้สอนคุณวิธีสื่อสารดีขึ้นและจัดการความขัดแย้งอย่างเคารพ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ขัดแย้งเก่า, The Tower = ปั่นป่วน",
+            "wands": "Seven of Wands = ปกป้อง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Two of Pentacles = ปรับ",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอดีตความรัก คือ 'ขัดแย้งเก่าสอนการสื่อสาร'",
+          "advice_th": "ใช้บทเรียนความขัดแย้งในรัก - เคยทะเลาะและเรียนรู้ ใช้ทักษะการสื่อสารในปัจจุบัน",
+          "keywords_th": ["ขัดแย้งรักเก่า", "เรียนรู้", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยผ่านการแข่งขันในงานและเติบโต",
+          "detailed_interpretation_th": "ในการงาน ห้าไม้เท้าอดีตเผยว่าคุณเคยผ่านการแข่งขันในงานและเติบโต - การชิงตำแหน่ง การแข่งขันรุนแรง ความขัดแย้งในทีม ประสบการณ์นี้สอนคุณวิธียืนหยัด ใช้พลังงานสร้างสรรค์ และทำงานในสภาพแข่งขัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Tower = วุ่นวาย",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Five of Swords = แข่งขัน",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอดีตงาน คือ 'การแข่งขันเก่าสร้างทักษะ'",
+          "advice_th": "ใช้บทเรียนการแข่งขัน - เคยผ่านการชิงตำแหน่ง ใช้ทักษะการยืนหยัดในปัจจุบัน",
+          "keywords_th": ["แข่งขันเก่า", "เติบโต", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยผ่านความขัดแย้งภายในที่ทำให้เติบโต",
+          "detailed_interpretation_th": "ในการเติบโต ห้าไม้เท้าอดีตชี้ว่าคุณเคยผ่านความขัดแย้งภายในที่ทำให้เติบโต - การต่อสู้กับตัวเอง การเลือกระหว่างค่านิยมที่ขัดกัน การหาตัวตน ประสบการณ์นี้สอนคุณเรื่องการรู้จักตัวเองและการเลือกที่ตรงกับใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สำรวจใน, The Tower = แปลงร่าง",
+            "wands": "Seven of Wands = ต่อสู้ภายใน",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Five of Swords = ขัดแย้งใน",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอดีตเติบโต คือ 'ความขัดแย้งภายในสอนการรู้จักตน'",
+          "advice_th": "ใช้บทเรียนความขัดแย้งภายใน - เคยต่อสู้กับตน ใช้ความรู้นี้เลือกที่ตรงกับใจ",
+          "keywords_th": ["ขัดแย้งภายในเก่า", "รู้จักตน", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีช่วงเครียดและพลังงานกระจัดกระจาย",
+          "detailed_interpretation_th": "ในสุขภาพ ห้าไม้เท้าอดีตเผยว่าคุณเคยมีช่วงเครียดและพลังงานกระจัดกระจาย - ความวุ่นวายในชีวิต ความเครียดสะสม การทำหลายอย่างพร้อมกัน ประสบการณ์นี้สอนคุณวิธีจัดระเบียบพลังงานและการพักผ่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ผ่านวุ่นวาย, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Knight of Wands = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอดีตสุขภาพ คือ 'ความเครียดเก่าสอนการจัดระเบียบ'",
+          "advice_th": "ใช้บทเรียนความเครียดเก่า - เคยพลังกระจัดกระจาย ใช้ความรู้จัดระเบียบในปัจจุบัน",
+          "keywords_th": ["เครียดเก่า", "พลังกระจาย", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยหลีกเลี่ยงความขัดแย้งจนเก็บกด",
+          "detailed_interpretation_th": "ห้าไม้เท้ากลับหัวในอดีต เผยว่าคุณเคยหลีกเลี่ยงความขัดแย้งจนเก็บกด - การไม่เผชิญหน้า การกลืนความไม่พอใจ การหลบปัญหา บทเรียนคือคุณรู้ว่าการหลีกเลี่ยงทำให้ปัญหาสะสม กล้าเผชิญในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = หลบเลี่ยง, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวอดีต คือ 'การหลีกเลี่ยงทำให้ปัญหาสะสม'",
+          "advice_th": "ใช้บทเรียนการหลีกเลี่ยง - คุณรู้ว่าการเก็บกดทำให้ปัญหาสะสม กล้าเผชิญในปัจจุบัน",
+          "keywords_th": ["หลีกเลี่ยงเก่า", "เก็บกด", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยกลืนความไม่พอใจในรัก",
+          "detailed_interpretation_th": "ในความรัก ห้าไม้เท้ากลับหัวอดีตเผยว่าคุณเคยกลืนความไม่พอใจในรัก - การไม่กล้าบอก การเก็บความรู้สึกไว้ บทเรียนคือคุณรู้ว่าต้องสื่อสารตรง ไม่เก็บกดอีก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = เก็บกด, The Moon = หลบเลี่ยง",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = เก็บอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวอดีตความรัก คือ 'รู้ว่าต้องสื่อสารตรงไม่เก็บกด'",
+          "advice_th": "ใช้บทเรียนการกลืนความไม่พอใจ - คุณรู้ว่าต้องบอกตรง ไม่เก็บกดในความรักปัจจุบัน",
+          "keywords_th": ["กลืนเก่า", "ไม่บอก", "สื่อสารตรง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยเจอการเมืองซ่อนเร้นในงาน",
+          "detailed_interpretation_th": "ในการงาน ห้าไม้เท้ากลับหัวอดีตเผยว่าคุณเคยเจอการเมืองซ่อนเร้นในงาน - ความขัดแย้งใต้ผิว การแข่งขันลับ บทเรียนคือคุณรู้วิธีอ่านสถานการณ์และจัดการการเมืองในที่ทำงาน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ซ่อนเร้น, The Devil = การเมือง",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Seven of Swords = หลอกลวง",
+            "pentacles": "Three of Pentacles (rev) = ทีมแตก",
+            "court_cards": "Knight of Swords (rev) = ลับๆ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวอดีตงาน คือ 'รู้วิธีอ่านสถานการณ์การเมือง'",
+          "advice_th": "ใช้บทเรียนการเมืองในงาน - เคยเจอความขัดแย้งซ่อน ใช้ทักษะอ่านสถานการณ์ในปัจจุบัน",
+          "keywords_th": ["การเมืองเก่า", "ซ่อนเร้น", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยปฏิเสธความขัดแย้งภายในของตน",
+          "detailed_interpretation_th": "ในการเติบโต ห้าไม้เท้ากลับหัวอดีตเผยว่าคุณเคยปฏิเสธความขัดแย้งภายในของตน - การไม่ยอมเผชิญความรู้สึกที่ขัดกัน การหลบความจริงในใจ บทเรียนคือคุณรู้ว่าต้องยอมรับและทำงานกับความขัดแย้งภายใน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ซ่อนเร้น, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Seven of Pentacles = นิ่ง",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวอดีตเติบโต คือ 'รู้ว่าต้องยอมรับและทำงานกับความขัดแย้งภายใน'",
+          "advice_th": "ใช้บทเรียนการปฏิเสธความขัดแย้ง - คุณรู้ว่าต้องยอมรับและทำงานกับมันในปัจจุบัน",
+          "keywords_th": ["ปฏิเสธเก่า", "ไม่เผชิญใน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยเก็บกดความเครียดจนสุขภาพแย่",
+          "detailed_interpretation_th": "ในสุขภาพ ห้าไม้เท้ากลับหัวอดีตเผยว่าคุณเคยเก็บกดความเครียดจนสุขภาพแย่ - การไม่ระบาย การกลืนอารมณ์ บทเรียนคือคุณรู้ว่าต้องระบายความเครียดและดูแลสุขภาพจิต",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เก็บกด, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Four of Pentacles = เก็บกด",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวอดีตสุขภาพ คือ 'รู้ว่าต้องระบายความเครียด'",
+          "advice_th": "ใช้บทเรียนการเก็บกด - คุณรู้ว่าต้องระบายความเครียด ใช้ในการดูแลสุขภาพปัจจุบัน",
+          "keywords_th": ["เก็บกดเก่า", "ไม่ระบาย", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีการแข่งขันและความท้าทาย",
+          "detailed_interpretation_th": "ห้าไม้เท้าในอนาคต เตือนว่าอนาคตจะมีการแข่งขันและความท้าทาย - การชิงโอกาส ความเห็นที่ขัดแย้ง การต้องต่อสู้เพื่อจุดยืน ไพ่หนุนให้คุณเตรียมพลังงาน ฝึกการสื่อสาร และพร้อมที่จะใช้ความขัดแย้งเป็นแรงผลักดัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Tower = ปั่นป่วน",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ขัดแย้ง",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Knight of Wands = บุ่มบ่าม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอนาคต คือ 'ใช้ความขัดแย้งเป็นแรงผลักดัน'",
+          "advice_th": "เตรียมรับการแข่งขัน - การชิงโอกาส ความขัดแย้ง ฝึกการสื่อสาร พร้อมใช้เป็นแรงผลักดัน",
+          "keywords_th": ["แข่งขัน", "ท้าทาย", "เตรียมพลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจมีความขัดแย้งและการต่อรอง",
+          "detailed_interpretation_th": "ในความรัก ห้าไม้เท้าอนาคตเตือนว่าความรักอาจมีความขัดแย้งและการต่อรอง - ความเห็นไม่ตรง การชิงความถูก การปะทะกันของบุคลิก ไพ่หนุนให้คุณเตรียมทักษะการสื่อสารและการประนีประนอม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The Tower = ปั่นป่วน",
+            "wands": "Seven of Wands = ปกป้อง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอนาคตความรัก คือ 'เตรียมทักษะการสื่อสารและประนีประนอม'",
+          "advice_th": "เตรียมรับความขัดแย้งในรัก - ความเห็นไม่ตรง การชิงถูก ฝึกการสื่อสารและประนีประนอม",
+          "keywords_th": ["ขัดแย้งรัก", "ต่อรอง", "ประนีประนอม"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานจะมีการแข่งขันรุนแรง",
+          "detailed_interpretation_th": "ในการงาน ห้าไม้เท้าอนาคตเตือนว่างานจะมีการแข่งขันรุนแรง - การชิงตำแหน่ง คู่แข่งที่เพิ่มขึ้น ความตึงเครียดในทีม ไพ่หนุนให้คุณเตรียมทักษะ พัฒนาตัวเอง และพร้อมที่จะยืนหยัดในจุดยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Tower = วุ่นวาย",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = แข่งขัน",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอนาคตงาน คือ 'พัฒนาตัวเองพร้อมยืนหยัดในจุดยืน'",
+          "advice_th": "เตรียมรับการแข่งขัน - การชิงตำแหน่ง คู่แข่งเพิ่ม พัฒนาตัวเอง ยืนหยัดในจุดยืน",
+          "keywords_th": ["แข่งขันรุนแรง", "ชิงตำแหน่ง", "เตรียมทักษะ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตจะมีความขัดแย้งภายในให้แก้",
+          "detailed_interpretation_th": "ในการเติบโต ห้าไม้เท้าอนาคตชี้ว่าการเติบโตจะมีความขัดแย้งภายในให้แก้ - การต้องเลือกระหว่างค่านิยม การต่อสู้กับความเชื่อเก่า การหาตัวตนที่แท้ ไพ่หนุนให้คุณเตรียมใจเผชิญความขัดแย้งและใช้เป็นโอกาสค้นพบตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สำรวจใน, The Tower = แปลงร่าง",
+            "wands": "Seven of Wands = ต่อสู้ภายใน",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Five of Swords = ขัดแย้งใน",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอนาคตเติบโต คือ 'ใช้ความขัดแย้งเป็นโอกาสค้นพบตัวเอง'",
+          "advice_th": "เตรียมรับความขัดแย้งภายใน - ต้องเลือกค่านิยม ต่อสู้กับความเชื่อเก่า โอกาสค้นพบตน",
+          "keywords_th": ["ขัดแย้งภายใน", "ต้องแก้", "ค้นพบตน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอาจมีความเครียดเพิ่มขึ้น",
+          "detailed_interpretation_th": "ในสุขภาพ ห้าไม้เท้าอนาคตเตือนว่าสุขภาพอาจมีความเครียดเพิ่มขึ้น - ความวุ่นวายในชีวิต พลังงานกระจัดกระจาย ความตึงเครียดสะสม ไพ่หนุนให้คุณเตรียมวิธีจัดการความเครียดและสร้างเวลาพักผ่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ปั่นป่วน, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Knight of Wands = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าอนาคตสุขภาพ คือ 'เตรียมวิธีจัดการความเครียดสร้างเวลาพัก'",
+          "advice_th": "เตรียมรับความเครียด - ความวุ่นวาย พลังกระจัดกระจาย เตรียมวิธีจัดการ สร้างเวลาพัก",
+          "keywords_th": ["เครียดเพิ่ม", "เตรียมจัดการ", "พักผ่อน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตอาจมีความขัดแย้งซ่อนเร้น",
+          "detailed_interpretation_th": "ห้าไม้เท้ากลับหัวในอนาคต เตือนว่าอาจมีความขัดแย้งซ่อนเร้น - การเก็บกด การไม่เผชิญหน้า ความตึงเครียดใต้ผิว ไพ่หนุนให้คุณเตรียมที่จะกล้าเผชิญความขัดแย้งและไม่ปล่อยให้ปัญหาสะสม",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ซ่อนเร้น, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Seven of Pentacles = นิ่ง",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวอนาคต คือ 'กล้าเผชิญไม่ปล่อยให้ปัญหาสะสม'",
+          "advice_th": "เตรียมเผชิญความขัดแย้ง - ความขัดแย้งซ่อนเร้น เก็บกด กล้าเผชิญ ไม่ปล่อยปัญหาสะสม",
+          "keywords_th": ["ขัดแย้งซ่อน", "เก็บกด", "กล้าเผชิญ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจมีความเก็บกดที่ระเบิด",
+          "detailed_interpretation_th": "ในความรัก ห้าไม้เท้ากลับหัวอนาคตเตือนว่าความรักอาจมีความเก็บกดที่ระเบิด - ความไม่พอใจที่สะสม ความขัดแย้งที่ไม่ได้พูด การระเบิดของอารมณ์ ไพ่หนุนให้คุณสื่อสารเปิดเผยก่อนความเก็บกดทำลายความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Moon = ซ่อนเร้น",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = เก็บอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวอนาคตความรัก คือ 'สื่อสารเปิดก่อนความเก็บกดทำลาย'",
+          "advice_th": "เตรียมรับการระเบิด - ความไม่พอใจสะสม ขัดแย้งไม่ได้พูด สื่อสารเปิดก่อนทำลาย",
+          "keywords_th": ["เก็บกดระเบิด", "ไม่ได้พูด", "สื่อสารเปิด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานอาจมีการเมืองและความขัดแย้งซ่อน",
+          "detailed_interpretation_th": "ในการงาน ห้าไม้เท้ากลับหัวอนาคตเตือนว่างานอาจมีการเมืองและความขัดแย้งซ่อน - การแข่งขันลับ ความไม่พอใจที่ไม่พูดออกมา การสร้างพรรคพวก ไพ่หนุนให้คุณเตรียมสังเกตและจัดการอย่างชาญฉลาด",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ซ่อนเร้น, The Devil = การเมือง",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Seven of Swords = หลอกลวง",
+            "pentacles": "Three of Pentacles (rev) = ทีมแตก",
+            "court_cards": "Knight of Swords (rev) = ลับๆ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวอนาคตงาน คือ 'สังเกตและจัดการอย่างชาญฉลาด'",
+          "advice_th": "เตรียมรับการเมืองในงาน - การแข่งขันลับ ความไม่พอใจซ่อน สังเกตและจัดการชาญฉลาด",
+          "keywords_th": ["การเมืองซ่อน", "ความขัดแย้งลับ", "ชาญฉลาด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจปฏิเสธความขัดแย้งภายในจนติดอยู่",
+          "detailed_interpretation_th": "ในการเติบโต ห้าไม้เท้ากลับหัวอนาคตเตือนว่าอาจปฏิเสธความขัดแย้งภายในจนติดอยู่ - การหลีกเลี่ยงความรู้สึกที่ขัดกัน การไม่ยอมเผชิญความจริงในใจ ไพ่หนุนให้คุณกล้ายอมรับความขัดแย้งภายในและทำงานกับมัน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ซ่อนเร้น, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Seven of Pentacles = นิ่ง",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวอนาคตเติบโต คือ 'ยอมรับและทำงานกับความขัดแย้งภายใน'",
+          "advice_th": "เตรียมเผชิญความขัดแย้งภายใน - ปฏิเสธจนติด ยอมรับและทำงานกับมัน",
+          "keywords_th": ["ปฏิเสธภายใน", "ติดอยู่", "ยอมรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ความเครียดที่ไม่ระบายอาจทำร้ายสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ห้าไม้เท้ากลับหัวอนาคตเตือนว่าความเครียดที่ไม่ระบายอาจทำร้ายสุขภาพ - การเก็บกดอารมณ์ การไม่จัดการความเครียด อาการทางร่างกายจากความเครียด ไพ่หนุนให้คุณหาวิธีระบายความเครียดอย่างสร้างสรรค์ก่อนสุขภาพแย่",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เก็บกด, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Four of Pentacles = เก็บกด",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวอนาคตสุขภาพ คือ 'หาวิธีระบายก่อนสุขภาพแย่'",
+          "advice_th": "ระบายความเครียด - เครียดไม่ระบายทำร้ายสุขภาพ หาวิธีระบายสร้างสรรค์",
+          "keywords_th": ["เครียดไม่ระบาย", "ทำร้ายสุขภาพ", "ระบาย"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือยืนหยัดและเอาชนะความท้าทาย",
+          "detailed_interpretation_th": "ห้าไม้เท้าในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือยืนหยัดและเอาชนะความท้าทาย - การพิสูจน์ตัวเอง การชนะการแข่งขัน การยืนหยัดในจุดยืน เป้าหมายนี้ต้องการความกล้าและความมุ่งมั่น",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าเป้าหมาย คือ 'ยืนหยัดและเอาชนะความท้าทาย'",
+          "advice_th": "ตั้งเป้ายืนหยัดและชนะ - พิสูจน์ตัวเอง ชนะการแข่งขัน กล้าและมุ่งมั่น",
+          "keywords_th": ["ยืนหยัด", "เอาชนะ", "ความท้าทาย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือทำงานผ่านความขัดแย้งในรัก",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือทำงานผ่านความขัดแย้งในรัก - การสื่อสารที่ดีขึ้น การประนีประนอม การเรียนรู้จากความขัดแย้ง ไพ่หนุนให้คุณตั้งเป้าหมายความสัมพันธ์ที่แก้ปัญหาด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Cups = ปรองดอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าเป้าหมายความรัก คือ 'แก้ปัญหาด้วยกัน'",
+          "advice_th": "ตั้งเป้าผ่านความขัดแย้ง - สื่อสารดีขึ้น ประนีประนอม เรียนรู้จากความขัดแย้ง",
+          "keywords_th": ["แก้ปัญหารัก", "ประนีประนอม", "เรียนรู้"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือชนะการแข่งขันและพิสูจน์ตัวเอง",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือชนะการแข่งขันและพิสูจน์ตัวเอง - การได้รับตำแหน่ง การเอาชนะคู่แข่ง การยืนหยัดในจุดยืน ไพ่หนุนให้คุณตั้งเป้าหมายที่ใช้พลังงานความแข่งขันเป็นแรงผลักดัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Sun = ความสำเร็จ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าเป้าหมายงาน คือ 'ใช้พลังงานความแข่งขันเป็นแรงผลักดัน'",
+          "advice_th": "ตั้งเป้าชนะและพิสูจน์ - ได้รับตำแหน่ง เอาชนะคู่แข่ง ยืนหยัดในจุดยืน",
+          "keywords_th": ["ชนะแข่งขัน", "พิสูจน์ตน", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือแก้ความขัดแย้งภายในและหาตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือแก้ความขัดแย้งภายในและหาตัวตน - การเข้าใจความต้องการ การเลือกค่านิยม การสามัคคีในใจ ไพ่หนุนให้คุณตั้งเป้าหมายการเติบโตที่ผ่านการเผชิญและรวมเป็นหนึ่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าเป้าหมายเติบโต คือ 'เผชิญและรวมเป็นหนึ่ง'",
+          "advice_th": "ตั้งเป้าแก้ความขัดแย้งภายใน - เข้าใจความต้องการ เลือกค่านิยม สามัคคีในใจ",
+          "keywords_th": ["แก้ภายใน", "หาตัวตน", "สามัคคี"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือจัดการความเครียดและสมดุลพลังงาน",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือจัดการความเครียดและสมดุลพลังงาน - การลดความวุ่นวาย การจัดระเบียบชีวิต การพักผ่อนเพียงพอ ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพที่สมดุลและสร้างพลังงานที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าเป้าหมายสุขภาพ คือ 'สมดุลและสร้างพลังงานยั่งยืน'",
+          "advice_th": "ตั้งเป้าจัดการความเครียด - ลดความวุ่นวาย จัดระเบียบ พักผ่อนพอ",
+          "keywords_th": ["จัดการเครียด", "สมดุล", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือสร้างความสามัคคีและสันติ",
+          "detailed_interpretation_th": "ห้าไม้เท้ากลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือสร้างความสามัคคีและสันติ - การประนีประนอม การหาทางออกร่วมกัน การลดความขัดแย้ง เป้าหมายนี้ต้องการความเข้าใจและความอดทน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ความหวัง",
+            "wands": "Two of Cups = ปรองดอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวเป้าหมาย คือ 'ความเข้าใจและความอดทน'",
+          "advice_th": "ตั้งเป้าสร้างสามัคคี - ประนีประนอม หาทางออกร่วมกัน ลดความขัดแย้ง",
+          "keywords_th": ["สามัคคี", "สันติ", "ประนีประนอม"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือสันติในความรัก",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือสันติในความรัก - การลดความขัดแย้ง การสร้างความเข้าใจ การปรองดอง ไพ่หนุนให้คุณตั้งเป้าหมายความสัมพันธ์ที่สงบสุขและมีความเข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Cups = ปรองดอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวเป้าหมายความรัก คือ 'สงบสุขและมีความเข้าใจ'",
+          "advice_th": "ตั้งเป้าสันติในรัก - ลดความขัดแย้ง สร้างความเข้าใจ ปรองดอง",
+          "keywords_th": ["สันติรัก", "ปรองดอง", "เข้าใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือความร่วมมือในงาน",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือความร่วมมือในงาน - การสร้างทีมที่กลมเกลียว การลดการแข่งขัน การทำงานร่วมกัน ไพ่หนุนให้คุณตั้งเป้าหมายที่สร้างวัฒนธรรมการร่วมมือมากกว่าการแข่งขัน",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวเป้าหมายงาน คือ 'สร้างวัฒนธรรมร่วมมือมากกว่าแข่งขัน'",
+          "advice_th": "ตั้งเป้าร่วมมือ - สร้างทีมกลมเกลียว ลดแข่งขัน ทำงานร่วมกัน",
+          "keywords_th": ["ร่วมมือ", "ทีมกลมเกลียว", "ลดแข่งขัน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือสันติภายในและการยอมรับ",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือสันติภายในและการยอมรับ - การยอมรับความขัดแย้งในใจ การหาความสงบ การเข้าใจตัวเอง ไพ่หนุนให้คุณตั้งเป้าหมายการเติบโตที่ผ่านการยอมรับและสันติ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นศรัทธา",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวเป้าหมายเติบโต คือ 'ยอมรับและสันติ'",
+          "advice_th": "ตั้งเป้าสันติภายใน - ยอมรับความขัดแย้งในใจ หาความสงบ เข้าใจตน",
+          "keywords_th": ["สันติภายใน", "ยอมรับ", "ความสงบ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพสมดุลและสงบ",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือสุขภาพสมดุลและสงบ - การลดความเครียด การสร้างกิจวัตรที่สงบ การพักผ่อนเพียงพอ ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพที่เน้นความสมดุลและสันติ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวเป้าหมายสุขภาพ คือ 'สมดุลและสันติ'",
+          "advice_th": "ตั้งเป้าสุขภาพสมดุล - ลดเครียด สร้างกิจวัตรสงบ พักผ่อนพอ",
+          "keywords_th": ["สมดุล", "สงบ", "พักผ่อน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือการเติบโตผ่านความท้าทาย",
+          "detailed_interpretation_th": "ห้าไม้เท้าในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือการเติบโตผ่านความท้าทาย - คุณมีพลังจากการต่อสู้ ชอบความแข่งขัน ใช้ความขัดแย้งเป็นแรงผลักดัน รากฐานนี้ทำให้คุณแกร่งและไม่กลัวการเผชิญหน้า",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Emperor = อำนาจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Knight of Wands = พลัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ารากฐาน คือ 'พลังจากการต่อสู้'",
+          "advice_th": "ใช้รากฐานความแกร่ง - คุณเติบโตจากความท้าทาย ใช้พลังจากการต่อสู้นำทาง",
+          "keywords_th": ["เติบโตผ่านท้าทาย", "พลังจากต่อสู้", "แกร่ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือการเรียนรู้จากความขัดแย้ง",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือการเรียนรู้จากความขัดแย้ง - คุณเชื่อว่าความรักต้องผ่านการทดสอบ การทำงานกับความขัดแย้งคือการเติบโตร่วมกัน รากฐานนี้ทำให้คุณเป็นคู่ครองที่ไม่กลัวการเผชิญหน้า",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Strength = พลังใจ",
+            "wands": "Seven of Wands = ปกป้อง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ารากฐานความรัก คือ 'ความรักต้องผ่านการทดสอบ'",
+          "advice_th": "ใช้การเรียนรู้จากความขัดแย้ง - ทดสอบความรัก ทำงานกับความขัดแย้ง เติบโตร่วมกัน",
+          "keywords_th": ["เรียนรู้จากขัดแย้ง", "ทดสอบรัก", "เติบโตร่วม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือการแข่งขันและพิสูจน์ตัวเอง",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือการแข่งขันและพิสูจน์ตัวเอง - คุณชอบความท้าทาย ใช้การแข่งขันเป็นแรงผลักดัน กล้าเผชิญคู่แข่ง รากฐานนี้ทำให้คุณเป็นนักธุรกิจที่แกร่งและพัฒนาตัวเองตลอดเวลา",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ารากฐานงาน คือ 'พัฒนาตัวเองตลอดเวลา'",
+          "advice_th": "ใช้การแข่งขันเป็นแรงผลักดัน - ชอบความท้าทาย กล้าเผชิญคู่แข่ง",
+          "keywords_th": ["แข่งขัน", "พิสูจน์ตน", "พัฒนา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือเติบโตจากการต่อสู้ภายใน",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือเติบโตจากการต่อสู้ภายใน - คุณเชื่อว่าการเผชิญความขัดแย้งในใจคือทางสู่ปัญญา การต่อสู้กับตัวเองทำให้แกร่งขึ้น รากฐานนี้ทำให้คุณเป็นคนที่เข้าใจตัวเองลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Strength = พลังใจ",
+            "wands": "Seven of Wands = ต่อสู้ภายใน",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ารากฐานเติบโต คือ 'เผชิญความขัดแย้งในใจคือทางสู่ปัญญา'",
+          "advice_th": "ใช้การต่อสู้ภายใน - เผชิญความขัดแย้งในใจ เข้าใจตัวเองลึกซึ้ง",
+          "keywords_th": ["ต่อสู้ภายใน", "ปัญญา", "เข้าใจตน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือพลังงานสูงและตื่นตัว",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือพลังงานสูงและตื่นตัว - คุณมีพลังงานเหลือล้น ชอบการเคลื่อนไหว ใช้การออกกำลังกายระบายความเครียด รากฐานนี้ทำให้คุณมีสุขภาพดีจากการตื่นตัว",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังกาย, The Sun = พลัง",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ace of Cups = สดใส",
+            "swords": "Ace of Swords = กระจ่าง",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Knight of Wands = พลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ารากฐานสุขภาพ คือ 'สุขภาพดีจากการตื่นตัว'",
+          "advice_th": "ใช้พลังงานสูง - ชอบเคลื่อนไหว ออกกำลังกายระบายความเครียด",
+          "keywords_th": ["พลังงานสูง", "ตื่นตัว", "ออกกำลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือกลัวความขัดแย้งจนหลีกเลี่ยง",
+          "detailed_interpretation_th": "ห้าไม้เท้ากลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือการกลัวความขัดแย้งจนหลีกเลี่ยง - คุณกลัวการเผชิญหน้า เลือกหลบปัญหา เก็บกดความรู้สึก รากฐานนี้ทำให้คุณติดอยู่ในความเก็บกด ถึงเวลาเรียนรู้ที่จะเผชิญ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = หลบเลี่ยง, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวรากฐาน คือ 'เรียนรู้ที่จะเผชิญ'",
+          "advice_th": "เรียนรู้เผชิญหน้า - กลัวขัดแย้งจนหลีกเลี่ยง ติดในความเก็บกด เผชิญทีละน้อย",
+          "keywords_th": ["กลัวขัดแย้ง", "หลีกเลี่ยง", "เผชิญ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานคือกลัวขัดแย้งในรักจนเก็บกด",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือกลัวขัดแย้งจนเก็บกด - คุณกลัวการทะเลาะ เลือกกลืนความไม่พอใจ ไม่กล้าบอกความรู้สึก รากฐานนี้ทำให้ความสัมพันธ์ขาดความซื่อสัตย์ ถึงเวลาเรียนรู้ที่จะสื่อสารตรง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = หลบเลี่ยง",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = เก็บอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวรากฐานความรัก คือ 'เรียนรู้ที่จะสื่อสารตรง'",
+          "advice_th": "เรียนรู้สื่อสารตรง - กลัวทะเลาะจนกลืน ความสัมพันธ์ขาดซื่อสัตย์ สื่อสารตรง",
+          "keywords_th": ["กลัวขัดแย้ง", "เก็บกด", "สื่อสารตรง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือกลัวการแข่งขันจนไม่กล้าเสี่ยง",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือกลัวการแข่งขันจนไม่กล้าเสี่ยง - คุณกลัวคู่แข่ง เลือกเส้นทางที่ปลอดภัย ไม่กล้าพิสูจน์ตัวเอง รากฐานนี้จำกัดศักยภาพ ถึงเวลาเรียนรู้ที่จะกล้าเผชิญการแข่งขัน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวรากฐานงาน คือ 'เรียนรู้กล้าเผชิญการแข่งขัน'",
+          "advice_th": "เรียนรู้กล้าแข่งขัน - กลัวคู่แข่ง เลือกปลอดภัย จำกัดศักยภาพ กล้าเผชิญ",
+          "keywords_th": ["กลัวแข่งขัน", "ไม่กล้าเสี่ยง", "เผชิญ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือหลีกเลี่ยงความขัดแย้งภายใน",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือหลีกเลี่ยงความขัดแย้งภายใน - คุณไม่ยอมเผชิญความรู้สึกที่ขัดกัน หลบความจริงในใจ กลืนความไม่ลงตัว รากฐานนี้จำกัดการเติบโต ถึงเวลาเรียนรู้ที่จะกล้ามองภายในและทำงานกับมัน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ซ่อนเร้น, The Hanged Man = ติดอยู่",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = นิ่ง",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวรากฐานเติบโต คือ 'กล้ามองภายในและทำงานกับมัน'",
+          "advice_th": "เรียนรู้เผชิญภายใน - ไม่ยอมเผชิญความรู้สึกขัดกัน หลบความจริง กล้ามอง",
+          "keywords_th": ["หลีกภายใน", "ไม่เผชิญ", "กล้ามอง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือเก็บกดความเครียด",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือเก็บกดความเครียด - คุณกลืนอารมณ์ ไม่ระบายความตึงเครียด ปล่อยให้สะสมในร่างกาย รากฐานนี้ทำให้สุขภาพเสีย ถึงเวลาเรียนรู้ที่จะระบายความเครียดและจัดการอารมณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เก็บกด, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Four of Pentacles = เก็บกด",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวรากฐานสุขภาพ คือ 'ระบายความเครียดและจัดการอารมณ์'",
+          "advice_th": "เรียนรู้ระบาย - เก็บกดความเครียด กลืนอารมณ์ สุขภาพเสีย ระบายและจัดการ",
+          "keywords_th": ["เก็บกดเครียด", "ไม่ระบาย", "ระบาย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เผชิญความขัดแย้งอย่างสร้างสรรค์",
+          "detailed_interpretation_th": "ห้าไม้เท้าในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือเผชิญความขัดแย้งอย่างสร้างสรรค์ - กล้าพูดความรู้สึก ใช้ความขัดแย้งเป็นแรงผลักดัน หาทางออกร่วมกัน ไพ่หนุนให้คุณนำด้วยความกล้าและความซื่อสัตย์",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Emperor = อำนาจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งคำแนะนำ คือ 'นำด้วยความกล้าและซื่อสัตย์'",
+          "advice_th": "เผชิญอย่างสร้างสรรค์ - กล้าพูดความรู้สึก ใช้ความขัดแย้งเป็นแรงผลักดัน หาทางออกร่วม",
+          "keywords_th": ["เผชิญ", "กล้าพูด", "สร้างสรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "สื่อสารตรงและจัดการความขัดแย้งในรัก",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณควรสื่อสารตรงและจัดการความขัดแย้งในรัก - บอกความรู้สึก ฟังคู่ ประนีประนอม ไพ่หนุนให้คุณนำด้วยความเปิดเผยและความเคารพ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Cups = ปรองดอง",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งคำแนะนำความรัก คือ 'เปิดเผยและเคารพ'",
+          "advice_th": "สื่อสารตรง - บอกความรู้สึก ฟังคู่ ประนีประนอม จัดการความขัดแย้ง",
+          "keywords_th": ["สื่อสารตรง", "ประนีประนอม", "เคารพ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ยืนหยัดในจุดยืนและสู้แข่งขัน",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรยืนหยัดในจุดยืนและสู้การแข่งขัน - กล้าแสดงความสามารถ ใช้คู่แข่งเป็นแรงผลักดัน พัฒนาตัวเองตลอด ไพ่หนุนให้คุณนำด้วยความมุ่งมั่นและความกล้า",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Six of Wands = ชนะ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งคำแนะนำงาน คือ 'มุ่งมั่นและกล้า'",
+          "advice_th": "ยืนหยัดและสู้ - กล้าแสดงความสามารถ ใช้คู่แข่งเป็นแรงผลักดัน พัฒนาตลอด",
+          "keywords_th": ["ยืนหยัด", "สู้แข่งขัน", "มุ่งมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เผชิญความขัดแย้งภายในและทำงานกับมัน",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรเผชิญความขัดแย้งภายในและทำงานกับมัน - ยอมรับความรู้สึกที่ขัดกัน เลือกค่านิยม หาความสามัคคีในใจ ไพ่หนุนให้คุณนำด้วยความซื่อสัตย์กับตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Seven of Wands = ต่อสู้ภายใน",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งคำแนะนำเติบโต คือ 'ซื่อสัตย์กับตัวเอง'",
+          "advice_th": "เผชิญภายใน - ยอมรับความรู้สึกขัดกัน เลือกค่านิยม หาความสามัคคีในใจ",
+          "keywords_th": ["เผชิญภายใน", "ทำงานกับมัน", "ซื่อสัตย์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ระบายความเครียดและจัดระเบียบพลังงาน",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรระบายความเครียดและจัดระเบียบพลังงาน - ออกกำลังกาย ทำกิจกรรมปลดปล่อย พูดคุยกับใครซักคน ไพ่หนุนให้คุณนำด้วยการดูแลตัวเองอย่างเป็นระบบ",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังกาย, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งคำแนะนำสุขภาพ คือ 'ดูแลตัวเองอย่างเป็นระบบ'",
+          "advice_th": "ระบายและจัดระเบียบ - ออกกำลังกาย ทำกิจกรรมปลดปล่อย พูดคุยกับใคร",
+          "keywords_th": ["ระบาย", "จัดระเบียบ", "ปลดปล่อย"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หาทางออกร่วมกันแทนการเผชิญหน้า",
+          "detailed_interpretation_th": "ห้าไม้เท้ากลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือหาทางออกร่วมกันแทนการเผชิญหน้า - ลดความตึงเครียด ประนีประนอม สร้างสันติ ไพ่หนุนให้คุณนำด้วยปัญญาและความเข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ความหวัง",
+            "wands": "Two of Cups = ปรองดอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งคำแนะนำ คือ 'ปัญญาและความเข้าใจ'",
+          "advice_th": "หาทางออกร่วมกัน - ลดความตึงเครียด ประนีประนอม สร้างสันติ",
+          "keywords_th": ["ทางออกร่วม", "ประนีประนอม", "สันติ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ปรองดองและลดความขัดแย้งในรัก",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าคุณควรปรองดองและลดความขัดแย้งในรัก - ให้อภัย หาจุดร่วม สร้างความเข้าใจ ไพ่หนุนให้คุณนำด้วยความเมตตาและสันติ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Cups = ปรองดอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งคำแนะนำความรัก คือ 'เมตตาและสันติ'",
+          "advice_th": "ปรองดองในรัก - ให้อภัย หาจุดร่วม สร้างความเข้าใจ",
+          "keywords_th": ["ปรองดอง", "ให้อภัย", "เข้าใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ร่วมมือแทนการแข่งขันรุนแรง",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวชี้ว่าคุณควรร่วมมือแทนการแข่งขันรุนแรง - สร้างพันธมิตร แบ่งปันความสำเร็จ ทำงานเป็นทีม ไพ่หนุนให้คุณนำด้วยการสร้างความสามัคคี",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งคำแนะนำงาน คือ 'สร้างความสามัคคี'",
+          "advice_th": "ร่วมมือ - สร้างพันธมิตร แบ่งปันความสำเร็จ ทำงานเป็นทีม",
+          "keywords_th": ["ร่วมมือ", "พันธมิตร", "ทีม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ยอมรับและสร้างสันติภายใน",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรยอมรับและสร้างสันติภายใน - หยุดต่อสู้กับตัวเอง รวมส่วนที่ขัดกัน สร้างความเข้าใจ ไพ่หนุนให้คุณนำด้วยความเมตตาต่อตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นศรัทธา",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งคำแนะนำเติบโต คือ 'เมตตาต่อตัวเอง'",
+          "advice_th": "ยอมรับและสร้างสันติ - หยุดต่อสู้กับตน รวมส่วนที่ขัดกัน สร้างความเข้าใจ",
+          "keywords_th": ["ยอมรับ", "สันติภายใน", "เมตตา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สร้างกิจวัตรสงบและสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวชี้ว่าคุณควรสร้างกิจวัตรสงบและสมดุล - ลดความเครียด นั่งสมาธิ พักผ่อนพอ ไพ่หนุนให้คุณนำด้วยการสร้างสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'สร้างสมดุล'",
+          "advice_th": "สร้างกิจวัตรสงบ - ลดความเครียด นั่งสมาธิ พักผ่อนพอ",
+          "keywords_th": ["สงบ", "สมดุล", "สมาธิ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมเต็มไปด้วยการแข่งขัน",
+          "detailed_interpretation_th": "ห้าไม้เท้าในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวเต็มไปด้วยการแข่งขัน - คนรอบข้างที่แข่งขันชิงดี ความขัดแย้งในชุมชน บรรยากาศที่ตึงเครียด ไพ่บอกว่าใช้สถานการณ์นี้พัฒนาตัวเองและรักษาจุดยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วุ่นวาย, The Emperor = อำนาจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ขัดแย้ง",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Knight of Wands = บุ่มบ่าม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งภายนอก คือ 'พัฒนาตัวเองและรักษาจุดยืน'",
+          "advice_th": "ใช้การแข่งขันรอบตัว - คนแข่งขันชิงดี ความขัดแย้งในชุมชน พัฒนาตัวเอง",
+          "keywords_th": ["แวดล้อมแข่งขัน", "ความขัดแย้ง", "ตึงเครียด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างมีอิทธิพลต่อความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าคนรอบข้างมีอิทธิพลต่อความรัก - คนที่วิจารณ์ ครอบครัวที่ไม่หนุน เพื่อนที่ผลักดัน ไพ่หนุนให้คุณยืนหยัดในความรู้สึกของตัวเองและไม่ปล่อยให้คนอื่นกำหนดความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, The Moon = สับสน",
+            "wands": "Seven of Wands = ปกป้อง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งภายนอกความรัก คือ 'ยืนหยัดในความรู้สึก'",
+          "advice_th": "ยืนหยัดในรัก - คนวิจารณ์ ครอบครัวไม่หนุน ไม่ให้คนอื่นกำหนดความรัก",
+          "keywords_th": ["คนรอบข้างมีอิทธิพล", "ถูกวิจารณ์", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตลาดและทีมเต็มไปด้วยการแข่งขัน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่าตลาดและทีมเต็มไปด้วยการแข่งขัน - คู่แข่งมากมาย เพื่อนร่วมงานที่ชิงตำแหน่ง บรรยากาศที่ตึงเครียด ไพ่หนุนให้คุณใช้การแข่งขันเป็นแรงผลักดันและพัฒนาทักษะ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Wheel of Fortune = โอกาส",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = แข่งขัน",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งภายนอกงาน คือ 'ใช้การแข่งขันพัฒนาทักษะ'",
+          "advice_th": "พัฒนาในตลาดแข่งขัน - คู่แข่งมาก เพื่อนชิงตำแหน่ง ใช้เป็นแรงผลักดัน",
+          "keywords_th": ["ตลาดแข่งขัน", "คู่แข่งมาก", "พัฒนาทักษะ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมมีความขัดแย้งและแรงกดดัน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าสังคมมีความขัดแย้งและแรงกดดัน - ค่านิยมที่ขัดกัน ความคาดหวังที่ไม่ตรงกับคุณ คนที่ตัดสิน ไพ่บอกว่าใช้สถานการณ์นี้ค้นพบตัวตนและยืนหยัดในจุดยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant (rev) = ขัดกรอบ, The Hermit = เดินคนเดียว",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งภายนอกเติบโต คือ 'ค้นพบตัวตนและยืนหยัด'",
+          "advice_th": "ยืนหยัดในจุดยืน - สังคมขัดแย้ง ค่านิยมขัดกัน ค้นพบตัวตน",
+          "keywords_th": ["สังคมขัดแย้ง", "แรงกดดัน", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมเครียดและบั่นทอนพลัง",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าสิ่งแวดล้อมเครียดและบั่นทอนพลัง - บรรยากาศตึงเครียด คนรอบข้างที่กดดัน ความวุ่นวาย ไพ่หนุนให้คุณปรับสิ่งแวดล้อมเท่าที่ทำได้และหาพื้นที่ปลอดภัย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, The Tower = ปั่นป่วน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งภายนอกสุขภาพ คือ 'หาพื้นที่ปลอดภัย'",
+          "advice_th": "ปรับสิ่งแวดล้อม - บรรยากาศตึงเครียด คนกดดัน หาพื้นที่ปลอดภัย",
+          "keywords_th": ["แวดล้อมเครียด", "บั่นทอนพลัง", "ปลอดภัย"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมเริ่มสงบลง",
+          "detailed_interpretation_th": "ห้าไม้เท้ากลับหัวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวเริ่มสงบลง - ความขัดแย้งคลี่คลาย คนที่ร่วมมือมากขึ้น บรรยากาศที่ผ่อนคลาย ไพ่บอกว่าใช้ช่วงเวลานี้สร้างความสามัคคีและฟื้นพลังงาน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ความหวัง",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Two of Cups = ปรองดอง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งภายนอก คือ 'สร้างความสามัคคีและฟื้นพลังงาน'",
+          "advice_th": "ใช้สภาพสงบ - ความขัดแย้งคลี่คลาย คนร่วมมือมากขึ้น ฟื้นพลังงาน",
+          "keywords_th": ["สงบลง", "คลี่คลาย", "ฟื้นพลัง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างเริ่มหนุนความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าคนรอบข้างเริ่มหนุนความรัก - ครอบครัวที่ยอมรับ เพื่อนที่สนับสนุน สถานการณ์ที่เอื้อ ไพ่หนุนให้คุณใช้แรงสนับสนุนนี้สร้างความสัมพันธ์ที่มั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งภายนอกความรัก คือ 'แรงสนับสนุนสร้างความมั่นคง'",
+          "advice_th": "ใช้แรงหนุน - ครอบครัวยอมรับ เพื่อนสนับสนุน สถานการณ์เอื้อ",
+          "keywords_th": ["คนหนุนรัก", "ยอมรับ", "สนับสนุน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "การแข่งขันในงานลดลงและร่วมมือมากขึ้น",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าการแข่งขันในงานลดลงและร่วมมือมากขึ้น - ทีมที่กลมเกลียวขึ้น คู่แข่งที่กลายเป็นพันธมิตร บรรยากาศที่ผ่อนคลาย ไพ่หนุนให้คุณใช้ช่วงเวลานี้สร้างเครือข่ายและทำงานร่วมกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งภายนอกงาน คือ 'สร้างเครือข่ายและทำงานร่วมกัน'",
+          "advice_th": "ใช้ช่วงเวลาร่วมมือ - การแข่งขันลด ทีมกลมเกลียวขึ้น คู่แข่งเป็นพันธมิตร",
+          "keywords_th": ["แข่งขันลด", "ร่วมมือ", "เครือข่าย"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมเริ่มเข้าใจและหนุนการเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมเริ่มเข้าใจและหนุนการเติบโต - คนที่เห็นคุณค่า ชุมชนที่ยอมรับ บรรยากาศที่เอื้อ ไพ่บอกว่าใช้แรงสนับสนุนนี้เติบโตเต็มที่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = แรงบันดาลใจ, Temperance = สมดุล",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Three of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งภายนอกเติบโต คือ 'เติบโตเต็มที่'",
+          "advice_th": "ใช้แรงสนับสนุน - สังคมเข้าใจ คนเห็นคุณค่า ชุมชนยอมรับ",
+          "keywords_th": ["สังคมเข้าใจ", "หนุน", "เติบโต"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมเริ่มเอื้อต่อสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวบอกว่าสิ่งแวดล้อมเริ่มเอื้อต่อสุขภาพ - ความเครียดลดลง บรรยากาศสงบ คนที่หนุน ไพ่หนุนให้คุณใช้ช่วงเวลานี้ฟื้นพลังและสร้างกิจวัตรที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งภายนอกสุขภาพ คือ 'ฟื้นพลังและสร้างกิจวัตรดี'",
+          "advice_th": "ใช้สิ่งแวดล้อมเอื้อ - ความเครียดลด บรรยากาศสงบ คนหนุน ฟื้นพลัง",
+          "keywords_th": ["แวดล้อมเอื้อ", "สงบ", "ฟื้นพลัง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังชนะการแข่งขัน กลัวขัดแย้ง",
+          "detailed_interpretation_th": "ห้าไม้เท้าในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังชนะการแข่งขันและพิสูจน์ตัวเอง แต่กลัวความขัดแย้งและการเผชิญหน้า ไพ่บอกว่าใช้ความหวังเป็นแรงผลักดันและไม่ปล่อยให้ความกลัวจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Moon = ความกลัว",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ขัดแย้ง",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งความหวังกลัว คือ 'ใช้ความหวังเป็นแรงผลักดัน'",
+          "advice_th": "ใช้ความหวังนำทาง - หวังชนะแต่กลัวขัดแย้ง ไม่ปล่อยความกลัวจำกัด",
+          "keywords_th": ["หวังชนะ", "กลัวขัดแย้ง", "ใช้แรงผลักดัน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังรักที่หลงใหล กลัวความขัดแย้ง",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังรักที่หลงใหลและน่าตื่นเต้น แต่กลัวความขัดแย้งจะทำลายความสัมพันธ์ ไพ่บอกว่าความขัดแย้งบางครั้งทำให้ความรักลึกซึ้งขึ้น กล้าเผชิญและสื่อสาร",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Moon = ความกลัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Three of Swords = กลัวเจ็บ",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งความหวังกลัวความรัก คือ 'ความขัดแย้งทำให้รักลึกซึ้งขึ้น'",
+          "advice_th": "กล้าเผชิญในรัก - หวังรักหลงใหลแต่กลัวขัดแย้ง ความขัดแย้งทำให้รักลึกซึ้ง",
+          "keywords_th": ["หวังรักหลงใหล", "กลัวขัดแย้ง", "กล้าเผชิญ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังชนะการแข่งขัน กลัวล้มเหลว",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังชนะการแข่งขันและก้าวสู่ระดับสูง แต่กลัวล้มเหลวต่อหน้าคนอื่น ไพ่บอกว่าความกลัวล้มเหลวคือสิ่งที่ทุกคนมี กล้าลงสนามและเรียนรู้จากการต่อสู้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Moon = ความกลัว",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Three of Swords = กลัวล้ม",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งความหวังกลัวงาน คือ 'กล้าลงสนามและเรียนรู้'",
+          "advice_th": "กล้าแข่งขัน - หวังชนะแต่กลัวล้ม ความกลัวคือสิ่งที่ทุกคนมี กล้าลงสนาม",
+          "keywords_th": ["หวังชนะ", "กลัวล้ม", "กล้าลงสนาม"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเติบโต กลัวการเผชิญตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังเติบโตและเข้าใจตัวเอง แต่กลัวการเผชิญความขัดแย้งภายในและสิ่งที่ค้นพบ ไพ่บอกว่าการเผชิญตัวเองคือทางสู่อิสรภาพ กล้ามองและทำงานกับมัน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = ความกลัว",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Nine of Swords = กลัวจริง",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Queen of Swords = เผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งความหวังกลัวเติบโต คือ 'เผชิญตัวเองคือทางสู่อิสรภาพ'",
+          "advice_th": "กล้าเผชิญตัวเอง - หวังเติบโตแต่กลัวเผชิญใน เผชิญคือทางสู่อิสรภาพ",
+          "keywords_th": ["หวังเติบโต", "กลัวเผชิญตน", "อิสรภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังพลังเหลือล้น กลัวเครียดเกินไป",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังมีพลังเหลือล้น แต่กลัวความเครียดและความวุ่นวายจะทำลายสุขภาพ ไพ่บอกว่าสร้างความสมดุลระหว่างความตื่นตัวและการพักผ่อน",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งความหวังกลัวสุขภาพ คือ 'สมดุลระหว่างตื่นตัวและพักผ่อน'",
+          "advice_th": "สร้างสมดุล - หวังพลังเหลือล้นแต่กลัวเครียด สมดุลตื่นตัวและพักผ่อน",
+          "keywords_th": ["หวังพลัง", "กลัวเครียด", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวความขัดแย้งจนหลีกเลี่ยง",
+          "detailed_interpretation_th": "ห้าไม้เท้ากลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวความขัดแย้งจนหลีกเลี่ยง - เพราะกลัวการเผชิญหน้า คุณกลืนความรู้สึก ไม่กล้าพูด ปิดใจ ไพ่บอกว่าการหลีกเลี่ยงทำให้ความขัดแย้งสะสม กล้าเผชิญทีละน้อย",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = หลบเลี่ยง, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งความหวังกลัว คือ 'กล้าเผชิญทีละน้อย'",
+          "advice_th": "กล้าเผชิญ - กลัวขัดแย้งจนหลีกเลี่ยง การหลีกเลี่ยงทำให้สะสม เผชิญทีละน้อย",
+          "keywords_th": ["กลัวขัดแย้ง", "หลีกเลี่ยง", "กล้าเผชิญ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวความขัดแย้งในรักจนปิดใจ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวความขัดแย้งในรักจนปิดใจ - กลัวการทะเลาะ กลัวการต่อรอง จึงเก็บความรู้สึก ไม่กล้าบอก ไพ่บอกว่าความรักที่ดีต้องผ่านความขัดแย้ง กล้าสื่อสาร",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = ความกลัว",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Three of Swords = กลัวเจ็บ",
+            "swords": "Two of Swords = ไม่เผชิญ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = เก็บอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งความหวังกลัวความรัก คือ 'ความรักดีต้องผ่านความขัดแย้ง'",
+          "advice_th": "กล้าสื่อสาร - กลัวขัดแย้งในรักจนปิด ความรักดีต้องผ่านความขัดแย้ง",
+          "keywords_th": ["กลัวขัดแย้งรัก", "ปิดใจ", "กล้าสื่อสาร"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวการแข่งขันจนไม่กล้าเสี่ยง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวการแข่งขันจนไม่กล้าเสี่ยง - กลัวคู่แข่ง กลัวการเปรียบเทียบ จึงเลือกเส้นทางปลอดภัย ไม่กล้าพิสูจน์ตัวเอง ไพ่บอกว่ากล้าลงสนามและเรียนรู้จากการแข่งขัน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งความหวังกลัวงาน คือ 'กล้าลงสนามและเรียนรู้'",
+          "advice_th": "กล้าเสี่ยง - กลัวแข่งขันจนไม่กล้า กล้าลงสนาม เรียนรู้จากการแข่ง",
+          "keywords_th": ["กลัวแข่งขัน", "ไม่กล้าเสี่ยง", "กล้าลงสนาม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวเผชิญตัวเองจนติดอยู่",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวเผชิญตัวเองจนติดอยู่ - กลัวสิ่งที่จะค้นพบ กลัวความรู้สึกที่ขัดกัน จึงหลบความจริงในใจ ไพ่หนุนให้คุณกล้ามองภายในและทำงานกับมันอย่างเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ซ่อนเร้น, The Hanged Man = ติดอยู่",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = นิ่ง",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'กล้ามองภายในด้วยเมตตา'",
+          "advice_th": "กล้ามองภายใน - กลัวเผชิญตัวเองจนติด มองภายในด้วยเมตตา",
+          "keywords_th": ["กลัวเผชิญตน", "ติดอยู่", "กล้ามอง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวเครียดจนเก็บกด",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวความเครียดจนเก็บกด - กลัวการเผชิญปัญหา กลัวจะแย่ลง จึงกลืนอารมณ์ ไม่ระบาย ไพ่หนุนให้คุณหาวิธีระบายความเครียดอย่างสร้างสรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เก็บกด, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Four of Pentacles = เก็บกด",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'ระบายความเครียดอย่างสร้างสรรค์'",
+          "advice_th": "ระบายความเครียด - กลัวเครียดจนเก็บกด หาวิธีระบายสร้างสรรค์",
+          "keywords_th": ["กลัวเครียด", "เก็บกด", "ระบาย"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือผ่านความขัดแย้งและเติบโต",
+          "detailed_interpretation_th": "ห้าไม้เท้าในตำแหน่งผลลัพธ์ บอกว่าผลลัพธ์ของสถานการณ์คือผ่านความขัดแย้งและเติบโต - คุณจะเผชิญการแข่งขัน ผ่านความท้าทาย และแกร่งขึ้น ไพ่ยืนยันว่าการต่อสู้นำสู่การพัฒนาตัวเองและความเข้าใจที่ลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Tower = แปลงร่าง",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งผลลัพธ์ คือ 'การต่อสู้นำสู่การพัฒนา'",
+          "advice_th": "เตรียมรับความท้าทาย - ผ่านความขัดแย้ง เผชิญการแข่งขัน แกร่งขึ้น",
+          "keywords_th": ["ผ่านขัดแย้ง", "เติบโต", "แกร่งขึ้น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักผ่านการทดสอบ",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์บอกว่าความรักจะผ่านการทดสอบ - คุณและคู่จะเรียนรู้จากความขัดแย้ง การสื่อสารดีขึ้น ความเข้าใจกันลึกซึ้งขึ้น ไพ่ยืนยันว่าความรักที่ผ่านการทดสอบจะมั่นคงและแกร่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Strength = พลังใจ",
+            "wands": "Two of Cups = ปรองดอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งผลลัพธ์ความรัก คือ 'ความรักที่ผ่านการทดสอบมั่นคง'",
+          "advice_th": "เตรียมรับการทดสอบ - เรียนรู้จากความขัดแย้ง สื่อสารดีขึ้น เข้าใจกันลึก",
+          "keywords_th": ["ผ่านทดสอบ", "เรียนรู้คู่", "มั่นคง"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือชนะการแข่งขันและพัฒนา",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดี - คุณจะชนะการแข่งขันและพัฒนาตัวเอง การยืนหยัดในจุดยืน การพิสูจน์ความสามารถ การได้รับการยอมรับ ไพ่ยืนยันว่าความพยายามและความกล้าจะนำสู่ความสำเร็จ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Emperor = อำนาจ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งผลลัพธ์งาน คือ 'ความพยายามและกล้านำสู่ความสำเร็จ'",
+          "advice_th": "เชื่อในความสำเร็จ - ชนะการแข่งขัน พิสูจน์ความสามารถ ได้รับการยอมรับ",
+          "keywords_th": ["ชนะแข่งขัน", "พัฒนา", "ความสำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือเข้าใจตัวเองและรวมเป็นหนึ่ง",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นชัยชนะ - คุณจะเข้าใจตัวเองและรวมส่วนที่ขัดกันให้เป็นหนึ่ง ความขัดแย้งภายในที่ผ่านการเผชิญจะกลายเป็นปัญญา ไพ่ยืนยันว่าการเดินทางสู่ตัวเองจะนำสู่ความสมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Hermit = ปัญญา",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งผลลัพธ์เติบโต คือ 'รวมเป็นหนึ่งสู่ความสมบูรณ์'",
+          "advice_th": "เฉลิมฉลองความเข้าใจ - เข้าใจตัวเอง รวมส่วนที่ขัดกัน ความขัดแย้งเป็นปัญญา",
+          "keywords_th": ["เข้าใจตน", "รวมเป็นหนึ่ง", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพแกร่งจากการจัดการความเครียด",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดี - คุณจะมีสุขภาพแกร่งจากการจัดการความเครียด ร่างกายแข็งแรง จิตใจสมดุล กิจวัตรที่ดี ไพ่ยืนยันว่าการเรียนรู้ที่จะระบายและจัดระเบียบพลังงานนำสู่สุขภาพยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังกาย, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้าตำแหน่งผลลัพธ์สุขภาพ คือ 'จัดการความเครียดนำสู่สุขภาพยั่งยืน'",
+          "advice_th": "เชื่อในสุขภาพแกร่ง - จัดการความเครียด ร่างกายแข็งแรง จิตใจสมดุล",
+          "keywords_th": ["สุขภาพแกร่ง", "จัดการเครียด", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือความขัดแย้งที่ไม่จบและสะสม",
+          "detailed_interpretation_th": "ห้าไม้เท้ากลับหัวในตำแหน่งผลลัพธ์ เตือนว่าผลลัพธ์อาจเป็นความขัดแย้งที่ไม่จบและสะสม - การหลีกเลี่ยงที่ทำให้ปัญหาใหญ่ขึ้น การเก็บกดที่ทำลายตัวเอง ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ กล้าเผชิญและจัดการ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งผลลัพธ์ คือ 'กล้าเผชิญและจัดการ'",
+          "advice_th": "อย่าหลีกเลี่ยง - ความขัดแย้งไม่จบสะสม เผชิญและจัดการ เปลี่ยนผลลัพธ์",
+          "keywords_th": ["ขัดแย้งไม่จบ", "สะสม", "กล้าเผชิญ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่เก็บกดและห่างเหิน",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวเตือนว่าอาจเป็นความรักที่เก็บกดและห่างเหิน - การไม่สื่อสารทำให้ห่าง ความเก็บกดทำลายความสัมพันธ์ ไพ่บอกว่านี่ไม่ใช่จุดจบ การกล้าสื่อสารและเผชิญปัญหาจะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ห่างเหิน, The Moon = สับสน",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'สื่อสารและเผชิญเปลี่ยนผลลัพธ์'",
+          "advice_th": "กล้าสื่อสาร - รักเก็บกดและห่างเหิน ไม่ใช่จุดจบ เผชิญปัญหา",
+          "keywords_th": ["รักเก็บกด", "ห่างเหิน", "สื่อสาร"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือพลาดโอกาสจากการกลัวแข่งขัน",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวเตือนว่าอาจพลาดโอกาสจากการกลัวแข่งขัน - การไม่กล้าเสี่ยง การเลือกปลอดภัย จำกัดศักยภาพ ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่ต้องเป็น กล้าลงสนามจะเปลี่ยนผลลัพธ์ได้",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งผลลัพธ์งาน คือ 'กล้าลงสนามเปลี่ยนผลลัพธ์'",
+          "advice_th": "กล้าเสี่ยง - พลาดโอกาสจากการกลัว ไม่ใช่ผลลัพธ์สุดท้าย กล้าลงสนาม",
+          "keywords_th": ["พลาดโอกาส", "กลัวแข่ง", "กล้าลงสนาม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือติดอยู่ในความขัดแย้งที่ไม่เผชิญ",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวเตือนว่าอาจติดอยู่ในความขัดแย้งภายในที่ไม่เผชิญ - การหลบความรู้สึก การไม่ยอมมองภายใน การปฏิเสธความจริง ไพ่บอกว่านี่คือโอกาสในการกล้ามองและทำงานกับมัน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ซ่อนเร้น, The Hanged Man = ติดอยู่",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = นิ่ง",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'กล้ามองและทำงานกับมัน'",
+          "advice_th": "กล้าเผชิญใน - ติดในความขัดแย้ง ไม่ใช่จุดจบ กล้ามองภายใน",
+          "keywords_th": ["ติดความขัดแย้ง", "ไม่เผชิญ", "กล้ามอง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพแย่จากความเครียดสะสม",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวเตือนว่าอาจสุขภาพแย่จากความเครียดสะสม - การเก็บกดที่ทำลายร่างกาย การไม่ระบายที่ทำให้ป่วย ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ การหาวิธีระบายจะเปลี่ยนสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = นิสัยร้าย, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ห้าไม้เท้ากลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'การระบายเปลี่ยนสุขภาพ'",
+          "advice_th": "หาวิธีระบาย - สุขภาพแย่จากเครียดสะสม ไม่ใช่ผลลัพธ์สุดท้าย ระบายเปลี่ยนสุขภาพ",
+          "keywords_th": ["สุขภาพแย่", "เครียดสะสม", "ระบาย"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}
+
