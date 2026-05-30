@@ -692,6 +692,10 @@ class CelticCrossService
             ."• ✅ *แต่งเรื่อง/สมมติฉากให้เห็นภาพชัดได้เต็มที่* — ตราบใดที่ \"แก่น\" มาจากไพ่ (เช่น ไพ่ดาบ → วาดภาพได้ว่าใครหักหลังแบบไหน/เมื่อไหร่) ห้ามเสกเรื่องที่ไพ่ไม่ได้ชี้\n"
             ."• 🔎 *โหมดนักสืบ — ชวนเจ้าชะตามีส่วนร่วมให้ \"โดน\"*: พอทำนายเจอเรื่องเฉพาะ (เช่น \"มีคนคิดไม่ดีกับเจ้าชะตา\") → ชวนยืนยัน/เดา\n"
             ."   เช่น \"คิดออกไหมว่าเป็นใคร? คนใกล้ตัวหรือที่ทำงานหรือเปล่า?\" — ถ้าเจ้าชะตารับว่าใช่/เริ่มเล่า → ซักให้เล่ารายละเอียด แล้วผูกไพ่ทำนายให้ลึก-ตรงขึ้น\n"
+            ."   📅 *สืบได้ทุกเรื่อง รวม \"วันเกิด\"*: ขอวันเกิดเจ้าชะตา (ถ้ายังไม่รู้) และวันเกิดคู่กรณี/อีกฝ่าย → แม่หมอจะคำนวณ ราศี/ดาวเจ้าชนะ/ธาตุ มาผสานไพ่ให้อัตโนมัติ\n"
+            ."      (ระบบคำนวณให้เองทันทีที่เจ้าชะตาพิมพ์วันเกิด เช่น เทียบธาตุ/ดาวมิตร-ศัตรู ของคู่รัก, จับจังหวะเวลาจากดาวเสริมไพ่ตำแหน่งอนาคต)\n"
+            ."      • *การ \"ขอ\" วันเกิด* = เก็บข้อมูล `[TYPE:D]` ไม่นับ / พอ *ได้* วันเกิดแล้ว → ทำนายเสริมดวงทันที `[TYPE:A]` นับ (ห้ามขอแล้วเงียบ)\n"
+            ."      • 🃏 *ไพ่กำกับเสมอ — ไพ่นำ ดวงเสริม อย่าออกทะเล*: ดวงดาวใช้ \"ยืนยัน/เสริม\" สิ่งที่ไพ่บอก ทุกอย่างวนกลับมาที่ไพ่ + คำถาม\n"
             ."   ⚠️ จังหวะ \"ชวนเล่า/เก็บข้อมูล\" นี้ = ยังไม่ใช่คำทำนายที่นับโควต้า (ใน Q2+ ขึ้นต้น `[TYPE:D]`) — พอได้ข้อมูลพอ ค่อยทำนายเต็ม\n"
             ."⚖️ เส้นแบ่ง: เตือน \"ตามที่ไพ่บอกจริง\" = จัดเต็มได้ / แต่ง-ขยายเคราะห์ที่ไพ่ไม่ได้ชี้เพื่อให้กลัว = ห้าม (ขายความกลัว ผิดจรรยาบรรณ)\n"
             ."🧠 ยกเว้นคนเปราะบาง/วิกฤต (ซึมหนัก/ย้ำคิด/พูดถึงทำร้ายตัวเอง) → เตือนตามไพ่ได้ แต่เน้นทางป้องกัน+ดึงสติ ไม่ขยี้ความกลัว\n\n"
@@ -1156,7 +1160,35 @@ class CelticCrossService
         foreach ($previousQA as $pq) {
             $birthAstroSourceText .= "\n".(string) $pq->question;
         }
-        $birthAstroBlock = (new ThaiAstrologyService)->buildCelticBirthAstrologyBlock($birthAstroSourceText);
+
+        // 🔎 (2026-05-30) Detective mode — รวมแหล่งวันเกิดให้ครบ + คงข้ามเทิร์น
+        //   ปัญหาเดิม: source = userQuestion + previousQA (เฉพาะ TYPE:A) → วันเกิดที่ลูกค้าให้
+        //   ในเทิร์น TYPE:D (record ถูกลบ) จะหายเทิร์นหน้า. แก้: persist ลง conversation_state
+        //   + auto-use วันเกิดจาก Deep 39฿ เดิมถ้ามี (ไม่ต้องถามซ้ำ — "ดาวเจ้าชนะที่เคยทำไปแล้ว")
+        $astro = new ThaiAstrologyService;
+        $persistedBirth = (string) $reading->getConversationState('celtic_birthdate_text', '');
+        if ($persistedBirth !== '') {
+            $birthAstroSourceText .= "\n".$persistedBirth;
+        }
+        try {
+            // เจอวันเกิดใน userQuestion ปัจจุบัน → เก็บไว้ กันหายแม้เทิร์นนี้ถูกจัดเป็น TYPE:D
+            if (! empty($astro->extractBirthDatesFromText($userQuestion))) {
+                $reading->setConversationState(
+                    'celtic_birthdate_text',
+                    mb_substr(trim($persistedBirth."\n".$userQuestion), 0, 500)
+                );
+            }
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+        // ยังไม่มีวันเกิดในบทสนทนาเลย → ดึงจาก Deep 39฿ ที่ user เดียวกันเคยทำ (auto, ไม่ต้องถาม)
+        if (empty($astro->extractBirthDatesFromText($birthAstroSourceText))) {
+            $linkedDeep = $this->findLinkedDeepReading($reading);
+            if ($linkedDeep && $linkedDeep->birth_date) {
+                $birthAstroSourceText .= "\nเจ้าชะตาเกิด ".$linkedDeep->birth_date->format('d/m/Y');
+            }
+        }
+        $birthAstroBlock = $astro->buildCelticBirthAstrologyBlock($birthAstroSourceText);
 
         // 👤 (2026-05-16) Inject persona — เพศ/อายุ/บุคลิก → ให้ AI ปรับ tone กลมกลืน
         //    Guard: ถ้า persona ไม่มีข้อมูล → return '' → ไม่ inject
