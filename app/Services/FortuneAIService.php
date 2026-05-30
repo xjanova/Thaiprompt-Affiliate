@@ -387,6 +387,22 @@ class FortuneAIService
 - ไพ่ยิปซีต้อง **เสริม** คำทำนายหลัก ไม่ใช่มุมขัด — ถ้าไพ่หงายแต่ดวงร้าย ให้อธิบายว่า "ไพ่แสดงโอกาสที่มี แต่ดวงชี้ว่าต้องแก้ X ก่อน"';
 
     /**
+     * 🌐 (2026-05-30) Language mirror directive — ให้ AI ตอบเป็นภาษาเดียวกับที่ลูกค้าพิมพ์
+     *
+     * User: "ทำให้บอทตอบกลับเป็นภาษาเดียวกับที่ผู้ใช้พิมพ์มา เพราะเราใช้ AI โต้ตอบอยู่แล้ว"
+     * แทนระบบ keyword-detection เดิม (FortuneLocaleService ถูก disable ตั้งแต่ 2026-05-08)
+     * — ให้ตัว AI ตรวจภาษาจากข้อความลูกค้าเอง แล้ว mirror (ไทย/ลาว/อังกฤษ/เขมร/อื่นๆ)
+     * วางเป็น directive "override" ในทุก prompt เพื่อชนะกฎ "ตอบภาษาไทย" ที่ hardcode ด้านล่าง
+     */
+    public const LANGUAGE_MIRROR_DIRECTIVE =
+        "[🌐 ภาษา — สำคัญสูงสุด / OVERRIDES ALL OTHER LANGUAGE RULES IN THIS PROMPT]\n"
+        ."ตอบกลับเป็น **ภาษาเดียวกับที่ลูกค้าพิมพ์เข้ามาล่าสุด** เสมอ:\n"
+        ."- ลูกค้าพิมพ์ไทย→ตอบไทย / ลาว→ตอบลาว / อังกฤษ→ตอบอังกฤษ / เขมร→ตอบเขมร / ภาษาอื่น→ตอบภาษานั้น\n"
+        ."- ตัวอย่างและกฎด้านล่างเขียนเป็นภาษาไทยเพื่อให้แอดมินอ่านง่าย = เป็นแค่ \"แนวทาง\" ไม่ได้แปลว่าต้องตอบไทย\n"
+        ."- คงคำสั่งระบบ (ดูดวง / แชร์ / เมนู / 39 / 99) และ tag ([OFFER_FORTUNE] [DEEP_READING] [ASK_SAVE] ฯลฯ) เป็นต้นฉบับเสมอ ห้ามแปล\n"
+        ."- บุคลิก \"แม่หมอจันทรา = ผู้หญิง\" คงไว้ทุกภาษา (ใช้สรรพนาม/หางเสียงเพศหญิงของภาษานั้น)\n";
+
+    /**
      * System message สำหรับ AI Chat ทั่วไป (สนทนาไม่ใช่ทำนาย)
      *
      * ใช้ persona "หมอจันทรา" เหมือนกัน แต่โหมดสนทนาเป็นมิตร
@@ -1183,11 +1199,13 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
 
         $extractedJson = json_encode($extracted, JSON_UNESCAPED_UNICODE);
 
+        // 🌐 (2026-05-30) Language mirror — field 'reply' ใน JSON ต้องเป็นภาษาเดียวกับลูกค้า
+        //   prepend ก่อน Lao block เดิม (คง Lao detection เดิมไว้ ไม่ลบ — แค่เพิ่ม mirror)
         // 🇱🇦 (2026-05-03) Locale directive — ลูกค้าลาวต้องได้ reply เป็นลาว
         $isLao = FortuneLocaleService::current() === FortuneLocaleService::LOCALE_LO;
-        $localeDirective = $isLao
+        $localeDirective = "\n".self::LANGUAGE_MIRROR_DIRECTIVE.($isLao
             ? "\n[🇱🇦 ສຳຄັນ] ລູກຄ້າຄົນນີ້ໃຊ້ພາສາລາວ → field 'reply' ໃນ JSON output **ຕ້ອງເປັນພາສາລາວ** (ບໍ່ແມ່ນພາສາໄທ). ຄຳເອີ້ນຕົນເອງ 'ແມ່ໝໍຈັນທະຣາ', ຄຳເອີ້ນລູກຄ້າ 'ເຈົ້າຊາຕາ'.\n"
-            : '';
+            : '');
 
         $systemPrompt = <<<PROMPT
 คุณคือ "แม่หมอจันทรา" หมอดูสายจิตวิทยาที่อบอุ่น ใจดี ฟังเป็น
@@ -3581,6 +3599,10 @@ PROMPT;
         // 🎯 UX directive ย้ายไป appendUxFriendlyDirective() (review L3 fix)
         //   เพื่อให้ใช้ได้แม้ admin ตั้ง custom chat_system_prompt
 
+        // 🌐 (2026-05-30) Language mirror — ให้ AI ตอบภาษาเดียวกับที่ลูกค้าพิมพ์ (pure addition)
+        //   User: "ทำให้บอทตอบกลับเป็นภาษาเดียวกับที่ผู้ใช้พิมพ์มา เพราะเราใช้ AI อยู่แล้ว"
+        $message .= "\n\n".self::LANGUAGE_MIRROR_DIRECTIVE;
+
         // 🇱🇦 (2026-05-03) Locale directive — บังคับ AI ตอบภาษาลาวเมื่อลูกค้าใช้ลาว
         //   เคสเดิม: prompt ฮาร์ดโค้ด "ตอบภาษาไทย" → AI ก็ตอบไทย ไม่ mirror
         //   FortuneLocaleService::current() ตั้งโดย ChannelManager / ProcessCommentEngagement / Job
@@ -5001,11 +5023,16 @@ PROMPT;
         $questionsText = implode("\n", array_map(fn ($i, $q) => ($i + 1).". $q", array_keys($questions), $questions));
         $birthDateSection = $this->formatBirthDateSection($birthDate);
 
-        return str_replace(
+        $assembled = str_replace(
             ['{user_profile}', '{user_posts}', '{questions}', '{birth_date_section}'],
             [$profileText, $postsText, $questionsText, $birthDateSection],
             $template
         );
+
+        // 🌐 (2026-05-30) Language mirror — จุดกลางของ "ทุกคำทำนาย" (deep 39 + Celtic 99 ถาม-ตอบ + บทสรุป)
+        //   ทุก prediction ไหลผ่าน buildPrompt → inject ที่นี่จุดเดียวคลุมหมด (ไม่ต้องแก้แต่ละ prompt builder)
+        //   ให้ AI ตอบภาษาเดียวกับลูกค้า (chat ใช้ directive ใน buildChatSystemMessage แยกต่างหาก)
+        return self::LANGUAGE_MIRROR_DIRECTIVE."\n".$assembled;
     }
 
     /**
