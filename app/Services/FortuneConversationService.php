@@ -13775,7 +13775,9 @@ PROMPT;
             //     → failed_count ค้าง → ไม่เคยเงียบ → บอทตอบ AI ไม่เลิก
             //     (เคสสนิท สาม่าน 87 turns/วัน 0฿). ใช้ counter นับ free-chat turns/วันแทน
             //   🛡️ paid bypass: เช็ค hasPaidActiveReading ก่อน (ลูกค้าจ่าย = ห้ามตัดราย)
-            //      buy-intent + วิกฤต ถูกเช็คใน recordFreeChatTurn เอง
+            //      วิกฤต (hasCriticalKeyword) ถูกเช็คใน recordFreeChatTurn เอง
+            //      🛡️ (2026-05-30 Fix D) buy-intent ที่หลุดมาถึง chat AI = ถูกนับด้วย (ไม่ bypass แล้ว)
+            //         เพราะ clean "ดูดวง" จะ route ไป tier menu ก่อน ไม่มาถึงนี่ — ที่มาถึง = แทรกใน ramble
             if (! $this->hasPaidActiveReading($userId)) {
                 try {
                     $turnCapResult = app(\App\Services\Fortune\CustomerPersonaService::class)

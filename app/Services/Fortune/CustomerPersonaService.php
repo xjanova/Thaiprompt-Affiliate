@@ -511,30 +511,31 @@ class CustomerPersonaService
         $result = ['triggered' => false, 'goodbye_message' => null];
 
         try {
-            // buy-intent (ดูดวง/จ่าย/celtic...) → ไม่นับ + ไม่ silence (ลูกค้าอาจพร้อมซื้อ)
-            //   🛡️ (2026-05-29 Fix A) เดิม reset counter เป็น 0 ที่บรรทัดนี้ = ช่องโหว่:
-            //     troll พิมพ์คำว่า "ดูดวง"/"พร้อม"/"ไพ่"/"99" คั่นทุก ~24 ข้อความ → ล้าง counter
-            //     → วนเล่น free-chat ไม่จบ (ทำลาย turn-cap วันเดียวกัน) แถม goodbye message
-            //     ยังบอกให้พิมพ์ "ดูดวง" เอง = ยื่นวิธี bypass ให้ลูกค้า
-            //   แก้: ไม่ reset ที่นี่ — buy-intent แค่ "ไม่ถูกนับ" (ผ่านไป route tier menu ปกติ ซึ่งถูก/เบา)
-            //     counter จะถูกล้างเฉพาะตอน "จ่ายเงินจริง" (confirmPayment → clearFreeChatCounter)
-            //     ดังนั้น troll ที่พิมพ์เพ้อเจ้อ (ไม่ใช่ buy-intent) ยังถูกนับสะสมจน cap → เงียบ
-            if (FortuneCustomerPersona::shouldBypassSilence($messageText)) {
-                return $result;
-            }
-
-            // วิกฤต (อยากตาย/หมดหวัง...) → ห้าม silence (ต้อง empathy ไม่ตัดบทเงียบ)
+            // 🛡️ วิกฤต (อยากตาย/หมดหวัง/ฆ่าตัวตาย...) → ห้ามนับ/เงียบ ต้อง empathy เสมอ
+            //   เช็คก่อนทุกอย่าง — กลุ่มเปราะบางต้องได้คุยต่อไม่ว่าจะส่งกี่ข้อความ
             if ($this->hasCriticalKeyword($messageText)) {
                 return $result;
             }
 
-            $cap = FortuneCustomerPersona::FREECHAT_DAILY_CAP;
-
-            // 🆕 (2026-05-29 Gap3) นับ free-chat turns/วัน ใน DB (เดิมอยู่ Cache → ถูกล้างทุก deploy)
-            //   auto-deploy ทุก push → deploy.sh รัน cache:clear → counter รีเซ็ตเป็น 0
-            //   วันที่ deploy บ่อย → troll ได้ free-chat เกิน cap หลายเท่า
-            //   ย้ายมา persona column (bumpFreeChatCount — reset รายวันเอง) → ทน deploy
+            // 🛡️ (2026-05-30 Fix D) เดิม buy-intent (shouldBypassSilence: ดูดวง/พร้อม/ไพ่/99)
+            //   "return ก่อนนับ" = ช่องโหว่ใหญ่ที่เหลือจาก Fix A (ที่แก้แค่ reset):
+            //   troll แทรกคำว่า "ดูดวง" ในทุกข้อความระบาย → ไม่ถูกนับ → counter ไม่ถึง cap → ตอบฟรีไม่จบ
+            //   (เคสสุบิน 30/5: freechat_count ไต่ช้า ทั้งที่ส่งหลายสิบข้อความ)
+            //   💡 นับได้อย่างปลอดภัยเพราะ: ข้อความที่ "มาถึง recordFreeChatTurn" = ถูก route ไป chat AI แล้ว
+            //      "ดูดวง" สะอาดจะถูก isGenericFortuneRequest จับไป tier menu *ก่อน* ไม่มาถึงนี่
+            //      → ที่หลุดมาถึง = "ดูดวง" แทรกใน ramble → ต้องนับ
+            //   ✅ ลูกค้าซื้อจริงไม่กระทบ: clean "ดูดวง" → menu (ก่อนถึงนี่) / ติด cap → goodbye ชวน "ดูดวง" → menu (ยังซื้อได้)
             $persona = FortuneCustomerPersona::getOrCreate($platform, $userId);
+
+            // 🆕 (2026-05-30 Fix E) Adaptive cap — ผู้กระทำซ้ำ (เคยถูกเงียบ silence_count≥1 / score สูง)
+            //   → cap ต่ำลง (8 แทน 25) เพื่อ wind down คนระบายวนไม่จ่ายที่กลับมาทุกวันให้เร็วกว่าคนทั่วไป
+            $isRepeatOffender = (int) ($persona->silence_count ?? 0) >= 1
+                || (int) ($persona->time_waster_score ?? 0) >= FortuneCustomerPersona::REPEAT_OFFENDER_SCORE_THRESHOLD;
+            $cap = $isRepeatOffender
+                ? FortuneCustomerPersona::REPEAT_OFFENDER_FREECHAT_CAP
+                : FortuneCustomerPersona::FREECHAT_DAILY_CAP;
+
+            // 🆕 (2026-05-29 Gap3) นับ free-chat turns/วัน ใน DB column (ทน deploy/cache:clear)
             $count = $persona->bumpFreeChatCount();
 
             // sync legacy cache key เผื่อมีโค้ดอื่นอ่าน (best-effort — DB คือ source of truth แล้ว)
@@ -550,8 +551,10 @@ class CustomerPersonaService
 
             // ถึง cap → silence + goodbye สุภาพ (content-agnostic) — persona โหลดแล้วจาก getOrCreate
             $persona->triggerSilence(sprintf(
-                'free-chat daily cap reached (%d turns/day, unpaid, no buy-intent)',
-                $count
+                'free-chat cap reached (%d/%d turns, %s, unpaid)',
+                $count,
+                $cap,
+                $isRepeatOffender ? 'repeat-offender' : 'normal'
             ));
             $goodbye = $persona->buildGoodbyeMessage();
             $this->invalidateCache($platform, $userId);
@@ -559,11 +562,12 @@ class CustomerPersonaService
             $result['triggered'] = true;
             $result['goodbye_message'] = $goodbye;
 
-            Log::info('CustomerPersonaService: free-chat turn cap reached → silence', [
+            Log::info('CustomerPersonaService: free-chat cap reached → silence', [
                 'platform' => $platform,
                 'user_id' => $userId,
                 'count' => $count,
                 'cap' => $cap,
+                'repeat_offender' => $isRepeatOffender,
             ]);
 
             return $result;

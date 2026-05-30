@@ -134,6 +134,18 @@ class FortuneCustomerPersona extends Model
     public const HARD_BLOCK_DURATION_HOURS = 168;
 
     /**
+     * 🆕 (2026-05-30 Fix E) Adaptive free-chat cap สำหรับ "ผู้กระทำซ้ำ"
+     *
+     * ผู้ที่เคยถูกเงียบ (silence_count ≥ 1) หรือ time_waster_score สูง = time-waster ที่กลับมาทุกวัน
+     * → cap ต่ำลงมาก (8 แทน 25) เพื่อ wind down เร็วกว่าคนทั่วไป
+     * เคสสุบิน สาวันดี: ระบายวนไม่จ่าย กลับมาทุกวัน → ควรตัดที่ ~8 ไม่ใช่ 25
+     */
+    public const REPEAT_OFFENDER_FREECHAT_CAP = 8;
+
+    /** time_waster_score ตั้งแต่เท่านี้ → ถือเป็นผู้กระทำซ้ำ (เคยถูกเงียบมาก่อน, score +20/silence -10/resume) */
+    public const REPEAT_OFFENDER_SCORE_THRESHOLD = 10;
+
+    /**
      * 🛒 Keyword bypass — ถ้าข้อความลูกค้ามี keyword พวกนี้ → ข้าม silence
      *
      * เหตุผล: ลูกค้าอยากซื้อจริง / พร้อมจ่าย / กลับมาถามดูดวง → ต้องตอบ
