@@ -528,7 +528,6 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * ปกติเราส่ง image (1 call) + text+QR (1 call) → 2 calls = ติด race
      * วิธีนี้: 1 call เดียว image attachment + quick_replies → atomic, no race possible
      *
-     * @param  string  $commentId
      * @param  string  $imageUrl  banner image URL (https)
      * @param  array  $quickReplies  pre-formatted FB structure: [{content_type, title, payload}]
      * @return bool true ถ้าส่งสำเร็จ
@@ -1134,7 +1133,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function listRecentPosts(int $sinceTimestamp, int $limit = 100): array
     {
-        return $this->fetchPagedFeed("/published_posts", $sinceTimestamp, $limit);
+        return $this->fetchPagedFeed('/published_posts', $sinceTimestamp, $limit);
     }
 
     /**
@@ -2115,6 +2114,102 @@ class FacebookWebhookService implements MessagingPlatformInterface
         }
 
         return 'มังกร (Capricorn)';
+    }
+
+    /**
+     * 🚫 (2026-05-30) Block user ออกจาก Facebook Page
+     *
+     * ใช้ Graph API: POST /{page-id}/blocked?psid={psid}
+     * ผล: user ส่ง DM ไม่ได้ + คอมเมนต์/โพสบนเพจไม่ได้ (block ระดับเพจจริง)
+     *
+     * ⚠️ ต้องมี permission pages_manage_metadata บน page token (ไม่งั้น error 283)
+     *
+     * @param  string  $psid  Page-Scoped User ID (sender id จาก webhook)
+     * @return bool true = block สำเร็จ
+     */
+    public function blockPageUser(string $psid): bool
+    {
+        $this->lastFetchError = null;
+        $pageId = $this->settings->facebook_page_id ?? null;
+
+        if (empty($pageId) || empty($this->pageAccessToken)) {
+            $this->lastFetchError = 'ไม่พบ facebook_page_id หรือ page_token';
+
+            return false;
+        }
+
+        try {
+            $resp = Http::timeout(20)->post($this->graphUrl("/{$pageId}/blocked"), [
+                'psid' => $psid,
+                'access_token' => $this->pageAccessToken,
+            ]);
+
+            if (! $resp->successful()) {
+                $this->lastFetchError = 'HTTP '.$resp->status().' | code='.$resp->json('error.code')
+                    .' | '.($resp->json('error.message') ?? 'unknown');
+                Log::warning('🚫 blockPageUser ล้มเหลว', [
+                    'psid' => $psid,
+                    'status' => $resp->status(),
+                    'error' => $resp->json('error'),
+                ]);
+
+                return false;
+            }
+
+            // ผลลัพธ์ที่เป็นไปได้: {"<psid>": true} หรือ {"success": true}
+            $json = $resp->json();
+            $ok = ($json[$psid] ?? null) !== false; // HTTP 200 = ถือว่าสำเร็จ (บาง format ไม่มี key)
+
+            Log::info('🚫 blockPageUser', ['psid' => $psid, 'ok' => $ok, 'resp' => $json]);
+
+            return $ok;
+        } catch (Exception $e) {
+            $this->lastFetchError = 'Exception: '.$e->getMessage();
+            Log::warning('🚫 blockPageUser exception: '.$e->getMessage(), ['psid' => $psid]);
+
+            return false;
+        }
+    }
+
+    /**
+     * ✨ (2026-05-30) ปลด block user ออกจาก Facebook Page
+     *
+     * Graph API: DELETE /{page-id}/blocked?psid={psid}
+     *
+     * @param  string  $psid  Page-Scoped User ID
+     * @return bool true = ปลด block สำเร็จ
+     */
+    public function unblockPageUser(string $psid): bool
+    {
+        $this->lastFetchError = null;
+        $pageId = $this->settings->facebook_page_id ?? null;
+
+        if (empty($pageId) || empty($this->pageAccessToken)) {
+            $this->lastFetchError = 'ไม่พบ facebook_page_id หรือ page_token';
+
+            return false;
+        }
+
+        try {
+            $resp = Http::timeout(20)->delete($this->graphUrl("/{$pageId}/blocked"), [
+                'psid' => $psid,
+                'access_token' => $this->pageAccessToken,
+            ]);
+
+            if (! $resp->successful()) {
+                $this->lastFetchError = 'HTTP '.$resp->status().' | '.($resp->json('error.message') ?? 'unknown');
+
+                return false;
+            }
+
+            Log::info('✨ unblockPageUser', ['psid' => $psid, 'resp' => $resp->json()]);
+
+            return true;
+        } catch (Exception $e) {
+            $this->lastFetchError = 'Exception: '.$e->getMessage();
+
+            return false;
+        }
     }
 
     /**

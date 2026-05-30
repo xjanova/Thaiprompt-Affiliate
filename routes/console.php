@@ -119,6 +119,18 @@ Schedule::command('fortune:scan-old-comments --since-last --execute --all --post
         }
     });
 
+// 🕵️ (2026-05-30) Auto-scan DM spammer (คนที่ส่งแต่ลิงก์/รูป ไม่เคยคุย)
+//   รายวัน 09:00 — DRY-RUN เท่านั้น (ไม่แบนอัตโนมัติ) → log ผู้ต้องสงสัยไว้ใน laravel.log
+//   แอดมินรีวิวแล้วลงมือแบน+block จริงเอง: php artisan fortune:scan-link-spammers --execute
+//   ⚠️ ตั้งใจไม่ใส่ --execute ใน schedule — กันแบนพลาดโดยไม่มีคนรีวิว (มนุษย์ตัดสินใจขั้นสุดท้าย)
+Schedule::command('fortune:scan-link-spammers --min=3 --days=7')
+    ->dailyAt('09:00')
+    ->timezone('Asia/Bangkok')
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->name('fortune-scan-link-spammers')
+    ->runInBackground();
+
 // ════════════════════════════════════════════════════════════════
 // 🔮 Daily Horoscope Auto-Post — โพสดวงประจำวัน 7 วันเกิด (ระบบเดิม)
 // ════════════════════════════════════════════════════════════════

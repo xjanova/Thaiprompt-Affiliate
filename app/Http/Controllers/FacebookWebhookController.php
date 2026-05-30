@@ -1567,6 +1567,26 @@ class FacebookWebhookController extends Controller
         //   ลบ spam silence + clear cache ที่อาจค้างอยู่ทันที (กันลูกค้าเก่าที่ติดอยู่แล้ว)
         $isVipPaid = $this->conversationService->hasPaidActiveReading($senderId);
 
+        // 🕵️ (2026-05-30) ติดตามพฤติกรรม contact — หาคนที่ "ส่งแต่ลิงก์/รูป ไม่เคยคุย"
+        //   ตรวจดูภายหลังด้วย: php artisan fortune:scan-link-spammers (--execute = แบน+block FB)
+        //   🛡️ บันทึกแบบ non-blocking — ถ้าพังห้ามกระทบ flow หลัก
+        //   🛡️ ลูกค้าจ่ายเงิน/เคยมี reading/กดปุ่ม → whitelist อัตโนมัติใน service (ไม่มีวันโดนแบน)
+        try {
+            $hasReadingOrPaid = $isVipPaid
+                || FortuneReading::where('facebook_user_id', $senderId)->exists();
+
+            app(\App\Services\Fortune\FortuneContactSignalService::class)->record(
+                'facebook',
+                $senderId,
+                $messageText,
+                $attachments,
+                ! empty($quickReplyPayload),
+                $hasReadingOrPaid,
+            );
+        } catch (\Throwable $e) {
+            Log::debug('FB: contact signal record fail (non-blocking)', ['error' => $e->getMessage()]);
+        }
+
         // 🚫 (2026-04-28) Spam guard — ปิดการตอบสนองคนป่วน
         // กัน: ส่งวิดีโอ/รูปสุ่ม/ลิงก์/ข้อความซ้ำ ๆ
         // ⚠️ (2026-05-24) Skip ถ้าเป็น VIP paid customer ระหว่างทำนาย
