@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "Six of Wands",
+    "name_th": "หกไม้เท้า",
+    "number": 6,
+    "type": "minor_arcana",
+    "suit": "wands"
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ชัยชนะและการได้รับการยอมรับ",
+          "detailed_interpretation_th": "หกไม้เท้าในปัจจุบัน บอกว่าคุณกำลังอยู่ในช่วงของชัยชนะและการได้รับการยอมรับ - ความสำเร็จที่เห็นได้ การได้รับเกียรติ การชื่นชมจากคนรอบข้าง ไพ่หนุนให้คุณภูมิใจในความสำเร็จและแบ่งปันด้วยความถ่อมตน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Chariot = ชัยชนะ",
+            "wands": "Nine of Cups = สมหวัง",
+            "cups": "Three of Cups = ฉลอง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าปัจจุบัน คือ 'ภูมิใจและถ่อมตน'",
+          "advice_th": "เฉลิมฉลองชัยชนะ - ความสำเร็จที่เห็นได้ การได้รับเกียรติ ภูมิใจและถ่อมตน",
+          "keywords_th": ["ชัยชนะ", "การยอมรับ", "ความสำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักได้รับการยอมรับและภูมิใจ",
+          "detailed_interpretation_th": "ในความรัก หกไม้เท้าปัจจุบันชี้ว่าความรักของคุณได้รับการยอมรับและภูมิใจ - ความสัมพันธ์ที่น่าชื่นชม การได้รับการยอมรับจากครอบครัว ความสุขที่แบ่งปันได้ ไพ่หนุนให้คุณเฉลิมฉลองความรักของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าปัจจุบันความรัก คือ 'เฉลิมฉลองความรัก'",
+          "advice_th": "ภูมิใจในความรัก - ได้รับการยอมรับ น่าชื่นชม ความสุขที่แบ่งปันได้",
+          "keywords_th": ["รักได้รับยอมรับ", "ภูมิใจ", "ความสุข"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความสำเร็จในงานและการเลื่อนตำแหน่ง",
+          "detailed_interpretation_th": "ในการงาน หกไม้เท้าปัจจุบันบอกว่าคุณได้รับความสำเร็จในงานและการเลื่อนตำแหน่ง - การได้รับการยอมรับ การชนะรางวัล โครงการที่สำเร็จ ไพ่ยืนยันว่าความพยายามของคุณให้ผลลัพธ์ที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าปัจจุบันงาน คือ 'ความพยายามให้ผลลัพธ์งดงาม'",
+          "advice_th": "เก็บเกี่ยวความสำเร็จ - การยอมรับ การชนะรางวัล โครงการสำเร็จ",
+          "keywords_th": ["สำเร็จในงาน", "เลื่อนตำแหน่ง", "การยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความมั่นใจในตัวเองและการเป็นแบบอย่าง",
+          "detailed_interpretation_th": "ในการเติบโต หกไม้เท้าปัจจุบันชี้ว่าคุณมีความมั่นใจในตัวเองและเป็นแบบอย่างให้คนอื่น - การยอมรับในตัวตน ความภูมิใจในการเดินทาง ความสามารถในการสร้างแรงบันดาลใจ ไพ่หนุนให้คุณแบ่งปันปัญญาและประสบการณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าปัจจุบันเติบโต คือ 'สร้างแรงบันดาลใจให้คนอื่น'",
+          "advice_th": "เป็นแบบอย่าง - ความมั่นใจในตัวตน ภูมิใจในการเดินทาง สร้างแรงบันดาลใจ",
+          "keywords_th": ["มั่นใจ", "แบบอย่าง", "แรงบันดาลใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพดีและพลังเหลือล้น",
+          "detailed_interpretation_th": "ในสุขภาพ หกไม้เท้าปัจจุบันบอกว่าคุณมีสุขภาพดีและพลังเหลือล้น - ร่างกายแข็งแรง จิตใจสดใส การฟื้นตัวที่ดี ไพ่หนุนให้คุณภูมิใจในสุขภาพและรักษาพลังนี้ต่อไป",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าปัจจุบันสุขภาพ คือ 'รักษาพลังนี้ต่อไป'",
+          "advice_th": "ภูมิใจในสุขภาพ - ร่างกายแข็งแรง จิตใจสดใส รักษาพลังนี้",
+          "keywords_th": ["สุขภาพดี", "พลังเหลือ", "สดใส"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความสำเร็จล่าช้าหรือไม่ได้รับการยอมรับ",
+          "detailed_interpretation_th": "หกไม้เท้ากลับหัวในปัจจุบัน บอกว่าความสำเร็จล่าช้าหรือไม่ได้รับการยอมรับ - การทำงานหนักที่ไม่มีใครเห็น ชัยชนะที่ขาดความรู้สึก ความหยิ่งที่ทำให้คนรอบข้างห่าง ไพ่หนุนให้คุณทบทวนแรงจูงใจและรักษาความถ่อมตน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Wands (rev) = หยิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวปัจจุบัน คือ 'รักษาความถ่อมตน'",
+          "advice_th": "ทบทวนแรงจูงใจ - ความสำเร็จล่าช้า ไม่ได้รับการยอมรับ ระวังความหยิ่ง",
+          "keywords_th": ["ความสำเร็จล่าช้า", "ไม่ได้รับยอมรับ", "ถ่อมตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักไม่ได้รับการยอมรับหรือต้องพิสูจน์",
+          "detailed_interpretation_th": "ในความรัก หกไม้เท้ากลับหัวชี้ว่าความรักไม่ได้รับการยอมรับหรือต้องพิสูจน์ - การคัดค้านจากครอบครัว ความรู้สึกไม่ได้รับการชื่นชม ความหยิ่งในความสัมพันธ์ ไพ่หนุนให้คุณรักษาความสัมพันธ์อย่างถ่อมตนและไม่หยิ่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวปัจจุบันความรัก คือ 'รักษาความถ่อมตน'",
+          "advice_th": "อดทนในความรัก - ไม่ได้รับยอมรับ ต้องพิสูจน์ ไม่หยิ่ง",
+          "keywords_th": ["รักไม่ยอมรับ", "ต้องพิสูจน์", "ไม่หยิ่ง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานไม่ได้รับการยอมรับและความสำเร็จล่าช้า",
+          "detailed_interpretation_th": "ในการงาน หกไม้เท้ากลับหัวบอกว่างานไม่ได้รับการยอมรับและความสำเร็จล่าช้า - การถูกมองข้าม การทำงานหนักที่ไม่มีใครเห็น ความผิดหวังในผลลัพธ์ ไพ่หนุนให้คุณยืนหยัด ทบทวนกลยุทธ์ และไม่ปล่อยให้ความท้อทำลายแรงจูงใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, The Tower = ตก",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวปัจจุบันงาน คือ 'ยืนหยัดและไม่ท้อ'",
+          "advice_th": "ยืนหยัดในงาน - ไม่ได้รับยอมรับ ความสำเร็จล่าช้า ไม่ปล่อยความท้อทำลาย",
+          "keywords_th": ["ไม่ยอมรับงาน", "สำเร็จล่าช้า", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ขาดความมั่นใจหรือมีความหยิ่งเกินไป",
+          "detailed_interpretation_th": "ในการเติบโต หกไม้เท้ากลับหัวเผยว่าคุณขาดความมั่นใจหรือมีความหยิ่งเกินไป - การไม่เห็นคุณค่าตัวเอง หรือการคิดว่าเหนือกว่าคนอื่น ไพ่หนุนให้คุณหาสมดุล - ภูมิใจในตัวเองโดยไม่หยิ่งและถ่อมตนโดยไม่ดูถูกตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The Devil = หยิ่ง",
+            "wands": "Five of Cups = ผิดหวังตน",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวปัจจุบันเติบโต คือ 'สมดุลระหว่างภูมิใจและถ่อมตน'",
+          "advice_th": "หาสมดุล - ขาดมั่นใจหรือหยิ่งเกิน ภูมิใจโดยไม่หยิ่ง ถ่อมตนโดยไม่ดูถูกตน",
+          "keywords_th": ["ขาดมั่นใจ", "หยิ่งเกิน", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพไม่ดีเท่าที่หวังหรือพลังลด",
+          "detailed_interpretation_th": "ในสุขภาพ หกไม้เท้ากลับหัวบอกว่าสุขภาพไม่ดีเท่าที่หวังหรือพลังลด - ความเหนื่อยล้า ความผิดหวังในร่างกาย การฟื้นตัวที่ช้า ไพ่หนุนให้คุณอดทน ทบทวนการดูแล และให้เวลาร่างกายในการฟื้น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวปัจจุบันสุขภาพ คือ 'ให้เวลาร่างกายในการฟื้น'",
+          "advice_th": "อดทนกับการฟื้น - สุขภาพไม่ดีเท่าหวัง พลังลด ทบทวนการดูแล",
+          "keywords_th": ["สุขภาพไม่ดี", "พลังลด", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการได้รับการยอมรับและรักษาความสำเร็จ",
+          "detailed_interpretation_th": "หกไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือการได้รับการยอมรับและรักษาความสำเร็จ - การพิสูจน์ตัวเอง การจัดการชัยชนะ การรักษาความถ่อมตนในช่วงสำเร็จ อุปสรรคนี้คือการเรียนรู้ที่จะเป็นผู้ชนะที่ถ่อมตน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Emperor = อำนาจ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอุปสรรค คือ 'เป็นผู้ชนะที่ถ่อมตน'",
+          "advice_th": "พิสูจน์และถ่อมตน - การได้รับการยอมรับ จัดการชัยชนะ รักษาความถ่อมตน",
+          "keywords_th": ["การยอมรับ", "พิสูจน์ตน", "ถ่อมตน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือทำให้ความรักได้รับการยอมรับ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือทำให้ความรักได้รับการยอมรับ - การพิสูจน์ความสัมพันธ์ การได้รับการยอมรับจากครอบครัว การแสดงให้คนอื่นเห็นความรักที่แท้จริง ไพ่หนุนให้คุณยืนหยัดในความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอุปสรรคความรัก คือ 'ยืนหยัดในความรัก'",
+          "advice_th": "พิสูจน์ความรัก - ได้รับการยอมรับ จากครอบครัว แสดงความรักที่แท้",
+          "keywords_th": ["ยืนหยัดรัก", "การยอมรับ", "พิสูจน์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือการพิสูจน์ความสามารถและชนะ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการพิสูจน์ความสามารถและชนะ - การแสดงผลงาน การได้รับการยอมรับ การก้าวสู่ตำแหน่งที่สูงขึ้น อุปสรรคนี้คือการรักษาความสำเร็จและไม่หยุดพัฒนา",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอุปสรรคงาน คือ 'รักษาความสำเร็จและไม่หยุดพัฒนา'",
+          "advice_th": "พิสูจน์ความสามารถ - แสดงผลงาน ได้รับการยอมรับ ก้าวสู่ตำแหน่งสูงกว่า",
+          "keywords_th": ["พิสูจน์ความสามารถ", "ชนะ", "พัฒนา"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือสร้างความมั่นใจและเป็นแบบอย่าง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือสร้างความมั่นใจและเป็นแบบอย่าง - การยอมรับตัวเอง การภูมิใจในการเดินทาง การกล้าแบ่งปันปัญญา อุปสรรคนี้คือการก้าวสู่ความเป็นผู้นำในการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอุปสรรคเติบโต คือ 'ก้าวสู่ความเป็นผู้นำในการเติบโต'",
+          "advice_th": "เป็นแบบอย่าง - ยอมรับตัวเอง ภูมิใจ กล้าแบ่งปันปัญญา",
+          "keywords_th": ["มั่นใจ", "แบบอย่าง", "ผู้นำ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือรักษาพลังและสุขภาพดี",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือรักษาพลังและสุขภาพดี - การคงระดับพลังงาน การดูแลร่างกายต่อเนื่อง การไม่ปล่อยให้ความสำเร็จในด้านอื่นทำลายสุขภาพ ไพ่หนุนให้คุณรักษาสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอุปสรรคสุขภาพ คือ 'รักษาสมดุล'",
+          "advice_th": "รักษาพลัง - คงระดับพลังงาน ดูแลร่างกายต่อเนื่อง ไม่ให้ความสำเร็จทำลายสุขภาพ",
+          "keywords_th": ["รักษาพลัง", "สมดุล", "ดูแลต่อเนื่อง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือความหยิ่งและความล้มเหลว",
+          "detailed_interpretation_th": "หกไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือความหยิ่งและความล้มเหลว - การไม่ได้รับการยอมรับ ความผิดหวัง ความหยิ่งที่ทำให้คนรอบข้างห่าง ไพ่เตือนว่าระวังไม่ให้ความล้มเหลวทำลายความเชื่อมั่น และไม่ให้ความสำเร็จทำให้หยิ่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Devil = หยิ่ง",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Wands (rev) = หยิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอุปสรรค คือ 'ไม่ให้ความล้มเหลวทำลายและไม่ให้ความสำเร็จทำให้หยิ่ง'",
+          "advice_th": "ระวังความหยิ่ง - ความล้มเหลวที่ทำลายความเชื่อมั่น ความหยิ่งที่ทำให้คนห่าง",
+          "keywords_th": ["หยิ่ง", "ล้มเหลว", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือไม่ได้รับการยอมรับในรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือไม่ได้รับการยอมรับในรัก - การคัดค้านจากครอบครัว ความรู้สึกถูกตัดสิน ความสัมพันธ์ที่ต้องพิสูจน์ ไพ่หนุนให้คุณยืนหยัดในความรู้สึกของตัวเองและไม่ปล่อยให้คนอื่นกำหนดความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอุปสรรคความรัก คือ 'ยืนหยัดในความรู้สึกตน'",
+          "advice_th": "ยืนหยัดในรัก - ไม่ได้รับการยอมรับ ถูกตัดสิน ไม่ให้คนอื่นกำหนดความรัก",
+          "keywords_th": ["ไม่ยอมรับรัก", "ถูกตัดสิน", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคืองานไม่สำเร็จและความหยิ่ง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคืองานไม่สำเร็จและความหยิ่ง - การถูกมองข้าม การล้มเหลว ความหยิ่งที่ทำลายโอกาส ไพ่หนุนให้คุณทบทวนกลยุทธ์ รักษาความถ่อมตน และไม่ปล่อยให้ความหยิ่งหรือความท้อทำลายการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Devil = หยิ่ง",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Wands (rev) = หยิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอุปสรรคงาน คือ 'รักษาความถ่อมตน'",
+          "advice_th": "ระวังความหยิ่ง - งานไม่สำเร็จ ความหยิ่งทำลายโอกาส ทบทวนกลยุทธ์",
+          "keywords_th": ["งานไม่สำเร็จ", "หยิ่ง", "ถ่อมตน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือขาดความมั่นใจหรือหยิ่งเกินไป",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือขาดความมั่นใจหรือหยิ่งเกินไป - การไม่เห็นคุณค่าตัวเอง หรือการคิดว่าเหนือกว่าคนอื่น ไพ่หนุนให้คุณหาสมดุลและทำงานกับเงาในใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Devil = หยิ่ง",
+            "wands": "Five of Cups = ผิดหวังตน",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอุปสรรคเติบโต คือ 'ทำงานกับเงาในใจ'",
+          "advice_th": "หาสมดุล - ขาดมั่นใจหรือหยิ่งเกิน ทำงานกับเงาในใจ",
+          "keywords_th": ["ขาดมั่นใจ", "หยิ่ง", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือสุขภาพไม่ดีจากการละเลย",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือสุขภาพไม่ดีจากการละเลย - การเอาแต่งานจนลืมร่างกาย การไม่พักผ่อน การฝืนใช้พลัง ไพ่หนุนให้คุณกลับมาดูแลตัวเองและไม่ให้ความสำเร็จทำลายสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = นิสัยร้าย, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอุปสรรคสุขภาพ คือ 'ไม่ให้ความสำเร็จทำลายสุขภาพ'",
+          "advice_th": "กลับมาดูแลตัวเอง - เอาแต่งานจนลืมร่าง ไม่พักผ่อน ฝืนใช้พลัง",
+          "keywords_th": ["ละเลย", "ฝืนใช้พลัง", "ดูแลตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยมีชัยชนะที่ภูมิใจ",
+          "detailed_interpretation_th": "หกไม้เท้าในอดีต เผยว่าคุณเคยมีชัยชนะที่ภูมิใจ - การได้รับการยอมรับ ความสำเร็จที่เห็นได้ การชนะที่เป็นแรงผลักดัน ประสบการณ์นี้สร้างความมั่นใจและเป็นรากฐานของความสำเร็จในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Chariot = ชัยชนะ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอดีต คือ 'ชัยชนะเก่าสร้างความมั่นใจ'",
+          "advice_th": "ใช้บทเรียนความสำเร็จ - คุณเคยมีชัยชนะ ใช้ความมั่นใจนี้ในปัจจุบัน",
+          "keywords_th": ["ชัยชนะเก่า", "ภูมิใจ", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่ได้รับการยอมรับและภูมิใจ",
+          "detailed_interpretation_th": "ในความรัก หกไม้เท้าอดีตเผยว่าคุณเคยมีความรักที่ได้รับการยอมรับและภูมิใจ - ความสัมพันธ์ที่น่าชื่นชม การได้รับการยอมรับจากคนรอบข้าง บทเรียนคือคุณรู้ว่าความรักที่ดีต้องการความเปิดเผยและความซื่อสัตย์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอดีตความรัก คือ 'ความรักที่ดีต้องเปิดเผยและซื่อสัตย์'",
+          "advice_th": "ใช้บทเรียนความรักที่ภูมิใจ - คุณเคยมีรักได้รับการยอมรับ ใช้บทเรียนนี้",
+          "keywords_th": ["รักภูมิใจเก่า", "เปิดเผย", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยสำเร็จในงานและได้รับการยอมรับ",
+          "detailed_interpretation_th": "ในการงาน หกไม้เท้าอดีตเผยว่าคุณเคยสำเร็จในงานและได้รับการยอมรับ - การได้รับรางวัล การเลื่อนตำแหน่ง การได้รับการชื่นชม ประสบการณ์นี้กลายเป็นความรู้ว่าคุณมีความสามารถและสามารถพิสูจน์ตัวเองได้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Emperor = อำนาจ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอดีตงาน คือ 'คุณมีความสามารถพิสูจน์ตัวเองได้'",
+          "advice_th": "ใช้บทเรียนความสำเร็จเก่า - คุณเคยสำเร็จและได้รับการยอมรับ ใช้ความรู้นี้ในปัจจุบัน",
+          "keywords_th": ["สำเร็จงานเก่า", "ได้รับการยอมรับ", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยมีช่วงความมั่นใจและเป็นแบบอย่าง",
+          "detailed_interpretation_th": "ในการเติบโต หกไม้เท้าอดีตชี้ว่าคุณเคยมีช่วงความมั่นใจและเป็นแบบอย่าง - การยอมรับในตัวตน การภูมิใจในการเดินทาง การสร้างแรงบันดาลใจให้คนอื่น ประสบการณ์นี้กลายเป็นรากฐานของความเชื่อในตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอดีตเติบโต คือ 'ความมั่นใจเก่าเป็นรากฐาน'",
+          "advice_th": "ใช้บทเรียนความมั่นใจ - คุณเคยเป็นแบบอย่าง ใช้ความเชื่อในตัวเองนี้",
+          "keywords_th": ["มั่นใจเก่า", "แบบอย่าง", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีช่วงสุขภาพดีเยี่ยม",
+          "detailed_interpretation_th": "ในสุขภาพ หกไม้เท้าอดีตเผยว่าคุณเคยมีช่วงสุขภาพดีเยี่ยม - พลังชีวิตที่เหลือล้น ร่างกายที่แข็งแรง การฟื้นตัวที่ดี ประสบการณ์นี้สอนคุณว่าสุขภาพดีเป็นไปได้และใช้เป็นเป้าหมายในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอดีตสุขภาพ คือ 'สุขภาพดีเป็นไปได้'",
+          "advice_th": "ใช้บทเรียนสุขภาพดี - คุณเคยมีพลังเหลือล้น ใช้เป็นเป้าหมาย",
+          "keywords_th": ["สุขภาพดีเก่า", "พลังเหลือ", "เป้าหมาย"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยล้มเหลวหรือไม่ได้รับการยอมรับ",
+          "detailed_interpretation_th": "หกไม้เท้ากลับหัวในอดีต เผยว่าคุณเคยล้มเหลวหรือไม่ได้รับการยอมรับ - การถูกมองข้าม ความผิดหวังในความสำเร็จที่ไม่มา ความหยิ่งที่ทำลายโอกาส บทเรียนคือคุณรู้ค่าของการรักษาความถ่อมตนและไม่หยุดพยายาม",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Wands (rev) = หยิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวอดีต คือ 'รักษาความถ่อมตนและไม่หยุดพยายาม'",
+          "advice_th": "ใช้บทเรียนความล้มเหลว - คุณรู้ค่าของความถ่อมตน ใช้บทเรียนนี้ในปัจจุบัน",
+          "keywords_th": ["ล้มเหลวเก่า", "ไม่ยอมรับ", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่ไม่ได้รับการยอมรับ",
+          "detailed_interpretation_th": "ในความรัก หกไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยมีความรักที่ไม่ได้รับการยอมรับ - การถูกตัดสิน การคัดค้านจากครอบครัว ความผิดหวัง บทเรียนคือคุณรู้ว่าความรักที่แท้ต้องการความซื่อสัตย์กับตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวอดีตความรัก คือ 'ความรักแท้ต้องการความซื่อสัตย์กับตน'",
+          "advice_th": "ใช้บทเรียนรักไม่ยอมรับ - คุณรู้ค่าของการซื่อสัตย์กับตัวเอง",
+          "keywords_th": ["รักไม่ยอมรับเก่า", "ถูกตัดสิน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยถูกมองข้ามในงาน",
+          "detailed_interpretation_th": "ในการงาน หกไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยถูกมองข้ามในงาน - การทำงานหนักที่ไม่มีใครเห็น การไม่ได้รับการยอมรับ ความผิดหวัง บทเรียนคือคุณรู้ว่าต้องทั้งทำงานหนักและแสดงผลงานให้คนอื่นเห็น",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดียวดาย, The Tower = ตก",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวอดีตงาน คือ 'ทั้งทำงานหนักและแสดงผลงาน'",
+          "advice_th": "ใช้บทเรียนถูกมองข้าม - คุณรู้ว่าต้องแสดงผลงาน ใช้ในการสร้างชื่อ",
+          "keywords_th": ["ถูกมองข้ามเก่า", "ไม่ยอมรับ", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยขาดความมั่นใจหรือหยิ่งเกินไป",
+          "detailed_interpretation_th": "ในการเติบโต หกไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยขาดความมั่นใจหรือหยิ่งเกินไป - การไม่เห็นคุณค่าตัวเอง หรือการคิดว่าเหนือกว่าคนอื่น บทเรียนคือคุณรู้ค่าของสมดุล - ภูมิใจในตัวเองโดยไม่หยิ่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Devil = หยิ่ง",
+            "wands": "Five of Cups = ผิดหวังตน",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวอดีตเติบโต คือ 'ภูมิใจโดยไม่หยิ่ง'",
+          "advice_th": "ใช้บทเรียนสมดุล - คุณรู้ค่าของภูมิใจโดยไม่หยิ่ง ใช้ในการเติบโตปัจจุบัน",
+          "keywords_th": ["ขาดมั่นใจเก่า", "หยิ่ง", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีช่วงสุขภาพไม่ดีจากการละเลย",
+          "detailed_interpretation_th": "ในสุขภาพ หกไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยมีช่วงสุขภาพไม่ดีจากการละเลย - การเอาแต่งานจนลืมร่างกาย การฝืนใช้พลัง บทเรียนคือคุณรู้ค่าของการดูแลตัวเองและสมดุลระหว่างความสำเร็จและสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = นิสัยร้าย, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวอดีตสุขภาพ คือ 'สมดุลระหว่างความสำเร็จและสุขภาพ'",
+          "advice_th": "ใช้บทเรียนการละเลย - คุณรู้ค่าของการดูแลตัวเอง ใช้ในปัจจุบัน",
+          "keywords_th": ["ละเลยเก่า", "ฝืนพลัง", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีชัยชนะและการได้รับการยอมรับ",
+          "detailed_interpretation_th": "หกไม้เท้าในอนาคต เป็นข่าวดี - อนาคตจะมีชัยชนะและการได้รับการยอมรับ ความสำเร็จที่เห็นได้ ความภาคภูมิใจในผลงาน การได้รับการชื่นชม ไพ่ยืนยันว่าความพยายามของคุณจะให้ผลลัพธ์ที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอนาคต คือ 'ความพยายามให้ผลลัพธ์งดงาม'",
+          "advice_th": "เตรียมรับชัยชนะ - ความสำเร็จที่เห็นได้ ความภาคภูมิใจ การได้รับการชื่นชม",
+          "keywords_th": ["ชัยชนะ", "การยอมรับ", "ความสำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักจะได้รับการยอมรับและภูมิใจ",
+          "detailed_interpretation_th": "ในความรัก หกไม้เท้าอนาคตเป็นข่าวดี - ความรักจะได้รับการยอมรับและภูมิใจ การได้รับการชื่นชมจากครอบครัว ความสัมพันธ์ที่เปิดเผยและภูมิใจ ไพ่ยืนยันว่าความรักของคุณจะเป็นที่ยอมรับและฉลองได้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอนาคตความรัก คือ 'ความรักเป็นที่ยอมรับและฉลองได้'",
+          "advice_th": "เตรียมรับความรักที่ภูมิใจ - ได้รับการชื่นชม จากครอบครัว เปิดเผย",
+          "keywords_th": ["รักภูมิใจ", "ได้รับยอมรับ", "ฉลอง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานจะสำเร็จและได้รับการเลื่อนตำแหน่ง",
+          "detailed_interpretation_th": "ในการงาน หกไม้เท้าอนาคตเป็นข่าวดี - งานจะสำเร็จและได้รับการเลื่อนตำแหน่ง การได้รับรางวัล การชนะการแข่งขัน การก้าวสู่ตำแหน่งที่สูงกว่า ไพ่ยืนยันว่าความพยายามของคุณจะให้ผลตอบแทนงดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Emperor = อำนาจ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอนาคตงาน คือ 'ความพยายามให้ผลตอบแทนงดงาม'",
+          "advice_th": "เตรียมรับความสำเร็จ - งานจะสำเร็จ เลื่อนตำแหน่ง ได้รับรางวัล",
+          "keywords_th": ["งานสำเร็จ", "เลื่อนตำแหน่ง", "รางวัล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตจะนำสู่ความมั่นใจและเป็นแบบอย่าง",
+          "detailed_interpretation_th": "ในการเติบโต หกไม้เท้าอนาคตบอกว่าการเติบโตจะนำสู่ความมั่นใจและเป็นแบบอย่าง - การยอมรับในตัวตน การภูมิใจในการเดินทาง การสร้างแรงบันดาลใจให้คนอื่น ไพ่ยืนยันว่าคุณจะเป็นที่ยอมรับและสร้างแรงบันดาลใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอนาคตเติบโต คือ 'เป็นที่ยอมรับและสร้างแรงบันดาลใจ'",
+          "advice_th": "เตรียมเป็นแบบอย่าง - ยอมรับในตัวตน ภูมิใจในการเดินทาง สร้างแรงบันดาลใจ",
+          "keywords_th": ["มั่นใจ", "แบบอย่าง", "ยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะดีและพลังเหลือล้น",
+          "detailed_interpretation_th": "ในสุขภาพ หกไม้เท้าอนาคตเป็นข่าวดี - สุขภาพจะดีและพลังเหลือล้น ร่างกายแข็งแรง จิตใจสดใส การฟื้นตัวที่ดี ไพ่ยืนยันว่าการดูแลตัวเองของคุณจะให้ผลลัพธ์ที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าอนาคตสุขภาพ คือ 'การดูแลตัวเองให้ผลลัพธ์งดงาม'",
+          "advice_th": "เตรียมรับสุขภาพดี - ร่างกายแข็งแรง จิตใจสดใส พลังเหลือล้น",
+          "keywords_th": ["สุขภาพดี", "พลังเหลือ", "สดใส"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตอาจมีความล้มเหลวหรือไม่ได้รับการยอมรับ",
+          "detailed_interpretation_th": "หกไม้เท้ากลับหัวในอนาคต เตือนว่าอาจมีความล้มเหลวหรือไม่ได้รับการยอมรับ - การถูกมองข้าม ความผิดหวัง ความหยิ่งที่ทำลายโอกาส ไพ่หนุนให้คุณเตรียมใจ รักษาความถ่อมตน และไม่ปล่อยให้ความล้มเหลวทำลายความมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Wands (rev) = หยิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวอนาคต คือ 'รักษาความถ่อมตน'",
+          "advice_th": "เตรียมรับความล้มเหลว - ไม่ได้รับการยอมรับ ความผิดหวัง รักษาความถ่อมตน",
+          "keywords_th": ["ล้มเหลว", "ไม่ยอมรับ", "ถ่อมตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจไม่ได้รับการยอมรับ",
+          "detailed_interpretation_th": "ในความรัก หกไม้เท้ากลับหัวอนาคตเตือนว่าความรักอาจไม่ได้รับการยอมรับ - การคัดค้านจากครอบครัว ความรู้สึกถูกตัดสิน ความสัมพันธ์ที่ต้องพิสูจน์ ไพ่หนุนให้คุณยืนหยัดในความรู้สึกของตัวเองและไม่ปล่อยให้คนอื่นกำหนดความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวอนาคตความรัก คือ 'ยืนหยัดในความรู้สึกตน'",
+          "advice_th": "เตรียมรับความรักไม่ยอมรับ - ครอบครัวคัดค้าน ถูกตัดสิน ยืนหยัด",
+          "keywords_th": ["รักไม่ยอมรับ", "ถูกตัดสิน", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานอาจไม่สำเร็จและไม่ได้รับการเลื่อน",
+          "detailed_interpretation_th": "ในการงาน หกไม้เท้ากลับหัวอนาคตเตือนว่างานอาจไม่สำเร็จและไม่ได้รับการเลื่อน - การถูกมองข้าม การล้มเหลวในการแข่งขัน ความหยิ่งที่ทำลายโอกาส ไพ่หนุนให้คุณเตรียมใจ ทบทวนกลยุทธ์ และรักษาความถ่อมตน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Hermit = ทบทวน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Wands (rev) = หยิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวอนาคตงาน คือ 'ทบทวนและรักษาถ่อมตน'",
+          "advice_th": "เตรียมรับงานไม่สำเร็จ - ถูกมองข้าม ล้มเหลว ทบทวนกลยุทธ์",
+          "keywords_th": ["งานไม่สำเร็จ", "ไม่เลื่อน", "ถ่อมตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจขาดความมั่นใจหรือหยิ่งเกินไป",
+          "detailed_interpretation_th": "ในการเติบโต หกไม้เท้ากลับหัวอนาคตเตือนว่าอาจขาดความมั่นใจหรือหยิ่งเกินไป - การไม่เห็นคุณค่าตัวเอง หรือการคิดว่าเหนือกว่าคนอื่น ไพ่หนุนให้คุณเตรียมใจหาสมดุลและทำงานกับเงาในใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Devil = หยิ่ง",
+            "wands": "Five of Cups = ผิดหวังตน",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวอนาคตเติบโต คือ 'หาสมดุลและทำงานกับเงาในใจ'",
+          "advice_th": "เตรียมหาสมดุล - ขาดมั่นใจหรือหยิ่งเกิน ทำงานกับเงาในใจ",
+          "keywords_th": ["ขาดมั่นใจ", "หยิ่ง", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอาจไม่ดีจากการละเลย",
+          "detailed_interpretation_th": "ในสุขภาพ หกไม้เท้ากลับหัวอนาคตเตือนว่าสุขภาพอาจไม่ดีจากการละเลย - การเอาแต่งานจนลืมร่างกาย การฝืนใช้พลัง การไม่พักผ่อน ไพ่หนุนให้คุณเตรียมใจกลับมาดูแลตัวเองและรักษาสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = นิสัยร้าย, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวอนาคตสุขภาพ คือ 'รักษาสมดุลและกลับมาดูแลตัวเอง'",
+          "advice_th": "เตรียมดูแลตัวเอง - สุขภาพอาจไม่ดีจากการละเลย รักษาสมดุล",
+          "keywords_th": ["สุขภาพไม่ดี", "ละเลย", "ดูแลตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือชัยชนะและการได้รับการยอมรับ",
+          "detailed_interpretation_th": "หกไม้เท้าในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือชัยชนะและการได้รับการยอมรับ - การพิสูจน์ตัวเอง การเป็นผู้นำ การได้รับเกียรติ เป้าหมายนี้ขับเคลื่อนด้วยความทะเยอทะยานและความต้องการพิสูจน์ตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Emperor = อำนาจ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าเป้าหมาย คือ 'พิสูจน์ตัวเองและเป็นผู้นำ'",
+          "advice_th": "ตั้งเป้าชัยชนะ - พิสูจน์ตัวเอง เป็นผู้นำ ได้รับเกียรติ",
+          "keywords_th": ["ชัยชนะ", "การยอมรับ", "เป็นผู้นำ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือความรักที่ภูมิใจและเปิดเผย",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือความรักที่ภูมิใจและเปิดเผย - ความสัมพันธ์ที่น่าชื่นชม การได้รับการยอมรับจากคนรอบข้าง การฉลองความรักด้วยกัน ไพ่หนุนให้คุณตั้งเป้าหมายความรักที่เปิดเผยและน่าภูมิใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าเป้าหมายความรัก คือ 'ความรักที่เปิดเผยและน่าภูมิใจ'",
+          "advice_th": "ตั้งเป้ารักภูมิใจ - น่าชื่นชม ได้รับการยอมรับ ฉลองความรัก",
+          "keywords_th": ["รักภูมิใจ", "เปิดเผย", "ฉลอง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือการเป็นที่ยอมรับและประสบความสำเร็จสูง",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือการเป็นที่ยอมรับและประสบความสำเร็จสูง - การก้าวสู่ตำแหน่งผู้นำ การได้รับรางวัล การชนะการแข่งขัน ไพ่หนุนให้คุณตั้งเป้าหมายที่ทะเยอทะยานและกล้าก้าวสู่ระดับสูงสุด",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าเป้าหมายงาน คือ 'กล้าก้าวสู่ระดับสูงสุด'",
+          "advice_th": "ตั้งเป้าก้าวสู่ผู้นำ - ได้รับรางวัล ชนะการแข่งขัน ระดับสูงสุด",
+          "keywords_th": ["ก้าวสู่ผู้นำ", "ความสำเร็จสูง", "การยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือเป็นแบบอย่างและสร้างแรงบันดาลใจ",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือเป็นแบบอย่างและสร้างแรงบันดาลใจ - การยอมรับในตัวตน การภูมิใจในการเดินทาง การแบ่งปันปัญญา ไพ่หนุนให้คุณตั้งเป้าหมายการเติบโตที่นำคุณสู่การเป็นแสงให้คนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าเป้าหมายเติบโต คือ 'เป็นแสงให้คนอื่น'",
+          "advice_th": "ตั้งเป้าเป็นแบบอย่าง - ยอมรับตน ภูมิใจในการเดินทาง แบ่งปันปัญญา",
+          "keywords_th": ["แบบอย่าง", "แรงบันดาลใจ", "เป็นแสง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพดีและพลังเหลือล้น",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือสุขภาพดีและพลังเหลือล้น - ร่างกายแข็งแรง จิตใจสดใส การมีพลังในการสร้างสรรค์ ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพที่สามารถภาคภูมิใจในร่างกายและพลังของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าเป้าหมายสุขภาพ คือ 'ภาคภูมิใจในร่างกายและพลัง'",
+          "advice_th": "ตั้งเป้าสุขภาพดี - ร่างกายแข็งแรง จิตใจสดใส พลังเหลือล้น",
+          "keywords_th": ["สุขภาพดี", "พลังเหลือ", "ภาคภูมิใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือกล้าฟื้นจากความล้มเหลว",
+          "detailed_interpretation_th": "หกไม้เท้ากลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือกล้าฟื้นจากความล้มเหลว - การไม่ยอมแพ้ การพิสูจน์ตัวเองใหม่ การรักษาความถ่อมตน เป้าหมายนี้ต้องการความแกร่งและความอดทน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, Strength = พลังใจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวเป้าหมาย คือ 'ความแกร่งและความอดทน'",
+          "advice_th": "ตั้งเป้าฟื้นจากความล้มเหลว - ไม่ยอมแพ้ พิสูจน์ตัวเองใหม่ ถ่อมตน",
+          "keywords_th": ["ฟื้นจากล้มเหลว", "ไม่ยอมแพ้", "ถ่อมตน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือฟื้นความรักหลังถูกตัดสิน",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือฟื้นความรักหลังถูกตัดสิน - การยืนหยัดในความรัก การฟื้นความสัมพันธ์ การหาคนที่ยอมรับคุณ ไพ่หนุนให้คุณตั้งเป้าหมายความรักที่ซื่อสัตย์กับตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Star = ความหวัง",
+            "wands": "Two of Cups = ปรองดอง",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวเป้าหมายความรัก คือ 'ซื่อสัตย์กับตัวเอง'",
+          "advice_th": "ตั้งเป้าฟื้นรัก - ยืนหยัดในความรัก ฟื้นความสัมพันธ์ ซื่อสัตย์กับตัวเอง",
+          "keywords_th": ["ฟื้นรัก", "ยืนหยัด", "ซื่อสัตย์"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือฟื้นจากความล้มเหลวในงาน",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือฟื้นจากความล้มเหลวในงาน - การพยายามใหม่ การทบทวนกลยุทธ์ การพิสูจน์ตัวเองอีกครั้ง ไพ่หนุนให้คุณตั้งเป้าหมายที่ใช้บทเรียนความล้มเหลวสร้างความสำเร็จใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นศรัทธา, The Wheel of Fortune = ปรับโชค",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวเป้าหมายงาน คือ 'ใช้บทเรียนความล้มเหลวสร้างความสำเร็จใหม่'",
+          "advice_th": "ตั้งเป้าฟื้นจากล้มเหลว - พยายามใหม่ ทบทวนกลยุทธ์ พิสูจน์ตัวเองอีกครั้ง",
+          "keywords_th": ["ฟื้นจากล้มเหลว", "พยายามใหม่", "พิสูจน์"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือสร้างความมั่นใจที่ถ่อมตน",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือสร้างความมั่นใจที่ถ่อมตน - การยอมรับตัวเองโดยไม่หยิ่ง การเห็นคุณค่าตัวเองโดยไม่ดูถูกคนอื่น การหาสมดุลในตัวตน ไพ่หนุนให้คุณตั้งเป้าหมายการเติบโตที่มาจากความจริงในใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวเป้าหมายเติบโต คือ 'ความจริงในใจ'",
+          "advice_th": "ตั้งเป้ามั่นใจที่ถ่อมตน - ยอมรับตัวเองโดยไม่หยิ่ง เห็นคุณค่าโดยไม่ดูถูกคนอื่น",
+          "keywords_th": ["มั่นใจถ่อมตน", "สมดุล", "ความจริงในใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือฟื้นสุขภาพและสมดุลที่ยั่งยืน",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือฟื้นสุขภาพและสมดุลที่ยั่งยืน - การกลับมาดูแลตัวเอง การสร้างกิจวัตรที่ดี การไม่ปล่อยให้ความสำเร็จทำลายร่างกาย ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพที่สมดุล",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวเป้าหมายสุขภาพ คือ 'สุขภาพสมดุลที่ยั่งยืน'",
+          "advice_th": "ตั้งเป้าฟื้นสุขภาพ - กลับมาดูแลตัวเอง สร้างกิจวัตรดี ไม่ให้ความสำเร็จทำลาย",
+          "keywords_th": ["ฟื้นสุขภาพ", "สมดุล", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความมั่นใจและความต้องการพิสูจน์ตัวเอง",
+          "detailed_interpretation_th": "หกไม้เท้าในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความมั่นใจและความต้องการพิสูจน์ตัวเอง - คุณมีพลังจากการแข่งขัน ชอบการยอมรับ มีความทะเยอทะยาน รากฐานนี้ทำให้คุณเป็นนักสู้และผู้นำที่กล้าหาญ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Emperor = อำนาจ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ารากฐาน คือ 'นักสู้และผู้นำที่กล้าหาญ'",
+          "advice_th": "ใช้ความมั่นใจ - พลังจากการแข่งขัน ชอบการยอมรับ มีความทะเยอทะยาน",
+          "keywords_th": ["มั่นใจ", "พิสูจน์ตน", "ผู้นำ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือความภูมิใจในคู่",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความภูมิใจในคู่ - คุณให้ความสำคัญกับการมีคู่ที่น่าชื่นชม การแสดงความรักให้คนอื่นเห็น การเป็นคู่ที่ภาคภูมิใจ รากฐานนี้ทำให้คุณเป็นคู่ครองที่มุ่งสร้างความสัมพันธ์ที่น่าภูมิใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ารากฐานความรัก คือ 'สร้างความสัมพันธ์ที่น่าภูมิใจ'",
+          "advice_th": "ใช้ความภูมิใจในคู่ - คู่ที่น่าชื่นชม แสดงความรัก เป็นคู่ที่ภาคภูมิใจ",
+          "keywords_th": ["ภูมิใจในคู่", "น่าชื่นชม", "แสดงความรัก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือความทะเยอทะยานและกล้าแข่งขัน",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือความทะเยอทะยานและกล้าแข่งขัน - คุณชอบการยอมรับ ต้องการพิสูจน์ตัวเอง กล้าก้าวสู่ระดับสูง รากฐานนี้ทำให้คุณเป็นนักธุรกิจที่ประสบความสำเร็จและได้รับการยอมรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ารากฐานงาน คือ 'นักธุรกิจที่ประสบความสำเร็จ'",
+          "advice_th": "ใช้ความทะเยอทะยาน - ชอบการยอมรับ พิสูจน์ตัวเอง กล้าก้าวสู่ระดับสูง",
+          "keywords_th": ["ทะเยอทะยาน", "กล้าแข่งขัน", "สำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือต้องการเป็นแบบอย่างและสร้างแรงบันดาลใจ",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือต้องการเป็นแบบอย่างและสร้างแรงบันดาลใจ - คุณขับเคลื่อนด้วยความปรารถนาที่จะแบ่งปันปัญญา การยอมรับในตัวตน การสร้างผลกระทบเชิงบวก รากฐานนี้ทำให้คุณเป็นผู้นำในการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ารากฐานเติบโต คือ 'ผู้นำในการเติบโต'",
+          "advice_th": "ใช้ความปรารถนาเป็นแบบอย่าง - แบ่งปันปัญญา ยอมรับในตัวตน สร้างผลกระทบ",
+          "keywords_th": ["แบบอย่าง", "แรงบันดาลใจ", "ผู้นำ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือพลังเหลือล้นและความแข็งแรง",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือพลังเหลือล้นและความแข็งแรง - คุณมีพลังงานสูง ภูมิใจในร่างกาย ชอบการแข่งขันทางกีฬา รากฐานนี้ทำให้คุณมีสุขภาพดีและเป็นแรงบันดาลใจให้คนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ารากฐานสุขภาพ คือ 'เป็นแรงบันดาลใจให้คนอื่น'",
+          "advice_th": "ใช้พลังเหลือล้น - พลังงานสูง ภูมิใจในร่างกาย แข่งขันทางกีฬา",
+          "keywords_th": ["พลังเหลือ", "แข็งแรง", "ภูมิใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือกลัวล้มเหลวและความหยิ่ง",
+          "detailed_interpretation_th": "หกไม้เท้ากลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือกลัวล้มเหลวและความหยิ่ง - คุณกลัวการถูกปฏิเสธ ใช้ความหยิ่งปกป้องตัวเอง ต้องการการยอมรับมากเกินไป รากฐานนี้ทำให้คุณติดอยู่ในความเก็บกด ถึงเวลาเรียนรู้ที่จะยอมรับตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = หยิ่ง, The Moon = กลัว",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "King of Wands (rev) = หยิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวรากฐาน คือ 'เรียนรู้ที่จะยอมรับตัวเอง'",
+          "advice_th": "เรียนรู้ยอมรับตัวเอง - กลัวล้มเหลว ใช้ความหยิ่งปกป้อง ต้องการการยอมรับมากเกินไป",
+          "keywords_th": ["กลัวล้มเหลว", "หยิ่ง", "ยอมรับตน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานคือต้องการการยอมรับมากเกินไปในรัก",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือต้องการการยอมรับมากเกินไปในรัก - คุณเลือกคู่จากภาพลักษณ์ ต้องการคนที่ทำให้ดูดีต่อหน้าคนอื่น กลัวคู่ที่ไม่ภาคภูมิใจ รากฐานนี้ทำให้ความรักไม่ลึกซึ้ง ถึงเวลาเรียนรู้ที่จะรักจากใจจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ผิวเผิน, The Devil = หยิ่ง",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ผิวเผิน",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวรากฐานความรัก คือ 'รักจากใจจริง'",
+          "advice_th": "เรียนรู้รักจากใจ - เลือกคู่จากภาพลักษณ์ ต้องการคู่ที่ทำให้ดูดี รักจากใจจริง",
+          "keywords_th": ["รักผิวเผิน", "ภาพลักษณ์", "รักจากใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือกลัวการแข่งขันและล้มเหลว",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือกลัวการแข่งขันและล้มเหลว - คุณกลัวคู่แข่ง เลือกเส้นทางที่ปลอดภัย ไม่กล้าพิสูจน์ตัวเอง รากฐานนี้จำกัดศักยภาพ ถึงเวลาเรียนรู้ที่จะกล้าก้าวและยอมรับความเสี่ยง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวรากฐานงาน คือ 'กล้าก้าวและยอมรับความเสี่ยง'",
+          "advice_th": "เรียนรู้กล้าก้าว - กลัวการแข่งขัน เลือกปลอดภัย ไม่กล้าพิสูจน์ ยอมรับความเสี่ยง",
+          "keywords_th": ["กลัวแข่งขัน", "กลัวล้มเหลว", "กล้าก้าว"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือต้องการการยอมรับจากคนอื่น",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือต้องการการยอมรับจากคนอื่น - คุณวัดคุณค่าตัวเองจากการชื่นชมของคนอื่น ตัดสินใจตามที่คนอื่นคิด ขาดความมั่นใจในตัวเอง รากฐานนี้ทำให้คุณติดอยู่ ถึงเวลาเรียนรู้ที่จะยอมรับตัวเองจากภายใน",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = กรอบสังคม, The Moon = กลัว",
+            "wands": "Five of Cups = ผิดหวังตน",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวรากฐานเติบโต คือ 'ยอมรับตัวเองจากภายใน'",
+          "advice_th": "เรียนรู้ยอมรับตน - วัดคุณค่าจากคนอื่น ตัดสินใจตามที่คนอื่นคิด ยอมรับตัวเองจากภายใน",
+          "keywords_th": ["ต้องการการยอมรับ", "ขาดมั่นใจ", "ยอมรับตน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือฝืนใช้พลังเกินตัว",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือฝืนใช้พลังเกินตัว - คุณต้องการพิสูจน์ความแข็งแรง ผลักดันตัวเองมากเกินไป ไม่ฟังร่างกาย รากฐานนี้ทำให้สุขภาพเสีย ถึงเวลาเรียนรู้ที่จะฟังร่างกายและไม่ฝืน",
+          "adjacent_influences": {
+            "major_arcana": "Strength (rev) = ฝืน, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวรากฐานสุขภาพ คือ 'ฟังร่างกายและไม่ฝืน'",
+          "advice_th": "เรียนรู้ฟังร่างกาย - ต้องการพิสูจน์ ผลักดันเกินไป ไม่ฟังร่าง ฟังและไม่ฝืน",
+          "keywords_th": ["ฝืนพลัง", "ผลักดันเกิน", "ฟังร่าง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "พิสูจน์ตัวเองและกล้าได้รับการยอมรับ",
+          "detailed_interpretation_th": "หกไม้เท้าในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือพิสูจน์ตัวเองและกล้าได้รับการยอมรับ - แสดงผลงาน ก้าวสู่ความสำเร็จ ภูมิใจในความสามารถ ไพ่หนุนให้คุณนำด้วยความมั่นใจและความถ่อมตน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Emperor = อำนาจ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งคำแนะนำ คือ 'มั่นใจและถ่อมตน'",
+          "advice_th": "พิสูจน์ตัวเอง - แสดงผลงาน ก้าวสู่ความสำเร็จ ภูมิใจในความสามารถ",
+          "keywords_th": ["พิสูจน์ตน", "กล้าได้รับยอมรับ", "มั่นใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "แสดงความภูมิใจในความรัก",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณควรแสดงความภูมิใจในความรัก - เปิดเผยความสัมพันธ์ ฉลองความรัก ภูมิใจในคู่ ไพ่หนุนให้คุณนำด้วยความเปิดเผยและซื่อสัตย์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งคำแนะนำความรัก คือ 'เปิดเผยและซื่อสัตย์'",
+          "advice_th": "แสดงความภูมิใจ - เปิดเผยความสัมพันธ์ ฉลองความรัก ภูมิใจในคู่",
+          "keywords_th": ["ภูมิใจรัก", "เปิดเผย", "ฉลอง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "พิสูจน์ความสามารถและก้าวสู่ระดับสูง",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรพิสูจน์ความสามารถและก้าวสู่ระดับสูง - แสดงผลงาน ขอเลื่อนตำแหน่ง รับโอกาส ไพ่หนุนให้คุณนำด้วยความทะเยอทะยานและความถ่อมตน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งคำแนะนำงาน คือ 'ทะเยอทะยานและถ่อมตน'",
+          "advice_th": "พิสูจน์ความสามารถ - แสดงผลงาน ขอเลื่อนตำแหน่ง รับโอกาส",
+          "keywords_th": ["พิสูจน์", "ก้าวสู่ระดับสูง", "ทะเยอทะยาน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป็นแบบอย่างและแบ่งปันปัญญา",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรเป็นแบบอย่างและแบ่งปันปัญญา - ยอมรับในตัวตน ภูมิใจในการเดินทาง สร้างแรงบันดาลใจให้คนอื่น ไพ่หนุนให้คุณนำด้วยความเป็นแสง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งคำแนะนำเติบโต คือ 'ความเป็นแสง'",
+          "advice_th": "เป็นแบบอย่าง - ยอมรับในตัวตน ภูมิใจในการเดินทาง สร้างแรงบันดาลใจ",
+          "keywords_th": ["แบบอย่าง", "แบ่งปันปัญญา", "เป็นแสง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ภูมิใจในร่างกายและรักษาพลัง",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรภูมิใจในร่างกายและรักษาพลัง - ดูแลตัวเองอย่างเป็นระบบ มีกิจวัตรที่ดี รักษาความแข็งแรง ไพ่หนุนให้คุณนำด้วยความใส่ใจในร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งคำแนะนำสุขภาพ คือ 'ใส่ใจในร่างกาย'",
+          "advice_th": "ภูมิใจในร่างกาย - ดูแลเป็นระบบ มีกิจวัตรดี รักษาความแข็งแรง",
+          "keywords_th": ["ภูมิใจร่าง", "รักษาพลัง", "ใส่ใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ทำงานในเงียบและไม่หยิ่ง",
+          "detailed_interpretation_th": "หกไม้เท้ากลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือทำงานในเงียบและไม่หยิ่ง - มุ่งมั่นโดยไม่อวด ทำดีโดยไม่ต้องการการยอมรับ ภูมิใจในใจไม่ในวาจา ไพ่หนุนให้คุณนำด้วยความถ่อมตนแท้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดียวดาย, The Star = ความหวัง",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Nine of Cups = สมหวังในตน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งคำแนะนำ คือ 'ถ่อมตนแท้'",
+          "advice_th": "ทำงานในเงียบ - มุ่งมั่นโดยไม่อวด ทำดีโดยไม่ต้องการการยอมรับ",
+          "keywords_th": ["ทำงานเงียบ", "ไม่หยิ่ง", "ถ่อมตน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รักจากใจไม่จากภาพลักษณ์",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าคุณควรรักจากใจไม่จากภาพลักษณ์ - เลือกคู่จากความรู้สึก ไม่ต้องการการยอมรับจากคนอื่น ภูมิใจในความรักของตัวเอง ไพ่หนุนให้คุณนำด้วยความซื่อสัตย์กับใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Hermit = ปัญญา",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งคำแนะนำความรัก คือ 'ซื่อสัตย์กับใจ'",
+          "advice_th": "รักจากใจ - เลือกคู่จากความรู้สึก ไม่ต้องการการยอมรับ ภูมิใจในความรักของตน",
+          "keywords_th": ["รักจากใจ", "ไม่จากภาพ", "ซื่อสัตย์"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ฝึกฝนและทำงานในเงียบ",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวชี้ว่าคุณควรฝึกฝนและทำงานในเงียบ - พัฒนาความสามารถโดยไม่อวด มุ่งมั่นในผลงานมากกว่าการได้รับการยอมรับ ความสำเร็จจะตามมา ไพ่หนุนให้คุณนำด้วยความใส่ใจในคุณภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Magician = ทักษะ",
+            "wands": "Eight of Pentacles = ฝึกฝน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งคำแนะนำงาน คือ 'ใส่ใจในคุณภาพ'",
+          "advice_th": "ฝึกฝนในเงียบ - พัฒนาความสามารถ ไม่อวด มุ่งมั่นในผลงาน คุณภาพ",
+          "keywords_th": ["ฝึกฝน", "ทำงานเงียบ", "คุณภาพ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ยอมรับตัวเองจากภายในไม่จากคนอื่น",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรยอมรับตัวเองจากภายในไม่จากคนอื่น - ภูมิใจในการเดินทางของตัวเอง ไม่ต้องการการยอมรับจากภายนอก ปฏิบัติเพื่อตัวเอง ไพ่หนุนให้คุณนำด้วยความเข้มแข็งจากภายใน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งคำแนะนำเติบโต คือ 'เข้มแข็งจากภายใน'",
+          "advice_th": "ยอมรับตน - ภูมิใจในการเดินทางของตัวเอง ไม่ต้องการการยอมรับจากภายนอก",
+          "keywords_th": ["ยอมรับตน", "ภูมิใจจากใน", "เข้มแข็ง"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ดูแลตัวเองโดยไม่ต้องการการยอมรับ",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวชี้ว่าคุณควรดูแลตัวเองโดยไม่ต้องการการยอมรับ - ออกกำลังกายเพื่อตัวเอง กินอาหารดีเพื่อร่างกาย ไม่ต้องการเปรียบเทียบกับคนอื่น ไพ่หนุนให้คุณนำด้วยความใส่ใจในตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'ใส่ใจในตัวเอง'",
+          "advice_th": "ดูแลตัวเอง - ออกกำลังกายเพื่อตน กินอาหารดีเพื่อร่าง ไม่เปรียบเทียบ",
+          "keywords_th": ["ดูแลเพื่อตน", "ไม่ต้องการยอมรับ", "ใส่ใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างยอมรับและให้เกียรติคุณ",
+          "detailed_interpretation_th": "หกไม้เท้าในตำแหน่งภายนอก บอกว่าคนรอบข้างยอมรับและให้เกียรติคุณ - การได้รับการชื่นชม การเป็นที่ยอมรับในกลุ่ม การได้รับเกียรติ ไพ่บอกว่าใช้การยอมรับนี้สร้างความสำเร็จและแบ่งปัน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Empress = อบอุ่น",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งภายนอก คือ 'สร้างความสำเร็จและแบ่งปัน'",
+          "advice_th": "ใช้การยอมรับจากคนรอบข้าง - การชื่นชม เป็นที่ยอมรับ ได้รับเกียรติ",
+          "keywords_th": ["คนยอมรับ", "ได้รับเกียรติ", "ชื่นชม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวและเพื่อนชื่นชมความรักของคุณ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าครอบครัวและเพื่อนชื่นชมความรักของคุณ - การได้รับการยอมรับ การฉลองร่วมกัน บรรยากาศที่หนุน ไพ่หนุนให้คุณใช้แรงสนับสนุนนี้สร้างความสัมพันธ์ที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งภายนอกความรัก คือ 'แรงสนับสนุนสร้างความงดงาม'",
+          "advice_th": "ใช้การชื่นชมจากครอบครัว - การยอมรับ การฉลองร่วม บรรยากาศหนุน",
+          "keywords_th": ["ครอบครัวชื่นชม", "ฉลองร่วม", "หนุน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทีมและองค์กรยอมรับความสามารถ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่าทีมและองค์กรยอมรับความสามารถของคุณ - การได้รับการยอมรับ การเลื่อนตำแหน่ง การชื่นชมจากเพื่อนร่วมงาน ไพ่หนุนให้คุณใช้การยอมรับนี้ก้าวสู่ระดับสูงขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Emperor = อำนาจ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งภายนอกงาน คือ 'ก้าวสู่ระดับสูงขึ้น'",
+          "advice_th": "ใช้การยอมรับ - ทีมและองค์กรยอมรับ การชื่นชม การเลื่อนตำแหน่ง",
+          "keywords_th": ["ทีมยอมรับ", "การยอมรับ", "เลื่อนตำแหน่ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ชุมชนยอมรับและสนับสนุน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าชุมชนยอมรับและสนับสนุนคุณ - การได้รับการยอมรับในกลุ่ม การได้รับแรงบันดาลใจจากคนรอบข้าง การได้รับการเห็นคุณค่า ไพ่หนุนให้คุณใช้แรงสนับสนุนนี้เติบโตเต็มที่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = แรงบันดาลใจ, The Empress = อบอุ่น",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Three of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งภายนอกเติบโต คือ 'เติบโตเต็มที่'",
+          "advice_th": "ใช้ชุมชนยอมรับ - ได้รับการยอมรับในกลุ่ม แรงบันดาลใจ เห็นคุณค่า",
+          "keywords_th": ["ชุมชนยอมรับ", "สนับสนุน", "เห็นคุณค่า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สภาพแวดล้อมสนับสนุนสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าสภาพแวดล้อมสนับสนุนสุขภาพ - กลุ่มเพื่อนที่ออกกำลังกาย คนที่หนุนการดูแลตัวเอง บรรยากาศที่เอื้อ ไพ่หนุนให้คุณใช้สิ่งแวดล้อมที่ดีนี้สร้างกิจวัตรสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Three of Cups = สังสรรค์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งภายนอกสุขภาพ คือ 'สร้างกิจวัตรสุขภาพ'",
+          "advice_th": "ใช้สภาพแวดล้อมดี - กลุ่มเพื่อนออกกำลัง คนหนุนการดูแล บรรยากาศเอื้อ",
+          "keywords_th": ["แวดล้อมหนุน", "เพื่อนออกกำลัง", "เอื้อ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างไม่ยอมรับหรือวิจารณ์",
+          "detailed_interpretation_th": "หกไม้เท้ากลับหัวในตำแหน่งภายนอก บอกว่าคนรอบข้างไม่ยอมรับหรือวิจารณ์ - การถูกตัดสิน การไม่ได้รับการยอมรับ ความขัดแย้งในกลุ่ม ไพ่เตือนให้คุณยืนหยัดในตัวตนและไม่ปล่อยให้การวิจารณ์ทำลายความมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดียวดาย, The Tower = ตก",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งภายนอก คือ 'ยืนหยัดในตัวตน'",
+          "advice_th": "ยืนหยัด - คนรอบข้างไม่ยอมรับ ถูกตัดสิน ไม่ให้การวิจารณ์ทำลายความมั่นใจ",
+          "keywords_th": ["ไม่ยอมรับ", "ถูกวิจารณ์", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวไม่หนุนความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าครอบครัวไม่หนุนความรัก - การคัดค้าน ความขัดแย้งในครอบครัว การถูกตัดสิน ไพ่หนุนให้คุณเชื่อในความรู้สึกของตัวเองและปกป้องความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งภายนอกความรัก คือ 'ปกป้องความรัก'",
+          "advice_th": "เชื่อความรู้สึกตน - ครอบครัวไม่หนุน คัดค้าน ปกป้องความรัก",
+          "keywords_th": ["ครอบครัวไม่หนุน", "ถูกตัดสิน", "ปกป้องรัก"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทีมไม่ยอมรับและความสำเร็จไม่ได้รับการเห็น",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าทีมไม่ยอมรับและความสำเร็จไม่ได้รับการเห็น - การถูกมองข้าม การไม่ได้รับการเลื่อนตำแหน่ง ความขัดแย้งในทีม ไพ่หนุนให้คุณยืนหยัดในผลงานและหาที่ที่เห็นคุณค่า",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Hermit = เดียวดาย",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งภายนอกงาน คือ 'หาที่ที่เห็นคุณค่า'",
+          "advice_th": "ยืนหยัดในผลงาน - ทีมไม่ยอมรับ ถูกมองข้าม หาที่ที่เห็นคุณค่า",
+          "keywords_th": ["ทีมไม่ยอมรับ", "ถูกมองข้าม", "หาที่ใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมไม่เข้าใจการเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมไม่เข้าใจการเติบโตของคุณ - คนที่ไม่เห็นค่าการเปลี่ยนแปลง การวิจารณ์เส้นทาง ความรู้สึกโดดเดี่ยว ไพ่หนุนให้คุณเดินตามเส้นทางของตัวเองและหาชุมชนที่เข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Hierophant (rev) = ทิ้งกรอบ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Five of Pentacles = ขาดแรงหนุน",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งภายนอกเติบโต คือ 'หาชุมชนที่เข้าใจ'",
+          "advice_th": "เดินตามเส้นทางตน - สังคมไม่เข้าใจ วิจารณ์ โดดเดี่ยว หาชุมชนที่เข้าใจ",
+          "keywords_th": ["สังคมไม่เข้าใจ", "เดินคนเดียว", "หาชุมชน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมไม่หนุนสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวเตือนว่าสิ่งแวดล้อมไม่หนุนสุขภาพ - คนรอบข้างที่ไม่ส่งเสริม บรรยากาศที่บั่นทอน กิจวัตรร่วมที่ไม่ดี ไพ่หนุนให้คุณปรับสภาพแวดล้อมและหาแรงหนุนใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งภายนอกสุขภาพ คือ 'หาแรงหนุนใหม่'",
+          "advice_th": "ปรับสิ่งแวดล้อม - คนรอบข้างไม่ส่งเสริม บรรยากาศบั่นทอน หาแรงหนุนใหม่",
+          "keywords_th": ["แวดล้อมไม่หนุน", "บั่นทอน", "หาที่ใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังการยอมรับ กลัวล้มเหลวต่อหน้าคนอื่น",
+          "detailed_interpretation_th": "หกไม้เท้าในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังการยอมรับและความสำเร็จที่เห็นได้ แต่กลัวล้มเหลวต่อหน้าคนอื่น ไพ่บอกว่าใช้ความหวังเป็นแรงผลักดันและไม่ปล่อยให้ความกลัวจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Moon = ความกลัว",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งความหวังกลัว คือ 'ใช้ความหวังเป็นแรงผลักดัน'",
+          "advice_th": "ใช้ความหวังนำทาง - หวังการยอมรับแต่กลัวล้มเหลว ไม่ปล่อยความกลัวจำกัด",
+          "keywords_th": ["หวังการยอมรับ", "กลัวล้มเหลว", "ใช้แรงผลักดัน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังรักที่ภูมิใจ กลัวถูกตัดสิน",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังรักที่ภูมิใจและน่าชื่นชม แต่กลัวถูกตัดสินจากครอบครัวและสังคม ไพ่บอกว่ารักที่แท้ไม่ต้องการการอนุมัติจากใคร กล้ารักจากใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Moon = ความกลัว",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Three of Swords = กลัวเจ็บ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งความหวังกลัวความรัก คือ 'รักจากใจไม่ต้องการการอนุมัติ'",
+          "advice_th": "กล้ารักจากใจ - หวังรักภูมิใจแต่กลัวถูกตัดสิน รักที่แท้ไม่ต้องการการอนุมัติ",
+          "keywords_th": ["หวังรักภูมิใจ", "กลัวถูกตัดสิน", "รักจากใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังเลื่อนตำแหน่ง กลัวความหยิ่ง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังเลื่อนตำแหน่งและประสบความสำเร็จ แต่กลัวความหยิ่งที่อาจทำลายความสัมพันธ์ ไพ่บอกว่ารักษาความถ่อมตนแม้ในความสำเร็จ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Devil = หยิ่ง",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งความหวังกลัวงาน คือ 'รักษาความถ่อมตนแม้ในความสำเร็จ'",
+          "advice_th": "รักษาความถ่อมตน - หวังเลื่อนตำแหน่งแต่กลัวความหยิ่ง รักษาความถ่อมตนแม้ในความสำเร็จ",
+          "keywords_th": ["หวังเลื่อนตำแหน่ง", "กลัวหยิ่ง", "ถ่อมตน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเป็นแบบอย่าง กลัวความรับผิดชอบ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังเป็นแบบอย่างให้คนอื่น แต่กลัวความรับผิดชอบที่มากับการเป็นที่รู้จัก ไพ่บอกว่ายอมรับศักยภาพและรับความรับผิดชอบที่มากับมัน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The Moon = ความกลัว",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งความหวังกลัวเติบโต คือ 'ยอมรับศักยภาพและรับความรับผิดชอบ'",
+          "advice_th": "รับผิดชอบ - หวังเป็นแบบอย่างแต่กลัวความรับผิดชอบ ยอมรับศักยภาพ",
+          "keywords_th": ["หวังแบบอย่าง", "กลัวความรับผิดชอบ", "ยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพดี กลัวพลังหายไป",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังสุขภาพดีและพลังเหลือล้น แต่กลัวพลังหายไปและสุขภาพแย่ลง ไพ่บอกว่าดูแลสุขภาพอย่างสมดุลและไม่หยุดพยายาม",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Moon = ความกลัว",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งความหวังกลัวสุขภาพ คือ 'ดูแลสุขภาพอย่างสมดุล'",
+          "advice_th": "ดูแลสมดุล - หวังพลังเหลือล้นแต่กลัวพลังหาย ดูแลสุขภาพอย่างสมดุล",
+          "keywords_th": ["หวังสุขภาพ", "กลัวพลังหาย", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวล้มเหลวจนไม่กล้าก้าว",
+          "detailed_interpretation_th": "หกไม้เท้ากลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวล้มเหลวจนไม่กล้าก้าว - เพราะกลัวการถูกปฏิเสธ คุณไม่กล้าพิสูจน์ตัวเอง ลดเป้าหมาย ไพ่บอกว่ากล้าเสี่ยงและเรียนรู้จากความล้มเหลว",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัว, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งความหวังกลัว คือ 'กล้าเสี่ยงและเรียนรู้'",
+          "advice_th": "กล้าก้าว - กลัวล้มเหลวจนไม่กล้า ลดเป้าหมาย กล้าเสี่ยง",
+          "keywords_th": ["กลัวล้มเหลว", "ไม่กล้าก้าว", "กล้าเสี่ยง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวถูกตัดสินในรักจนปิดใจ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวถูกตัดสินในรักจนปิดใจ - กลัวครอบครัวคัดค้าน กลัวสังคมตัดสิน จึงเลือกซ่อนความรักหรือไม่กล้ารัก ไพ่บอกว่ารักจากใจไม่ต้องการการอนุมัติจากใคร",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = กลัวรัก, The Moon = ความกลัว",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Three of Swords = กลัวเจ็บ",
+            "swords": "Two of Swords = ไม่ตัดสินใจ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งความหวังกลัวความรัก คือ 'รักจากใจไม่ต้องการการอนุมัติ'",
+          "advice_th": "กล้ารัก - กลัวถูกตัดสินจนปิด ซ่อนความรัก รักจากใจไม่ต้องการการอนุมัติ",
+          "keywords_th": ["กลัวถูกตัดสินรัก", "ปิดใจ", "กล้ารัก"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวการแข่งขันจนไม่กล้าพิสูจน์",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวการแข่งขันจนไม่กล้าพิสูจน์ - กลัวคู่แข่ง กลัวการเปรียบเทียบ จึงเลือกเส้นทางปลอดภัย ไม่กล้าก้าว ไพ่บอกว่ากล้าลงสนามและเรียนรู้จากการแข่งขัน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands (rev) = ยอมแพ้",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งความหวังกลัวงาน คือ 'กล้าลงสนาม'",
+          "advice_th": "กล้าพิสูจน์ - กลัวการแข่งขันจนไม่กล้า เลือกปลอดภัย กล้าลงสนาม",
+          "keywords_th": ["กลัวแข่งขัน", "ไม่กล้าพิสูจน์", "กล้าลงสนาม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวความรับผิดชอบจนหลีกเลี่ยงการเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวความรับผิดชอบจนหลีกเลี่ยงการเติบโต - กลัวการถูกมอง กลัวการเป็นแบบอย่าง จึงทำตัวเงียบและไม่กล้าแสดงศักยภาพ ไพ่หนุนให้คุณยอมรับศักยภาพและรับความรับผิดชอบ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Hanged Man = ติดอยู่",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'ยอมรับศักยภาพและรับความรับผิดชอบ'",
+          "advice_th": "ยอมรับศักยภาพ - กลัวความรับผิดชอบจนหลีกเลี่ยง กลัวถูกมอง รับความรับผิดชอบ",
+          "keywords_th": ["กลัวความรับผิดชอบ", "หลีกเลี่ยง", "ยอมรับศักยภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวพลังหายไปจนหักโหม",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวพลังหายไปจนหักโหม - กลัวการแก่ตัว กลัวสูญเสียพลัง จึงผลักดันตัวเองมากเกินไป ไพ่หนุนให้คุณยอมรับการเปลี่ยนแปลงของร่างกายและดูแลอย่างเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "Strength (rev) = ฝืน, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'ดูแลอย่างเมตตา'",
+          "advice_th": "ยอมรับการเปลี่ยนแปลง - กลัวพลังหายจนหักโหม ผลักดันมากเกินไป ดูแลเมตตา",
+          "keywords_th": ["กลัวพลังหาย", "หักโหม", "เมตตา"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือชัยชนะและการได้รับการยอมรับ",
+          "detailed_interpretation_th": "หกไม้เท้าในตำแหน่งผลลัพธ์ เป็นข่าวดี - ผลลัพธ์ของสถานการณ์คือชัยชนะและการได้รับการยอมรับ ความสำเร็จที่เห็นได้ การก้าวสู่ความเป็นผู้นำ การได้รับเกียรติ ไพ่ยืนยันว่าความพยายามของคุณจะให้ผลลัพธ์ที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Chariot = ชัยชนะ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งผลลัพธ์ คือ 'ความพยายามให้ผลลัพธ์งดงาม'",
+          "advice_th": "เชื่อในชัยชนะ - ความสำเร็จที่เห็นได้ ก้าวสู่ความเป็นผู้นำ ได้รับเกียรติ",
+          "keywords_th": ["ชัยชนะ", "การยอมรับ", "ผู้นำ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่ภูมิใจและได้รับการยอมรับ",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เป็นข่าวดี - ความรักจะภูมิใจและได้รับการยอมรับ การฉลองความสัมพันธ์ การได้รับการชื่นชม การก้าวสู่ขั้นใหม่ที่น่าภูมิใจ ไพ่ยืนยันว่าความรักของคุณจะเป็นที่ยอมรับและน่าชื่นชม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งผลลัพธ์ความรัก คือ 'ความรักเป็นที่ยอมรับและน่าชื่นชม'",
+          "advice_th": "เปิดใจรับความรักภูมิใจ - ฉลองความสัมพันธ์ ได้รับการชื่นชม ขั้นใหม่ที่น่าภูมิใจ",
+          "keywords_th": ["รักภูมิใจ", "ได้รับการยอมรับ", "ชื่นชม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือความสำเร็จและการเลื่อนตำแหน่ง",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดี - คุณจะได้รับความสำเร็จและการเลื่อนตำแหน่ง การได้รับรางวัล การชนะการแข่งขัน การก้าวสู่ระดับผู้นำ ไพ่ยืนยันว่าความพยายามของคุณจะให้ผลตอบแทนที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Emperor = อำนาจ",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งผลลัพธ์งาน คือ 'ความพยายามให้ผลตอบแทนงดงาม'",
+          "advice_th": "เชื่อในความสำเร็จ - การเลื่อนตำแหน่ง รางวัล ชนะการแข่งขัน ระดับผู้นำ",
+          "keywords_th": ["ความสำเร็จ", "เลื่อนตำแหน่ง", "ผู้นำ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือเป็นแบบอย่างและสร้างแรงบันดาลใจ",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นชัยชนะ - คุณจะเป็นแบบอย่างและสร้างแรงบันดาลใจ การยอมรับในตัวตน การภูมิใจในการเดินทาง การสร้างแสงให้คนอื่น ไพ่ยืนยันว่าการเดินทางของคุณจะเป็นที่ชื่นชม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งผลลัพธ์เติบโต คือ 'สร้างแสงให้คนอื่น'",
+          "advice_th": "เฉลิมฉลองการเป็นแบบอย่าง - ยอมรับในตัวตน ภูมิใจในการเดินทาง สร้างแสง",
+          "keywords_th": ["แบบอย่าง", "แรงบันดาลใจ", "เป็นแสง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพดีและพลังเหลือล้น",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดี - คุณจะมีสุขภาพดีและพลังเหลือล้น ร่างกายแข็งแรง จิตใจสดใส การเป็นที่ภาคภูมิใจในร่างกาย ไพ่ยืนยันว่าการดูแลตัวเองของคุณจะให้ผลลัพธ์ที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้าตำแหน่งผลลัพธ์สุขภาพ คือ 'การดูแลให้ผลลัพธ์งดงาม'",
+          "advice_th": "เชื่อในสุขภาพดี - ร่างกายแข็งแรง จิตใจสดใส ภาคภูมิใจในร่างกาย",
+          "keywords_th": ["สุขภาพดี", "พลังเหลือ", "ภาคภูมิใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือล้มเหลวหรือไม่ได้รับการยอมรับ",
+          "detailed_interpretation_th": "หกไม้เท้ากลับหัวในตำแหน่งผลลัพธ์ เตือนว่าผลลัพธ์อาจเป็นความล้มเหลวหรือไม่ได้รับการยอมรับ - การถูกมองข้าม ความผิดหวัง ความหยิ่งที่ทำลายโอกาส ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ การรักษาความถ่อมตนและไม่ยอมแพ้จะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Devil = หยิ่ง",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Wands (rev) = หยิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งผลลัพธ์ คือ 'รักษาความถ่อมตนและไม่ยอมแพ้'",
+          "advice_th": "รักษาถ่อมตน - ล้มเหลวไม่ใช่ผลลัพธ์สุดท้าย ไม่ยอมแพ้ เปลี่ยนผลลัพธ์",
+          "keywords_th": ["ล้มเหลว", "ไม่ยอมรับ", "ถ่อมตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่ไม่ได้รับการยอมรับ",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวเตือนว่าความรักอาจไม่ได้รับการยอมรับ - การคัดค้านจากครอบครัว ความสัมพันธ์ที่ต้องพิสูจน์ ความรู้สึกถูกตัดสิน ไพ่บอกว่านี่ไม่ใช่จุดจบ การยืนหยัดในความรู้สึกจะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'ยืนหยัดในความรู้สึกเปลี่ยนผลลัพธ์'",
+          "advice_th": "ยืนหยัดในรัก - ไม่ได้รับการยอมรับไม่ใช่จุดจบ ยืนหยัดในความรู้สึก",
+          "keywords_th": ["รักไม่ยอมรับ", "ถูกตัดสิน", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คืองานไม่สำเร็จและไม่ได้รับการเลื่อน",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวเตือนว่างานอาจไม่สำเร็จและไม่ได้รับการเลื่อน - การถูกมองข้าม การล้มเหลว ความหยิ่งที่ทำลายโอกาส ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่ต้องเป็น การทบทวนกลยุทธ์และรักษาความถ่อมตนจะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Wands (rev) = หยิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งผลลัพธ์งาน คือ 'ทบทวนกลยุทธ์และถ่อมตน'",
+          "advice_th": "อย่ายอมแพ้ - งานไม่สำเร็จไม่ใช่ผลลัพธ์สุดท้าย ทบทวนกลยุทธ์ ถ่อมตน",
+          "keywords_th": ["งานไม่สำเร็จ", "ไม่เลื่อน", "ถ่อมตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือขาดความมั่นใจหรือหยิ่งเกินไป",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวเตือนว่าอาจขาดความมั่นใจหรือหยิ่งเกินไป - การไม่เห็นคุณค่าตัวเอง หรือการคิดว่าเหนือกว่าคนอื่น ไพ่บอกว่านี่ไม่ใช่จุดจบ การหาสมดุลและทำงานกับเงาในใจจะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Devil = หยิ่ง",
+            "wands": "Five of Cups = ผิดหวังตน",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'หาสมดุลเปลี่ยนผลลัพธ์'",
+          "advice_th": "หาสมดุล - ขาดมั่นใจหรือหยิ่งเกิน ทำงานกับเงาในใจ",
+          "keywords_th": ["ขาดมั่นใจ", "หยิ่ง", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพไม่ดีจากการละเลย",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวเตือนว่าสุขภาพอาจไม่ดีจากการละเลย - การเอาแต่งานจนลืมร่างกาย การฝืนใช้พลัง การไม่พักผ่อน ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่ต้องเป็น การกลับมาดูแลตัวเองจะเปลี่ยนสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = นิสัยร้าย, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หกไม้เท้ากลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'กลับมาดูแลตัวเองเปลี่ยนสุขภาพ'",
+          "advice_th": "ดูแลตัวเอง - สุขภาพไม่ดีจากการละเลย ไม่ใช่ผลลัพธ์สุดท้าย กลับมาดูแล",
+          "keywords_th": ["สุขภาพไม่ดี", "ละเลย", "ดูแลตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}
