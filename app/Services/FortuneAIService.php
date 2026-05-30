@@ -5007,6 +5007,36 @@ PROMPT;
     }
 
     /**
+     * 🃏 (2026-05-30) System message สำหรับ "การทำนาย (reading generation)" — gate ตาม purpose
+     *
+     * ปัญหา: SYSTEM_MESSAGE สั่ง "สุ่มจับไพ่ทาโร่ 1 ใบทุกครั้ง + 🃏 ไพ่ที่จับได้ + เคล็ด/ธรรมะ บังคับ"
+     *   (ออกแบบสำหรับดูดวง 39฿/แชทฟรี ที่ลูกค้าไม่มีไพ่ของตัวเอง)
+     *   → Celtic 99฿ มีไพ่ของลูกค้า 10 ใบอยู่แล้ว แต่ยังโดนกฎนี้ → AI เสกไพ่ผีใบที่ 11
+     *     (เคส R4393: "The Moon" / "สี่เหรียญ" นอกสำรับ) — ขัดกฎ card-first 100%
+     *
+     * แก้: เฉพาะ purpose='prediction_celtic' → ต่อท้าย override block ปิดกฎ "สุ่มจับ 1 ใบ"
+     *   (append ท้าย system role = robust ไม่ผูกกับ exact text ของ const + ไม่กระทบ 39฿/แชท)
+     *   ทำงานคู่กับ CelticCrossService::buildCardFirstMandate() (กฎฝั่ง user message)
+     *
+     * @return string system message ที่ใช้เป็น role=system ของ provider call
+     */
+    protected function getReadingSystemMessage(): string
+    {
+        $base = self::SYSTEM_MESSAGE;
+
+        // Celtic Cross 99฿ — ลบล้างกฎ "สุ่มจับไพ่ 1 ใบ" ที่ขัดกับการทำนายจาก 10 ใบ
+        if ($this->defaultPurpose === 'prediction_celtic') {
+            $base .= "\n\n[⚠️ CELTIC CROSS OVERRIDE — ใช้เฉพาะการทำนายนี้ ลบล้างกฎด้านบนเฉพาะส่วนที่ขัดกัน]\n"
+                ."การทำนายนี้คือ Celtic Cross 10 ใบ ที่เจ้าชะตาจับเองครบแล้ว (รายการไพ่อยู่ใน user message):\n"
+                ."• ❌ ยกเลิกกฎ \"สุ่มจับไพ่ทาโร่ 1 ใบทุกครั้ง\" และบรรทัด \"🃏 ไพ่ที่จับได้\" — ห้ามสุ่ม/จับ/เพิ่มไพ่ใบใหม่นอกเหนือ 10 ใบเด็ดขาด\n"
+                ."• ✅ ทำนายจากไพ่ 10 ใบที่ระบุ × ตำแหน่งของมัน 100% ตามโครงสร้างใน user message\n"
+                ."• เคล็ด/มู/ธรรมะ \"ไม่บังคับทุกครั้ง\" — ใส่เฉพาะเมื่อสัมพันธ์กับไพ่/คำถามจริง (ไม่ต้องมี ✨เคล็ด/🙏ธรรมะ ติดทุกคำตอบ)";
+        }
+
+        return $base;
+    }
+
+    /**
      * สร้าง prompt สำหรับส่งให้ AI
      *
      * @param  array  $questions  คำถาม
@@ -5297,7 +5327,7 @@ PROMPT;
 
             $response = Http::timeout($this->geminiTimeoutFor(self::DEEP_PROVIDER_TIMEOUT))->post($url, [
                 'system_instruction' => [
-                    'parts' => [['text' => self::SYSTEM_MESSAGE]],
+                    'parts' => [['text' => $this->getReadingSystemMessage()]],
                 ],
                 'contents' => [['parts' => [['text' => $prompt]]]],
                 'generationConfig' => $generationConfig,
@@ -5346,7 +5376,7 @@ PROMPT;
                 ->post('https://api.groq.com/openai/v1/chat/completions', [
                     'model' => $this->model,
                     'messages' => [
-                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
                     ],
                     'temperature' => $config['temperature'] ?? 0.7,
@@ -5395,7 +5425,7 @@ PROMPT;
                 ->post($endpoint, [
                     'model' => $this->model,
                     'messages' => [
-                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
                     ],
                     'temperature' => $config['temperature'] ?? 0.7,
@@ -5430,7 +5460,7 @@ PROMPT;
                 ->post('https://router.huggingface.co/v1/chat/completions', [
                     'model' => $this->model,
                     'messages' => [
-                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
                     ],
                     'max_tokens' => $config['max_tokens'] ?? 2048,
@@ -5495,7 +5525,7 @@ PROMPT;
             $payload = [
                 'model' => $this->model,
                 'input' => $prompt,
-                'instructions' => self::SYSTEM_MESSAGE,
+                'instructions' => $this->getReadingSystemMessage(),
                 'max_output_tokens' => $config['max_tokens'] ?? 2048,
                 'reasoning' => ['effort' => $config['reasoning_effort'] ?? 'low'],
             ];
@@ -5588,7 +5618,7 @@ PROMPT;
                 ->post($endpoint, [
                     'model' => $this->model,
                     'messages' => [
-                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
                     ],
                     'temperature' => $config['temperature'] ?? 0.7,
@@ -5642,7 +5672,7 @@ PROMPT;
                 ->post($endpoint, [
                     'model' => $this->model,
                     'max_tokens' => $config['max_tokens'] ?? 2048,
-                    'system' => self::SYSTEM_MESSAGE,
+                    'system' => $this->getReadingSystemMessage(),
                     'messages' => [
                         ['role' => 'user', 'content' => $prompt],
                     ],
@@ -5682,7 +5712,7 @@ PROMPT;
                 ->post('https://openrouter.ai/api/v1/chat/completions', [
                     'model' => $this->model,
                     'messages' => [
-                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
                     ],
                     'temperature' => $config['temperature'] ?? 0.7,
@@ -5922,7 +5952,7 @@ TXT;
                 ->post('https://api.x.ai/v1/chat/completions', [
                     'model' => $effectiveModel,
                     'messages' => [
-                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
                     ],
                     'temperature' => $config['temperature'] ?? 0.7,
@@ -5973,7 +6003,7 @@ TXT;
                 ->post('https://api.deepseek.com/chat/completions', [
                     'model' => $this->model ?: 'deepseek-chat',
                     'messages' => [
-                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
                     ],
                     'temperature' => $config['temperature'] ?? 0.7,
@@ -6021,7 +6051,7 @@ TXT;
                 ->post('https://api.opentyphoon.ai/v1/chat/completions', [
                     'model' => $this->model ?: 'typhoon-v2-70b-instruct',
                     'messages' => [
-                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
                     ],
                     'temperature' => $config['temperature'] ?? 0.7,
@@ -6071,7 +6101,7 @@ TXT;
 
         // สร้าง messages array พร้อม system message
         $chatMessages = [
-            ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+            ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
         ];
         foreach ($messages as $msg) {
             $chatMessages[] = [
