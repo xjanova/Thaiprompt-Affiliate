@@ -97,8 +97,22 @@
                                 <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{{ \Illuminate\Support\Str::limit($row->content, 160) }}</div>
                             </td>
                             <td class="px-4 py-3 align-top text-sm text-gray-700 dark:text-gray-300">
-                                @if($row->card_name)<div>🃏 {{ $row->card_name }}</div>@endif
-                                @if($row->subject)<div class="text-xs text-gray-500 dark:text-gray-400">{{ $row->subject }}</div>@endif
+                                @if($row->card_name)
+                                    @php $c = $cardMap[$row->card_name] ?? null; @endphp
+                                    <div class="flex items-center gap-2">
+                                        @if($c && $c->image_url)
+                                            <img src="{{ $c->image_url }}" alt="{{ $row->card_name }}" class="w-9 h-auto rounded shadow-sm flex-shrink-0" loading="lazy">
+                                        @else
+                                            <span class="text-lg">🃏</span>
+                                        @endif
+                                        <div>
+                                            <div class="font-medium text-gray-800 dark:text-gray-100">{{ $c->name_th ?? $row->card_name }}</div>
+                                            <div class="text-xs text-gray-400">{{ $row->card_name }}</div>
+                                        </div>
+                                    </div>
+                                @elseif($row->subject)
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $row->subject }}</div>
+                                @endif
                             </td>
                             <td class="px-4 py-3 align-top text-center">
                                 <form method="POST" action="{{ route('admin.fortune.knowledge.toggle', $row) }}">

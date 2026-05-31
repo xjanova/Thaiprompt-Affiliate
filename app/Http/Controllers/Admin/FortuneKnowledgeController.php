@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FortuneKnowledge;
+use App\Models\TarotCard;
 use App\Services\FortuneKnowledgeService;
 use Illuminate\Http\Request;
 
@@ -66,8 +67,15 @@ class FortuneKnowledgeController extends Controller
                 ->toArray(),
         ];
 
+        // 🃏 (2026-06-01) ดึงรูป+ชื่อไทยของไพ่ มาโชว์ในช่อง "ไพ่" (ให้แอดมินเห็นว่าความรู้ตรงกับไพ่ใบไหน)
+        $cardNames = $rows->pluck('card_name')->filter()->unique()->values()->all();
+        $cardMap = empty($cardNames)
+            ? collect()
+            : TarotCard::whereIn('name_en', $cardNames)->get()->keyBy('name_en');
+
         return view('admin.fortune.knowledge.index', [
             'rows' => $rows,
+            'cardMap' => $cardMap,
             'stats' => $stats,
             'search' => $search,
             'category' => $category,
@@ -111,8 +119,14 @@ class FortuneKnowledgeController extends Controller
      */
     public function edit(FortuneKnowledge $knowledge)
     {
+        // 🃏 ไพ่ที่ผูกกับความรู้นี้ (โชว์รูป+ชื่อไทยในฟอร์ม ให้แอดมินเห็นว่าตรงใบไหน)
+        $card = $knowledge->card_name
+            ? TarotCard::where('name_en', $knowledge->card_name)->first()
+            : null;
+
         return view('admin.fortune.knowledge.edit', [
             'item' => $knowledge,
+            'card' => $card,
             'categories' => FortuneKnowledge::CATEGORIES,
             'categoryLabels' => FortuneKnowledge::CATEGORY_LABELS,
             'pageTitle' => 'แก้ไของค์ความรู้ #'.$knowledge->id,

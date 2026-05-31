@@ -22,6 +22,19 @@
     </div>
 </div>
 
+@if(($card ?? null))
+    <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700">
+        @if($card->image_url)
+            <img src="{{ $card->image_url }}" alt="{{ $card->name_en }}" class="w-14 h-auto rounded shadow flex-shrink-0">
+        @endif
+        <div class="text-sm">
+            <div class="text-xs text-gray-400 mb-0.5">ไพ่ที่ผูกกับความรู้นี้</div>
+            <div class="font-medium text-gray-800 dark:text-gray-100">🃏 {{ $card->name_th }}</div>
+            <div class="text-xs text-gray-400">{{ $card->name_en }}</div>
+        </div>
+    </div>
+@endif
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
         <label class="{{ $labelCls }}">หัวเรื่องย่อย (subject)</label>
