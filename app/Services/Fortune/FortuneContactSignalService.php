@@ -22,6 +22,12 @@ use Illuminate\Support\Facades\Log;
 class FortuneContactSignalService
 {
     /**
+     * ความยาวข้อความ (ไม่นับ URL) ที่ถือว่า "คุยจริง" แม้มีลิงก์ประกบ
+     * — กันลูกค้าจริงที่พิมพ์ยาวๆ พร้อมแปะลิงก์ (เช่น ถามรายละเอียดแพคเกจ)
+     */
+    protected const LONG_TEXT_CHARS = 40;
+
+    /**
      * บันทึกสัญญาณจากข้อความขาเข้า 1 ข้อความ
      *
      * @param  string  $platform  'facebook' | 'line'
@@ -45,18 +51,30 @@ class FortuneContactSignalService
             $hasWords = $this->hasRealWords($text);
             $hasExternalLink = $this->hasExternalLink($text);
             $hasMedia = $this->hasMediaAttachment($attachments);
+            $wordLen = $this->wordLen($text); // ความยาวข้อความที่ไม่นับ URL
 
-            // engagement → whitelist (ลูกค้าจริง ห้ามแบนอัตโนมัติ)
-            $engaged = $hasWords || $buttonPressed || $hasReadingOrPaid;
+            // ✅ "คุยจริง" (→ whitelist): กดปุ่ม / จ่ายเงิน /
+            //    มีคำจริงโดยไม่มีลิงก์ / หรือมีลิงก์แต่พิมพ์ยาว (ลูกค้าถามจริงพร้อมแปะลิงก์)
+            $genuineConvo = $buttonPressed
+                || $hasReadingOrPaid
+                || ($hasWords && ! $hasExternalLink)
+                || ($hasWords && $hasExternalLink && $wordLen > self::LONG_TEXT_CHARS);
 
-            // เป็น "ลิงก์/รูปล้วน" เมื่อ: ไม่มีคำจริง + (มีลิงก์ภายนอก หรือ มีรูป/วิดีโอ)
-            $isLinkImage = ! $hasWords && ($hasExternalLink || $hasMedia);
+            // 🚩 (1) ลิงก์ + คำประกบสั้นๆ (เช่น "ดูเลย🔥 + ลิงก์") = promo caption
+            $isLinkCaption = ! $genuineConvo && $hasExternalLink && $hasWords && $wordLen <= self::LONG_TEXT_CHARS;
+
+            // 🚩 ลิงก์/รูปล้วน ไม่มีคำเลย
+            $isPureLinkImage = ! $hasWords && ($hasExternalLink || $hasMedia);
+
+            $isSpamType = $isPureLinkImage || $isLinkCaption;
 
             $sample = null;
-            if ($isLinkImage) {
+            if ($isPureLinkImage) {
                 $sample = $hasExternalLink
                     ? mb_substr(trim($text), 0, 300)
                     : '[media:'.$this->mediaTypes($attachments).']';
+            } elseif ($isLinkCaption) {
+                $sample = mb_substr(trim($text), 0, 300);
             }
 
             $signal = FortuneContactSignal::firstOrNew([
@@ -73,27 +91,42 @@ class FortuneContactSignalService
             $signal->inbound_total = (int) $signal->inbound_total + 1;
             $signal->last_seen_at = now();
 
-            if ($engaged) {
-                // เคยคุยจริง/จ่ายเงิน/กดปุ่ม → whitelist ถาวร (กัน false-positive)
+            if ($genuineConvo) {
+                // คุยจริง → whitelist ถาวร (กัน false-positive)
                 $signal->whitelisted = true;
 
                 if ($hasWords) {
                     $signal->real_text_count = (int) $signal->real_text_count + 1;
                 }
-                if ($buttonPressed || $hasWords) {
-                    $signal->interaction_count = (int) $signal->interaction_count + 1;
-                }
+                $signal->interaction_count = (int) $signal->interaction_count + 1;
 
                 // ถ้าเคยถูก flag ไว้ → คืนสถานะ (เคลียร์ความเข้าใจผิด)
                 if ($signal->status === 'flagged') {
                     $signal->status = 'cleared';
                 }
-            } elseif ($isLinkImage) {
-                // ลิงก์/รูปล้วน — สะสมเข้า counter
+            } elseif ($isPureLinkImage) {
+                // ลิงก์/รูปล้วน
                 $signal->link_image_count = (int) $signal->link_image_count + 1;
+                $signal->last_sample = $sample;
+            } elseif ($isLinkCaption) {
+                // ลิงก์ + คำประกบสั้น (promo)
+                $signal->link_caption_count = (int) $signal->link_caption_count + 1;
                 $signal->last_sample = $sample;
             }
             // sticker / emoji / empty / location → นับแค่ inbound_total เฉยๆ
+
+            // 📅 (2) ความถี่: นับ "จำนวนวันที่ส่งสแปม" (distinct calendar days)
+            //    gate ด้วย !genuineConvo — ลูกค้าจริง/จ่ายเงินที่บังเอิญแปะลิงก์ ไม่นับเป็นวันสแปม
+            if ($isSpamType && ! $genuineConvo) {
+                $today = now()->toDateString();
+                $lastDay = $signal->last_spam_day
+                    ? (\is_string($signal->last_spam_day) ? $signal->last_spam_day : $signal->last_spam_day->toDateString())
+                    : null;
+                if ($lastDay !== $today) {
+                    $signal->active_days = (int) $signal->active_days + 1;
+                    $signal->last_spam_day = $today;
+                }
+            }
 
             $signal->save();
         } catch (\Throwable $e) {
@@ -107,16 +140,25 @@ class FortuneContactSignalService
     }
 
     /**
+     * ความยาวข้อความที่ "ไม่นับ URL" (ตัดลิงก์ออกแล้ว trim)
+     *
+     * ใช้แยก "ลิงก์ + คำประกบสั้น" (promo) ออกจาก "ลูกค้าถามจริงพร้อมลิงก์" (ยาว)
+     */
+    protected function wordLen(string $text): int
+    {
+        $stripped = preg_replace('#https?://\S+#i', '', $text);
+
+        return mb_strlen(trim((string) $stripped));
+    }
+
+    /**
      * มี "คำจริง" ไหม (ตัด URL ออกแล้วยังเหลือตัวอักษร ≥ 2)
      *
      * เหตุผล: ข้อความที่มีคำจริง = ลูกค้าพยายามสื่อสาร → ไม่ใช่สแปมลิงก์ล้วน
      */
     protected function hasRealWords(string $text): bool
     {
-        $stripped = preg_replace('#https?://\S+#i', '', $text);
-        $stripped = trim((string) $stripped);
-
-        return mb_strlen($stripped) >= 2;
+        return $this->wordLen($text) >= 2;
     }
 
     /**

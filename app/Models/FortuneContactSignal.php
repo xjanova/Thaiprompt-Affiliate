@@ -51,13 +51,16 @@ class FortuneContactSignal extends Model
         'display_name',
         'inbound_total',
         'link_image_count',
+        'link_caption_count',
         'real_text_count',
         'interaction_count',
+        'active_days',
         'last_sample',
         'whitelisted',
         'status',
         'first_seen_at',
         'last_seen_at',
+        'last_spam_day',
         'flagged_at',
         'banned_at',
     ];
@@ -70,11 +73,14 @@ class FortuneContactSignal extends Model
     protected $casts = [
         'inbound_total' => 'integer',
         'link_image_count' => 'integer',
+        'link_caption_count' => 'integer',
         'real_text_count' => 'integer',
         'interaction_count' => 'integer',
+        'active_days' => 'integer',
         'whitelisted' => 'boolean',
         'first_seen_at' => 'datetime',
         'last_seen_at' => 'datetime',
+        'last_spam_day' => 'date',
         'flagged_at' => 'datetime',
         'banned_at' => 'datetime',
     ];
@@ -94,17 +100,20 @@ class FortuneContactSignal extends Model
      *
      * เงื่อนไข:
      *  - ไม่เคยพิมพ์คุยจริง (real_text_count = 0)
-     *  - ส่งลิงก์/รูป ≥ $minLinkImage ครั้ง
+     *  - ลิงก์/รูปล้วน + ลิงก์มีคำประกบสั้น รวมกัน ≥ $minLinkImage ครั้ง
+     *  - ส่งสแปมในจำนวนวันต่างกัน ≥ $minActiveDays (ความถี่)
      *  - ไม่ถูก whitelist (ไม่เคยจ่าย/ไม่เคย engage)
      *  - ยัง tracking อยู่ (ยังไม่ถูกแบน/เคลียร์)
      *
-     * @param  int  $minLinkImage  จำนวนลิงก์/รูปขั้นต่ำที่ถือว่าเป็นสแปม
+     * @param  int  $minLinkImage  จำนวนลิงก์/รูป+caption ขั้นต่ำที่ถือว่าเป็นสแปม
+     * @param  int  $minActiveDays  จำนวนวันที่ส่งสแปมต่างกันขั้นต่ำ (1 = ไม่บังคับความถี่)
      */
-    public function scopeSuspects(Builder $query, int $minLinkImage = 3): Builder
+    public function scopeSuspects(Builder $query, int $minLinkImage = 3, int $minActiveDays = 1): Builder
     {
         return $query->where('whitelisted', false)
             ->where('status', 'tracking')
             ->where('real_text_count', 0)
-            ->where('link_image_count', '>=', $minLinkImage);
+            ->where('active_days', '>=', $minActiveDays)
+            ->whereRaw('(link_image_count + link_caption_count) >= ?', [$minLinkImage]);
     }
 }

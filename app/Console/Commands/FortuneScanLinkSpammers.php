@@ -32,6 +32,7 @@ class FortuneScanLinkSpammers extends Command
     protected $signature = 'fortune:scan-link-spammers
                             {--min=3 : จำนวนลิงก์/รูปขั้นต่ำที่ถือว่าเป็นสแปม}
                             {--days=7 : ดูเฉพาะที่ส่งข้อความภายในกี่วันล่าสุด}
+                            {--min-days=1 : ต้องส่งสแปมในจำนวนวันต่างกันอย่างน้อยเท่าไร (ความถี่ — ใส่ 2 = ส่งหลายวัน)}
                             {--limit=200 : จำกัดจำนวนรายการสูงสุด}
                             {--execute : ลงมือแบน + block บน FB จริง (default: dry-run)}';
 
@@ -47,15 +48,16 @@ class FortuneScanLinkSpammers extends Command
     {
         $min = max(1, (int) $this->option('min'));
         $days = max(1, (int) $this->option('days'));
+        $minDays = max(1, (int) $this->option('min-days'));
         $limit = max(1, (int) $this->option('limit'));
         $execute = (bool) $this->option('execute');
 
-        $this->info('🔎 สแกน contact ที่ส่งแต่ลิงก์/รูป (facebook) — min='.$min.' / days='.$days);
+        $this->info('🔎 สแกน contact ที่ส่งแต่ลิงก์/รูป (facebook) — min='.$min.' / days='.$days.' / min-days='.$minDays);
         $this->newLine();
 
         $candidates = FortuneContactSignal::query()
             ->forPlatform('facebook')
-            ->suspects($min)
+            ->suspects($min, $minDays)
             ->where('last_seen_at', '>=', now()->subDays($days))
             ->orderByDesc('link_image_count')
             ->limit($limit)
@@ -79,13 +81,15 @@ class FortuneScanLinkSpammers extends Command
             $rows[] = [
                 $c->id,
                 $c->platform_user_id,
-                mb_substr($c->display_name ?? '-', 0, 18),
+                mb_substr($c->display_name ?? '-', 0, 16),
                 $c->link_image_count,
+                $c->link_caption_count,
+                $c->active_days,
                 $c->real_text_count,
                 $c->inbound_total,
                 optional($c->last_seen_at)->format('m-d H:i'),
-                $hasPaid ? '⚠️ PAID-skip' : 'spam',
-                mb_substr($c->last_sample ?? '', 0, 30),
+                $hasPaid ? '⚠️PAID' : 'spam',
+                mb_substr($c->last_sample ?? '', 0, 24),
             ];
 
             if (! $hasPaid) {
@@ -94,7 +98,7 @@ class FortuneScanLinkSpammers extends Command
         }
 
         $this->table(
-            ['ID', 'PSID', 'ชื่อ', 'ลิงก์/รูป', 'คุยจริง', 'รวม', 'ล่าสุด', 'สถานะ', 'ตัวอย่าง'],
+            ['ID', 'PSID', 'ชื่อ', 'ลิงก์/รูป', 'caption', 'วัน', 'คุยจริง', 'รวม', 'ล่าสุด', 'สถานะ', 'ตัวอย่าง'],
             $rows
         );
         $this->newLine();
