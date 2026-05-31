@@ -3932,7 +3932,10 @@ class FortuneConversationService
         if (! $freeEnabled && ! $deepEnabled && $celticEnabled) {
             $hasExplicitIntent = (bool) Cache::get("fortune:force_tier:{$facebookUserId}");
             $hasExplicitCeltic = $this->matchesCelticCrossKeyword($messageText);
-            $forceTierArg = ($hasExplicitIntent || $hasExplicitCeltic) ? 'celtic' : null;
+            // 🌙 (2026-05-31) ปุ่ม postback (force_tier flag) ไม่ skip intro แล้ว — ต้องผ่านการ์ดคัดกรองก่อน
+            //   user feedback: "กดดูดวง→สร้างบิลเลย มีบิลค้างไม่จ่ายเยอะ รกมาก" → ปุ่มต้องเห็น intro+ค่าครูก่อน
+            //   เฉพาะ "พิมพ์" celtic/99 เอง (typed = ตั้งใจ + รู้ราคา) → ตรงดิ่ง Celtic flow ได้
+            $forceTierArg = $hasExplicitCeltic ? 'celtic' : null;
 
             Log::info('Fortune: FAST PATH 3 — ปิด free+deep + เปิด celtic', [
                 'facebook_user_id' => $facebookUserId,
@@ -5175,12 +5178,19 @@ class FortuneConversationService
                 }
 
                 if ($celticEnabled) {
-                    // 🆕 (2026-05-27) ลูกค้ามี intent ชัดเจน (postback/keyword) → ไป Celtic flow ทันที
-                    //   ถ้าไม่ชัด (generic "ดูดวง") → fall through ไปสร้าง reading + แสดง tier_choice intro
-                    if ($hasExplicitIntent || $hasExplicitCeltic) {
+                    // 🆕 (2026-05-27) ลูกค้า "พิมพ์" celtic keyword ชัด → ไป Celtic flow ทันที
+                    //   🌙 (2026-05-31) postback (force_tier flag) ไม่ skip intro แล้ว — ปุ่มต้องผ่านการ์ดคัดกรอง
+                    //     user feedback: "กดดูดวง→สร้างบิลเลย บิลค้างไม่จ่ายเยอะ" → ปุ่มเห็น intro+ค่าครูก่อน
+                    //     เฉพาะ typed celtic/99 (ตั้งใจ+รู้ราคา) → ตรงดิ่ง
+                    if ($hasExplicitCeltic) {
                         return $this->startDeepReadingFlow($facebookUserId, $userProfile, 'celtic', $originalMessage);
                     }
-                    // else: fall through — useTierChoice ด้านล่างจะจับเป็น Celtic-only intro
+                    // 🌙 (2026-05-31) generic/postback → intro card. เคลียร์ force_tier flag กัน "lingering
+                    //   auto-confirm": ถ้าไม่เคลียร์ ลูกค้าพิมพ์คำถามที่การ์ด intro ภายใน 30s → handleTierChoice
+                    //   (บรรทัด ~458 hasForceTierFlag) จะสร้างบิลทั้งที่ยังไม่ยืนยัน. การยืนยันจริง = คลิกปุ่ม
+                    //   "โอนค่าบูชาครู/เริ่มเลย" จะ re-set flag เอง → handleTierChoice สร้างบิลให้ถูกจังหวะ
+                    Cache::forget("fortune:force_tier:{$facebookUserId}");
+                    // fall through — useTierChoice ด้านล่างจะจับเป็น Celtic-only intro
                 } else {
                     return [
                         'action' => 'deep_reading_disabled',
