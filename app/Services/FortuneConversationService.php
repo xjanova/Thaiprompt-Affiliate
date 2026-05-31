@@ -6722,6 +6722,12 @@ class FortuneConversationService
             Log::warning('Fortune: askPaymentMethod ถูกเรียกแต่ mode='.$mode.' — fall through ไป QR Thai', [
                 'reading_id' => $reading->id,
             ]);
+
+            // 🛡️ (2026-05-31) Celtic reading → Celtic flow (99) เสมอ ห้ามตก createPaymentBill (39)
+            if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                return $this->startCelticCrossFlow($reading, skipStripeGate: true);
+            }
+
             $questions = $reading->getCollectedQuestions();
 
             return $this->createPaymentBill($reading, $questions);
@@ -7392,6 +7398,20 @@ class FortuneConversationService
      */
     protected function createPaymentBill(FortuneReading $reading, array $questions, bool $payFirst = false): array
     {
+        // 🛡️ (2026-05-31 HOTFIX) Celtic reading ห้ามใช้ createPaymentBill (ราคา Deep 39 เสมอ)
+        //   Incident จริง (reading 4487): Celtic 99 reading หลุดมา createPaymentBill ผ่าน
+        //   askPaymentMethod fall-through (mode=sms_only / state race) → บิลถูกทับเป็น 39
+        //   ทั้งที่ลูกค้าเลือก Celtic 99 → redirect กลับ Celtic flow (99) เสมอ
+        //   (startCelticCrossFlow สร้างบิล Celtic เอง — ไม่ recursive กลับมาที่นี่)
+        if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            Log::warning('Fortune: createPaymentBill ถูกเรียกบน Celtic reading — redirect Celtic flow (กันบิล 39)', [
+                'reading_id' => $reading->id,
+                'conversation_status' => $reading->conversation_status,
+            ]);
+
+            return $this->startCelticCrossFlow($reading, skipStripeGate: true);
+        }
+
         try {
             // ⚠️ CRITICAL SAFETY — ห้ามส่ง QR code / bill_reference ออกไปจนกว่าจะ verify
             //   ว่า DB persist สมบูรณ์ทั้ง UPA + FortuneReading.unique_payment_amount_id + bill_reference
