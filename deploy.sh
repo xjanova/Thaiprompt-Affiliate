@@ -1691,7 +1691,12 @@ HORIZON_STATUS="⏭️ ไม่ได้ใช้งาน"
 print_info "→ ตรวจสอบ PHP-FPM service..."
 PHP_FPM_RESTARTED=false
 if command -v systemctl >/dev/null 2>&1; then
-    for service in php8.3-fpm php8.2-fpm php8.1-fpm php8.0-fpm php-fpm; do
+    # ⭐ FIX (2026-05-31): เพิ่ม php-fpm83 (alt-php/CloudLinux naming) หน้าสุด
+    #   เซิร์ฟเวอร์ prod นี้ service = `php-fpm83` ไม่ใช่ `php8.3-fpm` (Ubuntu) →
+    #   loop เดิมไม่ match → reload ถูกข้ามเงียบ → opcache รันโค้ดเก่าทุก deploy
+    #   เคสจริง R4543: R4474 fix landed 13:02 แต่ php-fpm restart ล่าสุด 05-30 18:30
+    #   → fix อยู่บน disk แต่ไม่ execute (user เห็น "เหมือนยังไม่ได้แก้อะไรเลย")
+    for service in php-fpm83 php-fpm82 php-fpm81 php8.3-fpm php8.2-fpm php8.1-fpm php8.0-fpm php-fpm; do
         if systemctl is-active --quiet $service 2>/dev/null; then
             print_info "  พบ PHP-FPM service: $service"
             if sudo systemctl reload $service 2>/dev/null; then
@@ -1710,7 +1715,7 @@ if command -v systemctl >/dev/null 2>&1; then
         PHP_FPM_STATUS="⚠️ ไม่พบ service"
     fi
 elif command -v service >/dev/null 2>&1; then
-    for svc in php8.3-fpm php8.2-fpm php8.1-fpm php-fpm; do
+    for svc in php-fpm83 php-fpm82 php-fpm81 php8.3-fpm php8.2-fpm php8.1-fpm php-fpm; do
         if service $svc status >/dev/null 2>&1; then
             if sudo service $svc reload 2>/dev/null; then
                 print_success "  ✓ Reload $svc สำเร็จ"
