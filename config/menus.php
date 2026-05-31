@@ -745,6 +745,7 @@ return [
                 ['label' => '🎯 เทคโอเวอร์ (แม่หมอคุยเอง)', 'route' => 'admin.fortune.takeover.index', 'description' => 'หยุด AI ให้แม่หมอ/แอดมินคุยเอง — LINE + Facebook'],
                 ['label' => '🚫 ระบบคุก (แบน user)', 'route' => 'admin.fortune.bans.index', 'description' => 'แบน user ไม่ให้บอทคุยด้วย (สแปม/ก่อกวน) — แอดมินยังคุยผ่าน Inbox ได้'],
                 ['label' => '📚 RAG Admin Q&A (เทรนบอทจากคำตอบแอดมิน)', 'route' => 'admin.fortune.admin-qa.index', 'description' => 'จับคู่ Q&A จาก FB Page Inbox → AI เลียนสไตล์แอดมินตอบ chat ลูกค้า'],
+                ['label' => '🧠 คลังความรู้แม่หมอ (RAG)', 'route' => 'admin.fortune.knowledge.index', 'description' => 'จัดการตำราสุขภาพ/ฮวงจุ้ย/เจ้าที่/องค์เทพ/ไสยศาสตร์ ที่ AI ดึงไปทำนายตามไพ่ — แก้/เพิ่มได้'],
                 ['label' => '👥 ผู้ใช้ดูดวง', 'route' => 'admin.fortune.users.index', 'description' => 'จัดการผู้ใช้ที่เคยดูดวง ส่งข้อความ เพิ่มเครดิต'],
                 ['label' => '🎴 บุคลิกลูกค้า (RPG)', 'route' => 'admin.fortune.personas.index', 'description' => 'ระบบจดจำบุคลิกลูกค้า — RPG card, radar chart, level, rarity tier'],
                 ['label' => '🎁 เครดิตฟรีรายคน', 'route' => 'admin.fortune.credits.index', 'description' => 'เพิ่ม/รีเซ็ตเครดิตดูฟรีเป็นรายคน'],

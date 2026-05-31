@@ -64,6 +64,7 @@ class DatabaseSeeder extends Seeder
             FortuneTakeoverSettingsSeeder::class, // 🎯 ระบบเทคโอเวอร์ดูดวง (แม่หมอ/แอดมินคุยแทน AI)
             FortuneBannerSeeder::class,          // 🖼️ แบนเนอร์ DM (4 รูปเริ่มต้นจาก banner1.zip)
             FortuneMysticTopicSeeder::class,     // 🔮 หมวดคอนเทนต์สายมู (5 หมวด: สายมู/แก้เคล็ด/ปัญหาชีวิต/สิ่งลี้ลับ/รู้หรือไม่ทั่วโลก)
+            FortuneKnowledgeSeeder::class,       // 🧠 คลังความรู้แม่หมอ (RAG) — สุขภาพ/ฮวงจุ้ย/เจ้าที่/องค์เทพ/มนต์ดำ (จาก config → DB)
 
             // 5. AI & Integrations
             CentralAiSettingSeeder::class,      // 🆕 Central AI Settings (Ollama + PostXAgent Management)

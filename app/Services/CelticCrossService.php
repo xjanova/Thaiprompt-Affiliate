@@ -842,6 +842,7 @@ class CelticCrossService
             .$saiMuDirective
             .$forecastDirective
             .$this->buildHealthDirective($reading, $userQuestion)
+            .$this->buildMuKnowledgeDirective($reading, $userQuestion)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1274,7 +1275,8 @@ class CelticCrossService
                 // 🪬 (2026-05-29) โหมดคุณไสย์ — inject Q2+ ด้วย (lock เรื่อง / reject ถ้าเปิดประเด็นช้า)
                 .$this->buildBlackMagicDirective($reading, $userQuestion, $previousContext)
                 // 🩺 (2026-06-01) ตำราสุขภาพ — inject Q2+ ด้วย (ถามสุขภาพ → เทียบอวัยวะ/อาการตามหน้าไพ่)
-                .$this->buildHealthDirective($reading, $userQuestion, $previousContext);
+                .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
+                .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1376,6 +1378,7 @@ class CelticCrossService
             .$forecastDirective2
             .$this->buildBlackMagicDirective($reading, $userQuestion, $previousContext)
             .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
+            .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2386,7 +2389,22 @@ class CelticCrossService
             ."• ❌ *ห้ามขายความกลัว* — ห้ามขู่ว่าโดนของหนักจะตาย/พินาศ ต้องรีบแก้ด่วนเป็นเงินก้อนโต\n"
             ."• 🧠 ลูกค้าที่ดูเปราะบาง/วิตกง่าย/หวาดระแวง/ย้ำคิด → ทำนายตามไพ่ได้ แต่ *เน้นกำลังใจ + ดึงสติ*:\n"
             ."  \"ของเป็นปัจจัยหนึ่ง แต่อย่าโทษของอย่างเดียว — ดูสุขภาพกาย-ใจ คนรอบตัว และการกระทำด้วย\"\n"
-            ."  + ถ้ามีอาการทางกาย/ใจชัด (นอนไม่หลับ เห็นภาพหลอน คิดทำร้ายตัวเอง) → แนะพบแพทย์/นักจิตวิทยาควบคู่\n\n";
+            ."  + ถ้ามีอาการทางกาย/ใจชัด (นอนไม่หลับ เห็นภาพหลอน คิดทำร้ายตัวเอง) → แนะพบแพทย์/นักจิตวิทยาควบคู่\n\n"
+            .$this->blackMagicRagKnowledgeBlock();
+    }
+
+    /**
+     * 🪬 (2026-06-01) ดึงความรู้ไสยศาสตร์จากคลัง RAG มาเสริม buildBlackMagicDirective
+     *   (แอดมินแก้/เพิ่มได้ที่ /admin/fortune/knowledge หมวด black_magic)
+     */
+    protected function blackMagicRagKnowledgeBlock(): string
+    {
+        $kb = app(\App\Services\FortuneKnowledgeService::class)->blackMagicKnowledge();
+        if (trim($kb) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n".$kb."\n━━━━━━━━━━━━━━━━━\n\n";
     }
 
     /**
@@ -2440,53 +2458,17 @@ class CelticCrossService
             return '';
         }
 
-        // ดึงตำรา + ไพ่ที่เปิด
-        $tome = (array) config('fortune_tarot_health', []);
-        $cardsTome = (array) ($tome['cards'] ?? []);
-        $suitsTome = (array) ($tome['suits'] ?? []);
+        // 🧠 ดึงความรู้สุขภาพจากคลัง RAG (DB → fallback config) — เฉพาะ 10 ใบที่เปิด
+        //    แอดมินแก้ตำราได้ที่ /admin/fortune/knowledge → AI ใช้ทันที (cache สั้น)
         $cards = $reading->getCelticCards();
-
-        if (empty($cardsTome) || count($cards) < 10) {
-            return ''; // ตำราหาย หรือไพ่ยังไม่ครบ — ข้าม (ไม่ block การทำนาย)
+        if (count($cards) < 10) {
+            return ''; // ไพ่ยังไม่ครบ — ข้าม (ไม่ block การทำนาย)
         }
 
-        // สร้างบรรทัดสุขภาพรายไพ่ (เฉพาะ 10 ใบที่เปิด — ไม่ dump ทั้ง 78 ใบ)
-        $lines = [];
-        for ($pos = 1; $pos <= 10; $pos++) {
-            $card = $cards[$pos] ?? null;
-            if (! $card) {
-                continue;
-            }
-            $nameEn = (string) ($card['card_name_en'] ?? '');
-            $nameTh = (string) ($card['card_name_th'] ?? '') ?: ($nameEn ?: '?');
-            $isReversed = ! empty($card['is_reversed']);
-            $positionName = (string) ($card['position_name'] ?? '?');
-
-            // lookup: ตรงชื่อ → fallback รายสำรับ (กัน lookup พลาดเงียบถ้าชื่อเพี้ยน)
-            $entry = $cardsTome[$nameEn] ?? null;
-            if (! $entry) {
-                $entry = $suitsTome[$this->resolveSuitKeyForHealth($nameEn)] ?? null;
-            }
-            if (! is_array($entry)) {
-                continue;
-            }
-
-            $orientation = $isReversed ? '(กลับหัว)' : '(ตั้งตรง)';
-            $body = (string) ($entry['body'] ?? '');
-            $tendency = $isReversed
-                ? (string) ($entry['rev'] ?? '')
-                : (string) ($entry['up'] ?? '');
-
-            $lines[] = "• ตำแหน่ง {$pos} [{$positionName}] — {$nameTh} {$orientation}\n"
-                ."   🩺 อวัยวะ/ระบบ: {$body}\n"
-                ."   → แนวโน้ม: {$tendency}";
+        $cardHealthBlock = app(\App\Services\FortuneKnowledgeService::class)->healthLinesForCards($cards);
+        if (trim($cardHealthBlock) === '') {
+            return ''; // ไม่มีข้อมูลในคลัง — ข้าม
         }
-
-        if (empty($lines)) {
-            return '';
-        }
-
-        $cardHealthBlock = implode("\n", $lines);
 
         return "━━━━━━━━━━━━━━━━━\n"
             ."🩺 ตำราสุขภาพประจำไพ่ (ตรวจพบคำถามเรื่องสุขภาพ — ใช้ทำนายให้เจาะจง-แม่น-หลากหลาย)\n"
@@ -2512,6 +2494,55 @@ class CelticCrossService
             ."• ❌ ห้ามขายความกลัว — เตือนเฉพาะที่ไพ่ชี้จริง ห้ามปั้นโรคที่ไพ่ไม่ได้บอกเพื่อให้ตกใจ\n"
             ."• 🧠 ถ้าไพ่ชี้สุขภาพจิต (ดาบเก้า/ถ้วยห้า ฯลฯ) + ลูกค้าดูเปราะบาง → อ่อนโยน ดึงสติ ให้กำลังใจ\n"
             ."  + ถ้าพบสัญญาณวิกฤต (คิดทำร้ายตัวเอง/ซึมหนัก) → แนะปรึกษาแพทย์/สายด่วนสุขภาพจิต 1323\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
+     * 🧠 (2026-06-01) คลังความรู้สายมู (ฮวงจุ้ย/เจ้าที่/องค์เทพ) — ทำนายตรงตามหน้าไพ่
+     *
+     * User directive 2026-06-01: "สร้างตำราองค์ความรู้ ฮวงจุ้ย เจ้าที่ องค์เทพ มนต์ดำ
+     *   แบบรู้ลึกรู้จริง ตอบให้ตรงจุดตามไพ่ที่เปิด แทนคำตอบกว้าง" + "เป็น RAG ที่แอดมินแก้/เพิ่มได้"
+     *
+     * Detect-based: inject เฉพาะหมวดที่ลูกค้าถาม (ฮวงจุ้ย/เจ้าที่/องค์เทพ) — ดึงจากคลัง RAG
+     *   ([[App\Services\FortuneKnowledgeService]] : DB → fallback config) → ลูกค้าทั่วไปไม่เปลือง token
+     *   (มนต์ดำมี [[buildBlackMagicDirective]] แยก — append ความรู้ไสยศาสตร์จาก RAG ในนั้น)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildMuKnowledgeDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    {
+        // settings gate — admin ปิดได้
+        if (! (bool) ($this->settings->enable_celtic_mu_knowledge ?? true)) {
+            return '';
+        }
+
+        $svc = app(\App\Services\FortuneKnowledgeService::class);
+        $categories = $svc->detectMuCategories($userQuestion.' '.$previousContext);
+        if (empty($categories)) {
+            return '';
+        }
+
+        $knowledge = $svc->muKnowledgeForCategories($categories);
+        if (trim($knowledge) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🧠 คลังความรู้สายมู (ตรวจพบคำถามหัวข้อนี้ — ใช้ตอบให้รู้ลึกรู้จริง ตามหน้าไพ่)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ด้านล่างคือองค์ความรู้ที่เกี่ยวกับคำถาม (จากคลังความรู้ของแม่หมอ) — ใช้ \"ประกอบการอ่านไพ่\" ให้เจาะจง:\n\n"
+            .$knowledge."\n\n"
+
+            ."🎯 *วิธีใช้ (card-first — ตอบตามหน้าไพ่ ไม่ตอบกว้าง):*\n"
+            ."• อ่านจากไพ่ที่เปิดก่อน → ไพ่ชี้เรื่องอะไร/ทิศไหน/องค์ไหน/รุนแรงแค่ไหน → ค่อยดึงความรู้ข้างบนมาเสริมให้ตรง\n"
+            ."• ทุกคำแนะนำต้อง \"งอกจากไพ่ใบใดที่ตำแหน่งใด\" + เจาะจง (ทิศ/องค์เทพ/ของบูชา/วิธีแก้ ที่ทำได้จริง)\n"
+            ."  ❌ ห้ามตอบกว้างๆ \"ทำบุญเยอะๆ / ไหว้พระเถอะ\" — ลูกค้าจ่าย 99฿ ต้องได้คำเฉพาะตามไพ่ของเขา\n"
+            ."• 🔎 โหมดนักสืบ: ถามรายละเอียด (บ้าน/ทิศ/ที่ดิน/เรื่องที่กังวล) [TYPE:D] ไม่นับ → แล้วผูกไพ่+ความรู้ตอบให้ลึก\n\n"
+
+            ."⚠️ *จรรยาบรรณ (เหมือนสายมูทั่วไป):*\n"
+            ."• ใช้ความรู้ \"เท่าที่ตรงกับไพ่+คำถาม\" — ไม่รู้แน่ (คาถา/ฤกษ์เป๊ะ) อย่าแต่งปลอม ให้แนะปรึกษาผู้รู้/พระ\n"
+            ."• ❌ ห้ามขายความกลัว / ❌ ห้ามแนะพิธีแพงเกินจำเป็น — เน้นทำเองได้ + ทำดีเป็นหลัก\n"
+            ."• คนเปราะบาง/เชื่อมูจนหลุด → ดึงสติ: มูเป็นตัวเสริม แกนจริงคือการกระทำ/การตัดสินใจ\n"
             ."━━━━━━━━━━━━━━━━━\n\n";
     }
 
@@ -3123,6 +3154,7 @@ class CelticCrossService
             .$this->buildCardFirstMandate()
             // 🩺 (2026-06-01) ตำราสุขภาพ — ถ้ามีคำถามสุขภาพในรอบนี้ ให้บทสรุปเทียบอวัยวะ/อาการตามไพ่
             .$this->buildHealthDirective($reading, $questions->pluck('question')->implode(' '))
+            .$this->buildMuKnowledgeDirective($reading, $questions->pluck('question')->implode(' '))
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"

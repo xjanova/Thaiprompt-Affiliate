@@ -242,6 +242,8 @@ class FortuneTellingSetting extends Model
         'enable_celtic_black_magic_mode',
         // 🩺 (2026-06-01) ตำราสุขภาพประจำไพ่ — เทียบอวัยวะ/โรค/อาการ/ความรุนแรงตามหน้าไพ่
         'enable_celtic_health_tome',
+        // 🧠 (2026-06-01) คลังความรู้สายมู (ฮวงจุ้ย/เจ้าที่/องค์เทพ/ไสยศาสตร์) จาก RAG
+        'enable_celtic_mu_knowledge',
         // 🛡️ (2026-05-27) Abuse Clapback — แม่หมอ savage mode ตอบลูกค้าหยาบคาย
         'enable_abuse_clapback',
         'abuse_clapback_use_grok',
@@ -406,6 +408,7 @@ class FortuneTellingSetting extends Model
         'enable_celtic_enrichment' => 'boolean',
         'enable_celtic_black_magic_mode' => 'boolean',
         'enable_celtic_health_tome' => 'boolean',
+        'enable_celtic_mu_knowledge' => 'boolean',
         // 🛡️ (2026-05-27) Abuse Clapback toggles
         'enable_abuse_clapback' => 'boolean',
         'abuse_clapback_use_grok' => 'boolean',
@@ -528,6 +531,8 @@ class FortuneTellingSetting extends Model
         'enable_celtic_black_magic_mode' => true,
         // 🩺 (2026-06-01) ตำราสุขภาพประจำไพ่ — default true (admin ปิดได้ผ่าน DB UPDATE)
         'enable_celtic_health_tome' => true,
+        // 🧠 (2026-06-01) คลังความรู้สายมู — default true (admin ปิดได้ผ่าน DB UPDATE)
+        'enable_celtic_mu_knowledge' => true,
         // 🛡️ (2026-05-27) Abuse Clapback — default ปิด (admin opt-in เท่านั้น)
         'enable_abuse_clapback' => false,
         'abuse_clapback_use_grok' => true,

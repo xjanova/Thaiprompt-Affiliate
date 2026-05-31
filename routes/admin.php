@@ -72,6 +72,7 @@ use App\Http\Controllers\Admin\FortuneCelticCrossController;
 use App\Http\Controllers\Admin\FortuneChannelController;
 use App\Http\Controllers\Admin\FortuneCommissionController;
 use App\Http\Controllers\Admin\FortuneDebugToolsController;
+use App\Http\Controllers\Admin\FortuneKnowledgeController;
 use App\Http\Controllers\Admin\FortuneHoroscopeController;
 use App\Http\Controllers\Admin\FortuneMarketingController;
 use App\Http\Controllers\Admin\FortuneMysticController;
@@ -4107,6 +4108,17 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{qa}/reembed', [FortuneAdminQAController::class, 'reembed'])->name('reembed');
         Route::delete('/{qa}', [FortuneAdminQAController::class, 'destroy'])->name('destroy');
         Route::post('/settings', [FortuneAdminQAController::class, 'updateSettings'])->name('settings');
+    });
+
+    // 🧠 (2026-06-01) คลังความรู้แม่หมอ (RAG) — สุขภาพ/ฮวงจุ้ย/เจ้าที่/องค์เทพ/ไสยศาสตร์
+    Route::prefix('knowledge')->name('knowledge.')->group(function () {
+        Route::get('/', [FortuneKnowledgeController::class, 'index'])->name('index');
+        Route::get('/create', [FortuneKnowledgeController::class, 'create'])->name('create');
+        Route::post('/', [FortuneKnowledgeController::class, 'store'])->name('store');
+        Route::get('/{knowledge}/edit', [FortuneKnowledgeController::class, 'edit'])->name('edit');
+        Route::put('/{knowledge}', [FortuneKnowledgeController::class, 'update'])->name('update');
+        Route::delete('/{knowledge}', [FortuneKnowledgeController::class, 'destroy'])->name('destroy');
+        Route::post('/{knowledge}/toggle', [FortuneKnowledgeController::class, 'toggle'])->name('toggle');
     });
 
     // ระบบเทคโอเวอร์ (Takeover Control) — แม่หมอ/แอดมินคุยแทน AI
