@@ -269,7 +269,9 @@ class FortuneSettingsController extends Controller
             // 🧾 (2026-05-31) SlipOK slip verification (fallback เมื่อ SMS checker ไม่พบ)
             'enable_slipok_verify' => 'boolean',
             'slipok_branch_id' => 'nullable|string|max:64',
-            'slipok_api_key' => 'nullable|string|max:255',
+            // ⚠️ (2026-05-31) SlipOK API key เป็น token ยาว (JWT-like > 255) — column เป็น text รองรับได้
+            //   เดิม max:255 ทำให้ save เงียบ ๆ ไม่ผ่าน (แต่ปุ่ม test ไม่เช็คความยาว → ลวงว่า OK)
+            'slipok_api_key' => 'nullable|string|max:2000',
             'slipok_min_amount' => 'nullable|numeric|min:0|max:100000',
             'slipok_fallback_delay_seconds' => 'nullable|integer|min:10|max:600',
             'slipok_use_log' => 'boolean',
