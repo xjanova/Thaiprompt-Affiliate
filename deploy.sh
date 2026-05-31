@@ -1710,9 +1710,23 @@ if command -v systemctl >/dev/null 2>&1; then
             break
         fi
     done
-    if [ "$PHP_FPM_RESTARTED" = false ] && [ "$PHP_FPM_STATUS" = "⏭️ ไม่พบ" ]; then
-        print_warning "  ⚠ ไม่พบ PHP-FPM service ที่ทำงานอยู่"
-        PHP_FPM_STATUS="⚠️ ไม่พบ service"
+    # 🛡️ (2026-05-31) Fail-LOUD + hardcoded fallback — กัน silent-skip ตลอดไป (เคส R4543 opcache stale)
+    #   ถ้า loop ไม่เจอ service ใด ๆ (เช่นวันหลังย้ายชื่อเป็น php-fpm84) → ลอง php-fpm83 ตรง ๆ
+    #   แล้ว "ตะโกนดัง ๆ" แทนที่จะเงียบ — เพราะ silent-skip = โค้ดใหม่ไม่ทำงานโดยไม่มีใครรู้
+    if [ "$PHP_FPM_RESTARTED" = false ]; then
+        print_warning "  ⚠ loop ไม่เจอ/reload PHP-FPM ไม่สำเร็จ — ลอง php-fpm83 (last resort)..."
+        if sudo systemctl reload php-fpm83.service 2>/dev/null || sudo systemctl restart php-fpm83.service 2>/dev/null; then
+            print_success "  ✓ php-fpm83 reloaded (fallback) — OPcache cleared"
+            PHP_FPM_STATUS="✅ php-fpm83 reloaded (fallback)"
+            PHP_FPM_RESTARTED=true
+        fi
+    fi
+    if [ "$PHP_FPM_RESTARTED" = false ]; then
+        print_error "  ════════════════════════════════════════════════════════"
+        print_error "  ✗✗✗ PHP-FPM ไม่ถูก reload — โค้ดใหม่จะไม่ทำงาน (opcache รันของเก่า)!"
+        print_error "  ✗✗✗ แก้ service name ใน deploy.sh (Step 18) แล้ว deploy ใหม่ทันที"
+        print_error "  ════════════════════════════════════════════════════════"
+        PHP_FPM_STATUS="❌ NOT RELOADED — opcache STALE (โค้ดใหม่ไม่ทำงาน!)"
     fi
 elif command -v service >/dev/null 2>&1; then
     for svc in php-fpm83 php-fpm82 php-fpm81 php8.3-fpm php8.2-fpm php8.1-fpm php-fpm; do
