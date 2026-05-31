@@ -11015,10 +11015,10 @@ class FortuneConversationService
             return $fuzzyResult;
         }
 
-        // 🧾 (2026-05-31) SlipOK on-ping — ลูกค้า ping ขณะมีสลิปเก็บไว้ + ยังไม่ตัด → ตรวจทันที
-        //   (SMS ไม่พบ → ระบบ SMS อาจมีปัญหา → ใช้สลิปที่ลูกค้าส่งมาตรวจกับ SlipOK)
-        if (! empty($reading->slip_image_path) && empty($reading->slipok_verified_at)) {
-            $slipResult = $this->trySlipOkVerifyForReading($reading);
+        // 🧾 (2026-05-31) SlipOK on-ping — ลูกค้าเคลมจ่าย + SMS ไม่พบ → ตรวจสลิป (รวม look-back)
+        //   askIfNoSlip=true: ถ้าหาสลิปไม่เจอเลย → ขอให้ส่งสลิป (แทนข้อความ "ยังไม่พบยอด" เฉย ๆ)
+        if (empty($reading->slipok_verified_at)) {
+            $slipResult = $this->trySlipOkVerifyForReading($reading, null, null, true);
             if ($slipResult !== null) {
                 return $slipResult;
             }
@@ -11443,6 +11443,13 @@ class FortuneConversationService
         $relPath = 'fortune/slips/'.$reading->id.'_'.now()->timestamp.'.jpg';
         \Illuminate\Support\Facades\Storage::disk('local')->put($relPath, $bytes);
 
+        // 🗂️ (2026-05-31) เก็บ candidate ใน cache (look-back ย้อน 10) — keyed by user, TTL วันนี้
+        $pUserId = $reading->facebook_user_id ?: $reading->platform_user_id;
+        if (! empty($pUserId)) {
+            $pPlatform = $reading->platform ?? (preg_match('/^U[0-9a-f]{32}$/i', (string) $pUserId) ? 'line' : 'facebook');
+            $this->pushSlipCandidate($pPlatform, $pUserId, $relPath);
+        }
+
         $reading->forceFill([
             'slip_image_path' => $relPath,
             'slip_received_at' => now(),
@@ -11482,13 +11489,64 @@ class FortuneConversationService
     }
 
     /**
+     * 🗂️ (2026-05-31) เก็บ path สลิปล่าสุดของ user ไว้ใน cache (look-back ย้อน 10 — user spec)
+     *   TTL = สิ้นวัน (today only) — กันใช้สลิปข้ามวัน
+     */
+    protected function pushSlipCandidate(string $platform, string $userId, string $relPath): void
+    {
+        try {
+            $key = 'fortune:slip_files:'.$platform.':'.$userId;
+            $list = \Illuminate\Support\Facades\Cache::get($key, []);
+            if (! is_array($list)) {
+                $list = [];
+            }
+            // newest first, ไม่ซ้ำ, cap 10
+            array_unshift($list, $relPath);
+            $list = array_values(array_unique($list));
+            $list = array_slice($list, 0, 10);
+            \Illuminate\Support\Facades\Cache::put($key, $list, now()->endOfDay());
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+    }
+
+    /**
+     * 🔁 ดึง path สลิป candidate ล่าสุด (newest first) สำหรับ look-back
+     *
+     * @return array<int,string> relPaths
+     */
+    protected function getSlipCandidatePaths(string $platform, string $userId): array
+    {
+        try {
+            $list = \Illuminate\Support\Facades\Cache::get('fortune:slip_files:'.$platform.':'.$userId, []);
+
+            return is_array($list) ? $list : [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * 🙏 ข้อความขอสลิป (ใช้เมื่อไม่เจอสลิป/รูปไม่ใช่สลิป)
+     */
+    protected function askForSlipMessage(FortuneReading $reading): array
+    {
+        return [
+            'action' => 'slipok_ask_slip',
+            'message' => "🙏 ขอบคุณค่ะ — เพื่อยืนยันการโอน รบกวนเจ้าชะตา*ส่งรูปสลิปการโอน*มาให้แม่หมอตรวจหน่อยนะคะ\n\n"
+                .'📸 ส่งเป็น *รูปสลิป* (ที่มี QR/เลขอ้างอิง) — ระบบจะตรวจกับธนาคารแล้วตัดบิลให้อัตโนมัติค่ะ ✨',
+            'reading' => $reading,
+        ];
+    }
+
+    /**
      * 🔎 ลอง verify สลิปที่เก็บไว้ด้วย SlipOK แล้วตัดบิลถ้าผ่าน
      *
      * เรียกจาก: VerifySlipFallbackJob (หน่วง 1 นาที) + on-ping (handlePendingPayment / handleCelticPendingPayment)
      *
      * @return array|null response (ส่งผ่าน ChannelManager) หรือ null = ไม่เข้าเงื่อนไข/ปล่อย flow เดิม
      */
-    public function trySlipOkVerifyForReading(FortuneReading $reading, ?string $platform = null, ?string $userId = null): ?array
+    public function trySlipOkVerifyForReading(FortuneReading $reading, ?string $platform = null, ?string $userId = null, bool $askIfNoSlip = false): ?array
     {
         try {
             $svc = new \App\Services\Fortune\SlipOkService($this->settings);
@@ -11508,21 +11566,33 @@ class FortuneConversationService
             if ($reading->slipok_verified_at) {
                 return null;
             }
-            if (empty($reading->slip_image_path)) {
-                return null;
-            }
 
-            $abs = \Illuminate\Support\Facades\Storage::disk('local')->path($reading->slip_image_path);
-            if (! is_file($abs)) {
-                return null;
-            }
-
-            $platform = $platform ?: $this->detectPlatformFromUserId($reading->facebook_user_id ?? $reading->line_user_id ?? '');
-            $userId = $userId ?: ($platform === 'line'
-                ? ($reading->line_user_id ?? $reading->facebook_user_id)
-                : ($reading->facebook_user_id ?? $reading->line_user_id));
+            $platform = $platform ?: $this->detectPlatformFromUserId($reading->facebook_user_id ?? $reading->platform_user_id ?? '');
+            $userId = $userId ?: ($reading->facebook_user_id ?: $reading->platform_user_id);
             if (empty($userId)) {
                 return null;
+            }
+
+            // 🔎 หาไฟล์สลิป: ของบิลนี้ก่อน → ไม่มีก็ย้อน candidate cache (look-back 10, today)
+            $abs = null;
+            if (! empty($reading->slip_image_path)) {
+                $p = \Illuminate\Support\Facades\Storage::disk('local')->path($reading->slip_image_path);
+                if (is_file($p)) {
+                    $abs = $p;
+                }
+            }
+            if (! $abs) {
+                foreach ($this->getSlipCandidatePaths($platform, $userId) as $cand) {
+                    $p = \Illuminate\Support\Facades\Storage::disk('local')->path($cand);
+                    if (is_file($p)) {
+                        $abs = $p;
+                        break;
+                    }
+                }
+            }
+            if (! $abs) {
+                // ไม่เจอสลิปเลย → ถ้าลูกค้าเคลมจ่าย (on-ping) → ขอสลิป ; ไม่งั้นปล่อย flow เดิม
+                return $askIfNoSlip ? $this->askForSlipMessage($reading) : null;
             }
 
             $verify = $svc->verifyByFile($abs);
@@ -11578,9 +11648,28 @@ class FortuneConversationService
                         'reading' => $reading,
                     ];
 
+                case \App\Services\Fortune\SlipOkService::DECISION_STALE:
+                    // สลิปไม่ใช่ของวันนี้ (user spec: รับเฉพาะวันนี้)
+                    $this->cleanupStoredSlip($reading);
+
+                    return [
+                        'action' => 'slipok_stale',
+                        'message' => "🙏 แม่หมอรับตรวจเฉพาะ*สลิปของวันนี้*นะคะ\n\n"
+                            .'ถ้าเจ้าชะตาโอนวันนี้จริง รบกวนส่งสลิปใบล่าสุดมาใหม่ หรือพิมพ์ "คุยกับแม่หมอ" ค่ะ',
+                        'reading' => $reading,
+                    ];
+
                 case \App\Services\Fortune\SlipOkService::DECISION_NO_QR:
-                    // สลิปไม่มี QR (ภาพ crop / สลิปเก่า) → ตรวจไม่ได้ → ปล่อย flow เดิม (รอ SMS / แอดมิน)
-                    //   ไม่ลบสลิป เผื่อลูกค้าส่งใหม่ทับ
+                    // รูปไม่มี QR (รูปยกนิ้ว / ภาพ crop / ไม่ใช่สลิป)
+                    if ($askIfNoSlip) {
+                        return [
+                            'action' => 'slipok_not_slip',
+                            'message' => "🙏 รูปที่ส่งมายังไม่ใช่สลิปการโอนค่ะ (อ่าน QR ไม่เจอ)\n\n"
+                                .'📸 รบกวนส่ง*รูปสลิปจริง*ที่มี QR / เลขอ้างอิง มาให้แม่หมอตรวจนะคะ ✨',
+                            'reading' => $reading,
+                        ];
+                    }
+                    // 60s job (ไม่ ask) → ปล่อย flow เดิม (รอ SMS / แอดมิน) — fall through
                 case \App\Services\Fortune\SlipOkService::DECISION_QUOTA:
                 case \App\Services\Fortune\SlipOkService::DECISION_ERROR:
                 default:

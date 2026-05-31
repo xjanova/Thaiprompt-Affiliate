@@ -969,10 +969,11 @@ trait CelticCrossConversationTrait
                 }
             }
 
-            // 🧾 (2026-05-31) SlipOK on-ping — SMS ไม่พบ + มีสลิปเก็บไว้ → ตรวจสลิปทันที
-            if (! empty($reading->slip_image_path) && empty($reading->slipok_verified_at)
+            // 🧾 (2026-05-31) SlipOK on-ping — SMS ไม่พบ → ตรวจสลิป (รวม look-back 10 ข้อความ)
+            //   askIfNoSlip=true: หาสลิปไม่เจอ → ขอให้ส่งสลิป
+            if (empty($reading->slipok_verified_at)
                 && method_exists($this, 'trySlipOkVerifyForReading')) {
-                $slipResult = $this->trySlipOkVerifyForReading($reading);
+                $slipResult = $this->trySlipOkVerifyForReading($reading, null, null, true);
                 if ($slipResult !== null) {
                     return $slipResult;
                 }

@@ -43,6 +43,8 @@ class SlipOkService
 
     public const DECISION_BANK_DELAY = 'bank_delay';
 
+    public const DECISION_STALE = 'stale';
+
     public const DECISION_ERROR = 'error';
 
     public const DECISION_DISABLED = 'disabled';
@@ -238,7 +240,37 @@ class SlipOkService
             ];
         }
 
+        // ── ด่าน 5: สลิปวันนี้เท่านั้น (user spec 2026-05-31) ─────
+        if (! $this->isTransToday($verify)) {
+            return [
+                'decision' => self::DECISION_STALE,
+                'reason' => 'สลิปไม่ใช่ของวันนี้ ('.($verify['trans_timestamp'] ?? '-').')',
+                'verify' => $verify,
+            ];
+        }
+
         return ['decision' => self::DECISION_APPROVE, 'reason' => 'ผ่านทุกด่าน', 'verify' => $verify];
+    }
+
+    /**
+     * 📅 สลิปเป็นของวันนี้ไหม (โซนเวลาไทย) — user spec: รับเฉพาะสลิปวันนี้
+     *   ไม่มี timestamp → ไม่บล็อก (เชื่อว่า SlipOK verify แล้ว)
+     */
+    protected function isTransToday(array $verify): bool
+    {
+        $ts = $verify['trans_timestamp'] ?? null;
+        if (empty($ts)) {
+            return true;
+        }
+
+        try {
+            $slipDate = \Carbon\Carbon::parse($ts)->setTimezone('Asia/Bangkok')->toDateString();
+            $today = \Carbon\Carbon::now('Asia/Bangkok')->toDateString();
+
+            return $slipDate === $today;
+        } catch (\Throwable $e) {
+            return true; // parse ไม่ได้ → ไม่บล็อก
+        }
     }
 
     /**
@@ -248,10 +280,14 @@ class SlipOkService
      */
     protected function minAmountForReading(FortuneReading $reading): float
     {
-        $floor = (float) ($this->settings->slipok_min_amount ?? 99.00);
+        // ราคาบิลจริง (Celtic 99 / Deep 39) — ลูกค้าต้องโอน ≥ ราคาสินค้านั้น
         $basePrice = (float) ($reading->uniquePaymentAmount?->base_amount ?? 0);
+        if ($basePrice > 0) {
+            return $basePrice;
+        }
 
-        return max($floor, $basePrice);
+        // ไม่มี UPA (เช่นเคสสร้างบิลจากสลิป) → ใช้ floor ขั้นต่ำ (default 99 — user spec "ไม่ต่ำกว่า 99")
+        return (float) ($this->settings->slipok_min_amount ?? 99.00);
     }
 
     /**
