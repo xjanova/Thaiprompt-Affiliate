@@ -2125,6 +2125,31 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 🧾 (2026-05-31) ไม่มีบิล active แต่ลูกค้าเคยพยายามดู Celtic + ส่งสลิป → ตรวจ+กู้ (returning)
+            try {
+                if (! empty($imageUrl) && (new \App\Services\Fortune\SlipOkService($this->settings))->isEnabled()) {
+                    $ret = $this->conversationService->handleReturningSlipImage('facebook', $senderId, $imageUrl, null);
+                    if ($ret !== null) {
+                        $this->channelManager->sendResponse('facebook', $senderId, $ret, [
+                            'from_admin' => true,
+                            'message_tag' => 'POST_PURCHASE_UPDATE',
+                        ]);
+
+                        Log::info('Facebook: returning slip image → ตรวจ+ตอบ', [
+                            'sender_id' => $senderId,
+                            'action' => $ret['action'] ?? null,
+                        ]);
+
+                        return;
+                    }
+                }
+            } catch (\Throwable $retErr) {
+                Log::warning('Facebook: returning slip image ล้มเหลว (non-blocking)', [
+                    'sender_id' => $senderId,
+                    'error' => $retErr->getMessage(),
+                ]);
+            }
+
             // ⚪ (2026-05-01) ไม่มี active reading → silent (ผู้ใช้สั่ง: ห้ามตอบรูปนอกโฟล)
             //    เคสนี้เกิดเมื่อ user ส่งรูปขณะที่กำลังจะหมดอายุ paid window (>30 นาที)
             //    หรือ status เปลี่ยนเป็น COMPLETED ระหว่างที่ส่ง — ไม่อยากรบกวน

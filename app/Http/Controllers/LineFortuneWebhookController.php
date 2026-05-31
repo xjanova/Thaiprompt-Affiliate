@@ -1917,6 +1917,39 @@ class LineFortuneWebhookController extends Controller
                 return;
             }
 
+            // 🧾 (2026-05-31) ไม่มีบิล active แต่เคยพยายามดู Celtic + ส่งสลิป → ตรวจ+กู้ (returning)
+            try {
+                if ((new \App\Services\Fortune\SlipOkService($this->settings))->isEnabled()) {
+                    $b64 = $cachedBase64;
+                    if (empty($b64) && ! empty($messageId)) {
+                        $b64 = $this->downloadLineImageAsBase64($messageId);
+                    }
+                    if (! empty($b64)) {
+                        $ret = $this->conversationService->handleReturningSlipImage('line', $userId, null, $b64);
+                        if ($ret !== null) {
+                            $this->channelManager->sendResponse(
+                                FortuneChannelManager::PLATFORM_LINE,
+                                $userId,
+                                $ret,
+                                ['reply_token' => $replyToken, 'from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']
+                            );
+
+                            Log::info('LINE: returning slip image → ตรวจ+ตอบ', [
+                                'user_id' => $userId,
+                                'action' => $ret['action'] ?? null,
+                            ]);
+
+                            return;
+                        }
+                    }
+                }
+            } catch (\Throwable $retErr) {
+                Log::warning('LINE: returning slip image ล้มเหลว (non-blocking)', [
+                    'user_id' => $userId,
+                    'error' => $retErr->getMessage(),
+                ]);
+            }
+
             // ⚪ ไม่มี active → guidance generic
             $genericMessage = "📸 ได้รับรูปภาพแล้วค่ะ\n\n"
                 ."💡 ถ้าเป็นสลิปการโอน — ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ ไม่ต้องส่งสลิปให้แอดมินค่ะ\n\n"

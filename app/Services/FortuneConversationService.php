@@ -878,6 +878,24 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // 🧾 (2026-05-31) Returning Paid-Claim Early Route
+            // ═══════════════════════════════════════════════════════════════
+            //   ลูกค้าทิ้งไปแล้วกลับมาบอก "โอนแล้ว/ยังไม่ได้ดู" แต่ไม่มีบิล active
+            //   → ตรวจสลิป (look-back) แล้วตัดบิล/เปิดไพ่ ; ไม่มีสลิป → ขอสลิป
+            //   ต้องมาก่อน flow ขาย — กันบอทเสนอขายลูกค้าที่จ่ายแล้ว (เคส entony)
+            try {
+                $rPlatform = $this->currentPlatform ?? $this->detectPlatformFromUserId($facebookUserId);
+                $returningResult = $this->tryReturningPaidSlipCheck($rPlatform, $facebookUserId, $messageText);
+                if ($returningResult !== null) {
+                    return $returningResult;
+                }
+            } catch (\Throwable $rErr) {
+                Log::debug('Fortune: returning paid-claim early-route fail (non-blocking)', [
+                    'error' => $rErr->getMessage(),
+                ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // 📚 (2026-05-09) View-History Early Route
             // ═══════════════════════════════════════════════════════════════
             // ลูกค้าพิมพ์ "อ่านคำทำนายล่าสุด" / "ดูคำทำนาย" / "บิลของฉัน" ฯลฯ
@@ -11529,7 +11547,7 @@ class FortuneConversationService
     /**
      * 🙏 ข้อความขอสลิป (ใช้เมื่อไม่เจอสลิป/รูปไม่ใช่สลิป)
      */
-    protected function askForSlipMessage(FortuneReading $reading): array
+    protected function askForSlipMessage(?FortuneReading $reading = null): array
     {
         return [
             'action' => 'slipok_ask_slip',
@@ -11537,6 +11555,295 @@ class FortuneConversationService
                 .'📸 ส่งเป็น *รูปสลิป* (ที่มี QR/เลขอ้างอิง) — ระบบจะตรวจกับธนาคารแล้วตัดบิลให้อัตโนมัติค่ะ ✨',
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * 🔎 (2026-05-31) ลูกค้าพิมพ์ทำนอง "โอนแล้ว / ยังไม่ได้ดู / ยังไม่ได้รับ"
+     */
+    public function looksLikePaidNotReceived(string $text): bool
+    {
+        if ($this->isPaymentClaimRequest($text)) {
+            return true;
+        }
+        $n = str_replace(' ', '', $this->normalizeUserInput($text));
+        $kw = [
+            'ยังไม่ได้ดู', 'ยังไม่ได้รับ', 'ยังไม่เปิดไพ่', 'ยังไม่ทำนาย', 'ยังไม่ได้ทำนาย',
+            'ไม่ได้คำทำนาย', 'ยังไม่ได้คำทำนาย', 'โอนแล้วไม่', 'จ่ายแล้วไม่', 'โอนเงินแล้วไม่',
+            'ทำไมยังไม่', 'เมื่อไหร่จะได้ดู', 'ยังไม่ดูให้', 'จ่ายไปแล้ว', 'โอนไปแล้ว',
+        ];
+        foreach ($kw as $k) {
+            if (str_contains($n, str_replace(' ', '', $k))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🧾 (2026-05-31) Returning customer — ทิ้งไปแล้วกลับมาบอก "โอนแล้ว/ยังไม่ได้ดู" (ไม่มีบิล active)
+     *   เดิม: บอทเปิด flow ขายใหม่ (แย่). ใหม่: ตรวจสลิปที่เคยส่ง (look-back) → ตัดบิล+เปิดไพ่ ; ไม่มีสลิป → ขอสลิป
+     *
+     * @return array|null response หรือ null = ไม่เข้าเงื่อนไข (ปล่อย flow เดิม)
+     */
+    public function tryReturningPaidSlipCheck(string $platform, string $userId, string $messageText): ?array
+    {
+        try {
+            $svc = new \App\Services\Fortune\SlipOkService($this->settings);
+            if (! $svc->isEnabled() || empty($userId) || ! $this->looksLikePaidNotReceived($messageText)) {
+                return null;
+            }
+
+            // มีบิล active → ปล่อยให้ handler เดิมจัดการ (มี wiring แล้ว)
+            $hasActive = FortuneReading::where('facebook_user_id', $userId)
+                ->whereIn('conversation_status', array_merge(
+                    FortuneReading::PENDING_PAYMENT_STATUSES,
+                    FortuneReading::CELTIC_ACTIVE_STATUSES,
+                    [FortuneReading::STATUS_PAID]
+                ))
+                ->exists();
+            if ($hasActive) {
+                return null;
+            }
+
+            // ต้องเคยพยายามดู Celtic เร็ว ๆ นี้ (กัน fire ใส่ลูกค้าใหม่)
+            $recentCeltic = FortuneReading::where('facebook_user_id', $userId)
+                ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                ->where('created_at', '>=', now()->subDays(2))
+                ->latest()
+                ->first();
+            if (! $recentCeltic) {
+                return null;
+            }
+
+            Log::info('SlipOK: returning paid-claim (no active bill) → ตรวจสลิป look-back', [
+                'user_id' => $userId,
+                'recent_celtic_id' => $recentCeltic->id,
+                'text_preview' => mb_substr($messageText, 0, 40),
+            ]);
+
+            return $this->respondReturningSlip($recentCeltic, $platform, $userId);
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK: tryReturningPaidSlipCheck ล้มเหลว (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🖼️ (2026-05-31) ลูกค้า (ไม่มีบิล active) ส่งรูปสลิป → cache + verify + recover
+     *   เรียกจาก webhook handleSlipImageOnly เมื่อไม่มีบิล active แต่เคยพยายามดู Celtic
+     */
+    public function handleReturningSlipImage(string $platform, string $userId, ?string $url, ?string $base64): ?array
+    {
+        try {
+            $svc = new \App\Services\Fortune\SlipOkService($this->settings);
+            if (! $svc->isEnabled() || empty($userId)) {
+                return null;
+            }
+
+            $recentCeltic = FortuneReading::where('facebook_user_id', $userId)
+                ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                ->where('created_at', '>=', now()->subDays(2))
+                ->latest()
+                ->first();
+            if (! $recentCeltic) {
+                return null;
+            }
+
+            $bytes = null;
+            if (! empty($base64)) {
+                if (str_contains($base64, ',')) {
+                    $base64 = substr($base64, strpos($base64, ',') + 1);
+                }
+                $bytes = base64_decode($base64, true) ?: null;
+            } elseif (! empty($url)) {
+                $resp = \Illuminate\Support\Facades\Http::timeout(20)->get($url);
+                $bytes = $resp->successful() ? $resp->body() : null;
+            }
+            if (empty($bytes) || strlen($bytes) > 6 * 1024 * 1024) {
+                return null;
+            }
+
+            $relPath = 'fortune/slips/u_'.md5($userId).'_'.now()->timestamp.'.jpg';
+            \Illuminate\Support\Facades\Storage::disk('local')->put($relPath, $bytes);
+            $this->pushSlipCandidate($platform, $userId, $relPath);
+
+            return $this->respondReturningSlip($recentCeltic, $platform, $userId);
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK: handleReturningSlipImage ล้มเหลว (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * core: look-back สลิป candidate → verify → recover / reject / ขอสลิป
+     */
+    protected function respondReturningSlip(FortuneReading $recentCeltic, string $platform, string $userId): array
+    {
+        $svc = new \App\Services\Fortune\SlipOkService($this->settings);
+
+        $verify = null;
+        $eval = null;
+        foreach ($this->getSlipCandidatePaths($platform, $userId) as $cand) {
+            $abs = \Illuminate\Support\Facades\Storage::disk('local')->path($cand);
+            if (! is_file($abs)) {
+                continue;
+            }
+            $v = $svc->verifyByFile($abs);
+            $e = $svc->evaluateForReading($recentCeltic, $v);
+            $verify = $v;
+            $eval = $e;
+            if ($e['decision'] === \App\Services\Fortune\SlipOkService::DECISION_APPROVE) {
+                break;
+            }
+        }
+
+        // ไม่มีสลิปใน look-back → ขอสลิป (user spec)
+        if ($verify === null) {
+            return $this->askForSlipMessage($recentCeltic);
+        }
+
+        Log::info('SlipOK: returning verify result', [
+            'reading_id' => $recentCeltic->id,
+            'decision' => $eval['decision'],
+            'amount' => $verify['amount'] ?? null,
+            'transRef' => $verify['transRef'] ?? null,
+        ]);
+
+        switch ($eval['decision']) {
+            case \App\Services\Fortune\SlipOkService::DECISION_APPROVE:
+                return $this->recoverCelticFromVerifiedSlip($recentCeltic, $verify, $platform, $userId);
+
+            case \App\Services\Fortune\SlipOkService::DECISION_DUPLICATE:
+                return [
+                    'action' => 'slipok_duplicate',
+                    'message' => "⚠️ สลิปนี้เคยถูกใช้ยืนยันการชำระไปแล้วค่ะ\n\n"
+                        .'ถ้าโอนใหม่จริง ส่งสลิปใบล่าสุด หรือพิมพ์ "คุยกับแม่หมอ" 🙏',
+                    'reading' => $recentCeltic,
+                ];
+
+            case \App\Services\Fortune\SlipOkService::DECISION_REJECT_RECEIVER:
+                return [
+                    'action' => 'slipok_wrong_receiver',
+                    'message' => "🙏 สลิปที่ส่งมาโอนเข้าบัญชีอื่น ไม่ใช่บัญชีของแม่หมอค่ะ\n"
+                        .'กรุณาโอนเข้าบัญชีที่ระบบแจ้ง แล้วส่งสลิปใหม่นะคะ',
+                    'reading' => $recentCeltic,
+                ];
+
+            case \App\Services\Fortune\SlipOkService::DECISION_REJECT_AMOUNT:
+                return [
+                    'action' => 'slipok_amount_low',
+                    'message' => "🙏 ยอดในสลิปยังไม่ครบค่าครูค่ะ ({$eval['reason']})\n"
+                        .'รบกวนโอนเพิ่มแล้วส่งสลิปใหม่นะคะ',
+                    'reading' => $recentCeltic,
+                ];
+
+            case \App\Services\Fortune\SlipOkService::DECISION_STALE:
+                return [
+                    'action' => 'slipok_stale',
+                    'message' => "🙏 แม่หมอรับตรวจเฉพาะ*สลิปของวันนี้*นะคะ\n"
+                        .'ถ้าโอนวันนี้จริง ส่งสลิปใบล่าสุดมาใหม่ค่ะ',
+                    'reading' => $recentCeltic,
+                ];
+
+            default:
+                // NO_QR / quota / error → ขอสลิปจริง
+                return $this->askForSlipMessage($recentCeltic);
+        }
+    }
+
+    /**
+     * ✅ (2026-05-31) กู้บิล Celtic ของลูกค้าที่กลับมา (สลิปผ่าน SlipOK) → ตัดบิล + เปิดไพ่
+     *   reuse reading เดิม — mark paid + reset cards + onCelticPaymentConfirmed (flow ที่พิสูจน์แล้ว)
+     */
+    protected function recoverCelticFromVerifiedSlip(FortuneReading $reading, array $verify, string $platform, string $userId): array
+    {
+        $transRef = (string) $verify['transRef'];
+
+        try {
+            \App\Models\SlipVerification::updateOrCreate(
+                ['trans_ref' => $transRef],
+                [
+                    'fortune_reading_id' => $reading->id,
+                    'amount' => $verify['amount'],
+                    'sending_bank' => $verify['sending_bank'],
+                    'receiving_bank' => $verify['receiving_bank'],
+                    'receiver_account' => $verify['receiver_account'],
+                    'sender_name' => $verify['sender_name'],
+                    'status' => 'verified',
+                    'raw' => $verify['raw'],
+                    'verified_at' => now(),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK recover: บันทึก SlipVerification ล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id, 'error' => $e->getMessage(),
+            ]);
+        }
+
+        // ตัดบิล + setup Celtic picking (reuse บิลเดิม ไม่สร้างใหม่)
+        $reading->forceFill([
+            'is_paid' => true,
+            'paid_at' => now(),
+            'amount_paid' => $verify['amount'] ?: $reading->amount_paid,
+            'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS,
+            'celtic_questions_used' => 0,
+            'slipok_verified_at' => now(),
+            'slipok_trans_ref' => $transRef,
+        ])->save();
+
+        try {
+            app(\App\Services\CelticCrossService::class)->resetPickedCards($reading);
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+        try {
+            $reading->celticQuestions()->delete();
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
+        // 🧹 ปิด reading อื่นที่ค้าง (เช่น tier_choice ที่บอทเพิ่งเปิดจะขาย) — กันมาบังบิลที่กู้
+        //   ปลอดภัย: ผ่าน hasActive guard มาแล้ว → ไม่มีบิล paid/pending active อื่น
+        try {
+            FortuneReading::where('facebook_user_id', $userId)
+                ->where('id', '!=', $reading->id)
+                ->where('is_paid', false)
+                ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
+                ->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
+        $this->cleanupStoredSlip($reading);
+
+        Log::warning('💎 SlipOK: RECOVERED returning customer + ตัดบิล', [
+            'reading_id' => $reading->id,
+            'amount' => $verify['amount'],
+            'transRef' => $transRef,
+        ]);
+
+        try {
+            $cm = new \App\Services\FortuneChannelManager($this->settings);
+            $this->processAffiliateAndCommissions($reading->fresh(), $platform, $userId, $cm);
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK recover: commission ล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id, 'error' => $e->getMessage(),
+            ]);
+        }
+
+        $resp = $this->onCelticPaymentConfirmed($reading->fresh());
+        $resp['action'] = 'slipok_recovered_celtic';
+
+        return $resp;
     }
 
     /**
