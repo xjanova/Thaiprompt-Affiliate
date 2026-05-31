@@ -11581,6 +11581,34 @@ class FortuneConversationService
     }
 
     /**
+     * 🔎 (2026-06-01) หา Celtic reading ล่าสุดที่ "ค้างไว้ยังไม่ได้ดู" สำหรับ recover ด้วยสลิป
+     *
+     * 🛡️ กันช่องโหว่ req #4 "บิลที่ดูไปแล้วเอามาใช้ใหม่":
+     *   บิลที่ลูกค้าได้รับคำทำนายแล้ว = `is_paid && celtic_questions_used > 0`
+     *   ห้ามนำมา recover ซ้ำ — โดยเฉพาะบิลที่ตัดด้วย SMS (ตัวหลัก) ซึ่ง "ไม่มี" transRef
+     *   ใน slip_verifications → transRef dedup จับไม่ได้ → ลูกค้าส่งสลิปเดิมวันเดียวกันแล้ว
+     *   เปิดไพ่ฟรีรอบสองได้ บั๊กนี้จึงตัดที่นี่: คืนเฉพาะบิลที่ยังไม่ส่งคำทำนาย
+     *   (เคส entony: หมดอายุก่อนได้ดู → questions_used=0 → ยัง recover ได้ตามเดิม)
+     *
+     * @param  string  $userId  facebook_user_id (LINE เก็บใน field เดียวกัน ขึ้นต้น U)
+     * @return FortuneReading|null บิลที่ recover ได้ หรือ null = ไม่มี/ดูไปแล้วทั้งหมด
+     */
+    protected function findRecoverableCelticReading(string $userId): ?FortuneReading
+    {
+        return FortuneReading::where('facebook_user_id', $userId)
+            ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+            ->where('created_at', '>=', now()->subDays(2))
+            // ❌ ข้ามบิลที่ "ดูไปแล้ว" (จ่าย + ใช้คำถามอย่างน้อย 1 ข้อ) — กันเปิดซ้ำฟรี
+            ->where(function ($q) {
+                $q->where('is_paid', false)
+                    ->orWhereNull('celtic_questions_used')
+                    ->orWhere('celtic_questions_used', '<=', 0);
+            })
+            ->latest()
+            ->first();
+    }
+
+    /**
      * 🧾 (2026-05-31) Returning customer — ทิ้งไปแล้วกลับมาบอก "โอนแล้ว/ยังไม่ได้ดู" (ไม่มีบิล active)
      *   เดิม: บอทเปิด flow ขายใหม่ (แย่). ใหม่: ตรวจสลิปที่เคยส่ง (look-back) → ตัดบิล+เปิดไพ่ ; ไม่มีสลิป → ขอสลิป
      *
@@ -11606,12 +11634,8 @@ class FortuneConversationService
                 return null;
             }
 
-            // ต้องเคยพยายามดู Celtic เร็ว ๆ นี้ (กัน fire ใส่ลูกค้าใหม่)
-            $recentCeltic = FortuneReading::where('facebook_user_id', $userId)
-                ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
-                ->where('created_at', '>=', now()->subDays(2))
-                ->latest()
-                ->first();
+            // ต้องเคยพยายามดู Celtic เร็ว ๆ นี้ + "ยังไม่ได้ดู" (กัน fire ใส่ลูกค้าใหม่ + กันเปิดบิลที่ดูไปแล้วซ้ำ)
+            $recentCeltic = $this->findRecoverableCelticReading($userId);
             if (! $recentCeltic) {
                 return null;
             }
@@ -11645,11 +11669,8 @@ class FortuneConversationService
                 return null;
             }
 
-            $recentCeltic = FortuneReading::where('facebook_user_id', $userId)
-                ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
-                ->where('created_at', '>=', now()->subDays(2))
-                ->latest()
-                ->first();
+            // กู้เฉพาะบิลที่ "ยังไม่ได้ดู" — กันนำสลิปมาเปิดบิลที่ทำนายไปแล้วซ้ำ (req #4)
+            $recentCeltic = $this->findRecoverableCelticReading($userId);
             if (! $recentCeltic) {
                 return null;
             }
@@ -11768,11 +11789,30 @@ class FortuneConversationService
     {
         $transRef = (string) $verify['transRef'];
 
+        // 🛡️ defense-in-depth (req #4): ห้าม recover บิลที่ "ดูไปแล้ว" (จ่าย + ใช้คำถามแล้ว)
+        //   ปกติถูกกรองที่ findRecoverableCelticReading แล้ว — กันไว้อีกชั้นเผื่อ call site อื่น
+        if ($reading->is_paid && (int) ($reading->celtic_questions_used ?? 0) > 0) {
+            Log::warning('🛑 SlipOK recover: ปฏิเสธ — บิลนี้เปิดไพ่/ทำนายไปแล้ว (กันเปิดซ้ำฟรี)', [
+                'reading_id' => $reading->id,
+                'questions_used' => $reading->celtic_questions_used,
+                'transRef' => $transRef,
+            ]);
+
+            return [
+                'action' => 'slipok_already_read',
+                'message' => "🙏 บิลนี้แม่หมอเปิดไพ่ทำนายให้เรียบร้อยแล้วนะคะ\n\n"
+                    .'ถ้าต้องการดูดวงรอบใหม่ พิมพ์ "ดูดวง" เพื่อเริ่มรายการใหม่ หรือพิมพ์ "คุยกับแม่หมอ" ค่ะ ✨',
+                'reading' => $reading,
+            ];
+        }
+
         try {
             \App\Models\SlipVerification::updateOrCreate(
                 ['trans_ref' => $transRef],
                 [
                     'fortune_reading_id' => $reading->id,
+                    'consumed_by_platform' => $platform,   // 🕵️ audit (req #5): ใคร (chat user) ใช้สลิปใบนี้
+                    'consumed_by_user_id' => $userId,
                     'amount' => $verify['amount'],
                     'sending_bank' => $verify['sending_bank'],
                     'receiving_bank' => $verify['receiving_bank'],
@@ -11788,6 +11828,9 @@ class FortuneConversationService
                 'reading_id' => $reading->id, 'error' => $e->getMessage(),
             ]);
         }
+
+        // 🕵️ (req #5) audit + เตือนถ้าสลิปน่าสงสัยว่าเป็นของคนอื่น — ไม่ reject
+        $this->flagSuspiciousSlip($reading, $verify, $platform, $userId);
 
         // ตัดบิล + setup Celtic picking (reuse บิลเดิม ไม่สร้างใหม่)
         $reading->forceFill([
@@ -11844,6 +11887,98 @@ class FortuneConversationService
         $resp['action'] = 'slipok_recovered_celtic';
 
         return $resp;
+    }
+
+    /**
+     * 🕵️ (2026-06-01, req #5) ตรวจรูปแบบ "สลิปของคนอื่น" → ตั้งธงเตือน + แจ้งแอดมิน (ไม่ reject)
+     *
+     * โหมด audit + เตือน (user spec): เปิดไพ่ให้ลูกค้าตามปกติเสมอ ไม่ปฏิเสธ
+     * แต่ถ้าเจอรูปแบบน่าสงสัย ตั้งธง flagged_review + แจ้งแอดมินให้ตรวจย้อนหลังได้:
+     *   (1) ชื่อผู้โอนเดียวกัน เคยถูกใช้โดยลูกค้า chat คนอื่น → อาจมีคนเอาสลิปคนอื่นมาส่ง
+     *   (2) ลูกค้า chat คนเดียว ใช้สลิปจากหลายชื่อผู้โอนใน 24 ชม. → อาจรวบรวมสลิปคนอื่น
+     *
+     * ⚠️ จงใจไม่ reject — กัน false-reject ลูกค้าจริงที่โอนจากบัญชีญาติ/คนอื่นแทน
+     *
+     * @param  FortuneReading  $reading  บิลที่เพิ่งตัด
+     * @param  array  $verify  ผล verify จาก SlipOK (ต้องมี transRef + sender_name)
+     */
+    protected function flagSuspiciousSlip(FortuneReading $reading, array $verify, string $platform, string $userId): void
+    {
+        try {
+            $transRef = trim((string) ($verify['transRef'] ?? ''));
+            $sender = trim((string) ($verify['sender_name'] ?? ''));
+            if ($transRef === '' || empty($userId)) {
+                return;
+            }
+
+            $reasons = [];
+
+            // (1) ชื่อผู้โอนเดียวกัน เคยถูกใช้โดย chat user คนอื่น (ยกเว้นสลิปใบนี้เอง)
+            if ($sender !== '') {
+                $otherUsers = \App\Models\SlipVerification::where('sender_name', $sender)
+                    ->where('trans_ref', '!=', $transRef)
+                    ->whereNotNull('consumed_by_user_id')
+                    ->where('consumed_by_user_id', '!=', $userId)
+                    ->distinct()
+                    ->pluck('consumed_by_user_id');
+                if ($otherUsers->isNotEmpty()) {
+                    $reasons[] = 'ชื่อผู้โอน "'.$sender.'" เคยใช้กับลูกค้า chat อื่น '.$otherUsers->count().' ราย';
+                }
+            }
+
+            // (2) chat user คนเดียว ใช้สลิปจากหลายชื่อผู้โอนใน 24 ชม.
+            $distinctSenders = \App\Models\SlipVerification::where('consumed_by_user_id', $userId)
+                ->where('verified_at', '>=', now()->subHours(24))
+                ->whereNotNull('sender_name')
+                ->where('sender_name', '!=', '')
+                ->distinct()
+                ->pluck('sender_name');
+            if ($distinctSenders->count() >= 2) {
+                $reasons[] = 'ลูกค้า chat คนนี้ใช้สลิปจาก '.$distinctSenders->count().' ชื่อผู้โอนต่างกันใน 24 ชม.';
+            }
+
+            if (empty($reasons)) {
+                return;
+            }
+
+            $reasonText = mb_substr(implode(' | ', $reasons), 0, 250);
+
+            // ตั้งธงเตือน (ไม่ reject — เปิดไพ่ให้ลูกค้าแล้ว)
+            try {
+                \App\Models\SlipVerification::where('trans_ref', $transRef)->update([
+                    'flagged_review' => true,
+                    'flag_reason' => $reasonText,
+                ]);
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+
+            Log::warning('🚩 SlipOK: สลิปน่าสงสัยว่าเป็นของคนอื่น (audit-only, ไม่ reject)', [
+                'reading_id' => $reading->id,
+                'transRef' => $transRef,
+                'consumed_by_user_id' => $userId,
+                'platform' => $platform,
+                'sender' => $sender,
+                'reasons' => $reasons,
+            ]);
+
+            // เตือนแอดมินผ่าน LINE alert channel (ช่องเดียวกับ fuzzy payment)
+            try {
+                app(\App\Services\LineAlertService::class)->alertSystemError('🚩 SlipOK: สลิปน่าสงสัย (อาจเป็นของคนอื่น)', [
+                    'detail' => 'บิล: '.($reading->bill_reference ?? '-')." (#{$reading->id})\n"
+                        .'ลูกค้า: '.($reading->facebook_user_name ?? $userId)." [{$platform}]\n"
+                        .'ผู้โอน: '.($sender !== '' ? $sender : '-')."\n"
+                        .'ยอด: ฿'.number_format((float) ($verify['amount'] ?? 0), 2)."\n"
+                        ."เหตุ: {$reasonText}\n"
+                        ."⚠️ เปิดไพ่ให้ลูกค้าแล้ว (โหมด audit ไม่ปฏิเสธ) — ตรวจสอบ: /admin/sms-payment/orders/{$reading->id}",
+                    'reading_id' => $reading->id,
+                ]);
+            } catch (\Throwable $e) {
+                Log::debug('SlipOK: แจ้งแอดมินสลิปน่าสงสัยล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+            }
+        } catch (\Throwable $e) {
+            Log::debug('SlipOK: flagSuspiciousSlip ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -12011,6 +12146,8 @@ class FortuneConversationService
                 ['trans_ref' => $transRef],
                 [
                     'fortune_reading_id' => $reading->id,
+                    'consumed_by_platform' => $platform,   // 🕵️ audit (req #5): ใคร (chat user) ใช้สลิปใบนี้
+                    'consumed_by_user_id' => $userId,
                     'amount' => $verify['amount'],
                     'sending_bank' => $verify['sending_bank'],
                     'receiving_bank' => $verify['receiving_bank'],
@@ -12027,6 +12164,9 @@ class FortuneConversationService
                 'error' => $e->getMessage(),
             ]);
         }
+
+        // 🕵️ (req #5) audit + เตือนถ้าสลิปน่าสงสัยว่าเป็นของคนอื่น — ไม่ reject (เปิดไพ่ให้ตามปกติ)
+        $this->flagSuspiciousSlip($reading, $verify, $platform, $userId);
 
         $reading->forceFill([
             'slipok_verified_at' => now(),

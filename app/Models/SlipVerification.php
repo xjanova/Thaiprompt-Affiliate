@@ -13,6 +13,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property string $trans_ref เลขอ้างอิงรายการ (unique)
  * @property int|null $fortune_reading_id บิลที่จับคู่
+ * @property string|null $consumed_by_platform แพลตฟอร์มลูกค้าที่ใช้สลิป (facebook/line)
+ * @property string|null $consumed_by_user_id chat user id ที่ใช้สลิป (audit/dispute)
+ * @property bool $flagged_review ตั้งธงเตือนว่าสลิปน่าสงสัย (ไม่ reject)
+ * @property string|null $flag_reason เหตุผลที่ตั้งธงเตือน
  * @property float|null $amount ยอดเงินจริงจากสลิป
  * @property string|null $sending_bank ธนาคารต้นทาง (3-digit code)
  * @property string|null $receiving_bank ธนาคารปลายทาง
@@ -29,18 +33,23 @@ class SlipVerification extends Model
     protected $fillable = [
         'trans_ref',
         'fortune_reading_id',
+        'consumed_by_platform',
+        'consumed_by_user_id',
         'amount',
         'sending_bank',
         'receiving_bank',
         'receiver_account',
         'sender_name',
         'status',
+        'flagged_review',
+        'flag_reason',
         'raw',
         'verified_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'flagged_review' => 'boolean',
         'raw' => 'array',
         'verified_at' => 'datetime',
     ];
