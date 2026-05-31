@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Storage;
  * Flow ของแต่ละ slot:
  * 1. สุ่ม topic (least-recently-used) + sub_topic
  * 2. WebSearchService.search() — Tavily/Brave/DDG หาแหล่งอ้างอิง
- * 3. Groq Llama (ผ่าน FortuneAIService) เขียนใหม่เป็นบทความสไตล์แม่หมอจันทรา
+ * 3. Gemini (ผ่าน FortuneAIService — provider หลัก, fallback Pool อัตโนมัติ) เขียนใหม่เป็นบทความสไตล์แม่หมอจันทรา
  * 4. AI image gen (Cloudflare AI → Pollinations → GD fallback) ตาม image_keywords
  * 5. POST /me/photos → Facebook Page
  * 6. บันทึก fb_post_id + sources + posted_at
@@ -164,7 +164,7 @@ class MysticContentAutoPostService
     }
 
     /**
-     * 3. AI rewrite — Groq Llama เขียนเป็นบทความ "สไตล์แม่หมอจันทรา"
+     * 3. AI rewrite — Gemini (provider หลัก) เขียนเป็นบทความ "สไตล์แม่หมอจันทรา"
      *
      * โดยใช้ search results เป็น reference (ไม่ก็อปคำต่อคำ)
      */
@@ -189,7 +189,7 @@ class MysticContentAutoPostService
                 continue;
             }
             $referenceText .= "แหล่งที่ {$idx}: {$title}\n";
-            $referenceText .= mb_substr($content, 0, 1500) . "\n\n";
+            $referenceText .= mb_substr($content, 0, 1500)."\n\n";
         }
 
         if ($referenceText === '') {
@@ -199,27 +199,29 @@ class MysticContentAutoPostService
         $hashtagLine = implode(' ', $hashtags);
 
         $prompt = "คุณคือ \"{$brandName}\" หมอดูสายมูที่มีผู้ติดตามจำนวนมากบน Facebook\n\n"
-            . "📌 หมวด: {$topic->name_th} {$topic->emoji}\n"
-            . "📌 หัวข้อวันนี้: {$subTopic}\n\n"
-            . "📚 ข้อมูลอ้างอิงจากเว็บที่น่าเชื่อถือ:\n{$referenceText}\n"
-            . "──────────────────────\n"
-            . "✍️ ภารกิจ: เขียนโพสต์ Facebook ภาษาไทย ความยาว {$minLen}-{$maxLen} ตัวอักษร\n\n"
-            . "กฎเข้ม (ห้ามฝ่าฝืน):\n"
-            . "1. ห้ามก็อปคำต่อคำจากแหล่งอ้างอิง — ต้องเรียบเรียงใหม่ทั้งหมดด้วยภาษาตัวเอง\n"
-            . "2. ขึ้นต้นด้วยประโยคติดหู ดึงคนหยุด scroll (เช่น \"รู้ไหมว่า...\", \"คุณเคยสงสัยไหม...\")\n"
-            . "3. มีสาระจริง ให้ความรู้ — ไม่ใช่แค่อ้อมๆ\n"
-            . "4. ใช้ภาษาเข้าใจง่าย เหมือนเล่าให้เพื่อนฟัง ไม่ใช่บทความวิชาการ\n"
-            . "5. มี emoji 3-5 ตัว (ไม่เยอะเกินไป)\n"
-            . "6. ปิดท้ายด้วย CTA แบบไม่กดดัน เช่น \"ใครเคยลองบ้าง คอมเมนต์เล่าให้ฟังหน่อย\" หรือ \"ทักแชทปรึกษาแม่หมอได้นะ\"\n"
-            . "7. ห้ามมีลิงก์ ห้ามมีคำว่า \"กดไลค์\" \"กดแชร์\" (Facebook ลด reach)\n"
-            . "8. ห้ามใช้คำเชิญชวนรุนแรงเช่น \"ห้ามพลาด\" \"คลิกเลย\" — เน้นความรู้สึกอบอุ่น\n"
-            . "9. ความยาวต้องอยู่ในช่วง {$minLen}-{$maxLen} ตัวอักษร (ไม่รวม hashtag)\n"
-            . "10. **ห้าม**ใส่ hashtag ในเนื้อหา — ระบบจะเพิ่มให้ทีหลัง\n"
-            . "11. **ห้าม**ใส่ markdown (** หรือ ##) ใช้ plain text เท่านั้น\n\n"
-            . "เริ่มเขียนเลย:";
+            ."📌 หมวด: {$topic->name_th} {$topic->emoji}\n"
+            ."📌 หัวข้อวันนี้: {$subTopic}\n\n"
+            ."📚 ข้อมูลอ้างอิงจากเว็บที่น่าเชื่อถือ:\n{$referenceText}\n"
+            ."──────────────────────\n"
+            ."✍️ ภารกิจ: เขียนโพสต์ Facebook ภาษาไทย ความยาว {$minLen}-{$maxLen} ตัวอักษร\n\n"
+            ."กฎเข้ม (ห้ามฝ่าฝืน):\n"
+            ."1. ห้ามก็อปคำต่อคำจากแหล่งอ้างอิง — ต้องเรียบเรียงใหม่ทั้งหมดด้วยภาษาตัวเอง\n"
+            ."2. ขึ้นต้นด้วยประโยคติดหู ดึงคนหยุด scroll (เช่น \"รู้ไหมว่า...\", \"คุณเคยสงสัยไหม...\")\n"
+            ."3. มีสาระจริง ให้ความรู้ — ไม่ใช่แค่อ้อมๆ\n"
+            ."4. ใช้ภาษาเข้าใจง่าย เหมือนเล่าให้เพื่อนฟัง ไม่ใช่บทความวิชาการ\n"
+            ."5. มี emoji 3-5 ตัว (ไม่เยอะเกินไป)\n"
+            ."6. ปิดท้ายด้วย CTA แบบไม่กดดัน เช่น \"ใครเคยลองบ้าง คอมเมนต์เล่าให้ฟังหน่อย\" หรือ \"ทักแชทปรึกษาแม่หมอได้นะ\"\n"
+            ."7. ห้ามมีลิงก์ ห้ามมีคำว่า \"กดไลค์\" \"กดแชร์\" (Facebook ลด reach)\n"
+            ."8. ห้ามใช้คำเชิญชวนรุนแรงเช่น \"ห้ามพลาด\" \"คลิกเลย\" — เน้นความรู้สึกอบอุ่น\n"
+            ."9. ความยาวต้องอยู่ในช่วง {$minLen}-{$maxLen} ตัวอักษร (ไม่รวม hashtag)\n"
+            ."10. **ห้าม**ใส่ hashtag ในเนื้อหา — ระบบจะเพิ่มให้ทีหลัง\n"
+            ."11. **ห้าม**ใส่ markdown (** หรือ ##) ใช้ plain text เท่านั้น\n\n"
+            .'เริ่มเขียนเลย:';
 
         try {
-            $aiService = new FortuneAIService($this->settings);
+            // 🌟 ใช้ Gemini เป็น provider หลักสำหรับคอนเทนต์สายมู
+            //    (ถ้าไม่มี Gemini key พร้อมใช้ใน Pool → fallback ไป provider อื่นอัตโนมัติ)
+            $aiService = new FortuneAIService($this->settings, preferredProvider: 'gemini');
             $result = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
                 userProfile: null,
@@ -237,15 +239,15 @@ class MysticContentAutoPostService
             $body = trim(preg_replace('/\s+/u', ' ', $body));
 
             if ($body === '' || mb_strlen($body) < 100) {
-                throw new Exception('AI body สั้นเกินไป (' . mb_strlen($body) . ' ตัวอักษร)');
+                throw new Exception('AI body สั้นเกินไป ('.mb_strlen($body).' ตัวอักษร)');
             }
 
             // ตัดถ้ายาวเกิน max + buffer 100
             if (mb_strlen($body) > $maxLen + 100) {
-                $body = mb_substr($body, 0, $maxLen + 50) . '...';
+                $body = mb_substr($body, 0, $maxLen + 50).'...';
             }
 
-            return $body . "\n\n" . $hashtagLine;
+            return $body."\n\n".$hashtagLine;
         } catch (Exception $e) {
             Log::warning('MysticAutoPost: AI rewrite ล้มเหลว → fallback template', [
                 'error' => $e->getMessage(),
@@ -271,18 +273,18 @@ class MysticContentAutoPostService
         foreach (array_slice($sources, 0, 2) as $src) {
             $snippet = trim($src['snippet'] ?? '');
             if ($snippet !== '') {
-                $body .= '✨ ' . mb_substr($snippet, 0, 250) . "\n\n";
+                $body .= '✨ '.mb_substr($snippet, 0, 250)."\n\n";
             }
         }
 
         if ($body === '') {
             $body = "วันนี้มาพูดถึงเรื่อง {$subTopic} กัน — เป็นเรื่องที่หลายคนสงสัยและต้องการคำตอบ "
-                . "หากใครมีประสบการณ์หรือคำถาม คอมเมนต์มาได้เลย แม่หมอยินดีตอบทุกท่าน 🙏\n\n";
+                ."หากใครมีประสบการณ์หรือคำถาม คอมเมนต์มาได้เลย แม่หมอยินดีตอบทุกท่าน 🙏\n\n";
         }
 
         $cta = "💬 ใครเคยมีประสบการณ์แบบนี้ คอมเมนต์เล่าได้นะ — แม่หมอจันทราคอยอยู่\n\n";
 
-        return $intro . $body . $cta . $hashtagLine;
+        return $intro.$body.$cta.$hashtagLine;
     }
 
     /**
@@ -337,11 +339,11 @@ class MysticContentAutoPostService
             }
 
             $prompt = "{$imagePromptSeed}, "
-                . 'mystical thai cultural setting, '
-                . 'professional photography, soft volumetric lighting, '
-                . 'rich saturated colors, photorealistic, ultra sharp, 8k detail, '
-                . 'magazine cover quality, '
-                . 'no text, no watermark, no people faces';
+                .'mystical thai cultural setting, '
+                .'professional photography, soft volumetric lighting, '
+                .'rich saturated colors, photorealistic, ultra sharp, 8k detail, '
+                .'magazine cover quality, '
+                .'no text, no watermark, no people faces';
 
             // seed = topic_id + slot_hour + date — รัน publish ซ้ำได้รูปเดียวกัน
             $seed = ((int) $topic->id * 10000) + ((int) $post->slot_hour * 100)
@@ -381,7 +383,7 @@ class MysticContentAutoPostService
 
             $post->update(['image_path' => $relativePath]);
 
-            return asset('storage/' . $relativePath);
+            return asset('storage/'.$relativePath);
         } catch (Exception $e) {
             Log::warning('MysticAutoPost: Cloudflare AI exception', ['error' => $e->getMessage()]);
 
@@ -395,17 +397,17 @@ class MysticContentAutoPostService
         string $imagePromptSeed
     ): ?string {
         $prompt = "{$imagePromptSeed}, "
-            . 'mystical thai cultural setting, '
-            . 'professional photography, soft volumetric lighting, '
-            . 'rich saturated colors, photorealistic, ultra sharp, 8k detail, '
-            . 'magazine cover quality, '
-            . 'no text, no watermark';
+            .'mystical thai cultural setting, '
+            .'professional photography, soft volumetric lighting, '
+            .'rich saturated colors, photorealistic, ultra sharp, 8k detail, '
+            .'magazine cover quality, '
+            .'no text, no watermark';
 
         $encoded = rawurlencode(mb_substr($prompt, 0, 800));
         $seed = ((int) $topic->id * 10000) + ((int) $post->slot_hour * 100)
             + ((int) $post->post_date->format('Ymd') % 100);
         $url = "https://image.pollinations.ai/prompt/{$encoded}"
-            . "?width=1080&height=1080&seed={$seed}&nologo=true&model=turbo&enhance=true";
+            ."?width=1080&height=1080&seed={$seed}&nologo=true&model=turbo&enhance=true";
 
         try {
             $response = Http::timeout(45)
@@ -422,7 +424,7 @@ class MysticContentAutoPostService
 
             $post->update(['image_path' => $relativePath]);
 
-            return asset('storage/' . $relativePath);
+            return asset('storage/'.$relativePath);
         } catch (Exception $e) {
             return null;
         }
@@ -488,7 +490,7 @@ class MysticContentAutoPostService
         }
 
         if (! $response->successful()) {
-            $error = $response->json('error.message', 'Facebook API error: HTTP ' . $response->status());
+            $error = $response->json('error.message', 'Facebook API error: HTTP '.$response->status());
             throw new Exception($error);
         }
 

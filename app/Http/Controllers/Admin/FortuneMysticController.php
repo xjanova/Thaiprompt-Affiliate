@@ -187,9 +187,14 @@ class FortuneMysticController extends Controller
         );
 
         if ($result['success']) {
-            $msg = "โพสสำเร็จ! หมวด: {$result['topic']} — {$result['sub_topic']}";
-            if (! empty($result['url'])) {
-                $msg .= " (URL: {$result['url']})";
+            // โพสใหม่สำเร็จ → มี topic/sub_topic; กรณี "โพสแล้ว ข้าม" → ไม่มี key เหล่านี้ (กัน Undefined array key)
+            if (! empty($result['topic'])) {
+                $msg = "โพสสำเร็จ! หมวด: {$result['topic']} — ".($result['sub_topic'] ?? '');
+                if (! empty($result['url'])) {
+                    $msg .= " (URL: {$result['url']})";
+                }
+            } else {
+                $msg = $result['message'] ?? 'ดำเนินการสำเร็จ';
             }
 
             return redirect()->route('admin.fortune.mystic.index')
@@ -197,7 +202,7 @@ class FortuneMysticController extends Controller
         }
 
         return redirect()->route('admin.fortune.mystic.index')
-            ->with('error', '❌ โพสล้มเหลว: ' . ($result['message'] ?? 'unknown'));
+            ->with('error', '❌ โพสล้มเหลว: '.($result['message'] ?? 'unknown'));
     }
 
     /**
