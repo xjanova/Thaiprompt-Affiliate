@@ -1661,6 +1661,29 @@ trait CelticCrossConversationTrait
             return $this->endCelticSession($reading, 'time_expired');
         }
 
+        // 🆕 (2026-05-31) ด่านกันคำทักทาย/ตอบรับ ก่อนคำถามแรก — ไม่ยิงทำนาย ไม่กินโควต้า
+        //   เคสจริง R4474 (FTU-260531-P7895): ลูกค้าพิมพ์ "พร้อม" หลังเปิดไพ่ครบ → Q1 ยิงทำนาย
+        //   "ความรัก" มั่ว (เดาธีมจากไพ่ถ้วย) + เปลือง 1/5 โควต้า เพราะ Q1 path เดิมไม่มี TYPE
+        //   classifier. ตอนนี้เพิ่ม classifier ใน prompt แล้ว แต่ AI-directive ไม่ 100% → ด่าน
+        //   deterministic นี้กันชั้นแรกแบบชัวร์
+        //   Scope: เฉพาะตอนยังไม่มีคำถามจริง (celtic_questions_used == 0) — กัน "พร้อม/ค่ะ/โอเค/
+        //   เริ่มเลย" ไม่ให้เปลือง Q1. คำถามจริงข้อแรก (มี "ไหม"/ระบุเรื่อง) ผ่านไป askQuestion ปกติ
+        if ((int) ($reading->celtic_questions_used ?? 0) === 0
+            && $this->looksLikeReadinessAck($question)) {
+            \Log::info('Celtic: readiness ack ก่อนคำถามแรก — ชวนถาม ไม่กินโควต้า', [
+                'reading_id' => $reading->id,
+                'text' => mb_substr($question, 0, 40),
+            ]);
+
+            return [
+                'action' => 'celtic_invite_question',
+                'message' => "🌙 เปิดไพ่ครบแล้วค่ะ — เจ้าชะตาอยากให้แม่หมอดูเรื่องอะไรก่อนดีคะ\n\n"
+                    ."💬 พิมพ์ถามเข้ามาได้เลย เช่น ความรัก การงาน การเงิน สุขภาพ ของหาย "
+                    ."หรือเรื่องที่ค้างคาใจ — แม่หมอจะเปิดไพ่ทำนายให้ทีละเรื่องค่ะ ✨",
+                'reading' => $reading,
+            ];
+        }
+
         // 🛑 (2026-05-13) ลบ max_questions enforcement — flow ใหม่เป็น free chat
         //   user spec: คุยเรื่อยๆ จนถึง time_expired หรือ "พอแค่นี้"
 
@@ -2485,6 +2508,70 @@ trait CelticCrossConversationTrait
         }
 
         return false;
+    }
+
+    /**
+     * 🆕 (2026-05-31) ตรวจว่าข้อความเป็นแค่ "คำทักทาย/ตอบรับ" ไม่ใช่คำถามทำนาย
+     *
+     * เคสจริง R4474 (FTU-260531-P7895): ลูกค้าพิมพ์ "พร้อม" หลังเปิดไพ่ → Q1 ยิงทำนายมั่ว
+     *   + กินโควต้า เพราะ Q1 path เดิมไม่มี TYPE classifier
+     *
+     * ใช้ใน handleCelticAwaitingQuestion (เฉพาะก่อนคำถามแรก) → ชวนถามแทนการทำนาย
+     *
+     * Safety (กัน false positive — ห้ามจับคำถามจริง):
+     *   1. reject ทันทีถ้ามี particle คำถาม (ไหม/เมื่อไหร่/อะไร/...) หรือ keyword ขอดูดวง
+     *   2. exact-match แก่นคำ หลัง strip คำลงท้าย/emoji — ไม่ใช่ str_contains
+     *   3. จำกัดความยาว (กันประโยคเล่าเรื่อง)
+     *   → "พร้อมดูเรื่องงานไหม" (มี "ไหม") / "ความรัก" (topic word) จะ "ไม่" match
+     */
+    protected function looksLikeReadinessAck(string $text): bool
+    {
+        $clean = mb_strtolower(trim($text));
+        if ($clean === '') {
+            return false;
+        }
+
+        // ลบ emoji + variation selector (เก็บตัวอักษร/ตัวเลข/ช่องว่าง/คำลงท้าย)
+        $clean = trim((string) preg_replace('/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2190}-\x{21FF}\x{FE0F}\x{200D}]/u', '', $clean));
+
+        // 🚫 มี particle/keyword คำถาม → ไม่ใช่ ack เด็ดขาด (กัน false positive คำถามจริง)
+        $questionMarkers = [
+            'ไหม', 'มั้ย', 'มัย', 'หรือ', 'เหรอ', 'หรอ', 'รึ', 'เมื่อไหร่', 'เมื่อไร',
+            'ทำไม', 'อะไร', 'ยังไง', 'อย่างไร', 'ที่ไหน', 'ใคร', 'กี่', 'เท่าไหร่', 'เท่าไร', '?',
+            'ขอถาม', 'อยากรู้', 'อยากถาม', 'อยากดู', 'ช่วยดู', 'ดูเรื่อง', 'ดูให้', 'ดูหน่อย', 'ทำนาย',
+        ];
+        foreach ($questionMarkers as $qm) {
+            if (str_contains($clean, mb_strtolower($qm))) {
+                return false;
+            }
+        }
+
+        // strip คำลงท้ายสุภาพไทย 2 รอบ (เผื่อซ้อน เช่น "พร้อมแล้วค่ะ" → "พร้อม")
+        $tailPattern = '/\s*(ค่ะ|คะ|ครับ|คับ|ครับผม|จ้า|จ้ะ|จ๊ะ|จ้าา|นะ|น่ะ|แล้ว|เลย|ละ|ล่ะ|ฮะ|ฮ่ะ|ๆ)\s*$/u';
+        $core = trim((string) preg_replace($tailPattern, '', $clean));
+        $core = trim((string) preg_replace($tailPattern, '', $core));
+
+        // มีแต่คำลงท้ายสุภาพล้วน ("ค่ะ"/"ครับ"/"จ้า") = ตอบรับ ไม่ใช่คำถาม
+        if ($core === '') {
+            return true;
+        }
+
+        // ack จริงสั้น — กันประโยคเล่าเรื่องยาว
+        if (mb_strlen($core) > 18) {
+            return false;
+        }
+
+        // whitelist คำตอบรับ/พร้อม (ไทย/อังกฤษ/ลาว) — exact match แก่นคำ
+        //   topic word (ความรัก/งาน/เงิน) ไม่อยู่ใน list → ผ่านไปทำนายจริง ✅
+        $acks = [
+            'พร้อม', 'พรอม', 'เริ่ม', 'เริ่มเลย', 'เริ่มได้', 'เริ่มได้เลย', 'เอา', 'เอาเลย',
+            'โอเค', 'โอเก', 'oke', 'ok', 'okay', 'okk', 'yes', 'yep', 'y',
+            'ใช่', 'ตกลง', 'จัดมา', 'จัดไป', 'จัด', 'ได้', 'ได้เลย', 'ดี', 'เยี่ยม',
+            'อืม', 'อืมม', 'อึม', 'รับทราบ', 'เข้าใจ', 'เข้าใจแล้ว', 'จ้า', 'ค่ะ', 'คะ', 'ครับ',
+            'ພ້ອມ', 'ໂອເຄ', 'ໄດ້', 'ໄດ້ເລີຍ',
+        ];
+
+        return in_array($core, $acks, true);
     }
 
     /**
