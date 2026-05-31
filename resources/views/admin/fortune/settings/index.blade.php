@@ -2381,6 +2381,15 @@ Format 2 — JSON array:
                     </label>
                 </div>
 
+                {{-- สถานะ key ที่ "บันทึกแล้ว" จริง (กันสับสน: ปุ่มทดสอบไม่ได้บันทึก) --}}
+                @if(($settings->enable_slipok_verify ?? false) && empty($settings->slipok_api_key))
+                    <div class="mb-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-xs text-red-700 dark:text-red-300 font-medium">
+                        ⚠️ เปิดใช้งานแล้ว แต่ <strong>ยังไม่ได้บันทึก API Key</strong> — กรอก API Key ด้านล่าง แล้วกดปุ่ม <strong>"💾 บันทึกการตั้งค่า"</strong> ด้านล่างสุด (การกด "ทดสอบ" อย่างเดียว <u>ไม่ได้บันทึก</u>)
+                    </div>
+                @elseif(! empty($settings->slipok_api_key))
+                    <div class="mb-3 text-xs text-emerald-600 dark:text-emerald-400 font-medium">🔑 API Key: บันทึกแล้ว ✓ (Branch: {{ $settings->slipok_branch_id ?: '-' }})</div>
+                @endif
+
                 <div x-show="enabled" x-cloak x-transition class="space-y-3 mt-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
