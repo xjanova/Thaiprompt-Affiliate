@@ -642,7 +642,7 @@ class FortuneChannelManager
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     if ($celticEnabled) {
                         return $fbService->sendQuickReplies($userId, $message, [
-                            ['content_type' => 'text', 'title' => '👑 VIP ไพ่ 10 ใบ 99฿', 'payload' => 'TIER_CELTIC_99'],
+                            ['content_type' => 'text', 'title' => '💎 โอนค่าบูชาครู 99฿', 'payload' => 'TIER_CELTIC_99'],
                             ['content_type' => 'text', 'title' => '🙏 ไว้คราวหน้า', 'payload' => 'NOT_INTERESTED'],
                         ], $extra);
                     }
@@ -711,7 +711,7 @@ class FortuneChannelManager
                     if ($celticOnlyIntro) {
                         $celticPriceLabel = (int) ($result['celtic_price'] ?? 99);
                         $buttons[] = ['content_type' => 'text',
-                            'title' => FortuneLocaleService::lo("✨ เริ่มเลย {$celticPriceLabel}฿", "✨ ເລີ່ມເລີຍ {$celticPriceLabel}฿"),
+                            'title' => FortuneLocaleService::lo("💎 โอนค่าบูชาครู {$celticPriceLabel}฿", "💎 ໂອນຄ່າບູຊາຄູ {$celticPriceLabel}฿"),
                             'payload' => 'TIER_CELTIC_99'];
                         $buttons[] = ['content_type' => 'text',
                             'title' => FortuneLocaleService::lo('🙏 ไว้คราวหน้า', '🙏 ໄວ້ຄາວໜ້າ'),
@@ -735,7 +735,7 @@ class FortuneChannelManager
                     }
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
-                            'title' => FortuneLocaleService::lo('👑 VIP ไพ่ 10 ใบ 99฿', '👑 VIP ໄພ່ 10 ໃບ 99฿'),
+                            'title' => FortuneLocaleService::lo('💎 โอนค่าบูชาครู 99฿', '💎 ໂອນຄ່າບູຊາຄູ 99฿'),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     $buttons[] = ['content_type' => 'text',
@@ -767,7 +767,7 @@ class FortuneChannelManager
                     }
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
-                            'title' => '👑 VIP 99 บาท',
+                            'title' => '💎 โอนค่าบูชาครู 99฿',
                             'payload' => 'TIER_CELTIC_99'];
                     }
 
@@ -830,7 +830,7 @@ class FortuneChannelManager
                     if ($celticEnabled) {
                         // 🛡️ FB QR title cap = 20 chars — เลิก "— " เพื่อ fit ใน 19 chars
                         $buttons[] = ['content_type' => 'text',
-                            'title' => FortuneLocaleService::lo("👑 VIP {$celticPrice}฿ ไพ่ 10 ใบ", "👑 VIP {$celticPrice}฿ ໄພ່ 10 ໃບ"),
+                            'title' => FortuneLocaleService::lo("💎 โอนค่าบูชาครู {$celticPrice}฿", "💎 ໂອນຄ່າບູຊາຄູ {$celticPrice}฿"),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     $buttons[] = ['content_type' => 'text',
@@ -1329,7 +1329,19 @@ class FortuneChannelManager
             usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
         }
 
-        // ส่งภาพ QR Code ชำระเงิน (ถ้ามี) — ส่งครั้งเดียว
+        // 🆕 (2026-05-31) ส่งเลขบัญชีเป็น "บับเบิลเดี่ยว" เลขล้วนๆ — ผู้สูงอายุกดค้างคัดลอกได้ง่าย
+        //   (เลขใส่ dash แล้วจาก getCopyableAccountNumber → กัน FB auto-QR, banking app ตัด dash เอง)
+        $copyableAccount = $result['copyable_account'] ?? null;
+        if (! empty($copyableAccount)) {
+            try {
+                $fbService->sendMessage($userId, $copyableAccount);
+                usleep(500000); // 0.5s กัน LINE/FB rate limit
+            } catch (\Throwable $e) {
+                Log::warning('Facebook: ส่งเลขบัญชี (copyable) ไม่สำเร็จ', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // ส่งภาพ QR Code โอนเงิน (ถ้ามี) — ส่งครั้งเดียว
         $paymentQrUrl = $result['payment_qr_url'] ?? null;
         if ($paymentQrUrl) {
             try {
@@ -2736,6 +2748,12 @@ class FortuneChannelManager
                 ->get();
         }
 
+        // 🆕 (2026-05-31) โชว์บัญชีหลักบัญชีเดียว (is_default ก่อน → ไม่มีก็ตัวแรก) — เป็นมิตรกับผู้สูงอายุ
+        $primaryAccount = $accounts->firstWhere('is_default', true) ?? $accounts->first();
+        if ($primaryAccount) {
+            $accounts = collect([$primaryAccount]);
+        }
+
         // จัดรูปแบบตาม payment_display_mode
         $bankAccounts = $accounts->map(function ($a) use ($displayMode) {
             $info = ['account_name' => $a->account_name];
@@ -2821,9 +2839,18 @@ class FortuneChannelManager
             }
             $replyMessages[] = [
                 'type' => 'flex',
-                'altText' => 'ยอดชำระ ฿'.number_format($amount, 2),
+                'altText' => 'ยอดโอน ฿'.number_format($amount, 2),
                 'contents' => $paymentFlex,
             ];
+
+            // 🆕 (2026-05-31) เลขบัญชีเป็นข้อความเดี่ยวๆ ต่อท้าย — กดค้างคัดลอกง่าย (เป็นมิตรกับผู้สูงอายุ)
+            $copyableAccount = $result['copyable_account'] ?? null;
+            if (! empty($copyableAccount)) {
+                $replyMessages[] = [
+                    'type' => 'text',
+                    'text' => $copyableAccount,
+                ];
+            }
 
             $sent = $lineService->replyMessage($replyToken, $replyMessages);
             if ($sent) {
@@ -2867,10 +2894,22 @@ class FortuneChannelManager
             }
         }
 
-        return $lineService->sendRichMessage($userId, [
-            'alt_text' => 'ยอดชำระ ฿'.number_format($amount, 2),
+        $lineService->sendRichMessage($userId, [
+            'alt_text' => 'ยอดโอน ฿'.number_format($amount, 2),
             'contents' => $paymentFlex,
         ]);
+
+        // 🆕 (2026-05-31) เลขบัญชีเป็นข้อความเดี่ยวๆ — กดค้างคัดลอกง่าย (เป็นมิตรกับผู้สูงอายุ)
+        $copyableAccount = $result['copyable_account'] ?? null;
+        if (! empty($copyableAccount)) {
+            try {
+                $lineService->sendMessage($userId, $copyableAccount);
+            } catch (\Throwable $e) {
+                Log::warning('LINE: ส่งเลขบัญชี (copyable) ไม่สำเร็จ', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -489,6 +489,8 @@ trait CelticCrossConversationTrait
             (string) $celticPriceInt,  // "99" (ดึงจาก service ไม่ hardcode)
             'celtic', 'เซลติก', 'เต็มสำรับ', 'เต็ม สำรับ', 'ไพ่ยิปซีเต็ม', 'ทาโรต์เต็ม',
             'พรีเมียม', 'premium', 'แพคเกจ 2', 'แพคเกจที่ 2', 'แบบที่ 2',
+            // 🆕 (2026-05-31) ลูกค้าพิมพ์ตามปุ่มใหม่ "โอนค่าบูชาครู" → เข้า Celtic flow (กดหรือพิมพ์ก็ได้)
+            'บูชาครู', 'โอนค่าบูชาครู', 'ค่าบูชาครู',
             'tier_celtic', 'tier_celtic_99',  // payload จาก FB button
         ];
         foreach ($celticKeywords as $kw) {
@@ -853,19 +855,20 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_pending_payment',
                 // 🌙 (2026-05-23 v3) ประกาศกติกาให้ชัดในบิล — 5 คำถาม / 15 นาที
+                // 🆕 (2026-05-31) แนบบัญชีหลัก + ชี้ไปบับเบิลเลขบัญชี (renderer ส่งเลขล้วนแยก กดค้างก๊อปง่าย)
                 'message' => "🔮 *ดูดวงไพ่ยิปซีเต็มสำรับ Celtic Cross*\n\n"
-                    ."✨ ค่าครู: {$baseAmountStr} บาท\n"
+                    ."✨ ค่าบูชาครู: {$baseAmountStr} บาท\n"
                     ."🃏 เปิดไพ่ 10 ใบ ตำแหน่งครบสายพันปี\n"
                     ."💬 คุยกับแม่หมอได้ *{$qLimitTxt} ภายใน {$qaWindow} นาที* (นับจากคำทำนายแรก)\n"
                     ."⚡ ตอบทันที ไม่มีรอ — พิมพ์ปุ๊บแม่หมอตอบปั๊บ\n"
                     ."🖼️ ได้รับภาพ Celtic Cross spread สวยๆ ส่งให้ตอนจบทำนาย เป็นที่ระลึก\n\n"
                     ."──────────────────────\n"
-                    ."💸 *ค่าครูสำหรับบิลนี้: {$payAmount} บาท*\n"
+                    ."💸 *ค่าบูชาครูสำหรับบิลนี้: {$payAmount} บาท*\n"
                     ."(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิลเจ้าชะตา)\n\n"
-                    ."👉 โอนตามจำนวนนี้ผ่าน QR ที่ส่งให้ — บิลหมดอายุใน 30 นาที\n\n"
-                    ."💚 *กรุณาโอนให้ตรง ตรงจุดทศนิยมด้วย*\n"
-                    ."เพื่อเปิดไพ่ยิปซี 10 ใบ ทีละใบ เมื่อครบแล้วจึงเริ่มถาม\n"
-                    .'ถามได้ทุกเรื่องในช่วงเวลานี้ค่ะ ✨',
+                    ."📲 *สแกน QR ในภาพได้เลย* — บิลหมดอายุใน 30 นาที\n"
+                    ."หรือโอนเข้าเลขบัญชีด้านล่างก็ได้นะคะ ✨\n\n"
+                    .$this->getBankAccountsListMessage(true)
+                    ."\n💚 *กรุณาโอนให้ตรง ตรงจุดทศนิยมด้วย* เพื่อเปิดไพ่ยิปซี 10 ใบ ค่ะ ✨",
                 'reading' => $reading,
                 'celtic_price' => $payAmount,
                 'celtic_base_price' => $basePrice,
@@ -873,6 +876,8 @@ trait CelticCrossConversationTrait
                 'unique_payment_amount' => $uniqueAmount,
                 'payment_qr_url' => $qrImageUrl, // ✅ FortuneChannelManager จะส่งภาพ QR ออก
                 'show_qr' => true,
+                // 🆕 (2026-05-31) เลขบัญชีหลัก ส่งเป็นบับเบิลเดี่ยวให้ลูกค้าก๊อปง่าย (renderer จัดการ)
+                'copyable_account' => $this->getCopyableAccountNumber(),
             ];
         } catch (\Throwable $e) {
             Log::error('Celtic: startCelticCrossFlow error', [
@@ -1371,7 +1376,7 @@ trait CelticCrossConversationTrait
             // ignore QR fail — ส่ง text only ก็ได้
         }
 
-        $message = "🌙 *พบบิล Celtic Cross ของคุณ{$name}ที่ยังรอชำระ*\n\n"
+        $message = "🌙 *พบบิล Celtic Cross ของคุณ{$name}ที่ยังรอโอน*\n\n"
             ."📋 เลขบิล: {$billRef}\n"
             ."💰💰 ยอดที่ต้องโอน: *{$payAmount}* บาท 💰💰\n"
             ."⏳ เหลือเวลา: {$remainingMin} นาที\n\n"
@@ -1413,12 +1418,12 @@ trait CelticCrossConversationTrait
         // หัวข้อ — แตกต่างกันระหว่าง admin reset / customer-triggered resume
         if ($fromAdminReset) {
             $header = "🔄 *แอดมินรีเซ็ตการดูดวงให้แล้วค่ะ คุณ{$name}*\n"
-                ."💚 ค่าครูเดิมยังใช้ได้ — ไม่ต้องจ่ายซ้ำ\n"
+                ."💚 ค่าครูเดิมยังใช้ได้ — ไม่ต้องโอนซ้ำ\n"
                 ."📋 เลขบิล: {$billRef}\n\n"
                 ."═══════════════════════\n\n";
         } else {
             $header = "✨ *พบบิลของคุณ{$name}ที่ยังใช้สิทธิ์ไม่ครบ*\n"
-                ."💚 ค่าครูเดิมยังใช้ได้ — ไม่ต้องจ่ายซ้ำ\n"
+                ."💚 ค่าครูเดิมยังใช้ได้ — ไม่ต้องโอนซ้ำ\n"
                 ."📋 เลขบิล: {$billRef}\n\n"
                 ."═══════════════════════\n\n";
         }
@@ -1678,8 +1683,8 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_invite_question',
                 'message' => "🌙 เปิดไพ่ครบแล้วค่ะ — เจ้าชะตาอยากให้แม่หมอดูเรื่องอะไรก่อนดีคะ\n\n"
-                    ."💬 พิมพ์ถามเข้ามาได้เลย เช่น ความรัก การงาน การเงิน สุขภาพ ของหาย "
-                    ."หรือเรื่องที่ค้างคาใจ — แม่หมอจะเปิดไพ่ทำนายให้ทีละเรื่องค่ะ ✨",
+                    .'💬 พิมพ์ถามเข้ามาได้เลย เช่น ความรัก การงาน การเงิน สุขภาพ ของหาย '
+                    .'หรือเรื่องที่ค้างคาใจ — แม่หมอจะเปิดไพ่ทำนายให้ทีละเรื่องค่ะ ✨',
                 'reading' => $reading,
             ];
         }

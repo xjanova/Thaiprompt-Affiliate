@@ -43,6 +43,7 @@ class PaymentBannerService
 
     /** Banner dimensions (px) — 2x ของเดิม เพื่อความชัด */
     protected int $bannerWidth = 1200;
+
     protected int $bannerHeight = 1600;
 
     /** Font paths (TTF — รองรับ UTF-8 + Thai)
@@ -76,7 +77,7 @@ class PaymentBannerService
      * @param  string  $qrPayload  EMVCo PromptPay payload (จาก PromptPayProvider::buildPromptPayPayload)
      * @param  string|null  $bankName  ชื่อธนาคาร (optional — แสดงใน banner)
      * @param  string|null  $accountNumber  เลขบัญชี (optional)
-     * @return string|null  public URL หรือ null ถ้า fail
+     * @return string|null public URL หรือ null ถ้า fail
      */
     public function generateCompositeBanner(
         float $amount,
@@ -363,7 +364,7 @@ class PaymentBannerService
         // Footer placeholder — จะถูก overwrite โดย renderText() ตอน composite จริง
         $footerY = $qrY + $qrSize + $pad + 60;
         if (file_exists($thaiFont)) {
-            $this->drawCenteredText($img, 'สแกน QR เพื่อชำระเงิน (ฝังยอดในนั้น)', $thaiFont, 28, $footerY, $silver, $W);
+            $this->drawCenteredText($img, 'สแกน QR เพื่อโอนค่าบูชาครู (ฝังยอดในนั้น)', $thaiFont, 28, $footerY, $silver, $W);
         } else {
             $ft = 'Scan QR to pay';
             imagestring($img, 3, (int) (($W - imagefontwidth(3) * strlen($ft)) / 2), $footerY, $ft, $silver);
@@ -495,7 +496,6 @@ class PaymentBannerService
      * 🎨 Helper: วาด text กลางแนวนอน ด้วย TTF font
      *
      * @param  \GdImage  $img
-     * @param  string  $text
      * @param  string  $fontPath  Full path ของ TTF font
      * @param  int  $size  font size (px)
      * @param  int  $y  Y coordinate (baseline)

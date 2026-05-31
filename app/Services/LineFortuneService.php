@@ -1045,7 +1045,7 @@ class LineFortuneService implements MessagingPlatformInterface
                         [
                             'type' => 'text',
                             'text' => isset($bankAccounts[0]['is_promptpay']) && $bankAccounts[0]['is_promptpay']
-                                ? '📱 ช่องทางชำระเงิน (พร้อมเพย์)'
+                                ? '📱 ช่องทางโอน (พร้อมเพย์)'
                                 : '💳 บัญชีรับโอน',
                             'weight' => 'bold',
                             'size' => 'md',

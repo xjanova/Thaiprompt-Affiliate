@@ -7521,6 +7521,8 @@ class FortuneConversationService
                     'reading' => $reading,
                     'payment_qr_url' => $qrImageUrl,
                     'show_qr' => true,
+                    // 🆕 (2026-05-31) เลขบัญชีหลัก ส่งเป็นบับเบิลเดี่ยวให้ลูกค้าก๊อปง่าย (renderer จัดการ)
+                    'copyable_account' => $this->getCopyableAccountNumber(),
                 ];
             }
 
@@ -7635,6 +7637,8 @@ class FortuneConversationService
                 'reading' => $reading,
                 'payment_qr_url' => $qrImageUrl,
                 'chart_image_url' => $chartImageUrl,
+                // 🆕 (2026-05-31) เลขบัญชีหลัก ส่งเป็นบับเบิลเดี่ยวให้ลูกค้าก๊อปง่าย (renderer จัดการ)
+                'copyable_account' => $this->getCopyableAccountNumber(),
             ];
 
         } catch (\Exception $e) {
@@ -9293,15 +9297,15 @@ class FortuneConversationService
         //   philosophy ย่อหายเหลือ 0 (ถาม "ทำไมต้องจ่ายก่อน" เพื่ออ่าน)
         // 🪄 (2026-05-16) เพิ่ม intro นุ่มนวล — "สแกน QR เลย หรือ โอนบัญชีก็ได้นะคะ"
         //   user feedback: ให้มี wording บอกชัดว่ามี 2 ทางเลือก ลูกค้าไม่งง
-        $message = "💎 *ค่าครู ฿{$amount}*\n\n";
+        $message = "💎 *ค่าบูชาครู ฿{$amount}*\n\n";
 
         $message .= "📲 *สแกน QR ในภาพได้เลย ⬇️*\n";
-        $message .= "หรือโอนตามบัญชีด้านล่างก็ได้นะคะ ✨\n\n";
+        $message .= "หรือโอนเข้าเลขบัญชีด้านล่างก็ได้นะคะ ✨\n\n";
 
-        // เลขบัญชี + PromptPay (ดึงจาก PaymentBankAccount ที่ตั้งไว้ใน fortune_bank_account_ids)
-        $message .= $this->getBankAccountsListMessage();
+        // 🆕 (2026-05-31) บัญชีหลัก + ชี้ไปบับเบิลเลขบัญชี (renderer ส่งเลขล้วนแยก กดค้างก๊อปง่าย)
+        $message .= $this->getBankAccountsListMessage(true);
 
-        $message .= "🔖 บิล: {$billRef}\n"
+        $message .= "\n🔖 บิล: {$billRef}\n"
             ."⏰ หมดอายุใน {$remainingMinutes} นาที\n\n"
             ."_โอนเสร็จ พิมพ์ \"โอนแล้ว\"_\n"
             .'_ติดปัญหา พิมพ์ "ช่วยหน่อย"_';
@@ -9321,15 +9325,15 @@ class FortuneConversationService
         $billRef = $reading->bill_reference;
         $remainingMinutes = max(0, (int) now()->diffInMinutes($uniqueAmount->expires_at, false));
 
-        $message = "💎 *ค่าครู ฿{$amount}*\n";
+        $message = "💎 *ค่าบูชาครู ฿{$amount}*\n";
         $message .= "🔖 บิล: {$billRef}\n";
         $message .= "⏰ หมดอายุใน {$remainingMinutes} นาที\n\n";
 
         $message .= "📲 *สแกน QR ในภาพได้เลย ⬇️*\n";
-        $message .= "หรือโอนตามบัญชีด้านล่างก็ได้นะคะ ✨\n\n";
+        $message .= "หรือโอนเข้าเลขบัญชีด้านล่างก็ได้นะคะ ✨\n\n";
 
-        // เพิ่มบัญชีธนาคาร
-        $message .= $this->getBankAccountsListMessage();
+        // 🆕 (2026-05-31) บัญชีหลัก + ชี้ไปบับเบิลเลขบัญชี (renderer ส่งเลขล้วนแยก กดค้างก๊อปง่าย)
+        $message .= $this->getBankAccountsListMessage(true);
 
         $message .= "_โอนเสร็จ พิมพ์ \"โอนแล้ว\"_\n"
             .'_ติดปัญหา พิมพ์ "ช่วยหน่อย"_';
@@ -9343,68 +9347,84 @@ class FortuneConversationService
      * ใช้บัญชีเฉพาะที่ตั้งค่าไว้ในระบบดูดวง (fortune_bank_account_ids)
      * ถ้าไม่ได้ตั้งค่า จะ fallback ไปใช้บัญชีที่เปิด SMS Checker ทั้งหมด
      */
-    protected function getBankAccountsListMessage(): string
+    protected function getBankAccountsListMessage(bool $separateNumber = false): string
     {
-        // ใช้ method จาก FortuneTellingSetting ที่ดึงบัญชีเฉพาะดูดวง
-        $accounts = $this->settings->getFortuneBankAccounts();
+        // 🆕 (2026-05-31) โชว์บัญชีหลักบัญชีเดียว (เป็นมิตรกับผู้สูงอายุ — ไม่ต้องเลือกจากหลายบัญชี)
+        $account = $this->getPrimaryFortuneBankAccount();
 
-        if ($accounts->isEmpty()) {
+        if (! $account) {
             return "🏦 กรุณาติดต่อแอดมินเพื่อขอบัญชีธนาคาร\n";
         }
 
-        // ดึงโหมดแสดงช่องทางชำระเงิน (both, bank_only, promptpay_only)
+        // ดึงโหมดแสดงช่องทางโอน (both, bank_only, promptpay_only)
         $displayMode = $this->settings->getPaymentDisplayMode();
-        $showBank = $this->settings->shouldShowBankAccount();
-        $showPromptpay = $this->settings->shouldShowPromptpay();
 
-        // เลือก header ตามโหมด
+        // 📱 โหมดพร้อมเพย์อย่างเดียว — ไม่มีเลขบัญชีให้ก๊อป ใช้สแกน QR เท่านั้น
         if ($displayMode === 'promptpay_only') {
-            $message = "📱 *ช่องทางชำระเงิน (พร้อมเพย์)*:\n\n";
-        } elseif ($displayMode === 'bank_only') {
-            $message = "🏦 *บัญชีที่รับโอน*:\n\n";
-        } else {
-            $message = "🏦 *บัญชีที่รับโอน*:\n\n";
+            $message = "📱 *ช่องทางโอน (พร้อมเพย์)*\n";
+            $message .= "   ชื่อ: {$account->account_name}\n";
+            $message .= "   📲 สแกน QR ในภาพด้านบนได้เลยค่ะ\n";
+
+            return $message;
         }
 
-        foreach ($accounts as $account) {
-            if ($displayMode === 'promptpay_only') {
-                // 🛡️ (2026-05-13) ลบ promptpay_id raw จาก text
-                //   user report: "เฟชบุ๊คมันสร้าง qrcode มาเองซึ่งมันใช้ไม่ได้"
-                //   Root cause: FB detect promptpay number 10 หลัก → render auto-QR overlay
-                //                ที่ format ผิด → ลูกค้าสแกนแล้วโอนไม่ได้
-                //   Fix: ไม่แสดงเลขเบอร์ — ใช้ QR image ที่ระบบสร้าง (ส่งคู่กับข้อความ)
-                if ($account->hasPromptpay()) {
-                    $message .= "📌 {$account->bank_name}\n";
-                    $message .= "   ชื่อ: {$account->account_name}\n";
-                    $message .= "   📲 สแกน QR Code ในภาพด้านล่าง\n";
-                    $message .= "\n";
-                }
-            } elseif ($displayMode === 'bank_only') {
-                // 🛡️ (2026-05-14) ใส่ dash ใน account_number — กัน FB auto-QR
-                //   user report ต่อ 2026-05-13: เลขบัญชีหลายธนาคาร (KBank, ออมสิน)
-                //   ขึ้นต้นด้วย 0 + 10 หลัก → FB ตรวจจับเป็นเบอร์โทร PromptPay
-                //   → render auto-QR overlay (format ผิด สแกนไม่ได้)
-                //   Fix: ใส่ dash → break digit-sequence pattern, ลูกค้ายัง copy ได้
-                $message .= "📌 {$account->bank_name}\n";
-                $message .= '   เลขบัญชี: '.$this->formatAccountNumberForFb($account->account_number)."\n";
-                $message .= "   ชื่อ: {$account->account_name}\n";
-                $message .= "\n";
-            } else {
-                // both mode: ใส่ dash ใน account_number (กัน FB auto-QR) + promptpay_id ลบออก
-                $message .= "📌 {$account->bank_name}\n";
-                $message .= '   เลขบัญชี: '.$this->formatAccountNumberForFb($account->account_number)."\n";
-                $message .= "   ชื่อ: {$account->account_name}\n";
+        // 🏦 โหมดบัญชีธนาคาร (bank_only / both) — บัญชีหลักบัญชีเดียว
+        $message = "🏦 *บัญชีรับโอน*\n";
+        $message .= "   ธนาคาร: {$account->bank_name}\n";
+        $message .= "   ชื่อบัญชี: {$account->account_name}\n";
 
-                if ($account->hasPromptpay()) {
-                    // 🛡️ (2026-05-13) ไม่แสดง promptpay_id — ป้องกัน FB auto-QR
-                    $message .= "   📲 พร้อมเพย์: สแกน QR ในภาพด้านล่าง\n";
-                }
-
-                $message .= "\n";
-            }
+        if ($separateNumber) {
+            // 🆕 (2026-05-31) เลขบัญชีถูกส่งเป็น "บับเบิลเดี่ยว" ถัดไป — กดค้างก๊อปง่าย (renderer จัดการ)
+            $message .= "\n👇 *เลขบัญชีอยู่ในข้อความถัดไป — กดค้างที่เลขเพื่อคัดลอกได้เลยค่ะ*\n";
+        } else {
+            // 🛡️ (2026-05-14) ใส่ dash ใน account_number — กัน FB auto-QR
+            //   FB detect เลข 10-13 หลักขึ้นต้น 0 → render auto-QR overlay (format ผิด สแกนไม่ได้)
+            //   Fix: ใส่ dash → break digit-sequence pattern, ลูกค้ายัง copy ได้ (banking app ตัด dash เอง)
+            $message .= '   เลขบัญชี: '.$this->formatAccountNumberForFb($account->account_number)."\n";
         }
 
         return $message;
+    }
+
+    /**
+     * 🆕 (2026-05-31) ดึงบัญชีหลัก (primary) ของระบบดูดวง — บัญชีเดียว
+     *
+     * ลำดับเลือก: is_default ก่อน → ไม่มีก็เอาตัวแรกตาม sort_order
+     */
+    protected function getPrimaryFortuneBankAccount(): ?\App\Models\PaymentBankAccount
+    {
+        $accounts = $this->settings->getFortuneBankAccounts();
+
+        if ($accounts->isEmpty()) {
+            return null;
+        }
+
+        // บัญชีหลัก (is_default=true) มาก่อน — ถ้าไม่มีก็เอาตัวแรกที่เรียงตาม sort_order แล้ว
+        return $accounts->firstWhere('is_default', true) ?? $accounts->first();
+    }
+
+    /**
+     * 🆕 (2026-05-31) เลขบัญชีหลักแบบใส่ dash — สำหรับส่งเป็น "บับเบิลเดี่ยว" ให้ลูกค้าก๊อป
+     *
+     * คืน null ถ้า: โหมด promptpay_only / ไม่มีบัญชี / บัญชีไม่มีเลขบัญชี
+     * (renderer จะข้ามการส่งบับเบิลเมื่อได้ null)
+     *
+     * @return string|null เลขบัญชีใส่ dash (เช่น 123-4-56789-0) หรือ null
+     */
+    protected function getCopyableAccountNumber(): ?string
+    {
+        // โหมดพร้อมเพย์อย่างเดียว — ไม่มีเลขบัญชีให้ก๊อป (ใช้ QR)
+        if ($this->settings->getPaymentDisplayMode() === 'promptpay_only') {
+            return null;
+        }
+
+        $account = $this->getPrimaryFortuneBankAccount();
+
+        if (! $account || empty($account->account_number)) {
+            return null;
+        }
+
+        return $this->formatAccountNumberForFb($account->account_number);
     }
 
     /**

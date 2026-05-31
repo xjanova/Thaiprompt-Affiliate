@@ -46,9 +46,9 @@ class FacebookRichMessageService
      *
      * ใช้ตอน: GET_STARTED postback หรือ ผู้ใช้เข้ามาครั้งแรก
      *
-     * @param string $userName ชื่อผู้ใช้
-     * @param string|null $facebookUserId FB PSID — ใช้ตรวจว่า user คนนี้ใช้สิทธิ์ฟรีไปแล้วหรือยัง
-     *                                    (ถ้า null → behave เดิม โชว์ปุ่มฟรีตาม admin setting)
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  string|null  $facebookUserId  FB PSID — ใช้ตรวจว่า user คนนี้ใช้สิทธิ์ฟรีไปแล้วหรือยัง
+     *                                       (ถ้า null → behave เดิม โชว์ปุ่มฟรีตาม admin setting)
      * @return array Facebook Messenger API payload
      */
     public function buildWelcomeTemplate(string $userName, ?string $facebookUserId = null): array
@@ -130,12 +130,12 @@ class FacebookRichMessageService
                 $qaWindowLao = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
                 $qLimitTextLao = $maxQRaw <= 0 ? 'ບໍ່ຈຳກັດ' : "{$maxQRaw} ຄຳຖາມ";
                 $serviceLines[] = "🔮 Celtic Cross 💰💰 {$celticPrice} BAHT 💰💰\n"
-                    . "   🃏 ຈິດເລືອກໄພ່ 10 ໃບ ຄອບຄຸມ:\n"
-                    . "   • ອະດີດ → ປັດຈຸບັນ → ອະນາຄົດ\n"
-                    . "   • ອຸປະສັກ + ຕົວທ່ານ + ຄົນຮອບຂ້າງ\n"
-                    . "   • ຄວາມຫວັງ&ຢ້ານ + ຜົນລັບ\n"
-                    . "   ❓ ຖາມໄດ້ {$qLimitTextLao} ພາຍໃນ {$qaWindowLao} ນາທີ\n"
-                    . "   ⚡ ຕອບທັນທີ ບໍ່ມີລໍຖ້າ";
+                    ."   🃏 ຈິດເລືອກໄພ່ 10 ໃບ ຄອບຄຸມ:\n"
+                    ."   • ອະດີດ → ປັດຈຸບັນ → ອະນາຄົດ\n"
+                    ."   • ອຸປະສັກ + ຕົວທ່ານ + ຄົນຮອບຂ້າງ\n"
+                    ."   • ຄວາມຫວັງ&ຢ້ານ + ຜົນລັບ\n"
+                    ."   ❓ ຖາມໄດ້ {$qLimitTextLao} ພາຍໃນ {$qaWindowLao} ນາທີ\n"
+                    .'   ⚡ ຕອບທັນທີ ບໍ່ມີລໍຖ້າ';
             }
             // 🎁 (2026-05-04) ลบบรรทัด "🆓 ດູດວງຟຣີ" ออก — ฟรีได้เฉพาะตอบกลับ DM react/comment
         } else {
@@ -150,12 +150,12 @@ class FacebookRichMessageService
                 $qaWindowTh = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
                 $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
                 $serviceLines[] = "🔮 Celtic Cross 💰💰 {$celticPrice} BAHT 💰💰\n"
-                    . "   🃏 จิตเลือกไพ่ 10 ใบ ครอบคลุม:\n"
-                    . "   • อดีต → ปัจจุบัน → อนาคต\n"
-                    . "   • อุปสรรค + ตัวคุณ + คนรอบข้าง\n"
-                    . "   • ความหวัง&กลัว + ผลลัพธ์\n"
-                    . "   ❓ ถามได้ {$qLimitText} ภายใน {$qaWindowTh} นาที\n"
-                    . "   ⚡ ตอบทันที ไม่มีรอ";
+                    ."   🃏 จิตเลือกไพ่ 10 ใบ ครอบคลุม:\n"
+                    ."   • อดีต → ปัจจุบัน → อนาคต\n"
+                    ."   • อุปสรรค + ตัวคุณ + คนรอบข้าง\n"
+                    ."   • ความหวัง&กลัว + ผลลัพธ์\n"
+                    ."   ❓ ถามได้ {$qLimitText} ภายใน {$qaWindowTh} นาที\n"
+                    .'   ⚡ ตอบทันที ไม่มีรอ';
             }
             // 🎁 (2026-05-04) ลบบรรทัด "🆓 ดูดวงฟรี" ออก — ฟรีได้เฉพาะตอบกลับ DM react/comment
         }
@@ -188,8 +188,8 @@ class FacebookRichMessageService
      *
      * ใช้ตอน: basic_done → เสนอดูดวงเชิงลึก
      *
-     * @param string $userName ชื่อผู้ใช้
-     * @param float $price ราคาดูดวงละเอียด
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  float  $price  ราคาดูดวงละเอียด
      * @return array Facebook Messenger API payload
      */
     public function buildUpsellTemplate(string $userName, float $price): array
@@ -253,8 +253,8 @@ class FacebookRichMessageService
      * ใช้ตอน: pending_payment → แสดงข้อมูลชำระเงิน
      * ⚠️ ไม่แก้ไข logic ของ SMS Payment — แค่แสดงผลสวยขึ้น
      *
-     * @param FortuneReading $reading ข้อมูลบิล
-     * @param string|null $bankInfo ข้อมูลบัญชีธนาคาร
+     * @param  FortuneReading  $reading  ข้อมูลบิล
+     * @param  string|null  $bankInfo  ข้อมูลบัญชีธนาคาร
      * @return array Facebook Messenger API payload
      */
     public function buildPaymentTemplate(FortuneReading $reading, ?string $bankInfo = null): array
@@ -280,9 +280,9 @@ class FacebookRichMessageService
             $text .= "   (ອາດໃຊ້ເວລາ 1-5 ນາທີ ກວ່າຍອດຈະເຂົ້າ)\n\n";
             $text .= "✅ ຄົບ → ລະບົບຕັດບິນອັດຕະໂນມັດ ສົ່ງຄຳທຳນາຍພາຍໃນ 1-5 ນາທີ\n";
             $text .= "❌ ບໍ່ຄົບ → ຕ້ອງລໍຖ້າແອັດມິນກວດ\n\n";
-            $text .= "⏰ ຊຳລະພາຍໃນ 30 ນາທີ — ໂອນແລ້ວກົດປຸ່ມດ້ານລຸ່ມ\n\n";
-            $text .= "📌 *ນະໂຍບາຍຄືນເງິນ*: ບໍລິການດິຈິຕອນສົ່ງທັນທີຫຼັງຊຳລະ\n";
-            $text .= "   ຮ້ານ*ງົດຄືນເງິນ*ທຸກກໍລະນີ ກະລຸນາກວດກ່ອນຊຳລະ 🙏";
+            $text .= "⏰ ໂອນພາຍໃນ 30 ນາທີ — ໂອນແລ້ວກົດປຸ່ມດ້ານລຸ່ມ\n\n";
+            $text .= "📌 *ນະໂຍບາຍຄືນເງິນ*: ບໍລິການດິຈິຕອນສົ່ງທັນທີຫຼັງໂອນ\n";
+            $text .= '   ຮ້ານ*ງົດຄືນເງິນ*ທຸກກໍລະນີ ກະລຸນາກວດກ່ອນໂອນ 🙏';
         } else {
             $text = "📋 บิล: {$billRef}\n";
             $text .= "━━━━━━━━━━━━━━━\n";
@@ -291,9 +291,9 @@ class FacebookRichMessageService
             $text .= "⚠️ *โอนยอดให้ตรงเป๊ะ {$amountText} บาท* (ทศนิยมด้วย!)\n";
             $text .= "✅ ตรง → ระบบตัดบิลอัตโนมัติ ส่งคำทำนายภายใน 1-3 นาที\n";
             $text .= "❌ ผิด → ต้องรอแอดมินตรวจ อาจช้าหลายชั่วโมง\n\n";
-            $text .= "⏰ ชำระภายใน 30 นาที — โอนแล้วกดปุ่มด้านล่างค่ะ\n\n";
-            $text .= "📌 *นโยบายคืนเงิน*: บริการดิจิทัลส่งคำทำนายทันทีหลังชำระ\n";
-            $text .= "   ทางร้านขอ*งดคืนเงิน*ทุกกรณีค่ะ กรุณาตรวจสอบก่อนชำระ 🙏";
+            $text .= "⏰ โอนภายใน 30 นาที — โอนแล้วกดปุ่มด้านล่างค่ะ\n\n";
+            $text .= "📌 *นโยบายคืนเงิน*: บริการดิจิทัลส่งคำทำนายทันทีหลังโอน\n";
+            $text .= '   ทางร้านขอ*งดคืนเงิน*ทุกกรณีค่ะ กรุณาตรวจสอบก่อนโอน 🙏';
         }
 
         // ตัดให้ไม่เกิน 640 ตัวอักษร (Facebook limit)
@@ -309,7 +309,7 @@ class FacebookRichMessageService
                     'buttons' => [
                         [
                             'type' => 'postback',
-                            'title' => $isLao ? '✅ ແຈ້ງໂອນແລ້ວ' : '✅ แจ้งชำระเงินแล้ว',
+                            'title' => $isLao ? '✅ ແຈ້ງໂອນແລ້ວ' : '✅ แจ้งโอนแล้ว',
                             'payload' => 'REPORT_PAYMENT',
                         ],
                         [
@@ -381,7 +381,7 @@ class FacebookRichMessageService
      *
      * ใช้ตอน: หลังดูดวงเสร็จ → เชิญแอด LINE
      *
-     * @param string|null $referralUrl URL เชิญเพื่อน (ถ้ามี)
+     * @param  string|null  $referralUrl  URL เชิญเพื่อน (ถ้ามี)
      * @return array|null Facebook Messenger API payload (null ถ้าไม่มี LINE URL)
      */
     public function buildLineInviteTemplate(?string $referralUrl = null): ?array
@@ -432,9 +432,9 @@ class FacebookRichMessageService
     /**
      * สร้าง Check Remaining Template แสดงสิทธิ์คงเหลือ
      *
-     * @param int $remaining จำนวนครั้งฟรีที่เหลือ
-     * @param int $maxFree จำนวนครั้งฟรีทั้งหมด
-     * @param int $todayCount จำนวนที่ใช้ไปวันนี้
+     * @param  int  $remaining  จำนวนครั้งฟรีที่เหลือ
+     * @param  int  $maxFree  จำนวนครั้งฟรีทั้งหมด
+     * @param  int  $todayCount  จำนวนที่ใช้ไปวันนี้
      * @return array Facebook Messenger API payload
      */
     public function buildCheckRemainingTemplate(int $remaining, int $maxFree, int $todayCount): array
@@ -497,7 +497,7 @@ class FacebookRichMessageService
         } elseif ($celticEnabled) {
             $buttons[] = [
                 'type' => 'postback',
-                'title' => "🔮 ไพ่ 10 ใบ {$celticPrice}฿",
+                'title' => "💎 โอนค่าบูชาครู {$celticPrice}฿",
                 'payload' => 'TIER_CELTIC_99',
             ];
         }
@@ -532,8 +532,8 @@ class FacebookRichMessageService
      *
      * ใช้ตอน: ผู้ใช้กดปุ่ม "เชิญเพื่อนได้เงิน"
      *
-     * @param string $referralUrl URL สำหรับแชร์
-     * @param string|null $commissionInfo ข้อมูลค่าคอมมิชชั่น
+     * @param  string  $referralUrl  URL สำหรับแชร์
+     * @param  string|null  $commissionInfo  ข้อมูลค่าคอมมิชชั่น
      * @return array Facebook Messenger API payload
      */
     public function buildAffiliateShareTemplate(string $referralUrl, ?string $commissionInfo = null): array
@@ -590,7 +590,7 @@ class FacebookRichMessageService
     /**
      * สร้าง Birthdate Prompt Template
      *
-     * @param float $price ราคาดูดวงละเอียด
+     * @param  float  $price  ราคาดูดวงละเอียด
      * @return array Facebook Messenger API payload
      */
     public function buildBirthdatePromptTemplate(float $price): array
@@ -604,8 +604,8 @@ class FacebookRichMessageService
                 'payload' => [
                     'template_type' => 'button',
                     'text' => "🎂 ขณะนี้ ให้กรอกวันเดือนปีเกิด\n\n"
-                        . "เป็นตัวเลข พ.ศ. ต้องกรอก 4 ตัว\n\n"
-                        . "📅 เช่น 1/1/2521",
+                        ."เป็นตัวเลข พ.ศ. ต้องกรอก 4 ตัว\n\n"
+                        .'📅 เช่น 1/1/2521',
                     'buttons' => [
                         [
                             'type' => 'postback',
@@ -650,7 +650,7 @@ class FacebookRichMessageService
             }
             $buttons[] = [
                 'type' => 'postback',
-                'title' => "🔮 ไพ่ Celtic {$celticPriceX}฿",
+                'title' => "💎 โอนค่าบูชาครู {$celticPriceX}฿",
                 'payload' => 'TIER_CELTIC_99',
             ];
         }
@@ -683,7 +683,7 @@ class FacebookRichMessageService
     /**
      * สร้าง AI Limit Template เมื่อหมดสิทธิ์ฟรี
      *
-     * @param float $price ราคาดูดวงละเอียด
+     * @param  float  $price  ราคาดูดวงละเอียด
      * @return array Facebook Messenger API payload
      */
     public function buildAiLimitTemplate(float $price): array
@@ -712,7 +712,7 @@ class FacebookRichMessageService
         } elseif ($celticEnabled) {
             $buttons[] = [
                 'type' => 'postback',
-                'title' => "🔮 ไพ่ 10 ใบ {$celticPrice}฿",
+                'title' => "💎 โอนค่าบูชาครู {$celticPrice}฿",
                 'payload' => 'TIER_CELTIC_99',
             ];
         }
@@ -825,7 +825,7 @@ class FacebookRichMessageService
     /**
      * สร้าง Waiting Payment Template (เตือนชำระเงิน)
      *
-     * @param string $remainingTime เวลาที่เหลือ เช่น "25 นาที"
+     * @param  string  $remainingTime  เวลาที่เหลือ เช่น "25 นาที"
      * @return array Facebook Messenger API payload
      */
     public function buildWaitingPaymentTemplate(string $remainingTime): array
@@ -962,10 +962,10 @@ class FacebookRichMessageService
         }
 
         if (! str_starts_with($basicId, '@')) {
-            $basicId = '@' . $basicId;
+            $basicId = '@'.$basicId;
         }
 
-        return 'https://line.me/R/ti/p/' . $basicId;
+        return 'https://line.me/R/ti/p/'.$basicId;
     }
 
     /**
@@ -973,7 +973,7 @@ class FacebookRichMessageService
      *
      * ใช้เมื่อไม่ต้องการ Button/Generic Template — แค่ Quick Replies
      *
-     * @param string $action action จาก FortuneConversationService
+     * @param  string  $action  action จาก FortuneConversationService
      * @return array|null Quick Replies array หรือ null
      */
     public function getQuickRepliesForAction(string $action): ?array
