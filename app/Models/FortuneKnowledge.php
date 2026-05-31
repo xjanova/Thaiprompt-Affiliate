@@ -45,6 +45,8 @@ class FortuneKnowledge extends Model
 
     public const CATEGORY_BLACK_MAGIC = 'black_magic';
 
+    public const CATEGORY_PHYSIOGNOMY = 'physiognomy';
+
     public const CATEGORY_GENERAL = 'general';
 
     /**
@@ -56,6 +58,7 @@ class FortuneKnowledge extends Model
         self::CATEGORY_GUARDIAN_SPIRITS,
         self::CATEGORY_DEITIES,
         self::CATEGORY_BLACK_MAGIC,
+        self::CATEGORY_PHYSIOGNOMY,
         self::CATEGORY_GENERAL,
     ];
 
@@ -65,6 +68,7 @@ class FortuneKnowledge extends Model
         self::CATEGORY_GUARDIAN_SPIRITS => '🛕 เจ้าที่/พระภูมิ',
         self::CATEGORY_DEITIES => '🕉️ องค์เทพ',
         self::CATEGORY_BLACK_MAGIC => '🪬 ไสยศาสตร์/มนต์ดำ',
+        self::CATEGORY_PHYSIOGNOMY => '👤 โหงวเฮ้ง/ลักษณะคน',
         self::CATEGORY_GENERAL => '📚 ทั่วไป',
     ];
 

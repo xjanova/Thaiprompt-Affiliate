@@ -28,9 +28,10 @@ class FortuneKnowledgeSeeder extends Seeder
         $this->command?->info('🌱 กำลัง seed คลังความรู้แม่หมอ (RAG)...');
 
         $health = $this->seedHealth();
+        $persona = $this->seedPhysiognomy();
         $mu = $this->seedMuKnowledge();
 
-        $this->command?->info("✅ Seed คลังความรู้สำเร็จ — สุขภาพ {$health} ใบ + สายมู {$mu} หัวข้อ");
+        $this->command?->info("✅ Seed คลังความรู้สำเร็จ — สุขภาพ {$health} + โหงวเฮ้ง {$persona} + สายมู {$mu} หัวข้อ");
     }
 
     /**
@@ -71,6 +72,47 @@ class FortuneKnowledgeSeeder extends Seeder
                     'priority' => 0,
                     'is_active' => true,
                     'source' => 'Liber 777 / lilly-tarot / teachmetarot',
+                ]
+            );
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Seed ตำราโหงวเฮ้ง/ลักษณะคน รายไพ่ จาก config/fortune_card_persona.php
+     */
+    protected function seedPhysiognomy(): int
+    {
+        $tome = (array) config('fortune_card_persona.cards', []);
+        $count = 0;
+
+        foreach ($tome as $nameEn => $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+            $look = (string) ($entry['look'] ?? '');
+            $trait = (string) ($entry['trait'] ?? '');
+            $rev = (string) ($entry['rev'] ?? '');
+
+            $content = "รูปลักษณ์/โหงวเฮ้ง: {$look}\n"
+                ."นิสัย/ลักษณะ: {$trait}\n"
+                ."กลับหัว (ด้านลบ): {$rev}";
+
+            FortuneKnowledge::firstOrCreate(
+                [
+                    'category' => FortuneKnowledge::CATEGORY_PHYSIOGNOMY,
+                    'card_name' => $nameEn,
+                ],
+                [
+                    'subject' => $nameEn,
+                    'title' => "{$nameEn} (โหงวเฮ้ง)",
+                    'keywords' => $nameEn,
+                    'content' => $content,
+                    'priority' => 0,
+                    'is_active' => true,
+                    'source' => 'Golden Dawn persona / โหงวเฮ้งจีน',
                 ]
             );
             $count++;

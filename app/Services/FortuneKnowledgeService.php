@@ -46,7 +46,27 @@ class FortuneKnowledgeService
      */
     public function healthLinesForCards(array $cards): string
     {
-        $map = $this->healthMap();
+        return $this->linesFromCardMap($cards, $this->healthMap());
+    }
+
+    /**
+     * สร้างบล็อกโหงวเฮ้ง/ลักษณะคน ของไพ่ที่เปิด (เฉพาะ 10 ใบ)
+     *
+     * @param  array<int, array>  $cards  ผลจาก FortuneReading::getCelticCards()
+     */
+    public function physiognomyLinesForCards(array $cards): string
+    {
+        return $this->linesFromCardMap($cards, $this->personaMap());
+    }
+
+    /**
+     * สร้างบรรทัดรายไพ่จาก map (name_en => ['content']) — ใช้ร่วม health/physiognomy
+     *
+     * @param  array<int, array>  $cards
+     * @param  array<string, array>  $map
+     */
+    protected function linesFromCardMap(array $cards, array $map): string
+    {
         if (empty($map)) {
             return '';
         }
@@ -115,6 +135,51 @@ class FortuneKnowledgeService
                         .'ตั้งตรง: '.(string) ($e['up'] ?? '')."\n"
                         .'กลับหัว: '.(string) ($e['rev'] ?? ''),
                     'severity' => '',
+                ];
+            }
+
+            return $map;
+        });
+    }
+
+    /**
+     * แผนที่โหงวเฮ้ง/ลักษณะคน: name_en => ['content'] (DB → fallback config) + cache
+     *
+     * @return array<string, array>
+     */
+    protected function personaMap(): array
+    {
+        return Cache::remember('fortune_knowledge:persona_map', self::CACHE_TTL, function () {
+            // 1) DB ก่อน (try/catch — DB ล่ม/ยังไม่ migrate → ใช้ config fallback)
+            try {
+                if (Schema::hasTable('fortune_knowledge')) {
+                    $rows = FortuneKnowledge::active()
+                        ->byCategory(FortuneKnowledge::CATEGORY_PHYSIOGNOMY)
+                        ->whereNotNull('card_name')
+                        ->get();
+                    if ($rows->isNotEmpty()) {
+                        $map = [];
+                        foreach ($rows as $r) {
+                            $map[(string) $r->card_name] = ['content' => (string) $r->content];
+                        }
+
+                        return $map;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // fall through to config fallback
+            }
+
+            // 2) Fallback: config
+            $map = [];
+            foreach ((array) config('fortune_card_persona.cards', []) as $nameEn => $e) {
+                if (! is_array($e)) {
+                    continue;
+                }
+                $map[(string) $nameEn] = [
+                    'content' => 'รูปลักษณ์/โหงวเฮ้ง: '.(string) ($e['look'] ?? '')."\n"
+                        .'นิสัย/ลักษณะ: '.(string) ($e['trait'] ?? '')."\n"
+                        .'กลับหัว (ด้านลบ): '.(string) ($e['rev'] ?? ''),
                 ];
             }
 
@@ -245,6 +310,7 @@ class FortuneKnowledgeService
     public function clearCache(): void
     {
         Cache::forget('fortune_knowledge:health_map');
+        Cache::forget('fortune_knowledge:persona_map');
         foreach (FortuneKnowledge::CATEGORIES as $cat) {
             Cache::forget("fortune_knowledge:entries:{$cat}");
         }

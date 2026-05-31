@@ -843,6 +843,7 @@ class CelticCrossService
             .$forecastDirective
             .$this->buildHealthDirective($reading, $userQuestion)
             .$this->buildMuKnowledgeDirective($reading, $userQuestion)
+            .$this->buildPhysiognomyDirective($reading, $userQuestion)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1276,7 +1277,8 @@ class CelticCrossService
                 .$this->buildBlackMagicDirective($reading, $userQuestion, $previousContext)
                 // 🩺 (2026-06-01) ตำราสุขภาพ — inject Q2+ ด้วย (ถามสุขภาพ → เทียบอวัยวะ/อาการตามหน้าไพ่)
                 .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
-                .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext);
+                .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
+                .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1379,6 +1381,7 @@ class CelticCrossService
             .$this->buildBlackMagicDirective($reading, $userQuestion, $previousContext)
             .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
             .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
+            .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2547,6 +2550,70 @@ class CelticCrossService
     }
 
     /**
+     * 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ — อ่าน "คน" จากหน้าไพ่
+     *
+     * User directive 2026-06-01: "เพิ่มตำราโหงวเฮ้ง ลักษณะคน ประจำไพ่ให้ครบ 78 ใบ"
+     *
+     * ใช้เมื่อลูกค้าถามถึง "คน" — เขาเป็นใคร/หน้าตา-นิสัยแบบไหน/เนื้อคู่/คู่กรณี/คนที่จะมา
+     *   → ดึงลักษณะคนประจำไพ่ที่เปิด (คลัง RAG: DB→config) มาให้แม่หมออ่านคนจากไพ่
+     *   ผูกกับโหมดนักสืบ "คิดออกไหมว่าใคร" (ดู [[buildCardFirstMandate]] 🔎)
+     *
+     * Detect-based: inject เฉพาะ session ที่ถามเรื่องคน → ลูกค้าทั่วไปไม่เปลือง token
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildPhysiognomyDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    {
+        // settings gate — admin ปิดได้
+        if (! (bool) ($this->settings->enable_celtic_physiognomy ?? true)) {
+            return '';
+        }
+
+        // Detect: ถามเรื่อง "คน" ไหม
+        $haystack = mb_strtolower($userQuestion.' '.$previousContext);
+        $keywords = [
+            'เป็นคนยังไง', 'เป็นคนแบบไหน', 'คนยังไง', 'คนแบบไหน', 'นิสัย', 'อุปนิสัย', 'หน้าตา',
+            'รูปร่าง', 'ลักษณะ', 'โหงวเฮ้ง', 'ดูคน', 'เขาเป็นคน', 'นิสัยใจคอ', 'เนื้อคู่', 'คู่แท้',
+            'คนที่จะมา', 'คนที่ชอบ', 'คนที่คุย', 'มือที่สาม', 'คู่กรณี', 'แฟนเป็นคน', 'เขาหน้าตา',
+            'คนรอบตัว', 'อีกฝ่ายเป็นคน', 'เขานิสัย', 'ดูนิสัย', 'ดูลักษณะ',
+        ];
+        $hit = false;
+        foreach ($keywords as $kw) {
+            if (mb_strpos($haystack, $kw) !== false) {
+                $hit = true;
+                break;
+            }
+        }
+        if (! $hit) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $block = app(\App\Services\FortuneKnowledgeService::class)->physiognomyLinesForCards($cards);
+        if (trim($block) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."👤 ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ (ตรวจพบคำถามเกี่ยวกับ \"คน\")\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ด้านล่างคือ \"รูปลักษณ์/โหงวเฮ้ง + นิสัย\" ที่ไพ่แต่ละใบที่เปิดบ่งถึง — ใช้อ่าน \"คน\" ตามหน้าไพ่:\n\n"
+            .$block."\n\n"
+
+            ."🎯 *วิธีอ่านคน (card-first — ตามหน้าไพ่ ไม่มั่ว):*\n"
+            ."• อ่าน \"คน\" จากไพ่ในตำแหน่งที่ตรงกับบุคคลนั้น — ตัวเจ้าชะตา / สิ่งแวดล้อม (คนรอบตัว) / ความหวัง-กลัว / ผลลัพธ์ หรือไพ่ราชสำนัก (ข้าราชบริพาร/อัศวิน/ราชินี/กษัตริย์ = คนจริง)\n"
+            ."• ฟันธงลักษณะเด่น: เพศ/วัย (ราชสำนัก) + รูปร่าง-ผิว-หน้า (สำรับ/ธาตุ) + นิสัยเด่น (ความหมายไพ่) + ตั้งตรง/กลับหัว (ด้านดี/ด้านลบ)\n"
+            ."  ❌ ห้ามตอบกว้างๆ \"เป็นคนดี/นิสัยดี\" — ต้องเฉพาะตามไพ่ (เช่น \"ชายผิวเข้ม รูปร่างล่ำ หนักแน่นแต่ดื้อ\")\n"
+            ."• 🔎 *โหมดนักสืบ (สำคัญ)*: ทำนายลักษณะคนแล้ว → ชวนเจ้าชะตายืนยัน \"ลักษณะแบบนี้ คิดออกไหมว่าเป็นใคร?\" ([TYPE:D] ไม่นับ) แล้วเจาะให้ตรงตัวขึ้น\n"
+            ."• ⚠️ ชี้ \"ลักษณะ/แนวโน้ม\" ตามไพ่ — *ห้ามมั่วชื่อจริง/หน้าตาเป๊ะ 100%* (ไพ่บอกแนวคน ไม่ใช่บัตรประชาชน)\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 🩺 helper — แปลง name_en เป็น suit key สำหรับ fallback ตำราสุขภาพ
      *   (ใช้เมื่อ lookup รายใบไม่เจอ เช่น ชื่อไพ่เพี้ยน)
      */
@@ -3155,6 +3222,7 @@ class CelticCrossService
             // 🩺 (2026-06-01) ตำราสุขภาพ — ถ้ามีคำถามสุขภาพในรอบนี้ ให้บทสรุปเทียบอวัยวะ/อาการตามไพ่
             .$this->buildHealthDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildMuKnowledgeDirective($reading, $questions->pluck('question')->implode(' '))
+            .$this->buildPhysiognomyDirective($reading, $questions->pluck('question')->implode(' '))
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"
