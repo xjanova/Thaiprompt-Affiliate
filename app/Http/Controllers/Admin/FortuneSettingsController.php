@@ -464,13 +464,14 @@ class FortuneSettingsController extends Controller
             }
         }
 
-        // 💳 (2026-05-09) Stripe secrets — ถ้า admin เคลียร์ field (เว้นว่าง) ห้ามเขียน null ทับ
-        //   เคส: admin โหลดหน้า settings → ฟิลด์ password ว่าง (security: ไม่แสดง secret กลับ)
-        //         → submit form → field=null → ทับ secret เดิม → key หาย
-        //   วิธี: ถ้า request->stripe_secret_key หรือ webhook_secret เป็น empty string → unset ออก
-        //         → DB row ไม่ update field นั้น (เก็บค่าเดิม)
+        // 💳 (2026-05-09) Secret fields — ถ้า admin เว้นว่าง ห้ามเขียนทับ secret เดิม
+        //   เคส: admin โหลดหน้า settings → ฟิลด์ password แสดงว่าง (security: ไม่ส่ง secret กลับ)
+        //         → submit form → field ว่าง → ทับ secret เดิม → key หาย
+        //   🐛 (2026-06-01 FIX) เดิมเช็ค `=== ''` แต่ middleware ConvertEmptyStringsToNull
+        //      แปลง '' → null ก่อนถึง validate → guard ไม่ทำงาน → null เขียนทับ key (SlipOK/Stripe หายหลัง save)
+        //      ใช้ blank() ครอบทั้ง null + '' + ช่องว่าง → ฟิลด์ที่เว้นว่าง = เก็บค่าเดิมไว้
         foreach (['stripe_secret_key', 'stripe_webhook_secret', 'slipok_api_key'] as $secretField) {
-            if (array_key_exists($secretField, $validated) && $validated[$secretField] === '') {
+            if (array_key_exists($secretField, $validated) && blank($validated[$secretField])) {
                 unset($validated[$secretField]);
             }
         }
