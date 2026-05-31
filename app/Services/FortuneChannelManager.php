@@ -1352,11 +1352,14 @@ class FortuneChannelManager
             }
         }
 
-        // ✅ ส่ง Payment Template เฉพาะปุ่มกด (ไม่มี QR ซ้ำ)
+        // 🌙 (2026-05-31) ส่งข้อความปิดท้าย "โอนแล้วรอ" เป็น text ธรรมดา (ไม่มีปุ่ม — user request)
+        //   เดิมเป็น button template [✅ แจ้งโอนแล้ว][❌ ยกเลิก] → เอาปุ่มออก (คนแก่สับสน)
+        //   แจ้งโอน = SMS auto-match เปิดไพ่ให้เอง / ยกเลิก = ลูกค้าพิมพ์ "ยกเลิก" ได้
         if ($reading) {
-            $paymentTemplate = $richService->buildPaymentTemplate($reading);
-
-            return $fbService->sendButtonTemplate($userId, $paymentTemplate);
+            $paymentNote = $richService->buildPaymentInstructionText($reading);
+            if (! empty($paymentNote)) {
+                return $fbService->sendMessage($userId, $paymentNote);
+            }
         }
 
         return true;

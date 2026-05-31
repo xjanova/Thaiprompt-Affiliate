@@ -248,79 +248,49 @@ class FacebookRichMessageService
     // ============================================================
 
     /**
-     * สร้าง Payment Template แสดงรายละเอียดบิล
+     * สร้างข้อความปิดท้ายขั้นชำระเงิน — "โอนแล้วรอ" (ไม่มีปุ่ม)
      *
-     * ใช้ตอน: pending_payment → แสดงข้อมูลชำระเงิน
-     * ⚠️ ไม่แก้ไข logic ของ SMS Payment — แค่แสดงผลสวยขึ้น
+     * ใช้ตอน: pending_payment / celtic_pending_payment → ส่งต่อท้าย QR
+     * ⚠️ ไม่แก้ไข logic ของ SMS Payment — แค่ข้อความ
+     *
+     * 🌙 (2026-05-31) เอาปุ่ม "แจ้งโอนแล้ว/ยกเลิก" ออก (user request — คนแก่สับสน)
+     *   - แจ้งโอน: ไม่ต้องกด — ระบบตัดบิลอัตโนมัติจาก SMS แล้วเปิดไพ่ให้เอง
+     *   - ยกเลิก: ลูกค้าพิมพ์ "ยกเลิก" ได้ (handleCelticPendingPayment / handlePendingPayment)
+     *   คืนค่าเป็น string ส่งผ่าน sendMessage ธรรมดา (ไม่ใช่ button template แล้ว)
      *
      * @param  FortuneReading  $reading  ข้อมูลบิล
-     * @param  string|null  $bankInfo  ข้อมูลบัญชีธนาคาร
-     * @return array Facebook Messenger API payload
+     * @return string ข้อความสั้น เป็นมิตรกับผู้สูงอายุ
      */
-    public function buildPaymentTemplate(FortuneReading $reading, ?string $bankInfo = null): array
+    public function buildPaymentInstructionText(FortuneReading $reading): string
     {
         $amount = $reading->unique_amount ?? $reading->amount_paid ?? 0;
         $amountText = number_format($amount, 2);
         $billRef = $reading->bill_reference ?? "FR-{$reading->id}";
 
-        // 💰 (2026-05-01) เน้นยอดเงินด้วย 💰💰 ขนาบ + เตือนทศนิยมต้องตรง
-        //    เหตุผล: ระบบตัดบิลอัตโนมัติใช้ทศนิยม unique จับคู่ slip
-        //    ถ้าโอนยอดผิด → ระบบไม่ตัด → ต้องรอแอดมินเช็ค (ช้า)
         // 🌐 (2026-05-03) Lao variant — สำหรับลูกค้าลาวที่ใช้ Cross-Border QR (BCEL One, LDB, JDB)
         $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
 
         if ($isLao) {
+            // 🌙 (2026-05-31) ບລັອກສະອາດ ເປັນມິດກັບຜູ້ສູງອາຍຸ — ເຫຼືອ QR + ບອກໃຫ້ລໍຖ້າ
+            //   ⚠️ ເກັບໝາຍເຫດ KIP→BAHT ໄວ້ — ສຳຄັນສຳລັບ Cross-Border QR ລາວ
             $text = "📋 ບິນ: {$billRef}\n";
-            $text .= "━━━━━━━━━━━━━━━\n";
-            $text .= "💰💰 *{$amountText}* BAHT 💰💰\n";
-            $text .= "━━━━━━━━━━━━━━━\n\n";
-            $text .= "⚠️ *ໂອນຍອດໃຫ້ຄົບ {$amountText} ບາດ* (ມີທົດສະນິຍົມ!)\n";
-            $text .= "🇱🇦 ສະແກນ QR ດ້ວຍແອັບທະນາຄານລາວ (BCEL One, LDB, JDB, APB)\n";
-            $text .= "   ຍອດຈະຖືກແປງຈາກ KIP ເປັນ BAHT ອັດຕະໂນມັດ\n";
-            $text .= "   (ອາດໃຊ້ເວລາ 1-5 ນາທີ ກວ່າຍອດຈະເຂົ້າ)\n\n";
-            $text .= "✅ ຄົບ → ລະບົບຕັດບິນອັດຕະໂນມັດ ສົ່ງຄຳທຳນາຍພາຍໃນ 1-5 ນາທີ\n";
-            $text .= "❌ ບໍ່ຄົບ → ຕ້ອງລໍຖ້າແອັດມິນກວດ\n\n";
-            $text .= "⏰ ໂອນພາຍໃນ 30 ນາທີ — ໂອນແລ້ວກົດປຸ່ມດ້ານລຸ່ມ\n\n";
-            $text .= "📌 *ນະໂຍບາຍຄືນເງິນ*: ບໍລິການດິຈິຕອນສົ່ງທັນທີຫຼັງໂອນ\n";
-            $text .= '   ຮ້ານ*ງົດຄືນເງິນ*ທຸກກໍລະນີ ກະລຸນາກວດກ່ອນໂອນ 🙏';
+            $text .= "💰 *{$amountText}* ບາດ\n\n";
+            $text .= "🇱🇦 ສະແກນ QR ດ້ານເທິງດ້ວຍແອັບທະນາຄານລາວ — ຍອດຂຶ້ນເອງ\n";
+            $text .= "   (ແປງ KIP→BAHT ອັດຕະໂນມັດ ອາດໃຊ້ເວລາ 1-5 ນາທີ)\n";
+            $text .= "   ຖ້າໂອນເອງ ໃສ່ໃຫ້ຄົບ {$amountText} ບາດ\n\n";
+            $text .= '🙏 ໂອນແລ້ວລໍຖ້າບຶດໜຶ່ງເດີ ແມ່ໝໍຊິເປີດໄພ່ໃຫ້ ✨';
         } else {
+            // 🌙 (2026-05-31) บล็อกสะอาด เป็นมิตรกับผู้สูงอายุ — เหลือ QR + บอกให้รอ
+            //   เก็บคำเตือนทศนิยมไว้แบบสั้น (ยอดต้องตรงเป๊ะ ระบบถึงตัดบิลอัตโนมัติ)
             $text = "📋 บิล: {$billRef}\n";
-            $text .= "━━━━━━━━━━━━━━━\n";
-            $text .= "💰💰 *{$amountText}* BAHT 💰💰\n";
-            $text .= "━━━━━━━━━━━━━━━\n\n";
-            $text .= "⚠️ *โอนยอดให้ตรงเป๊ะ {$amountText} บาท* (ทศนิยมด้วย!)\n";
-            $text .= "✅ ตรง → ระบบตัดบิลอัตโนมัติ ส่งคำทำนายภายใน 1-3 นาที\n";
-            $text .= "❌ ผิด → ต้องรอแอดมินตรวจ อาจช้าหลายชั่วโมง\n\n";
-            $text .= "⏰ โอนภายใน 30 นาที — โอนแล้วกดปุ่มด้านล่างค่ะ\n\n";
-            $text .= "📌 *นโยบายคืนเงิน*: บริการดิจิทัลส่งคำทำนายทันทีหลังโอน\n";
-            $text .= '   ทางร้านขอ*งดคืนเงิน*ทุกกรณีค่ะ กรุณาตรวจสอบก่อนโอน 🙏';
+            $text .= "💰 *{$amountText}* บาท\n\n";
+            $text .= "📲 สแกน QR ด้านบนได้เลยค่ะ ยอดขึ้นเอง\n";
+            $text .= "   (ถ้าโอนเอง ใส่ให้ตรง {$amountText} บาท)\n\n";
+            $text .= '🙏 โอนแล้วรอสักครู่นะคะ เดี๋ยวแม่หมอเปิดไพ่ให้ ✨';
         }
 
-        // ตัดให้ไม่เกิน 640 ตัวอักษร (Facebook limit)
-        $text = mb_substr($text, 0, 630);
-
-        return [
-            'attachment' => [
-                'type' => 'template',
-                'payload' => [
-                    'template_type' => 'button',
-                    'text' => $text,
-                    // 🎯 Phase M — เอาปุ่ม "เช็คสถานะบิล" ออก (ซ้ำซ้อน)
-                    'buttons' => [
-                        [
-                            'type' => 'postback',
-                            'title' => $isLao ? '✅ ແຈ້ງໂອນແລ້ວ' : '✅ แจ้งโอนแล้ว',
-                            'payload' => 'REPORT_PAYMENT',
-                        ],
-                        [
-                            'type' => 'postback',
-                            'title' => $isLao ? '❌ ຍົກເລີກ' : '❌ ยกเลิก',
-                            'payload' => 'CANCEL_PAYMENT',
-                        ],
-                    ],
-                ],
-            ],
-        ];
+        // ตัดความยาวกันเกิน limit (FB plain text ~2000) — ข้อความสั้นอยู่แล้ว
+        return mb_substr($text, 0, 1900);
     }
 
     // ============================================================
