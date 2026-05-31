@@ -953,6 +953,32 @@ trait CelticCrossConversationTrait
             return $this->onCelticPaymentConfirmed($reading);
         }
 
+        // 🔍 (2026-05-31) Fuzzy Payment — ลูกค้าเคลม "โอนแล้ว/เช็คสถานะ" แต่ยอดไม่ตรงเป๊ะ
+        //   เคสจริง: บิล 99.77 แต่ลูกค้าโอน 99 กลม / 100 (เกิน) → exact match พลาด → ค้างตลอด
+        //   เดิม Celtic ไม่ต่อสาย fuzzy เลย (ต่อแค่ Deep handlePendingPayment) → ระบบ "โอนไม่ตรงยอด" ตายสำหรับ 99฿
+        //   ตอนนี้: เคลมจ่าย + ยังไม่ตัดบิล → ลอง fuzzy (auto-approve / ask-confirm ใช่-ไม่ใช่ / push admin)
+        //   ⚠️ SCB SMS ไม่มีชื่อผู้โอน → name score ต่ำ → ส่วนใหญ่จะถามยืนยัน "ใช่/ไม่ใช่" ก่อนตัด (ปลอดภัย)
+        if (method_exists($this, 'isPaymentClaimRequest')
+            && method_exists($this, 'tryFuzzyAutoApproveOnClaim')
+            && $this->isPaymentClaimRequest($messageText)) {
+            $celticUpa = $reading->uniquePaymentAmount;
+            if ($celticUpa) {
+                $fuzzyResult = $this->tryFuzzyAutoApproveOnClaim($reading, $celticUpa);
+                if ($fuzzyResult !== null) {
+                    return $fuzzyResult;
+                }
+            }
+
+            // 🧾 (2026-05-31) SlipOK on-ping — SMS ไม่พบ + มีสลิปเก็บไว้ → ตรวจสลิปทันที
+            if (! empty($reading->slip_image_path) && empty($reading->slipok_verified_at)
+                && method_exists($this, 'trySlipOkVerifyForReading')) {
+                $slipResult = $this->trySlipOkVerifyForReading($reading);
+                if ($slipResult !== null) {
+                    return $slipResult;
+                }
+            }
+        }
+
         $payAmount = $reading->amount_paid
             ? number_format((float) $reading->amount_paid, 2)
             : '99.00';

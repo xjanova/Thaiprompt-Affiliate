@@ -2343,6 +2343,102 @@ Format 2 — JSON array:
                 </div>
             </div>
 
+            {{-- 🧾 (2026-05-31) SlipOK ตรวจสลิป — fallback เมื่อ SMS ไม่เข้า --}}
+            <div class="mt-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-700"
+                 x-data="{
+                     enabled: {{ ($settings->enable_slipok_verify ?? false) ? 'true' : 'false' }},
+                     testing: false, testMsg: '', testOk: false,
+                     testConn() {
+                         this.testing = true; this.testMsg = '';
+                         fetch('{{ route('admin.fortune.settings.test-slipok') }}', {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                             body: JSON.stringify({ slipok_branch_id: (this.$refs.branch?.value || ''), slipok_api_key: (this.$refs.apikey?.value || '') })
+                         }).then(r => r.json()).then(d => {
+                             this.testOk = !!d.success;
+                             this.testMsg = d.success
+                                 ? ('✅ ' + (d.message || 'เชื่อมต่อสำเร็จ') + ' • โควตาเหลือ ' + (d.quota ?? '-'))
+                                 : ('❌ ' + (d.message || 'ไม่สำเร็จ'));
+                         }).catch(e => { this.testOk = false; this.testMsg = '❌ ' + e.message; })
+                           .finally(() => { this.testing = false; });
+                     }
+                 }">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 dark:text-white">
+                            🧾 ตรวจสลิปด้วย SlipOK (สำรองเมื่อ SMS ไม่เข้า)
+                        </label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            ลูกค้าส่งสลิป → ถ้า SMS ยังไม่ตัดบิลใน 1 นาที (หรือลูกค้าทักถาม) ระบบจะเอาสลิปไปตรวจกับธนาคารผ่าน SlipOK — โอนจริงก็ตัดบิลให้เลย
+                        </p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="hidden" name="enable_slipok_verify" value="0">
+                        <input type="checkbox" name="enable_slipok_verify" value="1"
+                               x-model="enabled"
+                               class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:ring-2 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                </div>
+
+                <div x-show="enabled" x-cloak x-transition class="space-y-3 mt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Branch ID</label>
+                            <input type="text" name="slipok_branch_id" x-ref="branch"
+                                   value="{{ $settings->slipok_branch_id }}"
+                                   placeholder="เช่น 12345"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">รหัสสาขาจาก SlipOK (อยู่ใน URL)</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">API Key (x-authorization)</label>
+                            <input type="password" name="slipok_api_key" x-ref="apikey" value="" autocomplete="new-password"
+                                   placeholder="{{ $settings->slipok_api_key ? '•••••• (เก็บไว้แล้ว — เว้นว่างถ้าไม่เปลี่ยน)' : 'วาง API Key ที่นี่' }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เก็บแบบเข้ารหัส — ไม่แสดงกลับ</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ยอดขั้นต่ำที่อนุมัติ (บาท)</label>
+                            <input type="number" name="slipok_min_amount" step="0.01" min="0" max="100000"
+                                   value="{{ $settings->slipok_min_amount ?? 99 }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ต้องโอนไม่ต่ำกว่านี้ — default 99 (ยอดเกินผ่านได้)</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">หน่วงก่อนตรวจ (วินาที)</label>
+                            <input type="number" name="slipok_fallback_delay_seconds" step="1" min="10" max="600"
+                                   value="{{ $settings->slipok_fallback_delay_seconds ?? 60 }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">รอ SMS ตัดก่อน — default 60 วิ (ประหยัดโควตา)</p>
+                        </div>
+                    </div>
+
+                    <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input type="hidden" name="slipok_use_log" value="0">
+                        <input type="checkbox" name="slipok_use_log" value="1"
+                               {{ ($settings->slipok_use_log ?? true) ? 'checked' : '' }}
+                               class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                        เปิด log mode — กันสลิปซ้ำ + เช็คบัญชีผู้รับอัตโนมัติ + ส่งสลิปซ้ำไม่กินโควตา <strong>(แนะนำเปิด)</strong>
+                    </label>
+
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <button type="button" @click="testConn()" :disabled="testing"
+                                class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition disabled:opacity-50">
+                            <span x-show="!testing">🔌 ทดสอบ + เช็คโควตา</span>
+                            <span x-show="testing">⏳ กำลังเช็ค...</span>
+                        </button>
+                        <span x-show="testMsg" x-text="testMsg" :class="testOk ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'" class="text-sm font-medium"></span>
+                    </div>
+                </div>
+
+                <div x-show="enabled" x-cloak class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+                    💡 <strong>ลำดับการตัดบิล:</strong> SMS checker ตัดก่อนเสมอ (ฟรี) → ถ้าไม่ตัดใน {{ $settings->slipok_fallback_delay_seconds ?? 60 }} วินาที หรือลูกค้าทักถาม
+                    → SlipOK ตรวจสลิป → <strong>โอนจริง + เข้าบัญชีเรา + ยอด ≥ {{ number_format($settings->slipok_min_amount ?? 99, 0) }}</strong> → ตัดบิลให้ทันที
+                    <br>🔐 สมัคร + ดู Branch ID / API Key ที่ <a href="https://slipok.com" target="_blank" class="underline">slipok.com</a> แล้วลงทะเบียนบัญชีรับเงินในระบบ SlipOK ให้ตรงกับบัญชีร้าน
+                </div>
+            </div>
+
             {{-- บัญชีธนาคารสำหรับระบบดูดวง (CRUD) --}}
             <div class="mt-6" x-data="fortuneBankAccounts()">
                 <div class="flex items-center justify-between mb-3">

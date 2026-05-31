@@ -302,6 +302,13 @@ class FortuneTellingSetting extends Model
         'fuzzy_window_minutes',
         'fuzzy_name_auto_threshold',
         'fuzzy_admin_alert_above_baht',
+        // 🧾 (2026-05-31) SlipOK slip verification (fallback เมื่อ SMS ไม่พบ)
+        'enable_slipok_verify',
+        'slipok_branch_id',
+        'slipok_api_key',
+        'slipok_min_amount',
+        'slipok_fallback_delay_seconds',
+        'slipok_use_log',
     ];
 
     /**
@@ -430,6 +437,12 @@ class FortuneTellingSetting extends Model
         'fuzzy_window_minutes' => 'integer',
         'fuzzy_name_auto_threshold' => 'integer',
         'fuzzy_admin_alert_above_baht' => 'decimal:2',
+        // 🧾 (2026-05-31) SlipOK slip verification
+        'enable_slipok_verify' => 'boolean',
+        'slipok_api_key' => 'encrypted',
+        'slipok_min_amount' => 'decimal:2',
+        'slipok_fallback_delay_seconds' => 'integer',
+        'slipok_use_log' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -576,6 +589,11 @@ class FortuneTellingSetting extends Model
         'fuzzy_window_minutes' => 60,
         'fuzzy_name_auto_threshold' => 70,
         'fuzzy_admin_alert_above_baht' => 5.00,
+        // 🧾 (2026-05-31) SlipOK — ค่าเริ่มต้น (default OFF — admin เปิด + ใส่ key ก่อนใช้)
+        'enable_slipok_verify' => false,
+        'slipok_min_amount' => 99.00,
+        'slipok_fallback_delay_seconds' => 60,
+        'slipok_use_log' => true,
     ];
 
     /**

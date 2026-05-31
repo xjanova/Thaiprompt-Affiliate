@@ -266,6 +266,13 @@ class FortuneSettingsController extends Controller
             'fuzzy_window_minutes' => 'nullable|integer|min:5|max:1440',
             'fuzzy_name_auto_threshold' => 'nullable|integer|min:0|max:100',
             'fuzzy_admin_alert_above_baht' => 'nullable|numeric|min:0|max:1000',
+            // 🧾 (2026-05-31) SlipOK slip verification (fallback เมื่อ SMS checker ไม่พบ)
+            'enable_slipok_verify' => 'boolean',
+            'slipok_branch_id' => 'nullable|string|max:64',
+            'slipok_api_key' => 'nullable|string|max:255',
+            'slipok_min_amount' => 'nullable|numeric|min:0|max:100000',
+            'slipok_fallback_delay_seconds' => 'nullable|integer|min:10|max:600',
+            'slipok_use_log' => 'boolean',
             // Affiliate/MLM Settings สำหรับดูดวง
             'fortune_affiliate_enabled' => 'boolean',
             'fortune_auto_register_enabled' => 'boolean',
@@ -445,6 +452,9 @@ class FortuneSettingsController extends Controller
             // 🛡️ (2026-05-10) Link Moderation
             'auto_hide_link_comments',
             'link_moderation_log_only',
+            // 🧾 (2026-05-31) SlipOK
+            'enable_slipok_verify',
+            'slipok_use_log',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {
@@ -457,7 +467,7 @@ class FortuneSettingsController extends Controller
         //         → submit form → field=null → ทับ secret เดิม → key หาย
         //   วิธี: ถ้า request->stripe_secret_key หรือ webhook_secret เป็น empty string → unset ออก
         //         → DB row ไม่ update field นั้น (เก็บค่าเดิม)
-        foreach (['stripe_secret_key', 'stripe_webhook_secret'] as $secretField) {
+        foreach (['stripe_secret_key', 'stripe_webhook_secret', 'slipok_api_key'] as $secretField) {
             if (array_key_exists($secretField, $validated) && $validated[$secretField] === '') {
                 unset($validated[$secretField]);
             }
@@ -796,6 +806,28 @@ class FortuneSettingsController extends Controller
         $aiService = new FortuneAIService($settings);
 
         $result = $aiService->testConnection();
+
+        return response()->json($result);
+    }
+
+    /**
+     * 🧾 (2026-05-31) ทดสอบการเชื่อมต่อ SlipOK + เช็คโควตาคงเหลือ
+     *
+     * ใช้ค่า Branch ID / API Key จาก form ถ้าส่งมา (ทดสอบก่อนบันทึก)
+     * ถ้า api_key เว้นว่าง → ใช้ค่าที่เก็บไว้เดิม
+     */
+    public function testSlipOk(Request $request)
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        if ($request->filled('slipok_branch_id')) {
+            $settings->slipok_branch_id = $request->input('slipok_branch_id');
+        }
+        if ($request->filled('slipok_api_key')) {
+            $settings->slipok_api_key = $request->input('slipok_api_key');
+        }
+
+        $result = (new \App\Services\Fortune\SlipOkService($settings))->checkQuota();
 
         return response()->json($result);
     }

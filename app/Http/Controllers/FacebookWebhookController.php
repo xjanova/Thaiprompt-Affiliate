@@ -1773,7 +1773,7 @@ class FacebookWebhookController extends Controller
             // 📸 มี active flow + รูป (อาจเป็นสลิป) → handleSlipImageOnly
             //   จะตอบเฉพาะ PENDING_PAYMENT + PAID (พฤติกรรมเดิม)
             if (empty($messageText) && $userImageUrl && $hasActiveFortune) {
-                $this->handleSlipImageOnly($senderId);
+                $this->handleSlipImageOnly($senderId, $userImageUrl);
 
                 return;
             }
@@ -1937,7 +1937,7 @@ class FacebookWebhookController extends Controller
         }
     }
 
-    protected function handleSlipImageOnly(string $senderId): void
+    protected function handleSlipImageOnly(string $senderId, ?string $imageUrl = null): void
     {
         try {
             // หา reading ที่ user กำลังใช้งานอยู่
@@ -1945,10 +1945,10 @@ class FacebookWebhookController extends Controller
             //   แล้วโดนข้อความ "แม่หมอกำลังคำนวณ" ที่ผิดความจริง (ที่จริงต้องเปิดไพ่ต่อ)
             $activeReading = FortuneReading::where('facebook_user_id', $senderId)
                 ->whereIn('conversation_status', array_merge(
-                    [
-                        FortuneReading::STATUS_PENDING_PAYMENT,
-                        FortuneReading::STATUS_PAID,
-                    ],
+                    // 🐛 (2026-05-31) ใช้ PENDING_PAYMENT_STATUSES — เดิมมีแค่ STATUS_PENDING_PAYMENT
+                    //   ทำให้ Celtic 99 (celtic_pending_payment) ที่ส่งสลิป ไม่ถูกจับ → silent
+                    FortuneReading::PENDING_PAYMENT_STATUSES,
+                    [FortuneReading::STATUS_PAID],
                     FortuneReading::CELTIC_ACTIVE_STATUSES
                 ))
                 ->latest()
@@ -1995,6 +1995,62 @@ class FacebookWebhookController extends Controller
             // 🟢 PENDING_PAYMENT — ลูกค้าส่งสลิป → ปลอบ + บังคับให้กด "แจ้งชำระเงิน"
             // (ครอบคลุม Celtic Cross 99฿ ด้วย — ทั้ง deep และ celtic ใช้ flow ตอบเดียวกันตรงนี้)
             if ($activeReading && in_array($activeReading->conversation_status, FortuneReading::PENDING_PAYMENT_STATUSES, true)) {
+                // 🔍 (2026-05-31) ลูกค้าส่งสลิป = เคลมว่าจ่ายแล้ว → ลองตัดบิลด้วย fuzzy ก่อน
+                //   user spec: "ลูกค้าส่งบิลมา แต่บิลไม่ตัด" → ต้องพยายามตัดให้จริง ไม่ใช่แค่ขอให้กดปุ่ม
+                //   (รองรับโอนยอดไม่ตรง/เศษ; ถ้าเจอ SMS ใกล้เคียง → ตัด/ถามยืนยัน/แจ้งแอดมิน)
+                try {
+                    $fuzzySlip = $this->conversationService->tryFuzzyMatchForSlip($activeReading);
+                    if ($fuzzySlip !== null) {
+                        $this->channelManager->sendResponse('facebook', $senderId, $fuzzySlip, [
+                            'from_admin' => true,
+                            'message_tag' => 'POST_PURCHASE_UPDATE',
+                        ]);
+
+                        Log::info('Facebook: รับสลิป → fuzzy match', [
+                            'sender_id' => $senderId,
+                            'reading_id' => $activeReading->id,
+                            'fuzzy_action' => $fuzzySlip['action'] ?? null,
+                        ]);
+
+                        return;
+                    }
+                } catch (\Throwable $fuzzyErr) {
+                    Log::warning('Facebook: slip fuzzy attempt ล้มเหลว (non-blocking)', [
+                        'sender_id' => $senderId,
+                        'reading_id' => $activeReading->id,
+                        'error' => $fuzzyErr->getMessage(),
+                    ]);
+                }
+
+                // 🧾 (2026-05-31) SlipOK fallback — SMS ยังไม่ตัด → เก็บสลิปไว้ตรวจใน 1 นาที (หรือ on-ping)
+                //   ประหยัดโควตา: ไม่ยิง SlipOK ทันที รอ SMS ตัดก่อน (job หน่วงเวลา + ลูกค้า ping จะ trigger)
+                try {
+                    $slipSvc = new \App\Services\Fortune\SlipOkService($this->settings);
+                    if ($slipSvc->isEnabled() && ! empty($imageUrl) && empty($activeReading->slipok_verified_at)) {
+                        $stored = $this->conversationService->storeIncomingSlipFromUrl($activeReading, $imageUrl);
+                        if ($stored) {
+                            $this->facebookService->sendMessage(
+                                $senderId,
+                                "🌙 ได้รับสลิปแล้วค่ะ ขอบคุณนะคะ\n\n"
+                                ."⏳ ระบบกำลังตรวจสอบให้ — ถ้าโอนเข้าจริง จะตัดบิลและเริ่มดูดวงให้ภายใน 1 นาที ✨\n\n"
+                                .'💡 อยากให้เช็คทันที พิมพ์ "เช็คสถานะ" ได้เลยค่ะ'
+                            );
+
+                            Log::info('Facebook: เก็บสลิป → รอ SlipOK fallback', [
+                                'sender_id' => $senderId,
+                                'reading_id' => $activeReading->id,
+                            ]);
+
+                            return;
+                        }
+                    }
+                } catch (\Throwable $slipErr) {
+                    Log::warning('Facebook: SlipOK store ล้มเหลว (non-blocking)', [
+                        'sender_id' => $senderId,
+                        'error' => $slipErr->getMessage(),
+                    ]);
+                }
+
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "🌙 ขอบคุณค่ะที่ส่งสลิปมาให้แม่หมอ\n\n"
                     ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"

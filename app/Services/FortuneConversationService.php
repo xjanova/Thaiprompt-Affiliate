@@ -11015,6 +11015,15 @@ class FortuneConversationService
             return $fuzzyResult;
         }
 
+        // 🧾 (2026-05-31) SlipOK on-ping — ลูกค้า ping ขณะมีสลิปเก็บไว้ + ยังไม่ตัด → ตรวจทันที
+        //   (SMS ไม่พบ → ระบบ SMS อาจมีปัญหา → ใช้สลิปที่ลูกค้าส่งมาตรวจกับ SlipOK)
+        if (! empty($reading->slip_image_path) && empty($reading->slipok_verified_at)) {
+            $slipResult = $this->trySlipOkVerifyForReading($reading);
+            if ($slipResult !== null) {
+                return $slipResult;
+            }
+        }
+
         // 📡 (2026-05-21) Trigger SMS Re-scan
         //   เคส: ธนาคารส่ง SMS แล้วแต่ broadcast receiver ของ smschecker พลาด
         //   (app sleeping, doze mode, OEM kill) → SMS ไม่เคยถูก process
@@ -11052,6 +11061,31 @@ class FortuneConversationService
             'message' => $message,
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * 🔍 (2026-05-31) Public entry — ลอง fuzzy match จากการที่ลูกค้า "ส่งสลิป/รูป"
+     *
+     * ใช้จาก FB/LINE webhook handleSlipImageOnly — ลูกค้าหลายคนส่งรูปสลิปแทนพิมพ์ "โอนแล้ว"
+     *   (เคสจริง user spec 2026-05-31: "ลูกค้าส่งบิลมา แต่บิลไม่ตัด" ต้องตัดบิลให้ด้วย)
+     *
+     * wrap tryFuzzyAutoApproveOnClaim + null-safe (fetch UPA, guard paid)
+     *
+     * @return array|null action result (ส่งผ่าน FortuneChannelManager) หรือ null = ไม่เข้าเงื่อนไข fuzzy
+     */
+    public function tryFuzzyMatchForSlip(FortuneReading $reading): ?array
+    {
+        // จ่ายแล้ว → ไม่ต้อง fuzzy (slip handler จะตอบ "กำลังคำนวณ/เปิดไพ่" ตามสถานะเอง)
+        if ($reading->is_paid) {
+            return null;
+        }
+
+        $uniqueAmount = $reading->uniquePaymentAmount;
+        if (! $uniqueAmount) {
+            return null;
+        }
+
+        return $this->tryFuzzyAutoApproveOnClaim($reading, $uniqueAmount);
     }
 
     /**
@@ -11106,23 +11140,9 @@ class FortuneConversationService
                     ]);
                 }
 
-                // เรียก processPaymentConfirmed — entry point เดียวกับ SMS auto match
-                try {
-                    $channelManager = new \App\Services\FortuneChannelManager($this->settings);
-                    $this->processPaymentConfirmed($reading->fresh(), $sms, $channelManager, $platform, $userId);
-                } catch (\Throwable $e) {
-                    Log::error('Fortune: fuzzy approve processPaymentConfirmed failed', [
-                        'reading_id' => $reading->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                    // ถึงล้ม processPaymentConfirmed ก็ตอบลูกค้าก่อน — bill ถูก mark paid แล้ว
-                }
-
-                return [
-                    'action' => 'fuzzy_auto_approved',
-                    'message' => $matcher->buildApprovedMessage($reading->fresh(), $uniqueAmount, $sms, $delta),
-                    'reading' => $reading->fresh(),
-                ];
+                // 🔀 (2026-05-31) route ตัดบิลตาม reading_type — Celtic เปิดไพ่, Deep gen คำทำนาย
+                //   (เดิม hardcode processPaymentConfirmed = Deep-only → Celtic โดน Pay-First guard เด้งขอวันเกิด)
+                return $this->finalizeFuzzyApprovedReading($reading, $sms, $uniqueAmount, $delta, $platform, $userId);
             }
 
             // ─── ASK_CONFIRMATION ─────────────────────────────────────
@@ -11264,22 +11284,9 @@ class FortuneConversationService
                 ];
             }
 
-            // Trigger pipeline ปกติ — processPaymentConfirmed
-            try {
-                $channelManager = new \App\Services\FortuneChannelManager($this->settings);
-                $this->processPaymentConfirmed($reading->fresh(), $sms, $channelManager, $platform, $userId);
-            } catch (\Throwable $e) {
-                Log::error('Fortune: fuzzy confirmation processPaymentConfirmed failed', [
-                    'reading_id' => $reading->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
-            return [
-                'action' => 'fuzzy_auto_approved',
-                'message' => $matcher->buildApprovedMessage($reading->fresh(), $upa, $sms, (float) ($pending['delta'] ?? 0)),
-                'reading' => $reading->fresh(),
-            ];
+            // 🔀 (2026-05-31) route ตัดบิลตาม reading_type — Celtic เปิดไพ่, Deep gen คำทำนาย
+            //   (สำคัญสำหรับ Celtic: SCB SMS ไม่มีชื่อผู้โอน → ส่วนใหญ่มาทาง ask-confirm นี้)
+            return $this->finalizeFuzzyApprovedReading($reading, $sms, $upa, (float) ($pending['delta'] ?? 0), $platform, $userId);
         } catch (\Throwable $e) {
             Log::warning('Fortune: tryHandleFuzzyConfirmation failed (non-blocking)', [
                 'platform' => $platform,
@@ -11289,6 +11296,397 @@ class FortuneConversationService
 
             return null;
         }
+    }
+
+    /**
+     * 🔀 (2026-05-31) หลัง fuzzy approve สำเร็จ → route การตัดบิลตาม reading_type
+     *
+     * เหตุผล: เดิม fuzzy เรียก processPaymentConfirmed() เสมอ ซึ่งออกแบบมาสำหรับ Deep 39฿
+     *   (gen คำทำนาย + Pay-First guard ขอวันเกิด) — ถ้าเอามาใช้กับ Celtic 99฿ จะผิด flow
+     *   (Celtic ไม่ต้องการวันเกิด ต้องเปิดไพ่ 10 ใบแทน)
+     *
+     *   - Celtic: confirmPayment() (is_paid + UPA used) → onCelticPaymentConfirmed() → เปิดไพ่ใบ 1
+     *             (คืน response ให้ webhook reply ส่งเอง — ไม่ push ซ้ำเหมือน handleCelticPaymentMatched)
+     *   - Deep:   processPaymentConfirmed() ตาม pipeline เดิม (gen คำทำนาย)
+     *
+     * @param  FortuneReading  $reading  บิลที่ approve แล้ว (matcher->approve ถูกเรียกไปก่อนหน้า)
+     * @param  SmsPaymentNotification  $sms  SMS ที่จับคู่
+     * @param  UniquePaymentAmount  $uniqueAmount  ยอดบิล
+     * @param  float  $delta  ส่วนต่าง (เกิน/ขาด)
+     * @param  string  $platform  facebook/line
+     * @param  string  $userId  platform user id
+     * @return array response สำหรับ webhook reply
+     */
+    protected function finalizeFuzzyApprovedReading(
+        FortuneReading $reading,
+        SmsPaymentNotification $sms,
+        UniquePaymentAmount $uniqueAmount,
+        float $delta,
+        string $platform,
+        string $userId
+    ): array {
+        $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+
+        if ($isCeltic) {
+            // ✅ Celtic — ตัดบิล (is_paid + UPA used) แล้วเปิดไพ่ใบที่ 1 ทันที
+            $reading->confirmPayment($sms);
+
+            // 💸 commission distribution (เหมือน handleCelticPaymentMatched) — ห้าม block flow เปิดไพ่
+            try {
+                $celticChannel = new \App\Services\FortuneChannelManager($this->settings);
+                $this->processAffiliateAndCommissions($reading->fresh(), $platform, $userId, $celticChannel);
+            } catch (\Throwable $affErr) {
+                Log::warning('Fortune: fuzzy Celtic commission ล้มเหลว (non-blocking)', [
+                    'reading_id' => $reading->id,
+                    'error' => $affErr->getMessage(),
+                ]);
+            }
+
+            // คืน response เปิดไพ่ใบ 1 (onCelticPaymentConfirmed → CELTIC_PICKING + promptNextCelticCard)
+            //   webhook reply จะ sendResponse เอง — ห้าม push ซ้ำ
+            $resp = $this->onCelticPaymentConfirmed($reading->fresh());
+            $resp['action'] = 'fuzzy_auto_approved_celtic';
+
+            Log::info('Fortune: fuzzy Celtic auto-approved → เปิดไพ่', [
+                'reading_id' => $reading->id,
+                'delta' => $delta,
+            ]);
+
+            return $resp;
+        }
+
+        // ✅ Deep — pipeline เดิม (gen คำทำนาย)
+        try {
+            $deepChannel = new \App\Services\FortuneChannelManager($this->settings);
+            $this->processPaymentConfirmed($reading->fresh(), $sms, $deepChannel, $platform, $userId);
+        } catch (\Throwable $e) {
+            Log::error('Fortune: fuzzy approve processPaymentConfirmed failed', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+            // ถึงล้ม processPaymentConfirmed ก็ตอบลูกค้าก่อน — bill ถูก mark paid แล้ว
+        }
+
+        $matcher = new \App\Services\Fortune\FortunePaymentFuzzyMatcher($this->settings);
+
+        return [
+            'action' => 'fuzzy_auto_approved',
+            'message' => $matcher->buildApprovedMessage($reading->fresh(), $uniqueAmount, $sms, $delta),
+            'reading' => $reading->fresh(),
+        ];
+    }
+
+    // ================================================================
+    // 🧾 (2026-05-31) SlipOK Slip Verification — fallback เมื่อ SMS ไม่พบ
+    // ================================================================
+
+    /**
+     * 💾 เก็บสลิปจาก URL (FB CDN) ไว้รอ verify fallback + นัด job 1 นาที
+     *
+     * @return bool true = เก็บสำเร็จ (พร้อมให้ fallback ตรวจ)
+     */
+    public function storeIncomingSlipFromUrl(FortuneReading $reading, string $url): bool
+    {
+        try {
+            $resp = \Illuminate\Support\Facades\Http::timeout(20)->get($url);
+            if (! $resp->successful()) {
+                return false;
+            }
+
+            return $this->persistSlipBytes($reading, $resp->body());
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK: storeIncomingSlipFromUrl ล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 💾 เก็บสลิปจาก base64 (LINE content API) ไว้รอ verify fallback + นัด job
+     */
+    public function storeIncomingSlipFromBase64(FortuneReading $reading, string $base64): bool
+    {
+        try {
+            // รองรับทั้ง data URI และ base64 ดิบ
+            if (str_contains($base64, ',')) {
+                $base64 = substr($base64, strpos($base64, ',') + 1);
+            }
+            $bytes = base64_decode($base64, true);
+            if ($bytes === false || $bytes === '') {
+                return false;
+            }
+
+            return $this->persistSlipBytes($reading, $bytes);
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK: storeIncomingSlipFromBase64 ล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * เขียนไฟล์สลิป + set columns + นัด job fallback
+     */
+    protected function persistSlipBytes(FortuneReading $reading, string $bytes): bool
+    {
+        // กันไฟล์ใหญ่เกิน (สลิปปกติ < 2MB)
+        if (strlen($bytes) > 6 * 1024 * 1024) {
+            return false;
+        }
+
+        $relPath = 'fortune/slips/'.$reading->id.'_'.now()->timestamp.'.jpg';
+        \Illuminate\Support\Facades\Storage::disk('local')->put($relPath, $bytes);
+
+        $reading->forceFill([
+            'slip_image_path' => $relPath,
+            'slip_received_at' => now(),
+        ])->save();
+
+        // 📅 นัดเช็ค fallback หลังหน่วงเวลา (default 60 วิ) — ถ้า SMS ยังไม่ตัด
+        $delay = (int) ($this->settings->slipok_fallback_delay_seconds ?? 60);
+        try {
+            \App\Jobs\VerifySlipFallbackJob::dispatch($reading->id)
+                ->delay(now()->addSeconds(max(10, $delay)));
+        } catch (\Throwable $e) {
+            // queue ล่มก็ไม่เป็นไร — on-ping path จะ trigger เอง
+            Log::debug('SlipOK: dispatch fallback job ล้มเหลว (on-ping จะ trigger แทน)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return true;
+    }
+
+    /**
+     * 🧹 ลบไฟล์สลิปที่เก็บไว้ + เคลียร์ column (PDPA — ไม่เก็บรูปนาน)
+     */
+    protected function cleanupStoredSlip(FortuneReading $reading): void
+    {
+        try {
+            if (! empty($reading->slip_image_path)) {
+                \Illuminate\Support\Facades\Storage::disk('local')->delete($reading->slip_image_path);
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+        if (! empty($reading->slip_image_path)) {
+            $reading->forceFill(['slip_image_path' => null])->save();
+        }
+    }
+
+    /**
+     * 🔎 ลอง verify สลิปที่เก็บไว้ด้วย SlipOK แล้วตัดบิลถ้าผ่าน
+     *
+     * เรียกจาก: VerifySlipFallbackJob (หน่วง 1 นาที) + on-ping (handlePendingPayment / handleCelticPendingPayment)
+     *
+     * @return array|null response (ส่งผ่าน ChannelManager) หรือ null = ไม่เข้าเงื่อนไข/ปล่อย flow เดิม
+     */
+    public function trySlipOkVerifyForReading(FortuneReading $reading, ?string $platform = null, ?string $userId = null): ?array
+    {
+        try {
+            $svc = new \App\Services\Fortune\SlipOkService($this->settings);
+            if (! $svc->isEnabled()) {
+                return null;
+            }
+
+            $reading->refresh();
+
+            // จ่ายแล้ว (SMS ตัดไปก่อน) → ลบสลิป + ไม่เรียก API (ประหยัดโควตา)
+            if ($reading->is_paid) {
+                $this->cleanupStoredSlip($reading);
+
+                return null;
+            }
+            // ตรวจไปแล้ว → กันซ้ำ
+            if ($reading->slipok_verified_at) {
+                return null;
+            }
+            if (empty($reading->slip_image_path)) {
+                return null;
+            }
+
+            $abs = \Illuminate\Support\Facades\Storage::disk('local')->path($reading->slip_image_path);
+            if (! is_file($abs)) {
+                return null;
+            }
+
+            $platform = $platform ?: $this->detectPlatformFromUserId($reading->facebook_user_id ?? $reading->line_user_id ?? '');
+            $userId = $userId ?: ($platform === 'line'
+                ? ($reading->line_user_id ?? $reading->facebook_user_id)
+                : ($reading->facebook_user_id ?? $reading->line_user_id));
+            if (empty($userId)) {
+                return null;
+            }
+
+            $verify = $svc->verifyByFile($abs);
+            $eval = $svc->evaluateForReading($reading, $verify);
+
+            Log::info('SlipOK: verify result', [
+                'reading_id' => $reading->id,
+                'decision' => $eval['decision'],
+                'reason' => $eval['reason'],
+                'amount' => $verify['amount'] ?? null,
+                'transRef' => $verify['transRef'] ?? null,
+            ]);
+
+            switch ($eval['decision']) {
+                case \App\Services\Fortune\SlipOkService::DECISION_APPROVE:
+                    return $this->finalizeSlipOkApproved($reading, $verify, $platform, $userId);
+
+                case \App\Services\Fortune\SlipOkService::DECISION_DUPLICATE:
+                    $this->cleanupStoredSlip($reading);
+
+                    return [
+                        'action' => 'slipok_duplicate',
+                        'message' => "⚠️ สลิปนี้เคยถูกใช้ยืนยันการชำระไปแล้วค่ะ\n\n"
+                            ."ถ้าเจ้าชะตาโอนใหม่จริง กรุณาส่งสลิปใบล่าสุด หรือพิมพ์ 'คุยกับแม่หมอ' 🙏",
+                        'reading' => $reading,
+                    ];
+
+                case \App\Services\Fortune\SlipOkService::DECISION_REJECT_RECEIVER:
+                    $this->cleanupStoredSlip($reading);
+
+                    return [
+                        'action' => 'slipok_wrong_receiver',
+                        'message' => "🙏 สลิปที่ส่งมาโอนเข้าบัญชีอื่น ไม่ใช่บัญชีของแม่หมอค่ะ\n\n"
+                            .'กรุณาโอนเข้าบัญชีที่ระบบแจ้ง แล้วส่งสลิปใหม่ หรือพิมพ์ "คุยกับแม่หมอ" นะคะ',
+                        'reading' => $reading,
+                    ];
+
+                case \App\Services\Fortune\SlipOkService::DECISION_REJECT_AMOUNT:
+                    $this->cleanupStoredSlip($reading);
+
+                    return [
+                        'action' => 'slipok_amount_low',
+                        'message' => "🙏 ยอดในสลิปยังไม่ครบค่าครูค่ะ\n({$eval['reason']})\n\n"
+                            .'รบกวนโอนเพิ่มให้ครบแล้วส่งสลิปใหม่ หรือพิมพ์ "คุยกับแม่หมอ" นะคะ',
+                        'reading' => $reading,
+                    ];
+
+                case \App\Services\Fortune\SlipOkService::DECISION_BANK_DELAY:
+                    return [
+                        'action' => 'slipok_bank_delay',
+                        'message' => "⏳ ธนาคารกำลังอัปเดตข้อมูลสลิป รออีกสักครู่นะคะ\n"
+                            ."แล้วพิมพ์ 'เช็คสถานะ' อีกครั้งค่ะ 🙏",
+                        'reading' => $reading,
+                    ];
+
+                case \App\Services\Fortune\SlipOkService::DECISION_NO_QR:
+                    // สลิปไม่มี QR (ภาพ crop / สลิปเก่า) → ตรวจไม่ได้ → ปล่อย flow เดิม (รอ SMS / แอดมิน)
+                    //   ไม่ลบสลิป เผื่อลูกค้าส่งใหม่ทับ
+                case \App\Services\Fortune\SlipOkService::DECISION_QUOTA:
+                case \App\Services\Fortune\SlipOkService::DECISION_ERROR:
+                default:
+                    Log::warning('SlipOK: ตรวจไม่ผ่าน/ระบบขัดข้อง → fallback flow เดิม', [
+                        'reading_id' => $reading->id,
+                        'decision' => $eval['decision'],
+                        'reason' => $eval['reason'],
+                    ]);
+
+                    return null;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK: trySlipOkVerifyForReading ล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * ✅ ตัดบิลหลัง SlipOK อนุมัติ — บันทึก audit + dedup + route ตาม reading_type
+     */
+    protected function finalizeSlipOkApproved(FortuneReading $reading, array $verify, string $platform, string $userId): array
+    {
+        $transRef = (string) $verify['transRef'];
+
+        // audit + dedup (trans_ref unique)
+        try {
+            \App\Models\SlipVerification::updateOrCreate(
+                ['trans_ref' => $transRef],
+                [
+                    'fortune_reading_id' => $reading->id,
+                    'amount' => $verify['amount'],
+                    'sending_bank' => $verify['sending_bank'],
+                    'receiving_bank' => $verify['receiving_bank'],
+                    'receiver_account' => $verify['receiver_account'],
+                    'sender_name' => $verify['sender_name'],
+                    'status' => 'verified',
+                    'raw' => $verify['raw'],
+                    'verified_at' => now(),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK: บันทึก SlipVerification ล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $reading->forceFill([
+            'slipok_verified_at' => now(),
+            'slipok_trans_ref' => $transRef,
+        ])->save();
+
+        // ตัดบิล (idempotent — ไม่มี SMS notification)
+        $reading->confirmPayment(null);
+
+        // ลบไฟล์สลิป (PDPA)
+        $this->cleanupStoredSlip($reading);
+
+        Log::warning('💎 SlipOK: APPROVED + ตัดบิล', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'amount' => $verify['amount'],
+            'transRef' => $transRef,
+        ]);
+
+        // commission (best-effort)
+        try {
+            $cm = new \App\Services\FortuneChannelManager($this->settings);
+            $this->processAffiliateAndCommissions($reading->fresh(), $platform, $userId, $cm);
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK: commission ล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // 🔮 Celtic → เปิดไพ่ใบ 1 / Deep → gen คำทำนาย
+        if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            $resp = $this->onCelticPaymentConfirmed($reading->fresh());
+            $resp['action'] = 'slipok_approved_celtic';
+
+            return $resp;
+        }
+
+        try {
+            $cm = new \App\Services\FortuneChannelManager($this->settings);
+            $this->processPaymentConfirmed($reading->fresh(), null, $cm, $platform, $userId);
+        } catch (\Throwable $e) {
+            Log::error('SlipOK: Deep processPaymentConfirmed ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return [
+            'action' => 'slipok_approved',
+            'message' => "✅ *ตรวจสลิปสำเร็จ — ตัดบิลเรียบร้อยแล้วค่ะ*\n\n"
+                .'🔖 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n"
+                .'💸 ยอดที่ตรวจพบ: ฿'.number_format((float) ($verify['amount'] ?? 0), 2)."\n\n"
+                .'🌙 แม่หมอกำลังคำนวณดวงดาวให้ รอสักครู่นะคะ ✨',
+            'reading' => $reading->fresh(),
+        ];
     }
 
     /**

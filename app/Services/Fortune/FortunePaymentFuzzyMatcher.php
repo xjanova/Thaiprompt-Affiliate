@@ -232,9 +232,12 @@ class FortunePaymentFuzzyMatcher
         $upperBound = $expectedAmount + $overpayMax;
 
         // active banks ที่เปิด SMS Checker (ตัด SMS จากธนาคารที่ไม่ใช่ของเรา)
+        // 🐛 (2026-05-31 FIX) เดิม pluck('bank_name') = "ธนาคารไทยพาณิชย์" แต่คอลัมน์ sms_payment_notifications.bank
+        //   เก็บเป็น bank_code = "SCB" → whereIn ไม่เคย match เลย → candidate=0 → fuzzy ตายสนิท
+        //   ต้องใช้ bank_code ให้ตรงกับที่ SMS เก็บ (ดู PaymentBankAccount::smsNotifications() ที่ใช้ bank_code อยู่แล้ว)
         $activeBanks = PaymentBankAccount::active()
             ->smsCheckerEnabled()
-            ->pluck('bank_name')
+            ->pluck('bank_code')
             ->unique()
             ->values();
 
@@ -403,7 +406,7 @@ class FortunePaymentFuzzyMatcher
             $message = "🔍 Fuzzy Payment Unresolved\n"
                 ."Bill: {$reading->bill_reference}\n"
                 ."Customer: {$reading->facebook_user_name}\n"
-                ."Expected: ฿".number_format((float) $uniqueAmount->unique_amount, 2)."\n";
+                .'Expected: ฿'.number_format((float) $uniqueAmount->unique_amount, 2)."\n";
 
             if (! empty($context['candidates']) && $context['candidates'] instanceof Collection) {
                 $message .= "Candidates: {$context['candidates']->count()}\n";
@@ -469,7 +472,7 @@ class FortunePaymentFuzzyMatcher
         $msg .= "👉 *ใช่ยอดที่เจ้าชะตาโอนใช่ไหมคะ?*\n\n"
             ."✅ ตอบ \"ใช่\" → ระบบจะตัดบิลและส่งคำทำนายให้\n"
             ."❌ ตอบ \"ไม่ใช่\" → แอดมินจะรับเรื่องตรวจสอบ\n\n"
-            ."🙏 ยืนยันภายใน 10 นาทีนะคะ";
+            .'🙏 ยืนยันภายใน 10 นาทีนะคะ';
 
         return $msg;
     }
@@ -502,7 +505,7 @@ class FortunePaymentFuzzyMatcher
             .$deltaLine
             ."⏰ เวลาโอน: {$time} น.\n\n"
             ."🌙 *แม่หมอจันทรากำลังคำนวณดวงดาวให้นะคะ*\n"
-            ."ใช้เวลา 1-3 นาที — รอสักครู่ค่ะ ✨";
+            .'ใช้เวลา 1-3 นาที — รอสักครู่ค่ะ ✨';
     }
 
     public function isEnabled(): bool
@@ -608,6 +611,7 @@ class FortunePaymentFuzzyMatcher
             if ($a['name_score'] !== $b['name_score']) {
                 return $b['name_score'] - $a['name_score'];
             }
+
             return $a['time_delta_minutes'] - $b['time_delta_minutes'];
         });
 
@@ -640,6 +644,7 @@ class FortunePaymentFuzzyMatcher
                     Log::warning('FortunePaymentFuzzyMatcher::confirmMatchByAdmin: reading not found', [
                         'reading_id' => $reading->id,
                     ]);
+
                     return false;
                 }
 
@@ -648,6 +653,7 @@ class FortunePaymentFuzzyMatcher
                     Log::info('FortunePaymentFuzzyMatcher::confirmMatchByAdmin: already paid', [
                         'reading_id' => $reading->id,
                     ]);
+
                     return true;
                 }
 
@@ -701,6 +707,7 @@ class FortunePaymentFuzzyMatcher
                 'sms_id' => $sms?->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

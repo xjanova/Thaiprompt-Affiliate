@@ -359,7 +359,7 @@ class LineFortuneWebhookController extends Controller
                 }
             }
 
-            $this->handleSlipImageOnly($userId, $replyToken);
+            $this->handleSlipImageOnly($userId, $replyToken, $messageId, $cachedBase64);
 
             return;
         }
@@ -651,7 +651,7 @@ class LineFortuneWebhookController extends Controller
                     'type' => 'text',
                     'text' => "🌙 รอแอดมินสักครู่นะคะ\n\n"
                         ."แม่หมอจะแจ้งให้แอดมินมาตอบคุณค่ะ ✨\n"
-                        ."ระหว่างรอ พิมพ์ถามแม่หมอต่อได้นะคะ 🔮",
+                        .'ระหว่างรอ พิมพ์ถามแม่หมอต่อได้นะคะ 🔮',
                 ],
             ]);
         }
@@ -1553,7 +1553,7 @@ class LineFortuneWebhookController extends Controller
      *
      * เหตุผล: ใช้ทั้ง classifier + Celtic vision — DRY + cache ภายใน request
      *
-     * @return string|null  data:image/jpeg;base64,...  หรือ null ถ้า fail
+     * @return string|null data:image/jpeg;base64,...  หรือ null ถ้า fail
      */
     protected function downloadLineImageAsBase64(string $messageId): ?string
     {
@@ -1732,7 +1732,7 @@ class LineFortuneWebhookController extends Controller
         }
     }
 
-    protected function handleSlipImageOnly(string $userId, ?string $replyToken): void
+    protected function handleSlipImageOnly(string $userId, ?string $replyToken, ?string $messageId = null, ?string $cachedBase64 = null): void
     {
         try {
             // หา reading ที่ user กำลังใช้งานอยู่ (LINE platform)
@@ -1742,10 +1742,10 @@ class LineFortuneWebhookController extends Controller
                     ->orWhere('facebook_user_id', $userId);
             })
                 ->whereIn('conversation_status', array_merge(
-                    [
-                        FortuneReading::STATUS_PENDING_PAYMENT,
-                        FortuneReading::STATUS_PAID,
-                    ],
+                    // 🐛 (2026-05-31) ใช้ PENDING_PAYMENT_STATUSES — เดิมตกหล่น celtic_pending_payment
+                    //   ทำให้ Celtic 99 ที่ส่งสลิปตอนรอจ่าย ไม่ถูกจับ → silent
+                    FortuneReading::PENDING_PAYMENT_STATUSES,
+                    [FortuneReading::STATUS_PAID],
                     FortuneReading::CELTIC_ACTIVE_STATUSES
                 ))
                 ->latest()
@@ -1788,6 +1788,69 @@ class LineFortuneWebhookController extends Controller
 
             // 🟢 PENDING_PAYMENT — ลูกค้าส่งสลิป → ปลอบ + ขอกด "แจ้งชำระเงิน"
             if ($activeReading && in_array($activeReading->conversation_status, FortuneReading::PENDING_PAYMENT_STATUSES, true)) {
+                // 🔍 (2026-05-31) ลูกค้าส่งสลิป = เคลมว่าจ่ายแล้ว → ลองตัดบิลด้วย fuzzy ก่อน
+                //   user spec: "ลูกค้าส่งบิลมา แต่บิลไม่ตัด" → ต้องพยายามตัดให้จริง (รองรับโอนยอดไม่ตรง/เศษ)
+                try {
+                    $fuzzySlip = $this->conversationService->tryFuzzyMatchForSlip($activeReading);
+                    if ($fuzzySlip !== null) {
+                        $this->channelManager->sendResponse(
+                            FortuneChannelManager::PLATFORM_LINE,
+                            $userId,
+                            $fuzzySlip,
+                            ['reply_token' => $replyToken, 'from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']
+                        );
+
+                        Log::info('LINE: รับสลิป → fuzzy match', [
+                            'user_id' => $userId,
+                            'reading_id' => $activeReading->id,
+                            'fuzzy_action' => $fuzzySlip['action'] ?? null,
+                        ]);
+
+                        return;
+                    }
+                } catch (\Throwable $fuzzyErr) {
+                    Log::warning('LINE: slip fuzzy attempt ล้มเหลว (non-blocking)', [
+                        'user_id' => $userId,
+                        'reading_id' => $activeReading->id,
+                        'error' => $fuzzyErr->getMessage(),
+                    ]);
+                }
+
+                // 🧾 (2026-05-31) SlipOK fallback — SMS ยังไม่ตัด → เก็บสลิปไว้ตรวจใน 1 นาที (หรือ on-ping)
+                try {
+                    $slipSvc = new \App\Services\Fortune\SlipOkService($this->settings);
+                    if ($slipSvc->isEnabled() && empty($activeReading->slipok_verified_at)) {
+                        // LINE: ดึงรูปผ่าน content API เป็น base64 (ใช้ที่ classify ไว้แล้วถ้ามี)
+                        $b64 = $cachedBase64;
+                        if (empty($b64) && ! empty($messageId)) {
+                            $b64 = $this->downloadLineImageAsBase64($messageId);
+                        }
+
+                        if (! empty($b64)
+                            && $this->conversationService->storeIncomingSlipFromBase64($activeReading, $b64)) {
+                            $this->lineService->sendMessageWithReplyFallback(
+                                $userId,
+                                "🌙 ได้รับสลิปแล้วค่ะ ขอบคุณนะคะ\n\n"
+                                ."⏳ ระบบกำลังตรวจสอบให้ — ถ้าโอนเข้าจริง จะตัดบิลและเริ่มดูดวงให้ภายใน 1 นาที ✨\n\n"
+                                .'💡 อยากให้เช็คทันที พิมพ์ "เช็คสถานะ" ได้เลยค่ะ',
+                                $replyToken
+                            );
+
+                            Log::info('LINE: เก็บสลิป → รอ SlipOK fallback', [
+                                'user_id' => $userId,
+                                'reading_id' => $activeReading->id,
+                            ]);
+
+                            return;
+                        }
+                    }
+                } catch (\Throwable $slipErr) {
+                    Log::warning('LINE: SlipOK store ล้มเหลว (non-blocking)', [
+                        'user_id' => $userId,
+                        'error' => $slipErr->getMessage(),
+                    ]);
+                }
+
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "🌙 ขอบคุณค่ะที่ส่งสลิปมาให้แม่หมอ\n\n"
                     ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
