@@ -240,6 +240,8 @@ class FortuneTellingSetting extends Model
         'enable_celtic_enrichment',
         // 🪬 (2026-05-29) โหมดคุณไสย์/มนต์ดำ — หัวข้อพิเศษล็อกทั้งรอบ (เปิดได้เฉพาะคำถามแรก)
         'enable_celtic_black_magic_mode',
+        // 🩺 (2026-06-01) ตำราสุขภาพประจำไพ่ — เทียบอวัยวะ/โรค/อาการ/ความรุนแรงตามหน้าไพ่
+        'enable_celtic_health_tome',
         // 🛡️ (2026-05-27) Abuse Clapback — แม่หมอ savage mode ตอบลูกค้าหยาบคาย
         'enable_abuse_clapback',
         'abuse_clapback_use_grok',
@@ -403,6 +405,7 @@ class FortuneTellingSetting extends Model
         'celtic_cross_proactive_enabled' => 'boolean',
         'enable_celtic_enrichment' => 'boolean',
         'enable_celtic_black_magic_mode' => 'boolean',
+        'enable_celtic_health_tome' => 'boolean',
         // 🛡️ (2026-05-27) Abuse Clapback toggles
         'enable_abuse_clapback' => 'boolean',
         'abuse_clapback_use_grok' => 'boolean',
@@ -523,6 +526,8 @@ class FortuneTellingSetting extends Model
         'enable_celtic_enrichment' => true,
         // 🪬 (2026-05-29) โหมดคุณไสย์ — default true (admin ปิดได้ผ่าน DB UPDATE)
         'enable_celtic_black_magic_mode' => true,
+        // 🩺 (2026-06-01) ตำราสุขภาพประจำไพ่ — default true (admin ปิดได้ผ่าน DB UPDATE)
+        'enable_celtic_health_tome' => true,
         // 🛡️ (2026-05-27) Abuse Clapback — default ปิด (admin opt-in เท่านั้น)
         'enable_abuse_clapback' => false,
         'abuse_clapback_use_grok' => true,

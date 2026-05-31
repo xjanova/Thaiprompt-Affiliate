@@ -841,6 +841,7 @@ class CelticCrossService
             .$advisorDirective
             .$saiMuDirective
             .$forecastDirective
+            .$this->buildHealthDirective($reading, $userQuestion)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1271,7 +1272,9 @@ class CelticCrossService
                 .$this->buildSaiMuDirective($reading)
                 .$this->buildForecastModeDirective($reading)
                 // 🪬 (2026-05-29) โหมดคุณไสย์ — inject Q2+ ด้วย (lock เรื่อง / reject ถ้าเปิดประเด็นช้า)
-                .$this->buildBlackMagicDirective($reading, $userQuestion, $previousContext);
+                .$this->buildBlackMagicDirective($reading, $userQuestion, $previousContext)
+                // 🩺 (2026-06-01) ตำราสุขภาพ — inject Q2+ ด้วย (ถามสุขภาพ → เทียบอวัยวะ/อาการตามหน้าไพ่)
+                .$this->buildHealthDirective($reading, $userQuestion, $previousContext);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1372,6 +1375,7 @@ class CelticCrossService
             .$saiMuDirective2
             .$forecastDirective2
             .$this->buildBlackMagicDirective($reading, $userQuestion, $previousContext)
+            .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2386,6 +2390,155 @@ class CelticCrossService
     }
 
     /**
+     * 🩺 (2026-06-01) ตำราสุขภาพประจำไพ่ — ทำนายสุขภาพให้เฉพาะเจาะจง/แม่นยำ/หลากหลาย
+     *
+     * User directive 2026-06-01: "การทำนายสุขภาพของ 99 ต้องหลากหลายแม่นยำกว่านี้ —
+     *   ไพ่แต่ละใบระบุอวัยวะ/โรค/อาการ/ความรุนแรงได้ ต้องมีตำราบรรจุให้แม่หมอรู้ว่า
+     *   ควรเทียบกับโรคอะไรของไพ่แต่ละใบ ตำแหน่งไหนในร่างกาย"
+     *
+     * แนวคิด: เมื่อลูกค้าถามเรื่องสุขภาพ → ดึง "อวัยวะ/แนวโน้มอาการ/ความรุนแรง" ประจำไพ่ที่เปิด
+     *   ทั้ง 10 ใบ (จาก config/fortune_tarot_health.php) มา inject ให้แม่หมอเทียบเคียง
+     *   → แม่หมออ่านสุขภาพ "จากหน้าไพ่ × ตำแหน่ง" (สอดคล้อง [[buildCardFirstMandate]]) ได้เจาะจง
+     *   แทนที่จะตอบกว้างๆ "ดูแลสุขภาพนะ"
+     *
+     * Detect-based (เหมือน [[buildBlackMagicDirective]]): inject เฉพาะ session ที่ถามสุขภาพ
+     *   → ลูกค้าทั่วไปไม่เปลือง token. inject เฉพาะ 10 ใบที่เปิด (ไม่ dump ตำราทั้ง 78 ใบ)
+     *
+     * จรรยาบรรณ: เทียบเคียงตามไพ่เท่านั้น ไม่ใช่วินิจฉัยแทนแพทย์ — อาการเฉียบพลัน/รุนแรง
+     *   ต้องแนะพบแพทย์จริง + ห้ามขายความกลัว (เตือนเฉพาะที่ไพ่ชี้)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+)
+     *         + buildGrandFinalePrompt
+     */
+    protected function buildHealthDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    {
+        // 🩺 settings gate — admin ปิดได้
+        if (! (bool) ($this->settings->enable_celtic_health_tome ?? true)) {
+            return '';
+        }
+
+        // Detect: คำถามนี้หรือบริบทก่อนหน้าเกี่ยวสุขภาพไหม
+        $haystack = mb_strtolower($userQuestion.' '.$previousContext);
+        $keywords = [
+            'สุขภาพ', 'ป่วย', 'ไม่สบาย', 'เจ็บป่วย', 'โรค', 'อาการ', 'รักษา', 'หมอ', 'แพทย์',
+            'โรงพยาบาล', 'ผ่าตัด', 'ตรวจสุขภาพ', 'ตรวจร่างกาย', 'มะเร็ง', 'เนื้องอก', 'เบาหวาน',
+            'ความดัน', 'หัวใจ', 'ตับ', 'ไต', 'ปอด', 'กระเพาะ', 'ลำไส้', 'ไทรอยด์', 'ไมเกรน',
+            'ปวดหัว', 'ปวดท้อง', 'ปวดหลัง', 'ปวดข้อ', 'นอนไม่หลับ', 'เครียด', 'ซึมเศร้า',
+            'วิตกกังวล', 'แพนิค', 'ภูมิแพ้', 'ภูมิคุ้มกัน', 'ติดเชื้อ', 'อักเสบ', 'เป็นไข้',
+            'เลือดจาง', 'โลหิตจาง', 'กระดูก', 'อ่อนเพลีย', 'ฮอร์โมน', 'ประจำเดือน', 'ตั้งครรภ์',
+            'มีลูกยาก', 'มีบุตรยาก', 'ซีสต์', 'แผล', 'บาดเจ็บ', 'อัมพาต', 'สโตรก', 'สุขภาพจิต',
+            'จิตเวช', 'กินยา', 'เสพติด', 'หายป่วย', 'พักฟื้น',
+        ];
+        $hit = false;
+        foreach ($keywords as $kw) {
+            if (mb_strpos($haystack, $kw) !== false) {
+                $hit = true;
+                break;
+            }
+        }
+        if (! $hit) {
+            return '';
+        }
+
+        // ดึงตำรา + ไพ่ที่เปิด
+        $tome = (array) config('fortune_tarot_health', []);
+        $cardsTome = (array) ($tome['cards'] ?? []);
+        $suitsTome = (array) ($tome['suits'] ?? []);
+        $cards = $reading->getCelticCards();
+
+        if (empty($cardsTome) || count($cards) < 10) {
+            return ''; // ตำราหาย หรือไพ่ยังไม่ครบ — ข้าม (ไม่ block การทำนาย)
+        }
+
+        // สร้างบรรทัดสุขภาพรายไพ่ (เฉพาะ 10 ใบที่เปิด — ไม่ dump ทั้ง 78 ใบ)
+        $lines = [];
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $nameEn = (string) ($card['card_name_en'] ?? '');
+            $nameTh = (string) ($card['card_name_th'] ?? '') ?: ($nameEn ?: '?');
+            $isReversed = ! empty($card['is_reversed']);
+            $positionName = (string) ($card['position_name'] ?? '?');
+
+            // lookup: ตรงชื่อ → fallback รายสำรับ (กัน lookup พลาดเงียบถ้าชื่อเพี้ยน)
+            $entry = $cardsTome[$nameEn] ?? null;
+            if (! $entry) {
+                $entry = $suitsTome[$this->resolveSuitKeyForHealth($nameEn)] ?? null;
+            }
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $orientation = $isReversed ? '(กลับหัว)' : '(ตั้งตรง)';
+            $body = (string) ($entry['body'] ?? '');
+            $tendency = $isReversed
+                ? (string) ($entry['rev'] ?? '')
+                : (string) ($entry['up'] ?? '');
+
+            $lines[] = "• ตำแหน่ง {$pos} [{$positionName}] — {$nameTh} {$orientation}\n"
+                ."   🩺 อวัยวะ/ระบบ: {$body}\n"
+                ."   → แนวโน้ม: {$tendency}";
+        }
+
+        if (empty($lines)) {
+            return '';
+        }
+
+        $cardHealthBlock = implode("\n", $lines);
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🩺 ตำราสุขภาพประจำไพ่ (ตรวจพบคำถามเรื่องสุขภาพ — ใช้ทำนายให้เจาะจง-แม่น-หลากหลาย)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ลูกค้าถามเรื่องสุขภาพ — ด้านล่างคือ \"อวัยวะ/ระบบ + แนวโน้มอาการ\" ประจำไพ่ที่เปิดทั้ง 10 ใบ\n"
+            ."(อิงตำราโหราเวชศาสตร์สากล + ความหมายไพ่ — ใช้ \"เทียบเคียง\" เพื่อชี้ตำแหน่งในร่างกาย ไม่ใช่ผลตรวจตายตัว)\n\n"
+            .$cardHealthBlock."\n\n"
+
+            ."🎯 *วิธีทำนายสุขภาพ (ต้องหลากหลาย-แม่น-เจาะจง ตามหน้าไพ่):*\n"
+            ."• อ่านสุขภาพจาก \"ไพ่ใบไหน + ตำแหน่งอะไร\" (card-first) — ใบที่ชี้อวัยวะ/อาการชัด = โฟกัสเป็นพิเศษ\n"
+            ."  ไพ่ตำแหน่ง ปัจจุบัน/อุปสรรค/รากฐาน/ผลลัพธ์ มักบอกสภาพกายตรงที่สุด\n"
+            ."• *ฟันธงให้ครบ 3 ชั้น*: (1) อวัยวะ/ตำแหน่งในร่างกาย (2) อาการ/โรคที่ควรเทียบ (3) ความรุนแรง (เบา/ปานกลาง/หนัก)\n"
+            ."  ❌ ห้ามตอบกว้างๆ \"ดูแลสุขภาพด้วยนะ / พักผ่อนเยอะๆ\" — ลูกค้าจ่าย 99฿ ต้องได้คำเฉพาะตามไพ่ของเขา\n"
+            ."• ตั้งตรง vs กลับหัว เปลี่ยนคำทำนาย — กลับหัวมัก \"แฝง/เรื้อรัง/หนักขึ้น/ยังไม่แสดงอาการ\"\n"
+            ."• ผูกหลายใบเป็นเรื่องเดียว — ดาบ (จิต-ประสาท) + ถ้วย (อารมณ์) = เครียดลงกาย; มีเหรียญ (กายภาพ-เรื้อรัง) ร่วม = สะสมนาน\n"
+            ."• ถามสุขภาพคนอื่น (พ่อแม่/ลูก/คู่) → อ่านไพ่ตำแหน่งที่ตรงกับบุคคลนั้น ใช้ตำราเดียวกัน\n"
+            ."• 🔎 โหมดนักสืบ: ทำนายอวัยวะ/อาการเจาะจงแล้ว → ชวนยืนยัน \"มีอาการแถวนี้ไหม? เคยตรวจเจออะไรหรือเปล่า?\" ([TYPE:D] ไม่นับ) แล้วเจาะให้ลึกขึ้น\n\n"
+
+            ."⚠️ *จรรยาบรรณสุขภาพ (ห้ามข้าม):*\n"
+            ."• ไพ่ชี้เป็น \"การเทียบเคียง/สัญญาณเตือน\" ไม่ใช่ผลแล็บ — *ห้ามฟันธงว่าเป็นโรคร้ายแน่นอน 100%*\n"
+            ."• ไพ่อาการเฉียบพลัน/รุนแรง (หอคอย / ดาบสิบ / ดาบเก้า / ดาบสาม / ห้าเหรียญ / Death) →\n"
+            ."  เตือนตรงตามไพ่ + *แนะให้ไปพบแพทย์จริงโดยเร็ว* (ไพ่ช่วยเตือน หมอตัวจริงช่วยรักษา)\n"
+            ."• ❌ ห้ามขายความกลัว — เตือนเฉพาะที่ไพ่ชี้จริง ห้ามปั้นโรคที่ไพ่ไม่ได้บอกเพื่อให้ตกใจ\n"
+            ."• 🧠 ถ้าไพ่ชี้สุขภาพจิต (ดาบเก้า/ถ้วยห้า ฯลฯ) + ลูกค้าดูเปราะบาง → อ่อนโยน ดึงสติ ให้กำลังใจ\n"
+            ."  + ถ้าพบสัญญาณวิกฤต (คิดทำร้ายตัวเอง/ซึมหนัก) → แนะปรึกษาแพทย์/สายด่วนสุขภาพจิต 1323\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
+     * 🩺 helper — แปลง name_en เป็น suit key สำหรับ fallback ตำราสุขภาพ
+     *   (ใช้เมื่อ lookup รายใบไม่เจอ เช่น ชื่อไพ่เพี้ยน)
+     */
+    protected function resolveSuitKeyForHealth(string $nameEn): string
+    {
+        $n = mb_strtolower($nameEn);
+        if (mb_strpos($n, 'cups') !== false) {
+            return 'cups';
+        }
+        if (mb_strpos($n, 'wands') !== false) {
+            return 'wands';
+        }
+        if (mb_strpos($n, 'swords') !== false) {
+            return 'swords';
+        }
+        if (mb_strpos($n, 'pentacles') !== false) {
+            return 'pentacles';
+        }
+
+        return 'major';
+    }
+
+    /**
      * 💬 (2026-05-24) Pre-Celtic chat context — inject บทสนทนาก่อนซื้อ Celtic เข้า prompt
      *
      * Why: AI generates predictions โดย "ไม่รู้" ว่าลูกค้าเคยเล่าอะไรก่อนหน้านี้
@@ -2968,6 +3121,8 @@ class CelticCrossService
         return $localeDirective
             .$this->buildCardNamingDirective()
             .$this->buildCardFirstMandate()
+            // 🩺 (2026-06-01) ตำราสุขภาพ — ถ้ามีคำถามสุขภาพในรอบนี้ ให้บทสรุปเทียบอวัยวะ/อาการตามไพ่
+            .$this->buildHealthDirective($reading, $questions->pluck('question')->implode(' '))
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"
