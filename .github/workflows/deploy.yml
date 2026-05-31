@@ -26,6 +26,14 @@ jobs:
   deploy:
     name: Deploy to ${{ github.event.inputs.environment || 'production' }}
     runs-on: ubuntu-latest
+    # 🔒 (2026-05-31) กัน deploy รันซ้อน — serialize ทุก deploy ทีละตัว (fixed group)
+    #   แก้ race: deploy ตัวนึงรัน composer install (ล้าง vendor ชั่วขณะ) ชนกับ php artisan up
+    #   ของ deploy อีกตัว → vendor/autoload.php หายวูบ → STEP 20 fail (incident 2026-05-31)
+    #   cancel-in-progress: false = ห้าม kill deploy ที่กำลังรัน (กันค้าง maintenance/half-deploy)
+    #   → deploy ใหม่เข้าคิวรอตัวเดิมจบก่อนเสมอ
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
     # ⏭️ Skip ถ้า commit message มี [skip ci] — เคารพ release bot commits
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
 
