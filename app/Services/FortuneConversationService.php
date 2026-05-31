@@ -412,16 +412,14 @@ class FortuneConversationService
                     $reading = $readingId ? \App\Models\FortuneReading::find($readingId) : null;
                     $billRef = $reading?->bill_reference ?? 'FTU-'.($readingId ?? 'NEW');
 
-                    // ดึงข้อมูล bank account ตัวแรกที่มี (สำหรับ display ใน banner)
+                    // 🆕 (2026-05-31) ใช้บัญชีหลัก (primary/is_default) ตัวเดียวกับบับเบิลเลขบัญชี
+                    //   กันลูกค้า (โดยเฉพาะผู้สูงอายุ) เห็นเลขบัญชีในรูป QR ไม่ตรงกับเลขบับเบิลที่ก๊อป
                     $bankName = null;
                     $accountNumber = null;
-                    $accounts = $this->settings->getFortuneBankAccounts();
-                    foreach ($accounts as $account) {
-                        if (! empty($account->bank_name)) {
-                            $bankName = $account->bank_name;
-                            $accountNumber = $account->account_number;
-                            break;
-                        }
+                    $primaryAccount = $this->getPrimaryFortuneBankAccount();
+                    if ($primaryAccount && ! empty($primaryAccount->bank_name)) {
+                        $bankName = $primaryAccount->bank_name;
+                        $accountNumber = $primaryAccount->account_number;
                     }
 
                     $bannerUrl = app(\App\Services\Fortune\PaymentBannerService::class)
