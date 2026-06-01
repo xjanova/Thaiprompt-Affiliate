@@ -231,6 +231,14 @@ class SlipOkService
             return ['decision' => self::DECISION_DUPLICATE, 'reason' => 'transRef ซ้ำ (เคยใช้กับบิลอื่นแล้ว)', 'verify' => $verify];
         }
 
+        // ── ด่าน 4.5 (2026-06-01, user): สลิปนี้เคยตัดบิลด้วย SMS checker ไปแล้วไหม ──────────
+        //   ปิดช่อง cross-platform reuse: บิลที่ตัดด้วย SMS ไม่ได้ record transRef → ด่าน 4 จับไม่ได้
+        //   user idea: SMS มี "ยอด+เวลา" → match สลิป (ยอดตรง + เวลา ±2 นาที) กับ SMS ที่ matched บิลอื่นแล้ว
+        //   (ระบบใช้ยอดทศนิยม unique ต่อบิล → ยอด+เวลา แม่นพอ + ไม่เปลือง SlipOK quota)
+        if ($this->slipMatchesUsedSmsPayment($verify, $reading->id)) {
+            return ['decision' => self::DECISION_DUPLICATE, 'reason' => 'สลิปนี้เคยใช้ตัดบิลด้วย SMS ไปแล้ว (ยอด+เวลาตรง)', 'verify' => $verify];
+        }
+
         // ── ด่าน 2: บัญชีปลายทาง = ของเราไหม ─────────────────────
         if (! $this->receiverMatchesOurAccounts($verify['receiver_account'])
             && ! $this->receiverMatchesOurAccounts($verify['receiver_name'])) {
@@ -257,6 +265,53 @@ class SlipOkService
         }
 
         return ['decision' => self::DECISION_APPROVE, 'reason' => 'ผ่านทุกด่าน', 'verify' => $verify];
+    }
+
+    /**
+     * 🛡️ (2026-06-01, user) สลิปนี้เคยถูกใช้ตัดบิลผ่าน SMS checker ไปแล้วไหม
+     *   ปิดช่อง cross-platform reuse: บิลที่ตัดด้วย SMS ไม่ได้ record transRef → ด่าน 4 (transRef) จับไม่ได้
+     *   วิธี: match การโอนของสลิป (ยอด + เวลา ±2 นาที) กับ sms_payment_notifications ที่ matched บิลอื่นแล้ว
+     *   - amount: ตรงเป๊ะ (ระบบใช้ยอดทศนิยม unique ต่อบิล → ยอด+เวลา = แม่น)
+     *   - เวลา: ±2 นาที (user: SMS กับเวลาในสลิปอาจคลาดเคลื่อนได้)
+     *
+     * @param  array  $verify  ผล verify จาก SlipOK (ต้องมี amount + trans_timestamp)
+     * @param  int|null  $excludeReadingId  บิลปัจจุบัน — ไม่นับ (เคส SMS ตัดบิลนี้ + ลูกค้าส่งสลิปบิลเดียวกัน)
+     * @return bool true = สลิปเคยตัดบิลด้วย SMS ไปแล้ว (= ซ้ำ)
+     */
+    public function slipMatchesUsedSmsPayment(array $verify, ?int $excludeReadingId = null): bool
+    {
+        $amount = $verify['amount'] ?? null;
+        $ts = $verify['trans_timestamp'] ?? null;
+        if ($amount === null || empty($ts)) {
+            return false;
+        }
+
+        try {
+            // สลิป transTimestamp = UTC (Z) → แปลงเป็นเวลาไทยให้ตรงกับ sms_timestamp (เก็บเป็นเวลาไทย)
+            $slipTime = \Carbon\Carbon::parse($ts)->setTimezone('Asia/Bangkok');
+            $amt = (float) $amount;
+
+            $q = \Illuminate\Support\Facades\DB::table('sms_payment_notifications')
+                ->whereNotNull('matched_transaction_id')               // ตัดบิลไปแล้ว
+                ->whereBetween('amount', [$amt - 0.001, $amt + 0.001])  // ยอดตรงเป๊ะ
+                ->whereBetween('sms_timestamp', [
+                    $slipTime->copy()->subMinutes(2)->toDateTimeString(),
+                    $slipTime->copy()->addMinutes(2)->toDateTimeString(),
+                ]);
+
+            // ไม่นับบิลปัจจุบัน (SMS ตัดบิลนี้ + ลูกค้าส่งสลิปบิลเดียวกัน = ไม่ใช่ reuse)
+            if ($excludeReadingId !== null) {
+                $q->where('matched_transaction_id', '!=', $excludeReadingId);
+            }
+
+            return $q->exists();
+        } catch (\Throwable $e) {
+            Log::warning('SlipOkService: slipMatchesUsedSmsPayment ล้มเหลว (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**

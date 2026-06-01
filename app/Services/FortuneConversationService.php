@@ -11813,6 +11813,28 @@ class FortuneConversationService
             'error' => $ok ? null : ($verify['message'] ?? 'verify failed/empty'),
         ]);
 
+        // 🛡️ (2026-06-01, user) สลิปนี้เคยใช้ไปแล้วไหม (cross-platform reuse) — transRef registry + SMS match
+        //   no-bill ไม่ recover อยู่แล้ว แต่ต้องบอกว่า "ใช้ไปแล้ว" ไม่ใช่ "ได้รับยอดเข้าร้าน"
+        $dupTransRef = (string) ($verify['transRef'] ?? '');
+        if ($ok && (
+            ($dupTransRef !== '' && \App\Models\SlipVerification::where('trans_ref', $dupTransRef)->exists())
+            || $svc->slipMatchesUsedSmsPayment($verify, null)
+        )) {
+            Log::warning('🧾 ADMIN_REVIEW: สลิปไม่มีบิล + เคยใช้ไปแล้ว (duplicate cross-platform)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'amount' => $verify['amount'] ?? null,
+                'transRef' => $dupTransRef ?: null,
+            ]);
+
+            return [
+                'action' => 'slipok_no_bill_duplicate',
+                'message' => "⚠️ สลิปนี้เคยถูกใช้ยืนยันการชำระไปแล้วค่ะ\n"
+                    .'ถ้าโอนใหม่จริง รบกวนส่งสลิปใบล่าสุด หรือพิมพ์ "คุยกับแม่หมอ" 🙏',
+                'reading' => null,
+            ];
+        }
+
         if ($ok && $toOurs) {
             // ✅ verify ผ่าน + เข้าบัญชีร้าน → เคลียร์ flag (ไม่ต้องเช็ครูปต่อไปอีก รอแอดมินจัดการ)
             \Illuminate\Support\Facades\Cache::forget('fortune:returning_slip_ask:'.$userId);
