@@ -46,6 +46,14 @@ class LineFortuneWebhookController extends Controller
      */
     protected FortuneBannerService $bannerService;
 
+    /**
+     * 🐛 (2026-06-01) FortuneConversationService — core สนทนา/สลิป
+     *   เดิม LINE controller "ลืม" declare+init property นี้ (FB มีครบ) → $this->conversationService
+     *   undefined → ทุก call (isInPrediction/fuzzy/store/handleReturningSlipImage) throw แล้วถูกกลืนเงียบ
+     *   เคส entony: ส่งสลิป → handleReturningSlipImage → "Undefined property" → ตกไป silent ignore
+     */
+    protected $conversationService;
+
     public function __construct()
     {
         $this->settings = FortuneTellingSetting::getSettings();
@@ -54,6 +62,7 @@ class LineFortuneWebhookController extends Controller
         $this->takeoverService = app(FortuneTakeoverService::class);
         $this->banService = app(FortuneBanService::class);
         $this->bannerService = new FortuneBannerService($this->settings);
+        $this->conversationService = new \App\Services\FortuneConversationService($this->settings);
     }
 
     /**
