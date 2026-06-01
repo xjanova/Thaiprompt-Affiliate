@@ -28,9 +28,12 @@ use Illuminate\Support\Facades\Log;
 class GeminiEmbeddingService
 {
     /**
-     * Model name
+     * Model name — gemini-embedding-001 (GA, multilingual, รองรับไทย)
+     *   ⚠️ (2026-06-01) text-embedding-004 ถูก Google deprecated → 404 บน v1beta embedContent → ย้ายมาตัวนี้
+     *   verify live แล้ว: status 200 + 768 dims (ต้องส่ง outputDimensionality=768 เพราะ default=3072)
+     *   หมายเหตุ: คนละ embedding space กับ text-embedding-004 — vector เก่าที่ store ต้อง re-embed (artisan fortune:reembed-knowledge)
      */
-    public const MODEL = 'text-embedding-004';
+    public const MODEL = 'gemini-embedding-001';
 
     /**
      * Dimension ของ embedding (768)
@@ -100,6 +103,8 @@ class GeminiEmbeddingService
                     'content' => [
                         'parts' => [['text' => $text]],
                     ],
+                    // gemini-embedding-001 default = 3072 → บังคับ 768 ให้ตรง DIMENSION + column เดิม
+                    'outputDimensionality' => self::DIMENSION,
                 ]);
 
             if (! $response->successful()) {
