@@ -31,6 +31,14 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_DEITIES,
     ];
 
+    /** หมวด "ชีวิต" ที่ detect ได้ (per-card ใน config/fortune_card_life.php) */
+    public const LIFE_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_AGE_RANGE,
+        FortuneKnowledge::CATEGORY_TIMING,
+        FortuneKnowledge::CATEGORY_CAREER_STUDY,
+        FortuneKnowledge::CATEGORY_BUSINESS_WORK,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -198,10 +206,31 @@ class FortuneKnowledgeService
      */
     public function detectMuCategories(string $text): array
     {
+        return $this->detectCategories($text, self::MU_DETECTABLE);
+    }
+
+    /**
+     * ตรวจหมวด "ชีวิต" (ช่วงอายุ/สถานการณ์/การศึกษา-อาชีพ/การงาน)
+     *
+     * @return array<string>
+     */
+    public function detectLifeCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::LIFE_DETECTABLE);
+    }
+
+    /**
+     * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
+     *
+     * @param  array<string>  $categories
+     * @return array<string>
+     */
+    protected function detectCategories(string $text, array $categories): array
+    {
         $haystack = mb_strtolower($text);
         $hits = [];
-        foreach (self::MU_DETECTABLE as $cat) {
-            $keywords = (array) config("fortune_mu_knowledge.{$cat}.keywords", []);
+        foreach ($categories as $cat) {
+            $keywords = (array) config($this->configBaseFor($cat).'.keywords', []);
             foreach ($keywords as $kw) {
                 if ($kw !== '' && mb_strpos($haystack, mb_strtolower((string) $kw)) !== false) {
                     $hits[] = $cat;
@@ -211,6 +240,16 @@ class FortuneKnowledgeService
         }
 
         return $hits;
+    }
+
+    /**
+     * config base ของหมวด: ชีวิต → fortune_card_life.{cat} / อื่น → fortune_mu_knowledge.{cat}
+     */
+    protected function configBaseFor(string $category): string
+    {
+        return in_array($category, self::LIFE_DETECTABLE, true)
+            ? "fortune_card_life.{$category}"
+            : "fortune_mu_knowledge.{$category}";
     }
 
     /**
@@ -227,7 +266,7 @@ class FortuneKnowledgeService
             if (trim($lines) === '') {
                 continue;
             }
-            $label = (string) config("fortune_mu_knowledge.{$cat}.label", $cat);
+            $label = (string) config($this->configBaseFor($cat).'.label', $cat);
             $blocks[] = "【{$label}】\n".$lines;
         }
 
@@ -274,7 +313,7 @@ class FortuneKnowledgeService
 
             // 2) Fallback: config .cards
             $map = [];
-            foreach ((array) config("fortune_mu_knowledge.{$category}.cards", []) as $nameEn => $content) {
+            foreach ((array) config($this->configBaseFor($category).'.cards', []) as $nameEn => $content) {
                 $map[(string) $nameEn] = ['content' => (string) $content];
             }
 

@@ -29,9 +29,10 @@ class FortuneKnowledgeSeeder extends Seeder
 
         $health = $this->seedHealth();
         $persona = $this->seedPhysiognomy();
-        $mu = $this->seedMuKnowledge();
+        $mu = $this->seedPerCardGroup('fortune_mu_knowledge');
+        $life = $this->seedPerCardGroup('fortune_card_life');
 
-        $this->command?->info("✅ Seed คลังความรู้สำเร็จ — สุขภาพ {$health} + โหงวเฮ้ง {$persona} + สายมู {$mu} หัวข้อ");
+        $this->command?->info("✅ Seed คลังความรู้สำเร็จ — สุขภาพ {$health} + โหงวเฮ้ง {$persona} + สายมู {$mu} + ชีวิต {$life}");
     }
 
     /**
@@ -122,12 +123,12 @@ class FortuneKnowledgeSeeder extends Seeder
     }
 
     /**
-     * Seed องค์ความรู้สายมูแบบ "รายไพ่" จาก config/fortune_mu_knowledge.php (.cards)
+     * Seed องค์ความรู้แบบ "รายไพ่" จาก config group ที่ระบุ (.cards) — ใช้ทั้งสายมู + ชีวิต
      * (per-card เหมือนสุขภาพ — card_name = name_en ของไพ่)
      */
-    protected function seedMuKnowledge(): int
+    protected function seedPerCardGroup(string $configName): int
     {
-        $tome = (array) config('fortune_mu_knowledge', []);
+        $tome = (array) config($configName, []);
         $count = 0;
 
         foreach ($tome as $category => $section) {

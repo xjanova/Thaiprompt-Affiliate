@@ -246,6 +246,8 @@ class FortuneTellingSetting extends Model
         'enable_celtic_mu_knowledge',
         // 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ จาก RAG
         'enable_celtic_physiognomy',
+        // 🗓️ (2026-06-01) ความรู้ชีวิตรายไพ่ (อายุ/สถานการณ์/อาชีพ/การงาน) จาก RAG
+        'enable_celtic_life_reading',
         // 🛡️ (2026-05-27) Abuse Clapback — แม่หมอ savage mode ตอบลูกค้าหยาบคาย
         'enable_abuse_clapback',
         'abuse_clapback_use_grok',
@@ -412,6 +414,7 @@ class FortuneTellingSetting extends Model
         'enable_celtic_health_tome' => 'boolean',
         'enable_celtic_mu_knowledge' => 'boolean',
         'enable_celtic_physiognomy' => 'boolean',
+        'enable_celtic_life_reading' => 'boolean',
         // 🛡️ (2026-05-27) Abuse Clapback toggles
         'enable_abuse_clapback' => 'boolean',
         'abuse_clapback_use_grok' => 'boolean',
@@ -538,6 +541,8 @@ class FortuneTellingSetting extends Model
         'enable_celtic_mu_knowledge' => true,
         // 👤 (2026-06-01) ตำราโหงวเฮ้ง — default true (admin ปิดได้ผ่าน DB UPDATE)
         'enable_celtic_physiognomy' => true,
+        // 🗓️ (2026-06-01) ความรู้ชีวิตรายไพ่ — default true (admin ปิดได้ผ่าน DB UPDATE)
+        'enable_celtic_life_reading' => true,
         // 🛡️ (2026-05-27) Abuse Clapback — default ปิด (admin opt-in เท่านั้น)
         'enable_abuse_clapback' => false,
         'abuse_clapback_use_grok' => true,

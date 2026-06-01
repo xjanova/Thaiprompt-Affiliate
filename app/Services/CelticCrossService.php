@@ -844,6 +844,7 @@ class CelticCrossService
             .$this->buildHealthDirective($reading, $userQuestion)
             .$this->buildMuKnowledgeDirective($reading, $userQuestion)
             .$this->buildPhysiognomyDirective($reading, $userQuestion)
+            .$this->buildLifeReadingDirective($reading, $userQuestion)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1278,7 +1279,8 @@ class CelticCrossService
                 // 🩺 (2026-06-01) ตำราสุขภาพ — inject Q2+ ด้วย (ถามสุขภาพ → เทียบอวัยวะ/อาการตามหน้าไพ่)
                 .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
                 .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
-                .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext);
+                .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
+                .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1382,6 +1384,7 @@ class CelticCrossService
             .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
             .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
             .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
+            .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2561,6 +2564,53 @@ class CelticCrossService
     }
 
     /**
+     * 🗓️ (2026-06-01) ความรู้ "ชีวิต" รายไพ่ — ช่วงอายุ/สถานการณ์-เวลา/การศึกษา-อาชีพ/ธุรกิจ-การงาน
+     *
+     * User directive 2026-06-01: "ต่อไปเรื่อง ช่วงอายุ, สถานการณ์(อดีต/ปัจจุบัน/อนาคต),
+     *   การศึกษา-วิชา-อาชีพ, ธุรกิจการงาน" — รายไพ่ทุกใบ เหมือนสุขภาพ
+     *
+     * Detect-based: inject เฉพาะหมวดที่ลูกค้าถาม (จาก config/fortune_card_life.php → DB)
+     *   ผสานกับ [[buildForecastModeDirective]] (อันนั้น=วิธีตอบ/สมมติฉาก, อันนี้=ความรู้รายไพ่)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildLifeReadingDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    {
+        if (! (bool) ($this->settings->enable_celtic_life_reading ?? true)) {
+            return '';
+        }
+
+        $svc = app(\App\Services\FortuneKnowledgeService::class);
+        $categories = $svc->detectLifeCategories($userQuestion.' '.$previousContext);
+        if (empty($categories)) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $knowledge = $svc->muLinesForCards($cards, $categories); // generic per-card (รองรับหมวดชีวิต)
+        if (trim($knowledge) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🗓️ ความรู้รายไพ่: ช่วงอายุ/สถานการณ์-เวลา/การศึกษา-อาชีพ/ธุรกิจ-การงาน (ตรวจพบคำถามหัวข้อนี้)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ด้านล่างคือความรู้ \"รายไพ่ที่เปิด\" ของหมวดที่ถาม — อ่านจากไพ่แต่ละใบตามตำแหน่ง:\n\n"
+            .$knowledge."\n\n"
+
+            ."🎯 *วิธีใช้ (card-first):*\n"
+            ."• ช่วงอายุ/ตัวคน → อ่านจากไพ่ตำแหน่งที่ตรงกับบุคคลนั้น (ราชสำนัก=คนชัด) ฟันธงวัยโดยประมาณ\n"
+            ."• สถานการณ์/จังหวะเวลา → ใช้ \"ตำแหน่งไพ่\" บอกช่วง (อดีต/ปัจจุบัน/อนาคต/ผลลัพธ์) + \"ธาตุไพ่\" บอกความเร็ว → ระบุกรอบเวลาได้ (วัน-สัปดาห์/เดือน/ปี) อย่ามั่ววันเป๊ะ\n"
+            ."• การศึกษา/อาชีพ/การงาน → ฟันธงสายงาน-แนวโน้มเฉพาะตามไพ่ + คำแนะนำ actionable ❌ ห้ามตอบกว้างๆ \"ตั้งใจทำงานนะ\"\n"
+            ."• 🔎 โหมดนักสืบ: ขอวันเกิด/บริบทเพิ่มได้ ([TYPE:D] ไม่นับ) → ผสานดาว+ไพ่จับจังหวะเวลาให้แม่นขึ้น\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ — อ่าน "คน" จากหน้าไพ่
      *
      * User directive 2026-06-01: "เพิ่มตำราโหงวเฮ้ง ลักษณะคน ประจำไพ่ให้ครบ 78 ใบ"
@@ -3234,6 +3284,7 @@ class CelticCrossService
             .$this->buildHealthDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildMuKnowledgeDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildPhysiognomyDirective($reading, $questions->pluck('question')->implode(' '))
+            .$this->buildLifeReadingDirective($reading, $questions->pluck('question')->implode(' '))
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"

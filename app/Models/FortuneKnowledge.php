@@ -47,6 +47,14 @@ class FortuneKnowledge extends Model
 
     public const CATEGORY_PHYSIOGNOMY = 'physiognomy';
 
+    public const CATEGORY_AGE_RANGE = 'age_range';
+
+    public const CATEGORY_TIMING = 'timing';
+
+    public const CATEGORY_CAREER_STUDY = 'career_study';
+
+    public const CATEGORY_BUSINESS_WORK = 'business_work';
+
     public const CATEGORY_GENERAL = 'general';
 
     /**
@@ -59,6 +67,10 @@ class FortuneKnowledge extends Model
         self::CATEGORY_DEITIES,
         self::CATEGORY_BLACK_MAGIC,
         self::CATEGORY_PHYSIOGNOMY,
+        self::CATEGORY_AGE_RANGE,
+        self::CATEGORY_TIMING,
+        self::CATEGORY_CAREER_STUDY,
+        self::CATEGORY_BUSINESS_WORK,
         self::CATEGORY_GENERAL,
     ];
 
@@ -69,6 +81,10 @@ class FortuneKnowledge extends Model
         self::CATEGORY_DEITIES => '🕉️ องค์เทพ',
         self::CATEGORY_BLACK_MAGIC => '🪬 ไสยศาสตร์/มนต์ดำ',
         self::CATEGORY_PHYSIOGNOMY => '👤 โหงวเฮ้ง/ลักษณะคน',
+        self::CATEGORY_AGE_RANGE => '🎂 ช่วงอายุ',
+        self::CATEGORY_TIMING => '⏳ สถานการณ์/จังหวะเวลา',
+        self::CATEGORY_CAREER_STUDY => '🎓 การศึกษา/อาชีพ',
+        self::CATEGORY_BUSINESS_WORK => '💼 ธุรกิจ/การงาน',
         self::CATEGORY_GENERAL => '📚 ทั่วไป',
     ];
 
