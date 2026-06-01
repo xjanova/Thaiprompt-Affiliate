@@ -214,93 +214,71 @@ class FortuneKnowledgeService
     }
 
     /**
-     * สร้างบล็อกความรู้ของหมวดที่ระบุ (DB → fallback config)
+     * สร้างบล็อกความรู้สายมูแบบ "รายไพ่" ของหมวดที่ระบุ (per-card เหมือนสุขภาพ)
      *
-     * @param  array<string>  $categories
+     * @param  array<int, array>  $cards  ไพ่ 10 ใบที่เปิด
+     * @param  array<string>  $categories  หมวดที่ detect ได้
      */
-    public function muKnowledgeForCategories(array $categories): string
+    public function muLinesForCards(array $cards, array $categories): string
     {
         $blocks = [];
         foreach ($categories as $cat) {
-            $entries = $this->entriesForCategory($cat);
-            if (empty($entries)) {
+            $lines = $this->linesFromCardMap($cards, $this->muCardMap($cat));
+            if (trim($lines) === '') {
                 continue;
             }
             $label = (string) config("fortune_mu_knowledge.{$cat}.label", $cat);
-            $lines = ["【{$label}】"];
-            foreach ($entries as $e) {
-                $title = (string) ($e['title'] ?? '');
-                $content = trim((string) ($e['content'] ?? ''));
-                $lines[] = "▸ {$title}\n".$content;
-            }
-            $blocks[] = implode("\n", $lines);
+            $blocks[] = "【{$label}】\n".$lines;
         }
 
         return implode("\n\n", $blocks);
     }
 
     /**
-     * ความรู้ไสยศาสตร์ (เสริม buildBlackMagicDirective)
+     * ความรู้ไสยศาสตร์ "รายไพ่" (เสริม buildBlackMagicDirective)
+     *
+     * @param  array<int, array>  $cards
      */
-    public function blackMagicKnowledge(): string
+    public function blackMagicLinesForCards(array $cards): string
     {
-        $entries = $this->entriesForCategory(FortuneKnowledge::CATEGORY_BLACK_MAGIC);
-        if (empty($entries)) {
-            return '';
-        }
-        $lines = ['📚 องค์ความรู้ไสยศาสตร์ไทย (อ้างอิงประกอบ — เทียบกับหน้าไพ่):'];
-        foreach ($entries as $e) {
-            $lines[] = '▸ '.(string) ($e['title'] ?? '')."\n".trim((string) ($e['content'] ?? ''));
-        }
-
-        return implode("\n", $lines);
+        return $this->linesFromCardMap($cards, $this->muCardMap(FortuneKnowledge::CATEGORY_BLACK_MAGIC));
     }
 
     /**
-     * ดึง entries ของหมวด (DB → fallback config) + cache
+     * แผนที่ความรู้สายมูรายไพ่: name_en => ['content'] (DB → fallback config .cards) + cache
      *
-     * @return array<int, array{title:string,content:string,subject:string,priority:int}>
+     * @return array<string, array>
      */
-    protected function entriesForCategory(string $category): array
+    protected function muCardMap(string $category): array
     {
-        return Cache::remember("fortune_knowledge:entries:{$category}", self::CACHE_TTL, function () use ($category) {
+        return Cache::remember("fortune_knowledge:mucards:{$category}", self::CACHE_TTL, function () use ($category) {
             // 1) DB ก่อน (try/catch — DB ล่ม/ยังไม่ migrate → ใช้ config fallback)
             try {
                 if (Schema::hasTable('fortune_knowledge')) {
                     $rows = FortuneKnowledge::active()
                         ->byCategory($category)
-                        ->whereNull('card_name')
-                        ->orderBy('priority')
+                        ->whereNotNull('card_name')
                         ->get();
                     if ($rows->isNotEmpty()) {
-                        return $rows->map(fn ($r) => [
-                            'title' => (string) $r->title,
-                            'content' => (string) $r->content,
-                            'subject' => (string) ($r->subject ?? ''),
-                            'priority' => (int) $r->priority,
-                        ])->all();
+                        $map = [];
+                        foreach ($rows as $r) {
+                            $map[(string) $r->card_name] = ['content' => (string) $r->content];
+                        }
+
+                        return $map;
                     }
                 }
             } catch (\Throwable $e) {
                 // fall through to config fallback
             }
 
-            // 2) Fallback: config
-            $entries = (array) config("fortune_mu_knowledge.{$category}.entries", []);
-            $out = [];
-            foreach ($entries as $e) {
-                if (! is_array($e) || empty($e['title'])) {
-                    continue;
-                }
-                $out[] = [
-                    'title' => (string) $e['title'],
-                    'content' => (string) ($e['content'] ?? ''),
-                    'subject' => (string) ($e['subject'] ?? ''),
-                    'priority' => (int) ($e['priority'] ?? 0),
-                ];
+            // 2) Fallback: config .cards
+            $map = [];
+            foreach ((array) config("fortune_mu_knowledge.{$category}.cards", []) as $nameEn => $content) {
+                $map[(string) $nameEn] = ['content' => (string) $content];
             }
 
-            return $out;
+            return $map;
         });
     }
 
@@ -312,7 +290,7 @@ class FortuneKnowledgeService
         Cache::forget('fortune_knowledge:health_map');
         Cache::forget('fortune_knowledge:persona_map');
         foreach (FortuneKnowledge::CATEGORIES as $cat) {
-            Cache::forget("fortune_knowledge:entries:{$cat}");
+            Cache::forget("fortune_knowledge:mucards:{$cat}");
         }
     }
 }

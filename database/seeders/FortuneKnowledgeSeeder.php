@@ -122,7 +122,8 @@ class FortuneKnowledgeSeeder extends Seeder
     }
 
     /**
-     * Seed องค์ความรู้สายมู จาก config/fortune_mu_knowledge.php
+     * Seed องค์ความรู้สายมูแบบ "รายไพ่" จาก config/fortune_mu_knowledge.php (.cards)
+     * (per-card เหมือนสุขภาพ — card_name = name_en ของไพ่)
      */
     protected function seedMuKnowledge(): int
     {
@@ -134,27 +135,26 @@ class FortuneKnowledgeSeeder extends Seeder
                 continue;
             }
             $keywords = implode(',', (array) ($section['keywords'] ?? []));
-            $entries = (array) ($section['entries'] ?? []);
+            $label = (string) ($section['label'] ?? $category);
 
-            foreach ($entries as $entry) {
-                if (! is_array($entry) || empty($entry['title'])) {
+            foreach ((array) ($section['cards'] ?? []) as $nameEn => $content) {
+                if ((string) $content === '') {
                     continue;
                 }
 
                 FortuneKnowledge::firstOrCreate(
                     [
                         'category' => $category,
-                        'title' => (string) $entry['title'],
+                        'card_name' => (string) $nameEn,
                     ],
                     [
-                        'card_name' => null,
-                        'subject' => (string) ($entry['subject'] ?? ''),
+                        'subject' => (string) $nameEn,
+                        'title' => $nameEn.' ('.$label.')',
                         'keywords' => $keywords,
-                        'content' => (string) ($entry['content'] ?? ''),
-                        'severity' => null,
-                        'priority' => (int) ($entry['priority'] ?? 0),
+                        'content' => (string) $content,
+                        'priority' => 0,
                         'is_active' => true,
-                        'source' => (string) ($entry['source'] ?? ''),
+                        'source' => 'card-tie',
                     ]
                 );
                 $count++;

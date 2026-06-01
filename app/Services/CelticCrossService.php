@@ -2393,21 +2393,27 @@ class CelticCrossService
             ."• 🧠 ลูกค้าที่ดูเปราะบาง/วิตกง่าย/หวาดระแวง/ย้ำคิด → ทำนายตามไพ่ได้ แต่ *เน้นกำลังใจ + ดึงสติ*:\n"
             ."  \"ของเป็นปัจจัยหนึ่ง แต่อย่าโทษของอย่างเดียว — ดูสุขภาพกาย-ใจ คนรอบตัว และการกระทำด้วย\"\n"
             ."  + ถ้ามีอาการทางกาย/ใจชัด (นอนไม่หลับ เห็นภาพหลอน คิดทำร้ายตัวเอง) → แนะพบแพทย์/นักจิตวิทยาควบคู่\n\n"
-            .$this->blackMagicRagKnowledgeBlock();
+            .$this->blackMagicRagKnowledgeBlock($reading);
     }
 
     /**
      * 🪬 (2026-06-01) ดึงความรู้ไสยศาสตร์จากคลัง RAG มาเสริม buildBlackMagicDirective
      *   (แอดมินแก้/เพิ่มได้ที่ /admin/fortune/knowledge หมวด black_magic)
      */
-    protected function blackMagicRagKnowledgeBlock(): string
+    protected function blackMagicRagKnowledgeBlock(FortuneReading $reading): string
     {
-        $kb = app(\App\Services\FortuneKnowledgeService::class)->blackMagicKnowledge();
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+        $kb = app(\App\Services\FortuneKnowledgeService::class)->blackMagicLinesForCards($cards);
         if (trim($kb) === '') {
             return '';
         }
 
-        return "━━━━━━━━━━━━━━━━━\n".$kb."\n━━━━━━━━━━━━━━━━━\n\n";
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🪬 ไสยศาสตร์รายไพ่ที่เปิด (เทียบทีละใบ — ส่วนใหญ่ \"ไม่มีของ\" ชี้เฉพาะที่ไพ่บอกจริง ห้ามขายความกลัว):\n"
+            .$kb."\n━━━━━━━━━━━━━━━━━\n\n";
     }
 
     /**
@@ -2525,7 +2531,12 @@ class CelticCrossService
             return '';
         }
 
-        $knowledge = $svc->muKnowledgeForCategories($categories);
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $knowledge = $svc->muLinesForCards($cards, $categories);
         if (trim($knowledge) === '') {
             return '';
         }
