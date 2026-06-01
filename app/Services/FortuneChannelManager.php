@@ -941,8 +941,9 @@ class FortuneChannelManager
 
                 // celtic_card_picked → ส่งรูปไพ่ + ข้อความ + ปุ่ม "เปิดไพ่" สำหรับใบถัดไป
                 // ✏️ (2026-05-03) เปลี่ยน label ให้คนแก่เข้าใจชัดเจน + เพิ่มปุ่มสับใหม่
+                // 🧾 (2026-06-01) slipok_recovered_celtic — กู้บิลด้วยสลิป → render แบบ celtic (ปุ่ม "เปิดไพ่") ไม่ใช่ default
                 'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset',
-                'celtic_restart_hint', 'celtic_already_in_session' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                'celtic_restart_hint', 'celtic_already_in_session', 'slipok_recovered_celtic' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // ส่งรูปไพ่ก่อน (ถ้ามี)
                     if (! empty($result['tarot_image_url'])) {
                         try {
@@ -2270,8 +2271,11 @@ class FortuneChannelManager
                 //   ใหม่: replyMessage([image, text+quickReply]) → 1 call ฟรี + เร็วขึ้น
                 //   + dynamic label "🃏 เปิดไพ่ใบที่ N" (เหมือน FB) — ผู้สูงอายุเข้าใจ
                 //   + เพิ่ม 'celtic_restart_hint', 'celtic_already_in_session'
+                // 🧾 (2026-06-01) slipok_recovered_celtic — กู้บิลด้วยสลิป (recoverCelticFromVerifiedSlip)
+                //   override action แต่ response = promptNextCelticCard → ต้อง render แบบ celtic (ปุ่ม "เปิดไพ่")
+                //   เดิมตกไป default → ได้ปุ่ม generic "ดูดวง" (สับสน — ลูกค้าจ่ายแล้วต้องพิมพ์ "พร้อม" เปิดไพ่)
                 'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset',
-                'celtic_restart_hint', 'celtic_already_in_session' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                'celtic_restart_hint', 'celtic_already_in_session', 'slipok_recovered_celtic' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
                     // 🃏 Dynamic label ตามจำนวนไพ่ที่เปิด
                     $reading = $result['reading'] ?? null;
                     $picked = method_exists($reading, 'getCelticPickedCount') ? $reading->getCelticPickedCount() : 0;
@@ -4269,6 +4273,12 @@ class FortuneChannelManager
 
     protected function sendLineMessageWithQuickReply(LineFortuneService $lineService, string $userId, string $message, ?string $replyToken, array $quickReplies): bool
     {
+        // 🧹 (2026-06-01, user) เอาปุ่ม generic "ดูดวง" (เริ่มบิลใหม่) ออกจากทุกกล่อง LINE ยกเว้น welcome
+        //   user: "ปุ่มดูดวงในกล่องที่ไม่เกี่ยวกับ welcome มันสับสน" — ลูกค้ากดทับ flow (เช่นตอนจะส่งสลิป → เปิดบิลใหม่)
+        //   • กล่อง welcome = Flex แยก (buildWelcomeFlexMessage) ไม่ผ่าน method นี้ → ปุ่ม welcome อยู่ครบ
+        //   • ปุ่ม "ราคา/แพคเกจ" (label มี ฿/บาท/ตัวเลข = ปุ่มจ่ายเงินจริง) เก็บไว้ — ลบแล้วซื้อไม่ได้
+        $quickReplies = $this->stripFortuneStartQuickReplies($quickReplies);
+
         // สร้าง Quick Reply items
         $quickReplyItems = [];
         foreach ($quickReplies as $reply) {
@@ -4280,6 +4290,11 @@ class FortuneChannelManager
                     'text' => $reply['text'] ?? $reply,
                 ],
             ];
+        }
+
+        // ⚠️ ถ้ากรองแล้วไม่เหลือปุ่ม → ส่ง text เปล่า (LINE API ห้าม quickReply.items ว่าง)
+        if (empty($quickReplyItems)) {
+            return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
         }
 
         $textMessage = [
@@ -4296,10 +4311,30 @@ class FortuneChannelManager
             }
         }
 
-        // Fallback: pushMessage พร้อม quick replies
+        // Fallback: pushMessage พร้อม quick replies (ที่กรองแล้ว)
         return $lineService->sendMessage($userId, $message, [
             'quick_replies' => $quickReplies,
         ]);
+    }
+
+    /**
+     * 🧹 (2026-06-01) กรองปุ่ม quick reply "ดูดวง" แบบ generic (เริ่มบิลใหม่) ออกจากกล่อง LINE
+     *   เก็บไว้: ปุ่มที่มีราคา (label มี ฿/บาท/ตัวเลข = ปุ่มซื้อจริง) + ปุ่มอื่นที่ไม่ใช่ดูดวง (คุยกับแม่หมอ/อ่านคำทำนาย ฯลฯ)
+     *   welcome เป็น Flex แยก ไม่ผ่านที่นี่ → ปุ่ม welcome ไม่ถูกแตะ
+     *
+     * @param  array  $quickReplies  รายการปุ่ม (['label'=>..,'text'=>..] หรือ string)
+     * @return array ปุ่มที่กรองแล้ว
+     */
+    protected function stripFortuneStartQuickReplies(array $quickReplies): array
+    {
+        return array_values(array_filter($quickReplies, function ($r) {
+            $label = is_array($r) ? (string) ($r['label'] ?? '') : (string) $r;
+            $isFortuneStart = mb_strpos($label, 'ดูดวง') !== false;
+            $hasPrice = preg_match('/[0-9฿]|บาท/u', $label) === 1;
+
+            // ลบเฉพาะปุ่ม "ดูดวง" ที่ไม่มีราคา (generic start) — ที่เหลือเก็บหมด
+            return ! ($isFortuneStart && ! $hasPrice);
+        }));
     }
 
     /**

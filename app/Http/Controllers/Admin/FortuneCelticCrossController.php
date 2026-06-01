@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneCelticQuestion;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
-use App\Models\UniquePaymentAmount;
 use App\Services\CelticCrossService;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
@@ -83,7 +82,9 @@ class FortuneCelticCrossController extends Controller
             $query->whereDate('created_at', '<=', $dateTo);
         }
 
-        $recentReadings = $query->latest()->paginate(20)->withQueryString();
+        // 🔼 (2026-06-01) เรียงตาม updated_at — บิลที่เพิ่ง active/recovered (กู้ด้วยสลิป) โผล่บนสุด
+        //   เดิม latest() = created_at → บิลที่ reuse (created เก่า เช่น entony 4544) จมท้าย แอดมินหาไม่เจอ
+        $recentReadings = $query->orderByDesc('updated_at')->orderByDesc('id')->paginate(20)->withQueryString();
 
         // Filter stuck (post-query — needs JSON inspect)
         if ($status === 'stuck') {
@@ -217,9 +218,9 @@ class FortuneCelticCrossController extends Controller
 
                     $response = $conversationService->onCelticPaymentConfirmed($reading);
                     $response['message'] = "🔄 *แอดมินรีเซ็ตการดูดวงให้แล้วค่ะ*\n"
-                        . "เจ้าชะตาสามารถเริ่มเปิดไพ่ใหม่ได้เลย — ค่าครูเดิมยังใช้ได้ ไม่ต้องจ่ายซ้ำ\n\n"
-                        . "═══════════════════════\n\n"
-                        . ($response['message'] ?? '');
+                        ."เจ้าชะตาสามารถเริ่มเปิดไพ่ใหม่ได้เลย — ค่าครูเดิมยังใช้ได้ ไม่ต้องจ่ายซ้ำ\n\n"
+                        ."═══════════════════════\n\n"
+                        .($response['message'] ?? '');
 
                     $channelManager->sendResponse($platform, $userId, $response, [
                         'from_admin' => true,
@@ -234,7 +235,7 @@ class FortuneCelticCrossController extends Controller
                 'notify' => $notify,
             ]);
 
-            return back()->with('success', "✅ Reset Reading #{$reading->id} สำเร็จ" . ($notify ? ' + แจ้งลูกค้าแล้ว' : ''));
+            return back()->with('success', "✅ Reset Reading #{$reading->id} สำเร็จ".($notify ? ' + แจ้งลูกค้าแล้ว' : ''));
         } catch (\Throwable $e) {
             Log::error('Celtic admin reset failed (web)', [
                 'reading_id' => $reading->id,
@@ -306,9 +307,9 @@ class FortuneCelticCrossController extends Controller
                     $channelManager->sendResponse($platform, $userId, [
                         'action' => 'celtic_cancelled',
                         'message' => "🙏 *แอดมินยกเลิกบิลให้แล้วค่ะ คุณ{$name}*\n\n"
-                            . "📋 บิล: {$billRef}\n\n"
-                            . "หากต้องการดูดวง Celtic Cross อีกครั้ง พิมพ์ 'celtic' ได้เลย\n"
-                            . "ระบบจะสร้างบิลใหม่ให้ — ค่าครู 99 บาท ✨",
+                            ."📋 บิล: {$billRef}\n\n"
+                            ."หากต้องการดูดวง Celtic Cross อีกครั้ง พิมพ์ 'celtic' ได้เลย\n"
+                            .'ระบบจะสร้างบิลใหม่ให้ — ค่าครู 99 บาท ✨',
                         'reading' => $reading,
                     ], [
                         'from_admin' => true,
@@ -324,7 +325,7 @@ class FortuneCelticCrossController extends Controller
                 'notify' => $notify,
             ]);
 
-            return back()->with('success', "✅ ยกเลิกบิล {$billRef} สำเร็จ" . ($notify ? ' + แจ้งลูกค้าแล้ว' : ''));
+            return back()->with('success', "✅ ยกเลิกบิล {$billRef} สำเร็จ".($notify ? ' + แจ้งลูกค้าแล้ว' : ''));
         } catch (\Throwable $e) {
             Log::error('Celtic admin cancel failed', [
                 'reading_id' => $reading->id,
@@ -665,10 +666,10 @@ class FortuneCelticCrossController extends Controller
                     $verb = $mode === 'reset' ? "เริ่มเวลาใหม่ {$minutes} นาที" : "เพิ่มเวลาอีก {$minutes} นาที";
 
                     $msg = "🌙✨ *แม่หมอจันทราเปิดประตูพลังเพิ่มเวลาให้ค่ะ คุณ{$name}* ✨🌙\n\n"
-                        . "🎁 แอดมินส่งพลังพิเศษให้ — *{$verb}*\n\n"
-                        . "⏳ *เหลือเวลาคุยกับแม่หมอ {$newRemaining} นาที*\n\n"
-                        . "💬 พิมพ์คำถามต่อมาได้เลยค่ะ แม่หมอรอฟังอยู่ ✨\n\n"
-                        . '🛑 หรือพิมพ์ *"ยุติการทำนาย"* เมื่อพอใจแล้วนะคะ';
+                        ."🎁 แอดมินส่งพลังพิเศษให้ — *{$verb}*\n\n"
+                        ."⏳ *เหลือเวลาคุยกับแม่หมอ {$newRemaining} นาที*\n\n"
+                        ."💬 พิมพ์คำถามต่อมาได้เลยค่ะ แม่หมอรอฟังอยู่ ✨\n\n"
+                        .'🛑 หรือพิมพ์ *"ยุติการทำนาย"* เมื่อพอใจแล้วนะคะ';
 
                     $pushed = (bool) $channelManager->sendResponse($platform, (string) $userId, [
                         'action' => 'celtic_time_extended',
@@ -893,7 +894,7 @@ class FortuneCelticCrossController extends Controller
         if ($readings->isEmpty()) {
             $msg = '✅ ไม่พบ reading ที่ต้องกู้';
             if (! empty($notFound)) {
-                $msg .= ' — บิลที่ไม่พบ: ' . implode(', ', $notFound);
+                $msg .= ' — บิลที่ไม่พบ: '.implode(', ', $notFound);
             }
 
             return back()->with('error', $msg);
@@ -928,6 +929,7 @@ class FortuneCelticCrossController extends Controller
                     $row['msg'] = '❌ ไม่มี user_id';
                     $results[] = $row;
                     $failCount++;
+
                     continue;
                 }
 
@@ -947,12 +949,12 @@ class FortuneCelticCrossController extends Controller
                 }
 
                 $defaultHeader = "🔔 *ขออภัยที่ทำให้รอนะคะ*\n"
-                    . "ระบบกู้สถานะให้แล้ว — ดำเนินการต่อได้เลยค่ะ ⬇️\n\n"
-                    . "═══════════════════════\n\n";
+                    ."ระบบกู้สถานะให้แล้ว — ดำเนินการต่อได้เลยค่ะ ⬇️\n\n"
+                    ."═══════════════════════\n\n";
                 $header = $customHeader !== ''
-                    ? rtrim($customHeader) . "\n\n═══════════════════════\n\n"
+                    ? rtrim($customHeader)."\n\n═══════════════════════\n\n"
                     : $defaultHeader;
-                $response['message'] = $header . ($response['message'] ?? '');
+                $response['message'] = $header.($response['message'] ?? '');
 
                 $sent = $cm->sendResponse($platform, $userId, $response, [
                     'from_admin' => true,
@@ -976,13 +978,14 @@ class FortuneCelticCrossController extends Controller
                     'admin_id' => auth()->id(),
                 ]);
             } catch (\Throwable $e) {
-                $row['msg'] = '❌ Error: ' . mb_substr($e->getMessage(), 0, 120);
+                $row['msg'] = '❌ Error: '.mb_substr($e->getMessage(), 0, 120);
                 $results[] = $row;
                 $failCount++;
                 Log::error('Celtic Emergency Recovery: exception', [
                     'reading_id' => $r->id,
                     'error' => $e->getMessage(),
                 ]);
+
                 continue;
             }
 
@@ -1004,7 +1007,7 @@ class FortuneCelticCrossController extends Controller
             '📊 กู้สำเร็จ %d | ล้มเหลว %d%s',
             $okCount,
             $failCount,
-            $notFound ? ' | ไม่พบบิล: ' . implode(', ', $notFound) : ''
+            $notFound ? ' | ไม่พบบิล: '.implode(', ', $notFound) : ''
         );
 
         return view('admin.fortune.celtic-cross.emergency-recover', [
