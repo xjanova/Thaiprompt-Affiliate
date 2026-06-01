@@ -11637,7 +11637,18 @@ class FortuneConversationService
             // ต้องเคยพยายามดู Celtic เร็ว ๆ นี้ + "ยังไม่ได้ดู" (กัน fire ใส่ลูกค้าใหม่ + กันเปิดบิลที่ดูไปแล้วซ้ำ)
             $recentCeltic = $this->findRecoverableCelticReading($userId);
             if (! $recentCeltic) {
-                return null;
+                // 🆕 (2026-06-01, user) paid-claim แต่ไม่มีบิล celtic ค้าง recent → ขอสลิปเสมอ (ไม่ขายใหม่)
+                //   user: "FB ลูกค้าพิมพ์โอนแล้วไม่ได้ดู ระบบไม่ตรวจเช็คเหมือนไลน์"
+                //   return non-null → preempt early-gate "generic fortune" (line ~1857) ไม่ให้เปิดบิลขายใหม่
+                //   ตั้ง flag 1 ชม. → รูปสลิปที่ตามมาถูกตรวจ (webhook gate + handleReturningSlipImage เช็ค flag นี้)
+                \Illuminate\Support\Facades\Cache::put('fortune:returning_slip_ask:'.$userId, true, now()->addHour());
+                Log::info('SlipOK: paid-claim ไม่มีบิลค้าง recent → ขอสลิป (ไม่ขายใหม่)', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'text_preview' => mb_substr($messageText, 0, 40),
+                ]);
+
+                return $this->askForSlipMessage(null);
             }
 
             Log::info('SlipOK: returning paid-claim (no active bill) → ตรวจสลิป look-back', [
@@ -11672,6 +11683,22 @@ class FortuneConversationService
             // กู้เฉพาะบิลที่ "ยังไม่ได้ดู" — กันนำสลิปมาเปิดบิลที่ทำนายไปแล้วซ้ำ (req #4)
             $recentCeltic = $this->findRecoverableCelticReading($userId);
             if (! $recentCeltic) {
+                // 🆕 (2026-06-01, user) ไม่มีบิลค้าง — ถ้าเพิ่งขอสลิปไป (flag จาก tryReturningPaidSlipCheck)
+                //   → รับสลิป + log ให้แอดมินตรวจมือ (ไม่ทิ้งเงียบ) แทนที่จะ silent ignore
+                if (\Illuminate\Support\Facades\Cache::pull('fortune:returning_slip_ask:'.$userId)) {
+                    Log::warning('🧾 ADMIN_REVIEW: ลูกค้าส่งสลิปแต่ไม่มีบิลค้างในระบบ → ตรวจมือ', [
+                        'platform' => $platform,
+                        'user_id' => $userId,
+                    ]);
+
+                    return [
+                        'action' => 'slipok_no_bill_admin',
+                        'message' => "🙏 ได้รับสลิปแล้วค่ะ — แม่หมอไม่พบบิลที่ค้างในระบบ\n"
+                            .'จะให้แอดมินตรวจสอบและติดต่อกลับให้นะคะ ✨',
+                        'reading' => null,
+                    ];
+                }
+
                 return null;
             }
 

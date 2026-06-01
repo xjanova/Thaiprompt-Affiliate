@@ -1746,15 +1746,19 @@ class FacebookWebhookController extends Controller
                 //    🛡️ Cheap-guard: เช็ค recoverable Celtic ก่อน (1 indexed query) — รูปเล่นๆ ไม่มีบิลค้าง → ไม่ยิง SlipOK
                 $hasRecoverableCeltic = ! empty($userImageUrl)
                     && (new \App\Services\Fortune\SlipOkService($this->settings))->isEnabled()
-                    && FortuneReading::where('facebook_user_id', $senderId)
-                        ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
-                        ->where('created_at', '>=', now()->subDays(3)) // อนุโลม 3 วัน (sync SlipOkService::MAX_SLIP_AGE_DAYS)
-                        ->where(function ($q) {
-                            $q->where('is_paid', false)
-                                ->orWhereNull('celtic_questions_used')
-                                ->orWhere('celtic_questions_used', '<=', 0);
-                        })
-                        ->exists();
+                    && (
+                        // 🆕 (2026-06-01) เพิ่งขอสลิปไป (paid-claim ไม่มีบิลค้าง) → ตรวจรูปสลิปที่ตามมา + แจ้งแอดมิน
+                        \Illuminate\Support\Facades\Cache::has('fortune:returning_slip_ask:'.$senderId)
+                        || FortuneReading::where('facebook_user_id', $senderId)
+                            ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                            ->where('created_at', '>=', now()->subDays(3)) // อนุโลม 3 วัน (sync SlipOkService::MAX_SLIP_AGE_DAYS)
+                            ->where(function ($q) {
+                                $q->where('is_paid', false)
+                                    ->orWhereNull('celtic_questions_used')
+                                    ->orWhere('celtic_questions_used', '<=', 0);
+                            })
+                            ->exists()
+                    );
 
                 if ($hasRecoverableCeltic) {
                     try {
