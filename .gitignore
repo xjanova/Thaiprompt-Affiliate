@@ -88,3 +88,7 @@ plptdb-firebase-adminsdk-*.json
 banner1.zip
 thaiprompt web.zip
 *.zip
+
+# Python cache (tarot generator scripts)
+__pycache__/
+*.pyc
