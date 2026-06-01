@@ -591,7 +591,7 @@ class CelticCrossService
                 $followupOffer = "\n\n──────────────────────\n"
                     .$timeHint
                     .$qHint."\n"
-                    .'💬 พิมพ์ต่อได้เลย — หรือกด *"📜 เลิกทำนายและสรุปผล"* เมื่อพร้อม ✨';
+                    .'💬 พิมพ์ต่อได้เลย — หรือพิมพ์ *"เลิก"* เมื่อพร้อมจบและรับสรุป ✨';
 
                 $channelManager = new FortuneChannelManager($this->settings);
                 $result['pushed'] = (bool) $channelManager->sendResponse($platform, (string) $userId, [
@@ -3531,7 +3531,7 @@ class CelticCrossService
 
         $promptLine = $usedQ === 0
             ? '💬 พิมพ์ *คำถามแรก* ที่อยากรู้มาเลยค่ะ — แม่หมอจะอ่านพลังจากไพ่ทั้ง 10 ใบ'
-            : '💬 พิมพ์ *คำถามถัดไป* ที่อยากรู้ — หรือกด *"📜 เลิกทำนายและสรุปผล"* เมื่อพร้อม';
+            : '💬 พิมพ์ *คำถามถัดไป* ที่อยากรู้ — หรือพิมพ์ *"เลิก"* เมื่อพร้อมจบและรับสรุป';
 
         return [
             'message' => $header

@@ -1009,7 +1009,10 @@ class FortuneChannelManager
                 //   เคสจริง บิล FTU-260528-E8815: AI ตอบสำเร็จ แต่ push ไม่ถึงลูกค้า เห็นแค่ "ติดขัด"
                 //   เดิม FB ไม่เช็คผลส่งเลย → fortune:celtic-redeliver cron จับ delivered_at=null ส่งซ้ำ
                 'celtic_question_answered', 'celtic_qa_prompt_resume', 'celtic_continue' => (function () use ($fbService, $userId, $message, $result, $extra) {
-                    $qr = [['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK']];
+                    // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
+                    //   ลูกค้ายังจบเองได้ด้วยการ "พิมพ์ เลิก" (handleCelticEndConfirmation จับ เลิก/จบ/พอแล้ว)
+                    //   ส่ง plain (sendQuickReplies + [] → fallback sendMessage ภายใน) — คง retry + markDelivered เดิม
+                    $qr = [];
                     $ok = $fbService->sendQuickReplies($userId, $message, $qr, $extra);
                     if (! $ok) {
                         usleep(800000); // 0.8s แล้ว retry 1 ครั้ง — กัน transient FB blip
@@ -1104,10 +1107,10 @@ class FortuneChannelManager
 
                     // ส่ง quick reply ปิดท้าย — ตามสถานะ session
                     $canAskMore = (bool) ($result['celtic_can_ask_more'] ?? false);
+                    // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
+                    //   ยังคุยต่อได้ / จบเองด้วยการพิมพ์ "เลิก" — เหลือ "ดูดวงใหม่" เฉพาะตอนจบรอบแล้ว
                     $quickReplies = $canAskMore
-                        ? [
-                            ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],
-                        ]
+                        ? []
                         : [
                             ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'MENU_FORTUNE'],
                         ];
@@ -1117,7 +1120,7 @@ class FortuneChannelManager
                     return $fbService->sendQuickReplies(
                         $userId,
                         $canAskMore
-                            ? '💬 คุยต่อได้เลยค่ะ — หรือกดปุ่มจบสนทนา 🙏'
+                            ? '💬 คุยต่อได้เลยค่ะ — หรือพิมพ์ *"เลิก"* เมื่อพร้อมจบและรับสรุป 🙏'
                             : '🙏 ขอบคุณที่ใช้บริการแม่หมอจันทรานะคะ ✨',
                         $quickReplies,
                         $extra
@@ -2290,8 +2293,9 @@ class FortuneChannelManager
                     //   Format: simple {label, text} — sendMessage แปลงเป็น LINE format ภายใน
                     $quickReplies = [];
                     if ($picked >= 10) {
-                        // ครบ 10 ใบ — Q&A mode → ปุ่มเดียว
-                        $quickReplies[] = ['label' => '📜 เลิกทำนายและสรุปผล', 'text' => 'เลิกทำนายและสรุปผล'];
+                        // ครบ 10 ใบ — Q&A mode → ไม่มีปุ่ม
+                        // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
+                        //   พิมพ์คำถามต่อได้เลย / จบเองด้วยการ "พิมพ์ เลิก" ($quickReplies = [] = ไม่มีปุ่ม ปลอดภัย)
                     } else {
                         // ยังเปิดไม่ครบ → ปุ่มเปิดไพ่ + สับใหม่ (ถ้ามีสิทธิ์) + ยกเลิก
                         $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
@@ -2403,9 +2407,9 @@ class FortuneChannelManager
                     ]);
 
                     $textOk = false;
-                    $lineQr = ['quick_replies' => [
-                        ['label' => '📜 เลิกทำนายและสรุปผล', 'text' => 'เลิกทำนายและสรุปผล'],
-                    ]];
+                    // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
+                    //   ส่ง plain (sendMessage guard quick_replies ว่าง) — ลูกค้าจบเองด้วยการ "พิมพ์ เลิก"
+                    $lineQr = [];
                     try {
                         $textOk = $lineService->sendMessage($userId, $message, $lineQr);
                         \Log::info('LINE Celtic Q&A: sendMessage (push) result', [
@@ -2507,15 +2511,17 @@ class FortuneChannelManager
                     }
 
                     $canAskMore = (bool) ($result['celtic_can_ask_more'] ?? false);
+                    // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
+                    //   คุยต่อ → ไม่มีปุ่ม (พิมพ์ "เลิก" จบเอง) / จบรอบแล้ว → เหลือ "ดูดวงใหม่"
                     $replies = $canAskMore
-                        ? [['label' => '📜 เลิกทำนายและสรุปผล', 'text' => 'ยุติการทำนาย']]
+                        ? []
                         : [['label' => '🔮 ดูดวงใหม่', 'text' => 'ดูดวง']];
 
                     return $this->sendLineMessageWithQuickReply(
                         $lineService,
                         $userId,
                         $canAskMore
-                            ? '💬 คุยต่อได้เลย — หรือกดปุ่มจบสนทนา 🙏'
+                            ? '💬 คุยต่อได้เลย — หรือพิมพ์ *"เลิก"* เมื่อพร้อมจบและรับสรุป 🙏'
                             : '🙏 ขอบคุณที่ใช้บริการแม่หมอจันทรานะคะ ✨',
                         null,
                         $replies
@@ -3239,19 +3245,17 @@ class FortuneChannelManager
                     }
                     $quickReplies[] = ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'];
                 } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION) {
-                    $hint = '👉 พิมพ์คำถามที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้';
-                    $quickReplies = [
-                        ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],
-                    ];
+                    // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
+                    $hint = '👉 พิมพ์คำถามที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้ (พิมพ์ *"เลิก"* เมื่อพร้อมจบ)';
+                    $quickReplies = [];
                 } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_GENERATING) {
                     $hint = '🌌 แม่หมอกำลังพิจารณาไพ่ทั้ง 10 ใบ — กรุณารอสักครู่ (~30-60 วินาที) ✨';
                     $quickReplies = [];
                 } else { // CELTIC_QA_PROMPT
                     // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — พิมพ์คำถามเข้ามาได้เลย
-                    $hint = '👉 พิมพ์คำถามมาได้เลย — หรือกด *"🛑 ยุติการทำนาย"* เพื่อจบรอบ';
-                    $quickReplies = [
-                        ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],
-                    ];
+                    // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
+                    $hint = '👉 พิมพ์คำถามมาได้เลย — หรือพิมพ์ *"เลิก"* เพื่อจบรอบ';
+                    $quickReplies = [];
                 }
 
                 return [
