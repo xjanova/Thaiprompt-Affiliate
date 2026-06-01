@@ -189,8 +189,8 @@ class CelticSpreadImageGenerator
         $fontPath = $this->findThaiFont();
 
         if ($fontPath) {
-            imagettftext($canvas, 36, 0, 60, 80, $gold, $fontPath, '🔮 Celtic Cross Tarot Reading');
-            imagettftext($canvas, 22, 0, 60, 130, $cream, $fontPath, 'แม่หมอจันทรา ✦ ดูดวงไพ่ยิปซีเต็มสำรับ');
+            imagettftext($canvas, 36, 0, 60, 80, $gold, $fontPath, 'Celtic Cross Tarot Reading');
+            imagettftext($canvas, 22, 0, 60, 130, $cream, $fontPath, 'แม่หมอจันทรา • ดูดวงไพ่ยิปซีเต็มสำรับ');
         } else {
             imagestring($canvas, 5, 60, 60, 'Celtic Cross Tarot Reading', $gold);
         }
@@ -296,10 +296,10 @@ class CelticSpreadImageGenerator
         $isReversed = ! empty($card['is_reversed']);
 
         if ($fontPath && $cardName !== '') {
-            // ✦ ดาวบน
+            // • ดาวบน
             $gold = imagecolorallocate($canvas, 220, 185, 110);
-            $bbTop = imagettfbbox(15, 0, $fontPath, '✦');
-            imagettftext($canvas, 15, 0, $x - intdiv($bbTop[2] - $bbTop[0], 2), $py + 32, $gold, $fontPath, '✦');
+            $bbTop = imagettfbbox(15, 0, $fontPath, '•');
+            imagettftext($canvas, 15, 0, $x - intdiv($bbTop[2] - $bbTop[0], 2), $py + 32, $gold, $fontPath, '•');
 
             // ชื่อไพ่ไทย — wrap กลางการ์ด (กล่องแนวนอน [rotation 90°] กว้างกว่า → ตัวอักษร/บรรทัดมากขึ้น)
             $cream = imagecolorallocate($canvas, 242, 232, 208);
@@ -314,7 +314,7 @@ class CelticSpreadImageGenerator
             }
 
             // ตำแหน่ง + กลับหัว ด้านล่าง
-            $tag = "[{$position}]".($isReversed ? '  ⤵ กลับหัว' : '');
+            $tag = "[{$position}]".($isReversed ? '  (กลับหัว)' : '');
             $tagColor = $isReversed ? imagecolorallocate($canvas, 255, 150, 150) : $gold;
             $bbTag = imagettfbbox(12, 0, $fontPath, $tag);
             imagettftext($canvas, 12, 0, $x - intdiv($bbTag[2] - $bbTag[0], 2), $py + $h - 16, $tagColor, $fontPath, $tag);
@@ -382,7 +382,7 @@ class CelticSpreadImageGenerator
         if ($fontPath) {
             $text = "[{$position}]";
             if ($isReversed) {
-                $text .= ' ⤵';
+                $text .= ' (กลับหัว)';
             }
             imagettftext($canvas, 14, 0, $x - 20, $y, $gold, $fontPath, $text);
         }
@@ -404,7 +404,7 @@ class CelticSpreadImageGenerator
         $legend = [
             '1=หัวใจของเรื่อง  •  2=อุปสรรค  •  3=เป้าหมาย  •  4=รากฐาน  •  5=อดีต',
             '6=อนาคตอันใกล้  •  7=ตัวเจ้าชะตา  •  8=อิทธิพลภายนอก  •  9=ความหวัง&ความกลัว  •  10=ผลลัพธ์',
-            '⤵ = ไพ่กลับหัว',
+            '(กลับหัว) = ไพ่วางหัวลง ความหมายเปลี่ยน',
         ];
 
         $y = $startY;
@@ -413,9 +413,9 @@ class CelticSpreadImageGenerator
             $y += 28;
         }
 
-        // ✨ watermark
+        // watermark
         $gold = imagecolorallocate($canvas, 220, 180, 100);
-        imagettftext($canvas, 14, 0, 60, self::CANVAS_H - 50, $gold, $fontPath, '✨ thaiprompt.online ✦ แม่หมอจันทรา');
+        imagettftext($canvas, 14, 0, 60, self::CANVAS_H - 50, $gold, $fontPath, 'thaiprompt.online • แม่หมอจันทรา');
     }
 
     /**
