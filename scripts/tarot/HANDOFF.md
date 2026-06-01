@@ -2,9 +2,34 @@
 
 ## สถานะปัจจุบัน (เมื่อ commit ล่าสุด)
 
-**Branch:** `claude/exciting-curie-TeFgP`
+**Branch ที่มี work ครบล่าสุด:** `claude/exciting-curie-TeFgP` (และ mirror ที่ `claude/keen-albattani-oQCAh`)
 **Repo:** `xjanova/Thaiprompt-Affiliate`
 **Path:** `database/data/tarot/celtic-cross/`
+
+### ⚠️ Branch สำหรับเซสชั่นถัดไป
+
+แต่ละเซสชั่นจะถูกระบบกำหนด branch ใหม่ตาม session ID เช่น `claude/<adj>-<name>-<id>`
+
+**ขั้นตอนเริ่มต้นเซสชั่นใหม่:**
+
+```bash
+# 1. ดูชื่อ branch ที่ระบบกำหนดให้ในระบบ reminder ตอนเริ่มเซสชั่น
+#    (ปกติอยู่ในรูปแบบ "Develop on branch claude/<name>-<id>")
+
+# 2. Checkout จาก branch ปัจจุบันที่มี work ครบ
+git fetch origin claude/exciting-curie-TeFgP
+git checkout -b claude/<new-session-branch> origin/claude/exciting-curie-TeFgP
+
+# 3. ตรวจว่ามี commit ครบ (ควรเห็น swords-seven + handoff)
+git log --oneline -3
+
+# 4. ทำงานตามคู่มือด้านล่าง
+
+# 5. Push ไปยัง branch ที่ระบบกำหนดให้สำหรับเซสชั่นนั้น
+git push -u origin claude/<new-session-branch>
+```
+
+**ห้าม** push ไป branch อื่นที่ไม่ใช่ branch ของเซสชั่นนั้น
 
 **เสร็จแล้ว: 57/78 ใบ**
 - Major Arcana 22/22 ใบ ✅ (00-the-fool → 21-the-world)
@@ -211,7 +236,8 @@ git push -u origin claude/exciting-curie-TeFgP
 
 ## Git rules
 
-- ห้าม push branch อื่นที่ไม่ใช่ `claude/exciting-curie-TeFgP`
-- Push: `git push -u origin claude/exciting-curie-TeFgP`
+- Push เฉพาะไป **branch ของเซสชั่นปัจจุบัน** (ที่ระบบกำหนดให้ตอนเริ่มเซสชั่น)
+- Push: `git push -u origin <session-branch>`
 - ถ้า network error: retry สูงสุด 4 ครั้ง backoff 2s, 4s, 8s, 16s
 - ทำทีละใบให้จบ + commit + push **ก่อน** เริ่มใบใหม่
+- ห้าม push ทับ branch ของเซสชั่นเก่า (`claude/exciting-curie-TeFgP`, `claude/keen-albattani-oQCAh`) เพราะเป็นประวัติของเซสชั่นที่ผ่านมา
