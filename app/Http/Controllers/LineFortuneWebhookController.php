@@ -317,6 +317,53 @@ class LineFortuneWebhookController extends Controller
             // 🔇 (2026-05-24) ไม่มี active flow + รูป → silent (Vision skipped, ประหยัด quota)
             //    User: "ตอนลูกค้าส่งรูปในแชทปกติ → เงียบ ไม่ตอบ"
             if (! $hasActiveFortune) {
+                // 🧾 (2026-06-01) ก่อน silent — ลูกค้า returning ที่เคยพยายามดู Celtic แล้วทิ้งบิล
+                //    (กดยกเลิก/บิลหมดอายุ) กลับมาส่ง "รูปสลิป" เพื่อยืนยันการโอน → ต้องตรวจ+กู้บิล ไม่ใช่ทิ้งเงียบ
+                //    🐛 เคส entony (reading 4544): รูปสลิปถูกทิ้งเงียบที่นี่ทุกครั้ง — returning-slip recovery
+                //       (commit 25a574767) wired ไว้ใน handleSlipImageOnly ซึ่งถูกเรียก *หลัง* guard นี้ → มาไม่ถึง
+                //    🛡️ Cheap-guard: เช็ค recoverable Celtic ก่อน (1 indexed query, mirror findRecoverableCelticReading)
+                //       แล้วค่อย download — ลูกค้าทั่วไปที่ส่งรูปเล่นๆ ไม่มีบิลค้าง → ไม่ download/ไม่ยิง SlipOK/Vision
+                $hasRecoverableCeltic = ! empty($messageId)
+                    && (new \App\Services\Fortune\SlipOkService($this->settings))->isEnabled()
+                    && FortuneReading::where('facebook_user_id', $userId)
+                        ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                        ->where('created_at', '>=', now()->subDays(2))
+                        ->where(function ($q) {
+                            $q->where('is_paid', false)
+                                ->orWhereNull('celtic_questions_used')
+                                ->orWhere('celtic_questions_used', '<=', 0);
+                        })
+                        ->exists();
+
+                if ($hasRecoverableCeltic) {
+                    try {
+                        $retB64 = $this->downloadLineImageAsBase64($messageId);
+                        if (! empty($retB64)) {
+                            $ret = $this->conversationService->handleReturningSlipImage('line', $userId, null, $retB64);
+                            if ($ret !== null) {
+                                $this->channelManager->sendResponse(
+                                    FortuneChannelManager::PLATFORM_LINE,
+                                    $userId,
+                                    $ret,
+                                    ['reply_token' => $replyToken, 'from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']
+                                );
+
+                                Log::info('LINE: returning slip image (no active flow) → ตรวจ+ตอบ', [
+                                    'user_id' => $userId,
+                                    'action' => $ret['action'] ?? null,
+                                ]);
+
+                                return;
+                            }
+                        }
+                    } catch (\Throwable $retErr) {
+                        Log::warning('LINE: returning slip image (no active flow) ล้มเหลว (non-blocking)', [
+                            'user_id' => $userId,
+                            'error' => $retErr->getMessage(),
+                        ]);
+                    }
+                }
+
                 Log::debug('LINE: silent ignore image (no active fortune flow, vision skipped)', [
                     'user_id' => $userId,
                 ]);

@@ -1740,6 +1740,46 @@ class FacebookWebhookController extends Controller
             //    User: "ตอนลูกค้าส่งรูปในแชทปกติ → เงียบ ไม่ตอบ"
             //    Vision classify ถูก skip ไปแล้ว (gate ที่ $hasActiveFortune) — saved quota
             if (empty($messageText) && ! $hasActiveFortune) {
+                // 🧾 (2026-06-01) ก่อน silent — ลูกค้า returning (ทิ้งบิล/บิลหมดอายุ) ส่ง "รูปสลิป" ยืนยันการโอน
+                //    → ตรวจ+กู้บิล ไม่ใช่ทิ้งเงียบ (parity กับ LINE — bug เดียวกัน: returning-slip recovery
+                //    wired ใน handleSlipImageOnly ซึ่งถูกเรียก *หลัง* guard นี้ → no-active-flow มาไม่ถึง)
+                //    🛡️ Cheap-guard: เช็ค recoverable Celtic ก่อน (1 indexed query) — รูปเล่นๆ ไม่มีบิลค้าง → ไม่ยิง SlipOK
+                $hasRecoverableCeltic = ! empty($userImageUrl)
+                    && (new \App\Services\Fortune\SlipOkService($this->settings))->isEnabled()
+                    && FortuneReading::where('facebook_user_id', $senderId)
+                        ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                        ->where('created_at', '>=', now()->subDays(2))
+                        ->where(function ($q) {
+                            $q->where('is_paid', false)
+                                ->orWhereNull('celtic_questions_used')
+                                ->orWhere('celtic_questions_used', '<=', 0);
+                        })
+                        ->exists();
+
+                if ($hasRecoverableCeltic) {
+                    try {
+                        $ret = $this->conversationService->handleReturningSlipImage('facebook', $senderId, $userImageUrl, null);
+                        if ($ret !== null) {
+                            $this->channelManager->sendResponse('facebook', $senderId, $ret, [
+                                'from_admin' => true,
+                                'message_tag' => 'POST_PURCHASE_UPDATE',
+                            ]);
+
+                            Log::info('Facebook: returning slip image (no active flow) → ตรวจ+ตอบ', [
+                                'sender_id' => $senderId,
+                                'action' => $ret['action'] ?? null,
+                            ]);
+
+                            return;
+                        }
+                    } catch (\Throwable $retErr) {
+                        Log::warning('Facebook: returning slip image (no active flow) ล้มเหลว (non-blocking)', [
+                            'sender_id' => $senderId,
+                            'error' => $retErr->getMessage(),
+                        ]);
+                    }
+                }
+
                 Log::debug('FB: silent ignore attachment (no active fortune flow, vision skipped)', [
                     'sender_id' => $senderId,
                     'has_image' => ! empty($userImageUrl),
