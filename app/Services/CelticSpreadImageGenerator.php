@@ -55,7 +55,7 @@ class CelticSpreadImageGenerator
     /**
      * สร้างภาพ spread + บันทึก path ใน reading
      *
-     * @return string|null  URL ของภาพ (asset path) หรือ null ถ้าล้มเหลว
+     * @return string|null URL ของภาพ (asset path) หรือ null ถ้าล้มเหลว
      */
     public function generate(FortuneReading $reading): ?string
     {
@@ -104,6 +104,7 @@ class CelticSpreadImageGenerator
                     'dir' => $dir,
                 ]);
                 imagedestroy($canvas);
+
                 return null;
             }
 
@@ -118,6 +119,7 @@ class CelticSpreadImageGenerator
                     'exists' => is_file($absolutePath),
                     'size' => is_file($absolutePath) ? filesize($absolutePath) : 0,
                 ]);
+
                 return null;
             }
 
@@ -128,7 +130,7 @@ class CelticSpreadImageGenerator
             //   เคสจริง: FB cache รูป URL → ลูกค้าเห็นรูปเก่าตอนเปิดไพ่ แทนรูปครบ 10 ใบ
             //   Fix: ?v={mtime} → unique URL ทุกครั้งที่ regen
             $cacheBuster = filemtime($absolutePath) ?: time();
-            $url = asset('storage/' . $relativePath) . '?v=' . $cacheBuster;
+            $url = asset('storage/'.$relativePath).'?v='.$cacheBuster;
 
             Log::info('CelticSpreadImage: สร้างสำเร็จ', [
                 'reading_id' => $reading->id,
@@ -213,21 +215,29 @@ class CelticSpreadImageGenerator
         // โหลด card image
         $cardImg = $this->loadImageFromUrl($imageUrl);
         if (! $cardImg) {
-            // fallback: วาด placeholder (สี่เหลี่ยมสีแสดงว่าโหลดไม่ได้)
-            $this->drawPlaceholderCard($canvas, $coords['x'], $coords['y'], $coords['rotation'], $position);
+            // fallback: ไพ่ยังไม่มีรูป (เช่น Minor Arcana 56 ใบที่ยังไม่อัปโหลด / SVG ที่ GD อ่านไม่ได้)
+            //   → วาดการ์ดหลังไพ่ + ชื่อไพ่ไทย แทนกล่องเปล่า ให้ดูตั้งใจ
+            $this->drawPlaceholderCard($canvas, $coords['x'], $coords['y'], $coords['rotation'], $position, $card);
 
             return;
         }
 
-        // Resize ไพ่ให้ขนาดมาตรฐาน
-        $cardW = self::CARD_W;
-        $cardH = self::CARD_H;
-        $resized = imagecreatetruecolor($cardW, $cardH);
+        // Resize ไพ่ — รักษาอัตราส่วน (contain) ไม่บีบ ไม่ครอป
+        //   🩹 (2026-06-02, user) เดิมยัด source เต็มใบลง 130×208 ตายตัว → ไพ่ที่ไม่ใช่ 5:8
+        //     (เช่น webp 400×600 = 2:3) ถูกบีบแนวนอน ~6% = ภาพเพี้ยน
+        //   ใหม่: สเกลตาม min(W/srcW, H/srcH) → การ์ดคงสัดส่วนจริง (เล็กลงพอดีกรอบ)
+        //     ขั้นถัดไป center ที่ (x,y) ด้วย imagesx/imagesy($resized) อยู่แล้ว → วางกึ่งกลางตำแหน่งถูกต้อง
+        $srcW = imagesx($cardImg);
+        $srcH = imagesy($cardImg);
+        $scale = min(self::CARD_W / $srcW, self::CARD_H / $srcH);
+        $drawW = max(1, (int) round($srcW * $scale));
+        $drawH = max(1, (int) round($srcH * $scale));
+        $resized = imagecreatetruecolor($drawW, $drawH);
         imagecopyresampled(
             $resized, $cardImg,
             0, 0, 0, 0,
-            $cardW, $cardH,
-            imagesx($cardImg), imagesy($cardImg)
+            $drawW, $drawH,
+            $srcW, $srcH
         );
         imagedestroy($cardImg);
 
@@ -262,7 +272,7 @@ class CelticSpreadImageGenerator
     /**
      * วาด placeholder card ถ้าโหลดรูปไพ่ไม่ได้
      */
-    protected function drawPlaceholderCard($canvas, int $x, int $y, int $rotation, int $position): void
+    protected function drawPlaceholderCard($canvas, int $x, int $y, int $rotation, int $position, array $card = []): void
     {
         $w = self::CARD_W;
         $h = self::CARD_H;
@@ -274,13 +284,90 @@ class CelticSpreadImageGenerator
         $px = $x - intdiv($w, 2);
         $py = $y - intdiv($h, 2);
 
-        $bg = imagecolorallocate($canvas, 60, 30, 90);
-        $border = imagecolorallocate($canvas, 200, 170, 80);
+        // 🎴 (2026-06-02) การ์ดหลังไพ่ลึกลับ + ขอบทอง 2 ชั้น — ดูตั้งใจ ไม่เหมือน error box
+        $bg = imagecolorallocate($canvas, 48, 26, 78);
+        $border = imagecolorallocate($canvas, 210, 175, 95);
         imagefilledrectangle($canvas, $px, $py, $px + $w, $py + $h, $bg);
         imagerectangle($canvas, $px, $py, $px + $w, $py + $h, $border);
+        imagerectangle($canvas, $px + 4, $py + 4, $px + $w - 4, $py + $h - 4, $border);
 
-        $white = imagecolorallocate($canvas, 255, 255, 255);
-        imagestring($canvas, 4, $px + 10, $py + ($h / 2) - 5, "POS {$position}", $white);
+        $fontPath = $this->findThaiFont();
+        $cardName = trim((string) ($card['card_name_th'] ?? ''));
+        $isReversed = ! empty($card['is_reversed']);
+
+        if ($fontPath && $cardName !== '') {
+            // ✦ ดาวบน
+            $gold = imagecolorallocate($canvas, 220, 185, 110);
+            $bbTop = imagettfbbox(15, 0, $fontPath, '✦');
+            imagettftext($canvas, 15, 0, $x - intdiv($bbTop[2] - $bbTop[0], 2), $py + 32, $gold, $fontPath, '✦');
+
+            // ชื่อไพ่ไทย — wrap กลางการ์ด (กล่องแนวนอน [rotation 90°] กว้างกว่า → ตัวอักษร/บรรทัดมากขึ้น)
+            $cream = imagecolorallocate($canvas, 242, 232, 208);
+            $perLine = $rotation !== 0 ? 16 : 9;
+            $lines = $this->wrapThaiText($cardName, $perLine);
+            $lineH = 26;
+            $startY = $y - intdiv((count($lines) - 1) * $lineH, 2);
+            foreach ($lines as $i => $line) {
+                $bb = imagettfbbox(13, 0, $fontPath, $line);
+                $tw = $bb[2] - $bb[0];
+                imagettftext($canvas, 13, 0, $x - intdiv($tw, 2), $startY + ($i * $lineH), $cream, $fontPath, $line);
+            }
+
+            // ตำแหน่ง + กลับหัว ด้านล่าง
+            $tag = "[{$position}]".($isReversed ? '  ⤵ กลับหัว' : '');
+            $tagColor = $isReversed ? imagecolorallocate($canvas, 255, 150, 150) : $gold;
+            $bbTag = imagettfbbox(12, 0, $fontPath, $tag);
+            imagettftext($canvas, 12, 0, $x - intdiv($bbTag[2] - $bbTag[0], 2), $py + $h - 16, $tagColor, $fontPath, $tag);
+        } else {
+            // ไม่มีฟอนต์/ชื่อ → fallback ข้อความ bitmap
+            $white = imagecolorallocate($canvas, 235, 230, 245);
+            imagestring($canvas, 4, $px + 10, (int) ($py + ($h / 2) - 5), "POS {$position}", $white);
+        }
+    }
+
+    /**
+     * ตัดข้อความเป็นหลายบรรทัดให้พอดีการ์ด
+     *   - มีช่องว่าง (อังกฤษ เช่น "Three of Wands") → ตัดตามคำ
+     *   - ไทยล้วน (ไม่มีช่องว่าง) → ตัดตามจำนวนตัวอักษร (~$perLine)
+     *
+     * @return array<int,string> สูงสุด 4 บรรทัด
+     */
+    protected function wrapThaiText(string $text, int $perLine = 9): array
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return [];
+        }
+
+        // มีช่องว่าง + ยาวเกิน → ตัดตามคำ
+        if (mb_strpos($text, ' ') !== false && mb_strlen($text) > $perLine) {
+            $words = preg_split('/\s+/u', $text) ?: [$text];
+            $lines = [];
+            $cur = '';
+            foreach ($words as $wd) {
+                $try = $cur === '' ? $wd : $cur.' '.$wd;
+                if (mb_strlen($try) > $perLine && $cur !== '') {
+                    $lines[] = $cur;
+                    $cur = $wd;
+                } else {
+                    $cur = $try;
+                }
+            }
+            if ($cur !== '') {
+                $lines[] = $cur;
+            }
+
+            return array_slice($lines, 0, 4);
+        }
+
+        // ไทยล้วน → ตัดตามจำนวนตัวอักษร
+        $chars = mb_str_split($text);
+        $lines = [];
+        for ($i = 0; $i < count($chars); $i += $perLine) {
+            $lines[] = implode('', array_slice($chars, $i, $perLine));
+        }
+
+        return array_slice($lines, 0, 4);
     }
 
     /**
@@ -353,7 +440,7 @@ class CelticSpreadImageGenerator
                 return null;
             }
 
-            $tempPath = tempnam(sys_get_temp_dir(), 'celtic_card_') . '.img';
+            $tempPath = tempnam(sys_get_temp_dir(), 'celtic_card_').'.img';
             file_put_contents($tempPath, $response->body());
             $img = $this->imageCreateFromFile($tempPath);
             @unlink($tempPath);
@@ -392,7 +479,7 @@ class CelticSpreadImageGenerator
 
         // /storage/foo.jpg → storage/app/public/foo.jpg
         if (str_starts_with($path, '/storage/')) {
-            return storage_path('app/public/' . substr($path, strlen('/storage/')));
+            return storage_path('app/public/'.substr($path, strlen('/storage/')));
         }
 
         // /images/... → public/images/...
@@ -409,11 +496,16 @@ class CelticSpreadImageGenerator
     protected function findThaiFont(): ?string
     {
         $candidates = [
+            // ⭐ (2026-06-02) ฟอนต์ไทยที่ฝังมากับ repo จริง — ต้องมาก่อน!
+            //   เดิม list หาแต่ Sarabun/Kanit ที่ไม่มีบน prod → คืน null → ข้อความไทยทั้งหมด
+            //   (subtitle/legend/เลขตำแหน่ง) หายเงียบๆ — เห็นแต่หัวอังกฤษ bitmap
+            resource_path('fonts/NotoSansThai-Bold.ttf'),
             public_path('fonts/Sarabun-Bold.ttf'),
             public_path('fonts/Kanit-Bold.ttf'),
             public_path('fonts/THSarabun.ttf'),
             resource_path('fonts/Sarabun-Bold.ttf'),
             resource_path('fonts/Kanit-Bold.ttf'),
+            resource_path('fonts/DejaVuSans.ttf'),
             '/usr/share/fonts/truetype/sarabun/Sarabun-Bold.ttf',
             '/usr/share/fonts/truetype/thai/TlwgTypist.ttf',
             'C:/Windows/Fonts/Tahoma.ttf',
