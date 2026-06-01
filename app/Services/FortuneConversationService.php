@@ -11675,6 +11675,18 @@ class FortuneConversationService
                 return null;
             }
 
+            // 🛡️ (2026-06-01) Pre-check ถูกๆ ด้วย Gemini classifier ก่อนยิง SlipOK (โควต้าจำกัด ~100/เดือน)
+            //   ลูกค้า returning อาจส่งรูปอื่น (เซลฟี่/วิว/มีม/สติ๊กเกอร์) แม้มีบิลค้าง — ถ้าไม่ใช่สลิปแน่ๆ
+            //   → ขอสลิป ไม่ยิง SlipOK (กันเปลืองโควต้ากับรูปที่ไม่มี QR). เอนเอียง "ปล่อยผ่าน" เมื่อไม่ชัด
+            if (! $this->returningImageLooksLikeSlip($url, $base64)) {
+                Log::info('SlipOK: returning image ไม่ใช่สลิป (classifier) → ขอสลิป ไม่ยิง SlipOK (ประหยัดโควต้า)', [
+                    'user_id' => $userId,
+                    'reading_id' => $recentCeltic->id,
+                ]);
+
+                return $this->askForSlipMessage($recentCeltic);
+            }
+
             $bytes = null;
             if (! empty($base64)) {
                 if (str_contains($base64, ',')) {
@@ -11701,6 +11713,53 @@ class FortuneConversationService
             ]);
 
             return null;
+        }
+    }
+
+    /**
+     * 🛡️ (2026-06-01) Pre-check ถูกๆ: รูปที่ลูกค้า returning ส่งมา "ดูเป็นสลิป" ไหม ก่อนยิง SlipOK
+     *   ใช้ ImageIntentClassifier (Gemini Flash — ถูก/ฟรี, cache 10 นาที) คัดรูปที่ไม่ใช่สลิปออก
+     *   เพื่อไม่เปลืองโควต้า SlipOK (จำกัด ~100/เดือน) กับรูปที่ไม่มี QR แน่ๆ (เซลฟี่/วิว/มีม/สติ๊กเกอร์)
+     *
+     *   ปรัชญา "เอนเอียงปล่อยผ่าน" — บล็อกเฉพาะตอนมั่นใจว่าไม่ใช่สลิป (กัน false-reject สลิปจริง):
+     *     • payment_slip                       → ผ่าน (true)
+     *     • classifier fail / ไม่มั่นใจ         → ผ่าน (true) ให้ SlipOK ตัดสิน ดีกว่าบล็อกลูกค้าจ่ายเงิน
+     *     • general/selfie/emoji/nonsense ที่มั่นใจ (confidence ≥ 0.55) → บล็อก (false)
+     *
+     * @param  string|null  $url  URL รูป (FB CDN) — ถ้ามี
+     * @param  string|null  $base64  base64 ของรูป (LINE) — ถ้ามี
+     * @return bool true = น่าจะเป็นสลิป (ยิง SlipOK ได้) / false = ไม่ใช่สลิปแน่ (ขอสลิปใหม่ ไม่เปลืองโควต้า)
+     */
+    protected function returningImageLooksLikeSlip(?string $url, ?string $base64): bool
+    {
+        try {
+            $imageData = null;
+            if (! empty($url)) {
+                $imageData = $url;
+            } elseif (! empty($base64)) {
+                $clean = str_contains($base64, ',') ? substr($base64, strpos($base64, ',') + 1) : $base64;
+                $imageData = 'data:image/jpeg;base64,'.$clean;
+            }
+            if ($imageData === null) {
+                return true; // ไม่มีข้อมูลรูป → ไม่บล็อก
+            }
+
+            $r = (new \App\Services\Fortune\ImageIntentClassifier($this->settings))->classify($imageData, 'payment_pending');
+            $intent = $r['intent'] ?? null;
+            $conf = (float) ($r['confidence'] ?? 0.0);
+
+            if ($intent === \App\Services\Fortune\ImageIntentClassifier::INTENT_PAYMENT_SLIP) {
+                return true;
+            }
+
+            // ไม่ใช่สลิป + classifier มั่นใจพอ → บล็อก (ประหยัดโควต้า) ; ไม่ชัด/fail (conf 0) → ปล่อยผ่าน
+            return $conf < 0.55;
+        } catch (\Throwable $e) {
+            Log::debug('SlipOK pre-check classifier ล้มเหลว → ปล่อยผ่าน (ไม่บล็อกลูกค้า)', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return true;
         }
     }
 
