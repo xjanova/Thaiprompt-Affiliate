@@ -2070,13 +2070,16 @@ class FacebookWebhookController extends Controller
                 //   ประหยัดโควตา: ไม่ยิง SlipOK ทันที รอ SMS ตัดก่อน (job หน่วงเวลา + ลูกค้า ping จะ trigger)
                 try {
                     $slipSvc = new \App\Services\Fortune\SlipOkService($this->settings);
-                    if ($slipSvc->isEnabled() && ! empty($imageUrl) && empty($activeReading->slipok_verified_at)) {
+                    // ⚠️ (2026-06-01, user) ข้าม sticker (👍 ฯลฯ) — ไม่ใช่สลิปแน่นอน
+                    //   กันตอบ "ได้รับสลิป" ผิด + เปลือง SlipOK quota (เคสจริง: ลูกค้ายกนิ้ว → บอทบอกได้รับสลิป)
+                    //   ข้อความเปลี่ยนเป็น "ได้รับรูป — ถ้าเป็นสลิปกำลังตรวจ" (ถูกต้องทั้งสลิป+ไม่ใช่สลิป — เผื่อ classifier ล่ม)
+                    if ($slipSvc->isEnabled() && ! empty($imageUrl) && ! $hasSticker && empty($activeReading->slipok_verified_at)) {
                         $stored = $this->conversationService->storeIncomingSlipFromUrl($activeReading, $imageUrl);
                         if ($stored) {
                             $this->facebookService->sendMessage(
                                 $senderId,
-                                "🌙 ได้รับสลิปแล้วค่ะ ขอบคุณนะคะ\n\n"
-                                ."⏳ ระบบกำลังตรวจสอบให้ — ถ้าโอนเข้าจริง จะตัดบิลและเริ่มดูดวงให้ภายใน 1 นาที ✨\n\n"
+                                "🌙 ได้รับรูปแล้วค่ะ ขอบคุณนะคะ\n\n"
+                                ."⏳ ถ้าเป็น*สลิปการโอน* ระบบกำลังตรวจสอบให้ — ถ้าโอนเข้าจริง จะตัดบิลและเริ่มดูดวงให้ภายใน 1 นาที ✨\n\n"
                                 .'💡 อยากให้เช็คทันที พิมพ์ "เช็คสถานะ" ได้เลยค่ะ'
                             );
 

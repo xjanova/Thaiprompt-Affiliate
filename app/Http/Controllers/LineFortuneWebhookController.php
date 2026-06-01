@@ -1890,8 +1890,8 @@ class LineFortuneWebhookController extends Controller
                             && $this->conversationService->storeIncomingSlipFromBase64($activeReading, $b64)) {
                             $this->lineService->sendMessageWithReplyFallback(
                                 $userId,
-                                "🌙 ได้รับสลิปแล้วค่ะ ขอบคุณนะคะ\n\n"
-                                ."⏳ ระบบกำลังตรวจสอบให้ — ถ้าโอนเข้าจริง จะตัดบิลและเริ่มดูดวงให้ภายใน 1 นาที ✨\n\n"
+                                "🌙 ได้รับรูปแล้วค่ะ ขอบคุณนะคะ\n\n"
+                                ."⏳ ถ้าเป็น*สลิปการโอน* ระบบกำลังตรวจสอบให้ — ถ้าโอนเข้าจริง จะตัดบิลและเริ่มดูดวงให้ภายใน 1 นาที ✨\n\n"
                                 .'💡 อยากให้เช็คทันที พิมพ์ "เช็คสถานะ" ได้เลยค่ะ',
                                 $replyToken
                             );
