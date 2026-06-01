@@ -11816,10 +11816,23 @@ class FortuneConversationService
         // 🛡️ (2026-06-01, user) สลิปนี้เคยใช้ไปแล้วไหม (cross-platform reuse) — transRef registry + SMS match
         //   no-bill ไม่ recover อยู่แล้ว แต่ต้องบอกว่า "ใช้ไปแล้ว" ไม่ใช่ "ได้รับยอดเข้าร้าน"
         $dupTransRef = (string) ($verify['transRef'] ?? '');
-        if ($ok && (
+        $isDup = $ok && (
             ($dupTransRef !== '' && \App\Models\SlipVerification::where('trans_ref', $dupTransRef)->exists())
             || $svc->slipMatchesUsedSmsPayment($verify, null)
-        )) {
+        );
+
+        // 🧾 (2026-06-01) audit log — no-bill verify (ทุกผล)
+        $this->recordSlipCheckLog([
+            'reading_id' => null, 'platform' => $platform, 'user_id' => $userId,
+            'context' => 'no_bill', 'sent_to_slipok' => ($verify !== null),
+            'decision' => $isDup ? 'no_bill_duplicate'
+                : ($ok ? ($toOurs ? 'no_bill_verified' : 'no_bill_wrong_receiver') : 'no_bill_unverified'),
+            'is_duplicate' => $isDup, 'to_our_account' => $ok ? $toOurs : null,
+            'trans_ref' => $verify['transRef'] ?? null, 'amount' => $verify['amount'] ?? null,
+            'sender_name' => $verify['sender_name'] ?? null, 'receiver_account' => $verify['receiver_account'] ?? null,
+        ]);
+
+        if ($isDup) {
             Log::warning('🧾 ADMIN_REVIEW: สลิปไม่มีบิล + เคยใช้ไปแล้ว (duplicate cross-platform)', [
                 'platform' => $platform,
                 'user_id' => $userId,
@@ -11914,6 +11927,58 @@ class FortuneConversationService
     }
 
     /**
+     * 🧾 (2026-06-01, user) บันทึกประวัติการตรวจสลิป (audit) — slip_verification_logs
+     *   ให้แอดมินเห็น: ส่งไป SlipOK จริงไหม / สลิปซ้ำไหม / บิลไหน (ทุกการตรวจ รวมที่ล้มเหลว/ไม่มีบิล)
+     */
+    protected function recordSlipCheckLog(array $data): void
+    {
+        try {
+            \App\Models\SlipVerificationLog::create([
+                'fortune_reading_id' => $data['reading_id'] ?? null,
+                'platform' => $data['platform'] ?? null,
+                'chat_user_id' => $data['user_id'] ?? null,
+                'context' => $data['context'] ?? null,
+                'sent_to_slipok' => (bool) ($data['sent_to_slipok'] ?? false),
+                'decision' => $data['decision'] ?? null,
+                'is_duplicate' => (bool) ($data['is_duplicate'] ?? (($data['decision'] ?? null) === 'duplicate')),
+                'to_our_account' => $data['to_our_account'] ?? null,
+                'trans_ref' => $data['trans_ref'] ?? null,
+                'amount' => $data['amount'] ?? null,
+                'sender_name' => isset($data['sender_name']) ? mb_substr((string) $data['sender_name'], 0, 190) : null,
+                'receiver_account' => $data['receiver_account'] ?? null,
+                'note' => isset($data['note']) ? mb_substr((string) $data['note'], 0, 250) : null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::debug('recordSlipCheckLog ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 🧾 helper: สร้าง audit log จากผล evaluateForReading (= ยิง SlipOK แล้ว)
+     */
+    protected function recordSlipCheckFromEval(array $verify, array $eval, ?int $readingId, ?string $platform, ?string $userId, string $context): void
+    {
+        $decision = $eval['decision'] ?? null;
+        $this->recordSlipCheckLog([
+            'reading_id' => $readingId,
+            'platform' => $platform,
+            'user_id' => $userId,
+            'context' => $context,
+            'sent_to_slipok' => true,
+            'decision' => $decision,
+            'is_duplicate' => $decision === \App\Services\Fortune\SlipOkService::DECISION_DUPLICATE,
+            'to_our_account' => $decision === \App\Services\Fortune\SlipOkService::DECISION_REJECT_RECEIVER
+                ? false
+                : (($verify['ok'] ?? false) ? true : null),
+            'trans_ref' => $verify['transRef'] ?? null,
+            'amount' => $verify['amount'] ?? null,
+            'sender_name' => $verify['sender_name'] ?? null,
+            'receiver_account' => $verify['receiver_account'] ?? null,
+            'note' => $eval['reason'] ?? null,
+        ]);
+    }
+
+    /**
      * core: look-back สลิป candidate → verify → recover / reject / ขอสลิป
      */
     protected function respondReturningSlip(FortuneReading $recentCeltic, string $platform, string $userId): array
@@ -11938,6 +12003,12 @@ class FortuneConversationService
 
         // ไม่มีสลิปใน look-back → ขอสลิป (user spec)
         if ($verify === null) {
+            $this->recordSlipCheckLog([
+                'reading_id' => $recentCeltic->id, 'platform' => $platform, 'user_id' => $userId,
+                'context' => 'returning_text', 'sent_to_slipok' => false, 'decision' => 'no_slip_found',
+                'note' => 'ไม่มีสลิปใน look-back → ขอสลิป',
+            ]);
+
             return $this->askForSlipMessage($recentCeltic);
         }
 
@@ -11947,6 +12018,9 @@ class FortuneConversationService
             'amount' => $verify['amount'] ?? null,
             'transRef' => $verify['transRef'] ?? null,
         ]);
+
+        // 🧾 (2026-06-01) audit log — ทุก decision (approve/duplicate/reject/...)
+        $this->recordSlipCheckFromEval($verify, $eval, $recentCeltic->id, $platform, $userId, 'returning_image');
 
         switch ($eval['decision']) {
             case \App\Services\Fortune\SlipOkService::DECISION_APPROVE:
@@ -12256,6 +12330,12 @@ class FortuneConversationService
                 'amount' => $verify['amount'] ?? null,
                 'transRef' => $verify['transRef'] ?? null,
             ]);
+
+            // 🧾 (2026-06-01) audit log — active-bill (fallback job / on-ping)
+            $this->recordSlipCheckFromEval(
+                $verify, $eval, $reading->id,
+                $platform ?? $reading->platform, $userId ?? $reading->facebook_user_id, 'active_bill'
+            );
 
             switch ($eval['decision']) {
                 case \App\Services\Fortune\SlipOkService::DECISION_APPROVE:

@@ -70,6 +70,7 @@ use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneCelticCrossController;
 use App\Http\Controllers\Admin\FortuneChannelController;
+use App\Http\Controllers\Admin\FortuneSlipLogController;
 use App\Http\Controllers\Admin\FortuneCommissionController;
 use App\Http\Controllers\Admin\FortuneDebugToolsController;
 use App\Http\Controllers\Admin\FortuneKnowledgeController;
@@ -4253,6 +4254,11 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/{campaign}/post-history', [FortuneHoroscopeController::class, 'postHistory'])->name('post-history');
         Route::get('/{campaign}/preview/{date?}', [FortuneHoroscopeController::class, 'previewContent'])->name('preview');
     });
+
+    // ========================================
+    // SLIP VERIFICATION LOGS — ประวัติการตรวจสลิป (SlipOK) audit
+    // ========================================
+    Route::get('slip-logs', [FortuneSlipLogController::class, 'index'])->name('slip-logs.index');
 
     // ========================================
     // CELTIC CROSS TAROT — โหมดดูดวงไพ่ยิปซีเต็มสำรับ 99฿

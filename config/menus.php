@@ -754,6 +754,7 @@ return [
                 ['label' => '🌙 คอนเทนต์สายมูอัตโนมัติ', 'route' => 'admin.fortune.mystic.index', 'description' => 'โพส FB อัตโนมัติ — สายมู/แก้เคล็ด/ปัญหาชีวิต/สิ่งลี้ลับ/รู้หรือไม่ทั่วโลก'],
                 ['label' => '🔮 Celtic Cross Tarot (99฿)', 'route' => 'admin.fortune.celtic-cross.index', 'description' => 'ดูดวงไพ่ยิปซีเต็มสำรับ 10 ใบ — toggle, ราคา, prompt, log Q&A'],
                 ['label' => '🚨 Emergency Recover (Celtic)', 'route' => 'admin.fortune.celtic-cross.emergency-recover', 'description' => 'กู้บิล Celtic ด่วน — ใส่เลขบิลแล้วระบบ re-push prompt ทันที'],
+                ['label' => '🧾 ประวัติตรวจสลิป (SlipOK)', 'route' => 'admin.fortune.slip-logs.index', 'description' => 'ประวัติการตรวจสลิปทุกครั้ง — ส่งไปเช็คจริงไหม / สลิปซ้ำไหม / บิลไหน + กรอง'],
                 ['label' => '🩺 TTS Voice Diagnostic', 'route' => 'admin.fortune.voice-diagnostic', 'description' => 'ตรวจระบบสังเคราะห์เสียง — provider ไหนพัง · storage health · ทดลองฟังตัวอย่าง'],
                 ['label' => '🐛 Debug Tools', 'route' => 'admin.fortune.debug-tools.index', 'description' => 'Tail laravel.log + ทดสอบ AI sync — debug Fortune flows โดยไม่ต้อง SSH'],
                 ['label' => '❓ คำถามรอตอบ', 'route' => 'admin.fortune.saved-questions.index', 'description' => 'คำถามที่ AI ตอบไม่ได้ รอแอดมินตอบกลับ'],
