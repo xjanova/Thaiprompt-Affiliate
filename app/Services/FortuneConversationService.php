@@ -11703,20 +11703,11 @@ class FortuneConversationService
             // กู้เฉพาะบิลที่ "ยังไม่ได้ดู" — กันนำสลิปมาเปิดบิลที่ทำนายไปแล้วซ้ำ (req #4)
             $recentCeltic = $this->findRecoverableCelticReading($userId);
             if (! $recentCeltic) {
-                // 🆕 (2026-06-01, user) ไม่มีบิลค้าง — ถ้าเพิ่งขอสลิปไป (flag จาก tryReturningPaidSlipCheck)
-                //   → รับสลิป + log ให้แอดมินตรวจมือ (ไม่ทิ้งเงียบ) แทนที่จะ silent ignore
-                if (\Illuminate\Support\Facades\Cache::pull('fortune:returning_slip_ask:'.$userId)) {
-                    Log::warning('🧾 ADMIN_REVIEW: ลูกค้าส่งสลิปแต่ไม่มีบิลค้างในระบบ → ตรวจมือ', [
-                        'platform' => $platform,
-                        'user_id' => $userId,
-                    ]);
-
-                    return [
-                        'action' => 'slipok_no_bill_admin',
-                        'message' => "🙏 ได้รับสลิปแล้วค่ะ — แม่หมอไม่พบบิลที่ค้างในระบบ\n"
-                            .'จะให้แอดมินตรวจสอบและติดต่อกลับให้นะคะ ✨',
-                        'reading' => null,
-                    ];
+                // 🆕 (2026-06-01, user) ไม่มีบิลค้าง — ถ้าเพิ่งขอสลิปไป (flag) → ตรวจสลิปจริงผ่าน SlipOK
+                //   user: "รับรูปแล้วแต่ไม่ได้ส่งไปเช็ค เลยไม่รู้" → verify ให้รู้ผล (จริงไหม/ยอด/บัญชี) + log แอดมิน
+                //   ใช้ has (ไม่ consume) → ส่งสลิป blurry/ผิดได้ใหม่ใน 1 ชม. ; เคลียร์ flag เฉพาะตอน verify ผ่าน
+                if (\Illuminate\Support\Facades\Cache::has('fortune:returning_slip_ask:'.$userId)) {
+                    return $this->verifyNoBillSlipForAdmin($platform, $userId, $url, $base64);
                 }
 
                 return null;
@@ -11761,6 +11752,96 @@ class FortuneConversationService
 
             return null;
         }
+    }
+
+    /**
+     * 🧾 (2026-06-01, user) ลูกค้า paid-claim แต่ไม่มีบิลค้าง — ส่งรูปสลิป → ตรวจจริงผ่าน SlipOK
+     *   user: "รับรูปแล้วแต่ไม่ได้ส่งไปเช็ค เลยไม่รู้" → verify ให้รู้ผล (จริงไหม/ยอด/บัญชีปลายทาง) + รายงาน + log แอดมิน
+     *   ไม่ recover บิล (ไม่มีบิลให้กู้) — แค่ตรวจ+แจ้งผล ให้แอดมินจัดการต่อ (ดู log 🧾 ADMIN_REVIEW)
+     */
+    protected function verifyNoBillSlipForAdmin(string $platform, string $userId, ?string $url, ?string $base64): array
+    {
+        $svc = new \App\Services\Fortune\SlipOkService($this->settings);
+
+        // pre-check ถูกๆ ก่อน — ไม่ใช่สลิป → ขอสลิปจริง (กันยิง SlipOK กับรูปที่ไม่มี QR)
+        if (! $this->returningImageLooksLikeSlip($url, $base64)) {
+            Log::info('🧾 ADMIN_REVIEW: ลูกค้าส่งรูป (ไม่มีบิล) แต่ไม่ใช่สลิป (classifier) → ขอสลิปจริง', [
+                'platform' => $platform, 'user_id' => $userId,
+            ]);
+
+            return [
+                'action' => 'slipok_no_bill_not_slip',
+                'message' => "🙏 รูปที่ส่งมายังไม่ใช่สลิปการโอนค่ะ\n"
+                    .'📸 รบกวนส่ง*รูปสลิปจริง* (มี QR / เลขอ้างอิง) มาให้แม่หมอตรวจนะคะ ✨',
+                'reading' => null,
+            ];
+        }
+
+        // download bytes → verify ผ่าน SlipOK จริง
+        $bytes = null;
+        if (! empty($base64)) {
+            $b = str_contains($base64, ',') ? substr($base64, strpos($base64, ',') + 1) : $base64;
+            $bytes = base64_decode($b, true) ?: null;
+        } elseif (! empty($url)) {
+            $resp = \Illuminate\Support\Facades\Http::timeout(20)->get($url);
+            $bytes = $resp->successful() ? $resp->body() : null;
+        }
+
+        $verify = null;
+        if (! empty($bytes) && strlen($bytes) <= 6 * 1024 * 1024) {
+            $relPath = 'fortune/slips/nobill_'.md5($userId).'_'.now()->timestamp.'.jpg';
+            \Illuminate\Support\Facades\Storage::disk('local')->put($relPath, $bytes);
+            $verify = $svc->verifyByFile(\Illuminate\Support\Facades\Storage::disk('local')->path($relPath));
+        }
+
+        $ok = (bool) ($verify['ok'] ?? false);
+        $toOurs = $ok && (
+            $svc->receiverMatchesOurAccounts($verify['receiver_account'] ?? null)
+            || $svc->receiverMatchesOurAccounts($verify['receiver_name'] ?? null)
+        );
+
+        // 🧾 log ครบให้แอดมินตัดสิน (ยอด / ผู้โอน / บัญชีปลายทาง / transRef / ผล)
+        Log::warning('🧾 ADMIN_REVIEW: สลิปไม่มีบิลค้าง — ผลตรวจ SlipOK', [
+            'platform' => $platform,
+            'user_id' => $userId,
+            'verified' => $ok,
+            'to_our_account' => $toOurs,
+            'amount' => $verify['amount'] ?? null,
+            'sender' => $verify['sender_name'] ?? null,
+            'receiver_account' => $verify['receiver_account'] ?? null,
+            'transRef' => $verify['transRef'] ?? null,
+            'error' => $ok ? null : ($verify['message'] ?? 'verify failed/empty'),
+        ]);
+
+        if ($ok && $toOurs) {
+            // ✅ verify ผ่าน + เข้าบัญชีร้าน → เคลียร์ flag (ไม่ต้องเช็ครูปต่อไปอีก รอแอดมินจัดการ)
+            \Illuminate\Support\Facades\Cache::forget('fortune:returning_slip_ask:'.$userId);
+            $amt = number_format((float) ($verify['amount'] ?? 0), 2);
+
+            return [
+                'action' => 'slipok_no_bill_verified',
+                'message' => "🙏 ตรวจสลิปเรียบร้อยแล้วค่ะ — ยอด ฿{$amt} เข้าบัญชีร้านจริง ✅\n\n"
+                    ."แต่แม่หมอไม่พบบิลที่ค้างในระบบของเจ้าชะตา จะให้แอดมินตรวจสอบและจัดการให้นะคะ\n"
+                    .'💬 หากต้องการคุยกับแอดมิน พิมพ์ "คุยกับแม่หมอ" ได้เลยค่ะ',
+                'reading' => null,
+            ];
+        }
+
+        if ($ok && ! $toOurs) {
+            return [
+                'action' => 'slipok_no_bill_wrong_receiver',
+                'message' => "🙏 ตรวจสลิปแล้วค่ะ — แต่ยอดนี้โอนเข้า*บัญชีอื่น* ไม่ใช่บัญชีร้าน\n"
+                    .'รบกวนตรวจสอบบัญชีปลายทาง หรือพิมพ์ "คุยกับแม่หมอ" นะคะ',
+                'reading' => null,
+            ];
+        }
+
+        return [
+            'action' => 'slipok_no_bill_unverified',
+            'message' => "🙏 ได้รับรูปแล้วค่ะ — แต่แม่หมอตรวจสลิปไม่ผ่าน (อ่าน QR ไม่ได้ / ไม่ใช่สลิป)\n"
+                .'รบกวนส่งสลิปที่ชัดเจน หรือพิมพ์ "คุยกับแม่หมอ" ให้แอดมินช่วยนะคะ',
+            'reading' => null,
+        ];
     }
 
     /**
