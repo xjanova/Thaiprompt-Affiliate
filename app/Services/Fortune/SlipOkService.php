@@ -49,6 +49,13 @@ class SlipOkService
 
     public const DECISION_DISABLED = 'disabled';
 
+    /**
+     * 📅 (2026-06-01, user directive) อนุโลมรับสลิปย้อนหลังได้ไม่เกินกี่วัน
+     *   เดิม "วันนี้เท่านั้น" — ผ่อนเป็น 3 วัน (กันลูกค้าที่โอนเมื่อวาน/2-3 วันก่อนแล้วเพิ่งกลับมา)
+     *   ความปลอดภัยยังอยู่: transRef dedup (slip_verifications unique) กันใช้สลิปซ้ำ + เช็คบัญชีผู้รับ + ยอดขั้นต่ำ
+     */
+    public const MAX_SLIP_AGE_DAYS = 3;
+
     protected FortuneTellingSetting $settings;
 
     public function __construct(?FortuneTellingSetting $settings = null)
@@ -240,11 +247,11 @@ class SlipOkService
             ];
         }
 
-        // ── ด่าน 5: สลิปวันนี้เท่านั้น (user spec 2026-05-31) ─────
-        if (! $this->isTransToday($verify)) {
+        // ── ด่าน 5: สลิปย้อนหลังไม่เกิน MAX_SLIP_AGE_DAYS วัน (user directive 2026-06-01) ─────
+        if (! $this->isTransWithinAllowedWindow($verify)) {
             return [
                 'decision' => self::DECISION_STALE,
-                'reason' => 'สลิปไม่ใช่ของวันนี้ ('.($verify['trans_timestamp'] ?? '-').')',
+                'reason' => 'สลิปเก่าเกิน '.self::MAX_SLIP_AGE_DAYS.' วัน ('.($verify['trans_timestamp'] ?? '-').')',
                 'verify' => $verify,
             ];
         }
@@ -253,10 +260,11 @@ class SlipOkService
     }
 
     /**
-     * 📅 สลิปเป็นของวันนี้ไหม (โซนเวลาไทย) — user spec: รับเฉพาะสลิปวันนี้
+     * 📅 สลิปอยู่ในช่วงที่อนุโลมไหม (โซนเวลาไทย) — user directive 2026-06-01: รับย้อนหลังไม่เกิน 3 วัน
+     *   เดิมรับเฉพาะวันนี้ — ผ่อนเป็น MAX_SLIP_AGE_DAYS วัน (กันลูกค้าโอนเมื่อวาน/2-3 วันก่อนเพิ่งกลับมา)
      *   ไม่มี timestamp → ไม่บล็อก (เชื่อว่า SlipOK verify แล้ว)
      */
-    protected function isTransToday(array $verify): bool
+    protected function isTransWithinAllowedWindow(array $verify): bool
     {
         $ts = $verify['trans_timestamp'] ?? null;
         if (empty($ts)) {
@@ -264,10 +272,11 @@ class SlipOkService
         }
 
         try {
-            $slipDate = \Carbon\Carbon::parse($ts)->setTimezone('Asia/Bangkok')->toDateString();
-            $today = \Carbon\Carbon::now('Asia/Bangkok')->toDateString();
+            $slipDate = \Carbon\Carbon::parse($ts)->setTimezone('Asia/Bangkok')->startOfDay();
+            $earliest = \Carbon\Carbon::now('Asia/Bangkok')->startOfDay()->subDays(self::MAX_SLIP_AGE_DAYS);
 
-            return $slipDate === $today;
+            // อนุโลมสลิปย้อนหลังได้ไม่เกิน MAX_SLIP_AGE_DAYS วัน (อายุ 0-3 วัน)
+            return $slipDate->greaterThanOrEqualTo($earliest);
         } catch (\Throwable $e) {
             return true; // parse ไม่ได้ → ไม่บล็อก
         }

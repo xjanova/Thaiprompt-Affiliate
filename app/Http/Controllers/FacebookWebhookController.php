@@ -1748,7 +1748,7 @@ class FacebookWebhookController extends Controller
                     && (new \App\Services\Fortune\SlipOkService($this->settings))->isEnabled()
                     && FortuneReading::where('facebook_user_id', $senderId)
                         ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
-                        ->where('created_at', '>=', now()->subDays(2))
+                        ->where('created_at', '>=', now()->subDays(3)) // อนุโลม 3 วัน (sync SlipOkService::MAX_SLIP_AGE_DAYS)
                         ->where(function ($q) {
                             $q->where('is_paid', false)
                                 ->orWhereNull('celtic_questions_used')

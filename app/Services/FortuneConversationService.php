@@ -11597,7 +11597,7 @@ class FortuneConversationService
     {
         return FortuneReading::where('facebook_user_id', $userId)
             ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
-            ->where('created_at', '>=', now()->subDays(2))
+            ->where('created_at', '>=', now()->subDays(3)) // อนุโลม 3 วัน (sync กับ SlipOkService::MAX_SLIP_AGE_DAYS)
             // ❌ ข้ามบิลที่ "ดูไปแล้ว" (จ่าย + ใช้คำถามอย่างน้อย 1 ข้อ) — กันเปิดซ้ำฟรี
             ->where(function ($q) {
                 $q->where('is_paid', false)
@@ -11829,8 +11829,8 @@ class FortuneConversationService
             case \App\Services\Fortune\SlipOkService::DECISION_STALE:
                 return [
                     'action' => 'slipok_stale',
-                    'message' => "🙏 แม่หมอรับตรวจเฉพาะ*สลิปของวันนี้*นะคะ\n"
-                        .'ถ้าโอนวันนี้จริง ส่งสลิปใบล่าสุดมาใหม่ค่ะ',
+                    'message' => "🙏 แม่หมอรับสลิปย้อนหลังได้ไม่เกิน 3 วันนะคะ\n"
+                        .'ถ้าโอนภายใน 3 วันนี้จริง ส่งสลิปใบล่าสุดมาใหม่ค่ะ',
                     'reading' => $recentCeltic,
                 ];
 
@@ -12150,13 +12150,13 @@ class FortuneConversationService
                     ];
 
                 case \App\Services\Fortune\SlipOkService::DECISION_STALE:
-                    // สลิปไม่ใช่ของวันนี้ (user spec: รับเฉพาะวันนี้)
+                    // สลิปเก่าเกิน 3 วัน (user directive 2026-06-01: อนุโลมย้อนหลังไม่เกิน 3 วัน)
                     $this->cleanupStoredSlip($reading);
 
                     return [
                         'action' => 'slipok_stale',
-                        'message' => "🙏 แม่หมอรับตรวจเฉพาะ*สลิปของวันนี้*นะคะ\n\n"
-                            .'ถ้าเจ้าชะตาโอนวันนี้จริง รบกวนส่งสลิปใบล่าสุดมาใหม่ หรือพิมพ์ "คุยกับแม่หมอ" ค่ะ',
+                        'message' => "🙏 แม่หมอรับสลิปย้อนหลังได้ไม่เกิน 3 วันนะคะ\n\n"
+                            .'ถ้าเจ้าชะตาโอนภายใน 3 วันนี้จริง รบกวนส่งสลิปใบล่าสุดมาใหม่ หรือพิมพ์ "คุยกับแม่หมอ" ค่ะ',
                         'reading' => $reading,
                     ];
 
