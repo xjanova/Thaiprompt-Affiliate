@@ -11406,6 +11406,17 @@ class FortuneConversationService
     public function storeIncomingSlipFromUrl(FortuneReading $reading, string $url): bool
     {
         try {
+            // 🛡️ (2026-06-01, user) Pre-check ก่อนเก็บ+นัด fallback job — รูปไม่ใช่สลิป (เซลฟี่/สติ๊กเกอร์) → ไม่เก็บ
+            //   กันเปลืองโควต้า SlipOK (fallback job จะยิง SlipOK กับรูปไม่มี QR) + ไม่ตอบ "ได้รับสลิป" ผิดๆ
+            //   (FB classify ด้วย URL เดียวกับ webhook upstream → cache hit ไม่เรียก Gemini ซ้ำ)
+            if (! $this->returningImageLooksLikeSlip($url, null)) {
+                Log::info('SlipOK: active-bill image ไม่ใช่สลิป (classifier) → ไม่เก็บ/ไม่นัด fallback (ประหยัดโควต้า)', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return false;
+            }
+
             $resp = \Illuminate\Support\Facades\Http::timeout(20)->get($url);
             if (! $resp->successful()) {
                 return false;
@@ -11428,6 +11439,15 @@ class FortuneConversationService
     public function storeIncomingSlipFromBase64(FortuneReading $reading, string $base64): bool
     {
         try {
+            // 🛡️ (2026-06-01, user) Pre-check ก่อนเก็บ+นัด fallback job — รูปไม่ใช่สลิป → ไม่เก็บ (กันเปลืองโควต้า SlipOK)
+            if (! $this->returningImageLooksLikeSlip(null, $base64)) {
+                Log::info('SlipOK: active-bill image ไม่ใช่สลิป (classifier) → ไม่เก็บ/ไม่นัด fallback (ประหยัดโควต้า)', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return false;
+            }
+
             // รองรับทั้ง data URI และ base64 ดิบ
             if (str_contains($base64, ',')) {
                 $base64 = substr($base64, strpos($base64, ',') + 1);
