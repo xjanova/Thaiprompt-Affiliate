@@ -31,7 +31,7 @@ class GeminiEmbeddingService
      * Model name — gemini-embedding-001 (GA, multilingual, รองรับไทย)
      *   ⚠️ (2026-06-01) text-embedding-004 ถูก Google deprecated → 404 บน v1beta embedContent → ย้ายมาตัวนี้
      *   verify live แล้ว: status 200 + 768 dims (ต้องส่ง outputDimensionality=768 เพราะ default=3072)
-     *   หมายเหตุ: คนละ embedding space กับ text-embedding-004 — vector เก่าที่ store ต้อง re-embed (artisan fortune:reembed-knowledge)
+     *   หมายเหตุ: คนละ embedding space กับ text-embedding-004 — vector เก่าที่ store ต้อง re-embed (artisan fortune:reembed-admin-qa)
      */
     public const MODEL = 'gemini-embedding-001';
 
@@ -76,7 +76,8 @@ class GeminiEmbeddingService
         }
 
         // 1) ลอง cache ก่อน (text เดิม → ไม่ต้อง API call)
-        $cacheKey = self::CACHE_PREFIX.hash('sha256', $text);
+        //   🔑 key รวม MODEL ด้วย → เปลี่ยนโมเดลแล้ว cache เก่า (คนละ embedding space) ไม่ถูกดึงมาใช้
+        $cacheKey = self::CACHE_PREFIX.hash('sha256', self::MODEL.'|'.$text);
         $cached = Cache::get($cacheKey);
         if (is_array($cached) && count($cached) === self::DIMENSION) {
             return $cached;
