@@ -845,6 +845,7 @@ class CelticCrossService
             .$this->buildMuKnowledgeDirective($reading, $userQuestion)
             .$this->buildPhysiognomyDirective($reading, $userQuestion)
             .$this->buildLifeReadingDirective($reading, $userQuestion)
+            .$this->buildDestinyDirective($reading, $userQuestion)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1280,7 +1281,8 @@ class CelticCrossService
                 .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
                 .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
                 .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
-                .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext);
+                .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
+                .$this->buildDestinyDirective($reading, $userQuestion, $previousContext);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1385,6 +1387,7 @@ class CelticCrossService
             .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
             .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
             .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
+            .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2611,6 +2614,56 @@ class CelticCrossService
     }
 
     /**
+     * 🔮 (2026-06-01) ดวงจิต/กรรม รายไพ่ — สายญาณ/ผู้มีองค์/ภารกิจสวรรค์ + อดีตชาติ/กรรมเก่า
+     *
+     * User directive 2026-06-01: "ดูสายญาณ/ผู้มีองค์/ภารกิจสวรรค์ + อดีตชาติได้ แต่ตรงพลังไพ่ อย่ามั่ว"
+     *
+     * ⚠️⚠️ พื้นที่อ่อนไหว/เสี่ยงสแกม — จรรยาบรรณเข้ม:
+     *   - ผู้มีองค์/สายญาณ: คนส่วนใหญ่ = คนธรรมดา → ห้ามมั่วว่าทุกคนมีองค์/ต้องรับขันธ์/เสียเงินด่วน
+     *   - อดีตชาติ: สัญลักษณ์จากไพ่ + บทเรียน ไม่ฟันธง 100% → โยงมาปรับปัจจุบัน ห้ามขู่ขายแก้กรรม
+     *
+     * Detect-based: inject เฉพาะ session ที่ถามหัวข้อนี้
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildDestinyDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    {
+        if (! (bool) ($this->settings->enable_celtic_destiny ?? true)) {
+            return '';
+        }
+
+        $svc = app(\App\Services\FortuneKnowledgeService::class);
+        $categories = $svc->detectDestinyCategories($userQuestion.' '.$previousContext);
+        if (empty($categories)) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $knowledge = $svc->muLinesForCards($cards, $categories); // generic per-card (รองรับหมวดดวงจิต)
+        if (trim($knowledge) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🔮 ดวงจิต/กรรม รายไพ่: สายญาณ-ผู้มีองค์-ภารกิจสวรรค์ / อดีตชาติ-กรรมเก่า (ตรวจพบคำถามนี้)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ด้านล่างคือความรู้รายไพ่ที่เปิด — อ่านจากไพ่แต่ละใบตามตำแหน่ง:\n\n"
+            .$knowledge."\n\n"
+
+            ."⚠️ *จรรยาบรรณเข้ม (ห้ามข้าม — พื้นที่นี้คนชอบมั่ว/ขายของ):*\n"
+            ."• *ผู้มีองค์/สายญาณ*: ❌ ห้ามมั่วว่ามีองค์ทุกคน — ไพ่ส่วนใหญ่บอกว่าเป็น \"คนธรรมดา\" ตอบตรงตามไพ่\n"
+            ."  ชี้ว่ามีสายญาณ *เฉพาะเมื่อไพ่หนุนจริง* (นักบวช/พระจันทร์/ฤๅษี/ดาว ฯลฯ) พูดแบบ \"อาจไวทางจิต/เหมาะทางธรรม\" ไม่ใช่ \"ต้องรับขันธ์ด่วน\"\n"
+            ."  ✅ ย้ำเสมอ: \"สนใจทางธรรม → ปฏิบัติ-ทำบุญเองได้ ไม่ต้องเสียเงินก้อนโต ระวังคนหลอกให้แก้/รับขันธ์ด่วน\"\n"
+            ."• *อดีตชาติ/กรรม*: เป็น \"สัญลักษณ์จากไพ่ + บทเรียน\" ไม่ใช่ความจริงตายตัว — ขึ้นต้น \"ไพ่สื่อว่า...\" แล้วโยงมา *ปรับปัจจุบัน*\n"
+            ."  ❌ ห้ามขู่เรื่องกรรม/เจ้ากรรมนายเวรเพื่อขายพิธีแก้กรรมแพง — แก้กรรม = ทำดี/ทำบุญ/ให้อภัย ทำเองได้\n"
+            ."• ทุกอย่างต้อง \"งอกจากไพ่ใบที่เปิด\" — ❌ ห้ามมั่วว่าเคยเป็นใครเป๊ะ/มีองค์อะไรเป๊ะ ที่ไพ่ไม่ได้ชี้\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ — อ่าน "คน" จากหน้าไพ่
      *
      * User directive 2026-06-01: "เพิ่มตำราโหงวเฮ้ง ลักษณะคน ประจำไพ่ให้ครบ 78 ใบ"
@@ -3285,6 +3338,7 @@ class CelticCrossService
             .$this->buildMuKnowledgeDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildPhysiognomyDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildLifeReadingDirective($reading, $questions->pluck('question')->implode(' '))
+            .$this->buildDestinyDirective($reading, $questions->pluck('question')->implode(' '))
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"

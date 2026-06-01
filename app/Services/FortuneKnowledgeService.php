@@ -39,6 +39,12 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_BUSINESS_WORK,
     ];
 
+    /** หมวด "ดวงจิต/กรรม" ที่ detect ได้ (per-card ใน config/fortune_card_destiny.php) */
+    public const DESTINY_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_SPIRITUAL_CALLING,
+        FortuneKnowledge::CATEGORY_PAST_LIFE,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -220,6 +226,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "ดวงจิต/กรรม" (สายญาณ/ผู้มีองค์/อดีตชาติ)
+     *
+     * @return array<string>
+     */
+    public function detectDestinyCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::DESTINY_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -247,9 +263,14 @@ class FortuneKnowledgeService
      */
     protected function configBaseFor(string $category): string
     {
-        return in_array($category, self::LIFE_DETECTABLE, true)
-            ? "fortune_card_life.{$category}"
-            : "fortune_mu_knowledge.{$category}";
+        if (in_array($category, self::LIFE_DETECTABLE, true)) {
+            return "fortune_card_life.{$category}";
+        }
+        if (in_array($category, self::DESTINY_DETECTABLE, true)) {
+            return "fortune_card_destiny.{$category}";
+        }
+
+        return "fortune_mu_knowledge.{$category}";
     }
 
     /**
