@@ -70,6 +70,11 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_LUCKY_ITEMS,
     ];
 
+    /** หมวด "จิตใจ/อารมณ์" ที่ detect ได้ (per-card ใน config/fortune_card_mental.php) */
+    public const MENTAL_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_MENTAL_EMOTIONAL,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -311,6 +316,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "จิตใจ/อารมณ์"
+     *
+     * @return array<string>
+     */
+    public function detectMentalCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::MENTAL_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -358,6 +373,9 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::LUCKY_ITEMS_DETECTABLE, true)) {
             return "fortune_card_lucky_items.{$category}";
+        }
+        if (in_array($category, self::MENTAL_DETECTABLE, true)) {
+            return "fortune_card_mental.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";
