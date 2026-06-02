@@ -60,6 +60,11 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_AUSPICIOUS_TIMING,
     ];
 
+    /** หมวด "เลขศาสตร์/เบอร์มงคล" ที่ detect ได้ (per-card ใน config/fortune_card_numerology.php) */
+    public const NUMEROLOGY_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_NUMEROLOGY,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -281,6 +286,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "เลขศาสตร์/เบอร์มงคล"
+     *
+     * @return array<string>
+     */
+    public function detectNumerologyCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::NUMEROLOGY_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -322,6 +337,9 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::AUSPICIOUS_DETECTABLE, true)) {
             return "fortune_card_timing_auspicious.{$category}";
+        }
+        if (in_array($category, self::NUMEROLOGY_DETECTABLE, true)) {
+            return "fortune_card_numerology.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";

@@ -35,8 +35,9 @@ class FortuneKnowledgeSeeder extends Seeder
         $love = $this->seedPerCardGroup('fortune_card_love');
         $wealth = $this->seedPerCardGroup('fortune_card_wealth');
         $auspicious = $this->seedPerCardGroup('fortune_card_timing_auspicious');
+        $numerology = $this->seedPerCardGroup('fortune_card_numerology');
 
-        $this->command?->info("✅ Seed คลังความรู้สำเร็จ — สุขภาพ {$health} + โหงวเฮ้ง {$persona} + สายมู {$mu} + ชีวิต {$life} + ดวงจิต {$destiny} + ความรัก {$love} + การเงิน {$wealth} + ฤกษ์ {$auspicious}");
+        $this->command?->info("✅ Seed คลังความรู้สำเร็จ — สุขภาพ {$health} + โหงวเฮ้ง {$persona} + สายมู {$mu} + ชีวิต {$life} + ดวงจิต {$destiny} + ความรัก {$love} + การเงิน {$wealth} + ฤกษ์ {$auspicious} + เลขศาสตร์ {$numerology}");
     }
 
     /**
