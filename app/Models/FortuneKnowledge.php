@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  *   - deities          = องค์เทพ (ไดเรกทอรีเทพ + ของบูชา + คาถา)
  *   - black_magic      = ไสยศาสตร์/มนต์ดำ (ชนิดของ/อาการ/การแก้)
  *   - love_relationship= ความรัก/เนื้อคู่ (สถานะรัก/คนที่เข้ามา/แววแต่งงาน) — per-card
+ *   - wealth_luck      = การเงิน/โชคลาภ (กระแสเงิน/หนี้/โชค/เสี่ยงโชค) — per-card
  *
  * แอดมินจัดการได้เต็มที่ผ่าน /admin/fortune/knowledge (เห็น/เพิ่ม/แก้/ปิด ทุก row)
  * Retrieval = เจาะจงตาม category + card_name + keyword (ดู App\Services\FortuneKnowledgeService)
@@ -62,6 +63,8 @@ class FortuneKnowledge extends Model
 
     public const CATEGORY_LOVE_RELATIONSHIP = 'love_relationship';
 
+    public const CATEGORY_WEALTH_LUCK = 'wealth_luck';
+
     public const CATEGORY_GENERAL = 'general';
 
     /**
@@ -81,6 +84,7 @@ class FortuneKnowledge extends Model
         self::CATEGORY_SPIRITUAL_CALLING,
         self::CATEGORY_PAST_LIFE,
         self::CATEGORY_LOVE_RELATIONSHIP,
+        self::CATEGORY_WEALTH_LUCK,
         self::CATEGORY_GENERAL,
     ];
 
@@ -98,6 +102,7 @@ class FortuneKnowledge extends Model
         self::CATEGORY_SPIRITUAL_CALLING => '🔮 สายญาณ/ผู้มีองค์/ภารกิจสวรรค์',
         self::CATEGORY_PAST_LIFE => '🕉️ อดีตชาติ/กรรมเก่า',
         self::CATEGORY_LOVE_RELATIONSHIP => '❤️ ความรัก/เนื้อคู่',
+        self::CATEGORY_WEALTH_LUCK => '💰 การเงิน/โชคลาภ',
         self::CATEGORY_GENERAL => '📚 ทั่วไป',
     ];
 

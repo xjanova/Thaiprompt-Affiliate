@@ -50,6 +50,11 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_LOVE_RELATIONSHIP,
     ];
 
+    /** หมวด "การเงิน/โชคลาภ" ที่ detect ได้ (per-card ใน config/fortune_card_wealth.php) */
+    public const WEALTH_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_WEALTH_LUCK,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -251,6 +256,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "การเงิน/โชคลาภ"
+     *
+     * @return array<string>
+     */
+    public function detectWealthCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::WEALTH_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -286,6 +301,9 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::LOVE_DETECTABLE, true)) {
             return "fortune_card_love.{$category}";
+        }
+        if (in_array($category, self::WEALTH_DETECTABLE, true)) {
+            return "fortune_card_wealth.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";
