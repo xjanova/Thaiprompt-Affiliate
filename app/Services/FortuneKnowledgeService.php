@@ -85,6 +85,11 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_TRAVEL_ABROAD,
     ];
 
+    /** หมวด "คดีความ/ข้อพิพาท/สัญญา" ที่ detect ได้ (per-card ใน config/fortune_card_legal.php) */
+    public const LEGAL_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_LEGAL_DISPUTES,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -356,6 +361,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "คดีความ/ข้อพิพาท/สัญญา"
+     *
+     * @return array<string>
+     */
+    public function detectLegalCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::LEGAL_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -412,6 +427,9 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::TRAVEL_DETECTABLE, true)) {
             return "fortune_card_travel.{$category}";
+        }
+        if (in_array($category, self::LEGAL_DETECTABLE, true)) {
+            return "fortune_card_legal.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";
