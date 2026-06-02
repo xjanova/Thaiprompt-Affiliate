@@ -624,6 +624,169 @@ class FortuneKnowledgeService
         return implode('|', $pair);
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // 🎴 อ่านภาพรวมสำรับ — Major/สำรับเด่น/กลับหัว/ราชสำนัก/Ace/เลขซ้ำ
+    // ════════════════════════════════════════════════════════════════
+
+    /** ชื่อ Major Arcana 22 ใบ (name_en) สำหรับจำแนกสำรับ */
+    protected const MAJOR_ARCANA = [
+        'The Fool', 'The Magician', 'The High Priestess', 'The Empress', 'The Emperor',
+        'The Hierophant', 'The Lovers', 'The Chariot', 'Strength', 'The Hermit',
+        'Wheel of Fortune', 'Justice', 'The Hanged Man', 'Death', 'Temperance',
+        'The Devil', 'The Tower', 'The Star', 'The Moon', 'The Sun', 'Judgement', 'The World',
+    ];
+
+    /** Rank → เลข (Pip + ราชสำนัก) */
+    protected const RANK_NUMBER = [
+        'Ace' => 1, 'Two' => 2, 'Three' => 3, 'Four' => 4, 'Five' => 5,
+        'Six' => 6, 'Seven' => 7, 'Eight' => 8, 'Nine' => 9, 'Ten' => 10,
+    ];
+
+    /**
+     * สร้างบล็อก "ภาพรวมสำรับ" จากการนับ 10 ใบ (Major/สำรับ/กลับหัว/ราชสำนัก/Ace/เลขซ้ำ)
+     *
+     * @param  array<int, array>  $cards
+     * @return string ว่าง = สำรับไม่ครบ 10
+     */
+    public function spreadPatternLines(array $cards): string
+    {
+        // นับสถิติสำรับ
+        $total = 0;
+        $major = 0;
+        $reversed = 0;
+        $court = 0;
+        $aces = 0;
+        $suit = ['Wands' => 0, 'Cups' => 0, 'Swords' => 0, 'Pentacles' => 0];
+        $numberCount = [];
+
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $nameEn = (string) ($card['card_name_en'] ?? '');
+            if ($nameEn === '') {
+                continue;
+            }
+            $total++;
+            if (! empty($card['is_reversed'])) {
+                $reversed++;
+            }
+
+            $c = $this->classifyCard($nameEn);
+            if ($c['arcana'] === 'major') {
+                $major++;
+
+                continue;
+            }
+            if (isset($suit[$c['suit']])) {
+                $suit[$c['suit']]++;
+            }
+            if ($c['isCourt']) {
+                $court++;
+            }
+            if ($c['isAce']) {
+                $aces++;
+            }
+            if ($c['number'] !== null && ! $c['isCourt']) {
+                $numberCount[$c['number']] = ($numberCount[$c['number']] ?? 0) + 1;
+            }
+        }
+
+        if ($total < 10) {
+            return '';
+        }
+
+        $cfg = (array) config('fortune_spread_patterns', []);
+        $lines = [];
+
+        // 1) Major Arcana (เกณฑ์: ≤2 น้อย / 5-6 เด่น / 7+ ท่วม)
+        if ($major >= 7) {
+            $lines[] = '• '.($cfg['major']['dominant'] ?? '')." (Major {$major}/10)";
+        } elseif ($major >= 5) {
+            $lines[] = '• '.($cfg['major']['heavy'] ?? '')." (Major {$major}/10)";
+        } elseif ($major <= 2) {
+            $lines[] = '• '.($cfg['major']['few'] ?? '')." (Major {$major}/10)";
+        }
+
+        // 2) สำรับเด่น (≥4 ใบในสำรับเดียว)
+        foreach ($suit as $s => $n) {
+            if ($n >= 4) {
+                $lines[] = '• '.($cfg['suit_dominant'][$s] ?? '')." ({$s} {$n} ใบ)";
+            }
+        }
+
+        // 3) สำรับขาด (0 ใบ — ชี้เฉพาะเมื่อ Major ไม่ท่วม ไม่งั้นกำกวม)
+        if ($major <= 5) {
+            foreach ($suit as $s => $n) {
+                if ($n === 0) {
+                    $lines[] = '• '.($cfg['suit_absent'][$s] ?? '');
+                }
+            }
+        }
+
+        // 4) กลับหัว (≤2 ลื่น / 5-6 ติดขัด / 7+ ปิดกั้น)
+        if ($reversed >= 7) {
+            $lines[] = '• '.($cfg['reversed']['dominant'] ?? '')." (กลับหัว {$reversed}/10)";
+        } elseif ($reversed >= 5) {
+            $lines[] = '• '.($cfg['reversed']['heavy'] ?? '')." (กลับหัว {$reversed}/10)";
+        } elseif ($reversed <= 2) {
+            $lines[] = '• '.($cfg['reversed']['few'] ?? '')." (กลับหัว {$reversed}/10)";
+        }
+
+        // 5) ราชสำนักเยอะ (≥4)
+        if ($court >= 4) {
+            $lines[] = '• '.($cfg['court']['heavy'] ?? '')." (ราชสำนัก {$court} ใบ)";
+        }
+
+        // 6) Ace หลายใบ (≥2)
+        if ($aces >= 2) {
+            $lines[] = '• '.($cfg['aces']['multiple'] ?? '')." (Ace {$aces} ใบ)";
+        }
+
+        // 7) เลขซ้ำ (Pip เลขเดียวกัน ≥3 ใบ)
+        foreach ($numberCount as $num => $n) {
+            if ($n >= 3 && isset($cfg['repeated_number'][$num])) {
+                $lines[] = '• '.$cfg['repeated_number'][$num]." (เลข {$num} ซ้ำ {$n} ใบ)";
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * จำแนกไพ่จาก name_en → arcana/suit/rank/isCourt/isAce/number
+     *
+     * @return array{arcana:string, suit:?string, rank:?string, isCourt:bool, isAce:bool, number:?int}
+     */
+    protected function classifyCard(string $nameEn): array
+    {
+        $base = [
+            'arcana' => 'minor', 'suit' => null, 'rank' => null,
+            'isCourt' => false, 'isAce' => false, 'number' => null,
+        ];
+
+        if (in_array($nameEn, self::MAJOR_ARCANA, true)) {
+            $base['arcana'] = 'major';
+
+            return $base;
+        }
+
+        // รูปแบบ "{Rank} of {Suit}"
+        if (! preg_match('/^(.+?)\s+of\s+(Wands|Cups|Swords|Pentacles)$/', $nameEn, $m)) {
+            return $base;
+        }
+
+        $rank = $m[1];
+        $base['suit'] = $m[2];
+        $base['rank'] = $rank;
+        $base['isCourt'] = in_array($rank, ['Page', 'Knight', 'Queen', 'King'], true);
+        $base['isAce'] = ($rank === 'Ace');
+        $base['number'] = self::RANK_NUMBER[$rank] ?? null;
+
+        return $base;
+    }
+
     /**
      * ล้าง cache (เรียกตอนแอดมินแก้คลังความรู้)
      */

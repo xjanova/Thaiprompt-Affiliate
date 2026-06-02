@@ -848,6 +848,7 @@ class CelticCrossService
             .$this->buildDestinyDirective($reading, $userQuestion)
             .$this->buildExtraKnowledgeDirectives($reading, $userQuestion)
             .$this->buildCardComboDirective($reading)
+            .$this->buildSpreadPatternDirective($reading)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1286,7 +1287,8 @@ class CelticCrossService
                 .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
                 .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
                 .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
-                .$this->buildCardComboDirective($reading);
+                .$this->buildCardComboDirective($reading)
+                .$this->buildSpreadPatternDirective($reading);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1394,6 +1396,7 @@ class CelticCrossService
             .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
             .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
             .$this->buildCardComboDirective($reading)
+            .$this->buildSpreadPatternDirective($reading)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2799,6 +2802,45 @@ class CelticCrossService
     }
 
     /**
+     * 🎴 (2026-06-02) อ่านภาพรวมสำรับ — ดูบรรยากาศ 10 ใบก่อนเจาะรายใบ (reading mechanic)
+     *
+     * หมอดูจริงดู "ภาพใหญ่" ก่อน: Major เยอะ = พรหมลิขิต/เรื่องใหญ่, สำรับเด่น = ธีม,
+     *   กลับหัวเยอะ = ติดขัด/ภายใน, ราชสำนักเยอะ = คนหลายคน, Ace หลายใบ = เริ่มใหม่
+     *
+     * ไม่ผูก keyword — ภาพรวมมีในทุกสำรับเสมอ (ออกเสมอถ้า toggle เปิด + ครบ 10 ใบ)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildSpreadPatternDirective(FortuneReading $reading): string
+    {
+        // settings gate — admin ปิดได้ (default เปิด)
+        if (! (bool) ($this->settings->enable_celtic_patterns ?? true)) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $patterns = app(\App\Services\FortuneKnowledgeService::class)->spreadPatternLines($cards);
+        if (trim($patterns) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🎴 ภาพรวมสำรับ (อ่านบรรยากาศ 10 ใบ ก่อนเจาะรายใบ)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."สถิติสำรับนี้บ่งทิศทาง \"พลังรวม\" ของดวง — ใช้ \"ตั้งโทน\" คำทำนายทั้งบท:\n\n"
+            .$patterns."\n\n"
+            ."🎯 *วิธีใช้:* เปิดคำทำนายด้วย \"ภาพรวม\" นี้ก่อน (เช่น \"สำรับนี้ไพ่ชุดใหญ่เด่น "
+            ."บอกว่าเรื่องนี้เป็นจังหวะใหญ่ของชีวิต...\") แล้วค่อยเจาะรายใบ/ตำแหน่งให้สอดคล้องโทนรวม\n"
+            ."• ❌ ห้ามอ่านภาพรวมแล้วขัดกับรายใบ — ต้อง \"ร้อยให้เป็นเรื่องเดียวกัน\"\n"
+            ."• ภาพรวม = บรรยากาศ/ทิศทาง ไม่ใช่คำฟันธง (กลับหัวเยอะ/Major เยอะ = ช่วงเปลี่ยนผ่าน ไม่ใช่ลางร้าย)\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ — อ่าน "คน" จากหน้าไพ่
      *
      * User directive 2026-06-01: "เพิ่มตำราโหงวเฮ้ง ลักษณะคน ประจำไพ่ให้ครบ 78 ใบ"
@@ -3476,6 +3518,7 @@ class CelticCrossService
             .$this->buildDestinyDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildExtraKnowledgeDirectives($reading, $questions->pluck('question')->implode(' '))
             .$this->buildCardComboDirective($reading)
+            .$this->buildSpreadPatternDirective($reading)
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"
