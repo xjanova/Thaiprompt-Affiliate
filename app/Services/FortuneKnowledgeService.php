@@ -55,6 +55,11 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_WEALTH_LUCK,
     ];
 
+    /** หมวด "ฤกษ์ยาม/วันมงคล" ที่ detect ได้ (per-card ใน config/fortune_card_timing_auspicious.php) */
+    public const AUSPICIOUS_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_AUSPICIOUS_TIMING,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -266,6 +271,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "ฤกษ์ยาม/วันมงคล"
+     *
+     * @return array<string>
+     */
+    public function detectAuspiciousCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::AUSPICIOUS_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -304,6 +319,9 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::WEALTH_DETECTABLE, true)) {
             return "fortune_card_wealth.{$category}";
+        }
+        if (in_array($category, self::AUSPICIOUS_DETECTABLE, true)) {
+            return "fortune_card_timing_auspicious.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";
