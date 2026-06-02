@@ -45,6 +45,56 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_PAST_LIFE,
     ];
 
+    /** หมวด "ความรัก/เนื้อคู่" ที่ detect ได้ (per-card ใน config/fortune_card_love.php) */
+    public const LOVE_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_LOVE_RELATIONSHIP,
+    ];
+
+    /** หมวด "การเงิน/โชคลาภ" ที่ detect ได้ (per-card ใน config/fortune_card_wealth.php) */
+    public const WEALTH_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_WEALTH_LUCK,
+    ];
+
+    /** หมวด "ฤกษ์ยาม/วันมงคล" ที่ detect ได้ (per-card ใน config/fortune_card_timing_auspicious.php) */
+    public const AUSPICIOUS_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_AUSPICIOUS_TIMING,
+    ];
+
+    /** หมวด "เลขศาสตร์/เบอร์มงคล" ที่ detect ได้ (per-card ใน config/fortune_card_numerology.php) */
+    public const NUMEROLOGY_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_NUMEROLOGY,
+    ];
+
+    /** หมวด "ของมงคล/สีมงคล/เครื่องราง" ที่ detect ได้ (per-card ใน config/fortune_card_lucky_items.php) */
+    public const LUCKY_ITEMS_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_LUCKY_ITEMS,
+    ];
+
+    /** หมวด "จิตใจ/อารมณ์" ที่ detect ได้ (per-card ใน config/fortune_card_mental.php) */
+    public const MENTAL_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_MENTAL_EMOTIONAL,
+    ];
+
+    /** หมวด "ครอบครัว/บุตร/บริวาร" ที่ detect ได้ (per-card ใน config/fortune_card_family.php) */
+    public const FAMILY_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_FAMILY_CHILDREN,
+    ];
+
+    /** หมวด "เดินทาง/ต่างแดน/ย้ายถิ่น" ที่ detect ได้ (per-card ใน config/fortune_card_travel.php) */
+    public const TRAVEL_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_TRAVEL_ABROAD,
+    ];
+
+    /** หมวด "คดีความ/ข้อพิพาท/สัญญา" ที่ detect ได้ (per-card ใน config/fortune_card_legal.php) */
+    public const LEGAL_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_LEGAL_DISPUTES,
+    ];
+
+    /** หมวด "แก้กรรม/สะเดาะเคราะห์/เสริมดวง" ที่ detect ได้ (per-card ใน config/fortune_card_remedy.php) */
+    public const REMEDY_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_REMEDY_BOOST,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -236,6 +286,106 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "ความรัก/เนื้อคู่"
+     *
+     * @return array<string>
+     */
+    public function detectLoveCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::LOVE_DETECTABLE);
+    }
+
+    /**
+     * ตรวจหมวด "การเงิน/โชคลาภ"
+     *
+     * @return array<string>
+     */
+    public function detectWealthCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::WEALTH_DETECTABLE);
+    }
+
+    /**
+     * ตรวจหมวด "ฤกษ์ยาม/วันมงคล"
+     *
+     * @return array<string>
+     */
+    public function detectAuspiciousCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::AUSPICIOUS_DETECTABLE);
+    }
+
+    /**
+     * ตรวจหมวด "เลขศาสตร์/เบอร์มงคล"
+     *
+     * @return array<string>
+     */
+    public function detectNumerologyCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::NUMEROLOGY_DETECTABLE);
+    }
+
+    /**
+     * ตรวจหมวด "ของมงคล/สีมงคล/เครื่องราง"
+     *
+     * @return array<string>
+     */
+    public function detectLuckyItemsCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::LUCKY_ITEMS_DETECTABLE);
+    }
+
+    /**
+     * ตรวจหมวด "จิตใจ/อารมณ์"
+     *
+     * @return array<string>
+     */
+    public function detectMentalCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::MENTAL_DETECTABLE);
+    }
+
+    /**
+     * ตรวจหมวด "ครอบครัว/บุตร/บริวาร"
+     *
+     * @return array<string>
+     */
+    public function detectFamilyCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::FAMILY_DETECTABLE);
+    }
+
+    /**
+     * ตรวจหมวด "เดินทาง/ต่างแดน/ย้ายถิ่น"
+     *
+     * @return array<string>
+     */
+    public function detectTravelCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::TRAVEL_DETECTABLE);
+    }
+
+    /**
+     * ตรวจหมวด "คดีความ/ข้อพิพาท/สัญญา"
+     *
+     * @return array<string>
+     */
+    public function detectLegalCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::LEGAL_DETECTABLE);
+    }
+
+    /**
+     * ตรวจหมวด "แก้กรรม/สะเดาะเคราะห์/เสริมดวง"
+     *
+     * @return array<string>
+     */
+    public function detectRemedyCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::REMEDY_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -268,6 +418,36 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::DESTINY_DETECTABLE, true)) {
             return "fortune_card_destiny.{$category}";
+        }
+        if (in_array($category, self::LOVE_DETECTABLE, true)) {
+            return "fortune_card_love.{$category}";
+        }
+        if (in_array($category, self::WEALTH_DETECTABLE, true)) {
+            return "fortune_card_wealth.{$category}";
+        }
+        if (in_array($category, self::AUSPICIOUS_DETECTABLE, true)) {
+            return "fortune_card_timing_auspicious.{$category}";
+        }
+        if (in_array($category, self::NUMEROLOGY_DETECTABLE, true)) {
+            return "fortune_card_numerology.{$category}";
+        }
+        if (in_array($category, self::LUCKY_ITEMS_DETECTABLE, true)) {
+            return "fortune_card_lucky_items.{$category}";
+        }
+        if (in_array($category, self::MENTAL_DETECTABLE, true)) {
+            return "fortune_card_mental.{$category}";
+        }
+        if (in_array($category, self::FAMILY_DETECTABLE, true)) {
+            return "fortune_card_family.{$category}";
+        }
+        if (in_array($category, self::TRAVEL_DETECTABLE, true)) {
+            return "fortune_card_travel.{$category}";
+        }
+        if (in_array($category, self::LEGAL_DETECTABLE, true)) {
+            return "fortune_card_legal.{$category}";
+        }
+        if (in_array($category, self::REMEDY_DETECTABLE, true)) {
+            return "fortune_card_remedy.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";

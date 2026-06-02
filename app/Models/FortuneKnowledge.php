@@ -14,6 +14,16 @@ use Illuminate\Database\Eloquent\Model;
  *   - guardian_spirits = เจ้าที่/พระภูมิ/ตายาย
  *   - deities          = องค์เทพ (ไดเรกทอรีเทพ + ของบูชา + คาถา)
  *   - black_magic      = ไสยศาสตร์/มนต์ดำ (ชนิดของ/อาการ/การแก้)
+ *   - love_relationship= ความรัก/เนื้อคู่ (สถานะรัก/คนที่เข้ามา/แววแต่งงาน) — per-card
+ *   - wealth_luck      = การเงิน/โชคลาภ (กระแสเงิน/หนี้/โชค/เสี่ยงโชค) — per-card
+ *   - auspicious_timing= ฤกษ์ยาม/วันมงคล (ควรลงมือเมื่อไหร่ — แต่ง/เปิดร้าน/เซ็น) — per-card
+ *   - numerology       = เลขศาสตร์/เบอร์มงคล (พลังเลข/คู่เสริม/เลขห้าม) — per-card
+ *   - lucky_items      = ของมงคล/สีมงคล/เครื่องราง (พกพา/แต่งกาย/เสริมดวง) — per-card
+ *   - mental_emotional = จิตใจ/อารมณ์ (เครียด/วิตก/ฮีลใจ — เติม health ที่เน้นกายล้วน) — per-card
+ *   - family_children  = ครอบครัว/บุตร/บริวาร (พ่อแม่/พี่น้อง/ลูก/ลูกน้อง) — per-card
+ *   - travel_abroad    = เดินทาง/ต่างแดน/ย้ายถิ่น (ทริป/วีซ่า/ย้ายประเทศ) — per-card
+ *   - legal_disputes   = คดีความ/ข้อพิพาท/สัญญา (อาญา-แพ่ง-หย่า-สัญญา) — per-card
+ *   - remedy_boost     = แก้กรรม/สะเดาะเคราะห์/เสริมดวง (ทำเอง-ไม่ต้องจ่าย) — per-card
  *
  * แอดมินจัดการได้เต็มที่ผ่าน /admin/fortune/knowledge (เห็น/เพิ่ม/แก้/ปิด ทุก row)
  * Retrieval = เจาะจงตาม category + card_name + keyword (ดู App\Services\FortuneKnowledgeService)
@@ -59,6 +69,26 @@ class FortuneKnowledge extends Model
 
     public const CATEGORY_PAST_LIFE = 'past_life';
 
+    public const CATEGORY_LOVE_RELATIONSHIP = 'love_relationship';
+
+    public const CATEGORY_WEALTH_LUCK = 'wealth_luck';
+
+    public const CATEGORY_AUSPICIOUS_TIMING = 'auspicious_timing';
+
+    public const CATEGORY_NUMEROLOGY = 'numerology';
+
+    public const CATEGORY_LUCKY_ITEMS = 'lucky_items';
+
+    public const CATEGORY_MENTAL_EMOTIONAL = 'mental_emotional';
+
+    public const CATEGORY_FAMILY_CHILDREN = 'family_children';
+
+    public const CATEGORY_TRAVEL_ABROAD = 'travel_abroad';
+
+    public const CATEGORY_LEGAL_DISPUTES = 'legal_disputes';
+
+    public const CATEGORY_REMEDY_BOOST = 'remedy_boost';
+
     public const CATEGORY_GENERAL = 'general';
 
     /**
@@ -77,6 +107,16 @@ class FortuneKnowledge extends Model
         self::CATEGORY_BUSINESS_WORK,
         self::CATEGORY_SPIRITUAL_CALLING,
         self::CATEGORY_PAST_LIFE,
+        self::CATEGORY_LOVE_RELATIONSHIP,
+        self::CATEGORY_WEALTH_LUCK,
+        self::CATEGORY_AUSPICIOUS_TIMING,
+        self::CATEGORY_NUMEROLOGY,
+        self::CATEGORY_LUCKY_ITEMS,
+        self::CATEGORY_MENTAL_EMOTIONAL,
+        self::CATEGORY_FAMILY_CHILDREN,
+        self::CATEGORY_TRAVEL_ABROAD,
+        self::CATEGORY_LEGAL_DISPUTES,
+        self::CATEGORY_REMEDY_BOOST,
         self::CATEGORY_GENERAL,
     ];
 
@@ -93,6 +133,16 @@ class FortuneKnowledge extends Model
         self::CATEGORY_BUSINESS_WORK => '💼 ธุรกิจ/การงาน',
         self::CATEGORY_SPIRITUAL_CALLING => '🔮 สายญาณ/ผู้มีองค์/ภารกิจสวรรค์',
         self::CATEGORY_PAST_LIFE => '🕉️ อดีตชาติ/กรรมเก่า',
+        self::CATEGORY_LOVE_RELATIONSHIP => '❤️ ความรัก/เนื้อคู่',
+        self::CATEGORY_WEALTH_LUCK => '💰 การเงิน/โชคลาภ',
+        self::CATEGORY_AUSPICIOUS_TIMING => '📅 ฤกษ์ยาม/วันมงคล',
+        self::CATEGORY_NUMEROLOGY => '🔢 เลขศาสตร์/เบอร์มงคล',
+        self::CATEGORY_LUCKY_ITEMS => '🧿 ของมงคล/สีมงคล/เครื่องราง',
+        self::CATEGORY_MENTAL_EMOTIONAL => '🧠 จิตใจ/อารมณ์',
+        self::CATEGORY_FAMILY_CHILDREN => '👨‍👩‍👧 ครอบครัว/บุตร/บริวาร',
+        self::CATEGORY_TRAVEL_ABROAD => '✈️ เดินทาง/ต่างแดน/ย้ายถิ่น',
+        self::CATEGORY_LEGAL_DISPUTES => '⚖️ คดีความ/ข้อพิพาท/สัญญา',
+        self::CATEGORY_REMEDY_BOOST => '🪷 แก้กรรม/สะเดาะเคราะห์/เสริมดวง',
         self::CATEGORY_GENERAL => '📚 ทั่วไป',
     ];
 

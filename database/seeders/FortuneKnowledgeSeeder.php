@@ -32,8 +32,18 @@ class FortuneKnowledgeSeeder extends Seeder
         $mu = $this->seedPerCardGroup('fortune_mu_knowledge');
         $life = $this->seedPerCardGroup('fortune_card_life');
         $destiny = $this->seedPerCardGroup('fortune_card_destiny');
+        $love = $this->seedPerCardGroup('fortune_card_love');
+        $wealth = $this->seedPerCardGroup('fortune_card_wealth');
+        $auspicious = $this->seedPerCardGroup('fortune_card_timing_auspicious');
+        $numerology = $this->seedPerCardGroup('fortune_card_numerology');
+        $lucky = $this->seedPerCardGroup('fortune_card_lucky_items');
+        $mental = $this->seedPerCardGroup('fortune_card_mental');
+        $family = $this->seedPerCardGroup('fortune_card_family');
+        $travel = $this->seedPerCardGroup('fortune_card_travel');
+        $legal = $this->seedPerCardGroup('fortune_card_legal');
+        $remedy = $this->seedPerCardGroup('fortune_card_remedy');
 
-        $this->command?->info("✅ Seed คลังความรู้สำเร็จ — สุขภาพ {$health} + โหงวเฮ้ง {$persona} + สายมู {$mu} + ชีวิต {$life} + ดวงจิต {$destiny}");
+        $this->command?->info("✅ Seed คลังความรู้สำเร็จ — สุขภาพ {$health} + โหงวเฮ้ง {$persona} + สายมู {$mu} + ชีวิต {$life} + ดวงจิต {$destiny} + ความรัก {$love} + การเงิน {$wealth} + ฤกษ์ {$auspicious} + เลขศาสตร์ {$numerology} + ของมงคล {$lucky} + จิตใจ {$mental} + ครอบครัว {$family} + เดินทาง {$travel} + คดี {$legal} + แก้กรรม {$remedy}");
     }
 
     /**
