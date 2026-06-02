@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "The Lovers",
+    "name_th": "คู่รัก",
+    "number": 6,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คุณกำลังเผชิญทางเลือกสำคัญที่เกี่ยวข้องกับหัวใจและค่านิยม",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน คู่รักหัวตั้งบ่งบอกว่าคุณกำลังอยู่ในช่วงที่ต้องตัดสินใจสำคัญ - การเลือกระหว่าง 2 สิ่ง การเลือกคู่ การเลือกเส้นทาง การเลือกระหว่างสิ่งที่ใจต้องการกับสิ่งที่สมองบอก การตัดสินใจครั้งนี้สำคัญมากเพราะจะเปลี่ยนทิศทางชีวิต ฟังหัวใจให้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers ข้างเคียง The Empress = ครอบครัว, The High Priestess = ฟังใจ",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = soul mate, Ace of Cups = ความรักใหม่",
+            "swords": "Two of Swords = ต้องเลือก",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Cups = ความรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักในปัจจุบัน คือ 'การตัดสินใจที่ใหญ่ที่สุดของช่วงนี้'",
+          "advice_th": "ฟังทั้งหัวใจและสมอง ทบทวนค่านิยมที่สำคัญ ตัดสินใจที่สอดคล้องกับตัวจริง ไม่ใช่ความคาดหวังคนอื่น",
+          "keywords_th": ["ทางเลือก", "ความรัก", "ตัดสินใจสำคัญ", "ค่านิยม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คุณอยู่ในความรักที่ลึกซึ้งหรือกำลังจะตัดสินใจสำคัญในรัก",
+          "detailed_interpretation_th": "ในความรักปัจจุบัน สำหรับคนโสด คุณกำลังจะพบหรือเพิ่งพบ soul mate ที่เข้ากันได้ลึกซึ้ง สำหรับคนมีคู่ ความสัมพันธ์อยู่ในระดับที่ลึก คุณรู้สึกถึงความรักที่แท้ พลังของไพ่นี้คือพลังของ 'ใช่' ที่จากใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ความรักงอกงาม, The Hierophant = แต่งงาน",
+            "wands": "Knight of Wands = หลงใหล, Ace of Wands = พลังใหม่",
+            "cups": "Two of Cups = soul mate, Ace of Cups = ความรักลึก",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่เข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักในปัจจุบันรัก คือ 'soul connection' ที่หาได้ยาก",
+          "advice_th": "ฟังหัวใจให้ดี ความรู้สึก 'ใช่' ที่เกิดขึ้นเป็นจริง ลงทุนเวลาและใจในความสัมพันธ์ ทุ่มเทเต็มที่ ความรักแท้คุ้มค่า",
+          "keywords_th": ["soul mate", "ความรักแท้", "เข้ากันได้ลึก", "ใช่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องเลือกระหว่างเส้นทางอาชีพ 2 ทาง - เลือกที่ใจรัก",
+          "detailed_interpretation_th": "ในการงาน-การเงิน คุณกำลังเผชิญทางเลือกสำคัญ - งานที่จ่ายดีแต่ไม่รัก vs งานที่รักแต่จ่ายน้อย ความมั่นคง vs ความเสี่ยง การอยู่กับองค์กรเดิม vs การเปลี่ยน คู่รักบอกให้เลือกที่ใจ ไม่ใช่ที่ตัวเลข",
+          "adjacent_influences": {
+            "major_arcana": "Two of Pentacles = สมดุล, Two of Swords = เลือก",
+            "wands": "Two of Wands = ตัดสินใจ, Knight of Wands = พลังเปลี่ยน",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = วินิจฉัยชัด",
+            "pentacles": "Two of Pentacles = สมดุล, Seven of Pentacles = ลงทุน",
+            "court_cards": "Knight of Cups = ตามใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักในปัจจุบันงาน-เงิน คือ 'อาชีพควรสอดคล้องค่านิยม'",
+          "advice_th": "ระบุค่านิยมที่สำคัญที่สุด แล้วเลือกอาชีพที่สอดคล้อง เงินสำคัญ แต่ใจสำคัญกว่า อาชีพที่รักจะให้ผลตอบแทนระยะยาว",
+          "keywords_th": ["ทางเลือก", "ตามใจ", "ค่านิยม", "อาชีพที่รัก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ตัดสินใจเส้นทางจิตวิญญาณที่จะเปลี่ยนชีวิต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณกำลังเผชิญทางเลือกที่จะเปลี่ยนทิศทางชีวิต อาจเป็นการตัดสินใจเปลี่ยนค่านิยม เปลี่ยนความเชื่อ หรือเปลี่ยนเส้นทางการเติบโต ใจของคุณรู้คำตอบ ฟังให้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาภายใน, The Hermit = ค้นหา",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Ace of Cups = เปิดใจ",
+            "swords": "Two of Swords = เลือก",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Page of Cups = เปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักในปัจจุบันจิตวิญญาณ คือ 'ทางเลือกที่เปลี่ยนชีวิต'",
+          "advice_th": "นั่งเงียบ ฟังหัวใจ ตัดสินใจตามที่ใจรัก ไม่ใช่ตามที่สมองหรือสังคมบอก เส้นทางของคุณคือเส้นทางของคุณ",
+          "keywords_th": ["ทางเลือก", "ตามใจ", "เปลี่ยนชีวิต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เลือกวิธีดูแลสุขภาพที่สอดคล้องกับร่างกายและจิตใจ",
+          "detailed_interpretation_th": "ในสุขภาพ คุณกำลังเลือกระหว่างวิธีดูแลตัวเอง - กระแสหลัก vs ทางเลือก หักโหม vs ผ่อนคลาย เคร่งครัด vs ยืดหยุ่น เลือกที่เหมาะกับร่างกายของคุณจริง ไม่ใช่ตามกระแส",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The High Priestess = ฟังร่างกาย",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินิจฉัยชัด",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักในปัจจุบันสุขภาพ คือ 'เลือกวิธีที่รักร่างกาย'",
+          "advice_th": "เลือกวิธีดูแลสุขภาพที่ทำได้สนุก ไม่ใช่ที่ทรมาน ร่างกายตอบสนองดีกับความรัก ไม่ใช่ความบังคับ",
+          "keywords_th": ["เลือกวิธี", "ฟังร่างกาย", "ดูแลด้วยรัก"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความไม่สมดุลในความสัมพันธ์หรือการตัดสินใจที่ผิดพลาด",
+          "detailed_interpretation_th": "คู่รักกลับหัวในปัจจุบัน บ่งบอกถึงความไม่สมดุลในชีวิต - ขัดแย้งในความสัมพันธ์ ตัดสินใจผิด เลือกสิ่งที่ไม่ใช่ใจตัวเอง คุณอาจรู้สึกว่าทำผิดทาง หรือยังตัดสินใจไม่ได้เพราะกลัว ต้องทบทวน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความผิด, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ, Three of Cups กลับหัว = มิตรภาพพัง",
+            "swords": "Three of Swords = แผลใจ, Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์เปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวในปัจจุบัน คือ 'ทบทวนการตัดสินใจ'",
+          "advice_th": "ทบทวนการตัดสินใจที่ทำไป - ทำเพราะรัก หรือเพราะกลัว? ทำเพราะตัวเอง หรือเพราะคนอื่น? ปรับให้สอดคล้องกับใจจริง",
+          "keywords_th": ["ตัดสินใจผิด", "ขัดแย้ง", "ทบทวน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์มีปัญหา อาจเป็นเพราะคู่ไม่ใช่หรือมีความขัดแย้ง",
+          "detailed_interpretation_th": "ในรัก คู่รักกลับหัวเตือนถึงปัญหาในความสัมพันธ์ อาจเป็นการทะเลาะที่ไม่จบ ความไม่เข้ากันที่ปฏิเสธไม่ได้ การหลงทางในการเลือกคู่ หรือความสัมพันธ์ที่ทำให้คุณไม่เป็นตัวเอง ฟังใจให้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, The Moon = สับสน",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ, Three of Cups กลับหัว = คนที่สาม",
+            "swords": "Three of Swords = หัวใจสลาย, Five of Swords = ทะเลาะ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = คนรักไม่จริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวรัก คือ 'คุณกำลังอยู่กับคนที่ใช่ไหม?'",
+          "advice_th": "ถามตัวเองตรงๆ ความสัมพันธ์นี้ทำให้คุณเป็นคนที่ดีกว่าไหม? ทำให้คุณเป็นตัวเองได้ไหม? ถ้าไม่ ต้องพิจารณา",
+          "keywords_th": ["ปัญหารัก", "ไม่เข้ากัน", "ทบทวน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เลือกอาชีพที่ไม่ใช่ใจหรือมีปัญหากับเพื่อนร่วมงาน",
+          "detailed_interpretation_th": "ในงาน-เงิน คู่รักกลับหัวบ่งบอกว่าคุณอยู่ในอาชีพที่ไม่ใช่ใจ ทำเพราะเงินหรือความคาดหวัง ไม่ใช่ความสุข หรือมีความขัดแย้งกับเพื่อนร่วมงาน หัวหน้า การเลือกระหว่างเงินกับใจกำลังกดดัน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในเงิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้งในงาน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้, Five of Swords = ทะเลาะ",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "King of Swords กลับหัว = หัวหน้าโหด"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวงาน-เงิน คือ 'เงิน vs ความสุข' ต้องเลือก",
+          "advice_th": "ทบทวนอาชีพปัจจุบัน - ทำเพราะอะไร? ถ้าคำตอบคือ 'เพราะต้อง' เริ่มวางแผนเปลี่ยน ชีวิตสั้นเกินไปจะทำงานที่เกลียด",
+          "keywords_th": ["อาชีพไม่ใช่ใจ", "ขัดแย้ง", "ต้องเลือก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ขาดความสมดุลในชีวิตหรือเสียสมาธิจากความสัมพันธ์",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คู่รักกลับหัวเตือนถึงการสูญเสียตัวเองในความสัมพันธ์ หรือใช้พลังในทางที่ไม่สมดุล - งานมากเกินไป ดูแลคนอื่นเกินไป ฟังคนนอกมากเกินไป กลับมาที่ตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความสัมพันธ์, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ไม่ฟังใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวจิตวิญญาณ คือ 'กลับมาที่ตัวเอง'",
+          "advice_th": "ใช้เวลาคนเดียวมากขึ้น ทำสมาธิ ฟังใจตัวเอง การเติบโตต้องการความสมดุลระหว่างให้และรับ",
+          "keywords_th": ["ขาดสมดุล", "เสียตัวเอง", "กลับมา"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจิตหรือกายไม่สมดุลจากความสัมพันธ์ที่เครียด",
+          "detailed_interpretation_th": "ในสุขภาพ คู่รักกลับหัวบ่งบอกว่าความเครียดจากความสัมพันธ์ส่งผลต่อร่างกาย - นอนไม่หลับ กินเยอะ/น้อยเกินไป ออกกำลังกายไม่สม่ำเสมอ การไม่สมดุลในความสัมพันธ์สะท้อนในร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเครียด, The Tower = สุขภาพพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ขาดดูแล",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวสุขภาพ คือ 'ความเครียดทำลายร่างกาย'",
+          "advice_th": "จัดการความเครียดในความสัมพันธ์ก่อนสุขภาพพัง ปรึกษานักจิตวิทยา ฝึกสมาธิ ออกกำลังกายเพื่อปลดปล่อยความเครียด",
+          "keywords_th": ["เครียดทำลาย", "ไม่สมดุล", "จัดการ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การต้องเลือกระหว่างหัวใจกับสมองเป็นความท้าทาย",
+          "detailed_interpretation_th": "ในตำแหน่งอุปสรรค คู่รัก (ตีความตั้งตรงเสมอ) บ่งบอกว่าสิ่งที่ขัดขวางคุณคือการต้องเลือก - หัวใจบอกอย่าง สมองบอกอย่าง ครอบครัวบอกอย่าง สังคมบอกอย่าง ความขัดแย้งภายในนี้ทำให้ตัดสินใจไม่ได้ ติดอยู่",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในการรอ, Two of Swords = เลือกไม่ได้",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Two of Swords = ขัดแย้งภายใน",
+            "pentacles": "Two of Pentacles = สมดุลที่ไม่นิ่ง",
+            "court_cards": "Knight of Cups = ตามใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักในอุปสรรค คือ 'เลือกได้ยาก'",
+          "advice_th": "ระบุค่านิยมที่สำคัญที่สุด แล้วเลือกที่สอดคล้อง การไม่เลือกคือการเลือกที่ทำให้ติดอยู่",
+          "keywords_th": ["เลือกยาก", "ใจ vs สมอง", "ขัดแย้งภายใน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ติดอยู่ระหว่างคน 2 คน หรือต้องตัดสินใจในความสัมพันธ์",
+          "detailed_interpretation_th": "อุปสรรคในรักคือการเลือก - อาจมีคน 2 คนที่ดึงดูดใจ หรือต้องเลือกระหว่างความสัมพันธ์ปัจจุบันกับโอกาสใหม่ หรือต้องตัดสินใจแต่งงาน/เลิก ความไม่ตัดสินใจคือพิษ",
+          "adjacent_influences": {
+            "major_arcana": "Two of Swords = เลือกไม่ได้, The Devil = ติด",
+            "wands": "Three of Wands กลับหัว = คนที่สาม",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Cups = ตามใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอุปสรรครัก คือ 'เลือกใคร?' หรือ 'จะไปหรือเลิก?'",
+          "advice_th": "ฟังหัวใจให้ดี การมีคนที่สาม การไม่ตัดสินใจ ทำลายความสัมพันธ์ทั้งสองฝ่าย ตัดสินใจให้ชัด",
+          "keywords_th": ["เลือกคน", "คนที่สาม", "ตัดสินใจ"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องเลือกระหว่างความมั่นคงทางการเงินกับความสุขในงาน",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือการต้องเลือก - เงินเดือนสูงแต่งานไม่รัก vs งานที่รักแต่เงินน้อย ทำธุรกิจของตัวเองที่เสี่ยง vs ทำงานประจำที่ไม่ยอมรับศักยภาพ การไม่ตัดสินใจทำให้ติด",
+          "adjacent_influences": {
+            "major_arcana": "Two of Pentacles = สมดุล, Two of Wands = ตัดสินใจ",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Two of Swords = เลือกไม่ได้",
+            "pentacles": "Two of Pentacles = สมดุล, Seven of Pentacles = ลงทุน",
+            "court_cards": "Knight of Cups = ตามใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอุปสรรคงาน-เงิน คือ 'เงิน vs ความสุข'",
+          "advice_th": "ตัดสินใจที่สอดคล้องกับค่านิยมระยะยาว เงินสำคัญ แต่ 30 ปีในงานที่เกลียดทำลายชีวิต ค่อยๆ ก้าวสู่งานที่รัก",
+          "keywords_th": ["เลือกอาชีพ", "เงิน vs ความสุข", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความขัดแย้งระหว่างค่านิยมเก่ากับใหม่",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือความขัดแย้งระหว่างค่านิยมที่ได้รับการเลี้ยงดูมากับสิ่งที่ค้นพบในตอนนี้ คุณอาจรู้สึกว่าค่านิยมเก่าไม่ใช่ของคุณอีกแล้ว แต่ค่านิยมใหม่ยังไม่ชัด ทำให้สับสน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติด",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Two of Pentacles = สมดุลที่ยาก",
+            "court_cards": "Page of Cups = ใจที่สับสน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอุปสรรคจิตวิญญาณ คือ 'ค่านิยมเก่า vs ใหม่'",
+          "advice_th": "ใช้เวลาทบทวนค่านิยมที่สำคัญ - เก็บอันที่ใช่ ทิ้งอันที่ไม่ใช่ การยอมรับว่าค่านิยมเปลี่ยนได้คือพลัง",
+          "keywords_th": ["ค่านิยมขัด", "เก่า vs ใหม่", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ขัดแย้งระหว่างวิถีชีวิตที่อยากกับวิถีที่ดีต่อสุขภาพ",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคือการเลือก - กินอาหารอร่อยที่ไม่ดี vs อาหารดีที่ไม่อร่อย ออกกำลังกายที่เหนื่อย vs นั่งสบาย นอนเร็ว vs ดูซีรีส์ ความขัดแย้งระหว่างความอยากกับสิ่งที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความอยาก, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Three of Cups = สังสรรค์, Seven of Cups = ฝัน",
+            "swords": "Two of Swords = เลือกไม่ได้",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = แรงปรารถนา"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอุปสรรคสุขภาพ คือ 'ความอยาก vs สุขภาพ'",
+          "advice_th": "สร้างสมดุล 80/20 - กินดี 80% ตามใจ 20% ไม่ต้องสมบูรณ์แบบ แต่ต้องมีวินัย",
+          "keywords_th": ["ความอยาก", "สุขภาพ", "สมดุล"],
+          "intensity_level": 2,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ปฏิเสธความรับผิดชอบของการตัดสินใจ",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือการไม่กล้าตัดสินใจ ปล่อยให้คนอื่นเลือกแทน หรือเลือกตามที่สังคมคาดหวัง ความกลัวความรับผิดชอบของการเลือกทำให้ติด คุณต้องเลือก ไม่ใช่ให้สถานการณ์เลือกแทน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Two of Swords = ปฏิเสธเลือก, Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = กลัวเสีย",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'รับผิดชอบกับการเลือก'",
+          "advice_th": "หยุดให้คนอื่นเลือกแทนคุณ ตัดสินใจของตัวเอง รับผิดชอบกับผลลัพธ์ ความกล้าตัดสินใจสร้างคุณภาพชีวิต",
+          "keywords_th": ["ไม่กล้าตัดสินใจ", "รับผิดชอบ", "เลือกเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ไม่มีพันธะหรือคู่ไม่กล้าตัดสินใจ",
+          "detailed_interpretation_th": "ในรัก อุปสรรคคือการไม่มีพันธะ คู่ของคุณ (หรือคุณเอง) ไม่กล้าตัดสินใจ ไม่กล้าคุยอนาคต ไม่กล้าก้าวต่อ การลอยอยู่ในความสัมพันธ์โดยไม่ตัดสินใจคือพิษ ต้องคุยตรงๆ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติดในความไม่แน่นอน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Two of Swords = เลือกไม่ได้",
+            "pentacles": "Four of Pentacles = กลัวเสีย",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'ขาดพันธะ'",
+          "advice_th": "คุยกับคู่ให้ชัด - จะไปต่อหรือเลิก? จะแต่งงานเมื่อไหร่? ความไม่ชัดเจนทำลายความสัมพันธ์",
+          "keywords_th": ["ไม่มีพันธะ", "ไม่กล้าคุย", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ติดในงานเพราะกลัวเปลี่ยน",
+          "detailed_interpretation_th": "ในงาน-เงิน อุปสรรคคือการกลัวเปลี่ยน คุณรู้ว่างานปัจจุบันไม่ใช่ แต่กลัวออก กลัวเงินไม่พอ กลัวไม่สำเร็จ ความกลัวขังคุณในงานที่ไม่ใช่ ต้องหันมาเผชิญและวางแผน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในงาน, The Moon = กลัว",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง, Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = กลัวเสียเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่มสิ่งใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'กลัวเปลี่ยน'",
+          "advice_th": "วางแผนเปลี่ยนงานอย่างฉลาด - มี emergency fund พัฒนาทักษะ สร้างเครือข่าย ออกอย่างมีแผน ไม่ใช่หุนหันพลันแล่น",
+          "keywords_th": ["กลัวเปลี่ยน", "ติดในงาน", "วางแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หลีกเลี่ยงการเติบโตเพราะกลัวเสียอะไรไป",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการกลัวการเติบโต กลัวว่าถ้าเปลี่ยนตัวเอง คนรอบข้างจะไม่ยอมรับ กลัวเสียความสัมพันธ์ กลัวสูญเสียตัวตน การกลัวขังคุณในที่เดิม",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในสิ่งที่มี",
+            "court_cards": "Page กลับหัว = ไม่กล้าโต"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'กลัวสูญเสีย'",
+          "advice_th": "การเติบโตหมายถึงการเปลี่ยน บางความสัมพันธ์อาจไม่ตามคุณไป นั่นเป็นธรรมชาติ คุณคู่ควรกับการเป็นตัวเองที่ดีที่สุด",
+          "keywords_th": ["กลัวเสีย", "ไม่กล้าโต", "ปลดปล่อย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ขาดแรงจูงใจดูแลสุขภาพเพราะรู้สึกว่ายาก",
+          "detailed_interpretation_th": "ในสุขภาพ อุปสรรคคือการไม่กล้าเริ่ม รู้สึกว่ายากเกินไป รู้สึกว่าไม่มีเวลา ความเชื่อ 'เริ่มพรุ่งนี้' ทำให้ไม่ได้เริ่มเลย ต้องเริ่มเล็กๆ วันนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในการรอ, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'เริ่มเล็กๆ วันนี้'",
+          "advice_th": "เริ่มจากนิสัยเล็กที่ทำได้ใน 2 นาที - ดื่มน้ำ 1 แก้ว เดิน 1 นาที กินผัก 1 ชิ้น ค่อยๆ ขยาย ความสม่ำเสมอสำคัญกว่าความสมบูรณ์",
+          "keywords_th": ["ขาดแรงจูงใจ", "ยากเกินไป", "เริ่มเล็ก"],
+          "intensity_level": 2,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เคยมีความรักที่ลึกซึ้งหรือตัดสินใจสำคัญในอดีต",
+          "detailed_interpretation_th": "คู่รักหัวตั้งในอดีต บ่งบอกถึงช่วงเวลาที่คุณเคยตัดสินใจสำคัญที่มาจากใจ อาจเป็นความรักครั้งแรก การเลือกอาชีพที่ตามใจ การตัดสินใจที่เปลี่ยนชีวิต ประสบการณ์เหล่านี้สร้างคุณในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers เสริม, The Empress = ความรักลึก",
+            "wands": "Knight of Wands = หลงใหลเก่า",
+            "cups": "Two of Cups = soul mate เก่า, Ace of Cups = รักครั้งแรก",
+            "swords": "Ace of Swords = ตัดสินใจชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวเก่า",
+            "court_cards": "King of Cups = คู่เก่า"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักในอดีต คือ 'การเลือกที่มาจากใจในอดีต'",
+          "advice_th": "ระลึกถึงการตัดสินใจที่ตามใจในอดีต - สอนอะไร? ใช้เป็นแม่แบบในปัจจุบัน",
+          "keywords_th": ["รักเก่า", "การเลือกเก่า", "ประสบการณ์"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักครั้งสำคัญในอดีตที่ยังส่งผลถึงปัจจุบัน",
+          "detailed_interpretation_th": "ในรักอดีต คุณเคยมีความรักที่ลึกซึ้ง อาจเป็นรักครั้งแรก รักครั้งสำคัญ หรือคู่ที่เคยใกล้แต่ไม่ได้คู่ ประสบการณ์นี้กำหนดวิธีรักในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักงอกงาม, The Star = ความหวัง",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่เก่าที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอดีตรัก คือ 'รักลึกในอดีต'",
+          "advice_th": "ใช้บทเรียนจากรักเก่า แต่อย่าให้อดีตขัดขวางปัจจุบัน ทุกความรักใหม่มีค่าของตัวเอง",
+          "keywords_th": ["รักครั้งสำคัญ", "บทเรียน", "ปล่อยอดีต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยตัดสินใจอาชีพตามใจในอดีต",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต คุณเคยตัดสินใจตามใจ - เลือกสายที่รัก เริ่มธุรกิจที่หลงใหล หรือเปลี่ยนทาง การตัดสินใจที่ตามใจให้ผลดี",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Sun = สำเร็จ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ace of Pentacles = เงินก้อน",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอดีตงาน-เงิน คือ 'ใจนำให้สำเร็จ'",
+          "advice_th": "ระลึกการตัดสินใจที่ตามใจในอดีต - สอนว่าเชื่อใจตัวเอง ใช้บทเรียนนี้ในปัจจุบัน",
+          "keywords_th": ["ตัดสินใจดี", "ตามใจ", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยตัดสินใจที่เปลี่ยนเส้นทางจิตวิญญาณ",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต คุณเคยตัดสินใจครั้งสำคัญที่เปลี่ยนทิศชีวิต - เปลี่ยนความเชื่อ ค้นพบเส้นทางใหม่ การตัดสินใจนี้ยังคงส่งผล",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = แรงบันดาลใจ",
+            "wands": "Page of Wands = เริ่มเรียน",
+            "cups": "Ace of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Page of Pentacles = ทดลอง",
+            "court_cards": "Page of Cups = เปิดใจรับ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอดีตจิตวิญญาณ คือ 'จุดเปลี่ยน'",
+          "advice_th": "ระลึกจุดเปลี่ยนในอดีต - เกิดอะไรขึ้น? ตัดสินใจอะไร? ใช้เป็นเชื้อเพลิงปัจจุบัน",
+          "keywords_th": ["จุดเปลี่ยน", "เส้นทางใหม่", "ตัดสินใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยตัดสินใจเรื่องสุขภาพที่ดีและได้ผล",
+          "detailed_interpretation_th": "ในสุขภาพอดีต คุณเคยตัดสินใจเปลี่ยนพฤติกรรมสุขภาพ - เริ่มออกกำลังกาย เปลี่ยนการกิน หรือเลิกนิสัยไม่ดี ความสำเร็จในอดีตเป็นหลักฐานว่าทำได้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอดีตสุขภาพ คือ 'เคยทำได้ ทำได้อีก'",
+          "advice_th": "ระลึกตอนสุขภาพดี - ทำอะไร? นำกลับมาทำ ความสำเร็จในอดีตคือหลักฐาน",
+          "keywords_th": ["สำเร็จเก่า", "หลักฐาน", "ทำได้อีก"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยตัดสินใจผิดหรือมีความสัมพันธ์ที่เจ็บปวดในอดีต",
+          "detailed_interpretation_th": "คู่รักกลับหัวในอดีต บ่งบอกถึงบาดแผลจากการตัดสินใจในอดีต อาจเป็นการเลือกผิด ความรักที่ทำร้าย หรือการตัดสินใจตามคนอื่นจนเสียใจ บาดแผลนี้ยังส่งผลถึงปัจจุบัน ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเสียใจ, The Moon = บาดแผลซ่อน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ, Three of Swords = แผลใจ",
+            "swords": "Ten of Swords = ทรยศเก่า",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Cups กลับหัว = คนรักไม่จริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวอดีต คือ 'บาดแผลจากการเลือกผิด'",
+          "advice_th": "ให้อภัยตัวเองที่เคยตัดสินใจผิด คุณทำดีที่สุดในตอนนั้น บทเรียนคือทรัพยากร ไม่ใช่กรง",
+          "keywords_th": ["ตัดสินใจผิดเก่า", "บาดแผล", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักในอดีตที่ทำร้ายและยังหลอน",
+          "detailed_interpretation_th": "ในรักอดีต คุณเคยมีความรักที่ทำร้าย อาจถูกทรยศ ถูกหลอก หรือเลือกผิดคน บาดแผลนี้ทำให้กลัวเปิดใจในปัจจุบัน ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = ติดในรูปแบบ",
+            "wands": "Three of Wands กลับหัว = คนที่สามเก่า",
+            "cups": "Five of Cups = เสียใจ, Three of Cups กลับหัว = ทรยศ",
+            "swords": "Three of Swords = หัวใจสลาย, Ten of Swords = ทรยศ",
+            "pentacles": "Pentacles กลับหัว = ปัญหาเงินในรัก",
+            "court_cards": "Knight of Cups กลับหัว = คนเจ้าชู้"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวอดีตรัก คือ 'บาดแผลรักลึก' รักษา",
+          "advice_th": "ทำงานกับบาดแผลรักเก่าอย่างจริงจัง อาจใช้ therapy การให้อภัยตัวเองและคู่เก่าคือกุญแจ",
+          "keywords_th": ["รักทำร้าย", "บาดแผล", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยตัดสินใจอาชีพผิดและเสียโอกาส",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต อาจเคยเลือกผิด - งานที่ไม่ใช่ ลงทุนที่พลาด พลาดโอกาสสำคัญ ความเสียใจยังอยู่ ต้องเรียนรู้และเดินต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, The Devil = ติดในความเสียใจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "King of Pentacles กลับหัว = ลงทุนผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวอดีตงาน-เงิน คือ 'บทเรียนจากความผิดพลาด'",
+          "advice_th": "ใช้ความผิดพลาดเป็นบทเรียน ไม่ใช่กรง ทุกคนทำผิด เรียนรู้และก้าวต่อ",
+          "keywords_th": ["ตัดสินใจผิด", "เสียโอกาส", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยเลือกเส้นทางที่ไม่ใช่และเสียเวลา",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต อาจเคยอยู่ในเส้นทางที่ไม่ใช่ - ศาสนาที่ไม่เหมาะ ครูที่ทำลาย ความเชื่อที่บีบ ตอนนี้รู้แล้วว่าผิดทาง ต้องให้อภัยตัวเองและเริ่มใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในเส้นทางผิด, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวอดีตจิตวิญญาณ คือ 'เส้นทางผิด' เรียนรู้",
+          "advice_th": "ให้อภัยตัวเองที่เคยเดินผิดทาง ใช้บทเรียน เริ่มเส้นทางใหม่ที่ใช่",
+          "keywords_th": ["เส้นทางผิด", "เริ่มใหม่", "ให้อภัย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยตัดสินใจสุขภาพผิดและส่งผลถึงปัจจุบัน",
+          "detailed_interpretation_th": "ในสุขภาพอดีต อาจเคยฝืนร่างกาย ทำ diet หนักเกิน ออกกำลังกายผิดวิธี ฟัง influencer ที่ไม่ดี ผลกระทบยังอยู่ ต้องเปลี่ยนแนวทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = สุขภาพพัง, The Devil = นิสัยเก่า",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวอดีตสุขภาพ คือ 'ผิดพลาดที่เรียนรู้ได้'",
+          "advice_th": "ปรึกษาผู้เชี่ยวชาญเพื่อแก้ผลกระทบจากการดูแลผิด ใช้ความผิดพลาดเป็นบทเรียน",
+          "keywords_th": ["ดูแลผิด", "ผลกระทบ", "แก้ไข"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "จะต้องตัดสินใจสำคัญใน 3-6 เดือนข้างหน้า",
+          "detailed_interpretation_th": "คู่รักหัวตั้งในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า จะมีการตัดสินใจสำคัญที่เปลี่ยนชีวิต อาจเป็นเรื่องความรัก อาชีพ การย้ายถิ่น เตรียมใจให้พร้อม ฟังหัวใจ",
+          "adjacent_influences": {
+            "major_arcana": "Two of Swords = เลือก, The Hanged Man = พิจารณา",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Ace of Cups = รักใหม่",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Cups = รักจะมา"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอนาคต คือ 'ตัดสินใจใหญ่จะมา'",
+          "advice_th": "เตรียมตัวสำหรับการตัดสินใจสำคัญ - ระบุค่านิยม จดสิ่งที่อยากได้จริง ใช้เป็นเข็มทิศ",
+          "keywords_th": ["ตัดสินใจใหญ่", "เปลี่ยนชีวิต", "เตรียมใจ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รักครั้งสำคัญหรือ soul mate จะเข้ามาในอนาคต",
+          "detailed_interpretation_th": "ในรักอนาคต คนโสด - จะพบ soul mate ใน 3-6 เดือน คนที่เข้ากันได้ลึกซึ้ง คนมีคู่ - ความสัมพันธ์จะลึกซึ้งขึ้น อาจมีการตัดสินใจสำคัญร่วมกัน เปิดใจรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักงอกงาม, The Hierophant = แต่งงาน",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = soul mate, Ace of Cups = ความรักลึก",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Cups = คนรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอนาคตรัก คือ 'soul mate จะมา'",
+          "advice_th": "เปิดใจรับความรักที่กำลังจะมา ใช้เวลาอยู่ในที่ที่คนมีโอกาสได้พบ ไว้วางใจในเวลาที่ถูกต้อง",
+          "keywords_th": ["soul mate", "รักครั้งสำคัญ", "เปิดใจ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "จะต้องตัดสินใจอาชีพสำคัญ - ตามใจหรือตามเงิน",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต จะมีโอกาสที่ต้องตัดสินใจ - งานใหม่ที่จ่ายน้อยแต่รัก vs งานปัจจุบันที่จ่ายดีแต่ไม่ใช่ การลงทุนที่เสี่ยงแต่ฝัน vs การออมที่ปลอดภัย ฟังใจ",
+          "adjacent_influences": {
+            "major_arcana": "Two of Pentacles = สมดุล, Two of Wands = ตัดสินใจ",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Two of Swords = เลือก",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = กล้าเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอนาคตงาน-เงิน คือ 'เลือกตามใจ'",
+          "advice_th": "เตรียมตัวสำหรับการตัดสินใจ - ประเมินค่านิยม ระบุเป้าหมายระยะยาว เลือกที่สอดคล้องกับตัวจริง",
+          "keywords_th": ["ตัดสินใจอาชีพ", "ตามใจ", "เปลี่ยนทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "จะมีจุดเปลี่ยนสำคัญทางจิตวิญญาณ",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต จะมีช่วงเวลาที่ต้องตัดสินใจค่านิยมใหม่ ค้นพบเส้นทางที่ใช่ หรือเปลี่ยนความเชื่อ การตัดสินใจนี้จะเปลี่ยนชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = แรงบันดาลใจ",
+            "wands": "Page of Wands = เริ่มเรียน",
+            "cups": "Ace of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Page of Pentacles = ทดลอง",
+            "court_cards": "Page of Cups = เปิดใจรับ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอนาคตจิตวิญญาณ คือ 'จุดเปลี่ยน'",
+          "advice_th": "เปิดใจรับการเปลี่ยนแปลงทางจิตวิญญาณ ฟังหัวใจ ปฏิบัติตามที่ใจรู้",
+          "keywords_th": ["จุดเปลี่ยน", "ค่านิยมใหม่", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "จะตัดสินใจเปลี่ยนวิถีชีวิตเพื่อสุขภาพที่ดีขึ้น",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต จะมีจุดที่ตัดสินใจเริ่มต้นใหม่ - เริ่มออกกำลังกายจริงจัง เปลี่ยน diet เลิกนิสัยไม่ดี การตัดสินใจครั้งนี้จะให้ผลตอบแทนสูง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักอนาคตสุขภาพ คือ 'เริ่มต้นใหม่'",
+          "advice_th": "เตรียมแผนสุขภาพ - กิจวัตรที่ทำได้ การเปลี่ยนแปลงเล็กๆ ที่ยั่งยืน เริ่มเมื่อพร้อม",
+          "keywords_th": ["เริ่มต้นใหม่", "เปลี่ยนวิถี", "สุขภาพดี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อาจเผชิญการตัดสินใจยากที่ผลลัพธ์ไม่แน่นอน",
+          "detailed_interpretation_th": "คู่รักกลับหัวในอนาคต เตือนว่าใน 3-6 เดือนข้างหน้า จะมีการตัดสินใจที่ยาก ผลลัพธ์ไม่ชัด อาจมีความขัดแย้งภายในหรือคนรอบข้าง ต้องฟังใจให้ดีและรับผลของการเลือก",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Two of Pentacles = ไม่สมดุล",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวอนาคต คือ 'การตัดสินใจที่ยาก'",
+          "advice_th": "ใช้เวลาตัดสินใจ ไม่รีบ ปรึกษาคนไว้ใจ ฟังหัวใจ การตัดสินใจที่ดีต้องการเวลา",
+          "keywords_th": ["ตัดสินใจยาก", "ไม่แน่นอน", "ฟังหัวใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อาจเผชิญปัญหาในรักหรือมีคนที่สามเข้ามา",
+          "detailed_interpretation_th": "ในรักอนาคต ระวังความสัมพันธ์อาจมีปัญหา - การทะเลาะที่หนัก คนที่สามที่จะมา หรือต้องตัดสินใจเลิก ฟังสัญญาณเตือนในใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ทำลาย, The Tower = ระเบิด",
+            "wands": "Three of Wands กลับหัว = คนที่สาม",
+            "cups": "Five of Cups = เสียใจ, Three of Cups กลับหัว = ทรยศ",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = คนรักไม่ซื่อ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวอนาคตรัก คือ 'ระวังปัญหา'",
+          "advice_th": "ฟังสัญญาณเตือนในใจ ตรวจสอบความสัมพันธ์อย่างซื่อสัตย์ ถ้ามีคนที่สาม จัดการให้ชัด",
+          "keywords_th": ["ปัญหาในรัก", "คนที่สาม", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ระวังการตัดสินใจอาชีพที่จะเสียใจภายหลัง",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต ระวังการตัดสินใจที่ไม่ผ่านการคิด - ลาออกหุนหันพลันแล่น ลงทุนตามอารมณ์ เปลี่ยนสายโดยไม่มีแผน ใช้เวลาประเมินก่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = ตัดสินใจเพราะอารมณ์",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Seven of Cups = ฝันลวง",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวอนาคตงาน-เงิน คือ 'อย่ารีบตัดสินใจ'",
+          "advice_th": "ก่อนการตัดสินใจสำคัญ รออย่างน้อย 30 วัน ปรึกษาผู้รู้ ทำการบ้านอย่างละเอียด ไม่ตัดสินใจตามอารมณ์",
+          "keywords_th": ["ระวังตัดสินใจ", "อย่ารีบ", "ประเมิน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจหลงทางในเส้นทางจิตวิญญาณหรือเปลี่ยนความเชื่อบ่อย",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ระวังการลังเล เปลี่ยนความเชื่อบ่อย ตามครูใหม่ตลอด ความสับสนจะทำให้ไม่ก้าวหน้า ต้องเลือกเส้นทางและทุ่มเท",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติดในการเปลี่ยน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Two of Swords = เลือกไม่ได้",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่จริงจัง",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวอนาคตจิตวิญญาณ คือ 'ทุ่มเท ไม่ลังเล'",
+          "advice_th": "เลือกเส้นทางหนึ่งและทุ่มเทอย่างน้อย 1 ปี ก่อนตัดสินว่าใช่หรือไม่ การเปลี่ยนบ่อยทำให้ไม่ก้าวหน้า",
+          "keywords_th": ["ลังเล", "เปลี่ยนบ่อย", "ทุ่มเท"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ลังเลในการเปลี่ยนนิสัยสุขภาพ - เริ่มแล้วเลิกบ่อย",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ระวังการเริ่มแล้วเลิก เริ่ม diet ใหม่ทุกเดือน เปลี่ยน trainer บ่อย ลอง supplements ตามกระแส การไม่ทุ่มเทจะไม่ให้ผล",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในการรอ, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Seven of Cups = ฝันลวง",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่จริงจัง",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวอนาคตสุขภาพ คือ 'ทุ่มเท 90 วัน'",
+          "advice_th": "เลือกแผนสุขภาพหนึ่งและทุ่มเท 90 วัน ก่อนเปลี่ยน ความสม่ำเสมอให้ผล ไม่ใช่ความหลากหลาย",
+          "keywords_th": ["เริ่มแล้วเลิก", "ลังเล", "ทุ่มเท"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือความสัมพันธ์ที่ลึกซึ้งและการตัดสินใจที่จริงใจกับตัวเอง",
+          "detailed_interpretation_th": "คู่รักหัวตั้งในเป้าหมาย สะท้อนความปรารถนา - ต้องการความสัมพันธ์ที่ลึกซึ้ง การตัดสินใจที่สอดคล้องกับใจ ชีวิตที่สอดคล้องกับค่านิยม คุณอยากเป็นคนที่กล้ารักและกล้าเลือก",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักงอกงาม, The World = บรรลุ",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักเป้าหมาย คือ 'รักที่แท้และเลือกที่ใจ'",
+          "advice_th": "ตั้งเป้าหมายให้สอดคล้องกับใจ ไม่ใช่ความคาดหวังคนอื่น ใช้ค่านิยมเป็นเข็มทิศ",
+          "keywords_th": ["รักลึก", "ตัดสินใจจริงใจ", "ค่านิยม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการ soul mate และความรักที่ลึกซึ้ง",
+          "detailed_interpretation_th": "เป้าหมายในรักคือการพบ soul mate - คนที่เข้ากันได้ในระดับลึก ทั้งจิตวิญญาณ อารมณ์ และค่านิยม ไม่ใช่แค่ความสัมพันธ์ผิวเผิน คุณอยากได้รักที่ทำให้เป็นตัวเองที่ดีที่สุด",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักงอกงาม, The Hierophant = แต่งงาน",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่เข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักเป้าหมายรัก คือ 'soul mate ที่ลึกซึ้ง'",
+          "advice_th": "อย่ายอมต่อรองมาตรฐาน soul mate มีจริง คุณคู่ควรกับความรักที่ลึกซึ้ง",
+          "keywords_th": ["soul mate", "รักลึก", "เข้ากันได้"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการอาชีพที่สอดคล้องกับใจและค่านิยม",
+          "detailed_interpretation_th": "เป้าหมายในงาน-เงินคืออาชีพที่ตามใจ ไม่ใช่แค่เงิน ต้องการงานที่ทำให้รู้สึกมีความหมาย ใช้ทักษะที่รัก ทำงานกับคนที่เข้ากัน ความมั่งคั่งจะมาพร้อมความสุข",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะที่รัก, The Sun = สำเร็จมีความสุข",
+            "wands": "Ace of Wands = พลังเริ่มต้น",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่งจากใจ",
+            "court_cards": "King of Cups = ผู้นำที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักเป้าหมายงาน-เงิน คือ 'อาชีพตามใจ'",
+          "advice_th": "ค้นหางานที่ตรงกับใจและทักษะที่รัก เมื่อทำสิ่งที่รัก ความสำเร็จและเงินจะตามมา",
+          "keywords_th": ["อาชีพที่รัก", "ความหมาย", "ตามใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการเป็นคนที่กล้าเลือกตามใจและซื่อสัตย์กับตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายคือการเป็นคนที่กล้าเลือกตามใจ ไม่ตามคำคาดหวัง การมีความซื่อสัตย์กับตัวเอง การตัดสินใจที่สอดคล้องกับค่านิยม คุณอยากใช้ชีวิตที่จริงใจ",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาภายใน, The Star = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "King of Pentacles = ปัญญาปฏิบัติ",
+            "court_cards": "Queen of Cups = ปัญญาในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักเป้าหมายจิตวิญญาณ คือ 'ซื่อสัตย์กับตัวเอง'",
+          "advice_th": "ฝึกความซื่อสัตย์กับตัวเอง - บอกความรู้สึกจริง เลือกตามใจ ทำตามค่านิยม ชีวิตที่จริงใจคือชีวิตที่ดี",
+          "keywords_th": ["ซื่อสัตย์", "กล้าเลือก", "ตามใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการสุขภาพที่สมดุลทั้งกายและใจ",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพคือความสมดุล - ร่างกายแข็งแรง จิตใจสงบ อารมณ์ดี ความสัมพันธ์ดี ไม่ใช่แค่ฟิตเนสหรือผอม แต่เป็นสุขภาพทั้งหมดของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักเป้าหมายสุขภาพ คือ 'สมดุลทั้งหมด'",
+          "advice_th": "ดูแลทุกมิติของสุขภาพ - กาย ใจ ความสัมพันธ์ จิตวิญญาณ ไม่เน้นด้านใดด้านหนึ่งเกินไป",
+          "keywords_th": ["สมดุล", "holistic", "สุขภาพแท้"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายไม่ชัดเจนหรือเลือกตามคนอื่น",
+          "detailed_interpretation_th": "คู่รักกลับหัวในเป้าหมาย บ่งบอกว่าเป้าหมายของคุณไม่ชัด หรือถูกบีบจากความคาดหวังคนอื่น คุณอาจตามฝันของพ่อแม่ หรือทำตามที่สังคมบอก ไม่ใช่ของคุณจริง ต้องทบทวน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความคาดหวัง, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = ติดในสิ่งที่ไม่ใช่",
+            "court_cards": "Queen of Swords กลับหัว = วิจารณ์ตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวเป้าหมาย คือ 'ทบทวนเป้าหมายจริง'",
+          "advice_th": "ระบุเป้าหมายของตัวเองจริงๆ ไม่ตามใคร ถ้าไม่มีคนเฝ้าดู คุณอยากเป็นใคร? นั่นคือเป้าหมายจริง",
+          "keywords_th": ["เป้าหมายไม่ใช่ของตัว", "ความคาดหวัง", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการความสัมพันธ์เพื่อภาพลักษณ์มากกว่าความรักจริง",
+          "detailed_interpretation_th": "เป้าหมายในรักอาจถูกบีบจากภายนอก - อยากแต่งงานก่อน 30 อยากมีลูก อยากดูดีในสายตาสังคม แต่ลึกๆ ไม่แน่ใจว่าต้องการเอง ต้องตรวจสอบ",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ตามแบบสังคม, The Devil = ติดในภาพ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Three of Swords = คาดหวังเกิน",
+            "pentacles": "Pentacles = มองเงินมากกว่าใจ",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวเป้าหมายรัก คือ 'รักจริง vs ภาพลักษณ์'",
+          "advice_th": "ถามตัวเอง 'ฉันอยากแต่งงาน/มีลูกจริงไหม?' หรือเพราะคนอื่นบอก? คำตอบจริงคือเข็มทิศ",
+          "keywords_th": ["รักเพื่อภาพ", "ทบทวน", "จริงใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตามอาชีพที่พ่อแม่หรือสังคมคาดหวัง ไม่ใช่ที่รัก",
+          "detailed_interpretation_th": "เป้าหมายอาชีพอาจไม่ใช่ของคุณ - หมอเพราะแม่อยากให้เป็น วิศวกรเพราะพ่ออยากให้เป็น ทนายเพราะดูดี แต่ลึกๆ ไม่ใช่ ต้องทบทวนและเลือกใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ตามสังคม, The Devil = ติดในความคาดหวัง",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "Knight of Swords กลับหัว = ทำเพราะถูกบีบ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวเป้าหมายงาน-เงิน คือ 'อาชีพของใคร?'",
+          "advice_th": "ถ้าตอนอายุ 18 เลือกเองได้ จะเลือกอะไร? คำตอบนั้นยังใช่อยู่ไหม? คุณยังเปลี่ยนได้",
+          "keywords_th": ["อาชีพไม่ใช่ตัว", "ความคาดหวัง", "เลือกใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการดูดีแทนที่จะเป็นจริง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายอาจเป็นไปเพื่อภาพลักษณ์ - อยากดูเป็นคนพัฒนาตัวเอง อยากให้คนเห็นว่าฉลาด มีค่านิยม แต่ลึกๆ ไม่ได้เปลี่ยนแปลงจริง การเป็นจริงสำคัญกว่าการดู",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในภาพ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ไม่ได้เปลี่ยนจริง",
+            "swords": "Eight of Swords = ขังในภาพ",
+            "pentacles": "Four of Pentacles = ติดในรูปลักษณ์",
+            "court_cards": "Page กลับหัว = ไม่โตจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวเป้าหมายจิตวิญญาณ คือ 'เป็นจริง ไม่ใช่ดูดี'",
+          "advice_th": "ทำการพัฒนาตัวเองเพื่อตัวเอง ไม่ใช่เพื่อแสดง ลบ social media สักช่วง โฟกัสที่การเปลี่ยนแปลงจริง",
+          "keywords_th": ["ดูดี vs เป็นจริง", "ภาพลักษณ์", "เปลี่ยนแปลงจริง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายสุขภาพเพื่อรูปลักษณ์ ไม่ใช่สุขภาพแท้",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายอาจเป็นไปเพื่อรูปลักษณ์ - อยากผอม อยากมีกล้ามท้อง อยากดูเด็ก ไม่ใช่เพื่อสุขภาพจริง การโฟกัสที่ผิวเผินทำให้เป็นทาสของรูปลักษณ์ ไม่ใช่อิสระจากสุขภาพดี",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในรูปลักษณ์, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Four of Cups = ไม่พอใจตัว",
+            "swords": "Nine of Swords = กังวลรูปร่าง",
+            "pentacles": "Four of Pentacles = ใช้เงินผิด",
+            "court_cards": "Queen of Wands กลับหัว = สนใจภายนอก"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวเป้าหมายสุขภาพ คือ 'สุขภาพ ไม่ใช่รูปลักษณ์'",
+          "advice_th": "วัดความสำเร็จด้วยพลังงาน อารมณ์ การนอน ไม่ใช่ตัวเลขในกระจก รูปลักษณ์ดีตามมาเมื่อสุขภาพดี",
+          "keywords_th": ["สุขภาพรูปลักษณ์", "ผิวเผิน", "วัดด้วยพลัง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ค่านิยมและความเข้าใจเรื่องความรักฝังอยู่ในจิตใต้สำนึก",
+          "detailed_interpretation_th": "คู่รักหัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีค่านิยมเรื่องความรัก ความซื่อสัตย์ การเลือกตามใจ คุณรู้ลึกๆ ว่าอะไรสำคัญ ฟังเสียงในใจให้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers เสริม, The Empress = รักลึก",
+            "wands": "Knight of Wands = หลงใหลในแกน",
+            "cups": "Two of Cups = ผูกพันลึก",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = ความมั่นคง",
+            "court_cards": "Queen of Cups = ปัญญาทางใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักรากฐาน คือ 'ค่านิยมรักฝังลึก'",
+          "advice_th": "ไว้วางใจในค่านิยมที่ฝังในใจ - ซื่อสัตย์ รักจริง เลือกตามใจ - เหล่านี้คือเข็มทิศ",
+          "keywords_th": ["ค่านิยมรัก", "ฝังลึก", "เข็มทิศ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสามารถรักลึกซึ้งเป็นรากฐานในตัว",
+          "detailed_interpretation_th": "ในรัก รากฐานของคุณคือความสามารถในการรักอย่างลึกซึ้ง ซื่อสัตย์ จริงใจ คุณเป็นคนที่รักด้วยใจ ไม่ใช่แค่ผิวเผิน ความสามารถนี้คือพรสวรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักลึก, The Lovers เสริม",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate, Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = นักรักลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักรากฐานรัก คือ 'นักรักลึกโดยกำเนิด'",
+          "advice_th": "ใช้ความสามารถรักลึกของคุณกับคนที่คู่ควร อย่าให้คนใช้ความใจดี เลือกคู่ที่รักคุณเท่าคุณรักเขา",
+          "keywords_th": ["รักลึก", "พรสวรรค์", "ซื่อสัตย์"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ใช้ใจในการทำงาน - ปัญญาทางอารมณ์เป็นรากฐาน",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานของคุณคือความสามารถในการเข้าใจคน การใช้ใจในการทำงาน ลูกค้าและเพื่อนร่วมงานสัมผัสได้ถึงความจริงใจของคุณ พรสวรรค์นี้ใช้ได้ในทุกอาชีพ",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ดูแล, The Lovers = ตัดสินใจ",
+            "wands": "King of Wands = ผู้นำที่มีใจ",
+            "cups": "King of Cups = ผู้นำที่เข้าใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Queen of Pentacles = ดูแลลูกค้า",
+            "court_cards": "Queen of Cups = นักจัดการอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักรากฐานงาน-เงิน คือ 'EQ คือทรัพย์สิน'",
+          "advice_th": "ใช้ปัญญาทางอารมณ์ในการทำงาน เข้าใจลูกค้า เพื่อนร่วมงาน หัวหน้า ความสัมพันธ์ดีนำมาซึ่งโอกาส",
+          "keywords_th": ["EQ", "เข้าใจคน", "ปัญญาอารมณ์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความสามารถซื่อสัตย์กับตัวเองและเลือกตามใจฝังในแกน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานของคุณคือความสามารถซื่อสัตย์กับตัวเอง การฟังหัวใจ การเลือกตามใจ พลังนี้คือพรสวรรค์ ใช้เป็นเข็มทิศชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาใน, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Queen of Pentacles = ดูแลตัว",
+            "court_cards": "Queen ทุกชุด = ปัญญาในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักรากฐานจิตวิญญาณ คือ 'ซื่อสัตย์กับใจ'",
+          "advice_th": "ใช้ความสามารถซื่อสัตย์กับตัวเองในการนำทาง ฝึกฟังหัวใจ ตัดสินใจตามค่านิยม",
+          "keywords_th": ["ซื่อสัตย์", "ฟังใจ", "ค่านิยม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ความเข้าใจว่ากายและใจเชื่อมโยงกันฝังลึก",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานของคุณคือการเข้าใจว่ากายและใจเชื่อมโยงกัน เมื่อใจดี กายดี เมื่อใจเครียด กายแย่ ปัญญานี้ใช้ในการดูแลสุขภาพแบบ holistic",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, The Sun = สุขภาพดี",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = สุขภาพจิตดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแลครบ",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักรากฐานสุขภาพ คือ 'กายและใจเป็นหนึ่ง'",
+          "advice_th": "ดูแลทั้งกายและใจ - ออกกำลังกาย กินดี + ทำสมาธิ ฟังอารมณ์ การละเลยอย่างใดอย่างหนึ่งทำลายสุขภาพ",
+          "keywords_th": ["กายและใจ", "holistic", "เชื่อมโยง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความเชื่อจำกัดเรื่องความรักและการเลือกฝังลึก",
+          "detailed_interpretation_th": "คู่รักกลับหัวในรากฐาน บ่งบอกถึงความเชื่อจำกัดในจิตใต้สำนึก - 'ฉันไม่คู่ควรกับรักดีๆ' 'ฉันต้องเลือกความปลอดภัยมากกว่าใจ' 'ทำตามคนอื่นปลอดภัยกว่า' ความเชื่อเหล่านี้กำหนดผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Swords กลับหัว = วิจารณ์ตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวรากฐาน คือ 'ความเชื่อจำกัด'",
+          "advice_th": "ระบุความเชื่อที่จำกัด - 'ฉันไม่คู่ควร' 'ฉันต้องเลือกตามคนอื่น' ทำงานปลดล็อก คุณคู่ควรกับทุกสิ่งดี",
+          "keywords_th": ["ความเชื่อจำกัด", "ฝังลึก", "ปลดล็อก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "บาดแผลรักเก่าหรือรูปแบบที่ทำร้ายฝังในแกน",
+          "detailed_interpretation_th": "ในรัก รากฐานของคุณมีบาดแผลจากความสัมพันธ์เก่า - ถูกทรยศ ถูกหลอก หรือเห็นพ่อแม่ทะเลาะ ทำให้ดึงดูดคนแบบเดิม รักไม่ลึก หรือกลัวเปิดใจ ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = วงจรซ้ำ, The Moon = บาดแผลซ่อน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ, Three of Swords = แผลใจ",
+            "swords": "Three of Swords = บาดแผล",
+            "pentacles": "Four of Pentacles = ป้องกันใจ",
+            "court_cards": "Knight of Cups กลับหัว = ดึงดูดผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวรากฐานรัก คือ 'รูปแบบรักที่ซ้ำ'",
+          "advice_th": "ระบุรูปแบบความสัมพันธ์ที่ซ้ำ - ดึงดูดคนแบบไหน? ทำไม? ทำงานกับ inner child เพื่อปลดล็อก",
+          "keywords_th": ["รูปแบบรักซ้ำ", "บาดแผล", "ปลดล็อก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความเชื่อว่าต้องเลือกระหว่างเงินกับใจ",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานความเชื่อว่า 'ต้องเลือกเงินหรือใจ ไม่มีทั้งสอง' ทำให้ติดในงานที่ไม่ใช่เพื่อเงิน หรือทำงานที่รักแต่เงินไม่พอ จริงๆ สองอย่างเป็นไปได้พร้อมกัน ต้องเปลี่ยนความเชื่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Two of Swords = เลือกไม่ได้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่เชื่อในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวรากฐานงาน-เงิน คือ 'ทั้งเงินและใจเป็นไปได้'",
+          "advice_th": "ค้นคนที่ทำงานที่รักและรวย - หลักฐานว่าเป็นไปได้ เปลี่ยนความเชื่อ ค่อยๆ ก้าวสู่งานที่ทั้งรักและรวย",
+          "keywords_th": ["เงิน vs ใจ", "เป็นไปได้ทั้งสอง", "ความเชื่อ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่ไว้ใจในความรู้สึกของตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานมีการไม่ไว้ใจในความรู้สึก เคยถูกบอกว่าความรู้สึก 'ผิด' 'อ่อนแอ' 'ไม่จริง' ทำให้กดความรู้สึก ใช้สมองมากกว่าใจ ต้องเรียนรู้ฟังความรู้สึกอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในสมอง, The Moon = ปฏิเสธอารมณ์",
+            "wands": "Wands ข้างเคียง = พลังถูกใช้",
+            "cups": "Four of Cups = ปฏิเสธอารมณ์",
+            "swords": "Queen of Swords กลับหัว = วิจารณ์ความรู้สึก",
+            "pentacles": "Four of Pentacles = ติดในตรรกะ",
+            "court_cards": "Knight of Swords = ตรรกะอย่างเดียว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวรากฐานจิตวิญญาณ คือ 'ฟังความรู้สึก'",
+          "advice_th": "ฝึกการรู้สึก - ทำสมาธิ จด journal อารมณ์ ความรู้สึกไม่ใช่อ่อนแอ เป็นปัญญาที่ลึก",
+          "keywords_th": ["ไม่ไว้ใจอารมณ์", "กดความรู้สึก", "ฝึกรู้สึก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ละเลยความเชื่อมโยงระหว่างอารมณ์กับสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานปัญหาคือการละเลยว่าอารมณ์ส่งผลต่อร่างกาย คุณอาจทำตามแผนสุขภาพแต่ไม่จัดการความเครียด ความเศร้า ความโกรธ ทำให้ร่างกายไม่ดีขึ้น ต้องดูแลใจด้วย",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = อารมณ์ทำลาย, The Devil = ติดในนิสัย",
+            "wands": "Wands ข้างเคียง = พลังหมด",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแลใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวรากฐานสุขภาพ คือ 'ใจส่งผลต่อกาย'",
+          "advice_th": "ดูแลสุขภาพจิตเท่ากับสุขภาพกาย - therapy สมาธิ การพักผ่อน ความสัมพันธ์ที่ดี",
+          "keywords_th": ["ละเลยใจ", "อารมณ์ส่งผล", "ดูแลครบ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ฟังหัวใจและตัดสินใจตามค่านิยมจริง",
+          "detailed_interpretation_th": "คำแนะนำจากคู่รักหัวตั้ง: ฟังหัวใจ ตัดสินใจตามที่ใจรู้ ค่านิยมที่สำคัญที่สุดของคุณคือเข็มทิศ ไม่ต้องตามคนอื่น ไม่ต้องเลือกที่ปลอดภัยที่สุด เลือกที่ใช่",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ฟังใจ, The Star = ตามแสง",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Ace of Cups = ตามใจ",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Cups = ปัญญาทางใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักคำแนะนำ คือ 'ฟังหัวใจ'",
+          "advice_th": "เมื่อต้องตัดสินใจ นั่งเงียบ ถามใจ คำตอบมักอยู่ที่นั่น ไม่ใช่ที่สมองหรือคนอื่น",
+          "keywords_th": ["ฟังหัวใจ", "ค่านิยม", "ตัดสินใจจริง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เปิดใจรับความรักและทุ่มเทกับความสัมพันธ์",
+          "detailed_interpretation_th": "คำแนะนำในรัก: เปิดใจรับ ทุ่มเทเต็มที่ ความรักที่ดีต้องการการให้และรับสมดุล อย่ากลัวการเปิดใจเพราะกลัวเจ็บ ความรักแท้คุ้มค่ากับความเสี่ยง",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักงอกงาม, The Star = ความหวัง",
+            "wands": "Knight of Wands = กล้ารัก",
+            "cups": "Ace of Cups = เปิดใจ, Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = สร้างครอบครัว",
+            "court_cards": "King of Cups = นักรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักคำแนะนำในรัก คือ 'เปิดใจรับ'",
+          "advice_th": "ในความสัมพันธ์ทุ่มเทเต็มที่ ลงทุนเวลา ใส่ใจ บอกความรู้สึก แสดงความรัก ความรักไม่ใช่แค่ความรู้สึก แต่เป็นการกระทำ",
+          "keywords_th": ["เปิดใจ", "ทุ่มเท", "แสดงรัก"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เลือกอาชีพที่สอดคล้องกับใจ - งานที่รักจะให้ผลตอบแทน",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: เลือกอาชีพที่ตามใจ การทำงานที่รักทำให้คุณเก่งและทุ่มเทมากกว่า ความสำเร็จและเงินจะตามมา ไม่ใช่ตรงข้าม",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Sun = สำเร็จ",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักคำแนะนำงาน-เงิน คือ 'งานที่รักให้ผล'",
+          "advice_th": "หา intersection ระหว่างทักษะ ความรัก และสิ่งที่ตลาดต้องการ - นั่นคือ sweet spot ของอาชีพ ค่อยๆ ก้าวไปทางนั้น",
+          "keywords_th": ["งานที่รัก", "ทักษะ", "เลือกใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ใช้ความซื่อสัตย์กับตัวเองเป็นเข็มทิศชีวิต",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ซื่อสัตย์กับตัวเอง ฟังหัวใจ ตัดสินใจตามค่านิยม การเป็นจริงสำคัญกว่าการดูดี ชีวิตที่จริงใจคือชีวิตที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = ตามแสง",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Queen of Pentacles = ดูแลตัว",
+            "court_cards": "Queen of Cups = ปัญญาในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักคำแนะนำการเติบโต คือ 'ซื่อสัตย์'",
+          "advice_th": "ฝึกซื่อสัตย์กับความรู้สึก - บอกตัวเองความจริง บอกคนอื่นความจริง การจริงใจคือพลัง",
+          "keywords_th": ["ซื่อสัตย์", "ฟังใจ", "จริงใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ดูแลกายและใจในแบบที่สอดคล้องกับตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ดูแลทั้งกายและใจ - กินอาหารที่ทำให้รู้สึกดี ออกกำลังกายที่สนุก พักผ่อนเพียงพอ จัดการความเครียด สร้างสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, The Sun = สดใส",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแลครบ",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักคำแนะนำสุขภาพ คือ 'สมดุลทั้งหมด'",
+          "advice_th": "อย่าทำสุขภาพแบบบังคับ เลือกสิ่งที่ทำได้สนุกและยั่งยืน ฟังร่างกาย สมดุลคือกุญแจ",
+          "keywords_th": ["สมดุล", "ฟังร่างกาย", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หยุดให้คนอื่นตัดสินใจแทน - กลับมาฟังใจตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำคู่รักกลับหัว: ถ้าคุณกำลังตัดสินใจตามคนอื่น หยุด ฟังหัวใจ คุณคือคนที่ต้องอยู่กับผลของการตัดสินใจ ฟังตัวเองให้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาภายใน, The Hermit = อยู่คนเดียว",
+            "wands": "Wands ข้างเคียง = พลังตัวเอง",
+            "cups": "Ace of Cups = ฟังใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Queen of Pentacles = ดูแลตัว",
+            "court_cards": "Queen ทุกชุด = ปัญญาในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวคำแนะนำ คือ 'หยุดถามคนอื่น'",
+          "advice_th": "ปิดมือถือ ออกจากสังคม นั่งคนเดียว ถามตัวเอง คำตอบอยู่ในใจ ไม่ใช่ใน chatroom",
+          "keywords_th": ["หยุดถามคน", "ฟังตัวเอง", "ตัดสินใจเอง"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หยุดยอมรับความสัมพันธ์ที่ไม่ดีและกล้าออก",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ถ้าความสัมพันธ์ทำให้คุณไม่เป็นตัวเอง หยุด ความรักที่ดีไม่ทำให้คุณเล็ก ถ้าต้องเปลี่ยนตัวเองมากเพื่อให้คู่พอใจ นั่นไม่ใช่ความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = สัมพันธ์ทำลาย",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Knight of Swords = กล้าออก"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวคำแนะนำในรัก คือ 'ออกถ้าไม่ใช่'",
+          "advice_th": "ความรักที่ดีไม่ทำให้คุณรู้สึกเล็ก ถ้าต้องเสียสละตัวตน ออก คุณคู่ควรกับความรักที่ทำให้เป็นตัวเอง",
+          "keywords_th": ["ออกจากความสัมพันธ์", "เลือกตัวเอง", "ไม่ยอม"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "หยุดทำงานที่ไม่ใช่เพื่อความคาดหวังคนอื่น",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ถ้าทำงานปัจจุบันเพราะพ่อแม่อยากให้ หรือเพราะเงินดี แต่ใจไม่รัก หยุด ชีวิตของคุณคือของคุณ ตัดสินใจตามใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มใหม่, The Magician = ใช้ทักษะ",
+            "wands": "Ace of Wands = พลังเริ่ม",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Page of Pentacles = ทักษะใหม่",
+            "court_cards": "Knight of Wands = กล้าเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวคำแนะนำงาน-เงิน คือ 'ชีวิตของคุณ'",
+          "advice_th": "ทำตามใจในงาน แม้พ่อแม่ไม่เห็นด้วย ชีวิตของคุณ คุณเลือก พวกเขาไม่ต้องอยู่กับผล - คุณต้อง",
+          "keywords_th": ["ทำตามใจ", "ไม่ตามคนอื่น", "เลือก"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หยุดเปรียบเทียบและกลับมาเป็นตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: หยุดเปรียบเทียบกับคนอื่น ทุกคนมีเส้นทางของตัวเอง การเติบโตของคุณคือของคุณ ไม่ต้องเหมือนใคร ไม่ต้องเร็วเท่าใคร",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ค้นหาเอง, The Star = แสงของตัว",
+            "wands": "Wands ข้างเคียง = พลังของตัว",
+            "cups": "Queen of Cups = ปัญญา",
+            "swords": "Queen of Swords = ตัดอารมณ์เปรียบเทียบ",
+            "pentacles": "Knight of Pentacles = ไปทีละก้าว",
+            "court_cards": "Queen ทุกชุด = ปัญญาตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวคำแนะนำการเติบโต คือ 'เส้นทางตัว'",
+          "advice_th": "ลบ social media สักช่วง โฟกัสที่ตัวเอง เปรียบเทียบกับเวอร์ชั่นเดิมของตัวเอง ไม่ใช่กับคนอื่น",
+          "keywords_th": ["หยุดเปรียบเทียบ", "เส้นทางตัว", "เป็นตัวเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หยุดทำตามกระแสและฟังร่างกายตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: หยุดทำ diet ตามกระแส หยุดออกกำลังกายแบบที่ influencer บอก ฟังร่างกายของคุณ ทุกคนต่างกัน สิ่งที่ดีสำหรับคนอื่นอาจไม่ดีสำหรับคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ฟังร่างกาย, The Star = ฟื้นฟู",
+            "wands": "Wands ข้างเคียง = พลังของตัว",
+            "cups": "Queen of Cups = ฟังอารมณ์",
+            "swords": "Ace of Swords = วินิจฉัยเอง",
+            "pentacles": "Queen of Pentacles = ดูแลแบบตัว",
+            "court_cards": "Queen of Pentacles = ผู้รู้ร่างกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวคำแนะนำสุขภาพ คือ 'ฟังร่างกายตัว'",
+          "advice_th": "ทดลองและสังเกต บันทึกว่าอาหารไหนทำให้รู้สึกดี กิจกรรมไหนสนุก เลือกสิ่งที่เหมาะกับคุณ ไม่ใช่กระแส",
+          "keywords_th": ["ไม่ตามกระแส", "ฟังร่างกาย", "เฉพาะตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างสนับสนุนการตัดสินใจของคุณ",
+          "detailed_interpretation_th": "คู่รักหัวตั้งในภายนอก บ่งบอกว่าคนรอบข้างสนับสนุนคุณ พ่อแม่ เพื่อน คู่รัก เข้าใจและช่วย สภาพแวดล้อมเอื้อต่อความรัก การตัดสินใจ การเติบโต ใช้พลังของชุมชน",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ครอบครัว, The Sun = ความสุข",
+            "wands": "Wands ข้างเคียง = พลังร่วม",
+            "cups": "Ten of Cups = ครอบครัว, Three of Cups = เพื่อนดี",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่งคั่ง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักภายนอก คือ 'คนรอบข้างสนับสนุน'",
+          "advice_th": "ใช้พลังของคนรอบข้าง บอกความฝันให้ครอบครัวและเพื่อนรู้ พวกเขาอาจช่วยได้มากกว่าที่คิด",
+          "keywords_th": ["สนับสนุน", "ครอบครัวดี", "เพื่อนช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่รักดูแลคุณดีหรือคนใกล้ตัวช่วยให้พบรัก",
+          "detailed_interpretation_th": "ในรัก คุณอยู่ในสภาพแวดล้อมที่ดี - คู่รักดูแลคุณ ครอบครัวสนับสนุน เพื่อนช่วยจับคู่ ความรักของคุณได้รับการยอมรับและช่วยเหลือจากคนรอบข้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers เสริม, The Empress = รักงอกงาม",
+            "wands": "Knight of Wands = คนรักหลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่งคั่ง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักภายนอกรัก คือ 'คนรอบข้างช่วยให้รักงอกงาม'",
+          "advice_th": "รับความช่วยเหลือจากคนรอบข้าง - คำแนะนำจากเพื่อน การจัดงานของครอบครัว ความรักของคุณได้รับการสนับสนุน",
+          "keywords_th": ["คู่ดูแล", "ครอบครัวสนับสนุน", "เพื่อนช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "พันธมิตรหรือเพื่อนร่วมงานที่ดีช่วยให้ประสบความสำเร็จ",
+          "detailed_interpretation_th": "ในงาน-เงิน มีพันธมิตร เพื่อนร่วมงาน หรือลูกค้าที่เข้าใจคุณ พวกเขาช่วยให้คุณสำเร็จ การร่วมมือสร้างผลลัพธ์มากกว่าทำงานคนเดียว",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Sun = สำเร็จ",
+            "wands": "Three of Wands = ขยาย",
+            "cups": "Three of Cups = ทีม",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Three of Pentacles = ทีม, Ten of Pentacles = สำเร็จร่วม",
+            "court_cards": "King of Cups = หัวหน้าที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักภายนอกงาน-เงิน คือ 'พันธมิตรช่วย'",
+          "advice_th": "ลงทุนความสัมพันธ์ในวงการ networking สร้างทีมที่เก่งร่วมกัน คุณไม่ต้องทำคนเดียว",
+          "keywords_th": ["พันธมิตร", "ทีม", "การร่วมมือ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ชุมชนหรือเพื่อนที่สนับสนุนการเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ มีชุมชนหรือเพื่อนที่อยู่ในเส้นทางคล้ายกัน พวกเขาเข้าใจ สนับสนุน เรียนรู้ร่วม การมีเพื่อนเส้นทางทำให้การเดินทางสนุก",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ชุมชน, The Star = แรงบันดาลใจ",
+            "wands": "Wands ข้างเคียง = พลังร่วม",
+            "cups": "Three of Cups = เพื่อนแท้",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "Queen ทุกชุด = ครูในชุมชน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักภายนอกจิตวิญญาณ คือ 'เพื่อนเส้นทาง'",
+          "advice_th": "หาเพื่อนที่สนใจการพัฒนาตัวเองเหมือนกัน เข้ากลุ่ม community พลังร่วมทำให้ก้าวหน้าเร็วขึ้น",
+          "keywords_th": ["ชุมชน", "เพื่อนเส้นทาง", "พลังร่วม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "คู่รักหรือเพื่อนช่วยให้ดูแลสุขภาพได้ดีขึ้น",
+          "detailed_interpretation_th": "ในสุขภาพ มีคนรอบข้างที่ช่วยให้ดูแลตัวเอง - คู่รักที่ออกกำลังกายด้วยกัน เพื่อนที่ชวนทำกิจกรรม ครอบครัวที่ทำอาหารดี การมีกลุ่มทำให้สม่ำเสมอ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Three of Cups = สังสรรค์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ครอบครัวสุขภาพดี",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักภายนอกสุขภาพ คือ 'กลุ่มสุขภาพ'",
+          "advice_th": "ชวนคู่รักหรือเพื่อนทำกิจกรรมสุขภาพร่วมกัน - เดิน โยคะ ทำอาหาร การมีคู่ทำให้สม่ำเสมอ",
+          "keywords_th": ["คู่ออกกำลังกาย", "เพื่อนสุขภาพ", "สม่ำเสมอ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างขัดขวางหรือไม่เข้าใจการเลือกของคุณ",
+          "detailed_interpretation_th": "คู่รักกลับหัวในภายนอก เตือนว่ามีคนรอบข้างที่ไม่สนับสนุน - พ่อแม่ที่ไม่เห็นด้วย เพื่อนที่อิจฉา คู่ที่ขัดขวาง สังคมที่ตัดสิน คุณต้องเลือกระหว่างทำตามใจหรือตามคำคาดหวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความคาดหวัง, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ, Three of Cups กลับหัว = เพื่อนทรยศ",
+            "swords": "Five of Swords = ทะเลาะ",
+            "pentacles": "Four of Pentacles = ครอบครัวหวง",
+            "court_cards": "King of Swords กลับหัว = ผู้ใหญ่ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวภายนอก คือ 'คนรอบข้างไม่เข้าใจ'",
+          "advice_th": "เลือกตามใจตัวเอง แม้คนรอบข้างไม่เข้าใจ ชีวิตของคุณ พวกเขาไม่ต้องอยู่กับผล - คุณต้อง",
+          "keywords_th": ["คนไม่สนับสนุน", "เลือกตัวเอง", "ไม่ฟังคนอื่น"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวหรือเพื่อนแทรกแซงความสัมพันธ์",
+          "detailed_interpretation_th": "ในรัก ระวังครอบครัวที่ไม่เห็นด้วยกับคู่ของคุณ เพื่อนที่อิจฉา ที่สามที่เข้ามา อิทธิพลภายนอกที่ไม่ดีต่อความสัมพันธ์ ปกป้องความรักของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ทำลาย, The Tower = ระเบิด",
+            "wands": "Three of Wands กลับหัว = คนที่สาม",
+            "cups": "Three of Cups กลับหัว = เพื่อนทรยศ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ครอบครัวหวง",
+            "court_cards": "Queen of Swords กลับหัว = คนที่สาม"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวภายนอกรัก คือ 'คนแทรกแซง'",
+          "advice_th": "ปกป้องความสัมพันธ์ของคุณจากการแทรกแซง คุยกับคู่ ตั้งขีดจำกัดกับครอบครัวและเพื่อน คู่เป็นทีมเดียวกัน",
+          "keywords_th": ["คนแทรกแซง", "ปกป้องรัก", "ขีดจำกัด"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เพื่อนร่วมงานที่อิจฉาหรือพันธมิตรที่ไม่ไว้ใจได้",
+          "detailed_interpretation_th": "ในงาน-เงิน ระวังเพื่อนร่วมงานที่อิจฉา หัวหน้าที่ไม่ยุติธรรม พันธมิตรที่ใช้คุณ การร่วมมือที่ไม่สมดุล ต้องตรวจสอบความสัมพันธ์ในงาน",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ความอยุติธรรม, The Devil = สภาพแวดล้อมพิษ",
+            "wands": "Five of Wands = แข่งขันไม่ดี",
+            "cups": "Three of Cups กลับหัว = เพื่อนทรยศ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = ทรยศ",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King กลับหัว = หัวหน้าไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวภายนอกงาน-เงิน คือ 'ระวังคนรอบข้าง'",
+          "advice_th": "เก็บแผนสำคัญไว้กับคนที่ไว้ใจจริงๆ บันทึกหลักฐานทุกอย่าง ตรวจสอบพันธมิตรก่อนร่วมมือ",
+          "keywords_th": ["คนอิจฉา", "พันธมิตรไม่ไว้ใจ", "ระวัง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "คนรอบข้างไม่เข้าใจการเติบโตและดึงคุณกลับ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คนรอบข้างอาจไม่เข้าใจการเปลี่ยนแปลงของคุณ พ่อแม่บอกว่า 'แปลก' เพื่อนบอกว่า 'เปลี่ยนไป' คู่ครอบไม่ตามทัน คุณอาจต้องเลือกระหว่างเติบโตหรือทำตามที่คนคุ้นเคย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความคาดหวัง, The Hermit = อยู่คนเดียว",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ฝึกตัว",
+            "court_cards": "Page กลับหัว = คนรอบข้างไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวภายนอกจิตวิญญาณ คือ 'คนรอบข้างไม่โต'",
+          "advice_th": "เติบโตในแบบของคุณ คนรอบข้างที่รักจริงจะตามมา คนที่ไม่ตาม อาจไม่ใช่คนของคุณอีกแล้ว นี่เป็นธรรมชาติ",
+          "keywords_th": ["ไม่เข้าใจการเติบโต", "เปลี่ยนวงเพื่อน", "เป็นตัวเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "คนรอบข้างทำให้ดูแลสุขภาพยาก - ครอบครัวที่กินไม่ดี เพื่อนชวนดื่ม",
+          "detailed_interpretation_th": "ในสุขภาพ สภาพแวดล้อมไม่เอื้อ - ครอบครัวที่กินอาหารหนัก เพื่อนที่ชวนดื่มและสังสรรค์มาก คู่ที่ไม่สนับสนุน คุณต้องตัดสินใจระหว่างเข้ากับสังคมหรือสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = สุขภาพจะพัง",
+            "wands": "Knight of Wands กลับหัว = ตามแรง",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวภายนอกสุขภาพ คือ 'สภาพแวดล้อมไม่ดี'",
+          "advice_th": "เปลี่ยนสภาพแวดล้อม - กลุ่มเพื่อนที่สุขภาพดี อาหารที่บ้าน คุยกับคู่เรื่องสุขภาพ เปลี่ยนแวดล้อมเปลี่ยนผลลัพธ์",
+          "keywords_th": ["สภาพแวดล้อมไม่ดี", "เปลี่ยนวงเพื่อน", "ตัดสินใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes",
+      "position_name_th": "ความหวัง",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังพบรักแท้และตัดสินใจที่จะเปลี่ยนชีวิต",
+          "detailed_interpretation_th": "คู่รักหัวตั้งในความหวัง สะท้อนความปรารถนา - หวังพบรักที่ลึกซึ้ง หวังตัดสินใจสำคัญที่จะเปลี่ยนชีวิต หวังเลือกตามใจและสำเร็จ ความหวังนี้สวยงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รัก, The Star = ความหวัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Two of Cups = soul mate",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักความหวัง คือ 'รักและการเลือกที่ถูกต้อง'",
+          "advice_th": "เก็บความหวังนี้ไว้ ใช้เป็นพลังขับเคลื่อน เปิดใจรับโอกาส",
+          "keywords_th": ["รักแท้", "เปลี่ยนชีวิต", "เลือกถูก"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังพบ soul mate และสร้างความสัมพันธ์ที่ยั่งยืน",
+          "detailed_interpretation_th": "ความหวังในรักคือการพบ soul mate คนที่เข้ากันได้ลึกซึ้ง ทั้งจิตวิญญาณ อารมณ์ ค่านิยม คุณอยากได้รักที่ยั่งยืน ความหวังนี้เป็นจริงได้",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักงอกงาม, The Hierophant = แต่งงาน",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่เข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักความหวังรัก คือ 'soul mate'",
+          "advice_th": "เก็บความหวังเรื่อง soul mate ไว้ พัฒนาตัวเองให้เป็นคนที่ soul mate ต้องการ ดึงดูดด้วยตัวจริง",
+          "keywords_th": ["soul mate", "รักยั่งยืน", "เปิดใจ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังอาชีพที่รักและสร้างรายได้ดี",
+          "detailed_interpretation_th": "ในงาน-เงิน ความหวังคืออาชีพที่ตามใจและให้รายได้ดี ทำงานที่รัก เก่งในสิ่งที่ทำ ได้รับการยอมรับ และมีอิสรภาพการเงิน ความหวังนี้เป็นจริงได้",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Sun = สำเร็จ",
+            "wands": "King of Wands = ผู้ประกอบการ",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักความหวังงาน-เงิน คือ 'ทั้งรักและรวย'",
+          "advice_th": "ทั้งใจและเงินเป็นไปได้พร้อมกัน ค้นหาจุดที่ทักษะ ความรัก และตลาดมาเจอกัน",
+          "keywords_th": ["อาชีพที่รัก", "รวยและรัก", "อิสรภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเป็นคนที่กล้าเลือกตามใจและซื่อสัตย์กับตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความหวังคือการเป็นคนที่กล้าเลือกตามใจ ไม่ตามคาดหวัง ความซื่อสัตย์กับตัวเอง การใช้ชีวิตที่จริงใจ ความหวังนี้สำคัญและเป็นจริงได้",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาใน, The Star = บรรลุ",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Queen of Pentacles = ดูแลตัว",
+            "court_cards": "Queen of Cups = ปัญญาในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักความหวังจิตวิญญาณ คือ 'ซื่อสัตย์กับตัว'",
+          "advice_th": "ฝึกซื่อสัตย์กับตัวเองทุกวัน บอกความรู้สึกจริง เลือกตามใจ ความหวังจะเป็นจริง",
+          "keywords_th": ["ซื่อสัตย์", "กล้าเลือก", "เป็นตัวเอง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพที่สมดุลทั้งกายและใจ",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือสุขภาพที่สมดุลทั้งกายและใจ - ร่างกายแข็งแรง อารมณ์ดี ความสัมพันธ์ดี การงานสมดุล ไม่ใช่แค่ฟิตเนส แต่เป็นชีวิตที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักความหวังสุขภาพ คือ 'สมดุลทั้งหมด'",
+          "advice_th": "ดูแลทั้งกายและใจ - กิน นอน เคลื่อนไหว + ทำสมาธิ ดูแลความสัมพันธ์ จัดการความเครียด",
+          "keywords_th": ["สุขภาพสมดุล", "holistic", "ชีวิตที่ดี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวการตัดสินใจหรือกลัวที่จะรักลึก",
+          "detailed_interpretation_th": "คู่รักกลับหัวในความหวัง บ่งบอกว่ามีความกลัวซ่อนอยู่ - กลัวตัดสินใจผิด กลัวรักแล้วเจ็บ กลัวเลือกแล้วเสียใจ ความกลัวทำให้คุณไม่กล้าก้าว ต้องทำงานกับใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ไม่กล้า",
+            "swords": "Eight of Swords = ขัง, Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Page กลับหัว = ไม่กล้าโต"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวความหวัง คือ 'กลัวการเลือก'",
+          "advice_th": "ระบุความกลัวเฉพาะเจาะจง ทำงานทีละข้อ การไม่เลือกคือการเลือกที่แย่กว่า ก้าวออกมา",
+          "keywords_th": ["กลัวเลือก", "กลัวเจ็บ", "ทำงานกับใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวความรักหรือไม่เชื่อว่าจะพบรักแท้",
+          "detailed_interpretation_th": "ความกลัวลึกๆ ในรัก - กลัวเปิดใจแล้วเจ็บ กลัวรักแล้วเลิก ไม่เชื่อว่ามี soul mate ความเชื่อ 'รักแท้ไม่มีจริง' ขังคุณจากความรัก ต้องเปิดใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัวรัก, The Devil = ติดในความเชื่อ",
+            "wands": "Five of Cups = บาดแผล",
+            "cups": "Five of Cups = เสียใจเก่า",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกันใจ",
+            "court_cards": "Queen of Swords กลับหัว = ขมขื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวความหวังรัก คือ 'กลัวเปิดใจ'",
+          "advice_th": "ทำงานกับบาดแผลรัก เปิดใจช้าๆ รักแท้มีจริงแต่ต้องเชื่อก่อนถึงเห็น",
+          "keywords_th": ["กลัวรัก", "บาดแผล", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวว่างานที่รักไม่ทำให้รวย",
+          "detailed_interpretation_th": "ในงาน-เงิน ความเชื่อ 'งานที่รักไม่รวย' 'ต้องเลือกระหว่างใจกับเงิน' ขัดขวางการเปลี่ยน ความกลัวความไม่มั่นคงทำให้ติดในงานที่ไม่ใช่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = กลัวเสียเงินเดือน",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวความหวังงาน-เงิน คือ 'ใจ vs เงินเป็นความเชื่อ'",
+          "advice_th": "ค้นคนที่ทั้งรวยและทำงานที่รัก - หลักฐานว่าเป็นไปได้ เปลี่ยนความเชื่อ ค่อยๆ ก้าว",
+          "keywords_th": ["ความเชื่อจำกัด", "กลัวเสี่ยง", "เป็นไปได้"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวที่จะเป็นตัวเองจริงเพราะกลัวคนไม่ยอมรับ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความกลัวการเป็นตัวเองจริง กลัวคนจะไม่รัก กลัวสูญเสียความสัมพันธ์ ความกลัวขังคุณในบทบาทที่ไม่ใช่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในบทบาท, The Moon = กลัว",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ไม่ฟังใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Queen of Swords กลับหัว = วิจารณ์ตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวความหวังจิตวิญญาณ คือ 'กลัวเป็นตัวเอง'",
+          "advice_th": "คนที่รักคุณจริงจะรักตัวจริง คนที่รักแค่เปลือกไม่ใช่คนของคุณ กล้าเป็นตัวเอง",
+          "keywords_th": ["กลัวเป็นตัว", "กลัวคนไม่ยอม", "กล้า"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ไม่เชื่อว่าจะมีสุขภาพดีและความสุขในชีวิตได้",
+          "detailed_interpretation_th": "ในสุขภาพ ความเชื่อ 'สุขภาพดีไม่มีจริง' 'ฉันต้องเสียสละความสุขเพื่อสุขภาพ' ขัดขวางการเริ่มต้น สุขภาพและความสุขเป็นไปได้พร้อมกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ลวงตา, The Devil = ติดในความเชื่อ",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight กลับหัว = ขาดแรงจูงใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวความหวังสุขภาพ คือ 'สุขภาพ + ความสุข = ได้'",
+          "advice_th": "หาวิธีดูแลสุขภาพที่สนุกและทำได้ - การออกกำลังกายที่ชอบ อาหารที่ทั้งดีและอร่อย",
+          "keywords_th": ["สุขภาพไม่ใช่ทรมาน", "สนุกได้", "เริ่ม"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือชีวิตที่สอดคล้องกับใจและความรักที่ลึกซึ้ง",
+          "detailed_interpretation_th": "คู่รักหัวตั้งในผลลัพธ์ บ่งบอกว่าถ้าดำเนินต่อ ผลลัพธ์คือชีวิตที่สอดคล้องกับใจและค่านิยม คุณจะมี soul mate ที่เข้ากันได้ อาชีพที่รัก ความสุขที่แท้ การเลือกที่ถูกต้องนำมาซึ่งผลลัพธ์ที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Sun = ความสุข, The Star = ความหวังสำเร็จ",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Ten of Cups = ครอบครัว, Two of Cups = soul mate",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Cups = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักผลลัพธ์ คือ 'ชีวิตที่สอดคล้อง'",
+          "advice_th": "ดำเนินตามใจต่อ ตัดสินใจที่สอดคล้องกับค่านิยม ผลลัพธ์ที่รออยู่งดงาม",
+          "keywords_th": ["ชีวิตสอดคล้อง", "รักลึก", "สำเร็จ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือพบ soul mate และสร้างครอบครัวที่อบอุ่น",
+          "detailed_interpretation_th": "ในรัก ถ้าดำเนินต่อ จะพบ soul mate คนที่เข้ากันได้ในระดับลึก หรือถ้ามีคู่แล้ว ความสัมพันธ์จะลึกซึ้งขึ้นและนำไปสู่การแต่งงานหรือครอบครัว ผลลัพธ์งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักงอกงาม, The Hierophant = แต่งงาน",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัวสมบูรณ์",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักผลลัพธ์รัก คือ 'soul mate + ครอบครัว'",
+          "advice_th": "ลงทุนในความสัมพันธ์ ทุ่มเทเต็มที่ คุณจะได้รักที่งดงาม",
+          "keywords_th": ["soul mate", "แต่งงาน", "ครอบครัว"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คืออาชีพที่รักและประสบความสำเร็จทางการเงิน",
+          "detailed_interpretation_th": "เส้นทางนี้นำไปสู่อาชีพที่รัก รายได้ดี และความสำเร็จ คุณจะรู้สึกว่างานมีความหมาย ลูกค้ารักคุณ เงินมาเพราะคุณเก่งและรักงาน ผลลัพธ์คือทั้งใจและเงิน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Sun = สำเร็จ, The World = บรรลุ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักผลลัพธ์งาน-เงิน คือ 'รักและรวย'",
+          "advice_th": "ดำเนินอาชีพที่รักต่อ พัฒนาทักษะ ลงทุน ความสำเร็จที่ตามมายั่งยืนเพราะมาจากใจ",
+          "keywords_th": ["งานที่รัก", "รวย", "บรรลุ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการเป็นคนที่ซื่อสัตย์กับตัวเองอย่างเต็มที่",
+          "detailed_interpretation_th": "เส้นทางจิตวิญญาณนี้นำไปสู่การเป็นคนที่จริงใจ ซื่อสัตย์กับตัวเอง กล้าเลือก กล้ารัก กล้าเป็นตัวเอง การเดินทางนี้เปลี่ยนชีวิตจากภายในออกนอก",
+          "adjacent_influences": {
+            "major_arcana": "The Star = บรรลุ, The World = สมบูรณ์, The Sun = สว่าง",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Queen of Pentacles = ดูแลตัว",
+            "court_cards": "Queen of Cups = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักผลลัพธ์จิตวิญญาณ คือ 'เป็นตัวเองอย่างเต็มที่'",
+          "advice_th": "ดำเนินการเป็นตัวเอง การเป็นจริงคือพลังสูงสุด คุณจะเป็นแรงบันดาลใจให้คนอื่น",
+          "keywords_th": ["เป็นตัวเอง", "ซื่อสัตย์", "บรรลุ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพสมดุลทั้งกาย ใจ และความสัมพันธ์",
+          "detailed_interpretation_th": "ในสุขภาพ เส้นทางนี้นำไปสู่ความสมดุลครบทุกมิติ - ร่างกายแข็งแรง อารมณ์ดี ความสัมพันธ์ดี การงานสมดุล คุณจะรู้สึกดีและมีพลังทำสิ่งที่รัก",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, The Star = ฟื้นฟู, The World = สมบูรณ์",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักผลลัพธ์สุขภาพ คือ 'สมดุลครบ'",
+          "advice_th": "ดำเนินการดูแลทั้งกายและใจต่อ ผลลัพธ์ระยะยาวคือชีวิตที่ดีและสุขภาพยั่งยืน",
+          "keywords_th": ["สมดุลครบ", "สุขภาพดี", "ความสุข"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์ไม่ดีถ้ายังคงตัดสินใจตามคนอื่นหรือกลัวรัก",
+          "detailed_interpretation_th": "คู่รักกลับหัวในผลลัพธ์ เตือนว่าถ้ายังคงตัดสินใจตามคนอื่น กลัวรัก หรือเลือกไม่ตามใจ ผลลัพธ์คือชีวิตที่ไม่เป็นของคุณ ความเสียใจที่ไม่กล้าเลือก ยังมีเวลาเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Tower = จะระเบิด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ, Four of Cups = ไม่พอใจ",
+            "swords": "Three of Swords = แผลใจ, Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Swords กลับหัว = ขมขื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวผลลัพธ์ คือ 'เปลี่ยนก่อนสาย'",
+          "advice_th": "ทบทวนการตัดสินใจปัจจุบัน - ทำตามใจหรือคนอื่น? ปรับให้สอดคล้องกับใจ ก่อนผลลัพธ์ที่ไม่ใช่จะมา",
+          "keywords_th": ["เปลี่ยนก่อนสาย", "ตามใจ", "ทบทวน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะจบหรือไม่ลงตัวถ้าไม่เปลี่ยน",
+          "detailed_interpretation_th": "ในรัก ผลลัพธ์ไม่ดีถ้ายังคงอยู่ในความสัมพันธ์ที่ไม่ใช่ ไม่กล้าเปิดใจ หรือดึงดูดคนผิดๆ ความเหงาหรือการเลิกราอาจมา ฟังใจให้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = สัมพันธ์ทำลาย",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ, Eight of Cups = ออกจาก",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = คนรักไม่จริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวผลลัพธ์รัก คือ 'เปลี่ยนก่อนพัง'",
+          "advice_th": "ประเมินความสัมพันธ์ตรงๆ ใช่ไหม? ทำให้คุณเป็นตัวเองไหม? ถ้าไม่ ต้องตัดสินใจ การยอมจะนำไปสู่ความเสียใจระยะยาว",
+          "keywords_th": ["สัมพันธ์จะพัง", "ตัดสินใจ", "ฟังใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ติดในอาชีพที่ไม่ใช่ตลอดชีวิตถ้าไม่กล้าเปลี่ยน",
+          "detailed_interpretation_th": "ในงาน-เงิน ผลลัพธ์ไม่ดีถ้ายังคงอยู่ในงานที่ไม่ใช่ ทำต่อไปอีก 10 ปี ก็ยังไม่มีความสุข ความเสียใจที่ไม่กล้าเปลี่ยนคือสิ่งที่หลายคนเสียใจในวัยชรา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในงาน, The Hanged Man = ติดในการรอ",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Eight of Swords = ขัง, Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "Knight กลับหัว = ขาดพลัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวผลลัพธ์งาน-เงิน คือ 'อย่ารอ'",
+          "advice_th": "เริ่มวางแผนเปลี่ยนงานตั้งแต่ตอนนี้ ทักษะใหม่ side hustle network ทุกก้าวสร้างทางออก ก่อนติดไปอีก 10 ปี",
+          "keywords_th": ["ติดในงาน", "อย่ารอ", "วางแผน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สูญเสียตัวตนถ้ายังคงเป็นไปตามที่คนอื่นต้องการ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ผลลัพธ์ไม่ดีถ้ายังคงเป็นไปตามที่พ่อแม่ สังคม คาดหวัง ไม่ใช่ตัวจริง คุณจะรู้สึกว่างเปล่า ไม่รู้จักตัวเอง เปลี่ยนตอนนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในบทบาท, The Moon = สูญตัวตน",
+            "wands": "Wands ข้างเคียง = พลังถูกใช้",
+            "cups": "Four of Cups = ไม่ฟังใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในกรอบ",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวผลลัพธ์จิตวิญญาณ คือ 'รักษาตัวตน'",
+          "advice_th": "กลับมาที่ตัวเอง ระบุว่าอยากเป็นใครจริงๆ เริ่มทำตามใจ การเป็นตัวเองคือชีวิตที่ดีที่สุด",
+          "keywords_th": ["สูญตัวตน", "กลับมา", "เป็นตัวเอง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะแย่ลงถ้ายังคงฝืนหรือละเลย",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์ไม่ดีถ้ายังคงละเลย ฝืน หรือทำตามที่ไม่เหมาะ ความเครียดสะสม นิสัยทำลาย จะส่งผลกระทบในระยะกลาง เปลี่ยนตอนนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = สุขภาพพัง, The Devil = ติดในนิสัย",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: คู่รักกลับหัวผลลัพธ์สุขภาพ คือ 'เปลี่ยนตอนนี้'",
+          "advice_th": "ทบทวนนิสัยสุขภาพ ระบุที่ทำลายและแก้ไข เริ่มดูแลทั้งกายและใจ ก่อนปัญหาเรื้อรัง",
+          "keywords_th": ["สุขภาพแย่ลง", "เปลี่ยน", "ดูแล"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    }
+  }
+}

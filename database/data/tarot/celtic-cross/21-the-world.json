@@ -1,0 +1,1792 @@
+{
+  "card_identifier": {
+    "name_en": "The World",
+    "name_th": "โลก",
+    "number": 21,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความสำเร็จสมบูรณ์และการบรรลุเป้าหมาย",
+          "detailed_interpretation_th": "โลกในปัจจุบัน บอกว่าคุณกำลังอยู่ในช่วงของความสำเร็จสมบูรณ์และการบรรลุเป้าหมาย - วงจรหนึ่งจบลงอย่างงดงาม คุณบรรลุสิ่งที่ตั้งใจ และรู้สึกเติมเต็ม ไพ่ยืนยันว่าคุณได้ผ่านการเดินทางมาครบวงจรและพร้อมเฉลิมฉลองความสำเร็จก่อนเริ่มวงจรใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสุข, Judgement = บรรลุ",
+            "wands": "Ten of Wands = ภารกิจเสร็จ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกปัจจุบัน คือ 'ครบวงจรอย่างงดงาม'",
+          "advice_th": "เฉลิมฉลองความสำเร็จ - คุณบรรลุเป้าหมาย ผ่านการเดินทางครบวงจร พร้อมเริ่มบทใหม่",
+          "keywords_th": ["ความสำเร็จ", "บรรลุเป้า", "เติมเต็ม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักที่สมบูรณ์และเติมเต็ม",
+          "detailed_interpretation_th": "ในความรัก โลกในปัจจุบันชี้ว่าความสัมพันธ์สมบูรณ์และเติมเต็ม - ความรักที่บรรลุความกลมเกลียว การก้าวสู่ขั้นสำคัญ เช่น แต่งงานหรือสร้างครอบครัว หรือความรู้สึกครบถ้วนในความสัมพันธ์ ไพ่ยืนยันว่าคุณอยู่ในความรักที่สมดุลและงดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลองรัก",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกปัจจุบันความรัก คือ 'ความรักที่สมบูรณ์และกลมเกลียว'",
+          "advice_th": "เพลิดเพลินกับความรักที่สมบูรณ์ - ความสัมพันธ์เติมเต็ม อาจมีก้าวสำคัญเช่นแต่งงาน",
+          "keywords_th": ["รักสมบูรณ์", "เติมเต็ม", "กลมเกลียว"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความสำเร็จในอาชีพและการบรรลุเป้าหมายการเงิน",
+          "detailed_interpretation_th": "ในการงาน โลกในปัจจุบันบอกว่าคุณบรรลุความสำเร็จในอาชีพและเป้าหมายการเงิน - โครงการใหญ่สำเร็จ การได้รับการยอมรับสูงสุด การบรรลุความมั่นคงทางการเงิน ไพ่ยืนยันว่าคุณเก็บเกี่ยวผลของการทำงานหนักและพร้อมก้าวสู่ระดับใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกปัจจุบันงาน คือ 'เก็บเกี่ยวผลและก้าวสู่ระดับใหม่'",
+          "advice_th": "เฉลิมฉลองความสำเร็จ - บรรลุเป้าหมาย เก็บเกี่ยวผล พร้อมก้าวสู่ระดับใหม่",
+          "keywords_th": ["ความสำเร็จ", "บรรลุเป้า", "ระดับใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การบรรลุความสมบูรณ์และเข้าใจตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต โลกในปัจจุบันชี้ว่าคุณบรรลุความสมบูรณ์และเข้าใจตัวเองอย่างลึกซึ้ง - การเดินทางภายในมาครบวงจร การบูรณาการทุกด้านของตัวเอง การรู้สึกเป็นหนึ่งเดียวกับชีวิต ไพ่ยืนยันว่าคุณบรรลุระดับการเติบโตที่สำคัญและพร้อมแบ่งปันปัญญากับโลก",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, Judgement = ตื่นรู้",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกปัจจุบันเติบโต คือ 'บูรณาการทุกด้านเป็นหนึ่งเดียว'",
+          "advice_th": "เฉลิมฉลองความสมบูรณ์ - คุณเข้าใจตัวเองลึกซึ้ง บูรณาการทุกด้าน พร้อมแบ่งปันปัญญา",
+          "keywords_th": ["สมบูรณ์", "บูรณาการ", "เป็นหนึ่งเดียว"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพสมบูรณ์และสมดุลทุกด้าน",
+          "detailed_interpretation_th": "ในสุขภาพ โลกในปัจจุบันบอกว่าสุขภาพของคุณสมบูรณ์และสมดุลทุกด้าน - ร่างกายแข็งแรง จิตใจสงบ จิตวิญญาณเชื่อมโยง ไพ่ยืนยันว่าคุณบรรลุสุขภาพแบบองค์รวมที่งดงาม ใช้ช่วงเวลานี้รักษาความสมดุลและเฉลิมฉลองพลังชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลังเต็มเปี่ยม, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกปัจจุบันสุขภาพ คือ 'สุขภาพองค์รวมที่งดงาม'",
+          "advice_th": "เฉลิมฉลองสุขภาพสมบูรณ์ - กาย ใจ จิตสมดุล รักษาความสมดุลนี้และเฉลิมฉลองพลังชีวิต",
+          "keywords_th": ["สุขภาพสมบูรณ์", "สมดุล", "องค์รวม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "วงจรที่ยังไม่จบหรือเป้าหมายที่ยังไม่บรรลุ",
+          "detailed_interpretation_th": "โลกกลับหัวในปัจจุบัน บอกว่าคุณกำลังอยู่ในช่วงที่วงจรยังไม่จบหรือเป้าหมายยังไม่บรรลุ - มีงานที่ยังค้าง ขาดบางสิ่งที่จะทำให้สมบูรณ์ หรือความรู้สึกว่ายังไปไม่ถึง ไพ่หนุนให้คุณทบทวนว่าอะไรขาดหายและทำให้ครบเพื่อปิดวงจร",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวปัจจุบัน คือ 'ทบทวนว่าอะไรขาดเพื่อปิดวงจร'",
+          "advice_th": "ทำให้ครบเพื่อปิดวงจร - มีงานที่ยังค้าง ทบทวนว่าอะไรขาด ทำให้สมบูรณ์",
+          "keywords_th": ["ยังไม่จบ", "ยังไม่บรรลุ", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ที่ยังไม่สมบูรณ์",
+          "detailed_interpretation_th": "ในความรัก โลกกลับหัวชี้ว่าความสัมพันธ์ยังไม่สมบูรณ์ - มีบางสิ่งที่ค้างคา ขาดความกลมเกลียว หรือยังไม่ไปถึงขั้นที่หวัง ไพ่หนุนให้คุณสื่อสารถึงสิ่งที่ขาด ทำงานร่วมกัน และเติมเต็มสิ่งที่ทำให้ความสัมพันธ์สมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ไม่ลงตัว, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = ไม่เข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวปัจจุบันความรัก คือ 'เติมเต็มสิ่งที่ขาด'",
+          "advice_th": "เติมเต็มความสัมพันธ์ - มีสิ่งที่ค้างคา สื่อสารถึงสิ่งที่ขาด ทำงานร่วมกัน",
+          "keywords_th": ["ยังไม่สมบูรณ์", "ค้างคา", "เติมเต็ม"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายอาชีพที่ยังไม่บรรลุเต็มที่",
+          "detailed_interpretation_th": "ในการงาน โลกกลับหัวบอกว่าเป้าหมายอาชีพยังไม่บรรลุเต็มที่ - โครงการที่ยังไม่เสร็จ ความสำเร็จที่ยังไปไม่ถึง หรือความรู้สึกว่ายังขาดบางสิ่ง ไพ่หนุนให้คุณทบทวนว่าอะไรขาด ทุ่มเทอีกนิด และทำให้งานสมบูรณ์ก่อนก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Ten of Swords = หมดแรง",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวปัจจุบันงาน คือ 'ทุ่มเทอีกนิดให้งานสมบูรณ์'",
+          "advice_th": "ทำงานให้สมบูรณ์ - เป้าหมายยังไม่บรรลุ ทบทวนว่าอะไรขาด ทุ่มเทอีกนิด",
+          "keywords_th": ["ยังไม่บรรลุ", "ทุ่มเทอีก", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตที่ยังไม่ครบวงจร",
+          "detailed_interpretation_th": "ในการเติบโต โลกกลับหัวชี้ว่าการเดินทางภายในยังไม่ครบวงจร - มีบทเรียนที่ยังไม่เรียนรู้ ด้านที่ยังไม่บูรณาการ หรือความรู้สึกว่ายังไปไม่ถึง ไพ่หนุนให้คุณอดทนกับกระบวนการ ทำงานกับด้านที่ขาด และเชื่อว่าความสมบูรณ์จะมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Eight of Cups = ต้องไปต่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = สับสน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวปัจจุบันเติบโต คือ 'อดทนกับกระบวนการ'",
+          "advice_th": "อดทนกับการเติบโต - ยังไม่ครบวงจร ทำงานกับด้านที่ขาด ความสมบูรณ์จะมาถึง",
+          "keywords_th": ["ยังไม่ครบ", "บทเรียนค้าง", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพที่ยังไม่สมดุลเต็มที่",
+          "detailed_interpretation_th": "ในสุขภาพ โลกกลับหัวบอกว่าสุขภาพยังไม่สมดุลเต็มที่ - มีด้านที่ยังต้องดูแล ความไม่สมดุลระหว่างกาย ใจ จิต หรือการฟื้นที่ยังไม่สมบูรณ์ ไพ่หนุนให้คุณมองสุขภาพแบบองค์รวม หาด้านที่ขาด และทำงานเพื่อความสมดุลที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = สับสน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวปัจจุบันสุขภาพ คือ 'หาด้านที่ขาดเพื่อสมดุลแท้'",
+          "advice_th": "มองสุขภาพองค์รวม - ยังไม่สมดุลเต็มที่ หาด้านที่ขาด ทำงานเพื่อความสมดุล",
+          "keywords_th": ["ยังไม่สมดุล", "ด้านที่ขาด", "องค์รวม"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการก้าวข้ามเส้นชัยและปิดวงจร",
+          "detailed_interpretation_th": "โลกในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือการก้าวข้ามเส้นชัยและปิดวงจรอย่างสมบูรณ์ - การทำงานให้เสร็จ การปล่อยสิ่งที่จบแล้ว การยอมรับความสำเร็จ อุปสรรคนี้คือการก้าวสุดท้ายที่ต้องการความมุ่งมั่นเพื่อบรรลุ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Judgement = บรรลุ",
+            "wands": "Ten of Wands = ภารกิจสุดท้าย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเอง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอุปสรรค คือ 'ก้าวสุดท้ายสู่เส้นชัย'",
+          "advice_th": "มุ่งมั่นก้าวสุดท้าย - ทำงานให้เสร็จ ปล่อยสิ่งที่จบ ยอมรับความสำเร็จ ปิดวงจร",
+          "keywords_th": ["ก้าวข้ามเส้นชัย", "ปิดวงจร", "มุ่งมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือการก้าวสู่ความสมบูรณ์ในรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการก้าวสู่ความสมบูรณ์ในความรัก - การก้าวสู่ขั้นสำคัญ การยอมผูกมัด การสร้างความกลมเกลียว อุปสรรคนี้คือการก้าวที่ต้องการความกล้าและความมุ่งมั่นเพื่อความรักที่สมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอุปสรรคความรัก คือ 'กล้าก้าวสู่ความสมบูรณ์'",
+          "advice_th": "กล้าก้าวสู่ความสมบูรณ์ - ก้าวสู่ขั้นสำคัญ ยอมผูกมัด สร้างความกลมเกลียว",
+          "keywords_th": ["ก้าวสู่สมบูรณ์", "ผูกมัด", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือการบรรลุเป้าหมายสุดท้าย",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการบรรลุเป้าหมายสุดท้าย - การทำโครงการให้เสร็จสมบูรณ์ การก้าวสู่ความสำเร็จระดับสูงสุด การปิดดีลสำคัญ อุปสรรคนี้คือการก้าวสุดท้ายที่ต้องการความทุ่มเทเพื่อบรรลุ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอุปสรรคงาน คือ 'ก้าวสุดท้ายสู่ความสำเร็จ'",
+          "advice_th": "ทุ่มเทก้าวสุดท้าย - ทำโครงการให้เสร็จ ก้าวสู่ความสำเร็จสูงสุด ปิดดีลสำคัญ",
+          "keywords_th": ["บรรลุเป้าสุดท้าย", "ทุ่มเท", "สำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือการบูรณาการตัวเองให้สมบูรณ์",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการบูรณาการตัวเองให้สมบูรณ์ - การรวมทุกด้านของตัวเอง การยอมรับทั้งจุดแข็งและจุดอ่อน การเป็นหนึ่งเดียวกับตัวตน อุปสรรคนี้คือการก้าวสุดท้ายของการเดินทางภายในสู่ความสมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, Judgement = ตื่นรู้",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเอง",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอุปสรรคเติบโต คือ 'บูรณาการทุกด้านเป็นหนึ่ง'",
+          "advice_th": "บูรณาการตัวเอง - รวมทุกด้าน ยอมรับจุดแข็งและจุดอ่อน เป็นหนึ่งเดียวกับตัวตน",
+          "keywords_th": ["บูรณาการ", "เป็นหนึ่ง", "สมบูรณ์"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือการสร้างสมดุลสุขภาพแบบองค์รวม",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการสร้างสมดุลสุขภาพแบบองค์รวม - การดูแลกาย ใจ จิตให้สมดุล การบรรลุสุขภาพที่สมบูรณ์ในทุกด้าน อุปสรรคนี้คือการก้าวสุดท้ายที่ต้องการความใส่ใจในทุกมิติของสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลรอบด้าน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอุปสรรคสุขภาพ คือ 'สมดุลในทุกมิติ'",
+          "advice_th": "สร้างสมดุลองค์รวม - ดูแลกาย ใจ จิตให้สมดุล ใส่ใจทุกมิติของสุขภาพ",
+          "keywords_th": ["สมดุลองค์รวม", "ทุกมิติ", "สมบูรณ์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือไม่สามารถปิดวงจรหรือก้าวต่อ",
+          "detailed_interpretation_th": "โลกในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือการไม่สามารถปิดวงจรหรือก้าวต่อ - การติดอยู่กับสิ่งที่ควรจบ การไม่ยอมปล่อย การหาความสมบูรณ์ที่ไม่มาถึง ไพ่เตือนว่าบางครั้งการปิดวงจรต้องยอมรับว่ามันไม่สมบูรณ์แบบและก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Eight of Cups = ต้องปล่อย",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Eight of Cups = ต้องไปต่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอุปสรรค คือ 'ยอมรับไม่สมบูรณ์แบบและก้าวต่อ'",
+          "advice_th": "กล้าปิดวงจร - บางครั้งต้องยอมรับว่าไม่สมบูรณ์แบบ ปล่อยสิ่งที่ควรจบ ก้าวต่อ",
+          "keywords_th": ["ปิดวงจรไม่ได้", "ไม่ยอมปล่อย", "ก้าวต่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือความสัมพันธ์ที่ค้างคาไม่จบ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือความสัมพันธ์ที่ค้างคาไม่จบ - การไม่ยอมปล่อยความสัมพันธ์ที่จบแล้ว การหาความสมบูรณ์ในที่ที่ไม่มี หรือการกลัวก้าวสู่ขั้นต่อไป ไพ่หนุนให้คุณกล้าตัดสินใจ ปล่อยหรือก้าวต่อ ไม่ค้างอยู่ตรงกลาง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ค้างคา, The Moon = สับสน",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Eight of Cups = ต้องไปต่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Cups (rev) = ไม่ปล่อย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอุปสรรคความรัก คือ 'กล้าตัดสินใจไม่ค้างกลาง'",
+          "advice_th": "กล้าตัดสินใจในรัก - ไม่ค้างอยู่ตรงกลาง ปล่อยที่จบแล้ว หรือกล้าก้าวต่อ",
+          "keywords_th": ["ค้างคา", "ไม่จบ", "กล้าตัดสิน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคืองานที่ไม่เสร็จหรือเป้าที่ไม่บรรลุ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคืองานที่ไม่เสร็จหรือเป้าที่ไม่บรรลุ - โครงการที่ค้าง ความสำเร็จที่ไปไม่ถึง การขาดความมุ่งมั่นที่จะปิดงาน ไพ่หนุนให้คุณทบทวนว่าอะไรขัดขวาง ทุ่มเทให้เสร็จ หรือกล้าปล่อยหากไม่คุ้ม",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Eight of Cups = ต้องไปต่อ",
+            "swords": "Ten of Swords = หมดแรง",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอุปสรรคงาน คือ 'ทุ่มเทให้เสร็จหรือกล้าปล่อย'",
+          "advice_th": "จัดการงานที่ค้าง - ทบทวนว่าอะไรขัดขวาง ทุ่มเทให้เสร็จ หรือกล้าปล่อยหากไม่คุ้ม",
+          "keywords_th": ["งานไม่เสร็จ", "เป้าไม่บรรลุ", "ทุ่มเท"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือติดในบทเรียนที่ยังไม่จบ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการติดในบทเรียนที่ยังไม่จบ - การวนซ้ำรูปแบบเดิม การไม่ยอมเรียนรู้บทเรียนสำคัญ การหาความสมบูรณ์โดยไม่ทำงานกับด้านที่ขาด ไพ่หนุนให้คุณเผชิญบทเรียนที่หลีกเลี่ยงและทำให้การเติบโตครบวงจร",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สำรวจ",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Eight of Cups = ต้องไปต่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = สับสน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอุปสรรคเติบโต คือ 'เผชิญบทเรียนที่หลีกเลี่ยง'",
+          "advice_th": "เผชิญบทเรียนที่ค้าง - หยุดวนซ้ำ เรียนรู้บทเรียนสำคัญ ทำให้การเติบโตครบวงจร",
+          "keywords_th": ["ติดบทเรียน", "วนซ้ำ", "เผชิญ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือสุขภาพที่ไม่สมดุลในบางด้าน",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือสุขภาพที่ไม่สมดุลในบางด้าน - การละเลยด้านใดด้านหนึ่ง ความไม่สมดุลระหว่างกายและใจ การฟื้นที่ไม่สมบูรณ์ ไพ่หนุนให้คุณมองสุขภาพแบบองค์รวม หาด้านที่ขาด และทำงานเพื่อความสมดุลในทุกมิติ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = สับสน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอุปสรรคสุขภาพ คือ 'หาด้านที่ขาดเพื่อสมดุลทุกมิติ'",
+          "advice_th": "มองสุขภาพองค์รวม - หาด้านที่ละเลย สร้างสมดุลกายและใจ ทำให้การฟื้นสมบูรณ์",
+          "keywords_th": ["ไม่สมดุล", "ละเลยบางด้าน", "องค์รวม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยบรรลุความสำเร็จและปิดวงจรสำคัญ",
+          "detailed_interpretation_th": "โลกในอดีต เผยว่าคุณเคยบรรลุความสำเร็จและปิดวงจรสำคัญ - ช่วงเวลาที่คุณทำสิ่งหนึ่งสำเร็จสมบูรณ์ บรรลุเป้าหมายใหญ่ หรือผ่านการเดินทางครบวงจร ประสบการณ์นี้สอนคุณว่าคุณมีความสามารถบรรลุสิ่งที่ตั้งใจและสร้างความสำเร็จได้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Judgement = บรรลุ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอดีต คือ 'คุณบรรลุสิ่งที่ตั้งใจได้'",
+          "advice_th": "ใช้บทเรียนความสำเร็จ - คุณเคยบรรลุและปิดวงจร ใช้ความสามารถนี้ในปัจจุบัน",
+          "keywords_th": ["บรรลุเก่า", "ปิดวงจร", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่สมบูรณ์และเติมเต็ม",
+          "detailed_interpretation_th": "ในความรัก โลกอดีตเผยว่าคุณเคยมีความรักที่สมบูรณ์และเติมเต็ม - ความสัมพันธ์ที่กลมเกลียว ช่วงเวลาแห่งความสุขที่ครบถ้วน หรือการบรรลุขั้นสำคัญในความรัก ประสบการณ์นี้เป็นต้นแบบของความรักที่คุณรู้ว่าเป็นไปได้และสมควรได้รับ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอดีตความรัก คือ 'ต้นแบบความรักที่สมบูรณ์'",
+          "advice_th": "ใช้รักเก่าเป็นต้นแบบ - คุณเคยมีรักสมบูรณ์ ใช้สิ่งนี้เป็นมาตรฐานหารักใหม่",
+          "keywords_th": ["รักสมบูรณ์", "ต้นแบบ", "เติมเต็ม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยบรรลุความสำเร็จในอาชีพ",
+          "detailed_interpretation_th": "ในการงาน โลกอดีตเผยว่าคุณเคยบรรลุความสำเร็จในอาชีพ - โครงการใหญ่สำเร็จ การบรรลุเป้าหมายการเงิน การได้รับการยอมรับ ประสบการณ์นี้กลายเป็นความรู้ว่าคุณสามารถสร้างความสำเร็จและบรรลุเป้าหมายใหญ่ได้ ใช้ความมั่นใจนี้ในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอดีตงาน คือ 'คุณสร้างความสำเร็จได้'",
+          "advice_th": "ใช้บทเรียนความสำเร็จเก่า - คุณเคยบรรลุเป้าใหญ่ ใช้ความมั่นใจนี้สร้างใหม่",
+          "keywords_th": ["สำเร็จเก่า", "บรรลุเป้า", "มั่นใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยบรรลุความสมบูรณ์และเข้าใจตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต โลกอดีตชี้ว่าคุณเคยบรรลุความสมบูรณ์และเข้าใจตัวเองอย่างลึกซึ้ง - ช่วงเวลาที่คุณรู้สึกเป็นหนึ่งเดียว บูรณาการทุกด้าน หรือบรรลุการเดินทางภายในครบวงจร ประสบการณ์นี้กลายเป็นรากฐานของปัญญาและความเข้าใจที่คุณมี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, Judgement = ตื่นรู้",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอดีตเติบโต คือ 'เคยเป็นหนึ่งเดียวกับตัวตน'",
+          "advice_th": "ใช้ปัญญาจากความสมบูรณ์ - คุณเคยบูรณาการตัวเอง ใช้ประสบการณ์นี้เป็นรากฐาน",
+          "keywords_th": ["สมบูรณ์เก่า", "บูรณาการ", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีสุขภาพสมบูรณ์และสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ โลกอดีตเผยว่าคุณเคยมีสุขภาพสมบูรณ์และสมดุลทุกด้าน - ช่วงเวลาที่ร่างกาย จิตใจ จิตวิญญาณกลมกลืน พลังชีวิตเต็มเปี่ยม ประสบการณ์นี้สอนคุณว่าสุขภาพแบบองค์รวมเป็นไปได้ ใช้เป็นเป้าหมายและรู้ว่ามันทำได้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอดีตสุขภาพ คือ 'สุขภาพองค์รวมเป็นไปได้'",
+          "advice_th": "ใช้บทเรียนสุขภาพสมบูรณ์ - คุณเคยมีสุขภาพองค์รวม ใช้เป็นเป้าหมายในปัจจุบัน",
+          "keywords_th": ["สุขภาพสมบูรณ์เก่า", "สมดุล", "เป้าหมาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยมีวงจรที่ไม่จบหรือเป้าที่ไม่บรรลุ",
+          "detailed_interpretation_th": "โลกกลับหัวในอดีต เผยว่าคุณเคยมีวงจรที่ไม่จบหรือเป้าหมายที่ไม่บรรลุ - โครงการที่ล้มกลางทาง ความสำเร็จที่หลุดมือ หรือสิ่งที่ค้างคา บทเรียนคือคุณรู้ว่าการปิดวงจรสำคัญ และตอนนี้พร้อมที่จะทำสิ่งต่างๆ ให้สมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวอดีต คือ 'การปิดวงจรสำคัญ'",
+          "advice_th": "ใช้บทเรียนวงจรไม่จบ - คุณรู้ว่าการปิดวงจรสำคัญ ตอนนี้ทำสิ่งต่างๆ ให้สมบูรณ์",
+          "keywords_th": ["วงจรไม่จบ", "เป้าไม่บรรลุ", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่ค้างคาไม่สมบูรณ์",
+          "detailed_interpretation_th": "ในความรัก โลกกลับหัวในอดีตชี้ว่าคุณเคยมีความรักที่ค้างคาไม่สมบูรณ์ - ความสัมพันธ์ที่จบไม่สวย การจากกันที่ค้างคา หรือความรักที่ไม่ไปถึงขั้นที่หวัง บทเรียนคือคุณรู้ว่าการปิดวงจรความสัมพันธ์อย่างสมบูรณ์ช่วยให้ก้าวต่อได้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ค้างคา, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = ไม่ปล่อย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวอดีตความรัก คือ 'ปิดวงจรช่วยก้าวต่อ'",
+          "advice_th": "ใช้บทเรียนความรักค้างคา - คุณรู้ว่าการปิดวงจรสมบูรณ์ช่วยก้าวต่อ ใช้กับปัจจุบัน",
+          "keywords_th": ["รักค้างคา", "ไม่สมบูรณ์", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยมีโครงการที่ไม่เสร็จหรือเป้าที่หลุดมือ",
+          "detailed_interpretation_th": "ในการงาน โลกกลับหัวในอดีตเผยว่าคุณเคยมีโครงการที่ไม่เสร็จหรือเป้าที่หลุดมือ - งานที่ล้มกลางทาง ความสำเร็จที่ไม่บรรลุ การลงทุนที่ไม่ครบ บทเรียนคือคุณรู้ว่าต้องทุ่มเทจนจบและความมุ่งมั่นในการปิดงานสำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = หมดแรง",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวอดีตงาน คือ 'ทุ่มเทจนจบสำคัญ'",
+          "advice_th": "ใช้บทเรียนงานไม่เสร็จ - คุณรู้ว่าต้องทุ่มเทจนจบ ใช้ความมุ่งมั่นนี้ในปัจจุบัน",
+          "keywords_th": ["โครงการไม่เสร็จ", "เป้าหลุด", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยติดในบทเรียนที่ไม่จบ",
+          "detailed_interpretation_th": "ในการเติบโต โลกกลับหัวในอดีตเผยว่าคุณเคยติดในบทเรียนที่ไม่จบ - การวนซ้ำรูปแบบเดิม การหลีกเลี่ยงบทเรียนสำคัญ หรือการเติบโตที่หยุดชะงัก บทเรียนคือคุณรู้ว่าต้องเผชิญและเรียนรู้บทเรียนให้ครบเพื่อก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สำรวจ",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Eight of Cups = ต้องไปต่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = สับสน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวอดีตเติบโต คือ 'เรียนรู้บทเรียนให้ครบ'",
+          "advice_th": "ใช้บทเรียนการติด - คุณรู้ว่าต้องเผชิญและเรียนรู้ให้ครบ ใช้ปัญญานี้ในปัจจุบัน",
+          "keywords_th": ["ติดบทเรียน", "วนซ้ำ", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีสุขภาพที่ไม่สมดุลในบางด้าน",
+          "detailed_interpretation_th": "ในสุขภาพ โลกกลับหัวในอดีตเผยว่าคุณเคยมีสุขภาพที่ไม่สมดุลในบางด้าน - การละเลยด้านใดด้านหนึ่ง ความไม่สมดุลกายและใจ การฟื้นที่ไม่สมบูรณ์ บทเรียนคือคุณรู้ว่าสุขภาพต้องดูแลแบบองค์รวมและความสมดุลในทุกมิติสำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = สับสน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวอดีตสุขภาพ คือ 'สมดุลในทุกมิติสำคัญ'",
+          "advice_th": "ใช้บทเรียนสุขภาพไม่สมดุล - คุณรู้ว่าต้องดูแลองค์รวม ใช้ความรู้นี้ในปัจจุบัน",
+          "keywords_th": ["ไม่สมดุลเก่า", "ละเลยด้าน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีความสำเร็จและการบรรลุเป้าหมาย",
+          "detailed_interpretation_th": "โลกในอนาคต เป็นข่าวดีที่สุด - อนาคตจะมีความสำเร็จและการบรรลุเป้าหมายอย่างสมบูรณ์ คุณจะปิดวงจรสำคัญ บรรลุสิ่งที่ตั้งใจ และรู้สึกเติมเต็ม ไพ่ยืนยันว่าการเดินทางของคุณจะมาถึงจุดสมบูรณ์ที่งดงามและเปิดทางสู่บทใหม่ที่ยิ่งใหญ่กว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสุข, Judgement = บรรลุ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอนาคต คือ 'การเดินทางมาถึงจุดสมบูรณ์'",
+          "advice_th": "เชื่อมั่นในอนาคต - ความสำเร็จและการบรรลุเป้าหมายรออยู่ การเดินทางจะมาถึงจุดสมบูรณ์",
+          "keywords_th": ["ความสำเร็จ", "บรรลุเป้า", "เติมเต็ม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักที่สมบูรณ์และเติมเต็มรออยู่",
+          "detailed_interpretation_th": "ในความรัก โลกอนาคตเป็นข่าวดียิ่ง - ความรักที่สมบูรณ์และเติมเต็มรออยู่ การก้าวสู่ขั้นสำคัญ เช่น แต่งงานหรือสร้างครอบครัว การบรรลุความกลมเกลียว หรือการพบความรักที่ครบถ้วน ไพ่ยืนยันว่าความสัมพันธ์ของคุณจะมาถึงจุดที่สมบูรณ์และงดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลองรัก",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอนาคตความรัก คือ 'ความรักมาถึงจุดสมบูรณ์'",
+          "advice_th": "เปิดใจรับความรักสมบูรณ์ - เติมเต็ม กลมเกลียว อาจมีก้าวสำคัญเช่นแต่งงาน",
+          "keywords_th": ["รักสมบูรณ์", "เติมเต็ม", "ก้าวสำคัญ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความสำเร็จในอาชีพและการเงินมั่งคั่งรออยู่",
+          "detailed_interpretation_th": "ในการงาน โลกอนาคตเป็นข่าวดียิ่ง - ความสำเร็จในอาชีพและการเงินมั่งคั่งรออยู่ การบรรลุเป้าหมายใหญ่ การได้รับการยอมรับสูงสุด การก้าวสู่ระดับใหม่ ไพ่ยืนยันว่าความพยายามของคุณจะนำมาซึ่งความสำเร็จที่สมบูรณ์และความมั่นคงทางการเงิน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอนาคตงาน คือ 'ความสำเร็จสมบูรณ์รออยู่'",
+          "advice_th": "เตรียมรับความสำเร็จ - บรรลุเป้าหมายใหญ่ การยอมรับสูงสุด ก้าวสู่ระดับใหม่",
+          "keywords_th": ["ความสำเร็จ", "มั่งคั่ง", "ระดับใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การบรรลุความสมบูรณ์ทางจิตวิญญาณรออยู่",
+          "detailed_interpretation_th": "ในการเติบโต โลกอนาคตเป็นชัยชนะ - การบรรลุความสมบูรณ์ทางจิตวิญญาณรอคุณอยู่ คุณจะบูรณาการทุกด้านของตัวเอง เข้าใจตัวเองลึกซึ้ง และรู้สึกเป็นหนึ่งเดียวกับชีวิต ไพ่ยืนยันว่าการเดินทางภายในของคุณจะมาถึงจุดสมบูรณ์และคุณจะเป็นแสงให้โลก",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, Judgement = ตื่นรู้",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอนาคตเติบโต คือ 'บูรณาการสมบูรณ์เป็นแสงให้โลก'",
+          "advice_th": "เตรียมใจรับความสมบูรณ์ - บูรณาการทุกด้าน เข้าใจตัวเองลึกซึ้ง เป็นหนึ่งเดียวกับชีวิต",
+          "keywords_th": ["สมบูรณ์", "บูรณาการ", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพสมบูรณ์และสมดุลรออยู่",
+          "detailed_interpretation_th": "ในสุขภาพ โลกอนาคตเป็นข่าวดียิ่ง - สุขภาพสมบูรณ์และสมดุลทุกด้านรออยู่ ร่างกายแข็งแรง จิตใจสงบ จิตวิญญาณเชื่อมโยง ไพ่ยืนยันว่าการดูแลตัวเองแบบองค์รวมจะนำมาซึ่งสุขภาพที่งดงามและพลังชีวิตเต็มเปี่ยม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกอนาคตสุขภาพ คือ 'สุขภาพองค์รวมที่งดงามรออยู่'",
+          "advice_th": "เชื่อในสุขภาพสมบูรณ์ - กาย ใจ จิตสมดุล ดูแลองค์รวม พลังชีวิตเต็มเปี่ยม",
+          "keywords_th": ["สุขภาพสมบูรณ์", "สมดุล", "องค์รวม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตอาจมีวงจรที่ยังไม่ปิดสมบูรณ์",
+          "detailed_interpretation_th": "โลกกลับหัวในอนาคต เตือนว่าอนาคตอาจมีวงจรที่ยังไม่ปิดสมบูรณ์ - ความสำเร็จที่ใช้เวลานานกว่าคาด เป้าหมายที่ต้องทุ่มเทเพิ่ม หรือสิ่งที่ยังค้างคา ไพ่หนุนให้คุณอดทน ทุ่มเทให้สิ่งต่างๆ ครบถ้วน และเชื่อว่าความสมบูรณ์จะมาถึงในเวลาที่เหมาะ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวอนาคต คือ 'ความสมบูรณ์จะมาในเวลาที่เหมาะ'",
+          "advice_th": "อดทนและทุ่มเท - วงจรอาจยังไม่ปิดสมบูรณ์ ทำสิ่งต่างๆ ให้ครบ ความสมบูรณ์จะมา",
+          "keywords_th": ["ยังไม่ปิด", "ใช้เวลา", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจยังไม่สมบูรณ์ในอนาคต",
+          "detailed_interpretation_th": "ในความรัก โลกกลับหัวอนาคตเตือนว่าความรักอาจยังไม่สมบูรณ์ - มีสิ่งที่ต้องทำงานเพิ่ม การก้าวสู่ขั้นสำคัญที่ใช้เวลา หรือความกลมเกลียวที่ต้องสร้าง ไพ่หนุนให้คุณอดทน สื่อสาร และทำงานร่วมกันเพื่อความสัมพันธ์ที่สมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ไม่ลงตัว, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = ไม่เข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวอนาคตความรัก คือ 'ทำงานร่วมกันเพื่อสมบูรณ์'",
+          "advice_th": "อดทนกับความรัก - ยังไม่สมบูรณ์ สื่อสาร ทำงานร่วมกัน เพื่อความสัมพันธ์ที่ดี",
+          "keywords_th": ["ยังไม่สมบูรณ์", "ใช้เวลา", "ทำงานร่วม"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความสำเร็จอาจล่าช้าหรือต้องทุ่มเทเพิ่ม",
+          "detailed_interpretation_th": "ในการงาน โลกกลับหัวอนาคตเตือนว่าความสำเร็จอาจล่าช้าหรือต้องทุ่มเทเพิ่ม - โครงการที่ใช้เวลานานกว่าคาด เป้าหมายที่ต้องพยายามมากขึ้น หรือสิ่งที่ยังไม่ครบ ไพ่หนุนให้คุณอดทน ทุ่มเท และไม่ยอมแพ้ก่อนถึงเส้นชัย ความสำเร็จจะมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = หมดแรง",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวอนาคตงาน คือ 'ไม่ยอมแพ้ก่อนเส้นชัย'",
+          "advice_th": "อดทนและทุ่มเท - ความสำเร็จอาจล่าช้า ไม่ยอมแพ้ก่อนเส้นชัย ความสำเร็จจะมา",
+          "keywords_th": ["สำเร็จล่าช้า", "ทุ่มเทเพิ่ม", "ไม่ยอมแพ้"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตอาจยังไม่ครบวงจร",
+          "detailed_interpretation_th": "ในการเติบโต โลกกลับหัวอนาคตเตือนว่าการเดินทางภายในอาจยังไม่ครบวงจร - มีบทเรียนที่ต้องเรียนรู้ ด้านที่ต้องบูรณาการ หรือกระบวนการที่ต้องผ่าน ไพ่หนุนให้คุณอดทนกับการเติบโต ทำงานกับด้านที่ขาด และเชื่อว่าความสมบูรณ์จะมาถึงในเวลาที่เหมาะ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Eight of Cups = ต้องไปต่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = สับสน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวอนาคตเติบโต คือ 'อดทนกับกระบวนการเติบโต'",
+          "advice_th": "อดทนกับการเติบโต - ยังไม่ครบวงจร ทำงานกับด้านที่ขาด ความสมบูรณ์จะมา",
+          "keywords_th": ["ยังไม่ครบ", "บทเรียนค้าง", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอาจยังไม่สมดุลเต็มที่",
+          "detailed_interpretation_th": "ในสุขภาพ โลกกลับหัวอนาคตบอกว่าสุขภาพอาจยังไม่สมดุลเต็มที่ - มีด้านที่ต้องดูแลเพิ่ม การฟื้นที่ใช้เวลา หรือความสมดุลที่ต้องสร้าง ไพ่หนุนให้คุณมองสุขภาพแบบองค์รวม ดูแลทุกมิติ และอดทนกับกระบวนการฟื้นเพื่อความสมดุลที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวอนาคตสุขภาพ คือ 'ดูแลทุกมิติเพื่อสมดุลแท้'",
+          "advice_th": "อดทนกับการฟื้น - ยังไม่สมดุลเต็มที่ ดูแลทุกมิติ ความสมดุลที่แท้จริงจะมา",
+          "keywords_th": ["ยังไม่สมดุล", "ดูแลเพิ่ม", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือบรรลุความสมบูรณ์และเติมเต็ม",
+          "detailed_interpretation_th": "โลกในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือการบรรลุความสมบูรณ์และเติมเต็ม - การทำสิ่งหนึ่งให้สำเร็จครบวงจร การบรรลุความฝัน การรู้สึกครบถ้วนในชีวิต เป้าหมายนี้คือการเดินทางมาถึงจุดสมบูรณ์ที่งดงามและการเป็นหนึ่งเดียวกับชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสุข, Judgement = บรรลุ",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกเป้าหมาย คือ 'เดินทางสู่ความสมบูรณ์'",
+          "advice_th": "ตั้งเป้าบรรลุความสมบูรณ์ - ทำสิ่งให้สำเร็จครบวงจร บรรลุความฝัน เป็นหนึ่งเดียวกับชีวิต",
+          "keywords_th": ["สมบูรณ์", "เติมเต็ม", "ครบวงจร"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือความรักที่สมบูรณ์และกลมเกลียว",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือความรักที่สมบูรณ์และกลมเกลียว - ความสัมพันธ์ที่เติมเต็ม การก้าวสู่ขั้นสำคัญร่วมกัน การสร้างชีวิตคู่ที่งดงาม ไพ่หนุนให้คุณตั้งเป้าหมายความรักที่ครบถ้วนและนำมาซึ่งความสุขในระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกเป้าหมายความรัก คือ 'ความรักที่ครบถ้วนและกลมเกลียว'",
+          "advice_th": "ตั้งเป้าความรักสมบูรณ์ - เติมเต็ม กลมเกลียว ก้าวสู่ขั้นสำคัญ สร้างชีวิตคู่ที่งดงาม",
+          "keywords_th": ["รักสมบูรณ์", "กลมเกลียว", "ครบถ้วน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือความสำเร็จสูงสุดและความมั่นคง",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือความสำเร็จสูงสุดและความมั่นคงทางการเงิน - การบรรลุจุดสูงสุดในอาชีพ การสร้างความมั่งคั่งที่ยั่งยืน การได้รับการยอมรับสูงสุด ไพ่หนุนให้คุณตั้งเป้าหมายที่ยิ่งใหญ่และเชื่อว่าคุณสามารถบรรลุได้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกเป้าหมายงาน คือ 'ความสำเร็จสูงสุดและมั่นคงยั่งยืน'",
+          "advice_th": "ตั้งเป้าความสำเร็จสูงสุด - บรรลุจุดสูงสุดในอาชีพ สร้างความมั่งคั่งยั่งยืน",
+          "keywords_th": ["สำเร็จสูงสุด", "มั่นคง", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือบูรณาการตัวเองและเป็นหนึ่งเดียว",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือการบูรณาการตัวเองและเป็นหนึ่งเดียวกับชีวิต - การรวมทุกด้านของตัวเอง การเข้าใจจุดหมายชีวิต การบรรลุความสมบูรณ์ทางจิตวิญญาณ ไพ่หนุนให้คุณตั้งเป้าหมายการเติบโตที่ลึกที่สุด คือการเป็นตัวตนที่สมบูรณ์และเป็นแสงให้โลก",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, Judgement = ตื่นรู้",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกเป้าหมายเติบโต คือ 'เป็นตัวตนที่สมบูรณ์และเป็นแสง'",
+          "advice_th": "ตั้งเป้าบูรณาการตัวเอง - รวมทุกด้าน เข้าใจจุดหมาย เป็นหนึ่งเดียวกับชีวิต เป็นแสง",
+          "keywords_th": ["บูรณาการ", "เป็นหนึ่ง", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพสมบูรณ์ทุกด้าน",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือสุขภาพสมบูรณ์ทุกด้าน - ร่างกายแข็งแรง จิตใจสงบ จิตวิญญาณเชื่อมโยง ความสมดุลในชีวิต ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพแบบองค์รวมที่ดูแลทุกมิติของความเป็นอยู่ที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลรอบด้าน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกเป้าหมายสุขภาพ คือ 'สุขภาพองค์รวมทุกมิติ'",
+          "advice_th": "ตั้งเป้าสุขภาพสมบูรณ์ - กาย ใจ จิตสมดุล ดูแลทุกมิติของความเป็นอยู่ที่ดี",
+          "keywords_th": ["สุขภาพสมบูรณ์", "องค์รวม", "ทุกมิติ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือปิดวงจรที่ค้างและทำให้สมบูรณ์",
+          "detailed_interpretation_th": "โลกกลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือการปิดวงจรที่ค้างและทำให้สมบูรณ์ - การทำสิ่งที่ค้างคาให้เสร็จ การหาความสมบูรณ์ที่ยังขาด การปล่อยสิ่งที่ควรจบ เป้าหมายนี้ต้องการความมุ่งมั่นในการทำให้สิ่งต่างๆ ครบถ้วนเพื่อก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Judgement = บรรลุ",
+            "wands": "Ten of Wands = ภารกิจสุดท้าย",
+            "cups": "Eight of Cups = ปล่อยที่จบ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวเป้าหมาย คือ 'ทำให้ครบถ้วนเพื่อก้าวต่อ'",
+          "advice_th": "ตั้งเป้าปิดวงจรที่ค้าง - ทำสิ่งที่ค้างให้เสร็จ ปล่อยสิ่งที่ควรจบ ทำให้สมบูรณ์",
+          "keywords_th": ["ปิดวงจรค้าง", "ทำให้สมบูรณ์", "มุ่งมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือเติมเต็มสิ่งที่ขาดในความรัก",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือการเติมเต็มสิ่งที่ขาดในความรัก - การแก้ปัญหาที่ค้างคา การสร้างความกลมเกลียวที่ขาด การก้าวสู่ขั้นที่ยังไม่ไปถึง ไพ่หนุนให้คุณทำงานกับความสัมพันธ์ สื่อสารถึงสิ่งที่ขาด และทำให้ความรักสมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวเป้าหมายความรัก คือ 'เติมเต็มสิ่งที่ขาด'",
+          "advice_th": "ตั้งเป้าเติมเต็มความรัก - แก้ปัญหาที่ค้าง สร้างความกลมเกลียว สื่อสารถึงสิ่งที่ขาด",
+          "keywords_th": ["เติมเต็ม", "แก้ปัญหา", "สมบูรณ์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือทำงานที่ค้างให้เสร็จสมบูรณ์",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือการทำงานที่ค้างให้เสร็จสมบูรณ์ - การปิดโครงการที่ยังไม่จบ การบรรลุเป้าหมายที่ยังไม่ถึง การทุ่มเทก้าวสุดท้าย ไพ่หนุนให้คุณมุ่งมั่นทำงานให้ครบถ้วนและไม่ทิ้งสิ่งต่างๆ ค้างคา",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune = โอกาส",
+            "wands": "Ten of Wands = ภารกิจสุดท้าย",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวเป้าหมายงาน คือ 'ทุ่มเทก้าวสุดท้ายให้ครบ'",
+          "advice_th": "ตั้งเป้าทำงานให้เสร็จ - ปิดโครงการที่ค้าง ทุ่มเทก้าวสุดท้าย ไม่ทิ้งค้างคา",
+          "keywords_th": ["ทำงานให้เสร็จ", "ก้าวสุดท้าย", "ครบถ้วน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือเรียนรู้บทเรียนที่ค้างให้ครบ",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือการเรียนรู้บทเรียนที่ค้างให้ครบ - การเผชิญสิ่งที่หลีกเลี่ยง การทำงานกับด้านที่ขาด การทำให้การเดินทางภายในครบวงจร ไพ่หนุนให้คุณกล้าเผชิญบทเรียนสำคัญและบูรณาการตัวเองให้สมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Seven of Wands = เผชิญ",
+            "cups": "Eight of Cups = ไปต่อ",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวเป้าหมายเติบโต คือ 'เผชิญบทเรียนที่ค้าง'",
+          "advice_th": "ตั้งเป้าเรียนรู้บทเรียนค้าง - เผชิญสิ่งที่หลีกเลี่ยง ทำงานกับด้านที่ขาด บูรณาการให้ครบ",
+          "keywords_th": ["บทเรียนค้าง", "เผชิญ", "บูรณาการ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสร้างสมดุลในด้านที่ขาด",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือการสร้างสมดุลในด้านที่ขาด - การดูแลด้านที่ละเลย การปรับสมดุลกายและใจ การทำให้การฟื้นสมบูรณ์ ไพ่หนุนให้คุณมองสุขภาพแบบองค์รวม หาด้านที่ขาด และทำงานเพื่อความสมดุลในทุกมิติ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวเป้าหมายสุขภาพ คือ 'สร้างสมดุลในด้านที่ขาด'",
+          "advice_th": "ตั้งเป้าสมดุลองค์รวม - ดูแลด้านที่ละเลย ปรับสมดุลกายและใจ ทำให้การฟื้นสมบูรณ์",
+          "keywords_th": ["สมดุลด้านขาด", "องค์รวม", "ฟื้นสมบูรณ์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความสามารถบรรลุและปิดวงจร",
+          "detailed_interpretation_th": "โลกในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความสามารถบรรลุและปิดวงจร - คุณเคยทำสิ่งต่างๆ สำเร็จ รู้วิธีทำให้ครบถ้วน มีความมุ่งมั่นจนถึงเส้นชัย รากฐานนี้ทำให้คุณสร้างความสำเร็จและบรรลุเป้าหมายใหญ่ได้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Judgement = บรรลุ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกรากฐาน คือ 'ความสามารถบรรลุคือพลัง'",
+          "advice_th": "ใช้ความสามารถบรรลุ - คุณทำสิ่งต่างๆ สำเร็จได้ มีความมุ่งมั่นจนถึงเส้นชัย",
+          "keywords_th": ["บรรลุ", "ปิดวงจร", "มุ่งมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือความสามารถสร้างความสมบูรณ์",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความสามารถสร้างความสมบูรณ์ในความสัมพันธ์ - คุณรู้วิธีสร้างความกลมเกลียว ทุ่มเทให้ความรัก สร้างความเติมเต็ม รากฐานนี้ทำให้คุณเป็นคู่ครองที่สร้างความสัมพันธ์ที่มั่นคงและงดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกรากฐานความรัก คือ 'สร้างความสมบูรณ์ในรักได้'",
+          "advice_th": "ใช้ความสามารถสร้างความรัก - คุณสร้างความกลมเกลียวได้ ทุ่มเทให้ความรักเติมเต็ม",
+          "keywords_th": ["สร้างสมบูรณ์", "กลมเกลียว", "เติมเต็ม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือความสามารถบรรลุเป้าหมายใหญ่",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือความสามารถบรรลุเป้าหมายใหญ่ - คุณรู้วิธีทำโครงการให้สำเร็จ มีวิสัยทัศน์ มีความมุ่งมั่น รากฐานนี้ทำให้คุณสร้างความสำเร็จ ความมั่งคั่ง และก้าวสู่ระดับสูงในอาชีพ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Emperor = อำนาจ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกรากฐานงาน คือ 'บรรลุเป้าหมายใหญ่คือพลัง'",
+          "advice_th": "ใช้ความสามารถบรรลุเป้า - คุณทำโครงการสำเร็จได้ มีวิสัยทัศน์ สร้างความสำเร็จและมั่งคั่ง",
+          "keywords_th": ["บรรลุเป้าใหญ่", "วิสัยทัศน์", "มั่งคั่ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือความเป็นหนึ่งเดียวและบูรณาการ",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือความเป็นหนึ่งเดียวและบูรณาการ - คุณเข้าใจตัวเองลึกซึ้ง รวมทุกด้านเป็นหนึ่ง รู้จุดหมายชีวิต รากฐานนี้ทำให้คุณมั่นคงในตัวตน เติบโตอย่างต่อเนื่อง และเป็นแสงให้คนรอบข้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, Judgement = ตื่นรู้",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกรากฐานเติบโต คือ 'เป็นหนึ่งเดียวคือพลัง'",
+          "advice_th": "ใช้ความเป็นหนึ่งเดียว - คุณเข้าใจตัวเองลึก รวมทุกด้าน เป็นแสงให้คนรอบข้าง",
+          "keywords_th": ["เป็นหนึ่ง", "บูรณาการ", "มั่นคง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือสมดุลและความสมบูรณ์",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือสมดุลและความสมบูรณ์ - คุณดูแลกาย ใจ จิตอย่างสมดุล มีพลังชีวิตเต็มเปี่ยม เข้าใจสุขภาพแบบองค์รวม รากฐานนี้ทำให้คุณมีสุขภาพดีระยะยาวและฟื้นจากความเจ็บป่วยได้ดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกรากฐานสุขภาพ คือ 'สมดุลและความสมบูรณ์คือพลัง'",
+          "advice_th": "ใช้ความสมดุลเป็นรากฐาน - ดูแลกาย ใจ จิตสมดุล เข้าใจสุขภาพองค์รวม",
+          "keywords_th": ["สมดุล", "สมบูรณ์", "องค์รวม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความรู้สึกไม่สมบูรณ์และค้างคา",
+          "detailed_interpretation_th": "โลกกลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความรู้สึกไม่สมบูรณ์และค้างคา - คุณมีสิ่งที่ยังไม่จบ เป้าหมายที่ไม่บรรลุ หรือความรู้สึกว่ายังไปไม่ถึง รากฐานนี้อาจทำให้คุณไม่พอใจในสิ่งที่มี ถึงเวลาเรียนรู้ที่จะปิดวงจรและพอใจในความสมบูรณ์ที่ไม่สมบูรณ์แบบ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, The Moon = สับสน",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวรากฐาน คือ 'พอใจในความสมบูรณ์ที่ไม่สมบูรณ์แบบ'",
+          "advice_th": "เรียนรู้ที่จะปิดวงจร - ความรู้สึกไม่สมบูรณ์ขับเคลื่อนคุณ พอใจในสิ่งที่มี ทำให้ครบ",
+          "keywords_th": ["ไม่สมบูรณ์", "ค้างคา", "พอใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือรู้สึกว่ายังขาดบางสิ่ง",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความรู้สึกว่ายังขาดบางสิ่ง - การหาความสมบูรณ์ในความสัมพันธ์ที่ไม่มา ความไม่พอใจในสิ่งที่มี การเปรียบเทียบกับอุดมคติ รากฐานนี้ทำให้ความสัมพันธ์รู้สึกไม่เติมเต็ม ถึงเวลาเรียนรู้ที่จะเห็นคุณค่าและสร้างความสมบูรณ์ร่วมกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ไม่ลงตัว, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = ไม่พอใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวรากฐานความรัก คือ 'เห็นคุณค่าและสร้างร่วมกัน'",
+          "advice_th": "เห็นคุณค่าในความรัก - หยุดหาความสมบูรณ์ที่ไม่มา เห็นคุณค่าในสิ่งที่มี สร้างร่วมกัน",
+          "keywords_th": ["รู้สึกขาด", "ไม่เติมเต็ม", "เห็นคุณค่า"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือความรู้สึกว่ายังไปไม่ถึงเป้า",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือความรู้สึกว่ายังไปไม่ถึงเป้า - การไม่พอใจในความสำเร็จที่มี การเปรียบเทียบกับคนอื่น ความรู้สึกว่ายังไม่พอ รากฐานนี้ผลักดันคุณแต่ก็ทำให้เหนื่อยล้า ถึงเวลาเห็นคุณค่าของสิ่งที่บรรลุแล้วและสมดุลระหว่างความทะเยอทะยานกับความพอใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวรากฐานงาน คือ 'สมดุลทะเยอทะยานกับความพอใจ'",
+          "advice_th": "เห็นคุณค่าของสิ่งที่บรรลุ - หยุดเปรียบเทียบ สมดุลความทะเยอทะยานกับความพอใจ",
+          "keywords_th": ["ไปไม่ถึง", "ไม่พอใจ", "เห็นคุณค่า"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือรู้สึกไม่ครบและตามหาความสมบูรณ์",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือความรู้สึกไม่ครบและการตามหาความสมบูรณ์ - การไม่พอใจในตัวเอง การหาความสมบูรณ์แบบที่ไม่มีจริง การวนซ้ำหาบางสิ่ง รากฐานนี้ทำให้คุณไม่หยุดนิ่ง แต่ก็ไม่เคยพอใจ ถึงเวลาเรียนรู้ที่จะเห็นความสมบูรณ์ในความไม่สมบูรณ์ของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = ไม่พอใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวรากฐานเติบโต คือ 'เห็นความสมบูรณ์ในความไม่สมบูรณ์'",
+          "advice_th": "เห็นความสมบูรณ์ในตน - หยุดตามหาความสมบูรณ์แบบที่ไม่มี ยอมรับและรักตัวเองอย่างที่เป็น",
+          "keywords_th": ["รู้สึกไม่ครบ", "ตามหา", "ยอมรับตน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือไม่สมดุลในบางด้าน",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือความไม่สมดุลในบางด้าน - การละเลยด้านใดด้านหนึ่งของสุขภาพ การโฟกัสกายแต่ลืมใจ หรือกลับกัน ความไม่สมดุลที่ฝังลึก รากฐานนี้ทำให้สุขภาพไม่สมบูรณ์ ถึงเวลามองสุขภาพแบบองค์รวมและดูแลทุกมิติอย่างสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = สับสน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวรากฐานสุขภาพ คือ 'ดูแลทุกมิติอย่างสมดุล'",
+          "advice_th": "มองสุขภาพองค์รวม - หาด้านที่ละเลย ดูแลทั้งกายและใจ สร้างสมดุลในทุกมิติ",
+          "keywords_th": ["ไม่สมดุล", "ละเลยด้าน", "องค์รวม"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ทำสิ่งต่างๆ ให้สมบูรณ์และเฉลิมฉลองความสำเร็จ",
+          "detailed_interpretation_th": "โลกในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีที่สุดคือทำสิ่งต่างๆ ให้สมบูรณ์และเฉลิมฉลองความสำเร็จ - ปิดวงจรอย่างงดงาม ยอมรับสิ่งที่บรรลุ และเตรียมก้าวสู่บทใหม่ ไพ่หนุนให้คุณมองภาพรวม เห็นการเดินทางที่ผ่านมา และภูมิใจในความสำเร็จ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Judgement = บรรลุ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งคำแนะนำ คือ 'ปิดวงจรอย่างงดงาม'",
+          "advice_th": "ทำให้สมบูรณ์และเฉลิมฉลอง - ปิดวงจรอย่างงดงาม ภูมิใจในความสำเร็จ เตรียมก้าวบทใหม่",
+          "keywords_th": ["ทำให้สมบูรณ์", "เฉลิมฉลอง", "ปิดวงจร"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "สร้างความสมบูรณ์และกลมเกลียวในความรัก",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณควรสร้างความสมบูรณ์และกลมเกลียวในความรัก - ทุ่มเทให้ความสัมพันธ์ ก้าวสู่ขั้นสำคัญ เฉลิมฉลองความรักที่มี ไพ่หนุนให้คุณเห็นคุณค่าของความสัมพันธ์และสร้างความเติมเต็มร่วมกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งคำแนะนำความรัก คือ 'เห็นคุณค่าและเติมเต็มร่วมกัน'",
+          "advice_th": "สร้างความสมบูรณ์ในรัก - ทุ่มเทให้ความสัมพันธ์ เห็นคุณค่า เฉลิมฉลองความรักที่มี",
+          "keywords_th": ["สร้างสมบูรณ์", "กลมเกลียว", "เห็นคุณค่า"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทำงานให้สำเร็จและก้าวสู่ระดับใหม่",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรทำงานให้สำเร็จและก้าวสู่ระดับใหม่ - ทำโครงการให้เสร็จสมบูรณ์ เก็บเกี่ยวผล วางแผนก้าวต่อไป ไพ่หนุนให้คุณภูมิใจในความสำเร็จและใช้มันเป็นฐานสู่เป้าหมายที่ใหญ่กว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โอกาส",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งคำแนะนำงาน คือ 'ใช้ความสำเร็จเป็นฐานสู่เป้าใหญ่'",
+          "advice_th": "ทำงานให้สำเร็จและก้าวต่อ - ทำโครงการให้เสร็จ เก็บเกี่ยวผล วางแผนเป้าหมายใหญ่กว่า",
+          "keywords_th": ["ทำสำเร็จ", "ระดับใหม่", "เก็บเกี่ยว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "บูรณาการตัวเองและเป็นหนึ่งเดียว",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรบูรณาการตัวเองและเป็นหนึ่งเดียว - รวมทุกด้าน ยอมรับตัวเองทั้งหมด เห็นภาพรวมของการเดินทาง ไพ่หนุนให้คุณเฉลิมฉลองการเติบโตที่ผ่านมาและเป็นหนึ่งเดียวกับตัวตนที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, Judgement = ตื่นรู้",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งคำแนะนำเติบโต คือ 'เป็นหนึ่งเดียวกับตัวตนแท้'",
+          "advice_th": "บูรณาการตัวเอง - รวมทุกด้าน ยอมรับตัวเองทั้งหมด เฉลิมฉลองการเติบโต เป็นหนึ่งเดียว",
+          "keywords_th": ["บูรณาการ", "เป็นหนึ่ง", "เฉลิมฉลอง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ดูแลสุขภาพแบบองค์รวมและสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรดูแลสุขภาพแบบองค์รวมและสมดุล - ใส่ใจกาย ใจ จิตไปพร้อมกัน สร้างความสมดุลในชีวิต เฉลิมฉลองพลังชีวิต ไพ่หนุนให้คุณมองสุขภาพแบบครบถ้วนและรักษาความสมดุลในทุกมิติ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลรอบด้าน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งคำแนะนำสุขภาพ คือ 'ดูแลครบถ้วนทุกมิติ'",
+          "advice_th": "ดูแลสุขภาพองค์รวม - ใส่ใจกาย ใจ จิต สร้างสมดุล เฉลิมฉลองพลังชีวิต",
+          "keywords_th": ["องค์รวม", "สมดุล", "ครบถ้วน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กล้าปิดวงจรแม้ไม่สมบูรณ์แบบ",
+          "detailed_interpretation_th": "โลกกลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือกล้าปิดวงจรแม้ไม่สมบูรณ์แบบ - ยอมรับว่าบางสิ่งไม่ต้องสมบูรณ์ ปล่อยความต้องการความสมบูรณ์แบบ ก้าวต่อ ไพ่หนุนให้คุณเห็นคุณค่าของการก้าวต่อมากกว่าการรอให้ทุกอย่างสมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Eight of Cups = ปล่อย",
+            "wands": "Eight of Wands = ก้าวต่อ",
+            "cups": "Eight of Cups = ปล่อยที่จบ",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Knight of Wands = ก้าวกล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งคำแนะนำ คือ 'ก้าวต่อสำคัญกว่าสมบูรณ์แบบ'",
+          "advice_th": "กล้าปิดวงจร - ยอมรับว่าบางสิ่งไม่ต้องสมบูรณ์ ปล่อยความสมบูรณ์แบบ ก้าวต่อ",
+          "keywords_th": ["กล้าปิด", "ไม่สมบูรณ์แบบ", "ก้าวต่อ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ยอมรับความไม่สมบูรณ์แบบในความรัก",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าคุณควรยอมรับความไม่สมบูรณ์แบบในความรัก - ปล่อยอุดมคติที่ไม่มีจริง เห็นคุณค่าของความสัมพันธ์ที่มี รักคู่อย่างที่เขาเป็น ไพ่หนุนให้คุณสร้างความสมบูรณ์จากความเป็นจริง ไม่ใช่จากความคาดหวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งคำแนะนำความรัก คือ 'รักจากความเป็นจริงไม่ใช่อุดมคติ'",
+          "advice_th": "ยอมรับความไม่สมบูรณ์ - ปล่อยอุดมคติ เห็นคุณค่าที่มี รักคู่อย่างที่เขาเป็น",
+          "keywords_th": ["ยอมรับไม่สมบูรณ์", "ปล่อยอุดมคติ", "เห็นคุณค่า"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ปิดงานที่ค้างแม้ไม่สมบูรณ์แบบ",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวชี้ว่าคุณควรปิดงานที่ค้างแม้ไม่สมบูรณ์แบบ - ส่งงานที่ดีพอ ไม่รอให้ทุกอย่างสมบูรณ์ ก้าวต่อสู่โอกาสใหม่ ไพ่หนุนให้คุณเห็นว่าการทำเสร็จดีกว่าการทำให้สมบูรณ์แบบที่ไม่จบ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune = โอกาส",
+            "wands": "Eight of Wands = ก้าวต่อ",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งคำแนะนำงาน คือ 'ทำเสร็จดีกว่าสมบูรณ์แบบที่ไม่จบ'",
+          "advice_th": "ปิดงานที่ค้าง - ส่งงานที่ดีพอ ไม่รอให้สมบูรณ์ ก้าวต่อสู่โอกาสใหม่",
+          "keywords_th": ["ปิดงาน", "ดีพอ", "ก้าวต่อ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ยอมรับตัวเองอย่างที่เป็นไม่ต้องสมบูรณ์แบบ",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรยอมรับตัวเองอย่างที่เป็นไม่ต้องสมบูรณ์แบบ - ปล่อยการตามหาความสมบูรณ์แบบ เห็นความงามในความไม่สมบูรณ์ รักตัวเองทั้งหมด ไพ่หนุนให้คุณเข้าใจว่าการเติบโตไม่ใช่การเป็นสมบูรณ์แบบ แต่คือการยอมรับและรักตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = เมตตา"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งคำแนะนำเติบโต คือ 'เติบโตคือยอมรับและรักตัวเอง'",
+          "advice_th": "ยอมรับตัวเองอย่างที่เป็น - ปล่อยการตามหาสมบูรณ์แบบ เห็นความงามในความไม่สมบูรณ์",
+          "keywords_th": ["ยอมรับตน", "ไม่สมบูรณ์แบบ", "รักตน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ดูแลสุขภาพอย่างสมดุลไม่หักโหม",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวชี้ว่าคุณควรดูแลสุขภาพอย่างสมดุลไม่หักโหม - ไม่ตามหาสุขภาพที่สมบูรณ์แบบจนเครียด ยอมรับความเป็นจริงของร่างกาย ดูแลอย่างพอดี ไพ่หนุนให้คุณสร้างสมดุลที่ยั่งยืน ไม่ใช่ความสมบูรณ์แบบที่กดดัน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'สมดุลยั่งยืนไม่ใช่สมบูรณ์แบบกดดัน'",
+          "advice_th": "ดูแลอย่างสมดุล - ไม่ตามหาสุขภาพสมบูรณ์แบบจนเครียด ดูแลพอดี สร้างสมดุลยั่งยืน",
+          "keywords_th": ["สมดุล", "ไม่หักโหม", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมหนุนความสำเร็จและการบรรลุ",
+          "detailed_interpretation_th": "โลกในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวหนุนความสำเร็จและการบรรลุ - คนที่ช่วยให้คุณไปถึงเป้า โอกาสที่เปิด สถานการณ์ที่เอื้อต่อการปิดวงจร ไพ่บอกว่าคุณอยู่ในที่และเวลาที่เหมาะ ใช้แรงหนุนนี้บรรลุสิ่งที่ตั้งใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Judgement = บรรลุ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งภายนอก คือ 'อยู่ในที่และเวลาที่เหมาะ'",
+          "advice_th": "ใช้แรงหนุนภายนอก - คนช่วยให้ถึงเป้า โอกาสเปิด สถานการณ์เอื้อ บรรลุสิ่งที่ตั้งใจ",
+          "keywords_th": ["แวดล้อมหนุน", "โอกาส", "บรรลุ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างหนุนความสัมพันธ์ที่สมบูรณ์",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าคนรอบข้างหนุนความสัมพันธ์ที่สมบูรณ์ - ครอบครัวยินดี เพื่อนสนับสนุน สังคมที่เอื้อ ไพ่บอกว่าสภาพแวดล้อมเอื้อให้ความรักของคุณก้าวสู่ความสมบูรณ์และกลมเกลียว ใช้แรงหนุนนี้สร้างความสัมพันธ์ที่มั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งภายนอกความรัก คือ 'แวดล้อมเอื้อความรักสมบูรณ์'",
+          "advice_th": "ใช้สภาพแวดล้อมหนุน - ครอบครัวยินดี เพื่อนหนุน สร้างความสัมพันธ์ที่สมบูรณ์และมั่นคง",
+          "keywords_th": ["รักหนุน", "สมบูรณ์", "มั่นคง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสในงานเอื้อต่อการบรรลุเป้าหมาย",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่าโอกาสในงานเอื้อต่อการบรรลุเป้าหมาย - ตลาดที่เปิด คนที่หนุน โครงการที่สำเร็จ ไพ่หนุนให้คุณคว้าโอกาสและใช้แรงหนุนจากภายนอกสร้างความสำเร็จที่สมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งภายนอกงาน คือ 'โอกาสเอื้อบรรลุเป้า'",
+          "advice_th": "คว้าโอกาสที่เอื้อ - ตลาดเปิด คนหนุน โครงการสำเร็จ สร้างความสำเร็จที่สมบูรณ์",
+          "keywords_th": ["โอกาสเอื้อ", "บรรลุเป้า", "ความสำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ชุมชนรอบข้างหนุนการบรรลุความสมบูรณ์",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าชุมชนรอบข้างหนุนการบรรลุความสมบูรณ์ - คนที่เห็นคุณค่า ครูที่นำทาง ชุมชนที่เติบโตร่วมกัน ไพ่บอกว่าใช้แรงสนับสนุนนี้บูรณาการตัวเองและเป็นแสงให้คนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, Judgement = ตื่นรู้",
+            "wands": "Four of Wands = ชุมชน",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งภายนอกเติบโต คือ 'ชุมชนหนุนการบูรณาการ'",
+          "advice_th": "ใช้ชุมชนหนุน - คนเห็นคุณค่า ครูนำทาง บูรณาการตัวเอง เป็นแสงให้คนอื่น",
+          "keywords_th": ["ชุมชนหนุน", "บูรณาการ", "เป็นแสง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมหนุนสุขภาพที่สมบูรณ์",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าสิ่งแวดล้อมหนุนสุขภาพที่สมบูรณ์ - ธรรมชาติที่สดชื่น คนที่ดูแล สภาพที่เอื้อต่อความสมดุล ไพ่หนุนให้คุณใช้สภาพแวดล้อมที่ดีนี้สร้างสุขภาพแบบองค์รวมและรักษาความสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งภายนอกสุขภาพ คือ 'แวดล้อมหนุนสุขภาพองค์รวม'",
+          "advice_th": "ใช้สิ่งแวดล้อมหนุนสุขภาพ - ธรรมชาติสดชื่น คนดูแล สร้างสุขภาพองค์รวมและสมดุล",
+          "keywords_th": ["แวดล้อมหนุน", "สมบูรณ์", "องค์รวม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมขัดขวางการปิดวงจร",
+          "detailed_interpretation_th": "โลกกลับหัวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวขัดขวางการปิดวงจร - อุปสรรคจากภายนอก ความล่าช้า คนที่ดึงรั้ง ไพ่เตือนให้คุณอดทน ทำงานกับสิ่งที่ควบคุมได้ และไม่ปล่อยให้อุปสรรคภายนอกหยุดการบรรลุเป้าหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งภายนอก คือ 'ทำงานกับสิ่งที่ควบคุมได้'",
+          "advice_th": "อดทนกับอุปสรรค - แวดล้อมขัดขวาง ทำงานกับสิ่งที่ควบคุมได้ ไม่ให้หยุดการบรรลุ",
+          "keywords_th": ["แวดล้อมขัด", "ล่าช้า", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างไม่หนุนความสมบูรณ์ในรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าคนรอบข้างไม่หนุนความสมบูรณ์ในความรัก - ครอบครัวคัดค้าน สังคมตัดสิน สถานการณ์ที่ขัดขวาง ไพ่หนุนให้คุณเชื่อในความสัมพันธ์ของตัวเอง และสร้างความสมบูรณ์ร่วมกันแม้ขาดแรงหนุนจากภายนอก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = วิกฤต, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ไม่เข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งภายนอกความรัก คือ 'สร้างความสมบูรณ์แม้ขาดแรงหนุน'",
+          "advice_th": "เชื่อในความสัมพันธ์ - คนรอบข้างไม่หนุน สร้างความสมบูรณ์ร่วมกันแม้ขาดแรงหนุน",
+          "keywords_th": ["ไม่หนุน", "ขัดขวาง", "เชื่อในรัก"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคภายนอกขัดขวางการบรรลุงาน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าอุปสรรคภายนอกขัดขวางการบรรลุงาน - ตลาดที่ไม่เอื้อ ความล่าช้า การแข่งขัน หรือคนที่ไม่หนุน ไพ่หนุนให้คุณอดทน ปรับกลยุทธ์ และไม่ปล่อยให้อุปสรรคภายนอกหยุดความมุ่งมั่นสู่ความสำเร็จ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Hermit = ทบทวน",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งภายนอกงาน คือ 'ปรับกลยุทธ์ไม่ให้อุปสรรคหยุด'",
+          "advice_th": "อดทนกับอุปสรรค - ตลาดไม่เอื้อ ปรับกลยุทธ์ ไม่ให้อุปสรรคหยุดความมุ่งมั่น",
+          "keywords_th": ["อุปสรรคนอก", "ล่าช้า", "ปรับกลยุทธ์"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมไม่เข้าใจการเดินทางของคุณ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมไม่เข้าใจการเดินทางของคุณ - คนที่ไม่เห็นค่าการเติบโต ความคาดหวังที่กักขัง การเปรียบเทียบ ไพ่หนุนให้คุณเดินตามเส้นทางภายใน ไม่ปล่อยให้การไม่เข้าใจจากสังคมหยุดการบูรณาการตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = สับสน",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งภายนอกเติบโต คือ 'เดินตามเส้นทางภายใน'",
+          "advice_th": "เดินตามเส้นทางในตน - สังคมไม่เข้าใจ ไม่ปล่อยให้หยุดการบูรณาการตัวเอง",
+          "keywords_th": ["ไม่เข้าใจ", "กักขัง", "เดินตามใน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมขัดขวางความสมดุลของสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวเตือนว่าสิ่งแวดล้อมขัดขวางความสมดุลของสุขภาพ - ความเครียดจากภายนอก สภาพที่ไม่เอื้อ คนที่บั่นทอน ไพ่หนุนให้คุณปรับสภาพแวดล้อมเท่าที่ทำได้ ตัดปัจจัยที่ทำลายความสมดุล และสร้างพื้นที่ที่หนุนสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งภายนอกสุขภาพ คือ 'ปรับสภาพแวดล้อมหนุนสุขภาพ'",
+          "advice_th": "ปรับสิ่งแวดล้อม - ตัดปัจจัยที่ทำลายความสมดุล สร้างพื้นที่ที่หนุนสุขภาพ",
+          "keywords_th": ["แวดล้อมขัด", "ปรับสภาพ", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังความสำเร็จสมบูรณ์ กลัวจะไปไม่ถึง",
+          "detailed_interpretation_th": "โลกในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังความสำเร็จสมบูรณ์และการบรรลุเป้าหมาย แต่ก็กลัวจะไปไม่ถึงหรือไม่สมบูรณ์ ไพ่บอกว่าความหวังของคุณคือแรงผลักดัน และคุณใกล้เส้นชัยกว่าที่คิด อย่าปล่อยให้ความกลัวหยุดคุณก่อนถึงจุดหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Moon = ความกลัว",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งความหวังกลัว คือ 'คุณใกล้เส้นชัยกว่าที่คิด'",
+          "advice_th": "อย่ายอมแพ้ก่อนถึงเส้นชัย - หวังสำเร็จแต่กลัวไปไม่ถึง คุณใกล้กว่าที่คิด",
+          "keywords_th": ["หวังสำเร็จ", "กลัวไม่ถึง", "ใกล้เส้นชัย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความรักสมบูรณ์ กลัวไม่กลมเกลียว",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังความรักที่สมบูรณ์และกลมเกลียว แต่กลัวว่าจะไม่เป็นเช่นนั้น - กลัวความสัมพันธ์ไม่ไปถึงขั้นที่หวัง กลัวขาดความเติมเต็ม ไพ่บอกว่าความรักที่สมบูรณ์เป็นไปได้ ทำงานร่วมกันและเชื่อในความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งความหวังกลัวความรัก คือ 'รักสมบูรณ์เป็นไปได้'",
+          "advice_th": "เชื่อในความรัก - หวังสมบูรณ์แต่กลัวไม่กลมเกลียว ทำงานร่วมกัน รักสมบูรณ์เป็นไปได้",
+          "keywords_th": ["หวังรักสมบูรณ์", "กลัวไม่กลมเกลียว", "เชื่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังบรรลุเป้าหมายใหญ่ กลัวล้มเหลว",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังบรรลุเป้าหมายใหญ่และความสำเร็จ แต่กลัวล้มเหลวก่อนถึงจุดหมาย - กลัวงานไม่สำเร็จ กลัวไปไม่ถึงเป้า ไพ่บอกว่าคุณมีความสามารถบรรลุ ทุ่มเทก้าวสุดท้ายและเชื่อในศักยภาพของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งความหวังกลัวงาน คือ 'คุณมีความสามารถบรรลุ'",
+          "advice_th": "ทุ่มเทก้าวสุดท้าย - หวังบรรลุเป้าแต่กลัวล้มเหลว เชื่อในศักยภาพ คุณบรรลุได้",
+          "keywords_th": ["หวังบรรลุ", "กลัวล้มเหลว", "ทุ่มเท"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังความสมบูรณ์ กลัวไม่เคยพอ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังความสมบูรณ์และการเป็นหนึ่งเดียว แต่กลัวว่าจะไม่เคยพอหรือไม่ถึงความสมบูรณ์แบบ ไพ่บอกว่าความสมบูรณ์ไม่ใช่ความสมบูรณ์แบบ แต่คือการยอมรับและบูรณาการทุกด้าน รวมถึงความไม่สมบูรณ์ของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, Judgement = ตื่นรู้",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งความหวังกลัวเติบโต คือ 'สมบูรณ์คือยอมรับทุกด้าน'",
+          "advice_th": "ยอมรับทุกด้าน - หวังสมบูรณ์แต่กลัวไม่พอ ความสมบูรณ์คือยอมรับความไม่สมบูรณ์ของตน",
+          "keywords_th": ["หวังสมบูรณ์", "กลัวไม่พอ", "ยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพสมบูรณ์ กลัวไม่สมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังสุขภาพสมบูรณ์และสมดุล แต่กลัวว่าจะไม่สมดุลหรือมีด้านที่ขาด ไพ่บอกว่าสุขภาพแบบองค์รวมเป็นไปได้ ดูแลทุกมิติด้วยความสมดุล ไม่ต้องสมบูรณ์แบบ แต่สมดุลและยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งความหวังกลัวสุขภาพ คือ 'สมดุลและยั่งยืนไม่ต้องสมบูรณ์แบบ'",
+          "advice_th": "ดูแลทุกมิติ - หวังสุขภาพสมบูรณ์แต่กลัวไม่สมดุล ดูแลสมดุล ยั่งยืน ไม่ต้องสมบูรณ์แบบ",
+          "keywords_th": ["หวังสุขภาพ", "กลัวไม่สมดุล", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวไม่มีวันบรรลุจนไม่กล้าเริ่ม",
+          "detailed_interpretation_th": "โลกกลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวไม่มีวันบรรลุจนไม่กล้าเริ่ม - เพราะกลัวว่าจะไปไม่ถึง คุณลดความหวัง ไม่กล้าตั้งเป้าใหญ่ ไพ่บอกว่าการไม่กล้าเริ่มเองที่ขังคุณจากความสำเร็จ กล้าฝันและก้าวทีละก้าว",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัว, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งความหวังกลัว คือ 'ไม่กล้าเริ่มขังจากความสำเร็จ'",
+          "advice_th": "กล้าฝันและก้าว - กลัวไม่บรรลุจนไม่กล้าเริ่ม การไม่เริ่มเองที่ขังคุณ ก้าวทีละก้าว",
+          "keywords_th": ["กลัวไม่บรรลุ", "ไม่กล้าเริ่ม", "กล้าก้าว"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวความรักไม่สมบูรณ์จนไม่ทุ่มเท",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวความรักไม่สมบูรณ์จนไม่ทุ่มเท - กลัวความสัมพันธ์ไม่ไปถึงขั้นที่หวัง จึงไม่ลงทุนเต็มที่ ไพ่บอกว่าความรักสมบูรณ์ต้องการการทุ่มเท การกลัวล่วงหน้าทำให้คุณพลาดความรักที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = กลัวเลือก, The Moon = สับสน",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = กลัวเจ็บ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งความหวังกลัวความรัก คือ 'รักสมบูรณ์ต้องการการทุ่มเท'",
+          "advice_th": "กล้าทุ่มเทในรัก - กลัวไม่สมบูรณ์จนไม่ลงทุน การกลัวล่วงหน้าทำให้พลาดรักที่ดี",
+          "keywords_th": ["กลัวไม่สมบูรณ์", "ไม่ทุ่มเท", "กล้าลงทุน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวไปไม่ถึงเป้าจนไม่กล้าฝันใหญ่",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวไปไม่ถึงเป้าจนไม่กล้าฝันใหญ่ - ลดเป้าหมาย เลือกความปลอดภัย ไม่กล้าทุ่มเทเพื่อความสำเร็จใหญ่ ไพ่บอกว่าความกลัวนี้ขังคุณจากศักยภาพ กล้าตั้งเป้าใหญ่และทำงานทีละขั้นสู่จุดหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Swords = ติดกรอบ",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งความหวังกลัวงาน คือ 'กล้าตั้งเป้าใหญ่'",
+          "advice_th": "กล้าฝันใหญ่ - กลัวไปไม่ถึงจนลดเป้า กล้าตั้งเป้าใหญ่ ทำงานทีละขั้นสู่จุดหมาย",
+          "keywords_th": ["กลัวไม่ถึง", "ไม่กล้าฝัน", "กล้าตั้งเป้า"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวไม่มีวันสมบูรณ์จนตำหนิตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวไม่มีวันสมบูรณ์จนตำหนิตัวเอง - การตั้งมาตรฐานสูงเกิน การไม่พอใจในความก้าวหน้า การเปรียบเทียบกับอุดมคติ ไพ่หนุนให้คุณยอมรับว่าการเติบโตเป็นกระบวนการต่อเนื่อง ไม่ใช่จุดหมายที่สมบูรณ์แบบ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เงาในใจ, The Hermit = ปัญญา",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Nine of Swords = ตำหนิตน",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'การเติบโตคือกระบวนการต่อเนื่อง'",
+          "advice_th": "ยอมรับกระบวนการ - กลัวไม่สมบูรณ์จนตำหนิตน การเติบโตคือกระบวนการ ไม่ใช่ความสมบูรณ์แบบ",
+          "keywords_th": ["กลัวไม่สมบูรณ์", "ตำหนิตน", "กระบวนการ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวสุขภาพไม่สมบูรณ์จนวิตกเกิน",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวสุขภาพไม่สมบูรณ์จนวิตกเกิน - การตามหาสุขภาพที่สมบูรณ์แบบจนเครียด การกังวลทุกอาการเล็กน้อย ไพ่บอกว่าความวิตกเองบั่นทอนสุขภาพ ยอมรับร่างกายอย่างที่เป็น ดูแลด้วยความสมดุลและสบายใจ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = วิตก",
+            "wands": "Ten of Wands = แบกกลัว",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'ความวิตกเองบั่นทอนสุขภาพ'",
+          "advice_th": "ดูแลด้วยความสบายใจ - กลัวไม่สมบูรณ์จนวิตกเกิน ยอมรับร่างกายอย่างที่เป็น ดูแลสมดุล",
+          "keywords_th": ["กลัวไม่สมบูรณ์", "วิตกเกิน", "สบายใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือความสำเร็จสมบูรณ์และการบรรลุ",
+          "detailed_interpretation_th": "โลกในตำแหน่งผลลัพธ์ เป็นข่าวดีที่สุดในไพ่ทั้งหมด - ผลลัพธ์ของสถานการณ์คือความสำเร็จสมบูรณ์และการบรรลุเป้าหมาย คุณจะปิดวงจรอย่างงดงาม บรรลุสิ่งที่ตั้งใจ และรู้สึกเติมเต็มในทุกด้าน ไพ่ยืนยันว่าการเดินทางของคุณจะมาถึงจุดสมบูรณ์ที่งดงามและเปิดทางสู่บทใหม่ที่ยิ่งใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสุข, Judgement = บรรลุ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งผลลัพธ์ คือ 'การเดินทางมาถึงจุดสมบูรณ์ที่งดงาม'",
+          "advice_th": "เชื่อมั่นในความสำเร็จสมบูรณ์ - คุณจะบรรลุเป้าหมาย ปิดวงจรงดงาม เติมเต็มในทุกด้าน",
+          "keywords_th": ["ความสำเร็จสมบูรณ์", "บรรลุเป้า", "เติมเต็ม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่สมบูรณ์และเติมเต็ม",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เป็นข่าวดีที่สุด - คุณจะมีความรักที่สมบูรณ์และเติมเต็ม ความสัมพันธ์ที่กลมเกลียว การก้าวสู่ขั้นสำคัญ เช่น แต่งงานหรือสร้างครอบครัว ไพ่ยืนยันว่าความรักของคุณจะมาถึงจุดที่สมบูรณ์และนำมาซึ่งความสุขในระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Sun = ความสุข",
+            "wands": "Four of Wands = ฉลองรัก",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งผลลัพธ์ความรัก คือ 'ความรักมาถึงจุดสมบูรณ์'",
+          "advice_th": "เปิดใจรับความรักสมบูรณ์ - กลมเกลียว เติมเต็ม อาจมีก้าวสำคัญ ความสุขระยะยาว",
+          "keywords_th": ["รักสมบูรณ์", "เติมเต็ม", "ก้าวสำคัญ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือความสำเร็จและความมั่งคั่งสูงสุด",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดีที่สุด - คุณจะบรรลุความสำเร็จและความมั่งคั่งสูงสุด การบรรลุเป้าหมายใหญ่ การได้รับการยอมรับ การก้าวสู่จุดสูงสุดในอาชีพ ไพ่ยืนยันว่าความพยายามของคุณจะเก็บเกี่ยวผลอย่างงดงามและเปิดทางสู่ความสำเร็จที่ยิ่งใหญ่กว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งผลลัพธ์งาน คือ 'เก็บเกี่ยวผลงดงามและก้าวสู่ระดับสูงสุด'",
+          "advice_th": "เชื่อในความสำเร็จสูงสุด - บรรลุเป้าหมายใหญ่ การยอมรับ มั่งคั่ง เปิดทางสู่ความสำเร็จที่ใหญ่กว่า",
+          "keywords_th": ["ความสำเร็จสูงสุด", "มั่งคั่ง", "ยอมรับ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการบรรลุความสมบูรณ์ทางจิตวิญญาณ",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นชัยชนะสูงสุด - คุณจะบรรลุความสมบูรณ์ทางจิตวิญญาณ บูรณาการทุกด้านของตัวเอง เข้าใจจุดหมายชีวิต และเป็นหนึ่งเดียวกับชีวิต ไพ่ยืนยันว่าการเดินทางภายในของคุณจะมาถึงจุดสมบูรณ์ คุณจะเป็นตัวตนที่แท้จริงและเป็นแสงสว่างให้โลก",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างเต็มที่, Judgement = ตื่นรู้",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งผลลัพธ์เติบโต คือ 'เป็นตัวตนแท้และเป็นแสงให้โลก'",
+          "advice_th": "เฉลิมฉลองความสมบูรณ์ - บูรณาการทุกด้าน เข้าใจจุดหมาย เป็นหนึ่งเดียวกับชีวิต เป็นแสง",
+          "keywords_th": ["สมบูรณ์", "บูรณาการ", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพสมบูรณ์และสมดุลทุกด้าน",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดีที่สุด - คุณจะมีสุขภาพสมบูรณ์และสมดุลทุกด้าน ร่างกายแข็งแรง จิตใจสงบ จิตวิญญาณเชื่อมโยง พลังชีวิตเต็มเปี่ยม ไพ่ยืนยันว่าการดูแลตัวเองแบบองค์รวมจะนำมาซึ่งสุขภาพที่งดงามและความเป็นอยู่ที่ดีในทุกมิติ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = สุขภาพดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกตำแหน่งผลลัพธ์สุขภาพ คือ 'สุขภาพองค์รวมที่งดงาม'",
+          "advice_th": "เชื่อในสุขภาพสมบูรณ์ - กาย ใจ จิตสมดุล พลังชีวิตเต็มเปี่ยม ความเป็นอยู่ที่ดีทุกมิติ",
+          "keywords_th": ["สุขภาพสมบูรณ์", "สมดุล", "องค์รวม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือวงจรที่ยังไม่ปิดสมบูรณ์",
+          "detailed_interpretation_th": "โลกกลับหัวในตำแหน่งผลลัพธ์ เตือนว่าผลลัพธ์อาจเป็นวงจรที่ยังไม่ปิดสมบูรณ์ - ความสำเร็จที่ใช้เวลานานกว่าคาด เป้าหมายที่ต้องทุ่มเทเพิ่ม หรือสิ่งที่ยังค้างคา ไพ่บอกว่านี่ไม่ใช่ความล้มเหลว เพียงต้องการเวลาและความมุ่งมั่นเพิ่มเพื่อทำให้สมบูรณ์ ความสำเร็จใกล้มาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งผลลัพธ์ คือ 'ความสำเร็จใกล้มาถึง'",
+          "advice_th": "อดทนและทุ่มเทเพิ่ม - วงจรยังไม่ปิดสมบูรณ์ ไม่ใช่ความล้มเหลว ความสำเร็จใกล้มา",
+          "keywords_th": ["ยังไม่ปิด", "ใช้เวลา", "ใกล้สำเร็จ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่ยังไม่สมบูรณ์เต็มที่",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวบอกว่าความรักอาจยังไม่สมบูรณ์เต็มที่ - มีสิ่งที่ต้องทำงานเพิ่ม การก้าวสู่ขั้นสำคัญที่ใช้เวลา หรือความกลมเกลียวที่ต้องสร้าง ไพ่บอกว่านี่ไม่ใช่จุดจบ การสื่อสารและทำงานร่วมกันจะนำความสัมพันธ์สู่ความสมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ไม่ลงตัว, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ไม่สมหวัง",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = ไม่เข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'สื่อสารนำสู่ความสมบูรณ์'",
+          "advice_th": "ทำงานกับความรัก - ยังไม่สมบูรณ์เต็มที่ ไม่ใช่จุดจบ สื่อสารและทำงานร่วมกัน",
+          "keywords_th": ["ยังไม่สมบูรณ์", "ทำงานร่วม", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือความสำเร็จที่ล่าช้าหรือยังไม่ครบ",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวบอกว่าความสำเร็จอาจล่าช้าหรือยังไม่ครบ - โครงการที่ใช้เวลานานกว่าคาด เป้าหมายที่ต้องพยายามมากขึ้น ไพ่บอกว่านี่ไม่ใช่ความล้มเหลว ทบทวน ปรับกลยุทธ์ ทุ่มเทก้าวสุดท้าย และไม่ยอมแพ้ก่อนถึงเส้นชัย ความสำเร็จจะมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = หมดแรง",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งผลลัพธ์งาน คือ 'ไม่ยอมแพ้ก่อนเส้นชัย'",
+          "advice_th": "ทุ่มเทก้าวสุดท้าย - ความสำเร็จล่าช้า ไม่ใช่ความล้มเหลว ปรับกลยุทธ์ ไม่ยอมแพ้",
+          "keywords_th": ["สำเร็จล่าช้า", "ยังไม่ครบ", "ทุ่มเท"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการเติบโตที่ยังไม่ครบวงจร",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวบอกว่าการเดินทางภายในอาจยังไม่ครบวงจร - มีบทเรียนที่ต้องเรียนรู้ ด้านที่ต้องบูรณาการ กระบวนการที่ต้องผ่าน ไพ่บอกว่านี่ไม่ใช่ความล้มเหลว เป็นส่วนหนึ่งของการเดินทาง อดทน ทำงานกับด้านที่ขาด ความสมบูรณ์จะมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Eight of Cups = ต้องไปต่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Cups (rev) = สับสน"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'ส่วนหนึ่งของการเดินทาง'",
+          "advice_th": "อดทนกับการเติบโต - ยังไม่ครบวงจร เป็นส่วนหนึ่งของการเดินทาง ความสมบูรณ์จะมา",
+          "keywords_th": ["ยังไม่ครบ", "บทเรียนค้าง", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพที่ยังต้องสร้างสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวบอกว่าสุขภาพอาจยังต้องสร้างสมดุล - มีด้านที่ต้องดูแลเพิ่ม การฟื้นที่ใช้เวลา ความสมดุลที่ต้องสร้าง ไพ่บอกว่านี่ไม่ใช่ความล้มเหลว มองสุขภาพแบบองค์รวม ดูแลทุกมิติ อดทนกับกระบวนการฟื้น ความสมดุลที่แท้จริงจะมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: โลกกลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'ความสมดุลที่แท้จริงจะมา'",
+          "advice_th": "อดทนกับการฟื้น - ยังต้องสร้างสมดุล มององค์รวม ดูแลทุกมิติ ความสมดุลจะมา",
+          "keywords_th": ["ยังต้องสมดุล", "ดูแลเพิ่ม", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}
+

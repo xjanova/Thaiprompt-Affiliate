@@ -1,0 +1,1792 @@
+{
+  "card_identifier": {
+    "name_en": "Four of Wands",
+    "name_th": "สี่ไม้เท้า",
+    "number": 4,
+    "type": "minor_arcana",
+    "suit": "wands"
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การเฉลิมฉลองและความสงบสุขในชุมชน",
+          "detailed_interpretation_th": "สี่ไม้เท้าในปัจจุบัน บอกว่าคุณกำลังอยู่ในช่วงของการเฉลิมฉลองและความสงบสุข - การได้รับการต้อนรับ การฉลองความสำเร็จ ความสามัคคีในครอบครัวหรือทีม ไพ่หนุนให้คุณเพลิดเพลินกับช่วงเวลานี้และแบ่งปันความสุขกับคนรอบข้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสุข, The Empress = ความอบอุ่น",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าปัจจุบัน คือ 'แบ่งปันความสุขกับคนรอบข้าง'",
+          "advice_th": "เฉลิมฉลองและสามัคคี - ได้รับการต้อนรับ ฉลองความสำเร็จ ความสามัคคีในชุมชน",
+          "keywords_th": ["เฉลิมฉลอง", "สงบสุข", "ชุมชน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักที่มั่นคงและกลมเกลียว",
+          "detailed_interpretation_th": "ในความรัก สี่ไม้เท้าปัจจุบันชี้ว่าความรักของคุณมั่นคงและกลมเกลียว - การก้าวสู่ขั้นใหม่ การหมั้น การแต่งงาน หรือการสร้างบ้าน ไพ่หนุนให้คุณเฉลิมฉลองความสัมพันธ์และสร้างรากฐานที่แข็งแรงร่วมกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Empress = ความอบอุ่น",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าปัจจุบันความรัก คือ 'สร้างรากฐานที่แข็งแรงร่วมกัน'",
+          "advice_th": "เฉลิมฉลองความรัก - มั่นคงและกลมเกลียว ก้าวสู่ขั้นใหม่ สร้างรากฐานร่วมกัน",
+          "keywords_th": ["รักมั่นคง", "กลมเกลียว", "ก้าวใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความสำเร็จที่เก็บเกี่ยวและทีมที่กลมเกลียว",
+          "detailed_interpretation_th": "ในการงาน สี่ไม้เท้าปัจจุบันบอกว่าคุณกำลังเก็บเกี่ยวความสำเร็จและมีทีมที่กลมเกลียว - การได้รับการยอมรับ ผลตอบแทนที่ดี การฉลองความสำเร็จของโครงการ ไพ่หนุนให้คุณเพลิดเพลินกับช่วงเวลานี้และขอบคุณทีมที่ช่วยให้คุณมาถึงจุดนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าปัจจุบันงาน คือ 'ขอบคุณทีมที่ช่วยให้มาถึงจุดนี้'",
+          "advice_th": "เก็บเกี่ยวความสำเร็จ - ได้รับการยอมรับ ผลตอบแทนดี ทีมกลมเกลียว ขอบคุณทีม",
+          "keywords_th": ["เก็บเกี่ยวสำเร็จ", "ทีมกลมเกลียว", "การยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ช่วงเวลาแห่งความสมดุลและการเชื่อมโยง",
+          "detailed_interpretation_th": "ในการเติบโต สี่ไม้เท้าปัจจุบันชี้ว่าคุณกำลังอยู่ในช่วงเวลาแห่งความสมดุลและการเชื่อมโยง - การรู้สึกเป็นส่วนหนึ่งของกลุ่ม การพบความสงบในตัวเอง การเฉลิมฉลองสิ่งที่บรรลุได้ ไพ่หนุนให้คุณซาบซึ้งกับความก้าวหน้าและเชื่อมโยงกับคนที่หนุนคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The World = สมบูรณ์, The Sun = สว่าง",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าปัจจุบันเติบโต คือ 'ซาบซึ้งกับความก้าวหน้า'",
+          "advice_th": "เฉลิมฉลองความสมดุล - รู้สึกเป็นส่วนหนึ่งของกลุ่ม พบความสงบ เชื่อมโยงกับคนที่หนุน",
+          "keywords_th": ["สมดุล", "เชื่อมโยง", "ซาบซึ้ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพดีและพลังสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ สี่ไม้เท้าปัจจุบันบอกว่าสุขภาพของคุณดีและพลังสมดุล - ร่างกายแข็งแรง จิตใจสงบ การพักผ่อนที่เพียงพอ ไพ่หนุนให้คุณเพลิดเพลินกับสุขภาพดีนี้และรักษาสมดุลในชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าปัจจุบันสุขภาพ คือ 'รักษาสมดุลในชีวิต'",
+          "advice_th": "เพลิดเพลินกับสุขภาพดี - ร่างกายแข็งแรง จิตใจสงบ พักผ่อนพอ รักษาสมดุล",
+          "keywords_th": ["สุขภาพดี", "พลังสมดุล", "สงบ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความสามัคคีถูกท้าทายหรือการฉลองถูกชะลอ",
+          "detailed_interpretation_th": "สี่ไม้เท้ากลับหัวในปัจจุบัน บอกว่าความสามัคคีถูกท้าทายหรือการฉลองถูกชะลอ - ความขัดแย้งในกลุ่ม การเลื่อนงานสำคัญ ความรู้สึกไม่มั่นคงในที่ที่ควรเป็นบ้าน ไพ่หนุนให้คุณทำงานกับความสัมพันธ์และสร้างความสามัคคีอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ปั่นป่วน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "King of Cups (rev) = ขาดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวปัจจุบัน คือ 'สร้างความสามัคคีอีกครั้ง'",
+          "advice_th": "ทำงานกับความสัมพันธ์ - ความสามัคคีถูกท้าทาย การฉลองชะลอ สร้างความสามัคคีอีกครั้ง",
+          "keywords_th": ["สามัคคีถูกท้าทาย", "ฉลองชะลอ", "ทำงานสัมพันธ์"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักมีปัญหาในบ้านหรือการก้าวต่อช้า",
+          "detailed_interpretation_th": "ในความรัก สี่ไม้เท้ากลับหัวชี้ว่ามีปัญหาในบ้านหรือการก้าวต่อช้า - ความขัดแย้งในครอบครัว การหมั้นที่เลื่อน ความสัมพันธ์ที่ไม่ก้าวหน้า ไพ่หนุนให้คุณสื่อสารกับคู่และแก้ปัญหาในบ้านอย่างซื่อสัตย์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = วิกฤต, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวปัจจุบันความรัก คือ 'สื่อสารและแก้ปัญหาซื่อสัตย์'",
+          "advice_th": "สื่อสารกับคู่ - ปัญหาในบ้าน การก้าวต่อช้า ขัดแย้งในครอบครัว แก้ปัญหาซื่อสัตย์",
+          "keywords_th": ["ปัญหาบ้าน", "ก้าวต่อช้า", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทีมขัดแย้งหรือความสำเร็จถูกชะลอ",
+          "detailed_interpretation_th": "ในการงาน สี่ไม้เท้ากลับหัวบอกว่าทีมขัดแย้งหรือความสำเร็จถูกชะลอ - การร่วมงานที่ไม่ราบรื่น การฉลองที่ยังไม่ถึง อุปสรรคในกลุ่ม ไพ่หนุนให้คุณทำงานกับทีม สื่อสารเปิด และแก้ปัญหาความขัดแย้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ขัดแย้ง, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Three of Pentacles (rev) = ทีมล้ม",
+            "court_cards": "King of Swords (rev) = เผด็จการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวปัจจุบันงาน คือ 'ทำงานกับทีมแก้ความขัดแย้ง'",
+          "advice_th": "ทำงานกับทีม - ทีมขัดแย้ง ความสำเร็จชะลอ สื่อสารเปิด แก้ความขัดแย้ง",
+          "keywords_th": ["ทีมขัดแย้ง", "สำเร็จชะลอ", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รู้สึกขาดความเชื่อมโยงและไม่มั่นคง",
+          "detailed_interpretation_th": "ในการเติบโต สี่ไม้เท้ากลับหัวเผยว่าคุณรู้สึกขาดความเชื่อมโยงและไม่มั่นคง - ความรู้สึกไม่เป็นส่วนหนึ่งของกลุ่ม ความสงบที่หายไป ความไม่สมดุลในชีวิต ไพ่หนุนให้คุณหาคนหรือชุมชนที่หนุนและสร้างสมดุลในตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = สับสน",
+            "wands": "Five of Cups = ผิดหวัง",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวปัจจุบันเติบโต คือ 'หาคนหรือชุมชนที่หนุน'",
+          "advice_th": "หาความเชื่อมโยง - ขาดความเชื่อมโยง ไม่มั่นคง หาคนหรือชุมชนที่หนุน สร้างสมดุล",
+          "keywords_th": ["ขาดเชื่อมโยง", "ไม่มั่นคง", "หาคนหนุน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพไม่สมดุลและพลังลด",
+          "detailed_interpretation_th": "ในสุขภาพ สี่ไม้เท้ากลับหัวบอกว่าสุขภาพไม่สมดุลและพลังลด - ความเหนื่อยล้า ความเครียดสะสม การพักผ่อนไม่เพียงพอ ไพ่หนุนให้คุณกลับมาสร้างสมดุล พักผ่อนให้พอ และดูแลทั้งกายและใจ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวปัจจุบันสุขภาพ คือ 'สร้างสมดุลพักผ่อนพอ'",
+          "advice_th": "สร้างสมดุล - สุขภาพไม่สมดุล พลังลด พักผ่อนพอ ดูแลกายและใจ",
+          "keywords_th": ["ไม่สมดุล", "พลังลด", "พักผ่อน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการสร้างความสามัคคีและฐานมั่นคง",
+          "detailed_interpretation_th": "สี่ไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือการสร้างความสามัคคีและฐานมั่นคง - การรวมคนเข้าด้วยกัน การสร้างความรู้สึกของบ้าน การฉลองความสำเร็จร่วมกัน อุปสรรคนี้คือการสร้างชุมชนที่หนุน",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ความอบอุ่น, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอุปสรรค คือ 'สร้างชุมชนที่หนุน'",
+          "advice_th": "สร้างความสามัคคี - รวมคนเข้าด้วยกัน สร้างความรู้สึกของบ้าน ฉลองร่วมกัน",
+          "keywords_th": ["สร้างสามัคคี", "ฐานมั่นคง", "ชุมชน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือการสร้างรากฐานในความสัมพันธ์",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการสร้างรากฐานในความสัมพันธ์ - การก้าวสู่ขั้นสำคัญ การสร้างบ้านร่วมกัน การวางแผนชีวิตคู่ อุปสรรคนี้คือการลงทุนในความสัมพันธ์ระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Empress = ความอบอุ่น",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอุปสรรคความรัก คือ 'ลงทุนในความสัมพันธ์ระยะยาว'",
+          "advice_th": "สร้างรากฐาน - ก้าวสู่ขั้นสำคัญ สร้างบ้านร่วมกัน วางแผนชีวิตคู่",
+          "keywords_th": ["สร้างรากฐาน", "ก้าวสำคัญ", "บ้าน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือการสร้างทีมและฉลองความสำเร็จ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการสร้างทีมและฉลองความสำเร็จ - การรวมทีม การสร้างวัฒนธรรมที่ดี การยกระดับความสำเร็จร่วมกัน อุปสรรคนี้คือการสร้างความสามัคคีในงาน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Empress = อบอุ่น",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอุปสรรคงาน คือ 'สร้างความสามัคคีในงาน'",
+          "advice_th": "สร้างทีมและฉลอง - รวมทีม สร้างวัฒนธรรมดี ยกระดับความสำเร็จร่วมกัน",
+          "keywords_th": ["สร้างทีม", "ฉลองสำเร็จ", "วัฒนธรรม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือการหาที่ที่รู้สึกเป็นบ้าน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการหาที่ที่รู้สึกเป็นบ้าน - การสร้างชุมชน การหาคนที่เข้าใจ การพบความสงบในตัวเอง อุปสรรคนี้คือการเชื่อมโยงกับคนและที่ที่สะท้อนคุณค่าของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, The Sun = ความสุข",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอุปสรรคเติบโต คือ 'เชื่อมโยงกับคนและที่ที่สะท้อนคุณค่า'",
+          "advice_th": "หาที่ที่เป็นบ้าน - สร้างชุมชน หาคนเข้าใจ พบความสงบในตัวเอง",
+          "keywords_th": ["หาบ้าน", "สร้างชุมชน", "เชื่อมโยง"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือการสร้างสมดุลในวิถีชีวิต",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการสร้างสมดุลในวิถีชีวิต - การพักผ่อนเพียงพอ การกินอาหารที่ดี การมีกิจกรรมที่ทำให้ใจสงบ อุปสรรคนี้คือการสร้างกิจวัตรที่หนุนสุขภาพระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอุปสรรคสุขภาพ คือ 'สร้างกิจวัตรที่หนุนสุขภาพระยะยาว'",
+          "advice_th": "สร้างสมดุลวิถีชีวิต - พักผ่อนพอ กินอาหารดี กิจกรรมทำให้ใจสงบ",
+          "keywords_th": ["สมดุลวิถี", "พักผ่อน", "กิจวัตรดี"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือความขัดแย้งที่ทำลายความสามัคคี",
+          "detailed_interpretation_th": "สี่ไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือความขัดแย้งที่ทำลายความสามัคคี - การแตกแยกในกลุ่ม ความไม่มั่นคงในบ้าน การเฉลิมฉลองที่ถูกชะลอ ไพ่หนุนให้คุณทำงานกับความสัมพันธ์ สื่อสารเปิด และสร้างความเข้าใจอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ปั่นป่วน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "King of Cups (rev) = ขาดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอุปสรรค คือ 'สร้างความเข้าใจอีกครั้ง'",
+          "advice_th": "ทำงานกับความสัมพันธ์ - ขัดแย้งทำลายสามัคคี สื่อสารเปิด สร้างความเข้าใจอีกครั้ง",
+          "keywords_th": ["ขัดแย้ง", "ทำลายสามัคคี", "สื่อสาร"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือปัญหาในบ้านและความสัมพันธ์ไม่ก้าวหน้า",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือปัญหาในบ้านและความสัมพันธ์ไม่ก้าวหน้า - ครอบครัวที่ขัดแย้ง การหมั้นที่เลื่อน คู่ที่ไม่พร้อมก้าวต่อ ไพ่หนุนให้คุณสื่อสารกับคู่อย่างซื่อสัตย์และแก้ปัญหาในบ้านอย่างจริงจัง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = วิกฤต, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอุปสรรคความรัก คือ 'แก้ปัญหาในบ้านจริงจัง'",
+          "advice_th": "แก้ปัญหาในบ้าน - ครอบครัวขัดแย้ง การหมั้นเลื่อน สื่อสารซื่อสัตย์ แก้ปัญหาจริงจัง",
+          "keywords_th": ["ปัญหาบ้าน", "ไม่ก้าวหน้า", "แก้ปัญหา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือทีมแตกแยกและความสำเร็จล่ม",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือทีมแตกแยกและความสำเร็จล่ม - การร่วมงานที่ขัดแย้ง โครงการที่ล่ม การฉลองที่ถูกยกเลิก ไพ่หนุนให้คุณทำงานกับทีม สื่อสารเปิด และฟื้นความสามัคคีเพื่อให้กลับมาทำงานร่วมกันได้",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Three of Pentacles (rev) = ทีมล้ม",
+            "court_cards": "King of Swords (rev) = เผด็จการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอุปสรรคงาน คือ 'ฟื้นความสามัคคีเพื่อกลับมาทำงานร่วมกัน'",
+          "advice_th": "ฟื้นทีม - แตกแยก ความสำเร็จล่ม สื่อสารเปิด ฟื้นความสามัคคีกลับมาทำงานร่วม",
+          "keywords_th": ["ทีมแตกแยก", "สำเร็จล่ม", "ฟื้นสามัคคี"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือรู้สึกโดดเดี่ยวและไม่มั่นคง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือความรู้สึกโดดเดี่ยวและไม่มั่นคง - การขาดชุมชน ความรู้สึกไม่เป็นส่วนหนึ่ง ความไม่สมดุลในชีวิต ไพ่หนุนให้คุณกล้าเชื่อมโยงกับคน หาที่ที่รู้สึกเป็นบ้าน และสร้างสมดุลในตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = สับสน",
+            "wands": "Five of Cups = ผิดหวัง",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอุปสรรคเติบโต คือ 'กล้าเชื่อมโยงกับคน'",
+          "advice_th": "เชื่อมโยงและสร้างสมดุล - รู้สึกโดดเดี่ยว ขาดชุมชน หาที่ที่เป็นบ้าน สร้างสมดุล",
+          "keywords_th": ["โดดเดี่ยว", "ไม่มั่นคง", "เชื่อมโยง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือความไม่สมดุลในวิถีชีวิต",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือความไม่สมดุลในวิถีชีวิต - ความเครียดสะสม การพักผ่อนไม่พอ การละเลยการดูแลตัวเอง ไพ่หนุนให้คุณกลับมาสร้างสมดุล วางแผนการพักผ่อน และดูแลทั้งร่างกายและจิตใจ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอุปสรรคสุขภาพ คือ 'กลับมาสร้างสมดุล'",
+          "advice_th": "สร้างสมดุลใหม่ - ไม่สมดุล เครียดสะสม พักผ่อนไม่พอ ดูแลร่างกายและจิตใจ",
+          "keywords_th": ["ไม่สมดุล", "พักผ่อนไม่พอ", "ดูแลกายใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยมีช่วงเฉลิมฉลองและสามัคคี",
+          "detailed_interpretation_th": "สี่ไม้เท้าในอดีต เผยว่าคุณเคยมีช่วงเฉลิมฉลองและสามัคคี - ช่วงเวลาที่รู้สึกเป็นส่วนหนึ่งของกลุ่ม ความสุขในชุมชน การฉลองความสำเร็จร่วมกัน ประสบการณ์นี้สอนคุณว่าความสามัคคีและการเชื่อมโยงทำให้ชีวิตมีความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ความอบอุ่น, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอดีต คือ 'ความสามัคคีทำให้ชีวิตมีความหมาย'",
+          "advice_th": "ใช้บทเรียนความสามัคคี - คุณเคยมีช่วงเฉลิมฉลอง ใช้ความรู้นี้สร้างความเชื่อมโยงในปัจจุบัน",
+          "keywords_th": ["เฉลิมฉลองเก่า", "สามัคคี", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีช่วงเวลาแห่งความรักที่กลมเกลียว",
+          "detailed_interpretation_th": "ในความรัก สี่ไม้เท้าอดีตเผยว่าคุณเคยมีช่วงเวลาแห่งความรักที่กลมเกลียว - การหมั้น การแต่งงาน การฉลองความสัมพันธ์ ประสบการณ์นี้สอนคุณว่าความรักที่มีรากฐานในครอบครัวและชุมชนยั่งยืนกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Empress = อบอุ่น",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอดีตความรัก คือ 'ความรักที่มีรากฐานในครอบครัวยั่งยืน'",
+          "advice_th": "ใช้บทเรียนความรักกลมเกลียว - คุณเคยมีช่วงเวลาแห่งความรัก ใช้ความเชื่อนี้ในปัจจุบัน",
+          "keywords_th": ["รักกลมเกลียวเก่า", "ครอบครัว", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยสำเร็จในงานร่วมกับทีม",
+          "detailed_interpretation_th": "ในการงาน สี่ไม้เท้าอดีตเผยว่าคุณเคยสำเร็จในงานร่วมกับทีม - โครงการที่สำเร็จด้วยความร่วมมือ การได้รับการยอมรับจากทีม การฉลองความสำเร็จร่วมกัน ประสบการณ์นี้กลายเป็นความรู้ว่าคุณทำงานเป็นทีมได้ดีและสร้างวัฒนธรรมที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Empress = อบอุ่น",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอดีตงาน คือ 'คุณทำงานเป็นทีมได้ดี'",
+          "advice_th": "ใช้บทเรียนการทำงานเป็นทีม - คุณเคยสำเร็จร่วมกับทีม ใช้ความสามารถนี้ในปัจจุบัน",
+          "keywords_th": ["สำเร็จกับทีมเก่า", "วัฒนธรรมดี", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยพบความสมดุลและการเชื่อมโยงกับชุมชน",
+          "detailed_interpretation_th": "ในการเติบโต สี่ไม้เท้าอดีตชี้ว่าคุณเคยพบความสมดุลและการเชื่อมโยงกับชุมชน - ช่วงเวลาที่รู้สึกเป็นส่วนหนึ่ง ความสงบในใจ การมีฐานที่มั่นคง ประสบการณ์นี้กลายเป็นความเข้าใจว่าการเชื่อมโยงกับคนสำคัญต่อความเป็นอยู่ที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The World = สมบูรณ์, The Empress = อบอุ่น",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอดีตเติบโต คือ 'การเชื่อมโยงกับคนสำคัญต่อความเป็นอยู่ที่ดี'",
+          "advice_th": "ใช้ปัญญาการเชื่อมโยง - คุณเคยพบความสมดุล ใช้ประสบการณ์นี้ในปัจจุบัน",
+          "keywords_th": ["สมดุลเก่า", "เชื่อมโยง", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีสุขภาพดีและพลังสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ สี่ไม้เท้าอดีตเผยว่าคุณเคยมีสุขภาพดีและพลังสมดุล - ช่วงเวลาที่ร่างกายแข็งแรง จิตใจสงบ การพักผ่อนเพียงพอ ประสบการณ์นี้สอนคุณว่ารู้สึกอย่างไรเมื่อสุขภาพสมดุล ใช้เป็นเป้าหมายในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอดีตสุขภาพ คือ 'สุขภาพสมดุลเป็นไปได้'",
+          "advice_th": "ใช้บทเรียนสุขภาพดี - คุณเคยมีพลังสมดุล ใช้เป็นเป้าหมายในปัจจุบัน",
+          "keywords_th": ["สุขภาพสมดุลเก่า", "พลังดี", "เป้าหมาย"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยมีความขัดแย้งในชุมชนหรือบ้าน",
+          "detailed_interpretation_th": "สี่ไม้เท้ากลับหัวในอดีต เผยว่าคุณเคยมีความขัดแย้งในชุมชนหรือบ้าน - การแตกแยกในกลุ่ม ปัญหาในครอบครัว การฉลองที่ขาดความสุข บทเรียนคือคุณรู้ค่าของความสามัคคีและการสื่อสารในความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ปั่นป่วน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "King of Cups (rev) = ขาดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวอดีต คือ 'รู้ค่าของความสามัคคีและการสื่อสาร'",
+          "advice_th": "ใช้บทเรียนความขัดแย้ง - คุณรู้ค่าของความสามัคคี ใช้ความเข้าใจนี้ในปัจจุบัน",
+          "keywords_th": ["ขัดแย้งเก่า", "ปัญหาบ้าน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีปัญหาในครอบครัวความรัก",
+          "detailed_interpretation_th": "ในความรัก สี่ไม้เท้ากลับหัวในอดีตชี้ว่าคุณเคยมีปัญหาในครอบครัวความรัก - การหมั้นที่ล่ม การแต่งงานที่ไม่ราบรื่น ครอบครัวที่ไม่หนุน บทเรียนคือคุณรู้ค่าของความสัมพันธ์ที่มั่นคงและการได้รับการหนุนจากคนรอบข้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ผิดพลาด, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวแตก",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวอดีตความรัก คือ 'รู้ค่าของความสัมพันธ์ที่มั่นคง'",
+          "advice_th": "ใช้บทเรียนปัญหาครอบครัวรัก - คุณรู้ค่าของความสัมพันธ์มั่นคง ใช้ในปัจจุบัน",
+          "keywords_th": ["ปัญหาครอบครัวเก่า", "ไม่หนุน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยมีทีมที่แตกแยกหรือโครงการล้ม",
+          "detailed_interpretation_th": "ในการงาน สี่ไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยมีทีมที่แตกแยกหรือโครงการล้ม - ความขัดแย้งในทีม การร่วมงานล้มเหลว วัฒนธรรมที่ไม่ดี บทเรียนคือคุณรู้ค่าของทีมที่กลมเกลียวและวัฒนธรรมการทำงานที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Three of Pentacles (rev) = ทีมล้ม",
+            "court_cards": "King of Swords (rev) = เผด็จการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวอดีตงาน คือ 'รู้ค่าของทีมที่กลมเกลียว'",
+          "advice_th": "ใช้บทเรียนทีมแตกเก่า - คุณรู้ค่าของทีมกลมเกลียว ใช้ในการสร้างทีมปัจจุบัน",
+          "keywords_th": ["ทีมแตกเก่า", "โครงการล้ม", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยรู้สึกโดดเดี่ยวและขาดชุมชน",
+          "detailed_interpretation_th": "ในการเติบโต สี่ไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยรู้สึกโดดเดี่ยวและขาดชุมชน - ช่วงเวลาที่ไม่มีคนเข้าใจ การหาที่ที่เป็นบ้านไม่เจอ ความรู้สึกห่างเหินจากกลุ่ม บทเรียนคือคุณรู้ค่าของการเชื่อมโยงและไม่ปล่อยให้ตัวเองโดดเดี่ยวอีก",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = สับสน",
+            "wands": "Five of Cups = ผิดหวัง",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวอดีตเติบโต คือ 'ไม่ปล่อยให้ตัวเองโดดเดี่ยวอีก'",
+          "advice_th": "ใช้บทเรียนความโดดเดี่ยว - คุณรู้ค่าของการเชื่อมโยง ไม่ปล่อยให้ตัวเองโดดเดี่ยวอีก",
+          "keywords_th": ["โดดเดี่ยวเก่า", "ขาดชุมชน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีช่วงสุขภาพไม่สมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ สี่ไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยมีช่วงสุขภาพไม่สมดุล - ความเครียดสะสม การพักผ่อนไม่พอ การละเลยการดูแลตัวเอง บทเรียนคือคุณรู้ค่าของความสมดุลและการดูแลกายและใจไปพร้อมกัน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวอดีตสุขภาพ คือ 'รู้ค่าของความสมดุล'",
+          "advice_th": "ใช้บทเรียนไม่สมดุล - คุณรู้ค่าของความสมดุล ดูแลกายและใจไปพร้อมกัน",
+          "keywords_th": ["ไม่สมดุลเก่า", "เครียด", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีการเฉลิมฉลองและความสามัคคี",
+          "detailed_interpretation_th": "สี่ไม้เท้าในอนาคต เป็นข่าวดี - อนาคตจะมีการเฉลิมฉลองและความสามัคคี การฉลองความสำเร็จ การก้าวสู่ขั้นใหม่ในชีวิต ช่วงเวลาแห่งความสุขในชุมชน ไพ่หนุนให้คุณเตรียมใจรับช่วงเวลาดีและแบ่งปันความสุขกับคนรอบข้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสุข, The Empress = อบอุ่น",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอนาคต คือ 'แบ่งปันความสุขกับคนรอบข้าง'",
+          "advice_th": "เตรียมรับการเฉลิมฉลอง - การฉลองความสำเร็จ ก้าวสู่ขั้นใหม่ ความสุขในชุมชน",
+          "keywords_th": ["เฉลิมฉลอง", "สามัคคี", "ช่วงเวลาดี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักจะก้าวสู่ขั้นสำคัญ",
+          "detailed_interpretation_th": "ในความรัก สี่ไม้เท้าอนาคตเป็นข่าวดี - ความรักจะก้าวสู่ขั้นสำคัญ การหมั้น การแต่งงาน การสร้างบ้านร่วมกัน หรือการฉลองความสัมพันธ์ที่ลึกซึ้ง ไพ่ยืนยันว่าความรักของคุณกำลังก้าวสู่ความมั่นคงและความสุข",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Empress = อบอุ่น",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอนาคตความรัก คือ 'ก้าวสู่ความมั่นคงและความสุข'",
+          "advice_th": "เตรียมรับขั้นใหม่ในรัก - การหมั้น แต่งงาน สร้างบ้าน ฉลองความสัมพันธ์ลึกซึ้ง",
+          "keywords_th": ["รักก้าวสำคัญ", "แต่งงาน", "บ้าน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความสำเร็จในทีมและการฉลองในงาน",
+          "detailed_interpretation_th": "ในการงาน สี่ไม้เท้าอนาคตเป็นข่าวดี - คุณจะได้ความสำเร็จในทีมและการฉลองในงาน โครงการที่สำเร็จ ทีมที่กลมเกลียว การได้รับการยอมรับ ไพ่ยืนยันว่าความพยายามร่วมกับทีมจะนำสู่ผลลัพธ์ที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอนาคตงาน คือ 'ความพยายามร่วมกับทีมนำสู่ผลงดงาม'",
+          "advice_th": "เตรียมรับความสำเร็จในทีม - โครงการสำเร็จ ทีมกลมเกลียว ได้รับการยอมรับ",
+          "keywords_th": ["สำเร็จในทีม", "ฉลอง", "ยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การพบความสมดุลและชุมชนที่หนุน",
+          "detailed_interpretation_th": "ในการเติบโต สี่ไม้เท้าอนาคตบอกว่าคุณจะพบความสมดุลและชุมชนที่หนุน - การรู้สึกเป็นส่วนหนึ่ง การพบที่ที่เป็นบ้าน การมีฐานที่มั่นคงทางใจ ไพ่หนุนให้คุณเตรียมใจรับความเชื่อมโยงและสร้างชุมชนที่เหมาะกับคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The World = สมบูรณ์, The Empress = อบอุ่น",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอนาคตเติบโต คือ 'สร้างชุมชนที่เหมาะกับคุณ'",
+          "advice_th": "เตรียมพบสมดุลและชุมชน - รู้สึกเป็นส่วนหนึ่ง พบที่ที่เป็นบ้าน ฐานมั่นคงทางใจ",
+          "keywords_th": ["พบสมดุล", "ชุมชนหนุน", "เชื่อมโยง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะดีและพลังสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ สี่ไม้เท้าอนาคตเป็นข่าวดี - สุขภาพจะดีและพลังสมดุล ร่างกายแข็งแรง จิตใจสงบ การมีกิจวัตรที่หนุนความเป็นอยู่ที่ดี ไพ่ยืนยันว่าการสร้างสมดุลในชีวิตจะให้ผลที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าอนาคตสุขภาพ คือ 'การสร้างสมดุลให้ผลงดงาม'",
+          "advice_th": "เตรียมรับสุขภาพดี - ร่างกายแข็งแรง จิตใจสงบ กิจวัตรหนุนความเป็นอยู่ที่ดี",
+          "keywords_th": ["สุขภาพดี", "พลังสมดุล", "สงบ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตอาจมีความขัดแย้งหรือการฉลองล่าช้า",
+          "detailed_interpretation_th": "สี่ไม้เท้ากลับหัวในอนาคต เตือนว่าอาจมีความขัดแย้งหรือการฉลองล่าช้า - ปัญหาในชุมชน การเลื่อนงานสำคัญ ความไม่มั่นคงในที่ที่ควรเป็นบ้าน ไพ่หนุนให้คุณเตรียมใจทำงานกับความสัมพันธ์และไม่ปล่อยให้ปัญหาทำลายความสุข",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ปั่นป่วน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "King of Cups (rev) = ขาดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวอนาคต คือ 'ไม่ปล่อยให้ปัญหาทำลายความสุข'",
+          "advice_th": "เตรียมรับความขัดแย้ง - ปัญหาในชุมชน การฉลองล่าช้า ทำงานกับความสัมพันธ์",
+          "keywords_th": ["ขัดแย้ง", "ฉลองล่าช้า", "ทำงานสัมพันธ์"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจมีปัญหาในการก้าวต่อ",
+          "detailed_interpretation_th": "ในความรัก สี่ไม้เท้ากลับหัวอนาคตเตือนว่าความรักอาจมีปัญหาในการก้าวต่อ - การหมั้นที่ล่าช้า การไม่ตกลงเรื่องอนาคต ครอบครัวที่ไม่หนุน ไพ่หนุนให้คุณสื่อสารกับคู่อย่างซื่อสัตย์และแก้ปัญหาในบ้านอย่างจริงจัง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวอนาคตความรัก คือ 'สื่อสารและแก้ปัญหาจริงจัง'",
+          "advice_th": "เตรียมรับปัญหาความรัก - หมั้นล่าช้า ไม่ตกลงอนาคต ครอบครัวไม่หนุน สื่อสารซื่อสัตย์",
+          "keywords_th": ["ปัญหาก้าวต่อ", "ไม่ตกลง", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทีมอาจขัดแย้งหรือโครงการชะลอ",
+          "detailed_interpretation_th": "ในการงาน สี่ไม้เท้ากลับหัวอนาคตเตือนว่าทีมอาจขัดแย้งหรือโครงการชะลอ - การทำงานที่ไม่ราบรื่น ความขัดแย้งในทีม การฉลองที่ไม่เกิด ไพ่หนุนให้คุณเตรียมทำงานกับทีม สื่อสารเปิด และแก้ปัญหาความขัดแย้งล่วงหน้า",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ขัดแย้ง, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Three of Pentacles (rev) = ทีมล้ม",
+            "court_cards": "King of Swords (rev) = เผด็จการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวอนาคตงาน คือ 'แก้ความขัดแย้งล่วงหน้า'",
+          "advice_th": "เตรียมรับทีมขัดแย้ง - การทำงานไม่ราบรื่น สื่อสารเปิด แก้ความขัดแย้งล่วงหน้า",
+          "keywords_th": ["ทีมขัดแย้ง", "โครงการชะลอ", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจรู้สึกขาดความเชื่อมโยงหรือชุมชน",
+          "detailed_interpretation_th": "ในการเติบโต สี่ไม้เท้ากลับหัวอนาคตเตือนว่าอาจรู้สึกขาดความเชื่อมโยงหรือชุมชน - ความรู้สึกห่างเหินจากกลุ่ม การไม่พบที่ที่เป็นบ้าน ความไม่สมดุลในชีวิต ไพ่หนุนให้คุณกล้าเชื่อมโยงกับคน หาชุมชนที่หนุน และสร้างสมดุลในตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = สับสน",
+            "wands": "Five of Cups = ผิดหวัง",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวอนาคตเติบโต คือ 'กล้าเชื่อมโยงและหาชุมชน'",
+          "advice_th": "เตรียมหาชุมชน - อาจรู้สึกขาดเชื่อมโยง กล้าเชื่อมโยงกับคน หาชุมชนที่หนุน",
+          "keywords_th": ["ขาดเชื่อมโยง", "ไม่พบบ้าน", "หาชุมชน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอาจไม่สมดุลและพลังลด",
+          "detailed_interpretation_th": "ในสุขภาพ สี่ไม้เท้ากลับหัวอนาคตบอกว่าสุขภาพอาจไม่สมดุลและพลังลด - ความเหนื่อยล้า ความเครียดสะสม การพักผ่อนไม่พอ ไพ่หนุนให้คุณเตรียมใจสร้างสมดุล วางแผนการพักผ่อน และดูแลทั้งร่างกายและจิตใจ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวอนาคตสุขภาพ คือ 'สร้างสมดุลก่อนพลังหมด'",
+          "advice_th": "เตรียมสร้างสมดุล - สุขภาพอาจไม่สมดุล วางแผนพักผ่อน ดูแลกายและใจ",
+          "keywords_th": ["ไม่สมดุล", "พลังลด", "สร้างสมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือสร้างบ้านและชุมชนที่อบอุ่น",
+          "detailed_interpretation_th": "สี่ไม้เท้าในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือสร้างบ้านและชุมชนที่อบอุ่น - การมีฐานที่มั่นคง การสร้างความสัมพันธ์ที่กลมเกลียว การฉลองชีวิตร่วมกับคนที่รัก เป้าหมายนี้คือชีวิตที่มีความหมายและความเชื่อมโยง",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ความอบอุ่น, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าเป้าหมาย คือ 'ชีวิตที่มีความหมายและความเชื่อมโยง'",
+          "advice_th": "ตั้งเป้าสร้างบ้านและชุมชน - ฐานมั่นคง ความสัมพันธ์กลมเกลียว ฉลองชีวิตร่วม",
+          "keywords_th": ["สร้างบ้าน", "ชุมชน", "ความเชื่อมโยง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือความรักที่มั่นคงและสร้างครอบครัว",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือความรักที่มั่นคงและสร้างครอบครัว - การหมั้น การแต่งงาน การมีลูก การสร้างบ้านร่วมกัน ไพ่หนุนให้คุณตั้งเป้าหมายความรักที่มีรากฐานในครอบครัวและความสามัคคี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Empress = อบอุ่น",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าเป้าหมายความรัก คือ 'รักที่มีรากฐานในครอบครัว'",
+          "advice_th": "ตั้งเป้าความรักมั่นคง - หมั้น แต่งงาน มีลูก สร้างบ้านร่วมกัน",
+          "keywords_th": ["รักมั่นคง", "สร้างครอบครัว", "ผูกพัน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือสร้างทีมและวัฒนธรรมที่ดี",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือสร้างทีมและวัฒนธรรมที่ดี - การมีทีมที่กลมเกลียว การสร้างวัฒนธรรมที่หนุนพนักงาน การฉลองความสำเร็จร่วมกัน ไพ่หนุนให้คุณตั้งเป้าหมายการสร้างธุรกิจที่มีคุณค่าและความเป็นมนุษย์",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, The Sun = ความสำเร็จ",
+            "wands": "Three of Cups = ร่วมงาน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าเป้าหมายงาน คือ 'ธุรกิจที่มีคุณค่าและความเป็นมนุษย์'",
+          "advice_th": "ตั้งเป้าสร้างทีมและวัฒนธรรม - ทีมกลมเกลียว วัฒนธรรมหนุนพนักงาน ฉลองร่วมกัน",
+          "keywords_th": ["สร้างทีม", "วัฒนธรรม", "ความเป็นมนุษย์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือความสมดุลและการเชื่อมโยงลึก",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือความสมดุลและการเชื่อมโยงลึก - การมีฐานที่มั่นคงทางใจ การเชื่อมโยงกับชุมชนที่หนุน การพบความสงบในตัวเอง ไพ่หนุนให้คุณตั้งเป้าหมายชีวิตที่สมดุลและมีรากฐาน",
+          "adjacent_influences": {
+            "major_arcana": "The World = สมบูรณ์, The Empress = อบอุ่น",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าเป้าหมายเติบโต คือ 'ชีวิตที่สมดุลและมีรากฐาน'",
+          "advice_th": "ตั้งเป้าสมดุลและเชื่อมโยงลึก - ฐานมั่นคงทางใจ เชื่อมโยงกับชุมชนหนุน พบความสงบ",
+          "keywords_th": ["สมดุล", "เชื่อมโยงลึก", "รากฐาน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพดีและพลังสมดุลระยะยาว",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือสุขภาพดีและพลังสมดุลระยะยาว - การมีร่างกายแข็งแรง จิตใจสงบ กิจวัตรที่หนุนความเป็นอยู่ที่ดี ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพที่ครอบคลุมทั้งกาย ใจ และวิถีชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าเป้าหมายสุขภาพ คือ 'สุขภาพครอบคลุมกาย ใจ วิถี'",
+          "advice_th": "ตั้งเป้าสุขภาพดีระยะยาว - ร่างกายแข็งแรง จิตใจสงบ กิจวัตรหนุนความเป็นอยู่ที่ดี",
+          "keywords_th": ["สุขภาพดี", "สมดุล", "ระยะยาว"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือฟื้นความสามัคคีและสร้างฐานใหม่",
+          "detailed_interpretation_th": "สี่ไม้เท้ากลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือฟื้นความสามัคคีและสร้างฐานใหม่ - การแก้ปัญหาในกลุ่ม การสร้างความเชื่อมโยงใหม่ การฟื้นความรู้สึกของบ้าน เป้าหมายนี้ต้องการความอดทนและการสื่อสาร",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Temperance = สมดุล",
+            "wands": "Six of Cups = เยียวยา",
+            "cups": "Two of Cups = ผูกพันใหม่",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวเป้าหมาย คือ 'ความอดทนและการสื่อสาร'",
+          "advice_th": "ตั้งเป้าฟื้นความสามัคคี - แก้ปัญหาในกลุ่ม สร้างความเชื่อมโยงใหม่ ฟื้นความรู้สึกของบ้าน",
+          "keywords_th": ["ฟื้นสามัคคี", "สร้างฐานใหม่", "สื่อสาร"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือฟื้นความสัมพันธ์ในครอบครัว",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือฟื้นความสัมพันธ์ในครอบครัว - การปรองดอง การสื่อสารเปิด การแก้ปัญหาเก่าที่ค้างคา ไพ่หนุนให้คุณตั้งเป้าหมายที่จะทำงานกับความสัมพันธ์ในบ้านและสร้างความสามัคคีอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Six of Cups = เยียวยา",
+            "cups": "Two of Cups = ผูกพันใหม่",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวเป้าหมายความรัก คือ 'ทำงานกับความสัมพันธ์ในบ้าน'",
+          "advice_th": "ตั้งเป้าฟื้นความสัมพันธ์ - ปรองดอง สื่อสารเปิด แก้ปัญหาเก่าที่ค้างคา สร้างสามัคคี",
+          "keywords_th": ["ฟื้นสัมพันธ์", "ปรองดอง", "สื่อสาร"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือฟื้นทีมและสร้างวัฒนธรรมใหม่",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือฟื้นทีมและสร้างวัฒนธรรมใหม่ - การแก้ปัญหาในทีม การสร้างวัฒนธรรมที่ดี การฟื้นความสามัคคี ไพ่หนุนให้คุณตั้งเป้าหมายที่จะทำงานกับทีมและสร้างสภาพการทำงานที่หนุนทุกคน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Temperance = สมดุล",
+            "wands": "Six of Cups = เยียวยา",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวเป้าหมายงาน คือ 'สร้างสภาพการทำงานที่หนุนทุกคน'",
+          "advice_th": "ตั้งเป้าฟื้นทีม - แก้ปัญหาในทีม สร้างวัฒนธรรมดี ฟื้นความสามัคคี",
+          "keywords_th": ["ฟื้นทีม", "สร้างวัฒนธรรม", "สภาพหนุน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือฟื้นการเชื่อมโยงกับชุมชน",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือฟื้นการเชื่อมโยงกับชุมชน - การกลับมาเป็นส่วนหนึ่ง การหาที่ที่เป็นบ้าน การสร้างความสัมพันธ์ใหม่ ไพ่หนุนให้คุณตั้งเป้าหมายที่จะออกจากความโดดเดี่ยวและสร้างเครือข่ายที่หนุนคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวเป้าหมายเติบโต คือ 'ออกจากความโดดเดี่ยวสร้างเครือข่าย'",
+          "advice_th": "ตั้งเป้าฟื้นการเชื่อมโยง - กลับมาเป็นส่วนหนึ่ง หาที่ที่เป็นบ้าน สร้างความสัมพันธ์ใหม่",
+          "keywords_th": ["ฟื้นเชื่อมโยง", "หาที่บ้าน", "เครือข่ายใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือฟื้นความสมดุลในชีวิต",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือฟื้นความสมดุลในชีวิต - การกลับมาดูแลตัวเอง การพักผ่อนเพียงพอ การสร้างกิจวัตรที่หนุนสุขภาพ ไพ่หนุนให้คุณตั้งเป้าหมายที่จะสร้างสมดุลใหม่และไม่ปล่อยให้ความเครียดทำลายสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวเป้าหมายสุขภาพ คือ 'สร้างสมดุลใหม่ไม่ให้ความเครียดทำลาย'",
+          "advice_th": "ตั้งเป้าฟื้นสมดุล - กลับมาดูแลตัวเอง พักผ่อนพอ สร้างกิจวัตรหนุนสุขภาพ",
+          "keywords_th": ["ฟื้นสมดุล", "ดูแลตัวเอง", "กิจวัตรดี"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความสามัคคีและความเชื่อมโยงกับชุมชน",
+          "detailed_interpretation_th": "สี่ไม้เท้าในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความสามัคคีและความเชื่อมโยงกับชุมชน - คุณให้ความสำคัญกับครอบครัว ชุมชน และความสัมพันธ์ที่มั่นคง รากฐานนี้ทำให้คุณเป็นคนที่อบอุ่นและสร้างสภาพแวดล้อมที่หนุนคนรอบข้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ความอบอุ่น, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ารากฐาน คือ 'สร้างสภาพแวดล้อมที่หนุนคนรอบข้าง'",
+          "advice_th": "ใช้ความสามัคคี - ให้ความสำคัญกับครอบครัว ชุมชน ความสัมพันธ์มั่นคง อบอุ่นและหนุน",
+          "keywords_th": ["สามัคคี", "เชื่อมโยง", "อบอุ่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือครอบครัวและความมั่นคง",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือครอบครัวและความมั่นคง - คุณให้ความสำคัญกับการสร้างชีวิตคู่ที่มั่นคง การมีบ้านที่อบอุ่น การฉลองช่วงเวลาดีร่วมกัน รากฐานนี้ทำให้คุณเป็นคู่ครองที่สร้างความมั่นคงและความสุข",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Empress = อบอุ่น",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ารากฐานความรัก คือ 'สร้างความมั่นคงและความสุข'",
+          "advice_th": "ใช้ความสำคัญของครอบครัว - สร้างชีวิตคู่มั่นคง มีบ้านอบอุ่น ฉลองช่วงเวลาดีร่วมกัน",
+          "keywords_th": ["ครอบครัว", "มั่นคง", "อบอุ่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือทีมและวัฒนธรรมที่ดี",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือทีมและวัฒนธรรมที่ดี - คุณให้ความสำคัญกับการทำงานเป็นทีม การสร้างวัฒนธรรมที่หนุน การยกระดับความสำเร็จร่วมกัน รากฐานนี้ทำให้คุณเป็นผู้นำที่สร้างสภาพการทำงานที่ดีและให้ผลลัพธ์ที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, The Sun = ความสำเร็จ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ารากฐานงาน คือ 'ผู้นำที่สร้างสภาพการทำงานที่ดี'",
+          "advice_th": "ใช้การทำงานเป็นทีม - สร้างวัฒนธรรมหนุน ยกระดับความสำเร็จร่วมกัน ผลลัพธ์ยั่งยืน",
+          "keywords_th": ["ทีม", "วัฒนธรรม", "ผู้นำ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือความสมดุลและการเชื่อมโยงลึก",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือความสมดุลและการเชื่อมโยงลึก - คุณมีฐานที่มั่นคงทางใจ ชุมชนที่หนุน ความสงบในตัวเอง รากฐานนี้ทำให้คุณเติบโตอย่างมั่นคงและเป็นแสงให้คนรอบข้าง",
+          "adjacent_influences": {
+            "major_arcana": "The World = สมบูรณ์, The Empress = อบอุ่น",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ารากฐานเติบโต คือ 'เติบโตอย่างมั่นคงเป็นแสงให้คนรอบข้าง'",
+          "advice_th": "ใช้ความสมดุลเป็นรากฐาน - ฐานมั่นคงทางใจ ชุมชนหนุน เป็นแสงให้คนรอบข้าง",
+          "keywords_th": ["สมดุล", "เชื่อมโยงลึก", "เป็นแสง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือความสมดุลและกิจวัตรที่ดี",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือความสมดุลและกิจวัตรที่ดี - คุณให้ความสำคัญกับการพักผ่อนเพียงพอ การกินอาหารดี การมีกิจกรรมที่ทำให้ใจสงบ รากฐานนี้ทำให้คุณมีสุขภาพดีและพลังสมดุลในชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ารากฐานสุขภาพ คือ 'สุขภาพดีและพลังสมดุลในชีวิต'",
+          "advice_th": "ใช้กิจวัตรที่ดี - พักผ่อนพอ กินอาหารดี กิจกรรมทำให้ใจสงบ มีสุขภาพดี",
+          "keywords_th": ["สมดุล", "กิจวัตรดี", "สุขภาพดี"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความรู้สึกขาดที่พึ่งและไม่มั่นคง",
+          "detailed_interpretation_th": "สี่ไม้เท้ากลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความรู้สึกขาดที่พึ่งและไม่มั่นคง - คุณไม่มีฐานที่มั่นคง ขาดชุมชน รู้สึกห่างเหินจากคนรอบข้าง รากฐานนี้ทำให้คุณรู้สึกโดดเดี่ยว ถึงเวลาเรียนรู้ที่จะสร้างความเชื่อมโยงและฐานที่มั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = สับสน",
+            "wands": "Five of Cups = ผิดหวัง",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวรากฐาน คือ 'สร้างความเชื่อมโยงและฐานมั่นคง'",
+          "advice_th": "เรียนรู้สร้างฐาน - ขาดที่พึ่ง ไม่มั่นคง โดดเดี่ยว สร้างความเชื่อมโยงและฐานมั่นคง",
+          "keywords_th": ["ขาดที่พึ่ง", "ไม่มั่นคง", "สร้างเชื่อมโยง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือบาดแผลจากครอบครัวเดิม",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือบาดแผลจากครอบครัวเดิม - ประสบการณ์ในครอบครัวเดิมที่ไม่ดี การขาดการหนุนจากคนรอบข้าง ทำให้คุณกลัวการสร้างครอบครัวหรือไม่เชื่อในความรักที่มั่นคง รากฐานนี้ทำให้คุณต้องทำงานกับบาดแผลและสร้างความเชื่อใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = บาดแผล, The Moon = สับสน",
+            "wands": "Five of Cups = เสียดาย",
+            "cups": "Three of Swords = ใจสลาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวแตก",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวรากฐานความรัก คือ 'ทำงานกับบาดแผลสร้างความเชื่อใหม่'",
+          "advice_th": "เยียวยาบาดแผลครอบครัว - ประสบการณ์ไม่ดีจากครอบครัว ขาดการหนุน สร้างความเชื่อใหม่",
+          "keywords_th": ["บาดแผลครอบครัว", "ไม่เชื่อรัก", "เยียวยา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือทีมที่ไม่ดีหรือไม่เชื่อในการทำงานร่วม",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือทีมที่ไม่ดีหรือไม่เชื่อในการทำงานร่วม - ประสบการณ์การทำงานกับทีมที่ไม่ดี ทำให้คุณเลือกทำงานคนเดียว ไม่ไว้ใจการร่วมงาน รากฐานนี้จำกัดศักยภาพ ถึงเวลาเรียนรู้ที่จะสร้างทีมที่ดีและไว้ใจคนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Tower = พังเก่า",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Three of Pentacles (rev) = ทีมล้ม",
+            "court_cards": "King of Swords (rev) = ไม่ไว้ใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวรากฐานงาน คือ 'สร้างทีมที่ดีและไว้ใจคนอื่น'",
+          "advice_th": "เรียนรู้สร้างทีม - ประสบการณ์ทีมไม่ดี ไม่ไว้ใจการร่วมงาน ฝึกสร้างทีมและไว้ใจ",
+          "keywords_th": ["ทีมไม่ดี", "ไม่เชื่อร่วมงาน", "ฝึกไว้ใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือความรู้สึกโดดเดี่ยวและไม่เป็นส่วนหนึ่ง",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือความรู้สึกโดดเดี่ยวและไม่เป็นส่วนหนึ่ง - คุณไม่รู้สึกว่ามีที่ของตัวเอง ขาดชุมชน รู้สึกห่างเหินจากคนรอบข้าง รากฐานนี้ขับเคลื่อนคุณจากความเจ็บปวด ถึงเวลาเรียนรู้ที่จะเปิดใจและสร้างความเชื่อมโยงกับคน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = สับสน",
+            "wands": "Five of Cups = ผิดหวัง",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวรากฐานเติบโต คือ 'เปิดใจสร้างความเชื่อมโยง'",
+          "advice_th": "เรียนรู้เปิดใจ - รู้สึกโดดเดี่ยว ไม่เป็นส่วนหนึ่ง สร้างความเชื่อมโยงกับคน",
+          "keywords_th": ["โดดเดี่ยว", "ไม่เป็นส่วนหนึ่ง", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือความไม่สมดุลในวิถีชีวิต",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือความไม่สมดุลในวิถีชีวิต - คุณไม่ได้พักผ่อนเพียงพอ มีกิจวัตรที่บีบตัวเอง ขาดสมดุลระหว่างงานและชีวิต รากฐานนี้ทำให้สุขภาพแย่ลง ถึงเวลาเรียนรู้ที่จะสร้างสมดุลและให้เวลากับการพักผ่อน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวรากฐานสุขภาพ คือ 'สร้างสมดุลและให้เวลาการพักผ่อน'",
+          "advice_th": "เรียนรู้สร้างสมดุล - พักผ่อนไม่พอ กิจวัตรบีบตัวเอง สร้างสมดุลและให้เวลาพักผ่อน",
+          "keywords_th": ["ไม่สมดุล", "บีบตัวเอง", "พักผ่อน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เฉลิมฉลองและสร้างความสามัคคี",
+          "detailed_interpretation_th": "สี่ไม้เท้าในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือเฉลิมฉลองและสร้างความสามัคคี - แบ่งปันความสุข สร้างชุมชน เชื่อมโยงกับคนรอบข้าง ไพ่หนุนให้คุณนำด้วยความอบอุ่นและการเชื่อมโยง",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งคำแนะนำ คือ 'นำด้วยความอบอุ่น'",
+          "advice_th": "เฉลิมฉลองและสามัคคี - แบ่งปันความสุข สร้างชุมชน เชื่อมโยงกับคนรอบข้าง",
+          "keywords_th": ["เฉลิมฉลอง", "สามัคคี", "เชื่อมโยง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ลงทุนในความรักและสร้างรากฐาน",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณควรลงทุนในความรักและสร้างรากฐาน - ก้าวสู่ขั้นใหม่ สร้างบ้านร่วมกัน วางแผนชีวิตคู่ ไพ่หนุนให้คุณนำด้วยความมุ่งมั่นและการสร้างความมั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Empress = อบอุ่น",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งคำแนะนำความรัก คือ 'มุ่งมั่นสร้างความมั่นคง'",
+          "advice_th": "ลงทุนในรัก - ก้าวสู่ขั้นใหม่ สร้างบ้านร่วมกัน วางแผนชีวิตคู่",
+          "keywords_th": ["ลงทุนรัก", "สร้างรากฐาน", "มุ่งมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "สร้างทีมและฉลองความสำเร็จ",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรสร้างทีมและฉลองความสำเร็จ - รวมทีม สร้างวัฒนธรรมดี ยกระดับความสำเร็จร่วมกัน ไพ่หนุนให้คุณนำด้วยการสร้างความสามัคคีในที่ทำงาน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Empress = อบอุ่น",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งคำแนะนำงาน คือ 'สร้างความสามัคคีในที่ทำงาน'",
+          "advice_th": "สร้างทีมและฉลอง - รวมทีม สร้างวัฒนธรรมดี ยกระดับความสำเร็จร่วมกัน",
+          "keywords_th": ["สร้างทีม", "ฉลอง", "วัฒนธรรม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หาที่ที่รู้สึกเป็นบ้านและสมดุล",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรหาที่ที่รู้สึกเป็นบ้านและสมดุล - สร้างชุมชน หาคนที่เข้าใจ พบความสงบในตัวเอง ไพ่หนุนให้คุณนำด้วยการเชื่อมโยงและสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, The World = สมบูรณ์",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งคำแนะนำเติบโต คือ 'เชื่อมโยงและสมดุล'",
+          "advice_th": "หาที่ที่เป็นบ้าน - สร้างชุมชน หาคนเข้าใจ พบความสงบในตัวเอง",
+          "keywords_th": ["หาบ้าน", "สมดุล", "เชื่อมโยง"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สร้างสมดุลและกิจวัตรที่หนุนสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรสร้างสมดุลและกิจวัตรที่หนุนสุขภาพ - พักผ่อนพอ กินอาหารดี กิจกรรมทำให้ใจสงบ ไพ่หนุนให้คุณนำด้วยความสม่ำเสมอและการดูแลรอบด้าน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งคำแนะนำสุขภาพ คือ 'ความสม่ำเสมอและดูแลรอบด้าน'",
+          "advice_th": "สร้างสมดุลและกิจวัตร - พักผ่อนพอ กินอาหารดี กิจกรรมทำให้ใจสงบ",
+          "keywords_th": ["สมดุล", "กิจวัตรดี", "สม่ำเสมอ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ทำงานกับความขัดแย้งและสร้างความสามัคคีอีกครั้ง",
+          "detailed_interpretation_th": "สี่ไม้เท้ากลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือทำงานกับความขัดแย้งและสร้างความสามัคคีอีกครั้ง - แก้ปัญหาในกลุ่ม สื่อสารเปิด ฟื้นการเชื่อมโยง ไพ่หนุนให้คุณนำด้วยความอดทนและการสร้างความเข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Temperance = สมดุล",
+            "wands": "Six of Cups = เยียวยา",
+            "cups": "Two of Cups = ผูกพันใหม่",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งคำแนะนำ คือ 'อดทนและสร้างความเข้าใจ'",
+          "advice_th": "ทำงานกับความขัดแย้ง - แก้ปัญหาในกลุ่ม สื่อสารเปิด ฟื้นการเชื่อมโยง",
+          "keywords_th": ["แก้ปัญหา", "สื่อสาร", "ฟื้นเชื่อมโยง"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "แก้ปัญหาในความสัมพันธ์และฟื้นความรัก",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าคุณควรแก้ปัญหาในความสัมพันธ์และฟื้นความรัก - สื่อสารเปิด แก้ปัญหาเก่า สร้างความเข้าใจใหม่ ไพ่หนุนให้คุณนำด้วยความอดทนและความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Six of Cups = เยียวยา",
+            "cups": "Two of Cups = ผูกพันใหม่",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งคำแนะนำความรัก คือ 'อดทนและความรัก'",
+          "advice_th": "แก้ปัญหาในรัก - สื่อสารเปิด แก้ปัญหาเก่า สร้างความเข้าใจใหม่",
+          "keywords_th": ["แก้ปัญหารัก", "สื่อสาร", "ฟื้นความรัก"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ฟื้นทีมและแก้ความขัดแย้งในที่ทำงาน",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวชี้ว่าคุณควรฟื้นทีมและแก้ความขัดแย้งในที่ทำงาน - สื่อสารเปิด แก้ปัญหาในกลุ่ม สร้างวัฒนธรรมดีกลับมา ไพ่หนุนให้คุณนำด้วยการเป็นตัวกลางและการสร้างความเข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Temperance = สมดุล",
+            "wands": "Six of Cups = เยียวยา",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งคำแนะนำงาน คือ 'เป็นตัวกลางสร้างความเข้าใจ'",
+          "advice_th": "ฟื้นทีมและแก้ขัดแย้ง - สื่อสารเปิด แก้ปัญหาในกลุ่ม สร้างวัฒนธรรมดีกลับมา",
+          "keywords_th": ["ฟื้นทีม", "แก้ขัดแย้ง", "เป็นตัวกลาง"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ออกจากความโดดเดี่ยวและกล้าเชื่อมโยง",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรออกจากความโดดเดี่ยวและกล้าเชื่อมโยง - หาชุมชน เปิดใจกับคน สร้างความสัมพันธ์ใหม่ ไพ่หนุนให้คุณนำด้วยความกล้าและความเปิดเผย",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งคำแนะนำเติบโต คือ 'ความกล้าและเปิดเผย'",
+          "advice_th": "ออกจากความโดดเดี่ยว - หาชุมชน เปิดใจกับคน สร้างความสัมพันธ์ใหม่",
+          "keywords_th": ["ออกโดดเดี่ยว", "กล้าเชื่อมโยง", "เปิดใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สร้างสมดุลใหม่และฟื้นกิจวัตร",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวชี้ว่าคุณควรสร้างสมดุลใหม่และฟื้นกิจวัตร - กลับมาดูแลตัวเอง พักผ่อนเพียงพอ สร้างกิจวัตรที่หนุนสุขภาพ ไพ่หนุนให้คุณนำด้วยความเมตตาต่อตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'เมตตาต่อตัวเอง'",
+          "advice_th": "สร้างสมดุลใหม่ - กลับมาดูแลตัวเอง พักผ่อนพอ สร้างกิจวัตรหนุนสุขภาพ",
+          "keywords_th": ["สร้างสมดุล", "ฟื้นกิจวัตร", "เมตตา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ชุมชนรอบข้างหนุนและฉลองความสำเร็จร่วมกัน",
+          "detailed_interpretation_th": "สี่ไม้เท้าในตำแหน่งภายนอก บอกว่าชุมชนรอบข้างหนุนและฉลองความสำเร็จร่วมกัน - ครอบครัวอบอุ่น เพื่อนที่ช่วยเหลือ คนรอบข้างที่ยินดี ไพ่บอกว่าใช้แรงสนับสนุนจากภายนอกเฉลิมฉลองและสร้างความสามัคคี",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, The Sun = ความสุข",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งภายนอก คือ 'ใช้แรงสนับสนุนเฉลิมฉลอง'",
+          "advice_th": "ใช้ชุมชนหนุน - ครอบครัวอบอุ่น เพื่อนช่วยเหลือ คนรอบข้างยินดี",
+          "keywords_th": ["ชุมชนหนุน", "ฉลอง", "สามัคคี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวและเพื่อนหนุนความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าครอบครัวและเพื่อนหนุนความรักของคุณ - การได้รับการยอมรับ คนรอบข้างยินดี สถานการณ์ที่เอื้อต่อการก้าวต่อ ไพ่หนุนให้คุณใช้แรงสนับสนุนนี้สร้างความสัมพันธ์ที่มั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Empress = อบอุ่น",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งภายนอกความรัก คือ 'แรงสนับสนุนสร้างความมั่นคง'",
+          "advice_th": "ใช้แรงหนุนรอบตัว - ครอบครัวและเพื่อนหนุน ได้รับการยอมรับ สร้างความมั่นคง",
+          "keywords_th": ["ครอบครัวหนุน", "เพื่อนยินดี", "การยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทีมและองค์กรหนุนความสำเร็จ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่าทีมและองค์กรหนุนความสำเร็จของคุณ - ทีมที่ร่วมมือดี วัฒนธรรมที่หนุน การฉลองความสำเร็จร่วมกัน ไพ่หนุนให้คุณใช้แรงสนับสนุนนี้สร้างความสำเร็จที่ใหญ่กว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The Empress = อบอุ่น",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งภายนอกงาน คือ 'แรงสนับสนุนสร้างความสำเร็จใหญ่กว่า'",
+          "advice_th": "ใช้ทีมและองค์กรหนุน - ทีมร่วมมือดี วัฒนธรรมหนุน ฉลองความสำเร็จร่วมกัน",
+          "keywords_th": ["ทีมหนุน", "วัฒนธรรมดี", "ฉลอง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ชุมชนหนุนการเติบโตและให้ฐานที่มั่นคง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าชุมชนหนุนการเติบโตและให้ฐานที่มั่นคง - คนที่เข้าใจ ครูที่ดี กลุ่มที่ช่วยให้เติบโต ไพ่บอกว่าใช้แรงสนับสนุนรอบตัวเป็นฐานในการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, The Hierophant = ครู",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งภายนอกเติบโต คือ 'ชุมชนเป็นฐานในการเติบโต'",
+          "advice_th": "ใช้ชุมชนหนุนเติบโต - คนเข้าใจ ครูดี กลุ่มช่วยให้เติบโต",
+          "keywords_th": ["ชุมชนหนุน", "ฐานมั่นคง", "ครูดี"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สภาพแวดล้อมหนุนสุขภาพและความสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าสภาพแวดล้อมหนุนสุขภาพและความสมดุล - บ้านที่อบอุ่น ครอบครัวที่ช่วยเหลือ กิจกรรมร่วมที่หนุนสุขภาพ ไพ่หนุนให้คุณใช้สภาพแวดล้อมที่ดีในการดูแลตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Empress = อบอุ่น",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งภายนอกสุขภาพ คือ 'สภาพแวดล้อมหนุนการดูแล'",
+          "advice_th": "ใช้สภาพแวดล้อมดี - บ้านอบอุ่น ครอบครัวช่วยเหลือ กิจกรรมร่วมหนุนสุขภาพ",
+          "keywords_th": ["แวดล้อมหนุน", "บ้านอบอุ่น", "ครอบครัวช่วย"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ชุมชนรอบข้างมีปัญหาหรือไม่หนุน",
+          "detailed_interpretation_th": "สี่ไม้เท้ากลับหัวในตำแหน่งภายนอก บอกว่าชุมชนรอบข้างมีปัญหาหรือไม่หนุน - ครอบครัวขัดแย้ง เพื่อนห่างเหิน คนรอบข้างไม่เข้าใจ ไพ่เตือนให้คุณรักษาตัวเองและหาแรงสนับสนุนจากที่อื่นเมื่อชุมชนปัจจุบันไม่หนุน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ปั่นป่วน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งภายนอก คือ 'หาแรงสนับสนุนจากที่อื่น'",
+          "advice_th": "รักษาตัวเอง - ชุมชนรอบข้างมีปัญหา ครอบครัวขัดแย้ง หาแรงสนับสนุนจากที่อื่น",
+          "keywords_th": ["ชุมชนปัญหา", "ไม่หนุน", "หาที่อื่น"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวหรือคนรอบข้างไม่หนุนความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าครอบครัวหรือคนรอบข้างไม่หนุนความรัก - การคัดค้านจากครอบครัว เพื่อนที่ไม่เข้าใจ สังคมที่กดดัน ไพ่หนุนให้คุณเชื่อในความรู้สึกของตัวเองและปกป้องความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งภายนอกความรัก คือ 'เชื่อในความรู้สึกตัวเอง'",
+          "advice_th": "ปกป้องความรัก - ครอบครัวคัดค้าน เพื่อนไม่เข้าใจ เชื่อในความรู้สึกตัวเอง",
+          "keywords_th": ["ครอบครัวคัดค้าน", "ไม่หนุน", "เชื่อตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทีมหรือองค์กรไม่หนุนความสำเร็จ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าทีมหรือองค์กรไม่หนุนความสำเร็จ - การไม่ได้รับการยอมรับ ทีมที่ขัดแย้ง วัฒนธรรมที่บั่นทอน ไพ่หนุนให้คุณหาที่ที่เห็นคุณค่าและสร้างเครือข่ายของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ขัดแย้ง, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Three of Pentacles (rev) = ทีมล้ม",
+            "court_cards": "King of Swords (rev) = เผด็จการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งภายนอกงาน คือ 'หาที่ที่เห็นคุณค่า'",
+          "advice_th": "หาที่ใหม่ - ทีมไม่หนุน ไม่ได้รับยอมรับ หาที่ที่เห็นคุณค่า สร้างเครือข่ายตัวเอง",
+          "keywords_th": ["ทีมไม่หนุน", "ไม่ยอมรับ", "หาที่ใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมรอบข้างไม่เข้าใจการเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมรอบข้างไม่เข้าใจการเติบโตของคุณ - คนที่ไม่เห็นค่าการเปลี่ยนแปลง ความคาดหวังที่จำกัด การวิจารณ์เส้นทางที่เลือก ไพ่หนุนให้คุณเดินตามเส้นทางของตัวเองและหาชุมชนใหม่ที่เข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Hierophant (rev) = ทิ้งกรอบ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Five of Pentacles = ขาดแรงหนุน",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งภายนอกเติบโต คือ 'เดินตามเส้นทางตัวเอง'",
+          "advice_th": "หาชุมชนใหม่ - สังคมไม่เข้าใจ คาดหวังจำกัด เดินตามเส้นทางตัวเอง หาชุมชนที่เข้าใจ",
+          "keywords_th": ["สังคมไม่เข้าใจ", "เดินตามตน", "ชุมชนใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สภาพแวดล้อมบั่นทอนสุขภาพและสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวเตือนว่าสภาพแวดล้อมบั่นทอนสุขภาพและสมดุล - บ้านที่ขัดแย้ง ความเครียดจากครอบครัว กิจวัตรร่วมที่ไม่ดี ไพ่หนุนให้คุณปรับสภาพแวดล้อมและหาพื้นที่ปลอดภัยสำหรับตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งภายนอกสุขภาพ คือ 'หาพื้นที่ปลอดภัย'",
+          "advice_th": "ปรับสภาพแวดล้อม - บ้านขัดแย้ง เครียดจากครอบครัว หาพื้นที่ปลอดภัย",
+          "keywords_th": ["แวดล้อมบั่นทอน", "เครียดจากบ้าน", "พื้นที่ปลอด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังบ้านที่อบอุ่น กลัวขาดความมั่นคง",
+          "detailed_interpretation_th": "สี่ไม้เท้าในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังบ้านที่อบอุ่นและชุมชนที่หนุน แต่กลัวขาดความมั่นคงและความเชื่อมโยง ไพ่บอกว่าความหวังของคุณเป็นไปได้ สร้างความเชื่อมโยงทีละน้อยและไม่ยอมแพ้กับการสร้างฐานที่มั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, The Moon = ความกลัว",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งความหวังกลัว คือ 'สร้างความเชื่อมโยงทีละน้อย'",
+          "advice_th": "สร้างฐานที่มั่นคง - หวังบ้านอบอุ่นแต่กลัวขาดความมั่นคง สร้างทีละน้อย ไม่ยอมแพ้",
+          "keywords_th": ["หวังบ้านอบอุ่น", "กลัวขาดมั่นคง", "สร้างทีละน้อย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความรักมั่นคง กลัวล้มเหลวอีกครั้ง",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังความรักมั่นคงและสร้างครอบครัว แต่กลัวจะล้มเหลวอีกครั้ง - กลัวการก้าวต่อ กลัวว่าครอบครัวจะแตก ไพ่บอกว่าความรักที่อดทนผ่านความกลัวจะมั่นคงและงดงาม กล้าก้าวและเชื่อมั่น",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Moon = ความกลัว",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Three of Swords = กลัวเจ็บ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งความหวังกลัวความรัก คือ 'รักที่อดทนผ่านความกลัวงดงาม'",
+          "advice_th": "กล้าก้าวและเชื่อมั่น - หวังรักมั่นคงแต่กลัวล้มเหลวอีก ความรักที่อดทนผ่านกลัวจะงดงาม",
+          "keywords_th": ["หวังรักมั่นคง", "กลัวล้มเหลว", "กล้าก้าว"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังทีมที่ดี กลัวขัดแย้ง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังทีมที่ดีและวัฒนธรรมที่หนุน แต่กลัวความขัดแย้งหรือการทำงานคนเดียว ไพ่บอกว่าทีมที่ดีต้องการการสร้างและรักษา กล้าเป็นผู้สร้างความสามัคคีและไว้ใจคนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, The Tower = กลัวขัดแย้ง",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Five of Swords = กลัวทำร้าย",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งความหวังกลัวงาน คือ 'เป็นผู้สร้างความสามัคคี'",
+          "advice_th": "สร้างทีมและไว้ใจ - หวังทีมดีแต่กลัวขัดแย้ง กล้าเป็นผู้สร้างความสามัคคี",
+          "keywords_th": ["หวังทีมดี", "กลัวขัดแย้ง", "ไว้ใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังที่ที่เป็นบ้าน กลัวความโดดเดี่ยว",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังที่ที่เป็นบ้านและชุมชนที่หนุน แต่กลัวความโดดเดี่ยว - กลัวไม่พบที่ที่ใช่ กลัวไม่มีคนเข้าใจ ไพ่บอกว่าความเชื่อมโยงต้องการการกล้าเปิดใจและสร้างความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อบอุ่น, The Hermit = โดดเดี่ยว",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งความหวังกลัวเติบโต คือ 'กล้าเปิดใจสร้างความสัมพันธ์'",
+          "advice_th": "กล้าเปิดใจ - หวังที่บ้านแต่กลัวโดดเดี่ยว ความเชื่อมโยงต้องการการสร้างความสัมพันธ์",
+          "keywords_th": ["หวังบ้าน", "กลัวโดดเดี่ยว", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพดี กลัวขาดสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังสุขภาพดีและพลังสมดุล แต่กลัวขาดสมดุลในชีวิต - กลัวเครียดเกินไป กลัวพักผ่อนไม่พอ ไพ่บอกว่าสมดุลต้องการการสร้างกิจวัตรและการดูแลตัวเองอย่างเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Moon = ความกลัว",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งความหวังกลัวสุขภาพ คือ 'สร้างกิจวัตรดูแลด้วยเมตตา'",
+          "advice_th": "สร้างสมดุลด้วยเมตตา - หวังสุขภาพดีแต่กลัวขาดสมดุล สร้างกิจวัตรดูแลตัวเอง",
+          "keywords_th": ["หวังสุขภาพ", "กลัวขาดสมดุล", "เมตตา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวความขัดแย้งจนหลีกเลี่ยงการเชื่อมโยง",
+          "detailed_interpretation_th": "สี่ไม้เท้ากลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวความขัดแย้งจนหลีกเลี่ยงการเชื่อมโยง - เพราะกลัวจะเจ็บปวดอีก คุณปิดใจกับคน รักษาระยะห่าง ไพ่บอกว่าการปิดใจไม่ทำให้ปลอดภัย กล้าเชื่อมโยงและสร้างฐานใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = ความกลัว",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งความหวังกลัว คือ 'กล้าเชื่อมโยงสร้างฐานใหม่'",
+          "advice_th": "กล้าเชื่อมโยง - กลัวขัดแย้งจนหลีกเลี่ยง การปิดใจไม่ทำให้ปลอดภัย สร้างฐานใหม่",
+          "keywords_th": ["กลัวขัดแย้ง", "หลีกเลี่ยง", "กล้าเชื่อมโยง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวความรักล้มเหลวจนไม่กล้าผูกมัด",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวความรักล้มเหลวจนไม่กล้าผูกมัด - กลัวการแต่งงาน กลัวสร้างครอบครัว กลัวจะเจ็บอีก จึงรักษาระยะห่าง ไพ่บอกว่าความรักที่อดทนผ่านความกลัวคือความรักที่แท้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = กลัวเลือก, The Moon = ความกลัว",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Three of Swords = กลัวเจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งความหวังกลัวความรัก คือ 'รักที่อดทนผ่านกลัวคือรักแท้'",
+          "advice_th": "กล้าผูกมัด - กลัวรักล้มเหลวจนไม่กล้า ความรักที่อดทนผ่านกลัวคือความรักแท้",
+          "keywords_th": ["กลัวรักล้ม", "ไม่กล้าผูกมัด", "กล้ารัก"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวทีมแตกจนทำงานคนเดียว",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวทีมแตกจนทำงานคนเดียว - กลัวความขัดแย้ง กลัวการพึ่งพา จึงไม่ไว้ใจทีม ไพ่บอกว่าการทำงานคนเดียวจำกัดศักยภาพ กล้าไว้ใจคนและสร้างทีม",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Tower = กลัวพัง",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "King of Swords (rev) = ไม่ไว้ใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งความหวังกลัวงาน คือ 'การทำงานคนเดียวจำกัดศักยภาพ'",
+          "advice_th": "กล้าสร้างทีม - กลัวทีมแตกจนทำงานคนเดียว กล้าไว้ใจคนและสร้างทีม",
+          "keywords_th": ["กลัวทีมแตก", "ทำงานคนเดียว", "ไว้ใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวเปลี่ยนแปลงจนติดอยู่ในเขตสบาย",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวเปลี่ยนแปลงจนติดอยู่ในเขตสบาย - กลัวการสูญเสีย กลัวการไม่มั่นคง จึงไม่กล้าเติบโต ไพ่หนุนให้คุณกล้าก้าวออกและเชื่อว่าการเปลี่ยนแปลงนำสู่สิ่งที่ดีกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'การเปลี่ยนแปลงนำสู่สิ่งที่ดีกว่า'",
+          "advice_th": "กล้าก้าวออก - กลัวเปลี่ยนจนติดเขตสบาย เชื่อว่าการเปลี่ยนแปลงนำสู่สิ่งที่ดีกว่า",
+          "keywords_th": ["กลัวเปลี่ยน", "ติดเขตสบาย", "กล้าก้าว"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวความเครียดจนละเลยตัวเอง",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวความเครียดจนละเลยตัวเอง - กลัวการเผชิญปัญหา กลัวจะแย่ลง จึงเลี่ยงการดูแลตัวเอง ไพ่หนุนให้คุณกล้าเผชิญและดูแลตัวเองอย่างเมตตา การหลีกเลี่ยงทำให้ปัญหาใหญ่ขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = นิสัยร้าย, The Moon = ความกลัว",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'การหลีกเลี่ยงทำให้ปัญหาใหญ่ขึ้น'",
+          "advice_th": "กล้าเผชิญและดูแล - กลัวเครียดจนละเลย ดูแลตัวเองอย่างเมตตา ไม่หลีกเลี่ยง",
+          "keywords_th": ["กลัวเครียด", "ละเลย", "กล้าเผชิญ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการเฉลิมฉลองและความสามัคคี",
+          "detailed_interpretation_th": "สี่ไม้เท้าในตำแหน่งผลลัพธ์ เป็นข่าวดี - ผลลัพธ์คือการเฉลิมฉลองและความสามัคคี การฉลองความสำเร็จ การมีบ้านที่อบอุ่น การได้รับการยอมรับจากชุมชน ไพ่ยืนยันว่าความพยายามของคุณนำสู่ช่วงเวลาแห่งความสุขและความเชื่อมโยง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสุข, The Empress = อบอุ่น",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งผลลัพธ์ คือ 'ช่วงเวลาแห่งความสุขและความเชื่อมโยง'",
+          "advice_th": "เชื่อในการเฉลิมฉลอง - การฉลองความสำเร็จ บ้านอบอุ่น การยอมรับจากชุมชน",
+          "keywords_th": ["เฉลิมฉลอง", "สามัคคี", "ความสุข"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักมั่นคงและการสร้างครอบครัว",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เป็นข่าวดี - ความรักมั่นคงและการสร้างครอบครัว การหมั้น การแต่งงาน การมีบ้านร่วมกัน หรือการก้าวสู่ขั้นใหม่ของความสัมพันธ์ ไพ่ยืนยันว่าความรักของคุณกำลังก้าวสู่ความมั่นคงและความสุข",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Empress = อบอุ่น",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งผลลัพธ์ความรัก คือ 'ก้าวสู่ความมั่นคงและความสุข'",
+          "advice_th": "เปิดใจรับความรักมั่นคง - การหมั้น แต่งงาน สร้างบ้านร่วมกัน ก้าวสู่ขั้นใหม่",
+          "keywords_th": ["รักมั่นคง", "สร้างครอบครัว", "ก้าวใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือความสำเร็จในทีมและการฉลอง",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดี - คุณจะได้ความสำเร็จในทีมและการฉลอง โครงการสำเร็จ ทีมกลมเกลียว การได้รับการยอมรับ ไพ่ยืนยันว่าความพยายามร่วมกับทีมจะนำสู่ผลลัพธ์ที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งผลลัพธ์งาน คือ 'ความพยายามร่วมกับทีมนำสู่ผลงดงาม'",
+          "advice_th": "เชื่อในความสำเร็จร่วม - โครงการสำเร็จ ทีมกลมเกลียว ได้รับการยอมรับ",
+          "keywords_th": ["สำเร็จในทีม", "ฉลอง", "ยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการพบสมดุลและชุมชนที่หนุน",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นข่าวดี - คุณจะพบสมดุลและชุมชนที่หนุน การรู้สึกเป็นส่วนหนึ่ง การพบที่ที่เป็นบ้าน การมีฐานที่มั่นคงทางใจ ไพ่ยืนยันว่าการเดินทางของคุณนำสู่ความเชื่อมโยงและความมั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The World = สมบูรณ์, The Empress = อบอุ่น",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งผลลัพธ์เติบโต คือ 'การเดินทางนำสู่ความเชื่อมโยงและมั่นคง'",
+          "advice_th": "เปิดใจรับสมดุล - พบที่ที่เป็นบ้าน ชุมชนหนุน ฐานมั่นคงทางใจ",
+          "keywords_th": ["พบสมดุล", "ชุมชนหนุน", "เชื่อมโยง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพดีและพลังสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดี - คุณจะมีสุขภาพดีและพลังสมดุล ร่างกายแข็งแรง จิตใจสงบ การมีกิจวัตรที่หนุนความเป็นอยู่ที่ดี ไพ่ยืนยันว่าการสร้างสมดุลในชีวิตจะให้ผลที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้าตำแหน่งผลลัพธ์สุขภาพ คือ 'การสร้างสมดุลให้ผลงดงาม'",
+          "advice_th": "เชื่อในสุขภาพสมดุล - ร่างกายแข็งแรง จิตใจสงบ กิจวัตรหนุนความเป็นอยู่ที่ดี",
+          "keywords_th": ["สุขภาพดี", "พลังสมดุล", "งดงาม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือต้องทำงานกับความขัดแย้งและสร้างใหม่",
+          "detailed_interpretation_th": "สี่ไม้เท้ากลับหัวในตำแหน่งผลลัพธ์ เตือนว่าผลลัพธ์อาจเป็นการต้องทำงานกับความขัดแย้งและสร้างใหม่ - ปัญหาในชุมชน การฉลองที่ถูกเลื่อน ความไม่มั่นคง ไพ่บอกว่านี่ไม่ใช่จุดจบ การสื่อสารและการสร้างความเข้าใจจะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ปั่นป่วน, The Hermit = ทบทวน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งผลลัพธ์ คือ 'การสื่อสารและสร้างความเข้าใจเปลี่ยนผลลัพธ์'",
+          "advice_th": "ทำงานกับความขัดแย้ง - ปัญหาในชุมชน การสื่อสารและการสร้างความเข้าใจจะเปลี่ยน",
+          "keywords_th": ["ขัดแย้ง", "สร้างใหม่", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่ต้องการการทำงานและสื่อสาร",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวบอกว่าความรักต้องการการทำงานและสื่อสาร - การก้าวต่อล่าช้า ปัญหาในบ้าน ความไม่มั่นคง ไพ่บอกว่านี่ไม่ใช่จุดจบ การลงทุนในความสัมพันธ์และการสื่อสารเปิดจะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ทดสอบ, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'การลงทุนในความสัมพันธ์เปลี่ยนผลลัพธ์'",
+          "advice_th": "ลงทุนในรัก - ก้าวต่อล่าช้า ปัญหาในบ้าน สื่อสารเปิด เปลี่ยนผลลัพธ์",
+          "keywords_th": ["ต้องทำงานรัก", "ก้าวต่อช้า", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือทีมที่ต้องสร้างใหม่",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวบอกว่าทีมต้องสร้างใหม่ - ความขัดแย้งในทีม โครงการที่ล่ม วัฒนธรรมที่ต้องปรับ ไพ่บอกว่านี่ไม่ใช่ความล้มเหลว ใช้เป็นโอกาสในการสร้างทีมและวัฒนธรรมที่ดีกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Three of Pentacles (rev) = ทีมล้ม",
+            "court_cards": "King of Swords (rev) = เผด็จการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งผลลัพธ์งาน คือ 'สร้างทีมและวัฒนธรรมที่ดีกว่า'",
+          "advice_th": "สร้างใหม่ - ทีมต้องสร้างใหม่ ไม่ใช่ความล้มเหลว ใช้เป็นโอกาสสร้างทีมที่ดีกว่า",
+          "keywords_th": ["ทีมต้องสร้างใหม่", "ขัดแย้ง", "โอกาส"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการเชื่อมโยงที่ต้องสร้างใหม่",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวบอกว่าการเชื่อมโยงต้องสร้างใหม่ - การห่างเหินจากชุมชน ความไม่มั่นคงทางใจ การไม่พบที่ที่เป็นบ้าน ไพ่บอกว่านี่คือโอกาสในการค้นพบชุมชนที่เหมาะกับคุณจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = สำรวจ",
+            "wands": "Five of Cups = ผิดหวัง",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'ค้นพบชุมชนที่เหมาะกับคุณจริง'",
+          "advice_th": "สร้างการเชื่อมโยงใหม่ - การห่างเหินไม่ใช่จุดจบ ค้นพบชุมชนที่เหมาะกับคุณจริง",
+          "keywords_th": ["สร้างเชื่อมโยงใหม่", "ห่างเหิน", "ค้นพบ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพที่ต้องการการฟื้นและสมดุล",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวบอกว่าสุขภาพต้องการการฟื้นและสมดุล - ความไม่สมดุล ความเครียดสะสม การพักผ่อนไม่พอ ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่ต้องเป็น การสร้างกิจวัตรใหม่และการพักผ่อนเพียงพอจะฟื้นสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สี่ไม้เท้ากลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'สร้างกิจวัตรใหม่และพักผ่อนพอจะฟื้น'",
+          "advice_th": "ฟื้นสุขภาพ - ไม่สมดุล เครียดสะสม สร้างกิจวัตรใหม่ พักผ่อนพอ",
+          "keywords_th": ["ฟื้นสุขภาพ", "ไม่สมดุล", "กิจวัตรใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "Two of Wands",
+    "name_th": "สองไม้เท้า",
+    "number": 2,
+    "type": "minor_arcana",
+    "suit": "wands"
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การวางแผนอนาคตและมองไปข้างหน้า",
+          "detailed_interpretation_th": "สองไม้เท้าในปัจจุบัน บอกว่าคุณกำลังอยู่ในช่วงของการวางแผนอนาคตและมองไปข้างหน้า - คุณมีวิสัยทัศน์ กำลังตัดสินใจเรื่องสำคัญ และพิจารณาทางเลือกต่างๆ ไพ่หนุนให้คุณกล้าก้าวออกจากความสบายและวางแผนเส้นทางที่ใหญ่กว่า โลกกว้างรออยู่",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The World = โอกาสกว้าง",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าปัจจุบัน คือ 'กล้าวางแผนเส้นทางที่ใหญ่กว่า'",
+          "advice_th": "วางแผนอนาคต - มีวิสัยทัศน์ พิจารณาทางเลือก กล้าก้าวออกจากความสบาย โลกกว้างรออยู่",
+          "keywords_th": ["วางแผน", "วิสัยทัศน์", "มองไปข้างหน้า"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "การวางแผนอนาคตร่วมกันในความรัก",
+          "detailed_interpretation_th": "ในความรัก สองไม้เท้าปัจจุบันชี้ว่าคุณกำลังวางแผนอนาคตร่วมกัน - การตัดสินใจก้าวสำคัญ การวางแผนชีวิตคู่ หรือการพิจารณาว่าความสัมพันธ์จะไปทางไหน หากโสด คุณกำลังคิดว่าต้องการอะไรในความรัก ไพ่หนุนให้คุณกล้าตัดสินใจและมองภาพระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The World = อนาคต",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าปัจจุบันความรัก คือ 'กล้าตัดสินใจมองภาพระยะยาว'",
+          "advice_th": "วางแผนอนาคตรัก - ตัดสินใจก้าวสำคัญ วางแผนชีวิตคู่ มองภาพระยะยาว",
+          "keywords_th": ["วางแผนคู่", "ตัดสินใจ", "ระยะยาว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "การวางแผนกลยุทธ์และขยายงาน",
+          "detailed_interpretation_th": "ในการงาน สองไม้เท้าปัจจุบันบอกว่าคุณกำลังวางแผนกลยุทธ์และขยายงาน - การวางแผนระยะยาว การพิจารณาขยายธุรกิจ การตัดสินใจเรื่องอาชีพ ไพ่หนุนให้คุณมองภาพใหญ่ กล้าออกจากเขตปลอดภัย และวางแผนการเติบโตอย่างมีวิสัยทัศน์",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The Emperor = วางแผน",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าปัจจุบันงาน คือ 'มองภาพใหญ่วางแผนการเติบโต'",
+          "advice_th": "วางแผนกลยุทธ์ - มองภาพใหญ่ พิจารณาขยายงาน กล้าออกจากเขตปลอดภัย วางแผนการเติบโต",
+          "keywords_th": ["วางกลยุทธ์", "ขยายงาน", "วิสัยทัศน์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การมองหาเส้นทางใหม่และก้าวออกจากเขตสบาย",
+          "detailed_interpretation_th": "ในการเติบโต สองไม้เท้าปัจจุบันชี้ว่าคุณกำลังมองหาเส้นทางใหม่และก้าวออกจากเขตสบาย - การพิจารณาความเป็นไปได้ การวางแผนการเปลี่ยนแปลง การกล้าฝันใหญ่ ไพ่หนุนให้คุณมองข้ามขอบเขตปัจจุบันและกล้าก้าวสู่โลกที่กว้างกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Fool = ก้าวใหม่",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าปัจจุบันเติบโต คือ 'มองข้ามขอบเขตก้าวสู่โลกกว้าง'",
+          "advice_th": "มองหาเส้นทางใหม่ - พิจารณาความเป็นไปได้ กล้าฝันใหญ่ ก้าวออกจากเขตสบาย",
+          "keywords_th": ["เส้นทางใหม่", "ก้าวออก", "ฝันใหญ่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "การวางแผนสุขภาพระยะยาว",
+          "detailed_interpretation_th": "ในสุขภาพ สองไม้เท้าปัจจุบันบอกว่าคุณกำลังวางแผนสุขภาพระยะยาว - การตั้งเป้าหมายสุขภาพ การพิจารณาเปลี่ยนวิถีชีวิต การมองภาพรวมของความเป็นอยู่ที่ดี ไพ่หนุนให้คุณวางแผนอย่างมีวิสัยทัศน์และกล้าเริ่มต้นการเปลี่ยนแปลงที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Emperor = วางแผน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าปัจจุบันสุขภาพ คือ 'วางแผนสุขภาพอย่างมีวิสัยทัศน์'",
+          "advice_th": "วางแผนสุขภาพระยะยาว - ตั้งเป้าหมาย พิจารณาเปลี่ยนวิถี เริ่มการเปลี่ยนแปลงที่ยั่งยืน",
+          "keywords_th": ["วางแผนสุขภาพ", "ระยะยาว", "วิสัยทัศน์"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวการเปลี่ยนแปลงและเลือกความปลอดภัย",
+          "detailed_interpretation_th": "สองไม้เท้ากลับหัวในปัจจุบัน บอกว่าคุณกำลังกลัวการเปลี่ยนแปลงและเลือกความปลอดภัย - การลังเลที่จะก้าวออก การยึดติดกับสิ่งคุ้นเคย หรือการวางแผนที่ไม่รอบคอบ ไพ่หนุนให้คุณกล้าออกจากเขตสบาย พิจารณาทางเลือกอย่างกว้าง และไม่ปล่อยให้ความกลัวจำกัดอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวปัจจุบัน คือ 'ไม่ปล่อยให้ความกลัวจำกัดอนาคต'",
+          "advice_th": "กล้าออกจากเขตสบาย - ลังเลที่จะก้าว ยึดติดสิ่งคุ้นเคย พิจารณาทางเลือกกว้าง ไม่ให้ความกลัวจำกัด",
+          "keywords_th": ["กลัวเปลี่ยน", "เลือกปลอดภัย", "กล้าก้าว"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ลังเลที่จะก้าวสู่ขั้นต่อไปในความรัก",
+          "detailed_interpretation_th": "ในความรัก สองไม้เท้ากลับหัวชี้ว่าคุณลังเลที่จะก้าวสู่ขั้นต่อไป - กลัวการผูกมัด ความไม่แน่ใจในอนาคตของความสัมพันธ์ หรือการไม่กล้าตัดสินใจ ไพ่หนุนให้คุณซื่อสัตย์กับสิ่งที่ต้องการ สื่อสารกับคู่ และกล้าตัดสินใจเรื่องอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวปัจจุบันความรัก คือ 'ซื่อสัตย์กับสิ่งที่ต้องการ'",
+          "advice_th": "กล้าตัดสินใจในรัก - ลังเลที่จะก้าวต่อ ซื่อสัตย์กับสิ่งที่ต้องการ สื่อสารกับคู่",
+          "keywords_th": ["ลังเล", "กลัวผูกมัด", "กล้าตัดสิน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "วางแผนไม่รอบคอบหรือกลัวขยายงาน",
+          "detailed_interpretation_th": "ในการงาน สองไม้เท้ากลับหัวบอกว่าคุณอาจวางแผนไม่รอบคอบหรือกลัวขยายงาน - การตัดสินใจที่ลังเล การยึดติดกับงานเดิม หรือแผนที่ขาดวิสัยทัศน์ ไพ่หนุนให้คุณมองภาพใหญ่ขึ้น กล้าก้าวออกจากเขตปลอดภัย และวางแผนอย่างรอบคอบก่อนตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวปัจจุบันงาน คือ 'มองภาพใหญ่กล้าก้าวออก'",
+          "advice_th": "วางแผนรอบคอบ - กลัวขยายงาน ยึดติดงานเดิม มองภาพใหญ่ กล้าก้าวออกจากเขตปลอดภัย",
+          "keywords_th": ["วางแผนไม่รอบคอบ", "กลัวขยาย", "มองภาพใหญ่"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดอยู่ในเขตสบายและกลัวก้าวออก",
+          "detailed_interpretation_th": "ในการเติบโต สองไม้เท้ากลับหัวเผยว่าคุณติดอยู่ในเขตสบายและกลัวก้าวออก - การไม่กล้าฝันใหญ่ การยึดติดกับสิ่งคุ้นเคย ความกลัวสิ่งที่ไม่รู้ ไพ่หนุนให้คุณกล้าก้าวออกจากเขตสบาย มองข้ามขอบเขตปัจจุบัน และเชื่อว่าโลกที่กว้างกว่ารออยู่",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวปัจจุบันเติบโต คือ 'โลกที่กว้างกว่ารออยู่'",
+          "advice_th": "กล้าก้าวออก - ติดเขตสบาย กลัวสิ่งที่ไม่รู้ มองข้ามขอบเขต เชื่อว่าโลกที่กว้างกว่ารออยู่",
+          "keywords_th": ["ติดเขตสบาย", "กลัวก้าวออก", "กล้าฝัน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ไม่วางแผนสุขภาพหรือผัดวันเปลี่ยนแปลง",
+          "detailed_interpretation_th": "ในสุขภาพ สองไม้เท้ากลับหัวบอกว่าคุณไม่วางแผนสุขภาพหรือผัดวันเปลี่ยนแปลง - การไม่ตั้งเป้าหมาย การยึดติดนิสัยเดิม หรือการเลื่อนการดูแลตัวเอง ไพ่หนุนให้คุณวางแผนสุขภาพอย่างจริงจัง กล้าเปลี่ยนวิถีที่ไม่ดี และมองภาพระยะยาวของความเป็นอยู่ที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = ไม่สนใจ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวปัจจุบันสุขภาพ คือ 'มองภาพระยะยาวกล้าเปลี่ยน'",
+          "advice_th": "วางแผนสุขภาพ - ไม่ตั้งเป้าหมาย ยึดติดนิสัยเดิม กล้าเปลี่ยนวิถี มองภาพระยะยาว",
+          "keywords_th": ["ไม่วางแผน", "ผัดวัน", "กล้าเปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการตัดสินใจเลือกเส้นทาง",
+          "detailed_interpretation_th": "สองไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือการต้องตัดสินใจเลือกเส้นทาง - การเลือกระหว่างความปลอดภัยกับการผจญภัย การวางแผนอนาคต การกล้าก้าวออก อุปสรรคนี้คือการต้องตัดสินใจอย่างกล้าหาญและมองภาพระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The World = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอุปสรรค คือ 'ตัดสินใจอย่างกล้าหาญมองระยะยาว'",
+          "advice_th": "ตัดสินใจเลือกเส้นทาง - เลือกระหว่างปลอดภัยกับผจญภัย กล้าก้าวออก มองภาพระยะยาว",
+          "keywords_th": ["ตัดสินใจ", "เลือกเส้นทาง", "กล้าหาญ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือการตัดสินใจอนาคตความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการต้องตัดสินใจอนาคตความรัก - การเลือกว่าจะก้าวต่อหรือไม่ การวางแผนชีวิตคู่ การกล้าผูกมัด อุปสรรคนี้คือการต้องตัดสินใจเรื่องสำคัญที่กำหนดทิศทางความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The World = อนาคต",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอุปสรรคความรัก คือ 'ตัดสินใจกำหนดทิศทางความสัมพันธ์'",
+          "advice_th": "ตัดสินใจอนาคตรัก - เลือกว่าจะก้าวต่อหรือไม่ วางแผนชีวิตคู่ กล้าตัดสินใจเรื่องสำคัญ",
+          "keywords_th": ["ตัดสินใจรัก", "อนาคต", "ทิศทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือการตัดสินใจกลยุทธ์อาชีพ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการต้องตัดสินใจกลยุทธ์อาชีพ - การเลือกระหว่างทางที่ปลอดภัยกับโอกาสที่ใหญ่กว่า การวางแผนขยายธุรกิจ การกล้าเสี่ยง อุปสรรคนี้คือการต้องตัดสินใจอย่างมีวิสัยทัศน์และมองภาพระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = วางแผน, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอุปสรรคงาน คือ 'ตัดสินใจอย่างมีวิสัยทัศน์'",
+          "advice_th": "ตัดสินใจกลยุทธ์ - เลือกระหว่างปลอดภัยกับโอกาสใหญ่ กล้าเสี่ยง มองภาพระยะยาว",
+          "keywords_th": ["ตัดสินใจกลยุทธ์", "เลือกทาง", "วิสัยทัศน์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือการกล้าก้าวออกจากเขตสบาย",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการต้องกล้าก้าวออกจากเขตสบาย - การเลือกระหว่างความคุ้นเคยกับการเติบโต การกล้าฝันใหญ่ การมองข้ามขอบเขต อุปสรรคนี้คือการเอาชนะความกลัวและกล้าก้าวสู่โลกที่กว้างกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Fool = ก้าวใหม่",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอุปสรรคเติบโต คือ 'เอาชนะความกลัวก้าวสู่โลกกว้าง'",
+          "advice_th": "กล้าก้าวออกจากเขตสบาย - เลือกการเติบโตเหนือความคุ้นเคย กล้าฝันใหญ่ มองข้ามขอบเขต",
+          "keywords_th": ["กล้าก้าวออก", "ฝันใหญ่", "เอาชนะกลัว"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือการตัดสินใจเปลี่ยนวิถีสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการต้องตัดสินใจเปลี่ยนวิถีสุขภาพ - การเลือกวางแผนระยะยาว การกล้าเปลี่ยนนิสัย การมองภาพรวมของความเป็นอยู่ที่ดี อุปสรรคนี้คือการต้องตัดสินใจและลงมือเปลี่ยนแปลงอย่างมีวิสัยทัศน์",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Emperor = วางแผน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอุปสรรคสุขภาพ คือ 'ตัดสินใจเปลี่ยนแปลงอย่างมีวิสัยทัศน์'",
+          "advice_th": "ตัดสินใจเปลี่ยนวิถี - เลือกวางแผนระยะยาว กล้าเปลี่ยนนิสัย มองภาพรวมความเป็นอยู่ที่ดี",
+          "keywords_th": ["ตัดสินใจเปลี่ยน", "วางแผน", "วิสัยทัศน์"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือความลังเลและกลัวการตัดสินใจ",
+          "detailed_interpretation_th": "สองไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือความลังเลและกลัวการตัดสินใจ - การไม่กล้าเลือก การติดอยู่ระหว่างทาง การกลัวก้าวออก ไพ่เตือนว่าความลังเลทำให้คุณติดอยู่ กล้าตัดสินใจและมองภาพใหญ่กว่าความกลัว",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอุปสรรค คือ 'ความลังเลทำให้ติดอยู่'",
+          "advice_th": "กล้าตัดสินใจ - ความลังเลทำให้ติดอยู่ กล้าเลือก มองภาพใหญ่กว่าความกลัว",
+          "keywords_th": ["ลังเล", "กลัวตัดสิน", "กล้าเลือก"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือกลัวผูกมัดและไม่กล้าก้าวต่อ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือความกลัวผูกมัดและไม่กล้าก้าวต่อ - การลังเลที่จะตัดสินใจอนาคต ความกลัวความมุ่งมั่น การติดอยู่ในความไม่แน่นอน ไพ่หนุนให้คุณซื่อสัตย์กับความรู้สึก สื่อสารกับคู่ และกล้าตัดสินใจเรื่องอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = สับสน",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอุปสรรคความรัก คือ 'กล้าตัดสินใจเรื่องอนาคต'",
+          "advice_th": "กล้าก้าวต่อ - กลัวผูกมัด ลังเลตัดสินใจ ซื่อสัตย์กับความรู้สึก สื่อสารกับคู่",
+          "keywords_th": ["กลัวผูกมัด", "ไม่กล้าก้าว", "กล้าตัดสิน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือกลัวเสี่ยงและติดในงานเดิม",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือความกลัวเสี่ยงและติดในงานเดิม - การไม่กล้าขยาย การลังเลที่จะตัดสินใจ การยึดติดกับความปลอดภัย ไพ่หนุนให้คุณกล้ามองภาพใหญ่ ประเมินโอกาสอย่างรอบคอบ และกล้าตัดสินใจเพื่อการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอุปสรรคงาน คือ 'กล้าตัดสินใจเพื่อการเติบโต'",
+          "advice_th": "กล้าเสี่ยงอย่างรอบคอบ - กลัวขยาย ติดงานเดิม มองภาพใหญ่ ประเมินโอกาส กล้าตัดสินใจ",
+          "keywords_th": ["กลัวเสี่ยง", "ติดงานเดิม", "กล้าตัดสิน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือติดในเขตสบายและกลัวฝันใหญ่",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการติดในเขตสบายและกลัวฝันใหญ่ - การลดความฝัน การไม่กล้าก้าวออก การยึดติดกับความคุ้นเคย ไพ่หนุนให้คุณกล้าฝันใหญ่ มองข้ามขอบเขตที่จำกัดตัวเอง และเชื่อว่าคุณสามารถไปได้ไกลกว่าที่คิด",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอุปสรรคเติบโต คือ 'คุณไปได้ไกลกว่าที่คิด'",
+          "advice_th": "กล้าฝันใหญ่ - ติดเขตสบาย ลดความฝัน มองข้ามขอบเขตที่จำกัดตัวเอง เชื่อในศักยภาพ",
+          "keywords_th": ["ติดเขตสบาย", "กลัวฝันใหญ่", "กล้าฝัน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือผัดวันและไม่กล้าเปลี่ยนวิถี",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือการผัดวันและไม่กล้าเปลี่ยนวิถี - การเลื่อนการดูแลตัวเอง การยึดติดนิสัยที่ไม่ดี การไม่วางแผนระยะยาว ไพ่หนุนให้คุณกล้าตัดสินใจเปลี่ยน วางแผนสุขภาพอย่างจริงจัง และลงมือทำตั้งแต่วันนี้",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Seven of Wands = ปฏิเสธ",
+            "cups": "Four of Cups = ไม่สนใจ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอุปสรรคสุขภาพ คือ 'กล้าตัดสินใจเปลี่ยนตั้งแต่วันนี้'",
+          "advice_th": "หยุดผัดวัน - เลื่อนการดูแล ยึดนิสัยไม่ดี กล้าตัดสินใจเปลี่ยน วางแผนสุขภาพ ลงมือวันนี้",
+          "keywords_th": ["ผัดวัน", "ไม่กล้าเปลี่ยน", "ลงมือ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยวางแผนและตัดสินใจครั้งสำคัญ",
+          "detailed_interpretation_th": "สองไม้เท้าในอดีต เผยว่าคุณเคยวางแผนและตัดสินใจครั้งสำคัญ - ช่วงเวลาที่คุณเลือกเส้นทาง วางวิสัยทัศน์ หรือกล้าก้าวออกจากเขตสบาย ประสบการณ์นี้สอนคุณว่าการวางแผนและกล้าตัดสินใจนำพาชีวิตไปข้างหน้า",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The World = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอดีต คือ 'การวางแผนนำพาชีวิตไปข้างหน้า'",
+          "advice_th": "ใช้บทเรียนการวางแผน - คุณเคยตัดสินใจครั้งสำคัญ ใช้ความกล้านี้วางแผนปัจจุบัน",
+          "keywords_th": ["วางแผนเก่า", "ตัดสินใจ", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยตัดสินใจเรื่องสำคัญในความรัก",
+          "detailed_interpretation_th": "ในความรัก สองไม้เท้าอดีตเผยว่าคุณเคยตัดสินใจเรื่องสำคัญในความรัก - การเลือกคู่ การวางแผนชีวิตคู่ หรือการก้าวสู่ขั้นใหม่ ประสบการณ์นี้สอนคุณว่าการกล้าตัดสินใจและมองภาพระยะยาวสร้างความสัมพันธ์ที่มั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The World = อนาคต",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอดีตความรัก คือ 'กล้าตัดสินใจสร้างความมั่นคง'",
+          "advice_th": "ใช้บทเรียนการตัดสินใจ - คุณเคยเลือกและวางแผนในรัก ใช้ความกล้านี้ในปัจจุบัน",
+          "keywords_th": ["ตัดสินใจรักเก่า", "วางแผน", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยวางกลยุทธ์และขยายงานสำเร็จ",
+          "detailed_interpretation_th": "ในการงาน สองไม้เท้าอดีตเผยว่าคุณเคยวางกลยุทธ์และขยายงานสำเร็จ - การวางแผนระยะยาว การกล้าตัดสินใจขยาย การมองภาพใหญ่ ประสบการณ์นี้กลายเป็นความรู้ว่าคุณมีวิสัยทัศน์และสามารถวางแผนการเติบโตได้ ใช้ความมั่นใจนี้ในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = วางแผน, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอดีตงาน คือ 'คุณมีวิสัยทัศน์วางแผนการเติบโต'",
+          "advice_th": "ใช้บทเรียนการวางกลยุทธ์ - คุณเคยขยายงานสำเร็จ ใช้วิสัยทัศน์นี้วางแผนปัจจุบัน",
+          "keywords_th": ["วางกลยุทธ์เก่า", "วิสัยทัศน์", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยกล้าก้าวออกจากเขตสบาย",
+          "detailed_interpretation_th": "ในการเติบโต สองไม้เท้าอดีตชี้ว่าคุณเคยกล้าก้าวออกจากเขตสบาย - การกล้าฝันใหญ่ การมองข้ามขอบเขต การก้าวสู่สิ่งใหม่ ประสบการณ์นี้กลายเป็นรากฐานของความเชื่อว่าคุณสามารถก้าวข้ามขีดจำกัดและเติบโตได้",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Fool = ก้าวใหม่",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอดีตเติบโต คือ 'คุณก้าวข้ามขีดจำกัดได้'",
+          "advice_th": "ใช้บทเรียนการก้าวออก - คุณเคยกล้าฝันใหญ่ ใช้ความเชื่อว่าก้าวข้ามขีดจำกัดได้",
+          "keywords_th": ["ก้าวออกเก่า", "ฝันใหญ่", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยวางแผนและเปลี่ยนวิถีสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ สองไม้เท้าอดีตเผยว่าคุณเคยวางแผนและเปลี่ยนวิถีสุขภาพ - การตั้งเป้าหมาย การกล้าเปลี่ยนนิสัย การมองภาพระยะยาว ประสบการณ์นี้สอนคุณว่าการวางแผนและตัดสินใจเปลี่ยนนำมาซึ่งสุขภาพที่ดีขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Emperor = วางแผน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอดีตสุขภาพ คือ 'การวางแผนนำสุขภาพที่ดีขึ้น'",
+          "advice_th": "ใช้บทเรียนการวางแผนสุขภาพ - คุณเคยเปลี่ยนวิถีสำเร็จ ใช้ความรู้นี้ในปัจจุบัน",
+          "keywords_th": ["วางแผนสุขภาพเก่า", "เปลี่ยนวิถี", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยลังเลหรือเลือกความปลอดภัยจนพลาดโอกาส",
+          "detailed_interpretation_th": "สองไม้เท้ากลับหัวในอดีต เผยว่าคุณเคยลังเลหรือเลือกความปลอดภัยจนพลาดโอกาส - การไม่กล้าก้าวออก การยึดติดกับสิ่งคุ้นเคย การลังเลที่จะตัดสินใจ บทเรียนคือคุณรู้ว่าการกล้าก้าวและมองภาพใหญ่สำคัญ และตอนนี้พร้อมที่จะกล้ามากขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวอดีต คือ 'การกล้าก้าวและมองภาพใหญ่สำคัญ'",
+          "advice_th": "ใช้บทเรียนการลังเล - คุณรู้ว่าต้องกล้าก้าว ตอนนี้พร้อมกล้ามากขึ้น",
+          "keywords_th": ["ลังเลเก่า", "พลาดโอกาส", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยลังเลในความรักจนพลาดหรือเสียดาย",
+          "detailed_interpretation_th": "ในความรัก สองไม้เท้ากลับหัวในอดีตชี้ว่าคุณเคยลังเลในความรักจนพลาดหรือเสียดาย - การไม่กล้าตัดสินใจ การกลัวผูกมัด การปล่อยโอกาสรักผ่าน บทเรียนคือคุณรู้ว่าการกล้าตัดสินใจในความรักสำคัญ และความลังเลทำให้พลาดสิ่งที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = ผิดหวัง",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวอดีตความรัก คือ 'ความลังเลทำให้พลาดสิ่งที่ดี'",
+          "advice_th": "ใช้บทเรียนความลังเล - คุณรู้ว่าต้องกล้าตัดสินใจในรัก ความลังเลทำให้พลาด",
+          "keywords_th": ["ลังเลรักเก่า", "เสียดาย", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยกลัวเสี่ยงจนติดในงานเดิม",
+          "detailed_interpretation_th": "ในการงาน สองไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยกลัวเสี่ยงจนติดในงานเดิม - การไม่กล้าขยาย การเลือกความปลอดภัย การปล่อยโอกาสเติบโต บทเรียนคือคุณรู้ว่าการกล้าเสี่ยงอย่างมีวิสัยทัศน์สำคัญ และตอนนี้พร้อมที่จะมองภาพใหญ่ขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวอดีตงาน คือ 'การกล้าเสี่ยงอย่างมีวิสัยทัศน์สำคัญ'",
+          "advice_th": "ใช้บทเรียนกลัวเสี่ยง - คุณรู้ว่าต้องกล้าเสี่ยง ตอนนี้พร้อมมองภาพใหญ่ขึ้น",
+          "keywords_th": ["กลัวเสี่ยงเก่า", "ติดงานเดิม", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยติดในเขตสบายและไม่กล้าฝัน",
+          "detailed_interpretation_th": "ในการเติบโต สองไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยติดในเขตสบายและไม่กล้าฝัน - การลดความฝัน การไม่กล้าก้าวออก การยึดติดกับความคุ้นเคย บทเรียนคือคุณรู้ว่าการกล้าฝันใหญ่และก้าวออกจากเขตสบายเป็นกุญแจสู่การเติบโต และจะไม่จำกัดตัวเองอีก",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวอดีตเติบโต คือ 'จะไม่จำกัดตัวเองอีก'",
+          "advice_th": "ใช้บทเรียนติดเขตสบาย - คุณรู้ว่าต้องกล้าฝันและก้าวออก จะไม่จำกัดตัวเองอีก",
+          "keywords_th": ["ติดเขตสบายเก่า", "ไม่กล้าฝัน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยผัดวันหรือไม่วางแผนสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ สองไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยผัดวันหรือไม่วางแผนสุขภาพ - การเลื่อนการดูแลตัวเอง การยึดติดนิสัยไม่ดี การไม่มองภาพระยะยาว บทเรียนคือคุณรู้ว่าการวางแผนและตัดสินใจเปลี่ยนตั้งแต่เนิ่นๆ สำคัญ และจะไม่ปล่อยให้สุขภาพรอจนสาย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = ไม่สนใจ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวอดีตสุขภาพ คือ 'วางแผนตั้งแต่เนิ่นๆ สำคัญ'",
+          "advice_th": "ใช้บทเรียนผัดวัน - คุณรู้ว่าต้องวางแผนตั้งแต่เนิ่นๆ ไม่ปล่อยสุขภาพรอจนสาย",
+          "keywords_th": ["ผัดวันเก่า", "ไม่วางแผน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีการตัดสินใจและโอกาสขยาย",
+          "detailed_interpretation_th": "สองไม้เท้าในอนาคต บอกว่าอนาคตจะมีการตัดสินใจและโอกาสขยาย - การเลือกเส้นทางใหม่ การวางแผนที่ใหญ่ขึ้น การกล้าก้าวออกสู่โลกกว้าง ไพ่หนุนให้คุณเตรียมพร้อมตัดสินใจอย่างมีวิสัยทัศน์และกล้าคว้าโอกาสที่จะมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The World = โอกาสกว้าง",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอนาคต คือ 'เตรียมตัดสินใจอย่างมีวิสัยทัศน์'",
+          "advice_th": "เตรียมรับการตัดสินใจ - มีโอกาสขยาย เลือกเส้นทางใหม่ กล้าก้าวออกสู่โลกกว้าง",
+          "keywords_th": ["ตัดสินใจ", "โอกาสขยาย", "วิสัยทัศน์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักจะมีการตัดสินใจก้าวสำคัญ",
+          "detailed_interpretation_th": "ในความรัก สองไม้เท้าอนาคตบอกว่าความรักจะมีการตัดสินใจก้าวสำคัญ - การก้าวสู่ขั้นใหม่ การวางแผนชีวิตคู่ การตัดสินใจเรื่องอนาคต ไพ่หนุนให้คุณเตรียมใจตัดสินใจและมองภาพระยะยาวของความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The World = อนาคต",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอนาคตความรัก คือ 'เตรียมตัดสินใจมองภาพระยะยาว'",
+          "advice_th": "เตรียมรับการตัดสินใจรัก - ก้าวสู่ขั้นใหม่ วางแผนชีวิตคู่ มองภาพระยะยาว",
+          "keywords_th": ["ตัดสินใจรัก", "ก้าวสำคัญ", "ระยะยาว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "อนาคตจะมีโอกาสขยายงานและเติบโต",
+          "detailed_interpretation_th": "ในการงาน สองไม้เท้าอนาคตเป็นข่าวดี - อนาคตจะมีโอกาสขยายงานและเติบโต การวางแผนกลยุทธ์ใหม่ การกล้าก้าวสู่ระดับที่ใหญ่กว่า ไพ่หนุนให้คุณเตรียมพร้อมมองภาพใหญ่ วางแผนการเติบโต และกล้าคว้าโอกาสที่จะมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = วางแผน, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอนาคตงาน คือ 'เตรียมมองภาพใหญ่วางแผนการเติบโต'",
+          "advice_th": "เตรียมรับโอกาสขยาย - วางแผนกลยุทธ์ใหม่ กล้าก้าวสู่ระดับใหญ่กว่า คว้าโอกาส",
+          "keywords_th": ["โอกาสขยาย", "เติบโต", "วางแผน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การก้าวสู่โลกที่กว้างกว่ารออยู่",
+          "detailed_interpretation_th": "ในการเติบโต สองไม้เท้าอนาคตบอกว่าการก้าวสู่โลกที่กว้างกว่ารอคุณอยู่ - การกล้าฝันใหญ่ การมองข้ามขอบเขตปัจจุบัน การเติบโตผ่านประสบการณ์ใหม่ ไพ่หนุนให้คุณเตรียมใจกล้าก้าวออกและเชื่อว่าศักยภาพของคุณกว้างกว่าที่คิด",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Fool = ก้าวใหม่",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอนาคตเติบโต คือ 'ศักยภาพกว้างกว่าที่คิด'",
+          "advice_th": "เตรียมก้าวสู่โลกกว้าง - กล้าฝันใหญ่ มองข้ามขอบเขต เชื่อว่าศักยภาพกว้างกว่าที่คิด",
+          "keywords_th": ["โลกกว้าง", "ฝันใหญ่", "กล้าก้าว"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะดีขึ้นจากการวางแผนระยะยาว",
+          "detailed_interpretation_th": "ในสุขภาพ สองไม้เท้าอนาคตบอกว่าสุขภาพจะดีขึ้นจากการวางแผนระยะยาว - การตั้งเป้าหมายที่ชัดเจน การเปลี่ยนวิถีชีวิตอย่างมีวิสัยทัศน์ การมองภาพรวมความเป็นอยู่ที่ดี ไพ่หนุนให้คุณเตรียมวางแผนสุขภาพและกล้าตัดสินใจเปลี่ยนเพื่ออนาคตที่แข็งแรง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Emperor = วางแผน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าอนาคตสุขภาพ คือ 'วางแผนเพื่ออนาคตที่แข็งแรง'",
+          "advice_th": "เตรียมวางแผนสุขภาพ - ตั้งเป้าชัดเจน เปลี่ยนวิถีอย่างมีวิสัยทัศน์ เพื่ออนาคตที่แข็งแรง",
+          "keywords_th": ["วางแผนสุขภาพ", "ระยะยาว", "แข็งแรง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตอาจมีความลังเลหรือเลือกความปลอดภัย",
+          "detailed_interpretation_th": "สองไม้เท้ากลับหัวในอนาคต เตือนว่าอนาคตอาจมีความลังเลหรือเลือกความปลอดภัย - การไม่กล้าก้าวออก การยึดติดกับสิ่งคุ้นเคย การลังเลที่จะตัดสินใจ ไพ่หนุนให้คุณเตรียมใจกล้าตัดสินใจ มองภาพใหญ่ และไม่ปล่อยให้ความกลัวจำกัดอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวอนาคต คือ 'ไม่ปล่อยให้ความกลัวจำกัดอนาคต'",
+          "advice_th": "เตรียมกล้าตัดสินใจ - อาจลังเลหรือเลือกปลอดภัย มองภาพใหญ่ ไม่ให้ความกลัวจำกัด",
+          "keywords_th": ["ลังเล", "เลือกปลอดภัย", "กล้าตัดสิน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจติดขัดเพราะกลัวก้าวต่อ",
+          "detailed_interpretation_th": "ในความรัก สองไม้เท้ากลับหัวอนาคตเตือนว่าความรักอาจติดขัดเพราะกลัวก้าวต่อ - การลังเลที่จะตัดสินใจอนาคต ความกลัวผูกมัด การติดอยู่ในความไม่แน่นอน ไพ่หนุนให้คุณเตรียมใจซื่อสัตย์กับความรู้สึก สื่อสารกับคู่ และกล้าตัดสินใจเรื่องอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวอนาคตความรัก คือ 'ซื่อสัตย์กับความรู้สึกกล้าตัดสิน'",
+          "advice_th": "เตรียมกล้าก้าวต่อ - อาจกลัวผูกมัด ซื่อสัตย์กับความรู้สึก สื่อสารกับคู่ กล้าตัดสินใจ",
+          "keywords_th": ["กลัวก้าวต่อ", "ลังเล", "กล้าตัดสิน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อาจกลัวเสี่ยงและพลาดโอกาสขยาย",
+          "detailed_interpretation_th": "ในการงาน สองไม้เท้ากลับหัวอนาคตเตือนว่าอาจกลัวเสี่ยงและพลาดโอกาสขยาย - การไม่กล้าตัดสินใจ การยึดติดกับงานเดิม การลังเลจนโอกาสผ่าน ไพ่หนุนให้คุณเตรียมใจมองภาพใหญ่ ประเมินโอกาสอย่างรอบคอบ และกล้าตัดสินใจเพื่อการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวอนาคตงาน คือ 'กล้าตัดสินใจเพื่อการเติบโต'",
+          "advice_th": "เตรียมกล้าเสี่ยง - อาจกลัวเสี่ยงพลาดโอกาส มองภาพใหญ่ ประเมินรอบคอบ กล้าตัดสินใจ",
+          "keywords_th": ["กลัวเสี่ยง", "พลาดโอกาส", "กล้าตัดสิน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจติดในเขตสบายและไม่กล้าฝันใหญ่",
+          "detailed_interpretation_th": "ในการเติบโต สองไม้เท้ากลับหัวอนาคตเตือนว่าอาจติดในเขตสบายและไม่กล้าฝันใหญ่ - การลดความฝัน การกลัวก้าวออก การยึดติดกับความคุ้นเคย ไพ่หนุนให้คุณเตรียมใจกล้าฝันใหญ่ มองข้ามขอบเขตที่จำกัดตัวเอง และเชื่อว่าศักยภาพของคุณกว้างกว่าที่คิด",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวอนาคตเติบโต คือ 'ศักยภาพกว้างกว่าที่คิด'",
+          "advice_th": "เตรียมกล้าฝันใหญ่ - อาจติดเขตสบาย มองข้ามขอบเขตที่จำกัดตัวเอง เชื่อในศักยภาพ",
+          "keywords_th": ["ติดเขตสบาย", "ไม่กล้าฝัน", "กล้าฝัน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อาจผัดวันหรือไม่วางแผนสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ สองไม้เท้ากลับหัวอนาคตบอกว่าอาจผัดวันหรือไม่วางแผนสุขภาพ - การเลื่อนการดูแลตัวเอง การไม่ตั้งเป้าหมาย การยึดติดนิสัยเดิม ไพ่หนุนให้คุณเตรียมวางแผนสุขภาพอย่างจริงจัง กล้าตัดสินใจเปลี่ยน และมองภาพระยะยาวของความเป็นอยู่ที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = ไม่สนใจ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวอนาคตสุขภาพ คือ 'วางแผนและกล้าตัดสินใจเปลี่ยน'",
+          "advice_th": "เตรียมวางแผนสุขภาพ - อาจผัดวัน ตั้งเป้าหมาย กล้าตัดสินใจเปลี่ยน มองภาพระยะยาว",
+          "keywords_th": ["ผัดวัน", "ไม่วางแผน", "กล้าเปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือวางแผนและสร้างอนาคตที่ใหญ่กว่า",
+          "detailed_interpretation_th": "สองไม้เท้าในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือการวางแผนและสร้างอนาคตที่ใหญ่กว่า - การมีวิสัยทัศน์ การกล้าฝัน การก้าวออกสู่โลกกว้าง เป้าหมายนี้ขับเคลื่อนด้วยความทะเยอทะยานและความกล้าที่จะตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The World = โอกาสกว้าง",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าเป้าหมาย คือ 'สร้างอนาคตที่ใหญ่กว่า'",
+          "advice_th": "ตั้งเป้าวางแผนอนาคต - มีวิสัยทัศน์ กล้าฝัน ก้าวออกสู่โลกกว้าง สร้างอนาคตที่ใหญ่กว่า",
+          "keywords_th": ["วางแผน", "วิสัยทัศน์", "อนาคตใหญ่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือสร้างอนาคตร่วมกันที่มั่นคง",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือการสร้างอนาคตร่วมกันที่มั่นคง - การวางแผนชีวิตคู่ การก้าวสู่ขั้นใหม่ การมีวิสัยทัศน์ร่วม ไพ่หนุนให้คุณตั้งเป้าหมายความรักที่มองภาพระยะยาวและสร้างรากฐานที่แข็งแรงร่วมกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = อนาคต",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าเป้าหมายความรัก คือ 'สร้างรากฐานที่แข็งแรงร่วมกัน'",
+          "advice_th": "ตั้งเป้าสร้างอนาคตร่วม - วางแผนชีวิตคู่ มีวิสัยทัศน์ร่วม มองภาพระยะยาว",
+          "keywords_th": ["อนาคตร่วม", "มั่นคง", "วางแผนคู่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือขยายงานและสร้างความสำเร็จที่ใหญ่ขึ้น",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือการขยายงานและสร้างความสำเร็จที่ใหญ่ขึ้น - การวางกลยุทธ์ระยะยาว การกล้าขยายธุรกิจ การมองภาพใหญ่ ไพ่หนุนให้คุณตั้งเป้าหมายที่ทะเยอทะยาน วางแผนการเติบโต และกล้าก้าวสู่ระดับที่สูงกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = วางแผน, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าเป้าหมายงาน คือ 'กล้าก้าวสู่ระดับที่สูงกว่า'",
+          "advice_th": "ตั้งเป้าขยายงาน - วางกลยุทธ์ระยะยาว กล้าขยายธุรกิจ มองภาพใหญ่ ก้าวสู่ระดับสูงกว่า",
+          "keywords_th": ["ขยายงาน", "ความสำเร็จใหญ่", "วางกลยุทธ์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือก้าวข้ามขีดจำกัดและฝันใหญ่",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือการก้าวข้ามขีดจำกัดและฝันใหญ่ - การมองข้ามขอบเขตปัจจุบัน การกล้าออกจากเขตสบาย การเติบโตผ่านประสบการณ์ใหม่ ไพ่หนุนให้คุณตั้งเป้าหมายที่ท้าทายและเชื่อว่าศักยภาพของคุณไร้ขีดจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Fool = ก้าวใหม่",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าเป้าหมายเติบโต คือ 'ศักยภาพไร้ขีดจำกัด'",
+          "advice_th": "ตั้งเป้าก้าวข้ามขีดจำกัด - มองข้ามขอบเขต กล้าออกจากเขตสบาย เชื่อว่าศักยภาพไร้ขีดจำกัด",
+          "keywords_th": ["ก้าวข้ามขีดจำกัด", "ฝันใหญ่", "ท้าทาย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพที่ดีจากการวางแผนรอบคอบ",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือสุขภาพที่ดีจากการวางแผนรอบคอบ - การตั้งเป้าหมายระยะยาว การวางวิถีชีวิตที่ยั่งยืน การมองภาพรวมของความเป็นอยู่ที่ดี ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพอย่างมีวิสัยทัศน์และวางแผนเพื่อความแข็งแรงในระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Emperor = วางแผน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าเป้าหมายสุขภาพ คือ 'วางแผนเพื่อความแข็งแรงระยะยาว'",
+          "advice_th": "ตั้งเป้าสุขภาพระยะยาว - ตั้งเป้าหมายชัดเจน วางวิถีที่ยั่งยืน มองภาพรวมความเป็นอยู่ที่ดี",
+          "keywords_th": ["วางแผนสุขภาพ", "ระยะยาว", "วิสัยทัศน์"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือกล้าก้าวออกจากความกลัว",
+          "detailed_interpretation_th": "สองไม้เท้ากลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือการกล้าก้าวออกจากความกลัว - เอาชนะความลังเล กล้าตัดสินใจ ก้าวออกจากเขตสบาย เป้าหมายนี้ต้องการการเผชิญหน้ากับความกลัวและความกล้าที่จะมองภาพใหญ่กว่าที่คุ้นเคย",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ปล่อยวาง, The Fool = กล้าเริ่ม",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวเป้าหมาย คือ 'เผชิญความกลัวและกล้ามองภาพใหญ่'",
+          "advice_th": "ตั้งเป้ากล้าก้าวออก - เอาชนะความลังเล กล้าตัดสินใจ ก้าวออกจากเขตสบาย",
+          "keywords_th": ["กล้าก้าวออก", "เผชิญกลัว", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือกล้าตัดสินใจในความรัก",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือการกล้าตัดสินใจ - เอาชนะความลังเล กล้าก้าวสู่ขั้นต่อไป ซื่อสัตย์กับสิ่งที่ต้องการ ไพ่หนุนให้คุณตั้งเป้าหมายที่จะตัดสินใจอย่างกล้าหาญและไม่ปล่อยให้ความกลัวผูกมัดขังความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Sun = ความสุข",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวเป้าหมายความรัก คือ 'ไม่ให้ความกลัวขังความสัมพันธ์'",
+          "advice_th": "ตั้งเป้ากล้าตัดสินใจ - เอาชนะความลังเล กล้าก้าวต่อ ซื่อสัตย์กับสิ่งที่ต้องการ",
+          "keywords_th": ["กล้าตัดสิน", "ก้าวต่อ", "ซื่อสัตย์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือกล้าเสี่ยงและก้าวออกจากงานเดิม",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือการกล้าเสี่ยงและก้าวออกจากงานเดิม - เอาชนะความกลัวล้มเหลว กล้าขยาย กล้าตัดสินใจครั้งใหญ่ ไพ่หนุนให้คุณตั้งเป้าหมายที่ท้าทายความปลอดภัย และเชื่อว่าโอกาสที่ใหญ่กว่ารอผู้ที่กล้าก้าว",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = โอกาส, The Fool = กล้าเริ่ม",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวเป้าหมายงาน คือ 'โอกาสที่ใหญ่กว่ารอผู้ที่กล้าก้าว'",
+          "advice_th": "ตั้งเป้ากล้าเสี่ยง - เอาชนะความกลัว กล้าขยาย กล้าตัดสินใจครั้งใหญ่ ท้าทายความปลอดภัย",
+          "keywords_th": ["กล้าเสี่ยง", "ก้าวออก", "ท้าทาย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือกล้าฝันใหญ่และก้าวออกจากเขตสบาย",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือการกล้าฝันใหญ่และก้าวออกจากเขตสบาย - ปลดความกลัวที่จำกัดตัวเอง กล้ามองข้ามขอบเขต กล้าก้าวสู่สิ่งใหม่ ไพ่หนุนให้คุณตั้งเป้าหมายที่ท้าทาย และเชื่อว่าการเติบโตอยู่นอกเขตที่คุ้นเคย",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Fool = ก้าวใหม่",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวเป้าหมายเติบโต คือ 'การเติบโตอยู่นอกเขตที่คุ้นเคย'",
+          "advice_th": "ตั้งเป้ากล้าฝันใหญ่ - ปลดความกลัวที่จำกัดตัวเอง มองข้ามขอบเขต กล้าก้าวสู่สิ่งใหม่",
+          "keywords_th": ["กล้าฝันใหญ่", "ก้าวออก", "ปลดกลัว"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือกล้าตัดสินใจเปลี่ยนวิถีสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือการกล้าตัดสินใจเปลี่ยนวิถีสุขภาพ - หยุดผัดวัน กล้าเปลี่ยนนิสัย วางแผนระยะยาวและลงมือ ไพ่หนุนให้คุณตั้งเป้าหมายที่จะตัดสินใจอย่างจริงจังและกล้าเริ่มการเปลี่ยนแปลงเพื่อสุขภาพที่ดีขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Emperor = วางแผน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวเป้าหมายสุขภาพ คือ 'กล้าเริ่มการเปลี่ยนแปลง'",
+          "advice_th": "ตั้งเป้ากล้าเปลี่ยน - หยุดผัดวัน กล้าเปลี่ยนนิสัย วางแผนระยะยาวและลงมือ",
+          "keywords_th": ["กล้าเปลี่ยน", "ตัดสินใจ", "ลงมือ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือวิสัยทัศน์และความกล้าวางแผน",
+          "detailed_interpretation_th": "สองไม้เท้าในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือวิสัยทัศน์และความกล้าวางแผน - คุณมองภาพใหญ่ ชอบวางแผนอนาคต กล้าตัดสินใจ รากฐานนี้ทำให้คุณสร้างเส้นทางที่ชัดเจนและก้าวสู่เป้าหมายอย่างมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The World = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ารากฐาน คือ 'วิสัยทัศน์คือพลังของคุณ'",
+          "advice_th": "ใช้วิสัยทัศน์เป็นรากฐาน - คุณมองภาพใหญ่ ชอบวางแผน กล้าตัดสินใจ สร้างเส้นทางที่ชัดเจน",
+          "keywords_th": ["วิสัยทัศน์", "วางแผน", "กล้าตัดสิน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือการมองอนาคตร่วมกัน",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือการมองอนาคตร่วมกัน - คุณให้ความสำคัญกับการวางแผนชีวิตคู่ คิดถึงระยะยาว กล้าตัดสินใจเรื่องสำคัญ รากฐานนี้ทำให้คุณเป็นคู่ครองที่สร้างความมั่นคงและมีทิศทางในความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = อนาคต",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ารากฐานความรัก คือ 'สร้างความมั่นคงและทิศทาง'",
+          "advice_th": "ใช้การมองอนาคตเป็นรากฐาน - วางแผนชีวิตคู่ คิดระยะยาว สร้างความมั่นคงในความสัมพันธ์",
+          "keywords_th": ["มองอนาคต", "วางแผนคู่", "ทิศทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือการวางกลยุทธ์และมองภาพใหญ่",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือการวางกลยุทธ์และมองภาพใหญ่ - คุณคิดเชิงกลยุทธ์ วางแผนระยะยาว กล้าตัดสินใจขยาย รากฐานนี้ทำให้คุณเป็นผู้นำที่มีวิสัยทัศน์ สร้างการเติบโต และนำพาทีมสู่เป้าหมายที่ใหญ่กว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = วางแผน, The Magician = พลัง",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ารากฐานงาน คือ 'ผู้นำที่มีวิสัยทัศน์'",
+          "advice_th": "ใช้การวางกลยุทธ์ - คุณคิดเชิงกลยุทธ์ วางแผนระยะยาว นำพาทีมสู่เป้าหมายที่ใหญ่กว่า",
+          "keywords_th": ["วางกลยุทธ์", "มองภาพใหญ่", "ผู้นำ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือความทะเยอทะยานและกล้าก้าวออก",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือความทะเยอทะยานและกล้าก้าวออก - คุณขับเคลื่อนด้วยความอยากเติบโต ชอบมองข้ามขอบเขต กล้าฝันใหญ่ รากฐานนี้ทำให้คุณไม่หยุดนิ่ง พัฒนาตัวเองต่อเนื่อง และก้าวสู่ศักยภาพที่สูงขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Magician = พลัง",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ารากฐานเติบโต คือ 'ความทะเยอทะยานขับเคลื่อนคุณ'",
+          "advice_th": "ใช้ความทะเยอทะยาน - คุณอยากเติบโต ชอบมองข้ามขอบเขต กล้าฝันใหญ่ ก้าวสู่ศักยภาพสูงขึ้น",
+          "keywords_th": ["ทะเยอทะยาน", "กล้าก้าว", "พัฒนาต่อเนื่อง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือการวางแผนและมองระยะยาว",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือการวางแผนและมองระยะยาว - คุณให้ความสำคัญกับการตั้งเป้าหมาย วางวิถีชีวิตที่ยั่งยืน มองภาพรวมความเป็นอยู่ที่ดี รากฐานนี้ทำให้คุณมีสุขภาพดีจากการดูแลอย่างมีวิสัยทัศน์และต่อเนื่อง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Emperor = วางแผน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ารากฐานสุขภาพ คือ 'วางแผนและมองระยะยาว'",
+          "advice_th": "ใช้การวางแผนระยะยาว - ตั้งเป้าหมาย วางวิถีที่ยั่งยืน ดูแลอย่างมีวิสัยทัศน์และต่อเนื่อง",
+          "keywords_th": ["วางแผน", "ระยะยาว", "วิสัยทัศน์"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความกลัวการเปลี่ยนแปลงและการตัดสินใจ",
+          "detailed_interpretation_th": "สองไม้เท้ากลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความกลัวการเปลี่ยนแปลงและการตัดสินใจ - คุณยึดติดกับความปลอดภัย ลังเลที่จะก้าวออก กลัวสิ่งที่ไม่รู้ รากฐานนี้ขังคุณในเขตสบาย ถึงเวลาเรียนรู้ที่จะกล้าตัดสินใจและมองภาพใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวรากฐาน คือ 'กล้าตัดสินใจและมองภาพใหญ่'",
+          "advice_th": "เรียนรู้กล้าตัดสินใจ - ความกลัวขังคุณในเขตสบาย กล้าก้าวออก มองภาพใหญ่",
+          "keywords_th": ["กลัวเปลี่ยน", "ติดเขตสบาย", "กล้าตัดสิน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือกลัวผูกมัดและไม่กล้าวางแผน",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความกลัวผูกมัดและไม่กล้าวางแผน - คุณหลีกเลี่ยงการตัดสินใจเรื่องอนาคต กลัวความมุ่งมั่น ไม่กล้าคิดระยะยาว รากฐานนี้ทำให้ความสัมพันธ์ขาดทิศทาง ถึงเวลาเรียนรู้ที่จะกล้าตัดสินใจและวางแผนอนาคตร่วมกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = สับสน",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวรากฐานความรัก คือ 'กล้าตัดสินใจวางแผนอนาคตร่วมกัน'",
+          "advice_th": "เรียนรู้กล้าวางแผนรัก - กลัวผูกมัด หลีกเลี่ยงตัดสินใจ กล้าคิดระยะยาวร่วมกัน",
+          "keywords_th": ["กลัวผูกมัด", "ไม่กล้าวางแผน", "กล้าตัดสิน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือกลัวเสี่ยงและขาดวิสัยทัศน์",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือความกลัวเสี่ยงและขาดวิสัยทัศน์ - คุณเลือกความปลอดภัยเสมอ ไม่กล้าขยาย ขาดการมองภาพใหญ่ รากฐานนี้ทำให้คุณติดอยู่ที่เดิม ถึงเวลาเรียนรู้ที่จะคิดเชิงกลยุทธ์ กล้าเสี่ยงอย่างมีวิสัยทัศน์ และมองโอกาสที่ใหญ่กว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวรากฐานงาน คือ 'คิดเชิงกลยุทธ์มองโอกาสที่ใหญ่กว่า'",
+          "advice_th": "เรียนรู้คิดเชิงกลยุทธ์ - กลัวเสี่ยง เลือกปลอดภัย กล้าเสี่ยงอย่างมีวิสัยทัศน์ มองโอกาสใหญ่กว่า",
+          "keywords_th": ["กลัวเสี่ยง", "ขาดวิสัยทัศน์", "คิดกลยุทธ์"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือติดในเขตสบายและกลัวฝันใหญ่",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือการติดในเขตสบายและกลัวฝันใหญ่ - คุณลดความฝันให้พอดีกับความปลอดภัย ไม่กล้ามองข้ามขอบเขต กลัวสิ่งที่ไม่รู้ รากฐานนี้ขับเคลื่อนคุณจากความกลัวและจำกัดการเติบโต ถึงเวลาเรียนรู้ที่จะกล้าฝันใหญ่และเชื่อในศักยภาพที่กว้างกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวรากฐานเติบโต คือ 'กล้าฝันใหญ่เชื่อในศักยภาพ'",
+          "advice_th": "เรียนรู้กล้าฝันใหญ่ - ติดเขตสบาย ลดความฝัน กล้ามองข้ามขอบเขต เชื่อในศักยภาพที่กว้างกว่า",
+          "keywords_th": ["ติดเขตสบาย", "กลัวฝันใหญ่", "กล้าฝัน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือผัดวันและไม่วางแผน",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือการผัดวันและไม่วางแผน - คุณเลื่อนการดูแลตัวเอง ยึดติดนิสัยเดิม ไม่มองภาพระยะยาว รากฐานนี้ทำให้สุขภาพไม่ก้าวหน้า ถึงเวลาเรียนรู้ที่จะวางแผนสุขภาพ กล้าตัดสินใจเปลี่ยน และมองภาพรวมความเป็นอยู่ที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Seven of Wands = ปฏิเสธ",
+            "cups": "Four of Cups = ไม่สนใจ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวรากฐานสุขภาพ คือ 'วางแผนและกล้าตัดสินใจเปลี่ยน'",
+          "advice_th": "เรียนรู้วางแผนสุขภาพ - ผัดวัน ยึดนิสัยเดิม กล้าตัดสินใจเปลี่ยน มองภาพรวมความเป็นอยู่ที่ดี",
+          "keywords_th": ["ผัดวัน", "ไม่วางแผน", "กล้าเปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "วางแผนอนาคตและกล้าตัดสินใจ",
+          "detailed_interpretation_th": "สองไม้เท้าในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีที่สุดคือวางแผนอนาคตและกล้าตัดสินใจ - มองภาพใหญ่ พิจารณาทางเลือก เลือกเส้นทางที่ตรงกับวิสัยทัศน์ ไพ่หนุนให้คุณคิดเชิงกลยุทธ์และก้าวอย่างมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = พลัง, The World = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งคำแนะนำ คือ 'คิดเชิงกลยุทธ์ก้าวมั่นใจ'",
+          "advice_th": "วางแผนและตัดสินใจ - มองภาพใหญ่ พิจารณาทางเลือก เลือกเส้นทางตรงวิสัยทัศน์",
+          "keywords_th": ["วางแผน", "กล้าตัดสิน", "วิสัยทัศน์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "วางแผนอนาคตร่วมและตัดสินใจอย่างมั่นใจ",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณควรวางแผนอนาคตร่วมและตัดสินใจอย่างมั่นใจ - พูดคุยเรื่องอนาคต ตั้งเป้าหมายร่วม ก้าวสู่ขั้นใหม่ ไพ่หนุนให้คุณนำด้วยวิสัยทัศน์ในความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = อนาคต",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งคำแนะนำความรัก คือ 'นำด้วยวิสัยทัศน์'",
+          "advice_th": "วางแผนร่วม - พูดคุยอนาคต ตั้งเป้าหมายร่วม ก้าวสู่ขั้นใหม่ ตัดสินใจมั่นใจ",
+          "keywords_th": ["วางแผนร่วม", "ตัดสินใจ", "วิสัยทัศน์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "คิดเชิงกลยุทธ์และวางแผนการเติบโต",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรคิดเชิงกลยุทธ์และวางแผนการเติบโต - มองภาพใหญ่ ตั้งเป้าหมายระยะยาว กล้าตัดสินใจขยาย ไพ่หนุนให้คุณนำด้วยวิสัยทัศน์และวางแผนอย่างมีกลยุทธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = วางแผน, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งคำแนะนำงาน คือ 'นำด้วยวิสัยทัศน์อย่างมีกลยุทธ์'",
+          "advice_th": "วางแผนเติบโต - มองภาพใหญ่ ตั้งเป้าระยะยาว กล้าตัดสินใจขยาย คิดเชิงกลยุทธ์",
+          "keywords_th": ["กลยุทธ์", "วางแผน", "เติบโต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กล้ามองข้ามขอบเขตและฝันใหญ่",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรกล้ามองข้ามขอบเขตและฝันใหญ่ - ออกจากเขตสบาย วางแผนการเปลี่ยนแปลง เชื่อในศักยภาพ ไพ่หนุนให้คุณกล้าก้าวสู่สิ่งที่ใหญ่กว่า",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Fool = ก้าวใหม่",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งคำแนะนำเติบโต คือ 'กล้าก้าวสู่สิ่งที่ใหญ่กว่า'",
+          "advice_th": "กล้าฝันใหญ่ - ออกจากเขตสบาย วางแผนการเปลี่ยนแปลง เชื่อในศักยภาพ",
+          "keywords_th": ["ฝันใหญ่", "กล้าก้าว", "ศักยภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "วางแผนสุขภาพระยะยาวอย่างมีวิสัยทัศน์",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรวางแผนสุขภาพระยะยาวอย่างมีวิสัยทัศน์ - ตั้งเป้าหมายชัดเจน วางวิถีชีวิตยั่งยืน ตัดสินใจเปลี่ยน ไพ่หนุนให้คุณมองภาพรวมและก้าวอย่างมีแผน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Emperor = วางแผน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งคำแนะนำสุขภาพ คือ 'มองภาพรวมก้าวอย่างมีแผน'",
+          "advice_th": "วางแผนสุขภาพ - ตั้งเป้าชัดเจน วางวิถียั่งยืน ตัดสินใจเปลี่ยน มองภาพรวม",
+          "keywords_th": ["วางแผนสุขภาพ", "วิสัยทัศน์", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อย่ารีบตัดสินใจและทบทวนแผนให้รอบคอบ",
+          "detailed_interpretation_th": "สองไม้เท้ากลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคืออย่ารีบตัดสินใจและทบทวนแผนให้รอบคอบ - พิจารณาความเป็นไปได้ ดูข้อมูลเพิ่ม ไม่ให้ความกระตือรือร้นพาไปผิดทาง ไพ่หนุนให้คุณสมดุลระหว่างความกล้ากับความรอบคอบ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Temperance = สมดุล",
+            "wands": "Seven of Wands = ระวัง",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งคำแนะนำ คือ 'สมดุลความกล้ากับความรอบคอบ'",
+          "advice_th": "ทบทวนรอบคอบ - อย่ารีบตัดสินใจ พิจารณาความเป็นไปได้ ดูข้อมูลเพิ่ม",
+          "keywords_th": ["ทบทวน", "รอบคอบ", "ไม่รีบ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อย่ารีบตัดสินใจในความรักให้พิจารณารอบคอบ",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าคุณควรอย่ารีบตัดสินใจให้พิจารณารอบคอบ - ดูว่าคู่และความสัมพันธ์เหมาะกับวิสัยทัศน์ระยะยาวไหม ให้เวลาพิสูจน์ ไม่บังคับตัวเองให้ตัดสินใจเร็ว",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ทบทวน, The Hermit = มองใน",
+            "wands": "Seven of Wands = ระวัง",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งคำแนะนำความรัก คือ 'ให้เวลาพิสูจน์'",
+          "advice_th": "พิจารณารอบคอบ - อย่ารีบในรัก ดูว่าเหมาะกับวิสัยทัศน์ระยะยาวไหม ให้เวลาพิสูจน์",
+          "keywords_th": ["ไม่รีบ", "พิจารณา", "ให้เวลา"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "วางแผนรอบคอบก่อนตัดสินใจขยาย",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวชี้ว่าคุณควรวางแผนรอบคอบก่อนตัดสินใจขยาย - ประเมินความเสี่ยง ดูข้อมูลให้ครบ ไม่กระโดดเข้าโอกาสที่ดูสวย ไพ่หนุนให้คุณสมดุลความทะเยอทะยานกับการประเมินอย่างมีเหตุผล",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, The Emperor = วางแผน",
+            "wands": "Two of Wands = ชั่งใจ",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งคำแนะนำงาน คือ 'สมดุลทะเยอทะยานกับการประเมินมีเหตุผล'",
+          "advice_th": "วางแผนรอบคอบ - ประเมินความเสี่ยง ดูข้อมูลครบ ไม่กระโดดเข้าโอกาสที่ดูสวย",
+          "keywords_th": ["รอบคอบ", "ประเมินเสี่ยง", "ไม่กระโดด"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ทบทวนเป้าหมายและไม่ฝืนแผน",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรทบทวนเป้าหมายและไม่ฝืนแผน - ดูว่าสิ่งที่ตั้งใจยังตรงกับคุณค่าจริงไหม ปรับเป้าตามความเข้าใจใหม่ ไม่ยึดติดแผนเก่าที่ไม่เหมาะแล้ว",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Four of Cups = ทบทวน",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งคำแนะนำเติบโต คือ 'ปรับเป้าตามความเข้าใจใหม่'",
+          "advice_th": "ทบทวนเป้าหมาย - ดูว่าตรงคุณค่าจริงไหม ปรับเป้าตามความเข้าใจใหม่ ไม่ยึดแผนเก่า",
+          "keywords_th": ["ทบทวนเป้า", "ปรับแผน", "ไม่ฝืน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อย่าหักโหมแผนสุขภาพและฟังร่างกาย",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวชี้ว่าคุณควรอย่าหักโหมแผนสุขภาพและฟังร่างกาย - อย่าตั้งเป้าหมายที่บีบตัวเองเกินไป ปรับแผนตามสภาพร่างกาย ค่อยเป็นค่อยไป ไพ่หนุนให้คุณสมดุลระหว่างวิสัยทัศน์กับความเป็นจริงของร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hanged Man = พัก",
+            "wands": "Ten of Wands = อย่าแบกเกิน",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = ค่อยเป็นค่อยไป",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'สมดุลวิสัยทัศน์กับความเป็นจริงของร่างกาย'",
+          "advice_th": "อย่าหักโหม - อย่าตั้งเป้าบีบตัวเอง ปรับแผนตามสภาพร่างกาย ค่อยเป็นค่อยไป",
+          "keywords_th": ["อย่าหักโหม", "ฟังร่างกาย", "ค่อยเป็นค่อยไป"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "โอกาสและพันธมิตรเปิดทางขยาย",
+          "detailed_interpretation_th": "สองไม้เท้าในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวเปิดโอกาสและพันธมิตรขยายทาง - คนที่หนุนวิสัยทัศน์ โอกาสร่วมงาน บรรยากาศที่เอื้อต่อการเติบโต ไพ่บอกว่าใช้แรงสนับสนุนจากภายนอกขยายความเป็นไปได้",
+          "adjacent_influences": {
+            "major_arcana": "The World = โอกาส, Wheel of Fortune = โชค",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งภายนอก คือ 'ใช้แรงสนับสนุนขยายความเป็นไปได้'",
+          "advice_th": "ใช้โอกาสและพันธมิตร - คนหนุนวิสัยทัศน์ โอกาสร่วมงาน บรรยากาศเอื้อ ขยายทาง",
+          "keywords_th": ["โอกาสรอบตัว", "พันธมิตร", "ขยาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างหนุนการตัดสินใจในความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าคนรอบข้างหนุนการตัดสินใจในความรัก - ครอบครัวเห็นด้วย เพื่อนสนับสนุน สถานการณ์ที่เอื้อต่อการก้าวต่อ ไพ่หนุนให้คุณใช้แรงสนับสนุนนี้วางแผนอนาคตอย่างมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งภายนอกความรัก คือ 'ใช้แรงสนับสนุนวางแผนมั่นใจ'",
+          "advice_th": "ใช้แรงหนุนคนรอบข้าง - ครอบครัวเห็นด้วย เพื่อนหนุน สถานการณ์เอื้อ วางแผนอนาคต",
+          "keywords_th": ["คนหนุน", "วางแผน", "มั่นใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสร่วมงานและพันธมิตรเปิดทางขยาย",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่ามีโอกาสร่วมงานและพันธมิตรเปิดทางขยาย - ข้อเสนอจากภายนอก คนที่ลงทุนด้วย ตลาดที่เปิด ไพ่หนุนให้คุณคว้าโอกาส สร้างพันธมิตร และใช้แรงสนับสนุนสร้างการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = โอกาส, The Emperor = วางแผน",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งภายนอกงาน คือ 'สร้างพันธมิตรเติบโต'",
+          "advice_th": "คว้าโอกาสและพันธมิตร - ข้อเสนอจากภายนอก คนลงทุนด้วย ตลาดเปิด สร้างการเติบโต",
+          "keywords_th": ["โอกาสร่วมงาน", "พันธมิตร", "ขยาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "โลกภายนอกเปิดทางให้กล้าก้าว",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าโลกภายนอกเปิดทางให้คุณกล้าก้าว - ประสบการณ์ใหม่ คนที่จุดประกาย โอกาสในการสำรวจ ไพ่บอกว่าใช้สิ่งที่อยู่รอบตัวเป็นเครื่องมือก้าวสู่โลกที่กว้างกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Star = แรงบันดาลใจ",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งภายนอกเติบโต คือ 'ใช้โลกภายนอกก้าวสู่โลกกว้าง'",
+          "advice_th": "ใช้โลกภายนอก - ประสบการณ์ใหม่ คนจุดประกาย โอกาสสำรวจ ก้าวสู่โลกกว้าง",
+          "keywords_th": ["โลกภายนอก", "ก้าวกว้าง", "ประสบการณ์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมหนุนการวางแผนสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าสิ่งแวดล้อมหนุนการวางแผนสุขภาพ - เพื่อนที่ออกกำลังกายร่วม กลุ่มสุขภาพ ผู้เชี่ยวชาญที่ให้คำแนะนำ ไพ่หนุนให้คุณใช้แรงสนับสนุนรอบตัววางแผนสุขภาพระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Three of Cups = กลุ่มเพื่อน",
+            "cups": "Three of Cups = สังสรรค์",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งภายนอกสุขภาพ คือ 'ใช้แรงสนับสนุนรอบตัว'",
+          "advice_th": "ใช้สิ่งแวดล้อม - เพื่อนออกกำลังกาย กลุ่มสุขภาพ ผู้เชี่ยวชาญ วางแผนระยะยาว",
+          "keywords_th": ["แวดล้อมหนุน", "วางแผนสุขภาพ", "ทีม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมขัดขวางหรือพันธมิตรไม่หนุน",
+          "detailed_interpretation_th": "สองไม้เท้ากลับหัวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมขัดขวางหรือพันธมิตรไม่หนุน - โอกาสที่ปิด คนที่ดึงรั้ง สถานการณ์ที่จำกัด ไพ่เตือนให้คุณยืนหยัดในวิสัยทัศน์ หาแรงสนับสนุนใหม่ และไม่ปล่อยให้อุปสรรคภายนอกหยุดแผน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ติดขัด, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งภายนอก คือ 'ยืนหยัดในวิสัยทัศน์'",
+          "advice_th": "ยืนหยัดในแผน - แวดล้อมขัดขวาง หาแรงสนับสนุนใหม่ ไม่ให้อุปสรรคหยุดแผน",
+          "keywords_th": ["แวดล้อมขัด", "พันธมิตรไม่หนุน", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างไม่หนุนการตัดสินใจในรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าคนรอบข้างไม่หนุนการตัดสินใจ - ครอบครัวคัดค้าน เพื่อนวิจารณ์ สังคมกดดัน ไพ่หนุนให้คุณเชื่อในความรู้สึกของตัวเอง ปกป้องวิสัยทัศน์ความสัมพันธ์ และไม่ปล่อยให้เสียงนอกกำหนดอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = วิกฤต, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งภายนอกความรัก คือ 'ปกป้องวิสัยทัศน์ความสัมพันธ์'",
+          "advice_th": "เชื่อความรู้สึกตน - คนรอบข้างไม่หนุน ปกป้องวิสัยทัศน์ ไม่ให้เสียงนอกกำหนดอนาคต",
+          "keywords_th": ["คนคัดค้าน", "ไม่หนุน", "เชื่อตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสปิดและตลาดไม่เอื้อ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าโอกาสปิดและตลาดไม่เอื้อ - การปฏิเสธจากพันธมิตร เศรษฐกิจไม่ดี การแข่งขันรุนแรง ไพ่หนุนให้คุณปรับแผน หาช่องทางอื่น และไม่ยอมแพ้กับวิสัยทัศน์ของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Tower = ชะงัก",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งภายนอกงาน คือ 'ปรับแผนหาช่องทางอื่น'",
+          "advice_th": "ปรับแผนรับมือ - โอกาสปิด ตลาดไม่เอื้อ หาช่องทางอื่น ไม่ยอมแพ้วิสัยทัศน์",
+          "keywords_th": ["โอกาสปิด", "ตลาดไม่เอื้อ", "ปรับแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมไม่เข้าใจวิสัยทัศน์ของคุณ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมไม่เข้าใจวิสัยทัศน์ของคุณ - คนรอบข้างไม่เห็นค่าการเติบโต ความคาดหวังที่จำกัด การวิจารณ์เส้นทางที่เลือก ไพ่หนุนให้คุณเดินตามวิสัยทัศน์ของตัวเอง ไม่ปล่อยให้สังคมหยุดการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Hierophant (rev) = ทิ้งกรอบ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Five of Pentacles = ขาดแรงหนุน",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งภายนอกเติบโต คือ 'เดินตามวิสัยทัศน์ของตัวเอง'",
+          "advice_th": "เดินตามวิสัยทัศน์ตน - สังคมไม่เข้าใจ ไม่ปล่อยให้หยุดการเติบโต หาชุมชนที่เข้าใจ",
+          "keywords_th": ["สังคมไม่เข้าใจ", "ยืนหยัด", "วิสัยทัศน์ตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมไม่หนุนแผนสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวเตือนว่าสิ่งแวดล้อมไม่หนุนแผนสุขภาพ - ความเครียดจากภายนอก คนรอบข้างที่ไม่ส่งเสริม กิจวัตรชีวิตที่ทำให้ละเลย ไพ่หนุนให้คุณปรับสภาพแวดล้อม หาแรงสนับสนุนใหม่ และสร้างพื้นที่ที่หนุนสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งภายนอกสุขภาพ คือ 'สร้างพื้นที่หนุนสุขภาพ'",
+          "advice_th": "ปรับสภาพแวดล้อม - ความเครียดภายนอก คนไม่ส่งเสริม หาแรงสนับสนุนใหม่",
+          "keywords_th": ["แวดล้อมไม่หนุน", "เครียด", "ปรับสภาพ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังสร้างอนาคตใหญ่ กลัวตัดสินใจผิด",
+          "detailed_interpretation_th": "สองไม้เท้าในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังสร้างอนาคตใหญ่และวางแผนชีวิตที่ยิ่งใหญ่ แต่กลัวตัดสินใจผิดหรือเลือกทางที่ไม่ถูก ไพ่บอกว่าทุกการเลือกมีบทเรียน กล้าตัดสินใจและเรียนรู้จากเส้นทาง",
+          "adjacent_influences": {
+            "major_arcana": "The World = โอกาสกว้าง, The Moon = ความกลัว",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งความหวังกลัว คือ 'ทุกการเลือกมีบทเรียน'",
+          "advice_th": "กล้าตัดสินใจ - หวังสร้างอนาคตใหญ่แต่กลัวเลือกผิด เรียนรู้จากเส้นทาง",
+          "keywords_th": ["หวังอนาคตใหญ่", "กลัวเลือกผิด", "กล้าตัดสิน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังอนาคตร่วมกับคู่ กลัวเลือกผูกมัดผิด",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังสร้างอนาคตร่วมกับคู่ แต่กลัวเลือกผูกมัดผิด - กลัวว่าจะตัดสินใจไม่ถูก กลัวว่าความสัมพันธ์จะไม่เป็นไปตามหวัง ไพ่บอกว่าฟังเสียงใจตัวเอง พูดคุยกับคู่ และตัดสินใจจากความเข้าใจที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The Moon = ความกลัว",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งความหวังกลัวความรัก คือ 'ตัดสินใจจากความเข้าใจที่แท้จริง'",
+          "advice_th": "ฟังเสียงใจ - หวังอนาคตร่วมแต่กลัวผูกมัดผิด พูดคุยกับคู่ ตัดสินใจจากความเข้าใจ",
+          "keywords_th": ["หวังอนาคตร่วม", "กลัวเลือกผิด", "ฟังใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังขยายงาน กลัวเสี่ยงเกินตัว",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังขยายงานและสร้างความสำเร็จใหญ่ แต่กลัวเสี่ยงเกินตัวหรือเกินกำลัง - กลัวลงทุนแล้วเสีย กลัวเปลี่ยนแล้วล้มเหลว ไพ่บอกว่าวางแผนรอบคอบ ประเมินความเสี่ยง และกล้าก้าวอย่างคำนวณได้",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = โอกาส, The Tower = กลัวพัง",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งความหวังกลัวงาน คือ 'กล้าก้าวอย่างคำนวณได้'",
+          "advice_th": "วางแผนรอบคอบ - หวังขยายแต่กลัวเสี่ยงเกินตัว ประเมินความเสี่ยง กล้าก้าวคำนวณได้",
+          "keywords_th": ["หวังขยาย", "กลัวเสี่ยง", "วางแผน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังก้าวสู่โลกใหม่ กลัวสูญเสียสิ่งเดิม",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังก้าวสู่โลกใหม่และเติบโต แต่กลัวสูญเสียสิ่งเดิม - กลัวจากครอบครัว กลัวห่างเพื่อน กลัวเปลี่ยนตัวตน ไพ่บอกว่าการเติบโตไม่ใช่การทิ้งสิ่งเก่า แต่คือการขยายตัวเองรวมทั้งเก่าและใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Moon = ความกลัว",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งความหวังกลัวเติบโต คือ 'ขยายตัวเองรวมเก่าและใหม่'",
+          "advice_th": "กล้าก้าวสู่โลกใหม่ - หวังเติบโตแต่กลัวสูญเสียเก่า การเติบโตคือการขยายไม่ใช่ทิ้ง",
+          "keywords_th": ["หวังโลกใหม่", "กลัวสูญเสีย", "ขยายตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพดี กลัวทำตามแผนไม่ได้",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังสุขภาพดีและวางแผนการดูแล แต่กลัวทำตามแผนไม่ได้ - กลัวล้มเหลวในการเปลี่ยนวิถี กลัวไม่มีวินัย ไพ่บอกว่าเริ่มจากแผนเล็กที่ทำได้ สร้างนิสัยทีละน้อย และให้กำลังใจตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Moon = ความกลัว",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Seven of Pentacles = ค่อยเป็นค่อยไป",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งความหวังกลัวสุขภาพ คือ 'เริ่มจากแผนเล็กที่ทำได้'",
+          "advice_th": "เริ่มแผนเล็ก - หวังสุขภาพดีแต่กลัวทำไม่ได้ สร้างนิสัยทีละน้อย ให้กำลังใจตัวเอง",
+          "keywords_th": ["หวังสุขภาพ", "กลัวทำไม่ได้", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวเปลี่ยนแปลงจนหยุดวางแผน",
+          "detailed_interpretation_th": "สองไม้เท้ากลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวเปลี่ยนแปลงจนหยุดวางแผน - เพราะกลัวล้มเหลว คุณเลือกไม่ทำอะไรเลย ลดความฝัน ปล่อยอนาคตให้เป็นไป ไพ่บอกว่าการไม่วางแผนเองที่ทำให้อนาคตไม่เป็นไปตามต้องการ กล้าฝันและวางแผน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัว, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งความหวังกลัว คือ 'กล้าฝันและวางแผน'",
+          "advice_th": "กล้าฝัน - กลัวเปลี่ยนจนหยุดวางแผน การไม่วางแผนเองที่ทำให้อนาคตไม่เป็นไปตามต้องการ",
+          "keywords_th": ["กลัวเปลี่ยน", "หยุดวางแผน", "กล้าฝัน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวผูกมัดจนไม่กล้าวางอนาคต",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวผูกมัดจนไม่กล้าวางอนาคต - กลัวความมุ่งมั่น กลัวว่าจะเลือกผิด หลีกเลี่ยงการพูดคุยเรื่องอนาคต ไพ่บอกว่าการไม่ตัดสินใจคือการตัดสินใจ และความสัมพันธ์ต้องการทิศทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = สับสน",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งความหวังกลัวความรัก คือ 'ไม่ตัดสินใจคือการตัดสินใจ'",
+          "advice_th": "กล้าวางอนาคต - กลัวผูกมัดจนหลีกเลี่ยง การไม่ตัดสินใจคือการตัดสินใจ ความสัมพันธ์ต้องการทิศทาง",
+          "keywords_th": ["กลัวผูกมัด", "ไม่กล้าวาง", "ทิศทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวล้มเหลวจนไม่ขยายงาน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวล้มเหลวจนไม่ขยายงาน - กลัวลงทุนแล้วเสีย กลัวเปลี่ยนแล้วผิด เลือกความปลอดภัยเสมอ ไพ่บอกว่าความกลัวจำกัดศักยภาพ ประเมินความเสี่ยงรอบคอบและกล้าก้าวเมื่อเหมาะสม",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = กลัวพัง, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งความหวังกลัวงาน คือ 'ความกลัวจำกัดศักยภาพ'",
+          "advice_th": "กล้าก้าวคำนวณได้ - กลัวล้มเหลวจนไม่ขยาย ประเมินความเสี่ยง กล้าก้าวเมื่อเหมาะสม",
+          "keywords_th": ["กลัวล้มเหลว", "ไม่ขยาย", "กล้าก้าว"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวก้าวออกจากเขตสบายจนติดอยู่",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวก้าวออกจากเขตสบายจนติดอยู่ - กลัวความไม่แน่นอน กลัวเปลี่ยนตัวตน กลัวสูญเสียสิ่งเดิม ไพ่หนุนให้คุณกล้าก้าวเล็กๆ และเชื่อว่าการเติบโตอยู่นอกเขตที่คุ้นเคย",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'การเติบโตอยู่นอกเขตที่คุ้นเคย'",
+          "advice_th": "กล้าก้าวเล็กๆ - กลัวก้าวออกจนติดอยู่ การเติบโตอยู่นอกเขตคุ้นเคย เริ่มทีละก้าว",
+          "keywords_th": ["กลัวก้าวออก", "ติดเขตสบาย", "ก้าวเล็กๆ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวเปลี่ยนวิถีจนไม่เริ่มแผนใหม่",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวเปลี่ยนวิถีจนไม่เริ่มแผนใหม่ - กลัวว่าจะทำไม่ได้ กลัวการเปลี่ยนแปลงที่ใหญ่เกิน เลื่อนการเริ่มต้น ไพ่หนุนให้คุณเริ่มจากการเปลี่ยนแปลงเล็กๆ ที่ทำได้ และให้เวลาตัวเองในการสร้างนิสัยใหม่",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = ความกลัว",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'เริ่มจากการเปลี่ยนแปลงเล็กๆ'",
+          "advice_th": "เริ่มเล็กๆ - กลัวเปลี่ยนวิถีจนไม่เริ่ม เริ่มเปลี่ยนเล็กๆ ที่ทำได้ ให้เวลาสร้างนิสัยใหม่",
+          "keywords_th": ["กลัวเปลี่ยน", "ไม่เริ่ม", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการก้าวสู่อนาคตที่วางแผนไว้",
+          "detailed_interpretation_th": "สองไม้เท้าในตำแหน่งผลลัพธ์ เป็นข่าวดี - ผลลัพธ์ของสถานการณ์คือการก้าวสู่อนาคตที่วางแผนไว้ คุณจะตัดสินใจสำคัญ ก้าวออกจากเขตสบาย และสร้างเส้นทางที่ตรงกับวิสัยทัศน์ ไพ่ยืนยันว่าการวางแผนและความกล้าจะนำคุณสู่ความสำเร็จที่ใหญ่กว่า",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, The Magician = พลัง",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = วางแผน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งผลลัพธ์ คือ 'การวางแผนและความกล้านำสู่ความสำเร็จใหญ่'",
+          "advice_th": "เชื่อในการวางแผน - คุณจะตัดสินใจสำคัญ ก้าวออกจากเขตสบาย สู่อนาคตที่ตรงวิสัยทัศน์",
+          "keywords_th": ["ก้าวสู่อนาคต", "ตัดสินใจ", "วิสัยทัศน์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือการก้าวสู่ขั้นใหม่ของความสัมพันธ์",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เป็นข่าวดี - คุณจะก้าวสู่ขั้นใหม่ของความสัมพันธ์ การตัดสินใจเรื่องอนาคตร่วม การวางแผนชีวิตคู่ การก้าวออกจากความไม่แน่นอนสู่ความมั่นคง ไพ่ยืนยันว่าความรักของคุณจะเข้าสู่ระดับใหม่ที่มีทิศทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = อนาคต",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งผลลัพธ์ความรัก คือ 'ความรักเข้าสู่ระดับใหม่ที่มีทิศทาง'",
+          "advice_th": "เปิดใจรับขั้นใหม่ - ตัดสินใจเรื่องอนาคตร่วม วางแผนชีวิตคู่ ก้าวสู่ความมั่นคง",
+          "keywords_th": ["ก้าวสู่ขั้นใหม่", "อนาคตร่วม", "ทิศทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือการขยายงานและสร้างความสำเร็จใหญ่",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดี - คุณจะขยายงานและสร้างความสำเร็จใหญ่ การลงทุนที่ให้ผล การร่วมงานกับพันธมิตรที่เหมาะสม การก้าวสู่ระดับที่สูงกว่า ไพ่ยืนยันว่าวิสัยทัศน์และการวางแผนของคุณจะให้ผลตอบแทนที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งผลลัพธ์งาน คือ 'วิสัยทัศน์ให้ผลตอบแทนที่งดงาม'",
+          "advice_th": "เชื่อในการขยาย - ลงทุนให้ผล พันธมิตรเหมาะสม ก้าวสู่ระดับสูงกว่า",
+          "keywords_th": ["ขยายงาน", "สำเร็จใหญ่", "ผลตอบแทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการก้าวสู่โลกที่กว้างกว่า",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นชัยชนะ - คุณจะก้าวสู่โลกที่กว้างกว่า เติบโตเป็นตัวตนที่ใหญ่ขึ้น มีวิสัยทัศน์ที่ลึกซึ้ง การกล้าฝันใหญ่และก้าวออกจากเขตสบาย ไพ่ยืนยันว่าการเดินทางของคุณจะนำสู่ศักยภาพที่ไร้ขีดจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Magician = พลัง",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งผลลัพธ์เติบโต คือ 'ศักยภาพที่ไร้ขีดจำกัด'",
+          "advice_th": "เฉลิมฉลองการเติบโต - ก้าวสู่โลกกว้างกว่า เป็นตัวตนใหญ่ขึ้น วิสัยทัศน์ลึกซึ้ง",
+          "keywords_th": ["โลกกว้างกว่า", "ฝันใหญ่", "ศักยภาพ"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพที่ดีจากการวางแผน",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดี - คุณจะมีสุขภาพที่ดีจากการวางแผน การเปลี่ยนวิถีชีวิตที่ยั่งยืน การตั้งเป้าหมายชัดเจน การดูแลรอบด้าน ไพ่ยืนยันว่าความวิสัยทัศน์ของคุณในการดูแลตัวเองจะนำสู่ความแข็งแรงในระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้าตำแหน่งผลลัพธ์สุขภาพ คือ 'วิสัยทัศน์นำสู่ความแข็งแรงระยะยาว'",
+          "advice_th": "เชื่อในการวางแผน - เปลี่ยนวิถียั่งยืน ตั้งเป้าชัดเจน ดูแลรอบด้าน สุขภาพดีระยะยาว",
+          "keywords_th": ["สุขภาพดี", "วางแผน", "ระยะยาว"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือติดอยู่ในความลังเล",
+          "detailed_interpretation_th": "สองไม้เท้ากลับหัวในตำแหน่งผลลัพธ์ เตือนว่าผลลัพธ์อาจเป็นการติดอยู่ในความลังเล - การไม่ตัดสินใจ การยึดติดกับสิ่งคุ้นเคย โอกาสที่ผ่านไป ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ กล้าตัดสินใจและวางแผนจะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งผลลัพธ์ คือ 'กล้าตัดสินใจเปลี่ยนผลลัพธ์'",
+          "advice_th": "เปลี่ยนผลลัพธ์ได้ - ติดในความลังเลไม่ใช่ผลลัพธ์สุดท้าย กล้าตัดสินใจและวางแผน",
+          "keywords_th": ["ติดลังเล", "ไม่ตัดสิน", "เปลี่ยนได้"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความสัมพันธ์ขาดทิศทาง",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวเตือนว่าความสัมพันธ์อาจขาดทิศทาง - การไม่กล้าตัดสินใจอนาคตร่วม การหลีกเลี่ยงการพูดคุยเรื่องสำคัญ การติดอยู่ในความไม่แน่นอน ไพ่บอกว่ากล้าพูดคุยกับคู่และวางแผนอนาคตจะเปลี่ยนผลลัพธ์ได้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = สับสน",
+            "wands": "Seven of Wands = ฝืน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'พูดคุยและวางแผนเปลี่ยนผลลัพธ์'",
+          "advice_th": "วางทิศทางรัก - ความสัมพันธ์ขาดทิศทางไม่ใช่ผลลัพธ์สุดท้าย พูดคุยกับคู่ วางแผนอนาคต",
+          "keywords_th": ["ขาดทิศทาง", "ไม่ตัดสิน", "พูดคุย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือพลาดโอกาสขยายงาน",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวเตือนว่าอาจพลาดโอกาสขยายงาน - การกลัวเสี่ยง การลังเลตัดสินใจ การยึดติดกับงานเดิม ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่ต้องเป็น กล้าประเมินโอกาส วางแผนรอบคอบ และกล้าก้าวจะเปลี่ยนผลลัพธ์ได้",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = พลาดโอกาส, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งผลลัพธ์งาน คือ 'ประเมินและกล้าก้าวเปลี่ยนผลลัพธ์'",
+          "advice_th": "อย่าพลาดโอกาส - กลัวเสี่ยงทำพลาด ประเมินโอกาส วางแผนรอบคอบ กล้าก้าว",
+          "keywords_th": ["พลาดโอกาส", "กลัวเสี่ยง", "กล้าก้าว"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือติดในเขตสบายและไม่เติบโต",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวเตือนว่าอาจติดในเขตสบายและไม่เติบโต - การกลัวการเปลี่ยนแปลง การลดความฝัน การยึดติดกับสิ่งคุ้นเคย ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่ต้องเป็น กล้าฝันใหญ่และก้าวออกจากเขตสบายจะเปลี่ยนเส้นทางได้",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'กล้าฝันใหญ่เปลี่ยนเส้นทาง'",
+          "advice_th": "อย่าติดเขตสบาย - การติดอยู่ไม่ใช่ผลลัพธ์สุดท้าย กล้าฝันใหญ่ ก้าวออกจากเขตสบาย",
+          "keywords_th": ["ติดเขตสบาย", "ไม่เติบโต", "กล้าฝัน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพไม่ก้าวหน้าเพราะไม่วางแผน",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวเตือนว่าสุขภาพอาจไม่ก้าวหน้าเพราะไม่วางแผน - การผัดวันเปลี่ยนวิถี การไม่ตั้งเป้าหมาย การยึดติดนิสัยเดิม ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่ต้องเป็น เริ่มจากการเปลี่ยนแปลงเล็กๆ และวางแผนระยะยาวจะเปลี่ยนผลลัพธ์ได้",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = ไม่สนใจ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สองไม้เท้ากลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'เริ่มเปลี่ยนเล็กๆ และวางแผนระยะยาว'",
+          "advice_th": "อย่าผัดวัน - สุขภาพไม่ก้าวหน้าไม่ใช่ผลลัพธ์สุดท้าย เริ่มเปลี่ยนเล็กๆ วางแผนระยะยาว",
+          "keywords_th": ["ไม่ก้าวหน้า", "ผัดวัน", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}

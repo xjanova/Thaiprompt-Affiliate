@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "The Chariot",
+    "name_th": "รถม้า",
+    "number": 7,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คุณกำลังควบคุมทิศทางชีวิตและมุ่งหน้าสู่ความสำเร็จ",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน รถม้าหัวตั้งบ่งบอกว่าคุณกำลังอยู่ในช่วงที่มีพลังและกำลังขับเคลื่อนชีวิตไปข้างหน้า คุณมีความมุ่งมั่น มีแผน รู้ว่าต้องการอะไรและกำลังทำมัน พลังของรถม้าคือการรวมพลังตรงข้าม (ม้า 2 ตัวที่ต่างกัน) ให้เดินทางไปทิศเดียวกัน ชัยชนะอยู่ในมือ ถ้าควบคุมได้",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Magician = ทักษะ, The Sun = สำเร็จ",
+            "wands": "Knight of Wands = พลังเดินหน้า, Eight of Wands = เร่ง",
+            "cups": "King of Cups = ควบคุมอารมณ์",
+            "swords": "King of Swords = ปัญญานำ, Ace of Swords = ความชัดเจน",
+            "pentacles": "Knight of Pentacles = มุ่งมั่น",
+            "court_cards": "Knight ทุกชุด = พลังขับเคลื่อน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าในปัจจุบัน คือ 'คุณคือผู้ขับ' ของชีวิตคุณ",
+          "advice_th": "ใช้พลังที่มีในการขับเคลื่อนชีวิต ตั้งเป้าหมายชัด มีแผน และทำตาม ควบคุมพลังทั้งหมดให้เดินไปทิศเดียวกัน",
+          "keywords_th": ["พลังขับเคลื่อน", "ชัยชนะ", "ควบคุม", "มุ่งหน้า"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์กำลังเดินหน้าด้วยความมุ่งมั่นและทิศทางที่ชัด",
+          "detailed_interpretation_th": "ในรักปัจจุบัน คุณกำลังขับเคลื่อนความสัมพันธ์ไปข้างหน้า มีเป้าหมายร่วมกัน คู่รักของคุณกระตือรือร้น พร้อมก้าวไปด้วยกัน ความสัมพันธ์อยู่ในช่วงพลังสูง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = รักงอกงาม",
+            "wands": "Knight of Wands = คนรักหลงใหล",
+            "cups": "Two of Cups = ก้าวสู่คู่",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Knight of Cups = คู่ที่กระตือรือร้น"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าในปัจจุบันรัก คือ 'เดินหน้าไปด้วยกัน'",
+          "advice_th": "วางแผนอนาคตร่วมกับคู่ - ย้ายมาอยู่ด้วยกัน แต่งงาน สร้างครอบครัว ใช้พลังของความสัมพันธ์ปัจจุบัน",
+          "keywords_th": ["เดินหน้า", "เป้าหมายร่วม", "พลังคู่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "อาชีพและการเงินกำลังเดินหน้าด้วยพลัง - ชัยชนะรออยู่",
+          "detailed_interpretation_th": "ในการงาน-การเงิน รถม้าหัวตั้งในปัจจุบัน คุณกำลังอยู่ในช่วงพลังสูง โปรเจกต์กำลังเดิน รายได้เพิ่ม การลงทุนให้ผล คุณมุ่งมั่นและรู้ทิศทาง ชัยชนะอยู่ในมือ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = อำนาจ, The Sun = สำเร็จ",
+            "wands": "King of Wands = ผู้นำ, Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง, Knight of Pentacles = มุ่งมั่น",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าในปัจจุบันงาน-เงิน คือ 'ชัยชนะใกล้แล้ว'",
+          "advice_th": "ใช้พลังให้เต็มที่ ไม่หยุด ไม่ลังเล มุ่งหน้าสู่เป้าหมาย ชัยชนะใกล้แล้ว",
+          "keywords_th": ["พลังสูง", "ชัยชนะใกล้", "เดินหน้า"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "คุณกำลังควบคุมพลังตัวเองและเติบโตอย่างมุ่งมั่น",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณกำลังอยู่ในช่วงที่ควบคุมพลังตัวเองได้ ใช้อารมณ์ ความคิด ร่างกายอย่างประสานกัน วินัยและความมุ่งมั่นทำให้คุณเติบโตอย่างรวดเร็ว นี่คือช่วงทอง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, Strength = พลังภายใน",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์สมดุล",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Knight ทุกชุด = พลังเต็ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าในปัจจุบันจิตวิญญาณ คือ 'ควบคุมพลังตัวเอง'",
+          "advice_th": "ใช้พลังที่มีในการเติบโต - วินัย สมาธิ ฝึกทักษะ ความมุ่งมั่นจะนำไปสู่การบรรลุ",
+          "keywords_th": ["ควบคุมพลัง", "มุ่งมั่น", "เติบโต"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายแข็งแรงและคุณมีวินัยในการดูแลตัวเอง",
+          "detailed_interpretation_th": "ในสุขภาพ รถม้าหัวตั้งบ่งบอกถึงร่างกายที่แข็งแรง พลังงานสูง วินัยในการดูแลตัวเอง คุณออกกำลังกายสม่ำเสมอ กินอาหารดี นอนตรงเวลา ร่างกายตอบสนองด้วยพลังเต็ม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, Strength = พลัง",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King of Pentacles = สุขภาพระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าในปัจจุบันสุขภาพ คือ 'พลังและวินัย'",
+          "advice_th": "ใช้พลังให้เต็มที่ - ออกกำลังกายหนัก กิจกรรมที่ท้าทาย เร่งโครงการสุขภาพ",
+          "keywords_th": ["พลังเต็ม", "วินัย", "แข็งแรง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เสียการควบคุมหรือมีทิศทางที่สับสน",
+          "detailed_interpretation_th": "รถม้ากลับหัวในปัจจุบัน บ่งบอกถึงการเสียการควบคุม คุณอาจไปไม่ทันสถานการณ์ เร่งเกินไป หรือไปคนละทิศ ม้า 2 ตัวของชีวิตคุณไม่ประสานกัน - งานกับครอบครัว ความฝันกับความจริง คุณติดอยู่หรือกำลังพัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติด",
+            "wands": "Five of Wands = ขัดแย้ง, Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวในปัจจุบัน คือ 'หยุดและประเมินทิศทาง'",
+          "advice_th": "หยุดและทบทวน - กำลังไปทิศไหน? ทิศนั้นถูกต้องหรือเปล่า? ปรับทิศก่อนเร่งต่อ",
+          "keywords_th": ["เสียควบคุม", "สับสน", "ทบทวน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ไม่ไปทิศเดียวกันหรือเร่งเกินไป",
+          "detailed_interpretation_th": "ในรัก รถม้ากลับหัวบ่งบอกว่าทั้งคู่ไม่ไปทิศเดียวกัน คนหนึ่งอยากแต่งงาน คนหนึ่งไม่ คนหนึ่งอยากย้าย คนหนึ่งไม่ หรือเร่งความสัมพันธ์เร็วเกินไป ต้องคุย",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = ติด",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Two of Pentacles = สมดุลที่ยาก",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวรัก คือ 'ไปทิศเดียวกันไหม?'",
+          "advice_th": "คุยกับคู่เรื่องเป้าหมาย - ต้องการอะไรในความสัมพันธ์? ไปทางไหน? ถ้าไม่ตรงกัน ต้องตัดสินใจ",
+          "keywords_th": ["ไม่ไปทิศเดียว", "เร่ง", "ต้องคุย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานชะงักหรือทำงานหลายอย่างจนไม่สำเร็จอะไรเลย",
+          "detailed_interpretation_th": "ในงาน-เงิน อาจกำลังชะงัก โครงการไม่ก้าวหน้า หรือทำงานหลายอย่างพร้อมกันจนไม่สำเร็จอะไร พลังกระจัดกระจาย ขาดโฟกัส ต้องเลือกและทุ่มเท",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติด",
+            "wands": "Eight of Wands กลับหัว = ชะลอ, Two of Wands กลับหัว = ไม่ตัดสินใจ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Five of Swords = สูญเสีย, Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด, Seven of Pentacles กลับหัว = ลงทุนผิด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวงาน-เงิน คือ 'โฟกัสที่หนึ่ง'",
+          "advice_th": "หยุดทำหลายอย่าง เลือกโครงการสำคัญที่สุดและทุ่มเท ความสำเร็จต้องการความโฟกัส ไม่ใช่ความหลากหลาย",
+          "keywords_th": ["ไม่โฟกัส", "ชะงัก", "เลือก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เริ่มหลายโครงการเติบโตแต่ไม่จบสักโครงการ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เริ่มเรียนหลายอย่าง ฝึกหลายเทคนิค อ่านหลายเล่ม แต่ไม่ลงลึกสักอย่าง พลังกระจัดกระจาย ขาดความก้าวหน้าจริง ต้องเลือกและทุ่มเท",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการเริ่มไม่จบ, The Moon = สับสน",
+            "wands": "Seven of Wands = ขัดแย้งภายใน",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่จบ",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวจิตวิญญาณ คือ 'ลึกหนึ่งอย่าง'",
+          "advice_th": "เลือกหนึ่งทักษะหรือคำสอนและฝึก 90 วัน อย่าเริ่มอันใหม่จนกว่าจะลึก ความก้าวหน้ามาจากการทุ่มเท",
+          "keywords_th": ["เริ่มไม่จบ", "ไม่ลึก", "ทุ่มเท"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ขาดวินัยสุขภาพหรือฝืนร่างกายเกินจนพัง",
+          "detailed_interpretation_th": "ในสุขภาพ มีสองรูปแบบ: ขาดวินัย ทำๆ หยุดๆ ไม่สม่ำเสมอ หรือฝืนเกินไป ออกกำลังกายหักโหม diet เข้มงวด ทั้งสองแบบทำลายสุขภาพ ต้องสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในนิสัย",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = สังสรรค์เกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวสุขภาพ คือ 'สมดุล'",
+          "advice_th": "หาสมดุลระหว่างวินัยกับความยืดหยุ่น 80/20 - ทำดี 80% ผ่อนปรน 20% ความยั่งยืนสำคัญกว่าความสมบูรณ์แบบ",
+          "keywords_th": ["ขาดสมดุล", "ฝืนหรือหยุด", "หาทาง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องควบคุมพลังตรงข้ามและรักษาทิศทาง",
+          "detailed_interpretation_th": "อุปสรรคในตำแหน่งนี้คือการต้องควบคุมพลังที่ขัดแย้ง - ใจกับสมอง อารมณ์กับตรรกะ ความปรารถนากับความรับผิดชอบ คุณต้องเป็นผู้ขับที่เก่งพอจะรวมพลังเหล่านี้ให้เดินทิศเดียวกัน ไม่ใช่ปล่อยให้ดึงคุณคนละทิศ",
+          "adjacent_influences": {
+            "major_arcana": "Two of Swords = สมดุล, Strength = ควบคุม",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = ความเข้าใจ",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Swords = พลังต้องควบคุม"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าในอุปสรรค คือ 'ควบคุมพลังตรงข้าม'",
+          "advice_th": "ระบุพลังตรงข้ามในชีวิต - ใจกับสมอง สิ่งที่ต้องการกับสิ่งที่ควรทำ หาวิธีรวมให้เดินทิศเดียวกัน",
+          "keywords_th": ["พลังตรงข้าม", "ควบคุม", "ทิศทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องรวมเป้าหมายของคุณกับคู่รักให้เป็นทิศเดียวกัน",
+          "detailed_interpretation_th": "ในรัก อุปสรรคคือการที่คุณและคู่มีเป้าหมายที่ต่าง - คุณอยากแต่งงาน คู่ไม่ คุณอยากย้าย คู่ไม่ คุณอยากมีลูก คู่ไม่ ต้องคุยและหาจุดร่วม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, Two of Swords = เลือก",
+            "wands": "Two of Wands = ตัดสินใจร่วม",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Two of Swords = เลือกร่วม",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Cups = คู่ที่ตามใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอุปสรรครัก คือ 'ไปทางไหนด้วยกัน?'",
+          "advice_th": "นั่งคุยกับคู่ตรงๆ เรื่องอนาคต - 5 ปี 10 ปีต้องการอะไร? ถ้าไม่ตรง ต้องหาทางหรือยอมรับว่าไม่ใช่",
+          "keywords_th": ["เป้าหมายต่าง", "หาจุดร่วม", "คุย"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องเลือกระหว่างหลายโอกาสที่มาพร้อมกัน",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือการมีหลายโอกาส - งานใหม่ ธุรกิจส่วนตัว การลงทุน ไม่สามารถทำทุกอย่างได้พร้อมกัน ต้องเลือกที่ใช่ที่สุดและโฟกัส",
+          "adjacent_influences": {
+            "major_arcana": "Two of Wands = ตัดสินใจ, Two of Pentacles = สมดุล",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Seven of Cups = ทางเลือก",
+            "swords": "Two of Swords = เลือก",
+            "pentacles": "Two of Pentacles = สมดุล, Seven of Pentacles = ลงทุน",
+            "court_cards": "King of Pentacles = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอุปสรรคงาน-เงิน คือ 'เลือกหนึ่งและโฟกัส'",
+          "advice_th": "ประเมินแต่ละโอกาสตามเกณฑ์ที่ชัด - ผลตอบแทน ความเสี่ยง ความสนุก เลือกที่ดีที่สุดและทุ่มเท",
+          "keywords_th": ["หลายโอกาส", "เลือก", "โฟกัส"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องสมดุลความฝันกับความจริง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการสมดุลระหว่างความฝันใหญ่กับความจริงในชีวิต คุณมีเป้าหมายสูง แต่ต้องทำงาน ดูแลครอบครัว มีภาระ ต้องหาวิธีเดินทั้งสองทาง",
+          "adjacent_influences": {
+            "major_arcana": "Two of Pentacles = สมดุล, The Hanged Man = พิจารณา",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Pentacles = ทำงานหนัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอุปสรรคจิตวิญญาณ คือ 'ฝัน + ความจริง'",
+          "advice_th": "อย่าทิ้งฝัน อย่าทิ้งความจริง - หาวิธีทำทั้งสอง ใช้เวลาว่าง 1-2 ชั่วโมงต่อวันเพื่อฝัน",
+          "keywords_th": ["ฝัน + ความจริง", "สมดุล", "ทำได้ทั้งสอง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องสมดุลระหว่างทำงานหนักกับการพักผ่อน",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคือการสมดุลระหว่างพลังกับการพัก คุณทำงานหนัก ออกกำลังกายหนัก ดูแลครอบครัว ทุกอย่างพร้อมกัน ต้องหาเวลาพัก ฟื้นฟู",
+          "adjacent_influences": {
+            "major_arcana": "Two of Pentacles = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Pentacles = ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอุปสรรคสุขภาพ คือ 'พลัง + พัก'",
+          "advice_th": "ตารางการพักให้ชัดเจน 1 วัน/สัปดาห์ไม่ทำงาน 1 ชั่วโมง/วันไม่มีกิจกรรม การพักคือการลงทุน ไม่ใช่ความขี้เกียจ",
+          "keywords_th": ["พลัง + พัก", "สมดุล", "ลงทุนพัก"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ขาดทิศทางและพลังกระจัดกระจาย",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือการไม่มีทิศทางที่ชัดเจน เริ่มหลายอย่างไม่จบสักอย่าง พลังกระจัดกระจาย ม้าของคุณวิ่งคนละทิศ คุณไม่ใช่ผู้ขับที่ดี ต้องตั้งทิศและควบคุม",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = ไม่มีแผน, The Moon = สับสน",
+            "wands": "Seven of Wands = ขัดแย้งภายใน",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Eight of Swords = ขัง, Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'ตั้งทิศและโฟกัส'",
+          "advice_th": "เขียนเป้าหมายเดียวที่สำคัญที่สุดใน 90 วัน ทุ่มเทพลังให้กับมัน หยุดทำหลายอย่าง โฟกัสคือพลัง",
+          "keywords_th": ["ไม่มีทิศ", "กระจัดกระจาย", "โฟกัส"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ไม่ไปไหนเพราะขาดเป้าหมายร่วม",
+          "detailed_interpretation_th": "ในรัก อุปสรรคคือการอยู่ในความสัมพันธ์ที่ไม่ไปไหน คบกันมานานไม่มีอนาคต ไม่คุยเป้าหมาย ลอยอยู่ การไม่ตัดสินใจคือพิษ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'ตัดสินใจอนาคต'",
+          "advice_th": "คุยกับคู่เรื่องอนาคต - แต่งงานเมื่อไหร่? อยู่ด้วยกันไหม? ความไม่ตัดสินใจทำลายความสัมพันธ์",
+          "keywords_th": ["ไม่มีอนาคต", "ลอย", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานไม่ก้าวหน้าเพราะขาดแผนและความมุ่งมั่น",
+          "detailed_interpretation_th": "ในงาน-เงิน อุปสรรคคือการไม่มีแผน ไม่มีเป้าหมาย ทำงานไปวันๆ การเงินไม่ก้าวหน้า ตำแหน่งไม่เลื่อน เพราะไม่มีพลังขับเคลื่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Fool = ไม่มีแผน",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'ตั้งเป้าและเดิน'",
+          "advice_th": "ตั้งเป้าหมาย 1 ปี ระบุก้าวที่จะทำทุกเดือน บันทึกความก้าวหน้า โฟกัสและทำตาม",
+          "keywords_th": ["ขาดแผน", "ไม่ก้าวหน้า", "ตั้งเป้า"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ขาดวินัยและพลังเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการขาดวินัย เริ่มไม่จบ ฝันมากกว่าทำ การเติบโตหยุดนิ่ง ต้องสร้างวินัยและพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในความเฉื่อย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'สร้างวินัย'",
+          "advice_th": "เริ่มจากกิจวัตรเล็กๆ ที่ทำได้ - 5 นาทีสมาธิทุกวัน วินัยเล็กสร้างวินัยใหญ่",
+          "keywords_th": ["ขาดวินัย", "เฉื่อย", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ไม่มีวินัยสุขภาพหรือทำๆ หยุดๆ",
+          "detailed_interpretation_th": "ในสุขภาพ อุปสรรคคือการขาดความสม่ำเสมอ ออกกำลังกายแล้วเลิก กินดีแล้วเลิก เริ่มดูแลแล้วล้มเหลว ต้องสร้างกิจวัตรที่ทำได้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในความเฉื่อย, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Three of Cups กลับหัว = สังสรรค์ไม่ดี",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'สร้างกิจวัตรที่ทำได้'",
+          "advice_th": "เริ่มจากนิสัยที่ใช้พลังน้อย - เดิน 10 นาที ดื่มน้ำ 1 แก้ว ทำให้สำเร็จก่อนเพิ่ม",
+          "keywords_th": ["ทำๆ หยุดๆ", "กิจวัตร", "เล็กๆ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เคยมีชัยชนะหรือก้าวสำคัญในอดีตที่สร้างพลังในตัว",
+          "detailed_interpretation_th": "รถม้าหัวตั้งในอดีต บ่งบอกถึงช่วงเวลาที่คุณเคยขับเคลื่อนชีวิตด้วยพลังและประสบความสำเร็จ อาจเป็นการเลื่อนตำแหน่ง การเริ่มธุรกิจ การสำเร็จการศึกษา ความสำเร็จในการแข่งขัน ประสบการณ์นี้สร้างความเชื่อมั่นในตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สำเร็จ, The World = บรรลุ",
+            "wands": "King of Wands = ผู้นำเก่า, Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "Knight of Wands = พลังเก่า"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าในอดีต คือ 'คุณเคยทำได้แล้ว'",
+          "advice_th": "ระลึกชัยชนะในอดีต - อะไรทำให้สำเร็จ? ใช้สูตรเดิมในปัจจุบัน",
+          "keywords_th": ["ชัยชนะเก่า", "พลังเก่า", "ความเชื่อมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความสัมพันธ์ที่ก้าวหน้าและมุ่งมั่นในอดีต",
+          "detailed_interpretation_th": "ในรักอดีต เคยมีความสัมพันธ์ที่มีพลังและก้าวหน้า อาจเป็นรักครั้งแรกที่จริงจัง การแต่งงาน หรือคู่ที่ร่วมเดินทางอย่างมุ่งมั่น ประสบการณ์นี้สร้างแม่แบบ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = รัก",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = soul mate",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอดีตรัก คือ 'รักที่ก้าวหน้า'",
+          "advice_th": "ใช้บทเรียนจากรักเก่า - อะไรทำให้สัมพันธ์ก้าวหน้า? นำมาใช้ปัจจุบัน",
+          "keywords_th": ["รักก้าวหน้า", "บทเรียน", "พลังคู่"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยสำเร็จในการลงทุนหรือการขยายธุรกิจ",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต คุณเคยมีช่วงเวลาทอง - ธุรกิจเติบโต รายได้พุ่ง ลงทุนได้ผล เลื่อนตำแหน่ง ทักษะและประสบการณ์ที่สั่งสมยังใช้ได้",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Sun = สำเร็จ",
+            "wands": "Three of Wands = ขยาย, Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = อิสระ, King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอดีตงาน-เงิน คือ 'ทำได้แล้ว ทำได้อีก'",
+          "advice_th": "ระลึกตอนสำเร็จ - ทำอะไร? วินัยแบบไหน? เครือข่ายไหน? นำมาใช้",
+          "keywords_th": ["สำเร็จเก่า", "ทักษะสะสม", "ทำได้อีก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยฝึกวินัยและบรรลุเป้าหมายในอดีต",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต คุณเคยฝึกวินัยและบรรลุเป้าหมาย อาจเป็นการลดน้ำหนัก เลิกนิสัยไม่ดี เรียนทักษะใหม่ ประสบการณ์นี้พิสูจน์ว่าคุณทำได้",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังภายใน, The Magician = ทักษะ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอดีตจิตวิญญาณ คือ 'มีวินัยมาก่อน'",
+          "advice_th": "ระลึกตอนมีวินัยและสำเร็จ - ตอนนั้นทำอะไร? ใช้เป็นแม่แบบสำหรับเป้าหมายใหม่",
+          "keywords_th": ["วินัยเก่า", "บรรลุเก่า", "แม่แบบ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีร่างกายแข็งแรงและฝึกอย่างจริงจัง",
+          "detailed_interpretation_th": "ในสุขภาพอดีต คุณเคยแข็งแรง เล่นกีฬา ออกกำลังกายสม่ำเสมอ ฝึกฝนอย่างจริงจัง ร่างกายจำได้ ฟื้นฟูได้ตามที่เคยเป็น",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, Strength = พลัง",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King of Pentacles = สุขภาพดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอดีตสุขภาพ คือ 'ร่างกายจำได้'",
+          "advice_th": "กลับไปสู่กิจวัตรที่เคยทำแล้วร่างกายดี - กีฬาเดิม กิจวัตรเดิม ความจำกล้ามเนื้อจะกลับมา",
+          "keywords_th": ["แข็งแรงเก่า", "ร่างกายจำ", "กลับมา"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยพ่ายแพ้หรือเสียการควบคุมในอดีต",
+          "detailed_interpretation_th": "รถม้ากลับหัวในอดีต บ่งบอกถึงประสบการณ์ความพ่ายแพ้ - โครงการที่ล้มเหลว ธุรกิจที่พัง ความสัมพันธ์ที่เลิก บาดแผลนี้ทำให้กลัวการลงมือใหม่ ต้องเรียนรู้",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติดในความพ่ายแพ้",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Ten of Swords = พ่ายแพ้, Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหันเก่า"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวอดีต คือ 'บทเรียนจากความพ่ายแพ้'",
+          "advice_th": "ใช้ความพ่ายแพ้เป็นบทเรียน ไม่ใช่กรง วิเคราะห์ว่าเกิดอะไร เรียนรู้ ก้าวต่อ",
+          "keywords_th": ["พ่ายแพ้เก่า", "บทเรียน", "ก้าวต่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ในอดีตที่พังเพราะทิศทางต่างกัน",
+          "detailed_interpretation_th": "ในรักอดีต คุณเคยมีความสัมพันธ์ที่พังเพราะทั้งคู่ต้องการสิ่งต่าง คุณอยากแต่งงาน เขาไม่ คุณอยากย้าย เขาไม่ บาดแผลทำให้กลัวเปิดใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = ติดในบาดแผล",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = ป้องกันใจ",
+            "court_cards": "Knight of Cups กลับหัว = คู่ที่ไม่จริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวอดีตรัก คือ 'รักที่ไปคนละทิศ'",
+          "advice_th": "เรียนรู้จากความสัมพันธ์เก่า - คราวหน้าตรวจสอบเป้าหมายร่วมตั้งแต่ต้น",
+          "keywords_th": ["รักไปคนละทิศ", "บาดแผล", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยล้มเหลวในธุรกิจหรือลงทุน",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต เคยมีประสบการณ์ล้มเหลว - ธุรกิจพัง ลงทุนผิด สูญเสียเงินก้อน บาดแผลทำให้กลัวเสี่ยง ระวังเกินไป ต้องเรียนรู้และก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ธุรกิจพัง, The Devil = ติดในความเสียใจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "King of Pentacles กลับหัว = ลงทุนผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวอดีตงาน-เงิน คือ 'ใช้บทเรียน อย่ากลัว'",
+          "advice_th": "ความล้มเหลวเก่าคือครู ไม่ใช่กรง วิเคราะห์ว่าผิดตรงไหน เรียนรู้ ลงมือใหม่ด้วยปัญญา",
+          "keywords_th": ["ล้มเหลวเก่า", "บทเรียน", "ลงมือใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยเริ่มหลายอย่างแต่ไม่จบเลย",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต คุณเคยเริ่มหลายโครงการเติบโต - คอร์ส diet ทักษะใหม่ - แต่ไม่จบสักอย่าง ขาดวินัย ขาดโฟกัส ต้องเปลี่ยนรูปแบบ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = สับสน",
+            "wands": "Page of Wands = เริ่มไม่จบ",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่จบ",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวอดีตจิตวิญญาณ คือ 'ลึกหนึ่งอย่าง'",
+          "advice_th": "เลือกหนึ่งเป้าหมายและทุ่มเท 90 วัน ก่อนเริ่มอันใหม่ การทำให้จบเป็นกุญแจ",
+          "keywords_th": ["เริ่มไม่จบ", "ขาดโฟกัส", "ทุ่มเท"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยฝืนร่างกายเกินไปจนบาดเจ็บ",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยฝืนเกิน - ออกกำลังกายหักโหม diet เข้มงวด ทำงานหนักจนพัง บาดแผลเก่ายังส่งผล ต้องดูแลแบบสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในการฝืน",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ, Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ทำลายร่างกาย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวอดีตสุขภาพ คือ 'ฝืนแล้วพัง'",
+          "advice_th": "เรียนรู้จากการฝืนเก่า ดูแลแบบสมดุล ฟังร่างกาย ไม่หักโหม",
+          "keywords_th": ["ฝืนเก่า", "บาดเจ็บ", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ชัยชนะและความก้าวหน้าใหญ่กำลังมา",
+          "detailed_interpretation_th": "รถม้าหัวตั้งในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า จะมีชัยชนะใหญ่ - การเลื่อนตำแหน่ง การปิดดีล การสำเร็จในโครงการ การก้าวหน้าทุกด้าน เตรียมตัวรับความสำเร็จ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, The World = บรรลุ, The Star = ความหวังสำเร็จ",
+            "wands": "Six of Wands = ชัยชนะ, Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = อิสระ, Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอนาคต คือ 'ชัยชนะใหญ่กำลังมา'",
+          "advice_th": "เตรียมตัวสำหรับความสำเร็จ ทุ่มเทต่อไป อย่าหยุด ชัยชนะใกล้แล้ว",
+          "keywords_th": ["ชัยชนะใหญ่", "ก้าวหน้า", "สำเร็จ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะก้าวหน้าและมีก้าวสำคัญร่วมกัน",
+          "detailed_interpretation_th": "ในรักอนาคต ความสัมพันธ์จะก้าวหน้า - อาจมีการแต่งงาน ย้ายมาอยู่ด้วยกัน หรือมีลูก สำหรับคนโสด จะพบคนที่กระตือรือร้นและพร้อมเดินไปด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = คนรักหลงใหล",
+            "cups": "Two of Cups = ผูกพัน, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Cups = คนรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอนาคตรัก คือ 'ก้าวสำคัญร่วม'",
+          "advice_th": "เตรียมตัวสำหรับก้าวใหญ่ในความสัมพันธ์ - แต่งงาน อยู่ด้วยกัน มีลูก คุยและวางแผน",
+          "keywords_th": ["ก้าวใหญ่", "แต่งงาน", "ครอบครัว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "การเลื่อนตำแหน่ง รายได้เพิ่ม หรือธุรกิจก้าวหน้า",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต จะมีการก้าวหน้าใหญ่ - เลื่อนตำแหน่ง ขึ้นเงินเดือน โบนัสใหญ่ การลงทุนให้ผลตอบแทนสูง ธุรกิจขยาย ยุคทองมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The Magician = ทักษะ",
+            "wands": "Six of Wands = ชัยชนะ, Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง, King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ของ Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอนาคตงาน-เงิน คือ 'รุ่งเรืองใหญ่'",
+          "advice_th": "เตรียมตัวสำหรับการเติบโต - ทักษะใหม่ ทีมใหม่ ลูกค้าใหม่ ทุ่มเทต่อไป",
+          "keywords_th": ["เลื่อนตำแหน่ง", "รายได้เพิ่ม", "รุ่งเรือง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "จะบรรลุเป้าหมายการเติบโตที่ตั้งไว้",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต คุณจะบรรลุเป้าหมายที่ตั้งไว้ - ทักษะใหม่ที่อยากได้ การเปลี่ยนแปลงพฤติกรรม ระดับสมาธิที่ลึกขึ้น ความมุ่งมั่นจะให้ผล",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Star = แรงบันดาลใจ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอนาคตจิตวิญญาณ คือ 'บรรลุเป้า'",
+          "advice_th": "ทุ่มเทกับเป้าหมายปัจจุบัน ความสำเร็จในอนาคตขึ้นกับการทำในปัจจุบัน",
+          "keywords_th": ["บรรลุเป้า", "ก้าวหน้า", "สำเร็จ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายจะแข็งแรงขึ้นและบรรลุเป้าหมายสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ร่างกายจะแข็งแรงขึ้น มีพลังงานสูง บรรลุเป้าหมายที่ตั้งไว้ - น้ำหนัก สมรรถภาพ การฟื้นฟูจากอาการเก่า กิจวัตรที่สร้างขึ้นจะให้ผล",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Nine of Pentacles = อิสระ, Ten of Pentacles = ยั่งยืน",
+            "court_cards": "King of Pentacles = สุขภาพระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าอนาคตสุขภาพ คือ 'ร่างกายดีขึ้น'",
+          "advice_th": "ดำเนินกิจวัตรสุขภาพต่อ ผลลัพธ์กำลังมา อย่าหยุดก่อนเห็นผล",
+          "keywords_th": ["ร่างกายดี", "บรรลุเป้า", "พลังเต็ม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อาจมีอุปสรรคหรือการชะงักในอนาคต",
+          "detailed_interpretation_th": "รถม้ากลับหัวในอนาคต เตือนว่าใน 3-6 เดือนข้างหน้า อาจมีอุปสรรค ความล่าช้า หรือเสียการควบคุมในบางเรื่อง ต้องเตรียมแผนสำรอง ไม่เร่งเกินไป",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Hanged Man = ติด",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวอนาคต คือ 'เตรียมแผนสำรอง'",
+          "advice_th": "ไม่เร่ง วางแผน B มี emergency fund เตรียมพร้อมรับการเปลี่ยนแปลงที่ไม่คาดคิด",
+          "keywords_th": ["อุปสรรคจะมา", "ชะลอ", "เตรียมแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์อาจชะงักหรือไม่ก้าวหน้า",
+          "detailed_interpretation_th": "ในรักอนาคต ระวังความสัมพันธ์ชะลอ คู่อาจไม่พร้อมก้าวต่อ การแต่งงานถูกเลื่อน หรือมีปัญหาที่ทำให้ติด ต้องอดทนหรือคุยตรง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวอนาคตรัก คือ 'ชะลอ'",
+          "advice_th": "อย่ารีบบีบความสัมพันธ์ ให้เวลา แต่ก็ต้องคุยอนาคต ถ้าคู่ไม่พร้อมจริงๆ พิจารณา",
+          "keywords_th": ["ชะลอ", "ไม่ก้าวหน้า", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "โครงการชะงักหรือเงินไม่เข้าตามที่หวัง",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต ระวังโครงการชะลอ ลูกค้าใหญ่หาย เงินไม่เข้าตามที่หวัง การลงทุนให้ผลช้า ต้องอดทนและปรับแผน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Tower = วิกฤต",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด, Seven of Pentacles กลับหัว = ลงทุนไม่ได้ผล",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวอนาคตงาน-เงิน คือ 'เตรียมพร้อมรับชะลอ'",
+          "advice_th": "อย่าใช้เงินใหญ่ในอนาคต 6 เดือน เก็บไว้รับมือ ปรับแผนตามสถานการณ์ ไม่เร่ง",
+          "keywords_th": ["ชะลอ", "เงินไม่เข้า", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายเติบโตอาจไม่บรรลุตามเวลาที่ตั้ง",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ระวังการเร่งเป้าหมายเกินไป การเติบโตต้องการเวลา ถ้าตั้งเป้าใหญ่ใน 90 วัน อาจไม่ทัน ปรับเป้าให้สมจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่จริงจัง",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวอนาคตจิตวิญญาณ คือ 'ปรับเป้าให้สมจริง'",
+          "advice_th": "การเติบโตต้องการเวลา ปรับเป้าหมายให้สมจริง 1 ปี 2 ปี ไม่ใช่ 90 วัน ความสม่ำเสมอสำคัญ",
+          "keywords_th": ["เป้าไม่บรรลุ", "ปรับเวลา", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อาจมีอุปสรรคสุขภาพหรือบาดเจ็บในอนาคต",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ระวังการฝืนร่างกายจนบาดเจ็บ หรืออาการที่กลับมา ต้องไม่หักโหม ดูแลแบบสมดุล ฟังร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = สุขภาพพัง, The Devil = ติดในการฝืน",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวอนาคตสุขภาพ คือ 'อย่าหักโหม'",
+          "advice_th": "ออกกำลังกายแบบสมดุล มีวันพัก ฟังร่างกาย ถ้าเจ็บ หยุด ปรึกษาหมอ",
+          "keywords_th": ["บาดเจ็บ", "อย่าหักโหม", "ฟังร่างกาย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือชัยชนะใหญ่และการเป็นผู้ขับชีวิตของตัวเอง",
+          "detailed_interpretation_th": "รถม้าหัวตั้งในเป้าหมาย สะท้อนความปรารถนา - บรรลุเป้าหมายใหญ่ในชีวิต ควบคุมทิศทาง เป็นผู้ที่กำหนดชีวิต ไม่ใช่เหยื่อของสถานการณ์ คุณต้องการชัยชนะที่จริง",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Sun = สำเร็จ, The Emperor = อำนาจ",
+            "wands": "King of Wands = ผู้นำ, Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าเป้าหมาย คือ 'ชัยชนะใหญ่'",
+          "advice_th": "ตั้งเป้าหมายใหญ่ที่ท้าทาย ระบุชัด วางแผน ทุ่มเท ชัยชนะรอคุณอยู่",
+          "keywords_th": ["ชัยชนะใหญ่", "ผู้ขับชีวิต", "บรรลุ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการคู่ที่กระตือรือร้นและเดินหน้าด้วยกัน",
+          "detailed_interpretation_th": "เป้าหมายในรักคือคู่ที่มีพลัง พร้อมก้าวไปด้วยกัน ทั้งคู่มีเป้าหมายใหญ่ ทำงานเป็นทีม สนับสนุนความฝันของกันและกัน ไม่ใช่แค่อยู่ด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = ทีม, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่งคั่ง",
+            "court_cards": "Knight of Cups = คู่ที่กระตือรือร้น"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าเป้าหมายรัก คือ 'คู่ที่เดินหน้าด้วยกัน'",
+          "advice_th": "ค้นหาคู่ที่มีพลังและเป้าหมายตรงกัน หรือสร้างเป้าหมายร่วมกับคู่ปัจจุบัน",
+          "keywords_th": ["คู่กระตือรือร้น", "ทีม", "เดินหน้าร่วม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการความสำเร็จใหญ่ในอาชีพและการเงิน",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายของคุณคือการเป็นผู้นำในวงการ มีธุรกิจของตัวเอง ความมั่งคั่งระดับสูง อิสรภาพการเงิน คุณต้องการชัยชนะที่จริงในการเงิน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The World = บรรลุ, The Magician = ทักษะ",
+            "wands": "King of Wands = CEO, Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญาธุรกิจ",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง, Ten of Pentacles = อาณาจักร",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าเป้าหมายงาน-เงิน คือ 'ชัยชนะการเงิน'",
+          "advice_th": "ตั้งเป้าหมายการเงินที่ชัดเจน - ตัวเลข เวลา วิธี ทำงานหนักและฉลาด ชัยชนะเป็นไปได้",
+          "keywords_th": ["ชัยชนะการเงิน", "ผู้นำ", "อิสรภาพ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการเป็นผู้ที่ควบคุมพลังตัวเองและบรรลุเป้าหมาย",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายของคุณคือการเป็น master ของตัวเอง ควบคุมพลัง ความคิด อารมณ์ พฤติกรรม ใช้พลังในการสร้างชีวิต บรรลุเป้าหมายที่ตั้งไว้",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังภายใน, The Magician = ทักษะ, The World = บรรลุ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าเป้าหมายจิตวิญญาณ คือ 'master ของตัวเอง'",
+          "advice_th": "ฝึกควบคุมตัวเอง - วินัย สมาธิ การจัดการอารมณ์ การเป็น master เริ่มจากการควบคุมตัวเอง",
+          "keywords_th": ["master ตัวเอง", "ควบคุม", "บรรลุ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการร่างกายที่แข็งแรงและสมรรถภาพสูง",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพคือร่างกายที่แข็งแกร่ง สมรรถภาพสูง สามารถทำกิจกรรมหนักได้ พลังงานเต็มทุกวัน คุณอยากเป็นนักกีฬาในแบบของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, Strength = พลัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Nine of Pentacles = อิสระ, Ten of Pentacles = ยั่งยืน",
+            "court_cards": "King of Pentacles = สุขภาพระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าเป้าหมายสุขภาพ คือ 'นักกีฬาในแบบของตัวเอง'",
+          "advice_th": "ตั้งเป้าหมายสุขภาพที่ชัด - วิ่งมาราธอน ลด 10 กิโล สมรรถภาพระดับ X ทำงานหนัก คุณทำได้",
+          "keywords_th": ["แข็งแกร่ง", "สมรรถภาพสูง", "เป้าหมายสุขภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายเร่งรีบเกินไปหรือไม่ใช่ของตัวเอง",
+          "detailed_interpretation_th": "รถม้ากลับหัวในเป้าหมาย บ่งบอกว่าเป้าหมายของคุณอาจเร่งเกินไป ไม่สมจริง หรือถูกบีบจากภายนอก คุณวิ่งเร็ว แต่ไม่รู้ว่าวิ่งไปทิศไหน ต้องหยุดและประเมิน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเร่ง, The Moon = สับสน",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Seven of Cups = ฝันลวง",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Seven of Pentacles กลับหัว = ลงทุนผิด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวเป้าหมาย คือ 'หยุดและประเมิน'",
+          "advice_th": "หยุดและถามตัวเอง - เป้าหมายนี้ของฉันจริงไหม? ทำได้ในเวลาที่ตั้งไหม? ปรับให้สมจริง",
+          "keywords_th": ["เร่งเกิน", "ทบทวน", "ปรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการความสัมพันธ์เร็วเกินหรือกดดันคู่",
+          "detailed_interpretation_th": "ในรัก เป้าหมายอาจเร่งเกิน - อยากแต่งงานเร็วเกินไป กดดันคู่ให้ตัดสินใจ ความเร่งทำให้คู่อึดอัด ต้องผ่อนคลาย ให้เวลา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = กดดัน, The Tower = ระเบิด",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ตามอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวเป้าหมายรัก คือ 'อย่าเร่งคู่'",
+          "advice_th": "ความรักต้องการเวลา อย่าบีบคู่ ความเร่งทำลายความสัมพันธ์ ให้คู่ตัดสินใจเอง",
+          "keywords_th": ["เร่งเกิน", "กดดัน", "ผ่อนคลาย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตั้งเป้าหมายการเงินที่เกินจริง",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายอาจเกินจริง - อยากรวยล้านใน 1 ปี อยากเป็น CEO ใน 3 ปี เป้าหมายใหญ่ดีแต่ต้องสมจริง เร่งเกินจะทำให้พังหรือทำลายสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, The Devil = ติดในความเร่ง",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = เร่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวเป้าหมายงาน-เงิน คือ 'สมจริง'",
+          "advice_th": "ตั้งเป้าหมายระยะยาว 5-10 ปี แทนระยะสั้น 1 ปี ความสำเร็จที่ยั่งยืนต้องการเวลา",
+          "keywords_th": ["เป้าเกินจริง", "เร่งเกิน", "ปรับให้สมจริง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ตั้งเป้าหมายการเติบโตที่เร่งเกินไป",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายอาจเร่งเกิน - บรรลุปัญญาใน 1 ปี เป็น guru ใน 2 ปี การเติบโตทางจิตวิญญาณต้องการเวลา ไม่สามารถเร่งได้",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเร่ง, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่จริงจัง",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวเป้าหมายจิตวิญญาณ คือ 'ค่อยๆ'",
+          "advice_th": "การเติบโตคือการเดินทาง ไม่ใช่จุดหมาย เพลิดเพลินกับการเดินทาง อย่าเร่งถึงจุดหมาย",
+          "keywords_th": ["เร่งเกิน", "การเดินทาง", "ค่อยๆ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายสุขภาพหักโหมจนทำลายร่างกาย",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายอาจหักโหม - ลด 20 กิโลใน 3 เดือน สร้างกล้ามใน 1 ปี ฝืนร่างกายเกินจะทำให้บาดเจ็บ ฮอร์โมนพัง ระวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในการฝืน",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ทำลายตัว",
+            "court_cards": "Knight of Wands กลับหัว = ฝืนเกิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวเป้าหมายสุขภาพ คือ 'อย่าหักโหม'",
+          "advice_th": "ปรับเป้าหมายให้สมจริง ลดน้ำหนัก 0.5-1 กิโลต่อสัปดาห์ สร้างกล้ามใช้เวลา 1-2 ปี ความยั่งยืนสำคัญ",
+          "keywords_th": ["หักโหม", "อันตราย", "สมจริง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความมุ่งมั่นและพลังขับเคลื่อนฝังอยู่ในแกน",
+          "detailed_interpretation_th": "รถม้าหัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีพลัง ความมุ่งมั่น และวินัยฝังลึก คุณเกิดมาเป็นผู้ขับ ไม่ใช่ผู้โดยสาร ใช้พลังนี้ในการสร้างชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังภายใน, The Magician = ทักษะ",
+            "wands": "King of Wands = พลังในแกน",
+            "cups": "King of Cups = สมดุล",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ารากฐาน คือ 'พลังในแกน'",
+          "advice_th": "ใช้พลังที่ฝังในตัว ตั้งเป้าหมายและทำให้ได้ คุณมีทุกอย่างที่ต้องการในตัวอยู่แล้ว",
+          "keywords_th": ["พลังในแกน", "มุ่งมั่น", "วินัย"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความมุ่งมั่นในการสร้างความสัมพันธ์ที่ดีอยู่ในแกน",
+          "detailed_interpretation_th": "ในรัก รากฐานของคุณคือความมุ่งมั่น คุณไม่ใช่คนที่เลิกง่าย คุณทุ่มเทกับความสัมพันธ์ พลังนี้คือพรสวรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, Strength = พลัง",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = นักรักลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ารากฐานรัก คือ 'มุ่งมั่นในรัก'",
+          "advice_th": "ใช้ความมุ่งมั่นในการสร้างความสัมพันธ์ที่ดี ทุ่มเทเวลา ใส่ใจ ความรักของคุณยั่งยืน",
+          "keywords_th": ["มุ่งมั่นรัก", "ไม่เลิกง่าย", "ทุ่มเท"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "พลังการทำงานหนักและความมุ่งมั่นในแกน",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานของคุณคือพลังการทำงานหนัก ความมุ่งมั่น วินัย คุณเป็นคนที่ลงมือทำ ไม่ใช่แค่พูด พลังนี้คือทรัพย์สิน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = ผู้นำ",
+            "wands": "King of Wands = ผู้ประกอบการ",
+            "cups": "King of Cups = สมดุล",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = วินัย, King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ารากฐานงาน-เงิน คือ 'work ethic ในแกน'",
+          "advice_th": "ใช้พลังการทำงานหนักของคุณให้เต็มที่ - ตั้งเป้าหมาย วางแผน ทำตาม ความสำเร็จเป็นของคุณ",
+          "keywords_th": ["work ethic", "วินัย", "มุ่งมั่น"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "วินัยและพลังการพัฒนาตัวเองฝังในแกน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานของคุณคือวินัยและพลังในการพัฒนาตัวเอง คุณตั้งเป้าได้และทำให้สำเร็จ พลังนี้ใช้ได้ในทุกด้าน - ทักษะ สุขภาพ ความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลัง, The Magician = ทักษะ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = สมดุล",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ารากฐานจิตวิญญาณ คือ 'วินัยฝังลึก'",
+          "advice_th": "ใช้วินัยที่มีในตัว ตั้งเป้าหมายการเติบโตและทำให้ได้ พรสวรรค์นี้สำคัญในชีวิต",
+          "keywords_th": ["วินัย", "พลัง", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายแข็งแรงและพลังชีวิตสูงเป็นทุนเดิม",
+          "detailed_interpretation_th": "รากฐานสุขภาพของคุณดี ร่างกายมีพลังชีวิตสูง สามารถฟื้นฟูเร็ว ออกกำลังกายหนักได้ พันธุกรรมดี ใช้ทุนนี้สร้างสุขภาพระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลังชีวิต, Strength = พลัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "King of Pentacles = ร่างกายแข็งแกร่ง",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ารากฐานสุขภาพ คือ 'ร่างกายแข็งแกร่ง'",
+          "advice_th": "ใช้ทุนทางร่างกายให้คุ้ม - ออกกำลังกายหนัก ฝึกฝน ลงทุนกับสุขภาพ ร่างกายของคุณรองรับได้",
+          "keywords_th": ["ร่างกายแข็งแกร่ง", "พันธุกรรมดี", "พลังสูง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความกลัวการล้มเหลวหรือเสียการควบคุมฝังลึก",
+          "detailed_interpretation_th": "รถม้ากลับหัวในรากฐาน บ่งบอกถึงความกลัวลึกๆ - กลัวล้มเหลว กลัวเสียการควบคุม กลัวว่าจะไปทิศผิด ความกลัวขังคุณจากการเริ่มต้น ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจเก่า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวรากฐาน คือ 'กลัวล้มเหลว'",
+          "advice_th": "ระบุความกลัว - กลัวอะไร? เพราะอะไร? ทำงานกับความกลัว เริ่มเล็กๆ สร้างความเชื่อมั่นทีละขั้น",
+          "keywords_th": ["กลัวล้มเหลว", "ฝังลึก", "ทำงานกับใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวการก้าวต่อในความสัมพันธ์เพราะบาดแผลเก่า",
+          "detailed_interpretation_th": "ในรัก รากฐานมีความกลัว - กลัวก้าวต่อ กลัวแต่งงาน กลัวมีลูก กลัวพันธะ เพราะเคยถูกทำร้ายหรือเห็นพ่อแม่หย่า บาดแผลนี้ขังจากความสัมพันธ์ที่จริงจัง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Devil = ติดในบาดแผล",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกันใจ",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวรากฐานรัก คือ 'กลัวพันธะ'",
+          "advice_th": "ทำงานกับ inner child เกี่ยวกับความรัก ความกลัวพันธะมักมาจากบาดแผลเก่า รักษาเพื่อก้าวต่อ",
+          "keywords_th": ["กลัวพันธะ", "บาดแผล", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความเชื่อว่าตัวเองไม่เก่งพอ - imposter syndrome",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานมีความเชื่อ 'ฉันไม่เก่งพอ' 'ฉันไม่มีทางสำเร็จใหญ่' imposter syndrome ขังคุณจากการตั้งเป้าใหญ่ ต้องทำงานกับความเชื่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Page กลับหัว = imposter"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวรากฐานงาน-เงิน คือ 'imposter syndrome'",
+          "advice_th": "จดทักษะและความสำเร็จที่มี อ่านเมื่อรู้สึก imposter หลักฐานอยู่ที่นั่น คุณคู่ควรกับความสำเร็จใหญ่",
+          "keywords_th": ["imposter syndrome", "ไม่เก่งพอ", "ปลดล็อก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "นิสัยล้มเลิกง่ายฝังลึก",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานมีนิสัย 'เริ่มแล้วเลิก' ฝังลึก เคยล้มเหลวหลายครั้ง สมองเรียนรู้ว่า 'ฉันเป็นคนเริ่มไม่จบ' ความเชื่อนี้ผิด ต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่จริงจัง",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวรากฐานจิตวิญญาณ คือ 'พิสูจน์ว่าทำได้'",
+          "advice_th": "ตั้งเป้าเล็กที่ทำได้ใน 7-14 วัน ทำให้สำเร็จ สร้างความเชื่อมั่นใหม่ ความสำเร็จเล็กสร้างความเชื่อใหม่",
+          "keywords_th": ["เริ่มไม่จบ", "นิสัยล้มเลิก", "พิสูจน์ใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ขาดวินัยฝังในนิสัย",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือนิสัยขาดวินัย - เริ่มออกกำลังกายแล้วเลิก เริ่ม diet แล้วล้มเหลว สมองคุ้นกับการล้มเลิก ต้องสร้างนิสัยใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Hanged Man = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Three of Cups กลับหัว = สังสรรค์ทำลาย",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวรากฐานสุขภาพ คือ 'สร้างนิสัยใหม่'",
+          "advice_th": "เริ่มจากนิสัยเล็กที่ใช้พลัง 2 นาที สม่ำเสมอเป็นกุญแจ สร้างนิสัยสำเร็จเล็ก ก่อนเพิ่มขนาด",
+          "keywords_th": ["ขาดวินัย", "เริ่มแล้วเลิก", "นิสัยใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ใช้ความมุ่งมั่นและวินัยขับเคลื่อนชีวิตไปข้างหน้า",
+          "detailed_interpretation_th": "คำแนะนำจากรถม้าหัวตั้ง: ตั้งเป้าหมายให้ชัด ใช้พลังขับเคลื่อน วินัยและความมุ่งมั่นคือกุญแจ ควบคุมพลังตรงข้ามให้เดินทิศเดียวกัน คุณคือผู้ขับชีวิตของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, Strength = พลัง",
+            "wands": "Knight of Wands = พลังเดินหน้า",
+            "cups": "King of Cups = ควบคุมอารมณ์",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "King ทุกชุด = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าคำแนะนำ คือ 'มุ่งมั่นและทำ'",
+          "advice_th": "เลือกเป้าหมายหนึ่งที่สำคัญที่สุด ทุ่มเทพลังให้กับมัน วินัยทุกวัน 90 วัน คุณจะเห็นความสำเร็จ",
+          "keywords_th": ["มุ่งมั่น", "วินัย", "ทำ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ก้าวหน้าในความสัมพันธ์ - ตัดสินใจและลงมือ",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ถ้ารักใคร แสดงออก ถ้าอยากแต่งงาน บอก ถ้าอยากแก้ปัญหา ลงมือ ความรักไม่ใช่แค่ความรู้สึก แต่เป็นการกระทำ ก้าวหน้าด้วยความมุ่งมั่น",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = รัก",
+            "wands": "Knight of Wands = กล้าทำ",
+            "cups": "Two of Cups = ก้าวสู่คู่",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = สร้างครอบครัว",
+            "court_cards": "Knight of Cups = ขับเคลื่อนความรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าคำแนะนำในรัก คือ 'ลงมือ'",
+          "advice_th": "วันนี้ทำสิ่งหนึ่งที่ก้าวหน้าความสัมพันธ์ - บอกรัก นัดเดต วางแผนอนาคต ความรักต้องการการกระทำ",
+          "keywords_th": ["ลงมือรัก", "ก้าวหน้า", "การกระทำ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทำงานหนักและมุ่งมั่น - ความสำเร็จต้องการการขับเคลื่อน",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ตั้งเป้าหมายและทำงานหนัก ความสำเร็จไม่มาด้วยตัวเอง ต้องการการขับเคลื่อน วินัย โฟกัส ทำงาน 90 วันโฟกัส คุณจะเห็นผล",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = ผู้นำ",
+            "wands": "King of Wands = CEO, Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = วินัย, King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ของ Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าคำแนะนำงาน-เงิน คือ 'มุ่งมั่นทำงานหนัก'",
+          "advice_th": "ตั้งเป้า 90 วันที่ชัดเจน วางก้าวที่จะทำทุกสัปดาห์ บันทึกความก้าวหน้า ทุ่มเทเต็มที่ ความสำเร็จเป็นของคุณ",
+          "keywords_th": ["มุ่งมั่นทำงาน", "วินัย", "เป้าหมาย"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ฝึกวินัยและความมุ่งมั่นในการพัฒนาตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: วินัยคือกุญแจ ตื่นเวลาเดิม ออกกำลังกาย ทำสมาธิ ฝึกทักษะ การเติบโตที่แท้ต้องการการทำสม่ำเสมอ ไม่ใช่แรงบันดาลใจ",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลัง, The Magician = ทักษะ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าคำแนะนำการเติบโต คือ 'วินัยทุกวัน'",
+          "advice_th": "สร้างกิจวัตรประจำวันที่ทำได้ - 1 ชั่วโมงเพื่อตัวเอง อ่าน เขียน ฝึก ทุกวัน 90 วันจะเปลี่ยนชีวิต",
+          "keywords_th": ["วินัยทุกวัน", "กิจวัตร", "ทำสม่ำเสมอ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ออกกำลังกายและดูแลร่างกายด้วยความมุ่งมั่น",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ตั้งเป้าหมายสุขภาพชัดเจน ออกกำลังกายอย่างจริงจัง วินัยในการกิน นอน พักผ่อน ทำตามแผน 90 วัน เห็นผลแน่นอน",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลัง, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King of Pentacles = สุขภาพระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าคำแนะนำสุขภาพ คือ 'วินัย 90 วัน'",
+          "advice_th": "เขียนแผนสุขภาพ 90 วัน - ออกกำลังกายเวลาไหน อาหารแต่ละมื้อ นอนกี่ทุ่ม ทำตามไม่ลด คุณจะแข็งแกร่ง",
+          "keywords_th": ["วินัยสุขภาพ", "90 วัน", "ทำตามแผน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หยุดและประเมินทิศทางก่อนเร่งต่อ",
+          "detailed_interpretation_th": "คำแนะนำรถม้ากลับหัว: ถ้ากำลังเร่งและรู้สึกเหนื่อย หยุด ประเมินว่ากำลังไปทิศไหน เป้าหมายนี้ของคุณจริงไหม? ถ้าไม่ ปรับทิศ ความเร็วโดยไม่มีทิศคือการเสียพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = พิจารณา, The Hermit = ใช้เวลาคิด",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = ประเมิน",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวคำแนะนำ คือ 'หยุดและประเมิน'",
+          "advice_th": "ใช้เวลา 1 สัปดาห์หยุดพัก ทบทวนเป้าหมาย ปรับทิศถ้าจำเป็น ก่อนเร่งต่อ",
+          "keywords_th": ["หยุดประเมิน", "ทบทวน", "ปรับทิศ"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อย่าเร่งความสัมพันธ์ - ให้เวลาคู่",
+          "detailed_interpretation_th": "คำแนะนำในรัก: อย่าเร่ง อย่ากดดันคู่ ให้เวลา ความรักต้องการเวลาในการพัฒนา ถ้าคู่ไม่พร้อม รออย่างมีสติ ไม่ใช่บีบ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = อดทน, The Hermit = ใช้เวลา",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Two of Cups = ผูกพันค่อยๆ",
+            "swords": "Two of Swords = ใจเย็น",
+            "pentacles": "Four of Pentacles = ผ่อน",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวคำแนะนำในรัก คือ 'อย่าเร่ง'",
+          "advice_th": "ให้คู่เวลา อย่าบีบ ความรักที่ดีไม่ต้องการการเร่ง ถ้าใช่ จะเดินไปด้วยกันตามจังหวะ",
+          "keywords_th": ["อย่าเร่ง", "ให้เวลา", "ใจเย็น"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "หยุดทำงานหนักจนเหนื่อย - หาสมดุล",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ถ้าทำงานหนักจนเหนื่อย หยุดและประเมิน การทำงานหนักไม่เท่ากับการทำงานฉลาด ปรับวิธี โฟกัสที่สำคัญ ปล่อยที่ไม่จำเป็น",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = พักคิด, The Tower = ป้องกัน burnout",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หักโหม"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวคำแนะนำงาน-เงิน คือ 'ทำงานฉลาดกว่าหนัก'",
+          "advice_th": "ทบทวนงานที่ทำ - อันไหนสำคัญ? อันไหนตัดได้? โฟกัส 20% ที่ให้ 80% ของผลลัพธ์ ปล่อยที่ไม่จำเป็น",
+          "keywords_th": ["ทำงานฉลาด", "หาสมดุล", "ปล่อยที่ไม่จำเป็น"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หยุดเร่งและให้เวลากับการเติบโตจริง",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: หยุดเร่งบรรลุ การเติบโตที่แท้ต้องการเวลา การปฏิบัติทุกวัน 1% ดีกว่าการพยายาม 100% ครั้งเดียวแล้วเลิก",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = อดทน, The Hermit = ค้นหาภายใน",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Knight of Pentacles = ช้าๆ",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวคำแนะนำการเติบโต คือ 'ค่อยๆ'",
+          "advice_th": "อย่าตั้งเป้าใหญ่ใน 30 วัน ตั้งเป้าเล็กที่ทำได้ทุกวัน ความสม่ำเสมอสร้าง compound effect",
+          "keywords_th": ["ค่อยๆ", "สม่ำเสมอ", "1% ทุกวัน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หยุดหักโหม - ฟังร่างกายและพักผ่อน",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ถ้าออกกำลังกายหนัก diet เข้มงวด ฝืนเกิน หยุด ร่างกายต้องการการพักเหมือนต้องการการทำงาน หาสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Hanged Man = พัก",
+            "wands": "Wands กลับหัว = ลดกิจกรรม",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Four of Pentacles = ผ่อน",
+            "court_cards": "Queen of Cups = ดูแลด้วยใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวคำแนะนำสุขภาพ คือ 'พักผ่อน'",
+          "advice_th": "ใช้ 1-2 วัน/สัปดาห์ในการพักจริงๆ ไม่ออกกำลังกาย กินสบายๆ นอนเยอะ การพักคือส่วนหนึ่งของวินัย",
+          "keywords_th": ["พักผ่อน", "อย่าหักโหม", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมเอื้อต่อการเดินหน้าและประสบความสำเร็จ",
+          "detailed_interpretation_th": "รถม้าหัวตั้งในภายนอก บ่งบอกว่าสภาพแวดล้อมรอบตัวเอื้อต่อความสำเร็จ - คนรอบข้างสนับสนุน ตลาดเอื้อ โอกาสเปิด ใช้พลังของสภาพแวดล้อมขับเคลื่อนชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สำเร็จ, The Magician = ทักษะ",
+            "wands": "Six of Wands = ชัยชนะ, Three of Wands = ขยาย",
+            "cups": "Three of Cups = ทีม",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Three of Pentacles = ทีม, Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King ทุกชุด = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าภายนอก คือ 'สภาพแวดล้อมเอื้อ'",
+          "advice_th": "ใช้พลังของสภาพแวดล้อม - คนรอบข้างที่สนับสนุน ตลาดที่เอื้อ โอกาสที่เปิด ลุยให้เต็มที่",
+          "keywords_th": ["สภาพแวดล้อมดี", "สนับสนุน", "โอกาสเปิด"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่รักหรือครอบครัวสนับสนุนเป้าหมายของคุณ",
+          "detailed_interpretation_th": "ในรัก คุณมีคู่ที่กระตือรือร้น พร้อมเดินไปด้วยกัน ครอบครัวสนับสนุน เพื่อนเข้าใจ การมีทีมในรักทำให้คุณก้าวหน้าเร็ว",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ครอบครัว, The Sun = ความสุข",
+            "wands": "Knight of Wands = คู่กระตือรือร้น",
+            "cups": "Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่งคั่ง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าภายนอกรัก คือ 'คู่ + ครอบครัวสนับสนุน'",
+          "advice_th": "ใช้พลังของคู่และครอบครัวในการก้าวหน้า ทำงานเป็นทีม ความรักของคุณมีพลัง",
+          "keywords_th": ["คู่สนับสนุน", "ครอบครัวดี", "ทีม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทีมและเครือข่ายที่ดีช่วยให้ก้าวหน้า",
+          "detailed_interpretation_th": "ในงาน-เงิน มีทีมที่เก่ง พันธมิตรที่ดี เครือข่ายที่กว้าง ลูกค้าที่รักคุณ การร่วมมือสร้างผลลัพธ์มากกว่าทำคนเดียว",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Magician = ทักษะ",
+            "wands": "Three of Wands = ทีม, King of Wands = ผู้นำ",
+            "cups": "Three of Cups = พันธมิตร",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "Three of Pentacles = ทีม, Ten of Pentacles = บริษัทใหญ่",
+            "court_cards": "King ทุกชุด = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าภายนอกงาน-เงิน คือ 'ทีมและเครือข่าย'",
+          "advice_th": "ลงทุนความสัมพันธ์ในวงการ network สร้างทีมที่เก่ง คุณไม่ต้องทำคนเดียว",
+          "keywords_th": ["ทีม", "เครือข่าย", "ร่วมมือ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลุ่มเพื่อนหรือ mentor ที่ช่วยให้เติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณมีคนรอบข้างที่ช่วยให้เติบโต - mentor เพื่อนที่สนใจการพัฒนาตัวเอง กลุ่ม community พลังของกลุ่มเร่งการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Star = แรงบันดาลใจ",
+            "wands": "Wands ข้างเคียง = พลังร่วม",
+            "cups": "Three of Cups = เพื่อนแท้",
+            "swords": "King of Swords = ครู",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = mentor"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าภายนอกจิตวิญญาณ คือ 'กลุ่มที่ดี'",
+          "advice_th": "เข้ากลุ่มที่มีเป้าหมายคล้ายกัน เรียนกับ mentor มีเพื่อนที่ผลักดัน พลังร่วมทำให้ก้าวหน้าเร็ว",
+          "keywords_th": ["กลุ่มดี", "mentor", "เพื่อน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เพื่อนหรือ trainer ที่ช่วยให้ดูแลสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ มีคนรอบข้างที่ช่วยให้ดูแล - คู่ที่ออกกำลังกายด้วยกัน เพื่อนที่ชวนทำกิจกรรม trainer ที่ติดตาม การมีคู่ทำให้สม่ำเสมอ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Three of Cups = สังสรรค์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = trainer",
+            "court_cards": "King of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าภายนอกสุขภาพ คือ 'มีคู่สุขภาพ'",
+          "advice_th": "ชวนคู่ เพื่อน หรือหา trainer ที่ติดตามได้ การมีคู่ทำให้วินัย ค่าใช้จ่ายคุ้มกับผลลัพธ์",
+          "keywords_th": ["คู่สุขภาพ", "trainer", "สม่ำเสมอ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมไม่เอื้อหรือมีคนขัดขวาง",
+          "detailed_interpretation_th": "รถม้ากลับหัวในภายนอก เตือนว่าสภาพแวดล้อมไม่เอื้อต่อการก้าวหน้า มีคนขัดขวาง ตลาดไม่ดี อุปสรรคภายนอก ต้องทำงานหนักกว่า หรือเปลี่ยนสภาพแวดล้อม",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สภาพแวดล้อมพิษ, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King กลับหัว = ผู้นำที่ขัดขวาง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวภายนอก คือ 'สภาพแวดล้อมต้านทาน'",
+          "advice_th": "ประเมินสภาพแวดล้อม - คนรอบข้าง สถานที่ ตลาด ถ้าไม่เอื้อ เปลี่ยนหรือทำงานหนักกว่า",
+          "keywords_th": ["สภาพแวดล้อมต้าน", "อุปสรรค", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวหรือเพื่อนไม่สนับสนุนความสัมพันธ์",
+          "detailed_interpretation_th": "ในรัก ครอบครัวอาจไม่เห็นด้วยกับคู่ เพื่อนอาจอิจฉา สังคมตัดสิน คู่ของคุณรู้สึกอึดอัด ต้องตัดสินใจระหว่างคนสนับสนุนกับคู่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดัน, The Tower = ระเบิด",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ครอบครัวหวง",
+            "court_cards": "Queen of Swords กลับหัว = คนที่สาม"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวภายนอกรัก คือ 'คนไม่สนับสนุนรัก'",
+          "advice_th": "ปกป้องความสัมพันธ์ ตั้งขีดจำกัดกับคนรอบข้าง คุยกับคู่ให้เป็นทีมเดียวกัน",
+          "keywords_th": ["ไม่สนับสนุน", "แรงกดดัน", "ปกป้องรัก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เพื่อนร่วมงานขัดแย้งหรือตลาดไม่ดี",
+          "detailed_interpretation_th": "ในงาน-เงิน อาจมีเพื่อนร่วมงานที่ขัดแย้ง หัวหน้าที่ไม่สนับสนุน ลูกค้าที่ลด ตลาดที่ลำบาก ต้องทำงานหนักหรือเปลี่ยนสภาพแวดล้อม",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, Justice = ไม่ยุติธรรม",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = ทรยศ",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King กลับหัว = หัวหน้าไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวภายนอกงาน-เงิน คือ 'สภาพแวดล้อมงานไม่ดี'",
+          "advice_th": "ประเมินสภาพแวดล้อม - ถ้าเป็นพิษและไม่เปลี่ยนได้ วางแผนหางานใหม่ ชีวิตคุณสำคัญกว่าทนคนแย่",
+          "keywords_th": ["สภาพแวดล้อมพิษ", "หางานใหม่", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "คนรอบข้างไม่เข้าใจการเติบโตหรือดึงคุณกลับ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คนรอบข้างอาจไม่เข้าใจการเปลี่ยนแปลงของคุณ ดึงคุณกลับสู่ที่เดิม คุณต้องเลือกระหว่างเติบโตหรือทำตามที่คุ้นเคย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความคาดหวัง, The Hermit = อยู่คนเดียว",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ฝึกตัว",
+            "court_cards": "Page กลับหัว = คนรอบไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวภายนอกจิตวิญญาณ คือ 'คนรอบข้างดึงกลับ'",
+          "advice_th": "หาเพื่อนใหม่ที่เข้าใจการเติบโต อยู่กับคนที่เก่งกว่าและสนับสนุน วงเพื่อนกำหนดชีวิต",
+          "keywords_th": ["คนดึงกลับ", "เปลี่ยนวง", "เพื่อนใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สภาพแวดล้อมที่ทำลายสุขภาพ - ครอบครัว เพื่อน",
+          "detailed_interpretation_th": "ในสุขภาพ สภาพแวดล้อมไม่เอื้อ - ครอบครัวที่กินไม่ดี เพื่อนชวนดื่ม คู่ที่ไม่สนับสนุน คุณต้องเลือกหรือเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = สุขภาพพัง",
+            "wands": "Knight of Wands กลับหัว = ตามแรง",
+            "cups": "Three of Cups กลับหัว = สังสรรค์ทำลาย",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวภายนอกสุขภาพ คือ 'สภาพแวดล้อมไม่เอื้อ'",
+          "advice_th": "เปลี่ยนสภาพแวดล้อม - กลุ่มเพื่อนใหม่ อาหารที่บ้าน คุยกับคู่เรื่องสุขภาพ",
+          "keywords_th": ["สภาพแวดล้อมไม่ดี", "เปลี่ยน", "ตัดสินใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes",
+      "position_name_th": "ความหวัง",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังบรรลุชัยชนะใหญ่และเป็นผู้ขับชีวิตของตัวเอง",
+          "detailed_interpretation_th": "รถม้าหัวตั้งในความหวัง สะท้อนความปรารถนา - หวังบรรลุเป้าหมายใหญ่ ควบคุมชีวิต ประสบความสำเร็จที่จับต้องได้ คุณต้องการชัยชนะ ความหวังนี้สูงและเป็นจริงได้",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Sun = ความสุข",
+            "wands": "Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าความหวัง คือ 'ชัยชนะใหญ่'",
+          "advice_th": "เก็บความหวังนี้ ใช้เป็นพลังขับเคลื่อน ตั้งเป้าหมายและทำ",
+          "keywords_th": ["ชัยชนะใหญ่", "บรรลุ", "ผู้ขับ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังคู่ที่กระตือรือร้นและสร้างชีวิตด้วยกัน",
+          "detailed_interpretation_th": "ในรัก ความหวังคือคู่ที่กระตือรือร้น มีเป้าหมาย พร้อมเดินหน้า สร้างชีวิตด้วยกัน ไม่ใช่แค่อยู่ด้วยกัน ความหวังนี้เป็นจริงได้",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ครอบครัว, The Lovers = ตัดสินใจ",
+            "wands": "Knight of Wands = คู่กระตือรือร้น",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่งคั่ง",
+            "court_cards": "Knight of Cups = คนรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าความหวังรัก คือ 'คู่ที่ขับเคลื่อนด้วยกัน'",
+          "advice_th": "หาคู่ที่มีพลังและเป้าหมายตรงกัน หรือสร้างเป้าหมายร่วมกับคู่ปัจจุบัน",
+          "keywords_th": ["คู่กระตือรือร้น", "ทีม", "สร้างชีวิต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังความสำเร็จใหญ่ในอาชีพและอิสรภาพการเงิน",
+          "detailed_interpretation_th": "ในงาน-เงิน ความหวังคือการเป็นผู้นำ มีธุรกิจของตัวเอง อิสรภาพการเงิน ความมั่งคั่งระดับสูง คุณต้องการชัยชนะใหญ่ในการเงิน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The World = บรรลุ",
+            "wands": "King of Wands = CEO",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าความหวังงาน-เงิน คือ 'อิสรภาพการเงิน'",
+          "advice_th": "ตั้งเป้าหมายการเงินที่ชัด - อิสรภาพในปีไหน ตัวเลขเท่าไร วางแผน ทำงาน ชัยชนะเป็นไปได้",
+          "keywords_th": ["อิสรภาพการเงิน", "ผู้นำ", "ความสำเร็จใหญ่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเป็นผู้ที่ควบคุมตัวเองและบรรลุเป้าหมาย",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความหวังคือการเป็น master ของตัวเอง ควบคุมพลัง วินัย ความคิด อารมณ์ ใช้พลังในการสร้างชีวิต ความหวังนี้สำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังภายใน, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = สมดุล",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = mastery",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าความหวังจิตวิญญาณ คือ 'master ตัวเอง'",
+          "advice_th": "ฝึก self-mastery ทุกวัน - วินัย สมาธิ การจัดการอารมณ์ การควบคุมพฤติกรรม คุณคู่ควรกับการเป็น master",
+          "keywords_th": ["master ตัว", "ควบคุม", "บรรลุ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังร่างกายแข็งแกร่งและสมรรถภาพสูง",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือร่างกายแข็งแกร่ง สมรรถภาพสูง พลังงานเต็ม คุณอยากเป็นนักกีฬาในแบบของตัวเอง อายุยืน ความหวังเป็นจริงได้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, Strength = พลัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "King of Pentacles = สุขภาพระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าความหวังสุขภาพ คือ 'แข็งแกร่ง + สมรรถภาพสูง'",
+          "advice_th": "ตั้งเป้าหมายสุขภาพที่ชัด - วิ่ง 10K ลด 10 กิโล ฝึกตามแผน คุณทำได้",
+          "keywords_th": ["แข็งแกร่ง", "สมรรถภาพ", "เป้าหมาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวว่าจะไม่บรรลุหรือไม่กล้าตั้งเป้าใหญ่",
+          "detailed_interpretation_th": "รถม้ากลับหัวในความหวัง บ่งบอกว่ามีความกลัวซ่อน - กลัวล้มเหลว กลัวเสียการควบคุม กลัวว่าตัวเองไม่กล้าพอ ความกลัวทำให้ไม่ตั้งเป้าใหญ่ ต้องทำงานกับใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่กล้า",
+            "swords": "Eight of Swords = ขัง, Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Page กลับหัว = ไม่กล้าโต"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวความหวัง คือ 'กลัวความใหญ่'",
+          "advice_th": "ตั้งเป้าเล็กที่ทำได้ก่อน ค่อยๆ เพิ่มขนาด การสำเร็จเล็กๆ สร้างความเชื่อมั่นสำหรับการสำเร็จใหญ่",
+          "keywords_th": ["กลัวล้มเหลว", "ไม่กล้าใหญ่", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวความสัมพันธ์ที่จริงจังหรือไม่ก้าวต่อ",
+          "detailed_interpretation_th": "ในรัก ความกลัวการก้าวต่อ - กลัวแต่งงาน กลัวมีลูก กลัวพันธะ ทำให้ติดในความสัมพันธ์ที่ไม่ไปไหน ต้องเอาชนะความกลัว",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Devil = ติดในความกลัว",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่กล้า",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = ป้องกันใจ",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวความหวังรัก คือ 'กลัวพันธะ'",
+          "advice_th": "ระบุความกลัวเฉพาะ - กลัวอะไรในการแต่งงาน/มีลูก? ทำงานกับความกลัวทีละข้อ ความรักคุ้มค่ากับความเสี่ยง",
+          "keywords_th": ["กลัวพันธะ", "ไม่ก้าวต่อ", "เอาชนะ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ไม่กล้าตั้งเป้าใหญ่ในการเงินเพราะกลัวล้มเหลว",
+          "detailed_interpretation_th": "ในงาน-เงิน ความกลัวการล้มเหลวขัดขวางการตั้งเป้าใหญ่ คุณตั้งเป้าเล็ก เพราะกลัวฝัน ความเชื่อ 'ฉันไม่สามารถสำเร็จใหญ่' ขังคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = กลัวเสีย",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวความหวังงาน-เงิน คือ 'imposter syndrome'",
+          "advice_th": "อ่านชีวประวัติคนที่เริ่มจากศูนย์และสำเร็จ - หลักฐานว่าเป็นไปได้ ตั้งเป้าใหญ่ ไม่ต้องรู้ทุกขั้นแต่เริ่มก้าวแรก",
+          "keywords_th": ["imposter syndrome", "ไม่กล้าใหญ่", "เริ่มก้าวแรก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่เชื่อว่าจะบรรลุเป้าหมายการเติบโตได้",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ไม่เชื่อว่าจะเปลี่ยนตัวเองได้ ความเชื่อ 'ฉันเป็นแบบนี้ตลอด' ขังการเติบโต ทุกคนเปลี่ยนได้ ต้องเชื่อก่อนถึงจะเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่กล้า",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวความหวังจิตวิญญาณ คือ 'เชื่อก่อนเปลี่ยน'",
+          "advice_th": "เริ่มจากการเชื่อว่าเปลี่ยนได้ อ่านเรื่องคนเปลี่ยนชีวิตจากศูนย์ ลองทำสิ่งเล็กที่ไม่เคยทำ พิสูจน์ว่าเปลี่ยนได้",
+          "keywords_th": ["ไม่เชื่อเปลี่ยน", "growth mindset", "พิสูจน์"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวว่าจะไม่สามารถมีสุขภาพดีได้",
+          "detailed_interpretation_th": "ในสุขภาพ ความเชื่อ 'ฉันแก่เกินไป' 'พันธุกรรมแย่' 'ไม่มีเวลา' ขัดขวางการเริ่ม ทุกคนเปลี่ยนร่างกายได้ในทุกวัย ต้องเชื่อก่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ลวงตา, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวความหวังสุขภาพ คือ 'ร่างกายเปลี่ยนได้ทุกวัย'",
+          "advice_th": "หาเรื่องคนวัยเดียวกันฟื้นฟูสุขภาพ - หลักฐานว่าเป็นไปได้ เริ่มเล็ก ค่อยๆ ก้าว 90 วันจะเห็นผล",
+          "keywords_th": ["เชื่อว่าเป็นไปได้", "เริ่มเล็ก", "ทุกวัย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือชัยชนะใหญ่และความสำเร็จที่จับต้องได้",
+          "detailed_interpretation_th": "รถม้าหัวตั้งในผลลัพธ์ บ่งบอกว่าถ้าดำเนินต่อ ผลลัพธ์คือชัยชนะ ความสำเร็จในเป้าหมายที่ตั้งไว้ การก้าวขึ้นในชีวิต ทุกความพยายามจะให้ผล",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Sun = สำเร็จ, The Star = สมหวัง",
+            "wands": "Six of Wands = ชัยชนะ, Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าผลลัพธ์ คือ 'ชัยชนะ'",
+          "advice_th": "ดำเนินต่อด้วยความมุ่งมั่น ชัยชนะใกล้ ไม่หยุดก่อนถึงเส้นชัย",
+          "keywords_th": ["ชัยชนะ", "สำเร็จ", "บรรลุ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความสัมพันธ์ที่ก้าวหน้าและสร้างครอบครัว",
+          "detailed_interpretation_th": "ในรัก ถ้าดำเนินต่อ ความสัมพันธ์จะก้าวหน้า - แต่งงาน ย้ายมาอยู่ด้วยกัน มีลูก สำหรับคนโสด จะพบคู่ที่กระตือรือร้น ผลลัพธ์งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัวสมบูรณ์",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าผลลัพธ์รัก คือ 'รักก้าวหน้า'",
+          "advice_th": "ลงทุนในความสัมพันธ์ต่อ ก้าวต่อด้วยความมุ่งมั่น ผลลัพธ์คือครอบครัวที่อบอุ่น",
+          "keywords_th": ["รักก้าวหน้า", "ครอบครัว", "สำเร็จ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือการเลื่อนตำแหน่ง รายได้สูง และอาณาจักรธุรกิจ",
+          "detailed_interpretation_th": "เส้นทางนี้นำไปสู่ความสำเร็จในงาน - เลื่อนตำแหน่ง รายได้สูง ธุรกิจขยาย ความมั่งคั่งระดับสูง ทุกความพยายามให้ผลตอบแทน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The World = บรรลุ, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ, Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง, Ten of Pentacles = อาณาจักร",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าผลลัพธ์งาน-เงิน คือ 'รุ่งเรืองใหญ่'",
+          "advice_th": "ดำเนินทำงานหนักต่อ ใช้พลังเต็มที่ ความสำเร็จที่รอคุ้มค่า",
+          "keywords_th": ["เลื่อนตำแหน่ง", "รายได้สูง", "อาณาจักร"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการเป็น master ของตัวเองและบรรลุเป้าหมาย",
+          "detailed_interpretation_th": "เส้นทางจิตวิญญาณนี้นำไปสู่การเป็น master ของตัวเอง คุณจะควบคุมพลังตัวเอง บรรลุเป้าหมาย เป็นแบบอย่างให้คนอื่น ผลลัพธ์คือชีวิตที่กำหนดเอง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลัง, The Magician = ทักษะ, The World = บรรลุ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าผลลัพธ์จิตวิญญาณ คือ 'mastery'",
+          "advice_th": "ดำเนินวินัยและการพัฒนาตัวเองต่อ คุณจะกลายเป็นคนที่ใฝ่ฝัน",
+          "keywords_th": ["master", "บรรลุ", "ชีวิตกำหนด"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือร่างกายแข็งแกร่งและสมรรถภาพสูง",
+          "detailed_interpretation_th": "ในสุขภาพ เส้นทางนี้นำไปสู่ร่างกายแข็งแกร่ง สมรรถภาพสูง พลังงานเต็ม คุณจะเป็นนักกีฬาในแบบของตัวเอง อายุยืนอย่างมีคุณภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, Strength = พลัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "King of Pentacles = สุขภาพระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้าผลลัพธ์สุขภาพ คือ 'แข็งแกร่งสูงสุด'",
+          "advice_th": "ดำเนินกิจวัตรสุขภาพต่อ ผลลัพธ์ในระยะยาวคือร่างกายที่อยากได้",
+          "keywords_th": ["แข็งแกร่ง", "สมรรถภาพสูง", "อายุยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "พ่ายแพ้หรือเสียการควบคุมถ้าไม่เปลี่ยน",
+          "detailed_interpretation_th": "รถม้ากลับหัวในผลลัพธ์ เตือนว่าถ้ายังคงทำในแบบเดิม - เร่งเกิน ไม่มีโฟกัส ไปคนละทิศ - ผลลัพธ์คือความพ่ายแพ้ การเสียการควบคุม ยังมีเวลาเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวผลลัพธ์ คือ 'เปลี่ยนก่อนพ่ายแพ้'",
+          "advice_th": "ประเมินทิศทาง - กำลังไปไหน? เป้าหมายของฉันจริงไหม? วิธีของฉันใช่ไหม? ปรับก่อนสาย",
+          "keywords_th": ["พ่ายแพ้", "เสียควบคุม", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะจบหรือเสียคู่ถ้าไม่เปลี่ยน",
+          "detailed_interpretation_th": "ในรัก ถ้ายังคงเร่งคู่ ควบคุม หรือไม่ตัดสินใจ ผลลัพธ์คือการเลิกรา การสูญเสียคู่ที่ดี ต้องเปลี่ยนวิธี",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = สัมพันธ์ทำลาย",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ, Eight of Cups = ออกจาก",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = คนรักจาก"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวผลลัพธ์รัก คือ 'อย่าเสียคู่'",
+          "advice_th": "คุยกับคู่ตรงๆ ปรับวิธีในความสัมพันธ์ ผ่อนคลายการกดดัน ความรักต้องการความใจเย็น",
+          "keywords_th": ["เสียคู่", "เปลี่ยนวิธี", "ผ่อนคลาย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "โครงการพังหรือ burnout ถ้าไม่ปรับ",
+          "detailed_interpretation_th": "ในงาน-เงิน ผลลัพธ์ไม่ดีถ้ายังคงเร่งหรือไม่โฟกัส โครงการอาจพัง การลงทุนล้มเหลว burnout จากการทำงานหนัก ต้องปรับวิธี",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ธุรกิจพัง, The Devil = burnout",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "Knight of Wands กลับหัว = หักโหม"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวผลลัพธ์งาน-เงิน คือ 'อย่าพังไปกับงาน'",
+          "advice_th": "ปรับสมดุล - ทำงานฉลาดกว่าหนัก โฟกัสที่สำคัญ ปล่อยที่ไม่จำเป็น พักผ่อน ก่อน burnout",
+          "keywords_th": ["burnout", "โครงการพัง", "ปรับสมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่บรรลุเป้าเพราะเริ่มไม่จบและขาดวินัย",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ถ้ายังคงเริ่มแล้วเลิก ขาดวินัย กระจัดกระจาย ผลลัพธ์คือความไม่ก้าวหน้า ความเสียใจที่ไม่ทำเต็มที่ ต้องทุ่มเทกับเป้าหมายเดียว",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่ก้าวหน้า",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่จริงจัง",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวผลลัพธ์จิตวิญญาณ คือ 'ทุ่มเทเป้าเดียว'",
+          "advice_th": "เลือกเป้าหมายเดียวและทุ่มเท 90 วัน อย่าเริ่มอันใหม่จนกว่าจะจบ การโฟกัสคือพลัง",
+          "keywords_th": ["ไม่บรรลุ", "ทุ่มเทเป้าเดียว", "โฟกัส"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายพังจากการหักโหมหรือบาดเจ็บ",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์ที่ไม่ดีถ้ายังคงหักโหม - ออกกำลังกายหนักเกิน diet เข้มงวด ฝืนความเหนื่อย ร่างกายจะพ่ายแพ้ บาดเจ็บ หรืออาการเรื้อรัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในการฝืน",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ, Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ทำลายตัว",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: รถม้ากลับหัวผลลัพธ์สุขภาพ คือ 'อย่าหักโหม'",
+          "advice_th": "ปรับวิธีดูแลสุขภาพ - มีวันพัก ลดความเข้มงวด ฟังร่างกาย ยั่งยืนสำคัญกว่ารวดเร็ว",
+          "keywords_th": ["ร่างกายพัง", "หักโหม", "ปรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    }
+  }
+}

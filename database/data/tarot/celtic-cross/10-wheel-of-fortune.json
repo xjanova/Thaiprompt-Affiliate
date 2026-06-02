@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "Wheel of Fortune",
+    "name_th": "กงล้อแห่งโชค",
+    "number": 10,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ชีวิตกำลังเปลี่ยนแปลงและโชคชะตาเข้าข้าง",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน กงล้อแห่งโชคหัวตั้งบ่งบอกถึงช่วงเวลาที่ชีวิตกำลังหมุน การเปลี่ยนแปลงครั้งใหญ่กำลังเกิดขึ้น โชคเข้าข้าง สถานการณ์ดีขึ้น โอกาสใหม่เปิด สิ่งที่รอมานานกำลังมาถึง คุณอยู่ในจังหวะที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = โชคดี, The World = บรรลุ, The Star = ความหวัง",
+            "wands": "Ace of Wands = เริ่มใหม่, Three of Wands = ขยาย",
+            "cups": "Ace of Cups = อารมณ์ดี, Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = โอกาสใหม่",
+            "pentacles": "Ace of Pentacles = โชคทางเงิน, Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "Knight of Wands = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อในปัจจุบัน คือ 'โชคเข้าข้าง'",
+          "advice_th": "ใช้โอกาสนี้ - ลงทุน เริ่มสิ่งใหม่ ขยาย จังหวะดี อย่าพลาด",
+          "keywords_th": ["โชคดี", "เปลี่ยนแปลง", "โอกาสใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์เปลี่ยนแปลงไปในทางที่ดี",
+          "detailed_interpretation_th": "ในรักปัจจุบัน คุณอยู่ในช่วงเปลี่ยนแปลงในทางที่ดี - คนโสดจะพบคนใหม่ คนมีคู่จะก้าวสู่ระดับใหม่ การพลิกผันในความรักนำมาซึ่งสิ่งดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = รักงอกงาม",
+            "wands": "Knight of Wands = คนรัก",
+            "cups": "Ace of Cups = ความรักใหม่",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Knight of Cups = คู่ใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อในปัจจุบันรัก คือ 'การเปลี่ยนที่ดี'",
+          "advice_th": "เปิดใจรับการเปลี่ยนแปลง โอกาสในรักกำลังมา ไม่ปฏิเสธ",
+          "keywords_th": ["รักเปลี่ยน", "โอกาสใหม่", "ดีขึ้น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "การเงินและงานเข้าสู่ช่วงโชคดี",
+          "detailed_interpretation_th": "ในงาน-เงิน คุณอยู่ในช่วงโชคดี - โอกาสใหม่ การเลื่อนตำแหน่ง รายได้เพิ่ม การลงทุนให้ผล ใช้โอกาสนี้ให้คุ้ม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The Magician = ทักษะ",
+            "wands": "Three of Wands = ขยาย, Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ace of Pentacles = โชคทางเงิน, Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ความมั่งคั่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อในปัจจุบันงาน-เงิน คือ 'โชคทางการเงิน'",
+          "advice_th": "ใช้โอกาส - ลงทุน เริ่มธุรกิจ ขอเลื่อนตำแหน่ง จังหวะดีจะมาไม่บ่อย",
+          "keywords_th": ["โชคทางเงิน", "โอกาส", "ใช้จังหวะ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เข้าสู่ช่วงเปลี่ยนแปลงทางจิตวิญญาณ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณอยู่ในช่วงเปลี่ยนแปลง - มุมมองใหม่ ปัญญาใหม่ การเข้าใจชีวิตในมิติใหม่ จักรวาลกำลังจัดสิ่งให้คุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = แรงบันดาลใจ, Judgement = ตื่นรู้",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Page of Pentacles = เรียนใหม่",
+            "court_cards": "Page ทุกชุด = นักเรียนใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อในปัจจุบันจิตวิญญาณ คือ 'การเปลี่ยนแปลงทางจิต'",
+          "advice_th": "เปิดใจรับการเปลี่ยนแปลง สิ่งที่จักรวาลส่งมาคือบทเรียนที่จำเป็น",
+          "keywords_th": ["เปลี่ยนแปลง", "มุมมองใหม่", "ตื่นรู้"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพเปลี่ยนแปลงในทางที่ดี",
+          "detailed_interpretation_th": "ในสุขภาพ คุณอยู่ในช่วงเปลี่ยนแปลงในทางที่ดี - ฟื้นฟูจากอาการเก่า เริ่มกิจวัตรใหม่ที่ทำให้ดีขึ้น โชคทางสุขภาพ ใช้จังหวะดูแลตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อในปัจจุบันสุขภาพ คือ 'ดีขึ้น'",
+          "advice_th": "เริ่มกิจวัตรใหม่ - ออกกำลังกาย กินดี ตรวจสุขภาพ จังหวะดีอำนวย",
+          "keywords_th": ["สุขภาพดีขึ้น", "เปลี่ยนแปลง", "ฟื้นฟู"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "โชคไม่ดีหรือชีวิตติดอยู่กับที่",
+          "detailed_interpretation_th": "กงล้อกลับหัวในปัจจุบัน บ่งบอกถึงช่วงที่โชคไม่ดี ชีวิตชะลอ ติดอยู่กับที่ สิ่งที่หวังไม่เกิดขึ้น ต้องอดทนและปรับตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Hanged Man = ติด",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หยุดนิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวในปัจจุบัน คือ 'โชคไม่ดี ต้องอดทน'",
+          "advice_th": "อย่าเร่ง อย่าตัดสินใจสำคัญในช่วงนี้ รอจังหวะดี ใช้เวลาเตรียมตัว",
+          "keywords_th": ["โชคไม่ดี", "ชะลอ", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ติดอยู่หรือเปลี่ยนแปลงไม่ดี",
+          "detailed_interpretation_th": "ในรัก กงล้อกลับหัวเตือนว่าความสัมพันธ์ติดอยู่ ไม่ก้าวหน้า หรือมีการเปลี่ยนแปลงที่ไม่ดี ต้องอดทนหรือปรับตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวรัก คือ 'รักติดอยู่'",
+          "advice_th": "ไม่บีบความสัมพันธ์ รอจังหวะดี หรือปรับวิธีเข้าหาคู่",
+          "keywords_th": ["รักติด", "ไม่ก้าวหน้า", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "การเงินตกหรือโอกาสในงานน้อย",
+          "detailed_interpretation_th": "ในงาน-เงิน ระวังการสูญเสีย โครงการชะงัก ลูกค้าหาย รายได้ลด ต้องระมัดระวัง ไม่ลงทุนใหญ่ในช่วงนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ธุรกิจพัง, The Devil = ติด",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด, Five of Wands = ขัดแย้ง",
+            "court_cards": "King of Pentacles กลับหัว = ลงทุนผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวงาน-เงิน คือ 'ระวังการสูญเสีย'",
+          "advice_th": "ระมัดระวังการใช้จ่าย ไม่ลงทุนใหญ่ เก็บเงินสำรอง รอจังหวะดี",
+          "keywords_th": ["การเงินตก", "ระวัง", "รอ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดอยู่กับรูปแบบเก่าที่ไม่ก้าวหน้า",
+          "detailed_interpretation_th": "ในจิตวิญญาณ การเติบโตชะลอ ติดอยู่กับรูปแบบเก่า ความคิดเก่า ไม่ก้าวหน้า ต้องเปลี่ยนวิธี",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในกรอบ",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวจิตวิญญาณ คือ 'เปลี่ยนวิธี'",
+          "advice_th": "ทบทวนวิธีการเติบโต - ครู เทคนิค กิจวัตร อาจต้องเปลี่ยนเพื่อก้าวต่อ",
+          "keywords_th": ["ติดอยู่", "ไม่ก้าวหน้า", "เปลี่ยนวิธี"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อาการสุขภาพกลับมาหรือเปลี่ยนไม่ดี",
+          "detailed_interpretation_th": "ในสุขภาพ อาการเก่าอาจกลับมา หรือสุขภาพเปลี่ยนแปลงในทางที่ไม่ดี ต้องระมัดระวัง ไปหาหมอ ดูแลตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = สุขภาพพัง, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวสุขภาพ คือ 'อาการกลับ'",
+          "advice_th": "ระวังอาการกลับมา ไปตรวจสุขภาพ ดูแลตัวเองเป็นพิเศษในช่วงนี้",
+          "keywords_th": ["อาการกลับ", "ระวัง", "ดูแล"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การเปลี่ยนแปลงที่รวดเร็วทำให้ปรับตัวยาก",
+          "detailed_interpretation_th": "ในตำแหน่งอุปสรรค กงล้อ (ตีความตั้งตรงเสมอ) บ่งบอกว่าความท้าทายคือการเปลี่ยนแปลงที่รวดเร็ว ทุกอย่างเปลี่ยน ปรับตัวไม่ทัน ต้องฝึกการยืดหยุ่น",
+          "adjacent_influences": {
+            "major_arcana": "Death = การเปลี่ยน, The Tower = วิกฤต",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Six of Swords = ก้าวไปข้างหน้า",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight ทุกชุด = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อในอุปสรรค คือ 'ฝึกการยืดหยุ่น'",
+          "advice_th": "ฝึกการปรับตัว ยอมรับการเปลี่ยนแปลง ความยืดหยุ่นคือทักษะ",
+          "keywords_th": ["เปลี่ยนเร็ว", "ปรับตัว", "ยืดหยุ่น"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์อยู่ในช่วงเปลี่ยนผ่าน",
+          "detailed_interpretation_th": "อุปสรรคในรักคือการเปลี่ยนแปลงในความสัมพันธ์ - คู่เปลี่ยนงาน ย้ายบ้าน มีลูก อาจทำให้คู่ปรับตัวต่างกัน ต้องสื่อสาร",
+          "adjacent_influences": {
+            "major_arcana": "Death = การเปลี่ยน, The Tower = ระเบิด",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Cups = อารมณ์เปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออุปสรรครัก คือ 'ปรับตัวร่วม'",
+          "advice_th": "คุยกับคู่บ่อยๆ ในช่วงเปลี่ยน สื่อสารคือกุญแจ ทั้งคู่ต้องปรับตัวด้วยกัน",
+          "keywords_th": ["รักเปลี่ยน", "ปรับตัว", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตลาดเปลี่ยนเร็วและต้องอัพเดทตัวเอง",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือตลาดที่เปลี่ยนเร็ว - เทคโนโลยีใหม่ ทักษะใหม่ที่ต้องการ ต้องเรียนรู้ตลอดเวลาเพื่อตามทัน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะใหม่, The Hierophant = เรียน",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Page of Cups = เรียน",
+            "swords": "Page of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ฝึก",
+            "court_cards": "Page ทุกชุด = นักเรียน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออุปสรรคงาน-เงิน คือ 'เรียนรู้ตลอด'",
+          "advice_th": "ลงทุนการเรียนรู้ทักษะใหม่ - AI, เทคโนโลยี ความรู้ใหม่ทำให้แข่งขันได้",
+          "keywords_th": ["ตลาดเปลี่ยน", "เรียนรู้", "อัพเดท"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความไม่แน่นอนของชีวิตทำให้กังวล",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการยอมรับว่าชีวิตไม่แน่นอน - ทุกอย่างเปลี่ยนได้ ไม่มีอะไรถาวร ความไม่แน่นอนคือธรรมชาติ ต้องเรียนรู้",
+          "adjacent_influences": {
+            "major_arcana": "Death = ยอมรับการเปลี่ยน, The Hanged Man = พิจารณา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Two of Swords = ยอมรับ",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Queen of Cups = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออุปสรรคจิตวิญญาณ คือ 'ยอมรับความไม่แน่นอน'",
+          "advice_th": "ฝึกการอยู่กับปัจจุบัน ปล่อยวางการพยายามควบคุมทุกอย่าง ความไม่แน่นอนคือชีวิต",
+          "keywords_th": ["ไม่แน่นอน", "ยอมรับ", "ปล่อยวาง"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพขึ้นลงตามช่วงต่างๆ ของชีวิต",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคือการที่ร่างกายเปลี่ยนตามวัย ตามฤดู ตามสถานการณ์ ต้องปรับการดูแลตามสิ่งที่ร่างกายต้องการ ไม่ใช่สูตรเดียวกันตลอด",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Cups ข้างเคียง = อารมณ์",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออุปสรรคสุขภาพ คือ 'ปรับตามวัย'",
+          "advice_th": "ฟังร่างกายในแต่ละช่วง วัย 20 ไม่เหมือนวัย 40 ปรับวิธีดูแลให้เหมาะ",
+          "keywords_th": ["ปรับตามวัย", "ขึ้นลง", "ฟังร่างกาย"],
+          "intensity_level": 2,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ติดอยู่กับการเสียดายอดีตและกลัวอนาคต",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือการติดอยู่ - เสียดายอดีต กลัวอนาคต ไม่อยู่กับปัจจุบัน ทำให้พลาดโอกาส",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในอดีต",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียดาย, Six of Cups = อดีต",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติด",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'อยู่กับปัจจุบัน'",
+          "advice_th": "ฝึกอยู่กับปัจจุบัน อดีตเป็นบทเรียน อนาคตเป็นแผน ปัจจุบันคือชีวิต",
+          "keywords_th": ["ติดอดีต", "กลัวอนาคต", "ปัจจุบัน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ติดอยู่กับรักเก่าหรือกลัวเริ่มความสัมพันธ์ใหม่",
+          "detailed_interpretation_th": "ในรัก อุปสรรคคือการติดอยู่กับอดีต - คนรักเก่า ความเสียใจเก่า ความกลัวรักครั้งใหม่ ต้องปล่อยวางและเปิดใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ติดในอดีต, The Devil = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียดาย, Six of Cups = ติดอดีต",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ปิดใจ",
+            "court_cards": "Queen of Cups กลับหัว = อารมณ์ติด"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'ปล่อยอดีต'",
+          "advice_th": "ทำพิธีปล่อยวางรักเก่า - เผาจดหมาย ขอบคุณ ปล่อย เปิดใจรับรักใหม่",
+          "keywords_th": ["ติดรักเก่า", "ปล่อยวาง", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ติดอยู่ในงานเก่าและกลัวเปลี่ยน",
+          "detailed_interpretation_th": "ในงาน-เงิน อุปสรรคคือติดในงานเก่า กลัวเปลี่ยน กลัวความไม่แน่นอน ทำให้พลาดโอกาสใหม่ที่ดีกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man = ติดในการรอ",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'ยอมรับการเปลี่ยน'",
+          "advice_th": "วางแผนเปลี่ยนงานอย่างฉลาด - emergency fund ทักษะใหม่ การกลัวเปลี่ยนทำให้ติดในที่ที่ไม่ใช่",
+          "keywords_th": ["ติดงานเก่า", "กลัวเปลี่ยน", "ยอมรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดอยู่กับตัวตนเก่าและไม่ยอมเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการติดอยู่กับตัวตนเก่า ความเชื่อเก่า รูปแบบเก่า ไม่ยอมเปลี่ยน การเติบโตต้องการการเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ไม่ยอมรับการเปลี่ยน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในกรอบ",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'ปล่อยตัวตนเก่า'",
+          "advice_th": "ยอมรับว่าคุณเปลี่ยนได้ ตัวตนเก่าไม่ใช่ถาวร เปิดใจสู่ตัวตนใหม่",
+          "keywords_th": ["ติดตัวตนเก่า", "ไม่โต", "ปล่อย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ติดอยู่กับนิสัยสุขภาพเก่าที่ไม่เหมาะกับวัย",
+          "detailed_interpretation_th": "ในสุขภาพ อุปสรรคคือนิสัยที่เคยใช้ได้แต่ตอนนี้ไม่เหมาะ - กินเหมือนวัย 20 นอนน้อยเหมือนเดิม ร่างกายเปลี่ยน ต้องปรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ไม่ยอมรับวัย",
+            "wands": "Wands กลับหัว = พลังลด",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'ปรับตามวัย'",
+          "advice_th": "ปรับนิสัยสุขภาพให้เหมาะกับวัยปัจจุบัน นอนเร็วขึ้น กินเบาขึ้น ออกกำลังกายเหมาะกับร่างกาย",
+          "keywords_th": ["นิสัยเก่า", "ไม่เหมาะวัย", "ปรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เคยมีจุดเปลี่ยนสำคัญที่นำพาชีวิตมาถึงปัจจุบัน",
+          "detailed_interpretation_th": "กงล้อหัวตั้งในอดีต บ่งบอกถึงจุดเปลี่ยนสำคัญในอดีต - การตัดสินใจครั้งใหญ่ การพบคน เหตุการณ์ที่เปลี่ยนชีวิต ทุกอย่างที่เป็นอยู่ในปัจจุบันมาจากจุดนั้น",
+          "adjacent_influences": {
+            "major_arcana": "Death = การเปลี่ยน, The Sun = สำเร็จ",
+            "wands": "Three of Wands = ขยาย",
+            "cups": "Six of Cups = ความทรงจำ",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "Knight ทุกชุด = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อในอดีต คือ 'จุดเปลี่ยนชีวิต'",
+          "advice_th": "ระลึกจุดเปลี่ยนสำคัญในอดีต - ขอบคุณการตัดสินใจในตอนนั้น",
+          "keywords_th": ["จุดเปลี่ยน", "บทเรียน", "ขอบคุณ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีการเปลี่ยนแปลงใหญ่ในความรักที่เปลี่ยนชีวิต",
+          "detailed_interpretation_th": "ในรักอดีต เคยมีการเปลี่ยนแปลงสำคัญ - พบคู่ครั้งสำคัญ การแต่งงาน การเลิก ประสบการณ์เปลี่ยนวิธีรักของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, Death = เลิก",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate, Six of Cups = ความทรงจำ",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Knight of Cups = คนรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออดีตรัก คือ 'การเปลี่ยนแปลงสำคัญ'",
+          "advice_th": "ระลึกการเปลี่ยนแปลงในรักอดีต - สอนคุณอะไร? ใช้เป็นบทเรียน",
+          "keywords_th": ["เปลี่ยนแปลงรัก", "บทเรียน", "ความทรงจำ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยมีโอกาสหรือจุดเปลี่ยนสำคัญในอาชีพ",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต เคยมีจุดเปลี่ยน - ได้งานใหม่ เลื่อนตำแหน่ง เริ่มธุรกิจ การลงทุนใหญ่ การตัดสินใจนั้นนำมาถึงปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Chariot = ก้าวหน้า",
+            "wands": "Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เงินก้อนใหม่",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออดีตงาน-เงิน คือ 'จุดเปลี่ยนอาชีพ'",
+          "advice_th": "ระลึกการตัดสินใจสำคัญในงานอดีต - ทำได้อย่างไร? ใช้สูตรเดิม",
+          "keywords_th": ["จุดเปลี่ยนงาน", "โอกาสเก่า", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยมีประสบการณ์ที่เปลี่ยนมุมมองชีวิต",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต มีประสบการณ์ที่เปลี่ยนมุมมอง - วิกฤต การสูญเสีย การพบครู ประสบการณ์ตื่นรู้ ปัญญาที่ได้ยังอยู่",
+          "adjacent_influences": {
+            "major_arcana": "Death = การเปลี่ยน, The Star = แสง",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King of Swords = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออดีตจิตวิญญาณ คือ 'จุดเปลี่ยนทางใจ'",
+          "advice_th": "ใช้ปัญญาจากจุดเปลี่ยนในอดีตเป็นรากฐาน บทเรียนเหล่านั้นยังใช้ได้",
+          "keywords_th": ["จุดเปลี่ยน", "ปัญญา", "ตื่นรู้"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีการเปลี่ยนแปลงสุขภาพที่นำมาถึงปัจจุบัน",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยมีจุดเปลี่ยน - ป่วยและฟื้นฟู เริ่มออกกำลังกาย เลิกนิสัยไม่ดี ประสบการณ์นี้สร้างความรู้เรื่องสุขภาพในตัวคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Death = เปลี่ยนนิสัย",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออดีตสุขภาพ คือ 'ฟื้นฟูได้แล้ว'",
+          "advice_th": "ระลึกการฟื้นฟูในอดีต - ทำได้อย่างไร? ใช้สูตรเดิมในปัจจุบัน",
+          "keywords_th": ["ฟื้นฟูเก่า", "บทเรียน", "ทำได้อีก"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยพลาดโอกาสสำคัญหรือเสียโชค",
+          "detailed_interpretation_th": "กงล้อกลับหัวในอดีต บ่งบอกถึงโอกาสที่พลาด การตัดสินใจผิดที่นำมาถึงปัจจุบัน บทเรียนที่ต้องเรียนรู้ ไม่ใช่กรง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Hanged Man = ติด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "Knight of Wands กลับหัว = หุนหันเก่า"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวอดีต คือ 'บทเรียนจากความผิดพลาด'",
+          "advice_th": "ใช้ความเสียดายเป็นบทเรียน ไม่ใช่กรง เรียนรู้และก้าวต่อ",
+          "keywords_th": ["พลาดโอกาส", "เสียดาย", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยพลาดความรักที่ดีหรือเลือกผิดคน",
+          "detailed_interpretation_th": "ในรักอดีต เคยพลาดคนที่ดี หรือเลือกคนผิด ความเสียดายยังอยู่ ใช้เป็นบทเรียนในการเลือกในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจผิด, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Cups กลับหัว = ผิดคน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวอดีตรัก คือ 'บทเรียนจากความเสียดาย'",
+          "advice_th": "ใช้บทเรียนจากความรักอดีต - คราวนี้เลือกฉลาดกว่าเดิม",
+          "keywords_th": ["พลาดรัก", "เลือกผิด", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยลงทุนผิดหรือพลาดโอกาสในงาน",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต เคยลงทุนผิด พลาดโอกาสสำคัญ ตัดสินใจอาชีพผิด ใช้บทเรียนในการตัดสินใจปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ธุรกิจพัง, The Devil = ติดในความเสียใจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "King of Pentacles กลับหัว = ลงทุนผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวอดีตงาน-เงิน คือ 'บทเรียนการเงิน'",
+          "advice_th": "ใช้บทเรียนความล้มเหลวเก่า - คราวนี้วิเคราะห์ก่อนลงทุน",
+          "keywords_th": ["ลงทุนผิดเก่า", "บทเรียน", "ฉลาดกว่า"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยติดอยู่กับช่วงเวลายากนาน",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต เคยติดอยู่กับช่วงยาก - วิกฤตทางอารมณ์ การสูญเสีย ความซึมเศร้านาน ตอนนี้ผ่านมาแล้ว ใช้ปัญญาที่ได้",
+          "adjacent_influences": {
+            "major_arcana": "Death = เปลี่ยนแล้ว, The Tower = วิกฤตเก่า",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวลเก่า",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Swords กลับหัว = ติดอยู่"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวอดีตจิตวิญญาณ คือ 'รอดจากความยาก'",
+          "advice_th": "ขอบคุณตัวเองที่ผ่านช่วงยากมาได้ ปัญญาที่ได้จากความเจ็บปวดมีค่า",
+          "keywords_th": ["ผ่านความยาก", "ปัญญา", "รอด"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีปัญหาสุขภาพที่ยังส่งผลถึงปัจจุบัน",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยมีปัญหาที่ส่งผลถึงปัจจุบัน - บาดเจ็บเรื้อรัง โรคที่ไม่หาย นิสัยที่ทำลาย ต้องจัดการในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในนิสัย",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวอดีตสุขภาพ คือ 'แก้ผลกระทบ'",
+          "advice_th": "ตรวจสุขภาพแก้ผลกระทบจากอดีต รักษาให้ถึงต้นเหตุ ไม่ใช่ปลายเหตุ",
+          "keywords_th": ["ปัญหาเก่า", "ผลกระทบ", "รักษา"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การเปลี่ยนแปลงครั้งใหญ่ที่นำมาซึ่งโชคดีในอนาคต",
+          "detailed_interpretation_th": "กงล้อหัวตั้งในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า จะมีการเปลี่ยนแปลงสำคัญที่นำมาซึ่งโชคดี - โอกาสใหม่ การพลิกผัน สิ่งที่รอจะมาถึง เตรียมพร้อมรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, The World = บรรลุ, The Star = ความหวัง",
+            "wands": "Three of Wands = ขยาย, Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = โอกาสใหม่",
+            "pentacles": "Ace of Pentacles = เงินก้อนใหม่, Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "Knight of Wands = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออนาคต คือ 'โชคดีกำลังมา'",
+          "advice_th": "เตรียมพร้อมรับโอกาส - ทักษะใหม่ การลงทุน เครือข่าย จังหวะดีกำลังมา",
+          "keywords_th": ["โชคดี", "โอกาส", "พลิกผัน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ในรักจะมีการเปลี่ยนแปลงที่ดีในอนาคต",
+          "detailed_interpretation_th": "ในรักอนาคต จะมีการเปลี่ยนแปลงดี - คนโสดจะพบคนที่ใช่ คนมีคู่จะก้าวสู่ระดับใหม่ การพลิกผันนำมาซึ่งสิ่งดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = คนรัก",
+            "cups": "Ace of Cups = ความรักใหม่, Two of Cups = soul mate",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Knight of Cups = คนรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออนาคตรัก คือ 'รักจะมา'",
+          "advice_th": "เปิดใจรับรักใหม่ การเปลี่ยนแปลงในรักนำมาซึ่งสิ่งดี",
+          "keywords_th": ["รักใหม่", "เปลี่ยนแปลงดี", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสทางการเงินและอาชีพใหม่จะมา",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต จะมีโอกาสใหม่ - งานใหม่ การเลื่อนตำแหน่ง การลงทุนที่ให้ผล รายได้เพิ่ม การพลิกผันที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The Magician = ทักษะ",
+            "wands": "Three of Wands = ขยาย, Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ace of Pentacles = เงินก้อนใหม่",
+            "court_cards": "King of Pentacles = ความมั่งคั่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออนาคตงาน-เงิน คือ 'โอกาสใหญ่จะมา'",
+          "advice_th": "เตรียมตัวรับโอกาส - อัพเดท CV เรียนทักษะใหม่ networking เปิดทาง",
+          "keywords_th": ["โอกาสใหม่", "ก้าวหน้า", "รายได้เพิ่ม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การตื่นรู้ทางจิตวิญญาณกำลังจะเกิด",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต จะมีการตื่นรู้สำคัญ - เข้าใจชีวิตในมิติใหม่ พบครู มีประสบการณ์ที่เปลี่ยนมุมมอง เตรียมตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Star = บรรลุ, Judgement = ตื่นรู้",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Page of Pentacles = เรียน",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออนาคตจิตวิญญาณ คือ 'ตื่นรู้ใหม่'",
+          "advice_th": "เปิดใจรับการเปลี่ยนแปลงทางจิตวิญญาณ ฝึกสมาธิเตรียมตัว",
+          "keywords_th": ["ตื่นรู้", "ปัญญาใหม่", "เปลี่ยนแปลง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะดีขึ้นและฟื้นฟูได้",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ร่างกายจะดีขึ้น - ฟื้นฟูจากอาการเก่า เริ่มกิจวัตรใหม่ที่ให้ผล โชคทางสุขภาพ ใช้จังหวะ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มกิจวัตร",
+            "court_cards": "King of Pentacles = สุขภาพดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้ออนาคตสุขภาพ คือ 'ดีขึ้น'",
+          "advice_th": "เริ่มกิจวัตรสุขภาพใหม่ตอนนี้ โชคจะอำนวยให้ดีขึ้นในอนาคต",
+          "keywords_th": ["สุขภาพดีขึ้น", "ฟื้นฟู", "พลังกลับ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ช่วงเวลายากในอนาคต - ต้องเตรียมพร้อม",
+          "detailed_interpretation_th": "กงล้อกลับหัวในอนาคต เตือนถึงช่วงเวลายากที่จะมา - การสูญเสีย วิกฤต ความท้าทาย ต้องเตรียมพร้อม เก็บเงินสำรอง รักษาสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, Death = การจบ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวอนาคต คือ 'เตรียมพร้อมรับช่วงยาก'",
+          "advice_th": "เก็บเงินสำรอง 6-12 เดือน ดูแลสุขภาพ สร้างเครือข่าย เตรียมความพร้อม",
+          "keywords_th": ["ช่วงยาก", "เตรียมพร้อม", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์อาจมีอุปสรรคในอนาคต",
+          "detailed_interpretation_th": "ในรักอนาคต ระวังการเปลี่ยนแปลงไม่ดี - การทะเลาะ การห่างเหิน คนที่สาม ต้องดูแลและสื่อสาร",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Moon = สับสน",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวอนาคตรัก คือ 'ปกป้องความสัมพันธ์'",
+          "advice_th": "ลงทุนเวลาใหญ่กับคู่ คุยปัญหา ปกป้องความสัมพันธ์จากแรงกดดันภายนอก",
+          "keywords_th": ["อุปสรรครัก", "ปกป้อง", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อาจมีการสูญเสียงานหรือเงินในอนาคต",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต ระวังการสูญเสีย - ตำแหน่งหาย ลูกค้าหาย การลงทุนพัง เตรียมแผนสำรอง อย่าเสี่ยงใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ธุรกิจพัง, The Devil = ติดในงาน",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Pentacles กลับหัว = ชะลอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวอนาคตงาน-เงิน คือ 'เก็บเงินสำรอง'",
+          "advice_th": "เก็บ emergency fund 6-12 เดือน อัพเดททักษะ สร้างเครือข่าย เตรียมแผนสำรอง",
+          "keywords_th": ["สูญเสีย", "เตรียมพร้อม", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การติดในรูปแบบเก่าจะทำให้ติดอยู่",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ถ้ายังคงในรูปแบบเก่า การเติบโตจะหยุด คุณต้องเปลี่ยนวิธี ครู กลุ่ม เพื่อก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวอนาคตจิตวิญญาณ คือ 'ต้องเปลี่ยนวิธี'",
+          "advice_th": "ทบทวนวิธีการเติบโต - ครู เทคนิค อาจต้องเปลี่ยนเพื่อก้าวต่อ",
+          "keywords_th": ["ติดอยู่", "เปลี่ยนวิธี", "ก้าวต่อ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อาการสุขภาพอาจกลับมาหรือแย่ลง",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ระวังอาการกลับ - บาดเจ็บเก่ากลับมา ความเครียดส่งผล ฮอร์โมนผิด ต้องดูแลและตรวจสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = สุขภาพพัง, The Devil = ติดในนิสัย",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวอนาคตสุขภาพ คือ 'ดูแลตอนนี้'",
+          "advice_th": "เริ่มดูแลสุขภาพอย่างจริงจัง - ตรวจสุขภาพ ลดความเครียด ออกกำลังกาย ก่อนอาการกลับ",
+          "keywords_th": ["อาการกลับ", "ระวัง", "ดูแลเดี๋ยวนี้"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังมีโชคและความสำเร็จจากการเปลี่ยนแปลงครั้งใหญ่",
+          "detailed_interpretation_th": "กงล้อหัวตั้งในเป้าหมาย สะท้อนความปรารถนา - ต้องการเห็นชีวิตเปลี่ยนแปลงในทางที่ดี โชคดี ความสำเร็จที่จับต้องได้ ปัจจัยภายนอกเข้าข้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, The World = บรรลุ",
+            "wands": "Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อเป้าหมาย คือ 'โชคและการเปลี่ยนแปลงที่ดี'",
+          "advice_th": "ทำงานเตรียมตัวสำหรับโอกาส - ทักษะ ความสัมพันธ์ การเงิน โชคชอบคนที่พร้อม",
+          "keywords_th": ["โชคดี", "เปลี่ยนแปลงดี", "ความสำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังพบรักผ่านการพลิกผันของชีวิต",
+          "detailed_interpretation_th": "ในรัก ความหวังคือพบรักผ่านการเปลี่ยนแปลงในชีวิต - ย้ายงาน เปลี่ยนเมือง พบคนใหม่ จักรวาลจัดให้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Star = ความหวัง",
+            "wands": "Knight of Wands = คนรัก",
+            "cups": "Two of Cups = soul mate",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Knight of Cups = คู่ใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อเป้าหมายรัก คือ 'รักผ่านการพลิกผัน'",
+          "advice_th": "เปิดใจรับการเปลี่ยนแปลง ทำตัวเองพร้อมรับรัก คนที่ใช่อาจมาในวันที่ไม่คาดคิด",
+          "keywords_th": ["รักใหม่", "พลิกผัน", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการรวยจากโอกาสและจังหวะที่ดี",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายคือรวยจากโอกาส - การลงทุนที่พลิกผัน ธุรกิจที่บูม การได้ตำแหน่งจากจังหวะดี โชคและความพร้อมมาด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Sun = รุ่งเรือง",
+            "wands": "Three of Wands = ขยาย, Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง, Ten of Pentacles = อาณาจักร",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อเป้าหมายงาน-เงิน คือ 'โชค + ความพร้อม'",
+          "advice_th": "พัฒนาทักษะ สร้างเครือข่าย เก็บเงิน เมื่อโอกาสมา คุณพร้อมจับ",
+          "keywords_th": ["โชค", "ความมั่งคั่ง", "พร้อมรับ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเข้าใจวงจรชีวิตและยอมรับการเปลี่ยนแปลง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายคือเข้าใจวงจรชีวิต - ขึ้นลง เกิดดับ ทุกอย่างเปลี่ยน การยอมรับนี้คือปัญญา",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Hermit = ค้นหา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = mastery",
+            "court_cards": "King ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อเป้าหมายจิตวิญญาณ คือ 'เข้าใจวงจร'",
+          "advice_th": "ศึกษาวงจรชีวิต - ความไม่แน่นอน การเปลี่ยน ความเกิดดับ ปัญญานี้ทำให้สงบ",
+          "keywords_th": ["เข้าใจวงจร", "ยอมรับ", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังร่างกายที่ปรับตามวัยได้ดี",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือร่างกายที่ปรับตามวัยได้ดี ดูแลเหมาะกับช่วงชีวิต ไม่ฝืนวัย ไม่หักโหม สมดุล",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อเป้าหมายสุขภาพ คือ 'ปรับตามวัย'",
+          "advice_th": "ดูแลตัวเองให้เหมาะกับวัย - ปรับอาหาร การออกกำลังกาย เมื่ออายุเพิ่ม วิธีต้องปรับ",
+          "keywords_th": ["ปรับตามวัย", "สมดุล", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หวังโชคโดยไม่ลงมือทำ",
+          "detailed_interpretation_th": "กงล้อกลับหัวในเป้าหมาย บ่งบอกถึงการรอโชคโดยไม่ทำอะไร อยากให้สิ่งดีมาเอง ไม่ฝึกตัวเอง การรอเฉยๆ ไม่นำมาซึ่งผล",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในการรอ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวเป้าหมาย คือ 'ลงมือทำ ไม่รอโชค'",
+          "advice_th": "หยุดรอโชค ลงมือทำ โชคชอบคนที่พร้อมและทำงานหนัก",
+          "keywords_th": ["รอโชค", "ไม่ทำ", "ลงมือ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รอรักมาเองโดยไม่เปิดตัว",
+          "detailed_interpretation_th": "ในรัก หวังรักมาเองโดยไม่ทำอะไร - ไม่ออกไปเจอคน ไม่เปิดแอป ไม่บอกครอบครัวว่าหาคู่ ความรักต้องการการลงมือ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ปิดใจ",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวเป้าหมายรัก คือ 'รักต้องการการลงมือ'",
+          "advice_th": "ออกไปเจอคน เปิดแอป บอกเพื่อนว่าหาคู่ ความรักไม่มาเองถ้าคุณซ่อนตัว",
+          "keywords_th": ["รอรัก", "ไม่ลงมือ", "เปิดตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังรวยจากโชคเดียวโดยไม่ทำงาน",
+          "detailed_interpretation_th": "ในงาน-เงิน หวังรวยจากหวย แชร์ลูกโซ่ คริปโต โดยไม่พัฒนาตัวเอง โชครวยมาเร็วไปเร็ว ความมั่งคั่งที่ยั่งยืนต้องการการทำงาน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Seven of Cups = ฝันลวง",
+            "swords": "Seven of Swords = ถูกหลอก",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวเป้าหมายงาน-เงิน คือ 'รวยจากการทำงาน'",
+          "advice_th": "หยุดรอโชครวย ทำงานหนัก ลงทุนระยะยาว ความมั่งคั่งสร้างจากการทำ ไม่ใช่จากการเสี่ยง",
+          "keywords_th": ["รอโชครวย", "ลวง", "ทำงานจริง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังตื่นรู้โดยไม่ฝึกปฏิบัติ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ หวังตื่นรู้มาเองโดยไม่ฝึก - อ่านหนังสือคิดว่าจะรู้แจ้ง ไปสัมนาคิดว่าจะเปลี่ยน การตื่นรู้สร้างจากการฝึก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการรอ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวเป้าหมายจิตวิญญาณ คือ 'ฝึกปฏิบัติ'",
+          "advice_th": "หยุดรอประสบการณ์ตื่นรู้ ฝึกปฏิบัติทุกวัน การตื่นรู้คือผลของการฝึก",
+          "keywords_th": ["รอตื่นรู้", "ไม่ฝึก", "ปฏิบัติ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพดีโดยไม่ดูแล",
+          "detailed_interpretation_th": "ในสุขภาพ หวังร่างกายแข็งแรงโดยไม่ทำอะไร - ไม่ออกกำลังกาย ไม่กินดี แต่หวังสุขภาพดี ร่างกายต้องการการดูแล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวเป้าหมายสุขภาพ คือ 'ดูแลคือลงทุน'",
+          "advice_th": "เริ่มดูแลตัวเองวันนี้ สุขภาพดีไม่มาเองโดยไม่ทำอะไร",
+          "keywords_th": ["รอสุขภาพ", "ไม่ดูแล", "เริ่ม"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความเชื่อว่าชีวิตจะเปลี่ยนแปลงในทางที่ดีฝังในแกน",
+          "detailed_interpretation_th": "กงล้อหัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีความเชื่อว่าชีวิตจะดีขึ้น โอกาสจะมา การพลิกผันคือธรรมชาติของชีวิต ความเชื่อนี้คือพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The Sun = สดใส",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อรากฐาน คือ 'เชื่อว่าจะดีขึ้น'",
+          "advice_th": "ใช้ความเชื่อในการดึงดูดโอกาส มองโลกในแง่บวก ทำงานหนักด้วยความหวัง",
+          "keywords_th": ["เชื่อในโชค", "หวัง", "พลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เชื่อในความรักและการเปลี่ยนแปลงในชีวิตคู่",
+          "detailed_interpretation_th": "ในรัก รากฐานคือความเชื่อว่ารักจริงมีอยู่ การเปลี่ยนแปลงคู่ทำให้ดีขึ้นได้ ความเชื่อนี้ทำให้คุณเปิดใจรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Star = ความหวัง",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Cups = คนรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อรากฐานรัก คือ 'เชื่อในรัก'",
+          "advice_th": "ใช้ความเชื่อนี้เปิดใจรับรัก ความเชื่อในความรักดึงดูดความรัก",
+          "keywords_th": ["เชื่อในรัก", "เปิดใจ", "ดึงดูด"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความสามารถจับโอกาสเป็นรากความสำเร็จ",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือความสามารถจับโอกาส คุณมีสัญชาตญาณที่ดี เห็นโอกาสที่คนอื่นไม่เห็น ใช้พลังนี้สร้างความมั่งคั่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Sun = สำเร็จ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อรากฐานงาน-เงิน คือ 'จับโอกาสเก่ง'",
+          "advice_th": "ใช้สัญชาตญาณจับโอกาสในงาน - networking อัพเดทตลาด เก็งทิศทาง คุณมีพรสวรรค์",
+          "keywords_th": ["จับโอกาส", "สัญชาตญาณ", "ความมั่งคั่ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เข้าใจวงจรชีวิตและการเปลี่ยนแปลงในตัว",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือความเข้าใจว่าทุกอย่างเปลี่ยน - ขึ้นลง เกิดดับ ความเข้าใจนี้ทำให้ใจสงบในช่วงท้าทาย",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, Temperance = สมดุล",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อรากฐานจิตวิญญาณ คือ 'เข้าใจวงจร'",
+          "advice_th": "ใช้ความเข้าใจวงจรชีวิต - ช่วงดีไม่อยู่ตลอด ช่วงยากไม่อยู่ตลอด สงบในทุกช่วง",
+          "keywords_th": ["เข้าใจวงจร", "ปัญญา", "สงบ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายปรับตัวเข้ากับการเปลี่ยนแปลงได้ดี",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือความสามารถปรับตัว ร่างกายฟื้นฟูเร็ว ภูมิคุ้มกันดี ใช้พรสวรรค์นี้สร้างสุขภาพยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "King of Pentacles = ร่างกายแกร่ง",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อรากฐานสุขภาพ คือ 'ปรับตัวเก่ง'",
+          "advice_th": "ใช้พรสวรรค์การปรับตัว - ฟังร่างกายในแต่ละช่วง ปรับการดูแลตามวัย",
+          "keywords_th": ["ปรับตัว", "ฟื้นฟูเร็ว", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความเชื่อว่าโชคไม่ดีหรือชีวิตเป็นเหยื่อ",
+          "detailed_interpretation_th": "กงล้อกลับหัวในรากฐาน บ่งบอกถึงความเชื่อว่าตัวเองโชคไม่ดี เป็นเหยื่อของชะตา ไม่มีอำนาจในชีวิต ความเชื่อนี้สร้างความจริงนั้น",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวรากฐาน คือ 'เปลี่ยนความเชื่อ'",
+          "advice_th": "เปลี่ยนความเชื่อว่าคุณเป็นเหยื่อ คุณมีอำนาจสร้างชีวิต โชคไม่ใช่ทุกอย่าง",
+          "keywords_th": ["โชคไม่ดี", "เหยื่อ", "เปลี่ยนความเชื่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เชื่อว่าไม่คู่ควรกับความรักที่ดี",
+          "detailed_interpretation_th": "ในรัก รากฐานคือความเชื่อ 'ฉันไม่คู่ควร' 'รักที่ดีสำหรับคนอื่น' ความเชื่อนี้สร้างผลลัพธ์ ดึงดูดความสัมพันธ์ที่ไม่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Queen of Swords กลับหัว = ขมขื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวรากฐานรัก คือ 'คุณคู่ควร'",
+          "advice_th": "ทำงานกับความเชื่อ 'ฉันคู่ควรกับรักที่ดี' ทำซ้ำทุกวัน เปลี่ยนความเชื่อเปลี่ยนผลลัพธ์",
+          "keywords_th": ["ไม่คู่ควร", "ความเชื่อจำกัด", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เชื่อว่าตัวเองไม่มีโอกาสรวย",
+          "detailed_interpretation_th": "ในงาน-เงิน ความเชื่อ 'ฉันไม่มีโอกาสรวย' 'คนแบบฉันไม่สำเร็จ' ขัดขวางการเติบโต ความเชื่อสร้างผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นโอกาส",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวรากฐานงาน-เงิน คือ 'money mindset'",
+          "advice_th": "อ่านเรื่อง money mindset เปลี่ยนความเชื่อว่าตัวเองสร้างความมั่งคั่งได้",
+          "keywords_th": ["ไม่มีโอกาส", "money mindset", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในความคิดว่าทุกอย่างซ้ำรอยเดิม",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือความเชื่อว่าทุกอย่างซ้ำรอย ไม่มีอะไรเปลี่ยนได้ คุณติดในวงจร ต้องเปลี่ยนความเชื่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวรากฐานจิตวิญญาณ คือ 'เปลี่ยนได้'",
+          "advice_th": "ทำสิ่งใหม่ทุกวัน - กินอาหารใหม่ ทางใหม่ ฝึกใหม่ พิสูจน์ว่าเปลี่ยนได้",
+          "keywords_th": ["ติดในวงจร", "ซ้ำรอย", "เปลี่ยนได้"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เชื่อว่าร่างกายไม่ฟื้นฟูได้",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือความเชื่อ 'พันธุกรรมแย่' 'ฉันเป็นแบบนี้ตลอด' ขัดขวางการดูแลตัวเอง ร่างกายเปลี่ยนได้",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ลวงตา, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวรากฐานสุขภาพ คือ 'ร่างกายเปลี่ยนได้'",
+          "advice_th": "หาตัวอย่างคนที่ฟื้นฟูร่างกายในวัยเดียวกัน หลักฐานว่าเป็นไปได้",
+          "keywords_th": ["ไม่ฟื้นฟู", "ความเชื่อผิด", "เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ยอมรับการเปลี่ยนแปลงและจับโอกาสที่มา",
+          "detailed_interpretation_th": "คำแนะนำจากกงล้อหัวตั้ง: ยอมรับการเปลี่ยนแปลง อย่าต่อต้าน เปิดใจรับโอกาส โชคชอบคนที่พร้อมและยืดหยุ่น",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มใหม่, The Magician = ทักษะ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight ทุกชุด = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อคำแนะนำ คือ 'ยืดหยุ่นและจับโอกาส'",
+          "advice_th": "พูด 'ใช่' กับโอกาสที่มา - งานใหม่ การเดินทาง คนใหม่ การเปิดใจคือกุญแจ",
+          "keywords_th": ["ยอมรับ", "จับโอกาส", "ยืดหยุ่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เปิดใจรับการเปลี่ยนแปลงในความรัก",
+          "detailed_interpretation_th": "คำแนะนำในรัก: เปิดใจรับการเปลี่ยนแปลง ไม่ติดในรูปแบบเก่า ถ้าคู่เสนอย้ายบ้าน เปลี่ยนงาน ปรับวิถี เปิดใจคุย",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = รัก",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Ace of Cups = เปิดใจ",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Cups = ตามใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อคำแนะนำในรัก คือ 'เปิดใจรับเปลี่ยน'",
+          "advice_th": "ยอมรับว่าคู่และความสัมพันธ์จะเปลี่ยน คุยและปรับตัวด้วยกัน",
+          "keywords_th": ["เปิดใจ", "ยอมรับเปลี่ยน", "คุย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ลงทุนในโอกาสที่มาและขยายธุรกิจ",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ลงทุนในโอกาสที่มา - งานใหม่ ลงทุนใหม่ ขยายธุรกิจ จังหวะดี อย่าพลาด แต่ทำการบ้านก่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Sun = สำเร็จ",
+            "wands": "Three of Wands = ขยาย, Ace of Wands = พลัง",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ace of Pentacles = โอกาสเงิน",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อคำแนะนำงาน-เงิน คือ 'จับโอกาส'",
+          "advice_th": "เปิดใจรับโอกาส แต่ตรวจสอบก่อนลงทุน โอกาสดีไม่หายไปถ้าคุณคิดก่อนทำ",
+          "keywords_th": ["ลงทุนโอกาส", "ขยาย", "ตรวจสอบ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ยอมรับการเปลี่ยนแปลงและปล่อยวางสิ่งที่ผ่าน",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ยอมรับว่าทุกอย่างเปลี่ยน ปล่อยวางสิ่งที่ผ่าน เปิดใจรับสิ่งใหม่ การยึดติดคือความทุกข์",
+          "adjacent_influences": {
+            "major_arcana": "Death = การเปลี่ยน, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Six of Swords = ก้าวไป",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อคำแนะนำการเติบโต คือ 'ยอมรับเปลี่ยน'",
+          "advice_th": "ฝึกปล่อยวาง - อดีต ความสัมพันธ์ที่ไม่ดี งานที่ไม่ใช่ การปล่อยทำให้พื้นที่สำหรับสิ่งใหม่",
+          "keywords_th": ["ยอมรับ", "ปล่อยวาง", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ปรับวิถีดูแลสุขภาพตามที่ร่างกายต้องการ",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ปรับวิถีดูแลตามที่ร่างกายต้องการในแต่ละช่วง ไม่ฝืนสูตรเดียวกันตลอด ฟังร่างกายและยืดหยุ่น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = ฟังร่างกาย",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อคำแนะนำสุขภาพ คือ 'ปรับตามต้องการ'",
+          "advice_th": "ลองสิ่งใหม่ - อาหาร การออกกำลังกาย กิจวัตร ดูว่าเหมาะกับร่างกายไหม ปรับตามผล",
+          "keywords_th": ["ปรับตัว", "ฟังร่างกาย", "ยืดหยุ่น"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รับผิดชอบกับชีวิตเอง ไม่โทษโชค",
+          "detailed_interpretation_th": "คำแนะนำกงล้อกลับหัว: ถ้ารู้สึกว่าโชคไม่ดี หยุดโทษ รับผิดชอบกับชีวิตเอง คุณคือผู้สร้าง ไม่ใช่เหยื่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = อำนาจ",
+            "wands": "Ace of Wands = พลัง",
+            "cups": "Ace of Cups = เปลี่ยนทัศนคติ",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ace of Pentacles = ลงมือ",
+            "court_cards": "King ทุกชุด = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวคำแนะนำ คือ 'รับผิดชอบเอง'",
+          "advice_th": "หยุดโทษโชค คนอื่น สถานการณ์ คุณคือผู้สร้างชีวิต ทุกการตัดสินใจของคุณกำหนดผลลัพธ์",
+          "keywords_th": ["รับผิดชอบ", "ไม่เป็นเหยื่อ", "สร้างชีวิต"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หยุดโทษคู่และทำงานกับตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำในรัก: หยุดโทษคู่หรือโชคที่ไม่ดีในรัก รับผิดชอบกับส่วนของตัวเอง คุณมีส่วนในผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = รักตัว",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Ace of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวคำแนะนำในรัก คือ 'รับผิดชอบส่วนของตัว'",
+          "advice_th": "ถามตัวเอง 'ฉันมีส่วนในผลลัพธ์นี้ยังไง?' การรับผิดชอบส่วนของตัวคือพลัง",
+          "keywords_th": ["รับผิดชอบ", "ไม่โทษคู่", "ทำงานกับตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หยุดรอโชคและลงมือทำอย่างฉลาด",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: หยุดรอโชครวย ลงทุนแบบ get-rich-quick ทำงานหนักและฉลาด ความมั่งคั่งสร้างจากการทำ ไม่ใช่จากการเสี่ยง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = วินัย",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวคำแนะนำงาน-เงิน คือ 'ทำงานคือทาง'",
+          "advice_th": "หยุดรอ ลงมือทำ - ทักษะใหม่ networking ลงทุนระยะยาว ความมั่งคั่งสร้างจากการทำซ้ำๆ",
+          "keywords_th": ["ลงมือทำ", "ไม่รอโชค", "ทำงานหนัก"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รับผิดชอบกับการเติบโตตัวเอง ไม่รอแรงบันดาลใจ",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: หยุดรอแรงบันดาลใจหรือครูที่ใช่ ลงมือฝึกตอนนี้ การเติบโตคือความรับผิดชอบของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Hermit = ฝึก",
+            "wands": "Knight of Wands = ลงมือ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวคำแนะนำการเติบโต คือ 'รับผิดชอบเอง'",
+          "advice_th": "ตื่นมาฝึกทุกวัน ไม่รอแรงบันดาลใจ ไม่รอวันที่พร้อม ลงมือทำเดี๋ยวนี้",
+          "keywords_th": ["รับผิดชอบ", "ลงมือ", "ไม่รอ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รับผิดชอบกับสุขภาพและสร้างกิจวัตรของตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: หยุดรอ trainer ที่สมบูรณ์แบบ diet ที่ใช่ ลงมือดูแลตัวเองด้วยสิ่งที่มี การรับผิดชอบกับสุขภาพคือพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, Strength = พลัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวคำแนะนำสุขภาพ คือ 'รับผิดชอบสุขภาพ'",
+          "advice_th": "เริ่มดูแลตัวเองด้วยสิ่งที่มีตอนนี้ - เดิน ดื่มน้ำ นอนเร็ว ไม่ต้องรอ perfect plan",
+          "keywords_th": ["รับผิดชอบ", "เริ่มเดี๋ยวนี้", "ดูแลตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมและสังคมเอื้อต่อการเปลี่ยนแปลงดี",
+          "detailed_interpretation_th": "กงล้อหัวตั้งในภายนอก บ่งบอกว่าสภาพแวดล้อมเอื้อต่อการเปลี่ยนแปลง - ตลาดดี เครือข่ายช่วย โอกาสมา ใช้ปัจจัยภายนอกให้คุ้ม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, The Magician = ทักษะ",
+            "wands": "Three of Wands = ขยาย, Six of Wands = ชัยชนะ",
+            "cups": "Three of Cups = สังคม",
+            "swords": "Ace of Swords = โอกาส",
+            "pentacles": "Ace of Pentacles = เงินก้อน",
+            "court_cards": "Knight of Wands = พลัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อภายนอก คือ 'สภาพแวดล้อมเอื้อ'",
+          "advice_th": "ใช้พลังของสภาพแวดล้อม - networking ลงทุนเมื่อตลาดดี เริ่มสิ่งใหม่",
+          "keywords_th": ["สภาพแวดล้อมดี", "โอกาส", "ใช้จังหวะ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างพาให้พบรักหรือสร้างโอกาสในรัก",
+          "detailed_interpretation_th": "ในรัก คนรอบข้างช่วยให้พบรัก - เพื่อนแนะนำ ครอบครัวพาเจอ event ในวงสังคม เปิดตัวกับสังคม",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ครอบครัว, The Lovers = ตัดสินใจ",
+            "wands": "Knight of Wands = คนรัก",
+            "cups": "Three of Cups = สังคม, Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Knight of Cups = คู่ใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อภายนอกรัก คือ 'รักผ่านสังคม'",
+          "advice_th": "เปิดตัวกับสังคม - บอกเพื่อน ไปงาน เพิ่มกิจกรรม คนที่ใช่อยู่ในวงสังคม",
+          "keywords_th": ["รักผ่านสังคม", "เปิดตัว", "โอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตลาดและเครือข่ายเอื้อต่อความสำเร็จ",
+          "detailed_interpretation_th": "ในงาน-เงิน ปัจจัยภายนอกเอื้อ - ตลาดบูม ลูกค้ามา เครือข่ายช่วย โอกาสมาจากคนรู้จัก ใช้จังหวะนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The Magician = ทักษะ",
+            "wands": "Three of Wands = ขยาย, Six of Wands = ชัยชนะ",
+            "cups": "Three of Cups = ทีม",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "Three of Pentacles = ทีม, Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อภายนอกงาน-เงิน คือ 'จังหวะเศรษฐกิจ'",
+          "advice_th": "ใช้จังหวะตลาด - ลงทุนเมื่อบูม ขยายเมื่อโอกาสเปิด networking ตอนเครือข่ายสร้างง่าย",
+          "keywords_th": ["ตลาดดี", "เครือข่าย", "โอกาส"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ครูหรือเพื่อนช่วยให้เติบโตในช่วงเปลี่ยน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ มีครูหรือเพื่อนที่เข้ามาในช่วงเปลี่ยนสำคัญ ช่วยนำทาง ใช้พลังของพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ครูทางใจ",
+            "swords": "King of Swords = ครู",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อภายนอกจิตวิญญาณ คือ 'ครูมาในเวลาที่ใช่'",
+          "advice_th": "เปิดใจรับครูที่จะมา อาจในรูปแบบที่ไม่คาดคิด - คน หนังสือ ประสบการณ์",
+          "keywords_th": ["ครูจะมา", "เพื่อนช่วย", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมอหรือ trainer ที่ดีเข้ามาช่วยในช่วงเปลี่ยน",
+          "detailed_interpretation_th": "ในสุขภาพ มีผู้เชี่ยวชาญที่ดีเข้ามา - หมอที่ใช่ trainer ที่ติดตาม นักโภชนาการที่เข้าใจ ใช้ทีมสุขภาพช่วย",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Hierophant = ครู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Queen of Cups = ผู้ดูแล",
+            "swords": "King of Swords = หมอ",
+            "pentacles": "Knight of Pentacles = trainer",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อภายนอกสุขภาพ คือ 'ทีมสุขภาพดี'",
+          "advice_th": "หาทีมสุขภาพที่ติดตามได้ระยะยาว - หมอประจำ trainer นักโภชนาการ การลงทุนคุ้มค่า",
+          "keywords_th": ["หมอดี", "ทีมสุขภาพ", "ติดตาม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมไม่เอื้อหรือคนรอบข้างขัดขวาง",
+          "detailed_interpretation_th": "กงล้อกลับหัวในภายนอก เตือนว่าสภาพแวดล้อมไม่เอื้อ - ตลาดแย่ คนรอบข้างขัดขวาง ปัจจัยภายนอกไม่ดี ต้องทำงานหนักกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = สภาพแวดล้อมพิษ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวภายนอก คือ 'ทำงานหนักกว่าหรือเปลี่ยน'",
+          "advice_th": "ถ้าสภาพแวดล้อมไม่เอื้อ - เปลี่ยนหรือทำงานหนักกว่า อย่ายอม รักษาตัวเอง",
+          "keywords_th": ["สภาพแวดล้อมไม่ดี", "ขัดขวาง", "เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวหรือสังคมขัดขวางความรัก",
+          "detailed_interpretation_th": "ในรัก คนรอบข้างอาจไม่สนับสนุน - ครอบครัวไม่เห็นด้วย เพื่อนตัดสิน สังคมกดดัน ปกป้องความรักของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดัน, The Tower = ระเบิด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ครอบครัวหวง",
+            "court_cards": "King of Swords กลับหัว = คนตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวภายนอกรัก คือ 'ปกป้องรัก'",
+          "advice_th": "คุยกับคู่ให้เป็นทีมเดียวกัน ตั้งขีดจำกัดกับคนรอบข้าง ความรักของคุณคือของคุณ",
+          "keywords_th": ["ขัดขวางรัก", "ปกป้อง", "ทีมเดียว"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตลาดถดถอยหรือคู่แข่งมาก",
+          "detailed_interpretation_th": "ในงาน-เงิน ตลาดอาจถดถอย คู่แข่งเยอะ ลูกค้าลด ต้องปรับกลยุทธ์ ลดค่าใช้จ่าย เก็บเงินสำรอง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤตเศรษฐกิจ, The Devil = ติดในงาน",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King of Pentacles กลับหัว = ตลาดแย่"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวภายนอกงาน-เงิน คือ 'ปรับตัวรับวิกฤต'",
+          "advice_th": "ลดค่าใช้จ่าย เก็บเงินสำรอง พัฒนาทักษะใหม่ การเตรียมพร้อมรับวิกฤตคือฉลาด",
+          "keywords_th": ["ตลาดถดถอย", "เตรียมพร้อม", "ปรับตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "คนรอบข้างไม่เข้าใจการเติบโตและดึงกลับ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คนรอบข้างไม่เข้าใจการเปลี่ยนแปลง อาจดึงคุณกลับสู่ที่เดิม คุณต้องเลือกระหว่างเติบโตหรือทำตามที่คุ้นเคย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ดึงกลับ, The Hermit = อยู่คนเดียว",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ฝึกตัว",
+            "court_cards": "Page กลับหัว = คนรอบไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวภายนอกจิตวิญญาณ คือ 'เปลี่ยนวงเพื่อน'",
+          "advice_th": "หาเพื่อนใหม่ที่เข้าใจการเติบโต อยู่กับคนที่สนับสนุน วงเพื่อนกำหนดชีวิต",
+          "keywords_th": ["คนดึงกลับ", "เปลี่ยนวง", "เพื่อนใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สภาพแวดล้อมทำลายสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ สภาพแวดล้อมไม่เอื้อ - มลพิษ ความเครียดในที่ทำงาน คนรอบข้างกินไม่ดี อาจต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สภาพแวดล้อมพิษ, The Tower = สุขภาพพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = สังสรรค์ทำลาย",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวภายนอกสุขภาพ คือ 'เปลี่ยนสภาพแวดล้อม'",
+          "advice_th": "ประเมินสภาพแวดล้อม - บ้าน ที่ทำงาน คนรอบข้าง ถ้าเป็นพิษ เปลี่ยน",
+          "keywords_th": ["สภาพแวดล้อมพิษ", "เปลี่ยน", "ดูแลตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes",
+      "position_name_th": "ความหวัง",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังโชคและการเปลี่ยนแปลงที่ดีในชีวิต",
+          "detailed_interpretation_th": "กงล้อหัวตั้งในความหวัง สะท้อนความปรารถนา - หวังเห็นโชคเข้าข้าง การพลิกผันในทางที่ดี โอกาสใหม่ที่จะมา ความหวังนี้คือพลังขับเคลื่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The Sun = สดใส",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight of Wands = พลัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อความหวัง คือ 'โชคและการเปลี่ยนแปลงดี'",
+          "advice_th": "เก็บความหวังนี้ ทำงานเตรียมตัวรับโอกาส โชคชอบคนที่พร้อม",
+          "keywords_th": ["โชคดี", "เปลี่ยนดี", "โอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังพบรักใหม่หรือความสัมพันธ์เปลี่ยนไปในทางที่ดี",
+          "detailed_interpretation_th": "ในรัก ความหวังคือพบคนใหม่ผ่านการเปลี่ยนแปลง หรือความสัมพันธ์ปัจจุบันเปลี่ยนไปในทางดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Star = ความหวัง",
+            "wands": "Knight of Wands = คนรัก",
+            "cups": "Two of Cups = soul mate",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Knight of Cups = คู่ใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อความหวังรัก คือ 'รักจะมา'",
+          "advice_th": "เปิดใจรับการเปลี่ยนแปลงในรัก ทำตัวเองพร้อม คนที่ใช่จะมา",
+          "keywords_th": ["รักใหม่", "เปลี่ยนดี", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังโอกาสใหม่หรือความสำเร็จในอาชีพ",
+          "detailed_interpretation_th": "ในงาน-เงิน ความหวังคือโอกาสใหม่ - งาน ลงทุน ธุรกิจ ที่นำมาซึ่งความมั่งคั่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The Magician = ทักษะ",
+            "wands": "Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เงินก้อนใหม่",
+            "court_cards": "King of Pentacles = ความมั่งคั่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อความหวังงาน-เงิน คือ 'โอกาสใหญ่'",
+          "advice_th": "เตรียมตัวรับโอกาส - ทักษะ ทุน เครือข่าย ความหวังพร้อมความพร้อม",
+          "keywords_th": ["โอกาส", "ความมั่งคั่ง", "พร้อม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเข้าใจชีวิตและยอมรับการเปลี่ยนแปลง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความหวังคือเข้าใจวงจรชีวิต ยอมรับการเปลี่ยน สงบในทุกช่วง ปัญญานี้คือสิ่งที่หา",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The World = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อความหวังจิตวิญญาณ คือ 'เข้าใจวงจร'",
+          "advice_th": "ศึกษาวงจรชีวิต ฝึกการอยู่กับปัจจุบัน ปัญญานี้นำมาซึ่งความสงบ",
+          "keywords_th": ["เข้าใจ", "ยอมรับ", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังร่างกายที่ปรับตัวได้ดีกับวัย",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือร่างกายที่ปรับตัวเข้ากับวัย - แข็งแรง ฟื้นฟูดี ไม่ฝืนวัย สมดุล",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อความหวังสุขภาพ คือ 'ปรับตามวัย'",
+          "advice_th": "ดูแลสุขภาพให้เหมาะกับวัย ปรับวิธีตามเวลา อย่าฝืนสูตรเดียวกันตลอด",
+          "keywords_th": ["ปรับตามวัย", "สมดุล", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวการเปลี่ยนแปลงและความไม่แน่นอน",
+          "detailed_interpretation_th": "กงล้อกลับหัวในความหวัง บ่งบอกถึงความกลัวการเปลี่ยนแปลง ความไม่แน่นอน อยากให้ทุกอย่างคงที่ ความกลัวขังคุณจากการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Hanged Man = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ติด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวความหวัง คือ 'ยอมรับเปลี่ยน'",
+          "advice_th": "ฝึกยอมรับการเปลี่ยนแปลงในเรื่องเล็ก - กินอาหารใหม่ ทางใหม่ คนใหม่ ค่อยๆ ขยาย",
+          "keywords_th": ["กลัวเปลี่ยน", "ไม่แน่นอน", "ยอมรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวว่าความสัมพันธ์จะเปลี่ยนไปในทางที่ไม่ดี",
+          "detailed_interpretation_th": "ในรัก กลัวการเปลี่ยนแปลง - กลัวคู่เปลี่ยน กลัวเลิก กลัวรักหาย ความกลัวทำลายความรัก ต้องไว้ใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Devil = ติดในความกลัว",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวความหวังรัก คือ 'ไว้วางใจ'",
+          "advice_th": "ฝึกไว้วางใจในความสัมพันธ์ การกลัวเปลี่ยนทำลายปัจจุบัน อยู่กับวันนี้",
+          "keywords_th": ["กลัวเปลี่ยน", "ไว้วางใจ", "ปัจจุบัน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวการเสียงานหรือเสียเงิน",
+          "detailed_interpretation_th": "ในงาน-เงิน กลัวการเปลี่ยน - กลัวเสียงาน กลัวลงทุนผิด กลัวขาดทุน ความกลัวทำให้ไม่เสี่ยง ก็เลยไม่เติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นโอกาส",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวความหวังงาน-เงิน คือ 'risk calculated'",
+          "advice_th": "ความเสี่ยงที่คำนวณแล้วคือพลัง การไม่เสี่ยงเลยคือเสี่ยงไม่เติบโต ลงทุนอย่างฉลาด",
+          "keywords_th": ["กลัวเสี่ยง", "ไม่เติบโต", "calculated risk"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่เชื่อว่าจะเปลี่ยนแปลงได้",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความเชื่อ 'ฉันเป็นแบบนี้ตลอด' ขัดขวางการเติบโต ทุกคนเปลี่ยนได้ ต้องเชื่อก่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวความหวังจิตวิญญาณ คือ 'เชื่อว่าเปลี่ยนได้'",
+          "advice_th": "อ่านเรื่องคนเปลี่ยนชีวิตได้ - หลักฐานว่าทุกคนเปลี่ยนได้ในทุกวัย",
+          "keywords_th": ["ไม่เชื่อเปลี่ยน", "ความเชื่อจำกัด", "เปลี่ยนได้"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวว่าสุขภาพจะแย่ลงเมื่ออายุเพิ่ม",
+          "detailed_interpretation_th": "ในสุขภาพ กลัวการแก่ - กลัวอ่อนแอ กลัวป่วย กลัวเสียความหนุ่มสาว ความกลัวขังจากการดูแลตัวเองอย่างเหมาะ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวความหวังสุขภาพ คือ 'ยอมรับวัย'",
+          "advice_th": "ยอมรับการแก่เป็นธรรมชาติ ดูแลตัวเองให้เหมาะกับวัย แต่ละช่วงมีเสน่ห์ของตัวเอง",
+          "keywords_th": ["กลัวแก่", "ยอมรับวัย", "ดูแล"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการเปลี่ยนแปลงครั้งใหญ่ที่นำมาซึ่งโชคดี",
+          "detailed_interpretation_th": "กงล้อหัวตั้งในผลลัพธ์ บ่งบอกว่าถ้าดำเนินต่อ ผลลัพธ์คือการเปลี่ยนแปลงครั้งใหญ่ในทางที่ดี - โอกาสมาถึง โชคเข้าข้าง ชีวิตพลิกผันสู่สิ่งที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, The World = บรรลุ, The Star = ความหวังสมหวัง",
+            "wands": "Six of Wands = ชัยชนะ, Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = โอกาสใหม่",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อผลลัพธ์ คือ 'พลิกผันดี'",
+          "advice_th": "ดำเนินทำงานและเปิดใจรับ ผลลัพธ์คือชีวิตเปลี่ยนไปในทางที่ดี",
+          "keywords_th": ["พลิกผันดี", "โชค", "เปลี่ยนแปลง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือพบรักหรือความสัมพันธ์เปลี่ยนไปในทางที่ดี",
+          "detailed_interpretation_th": "ในรัก ถ้าดำเนินต่อ ผลลัพธ์คือพบรักใหม่ผ่านการเปลี่ยนแปลง หรือความสัมพันธ์ปัจจุบันเข้าสู่ระดับใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = คนรัก",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Cups = คู่ใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อผลลัพธ์รัก คือ 'รักเปลี่ยนชีวิต'",
+          "advice_th": "เปิดใจรับการเปลี่ยนแปลงในรัก ผลลัพธ์คือความสัมพันธ์ที่ดีกว่าเดิม",
+          "keywords_th": ["รักเปลี่ยน", "soul mate", "ก้าวต่อ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือความสำเร็จในอาชีพและการเงิน",
+          "detailed_interpretation_th": "เส้นทางนี้นำไปสู่ความสำเร็จใหญ่ - การเลื่อนตำแหน่ง การลงทุนให้ผล ธุรกิจขยาย ความมั่งคั่งสร้าง ทุกอย่างพลิกในทางที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The World = บรรลุ, The Magician = ทักษะ",
+            "wands": "Six of Wands = ชัยชนะ, Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง, Ten of Pentacles = อาณาจักร",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อผลลัพธ์งาน-เงิน คือ 'รุ่งเรือง'",
+          "advice_th": "ดำเนินการทำงานและลงทุนต่อ ผลลัพธ์คือความมั่งคั่งที่รอ",
+          "keywords_th": ["รุ่งเรือง", "ความมั่งคั่ง", "สำเร็จ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือเข้าใจชีวิตและยอมรับการเปลี่ยนแปลง",
+          "detailed_interpretation_th": "เส้นทางจิตวิญญาณนี้นำไปสู่การเข้าใจวงจรชีวิต ยอมรับการเปลี่ยนแปลง สงบในทุกช่วง ปัญญานี้เปลี่ยนชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Star = ความหวัง, The Sun = สดใส",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อผลลัพธ์จิตวิญญาณ คือ 'เข้าใจวงจร'",
+          "advice_th": "ดำเนินการเรียนรู้และยอมรับการเปลี่ยน ปัญญาคุณจะลึกซึ้งขึ้น",
+          "keywords_th": ["เข้าใจ", "ยอมรับ", "ปัญญา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพดีและร่างกายแข็งแรงตามวัย",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์คือร่างกายที่แข็งแรงตามวัย ฟื้นฟูดี อายุยืน คุณดูแลตัวเองได้เหมาะกับช่วงชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "King of Pentacles = สุขภาพระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อผลลัพธ์สุขภาพ คือ 'แข็งแรงตามวัย'",
+          "advice_th": "ดำเนินการดูแลสุขภาพต่อ ปรับตามวัย ผลลัพธ์คืออายุยืนอย่างมีคุณภาพ",
+          "keywords_th": ["แข็งแรง", "อายุยืน", "ปรับตามวัย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "การเปลี่ยนแปลงที่ไม่ดีถ้าไม่ปรับตัว",
+          "detailed_interpretation_th": "กงล้อกลับหัวในผลลัพธ์ เตือนว่าถ้ายังคงต่อต้านการเปลี่ยนแปลง ผลลัพธ์คือชีวิตที่ติดอยู่ การพลาดโอกาส ความเสียดาย ต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวผลลัพธ์ คือ 'ยอมรับเปลี่ยนก่อนสาย'",
+          "advice_th": "เปิดใจรับการเปลี่ยนแปลง ปรับตัว อย่าต่อต้าน ชีวิตเปลี่ยนคุณก็ต้องเปลี่ยน",
+          "keywords_th": ["ติดอยู่", "ต่อต้านเปลี่ยน", "ปรับตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ไม่เปลี่ยนแปลงและตาย",
+          "detailed_interpretation_th": "ในรัก ผลลัพธ์ไม่ดีถ้าไม่ปรับตัว - ความสัมพันธ์จืดชืด ไม่มีพลัง ต้องเขย่าให้กลับมามีชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Tower = ระเบิด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = อารมณ์ผันผวน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวผลลัพธ์รัก คือ 'เขย่าความสัมพันธ์'",
+          "advice_th": "ทำสิ่งใหม่ในความสัมพันธ์ - เดินทาง กิจกรรมใหม่ การสื่อสารใหม่ ความสัมพันธ์ต้องการการขยับ",
+          "keywords_th": ["รักจืด", "ไม่เปลี่ยน", "เขย่า"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ติดอยู่ในงานเดิมและการเงินไม่เติบโต",
+          "detailed_interpretation_th": "ในงาน-เงิน ผลลัพธ์ไม่ดีถ้าไม่ปรับตัว - ติดในงานเดิม รายได้ไม่เพิ่ม ทักษะล้าสมัย พลาดโอกาส",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในความสบาย",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวผลลัพธ์งาน-เงิน คือ 'ปรับตัวก่อนสาย'",
+          "advice_th": "อัพเดททักษะ networking เริ่ม side hustle ลงทุน ความเปลี่ยนแปลงคือทาง",
+          "keywords_th": ["ติดในงาน", "ไม่เติบโต", "ปรับตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในรูปแบบเก่าและไม่เติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ผลลัพธ์ไม่ดีถ้ายังคงในรูปแบบเก่า - ความคิดเก่า ครูเก่า กิจวัตรเก่า การเติบโตต้องการการเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Hanged Man = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในกรอบ",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวผลลัพธ์จิตวิญญาณ คือ 'เปลี่ยนวิธี'",
+          "advice_th": "ลองวิธีใหม่ ครูใหม่ กลุ่มใหม่ การเติบโตต้องการการเขย่า",
+          "keywords_th": ["ติดในรูปแบบเก่า", "ไม่เติบโต", "ลองใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพแย่ลงเพราะไม่ปรับวิถีตามวัย",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์ไม่ดีถ้ายังคงดูแลแบบเดิมที่ไม่เหมาะกับวัย - กินเหมือนเดิม นอนน้อยเหมือนเดิม ออกกำลังกายแบบเดิม ต้องปรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: กงล้อกลับหัวผลลัพธ์สุขภาพ คือ 'ปรับตามวัย'",
+          "advice_th": "ปรับวิธีดูแลตามวัย - อาหารเบาขึ้น นอนเร็วขึ้น ออกกำลังกายเหมาะกับร่างกาย",
+          "keywords_th": ["สุขภาพแย่", "ไม่ปรับตามวัย", "ปรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1792 @@
+{
+  "card_identifier": {
+    "name_en": "Judgement",
+    "name_th": "การพิพากษา",
+    "number": 20,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การตื่นรู้ การเรียกร้อง และการเริ่มต้นใหม่",
+          "detailed_interpretation_th": "การพิพากษาในปัจจุบัน บอกว่าคุณกำลังอยู่ในช่วงของการตื่นรู้และการเรียกร้องสู่จุดหมายที่สูงกว่า - คุณได้ยินเสียงเรียกภายใน ตระหนักถึงสิ่งที่ต้องเปลี่ยน และพร้อมเริ่มต้นบทใหม่ ไพ่หนุนให้คุณตอบรับเสียงเรียกและก้าวสู่เวอร์ชันที่ดีขึ้นของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, Death = แปลงร่าง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาปัจจุบัน คือ 'ตอบรับเสียงเรียกภายใน'",
+          "advice_th": "ตอบรับเสียงเรียก - คุณกำลังตื่นรู้ พร้อมเริ่มบทใหม่ ก้าวสู่เวอร์ชันที่ดีขึ้นของตัวเอง",
+          "keywords_th": ["ตื่นรู้", "เสียงเรียก", "เริ่มใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "การประเมินและฟื้นฟูความสัมพันธ์",
+          "detailed_interpretation_th": "ในความรัก การพิพากษาปัจจุบันชี้ว่าคุณกำลังประเมินและฟื้นฟูความสัมพันธ์ - การตัดสินใจครั้งสำคัญ การให้อภัยและเริ่มต้นใหม่ หรือการตระหนักว่าความสัมพันธ์ต้องเปลี่ยน ไพ่หนุนให้คุณฟังเสียงใจและตัดสินใจจากความจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, Death = สิ้นสุดเก่า",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาปัจจุบันความรัก คือ 'ให้อภัยและเริ่มใหม่'",
+          "advice_th": "ประเมินความรัก - ฟังเสียงใจ ตัดสินใจจากความจริง ให้อภัยและเริ่มต้นใหม่หากเหมาะ",
+          "keywords_th": ["ประเมิน", "ให้อภัย", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "การประเมินเส้นทางอาชีพและเรียกร้องสู่จุดหมายใหม่",
+          "detailed_interpretation_th": "ในการงาน การพิพากษาปัจจุบันบอกว่าคุณกำลังประเมินเส้นทางอาชีพและได้ยินเสียงเรียกสู่จุดหมายใหม่ - การตระหนักว่าต้องเปลี่ยนสายงาน การค้นพบเป้าหมายที่แท้จริง หรือการเก็บเกี่ยวผลของอดีต ไพ่หนุนให้คุณตอบรับเสียงเรียกและก้าวสู่อาชีพที่ตรงคุณค่า",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = เปลี่ยน",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาปัจจุบันงาน คือ 'ตอบรับเสียงเรียกสู่จุดหมายแท้'",
+          "advice_th": "ประเมินอาชีพ - ฟังเสียงเรียก ค้นพบเป้าหมายแท้ ก้าวสู่อาชีพที่ตรงคุณค่า",
+          "keywords_th": ["ประเมินอาชีพ", "เสียงเรียก", "จุดหมายใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การตื่นรู้ทางจิตวิญญาณและเปลี่ยนแปลงตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต การพิพากษาปัจจุบันชี้ว่าคุณกำลังมีการตื่นรู้ทางจิตวิญญาณและเปลี่ยนแปลงตัวตน - การปลดอดีต การให้อภัยตัวเอง การก้าวสู่เวอร์ชันที่สูงกว่า ไพ่ยืนยันว่าคุณกำลังเกิดใหม่ในระดับลึก และเสียงเรียกภายในนำทางคุณสู่จุดหมายที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จสมบูรณ์",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาปัจจุบันเติบโต คือ 'เกิดใหม่ในระดับลึก'",
+          "advice_th": "ตอบรับการตื่นรู้ - ปลดอดีต ให้อภัยตัวเอง ก้าวสู่เวอร์ชันที่สูงกว่าของตัวเอง",
+          "keywords_th": ["ตื่นรู้", "เกิดใหม่", "เวอร์ชันสูงกว่า"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "การฟื้นตัวและการตื่นรู้เรื่องสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ การพิพากษาปัจจุบันบอกว่าคุณกำลังฟื้นตัวและตื่นรู้เรื่องสุขภาพ - การตระหนักว่าต้องเปลี่ยนวิถีชีวิต การฟื้นจากความเจ็บป่วย หรือการเริ่มต้นดูแลตัวเองใหม่ ไพ่หนุนให้คุณตอบรับเสียงเรียกของร่างกายและเริ่มบทใหม่ของสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาปัจจุบันสุขภาพ คือ 'ตอบรับเสียงเรียกของร่างกาย'",
+          "advice_th": "ตื่นรู้เรื่องสุขภาพ - ตระหนักว่าต้องเปลี่ยนวิถี เริ่มบทใหม่ดูแลตัวเอง",
+          "keywords_th": ["ฟื้นตัว", "ตื่นรู้", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เพิกเฉยเสียงเรียกและตัดสินตัวเองรุนแรง",
+          "detailed_interpretation_th": "การพิพากษากลับหัวในปัจจุบัน บอกว่าคุณกำลังเพิกเฉยเสียงเรียกภายในหรือตัดสินตัวเองรุนแรงเกินไป - การปฏิเสธการเปลี่ยนแปลงที่จำเป็น การติดอยู่กับความผิดในอดีต การไม่ให้อภัยตัวเอง ไพ่หนุนให้คุณฟังเสียงภายในและปลดการตัดสินที่กดดันตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ตัดสินตน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวปัจจุบัน คือ 'ปลดการตัดสินที่กดดันตน'",
+          "advice_th": "ฟังเสียงภายในและให้อภัยตน - หยุดตัดสินตัวเองรุนแรง ตอบรับการเปลี่ยนแปลงที่จำเป็น",
+          "keywords_th": ["เพิกเฉยเสียงเรียก", "ตัดสินตนรุนแรง", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ติดอยู่กับความผิดในอดีตของความสัมพันธ์",
+          "detailed_interpretation_th": "ในความรัก การพิพากษากลับหัวชี้ว่าคุณติดอยู่กับความผิดในอดีตของความสัมพันธ์ - ไม่ให้อภัยตัวเองหรือคู่ ตัดสินรุนแรง หรือไม่กล้าเริ่มต้นใหม่ ไพ่หนุนให้คุณปลดอดีต ให้อภัย และเปิดใจให้โอกาสความรักเริ่มใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ติดอดีต, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวปัจจุบันความรัก คือ 'ปลดอดีตและให้อภัย'",
+          "advice_th": "ปลดอดีตในรัก - หยุดตัดสินรุนแรง ให้อภัยตัวเองและคู่ เปิดใจให้โอกาสเริ่มใหม่",
+          "keywords_th": ["ติดอดีต", "ไม่ให้อภัย", "ปลด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "เพิกเฉยเสียงเรียกในอาชีพหรือกลัวเปลี่ยน",
+          "detailed_interpretation_th": "ในการงาน การพิพากษากลับหัวบอกว่าคุณเพิกเฉยเสียงเรียกในอาชีพหรือกลัวการเปลี่ยนแปลง - รู้ว่างานไม่ใช่แต่ไม่กล้าออก ฝืนอยู่ในที่ที่ไม่ตรงคุณค่า ไพ่หนุนให้คุณฟังเสียงภายในและกล้าตอบรับการเปลี่ยนแปลงสู่อาชีพที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวปัจจุบันงาน คือ 'กล้าตอบรับเสียงเรียก'",
+          "advice_th": "ฟังเสียงเรียกในอาชีพ - กล้าออกจากที่ไม่ตรงคุณค่า ตอบรับการเปลี่ยนแปลงสู่จุดหมายแท้",
+          "keywords_th": ["เพิกเฉยเรียก", "กลัวเปลี่ยน", "กล้าตอบรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ตัดสินตัวเองรุนแรงและไม่ยอมเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต การพิพากษากลับหัวเผยว่าคุณตัดสินตัวเองรุนแรงและไม่ยอมเติบโต - ติดอยู่กับความผิดในอดีต โทษตัวเอง ไม่ให้อภัย ไพ่หนุนให้คุณปลดการตัดสินที่กดดัน ให้อภัยตัวเอง และตอบรับเสียงเรียกสู่การเติบโตอย่างเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Seven of Wands = ต่อสู้ภายใน",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Nine of Swords = ตัดสินตน",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวปัจจุบันเติบโต คือ 'ให้อภัยตัวเองด้วยเมตตา'",
+          "advice_th": "ให้อภัยตัวเอง - หยุดตัดสินรุนแรง ปลดความผิดในอดีต ตอบรับการเติบโตอย่างเมตตา",
+          "keywords_th": ["ตัดสินตน", "ไม่เติบโต", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เพิกเฉยสัญญาณร่างกายหรือโทษตัวเอง",
+          "detailed_interpretation_th": "ในสุขภาพ การพิพากษากลับหัวบอกว่าคุณเพิกเฉยสัญญาณร่างกายหรือโทษตัวเองเรื่องสุขภาพ - ไม่ยอมเปลี่ยนวิถีที่ทำร้ายร่างกาย หรือโทษตัวเองที่ป่วย ไพ่หนุนให้คุณฟังร่างกาย ปลดการโทษตัวเอง และเริ่มดูแลตัวเองอย่างเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Seven of Wands = ปฏิเสธ",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = โทษตน",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวปัจจุบันสุขภาพ คือ 'ปลดการโทษตัวเอง'",
+          "advice_th": "ฟังร่างกายด้วยเมตตา - หยุดเพิกเฉยสัญญาณ ปลดการโทษตัวเอง เริ่มดูแลอย่างเมตตา",
+          "keywords_th": ["เพิกเฉยสัญญาณ", "โทษตน", "เมตตา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการตอบรับเสียงเรียกที่ยิ่งใหญ่",
+          "detailed_interpretation_th": "การพิพากษาในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือการต้องตอบรับเสียงเรียกที่ยิ่งใหญ่ - การตัดสินใจครั้งสำคัญที่เปลี่ยนชีวิต การก้าวข้ามอดีต การยอมรับการเปลี่ยนแปลงครั้งใหญ่ อุปสรรคนี้คือความกล้าที่จะตอบรับและเกิดใหม่",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอุปสรรค คือ 'กล้าตอบรับและเกิดใหม่'",
+          "advice_th": "กล้าตอบรับเสียงเรียก - การตัดสินใจครั้งใหญ่รอคุณ กล้าก้าวข้ามอดีตและเกิดใหม่",
+          "keywords_th": ["เสียงเรียกยิ่งใหญ่", "ตัดสินใจใหญ่", "เกิดใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือการตัดสินใจครั้งสำคัญในความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการตัดสินใจครั้งสำคัญในความรัก - การให้อภัยและเริ่มใหม่ การก้าวสู่ขั้นใหม่ของความสัมพันธ์ หรือการยอมรับว่าต้องปล่อย ไพ่หนุนให้คุณฟังเสียงใจและตัดสินใจอย่างกล้าหาญ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, Death = สิ้นสุด",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอุปสรรคความรัก คือ 'ตัดสินใจอย่างกล้าหาญ'",
+          "advice_th": "ตัดสินใจครั้งสำคัญ - ฟังเสียงใจ ให้อภัยและเริ่มใหม่ หรือกล้าปล่อยหากจำเป็น",
+          "keywords_th": ["ตัดสินใจสำคัญ", "ฟังใจ", "กล้าหาญ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือการตัดสินใจเปลี่ยนอาชีพครั้งใหญ่",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการตัดสินใจเปลี่ยนอาชีพครั้งใหญ่ - การตอบรับเสียงเรียกสู่งานที่ใช่ การก้าวออกจากที่ปลอดภัย การเริ่มต้นใหม่ ไพ่หนุนให้คุณกล้าตอบรับและเชื่อในจุดหมายที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = เปลี่ยน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอุปสรรคงาน คือ 'กล้าตอบรับสู่งานที่ใช่'",
+          "advice_th": "ตัดสินใจเปลี่ยนอาชีพ - ตอบรับเสียงเรียก กล้าออกจากที่ปลอดภัย เชื่อในจุดหมายแท้",
+          "keywords_th": ["เปลี่ยนอาชีพ", "เสียงเรียก", "กล้าตอบรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือการเกิดใหม่และปลดตัวตนเก่า",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการเกิดใหม่และปลดตัวตนเก่า - การก้าวข้ามอดีต การให้อภัยตัวเอง การยอมรับเวอร์ชันที่สูงกว่า อุปสรรคนี้คือความกล้าที่จะปล่อยคนเก่าและเกิดเป็นตัวตนใหม่ที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "Death = ตัวตนเก่าตาย, The World = สำเร็จสมบูรณ์",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอุปสรรคเติบโต คือ 'ปล่อยคนเก่าเกิดเป็นตัวตนใหม่'",
+          "advice_th": "กล้าเกิดใหม่ - ปลดตัวตนเก่า ให้อภัยตัวเอง ยอมรับเวอร์ชันที่สูงกว่าและแท้จริง",
+          "keywords_th": ["เกิดใหม่", "ปลดตัวตนเก่า", "ให้อภัย"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือการเปลี่ยนวิถีชีวิตเพื่อสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการต้องเปลี่ยนวิถีชีวิตครั้งใหญ่เพื่อสุขภาพ - การตอบรับเสียงเรียกของร่างกาย การเลิกนิสัยทำลาย การเริ่มต้นวิถีใหม่ ไพ่หนุนให้คุณกล้าเปลี่ยนและเกิดใหม่ในแง่สุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, Death = เปลี่ยน",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอุปสรรคสุขภาพ คือ 'กล้าเปลี่ยนวิถีและเกิดใหม่'",
+          "advice_th": "เปลี่ยนวิถีชีวิต - ตอบรับเสียงเรียกร่างกาย เลิกนิสัยทำลาย เริ่มวิถีใหม่",
+          "keywords_th": ["เปลี่ยนวิถี", "เสียงเรียกกาย", "เกิดใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการตัดสินตัวเองและกลัวเปลี่ยน",
+          "detailed_interpretation_th": "การพิพากษาในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือการตัดสินตัวเองรุนแรงและกลัวการเปลี่ยนแปลง - การติดอยู่กับความผิดในอดีต การไม่กล้าตอบรับเสียงเรียก ความกลัวที่จะเกิดใหม่ ไพ่เตือนว่าการตัดสินตัวเองขังคุณจากการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ต้าน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ตัดสินตน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอุปสรรค คือ 'การตัดสินตนขังการเติบโต'",
+          "advice_th": "ปลดการตัดสินตัวเอง - หยุดติดอดีต กล้าตอบรับเสียงเรียก ไม่กลัวการเกิดใหม่",
+          "keywords_th": ["ตัดสินตน", "กลัวเปลี่ยน", "ปลด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือติดความผิดในอดีตจนไม่กล้ารักใหม่",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการติดความผิดในอดีตจนไม่กล้ารักใหม่ - การโทษตัวเองเรื่องความสัมพันธ์ที่จบ การไม่ให้อภัย การกลัวซ้ำรอย ไพ่หนุนให้คุณปลดอดีต ให้อภัยตัวเองและคนอื่น และเปิดใจให้โอกาส",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ติดอดีต, The Moon = สับสน",
+            "wands": "Seven of Wands = ต้าน",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอุปสรรคความรัก คือ 'ปลดอดีตเปิดใจรักใหม่'",
+          "advice_th": "ปลดความผิดในอดีต - หยุดโทษตัวเอง ให้อภัย เปิดใจให้โอกาสรักใหม่",
+          "keywords_th": ["ติดอดีต", "ไม่ให้อภัย", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือกลัวเปลี่ยนอาชีพและฝืนอยู่ที่เดิม",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือความกลัวเปลี่ยนอาชีพและฝืนอยู่ที่เดิม - รู้ว่างานไม่ใช่แต่ไม่กล้าออก กลัวความไม่แน่นอน เพิกเฉยเสียงเรียก ไพ่หนุนให้คุณกล้าตอบรับการเปลี่ยนแปลง การฝืนอยู่ทำให้คุณสูญเสียศักยภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอุปสรรคงาน คือ 'ฝืนอยู่สูญเสียศักยภาพ'",
+          "advice_th": "กล้าตอบรับการเปลี่ยน - หยุดฝืนอยู่ที่เดิม ฟังเสียงเรียก การฝืนทำให้สูญศักยภาพ",
+          "keywords_th": ["กลัวเปลี่ยน", "ฝืนอยู่", "กล้าตอบรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือตัดสินตัวเองและติดความผิดเก่า",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการตัดสินตัวเองและติดความผิดเก่า - การโทษตัวเองไม่หยุด การไม่ให้อภัย การมองตัวเองในแง่ลบ ไพ่หนุนให้คุณปลดการตัดสินที่กดดัน ให้อภัยตัวเองด้วยเมตตา และตอบรับการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Nine of Swords = โทษตน",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอุปสรรคเติบโต คือ 'ให้อภัยตัวเองด้วยเมตตา'",
+          "advice_th": "ให้อภัยตัวเอง - หยุดโทษตัวเองไม่หยุด ปลดความผิดเก่า ตอบรับการเติบโตด้วยเมตตา",
+          "keywords_th": ["ตัดสินตน", "ติดความผิด", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือโทษตัวเองและไม่ยอมเปลี่ยนวิถี",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือการโทษตัวเองและไม่ยอมเปลี่ยนวิถี - การโทษตัวเองที่ป่วยหรือไม่ดูแล การฝืนนิสัยที่ทำร้ายร่างกาย ไพ่หนุนให้คุณปลดการโทษ ฟังร่างกาย และกล้าเปลี่ยนวิถีด้วยความเมตตาต่อตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Seven of Wands = ปฏิเสธ",
+            "cups": "Five of Cups = โทษตน",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอุปสรรคสุขภาพ คือ 'ปลดการโทษกล้าเปลี่ยน'",
+          "advice_th": "ปลดการโทษตัวเอง - หยุดโทษที่ป่วย ฟังร่างกาย กล้าเปลี่ยนวิถีด้วยเมตตา",
+          "keywords_th": ["โทษตน", "ไม่เปลี่ยนวิถี", "เมตตา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยมีการตื่นรู้และเริ่มต้นใหม่",
+          "detailed_interpretation_th": "การพิพากษาในอดีต เผยว่าคุณเคยผ่านการตื่นรู้และเริ่มต้นใหม่ครั้งสำคัญ - ช่วงเวลาที่คุณตอบรับเสียงเรียก เปลี่ยนทิศทางชีวิต หรือเกิดใหม่หลังวิกฤต ประสบการณ์นี้สอนคุณว่าการเปลี่ยนแปลงครั้งใหญ่นำมาซึ่งการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอดีต คือ 'การเปลี่ยนใหญ่นำการเติบโต'",
+          "advice_th": "ใช้บทเรียนการตื่นรู้ - คุณเคยเกิดใหม่สำเร็จ ใช้ความกล้านี้ในปัจจุบัน",
+          "keywords_th": ["ตื่นรู้เก่า", "เริ่มใหม่", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีจุดเปลี่ยนสำคัญในความรัก",
+          "detailed_interpretation_th": "ในความรัก การพิพากษาอดีตเผยว่าคุณเคยมีจุดเปลี่ยนสำคัญในความรัก - การให้อภัยและเริ่มใหม่ การตัดสินใจครั้งใหญ่ หรือการเกิดใหม่หลังความสัมพันธ์จบ ประสบการณ์นี้สอนคุณเรื่องการให้อภัยและการเปิดใจอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, Death = สิ้นสุด",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอดีตความรัก คือ 'บทเรียนการให้อภัย'",
+          "advice_th": "ใช้บทเรียนจุดเปลี่ยน - คุณเคยให้อภัยและเริ่มใหม่ ใช้ปัญญานี้ในความรักปัจจุบัน",
+          "keywords_th": ["จุดเปลี่ยนรัก", "ให้อภัย", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยเปลี่ยนอาชีพหรือเริ่มต้นใหม่",
+          "detailed_interpretation_th": "ในการงาน การพิพากษาอดีตเผยว่าคุณเคยเปลี่ยนอาชีพหรือเริ่มต้นใหม่ครั้งสำคัญ - การตอบรับเสียงเรียก การกล้าเปลี่ยนสายงาน การเริ่มต้นจากศูนย์ ประสบการณ์นี้สอนคุณว่าการกล้าเปลี่ยนนำมาซึ่งโอกาสที่ตรงคุณค่ากว่า",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = เปลี่ยน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอดีตงาน คือ 'กล้าเปลี่ยนนำโอกาสตรงคุณค่า'",
+          "advice_th": "ใช้บทเรียนการเปลี่ยน - คุณเคยกล้าเปลี่ยนอาชีพ ใช้ความกล้านี้ในปัจจุบัน",
+          "keywords_th": ["เปลี่ยนอาชีพเก่า", "กล้าเปลี่ยน", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยเกิดใหม่และเปลี่ยนตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต การพิพากษาอดีตชี้ว่าคุณเคยเกิดใหม่และเปลี่ยนตัวตน - การปลดอดีต การให้อภัยตัวเอง การก้าวสู่เวอร์ชันที่สูงกว่า ประสบการณ์นี้กลายเป็นรากฐานของความเข้าใจว่าคุณสามารถเปลี่ยนแปลงและเติบโตได้เสมอ",
+          "adjacent_influences": {
+            "major_arcana": "Death = ตัวตนเก่าตาย, The World = สำเร็จสมบูรณ์",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอดีตเติบโต คือ 'คุณเปลี่ยนแปลงได้เสมอ'",
+          "advice_th": "ใช้บทเรียนการเกิดใหม่ - คุณเคยเปลี่ยนตัวตนสำเร็จ รู้ว่าคุณเติบโตได้เสมอ",
+          "keywords_th": ["เกิดใหม่เก่า", "เปลี่ยนตัวตน", "รากฐาน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยฟื้นตัวและเปลี่ยนวิถีสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ การพิพากษาอดีตเผยว่าคุณเคยฟื้นตัวและเปลี่ยนวิถีสุขภาพ - การฟื้นจากความเจ็บป่วย การเลิกนิสัยทำลาย การเริ่มต้นดูแลตัวเองใหม่ ประสบการณ์นี้สอนคุณว่าร่างกายฟื้นได้และการเปลี่ยนวิถีนำมาซึ่งสุขภาพที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอดีตสุขภาพ คือ 'ร่างกายฟื้นได้'",
+          "advice_th": "ใช้บทเรียนการฟื้น - คุณเคยฟื้นและเปลี่ยนวิถีสำเร็จ ใช้ความรู้นี้ในปัจจุบัน",
+          "keywords_th": ["ฟื้นตัวเก่า", "เปลี่ยนวิถี", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยพลาดโอกาสตอบรับเสียงเรียก",
+          "detailed_interpretation_th": "การพิพากษากลับหัวในอดีต เผยว่าคุณเคยพลาดโอกาสตอบรับเสียงเรียก - การไม่กล้าเปลี่ยน การฝืนอยู่ที่เดิม การปล่อยจังหวะสำคัญผ่านไป บทเรียนคือคุณรู้ว่าการเพิกเฉยเสียงเรียกนำมาซึ่งความเสียดาย และตอนนี้พร้อมที่จะตอบรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวอดีต คือ 'เพิกเฉยเสียงเรียกนำความเสียดาย'",
+          "advice_th": "ใช้บทเรียนการพลาด - คุณรู้ค่าของเสียงเรียก ตอนนี้พร้อมตอบรับโอกาสที่มา",
+          "keywords_th": ["พลาดโอกาส", "เสียดาย", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยติดอยู่กับความผิดในอดีตของความรัก",
+          "detailed_interpretation_th": "ในความรัก การพิพากษากลับหัวในอดีตชี้ว่าคุณเคยติดอยู่กับความผิดในอดีตของความรัก - การไม่ให้อภัย การโทษตัวเอง การไม่กล้าเริ่มใหม่ บทเรียนคือคุณรู้ว่าการให้อภัยปลดปล่อยคุณ และการเปิดใจนำมาซึ่งความรักใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ติดอดีต, The Moon = สับสน",
+            "wands": "Seven of Wands = ต้าน",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวอดีตความรัก คือ 'การให้อภัยปลดปล่อยคุณ'",
+          "advice_th": "ใช้บทเรียนการให้อภัย - คุณรู้ว่าการให้อภัยปลดปล่อย เปิดใจนำรักใหม่",
+          "keywords_th": ["ติดอดีต", "ไม่ให้อภัย", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยกลัวเปลี่ยนอาชีพและพลาดโอกาส",
+          "detailed_interpretation_th": "ในการงาน การพิพากษากลับหัวในอดีตเผยว่าคุณเคยกลัวเปลี่ยนอาชีพและพลาดโอกาส - การฝืนอยู่ในงานที่ไม่ใช่ การปล่อยโอกาสสำคัญ บทเรียนคือคุณรู้ว่าความกลัวขังคุณจากศักยภาพ และตอนนี้พร้อมที่จะกล้าเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวอดีตงาน คือ 'ความกลัวขังจากศักยภาพ'",
+          "advice_th": "ใช้บทเรียนความกลัว - คุณรู้ว่าความกลัวขังคุณ ตอนนี้พร้อมกล้าเปลี่ยน",
+          "keywords_th": ["กลัวเปลี่ยน", "พลาดโอกาส", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยตัดสินตัวเองและไม่ยอมเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต การพิพากษากลับหัวในอดีตเผยว่าคุณเคยตัดสินตัวเองรุนแรงและไม่ยอมเติบโต - การติดความผิดเก่า การโทษตัวเอง การมองในแง่ลบ บทเรียนคือคุณรู้ว่าการให้อภัยตัวเองเป็นกุญแจสู่การเติบโต และตอนนี้พร้อมที่จะเมตตาตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Nine of Swords = โทษตน",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวอดีตเติบโต คือ 'ให้อภัยตัวเองคือกุญแจ'",
+          "advice_th": "ใช้บทเรียนการตัดสินตน - คุณรู้ว่าการให้อภัยตัวเองคือกุญแจ ตอนนี้เมตตาตัวเอง",
+          "keywords_th": ["ตัดสินตน", "ไม่เติบโต", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยเพิกเฉยสัญญาณและไม่เปลี่ยนวิถี",
+          "detailed_interpretation_th": "ในสุขภาพ การพิพากษากลับหัวในอดีตเผยว่าคุณเคยเพิกเฉยสัญญาณร่างกายและไม่เปลี่ยนวิถี - การฝืนนิสัยที่ทำร้ายร่างกาย การเลื่อนการดูแล บทเรียนคือคุณรู้ว่าการฟังร่างกายและเปลี่ยนวิถีทันเวลาสำคัญ และตอนนี้พร้อมที่จะดูแลตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Seven of Wands = ปฏิเสธ",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวอดีตสุขภาพ คือ 'ฟังร่างกายทันเวลาสำคัญ'",
+          "advice_th": "ใช้บทเรียนการเพิกเฉย - คุณรู้ว่าต้องฟังร่างกายทันเวลา ตอนนี้พร้อมดูแลตัวเอง",
+          "keywords_th": ["เพิกเฉยเก่า", "ไม่เปลี่ยน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีการตื่นรู้และการเริ่มต้นใหม่",
+          "detailed_interpretation_th": "การพิพากษาในอนาคต เป็นข่าวดี - อนาคตจะมีการตื่นรู้และการเริ่มต้นใหม่ครั้งสำคัญ คุณจะได้ยินเสียงเรียกสู่จุดหมายที่สูงกว่า ตระหนักถึงสิ่งที่ต้องเปลี่ยน และเกิดใหม่เป็นเวอร์ชันที่ดีขึ้น ไพ่ยืนยันว่าการเปลี่ยนแปลงนี้จะนำมาซึ่งการเติบโตและความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, Death = แปลงร่าง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอนาคต คือ 'เกิดใหม่นำการเติบโตและความหมาย'",
+          "advice_th": "เตรียมใจรับการตื่นรู้ - เสียงเรียกสู่จุดหมายสูงกว่ามา เกิดใหม่เป็นเวอร์ชันที่ดีขึ้น",
+          "keywords_th": ["ตื่นรู้", "เริ่มใหม่", "เกิดใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักจะมีจุดเปลี่ยนและการเริ่มต้นใหม่",
+          "detailed_interpretation_th": "ในความรัก การพิพากษาอนาคตเป็นข่าวดี - ความรักจะมีจุดเปลี่ยนและการเริ่มต้นใหม่ การให้อภัยและฟื้นฟู การก้าวสู่ขั้นใหม่ หรือการพบความรักที่เปลี่ยนชีวิต ไพ่ยืนยันว่าการเปลี่ยนแปลงนี้จะนำมาซึ่งความสัมพันธ์ที่ลึกซึ้งและแท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The World = สำเร็จคู่",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอนาคตความรัก คือ 'จุดเปลี่ยนนำความรักลึกซึ้ง'",
+          "advice_th": "เตรียมใจรับจุดเปลี่ยน - การให้อภัยและฟื้นฟู หรือพบรักที่เปลี่ยนชีวิตรออยู่",
+          "keywords_th": ["จุดเปลี่ยนรัก", "เริ่มใหม่", "ลึกซึ้ง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "การงานจะมีการเปลี่ยนแปลงและโอกาสใหม่",
+          "detailed_interpretation_th": "ในการงาน การพิพากษาอนาคตเป็นข่าวดี - การงานจะมีการเปลี่ยนแปลงและโอกาสใหม่ การตอบรับเสียงเรียกสู่อาชีพที่ใช่ การเก็บเกี่ยวผลของอดีต หรือการเริ่มต้นเส้นทางใหม่ ไพ่ยืนยันว่าการเปลี่ยนแปลงนี้จะนำมาซึ่งอาชีพที่ตรงคุณค่าและมีความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = เปลี่ยน",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอนาคตงาน คือ 'อาชีพที่ตรงคุณค่ารออยู่'",
+          "advice_th": "เตรียมรับการเปลี่ยนแปลง - ตอบรับเสียงเรียกสู่อาชีพที่ใช่ โอกาสใหม่รออยู่",
+          "keywords_th": ["เปลี่ยนแปลง", "โอกาสใหม่", "ตรงคุณค่า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การตื่นรู้ทางจิตวิญญาณครั้งใหญ่รออยู่",
+          "detailed_interpretation_th": "ในการเติบโต การพิพากษาอนาคตเป็นชัยชนะ - การตื่นรู้ทางจิตวิญญาณครั้งใหญ่รอคุณอยู่ คุณจะปลดอดีต ให้อภัยตัวเอง และเกิดใหม่เป็นเวอร์ชันที่สูงกว่า ไพ่ยืนยันว่าการเปลี่ยนแปลงนี้จะนำคุณสู่ความเข้าใจในจุดหมายชีวิตและความเป็นตัวเองที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จสมบูรณ์",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอนาคตเติบโต คือ 'เกิดใหม่สู่ความเป็นตัวเองแท้'",
+          "advice_th": "เตรียมใจรับการตื่นรู้ใหญ่ - ปลดอดีต ให้อภัยตัวเอง เกิดใหม่เป็นเวอร์ชันที่สูงกว่า",
+          "keywords_th": ["ตื่นรู้ใหญ่", "เกิดใหม่", "ตัวตนแท้"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะฟื้นฟูและเริ่มต้นวิถีใหม่",
+          "detailed_interpretation_th": "ในสุขภาพ การพิพากษาอนาคตเป็นข่าวดี - สุขภาพจะฟื้นฟูและเริ่มต้นวิถีใหม่ การฟื้นจากความเจ็บป่วย การเปลี่ยนวิถีชีวิต การตื่นรู้เรื่องการดูแลตัวเอง ไพ่ยืนยันว่าการเปลี่ยนแปลงนี้จะนำมาซึ่งสุขภาพที่ดีและพลังชีวิตที่ฟื้นกลับมา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาอนาคตสุขภาพ คือ 'ฟื้นฟูและเริ่มวิถีใหม่'",
+          "advice_th": "เตรียมรับการฟื้นฟู - เริ่มวิถีใหม่ ตื่นรู้เรื่องดูแลตัวเอง พลังชีวิตจะกลับมา",
+          "keywords_th": ["ฟื้นฟู", "วิถีใหม่", "พลังกลับ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตอาจมีการลังเลตอบรับเสียงเรียก",
+          "detailed_interpretation_th": "การพิพากษากลับหัวในอนาคต เตือนว่าอนาคตอาจมีการลังเลตอบรับเสียงเรียก - การกลัวเปลี่ยนแปลง การติดอยู่กับอดีต การไม่กล้าตัดสินใจครั้งสำคัญ ไพ่หนุนให้คุณเตรียมใจ ฟังเสียงภายใน และกล้าตอบรับเมื่อโอกาสมาถึง อย่าปล่อยให้ความกลัวขัดขวาง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวอนาคต คือ 'อย่าให้ความกลัวขัดขวาง'",
+          "advice_th": "เตรียมใจตอบรับ - อย่าให้ความกลัวขัดขวาง ฟังเสียงภายใน กล้าตัดสินใจเมื่อโอกาสมา",
+          "keywords_th": ["ลังเล", "กลัวเปลี่ยน", "กล้าตอบรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจติดอยู่กับอดีตที่ยังไม่ปลด",
+          "detailed_interpretation_th": "ในความรัก การพิพากษากลับหัวอนาคตเตือนว่าความรักอาจติดอยู่กับอดีตที่ยังไม่ปลด - บาดแผลเก่าที่ยังไม่หาย การไม่ให้อภัย ความกลัวซ้ำรอย ไพ่หนุนให้คุณทำงานกับอดีต ให้อภัย และเปิดใจรับการเริ่มต้นใหม่ในความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ติดอดีต, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวอนาคตความรัก คือ 'ปลดอดีตเปิดใจใหม่'",
+          "advice_th": "เตรียมทำงานกับอดีต - ปลดบาดแผลเก่า ให้อภัย เปิดใจรับการเริ่มต้นใหม่",
+          "keywords_th": ["ติดอดีต", "ไม่ปลด", "เปิดใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "การงานอาจล่าช้าเพราะกลัวเปลี่ยน",
+          "detailed_interpretation_th": "ในการงาน การพิพากษากลับหัวอนาคตเตือนว่าการงานอาจล่าช้าเพราะกลัวเปลี่ยน - การลังเลตอบรับโอกาส การฝืนอยู่ในที่ปลอดภัย ความกลัวความไม่แน่นอน ไพ่หนุนให้คุณเตรียมใจ ประเมินอย่างรอบคอบ และกล้าตอบรับการเปลี่ยนแปลงที่จำเป็น",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวอนาคตงาน คือ 'กล้าตอบรับการเปลี่ยนที่จำเป็น'",
+          "advice_th": "เตรียมใจตอบรับ - อย่าลังเลเพราะกลัว ประเมินรอบคอบ กล้าตอบรับการเปลี่ยนแปลง",
+          "keywords_th": ["ล่าช้า", "กลัวเปลี่ยน", "กล้าตอบรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตอาจติดเพราะตัดสินตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต การพิพากษากลับหัวอนาคตเตือนว่าการเติบโตอาจติดเพราะตัดสินตัวเอง - การติดความผิดเก่า การไม่ให้อภัย การกลัวเปลี่ยนแปลง ไพ่หนุนให้คุณทำงานกับการให้อภัยตัวเอง ปลดการตัดสินที่กดดัน และตอบรับการเติบโตด้วยเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Nine of Swords = โทษตน",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวอนาคตเติบโต คือ 'ให้อภัยตัวเองด้วยเมตตา'",
+          "advice_th": "เตรียมให้อภัยตัวเอง - ปลดการตัดสินที่กดดัน ตอบรับการเติบโตด้วยเมตตา",
+          "keywords_th": ["ตัดสินตน", "ติดความผิด", "ให้อภัย"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอาจฟื้นช้าเพราะไม่ยอมเปลี่ยน",
+          "detailed_interpretation_th": "ในสุขภาพ การพิพากษากลับหัวอนาคตเตือนว่าสุขภาพอาจฟื้นช้าเพราะไม่ยอมเปลี่ยนวิถี - การฝืนนิสัยที่ทำร้ายร่างกาย การเลื่อนการดูแล การโทษตัวเอง ไพ่หนุนให้คุณกล้าเปลี่ยนวิถี ฟังร่างกาย และดูแลตัวเองด้วยเมตตาเพื่อการฟื้นที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Seven of Wands = ปฏิเสธ",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวอนาคตสุขภาพ คือ 'กล้าเปลี่ยนวิถีเพื่อฟื้นแท้'",
+          "advice_th": "เตรียมเปลี่ยนวิถี - หยุดฝืนนิสัยทำร้าย ฟังร่างกาย ดูแลตัวเองด้วยเมตตา",
+          "keywords_th": ["ฟื้นช้า", "ไม่เปลี่ยน", "กล้าเปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือการเกิดใหม่และตอบรับเสียงเรียก",
+          "detailed_interpretation_th": "การพิพากษาในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือการเกิดใหม่และตอบรับเสียงเรียกสู่จุดหมายที่สูงกว่า - การก้าวข้ามอดีต การใช้ชีวิตตามจุดหมายแท้ การเป็นเวอร์ชันที่ดีที่สุดของตัวเอง เป้าหมายนี้คือการเปลี่ยนแปลงครั้งใหญ่ที่นำมาซึ่งความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, Death = แปลงร่าง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาเป้าหมาย คือ 'เกิดใหม่ตามจุดหมายแท้'",
+          "advice_th": "ตั้งเป้าเกิดใหม่ - ก้าวข้ามอดีต ใช้ชีวิตตามจุดหมายแท้ เป็นเวอร์ชันที่ดีที่สุด",
+          "keywords_th": ["เกิดใหม่", "เสียงเรียก", "จุดหมายแท้"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือความรักที่ฟื้นฟูและให้อภัย",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือความรักที่ฟื้นฟูและให้อภัย - ความสัมพันธ์ที่ก้าวข้ามอดีต การเริ่มต้นใหม่บนพื้นฐานความเข้าใจ การให้อภัยซึ่งกันและกัน ไพ่หนุนให้คุณตั้งเป้าหมายความรักที่เติบโตและเยียวยา",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The World = สำเร็จคู่",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาเป้าหมายความรัก คือ 'รักที่ฟื้นฟูและให้อภัย'",
+          "advice_th": "ตั้งเป้าความรักฟื้นฟู - ก้าวข้ามอดีต เริ่มใหม่บนความเข้าใจ ให้อภัยกัน",
+          "keywords_th": ["รักฟื้นฟู", "ให้อภัย", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคืออาชีพที่ตรงเสียงเรียกและจุดหมาย",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคืออาชีพที่ตรงเสียงเรียกและจุดหมายชีวิต - งานที่ใช้พรสวรรค์ การสร้างผลกระทบที่มีความหมาย การตอบรับสิ่งที่คุณถูกเรียกร้องให้ทำ ไพ่หนุนให้คุณตั้งเป้าหมายอาชีพที่สอดคล้องกับจุดหมายลึก ไม่ใช่แค่เงิน",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาเป้าหมายงาน คือ 'อาชีพตรงจุดหมายลึก'",
+          "advice_th": "ตั้งเป้าอาชีพตรงเสียงเรียก - ใช้พรสวรรค์ สร้างผลกระทบมีความหมาย ตรงจุดหมายลึก",
+          "keywords_th": ["อาชีพตรงเรียก", "จุดหมาย", "ความหมาย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือการตื่นรู้และเป็นตัวตนสูงสุด",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือการตื่นรู้ทางจิตวิญญาณและเป็นตัวตนสูงสุด - การปลดอดีต การให้อภัยตัวเอง การก้าวสู่เวอร์ชันที่สูงที่สุด ไพ่หนุนให้คุณตั้งเป้าหมายการเติบโตที่ลึกที่สุด คือการเกิดใหม่เป็นตัวตนที่แท้จริงและเป็นแสงให้โลก",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Star = แรงบันดาลใจ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาเป้าหมายเติบโต คือ 'เกิดใหม่เป็นตัวตนสูงสุด'",
+          "advice_th": "ตั้งเป้าตื่นรู้สูงสุด - ปลดอดีต ให้อภัยตัวเอง เกิดใหม่เป็นตัวตนแท้ เป็นแสงให้โลก",
+          "keywords_th": ["ตื่นรู้", "ตัวตนสูงสุด", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือฟื้นฟูและเริ่มวิถีสุขภาพใหม่",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือการฟื้นฟูและเริ่มวิถีสุขภาพใหม่ - การฟื้นจากความเจ็บป่วยอย่างสมบูรณ์ การเปลี่ยนวิถีชีวิตที่ยั่งยืน การดูแลตัวเองแบบองค์รวม ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพที่เป็นการเกิดใหม่ในแง่ร่างกายและจิตใจ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาเป้าหมายสุขภาพ คือ 'เกิดใหม่ในแง่กายและใจ'",
+          "advice_th": "ตั้งเป้าฟื้นฟูสุขภาพ - ฟื้นสมบูรณ์ เปลี่ยนวิถียั่งยืน ดูแลแบบองค์รวม",
+          "keywords_th": ["ฟื้นฟู", "วิถีใหม่", "องค์รวม"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือปลดการตัดสินตัวเองและให้อภัย",
+          "detailed_interpretation_th": "การพิพากษากลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือการปลดการตัดสินตัวเองและให้อภัย - กลับมาเมตตาตัวเอง ปลดความผิดในอดีต ยอมรับว่าทุกคนผิดพลาดได้ เป้าหมายนี้ต้องการการทำงานกับใจ แต่จะนำมาซึ่งอิสรภาพและการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Cups = เมตตา"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวเป้าหมาย คือ 'ให้อภัยตัวเองนำอิสรภาพ'",
+          "advice_th": "ตั้งเป้าให้อภัยตัวเอง - ปลดความผิดในอดีต เมตตาตัวเอง ยอมรับว่าทุกคนผิดพลาดได้",
+          "keywords_th": ["ปลดตัดสิน", "ให้อภัย", "อิสรภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือปลดบาดแผลรักและให้อภัย",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือการปลดบาดแผลรักและให้อภัย - ปล่อยความผิดในอดีต ให้อภัยตัวเองและคนเก่า เปิดใจรับความรักใหม่ ไพ่หนุนให้คุณทำงานกับบาดแผล เพื่อให้ความรักในอนาคตไม่ถูกอดีตขัดขวาง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Cups = เมตตา"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวเป้าหมายความรัก คือ 'ปลดบาดแผลเปิดรักใหม่'",
+          "advice_th": "ตั้งเป้าปลดบาดแผลรัก - ให้อภัยตัวเองและคนเก่า เปิดใจรับความรักใหม่",
+          "keywords_th": ["ปลดบาดแผล", "ให้อภัย", "เปิดรักใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือกล้าตอบรับการเปลี่ยนอาชีพ",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือการกล้าตอบรับการเปลี่ยนอาชีพ - ปลดความกลัวที่ขังคุณ กล้าออกจากที่ไม่ตรงคุณค่า ตอบรับเสียงเรียก ไพ่หนุนให้คุณทำงานกับความกลัว และกล้าก้าวสู่อาชีพที่แท้จริง แม้จะไม่แน่นอน",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = เปลี่ยน, The Fool = กล้าเริ่ม",
+            "wands": "Three of Wands = วางแผน",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวเป้าหมายงาน คือ 'กล้าก้าวแม้ไม่แน่นอน'",
+          "advice_th": "ตั้งเป้ากล้าเปลี่ยน - ปลดความกลัว ออกจากที่ไม่ตรงคุณค่า ตอบรับเสียงเรียก",
+          "keywords_th": ["กล้าเปลี่ยน", "ปลดกลัว", "ตอบรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือเมตตาตัวเองและปลดความผิด",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือการเมตตาตัวเองและปลดความผิด - กลับมาให้อภัยตัวเอง ปลดการตัดสินที่กดดัน ยอมรับความไม่สมบูรณ์ของตัวเอง ไพ่หนุนให้คุณทำงานกับการให้อภัยตัวเอง ซึ่งคือก้าวสำคัญสู่การเติบโตที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Cups = เมตตา"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวเป้าหมายเติบโต คือ 'เมตตาตัวเองคือก้าวสำคัญ'",
+          "advice_th": "ตั้งเป้าเมตตาตัวเอง - ให้อภัยตัวเอง ปลดการตัดสิน ยอมรับความไม่สมบูรณ์",
+          "keywords_th": ["เมตตาตน", "ปลดความผิด", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือดูแลสุขภาพด้วยเมตตาไม่โทษตน",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือการดูแลสุขภาพด้วยเมตตาไม่โทษตัวเอง - ปลดการโทษตัวเองเรื่องสุขภาพ ฟังร่างกายด้วยความเข้าใจ เปลี่ยนวิถีด้วยความรักไม่ใช่การลงโทษ ไพ่หนุนให้คุณดูแลตัวเองอย่างเมตตาเพื่อการฟื้นที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวเป้าหมายสุขภาพ คือ 'ดูแลด้วยรักไม่ใช่ลงโทษ'",
+          "advice_th": "ตั้งเป้าดูแลด้วยเมตตา - ปลดการโทษตัวเอง ฟังร่างกาย เปลี่ยนวิถีด้วยความรัก",
+          "keywords_th": ["เมตตา", "ไม่โทษตน", "ฟื้นยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือการตื่นรู้และความสามารถเริ่มใหม่",
+          "detailed_interpretation_th": "การพิพากษาในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือการตื่นรู้และความสามารถเริ่มใหม่ - คุณเคยเกิดใหม่หลายครั้ง รู้ว่าการเปลี่ยนแปลงเป็นไปได้ ฟังเสียงเรียกภายใน รากฐานนี้ทำให้คุณกล้าตัดสินใจครั้งสำคัญและเติบโตอย่างต่อเนื่อง",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษารากฐาน คือ 'ความสามารถเริ่มใหม่คือพลัง'",
+          "advice_th": "ใช้ความสามารถเริ่มใหม่ - คุณเกิดใหม่ได้เสมอ ฟังเสียงเรียก กล้าตัดสินใจสำคัญ",
+          "keywords_th": ["ตื่นรู้", "เริ่มใหม่", "เติบโต"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือการให้อภัยและเริ่มใหม่",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความสามารถในการให้อภัยและเริ่มใหม่ - คุณไม่ยึดติดความผิดในอดีต กล้าเปิดใจอีกครั้ง เชื่อในการเริ่มต้นใหม่ รากฐานนี้ทำให้คุณเป็นคู่ครองที่เติบโตและสร้างความสัมพันธ์ที่ฟื้นฟูได้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษารากฐานความรัก คือ 'ให้อภัยและเริ่มใหม่คือพลัง'",
+          "advice_th": "ใช้การให้อภัยเป็นรากฐาน - ไม่ยึดติดอดีต กล้าเปิดใจ เชื่อในการเริ่มต้นใหม่",
+          "keywords_th": ["ให้อภัย", "เริ่มใหม่", "ฟื้นฟู"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือความกล้าเปลี่ยนและตอบรับโอกาส",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือความกล้าเปลี่ยนและตอบรับโอกาส - คุณไม่กลัวเริ่มใหม่ ฟังเสียงเรียกในอาชีพ กล้าตัดสินใจครั้งสำคัญ รากฐานนี้ทำให้คุณก้าวสู่อาชีพที่ตรงคุณค่าและไม่ติดอยู่ในที่ที่ไม่ใช่",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = เปลี่ยน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษารากฐานงาน คือ 'กล้าเปลี่ยนคือพลัง'",
+          "advice_th": "ใช้ความกล้าเปลี่ยน - ฟังเสียงเรียกในอาชีพ ตอบรับโอกาส ก้าวสู่งานตรงคุณค่า",
+          "keywords_th": ["กล้าเปลี่ยน", "ตอบรับโอกาส", "ตรงคุณค่า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือความสามารถเกิดใหม่และให้อภัยตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือความสามารถเกิดใหม่และให้อภัยตัวเอง - คุณรู้ว่าสามารถเปลี่ยนแปลงได้ ปลดอดีตได้ เมตตาตัวเองได้ รากฐานนี้ทำให้คุณเติบโตอย่างต่อเนื่องและไม่ติดอยู่กับความผิดในอดีต",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จสมบูรณ์",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษารากฐานเติบโต คือ 'เกิดใหม่และให้อภัยตนได้เสมอ'",
+          "advice_th": "ใช้ความสามารถเกิดใหม่ - คุณเปลี่ยนแปลงได้ ปลดอดีตได้ เมตตาตัวเองได้",
+          "keywords_th": ["เกิดใหม่", "ให้อภัยตน", "เติบโต"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือความสามารถฟื้นและเริ่มใหม่",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือความสามารถฟื้นและเริ่มใหม่ - คุณรู้ว่าร่างกายฟื้นได้ กล้าเปลี่ยนวิถี เชื่อในการเริ่มต้นใหม่ รากฐานนี้ทำให้คุณดูแลตัวเองอย่างต่อเนื่องและฟื้นจากความเจ็บป่วยได้",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษารากฐานสุขภาพ คือ 'ร่างกายฟื้นและเริ่มใหม่ได้'",
+          "advice_th": "ใช้ความสามารถฟื้น - คุณรู้ว่าร่างกายฟื้นได้ กล้าเปลี่ยนวิถี เชื่อในการเริ่มใหม่",
+          "keywords_th": ["ฟื้นได้", "เริ่มใหม่", "ดูแลต่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือการตัดสินตัวเองและกลัวเปลี่ยน",
+          "detailed_interpretation_th": "การพิพากษากลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือการตัดสินตัวเองและกลัวการเปลี่ยนแปลง - คุณติดอยู่กับความผิดในอดีต โทษตัวเอง กลัวเริ่มใหม่ รากฐานนี้ขังคุณจากการเติบโต ถึงเวลาทำงานกับการให้อภัยตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ตัดสินตน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวรากฐาน คือ 'ให้อภัยตัวเองปลดการขัง'",
+          "advice_th": "ทำงานกับการให้อภัยตน - ปลดความผิดในอดีต หยุดโทษตัวเอง กล้าเริ่มใหม่",
+          "keywords_th": ["ตัดสินตน", "กลัวเปลี่ยน", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือบาดแผลและไม่ให้อภัย",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือบาดแผลและการไม่ให้อภัย - คุณยึดติดความผิดในอดีต โทษตัวเองหรือคนเก่า กลัวเริ่มใหม่ รากฐานนี้ขัดความรักไม่ให้เข้ามา ถึงเวลาเยียวยาบาดแผลและเรียนรู้การให้อภัย",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = บาดแผล, The Moon = สับสน",
+            "wands": "Seven of Wands = ต้าน",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวรากฐานความรัก คือ 'เยียวยาและให้อภัย'",
+          "advice_th": "เยียวยาบาดแผล - หยุดยึดติดความผิด ให้อภัยตัวเองและคนเก่า กล้าเริ่มใหม่",
+          "keywords_th": ["บาดแผล", "ไม่ให้อภัย", "เยียวยา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือกลัวเปลี่ยนและติดในที่ปลอดภัย",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือความกลัวเปลี่ยนและติดในที่ปลอดภัย - คุณฝืนอยู่ในงานที่ไม่ใช่ กลัวความไม่แน่นอน เพิกเฉยเสียงเรียก รากฐานนี้ทำให้คุณติดอยู่ ถึงเวลาทำงานกับความกลัวและกล้าตอบรับการเปลี่ยนแปลง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวรากฐานงาน คือ 'กล้าตอบรับการเปลี่ยน'",
+          "advice_th": "ทำงานกับความกลัว - หยุดฝืนอยู่ที่เดิม ฟังเสียงเรียก กล้าตอบรับการเปลี่ยนแปลง",
+          "keywords_th": ["กลัวเปลี่ยน", "ติดปลอดภัย", "กล้าตอบรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือตัดสินตัวเองและไม่ให้อภัย",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือการตัดสินตัวเองและไม่ให้อภัย - คุณติดความผิดในอดีต โทษตัวเองไม่หยุด มองตัวเองในแง่ลบ รากฐานนี้ขับเคลื่อนคุณจากเบื้องหลังและขังคุณจากการเติบโต ไพ่หนุนให้คุณทำงานกับการให้อภัยตัวเองด้วยเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Nine of Swords = โทษตน",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวรากฐานเติบโต คือ 'ให้อภัยตัวเองด้วยเมตตา'",
+          "advice_th": "ทำงานกับการให้อภัยตน - หยุดโทษตัวเอง ปลดความผิดเก่า มองตัวเองด้วยเมตตา",
+          "keywords_th": ["ตัดสินตน", "ไม่ให้อภัย", "เมตตา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือโทษตัวเองและไม่ยอมเปลี่ยน",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือการโทษตัวเองและไม่ยอมเปลี่ยนวิถี - คุณโทษตัวเองเรื่องสุขภาพ ฝืนนิสัยที่ทำร้ายร่างกาย ไม่เชื่อว่าจะดีขึ้น รากฐานนี้ทำให้สุขภาพแย่ลง ไพ่หนุนให้คุณปลดการโทษตัวเอง ฟังร่างกาย และดูแลด้วยเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Seven of Wands = ปฏิเสธ",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวรากฐานสุขภาพ คือ 'ปลดการโทษ ดูแลด้วยเมตตา'",
+          "advice_th": "ปลดการโทษตัวเอง - หยุดโทษเรื่องสุขภาพ ฟังร่างกาย ดูแลด้วยเมตตา",
+          "keywords_th": ["โทษตน", "ไม่เปลี่ยน", "เมตตา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ตอบรับเสียงเรียกและกล้าเริ่มใหม่",
+          "detailed_interpretation_th": "การพิพากษาในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีที่สุดคือตอบรับเสียงเรียกและกล้าเริ่มใหม่ - ฟังสัญชาตญาณภายใน ตัดสินใจครั้งสำคัญ ปล่อยอดีตและก้าวสู่บทใหม่ ไพ่หนุนให้คุณเชื่อในเสียงเรียกและกล้าเปลี่ยนแปลงตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งคำแนะนำ คือ 'เชื่อในเสียงเรียกและกล้าเปลี่ยน'",
+          "advice_th": "ตอบรับเสียงเรียก - ฟังสัญชาตญาณ ตัดสินใจครั้งสำคัญ ปล่อยอดีต ก้าวสู่บทใหม่",
+          "keywords_th": ["ตอบรับ", "กล้าเริ่มใหม่", "ฟังใน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ให้อภัยและกล้าตัดสินใจในความรัก",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณควรให้อภัยและกล้าตัดสินใจ - ปล่อยความผิดในอดีต ตัดสินใจเรื่องความสัมพันธ์อย่างซื่อสัตย์ เปิดใจให้การเริ่มต้นใหม่ ไพ่หนุนให้คุณฟังเสียงใจและกล้าทำสิ่งที่ถูกต้อง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, Temperance = สมดุล",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งคำแนะนำความรัก คือ 'ให้อภัยและกล้าตัดสินใจ'",
+          "advice_th": "ให้อภัยในความรัก - ปล่อยความผิดเก่า ตัดสินใจซื่อสัตย์ เปิดใจให้การเริ่มต้นใหม่",
+          "keywords_th": ["ให้อภัย", "กล้าตัดสิน", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตอบรับเสียงเรียกในอาชีพและกล้าเปลี่ยน",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรตอบรับเสียงเรียกในอาชีพและกล้าเปลี่ยน - ฟังว่าอะไรเรียกร้องคุณ กล้าตัดสินใจสำคัญ ก้าวสู่งานที่ตรงคุณค่า ไพ่หนุนให้คุณเชื่อในจุดหมายและกล้าทำการเปลี่ยนแปลงที่จำเป็น",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = เปลี่ยน",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งคำแนะนำงาน คือ 'เชื่อในจุดหมายกล้าเปลี่ยน'",
+          "advice_th": "ตอบรับเสียงเรียกอาชีพ - ฟังว่าอะไรเรียกร้อง กล้าตัดสินใจ ก้าวสู่งานตรงคุณค่า",
+          "keywords_th": ["ตอบรับเรียก", "กล้าเปลี่ยน", "จุดหมาย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ปลดอดีตและก้าวสู่เวอร์ชันที่ดีขึ้น",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรปลดอดีตและก้าวสู่เวอร์ชันที่ดีขึ้น - ให้อภัยตัวเอง ปล่อยความผิดเก่า ตอบรับการเรียกร้องสู่การเติบโต ไพ่หนุนให้คุณกล้าเกิดใหม่และเชื่อในศักยภาพของการเปลี่ยนแปลง",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จสมบูรณ์",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งคำแนะนำเติบโต คือ 'กล้าเกิดใหม่'",
+          "advice_th": "ปลดอดีตและเกิดใหม่ - ให้อภัยตัวเอง ตอบรับการเรียกร้องสู่การเติบโต กล้าเปลี่ยน",
+          "keywords_th": ["ปลดอดีต", "เกิดใหม่", "ให้อภัย"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ฟังร่างกายและกล้าเปลี่ยนวิถีชีวิต",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรฟังร่างกายและกล้าเปลี่ยนวิถีชีวิต - ตอบรับสัญญาณของร่างกาย เลิกนิสัยทำลาย เริ่มต้นการดูแลตัวเองใหม่ ไพ่หนุนให้คุณกล้าทำการเปลี่ยนแปลงที่จำเป็นเพื่อสุขภาพที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งคำแนะนำสุขภาพ คือ 'ฟังร่างกายกล้าเปลี่ยน'",
+          "advice_th": "ฟังร่างกายและเปลี่ยน - ตอบรับสัญญาณ เลิกนิสัยทำลาย เริ่มดูแลตัวเองใหม่",
+          "keywords_th": ["ฟังร่าง", "เปลี่ยนวิถี", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หยุดตัดสินตัวเองและฟังเสียงภายในด้วยเมตตา",
+          "detailed_interpretation_th": "การพิพากษากลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือหยุดตัดสินตัวเองและฟังเสียงภายในด้วยเมตตา - ปลดความผิดในอดีต ให้อภัยตัวเอง ไม่กดดันตัวเองเกินไป ไพ่หนุนให้คุณเข้าหาการเปลี่ยนแปลงด้วยความรักไม่ใช่การลงโทษ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Cups = เมตตา"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งคำแนะนำ คือ 'เปลี่ยนด้วยรักไม่ใช่ลงโทษ'",
+          "advice_th": "หยุดตัดสินตัวเอง - ให้อภัยตัวเอง ฟังเสียงภายในด้วยเมตตา เปลี่ยนด้วยรัก",
+          "keywords_th": ["หยุดตัดสิน", "ให้อภัย", "เมตตา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ให้อภัยตัวเองและไม่โทษเรื่องความรัก",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าคุณควรให้อภัยตัวเองและไม่โทษเรื่องความรัก - ปลดความรู้สึกผิดเรื่องความสัมพันธ์ที่จบ ยอมรับว่าทุกคนผิดพลาดได้ เมตตาตัวเอง ไพ่หนุนให้คุณเยียวยาบาดแผลก่อนเปิดใจรับความรักใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Cups = เมตตา"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งคำแนะนำความรัก คือ 'เยียวยาก่อนเปิดใจ'",
+          "advice_th": "ให้อภัยตัวเองในรัก - ปลดความรู้สึกผิด เมตตาตัวเอง เยียวยาก่อนเปิดใจใหม่",
+          "keywords_th": ["ให้อภัยตน", "ไม่โทษ", "เยียวยา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อย่ากดดันตัวเองเกินและประเมินอย่างเมตตา",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวชี้ว่าคุณควรอย่ากดดันตัวเองเกินและประเมินอย่างเมตตา - ไม่ตัดสินตัวเองรุนแรงเรื่องความล้มเหลว ให้เวลาในการตัดสินใจ ไม่เร่งรีบเปลี่ยน ไพ่หนุนให้คุณเข้าหาการเปลี่ยนแปลงอาชีพด้วยความรอบคอบและเมตตาต่อตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Temperance = สมดุล",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = ไตร่ตรอง",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งคำแนะนำงาน คือ 'ประเมินอย่างเมตตา'",
+          "advice_th": "อย่ากดดันตัวเองเกิน - ไม่ตัดสินรุนแรงเรื่องล้มเหลว ให้เวลา ประเมินอย่างเมตตา",
+          "keywords_th": ["ไม่กดดัน", "เมตตา", "รอบคอบ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ให้อภัยตัวเองและเข้าหาการเติบโตด้วยเมตตา",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรให้อภัยตัวเองและเข้าหาการเติบโตด้วยเมตตา - หยุดตัดสินตัวเองรุนแรง ยอมรับความไม่สมบูรณ์ มองความผิดพลาดเป็นบทเรียน ไพ่หนุนให้คุณเติบโตจากความรักตัวเอง ไม่ใช่จากการลงโทษ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Cups = เมตตา"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งคำแนะนำเติบโต คือ 'เติบโตจากความรักตัวเอง'",
+          "advice_th": "ให้อภัยตัวเอง - หยุดตัดสินรุนแรง ยอมรับความไม่สมบูรณ์ เติบโตจากความรักตน",
+          "keywords_th": ["ให้อภัยตน", "เมตตา", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ดูแลสุขภาพด้วยเมตตาไม่โทษตัวเอง",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวชี้ว่าคุณควรดูแลสุขภาพด้วยเมตตาไม่โทษตัวเอง - ปลดการโทษตัวเองเรื่องสุขภาพ ฟังร่างกายด้วยความเข้าใจ เปลี่ยนวิถีด้วยความรัก ไพ่หนุนให้คุณดูแลตัวเองอย่างอ่อนโยนเพื่อการฟื้นที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'ดูแลด้วยเมตตาไม่โทษตน'",
+          "advice_th": "ดูแลด้วยเมตตา - ปลดการโทษตัวเอง ฟังร่างกายด้วยเข้าใจ เปลี่ยนวิถีด้วยรัก",
+          "keywords_th": ["เมตตา", "ไม่โทษตน", "อ่อนโยน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมหนุนการเปลี่ยนแปลงและเริ่มใหม่",
+          "detailed_interpretation_th": "การพิพากษาในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวหนุนการเปลี่ยนแปลงและเริ่มใหม่ - เหตุการณ์ที่ผลักให้คุณตื่นรู้ คนที่หนุนการเปลี่ยน โอกาสที่เรียกร้องให้คุณก้าว ไพ่บอกว่าจักรวาลกำลังเรียกร้องให้คุณก้าวสู่บทใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Death = แปลงร่าง",
+            "wands": "Eight of Wands = เหตุการณ์เร็ว",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งภายนอก คือ 'จักรวาลเรียกร้องให้ก้าว'",
+          "advice_th": "ตอบรับการเรียกจากภายนอก - เหตุการณ์ผลักให้ตื่นรู้ คนหนุนเปลี่ยน ก้าวสู่บทใหม่",
+          "keywords_th": ["แวดล้อมหนุนเปลี่ยน", "เรียกร้อง", "บทใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างหนุนการตัดสินใจในความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าคนรอบข้างหนุนการตัดสินใจในความรัก - เพื่อนที่ให้คำแนะนำดี ครอบครัวที่สนับสนุน เหตุการณ์ที่ช่วยให้เห็นชัด ไพ่บอกว่าใช้แรงสนับสนุนนี้ตัดสินใจเรื่องความสัมพันธ์อย่างมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งภายนอกความรัก คือ 'แรงหนุนช่วยตัดสินใจ'",
+          "advice_th": "ใช้แรงหนุนจากคนรอบข้าง - เพื่อนแนะนำดี ครอบครัวหนุน ตัดสินใจเรื่องรักมั่นใจ",
+          "keywords_th": ["คนหนุน", "ตัดสินใจ", "มั่นใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสในงานเรียกร้องให้คุณก้าว",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่าโอกาสในงานเรียกร้องให้คุณก้าว - ข้อเสนอใหม่ การเปลี่ยนแปลงในองค์กร เหตุการณ์ที่ผลักให้ตัดสินใจ ไพ่หนุนให้คุณตอบรับโอกาสและก้าวสู่บทใหม่ของอาชีพ",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = เปลี่ยน",
+            "wands": "Eight of Wands = เหตุการณ์เร็ว",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งภายนอกงาน คือ 'โอกาสเรียกร้องให้ก้าว'",
+          "advice_th": "ตอบรับโอกาสที่เรียกร้อง - ข้อเสนอใหม่ การเปลี่ยนในองค์กร ก้าวสู่บทใหม่ของอาชีพ",
+          "keywords_th": ["โอกาสเรียก", "ตอบรับ", "บทใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เหตุการณ์ภายนอกเรียกร้องให้ตื่นรู้",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าเหตุการณ์ภายนอกเรียกร้องให้คุณตื่นรู้ - ประสบการณ์ที่เปลี่ยนมุมมอง คนที่เป็นครู สถานการณ์ที่ผลักให้เติบโต ไพ่บอกว่าใช้สิ่งที่เกิดเป็นแรงผลักสู่การเกิดใหม่และการตื่นรู้",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จ",
+            "wands": "Eight of Wands = ข้อมูลเร็ว",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งภายนอกเติบโต คือ 'เหตุการณ์เป็นแรงผลักตื่นรู้'",
+          "advice_th": "ใช้เหตุการณ์เป็นแรงผลัก - ประสบการณ์เปลี่ยนมุมมอง คนเป็นครู ก้าวสู่การเกิดใหม่",
+          "keywords_th": ["เหตุการณ์เรียก", "ตื่นรู้", "เกิดใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เหตุการณ์ภายนอกเตือนให้ดูแลสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าเหตุการณ์ภายนอกเตือนให้คุณดูแลสุขภาพ - เหตุการณ์ที่ทำให้ตระหนัก คนที่ป่วยรอบตัว คำแนะนำจากแพทย์ ไพ่หนุนให้คุณใช้สัญญาณเหล่านี้เป็นแรงผลักสู่การเปลี่ยนวิถีและดูแลตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Eight of Wands = เหตุการณ์เร็ว",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งภายนอกสุขภาพ คือ 'ใช้สัญญาณเป็นแรงผลักเปลี่ยน'",
+          "advice_th": "ใช้สัญญาณภายนอกเตือน - เหตุการณ์ทำให้ตระหนัก คำแนะนำแพทย์ เปลี่ยนวิถี ดูแลตัวเอง",
+          "keywords_th": ["เหตุการณ์เตือน", "ตระหนัก", "เปลี่ยนวิถี"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมตัดสินหรือกดดันให้เปลี่ยน",
+          "detailed_interpretation_th": "การพิพากษากลับหัวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวตัดสินหรือกดดันให้คุณเปลี่ยน - คนที่ตัดสินคุณ ความคาดหวังของสังคม แรงกดดันที่ไม่ตรงกับเสียงภายใน ไพ่เตือนให้คุณฟังเสียงภายในตัวเองมากกว่าเสียงตัดสินจากภายนอก",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Hierophant = กรอบสังคม",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ถูกตัดสิน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งภายนอก คือ 'ฟังเสียงในมากกว่าเสียงตัดสิน'",
+          "advice_th": "ฟังเสียงภายในตัวเอง - แวดล้อมตัดสินและกดดัน ฟังเสียงในมากกว่าเสียงตัดสินจากนอก",
+          "keywords_th": ["ถูกตัดสิน", "กดดัน", "ฟังใน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างตัดสินความสัมพันธ์ของคุณ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าคนรอบข้างตัดสินความสัมพันธ์ของคุณ - ครอบครัวที่คัดค้าน เพื่อนที่วิจารณ์ สังคมที่กดดัน ไพ่หนุนให้คุณเชื่อในความรู้สึกของตัวเอง ไม่ปล่อยให้การตัดสินจากภายนอกกำหนดความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งภายนอกความรัก คือ 'เชื่อความรู้สึกตน'",
+          "advice_th": "เชื่อในความรู้สึกตน - คนรอบข้างตัดสิน ไม่ปล่อยให้การตัดสินจากนอกกำหนดความรัก",
+          "keywords_th": ["ถูกตัดสิน", "กดดัน", "เชื่อตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ที่ทำงานตัดสินหรือกดดันให้เปลี่ยน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าที่ทำงานตัดสินหรือกดดันให้คุณเปลี่ยน - การประเมินที่ไม่เป็นธรรม แรงกดดันที่ไม่ตรงคุณค่า ความคาดหวังที่เกินจริง ไพ่หนุนให้คุณยืนหยัดในคุณค่าตัวเองและไม่ปล่อยให้การตัดสินจากภายนอกบั่นทอนความมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor (rev) = อำนาจกดดัน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ถูกกดดัน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "King of Swords (rev) = เผด็จการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งภายนอกงาน คือ 'ยืนหยัดในคุณค่าตน'",
+          "advice_th": "ยืนหยัดในคุณค่าตน - ที่ทำงานตัดสินไม่เป็นธรรม ไม่ปล่อยให้บั่นทอนความมั่นใจ",
+          "keywords_th": ["ถูกตัดสิน", "กดดัน", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมตัดสินการเปลี่ยนแปลงของคุณ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมตัดสินการเปลี่ยนแปลงของคุณ - คนที่ไม่เข้าใจการเติบโต ความคาดหวังที่กักขัง การวิจารณ์เส้นทางที่คุณเลือก ไพ่หนุนให้คุณเดินตามเสียงเรียกภายใน ไม่ปล่อยให้การตัดสินจากสังคมหยุดการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant (rev) = ทิ้งกรอบ, The Hermit = เดินคนเดียว",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Four of Pentacles = ยึดเก่า",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งภายนอกเติบโต คือ 'เดินตามเสียงเรียกภายใน'",
+          "advice_th": "เดินตามเสียงในตน - สังคมตัดสินการเปลี่ยน ไม่ปล่อยให้หยุดการเติบโตของคุณ",
+          "keywords_th": ["สังคมตัดสิน", "ไม่เข้าใจ", "เดินตามใน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมกดดันหรือไม่หนุนการดูแลตัวเอง",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวเตือนว่าสิ่งแวดล้อมกดดันหรือไม่หนุนการดูแลตัวเอง - ความเครียดจากภายนอก คนที่ไม่เข้าใจ สภาพที่ทำให้ละเลยสุขภาพ ไพ่หนุนให้คุณให้ความสำคัญกับสุขภาพตัวเอง ไม่ปล่อยให้แรงกดดันภายนอกทำให้ละเลย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งภายนอกสุขภาพ คือ 'ให้ความสำคัญสุขภาพตน'",
+          "advice_th": "ให้ความสำคัญสุขภาพตน - แวดล้อมกดดัน ไม่ปล่อยให้แรงกดดันทำให้ละเลยตัวเอง",
+          "keywords_th": ["กดดัน", "ไม่หนุน", "ให้ความสำคัญตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังการเกิดใหม่ กลัวการเปลี่ยนแปลง",
+          "detailed_interpretation_th": "การพิพากษาในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังการเกิดใหม่และการตื่นรู้ - อยากเปลี่ยนแปลง อยากเริ่มบทใหม่ แต่ก็กลัวการเปลี่ยนแปลงและสิ่งที่ต้องปล่อย ไพ่บอกว่าการเกิดใหม่ต้องการความกล้า และคุณพร้อมกว่าที่คิด",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งความหวังกลัว คือ 'คุณพร้อมเกิดใหม่กว่าที่คิด'",
+          "advice_th": "กล้าเกิดใหม่ - หวังเปลี่ยนแปลงแต่กลัวสิ่งที่ต้องปล่อย คุณพร้อมกว่าที่คิด",
+          "keywords_th": ["หวังเกิดใหม่", "กลัวเปลี่ยน", "พร้อม"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังการเริ่มใหม่ในรัก กลัวซ้ำรอยเดิม",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังการเริ่มใหม่ในความรัก แต่กลัวซ้ำรอยความผิดพลาดเดิม - หวังให้อภัยและฟื้นฟู แต่กลัวเจ็บอีก ไพ่บอกว่าการให้อภัยและเปิดใจไม่ได้รับประกันไม่เจ็บ แต่เป็นทางเดียวสู่ความรักที่แท้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Death = สิ้นสุดเก่า",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งความหวังกลัวความรัก คือ 'ให้อภัยคือทางสู่รักแท้'",
+          "advice_th": "กล้าเริ่มใหม่ในรัก - หวังฟื้นฟูแต่กลัวซ้ำรอย การให้อภัยและเปิดใจคือทางสู่รักแท้",
+          "keywords_th": ["หวังเริ่มใหม่", "กลัวซ้ำรอย", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังเปลี่ยนอาชีพ กลัวความไม่แน่นอน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังเปลี่ยนอาชีพสู่สิ่งที่ใช่ แต่กลัวความไม่แน่นอน - หวังตอบรับเสียงเรียก แต่กลัวเสี่ยงและล้มเหลว ไพ่บอกว่าเสียงเรียกของคุณคือเข็มทิศ การตอบรับต้องการความกล้า แต่จะนำสู่อาชีพที่ตรงคุณค่า",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โอกาส",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งความหวังกลัวงาน คือ 'เสียงเรียกคือเข็มทิศ'",
+          "advice_th": "กล้าเปลี่ยนอาชีพ - หวังตอบรับเสียงเรียกแต่กลัวเสี่ยง เสียงเรียกคือเข็มทิศ",
+          "keywords_th": ["หวังเปลี่ยน", "กลัวเสี่ยง", "เสียงเรียก"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเกิดใหม่ กลัวความรับผิดชอบที่ตามมา",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังเกิดใหม่และเป็นเวอร์ชันที่สูงกว่า แต่กลัวความรับผิดชอบที่ตามมา - หวังตื่นรู้ แต่กลัวว่าจะกลับไปเหมือนเดิมไม่ได้ กลัวความคาดหวังใหม่ ไพ่หนุนให้คุณกล้าเกิดใหม่ การเติบโตคือสิทธิ์โดยกำเนิดของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The World = สำเร็จสมบูรณ์",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งความหวังกลัวเติบโต คือ 'การเติบโตคือสิทธิ์โดยกำเนิด'",
+          "advice_th": "กล้าเกิดใหม่ - หวังตื่นรู้แต่กลัวรับผิดชอบ การเติบโตคือสิทธิ์โดยกำเนิดของคุณ",
+          "keywords_th": ["หวังเกิดใหม่", "กลัวรับผิดชอบ", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังฟื้นฟู กลัวว่าจะไม่หาย",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังฟื้นฟูและเริ่มต้นวิถีใหม่ แต่กลัวว่าจะไม่หายหรือกลับมาป่วยอีก - หวังเปลี่ยนวิถี แต่กลัวว่าจะทำไม่สำเร็จ ไพ่บอกว่าความหวังคือพลังเยียวยา การกล้าเริ่มใหม่และเชื่อในร่างกายจะนำมาซึ่งการฟื้นที่แท้",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งความหวังกลัวสุขภาพ คือ 'ความหวังคือพลังเยียวยา'",
+          "advice_th": "กล้าเริ่มใหม่ - หวังฟื้นฟูแต่กลัวไม่หาย ความหวังคือพลังเยียวยา เชื่อในร่างกาย",
+          "keywords_th": ["หวังฟื้นฟู", "กลัวไม่หาย", "เชื่อในร่าง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวการตัดสินและความผิดพลาดในอดีต",
+          "detailed_interpretation_th": "การพิพากษากลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวการตัดสินและความผิดพลาดในอดีต - กลัวถูกตัดสิน กลัวความผิดเก่าจะตามมา ตัดสินตัวเองรุนแรง ไพ่บอกว่าการให้อภัยตัวเองคือทางสู่อิสรภาพ คุณไม่ได้ถูกนิยามด้วยความผิดในอดีต",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัว, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ตัดสินตน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งความหวังกลัว คือ 'คุณไม่ได้ถูกนิยามด้วยอดีต'",
+          "advice_th": "ให้อภัยตัวเอง - กลัวการตัดสินและความผิดเก่า คุณไม่ได้ถูกนิยามด้วยอดีต",
+          "keywords_th": ["กลัวถูกตัดสิน", "ความผิดเก่า", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวถูกตัดสินเรื่องอดีตความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวถูกตัดสินเรื่องอดีตความรัก - กลัวคนใหม่รู้เรื่องเก่า กลัวความผิดพลาดในอดีตจะทำลายโอกาส ตัดสินตัวเองเรื่องความสัมพันธ์ที่จบ ไพ่บอกว่าอดีตคือบทเรียน ไม่ใช่ตราบาป กล้าเปิดใจรับความรักใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = บาดแผล, The Moon = สับสน",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งความหวังกลัวความรัก คือ 'อดีตคือบทเรียนไม่ใช่ตราบาป'",
+          "advice_th": "ปลดความกลัวถูกตัดสิน - อดีตคือบทเรียนไม่ใช่ตราบาป กล้าเปิดใจรับรักใหม่",
+          "keywords_th": ["กลัวถูกตัดสิน", "อดีต", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวความล้มเหลวในอดีตจะตามมา",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวความล้มเหลวในอดีตจะตามมา - กลัวซ้ำรอยความผิดพลาดเก่า กลัวคนตัดสินจากประวัติ ไม่กล้าเริ่มใหม่ ไพ่บอกว่าความล้มเหลวเก่าคือบทเรียน ใช้มันเป็นปัญญา ไม่ใช่โซ่ที่ล่ามคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พังเก่า, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = กลัวขาด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งความหวังกลัวงาน คือ 'ล้มเหลวเก่าคือปัญญาไม่ใช่โซ่'",
+          "advice_th": "ปลดความกลัวล้มเหลว - ความล้มเหลวเก่าคือบทเรียน ใช้เป็นปัญญา ไม่ใช่โซ่ล่าม",
+          "keywords_th": ["กลัวล้มเหลว", "ซ้ำรอย", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวเผชิญความผิดในอดีตของตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวเผชิญความผิดในอดีตของตัวเอง - กลัวมองด้านที่เคยทำผิด กลัวรับผิดชอบ ตัดสินตัวเองรุนแรง ไพ่หนุนให้คุณกล้าเผชิญอดีตด้วยเมตตา ให้อภัยตัวเอง และใช้เป็นบทเรียนสู่การเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เงาในใจ, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Nine of Swords = โทษตน",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'เผชิญอดีตด้วยเมตตา'",
+          "advice_th": "กล้าเผชิญอดีตด้วยเมตตา - กลัวมองความผิดเก่า ให้อภัยตัวเอง ใช้เป็นบทเรียน",
+          "keywords_th": ["กลัวเผชิญ", "ความผิดเก่า", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวร่างกายจะไม่ฟื้นและโทษตัวเอง",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวร่างกายจะไม่ฟื้นและโทษตัวเอง - กลัวว่าสายเกินไป โทษตัวเองที่ไม่ดูแลก่อน วิตกว่าจะไม่หาย ไพ่บอกว่าการโทษตัวเองไม่ช่วยฟื้น ปลดความกลัว ดูแลด้วยเมตตา และเชื่อในพลังเยียวยาของร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = ความกลัว",
+            "wands": "Ten of Wands = แบกกลัว",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = กลัวป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'โทษตัวเองไม่ช่วยฟื้น'",
+          "advice_th": "ปลดความกลัวและโทษตน - การโทษตัวเองไม่ช่วยฟื้น ดูแลด้วยเมตตา เชื่อในเยียวยา",
+          "keywords_th": ["กลัวไม่ฟื้น", "โทษตน", "เมตตา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการเกิดใหม่และการเริ่มต้นที่มีความหมาย",
+          "detailed_interpretation_th": "การพิพากษาในตำแหน่งผลลัพธ์ เป็นข่าวดีที่ลึกซึ้ง - ผลลัพธ์ของสถานการณ์คือการเกิดใหม่และการเริ่มต้นที่มีความหมาย คุณจะตอบรับเสียงเรียก ก้าวข้ามอดีต และเกิดเป็นเวอร์ชันที่สูงกว่าของตัวเอง ไพ่ยืนยันว่าการตัดสินใจและการเปลี่ยนแปลงจะนำมาซึ่งชีวิตที่ตรงจุดหมายแท้",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, Death = แปลงร่าง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งผลลัพธ์ คือ 'เกิดใหม่สู่ชีวิตที่ตรงจุดหมาย'",
+          "advice_th": "เชื่อมั่นในการเกิดใหม่ - ตอบรับเสียงเรียก ก้าวข้ามอดีต เกิดเป็นเวอร์ชันที่สูงกว่า",
+          "keywords_th": ["เกิดใหม่", "เริ่มต้นมีความหมาย", "จุดหมายแท้"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่ฟื้นฟูหรือเริ่มต้นใหม่",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เป็นข่าวดี - ความรักจะฟื้นฟูหรือเริ่มต้นใหม่บนพื้นฐานที่ลึกซึ้งกว่า การให้อภัยและการเข้าใจ การก้าวสู่ขั้นใหม่ของความสัมพันธ์ หรือการพบรักที่เปลี่ยนชีวิต ไพ่ยืนยันว่าความรักครั้งนี้เกิดจากการตื่นรู้และนำมาซึ่งความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The World = สำเร็จคู่",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งผลลัพธ์ความรัก คือ 'รักเกิดจากการตื่นรู้'",
+          "advice_th": "เปิดใจรับความรักที่ฟื้นฟู - เริ่มใหม่บนพื้นฐานลึกซึ้ง ให้อภัยและเข้าใจ มีความหมาย",
+          "keywords_th": ["รักฟื้นฟู", "เริ่มใหม่", "ลึกซึ้ง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คืออาชีพใหม่ที่ตรงจุดหมาย",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดี - คุณจะก้าวสู่อาชีพใหม่ที่ตรงจุดหมายและคุณค่า การตอบรับเสียงเรียก การเปลี่ยนสายงานที่สำเร็จ หรือการเก็บเกี่ยวผลของการเปลี่ยนแปลง ไพ่ยืนยันว่าความกล้าตัดสินใจของคุณจะนำมาซึ่งอาชีพที่มีความหมายและความสำเร็จ",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งผลลัพธ์งาน คือ 'อาชีพใหม่ตรงจุดหมาย'",
+          "advice_th": "เชื่อในการเปลี่ยน - ก้าวสู่อาชีพใหม่ตรงจุดหมาย ความกล้าตัดสินใจนำความสำเร็จ",
+          "keywords_th": ["อาชีพใหม่", "ตรงจุดหมาย", "ความสำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการเกิดใหม่ทางจิตวิญญาณ",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นชัยชนะลึกซึ้ง - คุณจะเกิดใหม่ทางจิตวิญญาณ ปลดอดีต ให้อภัยตัวเอง และก้าวสู่เวอร์ชันที่สูงที่สุดของตัวเอง ไพ่ยืนยันว่าการตื่นรู้นี้จะนำคุณสู่ความเข้าใจในจุดหมายชีวิต ความเป็นตัวเองที่แท้จริง และการเป็นแสงให้โลก",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, Death = แปลงร่าง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งผลลัพธ์เติบโต คือ 'เกิดใหม่ทางจิตวิญญาณ'",
+          "advice_th": "เฉลิมฉลองการเกิดใหม่ - ปลดอดีต ให้อภัยตัวเอง ก้าวสู่ตัวตนสูงสุด เป็นแสงให้โลก",
+          "keywords_th": ["เกิดใหม่จิตวิญญาณ", "ตัวตนสูงสุด", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือการฟื้นฟูและสุขภาพที่กลับมา",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดี - คุณจะฟื้นฟูและสุขภาพกลับมา การฟื้นจากความเจ็บป่วย การเปลี่ยนวิถีที่สำเร็จ การตื่นรู้เรื่องการดูแลตัวเอง ไพ่ยืนยันว่าความกล้าเปลี่ยนแปลงและการดูแลตัวเองจะนำมาซึ่งสุขภาพที่ดีและพลังชีวิตที่ฟื้นกลับ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษาตำแหน่งผลลัพธ์สุขภาพ คือ 'ฟื้นฟูและสุขภาพกลับมา'",
+          "advice_th": "เชื่อในการฟื้น - ฟื้นจากความเจ็บป่วย เปลี่ยนวิถีสำเร็จ พลังชีวิตจะกลับมา",
+          "keywords_th": ["ฟื้นฟู", "สุขภาพกลับ", "พลังกลับ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือติดอยู่เพราะไม่กล้าเปลี่ยน",
+          "detailed_interpretation_th": "การพิพากษากลับหัวในตำแหน่งผลลัพธ์ เตือนว่าผลลัพธ์อาจเป็นการติดอยู่เพราะไม่กล้าเปลี่ยน - การเพิกเฉยเสียงเรียก การติดความผิดในอดีต การตัดสินตัวเองรุนแรง ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ การให้อภัยตัวเองและกล้าตอบรับเสียงเรียกจะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ตัดสินตน",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งผลลัพธ์ คือ 'ให้อภัยและกล้าตอบรับเปลี่ยนผลลัพธ์'",
+          "advice_th": "เปลี่ยนผลลัพธ์ได้ - ไม่กล้าเปลี่ยนทำให้ติด ให้อภัยตัวเอง กล้าตอบรับเสียงเรียก",
+          "keywords_th": ["ติดอยู่", "ไม่กล้าเปลี่ยน", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือติดอยู่กับอดีตของความรัก",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวเตือนว่าอาจติดอยู่กับอดีตของความรัก - การไม่ให้อภัย การโทษตัวเองหรือคนเก่า การกลัวเริ่มใหม่ ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ การปลดอดีตและเปิดใจจะนำมาซึ่งความรักใหม่ที่ดีต่อสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ติดอดีต, The Moon = สับสน",
+            "wands": "Seven of Wands = ต้าน",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'ปลดอดีตเปิดรักใหม่'",
+          "advice_th": "ปลดอดีตในรัก - การติดอดีตไม่ใช่ผลลัพธ์สุดท้าย ให้อภัย เปิดใจรับรักใหม่",
+          "keywords_th": ["ติดอดีต", "ไม่ให้อภัย", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือฝืนอยู่ในที่ไม่ตรงคุณค่า",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวเตือนว่าอาจฝืนอยู่ในที่ไม่ตรงคุณค่า - การเพิกเฉยเสียงเรียก การกลัวเปลี่ยน การติดในงานที่ไม่ใช่ ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่ต้องเป็น การกล้าตอบรับการเปลี่ยนแปลงจะนำมาซึ่งอาชีพที่ตรงคุณค่าและความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งผลลัพธ์งาน คือ 'กล้าเปลี่ยนสู่งานตรงคุณค่า'",
+          "advice_th": "อย่าฝืนอยู่ - การฝืนในที่ไม่ตรงคุณค่าไม่ใช่ผลลัพธ์ กล้าตอบรับการเปลี่ยนแปลง",
+          "keywords_th": ["ฝืนอยู่", "เพิกเฉยเรียก", "กล้าเปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือติดอยู่เพราะตัดสินตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวเตือนว่าอาจติดอยู่เพราะตัดสินตัวเอง - การโทษตัวเองไม่หยุด การติดความผิดในอดีต การไม่ให้อภัย ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่ต้องเป็น การให้อภัยตัวเองด้วยเมตตาคือกุญแจสู่การเติบโตและการเกิดใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Nine of Swords = โทษตน",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Swords (rev) = วิจารณ์ตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'ให้อภัยตัวเองคือกุญแจ'",
+          "advice_th": "ให้อภัยตัวเอง - การตัดสินตนไม่ใช่ผลลัพธ์สุดท้าย เมตตาตัวเองคือกุญแจสู่การเติบโต",
+          "keywords_th": ["ตัดสินตน", "ติดอยู่", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือฟื้นช้าเพราะไม่ยอมเปลี่ยน",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวเตือนว่าอาจฟื้นช้าเพราะไม่ยอมเปลี่ยนวิถี - การฝืนนิสัยที่ทำร้ายร่างกาย การโทษตัวเอง การไม่เชื่อในการฟื้น ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ การกล้าเปลี่ยนวิถีและดูแลด้วยเมตตาจะนำมาซึ่งการฟื้นที่แท้",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Seven of Wands = ปฏิเสธ",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: การพิพากษากลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'กล้าเปลี่ยนวิถีฟื้นแท้'",
+          "advice_th": "กล้าเปลี่ยนวิถี - การฝืนไม่ใช่ผลลัพธ์สุดท้าย เปลี่ยนวิถี ดูแลด้วยเมตตา ฟื้นได้",
+          "keywords_th": ["ฟื้นช้า", "ไม่เปลี่ยน", "กล้าเปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}
+

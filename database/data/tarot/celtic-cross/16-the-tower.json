@@ -1,0 +1,1792 @@
+{
+  "card_identifier": {
+    "name_en": "The Tower",
+    "name_th": "หอคอย",
+    "number": 16,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความปั่นป่วนกะทันหันสั่นคลอนทุกสิ่ง",
+          "detailed_interpretation_th": "หอคอยในปัจจุบัน บอกว่าคุณกำลังเผชิญเหตุการณ์ที่สั่นคลอนรากฐานชีวิต - การเปลี่ยนแปลงกะทันหัน วิกฤต หรือการเปิดเผยความจริงที่ทำลายโครงสร้างเดิม แม้จะเจ็บปวด แต่นี่คือการทำลายสิ่งที่สร้างบนรากฐานเท็จเพื่อสร้างใหม่บนพื้นฐานที่จริงแท้กว่า",
+          "adjacent_influences": {
+            "major_arcana": "Death = สิ้นสุด, The Star = ความหวังหลังพายุ",
+            "wands": "Five of Wands = ความวุ่นวาย",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Ten of Swords = ถึงจุดต่ำสุด",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Swords = แรงโจมตี"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยปัจจุบัน คือ 'พังเพื่อสร้างใหม่บนความจริง'",
+          "advice_th": "ยอมรับว่าการพังครั้งนี้เปิดเผยความจริง - แม้เจ็บปวด แต่เป็นโอกาสสร้างใหม่บนพื้นฐานแท้",
+          "keywords_th": ["ปั่นป่วนกะทันหัน", "สั่นคลอน", "พังเพื่อสร้าง"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์เจอวิกฤตใหญ่สั่นสะเทือน",
+          "detailed_interpretation_th": "ในความรัก หอคอยปัจจุบันชี้ว่าความสัมพันธ์กำลังเจอวิกฤตใหญ่ - การเปิดเผยความลับ การทะเลาะรุนแรง หรือเหตุการณ์ที่ทำให้คุณต้องตั้งคำถามทุกอย่าง ไพ่บอกว่าสิ่งที่ปรากฏมาเป็นความจริงที่ซ่อนไว้ ถึงเวลาเผชิญหน้า",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ความรักล้มเหลว, The Moon = ความลวง",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = ใจสลาย",
+            "swords": "Three of Swords = เจ็บปวด",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวแตก",
+            "court_cards": "Knight of Cups (rev) = คนทรยศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยปัจจุบันความรัก คือ 'ความจริงที่ซ่อนไว้ปรากฏ'",
+          "advice_th": "เผชิญหน้าความจริงที่ปรากฏ - แม้สั่นสะเทือนแต่เป็นโอกาสรู้ว่าความสัมพันธ์ตั้งบนอะไร",
+          "keywords_th": ["วิกฤตความรัก", "ความลับเปิด", "เผชิญหน้า"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "การงานหรือการเงินเจอวิกฤตกะทันหัน",
+          "detailed_interpretation_th": "ในการงาน หอคอยปัจจุบันเตือนถึงวิกฤตกะทันหัน - การถูกเลิกจ้าง บริษัทล้ม การลงทุนพัง หรือโครงการที่ใช้เวลาสร้างพังในชั่วข้ามคืน ไพ่ชี้ว่าสิ่งที่สร้างบนรากฐานเท็จกำลังพังลง เพื่อให้คุณสร้างใหม่บนพื้นฐานที่มั่นคงกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Wheel of Fortune (rev) = โชคพลิก, Justice = ผลลัพธ์",
+            "wands": "Ten of Wands = ภาระล้นเกิน",
+            "cups": "Five of Cups = สูญเสีย",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = ตกงาน",
+            "court_cards": "King of Pentacles (rev) = ผู้นำล้ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยปัจจุบันงาน คือ 'รากฐานเท็จต้องพังลง'",
+          "advice_th": "ยอมรับวิกฤตและประเมินใหม่ - สิ่งที่พังเปิดเผยว่าอะไรไม่มั่นคง ใช้โอกาสสร้างใหม่",
+          "keywords_th": ["วิกฤตงาน", "การเงินพัง", "สร้างใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การตื่นรู้กะทันหันทำลายความเชื่อเดิม",
+          "detailed_interpretation_th": "ในการเติบโต หอคอยปัจจุบันบอกถึงการตื่นรู้กะทันหันที่ทำลายความเชื่อ ภาพลวง หรือกรอบความคิดเดิมของคุณ การเปิดเผยอันรุนแรงนี้แม้น่าตกใจ แต่นำคุณสู่ความเข้าใจที่แท้จริง ปลดปล่อยจากการหลอกตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The Hierophant (rev) = ปลดกรอบเก่า",
+            "wands": "Eight of Wands = ข้อมูลเข้ามาเร็ว",
+            "cups": "Five of Cups = ผิดหวังในตัวเอง",
+            "swords": "Ace of Swords = ความจริงปรากฏ",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Swords = เห็นความจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยปัจจุบันเติบโต คือ 'ตื่นจากภาพลวงตา'",
+          "advice_th": "ยอมรับการตื่นรู้ - ความเชื่อเดิมพังลง แต่เปิดทางสู่ความเข้าใจที่แท้จริง",
+          "keywords_th": ["ตื่นรู้", "ทำลายภาพลวง", "เปิดเผยจริง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพเจอวิกฤตหรือการเปลี่ยนแปลงกะทันหัน",
+          "detailed_interpretation_th": "ในสุขภาพ หอคอยปัจจุบันเตือนถึงวิกฤตสุขภาพกะทันหัน - อุบัติเหตุ การวินิจฉัยใหม่ หรือการพังของร่างกายที่ละเลย ไพ่บอกว่าสัญญาณที่คุณเพิกเฉยมานานกำลังระเบิดออกมา ถึงเวลาเข้าหาแพทย์และดูแลตัวเองอย่างจริงจัง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = เสียสมดุล, Death = เปลี่ยนแปลง",
+            "wands": "Ten of Wands = ร่างกายแบกไม่ไหว",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตกหนัก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Knight of Swords = วิกฤตเร็ว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยปัจจุบันสุขภาพ คือ 'ร่างกายระเบิดสัญญาณที่เพิกเฉยมานาน'",
+          "advice_th": "เข้าหาแพทย์ทันที - วิกฤตสุขภาพต้องการการดูแลด่วน อย่ารอ ฟังร่างกาย",
+          "keywords_th": ["วิกฤตสุขภาพ", "อุบัติเหตุ", "ดูแลด่วน"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หลีกเลี่ยงวิกฤตได้แต่การเปลี่ยนแปลงยังจำเป็น",
+          "detailed_interpretation_th": "หอคอยกลับหัวในปัจจุบัน บอกว่าคุณกำลังหลีกเลี่ยงวิกฤตที่กำลังจะมา หรือกำลังผ่านการเปลี่ยนแปลงครั้งใหญ่อย่างค่อยเป็นค่อยไป แม้จะไม่รุนแรงเท่าหอคอยตั้งตรง แต่การเปลี่ยนแปลงยังคงจำเป็น ไพ่เตือนว่าหากเลี่ยงต่อ การพังครั้งใหญ่อาจตามมา",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ยอมรับ, Temperance = สมดุล",
+            "wands": "Two of Wands = วางแผนเปลี่ยน",
+            "cups": "Eight of Cups = เริ่มจากไป",
+            "swords": "Six of Swords = ผ่านพ้นทีละน้อย",
+            "pentacles": "Two of Pentacles = ปรับสมดุล",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวปัจจุบัน คือ 'เปลี่ยนเองก่อนถูกบังคับ'",
+          "advice_th": "เลือกเปลี่ยนแปลงเองก่อนถูกบังคับ - การเลี่ยงวิกฤตชั่วคราวอาจสะสมเป็นวิกฤตใหญ่กว่า",
+          "keywords_th": ["เลี่ยงวิกฤต", "เปลี่ยนค่อยเป็นค่อยไป", "จำเป็นต้องเปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผ่านพายุความรักด้วยการปรับตัว",
+          "detailed_interpretation_th": "ในความรัก หอคอยกลับหัวชี้ว่าคุณกำลังผ่านวิกฤตความสัมพันธ์อย่างนุ่มนวลกว่า - การปรับตัว การแก้ไขปัญหาก่อนระเบิด หรือการแยกทางด้วยความเข้าใจ ไพ่บอกว่าคุณรอดจากการพังครั้งใหญ่ แต่ความสัมพันธ์ต้องผ่านการเปลี่ยนแปลงเชิงโครงสร้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือกความรัก, Temperance = สมดุลคู่",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Eight of Cups = ค่อยๆ จากไป",
+            "swords": "Six of Swords = ก้าวข้ามด้วยกัน",
+            "pentacles": "Two of Pentacles = ปรับสมดุลคู่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวปัจจุบันความรัก คือ 'รอดพายุด้วยการปรับ'",
+          "advice_th": "ปรับตัวก่อนวิกฤตจะระเบิด - แก้ปัญหาที่ซ่อนไว้ การพูดคุยตรงๆ ดีกว่าปล่อยให้พัง",
+          "keywords_th": ["ปรับตัว", "เลี่ยงวิกฤต", "พูดคุยตรง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานหรือการเงินผ่านการปรับครั้งใหญ่",
+          "detailed_interpretation_th": "ในการงาน หอคอยกลับหัวบอกว่าคุณกำลังผ่านการปรับโครงสร้างครั้งใหญ่อย่างค่อยเป็นค่อยไป - การเปลี่ยนงาน การปรับธุรกิจ หรือการปรับการเงินก่อนวิกฤต ไพ่ชี้ว่าคุณตื่นรู้พอที่จะปรับตัวก่อนการพังครั้งใหญ่ ใช้โอกาสนี้สร้างรากฐานที่มั่นคงกว่า",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ปรับโชค, The Hermit = ทบทวน",
+            "wands": "Three of Wands = วางแผนใหม่",
+            "cups": "Two of Cups = พันธมิตรใหม่",
+            "swords": "Two of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "King of Pentacles = วางรากฐานมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวปัจจุบันงาน คือ 'ปรับโครงสร้างก่อนพัง'",
+          "advice_th": "ใช้ช่วงนี้ปรับโครงสร้าง - การงาน การเงิน อย่ารอวิกฤต สร้างรากฐานมั่นคงกว่าตั้งแต่ตอนนี้",
+          "keywords_th": ["ปรับโครงสร้าง", "ก่อนวิกฤต", "รากฐานใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเปลี่ยนแปลงภายในแบบค่อยเป็นค่อยไป",
+          "detailed_interpretation_th": "ในการเติบโต หอคอยกลับหัวชี้ว่าคุณกำลังผ่านการเปลี่ยนแปลงภายในแบบค่อยเป็นค่อยไป - การปลดความเชื่อเก่า การปรับมุมมอง การเรียนรู้สิ่งใหม่ ไพ่บอกว่ากระบวนการนี้นุ่มนวลกว่าการตื่นรู้กะทันหัน แต่ก็ลึกซึ้งไม่แพ้กัน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญาภายใน, Temperance = สมดุล",
+            "wands": "Page of Wands = เรียนรู้ใหม่",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "Queen of Pentacles = ดูแลใน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวปัจจุบันเติบโต คือ 'เปลี่ยนนุ่มนวลแต่ลึกซึ้ง'",
+          "advice_th": "ให้เวลาตัวเองในการเปลี่ยน - ปลดความเชื่อเก่าทีละชั้น การเปลี่ยนค่อยเป็นค่อยไปยั่งยืนกว่า",
+          "keywords_th": ["เปลี่ยนค่อยเป็นค่อยไป", "ปลดทีละชั้น", "ลึกซึ้ง"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ฟื้นตัวจากวิกฤตสุขภาพหรือเลี่ยงได้",
+          "detailed_interpretation_th": "ในสุขภาพ หอคอยกลับหัวบอกว่าคุณกำลังฟื้นตัวจากวิกฤตสุขภาพที่เพิ่งผ่านมา หรือเลี่ยงวิกฤตได้ด้วยการดูแลตัวเอง ไพ่ชี้ว่าสัญญาณเตือนยังอยู่ ต้องเอาจริงเอาจังกับการดูแลร่างกายอย่างต่อเนื่อง อย่าหยุดกลางทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Strength = พลังใจ",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลร่างกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวปัจจุบันสุขภาพ คือ 'ฟื้นตัวต่อเนื่อง อย่าหยุดกลางทาง'",
+          "advice_th": "ดูแลต่อเนื่อง - คุณฟื้นจากวิกฤตได้ แต่อย่าหยุดดูแล สัญญาณเตือนยังอยู่",
+          "keywords_th": ["ฟื้นตัว", "เลี่ยงวิกฤต", "ต่อเนื่อง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือเหตุการณ์พลิกผันสั่นคลอน",
+          "detailed_interpretation_th": "หอคอยในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือเหตุการณ์พลิกผันที่ทำลายสิ่งที่สร้างไว้ - การแตกหัก ความล้มเหลว หรือการเปิดเผยที่ทำให้ทุกอย่างไม่เหมือนเดิม อุปสรรคนี้รุนแรงแต่จำเป็น เพื่อปลดสิ่งที่ตั้งบนรากฐานเท็จ",
+          "adjacent_influences": {
+            "major_arcana": "Death = สิ้นสุด, The Devil = การยึดติด",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Five of Cups = สูญเสีย",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Swords = แรงโจมตี"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอุปสรรค คือ 'การทำลายสิ่งที่ต้องพัง'",
+          "advice_th": "ยอมรับการพังเป็นกระบวนการที่จำเป็น - อย่าฝืนรักษาสิ่งที่ตั้งบนรากฐานเท็จ ปล่อยให้พังเพื่อสร้างใหม่",
+          "keywords_th": ["พลิกผัน", "สั่นคลอน", "ปลดสิ่งเท็จ"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือความสัมพันธ์พังกะทันหัน",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือความสัมพันธ์พังกะทันหัน - การจับได้คาหนังคาเขา การทะเลาะใหญ่ การเปิดเผยความลับ ไพ่บอกว่าสิ่งที่ดูสวยงามภายนอกตั้งอยู่บนความเท็จ การพังครั้งนี้เปิดเผยความจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ความรักผิด, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = ใจสลาย",
+            "swords": "Five of Swords = ทำร้ายกัน",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวแตก",
+            "court_cards": "Knight of Cups (rev) = คนทรยศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอุปสรรคความรัก คือ 'สิ่งที่ดูสวยตั้งบนความเท็จ'",
+          "advice_th": "ยอมรับว่าความสัมพันธ์อาจตั้งบนความเท็จ - การพังเปิดเผยความจริง อย่าฝืนซ่อมสิ่งที่ปลอม",
+          "keywords_th": ["ความรักพัง", "ความลับเปิด", "ความจริงปรากฏ"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือธุรกิจหรือการเงินล้มกะทันหัน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการล้มกะทันหัน - บริษัทล้ม โครงการพัง การลงทุนเสียหาย หรือการถูกเลิกจ้างกะทันหัน ไพ่เผยว่าโครงสร้างที่คุณพึ่งพาตั้งบนรากฐานไม่มั่นคง ต้องสร้างใหม่จากศูนย์",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = โชคพลิก, The Devil = หมกมุ่นเสี่ยง",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสียเงิน",
+            "court_cards": "King of Pentacles (rev) = ผู้นำล้ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอุปสรรคงาน คือ 'โครงสร้างไม่มั่นคงต้องพัง'",
+          "advice_th": "ยอมรับการล้มเป็นการรีเซ็ต - โครงสร้างที่พึ่งพาไม่มั่นคง สร้างใหม่จากรากฐานที่แข็งแรงกว่า",
+          "keywords_th": ["ธุรกิจล้ม", "การเงินพัง", "รีเซ็ต"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือการตื่นรู้ทำลายตัวตนเก่า",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการตื่นรู้ที่ทำลายตัวตนเก่า - ภาพลวง ความเชื่อ หรืออัตลักษณ์ที่คุณยึดถือมานานพังลง ไพ่บอกว่าแม้น่าตกใจ แต่นี่คือกระบวนการเปลี่ยนแปลงที่จำเป็น เพื่อให้คุณเติบโตเป็นตัวตนที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The Hierophant (rev) = ทิ้งกรอบ",
+            "wands": "Eight of Wands = ข้อมูลเร็ว",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอุปสรรคเติบโต คือ 'ตัวตนเก่าต้องพังเพื่อเกิดใหม่'",
+          "advice_th": "ปล่อยให้ตัวตนเก่าพัง - ภาพลวงและอัตลักษณ์เดิมจะเปิดทางให้ตัวคุณที่แท้จริงเกิด",
+          "keywords_th": ["ตื่นรู้รุนแรง", "ตัวตนเก่าพัง", "เกิดใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือวิกฤตสุขภาพระเบิด",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือวิกฤตสุขภาพที่ระเบิดออกมา - อุบัติเหตุ การวินิจฉัยร้ายแรง หรือการพังของร่างกายที่ละเลย ไพ่ชี้ว่าสัญญาณที่เพิกเฉยมานานบังคับให้คุณต้องหยุดและดูแลร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "Death = เปลี่ยนแปลงใหญ่, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = ร่างกายแบกไม่ไหว",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตกหนัก",
+            "pentacles": "Five of Pentacles = ป่วยหนัก",
+            "court_cards": "Knight of Swords = วิกฤตเร็ว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอุปสรรคสุขภาพ คือ 'ร่างกายระเบิดสัญญาณที่เพิกเฉย'",
+          "advice_th": "หยุดและให้ความสำคัญสุขภาพ - วิกฤตนี้บังคับให้คุณดูแลตัวเองจริงจัง อย่ารอช้า",
+          "keywords_th": ["วิกฤตระเบิด", "บังคับหยุด", "ดูแลด่วน"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการเลี่ยงวิกฤตที่จำเป็น",
+          "detailed_interpretation_th": "หอคอยในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือการที่คุณพยายามเลี่ยงการเปลี่ยนแปลงที่จำเป็น ความกลัวต่อวิกฤตทำให้คุณยื้อสิ่งที่ควรปล่อย ไพ่เตือนว่าการเลี่ยงต่อจะทำให้วิกฤตใหญ่กว่าตามมา",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ยอมรับ, The Devil = ติดยึด",
+            "wands": "Seven of Wands = ต้าน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่ยอมเลือก",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Queen of Swords = ต้องยอมตัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอุปสรรค คือ 'เลี่ยงต่อจะทำให้พังใหญ่กว่า'",
+          "advice_th": "ยอมรับการเปลี่ยนแปลงที่หลีกเลี่ยงไม่ได้ - การยื้อสิ่งที่ควรปล่อยจะทำให้วิกฤตใหญ่กว่าตามมา",
+          "keywords_th": ["เลี่ยงวิกฤต", "ยื้อเกินไป", "ยอมรับเปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือความสัมพันธ์ใกล้ล่มแต่ยื้อไว้",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าความสัมพันธ์ใกล้ล่มแล้วแต่คุณยื้อไว้ - การปฏิเสธความจริง การพยายามซ่อมสิ่งที่พังเกิน หรือการอยู่ในสัมพันธ์ที่จบไปแล้ว ไพ่บอกว่าการเผชิญหน้าจะดีกว่าการลากความเจ็บปวด",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ตัดสินใจยาก, The Moon = ลวงตา",
+            "wands": "Seven of Wands = ต้านการจบ",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Three of Swords = เจ็บลาก",
+            "pentacles": "Four of Pentacles = ยึดสิ่งหมดแล้ว",
+            "court_cards": "Queen of Cups = ตัดใจไม่ได้"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอุปสรรคความรัก คือ 'เผชิญหน้าดีกว่าลากเจ็บ'",
+          "advice_th": "เผชิญหน้าความจริง - หากความสัมพันธ์จบแล้วให้กล้ายอม การยื้อทำให้เจ็บนานขึ้น",
+          "keywords_th": ["ยื้อความรัก", "ปฏิเสธจบ", "เผชิญหน้า"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือเลี่ยงการปรับเปลี่ยนทางการเงิน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าคุณกำลังเลี่ยงการปรับเปลี่ยนทางการเงินที่จำเป็น - กลัวเปลี่ยนงาน ยึดติดธุรกิจที่ไม่ทำเงิน หรือไม่ยอมตัดสินใจ ไพ่บอกว่าการเลี่ยงต่อจะทำให้วิกฤตใหญ่กว่าเมื่อต้องเผชิญในที่สุด",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant (rev) = ทิ้งกรอบ, Wheel of Fortune = ปรับโชค",
+            "wands": "Eight of Wands = ต้องเร็ว",
+            "cups": "Four of Cups = ไม่ยอมเห็น",
+            "swords": "Two of Swords = ไม่ตัดสินใจ",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = ไม่กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอุปสรรคงาน คือ 'เลี่ยงปรับจะเป็นวิกฤตใหญ่กว่า'",
+          "advice_th": "กล้าปรับการเงินตั้งแต่ตอนนี้ - เปลี่ยนงาน ปรับธุรกิจ การเลี่ยงต่อจะทำให้พังใหญ่กว่า",
+          "keywords_th": ["เลี่ยงปรับ", "ยึดเดิม", "ต้องเปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือการยึดติดตัวตนเก่าที่ไม่จริง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าคุณกำลังยึดติดตัวตนเก่า ความเชื่อ หรือภาพลวงที่ไม่ใช่ตัวคุณที่แท้จริง การปฏิเสธการเปลี่ยนแปลงนี้ทำให้คุณติดอยู่ ไพ่บอกว่าการยอมปล่อยตัวตนเก่าคือกุญแจสู่การเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, Death = ปล่อยวาง",
+            "wands": "Seven of Wands = ต้านเปลี่ยน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดตัวตน",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอุปสรรคเติบโต คือ 'ปล่อยตัวตนเก่าเพื่อเติบโต'",
+          "advice_th": "กล้าปล่อยตัวตนเก่า - การยึดติดภาพลวงทำให้ไม่เติบโต ยอมรับการเปลี่ยนแปลงในตัว",
+          "keywords_th": ["ยึดตัวตนเก่า", "ปฏิเสธเปลี่ยน", "กล้าปล่อย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือเพิกเฉยสัญญาณสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าคุณกำลังเพิกเฉยสัญญาณเตือนของร่างกาย หรือเลื่อนการดูแลสุขภาพออกไป ไพ่บอกว่าการเลี่ยงไปเรื่อยๆ จะทำให้วิกฤตใหญ่ตามมา ถึงเวลาเข้าหาแพทย์และเริ่มดูแลตัวเองอย่างจริงจัง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = นิสัยร้าย",
+            "wands": "Seven of Wands = ปฏิเสธพัก",
+            "cups": "Four of Cups = ไม่สนใจ",
+            "swords": "Nine of Swords = วิตกแต่ไม่ทำ",
+            "pentacles": "Five of Pentacles = ละเลยร่างกาย",
+            "court_cards": "Knight of Cups = ตามใจตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอุปสรรคสุขภาพ คือ 'เพิกเฉยสัญญาณนำสู่วิกฤต'",
+          "advice_th": "หยุดเพิกเฉย - เข้าหาแพทย์ตอนนี้ ฟังร่างกาย การเลี่ยงต่อจะทำให้วิกฤตใหญ่กว่า",
+          "keywords_th": ["เพิกเฉยสัญญาณ", "เลื่อนการดูแล", "เข้าหาแพทย์"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยมีเหตุการณ์ทำลายล้างเปลี่ยนชีวิต",
+          "detailed_interpretation_th": "หอคอยในอดีต เผยว่าคุณเคยผ่านเหตุการณ์ทำลายล้างที่เปลี่ยนชีวิต - การพังครั้งใหญ่ การสูญเสียกะทันหัน หรือการเปิดเผยที่สั่นคลอนทุกอย่าง ประสบการณ์นี้แม้เจ็บปวด แต่กลายเป็นจุดเปลี่ยนที่หล่อหลอมคุณให้แข็งแกร่งและตื่นรู้",
+          "adjacent_influences": {
+            "major_arcana": "Death = สิ้นสุดยุค, The World = ผ่านพ้น",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Five of Cups = สูญเสีย",
+            "swords": "Ten of Swords = ต่ำสุด",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Swords = วิกฤตเร็ว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอดีต คือ 'การพังที่หล่อหลอมคุณ'",
+          "advice_th": "ยอมรับว่าอดีตที่ปั่นป่วนหล่อหลอมคุณ - ประสบการณ์นั้นทำให้คุณตื่นรู้และแข็งแกร่งกว่าเดิม",
+          "keywords_th": ["พังในอดีต", "หล่อหลอม", "จุดเปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยผ่านการพังของความสัมพันธ์",
+          "detailed_interpretation_th": "ในความรัก หอคอยอดีตเผยว่าคุณเคยผ่านการพังของความสัมพันธ์ครั้งใหญ่ - การหักหลัง การเปิดเผยความลับ หรือการเลิกกะทันหัน ประสบการณ์นี้แม้เจ็บปวด แต่ทำให้คุณรู้ว่าความรักแท้คืออะไรและไม่ใช่อะไร",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = เลือกผิดเก่า, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งเก่า",
+            "cups": "Three of Swords = ใจสลาย",
+            "swords": "Five of Swords = ทำร้ายกัน",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวแตก",
+            "court_cards": "Knight of Cups (rev) = คนทรยศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอดีตความรัก คือ 'เจ็บแล้วรู้ว่ารักแท้คืออะไร'",
+          "advice_th": "ใช้บทเรียนจากความรักที่พัง - ตอนนี้คุณรู้ว่าควรมองหาอะไรในความสัมพันธ์",
+          "keywords_th": ["ความรักพัง", "บทเรียน", "เข้าใจรัก"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยเผชิญวิกฤตธุรกิจหรือการเงิน",
+          "detailed_interpretation_th": "ในการงาน หอคอยอดีตเผยว่าคุณเคยเผชิญวิกฤตทางธุรกิจหรือการเงินครั้งใหญ่ - บริษัทล้ม ตกงาน หรือการลงทุนพัง ประสบการณ์นี้สอนคุณเรื่องความเสี่ยง การกระจายแหล่งรายได้ และการสร้างรากฐานที่มั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = โชคพลิก, The Devil = เคยหมกมุ่นเสี่ยง",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสียเงิน",
+            "court_cards": "King of Pentacles (rev) = ผู้นำล้ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอดีตงาน คือ 'บทเรียนเรื่องความเสี่ยง'",
+          "advice_th": "ใช้บทเรียนการเงินจากอดีต - สร้างรากฐานมั่นคง กระจายความเสี่ยง อย่าซ้ำรอยเดิม",
+          "keywords_th": ["วิกฤตเก่า", "บทเรียนเงิน", "สร้างมั่นคง"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยตื่นรู้กะทันหันทำลายภาพลวง",
+          "detailed_interpretation_th": "ในการเติบโต หอคอยอดีตชี้ว่าคุณเคยมีประสบการณ์ตื่นรู้กะทันหันที่ทำลายภาพลวงเดิม - การค้นพบความจริงเกี่ยวกับตัวเอง ความเชื่อ หรือคนรอบข้าง การตื่นรู้นี้เปลี่ยนวิธีที่คุณมองโลกอย่างถาวร",
+          "adjacent_influences": {
+            "major_arcana": "Death = ตัวตนเก่าตาย, The Hierophant (rev) = ทิ้งกรอบ",
+            "wands": "Eight of Wands = ข้อมูลเร็ว",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอดีตเติบโต คือ 'การตื่นที่เปลี่ยนวิธีมองโลก'",
+          "advice_th": "ใช้การตื่นรู้ในอดีตเป็นรากฐาน - คุณเห็นภาพชัดกว่าคนอื่นแล้ว ใช้ปัญญานี้",
+          "keywords_th": ["ตื่นรู้เก่า", "ทำลายภาพลวง", "เห็นชัด"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยผ่านวิกฤตสุขภาพครั้งใหญ่",
+          "detailed_interpretation_th": "ในสุขภาพ หอคอยอดีตเผยว่าคุณเคยผ่านวิกฤตสุขภาพครั้งใหญ่ - อุบัติเหตุ การผ่าตัด หรือการเจ็บป่วยรุนแรง ประสบการณ์นี้ทำให้คุณตระหนักถึงความเปราะบางของร่างกาย และเปลี่ยนวิธีที่คุณดูแลตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Death = เปลี่ยนแปลงร่าง, Temperance = ฟื้นสมดุล",
+            "wands": "Ten of Wands = ร่างเคยรับไม่ไหว",
+            "cups": "Five of Cups = ทุกข์ใจ",
+            "swords": "Nine of Swords = วิตกหนัก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Knight of Swords = วิกฤตเร็ว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอดีตสุขภาพ คือ 'วิกฤตเก่าสอนให้รู้ค่าร่างกาย'",
+          "advice_th": "ใช้บทเรียนจากวิกฤตสุขภาพ - คุณรู้ค่าของร่างกายแล้ว ดูแลต่อเนื่อง อย่าละเลย",
+          "keywords_th": ["วิกฤตสุขภาพเก่า", "รู้ค่าร่าง", "ดูแลต่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยเลี่ยงวิกฤตหรือเปลี่ยนแบบค่อยเป็นค่อยไป",
+          "detailed_interpretation_th": "หอคอยกลับหัวในอดีต เผยว่าคุณเคยผ่านการเปลี่ยนแปลงครั้งใหญ่แต่ไม่รุนแรงเท่าวิกฤตเต็มรูปแบบ - การเปลี่ยนทีละน้อย การเลี่ยงวิกฤตได้ในนาทีสุดท้าย หรือการตื่นรู้แบบค่อยๆ ประสบการณ์นี้สอนคุณเรื่องการปรับตัวอย่างมีสติ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ยอมรับ, Temperance = สมดุล",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Eight of Cups = ค่อยๆ จาก",
+            "swords": "Six of Swords = ผ่านพ้นนุ่ม",
+            "pentacles": "Two of Pentacles = ปรับสมดุล",
+            "court_cards": "Queen of Swords = ตัดสินใจดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวอดีต คือ 'เคยเปลี่ยนอย่างมีสติ'",
+          "advice_th": "ใช้บทเรียนการปรับตัว - คุณรู้แล้วว่าการเปลี่ยนค่อยเป็นค่อยไปยั่งยืน นำมาใช้กับปัจจุบัน",
+          "keywords_th": ["เลี่ยงวิกฤตเก่า", "ปรับค่อยๆ", "บทเรียนสติ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์เก่าเปลี่ยนแบบนุ่มนวล",
+          "detailed_interpretation_th": "ในความรัก หอคอยกลับหัวในอดีตชี้ว่าคุณเคยผ่านการเปลี่ยนแปลงความสัมพันธ์แบบนุ่มนวล - การแยกทางด้วยความเข้าใจ การปรับตัวแก้ปัญหาก่อนพัง หรือการเติบโตร่วมกัน บทเรียนคือการสื่อสารและปรับตัวรักษาความสัมพันธ์ได้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, Temperance = สมดุลคู่",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Eight of Cups = จากด้วยใจสงบ",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Two of Pentacles = ปรับชีวิตคู่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวอดีตความรัก คือ 'การสื่อสารป้องกันการพัง'",
+          "advice_th": "ใช้บทเรียนความสัมพันธ์เก่า - การสื่อสารเปิดและปรับตัวรักษาความสัมพันธ์ใหม่ได้ดี",
+          "keywords_th": ["ปรับนุ่มนวล", "สื่อสาร", "บทเรียนรัก"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยปรับการเงินก่อนวิกฤต",
+          "detailed_interpretation_th": "ในการงาน หอคอยกลับหัวในอดีตชี้ว่าคุณเคยปรับเปลี่ยนการเงินหรือการงานก่อนจะถึงวิกฤต - เปลี่ยนงานทันเวลา ออกจากธุรกิจที่กำลังจะพัง หรือปรับโครงสร้างก่อนล้ม บทเรียนคือสัญชาตญาณและความกล้าปรับตัว",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ปรับโชค, The Hermit = ทบทวน",
+            "wands": "Three of Wands = วางแผน",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Two of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวอดีตงาน คือ 'ปรับก่อนพังคือทักษะคุณ'",
+          "advice_th": "เชื่อสัญชาตญาณการเงิน - คุณเคยปรับก่อนวิกฤตสำเร็จ ใช้ทักษะนี้ต่อไป",
+          "keywords_th": ["ปรับก่อนวิกฤต", "สัญชาตญาณ", "กล้าปรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยเติบโตด้วยการเปลี่ยนทีละน้อย",
+          "detailed_interpretation_th": "ในการเติบโต หอคอยกลับหัวในอดีตเผยว่าคุณเคยเติบโตด้วยการเปลี่ยนแปลงทีละน้อย - ปลดความเชื่อทีละชั้น ปรับมุมมองค่อยๆ หรือเรียนรู้ผ่านประสบการณ์เล็กๆ บทเรียนคือการเติบโตยั่งยืนไม่ต้องผ่านวิกฤตเสมอไป",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญาภายใน, Temperance = สมดุล",
+            "wands": "Page of Wands = เรียนรู้",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "Queen of Pentacles = ดูแลใน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวอดีตเติบโต คือ 'เปลี่ยนนุ่มนวลแต่ลึกซึ้ง'",
+          "advice_th": "ใช้รูปแบบการเติบโตที่ยั่งยืน - การเปลี่ยนทีละน้อยลึกซึ้งและยั่งยืนกว่าวิกฤต",
+          "keywords_th": ["เติบโตทีละน้อย", "ยั่งยืน", "ลึกซึ้ง"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยเลี่ยงวิกฤตสุขภาพด้วยการดูแลทันเวลา",
+          "detailed_interpretation_th": "ในสุขภาพ หอคอยกลับหัวในอดีตชี้ว่าคุณเคยเลี่ยงวิกฤตสุขภาพด้วยการดูแลตัวเองทันเวลา - หยุดนิสัยร้ายก่อนป่วยหนัก เข้าพบแพทย์ตามอาการเตือน หรือปรับวิถีชีวิต บทเรียนคือการฟังร่างกายช่วยชีวิตคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลต่อ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวอดีตสุขภาพ คือ 'ฟังร่างกายช่วยชีวิตคุณ'",
+          "advice_th": "เชื่อสัญชาตญาณร่างกายต่อไป - คุณเคยเลี่ยงวิกฤตด้วยการดูแลทันเวลา รักษานิสัยนี้",
+          "keywords_th": ["เลี่ยงวิกฤตสุขภาพ", "ฟังร่างกาย", "ดูแลทันเวลา"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีเหตุการณ์ทำลายล้างเปลี่ยนแปลง",
+          "detailed_interpretation_th": "หอคอยในอนาคต เตือนว่าจะมีเหตุการณ์ทำลายล้างเข้ามาเปลี่ยนชีวิต - การพังของโครงสร้างเดิม การเปิดเผยความจริง หรือวิกฤตที่บังคับให้คุณเริ่มใหม่ ไพ่บอกว่าแม้จะน่ากลัว แต่นี่คือกระบวนการชำระล้างที่จำเป็นเพื่อสร้างชีวิตที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "Death = สิ้นสุด, The Star = หลังพายุมีดาว",
+            "wands": "Eight of Wands = เหตุการณ์เร็ว",
+            "cups": "Five of Cups = สูญเสีย",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = ความขาดแคลน",
+            "court_cards": "Knight of Swords = วิกฤตด่วน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอนาคต คือ 'พายุมาเพื่อชำระล้าง'",
+          "advice_th": "เตรียมใจรับเหตุการณ์ปั่นป่วน - ไม่ใช่จุดจบ แต่เป็นการชำระล้างเพื่อสร้างชีวิตแท้",
+          "keywords_th": ["พายุอนาคต", "ทำลายล้าง", "ชำระล้าง"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะเจอวิกฤตทดสอบ",
+          "detailed_interpretation_th": "ในความรัก หอคอยอนาคตเตือนว่าความสัมพันธ์จะเจอวิกฤตทดสอบ - การเปิดเผยความจริง การทะเลาะใหญ่ หรือเหตุการณ์ที่สั่นคลอนรากฐาน ไพ่บอกว่าหากความสัมพันธ์ตั้งบนความจริง จะรอด หากตั้งบนความเท็จ จะพัง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = บททดสอบรัก, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้ายกัน",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "Knight of Cups (rev) = คนหลอก"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอนาคตความรัก คือ 'ทดสอบว่าตั้งบนอะไร'",
+          "advice_th": "เตรียมความสัมพันธ์เผชิญทดสอบ - หากตั้งบนความจริงจะรอด เตรียมพูดความจริงและฟัง",
+          "keywords_th": ["ทดสอบรัก", "เปิดเผย", "สั่นคลอน"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อนาคตจะมีวิกฤตการงานหรือการเงิน",
+          "detailed_interpretation_th": "ในการงาน หอคอยอนาคตเตือนถึงวิกฤตที่จะเข้ามา - การเปลี่ยนแปลงโครงสร้างองค์กร การลงทุนพัง การถูกเลิกจ้าง หรือความสูญเสียทางการเงินกะทันหัน ไพ่แนะให้เตรียมแผนสำรอง สร้างเงินสำรอง และกระจายความเสี่ยง",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = โชคพลิก, The Devil = ความเสี่ยง",
+            "wands": "Eight of Wands = เหตุการณ์เร็ว",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสียเงิน",
+            "court_cards": "King of Pentacles (rev) = ผู้นำพัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอนาคตงาน คือ 'เตรียมแผนสำรองและเงินสำรอง'",
+          "advice_th": "เตรียมรับวิกฤตการเงิน - สร้างเงินสำรอง 6 เดือน กระจายความเสี่ยง อัพเดทเรซูเม่",
+          "keywords_th": ["วิกฤตอนาคต", "เตรียมตัว", "เงินสำรอง"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การตื่นรู้กะทันหันรออยู่ข้างหน้า",
+          "detailed_interpretation_th": "ในการเติบโต หอคอยอนาคตชี้ว่าการตื่นรู้กะทันหันรอคุณอยู่ - การค้นพบความจริงที่ทำลายภาพลวง การเปิดเผยที่เปลี่ยนวิธีมองตัวเอง หรือประสบการณ์ที่หล่อหลอมตัวตนใหม่ ไพ่บอกว่าเตรียมใจเปิดรับการเปลี่ยนแปลงครั้งใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The Hierophant (rev) = ปลดกรอบ",
+            "wands": "Eight of Wands = ข้อมูลเร็ว",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอนาคตเติบโต คือ 'การตื่นรู้รออยู่'",
+          "advice_th": "เปิดใจรับการตื่นรู้ - การเปิดเผยที่จะมาจะเปลี่ยนคุณ ยอมรับแม้น่าตกใจ",
+          "keywords_th": ["ตื่นรู้อนาคต", "เปลี่ยนตัวตน", "เปิดใจ"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "วิกฤตสุขภาพอาจมาในอนาคต",
+          "detailed_interpretation_th": "ในสุขภาพ หอคอยอนาคตเตือนถึงวิกฤตสุขภาพที่อาจมา - อุบัติเหตุ การเจ็บป่วยกะทันหัน หรือผลจากการละเลยร่างกาย ไพ่แนะให้ตรวจสุขภาพประจำปี ลดพฤติกรรมเสี่ยง และดูแลร่างกายอย่างจริงจังก่อนสายเกินไป",
+          "adjacent_influences": {
+            "major_arcana": "Death = เปลี่ยนใหญ่, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = ร่างเกินรับ",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียดหนัก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Knight of Swords = วิกฤตเร็ว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยอนาคตสุขภาพ คือ 'ตรวจก่อนวิกฤตมา'",
+          "advice_th": "เตรียมสุขภาพ - ตรวจประจำปี ลดพฤติกรรมเสี่ยง ดูแลร่างกายตอนนี้ก่อนสายเกินไป",
+          "keywords_th": ["วิกฤตสุขภาพ", "ตรวจสุขภาพ", "ดูแลก่อน"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตจะเปลี่ยนแปลงแบบค่อยเป็นค่อยไป",
+          "detailed_interpretation_th": "หอคอยกลับหัวในอนาคต บอกว่าการเปลี่ยนแปลงที่กำลังมาจะนุ่มนวลกว่าวิกฤตเต็มรูปแบบ - การปรับตัวค่อยๆ การเลี่ยงวิกฤตด้วยการเตรียมตัว หรือการเปลี่ยนแปลงที่คุณเลือกเอง ไพ่ชี้ว่าหากตื่นรู้และปรับตัวตอนนี้ จะเลี่ยงพายุใหญ่ได้",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hanged Man = ยอมรับ",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Eight of Cups = เริ่มจาก",
+            "swords": "Six of Swords = ผ่านพ้นนุ่ม",
+            "pentacles": "Two of Pentacles = ปรับสมดุล",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวอนาคต คือ 'ปรับตอนนี้เลี่ยงพายุได้'",
+          "advice_th": "เริ่มปรับเปลี่ยนตั้งแต่ตอนนี้ - การเปลี่ยนเองอย่างมีสติเลี่ยงวิกฤตในอนาคตได้",
+          "keywords_th": ["เปลี่ยนค่อยๆ", "เลี่ยงพายุ", "ปรับเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะปรับเปลี่ยนแบบนุ่มนวล",
+          "detailed_interpretation_th": "ในความรัก หอคอยกลับหัวอนาคตชี้ว่าความสัมพันธ์จะผ่านการเปลี่ยนแปลงแบบนุ่มนวล - การแก้ปัญหาที่ค้างคา การปรับตัวเข้าหากัน หรือการแยกทางด้วยความเข้าใจหากจำเป็น ไพ่บอกว่าการสื่อสารเปิดและซื่อสัตย์จะป้องกันวิกฤตใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุลคู่, The Lovers = ทางเลือก",
+            "wands": "Two of Wands = ตัดสินใจร่วม",
+            "cups": "Two of Cups = ผูกพันใหม่",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Two of Pentacles = ปรับชีวิต",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวอนาคตความรัก คือ 'สื่อสารป้องกันวิกฤต'",
+          "advice_th": "เริ่มสื่อสารปัญหาที่ค้างตอนนี้ - การพูดเปิดและซื่อสัตย์ป้องกันการพังในอนาคต",
+          "keywords_th": ["ปรับนุ่ม", "สื่อสาร", "ป้องกันพัง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "การงานจะปรับเปลี่ยนแบบค่อยเป็นค่อยไป",
+          "detailed_interpretation_th": "ในการงาน หอคอยกลับหัวอนาคตบอกว่าการเปลี่ยนแปลงทางการเงินหรืออาชีพจะมาแบบค่อยเป็นค่อยไป - มีเวลาเตรียมตัว มีโอกาสปรับตัวก่อนวิกฤต ไพ่หนุนให้ใช้เวลานี้สร้างทักษะใหม่ ขยายเครือข่าย และเตรียมรับการเปลี่ยนแปลง",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ปรับโชค, The Hermit = ทบทวน",
+            "wands": "Three of Wands = วางแผนไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Page of Swords = เรียนรู้",
+            "pentacles": "Eight of Pentacles = ฝึกทักษะ",
+            "court_cards": "King of Pentacles = วางมั่นคง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวอนาคตงาน คือ 'มีเวลาเตรียมตัวก่อนเปลี่ยน'",
+          "advice_th": "ใช้เวลาที่มีเตรียมตัว - สร้างทักษะใหม่ ขยายเครือข่าย เตรียมรับการเปลี่ยนแปลงที่กำลังมา",
+          "keywords_th": ["ปรับค่อยๆ", "เตรียมตัว", "สร้างทักษะ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตจะมาแบบค่อยเป็นค่อยไป",
+          "detailed_interpretation_th": "ในการเติบโต หอคอยกลับหัวอนาคตชี้ว่าการเปลี่ยนแปลงภายในจะมาแบบค่อยเป็นค่อยไป - การปลดความเชื่อทีละชั้น การเรียนรู้ผ่านประสบการณ์เล็กๆ การตื่นรู้แบบนุ่มนวล ไพ่บอกว่ากระบวนการนี้ลึกซึ้งและยั่งยืน เปิดใจรับมัน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญาภายใน, Temperance = สมดุล",
+            "wands": "Page of Wands = เรียนรู้",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "Queen of Pentacles = ดูแลใน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวอนาคตเติบโต คือ 'เปลี่ยนลึกซึ้งและยั่งยืน'",
+          "advice_th": "เปิดใจรับการเติบโตทีละน้อย - ปลดความเชื่อทีละชั้น กระบวนการนี้ลึกซึ้งและยั่งยืน",
+          "keywords_th": ["เติบโตทีละน้อย", "ลึกซึ้ง", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะค่อยๆ ฟื้นตัวหรือเลี่ยงวิกฤต",
+          "detailed_interpretation_th": "ในสุขภาพ หอคอยกลับหัวอนาคตบอกว่าสุขภาพจะค่อยๆ ฟื้นตัว หรือคุณจะเลี่ยงวิกฤตได้ด้วยการดูแลตัวเอง ไพ่ชี้ว่าการตัดสินใจดูแลร่างกายอย่างจริงจังตอนนี้จะให้ผลในอนาคต ความสม่ำเสมอสำคัญกว่าความเข้มข้น",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวอนาคตสุขภาพ คือ 'สม่ำเสมอสำคัญกว่าเข้มข้น'",
+          "advice_th": "ดูแลสุขภาพสม่ำเสมอตอนนี้ - การตัดสินใจดูแลตัวเองจะป้องกันวิกฤตในอนาคต",
+          "keywords_th": ["ฟื้นค่อยๆ", "เลี่ยงวิกฤต", "สม่ำเสมอ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือการชำระล้างและเริ่มต้นใหม่",
+          "detailed_interpretation_th": "หอคอยในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือการชำระล้างสิ่งเก่าและเริ่มต้นใหม่ - การปลดสิ่งที่ไม่จริงแท้ การทำลายโครงสร้างที่ใช้ไม่ได้ และการสร้างชีวิตบนรากฐานใหม่ที่แท้จริงกว่า เป้าหมายนี้ต้องการความกล้ารับการเปลี่ยนแปลง",
+          "adjacent_influences": {
+            "major_arcana": "Death = สิ้นสุดเก่า, The Star = ความหวังใหม่",
+            "wands": "Three of Wands = ขยายมองไกล",
+            "cups": "Eight of Cups = ทิ้งสิ่งเดิม",
+            "swords": "Ace of Swords = เริ่มชัด",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "Knight of Wands = กล้าเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยเป้าหมาย คือ 'ชำระล้างเพื่อสร้างใหม่'",
+          "advice_th": "ตั้งใจชำระล้างสิ่งเก่า - ปลดที่ไม่จริงแท้ สร้างชีวิตใหม่บนรากฐานที่มั่นคงกว่า",
+          "keywords_th": ["ชำระล้าง", "เริ่มใหม่", "รากฐานใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือปลดความสัมพันธ์เท็จเพื่อเปิดทางรักแท้",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือการปลดความสัมพันธ์ที่ตั้งบนความเท็จ - การจบความสัมพันธ์ที่หมดอายุ การยอมรับว่าบางความสัมพันธ์ต้องพัง เพื่อเปิดทางให้ความรักแท้เข้ามา ไพ่หนุนให้คุณเลือกความจริงเหนือความสบาย",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = เลือกรักแท้, Death = จบความสัมพันธ์เก่า",
+            "wands": "Knight of Wands = กล้าเดินจาก",
+            "cups": "Eight of Cups = ออกจากเท็จ",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Swords = ตัดสินใจชัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยเป้าหมายความรัก คือ 'ปลดเท็จเปิดทางแท้'",
+          "advice_th": "เลือกความจริงเหนือความสบาย - ปลดความสัมพันธ์เท็จ เปิดทางให้รักแท้เข้ามา",
+          "keywords_th": ["ปลดเท็จ", "เปิดทางแท้", "ความจริง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือสร้างรากฐานการเงินใหม่ที่มั่นคง",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือการสร้างรากฐานการเงินใหม่ที่มั่นคงกว่าเดิม - หลังจากวิกฤตเก่า คุณตั้งใจสร้างความมั่นคงที่ไม่ขึ้นอยู่กับโครงสร้างเปราะบาง ไพ่หนุนให้คุณกระจายแหล่งรายได้ สร้างเงินสำรอง และลงทุนในทักษะที่ติดตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = โครงสร้างมั่น, Wheel of Fortune = โชคเปลี่ยน",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Ace of Swords = แผนชัด",
+            "pentacles": "Ace of Pentacles = รากฐานใหม่",
+            "court_cards": "King of Pentacles = สร้างมั่งคั่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยเป้าหมายงาน คือ 'มั่นคงด้วยการกระจาย'",
+          "advice_th": "ตั้งเป้าสร้างรากฐานใหม่ - กระจายรายได้ สร้างเงินสำรอง ลงทุนทักษะ ไม่พึ่งโครงสร้างเดียว",
+          "keywords_th": ["รากฐานใหม่", "กระจาย", "มั่นคง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือตื่นรู้และทำลายภาพลวง",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือการตื่นรู้และทำลายภาพลวงเกี่ยวกับตัวเองและโลก - การกล้ามองความจริงที่ไม่สบาย การปลดความเชื่อจำกัด การยอมรับด้านที่เคยปฏิเสธ ไพ่หนุนให้คุณเลือกความจริงเหนือความสบาย ตื่นรู้แม้เจ็บปวด",
+          "adjacent_influences": {
+            "major_arcana": "Death = ตัวตนเก่าตาย, The Hierophant (rev) = ทิ้งกรอบ",
+            "wands": "Eight of Wands = ข้อมูลเร็ว",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยเป้าหมายเติบโต คือ 'ความจริงเหนือความสบาย'",
+          "advice_th": "ตั้งใจตื่นรู้แม้เจ็บปวด - ทำลายภาพลวง ปลดความเชื่อจำกัด เลือกความจริงเสมอ",
+          "keywords_th": ["ตื่นรู้", "ทำลายลวง", "เลือกจริง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือปรับวิถีชีวิตหลังตื่นรู้ความเปราะบาง",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือการปรับวิถีชีวิตอย่างจริงจังหลังตระหนักถึงความเปราะบางของร่างกาย - ทิ้งนิสัยทำลาย สร้างกิจวัตรใหม่ ใส่ใจร่างกายและจิตใจ ไพ่หนุนให้คุณใช้การตื่นรู้นี้สร้างชีวิตที่ดีต่อสุขภาพอย่างยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวสู่ดี",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยเป้าหมายสุขภาพ คือ 'ใช้การตื่นรู้สร้างชีวิตใหม่'",
+          "advice_th": "ปรับวิถีชีวิตหลังตื่นรู้ - ทิ้งนิสัยทำลาย สร้างกิจวัตรใหม่ ใส่ใจร่างกายและจิตใจ",
+          "keywords_th": ["ปรับวิถี", "ตื่นรู้", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือเลี่ยงวิกฤตด้วยการปรับตัวก่อน",
+          "detailed_interpretation_th": "หอคอยกลับหัวในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือการเลี่ยงวิกฤตด้วยการปรับตัวก่อน - มองเห็นปัญหาตั้งแต่ระยะแรก ปรับเปลี่ยนอย่างมีสติ และสร้างความมั่นคงที่ป้องกันการพัง เป้าหมายนี้ต้องการความตื่นรู้และความกล้าตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Six of Cups = บทเรียน",
+            "swords": "Queen of Swords = ตัดสินใจชัด",
+            "pentacles": "Ace of Pentacles = สร้างใหม่",
+            "court_cards": "King of Pentacles = วางมั่นคง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวเป้าหมาย คือ 'ปรับก่อนวิกฤต'",
+          "advice_th": "ตั้งเป้าเลี่ยงวิกฤตด้วยสติ - มองเห็นปัญหาเร็ว ปรับตัวก่อนพัง สร้างความมั่นคงป้องกันการพัง",
+          "keywords_th": ["เลี่ยงวิกฤต", "ปรับก่อน", "สติ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือรักษาความสัมพันธ์ด้วยการแก้ก่อน",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือการรักษาความสัมพันธ์ด้วยการแก้ปัญหาก่อนระเบิด - การสื่อสารเปิด การยอมรับปัญหา การปรับตัวเข้าหากัน ไพ่หนุนให้คุณใส่ใจสัญญาณเตือนเล็กๆ และจัดการตั้งแต่ยังไม่ใหญ่ ป้องกันการพังของความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุลคู่, The Lovers = ความรัก",
+            "wands": "Two of Wands = ตัดสินใจคู่",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Two of Pentacles = ปรับ",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวเป้าหมายความรัก คือ 'แก้ก่อนระเบิด'",
+          "advice_th": "ใส่ใจสัญญาณเล็กๆ ในความสัมพันธ์ - สื่อสาร แก้ปัญหาตั้งแต่ยังไม่ใหญ่ ป้องกันการพัง",
+          "keywords_th": ["รักษาความสัมพันธ์", "แก้ก่อน", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือปรับการเงินก่อนวิกฤต",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือการปรับโครงสร้างการเงินก่อนวิกฤต - มองหาความเสี่ยง สร้างเงินสำรอง กระจายแหล่งรายได้ พัฒนาทักษะใหม่ ไพ่หนุนให้คุณตื่นรู้ก่อนสถานการณ์บีบ และสร้างความมั่นคงจากการเตรียมตัว ไม่ใช่จากการตอบสนองเหตุการณ์",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ปรับโชค, The Hermit = ทบทวน",
+            "wands": "Three of Wands = วางแผน",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Page of Swords = เรียนรู้",
+            "pentacles": "Eight of Pentacles = ฝึกทักษะ",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวเป้าหมายงาน คือ 'มั่นคงจากการเตรียม ไม่ใช่ตอบสนอง'",
+          "advice_th": "ตั้งเป้าปรับการเงินก่อนวิกฤต - มองความเสี่ยง สร้างเงินสำรอง พัฒนาทักษะ เตรียมตัวไว้",
+          "keywords_th": ["ปรับการเงิน", "เตรียมตัว", "มั่นคง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือเติบโตอย่างมีสติและยั่งยืน",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือการพัฒนาตัวเองอย่างมีสติและยั่งยืน - ปลดความเชื่อทีละชั้นด้วยความเข้าใจ ไม่ต้องผ่านวิกฤตเพื่อตื่นรู้ ไพ่หนุนให้คุณเรียนรู้จากการสังเกตและไตร่ตรอง สร้างการเติบโตที่ลึกซึ้งและคงทน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญาภายใน, Temperance = สมดุล",
+            "wands": "Page of Wands = เรียนรู้",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "Queen of Pentacles = ดูแลใน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวเป้าหมายเติบโต คือ 'เติบโตด้วยสติ ไม่ต้องผ่านวิกฤต'",
+          "advice_th": "เติบโตอย่างมีสติ - ปลดความเชื่อด้วยความเข้าใจ ไม่ต้องรอวิกฤตปลุก ใช้การไตร่ตรอง",
+          "keywords_th": ["เติบโตยั่งยืน", "สติ", "ไตร่ตรอง"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพดีจากการดูแลต่อเนื่อง",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือการมีสุขภาพดีจากการดูแลตัวเองต่อเนื่อง - ไม่ใช่หวังรอด้วยการรักษาเมื่อป่วย แต่ป้องกันด้วยการดูแลทุกวัน ไพ่หนุนให้คุณสร้างกิจวัตรสุขภาพที่ยั่งยืน ฟังร่างกาย และตรวจสุขภาพประจำ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวเป้าหมายสุขภาพ คือ 'ป้องกันดีกว่ารักษา'",
+          "advice_th": "ตั้งเป้าสุขภาพดีจากการป้องกัน - กิจวัตรยั่งยืน ฟังร่างกาย ตรวจประจำ ไม่รอป่วยถึงค่อยดูแล",
+          "keywords_th": ["สุขภาพดี", "ป้องกัน", "ต่อเนื่อง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือประสบการณ์การพังครั้งใหญ่",
+          "detailed_interpretation_th": "หอคอยในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือประสบการณ์การพังครั้งใหญ่ในอดีต - การเปลี่ยนแปลงกะทันหันที่หล่อหลอมมุมมองและบุคลิก คุณรู้ว่าสิ่งที่ดูมั่นคงอาจไม่จริง และนี่ทำให้คุณระวังตัว ซื่อสัตย์กับความจริง และไม่ยึดติด",
+          "adjacent_influences": {
+            "major_arcana": "Death = ผ่านการเปลี่ยน, The Star = ฟื้นจากพายุ",
+            "wands": "Ten of Wands = เคยแบกหนัก",
+            "cups": "Five of Cups = เคยสูญ",
+            "swords": "Ten of Swords = เคยตกต่ำ",
+            "pentacles": "Five of Pentacles = เคยขาดแคลน",
+            "court_cards": "Queen of Swords = ผ่านบทเรียน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยรากฐาน คือ 'การพังทำให้คุณซื่อสัตย์กับความจริง'",
+          "advice_th": "ใช้รากฐานจากการพังเป็นจุดแข็ง - คุณรู้ว่าอะไรจริง ใช้สัญชาตญาณนี้",
+          "keywords_th": ["รากฐานพัง", "ซื่อสัตย์จริง", "ระวังตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือบาดแผลจากการพังเก่า",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือบาดแผลจากความสัมพันธ์ที่พังในอดีต - การหักหลัง การสูญเสีย หรือการเปิดเผยที่เปลี่ยนวิธีที่คุณรัก ไพ่บอกว่าบาดแผลนี้ทำให้คุณระวังตัว แต่ก็ทำให้คุณเลือกคู่อย่างซื่อสัตย์กับความจริง ไม่ยอมความเท็จ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = เลือกผิดเก่า, The Moon = ความกลัว",
+            "wands": "Five of Wands = ขัดแย้งเก่า",
+            "cups": "Three of Swords = ใจสลาย",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Queen of Swords = ระวังหลัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยรากฐานความรัก คือ 'บาดแผลทำให้เลือกแท้'",
+          "advice_th": "ใช้บาดแผลเก่าเป็นกรอง - คุณรู้สัญญาณของความเท็จ เลือกคู่ที่ซื่อสัตย์กับคุณ",
+          "keywords_th": ["บาดแผลรัก", "ระวังตัว", "เลือกแท้"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือบทเรียนจากวิกฤตการเงินเก่า",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือบทเรียนจากวิกฤตการเงินหรือธุรกิจในอดีต - การล้ม การสูญเสีย หรือการพังของแผนที่วางไว้ ประสบการณ์นี้สอนคุณเรื่องการระวัง การกระจายความเสี่ยง และการสร้างความมั่นคงไม่พึ่งโครงสร้างเดียว",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ผ่านโชคพลิก, The Devil = เรียนรู้ความเสี่ยง",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสียเงิน",
+            "court_cards": "King of Pentacles = สร้างใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยรากฐานงาน คือ 'บทเรียนวิกฤตคือสมบัติของคุณ'",
+          "advice_th": "ใช้บทเรียนวิกฤตเก่า - กระจายความเสี่ยง สร้างเงินสำรอง อย่าซ้ำรอย",
+          "keywords_th": ["บทเรียนวิกฤต", "กระจายเสี่ยง", "มั่นคง"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือการตื่นรู้จากการพังในอดีต",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือการตื่นรู้ที่เกิดจากการพังในอดีต - ความเชื่อเก่าที่พังลง ภาพลวงที่ถูกเปิดเผย หรือตัวตนที่ต้องสร้างใหม่ ประสบการณ์นี้ทำให้คุณมองโลกชัดเจน ไม่หลงในภาพลวง และเติบโตเป็นคนที่ลึกซึ้งกว่า",
+          "adjacent_influences": {
+            "major_arcana": "Death = ตัวตนเก่าตาย, The Hermit = ปัญญา",
+            "wands": "Eight of Wands = ข้อมูลเร็ว",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยรากฐานเติบโต คือ 'การพังทำให้มองโลกชัด'",
+          "advice_th": "ใช้การตื่นรู้จากอดีต - คุณมองโลกชัดกว่าคนอื่น ใช้ปัญญานี้เป็นรากฐาน",
+          "keywords_th": ["ตื่นรู้รากฐาน", "มองชัด", "ลึกซึ้ง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือประสบการณ์วิกฤตเก่า",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือประสบการณ์วิกฤตสุขภาพเก่าที่ทำให้คุณเข้าใจความเปราะบางของร่างกาย - อุบัติเหตุ การเจ็บป่วย หรือการพังของร่างกายที่สอนบทเรียน ประสบการณ์นี้กลายเป็นเหตุผลที่คุณดูแลตัวเองอย่างจริงจังในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "Death = ผ่านการเปลี่ยน, Temperance = ฟื้นสมดุล",
+            "wands": "Ten of Wands = ร่างเคยรับไม่ไหว",
+            "cups": "Five of Cups = ทุกข์ใจ",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Knight of Swords = วิกฤตเร็ว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยรากฐานสุขภาพ คือ 'วิกฤตเก่าทำให้รู้ค่าร่าง'",
+          "advice_th": "ใช้บทเรียนวิกฤตสุขภาพเก่า - ดูแลร่างกายต่อเนื่อง อย่าซ้ำรอยเดิม",
+          "keywords_th": ["วิกฤตเก่า", "รู้ค่าร่าง", "ดูแลต่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความยืดหยุ่นจากการปรับตัวค่อยๆ",
+          "detailed_interpretation_th": "หอคอยกลับหัวในรากฐาน เผยว่ารากฐานของคุณคือความยืดหยุ่นจากการเรียนรู้ปรับตัวค่อยเป็นค่อยไป - คุณรู้วิธีเปลี่ยนแปลงตัวเองอย่างมีสติโดยไม่ต้องรอวิกฤตปลุก รากฐานนี้ทำให้คุณมั่นคงท่ามกลางความไม่แน่นอน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญาภายใน, Temperance = สมดุล",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Six of Cups = บทเรียน",
+            "swords": "Queen of Swords = ตัดสินใจ",
+            "pentacles": "Two of Pentacles = ปรับสมดุล",
+            "court_cards": "Queen of Pentacles = ดูแลรอบด้าน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวรากฐาน คือ 'ยืดหยุ่นคือพลัง'",
+          "advice_th": "ใช้ความยืดหยุ่นเป็นจุดแข็ง - คุณรู้วิธีปรับตัวอย่างมีสติ นำมาใช้กับทุกสถานการณ์",
+          "keywords_th": ["ยืดหยุ่น", "ปรับตัวมีสติ", "มั่นคง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือการเรียนรู้ปรับตัว",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือการเรียนรู้ปรับตัวในความสัมพันธ์ - การสื่อสารเปิด การแก้ปัญหาก่อนระเบิด การเลือกความเข้าใจเหนือความถูกต้อง ประสบการณ์นี้ทำให้คุณรักษาความสัมพันธ์ได้ดีและไม่กลัวการเปลี่ยนแปลง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุลคู่, The Lovers = ความรัก",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Two of Pentacles = ปรับ",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวรากฐานความรัก คือ 'ปรับตัวคือพลังรัก'",
+          "advice_th": "ใช้ทักษะปรับตัวในความรัก - สื่อสารเปิด แก้ก่อนระเบิด ความสัมพันธ์จะมั่นคง",
+          "keywords_th": ["ปรับตัวรัก", "สื่อสาร", "มั่นคง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือการบริหารความเสี่ยงและปรับตัว",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือทักษะการบริหารความเสี่ยงและการปรับตัว - คุณเรียนรู้กระจายแหล่งรายได้ มีเงินสำรอง พัฒนาทักษะใหม่ตลอด ทักษะนี้ทำให้คุณรอดในเศรษฐกิจที่ไม่แน่นอนและมีอิสระเลือกเส้นทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Wheel of Fortune = ปรับโชค",
+            "wands": "Three of Wands = วางแผนไกล",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Queen of Swords = ตัดสินใจ",
+            "pentacles": "King of Pentacles = วางมั่น",
+            "court_cards": "King of Pentacles = สร้างมั่งคั่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวรากฐานงาน คือ 'บริหารเสี่ยงคือพลัง'",
+          "advice_th": "ใช้ทักษะบริหารความเสี่ยง - กระจายรายได้ มีเงินสำรอง พัฒนาทักษะ คุณรอดทุกเศรษฐกิจ",
+          "keywords_th": ["บริหารเสี่ยง", "ปรับตัว", "อิสระเลือก"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือการเติบโตอย่างต่อเนื่อง",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือการพัฒนาตัวเองอย่างต่อเนื่องและมีสติ - คุณเรียนรู้จากประสบการณ์เล็กๆ ปรับมุมมองทีละน้อย ไม่ต้องรอวิกฤตปลุก ความสามารถนี้ทำให้คุณเติบโตอย่างยั่งยืนและลึกซึ้งโดยไม่ต้องผ่านความเจ็บปวดรุนแรง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Page of Wands = เรียนรู้",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "Queen of Pentacles = ดูแลใน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวรากฐานเติบโต คือ 'เติบโตต่อเนื่องด้วยสติ'",
+          "advice_th": "ใช้ความสามารถเติบโตอย่างต่อเนื่อง - เรียนรู้จากทุกประสบการณ์ ปรับทีละน้อย ลึกซึ้งและยั่งยืน",
+          "keywords_th": ["เติบโตต่อเนื่อง", "สติ", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือการดูแลต่อเนื่อง",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือการดูแลตัวเองอย่างต่อเนื่อง - คุณมีกิจวัตรสุขภาพที่ยั่งยืน ฟังร่างกาย ตรวจประจำ ป้องกันก่อนรักษา ทักษะนี้ทำให้คุณมีสุขภาพดีระยะยาวและสามารถรับมือความท้าทายของร่างกายได้",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวรากฐานสุขภาพ คือ 'ดูแลต่อเนื่องคือพลัง'",
+          "advice_th": "ใช้กิจวัตรสุขภาพที่มีต่อไป - ดูแลต่อเนื่อง ฟังร่างกาย คุณมีสุขภาพดีระยะยาว",
+          "keywords_th": ["ดูแลต่อเนื่อง", "ป้องกัน", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เข้าหาสถานการณ์ด้วยการพังกะทันหัน",
+          "detailed_interpretation_th": "หอคอยในตำแหน่งคำแนะนำ บอกว่าวิธีที่คุณเข้าหาสถานการณ์เกี่ยวข้องกับการทำลายล้างหรือเปลี่ยนแปลงครั้งใหญ่ - คุณกำลังพยายามทำลายสิ่งที่ใช้ไม่ได้ หรือกำลังสร้างวิกฤตให้ตัวเองโดยไม่รู้ตัว ไพ่เตือนให้คุณตื่นรู้ ใช้พลังการทำลายล้างอย่างชาญฉลาด ไม่ใช่หุนหันพลันแล่น",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ใช้อำนาจ, Death = เปลี่ยนแปลงใหญ่",
+            "wands": "Seven of Wands = ต่อสู้",
+            "cups": "Five of Cups = สูญเสีย",
+            "swords": "Five of Swords = ทำลาย",
+            "pentacles": "Four of Pentacles = ปลดยึด",
+            "court_cards": "Knight of Swords = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งคำแนะนำ คือ 'พลังทำลายต้องชาญฉลาด'",
+          "advice_th": "ใช้พลังทำลายล้างอย่างชาญฉลาด - ทำลายสิ่งที่ไม่จริงแท้ แต่อย่าหุนหันพลันแล่น",
+          "keywords_th": ["ทำลายล้าง", "ตื่นรู้", "ชาญฉลาด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ต้องการการเผชิญหน้าครั้งใหญ่",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าความสัมพันธ์ต้องการการเผชิญหน้าครั้งใหญ่ - การพูดความจริงที่ค้างไว้ การจบความสัมพันธ์ที่หมดอายุ หรือการเปิดเผยปัญหาที่ซ่อนไว้ ไพ่บอกว่าหลีกเลี่ยงไม่ได้แล้ว ดีกว่าจัดการตอนนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, Death = สิ้นสุด",
+            "wands": "Knight of Wands = กล้าเผชิญ",
+            "cups": "Eight of Cups = จากไป",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Eight of Pentacles = ตั้งใจแก้",
+            "court_cards": "Queen of Swords = ตรงไปตรงมา"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งคำแนะนำความรัก คือ 'เผชิญหน้าหลีกไม่ได้'",
+          "advice_th": "เผชิญหน้าครั้งใหญ่ - พูดความจริง จบสิ่งที่หมดอายุ เปิดเผยปัญหา ดีกว่าซ่อน",
+          "keywords_th": ["เผชิญหน้า", "พูดจริง", "เปลี่ยนใหญ่"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องตัดสินใจครั้งใหญ่เกี่ยวกับงานหรือเงิน",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำเตือนว่าถึงเวลาตัดสินใจครั้งใหญ่ - ลาออกจากงานที่ไม่ใช่ ปิดธุรกิจที่ไม่ทำเงิน หรือยกเครื่องการเงินใหม่ ไพ่บอกว่าการรักษาสิ่งที่ไม่จริงแท้ไม่คุ้มต้นทุน กล้าทำลายเพื่อสร้างใหม่",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = พลิกชะตา, Justice = ตัดสินใจ",
+            "wands": "Knight of Wands = กล้าก้าว",
+            "cups": "Eight of Cups = จาก",
+            "swords": "Ace of Swords = ตัดสินใจชัด",
+            "pentacles": "Five of Pentacles = ยอมขาดทุนเก่า",
+            "court_cards": "King of Swords = วิเคราะห์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งคำแนะนำงาน คือ 'ทำลายเพื่อสร้างใหม่'",
+          "advice_th": "ตัดสินใจครั้งใหญ่ - ลาออก ปิดธุรกิจ ยกเครื่องการเงิน รักษาสิ่งไม่จริงแท้ไม่คุ้ม",
+          "keywords_th": ["ตัดสินใหญ่", "ทำลายเก่า", "สร้างใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ทำลายความเชื่อเดิมเพื่อเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณต้องทำลายความเชื่อเดิม กรอบความคิด หรือตัวตนที่ไม่ใช่ตัวคุณที่แท้จริง การยอมให้มันพังจะเปิดพื้นที่ให้คุณเติบโตเป็นตัวตนใหม่ ไพ่หนุนให้กล้าตื่นรู้และยอมรับการเปลี่ยนแปลงในตัว",
+          "adjacent_influences": {
+            "major_arcana": "Death = ตัวตนเก่าตาย, The Hierophant (rev) = ทิ้งกรอบ",
+            "wands": "Eight of Wands = ข้อมูลเร็ว",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งคำแนะนำเติบโต คือ 'ทำลายเก่าเปิดทางใหม่'",
+          "advice_th": "ทำลายความเชื่อเดิม - ยอมให้กรอบเก่าพัง เปิดพื้นที่ให้ตัวตนใหม่ที่แท้จริงเกิด",
+          "keywords_th": ["ทำลายเก่า", "เปิดพื้นที่", "ตัวตนใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องเปลี่ยนวิถีสุขภาพอย่างจริงจัง",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำเตือนว่าต้องเปลี่ยนวิถีสุขภาพอย่างจริงจังและทันที - เลิกนิสัยทำลาย เริ่มออกกำลังกาย จัดการความเครียด เข้าหาแพทย์ ไพ่บอกว่าการเปลี่ยนเล็กน้อยไม่พอ ต้องยกเครื่องวิถีชีวิตทั้งหมด",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, Death = เปลี่ยน",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Eight of Cups = เลิกนิสัย",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Eight of Pentacles = วินัย",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งคำแนะนำสุขภาพ คือ 'ยกเครื่องไม่ใช่ปรับเล็ก'",
+          "advice_th": "ยกเครื่องวิถีชีวิตทั้งหมด - เลิกทำลาย เริ่มออกกำลัง จัดการเครียด เข้าหาแพทย์",
+          "keywords_th": ["ยกเครื่อง", "เปลี่ยนใหญ่", "ทันที"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เข้าหาด้วยการเปลี่ยนแปลงอย่างมีสติ",
+          "detailed_interpretation_th": "หอคอยกลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีที่สุดคือเข้าหาด้วยการเปลี่ยนแปลงอย่างมีสติ - ค่อยๆ ปรับ ไม่ฝืน ใช้สัญชาตญาณนำทาง การเปลี่ยนแปลงนุ่มนวลที่ยั่งยืนดีกว่าการพังครั้งใหญ่ที่บีบบังคับ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hermit = ปัญญา",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Queen of Swords = ตัดสินใจ",
+            "pentacles": "Two of Pentacles = ปรับสมดุล",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งคำแนะนำ คือ 'ปรับนุ่มนวลดีกว่าพังบีบ'",
+          "advice_th": "เปลี่ยนแปลงอย่างมีสติ - ค่อยๆ ปรับ ไม่ฝืน ใช้สัญชาตญาณ การเปลี่ยนนุ่มนวลยั่งยืนกว่า",
+          "keywords_th": ["เปลี่ยนมีสติ", "นุ่มนวล", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เข้าหาความรักด้วยการสื่อสารและปรับตัว",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าวิธีที่ดีคือการสื่อสารเปิดและปรับตัว - แก้ปัญหาก่อนระเบิด พูดความจริงด้วยความรัก ไม่ใช่กล่าวหา ไพ่หนุนให้คุณรักษาความสัมพันธ์ด้วยการเข้าใจกันมากกว่าการเผชิญหน้ารุนแรง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุลคู่, The Lovers = ความรัก",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Two of Pentacles = ปรับ",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งคำแนะนำความรัก คือ 'พูดด้วยรักไม่ใช่กล่าวหา'",
+          "advice_th": "สื่อสารและปรับตัว - แก้ก่อนระเบิด พูดความจริงด้วยรัก เข้าใจกันสำคัญกว่าเผชิญหน้ารุนแรง",
+          "keywords_th": ["สื่อสารดี", "ปรับตัว", "เข้าใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ปรับการเงินอย่างค่อยเป็นค่อยไป",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวบอกว่าวิธีที่ดีคือการปรับการเงินอย่างค่อยเป็นค่อยไป - วางแผน เก็บเงินสำรอง สร้างทักษะใหม่ทีละน้อย ไพ่หนุนให้คุณเตรียมตัวก่อนวิกฤต ไม่ใช่ตัดสินใจรุนแรงในนาทีสุดท้าย",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune = ปรับโชค",
+            "wands": "Three of Wands = วางแผน",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Page of Swords = เรียนรู้",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งคำแนะนำงาน คือ 'เตรียมก่อนวิกฤต'",
+          "advice_th": "ปรับการเงินค่อยเป็นค่อยไป - วางแผน เก็บเงินสำรอง สร้างทักษะ เตรียมก่อนวิกฤต",
+          "keywords_th": ["ปรับค่อยๆ", "เตรียมก่อน", "วางแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เติบโตด้วยการปลดทีละชั้นอย่างมีสติ",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าวิธีที่ดีคือการปลดความเชื่อทีละชั้นอย่างมีสติ - สังเกตตัวเอง เรียนรู้จากประสบการณ์เล็กๆ ปรับมุมมองค่อยๆ ไพ่บอกว่ากระบวนการนี้ลึกซึ้งและยั่งยืน ไม่ต้องผ่านวิกฤตเพื่อตื่นรู้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Page of Wands = เรียนรู้",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Eight of Pentacles = ฝึก",
+            "court_cards": "Queen of Pentacles = ดูแลใน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งคำแนะนำเติบโต คือ 'ปลดทีละชั้นลึกซึ้งยั่งยืน'",
+          "advice_th": "ปลดความเชื่อทีละชั้น - สังเกตตัวเอง เรียนรู้ทีละน้อย กระบวนการนี้ลึกซึ้งและยั่งยืน",
+          "keywords_th": ["ปลดทีละชั้น", "สังเกตตน", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เปลี่ยนวิถีสุขภาพด้วยการสร้างกิจวัตร",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวบอกว่าวิธีที่ดีคือการสร้างกิจวัตรสุขภาพอย่างค่อยเป็นค่อยไป - เริ่มเล็กๆ ทำสม่ำเสมอ ขยายทีละขั้น ไพ่หนุนให้คุณเปลี่ยนวิถีชีวิตอย่างยั่งยืน ไม่ใช่ฮวบไปฮวบมา การเปลี่ยนช้าๆ ติดเป็นนิสัยจริง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'เริ่มเล็ก ทำสม่ำเสมอ'",
+          "advice_th": "สร้างกิจวัตรสุขภาพค่อยๆ - เริ่มเล็ก ทำสม่ำเสมอ ขยายทีละขั้น ยั่งยืนกว่าฮวบไปฮวบมา",
+          "keywords_th": ["กิจวัตร", "สม่ำเสมอ", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมเต็มไปด้วยความปั่นป่วน",
+          "detailed_interpretation_th": "หอคอยในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวเต็มไปด้วยความปั่นป่วน - เหตุการณ์ใหญ่ การพังของระบบ หรือคนรอบข้างเจอวิกฤต คุณอยู่ในกระแสการเปลี่ยนแปลงที่ควบคุมไม่ได้ ไพ่แนะให้ปรับตัว ไม่ฝืนกระแส",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = กระแสเปลี่ยน, Death = สิ้นสุดเก่า",
+            "wands": "Five of Wands = ความวุ่นวาย",
+            "cups": "Five of Cups = สูญเสีย",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Swords = วิกฤตเร็ว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งภายนอก คือ 'ปรับตัวไม่ฝืนกระแส'",
+          "advice_th": "ปรับตัวในกระแสปั่นป่วน - คุณเปลี่ยนสภาพแวดล้อมไม่ได้ แต่เปลี่ยนการตอบสนองได้",
+          "keywords_th": ["สภาพปั่นป่วน", "เปลี่ยนใหญ่", "ปรับตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์รอบตัวมีดราม่าใหญ่",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่ามีดราม่าใหญ่ในความสัมพันธ์รอบตัว - คู่ของคุณ คนใกล้ตัว หรือสภาพแวดล้อมที่ทำให้ความรักของคุณสั่นคลอน อาจมีการเปิดเผยความลับ การหักหลัง หรือเหตุการณ์ที่บีบให้ตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = วิกฤตรัก, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Ten of Pentacles (rev) = ครอบครัวสั่น",
+            "court_cards": "Knight of Cups (rev) = คนหลอก"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งภายนอกความรัก คือ 'ดราม่ารอบตัวเปลี่ยนเกม'",
+          "advice_th": "รับมือกับดราม่ารอบตัว - มีเหตุการณ์สั่นคลอน ตั้งสติ ปกป้องความสัมพันธ์ที่สำคัญ",
+          "keywords_th": ["ดราม่าใหญ่", "เปิดเผย", "สั่นคลอน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตลาดหรือบริษัทเจอวิกฤตจากภายนอก",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกเตือนว่าตลาด เศรษฐกิจ หรือบริษัทกำลังเจอวิกฤตจากภายนอก - การปรับโครงสร้าง การเลิกจ้างหมู่ การล้มของอุตสาหกรรม คุณอยู่ในวงกระแสที่ควบคุมไม่ได้ ไพ่แนะให้เตรียมแผนสำรองและกระจายความเสี่ยง",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = โชคพลิก, The Emperor (rev) = ระบบล้ม",
+            "wands": "Eight of Wands = เหตุการณ์เร็ว",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = ตกงาน",
+            "court_cards": "King of Pentacles (rev) = ผู้นำพัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งภายนอกงาน คือ 'กระแสภายนอกเปลี่ยนเกม'",
+          "advice_th": "เตรียมรับมือกระแสภายนอก - มีวิกฤตในตลาด เตรียมแผนสำรอง กระจายความเสี่ยง",
+          "keywords_th": ["วิกฤตตลาด", "กระแสภายนอก", "กระจายเสี่ยง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เหตุการณ์ภายนอกบังคับให้ตื่นรู้",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าเหตุการณ์ภายนอกกำลังบังคับให้คุณตื่นรู้ - การเปลี่ยนแปลงที่ทำให้คุณต้องทบทวนความเชื่อ การเห็นความจริงที่ไม่อยากเห็น คนรอบข้างที่ทำลายภาพลวง ไพ่บอกว่าใช้สิ่งที่เกิดเป็นบทเรียน",
+          "adjacent_influences": {
+            "major_arcana": "Death = ตัวตนเก่าตาย, The Moon = จิตใต้สำนึก",
+            "wands": "Eight of Wands = ข้อมูลเร็ว",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งภายนอกเติบโต คือ 'เหตุการณ์ภายนอกคือครู'",
+          "advice_th": "ใช้เหตุการณ์ภายนอกเป็นบทเรียน - มันบังคับให้คุณตื่นรู้ ใช้ปัญญานี้เติบโต",
+          "keywords_th": ["บังคับตื่น", "บทเรียน", "ตื่นรู้"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ปัจจัยภายนอกทำลายสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกเตือนว่าปัจจัยภายนอกกำลังทำลายสุขภาพ - ความเครียดจากงาน มลภาวะ คนรอบข้างที่เป็นพิษ หรือสภาพแวดล้อมที่บั่นทอน ไพ่แนะให้คุณระวัง ตัดปัจจัยทำลายออกเท่าที่ทำได้ และดูแลตัวเองให้แข็งแกร่งรับมือ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Knight of Swords = แรงโจมตี"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งภายนอกสุขภาพ คือ 'ตัดปัจจัยทำลาย'",
+          "advice_th": "ระวังปัจจัยภายนอก - ความเครียด มลภาวะ คนพิษ ตัดออกเท่าที่ทำได้ ดูแลตัวเองให้แกร่ง",
+          "keywords_th": ["ปัจจัยทำลาย", "ระวัง", "ดูแลตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมเริ่มสงบหลังพายุ",
+          "detailed_interpretation_th": "หอคอยกลับหัวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมเริ่มสงบลงหลังพายุ - วิกฤตที่ผ่านมาเริ่มคลี่คลาย ผู้คนเริ่มฟื้นตัว สถานการณ์เปลี่ยนไปในทางที่ดีขึ้น ไพ่บอกว่านี่คือช่วงเวลาฟื้นฟูและสร้างใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The Sun = ทางสว่าง",
+            "wands": "Four of Wands = พักหลังพายุ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Cups = ปลอบใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งภายนอก คือ 'พายุผ่าน เริ่มฟื้น'",
+          "advice_th": "ใช้ช่วงสงบหลังพายุ - ฟื้นฟูตัวเอง สร้างใหม่ สถานการณ์รอบตัวกำลังดีขึ้น",
+          "keywords_th": ["สงบหลังพายุ", "ฟื้นฟู", "สร้างใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์รอบตัวเริ่มฟื้นและสงบ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าความสัมพันธ์รอบตัวเริ่มสงบและฟื้นตัว - คู่ของคุณคลี่คลายปัญหา ครอบครัวเริ่มเข้ากัน หรือสภาพแวดล้อมหนุนความรักของคุณมากขึ้น ไพ่บอกว่าใช้ช่วงนี้สร้างความสัมพันธ์ที่มั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุลคู่",
+            "wands": "Four of Wands = ฉลองสงบ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่น",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งภายนอกความรัก คือ 'สงบ ฟื้น สร้างมั่นคง'",
+          "advice_th": "ใช้ช่วงสงบสร้างความสัมพันธ์ - ดราม่าผ่านแล้ว สร้างความมั่นคงและความเข้าใจกัน",
+          "keywords_th": ["สงบ", "ฟื้นรัก", "มั่นคง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตลาดเริ่มฟื้นตัวหลังวิกฤต",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าตลาดหรือเศรษฐกิจเริ่มฟื้นตัวหลังวิกฤต - โอกาสใหม่เปิด บริษัทเริ่มจ้างงาน การลงทุนเริ่มขึ้น ไพ่หนุนให้คุณคว้าโอกาสในช่วงฟื้น สร้างฐานการเงินใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = โอกาสเงิน",
+            "court_cards": "King of Wands = ผู้นำเปิดทาง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งภายนอกงาน คือ 'คว้าโอกาสในช่วงฟื้น'",
+          "advice_th": "คว้าโอกาสในตลาดที่ฟื้น - โอกาสใหม่เปิด สร้างฐานการเงินใหม่ในช่วงนี้",
+          "keywords_th": ["ตลาดฟื้น", "โอกาสใหม่", "คว้า"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สภาพแวดล้อมเอื้อต่อการเติบโตอย่างสงบ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสภาพแวดล้อมเริ่มเอื้อต่อการเติบโตอย่างสงบ - คนรอบข้างที่หนุน ชุมชนที่ยกคุณขึ้น สภาพชีวิตที่มั่นคงพอให้คุณโฟกัสพัฒนาตัวเอง ไพ่บอกให้ใช้ช่วงนี้เรียนรู้และเติบโตลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ความหวัง",
+            "wands": "Four of Wands = ชุมชนหนุน",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Page of Swords = เรียนรู้",
+            "pentacles": "Three of Pentacles = ทีมงาน",
+            "court_cards": "Queen of Pentacles = ดูแลรอบด้าน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งภายนอกเติบโต คือ 'สงบเอื้อเติบโตลึก'",
+          "advice_th": "ใช้ช่วงสงบเติบโตลึก - คนรอบข้างหนุน ชุมชนยก ใช้เวลาเรียนรู้และพัฒนาตัวเอง",
+          "keywords_th": ["สงบเอื้อ", "เติบโตลึก", "เรียนรู้"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมหนุนการฟื้นตัว",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวบอกว่าสิ่งแวดล้อมหนุนการฟื้นตัวของคุณ - ความเครียดลดลง คนรอบข้างคอยช่วย สภาพชีวิตเปลี่ยนไปในทางที่ดี ไพ่ชี้ว่านี่คือช่วงเวลาฟื้นฟูร่างกายและจิตใจอย่างเต็มที่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งภายนอกสุขภาพ คือ 'สิ่งแวดล้อมหนุนฟื้น'",
+          "advice_th": "ใช้สภาพแวดล้อมที่หนุนฟื้นตัว - ความเครียดลด คนช่วย ฟื้นฟูร่างกายและจิตใจเต็มที่",
+          "keywords_th": ["สิ่งแวดล้อมหนุน", "ฟื้นฟู", "ดี"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "กลัวการพังครั้งใหญ่ของชีวิต",
+          "detailed_interpretation_th": "หอคอยในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวการพังครั้งใหญ่ของชีวิต - กลัวสูญเสียทุกสิ่ง กลัวเหตุการณ์พลิกผัน กลัวการเปลี่ยนแปลงที่ควบคุมไม่ได้ ไพ่บอกว่าความกลัวนี้อาจสะท้อนสัญญาณบางอย่างที่คุณรู้ลึกๆ ว่ากำลังจะเกิด",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัวซ่อน, Death = สิ้นสุด",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = กลัวสูญ",
+            "swords": "Nine of Swords = ฝันร้าย",
+            "pentacles": "Five of Pentacles = กลัวขาด",
+            "court_cards": "Queen of Swords = ระวัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งความหวังกลัว คือ 'ความกลัวอาจเป็นสัญญาณเตือน'",
+          "advice_th": "ฟังความกลัว - มันอาจสะท้อนสัญญาณที่คุณรู้ลึกๆ เตรียมตัวรับการเปลี่ยนแปลง",
+          "keywords_th": ["กลัวพังใหญ่", "สัญญาณเตือน", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวความสัมพันธ์จะพังกะทันหัน",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณกลัวความสัมพันธ์จะพังกะทันหัน - กลัวการหักหลัง การเปิดเผยความลับ การเลิกแบบไม่คาดคิด ความกลัวนี้อาจสะท้อนสัญชาตญาณว่ามีอะไรไม่จริงในความสัมพันธ์ หรือเป็นบาดแผลเก่าที่ทำให้ระแวง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = กลัวเลือกผิด, The Moon = กลัวซ่อน",
+            "wands": "Nine of Wands = ระวัง",
+            "cups": "Three of Swords = กลัวเจ็บ",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = กลัวสูญ",
+            "court_cards": "Knight of Cups (rev) = กลัวคนหลอก"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งความหวังกลัวความรัก คือ 'ฟังสัญชาตญาณรัก'",
+          "advice_th": "ฟังสัญชาตญาณรัก - หากกลัวอาจมีสัญญาณ พูดคุยตรงๆ กับคู่เพื่อสร้างความมั่นใจ",
+          "keywords_th": ["กลัวรักพัง", "สัญชาตญาณ", "พูดคุย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวเสียงานหรือล้มละลายกะทันหัน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณกลัวเสียงานกะทันหันหรือล้มละลาย - กลัวการเลิกจ้าง กลัวธุรกิจล้ม กลัวการลงทุนพัง ไพ่บอกว่าความกลัวนี้อาจสะท้อนความไม่มั่นใจในสภาพปัจจุบัน ถึงเวลาประเมินและสร้างแผนสำรอง",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = กลัวโชคพลิก, The Devil = กลัวเสียทุน",
+            "wands": "Ten of Wands = กลัวภาระ",
+            "cups": "Five of Cups = กลัวสูญ",
+            "swords": "Nine of Swords = วิตกเงิน",
+            "pentacles": "Five of Pentacles = กลัวยาก",
+            "court_cards": "King of Pentacles (rev) = กลัวผู้นำพัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งความหวังกลัวงาน คือ 'ความกลัวบอกให้ประเมิน'",
+          "advice_th": "ใช้ความกลัวเป็นสัญญาณ - ประเมินสภาพการเงิน สร้างแผนสำรอง สร้างเงินสำรอง",
+          "keywords_th": ["กลัวเสียงาน", "กลัวล้ม", "ประเมิน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวการเปลี่ยนแปลงตัวตนรุนแรง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณกลัวการเปลี่ยนแปลงตัวตนรุนแรง - กลัวสูญเสียอัตลักษณ์เดิม กลัวค้นพบความจริงที่ทำลาย กลัวการตื่นรู้ที่บีบให้เปลี่ยน ความกลัวนี้ทำให้คุณยึดติดสิ่งคุ้นเคย ไพ่หนุนให้กล้าเผชิญ",
+          "adjacent_influences": {
+            "major_arcana": "Death = กลัวตัวตนเก่าตาย, The Moon = กลัวซ่อน",
+            "wands": "Seven of Wands = ต้านเปลี่ยน",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Nine of Swords = กลัวจริง",
+            "pentacles": "Four of Pentacles = ยึดตัวตน",
+            "court_cards": "Queen of Swords = ต้องเผชิญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งความหวังกลัวเติบโต คือ 'กล้าเผชิญตัวตนที่จะเกิดใหม่'",
+          "advice_th": "กล้าเผชิญการเปลี่ยน - ความกลัวสูญเสียตัวตนเก่าทำให้ไม่เติบโต ปล่อยให้เก่าตายเพื่อใหม่เกิด",
+          "keywords_th": ["กลัวเปลี่ยนตน", "ยึดตัวตน", "กล้าเผชิญ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัววิกฤตสุขภาพรุนแรง",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณกลัววิกฤตสุขภาพรุนแรง - กลัวอุบัติเหตุ กลัวการวินิจฉัยร้ายแรง กลัวร่างกายพัง ไพ่บอกว่าความกลัวนี้อาจสะท้อนสัญญาณที่ร่างกายส่งมาแล้วคุณไม่ฟัง ถึงเวลาดูแลตัวเองและตรวจสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "Death = กลัวเปลี่ยน, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = กลัวร่างพัง",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตกหนัก",
+            "pentacles": "Five of Pentacles = กลัวป่วย",
+            "court_cards": "Knight of Swords = กลัววิกฤตเร็ว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งความหวังกลัวสุขภาพ คือ 'ฟังร่างกายที่ส่งสัญญาณ'",
+          "advice_th": "ฟังร่างกาย - ความกลัวอาจเป็นสัญญาณที่ละเลย ตรวจสุขภาพ ดูแลตัวเองตอนนี้",
+          "keywords_th": ["กลัววิกฤต", "สัญญาณร่าง", "ตรวจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หวังหลุดจากวิกฤต แต่กลัวการเปลี่ยนแปลง",
+          "detailed_interpretation_th": "หอคอยกลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังจะหลุดจากวิกฤตและสร้างความมั่นคงใหม่ แต่ก็กลัวการเปลี่ยนแปลงที่ต้องผ่าน ไพ่บอกว่าความหวังของคุณบริสุทธิ์ แต่ต้องยอมรับว่าการเปลี่ยนแปลงคือส่วนหนึ่งของการสร้างใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "Queen of Cups = เข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งความหวังกลัว คือ 'ยอมรับเปลี่ยนเพื่อสร้างใหม่'",
+          "advice_th": "ยอมรับการเปลี่ยนแปลง - คุณหวังหลุดจากวิกฤต แต่ต้องยอมเปลี่ยน นี่คือทางเดียวสร้างใหม่",
+          "keywords_th": ["หวังหลุดวิกฤต", "กลัวเปลี่ยน", "ยอมรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความสัมพันธ์มั่นคง แต่กลัวการเผชิญหน้า",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณหวังความสัมพันธ์ที่มั่นคง แต่กลัวการเผชิญหน้ากับปัญหาที่ค้างคา ไพ่บอกว่าการเลี่ยงจะทำให้ปัญหาใหญ่ขึ้น กล้าพูดคุยและแก้ไขด้วยความรักจะนำมาซึ่งความมั่นคงที่หวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Two of Pentacles = ปรับสมดุลคู่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งความหวังกลัวความรัก คือ 'กล้าพูดคุยนำมั่นคง'",
+          "advice_th": "กล้าเผชิญปัญหาความสัมพันธ์ - คุณหวังมั่นคงแต่กลัวเผชิญหน้า การพูดคุยตรงคือทาง",
+          "keywords_th": ["หวังมั่นคง", "กลัวเผชิญ", "กล้าพูด"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังความมั่นคงทางการเงิน แต่กลัวการปรับตัว",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณหวังความมั่นคงทางการเงิน แต่กลัวการปรับตัวที่ต้องทำ - เปลี่ยนงาน ปรับธุรกิจ เรียนทักษะใหม่ ไพ่หนุนให้คุณกล้าปรับ ความหวังจะเป็นจริงเมื่อคุณยอมรับว่าต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ปรับโชค, The Hermit = ทบทวน",
+            "wands": "Three of Wands = วางแผน",
+            "cups": "Two of Cups = พันธมิตร",
+            "swords": "Page of Swords = เรียนรู้",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งความหวังกลัวงาน คือ 'ปรับตัวคือทางมั่นคง'",
+          "advice_th": "กล้าปรับตัวการเงิน - หวังมั่นคงต้องยอมเปลี่ยน เรียนทักษะใหม่ ขยายเครือข่าย",
+          "keywords_th": ["หวังมั่นคง", "กลัวปรับ", "ยอมเปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเติบโต แต่กลัวสิ่งที่จะค้นพบ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณหวังจะเติบโตและเป็นตัวเองที่แท้จริง แต่ก็กลัวสิ่งที่จะค้นพบเมื่อมองลึกเข้าไป ไพ่บอกว่าสิ่งที่ค้นพบจะปลดปล่อยมากกว่าทำลาย กล้าเดินทางเข้าสู่ภายในเพื่อความหวังจะเป็นจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Sun = สว่าง",
+            "wands": "Page of Wands = เรียนรู้",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Pentacles = ดูแลใน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'สิ่งที่พบจะปลดปล่อย'",
+          "advice_th": "กล้ามองในตัวเอง - คุณหวังเติบโตแต่กลัวสิ่งที่พบ ความจริงคือมันจะปลดปล่อยคุณ",
+          "keywords_th": ["หวังเติบโต", "กลัวพบ", "กล้ามอง"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพดี แต่กลัวการเปลี่ยนวิถีชีวิต",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณหวังสุขภาพดี แต่กลัวการเปลี่ยนวิถีชีวิตที่จำเป็น - เลิกนิสัยที่รัก เริ่มออกกำลังกาย เปลี่ยนอาหาร ไพ่บอกว่าหวังให้ดีต้องลงมือทำ การเปลี่ยนวิถีคือทางเดียวสู่สุขภาพที่หวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'หวังต้องลงมือทำ'",
+          "advice_th": "กล้าเปลี่ยนวิถี - หวังสุขภาพดีต้องเลิกนิสัยร้าย เริ่มออกกำลัง เปลี่ยนอาหาร ลงมือเลย",
+          "keywords_th": ["หวังสุขภาพ", "กลัวเปลี่ยน", "ลงมือ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการพังครั้งใหญ่และเริ่มใหม่",
+          "detailed_interpretation_th": "หอคอยในตำแหน่งผลลัพธ์ บอกว่าผลลัพธ์ของสถานการณ์จะเป็นการพังครั้งใหญ่ที่บังคับให้คุณเริ่มต้นใหม่ - การล้มของโครงสร้างเดิม การเปิดเผยที่เปลี่ยนทุกอย่าง การพลิกผันที่ไม่คาดคิด ไพ่บอกว่าแม้รุนแรง แต่นี่คือกระบวนการชำระล้างที่จำเป็น เพื่อสร้างชีวิตใหม่บนรากฐานแท้",
+          "adjacent_influences": {
+            "major_arcana": "Death = สิ้นสุด, The Star = หลังพายุมีหวัง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจใหม่",
+            "swords": "Ace of Swords = ปัญญาใหม่",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "Knight of Wands = ก้าวกล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งผลลัพธ์ คือ 'พังเพื่อสร้างใหม่บนความจริง'",
+          "advice_th": "ยอมรับการพังเป็นกระบวนการ - แม้รุนแรงแต่จำเป็น คุณจะสร้างชีวิตใหม่บนรากฐานแท้",
+          "keywords_th": ["พังใหญ่", "เริ่มใหม่", "รากฐานแท้"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความสัมพันธ์ที่ตั้งบนเท็จจะพัง",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เตือนว่าความสัมพันธ์ที่ตั้งบนความเท็จจะพังลง - การหักหลังจะถูกเปิดเผย ความลับจะแตก หรือความสัมพันธ์ที่ไม่จริงแท้จะจบ ไพ่บอกว่าแม้เจ็บปวด แต่นี่คือการชำระล้างเพื่อเปิดทางให้ความรักแท้เข้ามา",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ความรักจบ, Death = สิ้นสุด",
+            "wands": "Eight of Wands = เหตุการณ์เร็ว",
+            "cups": "Three of Swords = ใจสลาย",
+            "swords": "Five of Swords = ทำร้ายกัน",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Cups (rev) = คนหลอก"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งผลลัพธ์ความรัก คือ 'พังเปิดทางรักแท้'",
+          "advice_th": "ยอมรับว่าความเท็จจะพัง - การพังเปิดเผยความจริงและเปิดทางให้รักแท้เข้ามา",
+          "keywords_th": ["ความรักพัง", "เปิดเผย", "เปิดทางแท้"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือวิกฤตการเงินบังคับให้สร้างใหม่",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เตือนว่าวิกฤตการเงินหรือธุรกิจจะเกิดขึ้น บังคับให้คุณสร้างใหม่ - การตกงาน บริษัทล้ม การลงทุนพัง ไพ่บอกว่าโครงสร้างเปราะบางจะถูกเปิดเผย แม้เจ็บปวด แต่จะนำไปสู่การสร้างฐานการเงินที่มั่นคงและแท้จริงกว่า",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = โชคพลิก, The Emperor (rev) = ระบบล้ม",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "King of Pentacles (rev) = ผู้นำพัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งผลลัพธ์งาน คือ 'วิกฤตเปิดทางสู่ฐานแท้'",
+          "advice_th": "เตรียมรับวิกฤต - มีเงินสำรอง พัฒนาทักษะ ใช้วิกฤตเป็นโอกาสสร้างฐานการเงินที่แท้จริง",
+          "keywords_th": ["วิกฤตเงิน", "บังคับสร้างใหม่", "ฐานแท้"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการตื่นรู้ที่เปลี่ยนตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เผยว่าคุณจะมีการตื่นรู้ครั้งใหญ่ที่เปลี่ยนตัวตน - การค้นพบความจริงเกี่ยวกับตัวเองและโลก การปลดความเชื่อจำกัด การเกิดใหม่เป็นคนที่ลึกซึ้งกว่า ไพ่บอกว่าแม้กระบวนการรุนแรง แต่ผลลัพธ์คืออิสรภาพจากภาพลวง",
+          "adjacent_influences": {
+            "major_arcana": "Death = แปลงร่าง, The Sun = สว่างเต็มที่",
+            "wands": "Eight of Wands = ข้อมูลเร็ว",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Ace of Pentacles = รากฐานใหม่",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งผลลัพธ์เติบโต คือ 'อิสรภาพจากภาพลวง'",
+          "advice_th": "เตรียมใจรับการตื่นรู้ - กระบวนการรุนแรงแต่นำสู่อิสรภาพและตัวตนแท้จริง",
+          "keywords_th": ["ตื่นรู้ใหญ่", "เปลี่ยนตัวตน", "อิสรภาพ"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือวิกฤตสุขภาพบังคับเปลี่ยนวิถี",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เตือนถึงวิกฤตสุขภาพที่จะบังคับให้เปลี่ยนวิถีชีวิต - การวินิจฉัยร้ายแรง อุบัติเหตุ หรือการพังของร่างกาย ไพ่บอกว่าสัญญาณที่เพิกเฉยจะระเบิดเป็นวิกฤต ถึงเวลาดูแลร่างกายอย่างจริงจังก่อนสายเกินไป",
+          "adjacent_influences": {
+            "major_arcana": "Death = เปลี่ยนใหญ่, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = ร่างพัง",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Knight of Swords = วิกฤตเร็ว"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยตำแหน่งผลลัพธ์สุขภาพ คือ 'อย่ารอวิกฤตปลุก'",
+          "advice_th": "อย่ารอวิกฤตปลุก - เปลี่ยนวิถีชีวิตตอนนี้ ดูแลร่างกาย ตรวจสุขภาพ ก่อนสายเกินไป",
+          "keywords_th": ["วิกฤตสุขภาพ", "บังคับเปลี่ยน", "ดูแลด่วน"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือเลี่ยงวิกฤตและเปลี่ยนแปลงนุ่มนวล",
+          "detailed_interpretation_th": "หอคอยกลับหัวในตำแหน่งผลลัพธ์ บอกว่าคุณจะเลี่ยงวิกฤตใหญ่ได้ ผ่านการเปลี่ยนแปลงแบบนุ่มนวล - การปรับตัวอย่างมีสติ การเตรียมตัวก่อนพายุ การเลือกเปลี่ยนเองก่อนถูกบังคับ ไพ่ยืนยันว่าความตื่นรู้และความกล้าของคุณจะนำมาซึ่งความมั่นคงที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวังจริง, Temperance = สมดุล",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่งมั่นคง",
+            "court_cards": "Queen of Pentacles = ดูแลรอบด้าน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งผลลัพธ์ คือ 'ตื่นรู้นำสู่ความมั่นคงยั่งยืน'",
+          "advice_th": "ใช้ความตื่นรู้สร้างความมั่นคง - คุณเลี่ยงวิกฤตได้ด้วยการปรับตัวอย่างมีสติ",
+          "keywords_th": ["เลี่ยงวิกฤต", "ปรับนุ่มนวล", "มั่นคงยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความสัมพันธ์มั่นคงหลังผ่านบททดสอบ",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวเป็นข่าวดี - ความสัมพันธ์จะมั่นคงหลังผ่านบททดสอบ การสื่อสารเปิดและการปรับตัวร่วมกันจะสร้างความเข้าใจที่ลึกซึ้งกว่าเดิม ไพ่ยืนยันว่าความรักของคุณจะแข็งแกร่งจากการเผชิญปัญหาร่วมกัน ไม่พัง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, Temperance = สมดุลคู่",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'รักแกร่งจากเผชิญร่วม'",
+          "advice_th": "เชื่อมั่นในความสัมพันธ์ - หลังผ่านบททดสอบ ความรักจะมั่นคงและลึกซึ้งกว่าเดิม",
+          "keywords_th": ["รักมั่นคง", "ผ่านทดสอบ", "ลึกซึ้ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือการเงินมั่นคงจากการเตรียมตัว",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวเป็นข่าวดี - คุณจะสร้างการเงินมั่นคงจากการเตรียมตัวล่วงหน้า - มีเงินสำรอง กระจายแหล่งรายได้ ทักษะที่หลากหลาย ไพ่ยืนยันว่าวิสัยทัศน์และการวางแผนของคุณจะทำให้รอดจากวิกฤตและเติบโตในระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่งมั่นคง",
+            "court_cards": "King of Pentacles = ปรมาจารย์การเงิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งผลลัพธ์งาน คือ 'เตรียมตัวนำสู่มั่นคงระยะยาว'",
+          "advice_th": "ใช้การเตรียมตัวสร้างมั่นคง - เงินสำรอง รายได้กระจาย ทักษะหลากหลาย คุณจะรอดและเติบโต",
+          "keywords_th": ["มั่นคงเงิน", "เตรียมตัว", "เติบโต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือเติบโตอย่างยั่งยืนและมั่นคง",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวเป็นชัยชนะที่ยั่งยืน - คุณเติบโตเป็นตัวตนที่แท้จริงโดยไม่ต้องผ่านวิกฤตรุนแรง การปลดความเชื่อทีละชั้นด้วยสติ การเรียนรู้จากประสบการณ์เล็กๆ ไพ่ยืนยันว่ากระบวนการนี้ลึกซึ้ง คงทน และนำคุณสู่ความเป็นตัวเองอย่างสมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Hermit = ปัญญาภายใน",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตนสมบูรณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'ยั่งยืนคงทนเป็นตัวเอง'",
+          "advice_th": "เฉลิมฉลองการเติบโตยั่งยืน - คุณเป็นตัวเองอย่างสมบูรณ์ผ่านกระบวนการที่มีสติ ลึกซึ้ง คงทน",
+          "keywords_th": ["เติบโตยั่งยืน", "เป็นตัวเอง", "สมบูรณ์"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพดีจากการป้องกัน",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวเป็นข่าวดี - คุณจะมีสุขภาพดีจากการป้องกันและดูแลตัวเองอย่างต่อเนื่อง ไพ่ยืนยันว่าการเลือกใส่ใจร่างกายตั้งแต่ตอนนี้จะทำให้คุณเลี่ยงวิกฤตและมีพลังชีวิตเต็มเปี่ยม ดูแลต่อเนื่องคือกุญแจ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟูสมบูรณ์, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = สุขภาพดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: หอคอยกลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'ป้องกันนำสู่พลังเต็มเปี่ยม'",
+          "advice_th": "เชื่อมั่นในการดูแล - การป้องกันตั้งแต่ตอนนี้จะให้สุขภาพดีและพลังชีวิตเต็มเปี่ยม",
+          "keywords_th": ["สุขภาพดี", "ป้องกัน", "พลังเต็ม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      }
+    }
+  }
+}
+

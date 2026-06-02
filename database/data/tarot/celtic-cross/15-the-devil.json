@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "The Devil",
+    "name_th": "ปีศาจ",
+    "number": 15,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คุณกำลังติดอยู่ในกับดักที่ตัวเองสร้างขึ้น",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน ปีศาจหัวตั้งบ่งบอกว่าคุณกำลังติดอยู่ในบางสิ่ง - นิสัยที่ทำลาย ความสัมพันธ์ที่เป็นพิษ งานที่กักขัง หรือความเชื่อที่จำกัดตัวเอง สิ่งสำคัญคือโซ่ที่ผูกคุณนั้นหลวม คุณปลดได้เสมอ แต่ยังเลือกที่จะอยู่ ถามตัวเองว่าอะไรทำให้คุณติด - มักเป็นความกลัวหรือความสะดวกสบาย",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = กับดักจะพัง, The Lovers = ความสัมพันธ์ที่ติด, Death = ต้องปล่อย",
+            "wands": "Eight of Wands กลับหัว = ติดอยู่",
+            "cups": "Seven of Cups = ภาพลวง, Five of Cups = ติดในความเศร้า",
+            "swords": "Eight of Swords = ขังตัวเอง, Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ยึดติดวัตถุ, Five of Pentacles = ติดในความขาด",
+            "court_cards": "Knight of Wands กลับหัว = ติดในความหลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจในปัจจุบัน คือ 'โซ่หลวม ปลดได้' แม่หมอควรถามว่าอะไรทำให้ผู้ถามติดอยู่ มักเป็นความกลัว",
+          "advice_th": "ระบุสิ่งที่ติด - นิสัย ความสัมพันธ์ ความเชื่อ ยอมรับว่าคุณเลือกได้ ปลดโซ่ออก เริ่มจากก้าวเล็กๆ",
+          "keywords_th": ["ติดกับดัก", "นิสัยทำลาย", "เลือกได้", "ปลด"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ที่มีการพึ่งพาหรือควบคุมที่ไม่ดี",
+          "detailed_interpretation_th": "ในความรักปัจจุบัน ปีศาจหัวตั้งเตือนถึงความสัมพันธ์ที่เป็นพิษ - การพึ่งพากันมากเกินไป ความหลงใหลที่ทำลาย การควบคุม หรือความสัมพันธ์ที่อยู่ด้วยกันเพราะกลัวอยู่คนเดียว ความผูกพันนี้อาจรู้สึกเข้มข้นแต่ไม่ใช่ความรักที่แท้ ความรักที่ดีให้อิสระ ไม่ใช่โซ่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = สัมพันธ์ที่ติด, The Tower = จะระเบิด, The Moon = ความลับ",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Seven of Cups = ภาพลวงในรัก, Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ, Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ควบคุม",
+            "court_cards": "Knight of Cups กลับหัว = คนรักที่ไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจในปัจจุบันรัก คือ 'ความหลงใหล ≠ ความรัก' แม่หมอควรถามว่าความสัมพันธ์ให้อิสระหรือกักขัง",
+          "advice_th": "ตรวจสอบความสัมพันธ์ - ทำให้คุณเป็นตัวเองหรือเล็กลง? พึ่งพาหรืออิสระ? ถ้าเป็นพิษ ตั้งขีดจำกัดหรือออก",
+          "keywords_th": ["สัมพันธ์เป็นพิษ", "พึ่งพา", "ควบคุม", "ความหลงใหล"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ติดในงานที่ไม่มีความสุขเพราะเงินหรือความกลัว",
+          "detailed_interpretation_th": "ในการงาน-การเงิน ปีศาจหัวตั้งบ่งบอกว่าคุณติดในงานที่ไม่ใช่ - อยู่เพราะเงินเดือน เพราะสถานะ เพราะกลัวความไม่แน่นอน หรือติดในวงจรของหนี้ การใช้จ่ายเกินตัว วัตถุนิยมกำลังควบคุมคุณ คุณทำงานเพื่อจ่ายหนี้ ไม่ใช่เพื่อชีวิต ถึงเวลาปลดโซ่",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = จะพัง, Death = ต้องเปลี่ยน",
+            "wands": "Eight of Wands กลับหัว = ติด",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Eight of Swords = ขังในงาน",
+            "pentacles": "Four of Pentacles = ยึดเงิน, Five of Pentacles = ติดในหนี้",
+            "court_cards": "King of Pentacles กลับหัว = วัตถุนิยม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจในปัจจุบันงาน-เงิน คือ 'ทาสของเงิน' แม่หมอควรถามว่าทำงานเพื่อชีวิตหรือเพื่อจ่ายหนี้",
+          "advice_th": "ทบทวนความสัมพันธ์กับเงิน - ติดในวัตถุนิยม? ใช้เกินตัว? อยู่ในงานเพราะกลัว? วางแผนปลดโซ่ทีละขั้น",
+          "keywords_th": ["ทาสของเงิน", "ติดในงาน", "หนี้", "วัตถุนิยม"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในความเชื่อจำกัดตัวเองหรือนิสัยที่ทำลาย",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ปีศาจหัวตั้งบ่งบอกว่าคุณติดในเงาของตัวเอง - ความเชื่อจำกัด ความกลัว นิสัยที่ทำลาย การเสพติด หรือ ego ที่ควบคุม สิ่งเหล่านี้คือ 'ปีศาจ' ในตัวคุณ แต่ปีศาจไม่ใช่ศัตรู เป็นส่วนที่ต้องเข้าใจและบูรณาการ shadow work คือกุญแจ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เงา, Death = เปลี่ยน, The Star = ฟื้นฟู",
+            "wands": "Wands กลับหัว = พลังถูกใช้ผิด",
+            "cups": "Five of Cups = ติดในความเศร้า",
+            "swords": "Eight of Swords = ขังตัวเอง, Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจในปัจจุบันจิตวิญญาณ คือ 'เผชิญเงา' แม่หมอควรกระตุ้นให้ผู้ถามเข้าใจ ไม่ใช่ปฏิเสธเงาของตัวเอง",
+          "advice_th": "ทำ shadow work - ระบุนิสัยทำลาย ความเชื่อจำกัด การเสพติด เข้าใจที่มา และค่อยๆ ปลดปล่อย อาจใช้ therapy",
+          "keywords_th": ["เงา", "shadow work", "ความเชื่อจำกัด", "เสพติด"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ติดในนิสัยที่ทำลายสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ปีศาจหัวตั้งเตือนถึงการเสพติดหรือนิสัยที่ทำลาย - บุหรี่ แอลกอฮอล์ น้ำตาล อาหารแปรรูป การติดมือถือ การติดงาน รู้ว่าไม่ดีแต่หยุดไม่ได้ นิสัยเหล่านี้กำลังกัดกินสุขภาพ การยอมรับว่าติดคือก้าวแรกของการเลิก",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายจะเรียกร้อง, Death = เลิกนิสัย",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืนตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจในปัจจุบันสุขภาพ คือ 'การเสพติด' แม่หมอควรย้ำว่าการยอมรับว่าติดคือก้าวแรกของการรักษา",
+          "advice_th": "ระบุการเสพติดที่ทำลายสุขภาพ - บุหรี่ น้ำตาล มือถือ การยอมรับคือก้าวแรก ขอความช่วยเหลือถ้าจำเป็น",
+          "keywords_th": ["เสพติด", "นิสัยทำลาย", "ยอมรับ", "เลิก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "คุณกำลังปลดโซ่และปลดปล่อยตัวเอง",
+          "detailed_interpretation_th": "ปีศาจกลับหัวในปัจจุบัน เป็นสัญญาณดี - คุณกำลังตื่นรู้และปลดปล่อยจากสิ่งที่กักขัง คุณเห็นโซ่ที่ผูกอยู่และเริ่มปลด - เลิกนิสัยทำลาย ออกจากความสัมพันธ์เป็นพิษ ปลดความเชื่อจำกัด นี่คือช่วงของการปลดปล่อยและทวงคืนพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, The Sun = สดใส, Death = เปลี่ยนเสร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight ทุกชุด = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวในปัจจุบัน คือ 'ปลดปล่อย' แม่หมอควรเสริมพลังให้ผู้ถามที่กำลังก้าวออกจากกับดัก",
+          "advice_th": "ดำเนินการปลดปล่อยต่อ - คุณกำลังทำได้ดี ปลดโซ่ทีละเส้น ทวงคืนพลัง อิสรภาพรออยู่",
+          "keywords_th": ["ปลดปล่อย", "อิสรภาพ", "ทวงคืนพลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ปลดปล่อยจากความสัมพันธ์ที่เป็นพิษ",
+          "detailed_interpretation_th": "ในรัก ปีศาจกลับหัวบ่งบอกถึงการปลดปล่อย - คุณกำลังออกจากความสัมพันธ์ที่เป็นพิษ เลิกพึ่งพา ตั้งขีดจำกัด ทวงคืนตัวเอง นี่คือช่วงของการรักตัวเองและเลือกความสัมพันธ์ที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, Death = จบ, The Sun = สดใส",
+            "wands": "Eight of Wands = ก้าวออก",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Four of Pentacles กลับหัว = ปล่อย",
+            "court_cards": "Knight of Wands = กล้าออก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวรัก คือ 'ปลดปล่อยจากพิษ' แม่หมอควรสนับสนุนการออกจากความสัมพันธ์ที่ทำลาย",
+          "advice_th": "ดำเนินการปลดปล่อย - ออกจากความสัมพันธ์ที่ทำให้เล็ก ตั้งขีดจำกัด รักตัวเอง คุณคู่ควรกับความรักที่ดี",
+          "keywords_th": ["ปลดปล่อยรัก", "ออกจากพิษ", "รักตัวเอง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ปลดปล่อยจากงานที่กักขังหรือวงจรหนี้",
+          "detailed_interpretation_th": "ในงาน-เงิน ปีศาจกลับหัวบ่งบอกถึงการปลดปล่อย - ลาออกจากงานที่ไม่ใช่ ปลดหนี้ เลิกใช้จ่ายเกินตัว ทวงคืนอิสรภาพทางการเงิน คุณกำลังเปลี่ยนความสัมพันธ์กับเงินและงาน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, The Fool = เริ่มใหม่",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่, Six of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวงาน-เงิน คือ 'อิสรภาพการเงิน' แม่หมอควรสนับสนุนการปลดหนี้และออกจากงานที่กักขัง",
+          "advice_th": "ดำเนินการปลดปล่อย - วางแผนปลดหนี้ ออกจากงานที่ไม่ใช่ เลิกใช้จ่ายเกินตัว ทวงคืนอิสรภาพการเงิน",
+          "keywords_th": ["ปลดหนี้", "อิสรภาพ", "ออกจากงาน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เลิกการเสพติดและปลดความเชื่อจำกัด",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ปีศาจกลับหัวบ่งบอกถึงการตื่นรู้ - คุณกำลังเลิกนิสัยที่ทำลาย ปลดความเชื่อจำกัด เผชิญและบูรณาการเงา นี่คือช่วงของการเติบโตที่ลึกซึ้ง คุณกำลังกลายเป็นนายของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Judgement = ตื่นรู้, The Sun = สดใส",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวจิตวิญญาณ คือ 'นายของตัวเอง' แม่หมอควรเสริมพลังการเลิกเสพติดและปลดความเชื่อจำกัด",
+          "advice_th": "ดำเนินการปลดปล่อย - เลิกนิสัยทำลาย ปลดความเชื่อจำกัด บูรณาการเงา คุณกำลังกลายเป็นนายของตัวเอง",
+          "keywords_th": ["เลิกเสพติด", "ปลดความเชื่อ", "นายตัวเอง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เลิกนิสัยทำลายสุขภาพและฟื้นฟู",
+          "detailed_interpretation_th": "ในสุขภาพ ปีศาจกลับหัวเป็นสัญญาณดี - คุณกำลังเลิกนิสัยที่ทำลาย - เลิกบุหรี่ ลดน้ำตาล ออกจากการเสพติดมือถือ ร่างกายกำลังฟื้นฟู นี่คือช่วงของการทวงคืนสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวสุขภาพ คือ 'เลิกได้แล้ว' แม่หมอควรเสริมพลังการเลิกนิสัยทำลาย",
+          "advice_th": "ดำเนินการเลิกต่อ - คุณกำลังทำได้ดี ทุกวันที่เลิกร่างกายฟื้นฟู ขอความช่วยเหลือถ้าต้องการ",
+          "keywords_th": ["เลิกนิสัย", "ฟื้นฟู", "ทวงคืนสุขภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การติดในนิสัยหรือความเชื่อกำลังขัดขวางคุณ",
+          "detailed_interpretation_th": "ในตำแหน่งอุปสรรค ปีศาจ (ตีความตั้งตรงเสมอ) บ่งบอกว่าสิ่งที่ขัดขวางคุณคือการติด - นิสัยที่ทำลาย ความเชื่อจำกัด การเสพติด ความกลัวที่ทำให้ไม่กล้าก้าว สิ่งเหล่านี้คือโซ่ที่คุณสร้างเอง การเป็นอิสระเริ่มจากการยอมรับว่าติด",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Moon = เงา",
+            "wands": "Eight of Wands กลับหัว = ติด",
+            "cups": "Five of Cups = ติดในความเศร้า",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจในอุปสรรค คือ 'โซ่ที่สร้างเอง' ยอมรับและปลด",
+          "advice_th": "ระบุสิ่งที่ติด - ยอมรับว่าคุณเลือกที่จะอยู่ในกับดัก ค่อยๆ ปลดโซ่",
+          "keywords_th": ["ติด", "โซ่ตัวเอง", "ยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "การพึ่งพาหรือความหลงใหลขัดขวางความรักที่แท้",
+          "detailed_interpretation_th": "อุปสรรคในรักคือการพึ่งพาหรือความหลงใหลที่ไม่ดี - คุณติดในคนที่ไม่ดีต่อคุณ พึ่งพาคู่มากเกินไป หรือความหลงใหลที่ทำให้มองไม่เห็นความจริง ความรักที่ดีต้องการอิสระและความเคารพ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = สัมพันธ์ที่ติด, The Moon = ลวงตา",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Seven of Cups = ภาพลวง",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ควบคุม",
+            "court_cards": "Knight of Cups กลับหัว = คนรักไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอุปสรรครัก คือ 'ความหลงใหลบังตา' ดูความจริง",
+          "advice_th": "ตรวจสอบความรู้สึก - หลงใหลหรือรักจริง? พึ่งพาหรือเติบโตด้วยกัน? ดูการกระทำมากกว่าคำพูด",
+          "keywords_th": ["พึ่งพา", "ความหลงใหล", "ดูความจริง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความกลัวความไม่แน่นอนทำให้ติดในงานที่ไม่ใช่",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือความกลัว - กลัวความไม่แน่นอน กลัวเสียเงินเดือน กลัวล้มเหลว ทำให้ติดในงานที่ไม่ใช่ หรือติดในวงจรหนี้ การเงินคุมคุณ ไม่ใช่คุณคุมการเงิน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Hanged Man = ติด",
+            "wands": "Eight of Wands กลับหัว = ติด",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึดเงิน, Five of Pentacles = หนี้",
+            "court_cards": "King of Pentacles กลับหัว = วัตถุนิยม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอุปสรรคงาน-เงิน คือ 'กลัวคุมชีวิต' เผชิญความกลัว",
+          "advice_th": "ระบุความกลัวที่ขังคุณ - กลัวไม่มีเงิน? กลัวล้มเหลว? วางแผนรับมือ ค่อยๆ ปลดโซ่",
+          "keywords_th": ["ความกลัว", "ติดในงาน", "หนี้"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เงาในตัวเองขัดขวางการเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือเงาในตัว - ส่วนที่ปฏิเสธ ความกลัว ความโกรธ ความอยาก การเสพติด สิ่งเหล่านี้ควบคุมคุณเมื่อไม่รู้ตัว shadow work คือการเข้าใจและบูรณาการ ไม่ใช่ต่อสู้",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เงา, Death = เปลี่ยน",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Five of Cups = ติดในความเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอุปสรรคจิตวิญญาณ คือ 'เผชิญเงา' เข้าใจไม่ใช่ต่อสู้",
+          "advice_th": "ทำ shadow work - ระบุส่วนที่ปฏิเสธในตัว เข้าใจที่มา บูรณาการ ไม่ใช่ต่อสู้",
+          "keywords_th": ["เงา", "shadow work", "บูรณาการ"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "การเสพติดขัดขวางสุขภาพที่ดี",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคือการเสพติด - บุหรี่ น้ำตาล แอลกอฮอล์ มือถือ การติดงาน รู้ว่าไม่ดีแต่หยุดไม่ได้ การเสพติดเหล่านี้กำลังกัดกินสุขภาพ ต้องการความตั้งใจและบางครั้งความช่วยเหลือ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายเรียก, Death = เลิก",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอุปสรรคสุขภาพ คือ 'การเสพติด' ยอมรับและขอความช่วยเหลือ",
+          "advice_th": "ระบุการเสพติดที่ทำลาย - บุหรี่ น้ำตาล มือถือ ยอมรับ ขอความช่วยเหลือ เลิกทีละอย่าง",
+          "keywords_th": ["เสพติด", "ทำลายสุขภาพ", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความกลัวการเป็นอิสระทำให้ลังเล",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือความกลัวการเป็นอิสระ - คุณรู้ว่าต้องปลดโซ่ แต่กลัวว่าจะเป็นใครถ้าไม่มีโซ่นั้น ความสะดวกสบายในกับดักทำให้ลังเล ต้องกล้าก้าวออก",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, The Fool = เริ่มใหม่",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight of Wands = กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'กล้าเป็นอิสระ'",
+          "advice_th": "ความกลัวการเปลี่ยนแปลงเป็นธรรมชาติ แต่อิสรภาพคุ้มค่า ก้าวออกทีละนิด",
+          "keywords_th": ["กลัวอิสระ", "ลังเล", "กล้าก้าว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวออกจากความสัมพันธ์ที่คุ้นเคยแม้ไม่ดี",
+          "detailed_interpretation_th": "ในรัก อุปสรรคคือความกลัวออกจากความสัมพันธ์ที่คุ้นเคย - แม้รู้ว่าไม่ดี กลัวอยู่คนเดียว กลัวไม่มีใครรักอีก ความกลัวขังคุณในความสัมพันธ์ที่เป็นพิษ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, Death = ต้องจบ",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight of Cups กลับหัว = ไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'กล้าออก'",
+          "advice_th": "อยู่คนเดียวดีกว่าอยู่ในความสัมพันธ์ที่ทำร้าย กล้าออก ความรักที่ดีจะมา",
+          "keywords_th": ["กลัวออก", "คุ้นเคย", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวออกจากงานที่มั่นคงแต่ไม่มีความสุข",
+          "detailed_interpretation_th": "ในงาน-เงิน อุปสรรคคือความกลัวออกจากความมั่นคงปลอม - งานที่ไม่มีความสุขแต่มั่นคง กลัวเสี่ยง กลัวไม่มีเงิน ความกลัวขังคุณในวงจรเดิม",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Tower = วิกฤต",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'ความมั่นคงปลอม'",
+          "advice_th": "วางแผนเปลี่ยน - emergency fund ทักษะใหม่ ค่อยๆ ก้าว ความมั่นคงปลอมทำลายชีวิต",
+          "keywords_th": ["กลัวเสี่ยง", "มั่นคงปลอม", "วางแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ลังเลที่จะเผชิญเงาในตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการลังเลที่จะเผชิญเงา - กลัวสิ่งที่จะเจอถ้ามองลึก หลีกเลี่ยง shadow work การเติบโตต้องการความกล้าเผชิญส่วนมืดในตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เงา, The Hermit = ค้นหา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'กล้าเผชิญเงา'",
+          "advice_th": "shadow work น่ากลัวแต่จำเป็น เริ่มจากเรื่องเล็ก อาจใช้ therapy เผชิญเพื่อปลดปล่อย",
+          "keywords_th": ["ลังเล", "เงา", "กล้าเผชิญ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวเลิกนิสัยที่ทำให้สบายใจชั่วคราว",
+          "detailed_interpretation_th": "ในสุขภาพ อุปสรรคคือความกลัวเลิกนิสัยที่ให้ความสบายชั่วคราว - บุหรี่ที่คลายเครียด น้ำตาลที่ปลอบใจ มือถือที่หนีความเหงา กลัวว่าถ้าเลิกจะรับมือกับชีวิตไม่ได้",
+          "adjacent_influences": {
+            "major_arcana": "The Devil เสริม, The Moon = หลีกเลี่ยง",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'หาวิธีรับมือใหม่'",
+          "advice_th": "หาวิธีรับมือความเครียดใหม่ที่ไม่ทำลาย - ออกกำลังกาย สมาธิ คุยกับเพื่อน ก่อนเลิกนิสัยเก่า",
+          "keywords_th": ["กลัวเลิก", "สบายชั่วคราว", "วิธีใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เคยติดในกับดักที่ส่งผลถึงปัจจุบัน",
+          "detailed_interpretation_th": "ปีศาจหัวตั้งในอดีต บ่งบอกถึงช่วงที่คุณเคยติดในกับดัก - นิสัยทำลาย ความสัมพันธ์เป็นพิษ ความเชื่อจำกัด ประสบการณ์นั้นทิ้งบาดแผลและบทเรียน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤตเก่า, The Moon = เงา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหันเก่า"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจในอดีต คือ 'กับดักเก่าที่เรียนรู้แล้ว'",
+          "advice_th": "ระลึกกับดักในอดีต - คุณปลดออกได้อย่างไร? ใช้บทเรียนเพื่อไม่ติดอีก",
+          "keywords_th": ["กับดักเก่า", "บทเรียน", "ปลด"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยอยู่ในความสัมพันธ์ที่เป็นพิษ",
+          "detailed_interpretation_th": "ในรักอดีต เคยอยู่ในความสัมพันธ์ที่เป็นพิษ - ถูกควบคุม พึ่งพา หลงใหลแบบทำลาย บาดแผลนี้ส่งผลให้ปัจจุบันระวังหรือกลัว ใช้บทเรียน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Moon = ลวงตา",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ, Three of Swords = แผลใจ",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = ควบคุม",
+            "court_cards": "Knight of Cups กลับหัว = คนรักไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอดีตรัก คือ 'รักที่เป็นพิษเก่า' ใช้บทเรียน",
+          "advice_th": "ใช้บทเรียนจากความสัมพันธ์เป็นพิษ - รู้สัญญาณเตือน เลือกฉลาดกว่า รักษาบาดแผล",
+          "keywords_th": ["รักเป็นพิษเก่า", "บาดแผล", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยติดในงานหรือหนี้ที่กักขัง",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต เคยติดในงานที่ไม่ใช่หรือวงจรหนี้ - อยู่เพราะเงิน เพราะกลัว ใช้จ่ายเกินตัว บทเรียนนี้สอนเรื่องการจัดการการเงินและอิสรภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พังเก่า, The Hanged Man = ติด",
+            "wands": "Eight of Wands กลับหัว = ติด",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึดเงิน, Five of Pentacles = หนี้",
+            "court_cards": "King of Pentacles กลับหัว = วัตถุนิยม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอดีตงาน-เงิน คือ 'ทาสเงินเก่า' บทเรียน",
+          "advice_th": "ใช้บทเรียนจากการติดในงาน/หนี้ - จัดการการเงินดีขึ้น ไม่ติดอีก",
+          "keywords_th": ["ติดงานเก่า", "หนี้", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยติดในเงาหรือนิสัยทำลาย",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต เคยถูกเงาควบคุม - ความกลัว ความโกรธ การเสพติด ความเชื่อจำกัด ตอนนี้เริ่มเข้าใจและบูรณาการ ปัญญาจากการเผชิญเงาสั่งสม",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เงา, Death = เปลี่ยน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอดีตจิตวิญญาณ คือ 'เผชิญเงาเก่า' ปัญญาสะสม",
+          "advice_th": "ใช้ปัญญาจากการเผชิญเงาในอดีต - เข้าใจตัวเองดีกว่าใคร ใช้เป็นจุดแข็ง",
+          "keywords_th": ["เงาเก่า", "บูรณาการ", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยติดในนิสัยทำลายสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยติดในการเสพติด - บุหรี่ ดื่ม กินไม่ดี ผลกระทบยังอยู่ แต่ถ้าเลิกได้แล้ว พิสูจน์ว่าคุณมีพลัง ใช้บทเรียน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายเรียก, Death = เลิก",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอดีตสุขภาพ คือ 'เสพติดเก่า' บทเรียน",
+          "advice_th": "ใช้บทเรียนจากการเสพติดเก่า - ถ้าเลิกได้แล้ว ภูมิใจ ถ้ายังติด ใช้ประสบการณ์เลิก",
+          "keywords_th": ["เสพติดเก่า", "ผลกระทบ", "เลิก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยปลดปล่อยตัวเองจากกับดักได้สำเร็จ",
+          "detailed_interpretation_th": "ปีศาจกลับหัวในอดีต บ่งบอกถึงช่วงที่คุณเคยปลดปล่อยตัวเอง - เลิกนิสัยทำลาย ออกจากความสัมพันธ์เป็นพิษ ปลดความเชื่อจำกัด พลังนี้พิสูจน์ว่าคุณทำได้",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, Death = เปลี่ยน",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวอดีต คือ 'เคยปลดปล่อยได้'",
+          "advice_th": "ระลึกตอนปลดปล่อยตัวเองในอดีต - ทำได้อย่างไร? ใช้พลังเดียวกันในปัจจุบัน",
+          "keywords_th": ["ปลดปล่อยเก่า", "พลัง", "ทำได้"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยออกจากความสัมพันธ์เป็นพิษได้",
+          "detailed_interpretation_th": "ในรักอดีต เคยออกจากความสัมพันธ์เป็นพิษ - กล้าเลิก ตั้งขีดจำกัด ทวงคืนตัวเอง ประสบการณ์นี้สอนคุณเรื่องคุณค่าของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, Death = จบ",
+            "wands": "Eight of Wands = ก้าวออก",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Four of Pentacles กลับหัว = ปล่อย",
+            "court_cards": "Knight of Wands = กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวอดีตรัก คือ 'เคยกล้าออก'",
+          "advice_th": "ใช้พลังที่เคยกล้าออกจากความสัมพันธ์เป็นพิษ - คุณรู้คุณค่าตัวเอง",
+          "keywords_th": ["กล้าออกเก่า", "คุณค่าตัว", "พลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยปลดหนี้หรือออกจากงานที่กักขัง",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต เคยปลดหนี้ ออกจากงานที่ไม่ใช่ ทวงคืนอิสรภาพการเงิน ประสบการณ์นี้พิสูจน์ว่าคุณจัดการการเงินได้",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, The Fool = เริ่มใหม่",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Six of Pentacles = สมดุล, Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "King of Pentacles = ความมั่นคง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวอดีตงาน-เงิน คือ 'เคยปลดหนี้ได้'",
+          "advice_th": "ใช้พลังที่เคยปลดหนี้/ออกจากงาน - คุณจัดการการเงินได้ ทำได้อีก",
+          "keywords_th": ["ปลดหนี้เก่า", "อิสรภาพ", "พลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยเลิกการเสพติดและบูรณาการเงา",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต เคยเลิกนิสัยทำลาย เผชิญและบูรณาการเงา ปัญญานี้ทำให้คุณแข็งแกร่ง ใช้ในการเติบโตต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Judgement = ตื่นรู้",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวอดีตจิตวิญญาณ คือ 'บูรณาการเงาแล้ว'",
+          "advice_th": "ใช้ปัญญาจากการเผชิญและบูรณาการเงา - คุณเข้าใจตัวเองลึก ใช้เป็นพลัง",
+          "keywords_th": ["บูรณาการเงา", "แข็งแกร่ง", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยเลิกนิสัยทำลายสุขภาพได้สำเร็จ",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยเลิกนิสัยทำลาย - เลิกบุหรี่ ลดน้ำหนัก เลิกการเสพติด พิสูจน์ว่าคุณมีพลังเปลี่ยนแปลง ใช้เป็นความเชื่อมั่น",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Pentacles = วินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวอดีตสุขภาพ คือ 'เคยเลิกได้'",
+          "advice_th": "ระลึกตอนเลิกนิสัยทำลายสำเร็จ - คุณมีพลัง ใช้ความเชื่อมั่นนี้ในปัจจุบัน",
+          "keywords_th": ["เลิกได้เก่า", "พลัง", "เชื่อมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ระวังการติดในกับดักใหม่ในอนาคต",
+          "detailed_interpretation_th": "ปีศาจหัวตั้งในอนาคต เตือนว่าใน 3-6 เดือนข้างหน้า อาจมีสิ่งล่อใจที่นำไปสู่การติด - งานที่จ่ายดีแต่กักขัง ความสัมพันธ์ที่ดูดีแต่เป็นพิษ การลงทุนที่ล่อใจ ใช้สติก่อนเข้าไป",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Moon = ลวงตา",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Seven of Cups = ฝันลวง",
+            "swords": "Seven of Swords = ถูกหลอก",
+            "pentacles": "Four of Pentacles = วัตถุนิยม",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอนาคต คือ 'สิ่งล่อใจจะมา' ใช้สติ",
+          "advice_th": "ระวังสิ่งล่อใจที่จะมา - ดูดีแต่กักขัง ใช้สติพิจารณาก่อนเข้าไป",
+          "keywords_th": ["สิ่งล่อใจ", "กับดัก", "ใช้สติ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ระวังความสัมพันธ์ที่ดูดีแต่เป็นพิษ",
+          "detailed_interpretation_th": "ในรักอนาคต ระวังคนที่ดูดีแต่จริงๆ เป็นพิษ - หลงใหลแต่ควบคุม น่าดึงดูดแต่ไม่ดีต่อคุณ ใช้เวลาทำความรู้จัก ดูการกระทำ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ลวงตา, The Lovers = ตัดสินใจ",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Seven of Cups = ภาพลวง",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ควบคุม",
+            "court_cards": "Knight of Cups กลับหัว = คนเจ้าชู้"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอนาคตรัก คือ 'ระวังคนที่ดูดีเกินจริง'",
+          "advice_th": "อย่ารีบเชื่อความหลงใหล - ใช้เวลา ดูการกระทำ ตรวจสอบว่าให้อิสระหรือควบคุม",
+          "keywords_th": ["ระวังคนพิษ", "ความหลงใหล", "ดูการกระทำ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ระวังข้อเสนอที่ล่อใจแต่กักขัง",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต ระวังข้อเสนอที่ล่อใจ - งานจ่ายสูงแต่กักขัง การลงทุนที่ดูรวยเร็ว สินเชื่อที่ทำให้ติดหนี้ ใช้สติพิจารณา ไม่หลงในตัวเลข",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, The Moon = ลวงตา",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Seven of Cups = ฝันรวย",
+            "swords": "Seven of Swords = ถูกหลอก",
+            "pentacles": "Four of Pentacles = วัตถุนิยม, Five of Pentacles = หนี้",
+            "court_cards": "Knight of Pentacles กลับหัว = ลงทุนผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอนาคตงาน-เงิน คือ 'ระวังกับดักหนี้'",
+          "advice_th": "ระวังข้อเสนอที่รวยเร็วหรือกักขัง - อ่านสัญญาให้ดี อย่าก่อหนี้เพื่อวัตถุ",
+          "keywords_th": ["ข้อเสนอล่อใจ", "กับดักหนี้", "ใช้สติ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เงาในตัวอาจกลับมาควบคุมในอนาคต",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ระวังเงากลับมาควบคุม - นิสัยเก่า ความกลัวเก่า รูปแบบเดิม ในช่วงเครียดเงาออกมา ฝึกสติเพื่อรับมือ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เงา, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอนาคตจิตวิญญาณ คือ 'เงาอาจกลับ' ฝึกสติ",
+          "advice_th": "ฝึกสติเตรียมตัว - รู้ตัวกระตุ้นของนิสัยเก่า มีแผนรับมือเมื่อเงาออกมา",
+          "keywords_th": ["เงากลับ", "ฝึกสติ", "เตรียมพร้อม"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ระวังการกลับไปติดนิสัยทำลายสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ระวังการกลับไปติดนิสัยเก่า - กลับไปสูบ กลับไปดื่ม กลับไปกินไม่ดี ในช่วงเครียดการเสพติดกลับมา มีแผนรับมือ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายเรียก, The Moon = หลีกเลี่ยง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจอนาคตสุขภาพ คือ 'ระวังกลับไปติด'",
+          "advice_th": "มีแผนรับมือ relapse - หาวิธีจัดการความเครียดที่ไม่ทำลาย เครือข่ายสนับสนุน",
+          "keywords_th": ["กลับไปติด", "relapse", "แผนรับมือ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "จะปลดปล่อยตัวเองและเป็นอิสระในอนาคต",
+          "detailed_interpretation_th": "ปีศาจกลับหัวในอนาคต เป็นสัญญาณดี - ใน 3-6 เดือนข้างหน้า คุณจะปลดปล่อยจากสิ่งที่กักขัง เลิกนิสัยทำลาย ออกจากความสัมพันธ์เป็นพิษ ทวงคืนอิสรภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, The Sun = สดใส, Death = เปลี่ยน",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวอนาคต คือ 'อิสรภาพจะมา'",
+          "advice_th": "เตรียมปลดปล่อยตัวเอง - ระบุสิ่งที่ต้องปลด วางแผน ก้าวสู่อิสรภาพ",
+          "keywords_th": ["อิสรภาพ", "ปลดปล่อย", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "จะออกจากความสัมพันธ์เป็นพิษและพบรักที่ดี",
+          "detailed_interpretation_th": "ในรักอนาคต คุณจะปลดปล่อยจากความสัมพันธ์เป็นพิษ - กล้าเลิก ทวงคืนตัวเอง เปิดทางสู่ความรักที่ดี อิสรภาพในความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, The Sun = ความสุข",
+            "wands": "Eight of Wands = ก้าวออก",
+            "cups": "Ace of Cups = รักใหม่",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Four of Pentacles กลับหัว = ปล่อย",
+            "court_cards": "Knight of Cups = คู่ใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวอนาคตรัก คือ 'อิสรภาพและรักใหม่'",
+          "advice_th": "เตรียมปลดปล่อย - ออกจากความสัมพันธ์ที่ทำร้าย รักษาตัวเอง เปิดใจรับรักที่ดี",
+          "keywords_th": ["ออกจากพิษ", "อิสรภาพ", "รักใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "จะปลดหนี้และทวงคืนอิสรภาพการเงิน",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต คุณจะปลดปล่อย - ปลดหนี้ ออกจากงานที่กักขัง เริ่มอาชีพที่รัก ทวงคืนอิสรภาพการเงิน เริ่มต้นใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, The Fool = เริ่มใหม่",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Six of Pentacles = สมดุล, Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวอนาคตงาน-เงิน คือ 'อิสรภาพการเงิน'",
+          "advice_th": "เตรียมวางแผนปลดหนี้ ออกจากงานที่ไม่ใช่ ทวงคืนอิสรภาพการเงิน",
+          "keywords_th": ["ปลดหนี้", "อิสรภาพ", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "จะเลิกการเสพติดและบูรณาการเงา",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต จะมีการตื่นรู้ - เลิกนิสัยทำลาย ปลดความเชื่อจำกัด บูรณาการเงา กลายเป็นนายของตัวเอง การเติบโตที่ลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Judgement = ตื่นรู้, The Sun = สดใส",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวอนาคตจิตวิญญาณ คือ 'นายของตัวเอง'",
+          "advice_th": "เตรียมตื่นรู้ - เลิกนิสัยทำลาย ปลดความเชื่อจำกัด บูรณาการเงา",
+          "keywords_th": ["ตื่นรู้", "บูรณาการเงา", "นายตัวเอง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "จะเลิกนิสัยทำลายและร่างกายฟื้นฟู",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต จะเลิกนิสัยทำลาย - เลิกบุหรี่ ลดน้ำตาล ออกจากการเสพติด ร่างกายฟื้นฟู ทวงคืนสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวอนาคตสุขภาพ คือ 'เลิกและฟื้นฟู'",
+          "advice_th": "เตรียมเลิกนิสัยทำลาย - หาความช่วยเหลือ มีแผน ร่างกายจะฟื้นฟู",
+          "keywords_th": ["เลิกนิสัย", "ฟื้นฟู", "ทวงคืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องการความสุขทางวัตถุและความสำเร็จที่จับต้องได้",
+          "detailed_interpretation_th": "ปีศาจหัวตั้งในเป้าหมาย สะท้อนความปรารถนาทางวัตถุ - ความมั่งคั่ง ความสุขทางกาย ความสำเร็จที่จับต้องได้ ไม่ใช่เรื่องผิด แต่ระวังอย่าให้วัตถุควบคุมคุณ สมดุลระหว่างวัตถุกับจิตวิญญาณ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Sun = สำเร็จ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง, King of Pentacles = วัตถุ",
+            "court_cards": "King of Pentacles = ความมั่งคั่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจเป้าหมาย คือ 'วัตถุนิยม - ระวังการควบคุม'",
+          "advice_th": "ตั้งเป้าหมายทางวัตถุได้ แต่อย่าให้มันควบคุม สมดุลกับจิตวิญญาณ",
+          "keywords_th": ["วัตถุนิยม", "ความสำเร็จ", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการความหลงใหลและความเข้มข้นในรัก",
+          "detailed_interpretation_th": "เป้าหมายในรักคือความหลงใหลและความเข้มข้น - passion ทางกาย ความสัมพันธ์ที่ร้อนแรง ไม่ใช่เรื่องผิด แต่ระวังว่าความหลงใหลไม่ใช่ความรักที่ยั่งยืน ต้องการทั้งสอง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Empress = ความหลงใหล",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Cups = คู่หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจเป้าหมายรัก คือ 'หลงใหล + ความรักแท้'",
+          "advice_th": "ต้องการความหลงใหล แต่ก็ต้องการความรักที่ยั่งยืน หาคู่ที่ให้ทั้งสอง",
+          "keywords_th": ["ความหลงใหล", "เข้มข้น", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการความมั่งคั่งและความสำเร็จทางวัตถุ",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายคือความมั่งคั่ง - เงิน ทรัพย์สิน สถานะ ไม่ใช่เรื่องผิด แต่ระวังอย่าให้เงินควบคุม อย่าทำงานที่ขัดค่านิยมเพื่อเงิน สมดุลระหว่างรวยกับความสุข",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Sun = รุ่งเรือง",
+            "wands": "King of Wands = ผู้ประกอบการ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง, Ten of Pentacles = อาณาจักร",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจเป้าหมายงาน-เงิน คือ 'รวยแต่ไม่เป็นทาส'",
+          "advice_th": "ตั้งเป้าหมายรวยได้ แต่อย่าทำงานที่ขัดค่านิยม อย่าให้เงินควบคุม สมดุลคือกุญแจ",
+          "keywords_th": ["ความมั่งคั่ง", "ไม่เป็นทาส", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการเข้าใจและบูรณาการเงาในตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายคือการเข้าใจเงา - ส่วนมืดในตัว ความอยาก ความกลัว ไม่ใช่เพื่อปฏิเสธ แต่เพื่อบูรณาการ การเป็นมนุษย์ที่สมบูรณ์รวมทั้งแสงและเงา",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เงา, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจเป้าหมายจิตวิญญาณ คือ 'บูรณาการเงา'",
+          "advice_th": "ทำ shadow work - เข้าใจส่วนมืดในตัว บูรณาการ ไม่ปฏิเสธ การเป็นมนุษย์สมบูรณ์",
+          "keywords_th": ["บูรณาการเงา", "shadow work", "สมบูรณ์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการร่างกายที่แข็งแรงและความสุขทางกาย",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพคือร่างกายแข็งแรงและความสุขทางกาย - กล้าม สมรรถภาพ ความสุขทางเพศ ไม่ใช่เรื่องผิด แต่ระวังอย่าให้กลายเป็นการเสพติด สมดุลคือกุญแจ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = แข็งแกร่ง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "King of Pentacles = ร่างกายแกร่ง",
+            "court_cards": "Knight of Wands = พลัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจเป้าหมายสุขภาพ คือ 'ความสุขทางกาย - สมดุล'",
+          "advice_th": "ดูแลร่างกายเพื่อความแข็งแรงและความสุข แต่อย่าให้กลายเป็นการเสพติด สมดุล",
+          "keywords_th": ["ร่างกายแกร่ง", "ความสุขกาย", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ต้องการปลดปล่อยและเป็นอิสระจากกับดัก",
+          "detailed_interpretation_th": "ปีศาจกลับหัวในเป้าหมาย สะท้อนความปรารถนา - ต้องการอิสรภาพ ปลดโซ่ เลิกนิสัยทำลาย ใช้ชีวิตที่ไม่ถูกควบคุมโดยความกลัวหรือการเสพติด เป้าหมายนี้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, The World = บรรลุ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight ทุกชุด = พลัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวเป้าหมาย คือ 'อิสรภาพ'",
+          "advice_th": "เก็บความปรารถนานี้ - ลงมือปลดโซ่ เลิกนิสัยทำลาย ทวงคืนพลัง",
+          "keywords_th": ["อิสรภาพ", "ปลดโซ่", "ทวงคืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการความรักที่อิสระและไม่ควบคุม",
+          "detailed_interpretation_th": "เป้าหมายในรักคือความสัมพันธ์ที่อิสระ - ไม่ควบคุม ไม่พึ่งพา ทั้งคู่เป็นตัวเอง รักที่ให้พื้นที่ ความรักของผู้ใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Star = อิสรภาพ",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวเป้าหมายรัก คือ 'รักที่อิสระ'",
+          "advice_th": "หาคู่ที่ให้อิสระ ไม่ควบคุม ทั้งคู่เติบโตด้วยกันแต่เป็นตัวเอง",
+          "keywords_th": ["รักอิสระ", "ไม่ควบคุม", "พื้นที่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการอิสรภาพการเงินและงานที่ไม่กักขัง",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายคืออิสรภาพ - ปลดหนี้ ไม่เป็นทาสของเงิน ทำงานที่รัก มีรายได้พอเพียงโดยไม่ต้องเป็นทาส อิสรภาพคือเป้าหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, The Fool = เริ่มใหม่",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Nine of Pentacles = อิสระ, Six of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวเป้าหมายงาน-เงิน คือ 'อิสรภาพการเงิน'",
+          "advice_th": "ตั้งเป้าหมายอิสรภาพการเงิน - ปลดหนี้ ออม ลงทุน ทำงานที่รัก",
+          "keywords_th": ["อิสรภาพการเงิน", "ปลดหนี้", "งานที่รัก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการเป็นอิสระจากความเชื่อจำกัดและการเสพติด",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายคือการเป็นอิสระจากเงา - ปลดความเชื่อจำกัด เลิกการเสพติด เป็นนายของตัวเอง การเติบโตที่แท้",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, Judgement = ตื่นรู้",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวเป้าหมายจิตวิญญาณ คือ 'นายของตัวเอง'",
+          "advice_th": "ตั้งเป้าหมายเป็นอิสระ - ปลดความเชื่อจำกัด เลิกการเสพติด บูรณาการเงา",
+          "keywords_th": ["อิสรภาพ", "นายตัวเอง", "บูรณาการ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการเลิกการเสพติดและมีสุขภาพอิสระ",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือการเป็นอิสระจากการเสพติด - เลิกบุหรี่ น้ำตาล มือถือ มีร่างกายและจิตใจที่ไม่ถูกควบคุม สุขภาพที่อิสระ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Pentacles = วินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวเป้าหมายสุขภาพ คือ 'สุขภาพอิสระ'",
+          "advice_th": "ตั้งเป้าหมายเลิกการเสพติด - บุหรี่ น้ำตาล มือถือ ร่างกายและจิตใจที่อิสระ",
+          "keywords_th": ["เลิกเสพติด", "สุขภาพอิสระ", "ทวงคืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความกลัวและความเชื่อจำกัดฝังลึกในจิตใต้สำนึก",
+          "detailed_interpretation_th": "ปีศาจหัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีความกลัวและความเชื่อจำกัดฝังลึก - 'ฉันไม่คู่ควร' 'ฉันต้องดิ้นรน' 'ความสุขมีราคา' ความเชื่อเหล่านี้ควบคุมชีวิตโดยไม่รู้ตัว ต้องค้นหาและปลด",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เงา, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง, Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ความขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจรากฐาน คือ 'ความเชื่อจำกัดในเงา' ค้นหาและปลด",
+          "advice_th": "ค้นหาความเชื่อจำกัดในจิตใต้สำนึก - 'ฉันไม่คู่ควร' มาจากไหน? ปลดผ่าน inner work",
+          "keywords_th": ["ความเชื่อจำกัด", "เงา", "ปลด"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความกลัวการถูกทอดทิ้งฝังลึกในรัก",
+          "detailed_interpretation_th": "ในรัก รากฐานคือความกลัวฝังลึก - กลัวถูกทอดทิ้ง กลัวไม่น่ารัก กลัวอยู่คนเดียว ความกลัวนี้ทำให้พึ่งพา ควบคุม หรือยอมในความสัมพันธ์ที่ไม่ดี ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = บาดแผล, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ, Three of Swords = แผลใจ",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Queen of Swords กลับหัว = ขมขื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจรากฐานรัก คือ 'กลัวถูกทอดทิ้ง' รักษา",
+          "advice_th": "ทำงานกับความกลัวถูกทอดทิ้ง - มักมาจากวัยเด็ก therapy ช่วยได้ รักตัวเองก่อน",
+          "keywords_th": ["กลัวถูกทิ้ง", "บาดแผล", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความเชื่อว่าต้องดิ้นรนเพื่อเงินฝังลึก",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือความเชื่อจำกัด - 'ต้องทำงานหนักถึงรวย' 'เงินหายาก' 'ฉันไม่คู่ควรรวย' ความเชื่อเหล่านี้ทำให้ติดในวงจรดิ้นรน ต้องเปลี่ยน money mindset",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ลวงตา, The Devil เสริม",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่เห็นโอกาส",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ความขาด",
+            "court_cards": "Page กลับหัว = imposter"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจรากฐานงาน-เงิน คือ 'scarcity mindset'",
+          "advice_th": "เปลี่ยน money mindset - 'เงินหายาก' เป็น 'เงินไหลมา' ความเชื่อกำหนดผลลัพธ์",
+          "keywords_th": ["scarcity mindset", "ความเชื่อจำกัด", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เงาที่ปฏิเสธควบคุมพฤติกรรม",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือเงาที่ปฏิเสธ - ความโกรธที่กดไว้ ความอยากที่ปฏิเสธ ความกลัวที่ซ่อน สิ่งเหล่านี้ควบคุมเมื่อไม่รู้ตัว shadow work คือกุญแจของการเป็นนายตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = เงา, Death = เปลี่ยน",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจรากฐานจิตวิญญาณ คือ 'เงาที่ปฏิเสธ'",
+          "advice_th": "ทำ shadow work - ระบุส่วนที่ปฏิเสธในตัว เข้าใจ บูรณาการ การเป็นนายตัวเอง",
+          "keywords_th": ["เงาที่ปฏิเสธ", "shadow work", "บูรณาการ"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "นิสัยเสพติดฝังลึกในจิตใต้สำนึก",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือนิสัยเสพติดที่ฝังลึก - การเสพติดมักมาจากความต้องการหนีความเจ็บปวด ความเครียด ความเหงา การเข้าใจที่มาของการเสพติดคือกุญแจของการเลิก",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = หลีกเลี่ยง, The Devil เสริม",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจรากฐานสุขภาพ คือ 'การเสพติดหนีความเจ็บ'",
+          "advice_th": "เข้าใจที่มาของการเสพติด - หนีความเครียด ความเหงา ความเจ็บ รักษาที่ต้นเหตุ",
+          "keywords_th": ["เสพติดฝังลึก", "หนีความเจ็บ", "ต้นเหตุ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความสามารถปลดปล่อยตัวเองฝังในแกน",
+          "detailed_interpretation_th": "ปีศาจกลับหัวในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีความสามารถปลดปล่อย - เผชิญเงา เลิกนิสัยทำลาย ทวงคืนพลัง พลังนี้คือพรสวรรค์ ใช้เป็นจุดแข็ง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = อิสรภาพ, The Sun = สดใส",
+            "wands": "Ace of Wands = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวรากฐาน คือ 'พลังปลดปล่อยในแกน'",
+          "advice_th": "ใช้ความสามารถปลดปล่อย - คุณเผชิญเงาและทวงคืนพลังได้ดีกว่าที่คิด",
+          "keywords_th": ["พลังปลดปล่อย", "ทวงคืน", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความเชื่อมั่นในคุณค่าตัวเองฝังในแกน",
+          "detailed_interpretation_th": "ในรัก รากฐานคือความเชื่อมั่นในคุณค่าตัวเอง - ไม่พึ่งพา ไม่ยอมในความสัมพันธ์ที่ไม่ดี รักตัวเอง พลังนี้ทำให้เลือกความสัมพันธ์ที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักตัว, The Star = ความหวัง",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวรากฐานรัก คือ 'รักตัวเองในแกน'",
+          "advice_th": "ใช้ความเชื่อมั่นในคุณค่าตัวเอง - เลือกความสัมพันธ์ที่ดี ไม่ยอมในสิ่งที่ทำร้าย",
+          "keywords_th": ["รักตัวเอง", "คุณค่า", "เลือกดี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความเชื่อว่าตัวเองคู่ควรกับความมั่งคั่ง",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือความเชื่อที่ดี - 'ฉันคู่ควรรวย' 'เงินไหลมา' 'ฉันสร้างความมั่งคั่งได้' abundance mindset ฝังลึก ทำให้สร้างความมั่งคั่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวรากฐานงาน-เงิน คือ 'abundance mindset'",
+          "advice_th": "ใช้ abundance mindset - เชื่อว่าคู่ควรกับความมั่งคั่ง ลงมือสร้าง",
+          "keywords_th": ["abundance", "คู่ควร", "สร้างความมั่งคั่ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความสามารถเผชิญและบูรณาการเงาฝังในแกน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือความสามารถเผชิญเงา - กล้ามองส่วนมืดในตัว เข้าใจ บูรณาการ พลังนี้ทำให้คุณเป็นมนุษย์ที่สมบูรณ์และเข้าใจคนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Hermit = ค้นหา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวรากฐานจิตวิญญาณ คือ 'เผชิญเงาเก่ง'",
+          "advice_th": "ใช้ความสามารถเผชิญเงา - เข้าใจตัวเองลึก ช่วยคนอื่นเผชิญเงาของพวกเขา",
+          "keywords_th": ["เผชิญเงา", "บูรณาการ", "สมบูรณ์"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ความสามารถเลิกการเสพติดฝังในแกน",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือความสามารถเลิกการเสพติด - วินัย ความตั้งใจ การจัดการความอยาก พลังนี้ทำให้คุณควบคุมร่างกายได้ ใช้เป็นจุดแข็ง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลัง, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King of Pentacles = ร่างกายแกร่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวรากฐานสุขภาพ คือ 'พลังควบคุมตัวเอง'",
+          "advice_th": "ใช้ความสามารถควบคุมตัวเอง - วินัย จัดการความอยาก คุณเลิกการเสพติดได้",
+          "keywords_th": ["ควบคุมตัว", "วินัย", "พลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "แนวทางของคุณถูกครอบงำด้วยความยึดติด",
+          "detailed_interpretation_th": "ปีศาจในตำแหน่งคำแนะนำ บอกว่าวิธีที่คุณเข้าหาสถานการณ์ ถูกขับเคลื่อนด้วยความยึดติด ความกลัว หรือวัตถุนิยม คุณอาจกำลังพยายามควบคุมทุกอย่าง หรือยอมจำนนต่อความอยากระยะสั้น ไพ่เตือนให้ดูว่าอะไรกำลังล่ามคุณไว้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = เลือกผิด, Strength = ต้องการพลังใจ",
+            "wands": "Eight of Wands = เร่งรีบเกินไป",
+            "cups": "Seven of Cups = ภาพลวงตา",
+            "swords": "Nine of Swords = วิตกกังวล",
+            "pentacles": "Four of Pentacles = ยึดติดวัตถุ",
+            "court_cards": "Knight of Swords = บุ่มบ่าม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งคำแนะนำ คือ 'ถามตัวเองว่าอะไรล่ามคุณไว้'",
+          "advice_th": "หยุดสำรวจว่าอะไรกำลังควบคุมคุณ - ความกลัว ความอยาก หรือวัตถุ แล้วเริ่มปลดมัน",
+          "keywords_th": ["ยึดติด", "ควบคุม", "สำรวจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เข้าหาความรักด้วยความหวงแหนครอบครอง",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณกำลังเข้าหาด้วยความหวงแหน ครอบครอง หรือพึ่งพิงมากเกินไป คุณอาจพยายามควบคุมคู่ หรือกลัวจะสูญเสียจนยึดแน่น ไพ่เตือนให้คลายมือ ให้พื้นที่ และรักอย่างอิสระ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = เลือกทางรัก, The Moon = ความกลัว",
+            "wands": "Knight of Wands = หึงหวง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Three of Swords = กลัวเจ็บ",
+            "pentacles": "Four of Pentacles = หวงคู่",
+            "court_cards": "Queen of Cups = พึ่งพิงอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งคำแนะนำความรัก คือ 'รักต้องมีอิสระ'",
+          "advice_th": "คลายการครอบครอง - ให้พื้นที่คู่ รักอย่างอิสระไม่ยึดติด ความกลัวทำลายความรัก",
+          "keywords_th": ["หวงแหน", "ครอบครอง", "คลายมือ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "เข้าหางานด้วยความหมกมุ่นเงินทอง",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำเตือนว่าคุณกำลังเข้าหาด้วยความหมกมุ่นในเงิน อำนาจ หรือสถานะ จนยอมทำสิ่งที่ขัดใจ คุณอาจติดกับดัก 'กุญแจมือทองคำ' - งานที่จ่ายดีแต่ทำให้ไม่มีความสุข ไพ่แนะให้ทบทวนว่าอะไรสำคัญจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Wheel of Fortune = โอกาส",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = หมดแรง",
+            "pentacles": "Nine of Pentacles = มั่งคั่งแต่โดดเดี่ยว",
+            "court_cards": "King of Pentacles = หมกมุ่นเงิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งคำแนะนำงาน คือ 'อย่าให้เงินซื้อจิตวิญญาณ'",
+          "advice_th": "ทบทวนว่าเงินหรือสถานะกำลังควบคุมคุณไหม - อิสระมีค่ากว่ากุญแจมือทองคำ",
+          "keywords_th": ["หมกมุ่นเงิน", "กุญแจมือทองคำ", "ทบทวน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เข้าหาการเติบโตขณะติดกับดักนิสัยเดิม",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณกำลังพยายามพัฒนาขณะยังติดกับดักนิสัยเดิม ความเชื่อจำกัด หรือเงาในใจที่ไม่ยอมเผชิญ ไพ่แนะให้ทำงานกับเงา (shadow work) - ยอมรับด้านมืดเพื่อปลดปล่อยมัน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = จิตใต้สำนึก, The Hermit = มองภายใน",
+            "wands": "Seven of Wands = ต่อสู้ภายใน",
+            "cups": "Eight of Cups = ต้องปล่อยวาง",
+            "swords": "Nine of Swords = เผชิญความกลัว",
+            "pentacles": "Five of Pentacles = ความเชื่อขาดแคลน",
+            "court_cards": "Queen of Swords = เผชิญความจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งคำแนะนำเติบโต คือ 'เผชิญเงาเพื่อปลดมัน'",
+          "advice_th": "ทำงานกับเงาในใจ - ยอมรับด้านมืด นิสัยจำกัด แล้วค่อยๆ ปลดปล่อยมัน",
+          "keywords_th": ["เงาในใจ", "นิสัยเดิม", "เผชิญ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เข้าหาสุขภาพด้วยพฤติกรรมเสพติด",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำเตือนว่าคุณกำลังเข้าหาด้วยพฤติกรรมเสพติด - กิน ดื่ม จอ หรือสารใดๆ ที่ทำร้ายร่างกาย ไพ่บอกว่าวงจรนี้ควบคุมคุณอยู่ ถึงเวลายอมรับและขอความช่วยเหลือเพื่อหลุดออกมา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ten of Wands = แบกภาระ",
+            "cups": "Five of Cups = หนีด้วยสาร",
+            "swords": "Nine of Swords = เครียดสะสม",
+            "pentacles": "Five of Pentacles = ละเลยสุขภาพ",
+            "court_cards": "Knight of Cups = ตามใจตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งคำแนะนำสุขภาพ คือ 'ยอมรับว่าเสพติดแล้วขอช่วย'",
+          "advice_th": "ยอมรับพฤติกรรมเสพติด - กิน ดื่ม จอ ขอความช่วยเหลือเพื่อหลุดวงจร อย่าอายที่จะขอ",
+          "keywords_th": ["เสพติด", "พฤติกรรม", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "แนวทางคือการปลดปล่อยตัวเองอย่างมีสติ",
+          "detailed_interpretation_th": "ปีศาจกลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีที่สุดคือเริ่มปลดปล่อยตัวเองอย่างมีสติ - ตัดสิ่งที่ล่ามคุณไว้ ทวงคืนพลัง และเลือกอิสรภาพ คุณมีกุญแจอยู่ในมือแล้ว เพียงตัดสินใจปลดโซ่ออก",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The Sun = อิสระ",
+            "wands": "Eight of Wands = ก้าวไปข้างหน้า",
+            "cups": "Six of Cups = ปล่อยอดีต",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = กล้าเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งคำแนะนำ คือ 'กุญแจอยู่ในมือคุณ'",
+          "advice_th": "ตัดสินใจปลดโซ่ - คุณมีพลังเลือกอิสรภาพ เริ่มตัดสิ่งที่ล่ามคุณไว้ทีละอย่าง",
+          "keywords_th": ["ปลดปล่อย", "ทวงคืนพลัง", "อิสระ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เข้าหาความรักด้วยการคลายความยึดติด",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าถึงเวลาคลายความยึดติดที่ไม่ดีต่อสุขภาพ - หากความสัมพันธ์เป็นพิษให้กล้าเดินจาก หากยังดีให้สร้างความสัมพันธ์บนอิสระและความเคารพ ไพ่หนุนให้คุณทวงคืนคุณค่าตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = เลือกใหม่, The Star = ฟื้นใจ",
+            "wands": "Knight of Wands = กล้าเดินจาก",
+            "cups": "Eight of Cups = ออกจากที่เป็นพิษ",
+            "swords": "Six of Swords = ไปสู่ที่ดีกว่า",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Swords = ตัดสินใจชัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งคำแนะนำความรัก คือ 'ทวงคืนคุณค่าตัวเอง'",
+          "advice_th": "คลายความยึดติดเป็นพิษ - หากเป็นพิษให้กล้าเดินจาก ทวงคืนคุณค่าและอิสระของตัวเอง",
+          "keywords_th": ["คลายยึดติด", "คุณค่าตัวเอง", "อิสระ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เข้าหางานด้วยอิสระจากความกลัวเงิน",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำหนุนให้คุณปลดปล่อยตัวจากความกลัวเงินและสถานะ - กล้าออกจากงานที่เป็นกุญแจมือทองคำ เลือกสิ่งที่ตรงกับคุณค่าจริง อิสรภาพทางใจมีค่ากว่าตัวเลขในบัญชี",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มกล้า, Wheel of Fortune = เปลี่ยนทาง",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Ace of Cups = ทำด้วยใจ",
+            "swords": "Six of Swords = ย้ายงาน",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "Knight of Wands = กล้าเสี่ยง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งคำแนะนำงาน คือ 'อิสระมีค่ากว่ากุญแจมือทองคำ'",
+          "advice_th": "ปลดความกลัวเงิน - กล้าออกจากงานที่ขังคุณ เลือกสิ่งตรงคุณค่า อิสระใจมีค่ากว่าเงิน",
+          "keywords_th": ["อิสระการเงิน", "กล้าออก", "คุณค่าจริง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เข้าหาการเติบโตด้วยการรวมเงาเข้าเป็นหนึ่ง",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณกำลังทำงานกับเงาสำเร็จ - ยอมรับด้านมืด รวมมันเข้าเป็นส่วนหนึ่งของตัวตน แล้วปลดพลังที่มันเคยกักไว้ นี่คือการเติบโตขั้นลึก ที่เปลี่ยนความอ่อนแอเป็นพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่างใจ, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = กระจ่าง",
+            "pentacles": "Three of Pentacles = สร้างตัวตน",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งคำแนะนำเติบโต คือ 'รวมเงาเป็นพลัง'",
+          "advice_th": "รวมเงาเข้าเป็นหนึ่ง - ยอมรับด้านมืดเป็นส่วนของตัวตน เปลี่ยนความอ่อนแอเป็นพลัง",
+          "keywords_th": ["รวมเงา", "เติบโตลึก", "พลัง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เข้าหาสุขภาพด้วยการฟื้นฟูจากการเสพติด",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำหนุนให้คุณเริ่มฟื้นฟูจากพฤติกรรมเสพติด - ก้าวแรกของการเลิก หาแรงสนับสนุน สร้างวินัยใหม่ ไพ่บอกว่าคุณมีพลังหลุดออกมาแล้ว เพียงเดินทีละก้าวอย่างใจดีกับตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Strength = พลังใจ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Four of Pentacles = วินัยใหม่",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'ฟื้นฟูทีละก้าว'",
+          "advice_th": "เริ่มฟื้นฟูจากเสพติด - ก้าวแรกของการเลิก หาแรงสนับสนุน ใจดีกับตัวเองทีละก้าว",
+          "keywords_th": ["ฟื้นฟู", "เลิกเสพติด", "ทีละก้าว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมรอบตัวเป็นพิษและกักขัง",
+          "detailed_interpretation_th": "ปีศาจในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวคุณเป็นพิษ มีคนหรือสถานการณ์ที่กักขังและควบคุมคุณไว้ คนอื่นอาจมองว่าคุณติดกับดัก ไพ่เตือนให้ระวังอิทธิพลภายนอกที่ดึงคุณลง",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจกดดัน, The Moon = ไม่ชัดเจน",
+            "wands": "Five of Wands = ความขัดแย้ง",
+            "cups": "Seven of Cups = สิ่งล่อใจ",
+            "swords": "Five of Swords = ถูกเอาเปรียบ",
+            "pentacles": "Four of Pentacles = คนหวงอำนาจ",
+            "court_cards": "King of Swords = คนควบคุม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งภายนอก คือ 'ระวังอิทธิพลที่ดึงคุณลง'",
+          "advice_th": "ระวังสภาพแวดล้อมเป็นพิษ - คนหรือสถานการณ์ที่กักขังคุณ เริ่มถอยห่างจากมัน",
+          "keywords_th": ["สภาพแวดล้อมพิษ", "ถูกควบคุม", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่หรือคนรอบข้างใช้อำนาจควบคุม",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าคู่หรือคนรอบข้างกำลังใช้อำนาจควบคุมคุณ - อาจหึงหวง บงการ หรือทำให้คุณรู้สึกพึ่งพิงจนขาดไม่ได้ ไพ่เตือนให้มองความสัมพันธ์อย่างซื่อสัตย์ว่าใครกุมอำนาจ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = คู่ครองงำ, The Moon = หลอกลวง",
+            "wands": "Knight of Wands = ครอบงำ",
+            "cups": "Eight of Cups = ควรจากไป",
+            "swords": "Three of Swords = เจ็บปวด",
+            "pentacles": "Four of Pentacles = หวงครอบครอง",
+            "court_cards": "King of Pentacles = คุมด้วยเงิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งภายนอกความรัก คือ 'มองว่าใครกุมอำนาจ'",
+          "advice_th": "มองความสัมพันธ์ซื่อสัตย์ - หากคู่ควบคุม บงการ หรือทำให้พึ่งพิงเกิน นั่นเป็นสัญญาณอันตราย",
+          "keywords_th": ["คู่ควบคุม", "บงการ", "พึ่งพิง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ที่ทำงานเป็นพิษ หัวหน้าควบคุม",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกเตือนว่าสภาพที่ทำงานเป็นพิษ - หัวหน้าควบคุม วัฒนธรรมกดดัน หรือระบบที่ขังคุณด้วยเงินเดือน คุณอาจรู้สึกว่าออกไม่ได้เพราะภาระ ไพ่ชี้ว่าปัจจัยภายนอกนี้กำลังบีบคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ระบบเข้ม, Justice = สัญญาผูก",
+            "wands": "Ten of Wands = งานหนักเกิน",
+            "cups": "Five of Cups = ผิดหวังงาน",
+            "swords": "Ten of Swords = ถูกกดดัน",
+            "pentacles": "Eight of Pentacles = ทำงานซ้ำซาก",
+            "court_cards": "King of Swords = หัวหน้าเข้ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งภายนอกงาน คือ 'ระบบกำลังขังคุณด้วยเงินเดือน'",
+          "advice_th": "ประเมินที่ทำงานเป็นพิษ - หัวหน้าควบคุม ระบบกดดัน วางแผนทางออกแม้ยังต้องอดทนชั่วคราว",
+          "keywords_th": ["ที่ทำงานพิษ", "หัวหน้าคุม", "ขังด้วยเงิน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สภาพแวดล้อมตอกย้ำให้ติดที่เดิม",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าสภาพแวดล้อมรอบตัวกำลังตอกย้ำให้คุณติดอยู่ที่เดิม - คนรอบข้างที่ลากลง ความเชื่อสังคมที่จำกัด หรือนิสัยกลุ่มที่ดึงรั้ง ไพ่แนะให้เลือกแวดล้อมที่หนุนการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = กรอบสังคม, The Moon = สับสน",
+            "wands": "Seven of Wands = ต้านแรงกด",
+            "cups": "Five of Cups = ถูกฉุดลง",
+            "swords": "Eight of Swords = ติดกับความเชื่อ",
+            "pentacles": "Five of Pentacles = ขาดการหนุน",
+            "court_cards": "Queen of Swords = ต้องตัดคนพิษ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งภายนอกเติบโต คือ 'เลือกแวดล้อมที่ยกคุณขึ้น'",
+          "advice_th": "เลือกแวดล้อมหนุนเติบโต - ห่างคนที่ลากลง ความเชื่อจำกัด เข้าใกล้คนที่ยกคุณขึ้น",
+          "keywords_th": ["แวดล้อมฉุด", "คนลากลง", "เลือกใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมเอื้อให้เสพติดต่อไป",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกเตือนว่าสิ่งแวดล้อมกำลังเอื้อให้คุณเสพติดต่อไป - กลุ่มเพื่อนที่ชวนเสีย ของเสพหาง่าย หรือความเครียดจากภายนอกที่ผลักคุณกลับสู่นิสัยเก่า ไพ่แนะให้เปลี่ยนสภาพแวดล้อม",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = ต้องสมดุล, The Moon = สิ่งลวง",
+            "wands": "Five of Wands = แรงกดรอบตัว",
+            "cups": "Seven of Cups = สิ่งล่อใจ",
+            "swords": "Nine of Swords = เครียดจากนอก",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Cups = เพื่อนชวนเสีย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งภายนอกสุขภาพ คือ 'เปลี่ยนสภาพแวดล้อมที่เอื้อเสพติด'",
+          "advice_th": "เปลี่ยนสิ่งแวดล้อม - ห่างกลุ่มที่ชวนเสีย เอาของเสพออกจากสายตา ลดความเครียดที่ผลักกลับนิสัยเก่า",
+          "keywords_th": ["สิ่งแวดล้อมเอื้อ", "เพื่อนชวนเสีย", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อิทธิพลภายนอกเริ่มหนุนการปลดปล่อย",
+          "detailed_interpretation_th": "ปีศาจกลับหัวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวเริ่มเปลี่ยนไปในทางที่หนุนอิสรภาพของคุณ - คนเป็นพิษเริ่มห่างออกไป โอกาสหลุดพ้นเปิดขึ้น ไพ่บอกว่าจักรวาลกำลังช่วยปลดโซ่ที่ล่ามคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The Sun = ทางสว่าง",
+            "wands": "Eight of Wands = สิ่งดีเร่งเข้ามา",
+            "cups": "Six of Cups = คนดีเข้ามา",
+            "swords": "Six of Swords = ทางออกเปิด",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "Queen of Cups = คนช่วยเหลือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งภายนอก คือ 'จักรวาลช่วยปลดโซ่'",
+          "advice_th": "รับโอกาสที่เปิดขึ้น - คนพิษห่างไป ทางหลุดพ้นปรากฏ คว้ามือที่ยื่นมาช่วยคุณ",
+          "keywords_th": ["หนุนอิสระ", "โอกาสเปิด", "คนพิษห่าง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างหนุนให้คุณเป็นอิสระ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าคนรอบข้างกำลังหนุนให้คุณหลุดจากความสัมพันธ์ที่เป็นพิษ หรือคู่เริ่มคลายการควบคุมและให้พื้นที่มากขึ้น ไพ่บอกว่าแรงสนับสนุนรอบตัวกำลังช่วยให้ความรักของคุณดีต่อสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The Star = ฟื้นใจ",
+            "wands": "Three of Wands = มองอนาคตร่วม",
+            "cups": "Ten of Cups = ครอบครัวหนุน",
+            "swords": "Six of Swords = ไปที่ปลอดภัย",
+            "pentacles": "Two of Pentacles = ปรับสมดุล",
+            "court_cards": "Queen of Cups = เพื่อนเข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งภายนอกความรัก คือ 'คนรอบข้างหนุนอิสระคุณ'",
+          "advice_th": "รับแรงหนุนจากคนรอบข้าง - พวกเขาช่วยให้คุณหลุดจากที่เป็นพิษ หรือคู่ให้พื้นที่มากขึ้น",
+          "keywords_th": ["คนหนุน", "ให้พื้นที่", "ดีต่อสุขภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ที่ทำงานเริ่มคลายแรงกดดัน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าสภาพที่ทำงานเริ่มคลายแรงกดดัน - หัวหน้าผ่อนการควบคุม โอกาสใหม่เปิดขึ้น หรือคุณได้รับอิสระมากขึ้นในการตัดสินใจ ไพ่ชี้ว่าโซ่ทางการเงินที่เคยล่ามกำลังคลายออก",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = โชคหมุน, The Sun = ความสำเร็จ",
+            "wands": "Three of Wands = ขยายโอกาส",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = โอกาสเงิน",
+            "court_cards": "King of Wands = ผู้นำเปิดทาง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งภายนอกงาน คือ 'โซ่การเงินกำลังคลายออก'",
+          "advice_th": "คว้าอิสระที่เปิดขึ้น - หัวหน้าผ่อนคุม โอกาสใหม่มา ใช้ช่วงนี้สร้างความมั่นคงด้วยตัวเอง",
+          "keywords_th": ["คลายกดดัน", "โอกาสเปิด", "อิสระงาน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สภาพแวดล้อมเอื้อต่อการหลุดพ้น",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสภาพแวดล้อมรอบตัวกำลังเอื้อต่อการหลุดพ้นของคุณ - คนที่หนุนการเปลี่ยนแปลง ชุมชนที่ยกคุณขึ้น หรือเหตุการณ์ที่กระตุ้นให้คุณก้าวข้ามขีดจำกัดเดิม ไพ่บอกให้ใช้แรงหนุนนี้เต็มที่",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The World = สำเร็จ",
+            "wands": "Four of Wands = ชุมชนหนุน",
+            "cups": "Three of Cups = มิตรภาพดี",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Three of Pentacles = ทีมหนุน",
+            "court_cards": "King of Cups = ผู้นำทางใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งภายนอกเติบโต คือ 'แวดล้อมยกคุณขึ้น'",
+          "advice_th": "ใช้แรงหนุนรอบตัวเต็มที่ - คนหนุนเปลี่ยน ชุมชนยกคุณขึ้น ก้าวข้ามขีดจำกัดเดิมไปด้วยกัน",
+          "keywords_th": ["แวดล้อมเอื้อ", "ชุมชนหนุน", "หลุดพ้น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมหนุนการฟื้นตัว",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวบอกว่าสิ่งแวดล้อมกำลังหนุนการฟื้นตัวของคุณ - มีคนคอยช่วย กลุ่มสนับสนุนการเลิก หรือสภาพที่ปลอดสิ่งล่อใจ ไพ่ชี้ว่านี่เป็นช่วงเวลาดีที่จะเริ่มเลิกเสพติด เพราะแรงหนุนพร้อม",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Three of Cups = กลุ่มหนุน",
+            "swords": "Six of Swords = ไปที่ปลอดภัย",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = คนดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งภายนอกสุขภาพ คือ 'แรงหนุนพร้อม เริ่มเลิกได้แล้ว'",
+          "advice_th": "ใช้แรงหนุนฟื้นตัว - มีคนช่วย กลุ่มสนับสนุน สภาพปลอดสิ่งล่อใจ นี่คือช่วงเวลาดีที่จะเลิก",
+          "keywords_th": ["สิ่งแวดล้อมหนุน", "กลุ่มช่วย", "ฟื้นตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "กลัวถูกล่ามไว้ แต่แอบยึดติดสิ่งที่คุ้นเคย",
+          "detailed_interpretation_th": "ปีศาจในตำแหน่งความหวังและความกลัว เผยความขัดแย้งในใจ - คุณกลัวจะถูกล่ามและสูญเสียอิสระ แต่ลึกๆ ก็ยังยึดติดกับสิ่งที่คุ้นเคยแม้มันจะเป็นพิษ ไพ่เผยว่าความกลัวนี้เองที่ทำให้คุณติดกับดัก",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัวซ่อน, The Star = ความหวัง",
+            "wands": "Seven of Wands = กลัวสูญเสีย",
+            "cups": "Seven of Cups = ความปรารถนาลวง",
+            "swords": "Nine of Swords = ฝันร้าย",
+            "pentacles": "Four of Pentacles = กลัวขาด",
+            "court_cards": "Queen of Swords = กลัวความจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งความหวังกลัว คือ 'ความกลัวเองที่ล่ามคุณไว้'",
+          "advice_th": "เผชิญความกลัวการสูญเสียอิสระ - และยอมรับว่าคุณแอบยึดสิ่งคุ้นเคยที่เป็นพิษ",
+          "keywords_th": ["กลัวถูกล่าม", "ยึดติด", "ขัดแย้งใน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวความผูกพันเป็นพิษ แต่กลัวอยู่คนเดียว",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณกลัวความผูกพันที่เป็นพิษหรือการถูกครอบครอง แต่ขณะเดียวกันก็กลัวความเหงาจนยอมทนอยู่ในความสัมพันธ์ที่ไม่ดี ไพ่ชี้ความขัดแย้งนี้ ให้คุณซื่อสัตย์กับสิ่งที่ตัวเองต้องการจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ทางเลือก, The Moon = ความกลัวลึก",
+            "wands": "Knight of Wands = กลัวถูกครอบงำ",
+            "cups": "Five of Cups = กลัวเสียดาย",
+            "swords": "Three of Swords = กลัวเจ็บ",
+            "pentacles": "Four of Pentacles = กลัวสูญเสียคู่",
+            "court_cards": "Queen of Cups = ปรารถนาความรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งความหวังกลัวความรัก คือ 'กลัวเหงาจนทนพิษ'",
+          "advice_th": "ซื่อสัตย์กับใจ - คุณกลัวพิษแต่ก็กลัวเหงา อย่าให้ความกลัวเหงาทำให้ทนความสัมพันธ์ที่ทำร้าย",
+          "keywords_th": ["กลัวผูกพันพิษ", "กลัวเหงา", "ซื่อสัตย์ใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวเป็นทาสเงิน แต่ก็กลัวขาดความมั่นคง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณกลัวจะกลายเป็นทาสของเงินและงาน แต่ขณะเดียวกันก็กลัวความไม่มั่นคงทางการเงินจนไม่กล้าเปลี่ยน ความกลัวสองด้านนี้ทำให้คุณติดอยู่ในกุญแจมือทองคำ ไพ่แนะให้หาจุดที่อิสระและมั่นคงไปด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ความมั่นคง, Wheel of Fortune = ความเสี่ยง",
+            "wands": "Ten of Wands = กลัวภาระ",
+            "cups": "Five of Cups = กลัวเสียดาย",
+            "swords": "Nine of Swords = วิตกเงิน",
+            "pentacles": "Five of Pentacles = กลัวยากจน",
+            "court_cards": "King of Pentacles = กลัวเสียสถานะ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งความหวังกลัวงาน คือ 'กลัวจนจนไม่กล้าเป็นอิสระ'",
+          "advice_th": "หาจุดอิสระที่มั่นคง - อย่าให้ความกลัวจนทำให้ยอมเป็นทาสเงิน วางแผนทีละขั้นเพื่อทั้งสองอย่าง",
+          "keywords_th": ["กลัวทาสเงิน", "กลัวไม่มั่นคง", "หาจุดสมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวเงาในตัวเอง ไม่กล้าเผชิญด้านมืด",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณกลัวเงาในตัวเอง - ด้านมืด ความปรารถนาต้องห้าม หรือความจริงที่ไม่อยากยอมรับ ความกลัวนี้ทำให้คุณหลีกเลี่ยงการมองเข้าไปข้างใน ไพ่บอกว่าการกล้าเผชิญเงาคือกุญแจสู่การเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = จิตใต้สำนึก, The Hermit = มองภายใน",
+            "wands": "Seven of Wands = ต่อสู้ภายใน",
+            "cups": "Eight of Cups = หลีกหนี",
+            "swords": "Nine of Swords = กลัวความจริง",
+            "pentacles": "Five of Pentacles = กลัวไม่พอ",
+            "court_cards": "Queen of Swords = เผชิญตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งความหวังกลัวเติบโต คือ 'กล้าเผชิญเงาคือกุญแจ'",
+          "advice_th": "กล้าเผชิญเงาในตัว - ด้านมืด ความปรารถนาต้องห้าม การยอมมองมันคือก้าวแรกของการปลดปล่อย",
+          "keywords_th": ["กลัวเงา", "หลีกเลี่ยง", "กล้าเผชิญ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวการเสพติดจะครอบงำชีวิต",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณกลัวว่าการเสพติดหรือพฤติกรรมทำลายจะครอบงำชีวิต แต่ก็กลัวความยากลำบากของการเลิก ความกลัวสองด้านทำให้ติดอยู่ ไพ่หนุนให้กล้ายอมรับและขอความช่วยเหลือ เพราะความกลัวเองคือสิ่งที่ขังคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, Strength = พลังใจ",
+            "wands": "Ten of Wands = ภาระหนัก",
+            "cups": "Five of Cups = หนีด้วยสาร",
+            "swords": "Nine of Swords = วิตกสุขภาพ",
+            "pentacles": "Five of Pentacles = กลัวอ่อนแอ",
+            "court_cards": "Knight of Cups = ตามใจตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งความหวังกลัวสุขภาพ คือ 'ความกลัวเลิกขังคุณไว้'",
+          "advice_th": "กล้ายอมรับและขอช่วย - คุณกลัวเสพติดครอบงำแต่ก็กลัวการเลิก ความกลัวเองคือสิ่งที่ขังคุณ",
+          "keywords_th": ["กลัวเสพติด", "กลัวเลิก", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หวังอิสรภาพ แต่กลัวจะรับมือกับมันไม่ไหว",
+          "detailed_interpretation_th": "ปีศาจกลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณปรารถนาอิสรภาพอย่างแรงกล้า อยากปลดโซ่และทวงคืนชีวิต แต่ลึกๆ ก็กลัวว่าจะรับมือกับอิสระและความรับผิดชอบที่ตามมาไม่ไหว ไพ่หนุนให้เชื่อมั่นว่าคุณพร้อมแล้ว",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The Sun = อิสระ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Page of Cups = ความหวังใหม่",
+            "swords": "Six of Swords = ก้าวสู่ที่ดีกว่า",
+            "pentacles": "Ace of Pentacles = เริ่มต้น",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งความหวังกลัว คือ 'คุณพร้อมรับอิสระแล้ว'",
+          "advice_th": "เชื่อมั่นว่าพร้อม - คุณหวังอิสระแต่กลัวรับมือไม่ไหว ความจริงคือคุณแข็งแกร่งพอแล้ว",
+          "keywords_th": ["หวังอิสระ", "กลัวรับมือ", "เชื่อมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังหลุดจากพิษ แต่กลัวความว่างหลังจากนั้น",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณหวังจะหลุดจากความสัมพันธ์ที่เป็นพิษ ทวงคืนตัวตน แต่ก็กลัวความว่างเปล่าหรือความเหงาหลังจากนั้น ไพ่ให้กำลังใจว่าการเป็นอิสระจะนำพาความรักที่ดีต่อสุขภาพเข้ามา อย่ากลัวก้าวออก",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวังรัก, The Sun = ความสุข",
+            "wands": "Knight of Wands = กล้าเปลี่ยน",
+            "cups": "Ace of Cups = รักใหม่",
+            "swords": "Six of Swords = ไปสู่ที่ดีกว่า",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Cups = รักตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งความหวังกลัวความรัก คือ 'อิสระนำรักดีเข้ามา'",
+          "advice_th": "อย่ากลัวก้าวออก - คุณหวังหลุดจากพิษแต่กลัวความว่าง การเป็นอิสระจะเปิดทางรักที่ดีกว่า",
+          "keywords_th": ["หวังหลุดพิษ", "กลัวว่างเปล่า", "กล้าออก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังอิสระทางการเงิน แต่กลัวความเสี่ยง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณปรารถนาอิสรภาพทางการเงิน อยากหลุดจากงานที่ขังคุณ แต่ก็กลัวความเสี่ยงและความไม่แน่นอน ไพ่หนุนให้วางแผนอย่างชาญฉลาด ก้าวออกอย่างมีสติ ความกลัวจะคลายเมื่อคุณเตรียมพร้อม",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = โอกาส, The Fool = กล้าเริ่ม",
+            "wands": "Three of Wands = วางแผนไกล",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ตัดสินใจชัด",
+            "pentacles": "Ace of Pentacles = โอกาสเงิน",
+            "court_cards": "King of Pentacles = วางแผนมั่นคง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งความหวังกลัวงาน คือ 'เตรียมพร้อมแล้วความกลัวจะคลาย'",
+          "advice_th": "วางแผนก้าวออกอย่างมีสติ - คุณหวังอิสระแต่กลัวเสี่ยง เตรียมพร้อมดีจะทำให้ความกลัวคลายลง",
+          "keywords_th": ["หวังอิสระเงิน", "กลัวเสี่ยง", "วางแผน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังรวมเงาเป็นพลัง แต่กลัวสิ่งที่จะพบ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณหวังจะทำงานกับเงา รวมด้านมืดเข้าเป็นพลัง แต่ก็กลัวว่าจะพบอะไรเมื่อมองลึกเข้าไป ไพ่ให้กำลังใจว่าสิ่งที่คุณค้นพบจะปลดปล่อยมากกว่าทำลาย กล้าเดินทางเข้าสู่ภายในเถิด",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สว่าง, The Hermit = ปัญญาภายใน",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = กระจ่าง",
+            "pentacles": "Three of Pentacles = สร้างตัวตน",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'สิ่งที่พบจะปลดปล่อยคุณ'",
+          "advice_th": "กล้าเดินทางเข้าสู่ภายใน - คุณหวังรวมเงาแต่กลัวสิ่งที่จะพบ ความจริงคือมันจะปลดปล่อยคุณ",
+          "keywords_th": ["หวังรวมเงา", "กลัวสิ่งที่พบ", "กล้ามอง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังเลิกเสพติด แต่กลัวความยากของการเลิก",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณหวังจะเลิกเสพติดและฟื้นฟูร่างกาย แต่ก็กลัวความยากลำบากและอาการถอนระหว่างทาง ไพ่ให้กำลังใจว่าทุกก้าวเล็กๆ มีค่า และการขอความช่วยเหลือไม่ใช่ความอ่อนแอ คุณทำได้",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Strength = พลังใจ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ก้าวสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'ทุกก้าวเล็กมีค่า'",
+          "advice_th": "เชื่อมั่นว่าทำได้ - คุณหวังเลิกแต่กลัวความยาก ทุกก้าวเล็กมีค่า ขอความช่วยเหลือไม่ใช่ความอ่อนแอ",
+          "keywords_th": ["หวังเลิก", "กลัวความยาก", "ทำได้"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือยังคงถูกล่ามหากไม่เปลี่ยน",
+          "detailed_interpretation_th": "ปีศาจในตำแหน่งผลลัพธ์ เตือนว่าหากไม่เปลี่ยนแปลง คุณจะยังคงถูกล่ามอยู่ในวงจรเดิม - ความผูกมัด การเสพติด หรือความสัมพันธ์ที่เป็นพิษ ไพ่นี้ไม่ใช่คำพิพากษาตายตัว แต่เป็นการเตือนว่าโซ่ที่ล่ามคุณนั้นหลวมพอจะถอดได้ หากคุณเลือก",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พังเพื่อสร้างใหม่, The Moon = ภาพลวง",
+            "wands": "Ten of Wands = แบกต่อไป",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Ten of Swords = ถึงจุดต่ำสุด",
+            "pentacles": "Four of Pentacles = ยึดติดต่อ",
+            "court_cards": "King of Pentacles = หมกมุ่นวัตถุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งผลลัพธ์ คือ 'โซ่หลวมพอจะถอดได้ หากคุณเลือก'",
+          "advice_th": "อย่ายอมรับวงจรเดิมเป็นผลลัพธ์สุดท้าย - โซ่ที่ล่ามคุณถอดได้ เริ่มเปลี่ยนตั้งแต่วันนี้",
+          "keywords_th": ["ยังถูกล่าม", "วงจรเดิม", "เลือกเปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือติดอยู่ในความสัมพันธ์ที่เป็นพิษ",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เตือนว่าหากปล่อยไว้ คุณจะติดอยู่ในความสัมพันธ์ที่เป็นพิษ - การพึ่งพิงเกินขนาด การควบคุม หรือวงจรทำร้ายซ้ำๆ ไพ่บอกว่านี่คือสิ่งที่จะเกิดหากไม่ลงมือ แต่คุณมีพลังเปลี่ยนทิศทางนี้ได้เสมอ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = เปลี่ยนกะทันหัน, The Moon = ความลวง",
+            "wands": "Five of Wands = ขัดแย้งซ้ำ",
+            "cups": "Three of Cups (rev) = ความสัมพันธ์พิษ",
+            "swords": "Three of Swords = เจ็บซ้ำ",
+            "pentacles": "Four of Pentacles = หวงครอบครอง",
+            "court_cards": "Knight of Swords = บงการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งผลลัพธ์ความรัก คือ 'คุณเปลี่ยนทิศทางได้เสมอ'",
+          "advice_th": "อย่าปล่อยให้พิษเป็นผลลัพธ์ - หากเป็นพิษคุณมีพลังเดินออก เลือกความรักที่เคารพและอิสระ",
+          "keywords_th": ["ติดความสัมพันธ์พิษ", "พึ่งพิงเกิน", "เปลี่ยนได้"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือเป็นทาสของงานและเงิน",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เตือนว่าหากไม่เปลี่ยน คุณจะกลายเป็นทาสของงานและเงิน - ติดในกุญแจมือทองคำ ทำงานที่ไม่มีความสุขเพียงเพราะเงิน หรือสูญเสียตัวตนเพื่อสถานะ ไพ่ชี้ว่านี่คือทางที่กำลังมุ่งไป แต่คุณเปลี่ยนเส้นทางได้",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พังโครงสร้าง, The Emperor = ระบบควบคุม",
+            "wands": "Ten of Wands = แบกหนักเกิน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = หมดไฟ",
+            "pentacles": "Nine of Pentacles = รวยแต่โดดเดี่ยว",
+            "court_cards": "King of Pentacles = หมกมุ่นเงิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งผลลัพธ์งาน คือ 'อย่าขายตัวตนเพื่อเงิน'",
+          "advice_th": "อย่าให้เป็นทาสงานเป็นผลลัพธ์ - ทบทวนว่าเงินคุ้มกับชีวิตที่เสียไปไหม เปลี่ยนเส้นทางได้",
+          "keywords_th": ["ทาสงานเงิน", "กุญแจมือทองคำ", "เปลี่ยนทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือติดกับเงาที่ไม่ยอมเผชิญ",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เตือนว่าหากเลี่ยงการเผชิญเงาในตัวเอง คุณจะติดอยู่กับนิสัยจำกัด ความเชื่อเก่า และด้านมืดที่ควบคุมคุณจากเบื้องหลัง ไพ่บอกว่าการเติบโตหยุดชะงักจนกว่าคุณจะกล้ามองและยอมรับสิ่งที่ซ่อนอยู่ในใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = จิตใต้สำนึก, The Tower = ทำลายเพื่อสร้าง",
+            "wands": "Seven of Wands = ต่อสู้ไม่จบ",
+            "cups": "Eight of Cups = วนหนี",
+            "swords": "Nine of Swords = ทุกข์ในใจ",
+            "pentacles": "Five of Pentacles = ขาดแคลนในใจ",
+            "court_cards": "Queen of Swords = ต้องเผชิญความจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งผลลัพธ์เติบโต คือ 'การเติบโตหยุดจนกว่าจะเผชิญเงา'",
+          "advice_th": "อย่าให้การติดเงาเป็นผลลัพธ์ - กล้ามองด้านมืด ยอมรับนิสัยจำกัด นี่คือทางเดียวที่จะเติบโตต่อ",
+          "keywords_th": ["ติดเงา", "เลี่ยงเผชิญ", "หยุดเติบโต"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือการเสพติดครอบงำหากไม่เลิก",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เตือนว่าหากไม่ลงมือเลิก พฤติกรรมเสพติดจะครอบงำชีวิตมากขึ้น - ทำร้ายร่างกาย จิตใจ และความสัมพันธ์ ไพ่นี้ไม่ใช่คำสาป แต่เป็นการปลุกให้ตื่น ว่าถึงเวลาขอความช่วยเหลือและเริ่มฟื้นฟูก่อนจะสายเกินไป",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, Temperance = ต้องสมดุล",
+            "wands": "Ten of Wands = แบกจนล้ม",
+            "cups": "Five of Cups = จมในสาร",
+            "swords": "Ten of Swords = ถึงจุดต่ำสุด",
+            "pentacles": "Five of Pentacles = ร่างทรุด",
+            "court_cards": "Knight of Cups = ตามใจจนเสีย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจตำแหน่งผลลัพธ์สุขภาพ คือ 'ปลุกให้ตื่นก่อนสายเกินไป'",
+          "advice_th": "อย่าให้เสพติดครอบงำเป็นผลลัพธ์ - ถึงเวลาขอความช่วยเหลือและเริ่มฟื้นฟู ก่อนจะสายเกินไป",
+          "keywords_th": ["เสพติดครอบงำ", "ปลุกให้ตื่น", "เริ่มเลิก"],
+          "intensity_level": 5,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คืออิสรภาพ ปลดโซ่ได้สำเร็จ",
+          "detailed_interpretation_th": "ปีศาจกลับหัวในตำแหน่งผลลัพธ์ เป็นข่าวดี - คุณจะปลดโซ่ที่ล่ามคุณได้สำเร็จ ทวงคืนพลังและอิสรภาพ หลุดจากความผูกมัด การเสพติด หรือความสัมพันธ์ที่เป็นพิษ ไพ่ยืนยันว่าการต่อสู้ของคุณจะนำไปสู่การปลดปล่อยและชีวิตที่เป็นของคุณเองอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = อิสระเต็มที่, The Star = ความหวังจริง",
+            "wands": "Eight of Wands = ก้าวไปอิสระ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้นสู่ที่ดี",
+            "pentacles": "Ace of Pentacles = เริ่มต้นใหม่",
+            "court_cards": "Knight of Wands = ก้าวอย่างอิสระ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งผลลัพธ์ คือ 'ชีวิตเป็นของคุณเองอีกครั้ง'",
+          "advice_th": "เฉลิมฉลองอิสรภาพที่จะมาถึง - การต่อสู้ของคุณนำสู่การปลดปล่อย ทวงคืนพลังและชีวิตของตัวเอง",
+          "keywords_th": ["อิสรภาพ", "ปลดโซ่", "ทวงคืนพลัง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือหลุดจากความสัมพันธ์ที่เป็นพิษ",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวเป็นข่าวดี - คุณจะหลุดจากความสัมพันธ์ที่เป็นพิษ ทวงคืนคุณค่าและอิสระของตัวเอง หากความสัมพันธ์ยังดี มันจะคลายการควบคุมและเติบโตสู่ความเคารพซึ่งกันและกัน ไพ่ยืนยันว่าความรักที่ดีต่อสุขภาพรออยู่ข้างหน้า",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสุข, The Lovers = ความรักแท้",
+            "wands": "Two of Wands = เลือกทางใหม่",
+            "cups": "Ace of Cups = รักใหม่",
+            "swords": "Six of Swords = สู่ที่ปลอดภัย",
+            "pentacles": "Ten of Pentacles = ความสัมพันธ์มั่นคง",
+            "court_cards": "Queen of Cups = รักตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'รักที่ดีรออยู่ข้างหน้า'",
+          "advice_th": "เปิดใจรับรักที่ดี - คุณจะหลุดจากพิษ ทวงคืนคุณค่าตัวเอง ความรักที่เคารพและอิสระรออยู่",
+          "keywords_th": ["หลุดจากพิษ", "ทวงคืนคุณค่า", "รักดี"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คืออิสรภาพทางการเงินและการงาน",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวเป็นข่าวดี - คุณจะหลุดจากงานที่ขังคุณ ปลดกุญแจมือทองคำ และเดินสู่เส้นทางที่ตรงกับคุณค่าและอิสรภาพ ไพ่ยืนยันว่าความกล้าตัดสินใจของคุณจะนำมาซึ่งความมั่นคงในแบบที่ไม่ต้องแลกกับความสุข",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสำเร็จ, Wheel of Fortune = โชคดี",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = เริ่มชัดเจน",
+            "pentacles": "Ace of Pentacles = ความมั่งคั่งใหม่",
+            "court_cards": "King of Wands = ผู้นำอิสระ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งผลลัพธ์งาน คือ 'มั่นคงโดยไม่แลกความสุข'",
+          "advice_th": "เดินสู่อิสระทางการเงิน - คุณจะปลดกุญแจมือทองคำ เลือกเส้นทางตรงคุณค่า มั่นคงและมีความสุขไปด้วยกัน",
+          "keywords_th": ["อิสระการเงิน", "ปลดกุญแจ", "ตรงคุณค่า"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือรวมเงาเป็นพลัง เติบโตเต็มศักยภาพ",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวเป็นชัยชนะลึกซึ้ง - คุณจะทำงานกับเงาสำเร็จ รวมด้านมืดเข้าเป็นพลัง และปลดปล่อยศักยภาพที่เคยถูกกักไว้ ไพ่ยืนยันว่าการกล้าเผชิญตัวเองนำไปสู่อิสรภาพภายในและความเป็นตัวของตัวเองอย่างสมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Sun = สว่างเต็มที่",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญากระจ่าง",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตนสมบูรณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'เผชิญตัวเองนำสู่อิสรภาพภายใน'",
+          "advice_th": "เฉลิมฉลองการเติบโตลึกซึ้ง - คุณรวมเงาเป็นพลังสำเร็จ ปลดศักยภาพ เป็นตัวของตัวเองอย่างสมบูรณ์",
+          "keywords_th": ["รวมเงาสำเร็จ", "ปลดศักยภาพ", "อิสระภายใน"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือเลิกการเสพติดและฟื้นฟูสำเร็จ",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวเป็นข่าวดีอย่างยิ่ง - คุณจะเลิกการเสพติดและฟื้นฟูร่างกายจิตใจได้สำเร็จ ทวงคืนการควบคุมชีวิตและสุขภาพ ไพ่ยืนยันว่าความพยายามและการขอความช่วยเหลือของคุณจะนำมาซึ่งชีวิตที่อิสระ แข็งแรง และเต็มไปด้วยพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟูสมบูรณ์, Strength = พลังแกร่ง",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = สุขภาพดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ปีศาจกลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'ทวงคืนการควบคุมชีวิต'",
+          "advice_th": "เชื่อมั่นในการฟื้นตัว - คุณจะเลิกเสพติดและฟื้นฟูสำเร็จ ความพยายามนำสู่ชีวิตอิสระ แข็งแรง เต็มพลัง",
+          "keywords_th": ["เลิกสำเร็จ", "ฟื้นฟู", "ทวงคืนชีวิต"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      }
+    }
+  }
+}

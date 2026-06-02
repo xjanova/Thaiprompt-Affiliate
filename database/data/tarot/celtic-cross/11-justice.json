@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "Justice",
+    "name_th": "ความยุติธรรม",
+    "number": 11,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คุณกำลังอยู่ในช่วงที่ต้องตัดสินใจอย่างยุติธรรมและรับผิดชอบ",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน ความยุติธรรมหัวตั้งบ่งบอกว่าคุณกำลังเผชิญสถานการณ์ที่ต้องตัดสินใจอย่างยุติธรรม ตรวจสอบสิ่งที่ทำมา รับผิดชอบกับการกระทำของตัวเอง สิ่งที่ปลูกในอดีตกำลังให้ผล - ทั้งดีและร้าย ใช้ปัญญาและความซื่อสัตย์",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Hierophant = กฎเกณฑ์, Judgement = ตัดสิน",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Queen of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญาตัดสิน, King of Swords = ผู้พิพากษา",
+            "pentacles": "Knight of Pentacles = ความรับผิดชอบ",
+            "court_cards": "King of Swords = ผู้นำที่ยุติธรรม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมในปัจจุบัน คือ 'สิ่งที่ปลูกได้รับ'",
+          "advice_th": "ตัดสินใจอย่างยุติธรรม รับผิดชอบกับสิ่งที่ทำ ใช้ปัญญาไม่ใช่อารมณ์ ความซื่อสัตย์คือพลัง",
+          "keywords_th": ["ยุติธรรม", "รับผิดชอบ", "สมดุล", "ตัดสิน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ต้องการความยุติธรรมและสมดุล",
+          "detailed_interpretation_th": "ในความรักปัจจุบัน คุณอยู่ในช่วงที่ต้องประเมินความสัมพันธ์อย่างยุติธรรม - ใครให้ใครรับมากกว่ากัน? ใครรับผิดชอบส่วนไหน? ความสัมพันธ์ที่ดีต้องการสมดุล ถ้าไม่สมดุล ต้องปรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, Two of Swords = สมดุล",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "King of Swords = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมในปัจจุบันรัก คือ 'สมดุลในความสัมพันธ์'",
+          "advice_th": "ประเมินความสัมพันธ์อย่างซื่อสัตย์ ถ้าไม่สมดุล คุยและปรับ ความรักต้องการความยุติธรรม",
+          "keywords_th": ["สมดุลในรัก", "ยุติธรรม", "ประเมิน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตัดสินใจในงานต้องอยู่บนพื้นฐานของความถูกต้องและยุติธรรม",
+          "detailed_interpretation_th": "ในการงาน-การเงิน คุณกำลังเผชิญสถานการณ์ที่ต้องตัดสินใจอย่างยุติธรรม - สัญญา การลงทุน การจัดการพนักงาน ความซื่อสัตย์ในระยะยาวจะนำมาซึ่งความสำเร็จ ไม่ใช่ทางลัด",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Magician = ทักษะ",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "King of Cups = ความเข้าใจ",
+            "swords": "King of Swords = ปัญญา, Justice เสริม",
+            "pentacles": "King of Pentacles = ความมั่นคง",
+            "court_cards": "King of Swords = ผู้นำที่ยุติธรรม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมในปัจจุบันงาน-เงิน คือ 'ซื่อสัตย์ในธุรกิจ'",
+          "advice_th": "ตัดสินใจในงานอย่างยุติธรรม - ไม่โกง ไม่เอาเปรียบ ไม่ทางลัด ความซื่อสัตย์สร้างชื่อเสียงระยะยาว",
+          "keywords_th": ["ซื่อสัตย์", "ยุติธรรมในงาน", "ความถูกต้อง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ช่วงตรวจสอบและรับผิดชอบกับตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณอยู่ในช่วงตรวจสอบชีวิต - การกระทำในอดีต ผลที่ได้รับ ความรับผิดชอบกับตัวเองและคนอื่น Karma กำลังทำงาน ใช้เวลาทบทวนและปรับ",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตัดสิน, The Hermit = พิจารณา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ความรับผิดชอบ",
+            "court_cards": "King ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมในปัจจุบันจิตวิญญาณ คือ 'รับผิดชอบกับชีวิต'",
+          "advice_th": "ทบทวนการกระทำของตัวเอง - อันไหนดี อันไหนต้องแก้ ขอโทษคนที่ทำผิด ปรับตัวเพื่ออนาคต",
+          "keywords_th": ["รับผิดชอบ", "Karma", "ทบทวน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพในปัจจุบันคือผลของการดูแลที่ผ่านมา",
+          "detailed_interpretation_th": "ในสุขภาพ ความยุติธรรมหัวตั้งบ่งบอกว่าสภาพร่างกายปัจจุบันคือผลของการดูแลที่ผ่านมา - กินดี = ร่างกายดี ละเลย = อาการแย่ ถึงเวลารับผิดชอบและดูแลอย่างจริงจัง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Cups ข้างเคียง = อารมณ์",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมในปัจจุบันสุขภาพ คือ 'ผลของการดูแล'",
+          "advice_th": "ร่างกายไม่โกง สิ่งที่กิน นอน เคลื่อนไหวให้ผลเสมอ ปรับนิสัยให้ดูแลร่างกาย",
+          "keywords_th": ["ผลตามเหตุ", "รับผิดชอบ", "ดูแล"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความอยุติธรรมหรือหลีกเลี่ยงความรับผิดชอบ",
+          "detailed_interpretation_th": "ความยุติธรรมกลับหัวในปัจจุบัน บ่งบอกถึงความอยุติธรรมในสถานการณ์ คุณอาจถูกตัดสินผิด เผชิญความไม่เป็นธรรม หรือกำลังหลีกเลี่ยงความรับผิดชอบของตัวเอง ความซื่อสัตย์กับตัวเองสำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = โกง, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Seven of Swords = โกง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King of Swords กลับหัว = ผู้พิพากษาที่ผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวในปัจจุบัน คือ 'รับผิดชอบหรือถูกเอาเปรียบ'",
+          "advice_th": "ถ้าหลีกเลี่ยงความรับผิดชอบ หยุด เผชิญหน้า ถ้าถูกเอาเปรียบ ยืนหยัด หาความเป็นธรรม",
+          "keywords_th": ["อยุติธรรม", "หลีกเลี่ยง", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์มีความไม่สมดุลและคุณยอมเกินไป",
+          "detailed_interpretation_th": "ในรัก คุณอาจกำลังยอมเกินไป - ให้ฝ่ายเดียว ดูแลฝ่ายเดียว ขอโทษทั้งที่ไม่ผิด ความสัมพันธ์นี้ไม่ยุติธรรม ต้องตั้งขีดจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ควบคุม",
+            "court_cards": "Knight of Cups กลับหัว = ไม่ซื่อ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวรัก คือ 'หยุดยอมเกิน'",
+          "advice_th": "ประเมินความสัมพันธ์ตรงๆ - ใครได้ ใครเสีย? ถ้าคุณยอมเกิน หยุด ขีดจำกัดสำคัญ",
+          "keywords_th": ["ไม่สมดุล", "ยอมเกิน", "ขีดจำกัด"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ถูกเอาเปรียบในงานหรือมีพฤติกรรมไม่ซื่อสัตย์",
+          "detailed_interpretation_th": "ในงาน-เงิน อาจถูกเอาเปรียบ - เงินเดือนต่ำกว่าค่า ลูกค้าไม่จ่าย หรือคุณเองมีพฤติกรรมไม่ซื่อสัตย์ในงาน ความไม่ยุติธรรมจะส่งผลร้าย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ไม่ซื่อ, The Tower = ระเบิด",
+            "wands": "Seven of Wands = ป้องกัน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Seven of Swords = โกง",
+            "pentacles": "Five of Pentacles = ขาด, Four of Pentacles = หวง",
+            "court_cards": "King of Swords กลับหัว = ผู้นำที่ผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวงาน-เงิน คือ 'ความซื่อสัตย์'",
+          "advice_th": "ถ้าถูกเอาเปรียบ ยืนหยัด เรียกร้องสิทธิ์ ถ้าทำผิด แก้ไข ความไม่ซื่อสัตย์จับได้แน่",
+          "keywords_th": ["ถูกเอาเปรียบ", "ไม่ซื่อ", "ยืนหยัด"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หลีกเลี่ยงความรับผิดชอบกับตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณกำลังหลีกเลี่ยงความรับผิดชอบ - โทษคนอื่น โทษโชค โทษสถานการณ์ ทั้งที่ตัวเองมีส่วนในผลลัพธ์ ต้องซื่อสัตย์กับตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการโทษ, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Swords กลับหัว = วิจารณ์คนอื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวจิตวิญญาณ คือ 'รับผิดชอบ'",
+          "advice_th": "หยุดโทษคนอื่น ถามตัวเอง 'ฉันมีส่วนยังไง?' การรับผิดชอบคือพลัง",
+          "keywords_th": ["หลีกเลี่ยง", "โทษคนอื่น", "รับผิดชอบ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ละเลยสุขภาพและไม่รับผิดชอบกับร่างกาย",
+          "detailed_interpretation_th": "ในสุขภาพ การหลีกเลี่ยงความรับผิดชอบ - ไม่ตรวจสุขภาพ ไม่ดูแลตัวเอง โทษพันธุกรรม เป็นข้ออ้าง ร่างกายต้องการการดูแลจากคุณ ไม่ใช่จากใคร",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = สุขภาพพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวสุขภาพ คือ 'รับผิดชอบร่างกาย'",
+          "advice_th": "หยุดโทษ - พันธุกรรม อายุ เวลา รับผิดชอบกับสุขภาพของตัวเอง เริ่มดูแล",
+          "keywords_th": ["ละเลย", "โทษ", "รับผิดชอบ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องตัดสินใจอย่างยุติธรรมในสถานการณ์ยาก",
+          "detailed_interpretation_th": "ในตำแหน่งอุปสรรค ความยุติธรรม (ตีความตั้งตรงเสมอ) บ่งบอกว่าความท้าทายคือการตัดสินใจที่ต้องชั่งน้ำหนัก - ใจกับสมอง ตัวเองกับคนอื่น ระยะสั้นกับยาว ทุกการเลือกมีผล ใช้ปัญญา",
+          "adjacent_influences": {
+            "major_arcana": "Two of Swords = สมดุล, The Hanged Man = พิจารณา",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "King of Cups = ความเข้าใจ",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "King of Swords = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมในอุปสรรค คือ 'ตัดสินใจอย่างยุติธรรม'",
+          "advice_th": "ก่อนตัดสินใจ ชั่งน้ำหนักทุกด้าน - ใคร? อะไร? เมื่อไร? ผลกระทบ? ใช้ปัญญาไม่ใช่อารมณ์",
+          "keywords_th": ["ตัดสินใจยาก", "ชั่งน้ำหนัก", "ยุติธรรม"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องสมดุลระหว่างความต้องการของตัวเองกับคู่",
+          "detailed_interpretation_th": "อุปสรรคในรักคือการหาสมดุล - ความต้องการของคุณ vs ของคู่ ทั้งคู่ต่างมีสิทธิ์ การเสียสละฝ่ายเดียวไม่ยั่งยืน คุยและประนีประนอม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, Two of Swords = สมดุล",
+            "wands": "Two of Wands = ตัดสินใจร่วม",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "King of Cups = ความเข้าใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอุปสรรครัก คือ 'สมดุลความต้องการ'",
+          "advice_th": "นั่งคุยกับคู่ - คุณต้องการอะไร? เขาต้องการอะไร? ประนีประนอมในจุดที่ทั้งคู่อยู่ได้",
+          "keywords_th": ["สมดุลคู่", "ประนีประนอม", "ความต้องการ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องตัดสินใจเรื่องสำคัญในงานหรือเผชิญข้อพิพาท",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือการตัดสินใจสำคัญ - สัญญา การลงทุน ข้อพิพาทกับคู่ค้า ต้องใช้ความยุติธรรมและตรวจสอบสิทธิ์ของตัวเอง อาจต้องการที่ปรึกษากฎหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Hierophant = กฎ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Queen of Swords = ปัญญา, King of Swords = ทนาย",
+            "pentacles": "Four of Pentacles = สิทธิ์",
+            "court_cards": "King of Swords = ที่ปรึกษากฎหมาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอุปสรรคงาน-เงิน คือ 'รู้สิทธิ์'",
+          "advice_th": "ก่อนเซ็นสัญญาหรือเข้าข้อพิพาท ปรึกษาผู้เชี่ยวชาญ รู้สิทธิ์ของตัวเอง อย่ายอม",
+          "keywords_th": ["ตัดสินใจสำคัญ", "ข้อพิพาท", "รู้สิทธิ์"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องเผชิญหน้ากับความจริงเกี่ยวกับตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการเผชิญหน้ากับความจริงเกี่ยวกับตัวเอง - การกระทำในอดีต รูปแบบที่ซ้ำ ผลที่เกิด ต้องซื่อสัตย์กับตัวเองและรับผิดชอบ",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตัดสิน, The Hermit = พิจารณา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญาคม",
+            "pentacles": "Knight of Pentacles = ความรับผิดชอบ",
+            "court_cards": "Queen of Swords = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอุปสรรคจิตวิญญาณ คือ 'เผชิญความจริง'",
+          "advice_th": "ทำ shadow work - ดูส่วนที่ปฏิเสธ ส่วนที่ทำผิด รับผิดชอบและรักษา",
+          "keywords_th": ["เผชิญตัว", "shadow work", "รับผิดชอบ"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องสมดุลระหว่างการทำงานกับการพักผ่อน",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคือการหาสมดุลระหว่างงานและการดูแลตัวเอง - ทำงานหนักจนเครียด หรือไม่ออกกำลังกายเพราะไม่มีเวลา ทุกอย่างมีราคาที่ต้องจ่าย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอุปสรรคสุขภาพ คือ 'สมดุลงานและพัก'",
+          "advice_th": "วางตารางการพักให้ชัด เวลาสุขภาพไม่ใช่ของฟรี ต้องจัดสรร",
+          "keywords_th": ["สมดุลงาน-พัก", "จัดสรรเวลา", "ลงทุนสุขภาพ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความอยุติธรรมหรือถูกตัดสินอย่างไม่ยุติธรรม",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือความอยุติธรรม - ถูกตัดสินผิด ถูกเอาเปรียบ หรือคุณเองตัดสินคนอื่นผิด ความอยุติธรรมในชีวิตคืออุปสรรค",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Tower = วิกฤต",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = ทรยศ",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King of Swords กลับหัว = ผู้พิพากษาที่ผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'หาความเป็นธรรม'",
+          "advice_th": "ถ้าถูกตัดสินผิด ยืนหยัด หาความจริง ถ้าตัดสินคนอื่นผิด ขอโทษและแก้ไข",
+          "keywords_th": ["อยุติธรรม", "ตัดสินผิด", "หาความจริง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ไม่สมดุลและต้องตัดสินใจยาก",
+          "detailed_interpretation_th": "ในรัก ความสัมพันธ์มีความไม่สมดุลที่หนัก - ฝ่ายหนึ่งให้ตลอด อีกฝ่ายรับฝ่ายเดียว ต้องตัดสินใจ - ปรับหรือออก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, The Tower = ระเบิด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ, Eight of Cups = ออกจาก",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'ตัดสินใจสมดุล'",
+          "advice_th": "ความสัมพันธ์ที่ไม่ยุติธรรมไม่ยั่งยืน คุยตรงๆ ถ้าไม่ปรับ พิจารณาออก",
+          "keywords_th": ["ไม่สมดุล", "ตัดสินใจ", "ยุติธรรม"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ถูกเอาเปรียบในสัญญาหรือข้อตกลง",
+          "detailed_interpretation_th": "ในงาน-เงิน อาจถูกเอาเปรียบในสัญญา ลูกค้าไม่จ่าย หัวหน้ากดดัน คู่ค้าไม่ซื่อ ต้องหาความเป็นธรรม - อาจต้องปรึกษาทนาย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในข้อตกลงไม่ดี, The Tower = ระเบิด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Seven of Swords = ถูกหลอก, Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "King of Pentacles กลับหัว = คู่ค้าไม่ซื่อ"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'ยืนหยัดสิทธิ์'",
+          "advice_th": "ถ้าถูกเอาเปรียบ บันทึกหลักฐาน ปรึกษาทนาย เรียกร้องสิทธิ์ อย่ายอม",
+          "keywords_th": ["ถูกเอาเปรียบ", "ยืนหยัด", "ทนาย"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "วิจารณ์ตัวเองหรือคนอื่นมากเกินไป",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการตัดสินตัวเองหรือคนอื่นรุนแรงเกินไป perfectionism ทำให้ทุกข์ การให้อภัยและความเมตตาคือทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล, Queen of Swords กลับหัว = วิจารณ์",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "King of Swords กลับหัว = ตัดสินรุนแรง"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'เมตตามากกว่าตัดสิน'",
+          "advice_th": "ฝึกความเมตตา - กับตัวเองและคนอื่น การตัดสินรุนแรงทำให้ทุกข์ทั้งสองฝ่าย",
+          "keywords_th": ["ตัดสินรุนแรง", "เมตตา", "ให้อภัย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ละเลยร่างกายและโทษอายุหรือพันธุกรรม",
+          "detailed_interpretation_th": "ในสุขภาพ การหลีกเลี่ยงความรับผิดชอบ - โทษอายุ พันธุกรรม สถานการณ์ ทั้งที่นิสัยตัวเองเป็นปัจจัยใหญ่ ต้องรับผิดชอบและเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'รับผิดชอบนิสัย'",
+          "advice_th": "หยุดโทษ ระบุนิสัยที่ทำลายสุขภาพ - กิน นอน เคลื่อนไหว ความเครียด เปลี่ยนทีละอย่าง",
+          "keywords_th": ["ละเลย", "โทษ", "เปลี่ยนนิสัย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เคยตัดสินใจสำคัญด้วยความยุติธรรมและรับผิดชอบ",
+          "detailed_interpretation_th": "ความยุติธรรมหัวตั้งในอดีต บ่งบอกถึงการตัดสินใจที่ยุติธรรมในอดีต - คุณเลือกทำสิ่งที่ถูกต้อง ความซื่อสัตย์ของคุณสร้างรากฐานความน่าเชื่อถือในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Hierophant = ค่านิยม",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความซื่อสัตย์",
+            "court_cards": "King ทุกชุด = ผู้นำที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมในอดีต คือ 'การตัดสินใจที่ดี'",
+          "advice_th": "ระลึกการตัดสินใจที่ยุติธรรมในอดีต - ใช้สูตรเดิมในปัจจุบัน",
+          "keywords_th": ["ตัดสินใจดี", "ซื่อสัตย์", "รากฐาน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความสัมพันธ์ที่ยุติธรรมและสมดุล",
+          "detailed_interpretation_th": "ในรักอดีต เคยอยู่ในความสัมพันธ์ที่สมดุล - ทั้งคู่รับผิดชอบเท่ากัน ให้และรับสมดุล ประสบการณ์นี้กำหนดมาตรฐาน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, Two of Cups = สมดุล",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอดีตรัก คือ 'สมดุลในรัก'",
+          "advice_th": "ใช้มาตรฐานจากความสัมพันธ์เก่า - สมดุล ให้-รับ ความซื่อสัตย์ ในปัจจุบัน",
+          "keywords_th": ["รักสมดุล", "มาตรฐาน", "ซื่อสัตย์"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยทำธุรกิจอย่างซื่อสัตย์และสร้างชื่อเสียง",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต ทำธุรกิจอย่างซื่อสัตย์ ลูกค้าไว้ใจ พันธมิตรเคารพ ชื่อเสียงดีคือทรัพย์สิน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Pentacles = นักธุรกิจที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอดีตงาน-เงิน คือ 'ชื่อเสียงสะสม'",
+          "advice_th": "ใช้ชื่อเสียงและความน่าเชื่อถือที่สั่งสม รักษามาตรฐานความซื่อสัตย์",
+          "keywords_th": ["ซื่อสัตย์", "ชื่อเสียง", "ความน่าเชื่อถือ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยเผชิญหน้ากับตัวเองและรับผิดชอบ",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต เคยทำ shadow work รับผิดชอบกับการกระทำ ขอโทษและแก้ไข ปัญญานี้สั่งสมและใช้ได้ในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตัดสินใจ, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ความรับผิดชอบ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอดีตจิตวิญญาณ คือ 'shadow work เก่า'",
+          "advice_th": "ใช้ปัญญาจาก shadow work - เข้าใจตัวเองดีกว่าใคร ใช้เป็นจุดแข็ง",
+          "keywords_th": ["shadow work", "รับผิดชอบ", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยรับผิดชอบกับสุขภาพและเห็นผลของการดูแล",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยรับผิดชอบ - เปลี่ยนนิสัย ออกกำลังกายสม่ำเสมอ กินดี เห็นผลของการดูแล ประสบการณ์นี้พิสูจน์ว่าทำได้",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอดีตสุขภาพ คือ 'ผลของการดูแล'",
+          "advice_th": "ระลึกตอนดูแลตัวเองได้ดี - ใช้สูตรเดิมในปัจจุบัน",
+          "keywords_th": ["ดูแลดี", "ผลตามเหตุ", "สูตรเดิม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยตัดสินใจผิดหรือเผชิญความไม่ยุติธรรม",
+          "detailed_interpretation_th": "ความยุติธรรมกลับหัวในอดีต บ่งบอกถึงการตัดสินใจที่ผิดในอดีต หรือเคยเผชิญความไม่ยุติธรรม - ถูกเอาเปรียบ ถูกตัดสินผิด บาดแผลยังส่งผล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = ทรยศ",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King of Swords กลับหัว = ผู้พิพากษาผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวอดีต คือ 'บทเรียนจากความผิด'",
+          "advice_th": "ให้อภัยตัวเองและคนอื่น ใช้บทเรียนเป็นทรัพยากร ไม่ใช่กรง",
+          "keywords_th": ["ผิดพลาดเก่า", "ไม่ยุติธรรม", "ให้อภัย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยอยู่ในความสัมพันธ์ที่ไม่ยุติธรรม",
+          "detailed_interpretation_th": "ในรักอดีต เคยอยู่ในความสัมพันธ์ที่ไม่สมดุล - ให้ฝ่ายเดียว ถูกใช้ ถูกทรยศ บาดแผลทำให้กลัวความสัมพันธ์ใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ทำลาย, The Tower = ระเบิด",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = หัวใจสลาย, Ten of Swords = ทรยศ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = คนรักไม่ซื่อ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวอดีตรัก คือ 'รักษาบาดแผล'",
+          "advice_th": "ใช้บทเรียนจากความสัมพันธ์เก่า - คราวนี้ตั้งขีดจำกัด ไม่ยอมเอาเปรียบ",
+          "keywords_th": ["ความสัมพันธ์ไม่ยุติธรรม", "บาดแผล", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยถูกเอาเปรียบในงานหรือลงทุนผิด",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต เคยถูกเอาเปรียบ - ลูกค้าโกง หัวหน้ากดดัน คู่ค้าไม่ซื่อ ลงทุนผิด บาดแผลทำให้ระวังเกินไป",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ธุรกิจพัง, Justice กลับหัว = ไม่ยุติธรรม",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "King of Pentacles กลับหัว = นักธุรกิจที่ผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวอดีตงาน-เงิน คือ 'บทเรียนการเงิน'",
+          "advice_th": "ใช้บทเรียน - คราวนี้ตรวจสอบสัญญา ปรึกษาทนาย ไม่ยอมเอาเปรียบ",
+          "keywords_th": ["ถูกเอาเปรียบ", "ลงทุนผิด", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยตัดสินตัวเองหรือคนอื่นรุนแรงเกินไป",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต เคย perfectionism - ตัดสินตัวเอง คนอื่น สถานการณ์รุนแรง บาดแผลของการไม่ยอมรับยังอยู่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Queen of Swords กลับหัว = วิจารณ์",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "King of Swords กลับหัว = วิจารณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวอดีตจิตวิญญาณ คือ 'เมตตามากกว่า'",
+          "advice_th": "ฝึกเมตตา - กับตัวเองและคนอื่น ปล่อยวางการตัดสินที่ผ่านมา",
+          "keywords_th": ["ตัดสินรุนแรง", "perfectionism", "เมตตา"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยละเลยสุขภาพและตอนนี้รับผลกระทบ",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยละเลย - กินไม่ดี ทำงานหนักเกิน ไม่ตรวจสุขภาพ ตอนนี้รับผลกระทบ ต้องรักษาและเปลี่ยนนิสัย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวอดีตสุขภาพ คือ 'ผลของการละเลย'",
+          "advice_th": "รับผิดชอบ เริ่มดูแลตัวเองตอนนี้ ร่างกายฟื้นฟูได้ถ้าให้โอกาส",
+          "keywords_th": ["ละเลยเก่า", "ผลกระทบ", "ดูแลใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความยุติธรรมจะเข้าข้างและการตัดสินใจที่ดีจะให้ผล",
+          "detailed_interpretation_th": "ความยุติธรรมหัวตั้งในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า ความยุติธรรมจะเข้าข้าง สิ่งที่ทำมาจะให้ผลที่ดี การตัดสินที่ค้างจะออกมาในทางที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, The Star = สมหวัง",
+            "wands": "Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Swords = ความยุติธรรม"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอนาคต คือ 'ความยุติธรรมจะมา'",
+          "advice_th": "ดำเนินการสิ่งที่ถูกต้องต่อ ความยุติธรรมจะเข้าข้างคุณ",
+          "keywords_th": ["ยุติธรรมเข้าข้าง", "ผลตามเหตุ", "สมหวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะมีสมดุลและพัฒนาไปในทางที่ยุติธรรม",
+          "detailed_interpretation_th": "ในรักอนาคต ความสัมพันธ์จะพัฒนาในทางที่สมดุล - ทั้งคู่รับผิดชอบเท่ากัน คุยตรงๆ ยอมรับ ก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, Two of Cups = สมดุล",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอนาคตรัก คือ 'สมดุลในรัก'",
+          "advice_th": "ใช้ความซื่อสัตย์และสมดุลในความสัมพันธ์ ทั้งคู่ต้องเป็นทีม",
+          "keywords_th": ["สมดุลรัก", "ซื่อสัตย์", "ทีม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ได้รับสิ่งที่สมควรในงานและการเงิน",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต คุณจะได้รับสิ่งที่สมควร - การเลื่อนตำแหน่งที่ค้าง โบนัสที่รอ การตัดสินคดีในทางดี ความซื่อสัตย์ของคุณให้ผล",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สำเร็จ, The Emperor = ผู้นำ",
+            "wands": "Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอนาคตงาน-เงิน คือ 'ได้สิ่งที่สมควร'",
+          "advice_th": "ดำเนินทำงานอย่างซื่อสัตย์ต่อ สิ่งที่สมควรได้กำลังมา",
+          "keywords_th": ["ได้รับสิ่งสมควร", "ชัยชนะ", "ความซื่อสัตย์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "จะเข้าใจตัวเองและรับผิดชอบกับชีวิตมากขึ้น",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต จะมีช่วงเข้าใจตัวเองลึก เผชิญหน้ากับ shadow รับผิดชอบกับชีวิต ปัญญานี้เปลี่ยนชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตัดสินใจ, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ความรับผิดชอบ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอนาคตจิตวิญญาณ คือ 'เข้าใจตัวเองลึก'",
+          "advice_th": "เตรียมรับการเข้าใจตัวเองลึก ทำ shadow work รับผิดชอบกับชีวิต",
+          "keywords_th": ["เข้าใจตัว", "shadow work", "รับผิดชอบ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะดีขึ้นจากการดูแลที่สมดุล",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ร่างกายจะดีขึ้นจากการดูแลสมดุล - กิน นอน ออกกำลังกาย พักผ่อน ทุกอย่างให้ผล",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมอนาคตสุขภาพ คือ 'ผลของการดูแล'",
+          "advice_th": "ดำเนินการดูแลตัวเองสมดุล ผลลัพธ์มาแน่",
+          "keywords_th": ["สุขภาพดีขึ้น", "สมดุล", "ผล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อาจเผชิญความอยุติธรรมหรือผลของความผิดในอดีต",
+          "detailed_interpretation_th": "ความยุติธรรมกลับหัวในอนาคต เตือนว่าใน 3-6 เดือนข้างหน้า อาจเผชิญความอยุติธรรม - ถูกตัดสินผิด คดีที่ไม่เป็นธรรม หรือผลของความผิดในอดีตจะมาถึง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King of Swords กลับหัว = ผู้พิพากษาผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวอนาคต คือ 'เตรียมรับความท้าทาย'",
+          "advice_th": "เตรียมหลักฐาน ปรึกษาผู้เชี่ยวชาญ ถ้ามีความผิดในอดีต แก้ไขก่อนสาย",
+          "keywords_th": ["ความอยุติธรรม", "ผลของการกระทำ", "เตรียมพร้อม"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์อาจมีความไม่สมดุลที่ต้องจัดการ",
+          "detailed_interpretation_th": "ในรักอนาคต ระวังความไม่สมดุล - ฝ่ายหนึ่งทำมากกว่า ความไม่ซื่อสัตย์ที่จะเปิดเผย ต้องเตรียมรับและจัดการ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = ติดในความไม่ยุติ",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ, Seven of Swords = ไม่ซื่อ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่ซื่อ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวอนาคตรัก คือ 'จัดการก่อนระเบิด'",
+          "advice_th": "ถ้ามีความไม่สมดุลในความสัมพันธ์ จัดการตอนนี้ ก่อนผลกระทบใหญ่",
+          "keywords_th": ["ไม่สมดุล", "ความไม่ซื่อ", "จัดการ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อาจถูกเอาเปรียบในงานหรือมีคดีความ",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต ระวังคดีความ - ถูกฟ้อง ถูกเรียกเก็บเงิน หรือเป็นฝ่ายถูกเอาเปรียบ เตรียมหลักฐานและที่ปรึกษากฎหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, Justice กลับหัว = ไม่ยุติธรรม",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = ทรยศ",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King of Swords กลับหัว = ทนายฝ่ายตรง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวอนาคตงาน-เงิน คือ 'เตรียมหลักฐาน'",
+          "advice_th": "เก็บเอกสารทุกอย่าง บันทึกการสนทนาสำคัญ ปรึกษาทนายตั้งแต่ตอนนี้",
+          "keywords_th": ["คดีความ", "ถูกเอาเปรียบ", "เตรียมหลักฐาน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจติดในการตัดสินตัวเองรุนแรง",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ระวังการตัดสินตัวเองรุนแรง - perfectionism ความรู้สึกผิด ความเข้มงวด ฝึกความเมตตากับตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการตัดสิน, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล, Queen of Swords กลับหัว = วิจารณ์",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "King of Swords กลับหัว = ตัดสินรุนแรง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวอนาคตจิตวิญญาณ คือ 'เมตตากับตัว'",
+          "advice_th": "ฝึกความเมตตา - ให้อภัยตัวเอง รับว่าทุกคนผิดได้ ความเข้มงวดเกินทำลาย",
+          "keywords_th": ["ตัดสินตัว", "เมตตา", "ให้อภัย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลของการละเลยสุขภาพในอดีตจะปรากฏ",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ผลของการละเลย/นิสัยไม่ดีในอดีตจะมา - ปัญหาเรื้อรัง บาดเจ็บกลับ ฮอร์โมนผิด ต้องรับผิดชอบและรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในนิสัย",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวอนาคตสุขภาพ คือ 'รับผิดชอบก่อนสาย'",
+          "advice_th": "ตรวจสุขภาพแบบครบ จัดการอาการที่กำลังเริ่ม รับผิดชอบกับร่างกาย",
+          "keywords_th": ["ผลของการละเลย", "อาการกลับ", "รับผิดชอบ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องการชีวิตที่ยุติธรรมและรับผิดชอบ",
+          "detailed_interpretation_th": "ความยุติธรรมหัวตั้งในเป้าหมาย สะท้อนความปรารถนา - ต้องการชีวิตที่ยุติธรรม ทำสิ่งที่ถูก รับผิดชอบกับการกระทำ คุณต้องการเป็นคนที่น่าเชื่อถือ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The World = บรรลุ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความซื่อสัตย์",
+            "court_cards": "King ทุกชุด = ผู้นำที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมเป้าหมาย คือ 'ความซื่อสัตย์และยุติธรรม'",
+          "advice_th": "เป้าหมายนี้สูง รักษาความซื่อสัตย์ในทุกการกระทำ ความน่าเชื่อถือคือทรัพย์สิน",
+          "keywords_th": ["ยุติธรรม", "ซื่อสัตย์", "น่าเชื่อถือ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการความสัมพันธ์ที่สมดุลและซื่อสัตย์",
+          "detailed_interpretation_th": "เป้าหมายในรักคือความสัมพันธ์ที่ทั้งคู่ซื่อสัตย์ สมดุล รับผิดชอบเท่ากัน ไม่ใช่ความรักผิวเผิน ต้องการสิ่งที่ลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, Two of Cups = สมดุล",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมเป้าหมายรัก คือ 'รักสมดุลและซื่อสัตย์'",
+          "advice_th": "อย่ายอมต่อรองมาตรฐาน - คู่ต้องซื่อสัตย์ รับผิดชอบ ทำงานร่วม คุณคู่ควร",
+          "keywords_th": ["รักสมดุล", "ซื่อสัตย์", "มาตรฐาน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการอาชีพที่มีศักดิ์ศรีและสร้างผลกระทบ",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายคืออาชีพที่มีศักดิ์ศรี ไม่ทางลัด ไม่โกง สร้างคุณค่าจริง อาจเป็นอาชีพกฎหมาย การศึกษา การให้คำปรึกษา",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Hierophant = ครู",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ที่ปรึกษา",
+            "swords": "King of Swords = ทนาย/ผู้พิพากษา",
+            "pentacles": "King of Pentacles = ความซื่อสัตย์",
+            "court_cards": "King ทุกชุด = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมเป้าหมายงาน-เงิน คือ 'อาชีพมีศักดิ์ศรี'",
+          "advice_th": "เลือกอาชีพที่มีความหมาย ไม่ทำงานที่ขัดกับค่านิยม รายได้จะมาพร้อมศักดิ์ศรี",
+          "keywords_th": ["อาชีพมีศักดิ์ศรี", "ค่านิยม", "ผลกระทบ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการเป็นคนที่ซื่อสัตย์กับตัวเองและรับผิดชอบ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายคือการเป็นคนที่ซื่อสัตย์กับตัวเอง รับผิดชอบกับชีวิต ไม่หลอกตัวเอง ปัญญานี้คือกุญแจของชีวิตที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, Judgement = ตัดสิน",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมเป้าหมายจิตวิญญาณ คือ 'ซื่อสัตย์กับตัว'",
+          "advice_th": "ฝึกซื่อสัตย์กับตัวเองทุกวัน บอกความจริงกับตัวเอง รับผิดชอบกับการเลือก",
+          "keywords_th": ["ซื่อสัตย์", "รับผิดชอบ", "ความจริง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการสุขภาพที่สมดุลและรับผิดชอบกับร่างกาย",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพคือร่างกายที่สมดุล - ไม่ฝืน ไม่ละเลย ดูแลอย่างยุติธรรม ทุกอย่างมีสัดส่วนที่เหมาะ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมเป้าหมายสุขภาพ คือ 'สมดุล'",
+          "advice_th": "ดูแลร่างกายอย่างสมดุล 80/20 - ดี 80% ตามใจ 20% ความยั่งยืนสำคัญ",
+          "keywords_th": ["สมดุล", "ยั่งยืน", "ดูแล"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ต้องการหลบหนีความรับผิดชอบ",
+          "detailed_interpretation_th": "ความยุติธรรมกลับหัวในเป้าหมาย บ่งบอกว่าเป้าหมายอาจเป็นไปเพื่อหลีกเลี่ยงความรับผิดชอบ - อยากอิสระแบบไม่มีข้อผูกมัด อยากใช้ทางลัด ทบทวน",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = อิสระ, The Devil = ติดในการหนี",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Seven of Swords = ทางลัด",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวเป้าหมาย คือ 'อิสระ vs รับผิดชอบ'",
+          "advice_th": "อิสรภาพที่แท้มาจากการรับผิดชอบ ไม่ใช่จากการหนี ทบทวนเป้าหมาย",
+          "keywords_th": ["หนีความรับผิดชอบ", "อิสรภาพ", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ไม่อยากผูกมัดเพื่อหลีกเลี่ยงความรับผิดชอบ",
+          "detailed_interpretation_th": "เป้าหมายในรักอาจเป็นการหลีกเลี่ยงพันธะ - ไม่อยากแต่งงาน ไม่อยากมีลูก ไม่อยากผูกมัด เพราะกลัวความรับผิดชอบ ต้องตรวจสอบ",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = อิสระ, The Devil = ติดในการหนี",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวเป้าหมายรัก คือ 'พันธะ vs อิสระ'",
+          "advice_th": "ทบทวน - ต้องการอิสระจริง หรือกลัวความรับผิดชอบ? ตอบให้ซื่อสัตย์",
+          "keywords_th": ["ไม่อยากผูก", "กลัวพันธะ", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อยากรวยเร็วโดยใช้ทางลัด",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายอาจเน้นทางลัด - รวยเร็ว แชร์ลูกโซ่ คริปโตเสี่ยง ไม่อยากทำงานหนัก ความซื่อสัตย์สำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในเงิน, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Seven of Swords = โกง",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "Knight of Wands กลับหัว = เสี่ยงเกิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวเป้าหมายงาน-เงิน คือ 'ไม่มีทางลัดยั่งยืน'",
+          "advice_th": "ความมั่งคั่งยั่งยืนต้องการการทำงาน ไม่มีทางลัด อย่าหลงในการรวยเร็ว",
+          "keywords_th": ["ทางลัด", "รวยเร็ว", "ทำงานจริง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หลอกตัวเองว่าตัวเองดีกว่าที่เป็น",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายอาจเป็นการดูดี - ดูเป็นคนเติบโต ดูซื่อสัตย์ ดูรับผิดชอบ แต่จริงๆ ไม่ได้เป็น การหลอกตัวเองทำลายการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในภาพ, The Moon = ลวงตา",
+            "wands": "Seven of Wands = ป้องกันตัว",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Seven of Swords = หลอกตัวเอง",
+            "pentacles": "Four of Pentacles = ติดในภาพ",
+            "court_cards": "Knight of Wands กลับหัว = ภาพไม่ตรงตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวเป้าหมายจิตวิญญาณ คือ 'ซื่อสัตย์กับตัว'",
+          "advice_th": "หยุดดูดีบน social media ลงมือเป็นจริง การเป็นคือสำคัญกว่าการดู",
+          "keywords_th": ["หลอกตัว", "ดูดี", "ซื่อสัตย์"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หลอกตัวเองเรื่องสุขภาพ - ทำเพื่อโชว์ไม่ใช่จริง",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายอาจเป็นไปเพื่อโชว์ - โพสต์ใน social media แต่ไม่ได้ทำจริง หรือทำเพื่อรูปร่างไม่ใช่สุขภาพ ต้องซื่อสัตย์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในภาพ, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Four of Cups = ไม่พอใจตัว",
+            "swords": "Seven of Swords = หลอกตัว",
+            "pentacles": "Four of Pentacles = ใช้เงินผิด",
+            "court_cards": "Queen of Wands กลับหัว = ภายนอกเด่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวเป้าหมายสุขภาพ คือ 'จริงไม่ใช่โชว์'",
+          "advice_th": "ดูแลสุขภาพเพื่อตัวเอง ไม่ใช่เพื่อ Instagram วัดด้วยพลังงาน อารมณ์ ไม่ใช่ likes",
+          "keywords_th": ["สุขภาพโชว์", "หลอกตัว", "จริง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ค่านิยมความยุติธรรมและความซื่อสัตย์ฝังในแกน",
+          "detailed_interpretation_th": "ความยุติธรรมหัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีค่านิยมความยุติธรรมและความซื่อสัตย์ฝังลึก คุณเป็นคนที่ทำสิ่งที่ถูก แม้ไม่มีใครเห็น พลังนี้คือพรสวรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ค่านิยม, The Emperor = อำนาจ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความซื่อสัตย์",
+            "court_cards": "King ทุกชุด = ผู้นำที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมรากฐาน คือ 'ซื่อสัตย์ในแกน'",
+          "advice_th": "ใช้ค่านิยมนี้เป็นเข็มทิศชีวิต ความซื่อสัตย์คือสิ่งที่ทำให้คุณพิเศษ",
+          "keywords_th": ["ค่านิยมดี", "ซื่อสัตย์", "พรสวรรค์"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เชื่อในความสัมพันธ์ที่สมดุลและซื่อสัตย์",
+          "detailed_interpretation_th": "ในรัก รากฐานคือความเชื่อว่าความรักต้องการความซื่อสัตย์และสมดุล ทั้งคู่ต้องรับผิดชอบ ค่านิยมนี้กำหนดความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, Two of Cups = สมดุล",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมรากฐานรัก คือ 'ค่านิยมรัก'",
+          "advice_th": "ใช้ค่านิยมที่มีในการเลือกคู่ ไม่ยอมต่อรองความซื่อสัตย์",
+          "keywords_th": ["ค่านิยมรัก", "ซื่อสัตย์", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความซื่อสัตย์ในธุรกิจเป็นรากความสำเร็จ",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือความซื่อสัตย์ในธุรกิจ - ลูกค้าไว้ใจ พันธมิตรเคารพ พนักงานนับถือ ชื่อเสียงดีคือทรัพย์สิน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมรากฐานงาน-เงิน คือ 'ชื่อเสียงคือทรัพย์'",
+          "advice_th": "รักษาความซื่อสัตย์ในธุรกิจ ชื่อเสียงสร้างยากแต่พังเร็ว",
+          "keywords_th": ["ซื่อสัตย์", "ชื่อเสียง", "ทรัพย์สิน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความต้องการความถูกต้องและความเป็นธรรมฝังในแกน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือความรู้สึกที่ต้องการความถูกต้อง ทำสิ่งที่ดีและเหมาะสม รับผิดชอบกับตัวเอง พลังนี้คือเสาหลักของชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, Judgement = ตัดสิน",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ความรับผิดชอบ",
+            "court_cards": "King ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมรากฐานจิตวิญญาณ คือ 'ความถูกต้องในแกน'",
+          "advice_th": "ใช้ค่านิยมความถูกต้องเป็นเข็มทิศ ในทุกการตัดสินใจ",
+          "keywords_th": ["ความถูก", "ค่านิยม", "เสาหลัก"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ดูแลร่างกายอย่างสมดุลตามธรรมชาติ",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือความสามารถดูแลตัวเองสมดุล - ไม่หักโหม ไม่ละเลย รู้จังหวะของร่างกาย พลังนี้สร้างสุขภาพยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมรากฐานสุขภาพ คือ 'สมดุลธรรมชาติ'",
+          "advice_th": "ใช้ความสามารถสมดุล - ฟังร่างกายและตอบสนองอย่างเหมาะ",
+          "keywords_th": ["สมดุล", "ธรรมชาติ", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "นิสัยการตัดสินคนอื่นหรือตัวเองรุนแรงฝังลึก",
+          "detailed_interpretation_th": "ความยุติธรรมกลับหัวในรากฐาน บ่งบอกถึงนิสัยตัดสินรุนแรง - กับตัวเองและคนอื่น perfectionism ความเข้มงวด ฝังลึกในจิตใต้สำนึก ต้องเรียนรู้เมตตา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการตัดสิน, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = วิจารณ์",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Queen of Swords กลับหัว = วิจารณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวรากฐาน คือ 'เมตตา'",
+          "advice_th": "ฝึกเมตตา - กับตัวเองและคนอื่น การตัดสินรุนแรงทำลายความสุข",
+          "keywords_th": ["ตัดสินรุนแรง", "perfectionism", "เมตตา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "บาดแผลจากการถูกตัดสินในความสัมพันธ์เก่า",
+          "detailed_interpretation_th": "ในรัก รากฐานมีบาดแผลจากการถูกตัดสิน - คู่เก่าตัดสินคุณ ครอบครัวตัดสินความสัมพันธ์ บาดแผลทำให้กลัวเปิดใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในบาดแผล, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Queen of Swords กลับหัว = ขมขื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวรากฐานรัก คือ 'รักษาบาดแผล'",
+          "advice_th": "ทำงานกับบาดแผล - therapy การให้อภัย คุณคู่ควรกับรักที่ไม่ตัดสิน",
+          "keywords_th": ["บาดแผลการตัดสิน", "กลัวเปิดใจ", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความเชื่อว่าตัวเองไม่คู่ควรกับความสำเร็จ",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานมีความเชื่อ 'ฉันไม่คู่ควรรวย' 'คนแบบฉันไม่สำเร็จ' การตัดสินตัวเองรุนแรงขัดขวางการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = imposter"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวรากฐานงาน-เงิน คือ 'คู่ควร'",
+          "advice_th": "เปลี่ยนความเชื่อ - 'ฉันคู่ควรกับความสำเร็จ' ทำซ้ำทุกวัน เปลี่ยนผลลัพธ์",
+          "keywords_th": ["ไม่คู่ควรปลอม", "ความเชื่อจำกัด", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในการวิจารณ์ตัวเองรุนแรง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือการวิจารณ์ตัวเองรุนแรง - 'ฉันไม่ดีพอ' 'ฉันผิดเสมอ' inner critic เสียงดัง ต้องสร้าง inner ally ใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความรู้สึกผิด, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล, Queen of Swords กลับหัว = วิจารณ์",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King of Swords กลับหัว = วิจารณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวรากฐานจิตวิญญาณ คือ 'inner ally'",
+          "advice_th": "ทำงานกับ inner critic - แทนที่ด้วย inner ally ที่เห็นอกเห็นใจ พูดดีกับตัวเอง",
+          "keywords_th": ["inner critic", "วิจารณ์ตัว", "inner ally"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "นิสัยลงโทษร่างกายแทนการดูแล",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือนิสัยลงโทษร่างกาย - diet โหด ออกกำลังกายหักโหม ทำงานหนักจนพัง ต้องเปลี่ยนเป็นการดูแลด้วยความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการลงโทษ, The Tower = ร่างกายพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ไม่รักตัว",
+            "swords": "Nine of Swords = วิจารณ์ร่างกาย",
+            "pentacles": "Five of Pentacles = ทำลายตัว",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวรากฐานสุขภาพ คือ 'รักร่างกาย'",
+          "advice_th": "เปลี่ยนความสัมพันธ์กับร่างกาย - ดูแลด้วยรัก ไม่ใช่ลงโทษ",
+          "keywords_th": ["ลงโทษร่างกาย", "ฝืน", "รักร่างกาย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ทำสิ่งที่ถูกต้องและรับผิดชอบกับการกระทำ",
+          "detailed_interpretation_th": "คำแนะนำจากความยุติธรรมหัวตั้ง: ทำสิ่งที่ถูก ซื่อสัตย์ในทุกการกระทำ รับผิดชอบกับผลที่ตามมา ความซื่อสัตย์คือทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ค่านิยม, The Emperor = อำนาจ",
+            "wands": "Knight of Wands = กล้าทำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ความรับผิดชอบ",
+            "court_cards": "King ทุกชุด = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมคำแนะนำ คือ 'ทำสิ่งที่ถูก'",
+          "advice_th": "ก่อนทำสิ่งใด ถามตัวเอง 'นี่ถูกต้องไหม?' ถ้าใช่ ทำ ถ้าไม่ อย่าทำ ง่ายๆ",
+          "keywords_th": ["ทำสิ่งถูก", "ซื่อสัตย์", "รับผิดชอบ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ซื่อสัตย์กับคู่และตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ซื่อสัตย์ - กับคู่และกับตัวเอง บอกความรู้สึกจริง ไม่หลอก ไม่ปกปิด ความสัมพันธ์ที่ดีต้องการความจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมคำแนะนำในรัก คือ 'ซื่อสัตย์'",
+          "advice_th": "บอกความจริงในความสัมพันธ์ - สิ่งที่รู้สึก สิ่งที่ต้องการ ความจริงเจ็บแต่จำเป็น",
+          "keywords_th": ["ซื่อสัตย์", "บอกจริง", "ไม่ปกปิด"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทำธุรกิจอย่างซื่อสัตย์และยุติธรรม",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ทำธุรกิจอย่างซื่อสัตย์ - ไม่โกง ไม่เอาเปรียบ ไม่ทางลัด ความซื่อสัตย์สร้างชื่อเสียงที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Hierophant = ค่านิยม",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความซื่อสัตย์",
+            "court_cards": "King ทุกชุด = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมคำแนะนำงาน-เงิน คือ 'ซื่อสัตย์คือทาง'",
+          "advice_th": "ไม่ทำธุรกิจที่ขัดกับค่านิยม ไม่โกหกลูกค้า ไม่เอาเปรียบพันธมิตร ระยะยาวจะคุ้ม",
+          "keywords_th": ["ซื่อสัตย์ธุรกิจ", "ไม่ทางลัด", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ซื่อสัตย์กับตัวเองและรับผิดชอบ",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ซื่อสัตย์กับตัวเอง - ความรู้สึกจริง ความต้องการจริง ความผิดที่ทำ การโกหกตัวเองทำลายการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Judgement = ตัดสิน",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ความรับผิดชอบ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมคำแนะนำการเติบโต คือ 'ซื่อสัตย์กับตัว'",
+          "advice_th": "ฝึกบอกความจริงกับตัวเอง - ในความรู้สึก ในการกระทำ ในความผิด การโกหกตัวเองทำลาย",
+          "keywords_th": ["ซื่อสัตย์กับตัว", "ความจริง", "รับผิดชอบ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รับผิดชอบกับร่างกายและสมดุล",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: รับผิดชอบกับร่างกาย - ตรวจสุขภาพ ดูแลสมดุล ไม่หักโหม ไม่ละเลย ร่างกายของคุณคือของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมคำแนะนำสุขภาพ คือ 'รับผิดชอบสมดุล'",
+          "advice_th": "ตรวจสุขภาพประจำปี ดูแลให้สมดุล - กิน นอน เคลื่อนไหว พักผ่อน ทุกอย่างมีสัดส่วน",
+          "keywords_th": ["รับผิดชอบ", "สมดุล", "ตรวจสุขภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หยุดวิจารณ์ตัวเองและคนอื่นรุนแรง",
+          "detailed_interpretation_th": "คำแนะนำความยุติธรรมกลับหัว: ถ้าตัดสินตัวเองหรือคนอื่นรุนแรง หยุด ฝึกเมตตา ทุกคนผิดได้ การให้อภัยคือพลัง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = อ่อนโยน, Temperance = สมดุล",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = เมตตา",
+            "swords": "Six of Swords = ก้าวไป",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวคำแนะนำ คือ 'เมตตา'",
+          "advice_th": "ฝึกเมตตา - กับตัวเองและคนอื่น ทุกคนทำดีที่สุดในความสามารถของตัวเอง",
+          "keywords_th": ["หยุดตัดสิน", "เมตตา", "ให้อภัย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ให้อภัยและก้าวต่อในความสัมพันธ์",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ถ้าค้างกับความผิดในอดีต - ของคู่หรือของตัวเอง ให้อภัยและก้าวต่อ ความขมขื่นทำลายความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รัก, Six of Swords = ก้าวไป",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = เมตตา",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวคำแนะนำในรัก คือ 'ให้อภัย'",
+          "advice_th": "ให้อภัยคู่และตัวเอง การยึดอยู่กับความผิดในอดีตทำให้ปัจจุบันเป็นพิษ",
+          "keywords_th": ["ให้อภัย", "ก้าวต่อ", "ปัจจุบัน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ปล่อยความเสียดายในธุรกิจที่ผ่านมา",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ปล่อยความเสียดายในการตัดสินใจเก่า - ลงทุนผิด ปฏิเสธโอกาส ใช้เป็นบทเรียน ไม่ใช่กรง",
+          "adjacent_influences": {
+            "major_arcana": "Six of Swords = ก้าวไป, The Sun = สดใส",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Six of Cups = บทเรียนเก่า",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Eight of Pentacles = ฝึก",
+            "court_cards": "King of Pentacles = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวคำแนะนำงาน-เงิน คือ 'ก้าวต่อ'",
+          "advice_th": "บทเรียนจากการเงินเก่ามีค่า ใช้ในการตัดสินใจปัจจุบัน แต่อย่าให้กลายเป็นกรง",
+          "keywords_th": ["บทเรียน", "ก้าวต่อ", "ปล่อยเสียดาย"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ให้อภัยตัวเองและรักตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ให้อภัยตัวเอง - กับความผิดในอดีต กับการตัดสินใจที่ผิด การให้อภัยตัวเองคือก้าวแรกของการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักตัว, The Star = ความหวัง",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = เมตตา",
+            "swords": "Six of Swords = ก้าวไป",
+            "pentacles": "Queen of Pentacles = ดูแลตัว",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวคำแนะนำการเติบโต คือ 'ให้อภัยตัวเอง'",
+          "advice_th": "เขียนจดหมายให้ตัวเองในอดีต ให้อภัย ขอบคุณที่ทำดีที่สุดในตอนนั้น",
+          "keywords_th": ["ให้อภัยตัว", "เมตตา", "รักตัว"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อ่อนโยนกับร่างกายและให้อภัย",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ถ้าตัดสินร่างกายรุนแรง - 'ฉันอ้วนเกิน' 'ฉันแก่' หยุด อ่อนโยนกับร่างกาย ขอบคุณที่พาคุณมาถึงตอนนี้",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักตัว, The Star = ฟื้นฟู",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = เมตตา",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Queen of Pentacles = ดูแลด้วยรัก",
+            "court_cards": "Queen of Pentacles = ผู้รัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวคำแนะนำสุขภาพ คือ 'รักร่างกาย'",
+          "advice_th": "เปลี่ยนความสัมพันธ์กับร่างกาย - ดูแลด้วยรัก ไม่ใช่ลงโทษ ขอบคุณที่ร่างกายพาคุณมาถึงตอนนี้",
+          "keywords_th": ["รักร่างกาย", "อ่อนโยน", "ขอบคุณ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างเห็นคุณเป็นคนยุติธรรมและน่าเชื่อถือ",
+          "detailed_interpretation_th": "ความยุติธรรมหัวตั้งในภายนอก บ่งบอกว่าคนรอบข้างเห็นคุณเป็นคนยุติธรรม น่าเชื่อถือ พวกเขามาขอคำปรึกษา เคารพการตัดสิน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Hierophant = ครู",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ที่ปรึกษา",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "King of Pentacles = ผู้น่าเชื่อถือ",
+            "court_cards": "King ทุกชุด = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมภายนอก คือ 'คนเคารพและไว้ใจ'",
+          "advice_th": "ใช้ชื่อเสียงดี - คนรอบข้างไว้ใจ ใช้ในการสร้างพันธมิตร เครือข่าย โอกาส",
+          "keywords_th": ["น่าเชื่อถือ", "เคารพ", "ที่ปรึกษา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่หรือครอบครัวเห็นคุณยุติธรรมและสมดุล",
+          "detailed_interpretation_th": "ในรัก คู่และครอบครัวเห็นคุณเป็นคนยุติธรรม รับผิดชอบ การไว้ใจคุณคือทรัพย์สิน ใช้ดูแลความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ครอบครัว, The Lovers = รัก",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมภายนอกรัก คือ 'คู่ไว้ใจ'",
+          "advice_th": "รักษาความซื่อสัตย์ในความสัมพันธ์ ความไว้ใจคือทรัพย์สินใช้เวลาสร้างยาก",
+          "keywords_th": ["คู่ไว้ใจ", "ครอบครัวยอมรับ", "ซื่อสัตย์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เพื่อนร่วมงานและลูกค้าเห็นคุณยุติธรรม",
+          "detailed_interpretation_th": "ในงาน-เงิน เพื่อนร่วมงาน ลูกค้า พันธมิตรเห็นคุณเป็นคนยุติธรรม ซื่อสัตย์ ชื่อเสียงดีนี้สร้างโอกาส",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = ผู้นำ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความซื่อสัตย์",
+            "court_cards": "King ทุกชุด = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมภายนอกงาน-เงิน คือ 'ชื่อเสียงดี'",
+          "advice_th": "ใช้ชื่อเสียงสร้างโอกาส - networking ขอแนะนำ พันธมิตรใหม่",
+          "keywords_th": ["ชื่อเสียง", "ไว้ใจ", "โอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ครูหรือ mentor ที่ฉลาดและยุติธรรมช่วยนำทาง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ มี mentor ครู ที่ปรึกษาที่ฉลาดและยุติธรรมในชีวิต พวกเขาให้คำแนะนำที่ดี ฟัง",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ครูทางใจ",
+            "swords": "King of Swords = ครูปัญญา",
+            "pentacles": "King of Pentacles = mentor",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมภายนอกจิตวิญญาณ คือ 'ครูที่ดี'",
+          "advice_th": "ฟัง mentor ที่ยุติธรรม พวกเขาให้คำแนะนำที่จริงใจ ไม่ใช่แค่สิ่งที่อยากฟัง",
+          "keywords_th": ["ครูดี", "ที่ปรึกษา", "ฟัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมอหรือ healer ที่ฉลาดและซื่อสัตย์",
+          "detailed_interpretation_th": "ในสุขภาพ มีหมอหรือผู้เชี่ยวชาญที่ซื่อสัตย์ - ไม่ขายของไม่จำเป็น ให้คำแนะนำที่ดี ลงทุนกับพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Hierophant = ครู",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = หมอที่ดี",
+            "swords": "King of Swords = หมอฉลาด",
+            "pentacles": "King of Pentacles = expert",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมภายนอกสุขภาพ คือ 'หมอที่ซื่อสัตย์'",
+          "advice_th": "หาหมอที่ไว้ใจระยะยาว ลงทุนกับการปรึกษาจริงจัง ไม่ใช่หมอที่ขายของเยอะ",
+          "keywords_th": ["หมอซื่อสัตย์", "ไว้ใจ", "ระยะยาว"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ถูกตัดสินอย่างไม่ยุติธรรมจากคนรอบข้าง",
+          "detailed_interpretation_th": "ความยุติธรรมกลับหัวในภายนอก เตือนว่าคนรอบข้างอาจตัดสินคุณผิด - เพื่อนเข้าใจผิด ครอบครัววิจารณ์ สังคมตัดสิน ต้องยืนหยัด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Tower = วิกฤต",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Three of Swords = แผลใจ",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King of Swords กลับหัว = ผู้ตัดสินผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวภายนอก คือ 'ยืนหยัดความจริง'",
+          "advice_th": "ถ้าถูกตัดสินผิด ยืนหยัดความจริง อธิบาย แต่ไม่ต้องพิสูจน์ตัวเองให้คนที่ไม่ฟัง",
+          "keywords_th": ["ถูกตัดสินผิด", "ยืนหยัด", "ความจริง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวหรือสังคมไม่ยอมรับความสัมพันธ์",
+          "detailed_interpretation_th": "ในรัก ครอบครัวหรือสังคมตัดสินความสัมพันธ์ของคุณ - ไม่เห็นด้วย ตำหนิ กดดัน คู่และคุณต้องเป็นทีมเดียวกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดัน, The Tower = ระเบิด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Queen of Swords กลับหัว = คนตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวภายนอกรัก คือ 'ปกป้องรัก'",
+          "advice_th": "ปกป้องความสัมพันธ์จากการตัดสิน ตั้งขีดจำกัดกับคนรอบข้าง ความรักของคุณคือของคุณ",
+          "keywords_th": ["ถูกตัดสิน", "ปกป้องรัก", "ทีมเดียว"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ถูกเอาเปรียบในงานหรือคู่ค้าไม่ซื่อ",
+          "detailed_interpretation_th": "ในงาน-เงิน ระวังคู่ค้าหรือลูกค้าที่ไม่ซื่อ - โกง ไม่จ่าย ไม่ทำตามสัญญา ปรึกษาทนาย เก็บหลักฐาน",
+          "adjacent_influences": {
+            "major_arcana": "Justice กลับหัว = ไม่ยุติธรรม, The Devil = ไม่ซื่อ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Seven of Swords = ถูกหลอก",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "King of Pentacles กลับหัว = คู่ค้าไม่ซื่อ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวภายนอกงาน-เงิน คือ 'ระวังคู่ค้า'",
+          "advice_th": "ตรวจสอบคู่ค้าก่อนเซ็นสัญญา เก็บหลักฐานทุกอย่าง ถ้าถูกโกง ปรึกษาทนาย",
+          "keywords_th": ["คู่ค้าไม่ซื่อ", "ถูกหลอก", "ระวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "คนรอบข้างวิจารณ์การเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คนรอบข้างอาจวิจารณ์การเปลี่ยนแปลงของคุณ - 'เปลี่ยนไป' 'แปลก' 'ไม่ใช่คนเดิม' การเติบโตของคุณคือของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ดึงกลับ, The Hermit = อยู่คนเดียว",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ฝึกตัว",
+            "court_cards": "Page กลับหัว = คนรอบไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวภายนอกจิตวิญญาณ คือ 'เติบโตของคุณ'",
+          "advice_th": "เติบโตในแบบของคุณ ไม่ต้องอธิบายให้คนที่ไม่เข้าใจ หาเพื่อนใหม่ที่อยู่ในเส้นทางเดียวกัน",
+          "keywords_th": ["ถูกวิจารณ์", "เติบโตของคุณ", "เพื่อนใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมอหรือผู้เชี่ยวชาญที่ไม่ใส่ใจ",
+          "detailed_interpretation_th": "ในสุขภาพ ระวังหมอที่ไม่ฟัง ขายของเยอะ วินิจฉัยผิด หา second opinion",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = หลอกลวง, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = เร่งรีบ",
+            "cups": "Four of Cups = ไม่ใส่ใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = เสียเงิน",
+            "court_cards": "King of Pentacles กลับหัว = หมอไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวภายนอกสุขภาพ คือ 'second opinion'",
+          "advice_th": "ถ้าหมอไม่ใส่ใจหรือขายของเยอะ เปลี่ยน หา second opinion ปกป้องสุขภาพตัวเอง",
+          "keywords_th": ["หมอไม่ดี", "เปลี่ยน", "second opinion"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes",
+      "position_name_th": "ความหวัง",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังความยุติธรรมและสมดุลในชีวิต",
+          "detailed_interpretation_th": "ความยุติธรรมหัวตั้งในความหวัง สะท้อนความปรารถนา - หวังความยุติธรรม ความสมดุล ความถูกต้องในชีวิต ทุกการกระทำให้ผลที่สมควร",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The Sun = สดใส",
+            "wands": "Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมความหวัง คือ 'ความสมดุลในชีวิต'",
+          "advice_th": "เก็บความหวังนี้ ทำสิ่งที่ถูกต้อง ความยุติธรรมจะมาเมื่อพร้อม",
+          "keywords_th": ["ยุติธรรม", "สมดุล", "ความถูกต้อง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความสัมพันธ์ที่สมดุลและซื่อสัตย์",
+          "detailed_interpretation_th": "ในรัก ความหวังคือคู่ที่สมดุล - ทั้งคู่ซื่อสัตย์ รับผิดชอบ ทำงานเป็นทีม ความรักที่มีความเป็นธรรม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมความหวังรัก คือ 'รักสมดุล'",
+          "advice_th": "อย่ายอมรักที่ไม่สมดุล - คุณคู่ควรกับคู่ที่ซื่อสัตย์ รับผิดชอบ",
+          "keywords_th": ["รักสมดุล", "ซื่อสัตย์", "ทีม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังได้รับสิ่งที่สมควรในงาน",
+          "detailed_interpretation_th": "ในงาน-เงิน ความหวังคือได้รับสิ่งที่สมควร - เงินเดือนที่เหมาะ ตำแหน่งที่คู่ควร การยอมรับจากการทำงานหนัก",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สำเร็จ, The Emperor = ผู้นำ",
+            "wands": "Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King of Pentacles = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมความหวังงาน-เงิน คือ 'ได้สิ่งสมควร'",
+          "advice_th": "ทำงานอย่างซื่อสัตย์ คุณจะได้รับสิ่งที่สมควร อาจช้าแต่จะมา",
+          "keywords_th": ["ได้สิ่งสมควร", "ความซื่อสัตย์", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเป็นคนที่ซื่อสัตย์และมีศักดิ์ศรี",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความหวังคือการเป็นคนที่ซื่อสัตย์ มีศักดิ์ศรี รับผิดชอบกับชีวิต - ตัวอย่างที่ดีให้คนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The World = บรรลุ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความซื่อสัตย์",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมความหวังจิตวิญญาณ คือ 'มีศักดิ์ศรี'",
+          "advice_th": "เป็นคนที่ทำสิ่งถูกต้องแม้ไม่มีใครเห็น ศักดิ์ศรีคือทรัพย์ภายใน",
+          "keywords_th": ["ซื่อสัตย์", "ศักดิ์ศรี", "ตัวอย่าง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพที่สมดุลตามวัย",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือร่างกายที่สมดุล - ไม่ฝืน ไม่ละเลย ปรับตามวัย ดูแลด้วยความเข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมความหวังสุขภาพ คือ 'สมดุลตามวัย'",
+          "advice_th": "ดูแลร่างกายให้เหมาะกับวัย - ไม่ฝืนเหมือนวัย 20 ไม่ละเลยเพราะอายุ",
+          "keywords_th": ["สมดุล", "ตามวัย", "ดูแล"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวว่าจะไม่ได้รับความเป็นธรรม",
+          "detailed_interpretation_th": "ความยุติธรรมกลับหัวในความหวัง บ่งบอกถึงความกลัว - กลัวถูกตัดสินผิด กลัวไม่ได้รับสิ่งที่สมควร กลัวความอยุติธรรม ความกลัวขังจากการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Swords กลับหัว = ขมขื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวความหวัง คือ 'ทำสิ่งถูกแล้วปล่อย'",
+          "advice_th": "ทำสิ่งที่ถูกต้อง แล้วปล่อยผลลัพธ์ ความยุติธรรมในจักรวาลทำงานในเวลาที่เหมาะ",
+          "keywords_th": ["กลัวไม่ยุติธรรม", "ทำสิ่งถูก", "ปล่อย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวว่าจะถูกหลอกหรือทรยศในรัก",
+          "detailed_interpretation_th": "ในรัก กลัวการถูกทรยศ - ถูกหลอก ถูกใช้ ความกลัวขังจากการเปิดใจ ต้องรักษาบาดแผลและไว้วางใจอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Devil = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Knight of Cups กลับหัว = ไม่ซื่อ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวความหวังรัก คือ 'รักษาก่อนรัก'",
+          "advice_th": "รักษาบาดแผลรักเก่า ฝึกไว้วางใจในเรื่องเล็ก ก่อนเรื่องใหญ่",
+          "keywords_th": ["กลัวทรยศ", "บาดแผล", "ไว้วางใจใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ไม่เชื่อว่าจะได้รับสิ่งที่สมควรในงาน",
+          "detailed_interpretation_th": "ในงาน-เงิน ความเชื่อ 'ฉันไม่ได้รับสิ่งที่สมควร' 'โลกไม่ยุติธรรม' ขัดขวางการเรียกร้องสิทธิ์ ต้องเปลี่ยนความเชื่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวความหวังงาน-เงิน คือ 'เรียกร้องสิทธิ์'",
+          "advice_th": "ขอเงินเดือนที่สมควร ขอตำแหน่งที่คู่ควร คุณคู่ควรกับสิ่งที่ทำงาน",
+          "keywords_th": ["ไม่เชื่อสิทธิ์", "เรียกร้อง", "เปลี่ยนความเชื่อ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวว่าจะไม่ดีพอหรือทำผิด",
+          "detailed_interpretation_th": "ในจิตวิญญาณ กลัวการทำผิด - perfectionism กลัวถูกตัดสิน กลัวไม่ดีพอ ความกลัวทำให้ติด ฝึกความเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = imposter"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวความหวังจิตวิญญาณ คือ 'ทุกคนผิดได้'",
+          "advice_th": "ฝึกเมตตากับตัวเอง ทุกคนผิดได้ ทำสิ่งที่ดีที่สุดในแต่ละช่วง",
+          "keywords_th": ["กลัวผิด", "perfectionism", "เมตตา"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวร่างกายและความสุขภาพไม่ยุติธรรม",
+          "detailed_interpretation_th": "ในสุขภาพ ความรู้สึก 'ทำไมฉันป่วย คนอื่นไม่ป่วย' ทำให้ขมขื่น ความยุติธรรมในสุขภาพไม่เป็นเส้นตรง ต้องยอมรับและดูแล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความขมขื่น, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Swords กลับหัว = ขมขื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวความหวังสุขภาพ คือ 'ยอมรับและดูแล'",
+          "advice_th": "ยอมรับสภาพร่างกาย ดูแลให้ดีที่สุด การเปรียบเทียบกับคนอื่นทำให้ทุกข์",
+          "keywords_th": ["ขมขื่น", "ยอมรับ", "ดูแล"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือความยุติธรรมและสมดุลในชีวิต",
+          "detailed_interpretation_th": "ความยุติธรรมหัวตั้งในผลลัพธ์ บ่งบอกว่าถ้าดำเนินต่อ ผลลัพธ์คือชีวิตที่สมดุล ยุติธรรม - ได้รับสิ่งที่สมควร การกระทำที่ถูกต้องให้ผลที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, The World = บรรลุ",
+            "wands": "Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ten of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมผลลัพธ์ คือ 'ได้สิ่งที่สมควร'",
+          "advice_th": "ดำเนินการทำสิ่งที่ถูกต้อง ผลลัพธ์คือชีวิตที่สมดุลและยุติธรรม",
+          "keywords_th": ["ยุติธรรม", "สมดุล", "ได้สมควร"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความสัมพันธ์ที่สมดุลและยั่งยืน",
+          "detailed_interpretation_th": "ในรัก ผลลัพธ์คือความสัมพันธ์ที่สมดุล - ทั้งคู่ซื่อสัตย์ รับผิดชอบ ทำงานเป็นทีม ความรักที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมผลลัพธ์รัก คือ 'รักสมดุลยั่งยืน'",
+          "advice_th": "ดำเนินรักษาความซื่อสัตย์และสมดุล ผลลัพธ์คือรักที่ยั่งยืน",
+          "keywords_th": ["รักสมดุล", "ยั่งยืน", "ซื่อสัตย์"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือความสำเร็จและการยอมรับในงาน",
+          "detailed_interpretation_th": "เส้นทางนี้นำไปสู่ความสำเร็จ - การเลื่อนตำแหน่ง รายได้สูง การยอมรับจากเพื่อนร่วมงาน ลูกค้า พันธมิตร ชื่อเสียงดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The Emperor = ผู้นำ, The World = บรรลุ",
+            "wands": "Six of Wands = ชัยชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง, Ten of Pentacles = อาณาจักร",
+            "court_cards": "King ทุกชุด = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมผลลัพธ์งาน-เงิน คือ 'สำเร็จและซื่อสัตย์'",
+          "advice_th": "ดำเนินทำงานอย่างซื่อสัตย์ ผลลัพธ์คือความสำเร็จที่ยั่งยืน",
+          "keywords_th": ["ความสำเร็จ", "การยอมรับ", "ชื่อเสียง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือความเข้าใจตัวเองและรับผิดชอบกับชีวิต",
+          "detailed_interpretation_th": "เส้นทางจิตวิญญาณนี้นำไปสู่ปัญญา - เข้าใจตัวเอง รับผิดชอบกับชีวิต ทำสิ่งที่ถูก คุณกลายเป็นแบบอย่าง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The World = บรรลุ, Judgement = ตื่นรู้",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมผลลัพธ์จิตวิญญาณ คือ 'ปัญญาและศักดิ์ศรี'",
+          "advice_th": "ดำเนินทำสิ่งที่ถูกต้อง คุณจะกลายเป็นคนที่ตัวเองภูมิใจ",
+          "keywords_th": ["ปัญญา", "ศักดิ์ศรี", "แบบอย่าง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพที่สมดุลและยั่งยืน",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์คือร่างกายที่สมดุล - ไม่ฝืน ไม่ละเลย ปรับตามวัย ดูแลด้วยความเข้าใจ อายุยืนอย่างมีคุณภาพ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู, The World = บรรลุ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมผลลัพธ์สุขภาพ คือ 'สมดุลยั่งยืน'",
+          "advice_th": "ดำเนินการดูแลแบบสมดุล ผลลัพธ์คือร่างกายที่อยู่ได้ยาวอย่างมีคุณภาพ",
+          "keywords_th": ["สมดุล", "ยั่งยืน", "คุณภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลของการกระทำผิดจะมาถึงในที่สุด",
+          "detailed_interpretation_th": "ความยุติธรรมกลับหัวในผลลัพธ์ เตือนว่าถ้ายังคงในเส้นทางไม่ซื่อสัตย์ ผลลัพธ์จะไม่ดี - ความผิดที่ทำจะมาถึง ความไม่ซื่อสัตย์จะถูกเปิดเผย แก้ไขก่อนสาย",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King of Swords กลับหัว = ผู้พิพากษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวผลลัพธ์ คือ 'แก้ไขก่อนสาย'",
+          "advice_th": "ถ้ามีความผิดที่ค้าง แก้ไขก่อน ผลของการกระทำมาถึงเสมอ การยอมรับและแก้ไขทำให้ผลกระทบเบาลง",
+          "keywords_th": ["ผลของการกระทำ", "แก้ไข", "ก่อนสาย"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะจบถ้าไม่จัดการความไม่สมดุล",
+          "detailed_interpretation_th": "ในรัก ผลลัพธ์ไม่ดีถ้าไม่จัดการความไม่สมดุล - ความไม่ซื่อสัตย์จะถูกเปิดเผย ความสัมพันธ์ที่ไม่สมดุลจะจบ ปรับก่อนสาย",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = สัมพันธ์ทำลาย",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ, Eight of Cups = ออกจาก",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่ซื่อ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวผลลัพธ์รัก คือ 'ความจริงจะปรากฏ'",
+          "advice_th": "ถ้ามีความลับ บอกเอง ดีกว่ารอให้ค้นพบ ความซื่อสัตย์เป็นรากฐานของความสัมพันธ์",
+          "keywords_th": ["สัมพันธ์จบ", "ความจริง", "ปรับก่อนสาย"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์ทางการเงินไม่ดีจากความไม่ซื่อสัตย์",
+          "detailed_interpretation_th": "ในงาน-เงิน ผลลัพธ์ไม่ดีถ้าทำธุรกิจไม่ซื่อสัตย์ - คดีความ การถูกเปิดเผย ชื่อเสียงพัง ความซื่อสัตย์คือทรัพย์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ธุรกิจพัง, Justice กลับหัว = ถูกตัดสิน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาดทุน",
+            "court_cards": "King of Swords กลับหัว = ทนายฝ่ายตรง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวผลลัพธ์งาน-เงิน คือ 'แก้ไขก่อนผิด'",
+          "advice_th": "ถ้ามีการเงินที่ไม่ซื่อสัตย์ - จ่ายภาษีไม่ครบ โกหกลูกค้า แก้ไขก่อนถูกจับได้",
+          "keywords_th": ["คดีความ", "ชื่อเสียงพัง", "แก้ไข"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่เติบโตเพราะหลีกเลี่ยงความรับผิดชอบ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ผลลัพธ์ไม่ดีถ้ายังคงหลีกเลี่ยงความรับผิดชอบ - โทษคนอื่น ไม่ยอมรับผิด ไม่เปลี่ยนแปลง ติดอยู่ในที่เดิม",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในการโทษ",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวผลลัพธ์จิตวิญญาณ คือ 'รับผิดชอบ'",
+          "advice_th": "หยุดโทษคนอื่น รับผิดชอบกับชีวิต ก้าวต่อ การยอมรับคือก้าวแรกของการเติบโต",
+          "keywords_th": ["ไม่เติบโต", "หลีกเลี่ยง", "รับผิดชอบ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพแย่ลงจากการละเลยและไม่รับผิดชอบ",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์ไม่ดีถ้ายังคงละเลย - ไม่ตรวจ ไม่ดูแล โทษพันธุกรรม อาการเรื้อรังจะเกิด รับผิดชอบกับร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในนิสัย",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: ความยุติธรรมกลับหัวผลลัพธ์สุขภาพ คือ 'รับผิดชอบร่างกาย'",
+          "advice_th": "เริ่มดูแลตัวเองอย่างจริงจัง ตรวจสุขภาพ เปลี่ยนนิสัย ก่อนผลกระทบจะใหญ่",
+          "keywords_th": ["ผลของการละเลย", "อาการเรื้อรัง", "รับผิดชอบ"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        }
+      }
+    }
+  }
+}

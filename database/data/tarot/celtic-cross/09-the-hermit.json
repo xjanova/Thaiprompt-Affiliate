@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "The Hermit",
+    "name_th": "นักบวช",
+    "number": 9,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คุณกำลังอยู่ในช่วงต้องการความเงียบและการค้นหาภายในตัวเอง",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน นักบวชหัวตั้งบ่งบอกว่าคุณกำลังอยู่ในช่วงต้องการอยู่คนเดียวเพื่อค้นหาความจริง คุณอาจรู้สึกห่างจากคนรอบข้าง ต้องการเวลาคิด ไตร่ตรอง พิจารณาชีวิต นี่ไม่ใช่ความเหงา แต่เป็นความต้องการของจิตวิญญาณ การปลีกตัวคือการกลับมาที่ตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาภายใน, The Hanged Man = พิจารณา, The Star = แสงนำทาง",
+            "wands": "Wands กลับหัวข้างเคียง = พักจากกิจกรรม",
+            "cups": "Four of Cups = ทบทวนอารมณ์",
+            "swords": "Queen of Swords = ปัญญา, Four of Swords = พัก",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King of Swords = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชในปัจจุบัน คือ 'ต้องการเวลาคนเดียว'",
+          "advice_th": "ให้เวลากับตัวเอง - สมาธิ เดินคนเดียว เขียน journal ปิดมือถือบ้าง คำตอบอยู่ในความเงียบ",
+          "keywords_th": ["ปลีกตัว", "ปัญญาภายใน", "ไตร่ตรอง", "ค้นหา"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการเวลาคนเดียวก่อนจะเดินต่อในความรัก",
+          "detailed_interpretation_th": "ในรักปัจจุบัน คุณอาจต้องการพื้นที่ เวลาคิด ทบทวนความสัมพันธ์ สำหรับคนโสด ไม่จำเป็นต้องรีบหาคู่ ใช้เวลาทำความรู้จักตัวเอง สำหรับคนมีคู่ อาจต้องคุยกับคู่เรื่องการให้พื้นที่",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาในใจ, The Lovers = ตัดสินใจ",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวนใจ",
+            "swords": "Two of Swords = พิจารณา",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชในปัจจุบันรัก คือ 'ต้องการพื้นที่'",
+          "advice_th": "ใช้เวลาคนเดียวก่อน รักตัวเองก่อนรักคนอื่น ทบทวนว่าต้องการอะไรในความรัก",
+          "keywords_th": ["พื้นที่ส่วนตัว", "ทบทวน", "รักตัวเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการทบทวนทิศทางอาชีพและไม่รีบตัดสินใจ",
+          "detailed_interpretation_th": "ในงาน-เงิน คุณอาจต้องการเวลาทบทวนว่ากำลังไปทิศไหน อาชีพนี้ใช่ของคุณไหม การเงินมั่นคงพอไหม ก่อนตัดสินใจใหญ่ ใช้เวลาคิด ปรึกษาผู้รู้",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = พิจารณา, Two of Swords = เลือก",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Queen of Swords = ปัญญา, Two of Swords = พิจารณา",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "King of Swords = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชในปัจจุบันงาน-เงิน คือ 'อย่ารีบตัดสินใจ'",
+          "advice_th": "ก่อนตัดสินใจสำคัญในงาน ขอเวลา 1-2 สัปดาห์คิด ปรึกษา mentor การตัดสินใจที่ดีต้องการเวลา",
+          "keywords_th": ["ทบทวน", "อย่ารีบ", "พิจารณา"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ช่วงสำคัญของการค้นหาความจริงและปัญญาภายใน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณกำลังอยู่ในช่วงที่ลึกของการเติบโต ต้องการคำตอบสำคัญ การฝึกสมาธิ การอ่านหนังสือธรรมะ การคุยกับครู ทั้งหมดเป็นส่วนของการค้นหา",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาลึก, The Star = แสงนำทาง",
+            "wands": "Wands ข้างเคียง = พลังจิตวิญญาณ",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King of Swords = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชในปัจจุบันจิตวิญญาณ คือ 'การเดินทางเข้าใน'",
+          "advice_th": "ใช้เวลาฝึกสมาธิ อ่านธรรมะ จด journal คำถามใหญ่ของชีวิต ค้นหาคำตอบ",
+          "keywords_th": ["ค้นหา", "สมาธิ", "ปัญญาใน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการพักผ่อนและฟังร่างกายอย่างลึกซึ้ง",
+          "detailed_interpretation_th": "ในสุขภาพ คุณต้องการพักผ่อน ลดกิจกรรม ฟังร่างกาย อาจมีอาการที่ต้องการการใส่ใจ การพักผ่อนจริงๆ - ไม่ดูมือถือ ไม่ทำงาน คือยาที่ดีที่สุด",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Four of Swords = พัก",
+            "wands": "Wands กลับหัว = ลดกิจกรรม",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Queen of Pentacles = ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชในปัจจุบันสุขภาพ คือ 'พักผ่อน'",
+          "advice_th": "หาเวลาพักจริงๆ 1-2 วัน - ไม่ทำงาน ไม่กิจกรรม นอนเยอะ ฟังร่างกาย",
+          "keywords_th": ["พักผ่อน", "ฟังร่างกาย", "ฟื้นฟู"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ปลีกตัวเกินไปจนโดดเดี่ยวหรือหลีกเลี่ยงการเผชิญหน้า",
+          "detailed_interpretation_th": "นักบวชกลับหัวในปัจจุบัน บ่งบอกถึงการปลีกตัวเกินไป กลายเป็นความโดดเดี่ยว ตัดขาดจากคน หรือใช้การ 'ค้นหาภายใน' หลีกเลี่ยงการแก้ปัญหาจริง ต้องสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติดในการหนี",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล, Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Swords กลับหัว = แยกตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวในปัจจุบัน คือ 'อย่าหลีกเลี่ยง'",
+          "advice_th": "ออกจากการแยกตัว เชื่อมต่อกับคนรอบข้าง การปลีกตัวเป็นช่วงเวลา ไม่ใช่ทางหนีถาวร",
+          "keywords_th": ["โดดเดี่ยว", "หลีกเลี่ยง", "เชื่อมต่อ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ห่างเหินจากคู่หรือใช้การปลีกตัวหลีกเลี่ยงปัญหา",
+          "detailed_interpretation_th": "ในรัก นักบวชกลับหัวเตือนว่าคุณกำลังห่างจากคู่ ใช้การ 'ต้องการพื้นที่' หลีกเลี่ยงการคุยปัญหา หรือคุณเองอาจรู้สึกถูกทอดทิ้งจากคู่ที่ปลีกตัวเกินไป",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ความสัมพันธ์พัง, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ, Three of Cups กลับหัว = ห่างกัน",
+            "swords": "Three of Swords = แผลใจ, Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ปิดใจ",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวรัก คือ 'อย่าใช้พื้นที่หลีกเลี่ยง'",
+          "advice_th": "ถ้ามีปัญหา คุยตรงๆ ไม่ใช่หลีกเลี่ยง ความรักต้องการการเผชิญหน้า ไม่ใช่การหนี",
+          "keywords_th": ["ห่างเหิน", "หลีกเลี่ยง", "คุย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ห่างจากคนในวงการหรือไม่ตัดสินใจในงาน",
+          "detailed_interpretation_th": "ในงาน-เงิน นักบวชกลับหัวบ่งบอกถึงการแยกตัวจากเพื่อนร่วมงาน ไม่ networking ไม่อัพเดทตัวเอง หรือหลีกเลี่ยงการตัดสินใจสำคัญ การตัดขาดจากวงการเป็นโทษระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในการรอ, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวงาน-เงิน คือ 'อย่าตัดขาดจากวงการ'",
+          "advice_th": "เริ่ม networking อีก เข้า event อัพเดททักษะ การตัดขาดจากวงการคือการตัดโอกาส",
+          "keywords_th": ["ตัดขาดวงการ", "ไม่ตัดสินใจ", "networking"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ใช้จิตวิญญาณหลีกเลี่ยงโลกจริง - spiritual bypassing",
+          "detailed_interpretation_th": "ในจิตวิญญาณ นักบวชกลับหัวเตือนถึง spiritual bypassing - การใช้การฝึกจิตวิญญาณหลีกเลี่ยงปัญหาจริง 'ปล่อยวาง' โดยไม่จัดการ 'อยู่กับปัจจุบัน' โดยไม่ดูแลอนาคต ต้องสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ไม่จัดการชีวิต",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวจิตวิญญาณ คือ 'spiritual bypassing'",
+          "advice_th": "ใช้จิตวิญญาณเสริมชีวิตจริง ไม่หลีกเลี่ยง การจัดการการเงิน ความสัมพันธ์ สุขภาพยังต้องทำควบคู่",
+          "keywords_th": ["spiritual bypassing", "หลีกเลี่ยง", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ละเลยสุขภาพหรือไม่ไปหาหมอเมื่อจำเป็น",
+          "detailed_interpretation_th": "ในสุขภาพ การปลีกตัวกลายเป็นการละเลย ไม่ไปตรวจสุขภาพ ไม่ปรึกษาหมอเมื่อมีอาการ คิดว่าจะหายเอง ความเงียบไม่ใช่ทางแก้ปัญหาสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = อาการซ่อน, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวลแต่ไม่ทำ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวสุขภาพ คือ 'อย่าละเลย'",
+          "advice_th": "ไปตรวจสุขภาพ ปรึกษาหมอ การปลีกตัวจากการแพทย์อันตราย ใช้การพักผ่อนพร้อมการดูแล",
+          "keywords_th": ["ละเลยสุขภาพ", "ไม่ไปหาหมอ", "ตรวจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องการเวลาคิดแต่สภาพแวดล้อมไม่เอื้อ",
+          "detailed_interpretation_th": "ในตำแหน่งอุปสรรค นักบวช (ตีความตั้งตรงเสมอ) บ่งบอกว่าคุณต้องการเวลาคิดและปลีกตัว แต่ชีวิตยุ่งเกินไป - งาน ครอบครัว ภาระ ทำให้ไม่มีเวลาให้ตัวเอง การไม่มีเวลาคนเดียวคืออุปสรรคต่อการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในความวุ่น, Ten of Wands = ภาระ",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Knight of Pentacles = ทำงาน",
+            "court_cards": "Queen of Swords = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชในอุปสรรค คือ 'หาเวลาให้ตัวเอง'",
+          "advice_th": "ตั้งเวลาคนเดียวในตารางทุกวัน 30 นาที ไม่ต่อรอง - เวลานี้คือของคุณ",
+          "keywords_th": ["ไม่มีเวลา", "ต้องการพื้นที่", "หาเวลา"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการพื้นที่แต่คู่ไม่เข้าใจ",
+          "detailed_interpretation_th": "อุปสรรคในรักคือความต้องการพื้นที่ส่วนตัวที่คู่อาจไม่เข้าใจ คู่อาจคิดว่าคุณห่างเหิน ไม่รัก จริงๆ คุณแค่ต้องการเวลาคิด ต้องสื่อสารให้ชัด",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอุปสรรครัก คือ 'อธิบายความต้องการ'",
+          "advice_th": "คุยกับคู่ว่าต้องการพื้นที่ - ไม่ใช่หนีรัก แต่เป็นการดูแลตัวเอง คู่ที่ดีจะเข้าใจ",
+          "keywords_th": ["ต้องการพื้นที่", "คู่ไม่เข้าใจ", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการคิดเชิงลึกแต่งานเร่งรีบเกินไป",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือสภาพแวดล้อมที่เร่งรีบ ไม่มีเวลาคิดเชิงลึก ทำงานเป็นเครื่องจักร ขาดความสร้างสรรค์ ต้องหาเวลาคิดเชิงกลยุทธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, Ten of Wands = ภาระ",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Knight of Pentacles = ทำงานหนัก",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอุปสรรคงาน-เงิน คือ 'หาเวลาคิดเชิงกลยุทธ์'",
+          "advice_th": "ตั้งเวลาทุกสัปดาห์สำหรับคิดเชิงลึก ไม่ทำงานเร่งด่วน วางแผน ประเมิน คิดสร้างสรรค์",
+          "keywords_th": ["ไม่มีเวลาคิด", "เร่งรีบ", "วางแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการครูแต่หาไม่เจอ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการต้องการครูหรือคำแนะนำ แต่ยังไม่พบ ความรู้สึกว่าเดินทางคนเดียว ต้องอดทนค้นหา ครูที่ใช่จะมาเมื่อพร้อม",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = แสงนำ",
+            "wands": "Wands ข้างเคียง = พลังจิตวิญญาณ",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = อดทน",
+            "court_cards": "King of Swords = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอุปสรรคจิตวิญญาณ คือ 'ครูที่ใช่จะมา'",
+          "advice_th": "อ่านหนังสือ ฟัง podcast เข้ากลุ่มออนไลน์ ครูในรูปแบบไหนก็ตามที่ไว้ใจ จะมาในเวลาที่เหมาะสม",
+          "keywords_th": ["ต้องการครู", "เดินทางคนเดียว", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการพักแต่หาเวลาไม่ได้",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคือการไม่มีเวลาพักผ่อนจริงๆ ภาระงาน ภาระครอบครัว ทำให้ไม่ได้พัก สุขภาพแย่ลงเรื่อยๆ จากการไม่พัก ต้องหาเวลา",
+          "adjacent_influences": {
+            "major_arcana": "Ten of Wands = ภาระ, The Tower = สุขภาพพัง",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = เหนื่อย",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Knight of Pentacles = ทำงานหนัก",
+            "court_cards": "Knight of Wands กลับหัว = เผาตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอุปสรรคสุขภาพ คือ 'พักผ่อนคือลงทุน'",
+          "advice_th": "ใส่เวลาพักในตารางและถือเป็น appointment สำคัญ การพักผ่อนคือการลงทุนกับสุขภาพระยะยาว",
+          "keywords_th": ["ไม่มีเวลาพัก", "ภาระ", "ลงทุนพัก"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ใช้ความเงียบหรือการปลีกตัวหลีกเลี่ยงปัญหา",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือการใช้ 'ต้องการเวลาคนเดียว' เป็นข้ออ้างหลีกเลี่ยงการเผชิญหน้ากับคน ปัญหา หรือความรู้สึก การปลีกตัวเป็นยา ไม่ใช่ทางหนี",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการหนี, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = หลีกเลี่ยง",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Queen of Swords กลับหัว = แยกตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'อย่าใช้การปลีกตัวหนีปัญหา'",
+          "advice_th": "เผชิญหน้ากับสิ่งที่หลีกเลี่ยง ความเงียบช่วยให้คิด แต่ต้องลงมือแก้ปัญหาด้วย",
+          "keywords_th": ["หลีกเลี่ยง", "หนีปัญหา", "เผชิญหน้า"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ห่างจากคู่จนถึงจุดที่อันตราย",
+          "detailed_interpretation_th": "ในรัก การห่างจากคู่กลายเป็นการตัดขาด ไม่คุย ไม่ใช้เวลาด้วยกัน อ้างว่า 'ต้องการพื้นที่' แต่จริงๆ คือการหนีจากปัญหา ต้องตัดสินใจ - แก้ไขหรือเลิก",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = สัมพันธ์ทำลาย",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = ปิดใจ",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'เผชิญหน้าหรือเลิก'",
+          "advice_th": "คุยกับคู่ตรงๆ - คุณต้องการอะไรในความสัมพันธ์? ถ้าไม่อยากต่อ บอกตรง ไม่ใช่หายไป",
+          "keywords_th": ["ห่างเหิน", "ตัดขาด", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตัดขาดจากวงการจนพลาดโอกาส",
+          "detailed_interpretation_th": "ในงาน-เงิน การปลีกตัวจากวงการนานเกินไป ไม่ networking ไม่อัพเดท พลาดเทรนด์ ขาดโอกาส ตอนนี้ต้องกลับเข้าสู่วงการ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, Ten of Wands = ภาระ",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่เห็นโอกาส",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'กลับเข้าวงการ'",
+          "advice_th": "เริ่ม networking อีก ไป event ส่งข้อความหาคนรู้จัก ลงทุนความสัมพันธ์ในวงการ โอกาสมาจากคนรู้จัก",
+          "keywords_th": ["ตัดขาดวงการ", "พลาดโอกาส", "กลับเข้า"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในการอ่านหนังสือแต่ไม่ลงมือปฏิบัติ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ การปลีกตัวเพื่อ 'ค้นหาปัญญา' กลายเป็นการบริโภคความรู้โดยไม่ลงมือ อ่านธรรมะมาก ฟังครูเยอะ แต่ไม่ปฏิบัติ ความรู้ที่ไม่ปฏิบัติไร้ค่า",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในการรอ, The Devil = ติดในการบริโภค",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขังในความคิด",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page of Wands กลับหัว = ไม่ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'ปฏิบัติ ไม่ใช่แค่อ่าน'",
+          "advice_th": "หยุดอ่านสักพัก ลงมือฝึกสิ่งที่อ่านมา 90 วัน ดูผลลัพธ์จริง",
+          "keywords_th": ["อ่านแต่ไม่ทำ", "ปฏิบัติ", "ลงมือ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "พักผ่อนเกินไปจนกลายเป็นนิ่ง",
+          "detailed_interpretation_th": "ในสุขภาพ การพักผ่อนกลายเป็นการขี้เกียจ ไม่ออกกำลังกาย ไม่เคลื่อนไหว ร่างกายต้องการการเคลื่อนไหวด้วย ไม่ใช่แค่พัก ต้องสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในความสบาย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ไม่อยากเปลี่ยน",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'เคลื่อนไหวด้วย'",
+          "advice_th": "เริ่มเคลื่อนไหว - เดิน 20 นาที โยคะเบาๆ ร่างกายต้องการการเคลื่อนไหว ไม่ใช่แค่พัก",
+          "keywords_th": ["พักเกินไป", "นิ่ง", "เคลื่อนไหว"],
+          "intensity_level": 2,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เคยมีช่วงเวลาที่ปลีกตัวและค้นพบสิ่งสำคัญ",
+          "detailed_interpretation_th": "นักบวชหัวตั้งในอดีต บ่งบอกถึงช่วงเวลาที่คุณเคยปลีกตัว ค้นหาภายใน และพบคำตอบสำคัญ อาจเป็นวัยรุ่นที่อยู่คนเดียวเรียนรู้ตัวเอง วิกฤตที่ทำให้กลับมาที่ตัวเอง หรือการเดินทางทางจิตวิญญาณ ปัญญานี้ยังอยู่",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = แสงนำ",
+            "wands": "Wands ข้างเคียง = พลังเก่า",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "King of Swords = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชในอดีต คือ 'ค้นพบในความเงียบ'",
+          "advice_th": "ระลึกตอนคุณปลีกตัวค้นหา - พบอะไร? ใช้ปัญญานั้นในปัจจุบัน",
+          "keywords_th": ["ปลีกตัวเก่า", "ค้นพบ", "ปัญญาสะสม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยใช้เวลาคนเดียวก่อนพบรักที่ใช่",
+          "detailed_interpretation_th": "ในรักอดีต เคยมีช่วงโสดยาวที่ใช้ทำความรู้จักตัวเอง ก่อนพบคู่ที่เหมาะสม การปลีกตัวเก่าสอนให้รู้ว่าต้องการอะไรในรัก",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Lovers = ตัดสินใจ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = ชัดเจน",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "Queen of Cups = นักรักลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอดีตรัก คือ 'รู้จักตัวก่อนรัก'",
+          "advice_th": "ใช้สิ่งที่เรียนรู้จากช่วงโสด - คุณรู้ว่าต้องการอะไรในความรัก ใช้เป็นมาตรฐาน",
+          "keywords_th": ["โสดยาว", "รู้จักตัว", "มาตรฐาน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยศึกษาหรือฝึกตัวเองอย่างจริงจัง",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต คุณเคยใช้เวลาศึกษา ฝึกทักษะ ค้นคว้า - ปริญญา certification ฝึกตัวเอง ทักษะที่สั่งสมจากการอ่านและฝึกในความเงียบยังใช้ได้",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Hierophant = ครู",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Cups ข้างเคียง = ใส่ใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอดีตงาน-เงิน คือ 'ทักษะจากการฝึก'",
+          "advice_th": "ใช้ทักษะที่สั่งสม ปรับให้เข้ากับยุคปัจจุบัน รากฐานการศึกษาเก่าคือทรัพย์สิน",
+          "keywords_th": ["ฝึกเก่า", "ทักษะสะสม", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยตื่นรู้ทางจิตวิญญาณในวัยใดวัยหนึ่ง",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต คุณเคยมีช่วงตื่นรู้ - อ่านหนังสือธรรมะ ทำสมาธิ พบครู ประสบการณ์ตื่นรู้ ปัญญานี้ยังเป็นรากฐาน ใช้ในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาลึก, The Star = แรงบันดาลใจ",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอดีตจิตวิญญาณ คือ 'ตื่นรู้ครั้งสำคัญ'",
+          "advice_th": "ระลึกประสบการณ์ตื่นรู้ในอดีต - ใช้เป็นแรงบันดาลใจกลับสู่เส้นทางจิตวิญญาณ",
+          "keywords_th": ["ตื่นรู้เก่า", "ปัญญา", "รากฐาน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยพักฟื้นจากการป่วยและฟื้นฟูได้ดี",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยมีช่วงพักฟื้นหรือฟื้นฟู ใช้เวลาดูแลตัวเองอย่างจริงจัง ร่างกายตอบสนอง ประสบการณ์นี้สอนวิธีดูแลตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Wands ข้างเคียง = พลังกลับมา",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอดีตสุขภาพ คือ 'ร่างกายฟื้นฟูได้'",
+          "advice_th": "ใช้บทเรียนจากการฟื้นฟูในอดีต - การพัก การดูแลตัวเองทำได้และให้ผล",
+          "keywords_th": ["ฟื้นฟูเก่า", "พักฟื้น", "ดูแลตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยโดดเดี่ยวหรือถูกตัดขาดจากสังคม",
+          "detailed_interpretation_th": "นักบวชกลับหัวในอดีต บ่งบอกถึงช่วงที่คุณโดดเดี่ยว - ถูกทอดทิ้ง รู้สึกไม่มีใครเข้าใจ หรือตัดขาดจากคนเพราะกลัว บาดแผลนี้ยังส่งผล ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = บาดแผล, The Devil = ติดในการแยกตัว",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวอดีต คือ 'บาดแผลการโดดเดี่ยว'",
+          "advice_th": "รักษาบาดแผลจากการโดดเดี่ยว เชื่อมต่อกับคนใหม่ การมีคนรอบข้างคือพรไม่ใช่ภัย",
+          "keywords_th": ["โดดเดี่ยวเก่า", "บาดแผล", "เชื่อมต่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยถูกทิ้งหรืออยู่คนเดียวจนกลัวการเปิดใจ",
+          "detailed_interpretation_th": "ในรักอดีต เคยถูกทิ้งให้อยู่คนเดียว หรือใช้การปลีกตัวจากความเจ็บปวด บาดแผลนี้ทำให้กลัวเปิดใจในปัจจุบัน ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = บาดแผล, The Devil = ติดในความกลัว",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ, Three of Swords = แผลใจ",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = ปิดใจ",
+            "court_cards": "Knight of Cups กลับหัว = คนรักทิ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวอดีตรัก คือ 'รักษาบาดแผลถูกทิ้ง'",
+          "advice_th": "ทำงานกับบาดแผลถูกทิ้งในอดีต อาจใช้ therapy ค้นหาว่าทำไมรู้สึกไม่คู่ควรกับความรัก",
+          "keywords_th": ["ถูกทิ้งเก่า", "กลัวรัก", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยตัดขาดจากวงการจนพลาดโอกาส",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต เคยตัดขาดจากวงการ - ไม่ networking อยู่ในงานเดิมนาน ไม่อัพเดท ตอนนี้ต้องทำงานหนักกว่าเพื่อตามทัน บทเรียนคือ networking สำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในงาน",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวอดีตงาน-เงิน คือ 'อย่าตัดขาดจากวงการ'",
+          "advice_th": "เริ่ม networking อีก เข้ากลุ่มในวงการ อัพเดทตัวเอง โอกาสมาจากการรู้จัก",
+          "keywords_th": ["ตัดขาดเก่า", "พลาดโอกาส", "กลับมา"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยติดในการเรียนแต่ไม่ปฏิบัติ",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต เคยอ่านเยอะ เรียนเยอะ แต่ไม่ลงมือปฏิบัติ ความรู้กลายเป็นกองข้อมูล ไม่เปลี่ยนชีวิตจริง บทเรียนคือต้องลงมือ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในการรู้, The Devil = ติดในความรู้",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Page of Swords = ปัญญาแค่ผิว",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวอดีตจิตวิญญาณ คือ 'ปฏิบัติ ไม่ใช่อ่าน'",
+          "advice_th": "หยุดสะสมความรู้ใหม่ ลงมือฝึกสิ่งที่อ่านมาแล้ว 1 อย่างให้ครบ 90 วัน",
+          "keywords_th": ["อ่านแต่ไม่ทำ", "บทเรียน", "ปฏิบัติ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยละเลยสุขภาพในช่วงที่ปลีกตัว",
+          "detailed_interpretation_th": "ในสุขภาพอดีต ช่วงที่อยู่คนเดียวอาจละเลยตัวเอง - กินไม่ดี ไม่ออกกำลังกาย นอนผิดเวลา ผลกระทบยังอยู่ ต้องดูแลในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ละเลย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวอดีตสุขภาพ คือ 'แก้ผลกระทบ'",
+          "advice_th": "ตรวจสุขภาพแก้ผลกระทบจากการละเลย ดูแลตัวเองในปัจจุบัน ร่างกายฟื้นฟูได้ถ้าให้โอกาส",
+          "keywords_th": ["ละเลยเก่า", "ผลกระทบ", "ดูแลใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะเป็นช่วงค้นพบและตื่นรู้ทางจิตวิญญาณ",
+          "detailed_interpretation_th": "นักบวชหัวตั้งในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า จะมีช่วงค้นหาภายในที่ลึก คุณจะพบคำตอบสำคัญของชีวิต อาจเจอครูที่ใช่ หรือมีประสบการณ์ตื่นรู้",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = แสงนำ, Judgement = ตื่นรู้",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King of Swords = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอนาคต คือ 'ตื่นรู้สำคัญจะมา'",
+          "advice_th": "เปิดใจรับการค้นพบ ใช้เวลาคนเดียวมากขึ้น คำตอบที่หาจะมา",
+          "keywords_th": ["ตื่นรู้", "ค้นพบ", "ปัญญาใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ในรักจะมีช่วงทบทวนและตัดสินใจสำคัญ",
+          "detailed_interpretation_th": "ในรักอนาคต จะมีช่วงที่ต้องทบทวนความสัมพันธ์ ตัดสินใจสำคัญ สำหรับคนโสด อาจมีช่วงโสดเพื่อค้นหาตัวเอง สำหรับคนมีคู่ อาจต้องคุยเรื่องสำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The High Priestess = ฟังใจ",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Four of Pentacles = พิจารณา",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอนาคตรัก คือ 'ทบทวนความสัมพันธ์'",
+          "advice_th": "ใช้เวลาคิดเรื่องความสัมพันธ์ ฟังหัวใจ ตัดสินใจอย่างมีปัญญา",
+          "keywords_th": ["ทบทวนรัก", "ตัดสินใจ", "ฟังใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "จะมีช่วงทบทวนทิศทางอาชีพและพบครู mentor",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต จะมีช่วงทบทวนทิศทาง - อาชีพนี้ใช่ของฉันไหม? อาจพบ mentor ที่จะนำทาง ใช้เวลาคิดเชิงกลยุทธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = พิจารณา, The Hierophant = ครู",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "King of Swords = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอนาคตงาน-เงิน คือ 'ทบทวนและพบ mentor'",
+          "advice_th": "ใช้เวลาคิดเชิงลึกเรื่องอาชีพ หา mentor หรือ coach การปรึกษาคนเก่งกว่าทำให้ก้าวหน้าเร็ว",
+          "keywords_th": ["ทบทวนอาชีพ", "mentor", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "จะมีการตื่นรู้ทางจิตวิญญาณครั้งใหญ่",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต จะมีประสบการณ์ตื่นรู้สำคัญ - เข้าใจตัวเองและโลกในมิติที่ลึก พบครูที่ใช่ หรือมีประสบการณ์ที่เปลี่ยนชีวิต เตรียมตัวให้พร้อม",
+          "adjacent_influences": {
+            "major_arcana": "The Star = บรรลุ, Judgement = ตื่นรู้, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอนาคตจิตวิญญาณ คือ 'ตื่นรู้ใหญ่'",
+          "advice_th": "ฝึกสมาธิเตรียมตัว เข้ากลุ่มจิตวิญญาณ การตื่นรู้ใกล้แล้ว เปิดใจรับ",
+          "keywords_th": ["ตื่นรู้", "ครูจะมา", "ปัญญาใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "จะมีช่วงพักฟื้นและฟื้นฟูร่างกายลึกซึ้ง",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต จะมีช่วงพักฟื้น ฟื้นฟูร่างกายและจิตใจ อาจเป็นวันหยุดยาว retreat หรือการเปลี่ยนวิถีชีวิต ใช้เวลาดูแลตัวเองอย่างลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Wands กลับหัว = ลดกิจกรรม",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พักผ่อน",
+            "pentacles": "Knight of Pentacles = ดูแล",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชอนาคตสุขภาพ คือ 'พักฟื้นลึก'",
+          "advice_th": "วางแผน retreat หรือวันหยุดยาวเพื่อพักฟื้น สุขภาพต้องการการพักจริงๆ",
+          "keywords_th": ["พักฟื้น", "ฟื้นฟูลึก", "retreat"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อาจรู้สึกโดดเดี่ยวหรือสับสนในอนาคต",
+          "detailed_interpretation_th": "นักบวชกลับหัวในอนาคต เตือนว่าใน 3-6 เดือนข้างหน้า อาจรู้สึกโดดเดี่ยว สับสน ขาดทิศทาง การไม่มีครูหรือชุมชนทำให้เดินทางยาก ต้องหาการสนับสนุน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติดในความหนี",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Swords กลับหัว = แยกตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวอนาคต คือ 'หาการสนับสนุน'",
+          "advice_th": "หาครู mentor หรือชุมชนตั้งแต่ตอนนี้ ไม่เดินคนเดียวเมื่อยาก",
+          "keywords_th": ["โดดเดี่ยว", "สับสน", "หาการสนับสนุน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์อาจห่างเหินถ้าไม่สื่อสาร",
+          "detailed_interpretation_th": "ในรักอนาคต ระวังความห่างเหินจากคู่ - ใช้เวลาทำงาน หลีกเลี่ยงการคุย ความสัมพันธ์ต้องการการลงทุนเวลาและใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ปิดใจ",
+            "court_cards": "Knight of Cups กลับหัว = ไม่ใส่ใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวอนาคตรัก คือ 'ลงทุนเวลากับคู่'",
+          "advice_th": "ใช้เวลากับคู่อย่างมีคุณภาพ คุย ใส่ใจ ความรักต้องการการดูแล ไม่ใช่การทอดทิ้ง",
+          "keywords_th": ["ห่างเหิน", "ลงทุนเวลา", "สื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อาจตัดสินใจสำคัญในงานคนเดียวจนผิดพลาด",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต ระวังการตัดสินใจสำคัญคนเดียวโดยไม่ปรึกษาใคร - เปลี่ยนงานหุนหัน ลงทุนผิด ปรึกษาผู้รู้ก่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวอนาคตงาน-เงิน คือ 'ปรึกษาก่อนตัดสินใจ'",
+          "advice_th": "ก่อนตัดสินใจสำคัญในงาน ปรึกษา mentor หรือคนเก่งกว่า สองสมองดีกว่าหนึ่ง",
+          "keywords_th": ["ตัดสินใจคนเดียว", "ปรึกษา", "ระวัง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจติดในการคิดมากแต่ไม่ลงมือ",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ระวังการคิดมากแต่ไม่ลงมือ - อ่านธรรมะมาก ฟังครูเยอะ แต่ไม่ปฏิบัติจริง ความรู้ที่ไม่ใช้คือการสะสมขยะ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในการรอ, The Devil = ติดในการคิด",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page of Wands กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวอนาคตจิตวิญญาณ คือ 'ลงมือฝึก'",
+          "advice_th": "ลดการอ่านใหม่ ฝึกปฏิบัติสิ่งที่รู้แล้ว 1 อย่าง 90 วัน ดูผลลัพธ์",
+          "keywords_th": ["คิดมากไม่ทำ", "ลงมือ", "ปฏิบัติ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อาจละเลยสุขภาพในช่วงปลีกตัว",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ระวังการละเลยตัวเอง - กินไม่ดี นอนผิดเวลา ไม่ไปตรวจสุขภาพ การปลีกตัวไม่ควรหมายถึงการละเลย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ละเลย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวอนาคตสุขภาพ คือ 'อย่าละเลย'",
+          "advice_th": "แม้จะปลีกตัว ตรวจสุขภาพประจำปี กินดี นอนพอ ออกกำลังกาย ดูแลตัวเอง",
+          "keywords_th": ["ละเลย", "ดูแลตัว", "พื้นฐาน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องการบรรลุปัญญาภายในและเข้าใจความจริงของชีวิต",
+          "detailed_interpretation_th": "นักบวชหัวตั้งในเป้าหมาย สะท้อนความปรารถนา - เข้าใจชีวิต บรรลุปัญญา รู้คำตอบของคำถามใหญ่ คุณต้องการเป็นผู้รู้ที่แท้",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The World = บรรลุ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชเป้าหมาย คือ 'บรรลุปัญญา'",
+          "advice_th": "ฝึกตัวเองด้วยวินัย - สมาธิ ศึกษา จด journal คุณจะค้นพบสิ่งที่หา",
+          "keywords_th": ["ปัญญา", "บรรลุ", "ความจริง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการคู่ที่เข้าใจคุณในระดับลึก",
+          "detailed_interpretation_th": "เป้าหมายในรักคือคู่ที่เข้าใจคุณในระดับจิตวิญญาณ ไม่ใช่แค่ผิวเผิน ทั้งคู่เป็น 'soul mate' ที่เดินทางทางจิตวิญญาณด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The High Priestess = เข้าใจลึก",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate, King of Cups = ปัญญาทางใจ",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชเป้าหมายรัก คือ 'soul mate ลึก'",
+          "advice_th": "หาคู่ที่สนใจการเติบโตทางจิตวิญญาณคล้ายกัน รักที่ลึกต้องการความเข้าใจที่ลึก",
+          "keywords_th": ["soul mate", "เข้าใจลึก", "จิตวิญญาณ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการอาชีพที่เป็นครูหรือที่ปรึกษา",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายของคุณคืออาชีพที่ใช้ปัญญา - ครู ที่ปรึกษา นักเขียน นักวิจัย โค้ช คุณอยากแบ่งปันสิ่งที่เรียนรู้",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ที่ปรึกษา",
+            "swords": "King of Swords = ครู",
+            "pentacles": "King of Pentacles = ผู้รู้",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชเป้าหมายงาน-เงิน คือ 'ครู/ที่ปรึกษา'",
+          "advice_th": "พัฒนาทักษะการสื่อสารและการสอน คุณมีความรู้ลึก แบ่งปันได้",
+          "keywords_th": ["ครู", "ที่ปรึกษา", "แบ่งปัน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการบรรลุปัญญาและรู้แจ้ง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายคือการบรรลุปัญญาที่แท้ ไม่ใช่แค่อ่านธรรมะ แต่เข้าใจในระดับเซลล์ คุณต้องการเป็นผู้ที่รู้แจ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาลึก, The Star = บรรลุ, The World = สมบูรณ์",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชเป้าหมายจิตวิญญาณ คือ 'รู้แจ้ง'",
+          "advice_th": "ฝึกปฏิบัติทุกวัน ความรู้แจ้งสร้างจากการฝึก ไม่ใช่จากการอ่าน",
+          "keywords_th": ["รู้แจ้ง", "ปัญญา", "ฝึก"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการสมดุลทางสุขภาพแบบ holistic",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพคือ holistic health - กายแข็งแรง จิตสงบ อารมณ์มั่นคง ความสัมพันธ์ดี ครบทุกมิติ ไม่ใช่แค่ฟิตเนส",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแลครบ",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชเป้าหมายสุขภาพ คือ 'holistic'",
+          "advice_th": "ดูแลทุกมิติ - กาย ใจ อารมณ์ ความสัมพันธ์ จิตวิญญาณ ไม่เน้นด้านใดเดียว",
+          "keywords_th": ["holistic", "สมดุล", "ครบทุกมิติ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ต้องการแยกจากโลกเพราะกลัวความเจ็บปวด",
+          "detailed_interpretation_th": "นักบวชกลับหัวในเป้าหมาย บ่งบอกว่าความต้องการปลีกตัวอาจมาจากความกลัว ต้องการหลบหนีจากคน ปัญหา ความสัมพันธ์ การปลีกตัวที่มาจากความกลัวไม่ใช่ปัญญา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการหนี, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ปิดใจ",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวเป้าหมาย คือ 'ตรวจสอบแรงจูงใจ'",
+          "advice_th": "ถามตัวเอง - ต้องการปลีกตัวเพราะอยากเติบโตหรือเพราะกลัว? คำตอบจริงคือเข็มทิศ",
+          "keywords_th": ["หลีกเลี่ยง", "กลัว", "ตรวจสอบ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อยากอยู่คนเดียวเพื่อหลีกเลี่ยงความเจ็บปวดในรัก",
+          "detailed_interpretation_th": "เป้าหมายในรักอาจเป็นการอยู่คนเดียวเพราะกลัวเจ็บ ไม่ใช่เพราะต้องการ ความกลัวขังคุณจากความรัก ต้องรักษาบาดแผล",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Devil = ติดในความเจ็บ",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ, Three of Swords = แผลใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ปิดใจ",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวเป้าหมายรัก คือ 'รักษาบาดแผล'",
+          "advice_th": "การอยู่คนเดียวเพราะเลือก vs เพราะกลัว ต่างกัน รักษาบาดแผลก่อน เปิดใจรับรัก",
+          "keywords_th": ["กลัวรัก", "บาดแผล", "เปิดใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อยากออกจากระบบเพื่อหลีกเลี่ยงความรับผิดชอบ",
+          "detailed_interpretation_th": "ในงาน-เงิน อาจอยาก 'free' ตัวเอง ออกจากงานประจำ เป็น nomad แต่จริงๆ เป็นการหลีกเลี่ยงความรับผิดชอบ การเงิน ความสัมพันธ์ในงาน ต้องตรวจสอบ",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มใหม่, The Devil = ติดในการหนี",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวเป้าหมายงาน-เงิน คือ 'อิสรภาพ vs หนี'",
+          "advice_th": "ก่อนออกจากงานเพื่อ 'อิสรภาพ' ถามตัวเอง - กำลังไปหาสิ่งไหนหรือกำลังหนีสิ่งไหน?",
+          "keywords_th": ["หนีงาน", "อิสรภาพปลอม", "ตรวจสอบ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ใช้จิตวิญญาณหลีกเลี่ยงโลกจริง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมาย 'รู้แจ้ง' อาจเป็นการหลีกเลี่ยงโลกจริง การงาน การเงิน ความสัมพันธ์ การ 'ปล่อยวาง' ทุกอย่างคือ spiritual bypassing ไม่ใช่ปัญญา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ไม่จัดการชีวิต",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวเป้าหมายจิตวิญญาณ คือ 'รู้แจ้งในชีวิตจริง'",
+          "advice_th": "ปัญญาที่แท้คือการใช้ในชีวิต - ทำงาน เลี้ยงครอบครัว ดูแลตัวเอง ไม่ใช่หลีกเลี่ยง",
+          "keywords_th": ["spiritual bypassing", "หลีกเลี่ยง", "ในชีวิตจริง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อยากดูแลสุขภาพคนเดียวแบบสุดโต่ง",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายอาจเป็นการดูแลแบบสุดโต่ง - อยู่คนเดียว ไม่กินที่ร้าน ไม่สังสรรค์ ทำให้กลายเป็นการแยกตัวมากกว่าสุขภาพ ต้องสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเข้มงวด, The Hanged Man = ติดในการแยก",
+            "wands": "Wands กลับหัว = ลด",
+            "cups": "Four of Cups = แยกตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในกฎ",
+            "court_cards": "Knight of Swords = วินัยเกิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวเป้าหมายสุขภาพ คือ 'สมดุลกับสังคม'",
+          "advice_th": "ใช้ชีวิตในสังคม กินกับเพื่อนได้ แค่เลือกที่ดี สุขภาพไม่ต้องตัดความสุขทางสังคม",
+          "keywords_th": ["สุดโต่ง", "แยกตัว", "สมดุล"],
+          "intensity_level": 2,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ปัญญาภายในและความสามารถคิดเชิงลึกฝังในแกน",
+          "detailed_interpretation_th": "นักบวชหัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีปัญญาลึก ความสามารถคิดเชิงลึก เข้าใจสิ่งซับซ้อน คุณเป็นนักคิดและนักปฏิบัติ พลังนี้เป็นพรสวรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Hermit เสริม",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชรากฐาน คือ 'ปัญญาในแกน'",
+          "advice_th": "ใช้ปัญญาที่ฝังในตัว - คิดเชิงลึก ไตร่ตรอง แบ่งปัน คุณรู้มากกว่าที่คิด",
+          "keywords_th": ["ปัญญา", "คิดลึก", "พรสวรรค์"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสามารถเข้าใจคู่ในระดับลึกฝังในตัว",
+          "detailed_interpretation_th": "ในรัก รากฐานของคุณคือการเข้าใจคนในระดับลึก คุณสัมผัสได้ว่าคู่รู้สึกอย่างไรโดยไม่ต้องพูด ความสามารถนี้คือพรสวรรค์ในรัก",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Lovers = รัก",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = นักรักลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชรากฐานรัก คือ 'เข้าใจลึก'",
+          "advice_th": "ใช้ความสามารถเข้าใจคู่ในความสัมพันธ์ปัจจุบัน แต่อย่าลืมตัวเองด้วย",
+          "keywords_th": ["เข้าใจคู่", "ปัญญารัก", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทักษะการวิเคราะห์และคิดเชิงลึกเป็นรากความสำเร็จ",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือทักษะวิเคราะห์ คิดเชิงลึก แก้ปัญหา คุณเป็นคนที่บริษัทพึ่งพาในเรื่องยาก ใช้พลังนี้สร้างอาชีพ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Hermit เสริม",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชรากฐานงาน-เงิน คือ 'วิเคราะห์ลึก'",
+          "advice_th": "ใช้ทักษะวิเคราะห์ในงาน เป็นผู้แก้ปัญหายาก ค่าตัวคุณสูงสำหรับความสามารถนี้",
+          "keywords_th": ["วิเคราะห์", "แก้ปัญหา", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ใจใฝ่รู้และความสามารถเรียนรู้ลึกฝังในแกน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือใจใฝ่รู้ ความสามารถเรียนรู้ลึก คุณเกิดมาเพื่อค้นหา ปัญญานี้ฝังในตัว ใช้ในการเดินทางจิตวิญญาณ",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Magician = ทักษะ",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชรากฐานจิตวิญญาณ คือ 'นักเรียนตลอดชีวิต'",
+          "advice_th": "ใช้ใจใฝ่รู้ในการเติบโต อ่าน ศึกษา ฝึก ปฏิบัติ เส้นทางนี้เหมาะกับคุณ",
+          "keywords_th": ["ใฝ่รู้", "เรียนลึก", "พรสวรรค์"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ความสามารถฟังร่างกายและฟื้นฟูตัวเองดี",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือความสามารถฟังร่างกาย รู้ว่าร่างกายต้องการอะไร ฟื้นฟูได้ดีเพราะใส่ใจ ความสามารถนี้คือพรสวรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The High Priestess = ฟังร่างกาย",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Queen of Cups = ฟังอารมณ์",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแลตัว",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชรากฐานสุขภาพ คือ 'ฟังร่างกาย'",
+          "advice_th": "ใช้ความสามารถฟังร่างกาย ทดลองและสังเกตว่าอะไรเหมาะกับคุณ",
+          "keywords_th": ["ฟังร่างกาย", "ฟื้นฟูเร็ว", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "นิสัยแยกตัวและความเงียบเป็นพื้นฐานชีวิต",
+          "detailed_interpretation_th": "นักบวชกลับหัวในรากฐาน บ่งบอกถึงนิสัยแยกตัวฝังลึก คุณคุ้นกับการอยู่คนเดียวจนเป็นเรื่องปกติ การเชื่อมต่อกับคนยาก ต้องเรียนรู้",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = แยกตัว, The Devil = ติดในความเหงา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวรากฐาน คือ 'นิสัยแยกตัว'",
+          "advice_th": "ค่อยๆ เปิดตัวกับคน ฝึกการเชื่อมต่อในเรื่องเล็ก ไม่ต้องเปลี่ยนทันที",
+          "keywords_th": ["แยกตัว", "นิสัย", "เปิดตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวเปิดใจฝังลึก",
+          "detailed_interpretation_th": "ในรัก รากฐานคือความกลัวเปิดใจ อาจเพราะบาดแผลในวัยเด็ก ทำให้เป็นนิสัยปกป้องตัวเอง ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Devil = ติดในการป้องกัน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกันใจ",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวรากฐานรัก คือ 'กลัวเปิดใจ'",
+          "advice_th": "ทำงานกับบาดแผลในวัยเด็ก therapy ช่วยได้ ความรักต้องการการเปิดใจ ฝึกค่อยๆ",
+          "keywords_th": ["กลัวเปิดใจ", "บาดแผล", "ฝึก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ขาดทักษะการทำงานเป็นทีม",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือนิสัยทำงานคนเดียว ขาดทักษะทีม ทำให้พลาดโอกาสที่ต้องการ collaboration ต้องฝึก",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit เสริม, The Hanged Man = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Three of Cups กลับหัว = ขาดเพื่อน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Three of Pentacles กลับหัว = ขาดทีม",
+            "court_cards": "King of Wands กลับหัว = ผู้นำคนเดียว"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวรากฐานงาน-เงิน คือ 'ฝึกทำงานเป็นทีม'",
+          "advice_th": "ฝึกทักษะ collaboration - communication การฟัง การประสานงาน คนเดียวไปได้ไกล ทีมไปได้ไกลกว่า",
+          "keywords_th": ["ทำงานคนเดียว", "ฝึกทีม", "collaboration"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในการรู้แต่ไม่ปฏิบัติฝังลึก",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือนิสัยอ่านมากแต่ไม่ปฏิบัติ ความรู้กลายเป็นการสะสมโดยไม่เปลี่ยนชีวิต ต้องเปลี่ยนนิสัย",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในการบริโภค",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวรากฐานจิตวิญญาณ คือ 'อ่านน้อยลง ทำมากขึ้น'",
+          "advice_th": "เปลี่ยนนิสัย - 80% เวลาฝึกปฏิบัติ 20% อ่าน ความเปลี่ยนแปลงมาจากการทำ",
+          "keywords_th": ["อ่านแต่ไม่ทำ", "นิสัยเก่า", "เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "นิสัยเก็บความเครียดในตัวจนเป็นโรคจิตและกาย",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือการเก็บความเครียดในตัว ไม่ระบาย ไม่ขอความช่วยเหลือ ส่งผลต่อร่างกายระยะยาว - ปวดหัว ปวดท้อง นอนไม่หลับ ต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, The Moon = บาดแผลซ่อน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ขาดดูแล",
+            "court_cards": "Queen of Pentacles กลับหัว = ไม่ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวรากฐานสุขภาพ คือ 'ระบายความเครียด'",
+          "advice_th": "ฝึกระบายความเครียด - คุยกับเพื่อน therapy เขียน journal ความเครียดที่ไม่ระบายทำลายร่างกาย",
+          "keywords_th": ["เก็บความเครียด", "ระบาย", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ใช้เวลาคนเดียวคิด - คำตอบอยู่ภายใน",
+          "detailed_interpretation_th": "คำแนะนำจากนักบวชหัวตั้ง: ใช้เวลาคนเดียว ปลีกตัวจากเสียงรบกวน คำตอบที่หาไม่ได้อยู่ในข้อมูลภายนอก แต่ในความเงียบภายใน ฝึกสมาธิ จด journal",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ฟังใน, Four of Swords = พัก",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชคำแนะนำ คือ 'หาเวลาเงียบ'",
+          "advice_th": "ใช้เวลา 30 นาทีต่อวันในความเงียบ - สมาธิ เดิน เขียน คำตอบจะปรากฏ",
+          "keywords_th": ["เงียบ", "สมาธิ", "คำตอบใน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ฟังหัวใจมากกว่าฟังคำแนะนำคนอื่น",
+          "detailed_interpretation_th": "คำแนะนำในรัก: หยุดถามคนรอบข้างว่าควรทำอะไร ฟังหัวใจตัวเอง คุณรู้คำตอบ ใช้เวลาคนเดียวเพื่อชัดเจน",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ฟังใจ, The Lovers = ตัดสินใจ",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Knight of Pentacles = อดทน",
+            "court_cards": "Queen of Cups = ปัญญาในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชคำแนะนำในรัก คือ 'ฟังใจ'",
+          "advice_th": "นั่งเงียบ ถามใจ - ฉันรู้สึกอย่างไรกับคู่/ความสัมพันธ์นี้? คำตอบแรกที่มาจริงที่สุด",
+          "keywords_th": ["ฟังหัวใจ", "ไม่ถามคนอื่น", "ใจรู้"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ใช้เวลาคิดเชิงกลยุทธ์ ไม่ลงมือตามอารมณ์",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: หยุดทำเหมือนเครื่องจักร ใช้เวลาคิดเชิงกลยุทธ์ - ที่ใหญ่กว่างานประจำวัน 5 ปี 10 ปี อยากเป็นใคร? วางแผนย้อนกลับมา",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = พิจารณา, Two of Wands = วางแผน",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "King of Swords = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชคำแนะนำงาน-เงิน คือ 'คิดเชิงกลยุทธ์'",
+          "advice_th": "หา 2-4 ชั่วโมงต่อสัปดาห์สำหรับคิดเชิงกลยุทธ์ - ไม่ทำงานเร่งด่วน วางแผนยาว ประเมินทิศทาง",
+          "keywords_th": ["คิดกลยุทธ์", "วางแผน 5 ปี", "ประเมิน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ฝึกสมาธิและการอยู่กับตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ฝึกสมาธิทุกวัน อ่านธรรมะ จด journal การอยู่กับตัวเองในความเงียบคือกุญแจของปัญญา",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = แรงบันดาลใจ",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King of Swords = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชคำแนะนำการเติบโต คือ 'สมาธิทุกวัน'",
+          "advice_th": "เริ่มจาก 10 นาทีต่อวัน สมาธิ ค่อยๆ เพิ่ม ผลลัพธ์มาแน่ในระยะกลาง",
+          "keywords_th": ["สมาธิ", "อยู่กับตัว", "ปัญญา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "พักผ่อนและฟังร่างกายอย่างจริงจัง",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: หยุดและพักผ่อน ฟังร่างกายว่าต้องการอะไร อาจต้องนอนเพิ่ม กินเรียบง่ายขึ้น ออกกำลังกายเบาๆ ความสงบของจิตใจคือยา",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Four of Swords = พัก",
+            "wands": "Wands กลับหัว = ลดกิจกรรม",
+            "cups": "Queen of Cups = ฟังอารมณ์",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Queen of Pentacles = ดูแลตัว",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชคำแนะนำสุขภาพ คือ 'พักและฟัง'",
+          "advice_th": "พักจริงๆ 1 วัน/สัปดาห์ - ไม่ทำงาน ไม่ดูจอ ฟังร่างกาย กิน นอน เคลื่อนไหวเบาๆ",
+          "keywords_th": ["พักผ่อน", "ฟังร่างกาย", "ความสงบ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ออกจากการแยกตัวและเชื่อมต่อกับคน",
+          "detailed_interpretation_th": "คำแนะนำนักบวชกลับหัว: ถ้าแยกตัวนานเกินไป ออกมา การเชื่อมต่อกับคนคือสิ่งจำเป็น มนุษย์ไม่ได้สร้างมาเพื่ออยู่คนเดียว",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = ความสุข, Three of Cups = เพื่อน",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Three of Cups = สังคม",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Knight of Wands = กล้าเชื่อมต่อ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวคำแนะนำ คือ 'เชื่อมต่อ'",
+          "advice_th": "โทรหาเพื่อนเก่า ออกไปกินข้าวกับครอบครัว เข้ากลุ่ม คนเปลี่ยนคุณ คุณไม่ต้องเปลี่ยนคนเดียว",
+          "keywords_th": ["เชื่อมต่อ", "สังคม", "ออกมา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เปิดใจกับคู่และอย่ารักษาระยะ",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ถ้ารักษาระยะจากคู่ ออกมา การเปิดใจคือพลัง การปกป้องตัวเองมากเกินไปทำลายความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Ace of Cups = เปิดใจ",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Cups = ตามใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวคำแนะนำในรัก คือ 'เปิดใจ'",
+          "advice_th": "บอกความรู้สึกจริง ใช้เวลากับคู่ แสดงความรัก การลงทุนเวลาในความสัมพันธ์ให้ผล",
+          "keywords_th": ["เปิดใจ", "ไม่รักษาระยะ", "ลงทุนรัก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เข้าสู่วงการและสร้างเครือข่ายอีก",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ออกจากการแยกตัว เข้า networking events อัพเดททักษะ พบคนในวงการ โอกาสมาจากการรู้จัก",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Sun = สำเร็จ",
+            "wands": "Three of Wands = ขยาย",
+            "cups": "Three of Cups = เพื่อนร่วมงาน",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวคำแนะนำงาน-เงิน คือ 'กลับเข้าวงการ'",
+          "advice_th": "เข้า event ในวงการ อัพเดท LinkedIn ติดต่อ mentor เก่า โอกาสรอคุณอยู่ในเครือข่าย",
+          "keywords_th": ["networking", "วงการ", "เครือข่าย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ลงมือปฏิบัติ ไม่ใช่แค่อ่าน",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: หยุดสะสมความรู้ ลงมือทำ ความรู้ที่ไม่ปฏิบัติคือการเสียเวลา เลือกหนึ่งอย่างและฝึก 90 วัน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Chariot = พลัง",
+            "wands": "Knight of Wands = ลงมือ",
+            "cups": "Ace of Cups = ปฏิบัติ",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Knight ทุกชุด = ลงมือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวคำแนะนำการเติบโต คือ 'ลงมือ'",
+          "advice_th": "เลือกหนึ่งทักษะที่อ่านมามากแต่ไม่ทำ ฝึก 90 วัน ดูผลลัพธ์ การปฏิบัติคือกุญแจ",
+          "keywords_th": ["ลงมือ", "ปฏิบัติ", "90 วัน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ออกจากความสันโดษและเข้าสู่กิจกรรม",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ออกจากการแยกตัว เข้ากลุ่มออกกำลังกาย ทำกิจกรรมร่วมกับคน สังคมคือยา ความสันโดษเกินไปทำลายสุขภาพจิต",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, Three of Cups = สังคม",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Three of Cups = เพื่อน",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Knight of Pentacles = ออกกำลังกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวคำแนะนำสุขภาพ คือ 'สังคมคือยา'",
+          "advice_th": "เข้ากลุ่มโยคะ ออกกำลังกาย ปั่นจักรยาน การมีเพื่อนสุขภาพทำให้สม่ำเสมอ",
+          "keywords_th": ["สังคม", "กลุ่มสุขภาพ", "เพื่อน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ครูหรือ mentor ที่ปัญญาในชีวิตช่วยนำทาง",
+          "detailed_interpretation_th": "นักบวชหัวตั้งในภายนอก บ่งบอกว่ามีครูหรือผู้รู้ในชีวิต - mentor ที่ปรึกษา ครูสมาธิ ผู้สูงอายุ ที่จะให้ปัญญาและคำแนะนำที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Hermit เสริม",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ครู",
+            "pentacles": "King of Pentacles = mentor",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชภายนอก คือ 'ครูในชีวิต'",
+          "advice_th": "ใกล้ชิดกับครูหรือ mentor ฟังคำแนะนำ ปัญญาของพวกเขาคือสมบัติ",
+          "keywords_th": ["ครู", "mentor", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ที่ปรึกษาในความรักที่ฉลาด",
+          "detailed_interpretation_th": "ในรัก มีคนรอบข้างที่ให้คำปรึกษาดี - เพื่อนสนิทที่ฉลาด แม่ที่เข้าใจ therapist ที่ดี ใช้พวกเขาเป็นเครื่องสะท้อนของชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ครอบครัว, The Hierophant = ครู",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ที่ปรึกษารัก",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชภายนอกรัก คือ 'ที่ปรึกษาในชีวิต'",
+          "advice_th": "พูดคุยกับคนไว้ใจเรื่องความสัมพันธ์ ฟังคำแนะนำ แต่ตัดสินใจเอง",
+          "keywords_th": ["ที่ปรึกษารัก", "ฟัง", "ตัดสินใจเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "mentor ในงานที่ช่วยให้ก้าวหน้า",
+          "detailed_interpretation_th": "ในงาน-เงิน มี mentor ที่ปรึกษา หัวหน้าที่ดี ที่ปรึกษาทางการเงิน ที่จะช่วยให้คุณก้าวหน้า ลงทุนความสัมพันธ์กับพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Emperor = ผู้นำ",
+            "wands": "King of Wands = mentor",
+            "cups": "King of Cups = หัวหน้าดี",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "King of Pentacles = ผู้รู้การเงิน",
+            "court_cards": "King ทุกชุด = mentor"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชภายนอกงาน-เงิน คือ 'mentor ช่วย'",
+          "advice_th": "ค้นหา mentor ในวงการ ลงทุน coaching คนเก่งกว่าจะเปิดประตูที่คุณไม่เห็น",
+          "keywords_th": ["mentor", "ที่ปรึกษา", "ก้าวหน้า"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ครูทางจิตวิญญาณหรือชุมชนที่ลึกซึ้ง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ มีครูที่ใช่ในชีวิต - ครูสมาธิ พระ ปราชญ์ หรือชุมชนจิตวิญญาณ ลงทุนเวลาเรียนกับพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The High Priestess = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชภายนอกจิตวิญญาณ คือ 'ครูจิตวิญญาณ'",
+          "advice_th": "หาครูที่ไว้ใจ เข้าชุมชน ลงทุน retreat การเรียนรู้ทางจิตวิญญาณต้องการคุณภาพ",
+          "keywords_th": ["ครูจิตวิญญาณ", "ชุมชน", "retreat"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมอหรือ healer ที่ฉลาดและเข้าใจ",
+          "detailed_interpretation_th": "ในสุขภาพ มีหมอประจำตัว therapist healer หรือนักโภชนาการที่ฉลาดและเข้าใจคุณ ลงทุนกับพวกเขาคุ้มค่า",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Hierophant = ครู",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = healer",
+            "swords": "King of Swords = หมอฉลาด",
+            "pentacles": "King of Pentacles = ผู้รู้สุขภาพ",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชภายนอกสุขภาพ คือ 'หมอประจำที่ดี'",
+          "advice_th": "หาหมอที่ติดตามได้ระยะยาว ลงทุนกับ holistic practitioner การมีทีมสุขภาพดี",
+          "keywords_th": ["หมอที่ดี", "ทีมสุขภาพ", "ติดตาม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ขาดครูที่ดีหรือคนรอบข้างไม่เข้าใจ",
+          "detailed_interpretation_th": "นักบวชกลับหัวในภายนอก เตือนว่าไม่มีครูที่ดีในชีวิต หรือคนรอบข้างไม่เข้าใจการเดินทางของคุณ ต้องหาครูใหม่หรือชุมชนใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit เสริม, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวภายนอก คือ 'หาครูใหม่'",
+          "advice_th": "ค้นหาครูที่ใช่ - online community หนังสือ podcast ครูจริงไม่จำเป็นต้องอยู่ใกล้ตัว",
+          "keywords_th": ["ขาดครู", "หาใหม่", "community"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างให้คำแนะนำผิดในความรัก",
+          "detailed_interpretation_th": "ในรัก ระวังคำแนะนำที่ผิดจากคนรอบข้าง - เพื่อนที่หวังร้าย ครอบครัวที่ไม่เข้าใจ social media ที่ทำให้สับสน ฟังเฉพาะคนไว้ใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = อิทธิพลผิด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups กลับหัว = เพื่อนทรยศ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Four of Pentacles = ฟังเงิน",
+            "court_cards": "Queen of Swords กลับหัว = คำแนะนำผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวภายนอกรัก คือ 'เลือกคนฟัง'",
+          "advice_th": "ฟังคำแนะนำจากคนที่มีความสัมพันธ์ที่ดี ไม่ใช่จากคนที่ขมขื่นหรือกำลังหย่า",
+          "keywords_th": ["คำแนะนำผิด", "เลือกฟัง", "คนไว้ใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ที่ปรึกษาในงานที่ไม่เก่งหรือ network ไม่ดี",
+          "detailed_interpretation_th": "ในงาน-เงิน ระวังที่ปรึกษาที่ไม่เก่ง coach ที่หลอกลวง หรืออยู่ใน network ที่ไม่ดี ตรวจสอบประวัติก่อนเชื่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Seven of Cups = ภาพลวง",
+            "swords": "Seven of Swords = ถูกหลอก",
+            "pentacles": "Five of Pentacles = เสียเงินกับครู",
+            "court_cards": "King of Pentacles กลับหัว = ที่ปรึกษาไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวภายนอกงาน-เงิน คือ 'ตรวจสอบครู'",
+          "advice_th": "ก่อนลงทุน coach ดู credential ผลลัพธ์ที่พิสูจน์แล้ว ไม่หลงตามคำพูดสวยหรู",
+          "keywords_th": ["ครูปลอม", "ตรวจสอบ", "ไม่หลง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "guru ปลอมหรือกลุ่มที่เป็นลัทธิ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ระวัง guru ปลอม กลุ่มที่เป็นลัทธิ ขอเงิน ขอความภักดี ครูที่แท้ไม่จำเป็นต้องเรียกเงินมาก ไม่กลัวคำถาม",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ลัทธิ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = พลังถูกใช้",
+            "cups": "Seven of Cups = ฝันลวง",
+            "swords": "Seven of Swords = หลอก",
+            "pentacles": "Five of Pentacles = เสียเงิน",
+            "court_cards": "King of Wands กลับหัว = guru ปลอม"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวภายนอกจิตวิญญาณ คือ 'ระวังลัทธิ'",
+          "advice_th": "ก่อนเชื่อ guru หรือเข้ากลุ่ม ดูประวัติ คุยกับคนที่เคยอยู่ในกลุ่ม ครูจริงเปิดเผยและไม่กลัวคำถาม",
+          "keywords_th": ["guru ปลอม", "ลัทธิ", "ระวัง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมอที่ไม่ใส่ใจหรือผู้รักษาทางเลือกที่ไม่น่าเชื่อถือ",
+          "detailed_interpretation_th": "ในสุขภาพ ระวังหมอที่ไม่ฟัง healer ที่ขายของไม่มีหลักฐาน คนที่บอกว่า 'รักษาทุกโรค' หาผู้เชี่ยวชาญที่มีคุณภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = หลอกลวง, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = เร่งรีบ",
+            "cups": "Seven of Cups = ภาพลวง",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = เสียเงิน",
+            "court_cards": "King of Pentacles กลับหัว = หมอไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวภายนอกสุขภาพ คือ 'second opinion'",
+          "advice_th": "ก่อนรักษาแพง ตรวจสอบหลักฐาน หา second opinion อย่าเชื่อเฉพาะคำพูด",
+          "keywords_th": ["หมอไม่ดี", "ตรวจสอบ", "second opinion"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes",
+      "position_name_th": "ความหวัง",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังบรรลุปัญญาและความสงบภายใน",
+          "detailed_interpretation_th": "นักบวชหัวตั้งในความหวัง สะท้อนความปรารถนา - บรรลุปัญญา ความสงบ ความเข้าใจชีวิต คุณต้องการเป็นผู้ที่รู้คำตอบ ไม่ใช่ผู้ที่หาคำตอบตลอด",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The World = บรรลุ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชความหวัง คือ 'ปัญญาและความสงบ'",
+          "advice_th": "เก็บความหวังนี้ ฝึกตัวเองทุกวัน ปัญญาสร้างจากการฝึก ไม่ใช่จากการอยากได้",
+          "keywords_th": ["ปัญญา", "ความสงบ", "บรรลุ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังคู่ที่เข้าใจคุณในระดับลึกซึ้ง",
+          "detailed_interpretation_th": "ในรัก ความหวังคือคู่ที่เข้าใจในระดับจิตวิญญาณ - soul mate ที่ไม่ต้องพูดเยอะก็เข้าใจกัน เดินทางทางจิตวิญญาณด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The High Priestess = เข้าใจ",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชความหวังรัก คือ 'soul mate เข้าใจ'",
+          "advice_th": "พัฒนาตัวเองทางจิตวิญญาณ คุณจะดึงดูดคู่ที่อยู่ในเส้นทางคล้ายกัน",
+          "keywords_th": ["soul mate", "เข้าใจลึก", "จิตวิญญาณ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังอาชีพที่ใช้ปัญญาและเป็นที่ปรึกษา",
+          "detailed_interpretation_th": "ในงาน-เงิน ความหวังคืออาชีพที่ใช้ปัญญา - ครู ที่ปรึกษา นักเขียน coach ความรู้ที่สั่งสมจะกลายเป็นทรัพยากร",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ที่ปรึกษา",
+            "swords": "King of Swords = ครู",
+            "pentacles": "King of Pentacles = expert",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชความหวังงาน-เงิน คือ 'อาชีพปัญญา'",
+          "advice_th": "พัฒนาทักษะการสื่อสาร การสอน คุณมีความรู้ลึก เปิดช่องทางแบ่งปัน",
+          "keywords_th": ["อาชีพปัญญา", "ครู", "ที่ปรึกษา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังรู้แจ้งและเข้าใจชีวิต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความหวังคือการรู้แจ้ง เข้าใจชีวิตในมิติที่ลึก ไม่ใช่แค่อ่านหรือเรียน แต่เข้าใจในระดับเซลล์",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาลึก, The Star = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชความหวังจิตวิญญาณ คือ 'รู้แจ้ง'",
+          "advice_th": "ฝึกปฏิบัติทุกวัน การรู้แจ้งไม่ใช่จุดหมาย แต่เป็นการเดินทาง",
+          "keywords_th": ["รู้แจ้ง", "เข้าใจชีวิต", "บรรลุ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพที่สมดุลและสงบทั้งกายและใจ",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือ holistic health - กายแข็งแรง จิตสงบ ความสัมพันธ์ดี ครบทุกมิติ ความสมดุลเป็นเป้าหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชความหวังสุขภาพ คือ 'สมดุลทั้งหมด'",
+          "advice_th": "ดูแลทุกมิติของสุขภาพ - กาย ใจ จิตวิญญาณ ความสัมพันธ์ ไม่เน้นด้านใดเดียว",
+          "keywords_th": ["holistic", "สมดุล", "สงบ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวที่จะอยู่คนเดียวหรือเผชิญตัวเอง",
+          "detailed_interpretation_th": "นักบวชกลับหัวในความหวัง บ่งบอกถึงความกลัว - กลัวอยู่คนเดียว กลัวเงียบ กลัวเผชิญตัวเอง ทำให้หลีกเลี่ยงการคิดเชิงลึก ต้องเผชิญหน้า",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = กลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวความหวัง คือ 'เผชิญตัวเอง'",
+          "advice_th": "ฝึกอยู่คนเดียวในความเงียบ - เริ่ม 10 นาทีต่อวัน ค่อยๆ ขยาย เผชิญตัวเองคือพลัง",
+          "keywords_th": ["กลัวเงียบ", "เผชิญตัว", "ฝึก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวอยู่คนเดียวจนรีบเข้าสู่ความสัมพันธ์",
+          "detailed_interpretation_th": "ในรัก ความกลัวอยู่คนเดียวทำให้รีบเข้าความสัมพันธ์ คบใครก็ได้ จะไม่ดีในระยะยาว ต้องเรียนรู้อยู่กับตัวเองก่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Devil = ติดในความเหงา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ตามอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวความหวังรัก คือ 'อยู่กับตัวก่อน'",
+          "advice_th": "ใช้ช่วงโสดเรียนรู้ตัวเอง ไม่รีบหาคู่ คนที่ใช่จะมาเมื่อคุณพร้อม",
+          "keywords_th": ["กลัวเหงา", "รีบรัก", "อยู่กับตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ไม่กล้าทำอาชีพที่ใช้ปัญญาเพราะคิดว่าไม่เก่งพอ",
+          "detailed_interpretation_th": "ในงาน-เงิน imposter syndrome - ไม่กล้าเป็นครู ที่ปรึกษา coach เพราะคิดว่าตัวเองไม่เก่งพอ ความจริงคุณรู้พอแล้ว",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = imposter"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวความหวังงาน-เงิน คือ 'คุณรู้พอแล้ว'",
+          "advice_th": "เริ่มแบ่งปันสิ่งที่รู้กับคนที่อยู่ต่ำกว่าคุณ 1-2 ขั้น คุณคือครูของพวกเขาได้",
+          "keywords_th": ["imposter syndrome", "ไม่กล้า", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่เชื่อว่าจะบรรลุปัญญาได้",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความเชื่อ 'ฉันไม่ใช่คนแบบนั้น' 'การรู้แจ้งสำหรับคนอื่น' ขัดขวางการเติบโต ทุกคนสามารถบรรลุได้ในระดับของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวความหวังจิตวิญญาณ คือ 'ทุกคนบรรลุได้'",
+          "advice_th": "เริ่มฝึกแม้ยังไม่เชื่อ - 5 นาทีสมาธิทุกวัน การฝึกสร้างความเชื่อมั่น",
+          "keywords_th": ["ไม่เชื่อว่าได้", "ทุกคนได้", "เริ่ม"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ไม่เชื่อว่าจะมีสุขภาพสมดุลได้",
+          "detailed_interpretation_th": "ในสุขภาพ ความเชื่อ 'ฉันแก่เกินไป' 'ชีวิตยุ่งเกินไป' ขัดขวางการเริ่ม ทุกคนสามารถมีสุขภาพดีได้ในระดับของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ลวงตา, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวความหวังสุขภาพ คือ 'เริ่มได้ทุกวัย'",
+          "advice_th": "เริ่มเล็ก - 10 นาทีเดินต่อวัน 1 แก้วน้ำเพิ่ม การเริ่มเล็กสร้างนิสัยใหญ่",
+          "keywords_th": ["ไม่เชื่อ", "เริ่มได้", "ทุกวัย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือบรรลุปัญญาและเป็นที่พึ่งของคนอื่น",
+          "detailed_interpretation_th": "นักบวชหัวตั้งในผลลัพธ์ บ่งบอกว่าถ้าดำเนินต่อ คุณจะกลายเป็นผู้ที่บรรลุปัญญา เป็นที่พึ่งทางจิตวิญญาณของคนอื่น สามารถนำทางและให้คำปรึกษาที่ฉลาด",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The High Priestess = ปัญญา",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = mastery",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชผลลัพธ์ คือ 'บรรลุปัญญา'",
+          "advice_th": "ดำเนินฝึกตัวเองต่อ ผลลัพธ์คือชีวิตที่มีความหมายและช่วยคนอื่นได้",
+          "keywords_th": ["ปัญญา", "ที่พึ่ง", "บรรลุ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือพบ soul mate ที่เข้าใจระดับลึก",
+          "detailed_interpretation_th": "ในรัก ถ้าดำเนินการพัฒนาตัวเอง ผลลัพธ์คือพบคู่ที่เข้าใจในระดับจิตวิญญาณ ความสัมพันธ์ที่ลึกซึ้งและทั้งคู่เติบโตด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชผลลัพธ์รัก คือ 'soul mate'",
+          "advice_th": "พัฒนาตัวเองต่อ คนที่ใช่จะมาเมื่อคุณพร้อม ความรักที่ลึกซึ้งคุ้มค่ารอ",
+          "keywords_th": ["soul mate", "เข้าใจลึก", "ความรักแท้"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือเป็นที่ปรึกษาหรือครูที่คนเคารพ",
+          "detailed_interpretation_th": "ในงาน-เงิน เส้นทางนี้นำไปสู่การเป็นที่ปรึกษา ครู หรือผู้เชี่ยวชาญที่คนเคารพ ความรู้ที่สั่งสมจะกลายเป็นทรัพยากร ใช้สอนและแบ่งปัน",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The World = บรรลุ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ที่ปรึกษา",
+            "swords": "King of Swords = ครู",
+            "pentacles": "King of Pentacles = expert",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชผลลัพธ์งาน-เงิน คือ 'ครู/expert'",
+          "advice_th": "ดำเนินการเรียนรู้และแบ่งปัน คุณจะกลายเป็นที่ปรึกษาที่คนพึ่งพา",
+          "keywords_th": ["ครู", "expert", "ที่ปรึกษา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการรู้แจ้งและเข้าใจชีวิตในระดับลึก",
+          "detailed_interpretation_th": "เส้นทางจิตวิญญาณนี้นำไปสู่การรู้แจ้ง คุณจะเข้าใจตัวเองและโลกในระดับลึก สามารถเป็นแหล่งของปัญญาให้คนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญา, The Star = บรรลุ, The World = สมบูรณ์",
+            "wands": "King of Wands = ครูผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชผลลัพธ์จิตวิญญาณ คือ 'รู้แจ้ง'",
+          "advice_th": "ดำเนินฝึกปฏิบัติต่อ คุณจะกลายเป็นแหล่งปัญญาให้คนอื่น การเดินทางคุ้มค่า",
+          "keywords_th": ["รู้แจ้ง", "ปัญญา", "แหล่งปัญญา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพสมดุลทั้งกายและใจ",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์คือ holistic health ครบทุกมิติ ร่างกายแข็งแรง จิตสงบ อารมณ์มั่นคง คุณเป็นแบบอย่างเรื่องสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = สมดุล, The Sun = สดใส, The World = สมบูรณ์",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชผลลัพธ์สุขภาพ คือ 'สมดุลครบ'",
+          "advice_th": "ดำเนินการดูแลทั้งกายและใจต่อ ผลลัพธ์คือชีวิตที่สมดุลและยั่งยืน",
+          "keywords_th": ["สมดุล", "holistic", "สงบ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "โดดเดี่ยวและตัดขาดถ้าไม่เปลี่ยน",
+          "detailed_interpretation_th": "นักบวชกลับหัวในผลลัพธ์ เตือนว่าถ้ายังคงแยกตัวเกินไป ผลลัพธ์คือความโดดเดี่ยว ตัดขาดจากคน ความเหงาเรื้อรัง ต้องเชื่อมต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวผลลัพธ์ คือ 'เชื่อมต่อก่อนสาย'",
+          "advice_th": "ออกจากการแยกตัว เชื่อมต่อกับคน การเดินทางทางจิตวิญญาณไม่ได้หมายถึงโดดเดี่ยว",
+          "keywords_th": ["โดดเดี่ยว", "ตัดขาด", "เชื่อมต่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อยู่คนเดียวเรื้อรังเพราะกลัวเปิดใจ",
+          "detailed_interpretation_th": "ในรัก ผลลัพธ์ไม่ดีถ้ายังคงกลัวเปิดใจ - อยู่คนเดียวเรื้อรัง ไม่กล้ารัก พลาดโอกาส ต้องรักษาบาดแผลและเปิดใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัวรัก, The Devil = ติดในความเหงา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ปิดใจ",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวผลลัพธ์รัก คือ 'เปิดใจก่อนสาย'",
+          "advice_th": "ทำงานกับบาดแผล เปิดใจค่อยๆ ความเหงาเรื้อรังไม่ใช่ทางออก",
+          "keywords_th": ["โสดเรื้อรัง", "กลัวรัก", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตกหล่นจากวงการเพราะไม่ networking",
+          "detailed_interpretation_th": "ในงาน-เงิน ผลลัพธ์ไม่ดีถ้ายังคงตัดขาดจากวงการ - ทักษะล้าสมัย พลาดเทรนด์ ไม่ก้าวหน้า โอกาสไปหาคนที่ networking",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในความสบาย",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่เห็นโอกาส",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวผลลัพธ์งาน-เงิน คือ 'กลับเข้าวงการ'",
+          "advice_th": "เริ่ม networking อีก อัพเดททักษะ การเชื่อมต่อกับวงการสำคัญ",
+          "keywords_th": ["ตกหล่น", "ขาด networking", "กลับมา"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในการเรียนแต่ไม่ปฏิบัติ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ผลลัพธ์ไม่ดีถ้ายังคงสะสมความรู้แต่ไม่ปฏิบัติ - อ่านเยอะ ฟังครูเยอะ แต่ชีวิตไม่เปลี่ยน ต้องลงมือทำ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดในการรอ, The Devil = ติดในการบริโภค",
+            "wands": "Wands กลับหัว = ไม่ลงมือ",
+            "cups": "Seven of Cups = ฝัน",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวผลลัพธ์จิตวิญญาณ คือ 'ปฏิบัติ ไม่ใช่อ่าน'",
+          "advice_th": "หยุดอ่านใหม่ ฝึก 1 อย่าง 90 วัน ดูผลลัพธ์จริง ปัญญามาจากการทำ",
+          "keywords_th": ["ติดในการเรียน", "ไม่ปฏิบัติ", "ลงมือ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจิตแย่จากการแยกตัว",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์ไม่ดีถ้ายังคงแยกตัว - ซึมเศร้า กังวล นอนไม่หลับ การมีสังคมและการสนับสนุนคือยาที่สำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สุขภาพจิตแย่, The Devil = ติดในความเหงา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Queen of Cups กลับหัว = ปัญหาทางใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: นักบวชกลับหัวผลลัพธ์สุขภาพ คือ 'สังคมคือยา'",
+          "advice_th": "เชื่อมต่อกับคน หา therapist เข้ากลุ่มสุขภาพ อย่าสู้คนเดียว",
+          "keywords_th": ["ซึมเศร้า", "แยกตัว", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    }
+  }
+}

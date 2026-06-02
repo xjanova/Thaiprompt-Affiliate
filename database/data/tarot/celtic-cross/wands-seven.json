@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "Seven of Wands",
+    "name_th": "เจ็ดไม้เท้า",
+    "number": 7,
+    "type": "minor_arcana",
+    "suit": "wands"
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การยืนหยัดและปกป้องจุดยืน",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในปัจจุบัน บอกว่าคุณกำลังยืนหยัดและปกป้องจุดยืน - เผชิญการท้าทาย ปกป้องสิ่งที่สร้างมา ยืนยันความเชื่อ ไพ่หนุนให้คุณกล้าหาญและไม่ยอมแพ้ง่ายๆ",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Emperor = อำนาจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าปัจจุบัน คือ 'กล้าหาญและไม่ยอมแพ้ง่ายๆ'",
+          "advice_th": "ยืนหยัด - เผชิญการท้าทาย ปกป้องสิ่งที่สร้างมา ยืนยันความเชื่อ",
+          "keywords_th": ["ยืนหยัด", "ปกป้อง", "กล้าหาญ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ปกป้องความรักจากแรงกดดันภายนอก",
+          "detailed_interpretation_th": "ในความรัก เจ็ดไม้เท้าปัจจุบันชี้ว่าคุณกำลังปกป้องความรักจากแรงกดดันภายนอก - การถูกตัดสิน การคัดค้าน การต่อสู้เพื่อความรัก ไพ่หนุนให้คุณยืนหยัดในความรู้สึกของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Strength = พลังใจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าปัจจุบันความรัก คือ 'ยืนหยัดในความรู้สึกของตัวเอง'",
+          "advice_th": "ปกป้องความรัก - แรงกดดันภายนอก ถูกตัดสิน ต่อสู้เพื่อความรัก",
+          "keywords_th": ["ปกป้องรัก", "ยืนหยัด", "สู้"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ปกป้องตำแหน่งและสู้กับคู่แข่ง",
+          "detailed_interpretation_th": "ในการงาน เจ็ดไม้เท้าปัจจุบันบอกว่าคุณกำลังปกป้องตำแหน่งและสู้กับคู่แข่ง - การเผชิญการแข่งขัน การยืนหยัดในผลงาน การปกป้องสิ่งที่สร้างมา ไพ่หนุนให้คุณยืนหยัดในความสามารถ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าปัจจุบันงาน คือ 'ยืนหยัดในความสามารถ'",
+          "advice_th": "ปกป้องตำแหน่ง - เผชิญการแข่งขัน ยืนหยัดในผลงาน ปกป้องสิ่งที่สร้าง",
+          "keywords_th": ["ปกป้องตำแหน่ง", "สู้คู่แข่ง", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ยืนหยัดในค่านิยมและตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต เจ็ดไม้เท้าปัจจุบันชี้ว่าคุณกำลังยืนหยัดในค่านิยมและตัวตน - การไม่ยอมตามกระแส การปกป้องความเชื่อ การกล้าเป็นตัวเอง ไพ่หนุนให้คุณยืนหยัดและสร้างความเข้มแข็งจากภายใน",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Hermit = เดียวดาย",
+            "wands": "Five of Wands = ต่อสู้",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าปัจจุบันเติบโต คือ 'สร้างความเข้มแข็งจากภายใน'",
+          "advice_th": "ยืนหยัดในตัวตน - ไม่ยอมตามกระแส ปกป้องความเชื่อ กล้าเป็นตัวเอง",
+          "keywords_th": ["ยืนหยัดในค่านิยม", "ตัวตน", "เข้มแข็ง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต่อสู้กับความเครียดและรักษาสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ เจ็ดไม้เท้าปัจจุบันบอกว่าคุณกำลังต่อสู้กับความเครียดและรักษาสุขภาพ - การเผชิญความท้าทาย การปกป้องร่างกายจากความเครียด การยืนหยัดในกิจวัตรสุขภาพ ไพ่หนุนให้คุณไม่ยอมแพ้",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าปัจจุบันสุขภาพ คือ 'ไม่ยอมแพ้'",
+          "advice_th": "ต่อสู้กับความเครียด - เผชิญความท้าทาย ปกป้องร่างกาย ยืนหยัดในกิจวัตร",
+          "keywords_th": ["ต่อสู้เครียด", "ปกป้อง", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ยอมแพ้และเลิกต่อสู้",
+          "detailed_interpretation_th": "เจ็ดไม้เท้ากลับหัวในปัจจุบัน บอกว่าคุณกำลังยอมแพ้และเลิกต่อสู้ - การหมดแรง ความรู้สึกไม่อยากสู้ การปล่อยให้คนอื่นกำหนด ไพ่หนุนให้คุณทบทวนว่ายังต้องสู้ต่อหรือถึงเวลาก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ยอมรับ, The Tower = ตก",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Ten of Swords = หมดแรง",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวปัจจุบัน คือ 'ทบทวนว่ายังต้องสู้หรือถึงเวลาก้าวต่อ'",
+          "advice_th": "ทบทวน - หมดแรง ไม่อยากสู้ ปล่อยให้คนอื่นกำหนด หรือถึงเวลาก้าวต่อ",
+          "keywords_th": ["ยอมแพ้", "หมดแรง", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ยอมแพ้ในความรักหรือเลิกต่อสู้",
+          "detailed_interpretation_th": "ในความรัก เจ็ดไม้เท้ากลับหัวชี้ว่าคุณกำลังยอมแพ้หรือเลิกต่อสู้เพื่อความรัก - การหมดแรงในความสัมพันธ์ การไม่อยากปกป้องต่อ การปล่อย ไพ่หนุนให้คุณทบทวนว่าความรักนี้คุ้มค่าที่จะสู้ต่อหรือไม่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ห่างเหิน, The Hanged Man = ยอมรับ",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวปัจจุบันความรัก คือ 'ทบทวนว่าคุ้มค่าที่จะสู้ต่อหรือไม่'",
+          "advice_th": "ทบทวนความรัก - ยอมแพ้ หมดแรง เลิกต่อสู้ คุ้มค่าที่จะสู้ต่อหรือไม่",
+          "keywords_th": ["ยอมแพ้รัก", "หมดแรง", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ยอมแพ้ในงานหรือถูกแซง",
+          "detailed_interpretation_th": "ในการงาน เจ็ดไม้เท้ากลับหัวบอกว่าคุณกำลังยอมแพ้ในงานหรือถูกแซง - การหมดไฟ การไม่อยากแข่งขันต่อ การถูกคู่แข่งแซง ไพ่หนุนให้คุณทบทวนว่าควรสู้ต่อในงานเดิมหรือมองหาสิ่งใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Hanged Man = ยอมรับ",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวปัจจุบันงาน คือ 'ทบทวนว่าควรสู้ต่อหรือมองหาสิ่งใหม่'",
+          "advice_th": "ทบทวนงาน - หมดไฟ ไม่อยากแข่งขัน ถูกคู่แข่งแซง สู้ต่อหรือมองหาสิ่งใหม่",
+          "keywords_th": ["ยอมแพ้งาน", "ถูกแซง", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เลิกยืนหยัดในตัวตนเพื่อให้คนอื่นพอใจ",
+          "detailed_interpretation_th": "ในการเติบโต เจ็ดไม้เท้ากลับหัวเผยว่าคุณกำลังเลิกยืนหยัดในตัวตนเพื่อให้คนอื่นพอใจ - การยอมตามกระแส การไม่กล้าเป็นตัวเอง การปล่อยให้คนอื่นกำหนด ไพ่หนุนให้คุณกลับมายืนหยัดในค่านิยม",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวปัจจุบันเติบโต คือ 'กลับมายืนหยัดในค่านิยม'",
+          "advice_th": "ยืนหยัดในตัวตน - เลิกยืนหยัด ยอมตามกระแส ไม่กล้าเป็นตัวเอง กลับมายืนหยัด",
+          "keywords_th": ["เลิกยืนหยัด", "ยอมตาม", "กลับมา"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมดแรงและสุขภาพแย่ลง",
+          "detailed_interpretation_th": "ในสุขภาพ เจ็ดไม้เท้ากลับหัวบอกว่าคุณหมดแรงและสุขภาพแย่ลง - ความเหนื่อยล้าสะสม ภูมิคุ้มกันอ่อน การไม่ดูแลตัวเอง ไพ่หนุนให้คุณพักผ่อนและฟื้นพลังก่อนกลับมาดูแลสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวปัจจุบันสุขภาพ คือ 'พักผ่อนและฟื้นพลัง'",
+          "advice_th": "พักผ่อนและฟื้นพลัง - หมดแรง สุขภาพแย่ลง พักก่อนกลับมาดูแล",
+          "keywords_th": ["หมดแรง", "สุขภาพแย่", "พักผ่อน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการต้องต่อสู้ปกป้องตำแหน่ง",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือการต้องต่อสู้ปกป้องตำแหน่ง - การเผชิญการท้าทาย การยืนหยัดในจุดยืน การปกป้องสิ่งที่สร้างมา อุปสรรคนี้คือการเรียนรู้ที่จะยืนหยัดและไม่ยอมแพ้",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Emperor = อำนาจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอุปสรรค คือ 'ยืนหยัดและไม่ยอมแพ้'",
+          "advice_th": "ต่อสู้ปกป้องตำแหน่ง - เผชิญการท้าทาย ยืนหยัดในจุดยืน ปกป้องสิ่งที่สร้าง",
+          "keywords_th": ["ต่อสู้", "ปกป้องตำแหน่ง", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือต้องปกป้องความรักจากภายนอก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือต้องปกป้องความรักจากภายนอก - การถูกตัดสิน การคัดค้านจากครอบครัว การถูกแย่งคู่ อุปสรรคนี้คือการยืนหยัดในความสัมพันธ์และปกป้องความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Strength = พลังใจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอุปสรรคความรัก คือ 'ยืนหยัดในความสัมพันธ์'",
+          "advice_th": "ปกป้องความรัก - ถูกตัดสิน คัดค้าน ถูกแย่งคู่ ยืนหยัดในความสัมพันธ์",
+          "keywords_th": ["ปกป้องรัก", "ถูกตัดสิน", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือต้องสู้กับคู่แข่งและรักษาตำแหน่ง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือต้องสู้กับคู่แข่งและรักษาตำแหน่ง - การเผชิญคู่แข่ง การถูกท้าทายในตำแหน่ง การปกป้องผลงาน อุปสรรคนี้คือการเรียนรู้ที่จะยืนหยัดในความสามารถ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอุปสรรคงาน คือ 'ยืนหยัดในความสามารถ'",
+          "advice_th": "สู้คู่แข่ง - เผชิญคู่แข่ง ถูกท้าทายในตำแหน่ง ปกป้องผลงาน",
+          "keywords_th": ["สู้คู่แข่ง", "รักษาตำแหน่ง", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือยืนหยัดในตัวตนแม้เจอแรงกดดัน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือยืนหยัดในตัวตนแม้เจอแรงกดดัน - การไม่ยอมตามกระแส การปกป้องความเชื่อ การกล้าเป็นตัวเองในสังคมที่ตัดสิน อุปสรรคนี้คือการเรียนรู้ที่จะยืนหยัด",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Hermit = เดียวดาย",
+            "wands": "Five of Wands = ต่อสู้",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอุปสรรคเติบโต คือ 'ยืนหยัดในตัวตน'",
+          "advice_th": "ยืนหยัดในตัวตน - ไม่ยอมตามกระแส ปกป้องความเชื่อ กล้าเป็นตัวเอง",
+          "keywords_th": ["ยืนหยัดในตัวตน", "แรงกดดัน", "กล้าเป็นตน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือต่อสู้กับความเครียดและรักษาพลัง",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือต่อสู้กับความเครียดและรักษาพลัง - การเผชิญความท้าทาย การปกป้องร่างกายจากความเครียด การยืนหยัดในกิจวัตรสุขภาพ อุปสรรคนี้คือการเรียนรู้ที่จะไม่ยอมแพ้",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอุปสรรคสุขภาพ คือ 'ไม่ยอมแพ้'",
+          "advice_th": "ต่อสู้กับความเครียด - เผชิญความท้าทาย ปกป้องร่างกาย ยืนหยัดในกิจวัตร",
+          "keywords_th": ["ต่อสู้เครียด", "รักษาพลัง", "ไม่ยอมแพ้"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือยอมแพ้หรือเลิกต่อสู้",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือการยอมแพ้หรือเลิกต่อสู้ - การหมดแรง ความรู้สึกไม่อยากสู้ การปล่อยให้คนอื่นกำหนด ไพ่เตือนว่าระวังการยอมแพ้ก่อนเวลาและทบทวนว่ายังต้องสู้ต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ยอมรับ, The Tower = ตก",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Ten of Swords = หมดแรง",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอุปสรรค คือ 'ระวังยอมแพ้ก่อนเวลา'",
+          "advice_th": "ทบทวนการยอมแพ้ - หมดแรง ไม่อยากสู้ ระวังยอมแพ้ก่อนเวลา",
+          "keywords_th": ["ยอมแพ้", "หมดแรง", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือยอมแพ้ในความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการยอมแพ้ในความรัก - การหมดแรงในความสัมพันธ์ การไม่อยากปกป้องต่อ ความท้อ ไพ่หนุนให้คุณทบทวนว่ายังคุ้มค่าที่จะสู้ต่อหรือถึงเวลาก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ห่างเหิน, The Hanged Man = ยอมรับ",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอุปสรรคความรัก คือ 'ทบทวนว่ายังคุ้มค่าที่จะสู้ต่อ'",
+          "advice_th": "ทบทวนความรัก - ยอมแพ้ในรัก หมดแรง ทบทวนว่ายังคุ้มค่า",
+          "keywords_th": ["ยอมแพ้รัก", "หมดแรง", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือยอมแพ้ในงานและถูกแซง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือการยอมแพ้ในงานและถูกแซง - การหมดไฟ การไม่อยากแข่งขันต่อ การสูญเสียตำแหน่ง ไพ่หนุนให้คุณทบทวนว่าควรสู้ต่อหรือเปลี่ยนทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Hanged Man = ยอมรับ",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอุปสรรคงาน คือ 'ทบทวนว่าควรสู้ต่อหรือเปลี่ยนทาง'",
+          "advice_th": "ทบทวนงาน - ยอมแพ้ ถูกแซง สูญเสียตำแหน่ง สู้ต่อหรือเปลี่ยนทาง",
+          "keywords_th": ["ยอมแพ้งาน", "ถูกแซง", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือเลิกยืนหยัดในตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการเลิกยืนหยัดในตัวตน - การยอมตามกระแส การไม่กล้าเป็นตัวเอง การถูกแรงกดดันบีบ ไพ่หนุนให้คุณกลับมายืนหยัดในค่านิยมและไม่ปล่อยให้สังคมกำหนด",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอุปสรรคเติบโต คือ 'กลับมายืนหยัดในค่านิยม'",
+          "advice_th": "กลับมายืนหยัด - เลิกยืนหยัด ยอมตามกระแส ไม่กล้าเป็นตัวเอง กลับมา",
+          "keywords_th": ["เลิกยืนหยัด", "ยอมตาม", "กลับมา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือหมดแรงและสุขภาพแย่ลง",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือหมดแรงและสุขภาพแย่ลง - ความเหนื่อยล้าสะสม ภูมิคุ้มกันอ่อน การไม่ดูแลตัวเอง ไพ่หนุนให้คุณพักผ่อนและฟื้นพลังก่อนกลับมาดูแลสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอุปสรรคสุขภาพ คือ 'พักผ่อนและฟื้นพลัง'",
+          "advice_th": "พักผ่อน - หมดแรง สุขภาพแย่ลง พักก่อนกลับมาดูแล",
+          "keywords_th": ["หมดแรง", "สุขภาพแย่", "พักผ่อน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยยืนหยัดและสู้ในความท้าทาย",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในอดีต เผยว่าคุณเคยยืนหยัดและสู้ในความท้าทาย - การต่อสู้ที่หล่อหลอม การปกป้องสิ่งที่สำคัญ การไม่ยอมแพ้ ประสบการณ์นี้สร้างความแกร่งและความกล้าที่คุณมีในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Emperor = อำนาจ",
+            "wands": "Five of Wands = ผ่านขัดแย้ง",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอดีต คือ 'การต่อสู้หล่อหลอมความแกร่ง'",
+          "advice_th": "ใช้บทเรียนการต่อสู้ - คุณเคยยืนหยัด ใช้ความแกร่งนี้ในปัจจุบัน",
+          "keywords_th": ["ยืนหยัดเก่า", "ต่อสู้", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยปกป้องความรักจากภายนอก",
+          "detailed_interpretation_th": "ในความรัก เจ็ดไม้เท้าอดีตเผยว่าคุณเคยปกป้องความรักจากภายนอก - การถูกตัดสิน การคัดค้าน การยืนหยัดในความสัมพันธ์ บทเรียนคือคุณรู้ว่าความรักที่แท้ต้องการความกล้า",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Strength = พลังใจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอดีตความรัก คือ 'ความรักแท้ต้องการความกล้า'",
+          "advice_th": "ใช้บทเรียนการปกป้องรัก - คุณเคยยืนหยัดในความสัมพันธ์ ใช้ความกล้านี้ในปัจจุบัน",
+          "keywords_th": ["ปกป้องรักเก่า", "ยืนหยัด", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยสู้กับคู่แข่งและรักษาตำแหน่ง",
+          "detailed_interpretation_th": "ในการงาน เจ็ดไม้เท้าอดีตเผยว่าคุณเคยสู้กับคู่แข่งและรักษาตำแหน่ง - การเผชิญการแข่งขัน การยืนหยัดในผลงาน การปกป้องสิ่งที่สร้างมา ประสบการณ์นี้กลายเป็นความรู้ว่าคุณสามารถยืนหยัดได้",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอดีตงาน คือ 'คุณสามารถยืนหยัดได้'",
+          "advice_th": "ใช้บทเรียนการสู้คู่แข่ง - คุณเคยรักษาตำแหน่ง ใช้ทักษะนี้ในปัจจุบัน",
+          "keywords_th": ["สู้คู่แข่งเก่า", "รักษาตำแหน่ง", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยยืนหยัดในตัวตนแม้เจอแรงกดดัน",
+          "detailed_interpretation_th": "ในการเติบโต เจ็ดไม้เท้าอดีตชี้ว่าคุณเคยยืนหยัดในตัวตนแม้เจอแรงกดดัน - การไม่ยอมตามกระแส การปกป้องค่านิยม การกล้าเป็นตัวเอง ประสบการณ์นี้กลายเป็นรากฐานของความเข้มแข็งที่คุณมี",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Hermit = เดียวดาย",
+            "wands": "Five of Wands = ต่อสู้",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอดีตเติบโต คือ 'ความเข้มแข็งจากการยืนหยัด'",
+          "advice_th": "ใช้บทเรียนการยืนหยัด - คุณเคยกล้าเป็นตัวเอง ใช้ความเข้มแข็งนี้ในปัจจุบัน",
+          "keywords_th": ["ยืนหยัดเก่า", "กล้าเป็นตน", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยต่อสู้กับความเครียดและฟื้นสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ เจ็ดไม้เท้าอดีตเผยว่าคุณเคยต่อสู้กับความเครียดและฟื้นสุขภาพ - การเผชิญความท้าทาย การปกป้องร่างกาย การไม่ยอมแพ้ ประสบการณ์นี้สอนคุณว่าร่างกายมีพลังฟื้นตัวได้",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังกาย, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอดีตสุขภาพ คือ 'ร่างกายมีพลังฟื้นตัว'",
+          "advice_th": "ใช้บทเรียนการฟื้น - คุณเคยต่อสู้และฟื้นสำเร็จ ใช้ความรู้นี้ในปัจจุบัน",
+          "keywords_th": ["ฟื้นสุขภาพเก่า", "ต่อสู้", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยยอมแพ้และเสียดาย",
+          "detailed_interpretation_th": "เจ็ดไม้เท้ากลับหัวในอดีต เผยว่าคุณเคยยอมแพ้และเสียดาย - การไม่สู้ต่อ การปล่อยให้คนอื่นกำหนด ความรู้สึกอ่อนแอ บทเรียนคือคุณรู้ค่าของการยืนหยัดและไม่ยอมแพ้",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ยอมรับ, The Tower = ตก",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวอดีต คือ 'รู้ค่าของการยืนหยัด'",
+          "advice_th": "ใช้บทเรียนการยอมแพ้ - คุณรู้ค่าของการยืนหยัด ใช้ในปัจจุบัน",
+          "keywords_th": ["ยอมแพ้เก่า", "เสียดาย", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยยอมแพ้ในความรักและเสียดาย",
+          "detailed_interpretation_th": "ในความรัก เจ็ดไม้เท้ากลับหัวอดีตเผยว่าคุณเคยยอมแพ้ในความรักและเสียดาย - การไม่สู้เพื่อความสัมพันธ์ การปล่อยคนที่รัก บทเรียนคือคุณรู้ว่าความรักที่แท้ต้องการการสู้เพื่อมัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = พลาด, The Moon = สับสน",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวอดีตความรัก คือ 'รักแท้ต้องการการสู้เพื่อมัน'",
+          "advice_th": "ใช้บทเรียนการยอมแพ้รัก - คุณรู้ค่าของการสู้เพื่อรัก ใช้ในปัจจุบัน",
+          "keywords_th": ["ยอมแพ้รักเก่า", "เสียดาย", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยยอมแพ้ในงานและสูญเสียโอกาส",
+          "detailed_interpretation_th": "ในการงาน เจ็ดไม้เท้ากลับหัวอดีตเผยว่าคุณเคยยอมแพ้ในงานและสูญเสียโอกาส - การหมดไฟ การไม่กล้าสู้ การถูกคู่แข่งแซง บทเรียนคือคุณรู้ค่าของการยืนหยัดและความมุ่งมั่น",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Hanged Man = ยอมรับ",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวอดีตงาน คือ 'รู้ค่าของการยืนหยัดและมุ่งมั่น'",
+          "advice_th": "ใช้บทเรียนการยอมแพ้งาน - คุณรู้ค่าของการมุ่งมั่น ใช้ในปัจจุบัน",
+          "keywords_th": ["ยอมแพ้งานเก่า", "สูญเสีย", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยยอมตามกระแสและไม่กล้าเป็นตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต เจ็ดไม้เท้ากลับหัวอดีตเผยว่าคุณเคยยอมตามกระแสและไม่กล้าเป็นตัวเอง - การไม่ยืนหยัดในค่านิยม การกลัวการตัดสินจากสังคม บทเรียนคือคุณรู้ค่าของการเป็นตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวอดีตเติบโต คือ 'รู้ค่าของการเป็นตัวเอง'",
+          "advice_th": "ใช้บทเรียนการยอมตามกระแส - คุณรู้ค่าของการเป็นตัวเอง ใช้ในปัจจุบัน",
+          "keywords_th": ["ยอมตามเก่า", "ไม่กล้าเป็นตน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยหมดแรงและสุขภาพแย่",
+          "detailed_interpretation_th": "ในสุขภาพ เจ็ดไม้เท้ากลับหัวอดีตเผยว่าคุณเคยหมดแรงและสุขภาพแย่ - ความเหนื่อยล้าสะสม การไม่ดูแลตัวเอง การปล่อยปะ บทเรียนคือคุณรู้ค่าของการพักผ่อนและการดูแลตัวเองอย่างสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวอดีตสุขภาพ คือ 'รู้ค่าของการพักผ่อนและสมดุล'",
+          "advice_th": "ใช้บทเรียนหมดแรง - คุณรู้ค่าของการพักผ่อน ใช้ในปัจจุบัน",
+          "keywords_th": ["หมดแรงเก่า", "สุขภาพแย่", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะต้องยืนหยัดในความท้าทาย",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในอนาคต เตือนว่าอนาคตจะต้องยืนหยัดในความท้าทาย - การเผชิญการต่อต้าน การปกป้องสิ่งที่สำคัญ การต่อสู้เพื่อจุดยืน ไพ่หนุนให้คุณเตรียมพลังและความกล้า",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Emperor = อำนาจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอนาคต คือ 'เตรียมพลังและความกล้า'",
+          "advice_th": "เตรียมยืนหยัด - เผชิญการต่อต้าน ปกป้องสิ่งที่สำคัญ ต่อสู้เพื่อจุดยืน",
+          "keywords_th": ["ยืนหยัดอนาคต", "ความท้าทาย", "เตรียมพลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจต้องเผชิญการคัดค้าน",
+          "detailed_interpretation_th": "ในความรัก เจ็ดไม้เท้าอนาคตเตือนว่าความรักอาจต้องเผชิญการคัดค้าน - การถูกตัดสิน แรงกดดันจากครอบครัว ความท้าทายในความสัมพันธ์ ไพ่หนุนให้คุณยืนหยัดในความรู้สึก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, Strength = พลังใจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอนาคตความรัก คือ 'ยืนหยัดในความรู้สึก'",
+          "advice_th": "เตรียมเผชิญการคัดค้าน - ถูกตัดสิน แรงกดดัน ความท้าทาย ยืนหยัด",
+          "keywords_th": ["รักเผชิญคัดค้าน", "แรงกดดัน", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานจะต้องเผชิญคู่แข่งและท้าทาย",
+          "detailed_interpretation_th": "ในการงาน เจ็ดไม้เท้าอนาคตเตือนว่างานจะต้องเผชิญคู่แข่งและท้าทาย - การถูกท้าทายในตำแหน่ง การแข่งขันรุนแรง การต้องปกป้องผลงาน ไพ่หนุนให้คุณเตรียมทักษะและความมุ่งมั่น",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอนาคตงาน คือ 'เตรียมทักษะและความมุ่งมั่น'",
+          "advice_th": "เตรียมเผชิญคู่แข่ง - ถูกท้าทาย แข่งขันรุนแรง ปกป้องผลงาน",
+          "keywords_th": ["เผชิญคู่แข่ง", "ท้าทาย", "เตรียมทักษะ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตจะต้องยืนหยัดในตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต เจ็ดไม้เท้าอนาคตชี้ว่าการเติบโตจะต้องยืนหยัดในตัวตน - การเผชิญแรงกดดันจากสังคม การปกป้องค่านิยม การกล้าเป็นตัวเอง ไพ่หนุนให้คุณเตรียมความเข้มแข็งจากภายใน",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Hermit = ปัญญา",
+            "wands": "Five of Wands = ต่อสู้",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอนาคตเติบโต คือ 'เตรียมความเข้มแข็งจากภายใน'",
+          "advice_th": "เตรียมยืนหยัดในตัวตน - เผชิญแรงกดดัน ปกป้องค่านิยม กล้าเป็นตัวเอง",
+          "keywords_th": ["ยืนหยัดอนาคต", "ตัวตน", "เข้มแข็ง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะต้องต่อสู้กับความเครียด",
+          "detailed_interpretation_th": "ในสุขภาพ เจ็ดไม้เท้าอนาคตเตือนว่าสุขภาพจะต้องต่อสู้กับความเครียด - การเผชิญความท้าทาย ความเครียดสะสม การต้องรักษาพลัง ไพ่หนุนให้คุณเตรียมกิจวัตรที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าอนาคตสุขภาพ คือ 'เตรียมกิจวัตรที่ดี'",
+          "advice_th": "เตรียมต่อสู้กับความเครียด - เผชิญความท้าทาย ความเครียดสะสม รักษาพลัง",
+          "keywords_th": ["ต่อสู้เครียด", "รักษาพลัง", "เตรียม"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตอาจยอมแพ้และเลิกต่อสู้",
+          "detailed_interpretation_th": "เจ็ดไม้เท้ากลับหัวในอนาคต เตือนว่าอนาคตอาจยอมแพ้และเลิกต่อสู้ - การหมดแรง การไม่อยากสู้ต่อ การปล่อยให้คนอื่นกำหนด ไพ่หนุนให้คุณเตรียมพลังและไม่ยอมแพ้ก่อนเวลา",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ยอมรับ, The Tower = ตก",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Ten of Swords = หมดแรง",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวอนาคต คือ 'ไม่ยอมแพ้ก่อนเวลา'",
+          "advice_th": "เตรียมพลัง - อาจยอมแพ้ หมดแรง ไม่อยากสู้ ไม่ยอมแพ้ก่อนเวลา",
+          "keywords_th": ["อาจยอมแพ้", "หมดแรง", "เตรียมพลัง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจหมดแรงและยอมแพ้",
+          "detailed_interpretation_th": "ในความรัก เจ็ดไม้เท้ากลับหัวอนาคตเตือนว่าความรักอาจหมดแรงและยอมแพ้ - การเลิกปกป้องความสัมพันธ์ การไม่อยากต่อสู้ต่อ ไพ่หนุนให้คุณทบทวนว่ายังคุ้มค่าที่จะสู้หรือถึงเวลาก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ห่างเหิน, The Hanged Man = ยอมรับ",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวอนาคตความรัก คือ 'ทบทวนว่ายังคุ้มค่า'",
+          "advice_th": "เตรียมทบทวน - ความรักอาจหมดแรง ยอมแพ้ ทบทวนว่ายังคุ้มค่า",
+          "keywords_th": ["รักหมดแรง", "ยอมแพ้", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานอาจยอมแพ้และสูญเสียโอกาส",
+          "detailed_interpretation_th": "ในการงาน เจ็ดไม้เท้ากลับหัวอนาคตเตือนว่างานอาจยอมแพ้และสูญเสียโอกาส - การหมดไฟ การไม่กล้าสู้ต่อ การถูกคู่แข่งแซง ไพ่หนุนให้คุณเตรียมความมุ่งมั่นและไม่ยอมแพ้",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, The Hanged Man = ยอมรับ",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวอนาคตงาน คือ 'เตรียมความมุ่งมั่น'",
+          "advice_th": "เตรียมไม่ยอมแพ้ - งานอาจยอมแพ้ สูญเสียโอกาส เตรียมความมุ่งมั่น",
+          "keywords_th": ["งานยอมแพ้", "สูญเสีย", "มุ่งมั่น"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจเลิกยืนหยัดในตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต เจ็ดไม้เท้ากลับหัวอนาคตเตือนว่าอาจเลิกยืนหยัดในตัวตน - การยอมตามกระแส การไม่กล้าเป็นตัวเอง การถูกแรงกดดันบีบ ไพ่หนุนให้คุณเตรียมความเข้มแข็งจากภายใน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวอนาคตเติบโต คือ 'เตรียมความเข้มแข็งจากภายใน'",
+          "advice_th": "เตรียมยืนหยัด - อาจเลิกยืนหยัด ยอมตาม ไม่กล้าเป็นตน",
+          "keywords_th": ["อาจเลิกยืนหยัด", "ยอมตาม", "เข้มแข็ง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อาจหมดแรงและสุขภาพแย่ลง",
+          "detailed_interpretation_th": "ในสุขภาพ เจ็ดไม้เท้ากลับหัวอนาคตเตือนว่าอาจหมดแรงและสุขภาพแย่ลง - ความเหนื่อยล้าสะสม ภูมิคุ้มกันอ่อน การไม่ดูแลตัวเอง ไพ่หนุนให้คุณเตรียมพักผ่อนและฟื้นพลัง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = พัก",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวอนาคตสุขภาพ คือ 'เตรียมพักผ่อนและฟื้นพลัง'",
+          "advice_th": "เตรียมพักผ่อน - อาจหมดแรง สุขภาพแย่ลง ฟื้นพลัง",
+          "keywords_th": ["อาจหมดแรง", "สุขภาพแย่", "ฟื้นพลัง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือยืนหยัดและปกป้องสิ่งสำคัญ",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือยืนหยัดและปกป้องสิ่งสำคัญ - การไม่ยอมแพ้ การสร้างความเข้มแข็ง การปกป้องสิ่งที่สร้างมา เป้าหมายนี้ต้องการความกล้าและความมุ่งมั่น",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Emperor = อำนาจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าเป้าหมาย คือ 'ความกล้าและความมุ่งมั่น'",
+          "advice_th": "ตั้งเป้ายืนหยัด - ไม่ยอมแพ้ สร้างความเข้มแข็ง ปกป้องสิ่งที่สร้าง",
+          "keywords_th": ["ยืนหยัด", "ปกป้อง", "มุ่งมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือปกป้องความรักจากภายนอก",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือปกป้องความรักจากภายนอก - การยืนหยัดในความสัมพันธ์ การไม่ปล่อยให้คนอื่นกำหนด การสู้เพื่อความรัก ไพ่หนุนให้คุณตั้งเป้าหมายความรักที่กล้าหาญและมั่นคง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Strength = พลังใจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าเป้าหมายความรัก คือ 'รักที่กล้าหาญและมั่นคง'",
+          "advice_th": "ตั้งเป้าปกป้องรัก - ยืนหยัดในความสัมพันธ์ ไม่ปล่อยให้คนอื่นกำหนด สู้เพื่อความรัก",
+          "keywords_th": ["ปกป้องรัก", "ยืนหยัด", "สู้"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือรักษาตำแหน่งและสู้ชนะคู่แข่ง",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือรักษาตำแหน่งและสู้ชนะคู่แข่ง - การยืนหยัดในความสามารถ การไม่ปล่อยให้ถูกแซง การพิสูจน์คุณค่า ไพ่หนุนให้คุณตั้งเป้าหมายที่ใช้ความมุ่งมั่นเป็นแรงผลักดัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าเป้าหมายงาน คือ 'ใช้ความมุ่งมั่นเป็นแรงผลักดัน'",
+          "advice_th": "ตั้งเป้ารักษาตำแหน่ง - ยืนหยัดในความสามารถ ไม่ปล่อยให้ถูกแซง พิสูจน์คุณค่า",
+          "keywords_th": ["รักษาตำแหน่ง", "สู้ชนะ", "มุ่งมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือเป็นตัวเองและยืนหยัดในค่านิยม",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือเป็นตัวเองและยืนหยัดในค่านิยม - การไม่ยอมตามกระแส การกล้าเป็นตัวเอง การปกป้องความเชื่อ ไพ่หนุนให้คุณตั้งเป้าหมายการเติบโตที่กล้าหาญ",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Hermit = ปัญญา",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าเป้าหมายเติบโต คือ 'การเติบโตที่กล้าหาญ'",
+          "advice_th": "ตั้งเป้าเป็นตัวเอง - ไม่ยอมตามกระแส กล้าเป็นตน ปกป้องความเชื่อ",
+          "keywords_th": ["เป็นตัวเอง", "ยืนหยัดในค่า", "กล้าหาญ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือต่อสู้และฟื้นสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือต่อสู้และฟื้นสุขภาพ - การไม่ยอมแพ้กับความเครียด การสร้างความแข็งแรง การรักษาพลัง ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพที่ใช้ความมุ่งมั่นและไม่ท้อ",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังกาย, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าเป้าหมายสุขภาพ คือ 'ใช้ความมุ่งมั่นและไม่ท้อ'",
+          "advice_th": "ตั้งเป้าต่อสู้และฟื้น - ไม่ยอมแพ้ สร้างความแข็งแรง รักษาพลัง",
+          "keywords_th": ["ต่อสู้", "ฟื้นสุขภาพ", "ไม่ท้อ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือเรียนรู้ที่จะปล่อยและก้าวต่อ",
+          "detailed_interpretation_th": "เจ็ดไม้เท้ากลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือเรียนรู้ที่จะปล่อยและก้าวต่อ - การไม่ยึดติดกับสิ่งที่ไม่คุ้มค่า การรู้ว่าเมื่อไหร่ควรหยุดสู้ การเลือกการต่อสู้ที่สำคัญ เป้าหมายนี้ต้องการความฉลาดและความเข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Hanged Man = ปล่อย",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวเป้าหมาย คือ 'ความฉลาดและความเข้าใจ'",
+          "advice_th": "ตั้งเป้าปล่อยและก้าวต่อ - ไม่ยึดติดกับสิ่งที่ไม่คุ้ม เลือกการต่อสู้ที่สำคัญ",
+          "keywords_th": ["ปล่อย", "ก้าวต่อ", "เลือกสู้"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือปล่อยรักที่ไม่คุ้มค่า",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือปล่อยรักที่ไม่คุ้มค่า - การรู้ว่าเมื่อไหร่ควรเลิกสู้ การเลือกความสุขเหนือการต่อสู้ การก้าวต่อด้วยความสง่างาม ไพ่หนุนให้คุณตั้งเป้าหมายที่ฉลาดและมีเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ปล่อย, Temperance = สมดุล",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวเป้าหมายความรัก คือ 'ฉลาดและมีเมตตา'",
+          "advice_th": "ตั้งเป้าปล่อยรักไม่คุ้ม - รู้ว่าเมื่อไหร่ควรเลิกสู้ เลือกความสุข ก้าวต่อด้วยความสง่างาม",
+          "keywords_th": ["ปล่อยรัก", "ก้าวต่อ", "เมตตา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือก้าวต่อจากงานที่ไม่คุ้ม",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือก้าวต่อจากงานที่ไม่คุ้ม - การรู้ว่าเมื่อไหร่ควรเปลี่ยนทาง การเลือกโอกาสใหม่ การไม่ยึดติดกับสิ่งที่หมดศักยภาพ ไพ่หนุนให้คุณตั้งเป้าหมายที่ฉลาดและมองอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ปรับโชค, The Fool = กล้าเริ่ม",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวเป้าหมายงาน คือ 'ฉลาดและมองอนาคต'",
+          "advice_th": "ตั้งเป้าก้าวต่อจากงานไม่คุ้ม - เปลี่ยนทาง เลือกโอกาสใหม่ ไม่ยึดติด",
+          "keywords_th": ["ก้าวต่อจากงาน", "โอกาสใหม่", "ฉลาด"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือยอมรับและก้าวต่อด้วยปัญญา",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือยอมรับและก้าวต่อด้วยปัญญา - การยอมรับว่าบางสู้ไม่ได้ การเลือกสันติ การรู้ว่าเมื่อไหร่ควรหยุด ไพ่หนุนให้คุณตั้งเป้าหมายการเติบโตที่ฉลาดและสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวเป้าหมายเติบโต คือ 'ฉลาดและสมดุล'",
+          "advice_th": "ตั้งเป้ายอมรับและก้าวต่อ - บางสู้ไม่ได้ เลือกสันติ รู้ว่าเมื่อไหร่ควรหยุด",
+          "keywords_th": ["ยอมรับ", "ก้าวต่อ", "ปัญญา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือพักผ่อนและฟื้นพลัง",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือพักผ่อนและฟื้นพลัง - การไม่ฝืนต่อ การยอมพักเมื่อหมดแรง การฟื้นตัวอย่างสง่างาม ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพที่ใส่ใจการพักผ่อน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวเป้าหมายสุขภาพ คือ 'ใส่ใจการพักผ่อน'",
+          "advice_th": "ตั้งเป้าพักผ่อน - ไม่ฝืน ยอมพักเมื่อหมดแรง ฟื้นตัวสง่างาม",
+          "keywords_th": ["พักผ่อน", "ฟื้นพลัง", "สง่างาม"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความกล้าหาญและไม่ยอมแพ้",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความกล้าหาญและไม่ยอมแพ้ - คุณมีพลังจากการยืนหยัด ชอบความท้าทาย ปกป้องสิ่งที่สร้างมา รากฐานนี้ทำให้คุณเป็นนักสู้ที่กล้าหาญ",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Emperor = อำนาจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ารากฐาน คือ 'นักสู้ที่กล้าหาญ'",
+          "advice_th": "ใช้ความกล้าหาญ - พลังจากการยืนหยัด ชอบความท้าทาย ปกป้องสิ่งที่สร้าง",
+          "keywords_th": ["กล้าหาญ", "ไม่ยอมแพ้", "นักสู้"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือความกล้าปกป้องความสัมพันธ์",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความกล้าปกป้องความสัมพันธ์ - คุณให้ความสำคัญกับการยืนหยัดในความรัก การไม่ปล่อยให้คนอื่นทำลาย รากฐานนี้ทำให้คุณเป็นคู่ครองที่กล้าหาญ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Strength = พลังใจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ารากฐานความรัก คือ 'คู่ครองที่กล้าหาญ'",
+          "advice_th": "ใช้ความกล้าปกป้องรัก - ยืนหยัดในความรัก ไม่ปล่อยให้คนอื่นทำลาย",
+          "keywords_th": ["กล้าปกป้องรัก", "ยืนหยัด", "ไม่ปล่อย"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือความมุ่งมั่นและไม่ยอมแพ้คู่แข่ง",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือความมุ่งมั่นและไม่ยอมแพ้คู่แข่ง - คุณชอบความท้าทาย ใช้การแข่งขันเป็นแรงผลักดัน ไม่กลัวการต่อสู้ รากฐานนี้ทำให้คุณเป็นนักธุรกิจที่แกร่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ารากฐานงาน คือ 'นักธุรกิจที่แกร่ง'",
+          "advice_th": "ใช้ความมุ่งมั่น - ชอบความท้าทาย แข่งขันเป็นแรงผลักดัน ไม่กลัวการต่อสู้",
+          "keywords_th": ["มุ่งมั่น", "ไม่ยอมแพ้", "แกร่ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือกล้าเป็นตัวเองและยืนหยัดในค่านิยม",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือกล้าเป็นตัวเองและยืนหยัดในค่านิยม - คุณขับเคลื่อนด้วยความกล้าหาญ ไม่ยอมตามกระแส ปกป้องตัวตน รากฐานนี้ทำให้คุณเป็นคนเข้มแข็งและจริงใจ",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Hermit = ปัญญา",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ารากฐานเติบโต คือ 'เข้มแข็งและจริงใจ'",
+          "advice_th": "ใช้ความกล้าเป็นตน - ไม่ยอมตามกระแส ปกป้องตัวตน เข้มแข็ง",
+          "keywords_th": ["กล้าเป็นตน", "ยืนหยัด", "จริงใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือพลังต่อสู้กับความท้าทาย",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือพลังต่อสู้กับความท้าทาย - คุณมีพลังในการฟื้นตัว ไม่ยอมแพ้กับโรค รักษาพลังในความเครียด รากฐานนี้ทำให้คุณมีร่างกายที่แกร่ง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังกาย, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ารากฐานสุขภาพ คือ 'ร่างกายที่แกร่ง'",
+          "advice_th": "ใช้พลังต่อสู้ - พลังในการฟื้นตัว ไม่ยอมแพ้กับโรค รักษาพลัง",
+          "keywords_th": ["พลังต่อสู้", "ฟื้นตัว", "แกร่ง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือยอมแพ้ง่ายและไม่กล้าสู้",
+          "detailed_interpretation_th": "เจ็ดไม้เท้ากลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือยอมแพ้ง่ายและไม่กล้าสู้ - คุณกลัวการเผชิญหน้า ปล่อยให้คนอื่นกำหนด ขาดความมุ่งมั่น รากฐานนี้จำกัดการเติบโต ถึงเวลาเรียนรู้ที่จะยืนหยัด",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = กลัว",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวรากฐาน คือ 'เรียนรู้ที่จะยืนหยัด'",
+          "advice_th": "เรียนรู้ยืนหยัด - กลัวการเผชิญหน้า ปล่อยให้คนอื่นกำหนด ขาดความมุ่งมั่น",
+          "keywords_th": ["ยอมแพ้ง่าย", "ไม่กล้าสู้", "เรียนรู้"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานคือไม่กล้าปกป้องความรัก",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือไม่กล้าปกป้องความรัก - คุณยอมให้คนอื่นกำหนด กลัวการเผชิญหน้า ปล่อยให้ความสัมพันธ์ถูกบ่อนทำลาย รากฐานนี้ทำให้ความรักไม่มั่นคง ถึงเวลาเรียนรู้ที่จะยืนหยัด",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = อ่อนแอ, The Moon = กลัว",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวรากฐานความรัก คือ 'เรียนรู้ที่จะยืนหยัด'",
+          "advice_th": "เรียนรู้ปกป้องรัก - ยอมให้คนอื่นกำหนด กลัวการเผชิญหน้า ยืนหยัด",
+          "keywords_th": ["ไม่กล้าปกป้อง", "ยอมให้", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือกลัวการแข่งขันและยอมแพ้",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือกลัวการแข่งขันและยอมแพ้ - คุณกลัวคู่แข่ง ไม่กล้าพิสูจน์ตัวเอง ปล่อยให้ถูกแซง รากฐานนี้จำกัดศักยภาพ ถึงเวลาเรียนรู้ที่จะกล้าก้าวและสู้",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวรากฐานงาน คือ 'กล้าก้าวและสู้'",
+          "advice_th": "เรียนรู้กล้าสู้ - กลัวคู่แข่ง ไม่กล้าพิสูจน์ ปล่อยให้ถูกแซง กล้าก้าว",
+          "keywords_th": ["กลัวแข่งขัน", "ยอมแพ้", "กล้าสู้"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือยอมตามกระแสและไม่กล้าเป็นตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือยอมตามกระแสและไม่กล้าเป็นตัวเอง - คุณกลัวการตัดสิน ปล่อยให้สังคมกำหนด ไม่ปกป้องค่านิยม รากฐานนี้ทำให้คุณติดอยู่ ถึงเวลาเรียนรู้ที่จะกล้าเป็นตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = กรอบ, The Moon = กลัว",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวรากฐานเติบโต คือ 'กล้าเป็นตัวเอง'",
+          "advice_th": "เรียนรู้กล้าเป็นตน - กลัวการตัดสิน ปล่อยให้สังคมกำหนด ไม่ปกป้องค่านิยม",
+          "keywords_th": ["ยอมตามกระแส", "ไม่กล้าเป็นตน", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือยอมแพ้กับความเครียด",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือยอมแพ้กับความเครียด - คุณปล่อยให้ความเครียดควบคุม ไม่ดูแลตัวเอง อ่อนแอเมื่อเจอความท้าทาย รากฐานนี้ทำให้สุขภาพแย่ ถึงเวลาเรียนรู้ที่จะแกร่งและไม่ยอมแพ้",
+          "adjacent_influences": {
+            "major_arcana": "Strength (rev) = อ่อนแอ, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวรากฐานสุขภาพ คือ 'แกร่งและไม่ยอมแพ้'",
+          "advice_th": "เรียนรู้แกร่ง - ปล่อยให้ความเครียดควบคุม ไม่ดูแลตน อ่อนแอ ไม่ยอมแพ้",
+          "keywords_th": ["ยอมแพ้เครียด", "อ่อนแอ", "แกร่ง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ยืนหยัดและไม่ยอมแพ้",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือยืนหยัดและไม่ยอมแพ้ - ปกป้องสิ่งที่สำคัญ ยืนยันจุดยืน สู้เพื่อสิ่งที่เชื่อ ไพ่หนุนให้คุณนำด้วยความกล้าหาญ",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Emperor = อำนาจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งคำแนะนำ คือ 'กล้าหาญ'",
+          "advice_th": "ยืนหยัดและสู้ - ปกป้องสิ่งที่สำคัญ ยืนยันจุดยืน สู้เพื่อสิ่งที่เชื่อ",
+          "keywords_th": ["ยืนหยัด", "ไม่ยอมแพ้", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ปกป้องความรักจากแรงกดดัน",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณควรปกป้องความรักจากแรงกดดัน - ยืนหยัดในความสัมพันธ์ ไม่ปล่อยให้คนอื่นกำหนด สู้เพื่อความรัก ไพ่หนุนให้คุณนำด้วยความกล้าและซื่อสัตย์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Strength = พลังใจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งคำแนะนำความรัก คือ 'กล้าและซื่อสัตย์'",
+          "advice_th": "ปกป้องความรัก - ยืนหยัดในความสัมพันธ์ ไม่ปล่อยให้คนอื่นกำหนด",
+          "keywords_th": ["ปกป้องรัก", "ยืนหยัด", "สู้"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "สู้กับคู่แข่งและรักษาตำแหน่ง",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรสู้กับคู่แข่งและรักษาตำแหน่ง - แสดงความสามารถ พิสูจน์คุณค่า ไม่ปล่อยให้ถูกแซง ไพ่หนุนให้คุณนำด้วยความมุ่งมั่นและกล้าเสี่ยง",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งคำแนะนำงาน คือ 'มุ่งมั่นและกล้าเสี่ยง'",
+          "advice_th": "สู้คู่แข่ง - แสดงความสามารถ พิสูจน์คุณค่า ไม่ปล่อยให้ถูกแซง",
+          "keywords_th": ["สู้คู่แข่ง", "รักษาตำแหน่ง", "มุ่งมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ยืนหยัดในตัวตนและไม่ยอมตามกระแส",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรยืนหยัดในตัวตนและไม่ยอมตามกระแส - ปกป้องค่านิยม กล้าเป็นตัวเอง ไม่ปล่อยให้สังคมกำหนด ไพ่หนุนให้คุณนำด้วยความเข้มแข็งจากภายใน",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Hermit = ปัญญา",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งคำแนะนำเติบโต คือ 'เข้มแข็งจากภายใน'",
+          "advice_th": "ยืนหยัดในตน - ปกป้องค่านิยม กล้าเป็นตัวเอง ไม่ปล่อยให้สังคมกำหนด",
+          "keywords_th": ["ยืนหยัดในตน", "ไม่ตามกระแส", "เข้มแข็ง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต่อสู้กับความเครียดและรักษาพลัง",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรต่อสู้กับความเครียดและรักษาพลัง - ไม่ยอมแพ้กับความท้าทาย ปกป้องร่างกาย รักษากิจวัตรสุขภาพ ไพ่หนุนให้คุณนำด้วยความแกร่ง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังกาย, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งคำแนะนำสุขภาพ คือ 'ความแกร่ง'",
+          "advice_th": "ต่อสู้กับความเครียด - ไม่ยอมแพ้กับความท้าทาย ปกป้องร่างกาย รักษากิจวัตร",
+          "keywords_th": ["ต่อสู้เครียด", "รักษาพลัง", "แกร่ง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เลือกการต่อสู้ที่คุ้มค่าและรู้จักปล่อย",
+          "detailed_interpretation_th": "เจ็ดไม้เท้ากลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือเลือกการต่อสู้ที่คุ้มค่าและรู้จักปล่อย - ไม่สู้ทุกการต่อสู้ ยอมรับสิ่งที่ไม่สามารถเปลี่ยน เลือกสันติเมื่อเหมาะ ไพ่หนุนให้คุณนำด้วยปัญญา",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Eight of Pentacles = ฝึกฝน",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งคำแนะนำ คือ 'ปัญญา'",
+          "advice_th": "เลือกการต่อสู้ - ไม่สู้ทุกการต่อสู้ ยอมรับสิ่งที่ไม่สามารถเปลี่ยน เลือกสันติ",
+          "keywords_th": ["เลือกสู้", "รู้จักปล่อย", "ปัญญา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ปล่อยรักที่ไม่คุ้มค่า",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าคุณควรปล่อยรักที่ไม่คุ้มค่า - รู้ว่าเมื่อไหร่ควรเลิกสู้ เลือกความสุขเหนือการต่อสู้ ก้าวต่อด้วยความสง่างาม ไพ่หนุนให้คุณนำด้วยปัญญาและเมตตา",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ปล่อย, Temperance = สมดุล",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งคำแนะนำความรัก คือ 'ปัญญาและเมตตา'",
+          "advice_th": "ปล่อยรักไม่คุ้ม - รู้ว่าเมื่อไหร่ควรเลิกสู้ เลือกความสุข ก้าวต่อสง่างาม",
+          "keywords_th": ["ปล่อยรัก", "ก้าวต่อ", "เมตตา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ก้าวต่อจากงานที่ไม่คุ้มและหาโอกาสใหม่",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวชี้ว่าคุณควรก้าวต่อจากงานที่ไม่คุ้มและหาโอกาสใหม่ - รู้ว่าเมื่อไหร่ควรเปลี่ยน เลือกโอกาสที่ดีกว่า ไม่ยึดติดกับสิ่งที่หมดศักยภาพ ไพ่หนุนให้คุณนำด้วยปัญญาและความกล้า",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ปรับโชค, The Fool = กล้าเริ่ม",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Three of Pentacles = สร้างใหม่",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งคำแนะนำงาน คือ 'ปัญญาและกล้า'",
+          "advice_th": "ก้าวต่อจากงานไม่คุ้ม - รู้ว่าเมื่อไหร่ควรเปลี่ยน เลือกโอกาสดีกว่า",
+          "keywords_th": ["ก้าวต่อ", "โอกาสใหม่", "ปัญญา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ยอมรับและก้าวต่อด้วยปัญญา",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรยอมรับและก้าวต่อด้วยปัญญา - ยอมรับว่าบางสู้ไม่ได้ เลือกสันติ ฝึกการปล่อยวาง ไพ่หนุนให้คุณนำด้วยความเข้าใจและสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Four of Cups = สงบ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งคำแนะนำเติบโต คือ 'เข้าใจและสมดุล'",
+          "advice_th": "ยอมรับและก้าวต่อ - บางสู้ไม่ได้ เลือกสันติ ฝึกการปล่อยวาง",
+          "keywords_th": ["ยอมรับ", "ปล่อยวาง", "ปัญญา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "พักผ่อนและฟื้นพลัง",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวชี้ว่าคุณควรพักผ่อนและฟื้นพลัง - ไม่ฝืนต่อ ยอมพักเมื่อหมดแรง ใช้เวลาฟื้นตัว ไพ่หนุนให้คุณนำด้วยความเมตตาต่อตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'เมตตาต่อตัวเอง'",
+          "advice_th": "พักผ่อนและฟื้น - ไม่ฝืน ยอมพักเมื่อหมดแรง ใช้เวลาฟื้นตัว",
+          "keywords_th": ["พักผ่อน", "ฟื้นพลัง", "เมตตา"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างท้าทายและสร้างแรงกดดัน",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในตำแหน่งภายนอก บอกว่าคนรอบข้างท้าทายและสร้างแรงกดดัน - การต่อต้านจากคู่แข่ง การวิจารณ์ การถูกท้าทายในจุดยืน ไพ่บอกว่าใช้แรงกดดันนี้พิสูจน์ตัวเองและยืนหยัด",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วุ่นวาย, The Emperor = อำนาจ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Knight of Wands = บุ่มบ่าม"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งภายนอก คือ 'ใช้แรงกดดันพิสูจน์และยืนหยัด'",
+          "advice_th": "เผชิญแรงกดดัน - การต่อต้านจากคู่แข่ง การวิจารณ์ การถูกท้าทาย",
+          "keywords_th": ["คนท้าทาย", "แรงกดดัน", "ต่อต้าน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวหรือคนรอบข้างกดดันความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าครอบครัวหรือคนรอบข้างกดดันความรัก - การคัดค้าน การตัดสิน การพยายามทำลายความสัมพันธ์ ไพ่หนุนให้คุณยืนหยัดในความรู้สึกและไม่ปล่อยให้คนอื่นทำลายความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ถูกตัดสิน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Swords (rev) = ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งภายนอกความรัก คือ 'ยืนหยัดในความรู้สึก'",
+          "advice_th": "ยืนหยัดในรัก - ครอบครัวกดดัน คัดค้าน ตัดสิน ปกป้องความรัก",
+          "keywords_th": ["คนกดดันรัก", "คัดค้าน", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "คู่แข่งและคนในงานพยายามแซง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่าคู่แข่งและคนในงานพยายามแซง - การแข่งขันชิงตำแหน่ง คู่แข่งที่เพิ่มขึ้น การถูกท้าทายในผลงาน ไพ่หนุนให้คุณยืนหยัดและพิสูจน์ความสามารถ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Wheel of Fortune = โอกาส",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Five of Swords = แข่งขัน",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งภายนอกงาน คือ 'พิสูจน์ความสามารถ'",
+          "advice_th": "ยืนหยัดในงาน - คู่แข่งพยายามแซง ชิงตำแหน่ง ถูกท้าทาย",
+          "keywords_th": ["คู่แข่งแซง", "ชิงตำแหน่ง", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมกดดันให้ตามกระแส",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าสังคมกดดันให้ตามกระแส - ความคาดหวังที่ขัดกับคุณค่า การวิจารณ์ทางเลือก แรงกดดันให้ทำตาม ไพ่บอกว่ายืนหยัดในตัวตนและไม่ปล่อยให้สังคมกำหนด",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant (rev) = ขัดกรอบ, The Hermit = เดินคนเดียว",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Five of Cups = ขาดความเข้าใจ",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Swords = ตัดสินใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งภายนอกเติบโต คือ 'ยืนหยัดในตัวตน'",
+          "advice_th": "ยืนหยัดในตน - สังคมกดดัน ความคาดหวังขัดคุณค่า การวิจารณ์",
+          "keywords_th": ["สังคมกดดัน", "ตามกระแส", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมสร้างความเครียด",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าสิ่งแวดล้อมสร้างความเครียด - บรรยากาศตึงเครียด คนรอบข้างที่กดดัน ความวุ่นวาย ไพ่หนุนให้คุณปรับสิ่งแวดล้อมเท่าที่ทำได้และหาพื้นที่ฟื้นพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, The Tower = ปั่นป่วน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งภายนอกสุขภาพ คือ 'หาพื้นที่ฟื้นพลัง'",
+          "advice_th": "ปรับสิ่งแวดล้อม - บรรยากาศตึงเครียด คนกดดัน หาพื้นที่ฟื้นพลัง",
+          "keywords_th": ["แวดล้อมเครียด", "กดดัน", "พื้นที่ฟื้น"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "แรงกดดันลดลงและคนรอบข้างเริ่มเข้าใจ",
+          "detailed_interpretation_th": "เจ็ดไม้เท้ากลับหัวในตำแหน่งภายนอก บอกว่าแรงกดดันลดลงและคนรอบข้างเริ่มเข้าใจ - การต่อต้านที่คลี่คลาย คนที่เริ่มยอมรับ ความขัดแย้งที่ลดลง ไพ่บอกว่าใช้ช่วงเวลานี้ฟื้นพลังและสร้างความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ความหวัง",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Two of Cups = ปรองดอง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งภายนอก คือ 'ฟื้นพลังและสร้างความสัมพันธ์'",
+          "advice_th": "ใช้ช่วงสงบ - แรงกดดันลดลง คนเริ่มเข้าใจ ความขัดแย้งคลี่คลาย",
+          "keywords_th": ["แรงกดดันลด", "เข้าใจ", "คลี่คลาย"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวเริ่มยอมรับความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าครอบครัวเริ่มยอมรับความรัก - การคลี่คลายของการคัดค้าน การยอมรับที่เพิ่มขึ้น บรรยากาศที่ดีขึ้น ไพ่หนุนให้คุณใช้ช่วงเวลานี้สร้างความเข้าใจกับครอบครัว",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Three of Cups = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งภายนอกความรัก คือ 'สร้างความเข้าใจ'",
+          "advice_th": "ใช้การยอมรับ - ครอบครัวเริ่มยอมรับ การคัดค้านคลี่คลาย",
+          "keywords_th": ["ครอบครัวยอมรับ", "คลี่คลาย", "สร้างความเข้าใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "การแข่งขันลดลงและงานเริ่มสงบ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าการแข่งขันลดลงและงานเริ่มสงบ - คู่แข่งที่ลดลง บรรยากาศที่ผ่อนคลาย ความตึงเครียดที่คลี่คลาย ไพ่หนุนให้คุณใช้ช่วงเวลานี้สร้างความก้าวหน้าและเครือข่าย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = ความสำเร็จ",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งภายนอกงาน คือ 'สร้างความก้าวหน้าและเครือข่าย'",
+          "advice_th": "ใช้ความสงบ - การแข่งขันลด บรรยากาศผ่อนคลาย สร้างก้าวหน้า",
+          "keywords_th": ["แข่งขันลด", "สงบ", "สร้างเครือข่าย"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมเริ่มยอมรับการเป็นตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมเริ่มยอมรับการเป็นตัวเอง - คนที่เริ่มเข้าใจ การยอมรับที่เพิ่มขึ้น ความเป็นแบบอย่าง ไพ่หนุนให้คุณใช้แรงสนับสนุนนี้เติบโตต่อไป",
+          "adjacent_influences": {
+            "major_arcana": "The Star = แรงบันดาลใจ, Temperance = สมดุล",
+            "wands": "Three of Cups = มิตรภาพ",
+            "cups": "Three of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งภายนอกเติบโต คือ 'เติบโตต่อไป'",
+          "advice_th": "ใช้การยอมรับ - สังคมเริ่มเข้าใจ ยอมรับการเป็นตน",
+          "keywords_th": ["สังคมยอมรับ", "เข้าใจ", "เติบโต"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมเริ่มเอื้อต่อสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวบอกว่าสิ่งแวดล้อมเริ่มเอื้อต่อสุขภาพ - ความเครียดลดลง บรรยากาศสงบ คนที่หนุน ไพ่หนุนให้คุณใช้ช่วงเวลานี้ฟื้นพลังและสร้างกิจวัตรดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งภายนอกสุขภาพ คือ 'ฟื้นพลังและสร้างกิจวัตรดี'",
+          "advice_th": "ใช้สิ่งแวดล้อมเอื้อ - ความเครียดลดลง บรรยากาศสงบ คนหนุน",
+          "keywords_th": ["แวดล้อมเอื้อ", "สงบ", "ฟื้นพลัง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังยืนหยัดได้ กลัวพ่ายแพ้",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังที่จะยืนหยัดในความท้าทาย แต่กลัวพ่ายแพ้ในการต่อสู้ ไพ่บอกว่าใช้ความหวังเป็นพลังและไม่ปล่อยให้ความกลัวจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Moon = ความกลัว",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งความหวังกลัว คือ 'ใช้ความหวังเป็นพลัง'",
+          "advice_th": "ใช้ความหวังนำทาง - หวังยืนหยัดแต่กลัวพ่ายแพ้ ไม่ปล่อยความกลัวจำกัด",
+          "keywords_th": ["หวังยืนหยัด", "กลัวแพ้", "ใช้พลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังปกป้องรักได้ กลัวสูญเสีย",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังปกป้องความรักได้ แต่กลัวสูญเสียจากแรงกดดันภายนอก ไพ่บอกว่าใช้ความรักเป็นแรงผลักดันและกล้ายืนหยัด",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Moon = ความกลัว",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Three of Swords = กลัวเจ็บ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งความหวังกลัวความรัก คือ 'ใช้ความรักเป็นแรงผลักดัน'",
+          "advice_th": "กล้ายืนหยัดในรัก - หวังปกป้องแต่กลัวสูญเสีย ใช้ความรักเป็นแรงผลักดัน",
+          "keywords_th": ["หวังปกป้องรัก", "กลัวสูญเสีย", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังรักษาตำแหน่ง กลัวถูกแซง",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังรักษาตำแหน่งและสู้ชนะ แต่กลัวถูกคู่แข่งแซง ไพ่บอกว่ากล้าพิสูจน์ตัวเองและพัฒนาทักษะ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Moon = ความกลัว",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Three of Swords = กลัวล้ม",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งความหวังกลัวงาน คือ 'กล้าพิสูจน์และพัฒนา'",
+          "advice_th": "กล้าพิสูจน์ - หวังรักษาตำแหน่งแต่กลัวถูกแซง พัฒนาทักษะ",
+          "keywords_th": ["หวังรักษาตำแหน่ง", "กลัวถูกแซง", "พิสูจน์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเป็นตัวเอง กลัวการถูกตัดสิน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังเป็นตัวเองและยืนหยัดในค่านิยม แต่กลัวการถูกตัดสินจากสังคม ไพ่บอกว่ายืนหยัดในตัวตนและไม่ปล่อยให้ความกลัวจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Moon = ความกลัว",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งความหวังกลัวเติบโต คือ 'ยืนหยัดในตัวตน'",
+          "advice_th": "ยืนหยัดในตน - หวังเป็นตัวเองแต่กลัวถูกตัดสิน ไม่ปล่อยความกลัวจำกัด",
+          "keywords_th": ["หวังเป็นตน", "กลัวถูกตัดสิน", "ยืนหยัด"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังต่อสู้ได้ กลัวพ่ายแพ้กับโรค",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังต่อสู้กับโรคและความเครียดได้ แต่กลัวพ่ายแพ้และร่างกายแย่ลง ไพ่บอกว่าดูแลตัวเองอย่างต่อเนื่องและไว้ใจในพลังฟื้นตัวของร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Moon = ความกลัว",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งความหวังกลัวสุขภาพ คือ 'ไว้ใจในพลังฟื้นตัว'",
+          "advice_th": "ดูแลต่อเนื่อง - หวังต่อสู้ได้แต่กลัวพ่ายแพ้ ไว้ใจในพลังฟื้นตัว",
+          "keywords_th": ["หวังต่อสู้", "กลัวแพ้โรค", "ไว้ใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวพ่ายแพ้จนยอมแพ้ก่อนเวลา",
+          "detailed_interpretation_th": "เจ็ดไม้เท้ากลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวพ่ายแพ้จนยอมแพ้ก่อนเวลา - เพราะกลัวการล้มเหลว คุณเลิกสู้ ปล่อยให้คนอื่นกำหนด ไพ่บอกว่าฝึกความกล้าและไม่ยอมแพ้ก่อนเวลา",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัว, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งความหวังกลัว คือ 'ฝึกความกล้า'",
+          "advice_th": "ฝึกความกล้า - กลัวพ่ายแพ้จนยอมแพ้ก่อนเวลา ไม่ยอมแพ้",
+          "keywords_th": ["กลัวพ่ายแพ้", "ยอมแพ้ก่อนเวลา", "ฝึกกล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวสูญเสียจนยอมปล่อยรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวสูญเสียจนยอมปล่อยรัก - กลัวเจ็บมากขึ้น กลัวการต่อสู้ จึงเลือกปล่อยก่อนที่ความรักจะดี ไพ่บอกว่าไม่ปล่อยรักที่คุ้มค่าและกล้าสู้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ปล่อย, The Moon = ความกลัว",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Three of Swords = กลัวเจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งความหวังกลัวความรัก คือ 'ไม่ปล่อยรักที่คุ้มค่า'",
+          "advice_th": "กล้าสู้เพื่อรัก - กลัวสูญเสียจนปล่อย ไม่ปล่อยรักที่คุ้มค่า",
+          "keywords_th": ["กลัวสูญเสีย", "ปล่อยรัก", "กล้าสู้"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวการแข่งขันจนยอมแพ้",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวการแข่งขันจนยอมแพ้ - กลัวคู่แข่ง กลัวความล้มเหลว จึงเลือกเส้นทางปลอดภัย ไม่กล้าพิสูจน์ตัวเอง ไพ่บอกว่ากล้าสู้และเรียนรู้จากการแข่งขัน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งความหวังกลัวงาน คือ 'กล้าสู้และเรียนรู้'",
+          "advice_th": "กล้าสู้ - กลัวการแข่งขันจนยอมแพ้ เลือกปลอดภัย กล้าพิสูจน์",
+          "keywords_th": ["กลัวแข่งขัน", "ยอมแพ้", "กล้าสู้"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวถูกตัดสินจนเลิกเป็นตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวถูกตัดสินจนเลิกเป็นตัวเอง - กลัวการวิจารณ์ กลัวการไม่เป็นที่ยอมรับ จึงยอมตามกระแส ไพ่หนุนให้คุณกลับมายืนหยัดในตัวตน",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = กรอบ, The Moon = กลัว",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'กลับมายืนหยัดในตัวตน'",
+          "advice_th": "กลับมายืนหยัด - กลัวถูกตัดสินจนเลิกเป็นตัวเอง ยอมตามกระแส กลับมาเป็นตัวเอง",
+          "keywords_th": ["กลัวถูกตัดสิน", "เลิกเป็นตน", "กลับมา"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวร่างกายแย่ลงจนไม่ดูแล",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวร่างกายแย่ลงจนไม่ดูแล - กลัวการรับรู้ว่ามีปัญหา กลัวการเปลี่ยนวิถีชีวิต จึงเลี่ยงการตรวจสุขภาพ ไพ่หนุนให้คุณกล้าเผชิญและดูแลตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Devil = ติดยึด",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'กล้าเผชิญและดูแล'",
+          "advice_th": "กล้าเผชิญ - กลัวร่างกายแย่ลงจนไม่ดูแล กลัวการรับรู้ กล้าเผชิญ",
+          "keywords_th": ["กลัวร่างแย่", "ไม่ดูแล", "กล้าเผชิญ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือยืนหยัดและรักษาจุดยืนได้",
+          "detailed_interpretation_th": "เจ็ดไม้เท้าในตำแหน่งผลลัพธ์ บอกว่าผลลัพธ์ของสถานการณ์คือยืนหยัดและรักษาจุดยืนได้ - คุณจะผ่านการท้าทาย ปกป้องสิ่งที่สำคัญ และเข้มแข็งขึ้น ไพ่ยืนยันว่าความกล้าหาญและความมุ่งมั่นของคุณจะให้ผลที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Emperor = อำนาจ",
+            "wands": "Five of Wands = ผ่านขัดแย้ง",
+            "cups": "Five of Cups = ผ่านผิดหวัง",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งผลลัพธ์ คือ 'ความกล้าและมุ่งมั่นให้ผลงดงาม'",
+          "advice_th": "เชื่อในการยืนหยัด - ผ่านการท้าทาย ปกป้องสิ่งที่สำคัญ เข้มแข็งขึ้น",
+          "keywords_th": ["ยืนหยัด", "รักษาจุดยืน", "เข้มแข็ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักผ่านการทดสอบและแกร่งขึ้น",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เป็นข่าวดี - ความรักของคุณจะผ่านการทดสอบและแกร่งขึ้น คุณและคู่จะยืนหยัดด้วยกัน ปกป้องความสัมพันธ์ และเข้าใจกันลึกซึ้งขึ้น ไพ่ยืนยันว่าความรักที่ผ่านการต่อสู้จะมั่นคงและยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Strength = พลังใจ",
+            "wands": "Two of Cups = ผูกพัน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งผลลัพธ์ความรัก คือ 'รักผ่านการต่อสู้จะมั่นคง'",
+          "advice_th": "เชื่อในการผ่านทดสอบ - ความรักแกร่งขึ้น ยืนหยัดด้วยกัน เข้าใจกันลึก",
+          "keywords_th": ["ผ่านทดสอบ", "แกร่งขึ้น", "มั่นคง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือรักษาตำแหน่งและพิสูจน์ความสามารถ",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดี - คุณจะรักษาตำแหน่งและพิสูจน์ความสามารถ สู้ชนะคู่แข่ง ได้รับการยอมรับ ก้าวสู่ความสำเร็จ ไพ่ยืนยันว่าความมุ่งมั่นและการต่อสู้ของคุณจะให้ผลตอบแทนที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The Sun = ความสำเร็จ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Six of Pentacles = ได้รับ",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งผลลัพธ์งาน คือ 'ความมุ่งมั่นให้ผลตอบแทนงดงาม'",
+          "advice_th": "เชื่อในความสำเร็จ - รักษาตำแหน่ง พิสูจน์ความสามารถ ชนะคู่แข่ง",
+          "keywords_th": ["รักษาตำแหน่ง", "พิสูจน์", "ชนะ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือเข้มแข็งและเป็นตัวเองอย่างเต็มที่",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นชัยชนะ - คุณจะเข้มแข็งและเป็นตัวเองอย่างเต็มที่ ยืนหยัดในค่านิยม ไม่ยอมตามกระแส กล้าเป็นแบบอย่าง ไพ่ยืนยันว่าการต่อสู้ของคุณจะให้ความเข้มแข็งและความเข้าใจตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Hermit = ปัญญา",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งผลลัพธ์เติบโต คือ 'ความเข้มแข็งและเข้าใจตัวเอง'",
+          "advice_th": "เฉลิมฉลองความเข้มแข็ง - เป็นตัวเองเต็มที่ ยืนหยัดในค่า กล้าเป็นแบบอย่าง",
+          "keywords_th": ["เข้มแข็ง", "เป็นตัวเอง", "แบบอย่าง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพดีจากการต่อสู้และดูแล",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดี - คุณจะมีสุขภาพดีจากการต่อสู้และดูแล ร่างกายฟื้นตัว พลังกลับมา ความเครียดลดลง ไพ่ยืนยันว่าความมุ่งมั่นในการดูแลตัวเองของคุณจะให้ผลที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังกาย, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้าตำแหน่งผลลัพธ์สุขภาพ คือ 'ความมุ่งมั่นให้ผลงดงาม'",
+          "advice_th": "เชื่อในสุขภาพดี - ร่างกายฟื้นตัว พลังกลับมา ความเครียดลดลง",
+          "keywords_th": ["สุขภาพดี", "ฟื้นตัว", "พลังกลับ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือยอมแพ้และสูญเสียโอกาส",
+          "detailed_interpretation_th": "เจ็ดไม้เท้ากลับหัวในตำแหน่งผลลัพธ์ เตือนว่าผลลัพธ์อาจเป็นยอมแพ้และสูญเสียโอกาส - การไม่กล้าสู้ การปล่อยให้คนอื่นกำหนด ความท้อแท้ ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ การกล้ายืนหยัดและไม่ยอมแพ้จะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ยอมรับ, The Tower = ตก",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งผลลัพธ์ คือ 'กล้ายืนหยัดเปลี่ยนผลลัพธ์'",
+          "advice_th": "อย่ายอมแพ้ - ยอมแพ้ไม่ใช่ผลลัพธ์สุดท้าย กล้ายืนหยัด",
+          "keywords_th": ["ยอมแพ้", "สูญเสียโอกาส", "กล้า"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือยอมปล่อยรักหรือถูกแยก",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวเตือนว่าอาจยอมปล่อยรักหรือถูกแยก - การไม่สู้เพื่อความสัมพันธ์ การยอมแพ้กับแรงกดดัน การสูญเสีย ไพ่บอกว่านี่ไม่ใช่จุดจบ การกล้าสู้และยืนหยัดจะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ห่างเหิน, The Tower = ตก",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'กล้าสู้เปลี่ยนผลลัพธ์'",
+          "advice_th": "กล้าสู้ในรัก - ยอมปล่อยรักไม่ใช่จุดจบ กล้าสู้และยืนหยัด",
+          "keywords_th": ["ยอมปล่อย", "ถูกแยก", "กล้าสู้"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือสูญเสียตำแหน่งหรือยอมแพ้กับคู่แข่ง",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวเตือนว่าอาจสูญเสียตำแหน่งหรือยอมแพ้กับคู่แข่ง - การถูกแซง การไม่ได้รับการยอมรับ ความล้มเหลว ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่ต้องเป็น การพัฒนาตัวเองและไม่ยอมแพ้จะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ตก, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Cups = ปล่อย",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งผลลัพธ์งาน คือ 'พัฒนาและไม่ยอมแพ้'",
+          "advice_th": "ไม่ยอมแพ้ - สูญเสียตำแหน่งไม่ใช่จุดจบ พัฒนาตัวเอง",
+          "keywords_th": ["สูญเสียตำแหน่ง", "ยอมแพ้", "พัฒนา"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือยอมตามกระแสและสูญเสียตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวเตือนว่าอาจยอมตามกระแสและสูญเสียตัวตน - การไม่กล้าเป็นตัวเอง การปล่อยให้สังคมกำหนด ความสูญเสียตัวตน ไพ่บอกว่านี่ไม่ใช่จุดจบ การกลับมายืนหยัดในค่านิยมจะเปลี่ยนผลลัพธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = กรอบสังคม, The Hanged Man = ติดอยู่",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ขาดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'กลับมายืนหยัดเปลี่ยนผลลัพธ์'",
+          "advice_th": "กลับมายืนหยัด - ยอมตามกระแสไม่ใช่ผลลัพธ์สุดท้าย กลับมาเป็นตัวเอง",
+          "keywords_th": ["ยอมตามกระแส", "สูญเสียตน", "กลับมา"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพแย่จากการไม่ดูแล",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวเตือนว่าอาจสุขภาพแย่จากการไม่ดูแล - ความเครียดสะสม การยอมแพ้กับนิสัยร้าย การไม่กล้าเผชิญปัญหา ไพ่บอกว่านี่ไม่ใช่ผลลัพธ์ที่หลีกเลี่ยงไม่ได้ การกล้าเผชิญและดูแลตัวเองจะเปลี่ยนสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = นิสัยร้าย, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = อ่อนแอ",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: เจ็ดไม้เท้ากลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'กล้าเผชิญเปลี่ยนสุขภาพ'",
+          "advice_th": "กล้าเผชิญ - สุขภาพแย่ไม่ใช่ผลลัพธ์สุดท้าย กล้าเผชิญและดูแลตน",
+          "keywords_th": ["สุขภาพแย่", "ไม่ดูแล", "กล้าเผชิญ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}

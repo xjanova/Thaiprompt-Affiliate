@@ -1,0 +1,1792 @@
+{
+  "card_identifier": {
+    "name_en": "The Sun",
+    "name_th": "ดวงอาทิตย์",
+    "number": 19,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความสุข ความสำเร็จ และพลังชีวิตเต็มเปี่ยม",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในปัจจุบัน บอกว่าคุณอยู่ในช่วงของความสุข ความสำเร็จ และพลังชีวิตเต็มเปี่ยม - ทุกอย่างชัดเจน เปิดทาง คุณรู้สึกมีพลังและมั่นใจ ไพ่ยืนยันว่าคุณกำลังเปล่งประกายและสิ่งดีๆ กำลังมาสู่คุณ ใช้ช่วงเวลาทองนี้สร้างสิ่งที่คุณต้องการ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The World = สำเร็จสมบูรณ์",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำสร้างสรรค์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ปัจจุบัน คือ 'ช่วงเวลาทองของชีวิต'",
+          "advice_th": "ใช้ช่วงเวลาทอง - คุณมีพลังเต็มเปี่ยม สิ่งดีๆ มา สร้างสิ่งที่ต้องการอย่างเต็มที่",
+          "keywords_th": ["ความสุข", "ความสำเร็จ", "พลังชีวิต"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักเปล่งประกายและมีความสุข",
+          "detailed_interpretation_th": "ในความรัก ดวงอาทิตย์ปัจจุบันชี้ว่าความรักเปล่งประกายและมีความสุข - หากมีคู่ ความสัมพันธ์อบอุ่นและเติบโต หากโสด มีโอกาสเจอคนที่ทำให้ใจสว่าง ไพ่ยืนยันว่าความรักครั้งนี้บริสุทธิ์ ซื่อสัตย์ และนำมาซึ่งความสุขที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The World = สำเร็จคู่",
+            "wands": "Four of Wands = ฉลองรัก",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ปัจจุบันความรัก คือ 'รักเปล่งประกายแท้จริง'",
+          "advice_th": "เพลิดเพลินกับความรัก - ความสัมพันธ์อบอุ่น มีความสุข ใช้ช่วงเวลาดีสร้างความทรงจำ",
+          "keywords_th": ["รักสุข", "อบอุ่น", "เปล่งประกาย"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานสำเร็จและการเงินมั่งคั่ง",
+          "detailed_interpretation_th": "ในการงาน ดวงอาทิตย์ปัจจุบันบอกว่างานสำเร็จและการเงินมั่งคั่ง - โครงการสำเร็จ ผลตอบแทนดี การยอมรับจากเพื่อนร่วมงาน ไพ่ยืนยันว่านี่คือช่วงเวลาทองของคุณในการงาน ใช้พลังนี้สร้างความก้าวหน้าและเก็บเกี่ยวผลของการทำงานหนัก",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = โชคดี, The World = สำเร็จยิ่งใหญ่",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์การเงิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ปัจจุบันงาน คือ 'เก็บเกี่ยวผลของการทำงานหนัก'",
+          "advice_th": "เก็บเกี่ยวความสำเร็จ - งานสำเร็จ การเงินมั่งคั่ง ใช้พลังสร้างความก้าวหน้าต่อ",
+          "keywords_th": ["งานสำเร็จ", "มั่งคั่ง", "ยอมรับ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ตัวตนเปล่งประกายและเชื่อมโยงกับจุดหมาย",
+          "detailed_interpretation_th": "ในการเติบโต ดวงอาทิตย์ปัจจุบันชี้ว่าตัวตนของคุณเปล่งประกายและเชื่อมโยงกับจุดหมายชีวิต - คุณรู้ว่าตัวเองเป็นใคร ทำอะไร และเพื่อใคร ไพ่ยืนยันว่าคุณอยู่ในเส้นทางที่ใช่และเป็นแสงสว่างให้คนรอบข้าง ใช้พลังนี้เปลี่ยนแปลงโลก",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ปัจจุบันเติบโต คือ 'เป็นแสงสว่างให้โลก'",
+          "advice_th": "เปล่งประกายตัวตน - คุณรู้จุดหมาย ใช้พลังนี้เปลี่ยนแปลงโลก เป็นแสงให้คนรอบข้าง",
+          "keywords_th": ["เปล่งประกาย", "จุดหมาย", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพดี ร่างกายเต็มไปด้วยพลัง",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงอาทิตย์ปัจจุบันบอกว่าสุขภาพของคุณดีและร่างกายเต็มไปด้วยพลัง - ฟื้นตัวเต็มที่ พลังชีวิตเต็มเปี่ยม จิตใจสดใส ไพ่ยืนยันว่านี่คือช่วงเวลาที่ดีต่อสุขภาพอย่างยิ่ง ใช้พลังนี้สร้างกิจวัตรที่ดีและรักษาความสุขนี้ต่อไป",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ปัจจุบันสุขภาพ คือ 'พลังเต็มเปี่ยม ใช้สร้างกิจวัตรดี'",
+          "advice_th": "ใช้พลังสุขภาพ - ร่างกายเต็มพลัง สร้างกิจวัตรที่ดี รักษาความสุขและสุขภาพต่อไป",
+          "keywords_th": ["สุขภาพดี", "พลังเต็ม", "สดใส"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความสำเร็จล่าช้าหรือความสุขถูกบดบัง",
+          "detailed_interpretation_th": "ดวงอาทิตย์กลับหัวในปัจจุบัน บอกว่าความสำเร็จล่าช้าหรือความสุขถูกบดบังชั่วคราว - มีอุปสรรคที่ยังไม่ผ่าน ความมั่นใจสั่นคลอน อารมณ์หม่นหมอง ไพ่บอกว่าแสงยังอยู่ในตัวคุณ เพียงต้องผ่านเมฆมาก่อน อย่าหมดหวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = อุปสรรค, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวปัจจุบัน คือ 'แสงยังอยู่ในตัวคุณ'",
+          "advice_th": "อย่าหมดหวัง - ความสุขถูกบดบังชั่วคราว ผ่านเมฆไป แสงในตัวยังอยู่",
+          "keywords_th": ["ล่าช้า", "หม่นหมอง", "ผ่านชั่วคราว"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักมีอุปสรรคชั่วคราว",
+          "detailed_interpretation_th": "ในความรัก ดวงอาทิตย์กลับหัวชี้ว่าความรักมีอุปสรรคชั่วคราว - การทะเลาะเล็กน้อย ความเข้าใจผิด หรือช่วงห่างเหิน ไพ่บอกว่านี่ไม่ใช่จุดจบ ความรักของคุณยังมีแสง เพียงต้องสื่อสารและฟื้นความเข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ทดสอบ, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวปัจจุบันความรัก คือ 'สื่อสารฟื้นความเข้าใจ'",
+          "advice_th": "สื่อสารและฟื้น - อุปสรรคชั่วคราว ความรักยังมีแสง สื่อสารฟื้นความเข้าใจ",
+          "keywords_th": ["อุปสรรครัก", "ชั่วคราว", "ฟื้นใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานล่าช้า การเงินไม่เป็นไปตามหวัง",
+          "detailed_interpretation_th": "ในการงาน ดวงอาทิตย์กลับหัวบอกว่างานล่าช้า การเงินไม่เป็นไปตามหวัง - โครงการชะลอ ผลตอบแทนน้อยกว่าคาด ความก้าวหน้าหยุดชะงัก ไพ่บอกว่าศักยภาพยังอยู่ ทบทวนวิธีและพยายามต่อ ความสำเร็จจะมาในเวลาที่เหมาะ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Hermit = ทบทวน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวปัจจุบันงาน คือ 'ศักยภาพยังอยู่ พยายามต่อ'",
+          "advice_th": "อย่าท้อ - งานล่าช้า ทบทวนวิธี พยายามต่อ ความสำเร็จมาในเวลาที่เหมาะ",
+          "keywords_th": ["งานล่าช้า", "ทบทวน", "พยายาม"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความมั่นใจสั่นคลอนและไม่เห็นทิศทาง",
+          "detailed_interpretation_th": "ในการเติบโต ดวงอาทิตย์กลับหัวเผยว่าความมั่นใจสั่นคลอนและไม่เห็นทิศทาง - การตั้งคำถามกับตัวเอง ความสงสัยในศักยภาพ การหลงทาง ไพ่บอกว่านี่เป็นช่วงทบทวน ฝึกความเชื่อในตัวเอง และค้นพบทิศทางที่แท้จริงอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Two of Swords = ไม่ตัดสิน",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = สับสน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวปัจจุบันเติบโต คือ 'ทบทวนค้นพบทิศทาง'",
+          "advice_th": "ทบทวนและค้นพบ - ความมั่นใจสั่นคลอน ฝึกเชื่อในตน ค้นพบทิศทางอีกครั้ง",
+          "keywords_th": ["มั่นใจสั่น", "ไม่เห็นทิศ", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "พลังลดลงและฟื้นตัวช้า",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงอาทิตย์กลับหัวบอกว่าพลังของคุณลดลงและฟื้นตัวช้า - ความเหนื่อยล้า ภูมิคุ้มกันอ่อน หรืออารมณ์หม่น ไพ่แนะให้คุณพักผ่อนให้พอ ดูแลสุขภาพจิต และให้เวลาร่างกายในการฟื้น พลังจะกลับมา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = ทบทวน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวปัจจุบันสุขภาพ คือ 'พักผ่อน พลังจะกลับมา'",
+          "advice_th": "พักผ่อนและดูแล - พลังลดลงชั่วคราว พักผ่อน ดูแลใจและกาย พลังจะกลับมา",
+          "keywords_th": ["พลังลด", "ฟื้นช้า", "พักผ่อน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือรักษาความสุขท่ามกลางความท้าทาย",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือการรักษาความสุขและความมั่นใจท่ามกลางความท้าทาย - อย่าให้สถานการณ์ภายนอกบดบังแสงในตัวคุณ อุปสรรคนี้เกี่ยวกับการรักษาแสงและพลังในช่วงยาก",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Star = ความหวัง",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Nine of Cups = ความสุข",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเอง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อุปสรรค คือ 'รักษาแสงในตน'",
+          "advice_th": "รักษาแสงในตน - อย่าให้สถานการณ์บดบังความสุขและพลัง ใช้แสงในตัวนำทาง",
+          "keywords_th": ["รักษาแสง", "ความสุข", "พลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือรักษาความสดใสในความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการรักษาความสดใสในความรัก - การไม่ให้กิจวัตรประจำวันทำให้ความรักจืดจาง การหาความสุขในสิ่งเล็กๆ การสร้างช่วงเวลาพิเศษกับคู่ ไพ่หนุนให้คุณใส่ใจกับสิ่งที่ทำให้ความรักเปล่งประกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวอบอุ่น",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อุปสรรคความรัก คือ 'สร้างความสุขในสิ่งเล็กๆ'",
+          "advice_th": "รักษาความสดใส - สร้างความสุขในสิ่งเล็กๆ ช่วงเวลาพิเศษ ความรักต้องการการดูแล",
+          "keywords_th": ["สดใส", "สุขเล็กๆ", "ดูแลรัก"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือรักษาความมั่นใจในงาน",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการรักษาความมั่นใจในงาน - การไม่ให้การวิจารณ์ทำให้สั่นคลอน การเชื่อในคุณค่าของตัวเอง การรักษาวิสัยทัศน์แม้เจออุปสรรค ไพ่หนุนให้คุณเปล่งประกายในงานและสร้างผลลัพธ์ที่พูดได้ด้วยตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, Strength = พลังใจ",
+            "wands": "Seven of Wands = ยืนหยัด",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อุปสรรคงาน คือ 'รักษาความมั่นใจในคุณค่าตน'",
+          "advice_th": "เปล่งประกายในงาน - เชื่อในคุณค่าตน รักษาวิสัยทัศน์ สร้างผลลัพธ์พูดได้ด้วยตัวเอง",
+          "keywords_th": ["มั่นใจ", "คุณค่าตน", "ผลลัพธ์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือเปล่งประกายตัวตนแท้ในโลกที่กดดัน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการเปล่งประกายตัวตนแท้ในโลกที่กดดันให้คุณเปลี่ยน - การไม่ปรับตัวเป็นคนอื่น การยืนหยัดในสิ่งที่คุณเป็น การกล้าเปิดเผยศักยภาพ ไพ่หนุนให้คุณเป็นตัวเองอย่างเต็มที่",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The World = สำเร็จ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อุปสรรคเติบโต คือ 'เป็นตัวเองอย่างเต็มที่'",
+          "advice_th": "เปล่งประกายตัวตน - ยืนหยัดเป็นตัวเอง ไม่ปรับเป็นคนอื่น กล้าเปิดเผยศักยภาพ",
+          "keywords_th": ["เปล่งประกาย", "ยืนหยัด", "เป็นตน"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือรักษาพลังในช่วงท้าทาย",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการรักษาพลังในช่วงท้าทาย - การไม่ให้ความเครียดทำลายสุขภาพ การสร้างกิจวัตรที่ปกป้องพลัง การใส่ใจสุขภาพจิต ไพ่หนุนให้คุณใช้แสงในตัวฟื้นและรักษาพลังชีวิตเต็มเปี่ยม",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อุปสรรคสุขภาพ คือ 'รักษาพลังในช่วงท้าทาย'",
+          "advice_th": "รักษาพลังชีวิต - สร้างกิจวัตรปกป้องพลัง ใส่ใจสุขภาพจิต ใช้แสงในตัวฟื้น",
+          "keywords_th": ["รักษาพลัง", "ปกป้อง", "ฟื้น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือความสุขที่ถูกบดบังจนหาทางไม่เจอ",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือความสุขถูกบดบังจนหาทางไม่เจอ - ความหดหู่ ขาดแรงบันดาลใจ ไม่เห็นแสงในชีวิต ไพ่หนุนให้คุณทำงานกับใจ ขอความช่วยเหลือ และเริ่มฟื้นความหวังทีละก้าว",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = ทุกข์",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อุปสรรค คือ 'ฟื้นความสุขทีละก้าว'",
+          "advice_th": "ฟื้นความสุขทีละก้าว - ใช้ช่วงนี้ดูแลใจ ขอความช่วยเหลือ เริ่มฟื้นความหวัง",
+          "keywords_th": ["สุขถูกบดบัง", "หดหู่", "ฟื้นทีละก้าว"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือความรักหมดแสงและความสดใส",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือความรักหมดแสงและความสดใส - กิจวัตรทำให้จืดจาง การทะเลาะซ้ำๆ ความเข้าใจผิดสะสม ไพ่บอกว่านี่ไม่ใช่จุดจบ ต้องทำงานกับความสัมพันธ์อย่างจริงจัง สื่อสาร สร้างความสดใสใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = วิกฤต, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อุปสรรคความรัก คือ 'สร้างความสดใสใหม่'",
+          "advice_th": "ทำงานกับความรัก - สื่อสาร สร้างความสดใสใหม่ ทำลายกิจวัตรที่ทำให้จืดจาง",
+          "keywords_th": ["หมดแสง", "จืดจาง", "สร้างใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคืองานล้มเหลวและการเงินตกต่ำ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคืองานล้มเหลวและการเงินตกต่ำ - โครงการพัง การลงทุนเสียหาย การถูกปฏิเสธ ไพ่หนุนให้คุณใช้เป็นบทเรียน ทบทวนกลยุทธ์ และเริ่มสร้างใหม่จากศักยภาพที่มี",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = โชคพลิก, The Tower = วิกฤต",
+            "wands": "Ten of Wands = แบกหนัก",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อุปสรรคงาน คือ 'ใช้ล้มเป็นบทเรียนสร้างใหม่'",
+          "advice_th": "ใช้ล้มเป็นบทเรียน - งานล้มเหลวชั่วคราว ทบทวนกลยุทธ์ เริ่มสร้างใหม่จากศักยภาพ",
+          "keywords_th": ["งานล้ม", "เงินตก", "สร้างใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือไม่เห็นแสงและคุณค่าในตน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการไม่เห็นแสงและคุณค่าในตัวเอง - ความรู้สึกไร้ค่า ความไม่มั่นใจ การเปรียบเทียบกับคนอื่น ไพ่หนุนให้คุณทำงานกับใจ ฝึกความเชื่อในตัวเอง และค้นพบแสงในตน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Five of Cups = ผิดหวังตน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อุปสรรคเติบโต คือ 'ค้นพบแสงในตน'",
+          "advice_th": "ค้นพบแสงในตน - ไม่เปรียบเทียบ ฝึกความเชื่อในตัวเอง คุณมีคุณค่าเป็นของตัวเอง",
+          "keywords_th": ["ไม่เห็นแสง", "ไร้ค่า", "ค้นพบ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือพลังหมดและร่างกายอ่อนแอ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือพลังหมดและร่างกายอ่อนแอ - ความเหนื่อยล้าเรื้อรัง ภูมิคุ้มกันต่ำ ซึมเศร้า ไพ่แนะให้คุณยอมรับและขอความช่วยเหลือ - จากแพทย์ ผู้เชี่ยวชาญด้านสุขภาพจิต ครอบครัว และให้เวลาฟื้น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = ติดยึด",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อุปสรรคสุขภาพ คือ 'ขอความช่วยเหลือ ให้เวลาฟื้น'",
+          "advice_th": "ขอความช่วยเหลือ - พลังหมด ยอมรับ ขอแพทย์ ผู้เชี่ยวชาญ ครอบครัว ให้เวลาฟื้น",
+          "keywords_th": ["พลังหมด", "อ่อนแอ", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยมีช่วงความสุขและความสำเร็จเปล่งประกาย",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในอดีต เผยว่าคุณเคยผ่านช่วงความสุขและความสำเร็จเปล่งประกาย - ช่วงเวลาที่ทุกอย่างชัดเจน พลังเต็มเปี่ยม สิ่งดีๆ มา ประสบการณ์นี้กลายเป็นรากฐานของความเชื่อมั่นในตัวเองและความรู้ว่าความสุขเป็นไปได้",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The World = สำเร็จ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อดีต คือ 'ความสุขเป็นไปได้เสมอ'",
+          "advice_th": "ใช้บทเรียนความสำเร็จ - คุณเคยเปล่งประกาย ใช้ความเชื่อนี้สร้างความสุขใหม่",
+          "keywords_th": ["สุขเก่า", "สำเร็จ", "เชื่อในตน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่เปล่งประกายและบริสุทธิ์",
+          "detailed_interpretation_th": "ในความรัก ดวงอาทิตย์อดีตเผยว่าคุณเคยมีความรักที่เปล่งประกายและบริสุทธิ์ - ความสัมพันธ์ที่อบอุ่น คนที่ทำให้ใจสว่าง ช่วงเวลาทองในรัก ประสบการณ์นี้สอนคุณว่าความรักแท้คืออะไร และเป็นต้นแบบสำหรับความรักในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อดีตความรัก คือ 'ต้นแบบรักบริสุทธิ์'",
+          "advice_th": "ใช้รักเก่าเป็นต้นแบบ - คุณเคยเจอรักแท้ ใช้สิ่งนี้เป็นมาตรฐานหารักใหม่",
+          "keywords_th": ["รักบริสุทธิ์", "ต้นแบบ", "เปล่งประกาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยประสบความสำเร็จในงานและการเงิน",
+          "detailed_interpretation_th": "ในการงาน ดวงอาทิตย์อดีตเผยว่าคุณเคยประสบความสำเร็จในงานและการเงิน - โครงการสำเร็จ ผลตอบแทนดี การยอมรับ ประสบการณ์นี้กลายเป็นความรู้ว่าคุณมีศักยภาพและสามารถสร้างความสำเร็จได้ ใช้ความมั่นใจนี้ในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = โชค, The World = สำเร็จ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์การเงิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อดีตงาน คือ 'คุณมีศักยภาพสร้างความสำเร็จ'",
+          "advice_th": "ใช้บทเรียนความสำเร็จเก่า - คุณเคยสำเร็จ มีศักยภาพ ใช้ความมั่นใจนี้สร้างใหม่",
+          "keywords_th": ["สำเร็จเก่า", "ศักยภาพ", "มั่นใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยเปล่งประกายและรู้จุดหมายชีวิต",
+          "detailed_interpretation_th": "ในการเติบโต ดวงอาทิตย์อดีตชี้ว่าคุณเคยเปล่งประกายและรู้จุดหมายชีวิต - ช่วงเวลาที่คุณรู้ว่าตัวเองเป็นใคร ทำอะไร และเพื่ออะไร ประสบการณ์นี้กลายเป็นรากฐานของปัญญาที่คุณมี ใช้มันเชื่อมโยงกับตัวตนแท้ในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Hermit = ปัญญา",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อดีตเติบโต คือ 'รู้จุดหมายเป็นรากฐาน'",
+          "advice_th": "ใช้ปัญญาเก่า - คุณเคยรู้จุดหมาย ใช้มันเชื่อมโยงกับตัวตนแท้ในปัจจุบัน",
+          "keywords_th": ["รู้จุดหมาย", "ปัญญา", "เชื่อมตน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีสุขภาพดีและพลังเต็มเปี่ยม",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงอาทิตย์อดีตเผยว่าคุณเคยมีสุขภาพดีและพลังเต็มเปี่ยม - ช่วงเวลาที่ร่างกายแข็งแรง จิตใจสดใส พลังชีวิตล้น ประสบการณ์นี้สอนคุณว่ารู้สึกอย่างไรเมื่อสุขภาพดี ใช้เป็นเป้าหมายและรู้ว่ามันเป็นไปได้",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อดีตสุขภาพ คือ 'สุขภาพดีเป็นไปได้'",
+          "advice_th": "ใช้บทเรียนสุขภาพดี - คุณเคยมีพลังเต็ม ใช้เป็นเป้าและรู้ว่าเป็นไปได้",
+          "keywords_th": ["สุขภาพดีเก่า", "พลังเต็ม", "เป้าหมาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยผ่านช่วงสุขที่ไม่ยั่งยืน",
+          "detailed_interpretation_th": "ดวงอาทิตย์กลับหัวในอดีต เผยว่าคุณเคยผ่านช่วงสุขที่ไม่ยั่งยืน - ความสำเร็จชั่วคราว ความสุขที่ผ่านไปเร็ว ช่วงทองที่จบลง บทเรียนคือคุณรู้ว่าความสุขแท้ต้องสร้างจากรากฐานที่มั่นคง ไม่ใช่จากปัจจัยภายนอก",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พังลง, The Wheel of Fortune (rev) = โชคพลิก",
+            "wands": "Five of Cups = ผิดหวัง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวอดีต คือ 'สุขแท้จากรากฐานมั่นคง'",
+          "advice_th": "ใช้บทเรียนสุขชั่วคราว - คุณรู้ว่าสุขแท้ต้องสร้างจากรากฐานมั่นคง ไม่ใช่ปัจจัยภายนอก",
+          "keywords_th": ["สุขไม่ยั่งยืน", "บทเรียน", "รากฐาน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่สวยภายนอกแต่กลวง",
+          "detailed_interpretation_th": "ในความรัก ดวงอาทิตย์กลับหัวในอดีตชี้ว่าคุณเคยมีความรักที่สวยภายนอกแต่กลวงข้างใน - ความสัมพันธ์ที่ดูดีแต่ขาดความลึกซึ้ง ความรักที่ตั้งบนภาพลักษณ์ ประสบการณ์นี้สอนให้คุณรู้คุณค่าของความรักที่แท้จริงเหนือภาพภายนอก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = เลือกผิด, The Moon = ภาพลวง",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ผิวเผิน",
+            "court_cards": "Knight of Cups (rev) = ลวงตา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวอดีตความรัก คือ 'ความลึกซึ้งเหนือภาพภายนอก'",
+          "advice_th": "ใช้บทเรียนรักกลวง - คุณรู้ว่าความรักแท้คือความลึกซึ้ง ไม่ใช่ภาพภายนอก",
+          "keywords_th": ["รักกลวง", "ภาพลักษณ์", "ลึกซึ้ง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยมีความสำเร็จที่ไม่ยั่งยืน",
+          "detailed_interpretation_th": "ในการงาน ดวงอาทิตย์กลับหัวในอดีตเผยว่าคุณเคยมีความสำเร็จที่ไม่ยั่งยืน - การได้รับการยอมรับชั่วคราว ผลตอบแทนที่หายไป ความสำเร็จที่ตั้งบนกระแส บทเรียนคือคุณรู้ว่าต้องสร้างความสำเร็จที่ยั่งยืนจากคุณค่าจริง",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = โชคพลิก, The Tower = พัง",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "King of Pentacles (rev) = พัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวอดีตงาน คือ 'สำเร็จยั่งยืนจากคุณค่า'",
+          "advice_th": "ใช้บทเรียนสำเร็จชั่วคราว - สร้างความสำเร็จยั่งยืนจากคุณค่าจริง ไม่ใช่กระแส",
+          "keywords_th": ["สำเร็จไม่ยั่ง", "บทเรียน", "คุณค่า"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยมีช่วงที่แสงดับและความมั่นใจหาย",
+          "detailed_interpretation_th": "ในการเติบโต ดวงอาทิตย์กลับหัวในอดีตเผยว่าคุณเคยมีช่วงที่แสงดับและความมั่นใจหาย - ความรู้สึกไร้ค่า ขาดทิศทาง ไม่เห็นจุดหมาย บทเรียนคือคุณรู้ว่าแสงในตัวต้องการการดูแลและการเชื่อมโยงกับจุดหมายลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, The Moon = สับสน",
+            "wands": "Eight of Swords = ติดกรอบ",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวอดีตเติบโต คือ 'แสงต้องการการดูแล'",
+          "advice_th": "ใช้บทเรียนแสงดับ - คุณรู้ว่าแสงในตัวต้องการการดูแลและเชื่อมโยงกับจุดหมายลึก",
+          "keywords_th": ["แสงดับเก่า", "ดูแล", "เชื่อมจุดหมาย"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีช่วงที่สุขภาพแย่ลงและฟื้นช้า",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงอาทิตย์กลับหัวในอดีตเผยว่าคุณเคยมีช่วงที่สุขภาพแย่ลงและฟื้นช้า - ความเหนื่อยล้าเรื้อรัง ซึมเศร้า ภูมิคุ้มกันต่ำ บทเรียนคือคุณรู้ว่าสุขภาพต้องการการดูแลต่อเนื่อง การพักผ่อนเพียงพอ และใส่ใจสุขภาพจิต",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = ติดยึด",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวอดีตสุขภาพ คือ 'ดูแลต่อเนื่อง'",
+          "advice_th": "ใช้บทเรียนสุขภาพเก่า - ดูแลต่อเนื่อง พักผ่อนพอ ใส่ใจสุขภาพจิต",
+          "keywords_th": ["สุขภาพแย่เก่า", "ฟื้นช้า", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีความสุขและความสำเร็จ",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในอนาคต เป็นข่าวดียิ่ง - อนาคตจะมีความสุขและความสำเร็จเปล่งประกาย คุณจะผ่านอุปสรรคและเข้าสู่ช่วงทองของชีวิต ทุกอย่างจะชัดเจน เปิดทาง และคุณจะมีพลังเต็มเปี่ยมในการสร้างสิ่งที่ต้องการ ไพ่ยืนยันว่าแสงอยู่ปลายอุโมงค์",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Star = ความหวังจริง",
+            "wands": "Three of Wands = ขยายตัว",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำสร้างสรรค์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อนาคต คือ 'แสงปลายอุโมงค์ ช่วงทองมา'",
+          "advice_th": "เชื่อมั่นในอนาคต - ความสุขและความสำเร็จเปล่งประกายรออยู่ใช้ช่วงนี้เตรียมตัว",
+          "keywords_th": ["ความสุข", "ความสำเร็จ", "ช่วงทอง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักที่เปล่งประกายและบริสุทธิ์รออยู่",
+          "detailed_interpretation_th": "ในความรัก ดวงอาทิตย์อนาคตเป็นข่าวดียิ่ง - ความรักที่เปล่งประกายและบริสุทธิ์รออยู่ หากโสด คนที่ใช่จะปรากฏและทำให้ใจสว่าง หากมีคู่ ความสัมพันธ์จะเข้าสู่ช่วงทอง ความเข้าใจลึก และความสุขร่วมกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The World = สำเร็จคู่",
+            "wands": "Four of Wands = ฉลองรัก",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อนาคตความรัก คือ 'รักเปล่งประกายรออยู่'",
+          "advice_th": "เปิดใจรับความรัก - ความสัมพันธ์เปล่งประกาย ความสุขร่วมกันรออยู่ข้างหน้า",
+          "keywords_th": ["รักเปล่งประกาย", "บริสุทธิ์", "ช่วงทอง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานสำเร็จและการเงินมั่งคั่งรออยู่",
+          "detailed_interpretation_th": "ในการงาน ดวงอาทิตย์อนาคตเป็นข่าวดียิ่ง - งานสำเร็จและการเงินมั่งคั่งรออยู่ โครงการสำเร็จ ผลตอบแทนดี การยอมรับ ไพ่ยืนยันว่าความพยายามของคุณจะให้ผล ใช้ช่วงนี้สร้างฐานและรอเก็บเกี่ยว",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = โชคดี, The World = สำเร็จยิ่งใหญ่",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์การเงิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อนาคตงาน คือ 'ความพยายามให้ผล'",
+          "advice_th": "เตรียมรับความสำเร็จ - งานสำเร็จ การเงินมั่งคั่ง สร้างฐานรอเก็บเกี่ยว",
+          "keywords_th": ["งานสำเร็จ", "มั่งคั่ง", "เก็บเกี่ยว"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ตัวตนเปล่งประกายและเชื่อมโยงกับจุดหมาย",
+          "detailed_interpretation_th": "ในการเติบโต ดวงอาทิตย์อนาคตเป็นชัยชนะ - ตัวตนของคุณจะเปล่งประกายและเชื่อมโยงกับจุดหมายชีวิต คุณจะเข้าใจว่าตัวเองเป็นใคร ทำเพื่ออะไร และเป็นแสงให้คนอื่น ไพ่ยืนยันว่าการเติบโตของคุณจะสมบูรณ์",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อนาคตเติบโต คือ 'เปล่งประกายเป็นแสงให้โลก'",
+          "advice_th": "เตรียมใจรับการเปล่งประกาย - ตัวตนเชื่อมโยงจุดหมาย เป็นแสงให้คนอื่น",
+          "keywords_th": ["เปล่งประกาย", "จุดหมาย", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพดีและพลังเต็มเปี่ยมกลับมา",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงอาทิตย์อนาคตเป็นข่าวดียิ่ง - สุขภาพดีและพลังเต็มเปี่ยมจะกลับมา หลังผ่านความยาก ร่างกายและจิตใจฟื้นเต็มที่ คุณจะมีพลังชีวิตล้นและสุขภาพที่งดงาม ไพ่หนุนให้คุณรักษาวิถีชีวิตที่ดีต่อเนื่อง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์อนาคตสุขภาพ คือ 'พลังเต็มเปี่ยมรออยู่'",
+          "advice_th": "เชื่อในการฟื้น - สุขภาพดีและพลังเต็มเปี่ยมรออยู่ รักษาวิถีดีต่อเนื่อง",
+          "keywords_th": ["สุขภาพดี", "พลังเต็ม", "งดงาม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีความสำเร็จที่ล่าช้า",
+          "detailed_interpretation_th": "ดวงอาทิตย์กลับหัวในอนาคต บอกว่าอนาคตจะมีความสำเร็จที่ล่าช้าหรือไม่ตรงตามที่คาดหวัง - อุปสรรคที่ต้องผ่าน ผลที่ใช้เวลานาน หรือต้องปรับเป้าหมาย ไพ่บอกว่าความสำเร็จจะมา เพียงต้องอดทนและรักษาความหวังต่อไป",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Temperance = สมดุล",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวอนาคต คือ 'อดทนรอความสำเร็จ'",
+          "advice_th": "เตรียมรับความล่าช้า - ความสำเร็จมาแต่ช้ากว่าหวัง อดทน รักษาความหวัง",
+          "keywords_th": ["สำเร็จล่าช้า", "อดทน", "ความหวัง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักจะมีอุปสรรคชั่วคราว",
+          "detailed_interpretation_th": "ในความรัก ดวงอาทิตย์กลับหัวอนาคตเตือนว่าความรักจะมีอุปสรรคชั่วคราว - การเข้าใจผิด ช่วงห่างเหิน หรือความสุขที่ดูเหมือนหายไป ไพ่หนุนให้คุณรักษาความเชื่อมั่นในความรัก สื่อสารเปิดและฟื้นความเข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ทดสอบ, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวอนาคตความรัก คือ 'สื่อสารฟื้นความเข้าใจ'",
+          "advice_th": "เตรียมรับอุปสรรค - ความรักจะมีช่วงท้าทาย สื่อสารเปิด รักษาความเชื่อมั่น",
+          "keywords_th": ["อุปสรรคชั่วคราว", "สื่อสาร", "เชื่อมั่น"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานหรือเงินจะมีอุปสรรคและล่าช้า",
+          "detailed_interpretation_th": "ในการงาน ดวงอาทิตย์กลับหัวอนาคตเตือนว่าจะมีอุปสรรคและล่าช้า - โครงการชะลอ ผลตอบแทนน้อยกว่าหวัง การลงทุนที่ไม่ตามแผน ไพ่หนุนให้คุณรักษาวิสัยทัศน์ ทบทวนกลยุทธ์ และไม่ปล่อยให้ความท้อทำลายแผน",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Hermit = ทบทวน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวอนาคตงาน คือ 'รักษาวิสัยทัศน์ทบทวนกลยุทธ์'",
+          "advice_th": "เตรียมรับอุปสรรค - รักษาวิสัยทัศน์ ทบทวนกลยุทธ์ ไม่ปล่อยความท้อทำลาย",
+          "keywords_th": ["อุปสรรคงาน", "ล่าช้า", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตจะมีช่วงสงสัยตัวเอง",
+          "detailed_interpretation_th": "ในการเติบโต ดวงอาทิตย์กลับหัวอนาคตเตือนว่าจะมีช่วงสงสัยตัวเองและความมั่นใจสั่นคลอน - การตั้งคำถามกับเส้นทาง ความรู้สึกไร้ค่า ไพ่บอกว่าช่วงนี้ผ่านได้ ฝึกความเชื่อในตัวเอง ขอความช่วยเหลือ และค้นพบแสงในตนอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวอนาคตเติบโต คือ 'ฝึกเชื่อในตน'",
+          "advice_th": "เตรียมรับช่วงสงสัยตน - ฝึกเชื่อในตน ขอความช่วยเหลือ ค้นพบแสงในตัวอีกครั้ง",
+          "keywords_th": ["สงสัยตน", "มั่นใจสั่น", "ค้นพบ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอาจฟื้นช้าและพลังลดลง",
+          "detailed_interpretation_th": "ในสุขภาพ ดวงอาทิตย์กลับหัวอนาคตบอกว่าสุขภาพอาจฟื้นช้าและพลังลดลง - ความเหนื่อยล้า ภูมิคุ้มกันอ่อน อารมณ์หม่น ไพ่แนะให้คุณพักผ่อนเพียงพอ ดูแลสุขภาพจิตเป็นพิเศษ และให้เวลาร่างกายในการฟื้น พลังจะกลับมา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = ทบทวน",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวอนาคตสุขภาพ คือ 'พลังจะกลับ ให้เวลา'",
+          "advice_th": "เตรียมรับการฟื้นช้า - พักผ่อนพอ ดูแลสุขภาพจิต ให้เวลา พลังจะกลับมา",
+          "keywords_th": ["ฟื้นช้า", "พลังลด", "ให้เวลา"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือชีวิตที่เปล่งประกายและมีความสุข",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือชีวิตที่เปล่งประกายและมีความสุข - ความสำเร็จที่สอดคล้องกับคุณค่า ความสัมพันธ์ที่อบอุ่น สุขภาพดี การเป็นแสงให้คนอื่น เป้าหมายนี้คือชีวิตที่สมบูรณ์ในทุกด้าน",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Star = ความหวัง",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์เป้าหมาย คือ 'ชีวิตเปล่งประกายในทุกด้าน'",
+          "advice_th": "ตั้งเป้าชีวิตเปล่งประกาย - ความสุข ความสำเร็จ ความสัมพันธ์ สุขภาพ ทุกด้านสมบูรณ์",
+          "keywords_th": ["เปล่งประกาย", "สมบูรณ์", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือความรักที่เปล่งประกายและเติมเต็ม",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือความรักที่เปล่งประกายและเติมเต็ม - ความสัมพันธ์ที่อบอุ่น ซื่อสัตย์ เติบโตร่วมกัน ความรักที่ทำให้ทั้งคุณและคู่เป็นคนที่ดีขึ้น ไพ่หนุนให้คุณตั้งเป้าหมายความรักที่นำมาซึ่งความสุขแท้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The World = สำเร็จคู่",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์เป้าหมายความรัก คือ 'รักทำให้ทั้งคู่ดีขึ้น'",
+          "advice_th": "ตั้งเป้าความรักเติมเต็ม - อบอุ่น ซื่อสัตย์ เติบโตร่วม ทำให้ทั้งคู่ดีขึ้น",
+          "keywords_th": ["รักเติมเต็ม", "เติบโตคู่", "ความสุขแท้"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือความสำเร็จที่มีความหมายและมั่งคั่ง",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือความสำเร็จที่มีความหมายและมั่งคั่ง - งานที่ใช้พรสวรรค์ ผลตอบแทนที่สมศักดิ์ศรี การยอมรับ ความก้าวหน้า ไพ่หนุนให้คุณตั้งเป้าหมายความสำเร็จที่ตรงคุณค่าและสร้างประโยชน์ ไม่ใช่แค่เงิน",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จยิ่งใหญ่, Wheel of Fortune = โชคดี",
+            "wands": "Three of Wands = ขยายไกล",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์เป้าหมายงาน คือ 'สำเร็จที่มีความหมายและสร้างประโยชน์'",
+          "advice_th": "ตั้งเป้าสำเร็จมีความหมาย - งานใช้พรสวรรค์ ผลตอบแทนสมศักดิ์ ตรงคุณค่า",
+          "keywords_th": ["สำเร็จมีความหมาย", "มั่งคั่ง", "ตรงคุณค่า"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือตัวตนแท้ที่เปล่งประกาย",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือตัวตนแท้ที่เปล่งประกาย - การเป็นตัวเองอย่างเต็มที่ ใช้พรสวรรค์เพื่อโลก เป็นแสงให้คนอื่น เชื่อมโยงกับจุดหมายชีวิต ไพ่หนุนให้คุณก้าวสู่ระดับการเติบโตที่ลึกที่สุด คือการเป็นแสงสว่าง",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์เป้าหมายเติบโต คือ 'เป็นแสงสว่างให้โลก'",
+          "advice_th": "ตั้งเป้าเป็นตัวเองเต็มที่ - ใช้พรสวรรค์เพื่อโลก เป็นแสง เชื่อมโยงจุดหมาย",
+          "keywords_th": ["ตัวตนแท้", "เป็นแสง", "เปล่งประกาย"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพดีและพลังเต็มเปี่ยม",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือสุขภาพดีและพลังเต็มเปี่ยม - ร่างกายแข็งแรง จิตใจสดใส พลังชีวิตล้น ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพที่ครอบคลุมทุกด้าน - ออกกำลังกาย ทานอาหารดี พักผ่อน ฝึกสติ เพื่อชีวิตที่เปล่งประกาย",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์เป้าหมายสุขภาพ คือ 'สุขภาพดีและพลังเต็ม'",
+          "advice_th": "ตั้งเป้าสุขภาพรอบด้าน - ออกกำลังกาย ทานอาหารดี พักผ่อน ฝึกสติ ชีวิตเปล่งประกาย",
+          "keywords_th": ["สุขภาพดี", "พลังเต็ม", "เปล่งประกาย"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือฟื้นความสุขที่จางหายไป",
+          "detailed_interpretation_th": "ดวงอาทิตย์กลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือการฟื้นความสุขที่จางหายไป - กลับมามีความหมาย เห็นแสงในชีวิต ค้นพบเส้นทางใหม่ เป้าหมายนี้ต้องการความอดทนและการทำงานกับใจ แต่จะนำมาซึ่งการตื่นรู้ที่ลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวเป้าหมาย คือ 'ฟื้นความสุขเป็นกระบวนการ'",
+          "advice_th": "ตั้งเป้าฟื้นความสุข - ทำงานกับใจ ค้นพบเส้นทางใหม่ ตื่นรู้ที่ลึกซึ้ง",
+          "keywords_th": ["ฟื้นความสุข", "ตื่นรู้", "เส้นทางใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือฟื้นความสดใสในความรัก",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือการฟื้นความสดใสในความรัก - กลับมาเปล่งประกาย ความสัมพันธ์มีชีวิต ความเข้าใจกันลึก ไพ่หนุนให้คุณลงทุนในความรักของคุณ สร้างช่วงเวลาพิเศษ และไม่ปล่อยให้กิจวัตรทำลายความสดใส",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Two of Cups = ผูกพันใหม่",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวเป้าหมายความรัก คือ 'ลงทุนในความรัก'",
+          "advice_th": "ตั้งเป้าฟื้นความสดใสรัก - ลงทุนในความรัก ช่วงเวลาพิเศษ ไม่ปล่อยกิจวัตรทำลาย",
+          "keywords_th": ["ฟื้นความสดใส", "ลงทุน", "ช่วงเวลาพิเศษ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือฟื้นแรงบันดาลใจและความสำเร็จ",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือการฟื้นแรงบันดาลใจและความสำเร็จ - หลังจากหมดไฟ ค้นพบสิ่งที่จุดประกาย กลับมาทำงานด้วยใจ สร้างความสำเร็จใหม่ ไพ่หนุนให้คุณสำรวจสิ่งที่เคยรัก ลองสิ่งใหม่ และไม่ยอมจำนนต่อความเบื่อหน่าย",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune = ปรับโชค",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "Knight of Wands = พลังกลับ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวเป้าหมายงาน คือ 'ค้นพบสิ่งที่จุดประกาย'",
+          "advice_th": "ตั้งเป้าฟื้นแรงบันดาลใจ - สำรวจสิ่งที่เคยรัก ลองใหม่ ไม่ยอมจำนนต่อเบื่อหน่าย",
+          "keywords_th": ["ฟื้นแรง", "จุดประกาย", "สิ่งใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือฟื้นความมั่นใจและค้นพบตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือการฟื้นความมั่นใจและค้นพบตัวตน - หลังจากแสงดับ กลับมาเห็นคุณค่าตัวเอง ค้นพบทิศทาง ฝึกความเชื่อในตน ไพ่หนุนให้คุณทำงานกับใจอย่างจริงจัง ใช้สมาธิและการสำรวจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = ใจเปิด",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Queen of Cups = ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวเป้าหมายเติบโต คือ 'ฟื้นมั่นใจค้นพบตน'",
+          "advice_th": "ตั้งเป้าฟื้นมั่นใจ - กลับมาเห็นคุณค่าตน ค้นพบทิศทาง ใช้สมาธิและการสำรวจ",
+          "keywords_th": ["ฟื้นมั่นใจ", "ค้นพบตน", "สำรวจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือฟื้นพลังและความสดใส",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือการฟื้นพลังและความสดใส - หลังจากเหนื่อยล้า กลับมามีพลังชีวิต ร่างกายแข็งแรง จิตใจสดใส ไพ่หนุนให้คุณดูแลสุขภาพจิตเป็นพิเศษ ขอความช่วยเหลือผู้เชี่ยวชาญ และให้เวลาฟื้น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวเป้าหมายสุขภาพ คือ 'ฟื้นพลังต้องเวลา'",
+          "advice_th": "ตั้งเป้าฟื้นพลัง - ดูแลสุขภาพจิตพิเศษ ขอช่วยผู้เชี่ยวชาญ ให้เวลาฟื้น",
+          "keywords_th": ["ฟื้นพลัง", "สุขภาพจิต", "ค่อยๆ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความเชื่อมั่นและพลังในตน",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความเชื่อมั่นและพลังในตัวเอง - คุณรู้ว่ามีค่า มีศักยภาพ มีแสงในตัว รากฐานนี้ทำให้คุณเปล่งประกายในทุกสถานการณ์และดึงดูดสิ่งดีๆ เข้ามา",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The World = สำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเอง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์รากฐาน คือ 'ความเชื่อในตนคือพลัง'",
+          "advice_th": "ใช้ความเชื่อในตนเป็นรากฐาน - คุณมีคุณค่าและศักยภาพ ใช้แสงในตัวนำทาง",
+          "keywords_th": ["เชื่อในตน", "พลัง", "เปล่งประกาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือความรักตัวเองและความเปิดใจ",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความรักตัวเองและความเปิดใจ - คุณรักตัวเองก่อน รู้คุณค่า เปิดใจรับความรักโดยไม่หวงแหน รากฐานนี้ทำให้คุณเป็นคู่ครองที่ดี ดึงดูดความรักที่บริสุทธิ์ และสร้างความสัมพันธ์ที่อบอุ่น",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่น",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์รากฐานความรัก คือ 'รักตนเองดึงดูดรักบริสุทธิ์'",
+          "advice_th": "ใช้รักตัวเองเป็นรากฐาน - รู้คุณค่า เปิดใจ ดึงดูดรักบริสุทธิ์และอบอุ่น",
+          "keywords_th": ["รักตน", "เปิดใจ", "อบอุ่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือความเชื่อในศักยภาพและคุณค่า",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือความเชื่อในศักยภาพและคุณค่าของตัวเอง - คุณรู้ว่ามีพรสวรรค์ มีค่า สามารถสร้างความสำเร็จ รากฐานนี้ทำให้คุณกล้าตัดสินใจ คว้าโอกาส และไม่ยอมรับสิ่งที่ต่ำกว่าคุณค่า",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The World = สำเร็จ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเอง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์รากฐานงาน คือ 'รู้คุณค่าและศักยภาพ'",
+          "advice_th": "ใช้ความเชื่อในศักยภาพ - กล้าตัดสินใจ คว้าโอกาส ไม่ยอมรับสิ่งต่ำกว่าคุณค่า",
+          "keywords_th": ["ศักยภาพ", "คุณค่า", "กล้าตัดสิน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือการรู้จักตัวเองและจุดหมาย",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือการรู้จักตัวเองและจุดหมาย - คุณรู้ว่าตัวเองเป็นใคร ทำเพื่ออะไร และอยู่ในเส้นทางที่ใช่ รากฐานนี้ทำให้คุณมั่นคงในตัวตน เป็นแสงสว่างให้คนรอบข้าง และเติบโตอย่างต่อเนื่อง",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Hermit = ปัญญา",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเอง",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์รากฐานเติบโต คือ 'รู้จักตนคือพลัง'",
+          "advice_th": "ใช้การรู้จักตน - คุณรู้จุดหมาย เป็นแสงให้คนรอบข้าง เติบโตอย่างต่อเนื่อง",
+          "keywords_th": ["รู้จักตน", "จุดหมาย", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือพลังชีวิตและความสดใส",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือพลังชีวิตและความสดใส - ร่างกายแข็งแรง จิตใจเปิด ความเชื่อในพลังเยียวยา รากฐานนี้ทำให้คุณมีสุขภาพดีระยะยาวและฟื้นจากความเจ็บป่วยได้",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์รากฐานสุขภาพ คือ 'พลังชีวิตในตน'",
+          "advice_th": "ใช้พลังชีวิตเป็นรากฐาน - ร่างกายแข็งแรง จิตใจเปิด เชื่อในพลังเยียวยา",
+          "keywords_th": ["พลังชีวิต", "สดใส", "เยียวยา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความไม่มั่นใจและความรู้สึกไร้ค่า",
+          "detailed_interpretation_th": "ดวงอาทิตย์กลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความไม่มั่นใจและความรู้สึกไร้ค่า - คุณตัดสินใจจากความกลัว เปรียบเทียบตัวเองกับคนอื่น ไม่เห็นคุณค่าในตน รากฐานนี้ขังคุณจากศักยภาพ ถึงเวลาทำงานกับใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = ติดยึด",
+            "wands": "Five of Wands = ขัดแย้งใน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวรากฐาน คือ 'ฟื้นมั่นใจคือก้าวแรก'",
+          "advice_th": "ทำงานกับใจ - ฟื้นมั่นใจ ไม่เปรียบเทียบ เห็นคุณค่าในตน เปิดศักยภาพ",
+          "keywords_th": ["ไม่มั่นใจ", "ไร้ค่า", "ฟื้น"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือกลัวรักและไม่รักตัวเอง",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือกลัวรักและไม่รักตัวเอง - คุณไม่เชื่อว่าคู่จริงๆ จะรัก ไม่เห็นค่าตน ปิดใจรับรัก รากฐานนี้สร้างกำแพงที่ขัดความรักไม่ให้เข้ามา ถึงเวลาเยียวยาและเรียนรู้รักตัวเองก่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = บาดแผล, The Moon = ลวงตา",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวรากฐานความรัก คือ 'รักตนก่อนรับรัก'",
+          "advice_th": "เรียนรู้รักตัวเอง - กำแพงจากกลัวขัดรักเข้ามา รักตนก่อน เห็นคุณค่าตน",
+          "keywords_th": ["กลัวรัก", "ไม่รักตน", "เรียนรู้"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือไม่เชื่อในศักยภาพและกลัวล้มเหลว",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือไม่เชื่อในศักยภาพและกลัวล้มเหลว - คุณไม่กล้าฝัน ไม่กล้าเสี่ยง ไม่เห็นคุณค่าของพรสวรรค์ รากฐานนี้ทำให้คุณติดอยู่กับสิ่งที่ปลอดภัย ไม่ก้าวหน้า ถึงเวลาฝึกความเชื่อในตน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Swords = ติดกรอบ",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวรากฐานงาน คือ 'ฝึกเชื่อในศักยภาพ'",
+          "advice_th": "ฝึกเชื่อในศักยภาพ - กลัวล้มเหลวขังคุณ กล้าฝัน กล้าเสี่ยง เห็นพรสวรรค์",
+          "keywords_th": ["ไม่เชื่อตน", "กลัวล้ม", "ฝึกเชื่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือแสงดับและไม่เห็นจุดหมาย",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือแสงดับและไม่เห็นจุดหมาย - คุณรู้สึกหลงทาง ไร้ค่า ไม่เห็นว่าจะไปทางไหน รากฐานนี้ทำให้คุณติดอยู่กับที่ ถึงเวลากลับมาเชื่อมโยงกับตัวเอง ใช้สมาธิ ค้นพบจุดหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = หมดอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวรากฐานเติบโต คือ 'ค้นพบจุดหมายเชื่อมโยงตน'",
+          "advice_th": "เชื่อมโยงตัวเองอีกครั้ง - แสงดับชั่วคราว ใช้สมาธิ ค้นพบจุดหมาย ฟื้นแสงในตน",
+          "keywords_th": ["แสงดับ", "หลงทาง", "ค้นพบ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือพลังหมดและไม่เชื่อในการฟื้น",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือพลังหมดและไม่เชื่อในการฟื้น - ความเหนื่อยล้าเรื้อรัง ภูมิคุ้มกันต่ำ ความรู้สึกว่าร่างกายจะไม่ดีขึ้น รากฐานนี้ทำให้สุขภาพแย่ลง ถึงเวลาขอความช่วยเหลือและฟื้นความเชื่อในพลังเยียวยา",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Devil = ติดยึด",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวรากฐานสุขภาพ คือ 'ฟื้นความเชื่อในพลังเยียวยา'",
+          "advice_th": "ขอความช่วยเหลือ - พลังหมด ขอแพทย์ ผู้เชี่ยวชาญ ครอบครัว ฟื้นความเชื่อในเยียวยา",
+          "keywords_th": ["พลังหมด", "ไม่เชื่อฟื้น", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เข้าหาด้วยความมั่นใจและมองโลกในแง่ดี",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีที่สุดคือเข้าหาด้วยความมั่นใจและมองโลกในแง่ดี - เชื่อในตัวเอง เปล่งประกายความสุข แสดงออกอย่างจริงใจ ไพ่หนุนให้คุณนำด้วยพลังบวกและความชัดเจน สิ่งดีๆ จะตามมา",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, The Star = ความหวัง",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Wands = มองไกล",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งคำแนะนำ คือ 'นำด้วยพลังบวก'",
+          "advice_th": "เข้าหาด้วยความมั่นใจ - เชื่อในตัวเอง มองโลกในแง่ดี เปล่งประกาย สิ่งดีจะตามมา",
+          "keywords_th": ["มั่นใจ", "แง่ดี", "เปล่งประกาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เข้าหาความรักด้วยความเปิดเผยและจริงใจ",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณควรเข้าหาด้วยความเปิดเผยและจริงใจ - แสดงความรู้สึกอย่างตรงไปตรงมา เปล่งประกายความสุข ไม่ปิดบัง ไพ่หนุนให้คุณนำด้วยความอบอุ่นและความบริสุทธิ์ ความรักจะตอบสนอง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งคำแนะนำความรัก คือ 'เปิดเผยและจริงใจ'",
+          "advice_th": "เข้าหารักด้วยความจริงใจ - แสดงความรู้สึกตรงไปตรงมา เปล่งประกาย อบอุ่น",
+          "keywords_th": ["เปิดเผย", "จริงใจ", "อบอุ่น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทำงานด้วยความมั่นใจและแสดงผลงาน",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรทำงานด้วยความมั่นใจและแสดงผลงาน - เชื่อในศักยภาพ กล้าแสดงออก คว้าโอกาส ไพ่หนุนให้คุณเปล่งประกายในงาน นำเสนอความสำเร็จ และไม่กลัวที่จะรับการยอมรับที่สมควรได้",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = อำนาจ, The World = สำเร็จ",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งคำแนะนำงาน คือ 'แสดงผลงานอย่างมั่นใจ'",
+          "advice_th": "ทำงานด้วยความมั่นใจ - เชื่อในศักยภาพ แสดงผลงาน คว้าโอกาส รับการยอมรับ",
+          "keywords_th": ["มั่นใจ", "แสดงผลงาน", "คว้าโอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป็นตัวเองอย่างเต็มที่และเปล่งประกาย",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรเป็นตัวเองอย่างเต็มที่และเปล่งประกาย - แสดงตัวตนแท้ ใช้พรสวรรค์ ไม่ซ่อนแสง ไพ่หนุนให้คุณยอมรับและภูมิใจในสิ่งที่คุณเป็น และแบ่งปันแสงนั้นกับโลก",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, Strength = พลังใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งคำแนะนำเติบโต คือ 'ไม่ซ่อนแสงในตน'",
+          "advice_th": "เป็นตัวเองเต็มที่ - แสดงตัวตนแท้ ใช้พรสวรรค์ ภูมิใจในตน แบ่งปันแสงกับโลก",
+          "keywords_th": ["เป็นตน", "เปล่งประกาย", "แบ่งปันแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ดูแลสุขภาพด้วยพลังบวกและกิจกรรมที่ทำให้สดใส",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรดูแลสุขภาพด้วยพลังบวกและกิจกรรมที่ทำให้สดใส - ออกกำลังกายกลางแจ้ง รับแสงแดด ทำสิ่งที่ทำให้มีความสุข ไพ่หนุนให้คุณดูแลทั้งกายและใจด้วยความสนุกและพลังชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งคำแนะนำสุขภาพ คือ 'ดูแลด้วยพลังบวกและความสนุก'",
+          "advice_th": "ดูแลด้วยพลังบวก - ออกกำลังกลางแจ้ง รับแสงแดด ทำสิ่งที่มีความสุข สดใส",
+          "keywords_th": ["พลังบวก", "สดใส", "สนุก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ระวังความมั่นใจเกินและการมองโลกในแง่ดีเกินจริง",
+          "detailed_interpretation_th": "ดวงอาทิตย์กลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคือระวังความมั่นใจเกินและการมองโลกในแง่ดีเกินจริง - อย่าประมาท อย่าหลอกตัวเองว่าทุกอย่างดี มองความจริงตามที่เป็น ไพ่หนุนให้คุณสมดุลระหว่างความหวังและความเป็นจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = ระวังลวง",
+            "wands": "Seven of Wands = ระวัง",
+            "cups": "Seven of Cups = ภาพลวง",
+            "swords": "Two of Swords = ไม่ตัดสิน",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ประมาท"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งคำแนะนำ คือ 'สมดุลหวังกับความจริง'",
+          "advice_th": "ระวังมั่นใจเกิน - อย่าประมาท อย่าหลอกตัวเอง สมดุลระหว่างความหวังและความจริง",
+          "keywords_th": ["มั่นใจเกิน", "แง่ดีเกิน", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ระวังการมองความรักผ่านแว่นสีชมพู",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าคุณควรระวังการมองความรักผ่านแว่นสีชมพู - อย่ามองข้ามสัญญาณเตือน อย่าหลอกตัวเองว่าทุกอย่างดี มองคู่และความสัมพันธ์ตามจริง ไพ่หนุนความสมดุลระหว่างความรักและความเป็นจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ระวังเลือก, The Moon = ลวงตา",
+            "wands": "Seven of Cups = ภาพลวง",
+            "cups": "Seven of Cups = ฝันรัก",
+            "swords": "Two of Swords = ไม่เห็นชัด",
+            "pentacles": "Four of Pentacles = ผิวเผิน",
+            "court_cards": "Knight of Cups (rev) = ลวงตา"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งคำแนะนำความรัก คือ 'มองคู่ตามจริง'",
+          "advice_th": "ระวังแว่นสีชมพู - อย่ามองข้ามสัญญาณ มองคู่ตามจริง สมดุลรักกับความเป็นจริง",
+          "keywords_th": ["แว่นสีชมพู", "ระวังสัญญาณ", "มองจริง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ระวังความมั่นใจเกินในการเงิน",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวเตือนว่าคุณควรระวังความมั่นใจเกินในการเงิน - อย่าประมาทในการลงทุน อย่าคาดหวังผลตอบแทนเกินจริง ตรวจสอบตามจริง ไพ่หนุนให้คุณสมดุลระหว่างความทะเยอทะยานและความรอบคอบ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = ไม่แน่นอน, The Hermit = ทบทวน",
+            "wands": "Seven of Wands = ระวัง",
+            "cups": "Seven of Cups = ภาพลวง",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ประมาท"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งคำแนะนำงาน คือ 'สมดุลทะเยอทะยานกับรอบคอบ'",
+          "advice_th": "ระวังมั่นใจเกินการเงิน - อย่าประมาทลงทุน ตรวจสอบจริง สมดุลทะเยอทะยานกับรอบคอบ",
+          "keywords_th": ["มั่นใจเกิน", "ประมาท", "รอบคอบ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ระวังการหลอกตัวเองว่าทุกอย่างดี",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรระวังการหลอกตัวเองว่าทุกอย่างดี - อย่าหลีกเลี่ยงปัญหาด้วยการมองโลกในแง่ดีเกิน ยอมรับด้านที่ต้องพัฒนา ไพ่หนุนให้คุณซื่อสัตย์กับตัวเองและเติบโตจากความจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Seven of Wands = เผชิญ",
+            "cups": "Four of Cups = ปฏิเสธ",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Seven of Pentacles = ทบทวน",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งคำแนะนำเติบโต คือ 'ซื่อสัตย์กับตัวเอง'",
+          "advice_th": "ระวังหลอกตัวเอง - อย่าหลีกปัญหาด้วยแง่ดีเกิน ยอมรับด้านที่ต้องพัฒนา ซื่อสัตย์กับตน",
+          "keywords_th": ["หลอกตัวเอง", "แง่ดีเกิน", "ซื่อสัตย์"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อย่าประมาทสุขภาพเพราะรู้สึกว่าดี",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวเตือนว่าคุณไม่ควรประมาทสุขภาพเพราะรู้สึกว่าดี - อย่ามองข้ามสัญญาณเตือน อย่าหักโหมเกินกำลัง ตรวจสุขภาพสม่ำเสมอ ไพ่หนุนให้คุณดูแลตัวเองอย่างสมดุล ไม่ประมาท",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hermit = ทบทวน",
+            "wands": "Ten of Wands = หักโหม",
+            "cups": "Four of Cups = ไม่สนใจ",
+            "swords": "Two of Swords = ไม่เห็น",
+            "pentacles": "Seven of Pentacles = รอดู",
+            "court_cards": "Knight of Wands (rev) = ประมาท"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'ไม่ประมาทแม้รู้สึกดี'",
+          "advice_th": "อย่าประมาทสุขภาพ - อย่ามองข้ามสัญญาณ อย่าหักโหม ตรวจสม่ำเสมอ ดูแลสมดุล",
+          "keywords_th": ["ประมาท", "หักโหม", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมสดใสและหนุนความสำเร็จ",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวสดใสและหนุนความสำเร็จ - คนรอบข้างที่ให้กำลังใจ โอกาสที่เปิด สถานการณ์ที่เอื้อ ไพ่บอกว่าคุณอยู่ในที่ที่ดี ใช้แรงหนุนนี้สร้างสิ่งที่ต้องการอย่างเต็มที่",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, The Star = ความหวัง",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งภายนอก คือ 'แวดล้อมสดใสหนุนคุณ'",
+          "advice_th": "ใช้แรงหนุนจากภายนอก - คนรอบข้างให้กำลังใจ โอกาสเปิด สร้างสิ่งที่ต้องการเต็มที่",
+          "keywords_th": ["แวดล้อมสดใส", "หนุน", "โอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์รอบตัวอบอุ่นและหนุนความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าความสัมพันธ์รอบตัวอบอุ่นและหนุนความรัก - ครอบครัวยินดี เพื่อนสนับสนุน คู่เปิดใจ ไพ่บอกว่าสภาพแวดล้อมเอื้อให้ความรักของคุณเปล่งประกายและเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = สำเร็จคู่",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัวอบอุ่น",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งภายนอกความรัก คือ 'แวดล้อมเอื้อรักเปล่งประกาย'",
+          "advice_th": "ใช้สภาพแวดล้อมหนุน - ครอบครัวยินดี เพื่อนหนุน คู่เปิดใจ ความรักเปล่งประกาย",
+          "keywords_th": ["รักหนุน", "อบอุ่น", "เปล่งประกาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสในงานเปิดและคนหนุนความสำเร็จ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่าโอกาสในงานเปิดและคนหนุนความสำเร็จของคุณ - มีคนเห็นคุณค่า โอกาสก้าวหน้า ตลาดที่เอื้อ ไพ่หนุนให้คุณคว้าโอกาส แสดงผลงาน และสร้างความสำเร็จในช่วงที่ทุกอย่างเอื้อ",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จยิ่งใหญ่, Wheel of Fortune = โชคดี",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งภายนอกงาน คือ 'โอกาสเปิดและคนหนุน'",
+          "advice_th": "คว้าโอกาสที่เปิด - มีคนเห็นคุณค่า ตลาดเอื้อ แสดงผลงาน สร้างความสำเร็จ",
+          "keywords_th": ["โอกาสเปิด", "คนหนุน", "ความสำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ชุมชนรอบข้างหนุนการเปล่งประกายของคุณ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าชุมชนรอบข้างหนุนการเปล่งประกายของคุณ - คนที่เห็นคุณค่า ครูที่หนุน ชุมชนที่ยกคุณขึ้น ไพ่บอกว่าใช้แรงสนับสนุนนี้เป็นตัวเองอย่างเต็มที่และแบ่งปันแสงกับคนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = ชุมชน",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Page of Swords = สำรวจ",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งภายนอกเติบโต คือ 'ชุมชนยกคุณขึ้น'",
+          "advice_th": "ใช้ชุมชนหนุน - คนเห็นคุณค่า ครูหนุน ชุมชนยกขึ้น เป็นตัวเองเต็มที่ แบ่งปันแสง",
+          "keywords_th": ["ชุมชนหนุน", "เปล่งประกาย", "แบ่งปัน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมหนุนสุขภาพและพลังชีวิต",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าสิ่งแวดล้อมหนุนสุขภาพและพลังชีวิต - ธรรมชาติที่สดชื่น คนที่ดูแล กิจกรรมที่ทำให้สดใส ไพ่หนุนให้คุณใช้สภาพแวดล้อมที่ดีนี้สร้างกิจวัตรสุขภาพและรักษาพลังชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งภายนอกสุขภาพ คือ 'แวดล้อมหนุนพลังชีวิต'",
+          "advice_th": "ใช้สิ่งแวดล้อมหนุนสุขภาพ - ธรรมชาติสดชื่น คนดูแล กิจกรรมสดใส สร้างกิจวัตรดี",
+          "keywords_th": ["แวดล้อมหนุน", "พลังชีวิต", "สดใส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "สภาพแวดล้อมหม่นหมองหรือบดบังความสุข",
+          "detailed_interpretation_th": "ดวงอาทิตย์กลับหัวในตำแหน่งภายนอก บอกว่าสภาพแวดล้อมรอบตัวหม่นหมองหรือบดบังความสุข - คนรอบข้างที่มองโลกในแง่ลบ สถานการณ์ที่กดดัน สังคมที่ฉุดความมั่นใจ ไพ่เตือนให้คุณรักษาแสงในตัวและหาคนหรือพื้นที่ที่หนุน",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = สับสน, The Devil = แวดล้อมพิษ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Queen of Cups (rev) = หม่นหมอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งภายนอก คือ 'รักษาแสงในตน หาพื้นที่หนุน'",
+          "advice_th": "รักษาแสงในตน - แวดล้อมหม่นหมอง อย่าให้ดับใจ หาคนหรือพื้นที่ที่หนุน",
+          "keywords_th": ["แวดล้อมหม่น", "บดบังสุข", "รักษาแสง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนรอบข้างไม่หนุนความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าคนรอบข้างไม่หนุนความรักของคุณ - ครอบครัวคัดค้าน เพื่อนวิจารณ์ สังคมตัดสิน ไพ่บอกว่าคุณต้องเชื่อในความรู้สึกของตัวเอง ปกป้องความรัก และไม่ปล่อยให้เสียงนอกบดบังความสุข",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = วิกฤต, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups (rev) = มิตรภาพแตก",
+            "swords": "Five of Swords = ทำร้าย",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งภายนอกความรัก คือ 'ปกป้องรักจากเสียงนอก'",
+          "advice_th": "ปกป้องความรัก - คนรอบข้างไม่หนุน เชื่อในความรู้สึกตน ไม่ให้เสียงนอกบดบัง",
+          "keywords_th": ["รอบข้างคัดค้าน", "ปกป้องรัก", "เชื่อตน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานหรือตลาดไม่เอื้อและคนไม่เห็นคุณค่า",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่างานหรือตลาดไม่เอื้อและคนไม่เห็นคุณค่า - การไม่ได้รับการยอมรับ โอกาสปิด สภาพที่กดดัน ไพ่หนุนให้คุณยืนหยัด หาที่ที่เห็นคุณค่า และไม่ปล่อยให้การไม่ยอมรับฉุดความมั่นใจ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Hermit = ทบทวน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดแคลน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งภายนอกงาน คือ 'หาที่ที่เห็นคุณค่า'",
+          "advice_th": "ยืนหยัดและหาที่ใหม่ - งานไม่เอื้อ คนไม่เห็นค่า หาที่เห็นค่า ไม่ให้ฉุดความมั่นใจ",
+          "keywords_th": ["ไม่เอื้อ", "ไม่เห็นค่า", "หาที่ใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "สังคมรอบข้างฉุดความมั่นใจ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าสังคมรอบข้างฉุดความมั่นใจของคุณ - คนที่วิจารณ์ การเปรียบเทียบ ค่านิยมที่กดดัน ไพ่หนุนให้คุณรักษาความเชื่อในตัวเอง ห่างจากคนที่ฉุดลง และหาชุมชนที่ยกคุณขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = เดินคนเดียว, The Moon = สับสน",
+            "wands": "Five of Wands = ความขัดแย้ง",
+            "cups": "Five of Cups = ถูกฉุด",
+            "swords": "Eight of Swords = สังคมจำกัด",
+            "pentacles": "Five of Pentacles = ขาดแรงหนุน",
+            "court_cards": "Queen of Swords = ตัดคนพิษ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งภายนอกเติบโต คือ 'ห่างคนที่ฉุดลง'",
+          "advice_th": "รักษาความเชื่อในตน - สังคมฉุดความมั่นใจ ห่างคนที่ฉุดลง หาชุมชนที่ยกขึ้น",
+          "keywords_th": ["สังคมฉุด", "เปรียบเทียบ", "รักษาเชื่อ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมบั่นทอนพลังและสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวเตือนว่าสิ่งแวดล้อมบั่นทอนพลังและสุขภาพ - ความเครียดจากภายนอก สภาพที่หม่นหมอง คนรอบข้างที่เป็นพิษ ไพ่แนะให้คุณปรับสภาพแวดล้อม รับแสงแดด ออกไปธรรมชาติ และสร้างพื้นที่ที่ฟื้นพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แวดล้อมพิษ, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งภายนอกสุขภาพ คือ 'ปรับสภาพหาพลัง'",
+          "advice_th": "ปรับสิ่งแวดล้อม - บั่นทอนพลัง รับแสงแดด ออกธรรมชาติ สร้างพื้นที่ฟื้นพลัง",
+          "keywords_th": ["แวดล้อมบั่นทอน", "ปรับสภาพ", "ฟื้นพลัง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังความสุขและความสำเร็จ กลัวมันจะไม่มา",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังความสุขและความสำเร็จ - ชีวิตที่เปล่งประกาย ความสมหวัง แต่ก็กลัวว่ามันจะไม่มาถึง หรือกลัวว่าตัวเองไม่สมควรได้รับ ไพ่บอกว่าความสุขเป็นสิทธิ์ของคุณ กล้าหวังและไปคว้ามัน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The World = สำเร็จ",
+            "wands": "Three of Wands = มองไกล",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ace of Pentacles = โอกาส",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งความหวังกลัว คือ 'ความสุขเป็นสิทธิ์ของคุณ'",
+          "advice_th": "กล้าหวังและคว้า - คุณหวังความสุขแต่กลัวไม่ได้ ความสุขเป็นสิทธิ์ของคุณ",
+          "keywords_th": ["หวังสุข", "กลัวไม่มา", "กล้าคว้า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความรักที่มีความสุข กลัวไม่สมหวัง",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังความรักที่มีความสุขและเปล่งประกาย แต่กลัวว่าจะไม่สมหวัง - กลัวคู่ไม่ใช่ กลัวความสุขจะจางหาย ไพ่บอกว่าความรักที่มีความสุขเป็นไปได้ กล้าเปิดใจและเชื่อว่าคุณสมควรได้รับ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Star = ความหวัง",
+            "wands": "Four of Wands = ฉลอง",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งความหวังกลัวความรัก คือ 'คุณสมควรได้รับรักสุข'",
+          "advice_th": "กล้าเปิดใจ - หวังรักสุขแต่กลัวไม่สมหวัง ความรักสุขเป็นไปได้ คุณสมควรได้รับ",
+          "keywords_th": ["หวังรักสุข", "กลัวไม่สมหวัง", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังความสำเร็จ กลัวล้มเหลวหรือไม่สมควร",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังความสำเร็จและการยอมรับ แต่กลัวล้มเหลวหรือกลัวว่าตัวเองไม่สมควรได้รับ - imposter syndrome กลัวคนเห็นว่าไม่เก่งจริง ไพ่บอกว่าคุณมีศักยภาพและสมควรกับความสำเร็จ กล้าไปคว้ามัน",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งความหวังกลัวงาน คือ 'คุณสมควรกับความสำเร็จ'",
+          "advice_th": "กล้าคว้าความสำเร็จ - หวังสำเร็จแต่กลัวไม่สมควร คุณมีศักยภาพและสมควรได้รับ",
+          "keywords_th": ["หวังสำเร็จ", "กลัวไม่สมควร", "กล้าคว้า"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเปล่งประกายตัวตน กลัวการถูกมองเห็น",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังจะเปล่งประกายตัวตน แต่กลัวการถูกมองเห็น - กลัวความสนใจ กลัวการตัดสิน กลัวความรับผิดชอบที่มากับการเป็นที่รู้จัก ไพ่หนุนให้คุณกล้าแสดงแสงของคุณ โลกต้องการสิ่งที่คุณมี",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Strength = พลังใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตน",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งความหวังกลัวเติบโต คือ 'โลกต้องการแสงของคุณ'",
+          "advice_th": "กล้าแสดงแสง - หวังเปล่งประกายแต่กลัวถูกมอง โลกต้องการสิ่งที่คุณมี",
+          "keywords_th": ["หวังเปล่งประกาย", "กลัวถูกมอง", "กล้าแสดง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพดี กลัวพลังจะหายไป",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังสุขภาพดีและพลังเต็มเปี่ยม แต่กลัวว่าพลังจะหายไปหรือกลัวการเจ็บป่วย ไพ่บอกว่าความหวังของคุณคือพลังเยียวยา การดูแลตัวเองด้วยความรักและการเชื่อในร่างกายจะนำมาซึ่งสุขภาพที่หวัง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังใจ, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งความหวังกลัวสุขภาพ คือ 'ความหวังคือพลังเยียวยา'",
+          "advice_th": "เชื่อในการฟื้น - หวังสุขภาพดีแต่กลัวพลังหาย ความหวังคือพลังเยียวยา ดูแลด้วยรัก",
+          "keywords_th": ["หวังสุขภาพ", "กลัวพลังหาย", "เชื่อในฟื้น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวจะไม่มีความสุขจนไม่กล้าหวัง",
+          "detailed_interpretation_th": "ดวงอาทิตย์กลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวจะไม่มีความสุขจนไม่กล้าหวัง - เพราะกลัวผิดหวัง คุณลดความคาดหวัง ไม่กล้าฝัน ไพ่บอกว่าการไม่กล้าหวังเองที่ขังคุณจากความสุข กล้าหวังอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัว, The Hanged Man = ติดอยู่",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งความหวังกลัว คือ 'ไม่กล้าหวังขังคุณ'",
+          "advice_th": "กล้าหวังอีกครั้ง - กลัวไม่มีสุขจนไม่กล้าหวัง การไม่หวังเองที่ขังคุณจากความสุข",
+          "keywords_th": ["กลัวไม่มีสุข", "ไม่กล้าหวัง", "กล้าหวัง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวความรักจะทำให้ผิดหวังจนปิดใจ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวความรักจะทำให้ผิดหวังจนปิดใจ - ไม่กล้าหวังความสุขในรัก ลดความคาดหวัง ป้องกันตัวเองจากความเจ็บ ไพ่บอกว่าการปิดใจปกป้องจากเจ็บแต่ก็กั้นความสุข กล้าเปิดใจอีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = บาดแผล, The Moon = ลวงตา",
+            "wands": "Nine of Wands = ตั้งรับ",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งความหวังกลัวความรัก คือ 'ปิดใจกั้นความสุข'",
+          "advice_th": "กล้าเปิดใจ - กลัวผิดหวังจนปิด การปิดใจปกป้องจากเจ็บแต่ก็กั้นความสุข",
+          "keywords_th": ["กลัวผิดหวัง", "ปิดใจ", "กล้าเปิด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวล้มเหลวจนไม่กล้าฝันใหญ่",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวล้มเหลวจนไม่กล้าฝันใหญ่ - ลดเป้าหมาย เลือกความปลอดภัย ไม่กล้าเสี่ยงเพื่อความสำเร็จ ไพ่บอกว่าความกลัวนี้ขังคุณจากศักยภาพ กล้าฝันและไปคว้าความสำเร็จที่สมควรได้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Swords = ติดกรอบ",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งความหวังกลัวงาน คือ 'กล้าฝันใหญ่'",
+          "advice_th": "กล้าฝันใหญ่ - กลัวล้มเหลวจนลดเป้า กล้าเสี่ยง ไปคว้าความสำเร็จที่สมควร",
+          "keywords_th": ["กลัวล้มเหลว", "ไม่กล้าฝัน", "กล้าเสี่ยง"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวเปล่งประกายจนซ่อนตัว",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวการเปล่งประกายจนซ่อนตัว - กลัวความสนใจ กลัวการตัดสิน ทำตัวเล็กลงเพื่อไม่ให้คนอื่นรู้สึกแย่ ไพ่หนุนให้คุณหยุดซ่อนแสง การทำตัวเล็กลงไม่ได้ช่วยใคร โลกต้องการแสงของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = กลัว",
+            "wands": "Seven of Wands = ต้านแสดงตัว",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Queen of Swords = ต้องกล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'ทำตัวเล็กไม่ช่วยใคร'",
+          "advice_th": "หยุดซ่อนแสง - กลัวเปล่งประกายจนซ่อนตัว การทำตัวเล็กไม่ช่วยใคร โลกต้องการแสงคุณ",
+          "keywords_th": ["กลัวเปล่งประกาย", "ซ่อนตัว", "กล้าแสดง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวพลังจะไม่กลับมา",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวพลังจะไม่กลับมา - กลัวจะอ่อนแอตลอด กลัวการเจ็บป่วยเรื้อรัง ความกลัวนี้บั่นทอนการฟื้น ไพ่หนุนให้คุณทำงานกับใจ ฝึกสติ และเชื่อในพลังเยียวยาของร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Moon = ความกลัว",
+            "wands": "Ten of Wands = แบกกลัว",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Five of Pentacles = กลัวป่วย",
+            "court_cards": "Queen of Pentacles (rev) = ละเลย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'ใจช่วยกายฟื้น'",
+          "advice_th": "ทำงานกับความกลัว - กลัวพลังไม่กลับบั่นทอนการฟื้น ฝึกสติ เชื่อในพลังเยียวยา",
+          "keywords_th": ["กลัวพลังไม่กลับ", "บั่นทอน", "เชื่อในฟื้น"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือความสุข ความสำเร็จ และพลังชีวิต",
+          "detailed_interpretation_th": "ดวงอาทิตย์ในตำแหน่งผลลัพธ์ เป็นข่าวดีที่สุด - ผลลัพธ์ของสถานการณ์คือความสุข ความสำเร็จ และพลังชีวิตเต็มเปี่ยม คุณจะผ่านอุปสรรคและเข้าสู่ช่วงทอง ทุกอย่างชัดเจน เปิดทาง ไพ่ยืนยันว่าคุณจะเปล่งประกายและบรรลุสิ่งที่ต้องการ",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Star = ความหวังจริง",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำสร้างสรรค์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งผลลัพธ์ คือ 'ช่วงทองและการเปล่งประกาย'",
+          "advice_th": "เชื่อมั่นในผลลัพธ์ที่งดงาม - ความสุข ความสำเร็จ และพลังชีวิตเต็มเปี่ยมรออยู่",
+          "keywords_th": ["ความสุข", "ความสำเร็จ", "พลังชีวิต"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่เปล่งประกายและมีความสุข",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เป็นข่าวดีมาก - คุณจะพบหรือสร้างความรักที่เปล่งประกายและมีความสุข ความสัมพันธ์ที่อบอุ่น ซื่อสัตย์ เติบโตร่วมกัน ไพ่ยืนยันว่ารักครั้งนี้บริสุทธิ์และนำมาซึ่งความสุขที่แท้จริง อาจมีการแต่งงาน ลูก หรือก้าวสำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The World = สำเร็จคู่",
+            "wands": "Four of Wands = ฉลองรัก",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Six of Swords = ก้าวต่อด้วยกัน",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "Queen of Cups = อบอุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งผลลัพธ์ความรัก คือ 'รักเปล่งประกายและมีความสุข'",
+          "advice_th": "เปิดใจรับความรักที่จะมา - เปล่งประกาย มีความสุข อาจมีก้าวสำคัญ แต่งงาน ลูก",
+          "keywords_th": ["รักเปล่งประกาย", "ความสุข", "ก้าวสำคัญ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คืองานสำเร็จและการเงินมั่งคั่ง",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดียิ่ง - คุณจะประสบความสำเร็จในงานและการเงินมั่งคั่ง โครงการสำเร็จ ผลตอบแทนดี การยอมรับ การเลื่อนตำแหน่ง ไพ่ยืนยันว่าความพยายามของคุณจะเก็บเกี่ยวผลอย่างงดงาม และอนาคตการเงินสดใส",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จยิ่งใหญ่, Wheel of Fortune = โชคดี",
+            "wands": "Six of Wands = ชนะ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งผลลัพธ์งาน คือ 'เก็บเกี่ยวผลอย่างงดงาม'",
+          "advice_th": "เชื่อในความสำเร็จ - งานสำเร็จ การเงินมั่งคั่ง การยอมรับ อนาคตสดใส",
+          "keywords_th": ["งานสำเร็จ", "มั่งคั่ง", "อนาคตสดใส"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือตัวตนแท้ที่เปล่งประกายเต็มที่",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นชัยชนะ - คุณจะเป็นตัวตนแท้ที่เปล่งประกายเต็มที่ เข้าใจจุดหมายชีวิต ใช้พรสวรรค์เพื่อโลก และเป็นแสงสว่างให้คนอื่น ไพ่ยืนยันว่าการเติบโตของคุณจะสมบูรณ์และคุณจะใช้ชีวิตด้วยความสุขและความหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Star = แรงบันดาลใจ",
+            "wands": "Four of Wands = มั่นคงในตน",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Nine of Pentacles = พึ่งตัวเองได้",
+            "court_cards": "King of Cups = ครองตน"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งผลลัพธ์เติบโต คือ 'เป็นแสงสว่างให้โลก'",
+          "advice_th": "เฉลิมฉลองการเปล่งประกาย - เป็นตัวตนแท้ ใช้พรสวรรค์ เป็นแสง ชีวิตมีความหมาย",
+          "keywords_th": ["ตัวตนแท้", "เปล่งประกาย", "เป็นแสง"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพดีและพลังเต็มเปี่ยม",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดีอย่างยิ่ง - คุณจะมีสุขภาพดีและพลังชีวิตเต็มเปี่ยม ร่างกายแข็งแรง จิตใจสดใส ฟื้นจากความเจ็บป่วยอย่างสมบูรณ์ ไพ่ยืนยันว่าการดูแลตัวเองและพลังบวกจะนำมาซึ่งสุขภาพที่งดงามและชีวิตที่เต็มไปด้วยพลัง",
+          "adjacent_influences": {
+            "major_arcana": "Strength = พลังแกร่ง, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังชีวิต",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = ร่างกายแข็งแรง",
+            "court_cards": "Queen of Pentacles = สุขภาพดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์ตำแหน่งผลลัพธ์สุขภาพ คือ 'พลังเต็มเปี่ยมและสดใส'",
+          "advice_th": "เชื่อในสุขภาพดี - ร่างกายแข็งแรง จิตใจสดใส ฟื้นสมบูรณ์ ชีวิตเต็มพลัง",
+          "keywords_th": ["สุขภาพดี", "พลังเต็ม", "สดใส"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือความสุขที่ล่าช้าหรือถูกบดบัง",
+          "detailed_interpretation_th": "ดวงอาทิตย์กลับหัวในตำแหน่งผลลัพธ์ บอกว่าผลลัพธ์อาจเป็นความสุขที่ล่าช้าหรือถูกบดบังชั่วคราว - อุปสรรคที่ยังไม่ผ่าน ความสำเร็จที่ใช้เวลา ความสุขที่ยังไม่เต็มที่ ไพ่บอกว่าแสงยังอยู่ปลายทาง อย่าหมดหวัง ทำงานกับใจและรักษาความเชื่อมั่น",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Temperance = สมดุล",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งผลลัพธ์ คือ 'แสงยังอยู่ปลายทาง'",
+          "advice_th": "อย่าหมดหวัง - ความสุขล่าช้าชั่วคราว แสงยังอยู่ปลายทาง รักษาความเชื่อมั่น",
+          "keywords_th": ["สุขล่าช้า", "ถูกบดบัง", "อย่าหมดหวัง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่ต้องผ่านอุปสรรคก่อนสุข",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวบอกว่าความรักต้องผ่านอุปสรรคก่อนจะมีความสุข - ช่วงท้าทาย ความเข้าใจผิดที่ต้องแก้ การปรับตัว ไพ่บอกว่าความสุขเป็นไปได้แต่ต้องทำงานกับความสัมพันธ์ สื่อสารเปิด และอดทน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ทดสอบ, Temperance = สมดุล",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'ทำงานกับความสัมพันธ์'",
+          "advice_th": "อดทนและสื่อสาร - ความรักผ่านอุปสรรคก่อนสุข ทำงานกับความสัมพันธ์ สื่อสารเปิด",
+          "keywords_th": ["ผ่านอุปสรรค", "ทำงานกับรัก", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือความสำเร็จที่ล่าช้าหรือไม่เต็มที่",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวบอกว่าความสำเร็จอาจล่าช้าหรือไม่เต็มที่ - โครงการชะลอ ผลตอบแทนน้อยกว่าหวัง การยอมรับที่ยังไม่มา ไพ่บอกว่าศักยภาพยังอยู่ ทบทวนกลยุทธ์ พยายามต่อ ความสำเร็จจะมาในเวลาที่เหมาะ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Hermit = ทบทวน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งผลลัพธ์งาน คือ 'ศักยภาพยังอยู่ พยายามต่อ'",
+          "advice_th": "อย่าท้อ - ความสำเร็จล่าช้า ทบทวนกลยุทธ์ พยายามต่อ มาในเวลาที่เหมาะ",
+          "keywords_th": ["สำเร็จล่าช้า", "ทบทวน", "พยายาม"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือต้องฟื้นความมั่นใจก่อนเปล่งประกาย",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวบอกว่าคุณต้องฟื้นความมั่นใจก่อนจะเปล่งประกายเต็มที่ - ทำงานกับความสงสัยในตัวเอง ปลดความเชื่อจำกัด ค้นพบคุณค่าในตน ไพ่บอกว่าการเปล่งประกายเป็นไปได้ แต่ต้องเริ่มจากการเชื่อในตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = ฟื้นศรัทธา",
+            "wands": "Five of Wands = ขัดแย้งใน",
+            "cups": "Four of Cups = ถอน",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดมั่นใจ",
+            "court_cards": "Queen of Cups (rev) = ปิดใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'เริ่มจากเชื่อในตัวเอง'",
+          "advice_th": "ฟื้นความมั่นใจ - เปล่งประกายเป็นไปได้ ปลดความเชื่อจำกัด เริ่มจากเชื่อในตน",
+          "keywords_th": ["ฟื้นมั่นใจ", "ปลดจำกัด", "เชื่อในตน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพที่ฟื้นช้าต้องอดทน",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวบอกว่าสุขภาพอาจฟื้นช้าและต้องอดทน - การฟื้นที่ใช้เวลานาน พลังที่ค่อยๆ กลับ อารมณ์ที่ต้องดูแล ไพ่หนุนให้คุณพักผ่อนเพียงพอ ดูแลสุขภาพจิต ขอความช่วยเหลือ และเชื่อว่าพลังจะกลับมาในที่สุด",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Four of Wands = พักผ่อน",
+            "cups": "Five of Cups = หมดกำลัง",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: ดวงอาทิตย์กลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'พลังจะกลับ ต้องอดทน'",
+          "advice_th": "อดทนกับการฟื้น - สุขภาพฟื้นช้า พักผ่อนพอ ดูแลใจ ขอช่วย เชื่อว่าพลังจะกลับ",
+          "keywords_th": ["ฟื้นช้า", "อดทน", "พลังจะกลับ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}
+

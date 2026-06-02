@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "The Hierophant",
+    "name_th": "มหาปุโรหิต",
+    "number": 5,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คุณกำลังเรียนรู้จากครูหรือประเพณีที่มีปัญญา - เคารพและซึมซับ",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน มหาปุโรหิตหัวตั้งบ่งบอกว่าคุณกำลังอยู่ในช่วงเรียนรู้จากครู ระบบการศึกษา ศาสนา หรือประเพณี คุณได้รับปัญญาที่สั่งสมมานาน เคารพและเปิดใจรับ ตอนนี้ไม่ใช่เวลาปฏิวัติ แต่เป็นเวลาเรียนรู้จากผู้รู้ ทำตามแบบแผนที่พิสูจน์แล้ว",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit ข้างเคียง = ครูปัญญา, The Magician = ใช้ทักษะเดิม",
+            "wands": "Wands ข้างเคียง = พลังของประเพณี",
+            "cups": "King of Cups = ครูที่เข้าใจอารมณ์",
+            "swords": "King of Swords = ครูฉลาด",
+            "pentacles": "Knight of Pentacles = เรียนรู้สม่ำเสมอ",
+            "court_cards": "King ทุกชุด = ครูระดับ master"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตในปัจจุบัน คือ 'มีครูคนสำคัญ' หรือ 'อยู่ในระบบที่ดี'",
+          "advice_th": "เปิดใจรับการสอน ฟังครู ทำตามคำแนะนำของผู้เชี่ยวชาญ ไม่ต้องคิดเอง บางครั้งวิธีที่ทดสอบแล้วดีกว่าวิธีใหม่",
+          "keywords_th": ["เรียนรู้", "ครู", "ประเพณี", "เคารพ", "ระบบ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ก้าวสู่ระดับที่จริงจังและเป็นทางการ",
+          "detailed_interpretation_th": "ในความรักปัจจุบัน คุณอยู่ในช่วงที่ความสัมพันธ์เป็นทางการมากขึ้น อาจเป็นเวลาแต่งงาน หมั้น แนะนำคู่ให้ครอบครัว หรือมีพิธีกรรมที่สำคัญ ครอบครัวและประเพณีเข้ามามีบทบาท ความรักของคุณได้รับการยอมรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจในรัก, The Empress = ครอบครัว, The Emperor = ความมั่นคง",
+            "wands": "Two of Wands = ตัดสินใจไปข้างหน้า",
+            "cups": "Two of Cups = แต่งงาน, Ten of Cups = ครอบครัวสมบูรณ์",
+            "swords": "Ace of Swords = ตัดสินใจชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "King of Cups = คู่ที่เป็นทางการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตในปัจจุบันรัก คือ 'รักที่เป็นทางการ' การแต่งงานหรือพิธีสำคัญ",
+          "advice_th": "ก้าวสู่ขั้นที่เป็นทางการได้ - แต่งงาน หมั้น แนะนำครอบครัว ความสัมพันธ์ที่มีโครงสร้างชัดเจนยั่งยืนกว่า",
+          "keywords_th": ["แต่งงาน", "พิธีสำคัญ", "ครอบครัว", "เป็นทางการ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทำงานในองค์กรที่มีโครงสร้างหรือเรียนรู้จากผู้เชี่ยวชาญ",
+          "detailed_interpretation_th": "ในการงาน-การเงิน คุณอยู่ในองค์กรที่มีระบบ หรือกำลังเรียนรู้จากผู้เชี่ยวชาญในวงการ การได้รับการฝึกอบรม คอร์ส certification ที่ได้รับการยอมรับ การเงินอาจมาจากระบบที่มั่นคง - เงินเดือน บำนาญ ประกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = องค์กรใหญ่, The Magician = ทักษะ",
+            "wands": "Three of Wands = ขยายธุรกิจ",
+            "cups": "Page of Cups = เรียนรู้",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "King of Pentacles = mentor การเงิน, Eight of Pentacles = ทักษะ",
+            "court_cards": "King ทุกชุด = ระดับผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตในปัจจุบันงาน-เงิน คือ 'ระบบดี + ครูดี' ใช้ทั้งสอง",
+          "advice_th": "ลงทุนในการศึกษาและ certification ที่ได้รับการยอมรับ หา mentor ในวงการ ทำตามระบบที่พิสูจน์แล้วสำเร็จ",
+          "keywords_th": ["องค์กรใหญ่", "certification", "mentor", "ระบบ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เรียนรู้จากครูทางจิตวิญญาณหรือศึกษาคำสอนที่มีปัญญา",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณกำลังศึกษาคำสอน ศาสนา หรือปรัชญาที่มีรากฐานลึก อาจมีครูสอนสมาธิ ปรัชญา หรือคุณกำลังอ่านคัมภีร์ หนังสือคลาสสิก ปัญญาเก่าแก่ที่พิสูจน์แล้วมีคุณค่ามาก",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ครู, The High Priestess = ปัญญาภายใน",
+            "wands": "Wands ข้างเคียง = พลังจิตวิญญาณ",
+            "cups": "King of Cups = ครูที่เข้าใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึกสม่ำเสมอ",
+            "court_cards": "King ทุกชุด = ครูสูงสุด"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตในปัจจุบันจิตวิญญาณ คือ 'ครูที่แท้' ฟังด้วยใจ",
+          "advice_th": "ศึกษาคำสอนที่สนใจอย่างจริงจัง - พุทธ คริสต์ ฮินดู ปรัชญา หาครูที่ไว้ใจ ฝึกตามคำสอน อย่าแค่อ่าน",
+          "keywords_th": ["ครูจิตวิญญาณ", "ศึกษาคำสอน", "ปัญญาเก่า"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ดูแลสุขภาพตามวิธีดั้งเดิมหรือคำแนะนำของผู้เชี่ยวชาญ",
+          "detailed_interpretation_th": "ในสุขภาพ คุณกำลังใช้วิธีดั้งเดิมในการดูแลตัวเอง - แพทย์แผนปัจจุบัน แพทย์แผนไทย โยคะ การปฏิบัติที่พิสูจน์แล้ว หรือมีหมอที่ติดตามอย่างสม่ำเสมอ การทำตามคำแนะนำของผู้เชี่ยวชาญให้ผลดี",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Magician = ใช้ทักษะ",
+            "wands": "Knight of Wands = ออกกำลังกายสม่ำเสมอ",
+            "cups": "King of Cups = หมอที่เข้าใจ",
+            "swords": "King of Swords = หมอฉลาด",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "King of Pentacles = ผู้เชี่ยวชาญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตในปัจจุบันสุขภาพ คือ 'ทำตามคำแนะนำผู้เชี่ยวชาญ'",
+          "advice_th": "ทำตามแผนรักษาของหมอ กินยาตามเวลา ออกกำลังกายตามที่แนะนำ อย่าฟังคนที่ไม่มีความรู้แต่กล้าแนะนำเยอะ",
+          "keywords_th": ["ทำตามคำแนะนำ", "ผู้เชี่ยวชาญ", "วิธีดั้งเดิม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กบฏต่อกฎหรือสภาพแวดล้อมที่บีบบังคับให้ทำตามแบบแผน",
+          "detailed_interpretation_th": "มหาปุโรหิตกลับหัวในปัจจุบัน บ่งบอกว่าคุณกำลังกบฏต่อกฎเกณฑ์ ประเพณี หรือระบบที่ไม่เหมาะกับคุณ ความรู้สึกว่า 'นี่ไม่ใช่ของฉัน' กำลังแรงขึ้น คุณอาจต้องการสร้างเส้นทางของตัวเอง ออกจากกรอบที่ครอบครัว ศาสนา หรือสังคมกำหนด",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = ความเป็นอิสระ, The Tower = ระเบิดออกจากระบบ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Eight of Cups = ออกจากสิ่งเก่า",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Four of Pentacles กลับหัว = ปล่อย",
+            "court_cards": "Knight of Wands = กบฏ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวในปัจจุบัน คือ 'ออกจากกรอบ' ใช้ปัญญาตัวเอง",
+          "advice_th": "ทบทวนกฎและประเพณีที่ยังทำตาม - อันไหนใช่ของคุณจริง? อันไหนทำเพราะ 'ต้อง'? ปลดปล่อยจากสิ่งที่ไม่ใช่",
+          "keywords_th": ["กบฏ", "ออกจากกรอบ", "เส้นทางตัวเอง"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ปฏิเสธรูปแบบความสัมพันธ์ดั้งเดิม - แต่งงานในแบบของตัวเอง",
+          "detailed_interpretation_th": "ในความรัก คุณอาจปฏิเสธรูปแบบดั้งเดิม - ไม่อยากแต่งงาน อยากอยู่ด้วยกันโดยไม่แต่ง อยากรักไม่ตามขนบ (open relationship, ต่างวัฒนธรรม, เพศเดียวกัน) ครอบครัวอาจไม่เข้าใจ แต่นี่คือเส้นทางของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจในรัก, The Fool = รักแบบใหม่",
+            "wands": "Five of Wands = ขัดแย้งกับครอบครัว",
+            "cups": "Two of Cups = คู่ที่เข้าใจ",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Four of Pentacles กลับหัว = ไม่ติดกรอบ",
+            "court_cards": "Knight of Wands = คู่ที่กบฏ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวรัก คือ 'รักแบบของคุณเอง'",
+          "advice_th": "ความรักไม่ต้องเหมือนของพ่อแม่หรือใคร ออกแบบความสัมพันธ์ที่เหมาะกับคุณและคู่ คุยกันให้ชัด สร้างรูปแบบของคุณเอง",
+          "keywords_th": ["รักแบบใหม่", "ไม่ตามขนบ", "เส้นทางตัวเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ออกจากองค์กรใหญ่หรือสร้างเส้นทางอาชีพของตัวเอง",
+          "detailed_interpretation_th": "ในงาน-เงิน คุณอาจปฏิเสธเส้นทางอาชีพดั้งเดิม - ออกจากบริษัทใหญ่ ไม่ทำงานประจำ เริ่ม freelance ทำงานออนไลน์ digital nomad ครอบครัวอาจไม่เข้าใจ แต่นี่คือเส้นทางที่เหมาะกับคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มเส้นทางใหม่, The Magician = ใช้ทักษะ",
+            "wands": "Ace of Wands = พลังเริ่มต้น",
+            "cups": "Eight of Cups = ออกจากงานเก่า",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ทักษะ",
+            "court_cards": "Knight of Wands = ผู้ประกอบการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวงาน-เงิน คือ 'อาชีพแบบของคุณ'",
+          "advice_th": "ออกแบบอาชีพที่เหมาะกับคุณ ไม่ต้องตามแบบพ่อแม่หรือสังคมคาดหวัง แต่ต้องวางแผนการเงินให้ดี อาชีพอิสระต้องการวินัย",
+          "keywords_th": ["อาชีพอิสระ", "นอกกรอบ", "วางแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ออกจากศาสนา/ความเชื่อเดิมและสร้างจิตวิญญาณของตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณอาจตั้งคำถามกับความเชื่อ ศาสนา หรือคำสอนที่ได้รับการเลี้ยงดูมา รู้สึกว่าไม่ใช่ทั้งหมด อยากค้นหาความจริงของตัวเอง อาจศึกษาหลายศาสนา หลายปรัชญา รวมเป็นความเชื่อของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ค้นหาเอง, The Star = แรงบันดาลใจใหม่",
+            "wands": "Page of Wands = เรียนรู้สิ่งใหม่",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Page of Pentacles = ศึกษา",
+            "court_cards": "Page ทุกชุด = นักเรียนใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวจิตวิญญาณ คือ 'ความเชื่อของตัวเอง'",
+          "advice_th": "ศึกษาหลายศาสนา หลายปรัชญา รวมส่วนที่เป็นจริงสำหรับคุณ ปฏิบัติตามจิตวิญญาณตัวเอง ไม่ใช่ตามที่คนอื่นบอก",
+          "keywords_th": ["ค้นหาเอง", "หลายศาสนา", "จิตวิญญาณตัวเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ไม่เชื่อในการแพทย์กระแสหลักหรือลองวิธีทางเลือก",
+          "detailed_interpretation_th": "ในสุขภาพ คุณอาจตั้งคำถามกับการแพทย์กระแสหลัก ลองวิธีทางเลือก - การฝังเข็ม สมุนไพร โยคะ ayurveda functional medicine บางอย่างได้ผล บางอย่างไม่ได้ ต้องเปิดใจรับทั้งสอง ไม่ปฏิเสธทั้งหมด",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ใช้ทักษะ, The Star = ฟื้นฟู",
+            "wands": "Wands ข้างเคียง = พลังใหม่",
+            "cups": "Page of Cups = เปิดใจรับ",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Page of Pentacles = ทดลอง",
+            "court_cards": "Knight of Wands = กล้าลอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวสุขภาพ คือ 'ทั้งกระแสหลักและทางเลือก'",
+          "advice_th": "อย่าปฏิเสธการแพทย์กระแสหลักทั้งหมด ใช้ทั้งสองวิธี ปรึกษาทั้งหมอแผนปัจจุบันและหมอแผนทางเลือก เลือกสิ่งที่ใช่สำหรับร่างกายคุณ",
+          "keywords_th": ["แพทย์ทางเลือก", "ผสมผสาน", "เปิดใจรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "กฎเกณฑ์ ประเพณี หรือสถาบันที่บีบและทำให้อึดอัด",
+          "detailed_interpretation_th": "ในตำแหน่งอุปสรรค มหาปุโรหิต (ตีความตั้งตรงเสมอ) บ่งบอกว่าสิ่งที่ขัดขวางคุณคือกฎ ประเพณี หรือสถาบันที่บีบบังคับ อาจเป็นครอบครัวที่คาดหวัง ศาสนาที่เข้มงวด สังคมที่ตัดสิน หรือระบบราชการที่ซับซ้อน ความรู้สึกว่า 'ต้องทำตาม' กำลังทำลายตัวจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในประเพณี, The Emperor = อำนาจกดขี่",
+            "wands": "Five of Wands = ขัดแย้งกับระบบ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขังในกฎ",
+            "pentacles": "Four of Pentacles = ติดในสิ่งที่ครอบครัวกำหนด",
+            "court_cards": "King of Swords = ผู้ใหญ่ที่เข้มงวด"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตในอุปสรรค คือ 'กฎที่ไม่ใช่ของฉัน' ระบุและเลือก",
+          "advice_th": "ระบุกฎ ประเพณี ความคาดหวังที่กำลังบีบ - ของพ่อแม่? ศาสนา? สังคม? เลือกอันที่จะตามและอันที่จะปฏิเสธ ไม่ใช่ทุกกฎสมควรตาม",
+          "keywords_th": ["กฎบีบ", "ประเพณีกดดัน", "สถาบันรัด"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวหรือศาสนาเข้ามาควบคุมความสัมพันธ์",
+          "detailed_interpretation_th": "อุปสรรคในรักคือการแทรกแซงของครอบครัว ประเพณี หรือศาสนา - พ่อแม่ไม่อนุญาตให้แต่งงานกับคนนี้ ครอบครัวมีกฎเรื่องสินสอด ศาสนาไม่อนุญาตให้แต่งงานข้ามศาสนา หรือสังคมกดดันให้แต่งงาน ทั้งที่คุณยังไม่พร้อม",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดัน, The Tower = ระเบิด",
+            "wands": "Five of Wands = ขัดแย้งกับครอบครัว",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "King of Swords = ผู้ใหญ่ที่ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอุปสรรครัก คือ 'ครอบครัว/ศาสนาแทรก' ต้องตัดสินใจ",
+          "advice_th": "ตัดสินใจว่าจะตามใจครอบครัว/สังคม หรือตามใจตัวเอง? ทั้งสองทางมีต้นทุน เลือกอันที่คุณอยู่ได้ตลอดชีวิต",
+          "keywords_th": ["ครอบครัวแทรก", "ศาสนากดดัน", "เลือก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ระบบราชการหรือกฎระเบียบขัดขวางความก้าวหน้า",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือระบบที่ใหญ่และเชื่องช้า - องค์กรราชการ บริษัทใหญ่ที่มีลำดับชั้น กฎระเบียบเยอะ การขอใบอนุญาต กฎหมายซับซ้อน ทุกอย่างต้องผ่านขั้นตอน ทำให้ไอเดียดีๆ ติดอยู่",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ระบบใหญ่, The Devil = ติดในระบบ",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในระเบียบ",
+            "court_cards": "King ของ Swords = ที่ปรึกษา"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอุปสรรคงาน-เงิน คือ 'ระบบเชื่องช้า'",
+          "advice_th": "หาวิธีทำงานในระบบ - เครือข่ายภายใน เรียนรู้กฎเพื่อใช้ประโยชน์ หรือออกจากระบบสร้างของตัวเอง ทั้งสองทางเป็นไปได้",
+          "keywords_th": ["ระบบราชการ", "กฎระเบียบ", "ทำงานในระบบ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความเชื่อทางศาสนาหรือปรัชญาที่ไม่เหมาะกับตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือคำสอนหรือศาสนาที่ไม่เหมาะกับคุณแต่ยังทำตามเพราะครอบครัวหรือกลัวบาป ความเชื่อที่บอกว่า 'ผู้หญิงต้อง...' 'ผู้ชายต้อง...' 'ลูกที่ดีต้อง...' ขังคุณไว้ในกรอบที่ไม่ใช่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขังในกฎ",
+            "pentacles": "Four of Pentacles = ติดในกรอบ",
+            "court_cards": "Knight of Swords = ปัญญาที่ขังไว้"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอุปสรรคจิตวิญญาณ คือ 'ความเชื่อบีบ' ปลดปล่อย",
+          "advice_th": "ตั้งคำถามกับความเชื่อทุกอย่าง - เชื่อเพราะอะไร? พิสูจน์ได้ไหม? เป็นประโยชน์ต่อชีวิตคุณไหม? ไม่ใช่ ทิ้ง",
+          "keywords_th": ["ความเชื่อบีบ", "กรอบศาสนา", "ตั้งคำถาม"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "นิสัยสุขภาพดั้งเดิมที่ไม่เหมาะกับร่างกายตัวเอง",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคือนิสัยที่รับมาจากครอบครัวหรือวัฒนธรรม - กินอาหารหนัก ไม่ออกกำลังกาย รับประทานยาตามที่ครอบครัวใช้ บางนิสัยอาจไม่เหมาะกับร่างกายเฉพาะของคุณ ต้องตั้งคำถาม",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = พลังหมด",
+            "cups": "Three of Cups กลับหัว = สังสรรค์ทำลาย",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอุปสรรคสุขภาพ คือ 'นิสัยครอบครัว' ตั้งคำถาม",
+          "advice_th": "ปรึกษาหมอ - อาหารที่ครอบครัวกินเหมาะกับร่างกายคุณหรือเปล่า? อาจต้องปรับ แม้จะแตกต่างจากครอบครัวก็ไม่เป็นไร",
+          "keywords_th": ["นิสัยครอบครัว", "ไม่เหมาะกับตัว", "ปรับ"],
+          "intensity_level": 2,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ขาดโครงสร้างหรือไม่มีค่านิยมที่ชัดเจน",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือการไม่มีค่านิยมที่ชัดเจน หรือปฏิเสธประเพณีทุกอย่างจนสับสน คุณอยากเป็นอิสระ แต่ไม่มีหลักให้ยึด ทำให้ลังเล ตัดสินใจไม่ได้ ขาดทิศทาง การต่อต้านระบบไม่ใช่คำตอบเสมอ ต้องสร้างระบบของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = ไม่มีทิศ, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'สร้างค่านิยมของตัวเอง'",
+          "advice_th": "เขียนค่านิยม 5 ข้อที่สำคัญสำหรับคุณ ใช้เป็นเข็มทิศตัดสินใจ ไม่ต้องตามใคร แต่ต้องมีหลัก",
+          "keywords_th": ["ไม่มีหลัก", "สับสน", "สร้างค่านิยม"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์ขาดความจริงจังหรือไม่มีพันธะ",
+          "detailed_interpretation_th": "ในรัก อุปสรรคคือความสัมพันธ์ที่ไม่มีโครงสร้าง ไม่มีพันธะ ไม่พูดถึงอนาคต ทำให้ทั้งคู่รู้สึกไม่มั่นคง การไม่ตัดสินใจคือการตัดสินใจ - คุณกำลังเลือกที่จะไม่มีอะไรชัดเจน ซึ่งทำลายในระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = ไม่จริงจัง, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Seven of Cups = ฝันหลายแบบ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = ป้องกันใจ",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'ตัดสินใจ' ความไม่ตัดสินใจคือพิษ",
+          "advice_th": "คุยกับคู่รักให้ชัด - จะไปต่อหรือเลิก? จะแต่งงานหรือไม่? ความไม่ชัดเจนทำลายความสัมพันธ์",
+          "keywords_th": ["ไม่จริงจัง", "ไม่มีพันธะ", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ไม่มีวินัยทางการเงินหรือไม่ทำตามแผนใดๆ",
+          "detailed_interpretation_th": "ในงาน-เงิน อุปสรรคคือการไม่มีวินัย ไม่ทำงบประมาณ ไม่ออม ไม่ลงทุน ไม่มีแผนอาชีพ การปฏิเสธ 'ระบบ' ทำให้ขาดโครงสร้าง การเงินไม่ก้าวหน้าเพราะไม่มีหลักการ ต้องสร้างระบบ แม้จะเป็นของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = ไม่จริงจัง, The Devil = ติดในการใช้",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Seven of Cups = ฝันมากกว่าทำ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Five of Pentacles = ขาด, Four of Pentacles = กลัวเสีย",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'สร้างระบบของตัวเอง'",
+          "advice_th": "เริ่มกิจวัตรการเงิน - จดบัญชี ทำงบประมาณ ออมอัตโนมัติ ลงทุน ระบบที่คุณสร้างเองยังคงเป็นระบบ ต้องทำตาม",
+          "keywords_th": ["ไม่มีวินัย", "สร้างระบบ", "ทำตามแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ปฏิเสธคำสอนทุกอย่างจนขาดทิศทางทางจิตวิญญาณ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการปฏิเสธทุกคำสอน 'ฉันไม่เชื่อใคร' 'ฉันทำเองได้' แต่จริงๆ ขาดปัญญา ขาดทิศทาง ขาดวิธีปฏิบัติ การปฏิเสธทั้งหมดคือการเสียโอกาสเรียนรู้จากปัญญาเก่า รับบางส่วน ปฏิเสธบางส่วน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit กลับหัว = หลีกเลี่ยงการเรียน, The Devil = ติดในการต่อต้าน",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ปิดใจ",
+            "swords": "Eight of Swords = ขังในความคิดต่อต้าน",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เรียน",
+            "court_cards": "Page กลับหัว = ไม่ยอมเรียน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'รับบางส่วน ปฏิเสธบางส่วน'",
+          "advice_th": "เปิดใจรับคำสอนจากหลายแหล่ง รับส่วนที่ใช่สำหรับคุณ ปฏิเสธส่วนที่ไม่ใช่ ไม่ต้องรับทั้งหมดหรือปฏิเสธทั้งหมด",
+          "keywords_th": ["ปฏิเสธทั้งหมด", "ขาดปัญญา", "เปิดรับเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ไม่ทำตามคำแนะนำหมอหรือลองวิธีทางเลือกที่ไม่ปลอดภัย",
+          "detailed_interpretation_th": "ในสุขภาพ อุปสรรคคือการปฏิเสธคำแนะนำหมอ ลองวิธีทางเลือกที่ไม่มีหลักฐาน เชื่อเฉพาะ influencer หรือ social media การปฏิเสธการแพทย์กระแสหลักทั้งหมดอันตราย ใช้ทั้งสองอย่างฉลาด",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ลวงตา, The Devil = ติดในความเชื่อผิด",
+            "wands": "Wands ข้างเคียง = พลังถูกใช้ผิด",
+            "cups": "Seven of Cups = ฝันสุขภาพ",
+            "swords": "Eight of Swords = ขังในความเชื่อ",
+            "pentacles": "Five of Pentacles = เสียเงิน",
+            "court_cards": "Page กลับหัว = หูเบา"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'หลักฐานสำคัญกว่าโฆษณา'",
+          "advice_th": "ปรึกษาหมอจริงๆ ก่อนลองอะไรใหม่ๆ การรักษาทางเลือกใช้ได้ แต่ต้องมีหลักฐาน ไม่ใช่แค่คำพูดของคนที่ขายของ",
+          "keywords_th": ["ไม่ฟังหมอ", "ลองวิธีไม่ปลอดภัย", "ต้องมีหลักฐาน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ในอดีตเคยได้รับการสอนจากครูที่ดีหรือเติบโตในประเพณีที่มั่นคง",
+          "detailed_interpretation_th": "มหาปุโรหิตหัวตั้งในอดีต บ่งบอกว่าคุณเติบโตในสภาพแวดล้อมที่มีโครงสร้าง - ครอบครัวที่มีค่านิยม ศาสนาที่ปฏิบัติ ระบบการศึกษาที่ดี เคยมีครูที่สอนทักษะสำคัญ ปัญญานี้ยังเป็นรากฐานในตัวคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ครอบครัวมีโครงสร้าง, The Hermit = ครู",
+            "wands": "King of Wands = พ่อที่นำ",
+            "cups": "King of Cups = ครูที่เข้าใจ",
+            "swords": "King of Swords = ครูฉลาด",
+            "pentacles": "King of Pentacles = ฐานะดี, Ten of Pentacles = ครอบครัวอบอุ่น",
+            "court_cards": "King ทุกชุด = ครู/ผู้ใหญ่"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตในอดีต คือ 'ครูที่ดีในอดีต' ยังส่งผล",
+          "advice_th": "ระลึกถึงครูหรือผู้ใหญ่ที่สอนคุณ - เขาสอนอะไร? คุณยังใช้อยู่ไหม? อาจกลับไปทบทวนคำสอนเก่าที่ลืม",
+          "keywords_th": ["ครูในอดีต", "ประเพณีดี", "ปัญญาเก่า"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความสัมพันธ์ที่จริงจังและเป็นทางการในอดีต",
+          "detailed_interpretation_th": "ในความรักอดีต คุณเคยมีความสัมพันธ์ที่จริงจัง อาจเคยแต่งงาน หมั้น หรือมีพิธีกรรมที่สำคัญ ความสัมพันธ์ดำเนินตามแบบแผน ครอบครัวสนับสนุน ประสบการณ์นี้กำหนดความเข้าใจเรื่องความสัมพันธ์ปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = soul mate เก่า, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่งคั่ง",
+            "court_cards": "King of Cups = คู่ที่ดีในอดีต"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอดีตรัก คือ 'รักจริงจังเก่า'",
+          "advice_th": "ใช้บทเรียนจากความสัมพันธ์อดีต - อะไรทำให้ดี อะไรทำให้ไม่ดี นำมาใช้ในความสัมพันธ์ปัจจุบัน",
+          "keywords_th": ["รักจริงจังเก่า", "บทเรียน", "แต่งงานเก่า"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยทำงานในองค์กรใหญ่หรือเรียนจากผู้เชี่ยวชาญ",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต คุณเคยทำงานในระบบที่มั่นคง - บริษัทใหญ่ องค์กรราชการ มหาวิทยาลัย เคยมี mentor หรือเจ้านายที่สอนสิ่งสำคัญ ทักษะและความรู้ที่สั่งสมมาจากตอนนั้นยังใช้ได้ในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = องค์กรใหญ่, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำที่สอน",
+            "cups": "King of Cups = หัวหน้าที่ดี",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "King of Pentacles = mentor การเงิน, Eight of Pentacles = ทักษะ",
+            "court_cards": "King ทุกชุด = mentor"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอดีตงาน-เงิน คือ 'ทักษะเก่ายังใช้ได้'",
+          "advice_th": "ใช้เครือข่ายและทักษะที่ได้จากองค์กรเดิม mentor เก่าอาจยังช่วยได้ ความรู้ที่สั่งสมเป็นทรัพยากร",
+          "keywords_th": ["ทักษะจากองค์กร", "mentor เก่า", "เครือข่าย"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยศึกษาคำสอนหรือเข้าร่วมศาสนาที่สอนสิ่งดี",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต คุณเคยศึกษาคำสอนทางศาสนา หรือเข้าร่วมกลุ่มจิตวิญญาณที่ดี ปัญญาที่เรียนรู้ในตอนนั้นยังเป็นรากฐาน อาจมีครูที่สอนวิธีปฏิบัติ การสมาธิ การมีศีลธรรม คำสอนเหล่านี้ใช้ได้ตลอดชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The High Priestess = ความรู้ลึก",
+            "wands": "Wands ข้างเคียง = พลังจิตวิญญาณ",
+            "cups": "King of Cups = ครูที่เข้าใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอดีตจิตวิญญาณ คือ 'คำสอนเก่ายังใช้ได้'",
+          "advice_th": "กลับไปทบทวนคำสอนที่เคยศึกษา - คัมภีร์ หนังสือ คำสอนของครู ปัญญาเก่าสะสมเป็นทรัพยากร",
+          "keywords_th": ["คำสอนเก่า", "ครูจิตวิญญาณ", "ปัญญาสะสม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีกิจวัตรสุขภาพที่ดีและทำตามคำแนะนำผู้เชี่ยวชาญ",
+          "detailed_interpretation_th": "ในสุขภาพอดีต คุณเคยมีวินัย ทำตามคำแนะนำหมอ มีหมอประจำตัวที่ติดตาม ออกกำลังกายสม่ำเสมอ กินอาหารดี กิจวัตรในตอนนั้นทำให้ร่างกายดี",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดีในอดีต, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King of Pentacles = สุขภาพดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอดีตสุขภาพ คือ 'กิจวัตรเก่าที่ดี' กลับมาใช้ได้",
+          "advice_th": "ระลึกว่าตอนสุขภาพดีคุณทำอะไร - กินอย่างไร ออกกำลังกายแบบไหน นอนกี่ทุ่ม นำกลับมาใช้",
+          "keywords_th": ["กิจวัตรเก่าดี", "วินัย", "กลับมาใช้"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยถูกบังคับให้ทำตามประเพณีที่ไม่ใช่ตัวเอง",
+          "detailed_interpretation_th": "มหาปุโรหิตกลับหัวในอดีต บ่งบอกว่าคุณเคยถูกบังคับให้ทำตามกฎ ประเพณี ศาสนา ที่ไม่ใช่ของคุณ เคยอยู่ในระบบที่บีบ ครอบครัวที่เข้มงวด ศาสนาที่กดดัน บาดแผลนี้ทำให้ปัจจุบันต่อต้านอำนาจทุกชนิด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อเก่า, The Tower = วิกฤตในวัยเด็ก",
+            "wands": "Five of Wands = ขัดแย้งกับครอบครัว",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในประเพณี",
+            "court_cards": "King กลับหัว = ผู้ใหญ่ที่บีบ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวอดีต คือ 'บาดแผลจากการบังคับ'",
+          "advice_th": "ทำงานกับความรู้สึกที่ถูกบังคับในอดีต ระบุว่าอันไหนยังส่งผล เลือกตัดสินใจของตัวเองในปัจจุบัน คุณไม่ใช่เด็กอีกแล้ว",
+          "keywords_th": ["ถูกบังคับเก่า", "กบฏ", "ปลดปล่อย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยแต่งงานหรือคบเพราะครอบครัวบังคับ",
+          "detailed_interpretation_th": "ในรักอดีต อาจเคยแต่งงานเพราะครอบครัวคาดหวัง หรือคบกับคนที่ครอบครัวเลือก ไม่ใช่จากใจคุณ บาดแผลนี้ทำให้ปัจจุบันมีปัญหากับการเลือกคู่ - ไม่กล้าเลือกตามใจ หรือต่อต้านความคาดหวังครอบครัวทั้งหมด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่บีบ, The Moon = บาดแผลซ่อน",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Queen of Swords กลับหัว = ความขมขื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวอดีตรัก คือ 'แต่งงานเพราะถูกบังคับ' บาดแผล",
+          "advice_th": "หากเคยอยู่ในความสัมพันธ์ที่ถูกบังคับ ให้อภัยตัวเองและครอบครัว ปัจจุบันคุณเลือกเองได้",
+          "keywords_th": ["แต่งงานบังคับ", "บาดแผล", "เลือกเอง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยทำงานในที่ที่ไม่ใช่ตัวเองเพราะความคาดหวังของพ่อแม่",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต อาจเคยเรียนหรือทำงานที่ครอบครัวเลือกให้ - หมอ วิศวกร ครู ราชการ - ไม่ใช่สิ่งที่คุณอยากเป็น ความฝืนใจทำให้ไม่มีความสุขในงาน ตอนนี้อาจต้องตัดสินใจเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความคาดหวัง, The Moon = สับสน",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่มตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวอดีตงาน-เงิน คือ 'อาชีพที่ไม่ใช่ตัวเอง'",
+          "advice_th": "ถามตัวเอง 'ถ้าเลือกเองตอนอายุ 18 จะเลือกอะไร?' พิจารณาเปลี่ยน หรือสร้าง side career ที่ใช่",
+          "keywords_th": ["อาชีพไม่ใช่ตัวเอง", "บังคับเก่า", "เลือกใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "บาดแผลจากศาสนาที่เข้มงวดหรือการศึกษาที่บีบ",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต คุณอาจมีบาดแผลจากศาสนาที่บีบ ครูที่ทำร้าย ระบบการศึกษาที่กดขี่ ความเชื่อในวัยเด็กว่า 'บาป' 'ผิด' 'ต้องลงโทษ' ยังหลอนปัจจุบัน ต้องรักษาบาดแผลทางจิตวิญญาณ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ศาสนาที่ทำลาย, The Moon = ความเชื่อที่เป็นพิษ",
+            "wands": "Five of Wands = ขัดแย้งกับศาสนา",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขังในความเชื่อ, Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King กลับหัว = ผู้นำศาสนาที่ทำร้าย"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวอดีตจิตวิญญาณ คือ 'religious trauma' รักษา",
+          "advice_th": "ทำงานกับบาดแผลทางศาสนา/การศึกษาในอดีต อาจใช้ therapy ที่เข้าใจ religious trauma ค้นหาจิตวิญญาณของตัวเอง",
+          "keywords_th": ["religious trauma", "บาดแผลศาสนา", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยฝืนสุขภาพตามคำสั่งของพ่อแม่หรือครู",
+          "detailed_interpretation_th": "ในสุขภาพอดีต อาจเคยฝืนกินอาหารที่ไม่ชอบ เล่นกีฬาที่ไม่อยาก หรือทำตาม diet ที่ไม่เหมาะ ตามคำสั่งพ่อแม่ ครู โค้ช บาดแผลทำให้ปัจจุบันมีปัญหาในการฟังร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการฝืน, The Tower = ร่างกายพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = เสียใจกับร่างกาย",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ทำลายตัว",
+            "court_cards": "Knight of Wands กลับหัว = ฝืนตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวอดีตสุขภาพ คือ 'ฟังร่างกายตัวเอง' ไม่ใช่คำสั่งเก่า",
+          "advice_th": "ฝึกฟังร่างกาย - อยากกินอะไร? อยากออกกำลังกายแบบไหน? ฟังตัวเองมากกว่าฟังเสียงเก่าในหัว",
+          "keywords_th": ["ฝืนเก่า", "ฟังร่างกายตัวเอง", "เลือกเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีการเรียนรู้สำคัญหรือเข้าสู่สถาบัน/ระบบที่มีโครงสร้าง",
+          "detailed_interpretation_th": "มหาปุโรหิตหัวตั้งในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า จะมีการเรียนรู้สำคัญ อาจเป็นการเรียนปริญญา certification คอร์สที่เปิดประตูใหม่ หรือเข้าสู่องค์กรที่มีระบบดี อาจพบ mentor ที่สำคัญ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะใหม่, The Hermit = ปัญญา",
+            "wands": "Page of Wands = เริ่มเรียน",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = ปัญญาใหม่",
+            "pentacles": "Eight of Pentacles = ทักษะ, Page of Pentacles = เริ่มเรียน",
+            "court_cards": "King ทุกชุด = mentor"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอนาคต คือ 'เรียนรู้ระดับใหม่'",
+          "advice_th": "เปิดใจรับโอกาสการเรียน - คอร์ส ปริญญา mentorship ลงทุนในการศึกษา จะให้ผลตอบแทนสูง",
+          "keywords_th": ["เรียนใหม่", "mentor", "ระบบดี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะเข้าสู่ขั้นเป็นทางการ - แต่งงาน หมั้น หรือพิธีสำคัญ",
+          "detailed_interpretation_th": "ในรักอนาคต ใน 3-12 เดือนข้างหน้า จะมีก้าวสำคัญที่เป็นทางการ - แต่งงาน หมั้น แนะนำกับครอบครัว หรือพิธีกรรมสำคัญ ความสัมพันธ์จะเข้าสู่ระดับที่จริงจังและได้รับการยอมรับจากครอบครัวทั้งสองฝ่าย",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจใหญ่, The Empress = ครอบครัว, The Emperor = ความมั่นคง",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Two of Cups = แต่งงาน, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = ตัดสินใจชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่นคง",
+            "court_cards": "King of Cups = คู่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอนาคตรัก คือ 'พิธีสำคัญมา'",
+          "advice_th": "เตรียมตัวสำหรับก้าวสำคัญ - การเงิน ครอบครัว แผนชีวิต ความสัมพันธ์ที่จะเข้าสู่ขั้นเป็นทางการต้องการการเตรียมตัว",
+          "keywords_th": ["แต่งงาน", "พิธีสำคัญ", "ก้าวจริงจัง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "จะได้ certification, เลื่อนตำแหน่ง, หรือทำงานในองค์กรที่มีโครงสร้าง",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต โอกาสในด้านการศึกษาและตำแหน่งกำลังมา - ได้ certification ที่สำคัญ เลื่อนตำแหน่งในองค์กรใหญ่ ได้รับเชิญเป็นที่ปรึกษา หรือเริ่มทำงานที่มีโครงสร้างมั่นคง รายได้จากการเรียนรู้ที่ลงทุนไป",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = องค์กรใหญ่, The Magician = ทักษะใหม่",
+            "wands": "Three of Wands = ขยาย",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "Eight of Pentacles = ทักษะ, King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ของ Pentacles = mentor"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอนาคตงาน-เงิน คือ 'certification เปิดประตู'",
+          "advice_th": "เริ่มลงทุนการเรียนรู้/certification ตอนนี้ จะได้ใช้ในอนาคต พัฒนาทักษะที่จะเปิดประตูให้คุณ",
+          "keywords_th": ["certification", "เลื่อนขั้น", "องค์กรดี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "จะพบครูทางจิตวิญญาณหรือเข้าร่วมชุมชนที่มีปัญญา",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต จะพบครูที่สำคัญ หรือเข้าร่วมกลุ่มสมาธิ ชุมชนจิตวิญญาณ ที่จะนำคุณไปสู่ระดับที่ลึกกว่า อาจมีการศึกษาคำสอนที่จะเปลี่ยนชีวิต ปฏิบัติธรรมระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ครูปัญญา, The High Priestess = ปัญญาลึก",
+            "wands": "Wands ข้างเคียง = พลังจิตวิญญาณ",
+            "cups": "King of Cups = ครูทางใจ",
+            "swords": "King of Swords = ครูปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึกสม่ำเสมอ",
+            "court_cards": "King ทุกชุด = ครูระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอนาคตจิตวิญญาณ คือ 'ครูที่ใช่จะมา'",
+          "advice_th": "เปิดใจรับครูที่จะเข้ามา อาจในรูปแบบที่ไม่คาดคิด - คน หนังสือ ประสบการณ์ ฟังให้ดี เรียนรู้ด้วยใจอ่อนน้อม",
+          "keywords_th": ["ครูจิตวิญญาณ", "ชุมชน", "ปัญญาใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "จะได้รับการรักษาที่ดีจากผู้เชี่ยวชาญหรือเรียนรู้วิธีดูแลตัวเอง",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต จะพบหมอ trainer หรือผู้เชี่ยวชาญที่ดี ที่จะช่วยให้คุณเข้าใจร่างกายและจัดการสุขภาพได้ดีขึ้น อาจเริ่มเข้าระบบรักษาที่จริงจัง หรือเรียนรู้กิจวัตรสุขภาพใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินิจฉัยชัด",
+            "pentacles": "Knight of Pentacles = วินัย, King of Pentacles = ผู้เชี่ยวชาญ",
+            "court_cards": "King of Pentacles = หมอที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตอนาคตสุขภาพ คือ 'พบผู้เชี่ยวชาญที่ใช่'",
+          "advice_th": "หาผู้เชี่ยวชาญที่ติดตามได้ระยะยาว - หมอประจำตัว personal trainer นักโภชนาการ ลงทุนกับสุขภาพคือลงทุนตลอดชีวิต",
+          "keywords_th": ["ผู้เชี่ยวชาญ", "การรักษาดี", "วิธีใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ในอนาคตจะปฏิเสธประเพณีหรือออกจากสถาบัน",
+          "detailed_interpretation_th": "มหาปุโรหิตกลับหัวในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า คุณจะออกจากระบบหรือประเพณีที่ไม่ใช่ตัวเอง อาจลาออกจากบริษัทใหญ่ ออกจากศาสนา หรือทำสิ่งที่ครอบครัวไม่เห็นด้วย เส้นทางใหม่จะเริ่มต้น",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มใหม่, The Tower = ระเบิดออกจากระบบ",
+            "wands": "Ace of Wands = พลังเริ่มต้น",
+            "cups": "Eight of Cups = ออกจากเก่า",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Page of Pentacles = เริ่มต้นใหม่",
+            "court_cards": "Knight of Wands = ก้าวออก"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวอนาคต คือ 'ออกจากระบบเก่า'",
+          "advice_th": "เตรียมตัวสำหรับการเปลี่ยนแปลงใหญ่ - การเงิน แผนสำรอง ความพร้อมทางใจ การออกจากระบบมีต้นทุนแต่ก็มีอิสรภาพ",
+          "keywords_th": ["ออกจากระบบ", "เส้นทางใหม่", "เปลี่ยนใหญ่"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะเปลี่ยนรูปแบบที่ไม่ตามขนบ",
+          "detailed_interpretation_th": "ในรักอนาคต ความสัมพันธ์จะเปลี่ยนเป็นรูปแบบที่ไม่ตามขนบ - อาจตกลงไม่แต่งงาน เปิดความสัมพันธ์ ย้ายไปอยู่ต่างประเทศ หรือเลือกคู่ที่ครอบครัวไม่เห็นด้วย ฟังใจตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Fool = รักแบบใหม่",
+            "wands": "Knight of Wands = กล้าเลือก",
+            "cups": "Two of Cups = คู่ที่เข้าใจ",
+            "swords": "Ace of Swords = ตัดสินใจชัด",
+            "pentacles": "Four of Pentacles กลับหัว = ไม่ตามกรอบ",
+            "court_cards": "Knight of Cups = คู่ที่ไม่ธรรมดา"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวอนาคตรัก คือ 'รักของคุณเอง'",
+          "advice_th": "เลือกความสัมพันธ์ที่เหมาะกับคุณ ไม่ต้องตามแบบของคนอื่น แต่ต้องคุยกับคู่ให้ชัดและพร้อมรับผลกระทบจากครอบครัว",
+          "keywords_th": ["รักแบบใหม่", "ไม่ตามขนบ", "ฟังใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ออกจากองค์กรใหญ่และเริ่มเส้นทางของตัวเอง",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต จะออกจากงานประจำหรือองค์กรใหญ่ เริ่ม freelance ทำธุรกิจของตัวเอง หรือเปลี่ยนสายอาชีพ ความไม่มั่นคงระยะสั้นแต่อิสรภาพระยะยาว ต้องวางแผนการเงินให้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มใหม่, The Magician = ใช้ทักษะ",
+            "wands": "Ace of Wands = พลังเริ่มต้น",
+            "cups": "Eight of Cups = ออกจากเก่า",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ทักษะใหม่",
+            "court_cards": "Knight of Wands = ผู้ประกอบการ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวอนาคตงาน-เงิน คือ 'อาชีพอิสระ'",
+          "advice_th": "ก่อนออกจากงานประจำ มี emergency fund 6 เดือน วางแผนรายได้ใหม่ สร้างทักษะที่ขายได้",
+          "keywords_th": ["ออกจากงานประจำ", "freelance", "ธุรกิจ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ออกจากศาสนา/ครูเดิมและค้นหาเส้นทางของตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต คุณจะตั้งคำถามกับครูหรือศาสนาที่เคยศึกษา อาจออกจากกลุ่ม สำรวจหลายเส้นทาง รวมเป็นความเชื่อของตัวเอง การเดินทางทางจิตวิญญาณจะเปลี่ยนรูปแบบ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ค้นหาคนเดียว, The Star = แรงบันดาลใจใหม่",
+            "wands": "Page of Wands = เรียนใหม่",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Page of Pentacles = ทดลอง",
+            "court_cards": "Page ทุกชุด = นักเรียนใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวอนาคตจิตวิญญาณ คือ 'ค้นหาเอง'",
+          "advice_th": "ศึกษาหลายเส้นทางทางจิตวิญญาณ รวมส่วนที่ใช่ ปฏิบัติตามที่เหมาะกับคุณ ไม่จำเป็นต้องอยู่ในศาสนาเดียว",
+          "keywords_th": ["ค้นหาเอง", "หลายเส้นทาง", "เลือกเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "จะลองวิธีรักษาทางเลือกหรือเปลี่ยนหมอ",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต อาจลองวิธีทางเลือก - functional medicine, แพทย์ทางเลือก, สมุนไพร โยคะ บำบัด หรือเปลี่ยนหมอจากกระแสหลักเป็นหมอที่เข้าใจ holistic ระวังเลือกอย่างฉลาด",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟูใหม่, The Magician = ใช้ทักษะ",
+            "wands": "Page of Wands = ลองใหม่",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Page of Pentacles = ทดลอง",
+            "court_cards": "Knight of Wands = กล้าลอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวอนาคตสุขภาพ คือ 'ลองวิธีใหม่'",
+          "advice_th": "ลองวิธีรักษาทางเลือกที่มีหลักฐาน อย่าทิ้งการแพทย์กระแสหลัก ใช้ทั้งสอง ปรึกษาผู้เชี่ยวชาญทั้งสองด้าน",
+          "keywords_th": ["วิธีทางเลือก", "เปลี่ยนหมอ", "ฉลาดเลือก"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือการเป็นครูหรือผู้ส่งต่อปัญญาที่มีคุณค่า",
+          "detailed_interpretation_th": "มหาปุโรหิตหัวตั้งในเป้าหมาย สะท้อนความปรารถนาที่จะเรียนรู้และสอน คุณต้องการบรรลุปัญญาที่จะแบ่งปันกับคนอื่น อาจอยากเป็นครู ที่ปรึกษา ผู้เชี่ยวชาญ คนที่คนอื่นมาขอคำแนะนำ เป้าหมายนี้สูงและทรงคุณค่า",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ครูปัญญา, The Star = บรรลุ, The World = สำเร็จ",
+            "wands": "King of Wands = ผู้นำที่สอน",
+            "cups": "King of Cups = ครูที่เข้าใจ",
+            "swords": "King of Swords = ครูปัญญา",
+            "pentacles": "King of Pentacles = mentor การเงิน",
+            "court_cards": "King ทุกชุด = ครูระดับ master"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตเป้าหมาย คือ 'เป็นครูส่งต่อปัญญา'",
+          "advice_th": "ลงทุนการเรียนรู้ตลอดชีวิต อ่านหนังสือ เรียนคอร์ส หา mentor วันหนึ่งคุณจะเป็นครูของคนอื่น เริ่มจดบันทึกสิ่งที่เรียน",
+          "keywords_th": ["เป็นครู", "แบ่งปันปัญญา", "ผู้เชี่ยวชาญ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการครอบครัวที่มั่นคงและความสัมพันธ์ที่เป็นทางการ",
+          "detailed_interpretation_th": "เป้าหมายในรักคือความสัมพันธ์ที่จริงจัง การแต่งงาน การสร้างครอบครัวตามค่านิยมที่เคารพ คุณอยากให้ครอบครัวภูมิใจ ลูกเติบโตในสภาพแวดล้อมที่มีโครงสร้าง ความรักของคุณมีรากฐานที่ลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจในรัก, The Empress = ครอบครัว, The Emperor = ความมั่นคง",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัวสมบูรณ์",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่งคั่ง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตเป้าหมายรัก คือ 'รักจริงจังตามแบบที่ดี'",
+          "advice_th": "เลือกคู่ที่มีค่านิยมตรงกัน วางแผนชีวิตร่วมกัน แต่งงานเป็นการเริ่มต้น ไม่ใช่จุดจบ ตั้งใจสร้างครอบครัว",
+          "keywords_th": ["ครอบครัวมั่นคง", "แต่งงาน", "ค่านิยม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือเป็นผู้เชี่ยวชาญที่ได้รับการยอมรับและมีอิทธิพล",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายของคุณคือการเป็นผู้เชี่ยวชาญในวงการ มีตำแหน่งที่คนนับถือ มีลูกศิษย์ ที่ปรึกษา ผู้นำในวงการ ความมั่งคั่งจะมาจากปัญญาและความเชี่ยวชาญ",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Magician = ทักษะ, The Sun = สำเร็จ",
+            "wands": "King of Wands = ผู้นำในวงการ",
+            "cups": "King of Cups = ผู้ที่เข้าใจคน",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "King of Pentacles = ผู้เชี่ยวชาญการเงิน, Ten of Pentacles = ตำแหน่งสูง",
+            "court_cards": "King ทุกชุด = ระดับ expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตเป้าหมายงาน-เงิน คือ 'ผู้เชี่ยวชาญที่คนเคารพ'",
+          "advice_th": "ลงทุนการเรียนรู้และ certification ที่ได้รับการยอมรับ สร้างองค์ความรู้เฉพาะตัว ค่อยๆ ก้าวสู่ระดับผู้เชี่ยวชาญ",
+          "keywords_th": ["ผู้เชี่ยวชาญ", "ได้รับการยอมรับ", "อิทธิพล"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการบรรลุปัญญาและกลายเป็นผู้ส่งต่อคำสอน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายของคุณคือการบรรลุปัญญาที่ลึกซึ้ง คุณอยากเป็นผู้ที่เข้าใจชีวิตอย่างแท้จริง สามารถสอนคนอื่น เป็นที่พึ่งทางใจ บางทีอาจอยากเขียนหนังสือ สอน หรือเป็น guru",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = บรรลุ, The World = สมบูรณ์",
+            "wands": "King of Wands = ครูที่กระตือรือร้น",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปัญญาปฏิบัติ",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตเป้าหมายจิตวิญญาณ คือ 'บรรลุและสอน'",
+          "advice_th": "ทุ่มเทกับการเรียนรู้และฝึกปฏิบัติ เริ่มแบ่งปันกับคนอื่นแม้ยังไม่เป็น master การสอนเป็นวิธีเรียนรู้ที่ดีที่สุด",
+          "keywords_th": ["บรรลุปัญญา", "ครูคำสอน", "แบ่งปัน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการเป็นแบบอย่างเรื่องสุขภาพและมีระเบียบดูแลตัวเอง",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพคือการเป็นคนที่มีร่างกายและจิตใจที่สมดุล มีกิจวัตรที่ดี เป็นแบบอย่างให้คนรอบข้าง อาจอยากเป็น coach สุขภาพ ครูโยคะ หรือคนที่แบ่งปันความรู้เรื่องสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "King of Pentacles = สุขภาพระดับสูง, Knight of Pentacles = วินัย",
+            "court_cards": "King of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตเป้าหมายสุขภาพ คือ 'แบบอย่างเรื่องสุขภาพ'",
+          "advice_th": "ศึกษาเรื่องสุขภาพอย่างจริงจัง ทดลองกับตัวเอง บันทึกผล แบ่งปันกับคนรอบข้าง คุณจะกลายเป็นแบบอย่าง",
+          "keywords_th": ["แบบอย่างสุขภาพ", "ระเบียบดี", "ครูสุขภาพ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ต้องการอิสรภาพจากกฎและประเพณีทั้งหมด",
+          "detailed_interpretation_th": "มหาปุโรหิตกลับหัวในเป้าหมาย บ่งบอกว่าเป้าหมายของคุณคือการเป็นอิสระจากระบบ ประเพณี และความคาดหวัง คุณอยากเป็นคนที่ไม่ตามแบบใคร สร้างเส้นทางตัวเอง ไม่ต้องการชื่อเสียงหรือการยอมรับจากสถาบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = อิสรภาพ, The Hermit = ปัญญาเงียบ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Page of Pentacles = เริ่มต้น",
+            "court_cards": "Knight of Wands = กล้าเดิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวเป้าหมาย คือ 'อิสรภาพแท้'",
+          "advice_th": "เป็นอิสระจากกฎคนอื่น แต่สร้างค่านิยมของตัวเอง อิสรภาพที่ไม่มีหลักนำไปสู่ความสับสน",
+          "keywords_th": ["อิสรภาพ", "ไม่ตามใคร", "เส้นทางใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการความสัมพันธ์ที่ไม่ตามขนบและเป็นแบบของตัวเอง",
+          "detailed_interpretation_th": "เป้าหมายในรักของคุณไม่ใช่การแต่งงานตามแบบ คุณอาจอยากอยู่ด้วยกันโดยไม่แต่งงาน ไม่อยากมีลูก เปิดความสัมพันธ์ ความรักข้ามวัฒนธรรม หรือรักของคุณไม่ตรงกับสิ่งที่สังคมยอมรับ ไม่เป็นไร ความรักที่แท้ของคุณคือเป้าหมาย",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Fool = รักแบบใหม่",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Two of Cups = คู่ที่เข้าใจ",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Four of Pentacles กลับหัว = ไม่ติดกรอบ",
+            "court_cards": "Knight ของ Cups = คู่ไม่ธรรมดา"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวเป้าหมายในรัก คือ 'รักของคุณ'",
+          "advice_th": "อย่ายอมต่อรองความรักให้ตรงกับขนบ ความสัมพันธ์ที่เหมาะกับคุณคือสิ่งสำคัญ ไม่ใช่สิ่งที่สังคมคาดหวัง",
+          "keywords_th": ["รักแบบใหม่", "ไม่ตามขนบ", "ของคุณเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคืออาชีพอิสระที่ไม่ตามรูปแบบดั้งเดิม",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายของคุณคืออาชีพอิสระ - freelance, entrepreneur, content creator, นักเขียน ศิลปิน ผู้ที่ทำงานในวิธีของตัวเอง ไม่ตามระบบ ความมั่งคั่งจากการเป็นตัวเอง ไม่ใช่จากการทำตามใคร",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มใหม่, The Magician = ใช้ทักษะ",
+            "wands": "Ace of Wands = พลังเริ่มต้น, Knight of Wands = ผู้ประกอบการ",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Eight of Pentacles = ทักษะ",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวเป้าหมายงาน-เงิน คือ 'อาชีพในแบบของคุณ'",
+          "advice_th": "พัฒนาทักษะที่ขายได้อิสระ - ดิจิทัล สร้างสรรค์ การให้คำปรึกษา สร้าง personal brand ที่เป็นของคุณ",
+          "keywords_th": ["อาชีพอิสระ", "นอกกรอบ", "ทำในแบบตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการจิตวิญญาณของตัวเองที่ไม่ตามศาสนาไหน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายของคุณคือการสร้างจิตวิญญาณของตัวเอง รวมจากหลายคำสอน หลายปรัชญา หลายประเพณี ไม่ต้องการชื่อ ไม่ต้องการกลุ่ม แค่ปฏิบัติในแบบที่จริงและเหมาะกับตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ค้นหาเอง, The Star = แรงบันดาลใจ",
+            "wands": "Wands ข้างเคียง = พลังจิตวิญญาณ",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึกปฏิบัติ",
+            "court_cards": "Queen ทุกชุด = ปัญญาในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวเป้าหมายจิตวิญญาณ คือ 'จิตวิญญาณของคุณ'",
+          "advice_th": "ศึกษาจากหลายแหล่ง รวมส่วนที่ใช่ ฝึกปฏิบัติในแบบของคุณ จิตวิญญาณไม่จำเป็นต้องมีชื่อหรือกลุ่ม",
+          "keywords_th": ["จิตวิญญาณตัวเอง", "หลายแหล่ง", "ปฏิบัติเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการสุขภาพในแบบที่เหมาะกับตัวเองโดยไม่ตามตำรา",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพของคุณไม่ใช่ตาม diet หรือออกกำลังกายแบบเป๊ะ คุณอยากค้นพบสิ่งที่เหมาะกับร่างกายตัวเอง อาจ intuitive eating ออกกำลังกายที่สนุก โยคะ การเดิน ฟังร่างกายเป็นหลัก",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ฟังร่างกาย, The Star = ฟื้นฟู",
+            "wands": "Wands ข้างเคียง = พลังในแบบของตัว",
+            "cups": "Queen of Cups = ฟังอารมณ์",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Queen of Pentacles = ดูแลแบบของตัว",
+            "court_cards": "Queen of Pentacles = ผู้รู้ร่างกายตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวเป้าหมายสุขภาพ คือ 'ฟังร่างกายตัวเอง'",
+          "advice_th": "ทดลองและเรียนรู้ว่าร่างกายคุณต้องการอะไรจริงๆ ไม่ต้องตามกระแส สุขภาพของคุณเป็นของคุณ",
+          "keywords_th": ["สุขภาพแบบตัว", "ฟังร่างกาย", "ไม่ตามกระแส"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ค่านิยมและประเพณีที่ดีฝังอยู่ในจิตใต้สำนึก",
+          "detailed_interpretation_th": "มหาปุโรหิตหัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีค่านิยมที่ดี - ความเคารพ ความซื่อสัตย์ ความรับผิดชอบ การเรียนรู้ การเคารพผู้ใหญ่ ค่านิยมเหล่านี้รับมาจากครอบครัวหรือวัฒนธรรม เป็นรากฐานที่มั่นคงให้กับชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = โครงสร้าง, The Hermit = ปัญญา",
+            "wands": "King of Wands = พลังในแกน",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ฐานะมั่นคง",
+            "court_cards": "King ทุกชุด = ปัญญาในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตรากฐาน คือ 'ค่านิยมที่ดีในแกน'",
+          "advice_th": "ค่านิยมที่ติดตัวมาจากครอบครัวเป็นทรัพยากร ใช้เป็นเข็มทิศตัดสินใจ แต่อย่ายึดมั่นเกินไป",
+          "keywords_th": ["ค่านิยมดี", "ประเพณีในแกน", "รากฐานมั่นคง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความเข้าใจเรื่องความสัมพันธ์ที่ยั่งยืนฝังอยู่ในแกน",
+          "detailed_interpretation_th": "ในรัก รากฐานของคุณคือความเข้าใจว่าความสัมพันธ์ที่ดีต้องการเวลา ความซื่อสัตย์ การให้และรับ คุณรู้ว่าความรักไม่ใช่แค่ความรู้สึก แต่เป็นการเลือกทุกวัน ปัญญานี้ฝังลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = ความหลงใหลที่มีรากฐาน",
+            "cups": "Two of Cups = ผูกพัน, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ความมั่นคง",
+            "court_cards": "King of Cups = ผู้รู้รัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตรากฐานในรัก คือ 'รักยั่งยืนต้องการความมุ่งมั่น'",
+          "advice_th": "ใช้ความเข้าใจที่มีในการสร้างความสัมพันธ์ ความรักที่ยั่งยืนคือการเลือก ไม่ใช่แค่ความรู้สึก",
+          "keywords_th": ["รักยั่งยืน", "ปัญญาในรัก", "การเลือก"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ทักษะและความรู้ที่สั่งสมมาเป็นรากฐานการเงิน",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานของคุณคือทักษะและความรู้ที่สั่งสมมาจากการศึกษาและประสบการณ์ คุณมีพื้นฐานที่ดี ไม่ว่าจะเป็นปริญญา certification หรือทักษะปฏิบัติ สิ่งเหล่านี้คือทรัพย์สินที่แท้",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = โครงสร้าง",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ผู้นำที่เข้าใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ทักษะ, King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตรากฐานงาน-เงิน คือ 'ทักษะคือทรัพย์สิน'",
+          "advice_th": "ใช้ทักษะที่มีอย่างเต็มที่ พัฒนาต่อ ลงทุนกับการเรียนรู้ ทักษะคือทรัพย์สินที่ไม่มีใครเอาไปได้",
+          "keywords_th": ["ทักษะ", "ความรู้", "รากฐานอาชีพ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ปัญญาทางจิตวิญญาณและคำสอนที่ดีเป็นรากฐาน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานของคุณคือคำสอนที่ดีที่ได้รับการเลี้ยงดูมา - ศาสนา ปรัชญา ค่านิยม คุณมีความเข้าใจเรื่องความดี ความรับผิดชอบ การเคารพ ปัญญานี้ฝังลึก ใช้เป็นเข็มทิศ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญาเก่า, The High Priestess = ความรู้ลึก",
+            "wands": "Wands ข้างเคียง = พลังจิตวิญญาณ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตรากฐานจิตวิญญาณ คือ 'ปัญญาในแกน'",
+          "advice_th": "กลับไปทบทวนคำสอนที่เคยศึกษา ปฏิบัติตามค่านิยมที่เชื่อ จิตวิญญาณของคุณมีรากที่ลึก",
+          "keywords_th": ["ปัญญาแกน", "ค่านิยมดี", "รากฐานจิต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ความรู้เรื่องสุขภาพและกิจวัตรที่ดีฝังอยู่ในนิสัย",
+          "detailed_interpretation_th": "รากฐานสุขภาพของคุณดี คุณรู้วิธีดูแลตัวเองพื้นฐาน - กินอาหารดี ออกกำลังกาย พักผ่อน ความรู้เหล่านี้ได้จากครอบครัวหรือการศึกษา ใช้เป็นพื้นฐานในการดูแลร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ, King of Pentacles = สุขภาพดี",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตรากฐานสุขภาพ คือ 'พื้นฐานที่ดี'",
+          "advice_th": "ใช้ความรู้พื้นฐานที่มีในการดูแลตัวเอง ความสม่ำเสมอในเรื่องพื้นฐาน - กิน นอน เคลื่อนไหว - สำคัญกว่าวิธีใหม่ๆ",
+          "keywords_th": ["ความรู้พื้นฐาน", "กิจวัตรดี", "รากฐานสุขภาพ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ค่านิยมเก่าที่ขัดแย้งหรือบาดแผลจากศาสนาในวัยเด็ก",
+          "detailed_interpretation_th": "มหาปุโรหิตกลับหัวในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีบาดแผลจากระบบ ศาสนา หรือครอบครัวในอดีต ค่านิยมที่ฝังลึกอาจขัดแย้งกับตัวจริงของคุณ - เช่น ความเชื่อว่า 'บาป' 'ผิด' 'ต้องอาย' ขังคุณไว้",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = บาดแผลซ่อน",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง, Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ติดในความคาดหวัง",
+            "court_cards": "King กลับหัว = ผู้สอนที่ทำร้าย"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวรากฐาน คือ 'บาดแผลจากระบบ' รักษา",
+          "advice_th": "ระบุความเชื่อที่บีบในจิตใต้สำนึก - 'ฉันต้อง...' 'ฉันไม่ควร...' มาจากไหน? ปลดล็อกที่ไม่ใช่ของคุณ",
+          "keywords_th": ["บาดแผลศาสนา", "ค่านิยมขัด", "ปลดล็อก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความเชื่อจำกัดเรื่องความสัมพันธ์รับมาจากครอบครัว",
+          "detailed_interpretation_th": "ในรัก รากฐานของคุณมีความเชื่อจำกัด - 'ผู้หญิงต้อง...' 'ผู้ชายต้อง...' 'ภรรยา/สามีที่ดีคือ...' 'ไม่แต่งงานคือ...' ความเชื่อเหล่านี้รับมาจากครอบครัวและสังคม กำหนดความสัมพันธ์โดยไม่รู้ตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในความคาดหวัง",
+            "court_cards": "Queen of Swords กลับหัว = วิจารณ์ตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวรากฐานในรัก คือ 'ความเชื่อจำกัด' ปลดล็อก",
+          "advice_th": "เขียนความเชื่อเกี่ยวกับความสัมพันธ์ที่รับมาจากครอบครัว เลือกอันที่จริง ทิ้งอันที่ไม่จริง สร้างความเชื่อใหม่",
+          "keywords_th": ["ความเชื่อจำกัด", "บทบาทเก่า", "ปลดล็อก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความเชื่อจำกัดเรื่องเงินและความสำเร็จรับมาจากครอบครัว",
+          "detailed_interpretation_th": "รากฐานทางการเงินมีความเชื่อจำกัด - 'คนรวยไม่ดี' 'เงินคือรากของความชั่วทั้งปวง' 'ทำงานหนักคือศักดิ์สิทธิ์' 'เรียนสูงๆ ถึงรวย' ความเชื่อเหล่านี้กำหนดผลลัพธ์ ต้องค้นหาและปลดล็อก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่เห็นโอกาส",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Page กลับหัว = ไม่กล้าโต"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวรากฐานงาน-เงิน คือ 'money story เก่า'",
+          "advice_th": "เขียน 'money story' จากครอบครัว - พ่อแม่พูดเรื่องเงินอย่างไร? ความเชื่อไหนเป็นพิษ? เขียนใหม่",
+          "keywords_th": ["money story", "ความเชื่อจำกัด", "เขียนใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "religious trauma หรือบาดแผลจากการศึกษาในวัยเด็ก",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานของคุณมีบาดแผลจากศาสนาหรือการศึกษาที่บีบ ครูที่ทำร้าย คำสอนที่บอกว่าคุณบาป ผิด ไม่ดีพอ บาดแผลเหล่านี้ขังจิตวิญญาณคุณ ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ศาสนาที่ทำร้าย, The Moon = บาดแผลซ่อน",
+            "wands": "Five of Wands = ขัดแย้งกับศาสนา",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวลบาป",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King กลับหัว = ผู้นำศาสนาที่ทำร้าย"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวรากฐานจิตวิญญาณ คือ 'religious trauma'",
+          "advice_th": "ทำงานกับ religious/spiritual trauma อย่างจริงจัง อาจใช้ therapy ที่เข้าใจประเด็นนี้ ปลดปล่อยความเชื่อที่ทำร้าย",
+          "keywords_th": ["religious trauma", "บาดแผลศาสนา", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "นิสัยสุขภาพที่รับมาจากครอบครัวที่ไม่ดี",
+          "detailed_interpretation_th": "รากฐานสุขภาพมีนิสัยที่ไม่ดีที่รับมาจากครอบครัว - กินอาหารหนัก น้ำตาลเยอะ ไม่ออกกำลังกาย นอนดึก ความเชื่อเรื่องอาหารหรือยาที่ไม่ถูกต้อง นิสัยเหล่านี้ฝังลึกและยากเปลี่ยน แต่ทำได้",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = พลังหมด",
+            "cups": "Three of Cups กลับหัว = สังสรรค์ทำลาย",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวรากฐานสุขภาพ คือ 'นิสัยจากครอบครัว' เปลี่ยนได้",
+          "advice_th": "ระบุนิสัยสุขภาพที่รับมาจากครอบครัว - อันไหนดี อันไหนไม่ดี เปลี่ยนทีละนิสัย ความสม่ำเสมอสร้างนิสัยใหม่",
+          "keywords_th": ["นิสัยจากครอบครัว", "ทำลายสุขภาพ", "เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หาครูที่ดีและเรียนรู้จากระบบที่พิสูจน์แล้ว",
+          "detailed_interpretation_th": "คำแนะนำจากมหาปุโรหิตหัวตั้ง: ไม่ต้องคิดเอง หาครูที่เคยเดินเส้นทางนี้แล้วและเรียนจากเขา ทำตามระบบที่พิสูจน์แล้วได้ผล เคารพคนที่มีประสบการณ์มากกว่า ความรู้สั่งสมมีค่า",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ครูปัญญา, The Magician = ใช้ทักษะ",
+            "wands": "Page of Wands = เรียน",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ทักษะ",
+            "court_cards": "King ทุกชุด = mentor"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตคำแนะนำ คือ 'หาครู ทำตามที่พิสูจน์แล้ว'",
+          "advice_th": "หา mentor ในเรื่องที่ต้องการเติบโต ลงทุนคอร์ส certification ที่ได้รับการยอมรับ ทำตามคำแนะนำของผู้รู้",
+          "keywords_th": ["หาครู", "ทำตามระบบ", "เคารพปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ขอคำแนะนำจากผู้ใหญ่หรือคู่รักที่แต่งงานสำเร็จ",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ขอคำแนะนำจากผู้ใหญ่ที่ผ่านประสบการณ์ - พ่อแม่ ผู้ใหญ่ในครอบครัว เพื่อนที่แต่งงานสำเร็จ พวกเขามีปัญญาเรื่องการสร้างความสัมพันธ์ที่ยั่งยืน ฟังให้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = ครอบครัว",
+            "wands": "Wands ข้างเคียง = พลังในรัก",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "King of Cups = ผู้ใหญ่ในรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตคำแนะนำในรัก คือ 'ปัญญาจากผู้ใหญ่'",
+          "advice_th": "นั่งคุยกับพ่อแม่หรือคู่รักที่แต่งงาน 20-30 ปีอย่างมีความสุข ถามวิธี ฟังประสบการณ์ ปัญญาเหล่านี้หาที่อื่นไม่ได้",
+          "keywords_th": ["คำแนะนำจากผู้ใหญ่", "ปัญญาในรัก", "ฟัง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หา mentor ทางอาชีพและทำตามแผนของผู้เชี่ยวชาญ",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: หา mentor ที่อยู่ในตำแหน่งที่คุณอยากเป็นใน 5-10 ปี เรียนจากเขา ทำตามคำแนะนำ ลงทุน certification ที่จะเปิดประตู ระบบที่พิสูจน์แล้วได้ผลดีกว่าทดลองเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = องค์กร, The Magician = ทักษะ",
+            "wands": "King of Wands = mentor",
+            "cups": "King of Cups = ที่ปรึกษา",
+            "swords": "King of Swords = ที่ปรึกษาฉลาด",
+            "pentacles": "King of Pentacles = mentor การเงิน, Eight of Pentacles = ทักษะ",
+            "court_cards": "King ทุกชุด = mentor"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตคำแนะนำงาน-เงิน คือ 'mentor + certification'",
+          "advice_th": "หา mentor 1-2 คนที่ไว้ใจ ลงทุน certification ที่จำเป็น เรียนรู้จากคนที่ทำสำเร็จ ไม่ใช่ทดลองเองทุกอย่าง",
+          "keywords_th": ["mentor", "certification", "ตามผู้สำเร็จ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ศึกษาคำสอนของครูที่นับถือและปฏิบัติตาม",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ศึกษาคำสอนของครูทางจิตวิญญาณที่นับถือ - พุทธ คริสต์ ฮินดู ปรัชญา จิตวิทยา อ่านคัมภีร์ ฟังครู ฝึกตามคำสอน ไม่ใช่แค่อ่าน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ครู, The High Priestess = ปัญญาภายใน",
+            "wands": "Wands ข้างเคียง = พลังจิตวิญญาณ",
+            "cups": "King of Cups = ครูที่เข้าใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตคำแนะนำการเติบโต คือ 'เรียนและฝึก'",
+          "advice_th": "เลือกครูหรือคำสอนที่ตรงใจ ศึกษาอย่างลึก ฝึกปฏิบัติทุกวัน ความก้าวหน้ามาจากการลงมือ ไม่ใช่แค่อ่าน",
+          "keywords_th": ["ศึกษาครู", "ฝึกปฏิบัติ", "ปัญญาเก่า"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ทำตามคำแนะนำของผู้เชี่ยวชาญและกิจวัตรที่พิสูจน์แล้ว",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ทำตามคำแนะนำของหมอจริงๆ ใช้กิจวัตรที่พิสูจน์แล้ว - การกินอาหารสมดุล การออกกำลังกายสม่ำเสมอ การนอนเพียงพอ ไม่ต้องคิดเอง ไม่ต้องลองวิธีแปลกๆ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Magician = ใช้ทักษะ",
+            "wands": "Knight of Wands = ออกกำลังกาย",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King of Pentacles = ผู้เชี่ยวชาญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตคำแนะนำสุขภาพ คือ 'พื้นฐานที่ใช้ได้กับทุกคน'",
+          "advice_th": "กิน 80% อาหารธรรมชาติ ออกกำลังกาย 150 นาทีต่อสัปดาห์ นอน 7-8 ชั่วโมง ตรวจสุขภาพประจำปี ไม่ซับซ้อน แค่ทำให้ได้",
+          "keywords_th": ["พื้นฐานสุขภาพ", "ทำตามคำแนะนำ", "พิสูจน์แล้ว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ฟังเสียงในใจตัวเองมากกว่าฟังคนอื่น",
+          "detailed_interpretation_th": "คำแนะนำจากมหาปุโรหิตกลับหัว: หยุดทำตามที่ทุกคนบอก ฟังเสียงในใจตัวเอง ไม่ทุกคำแนะนำเหมาะกับคุณ บางครั้งครูที่ดีที่สุดคือตัวคุณเอง ฝึกการเชื่อมั่นในปัญญาของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ปัญญาภายใน, The Hermit = ค้นหาเอง",
+            "wands": "Ace of Wands = พลังจากภายใน",
+            "cups": "Page of Cups = ฟังใจ",
+            "swords": "Ace of Swords = ความคิดของตัว",
+            "pentacles": "Page of Pentacles = ทดลองเอง",
+            "court_cards": "Queen ทุกชุด = ปัญญาภายใน"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวคำแนะนำ คือ 'ฟังตัวเอง'",
+          "advice_th": "หยุดอ่านบทความ podcast ดู YouTube มากเกินไป นั่งเงียบ ฟังตัวเอง คำตอบมักอยู่ภายใน ไม่ใช่ภายนอก",
+          "keywords_th": ["ฟังตัวเอง", "ปัญญาภายใน", "ไม่ตามใคร"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ไม่ฟังคำแนะนำของคนอื่น สร้างความสัมพันธ์แบบของตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ความสัมพันธ์ของคุณเป็นของคุณ ไม่ใช่ของพ่อแม่ ของเพื่อน ของสังคม เลือกคู่และวิธีรักของคุณเอง ไม่ทุกคำแนะนำจะใช้ได้กับคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Fool = รักแบบใหม่",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Two of Cups = คู่ใจ",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Four of Pentacles กลับหัว = ไม่ตามกรอบ",
+            "court_cards": "Knight of Cups = ตามใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวคำแนะนำในรัก คือ 'รักของคุณ'",
+          "advice_th": "ฟังเสียงในใจเรื่องคู่รัก คนอื่นเห็นแค่ภายนอก คุณรู้ความรู้สึกจริง ตัดสินใจในแบบของคุณ",
+          "keywords_th": ["รักของตัว", "ไม่ตามคำแนะนำ", "ฟังใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ไม่ทุก career path ตามแบบ - สร้างเส้นทางของตัวเอง",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ไม่ทุก career path ตามแบบดั้งเดิม คุณอาจไม่ต้องเรียนปริญญา ไม่ต้องทำงานประจำ ไม่ต้องตาม certification เส้นทางของคุณอาจเป็น entrepreneur, creator, freelancer ที่สร้างเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เส้นทางใหม่, The Magician = ใช้ทักษะ",
+            "wands": "Ace of Wands = พลังเริ่มต้น",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Eight of Pentacles = ทักษะตัวเอง",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวคำแนะนำงาน-เงิน คือ 'เส้นทางของคุณ'",
+          "advice_th": "ไม่ต้องทำตามที่พ่อแม่ ครู หรือสังคมบอก ค้นหาทักษะที่คุณเก่งและรัก สร้างอาชีพรอบตัวมัน",
+          "keywords_th": ["เส้นทางใหม่", "ไม่ตามแบบ", "สร้างเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หาจิตวิญญาณของตัวเอง ไม่ตามครูหรือศาสนาไหน",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ไม่ต้องตามครูคนเดียวหรือศาสนาเดียว ศึกษาหลายแหล่ง ปฏิบัติในแบบที่ตอบโจทย์ตัวเอง สร้างจิตวิญญาณของคุณ ไม่ต้องเข้ากลุ่ม ไม่ต้องมีชื่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ค้นหาเอง, The Star = แรงบันดาลใจ",
+            "wands": "Wands ข้างเคียง = พลังจิตวิญญาณ",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ปฏิบัติเอง",
+            "court_cards": "Queen ทุกชุด = ปัญญาภายใน"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวคำแนะนำการเติบโต คือ 'หลายเส้นทาง รวมเป็นของคุณ'",
+          "advice_th": "เก็บคำสอนที่ดีจากหลายแหล่ง ปฏิบัติ ทดลอง ค้นหาสิ่งที่ใช่สำหรับคุณ จิตวิญญาณไม่จำเป็นต้องมีชื่อหรือกลุ่ม",
+          "keywords_th": ["จิตวิญญาณตัวเอง", "หลายเส้นทาง", "ทดลอง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ฟังร่างกายตัวเอง ไม่ตามกระแสสุขภาพ",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ไม่ทุก diet หรือ trend สุขภาพเหมาะกับคุณ ฟังร่างกายตัวเอง ทดลองและสังเกต ร่างกายแต่ละคนต่างกัน สิ่งที่ดีสำหรับคนอื่นอาจไม่ดีสำหรับคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The High Priestess = ฟังร่างกาย, The Star = ฟื้นฟู",
+            "wands": "Wands ข้างเคียง = พลังในแบบตัว",
+            "cups": "Queen of Cups = ฟังอารมณ์",
+            "swords": "Ace of Swords = วินิจฉัยเอง",
+            "pentacles": "Queen of Pentacles = ดูแลแบบตัว",
+            "court_cards": "Queen of Pentacles = ผู้รู้ร่างกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวคำแนะนำสุขภาพ คือ 'ฟังร่างกายของตัวเอง'",
+          "advice_th": "ทดลองวิธีต่างๆ บันทึกผลกระทบต่อร่างกายและอารมณ์ของคุณ ใช้ข้อมูลตัดสินใจ ไม่ใช่กระแส",
+          "keywords_th": ["ฟังร่างกาย", "ไม่ตามกระแส", "ทดลอง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "มีครู mentor หรือสถาบันที่สนับสนุนการเติบโต",
+          "detailed_interpretation_th": "มหาปุโรหิตหัวตั้งในภายนอก บ่งบอกว่าในชีวิตของคุณมีครูหรือ mentor ที่สำคัญ มีสถาบันที่ส่งเสริม - อาจเป็นมหาวิทยาลัย บริษัทใหญ่ กลุ่มสมาธิ ศาสนสถาน องค์กรวิชาชีพ พวกเขามอบความรู้และเครือข่าย",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ครู, The Emperor = องค์กรใหญ่",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ที่ปรึกษา",
+            "swords": "King of Swords = ที่ปรึกษาฉลาด",
+            "pentacles": "King of Pentacles = mentor การเงิน",
+            "court_cards": "King ทุกชุด = ครู mentor"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตภายนอก คือ 'ครู/สถาบันที่ดี' ใช้ประโยชน์",
+          "advice_th": "ใกล้ชิด mentor ใช้ประโยชน์จากองค์กรที่อยู่ ร่วมกิจกรรมของสถาบัน เครือข่ายจะเปิดประตู",
+          "keywords_th": ["ครูดี", "mentor", "สถาบัน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวสนับสนุนความสัมพันธ์อย่างเป็นทางการ",
+          "detailed_interpretation_th": "ในรัก ครอบครัวทั้งสองฝ่ายสนับสนุนความสัมพันธ์ พ่อแม่ยอมรับคู่ของคุณ ครอบครัวพร้อมช่วยจัดงานแต่ง ค่านิยมตรงกัน สังคมรอบข้างเอื้อต่อความสัมพันธ์ที่จริงจัง",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ครอบครัว, The Lovers = ตัดสินใจ",
+            "wands": "Wands ข้างเคียง = พลังในรัก",
+            "cups": "Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ความมั่นคง",
+            "court_cards": "King of Cups = ผู้ใหญ่ในรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตภายนอกรัก คือ 'ครอบครัวสนับสนุน'",
+          "advice_th": "ใช้การสนับสนุนของครอบครัวเป็นพลัง คุยกับพ่อแม่ทั้งสองฝ่ายเรื่องอนาคต ความรักที่ได้รับการยอมรับยั่งยืน",
+          "keywords_th": ["ครอบครัวสนับสนุน", "ค่านิยมตรงกัน", "การยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หัวหน้าหรือองค์กรสนับสนุนการเติบโตในอาชีพ",
+          "detailed_interpretation_th": "ในงาน-เงิน มีหัวหน้าที่ดี บริษัทที่มีระบบ การฝึกอบรม โอกาสเลื่อนตำแหน่ง ลูกค้าใหญ่ที่เป็นพันธมิตร พันธมิตรทางการเงินที่ไว้ใจได้ สภาพแวดล้อมเอื้อต่อการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Magician = ทักษะ",
+            "wands": "King of Wands = หัวหน้าดี",
+            "cups": "King of Cups = หัวหน้าเข้าใจ",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "King of Pentacles = mentor การเงิน, Ten of Pentacles = บริษัทใหญ่",
+            "court_cards": "King ทุกชุด = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตภายนอกงาน-เงิน คือ 'องค์กรดี + หัวหน้าดี'",
+          "advice_th": "ใช้ทรัพยากรของบริษัท - การฝึกอบรม mentor program network event ลงทุนความสัมพันธ์กับหัวหน้าและเพื่อนร่วมงาน",
+          "keywords_th": ["หัวหน้าดี", "บริษัทดี", "เครือข่าย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลุ่มจิตวิญญาณหรือชุมชนที่สนับสนุนการเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ มีชุมชนที่เอื้อต่อการเติบโต - กลุ่มสมาธิ ศาสนสถาน กลุ่มศึกษา เพื่อนที่สนใจเรื่องเดียวกัน พลังของชุมชนช่วยให้การเดินทางไม่โดดเดี่ยว",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = แรงบันดาลใจ",
+            "wands": "Wands ข้างเคียง = พลังร่วม",
+            "cups": "King of Cups = ครูที่เข้าใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครูระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตภายนอกจิตวิญญาณ คือ 'ชุมชนที่ดี'",
+          "advice_th": "เข้าร่วมกลุ่มสมาธิ ศึกษาธรรม หรือชุมชนทางจิตวิญญาณ พลังร่วมและการเรียนรู้กับคนอื่นทำให้การเดินทางง่ายขึ้น",
+          "keywords_th": ["ชุมชนจิตวิญญาณ", "เพื่อนเส้นทาง", "พลังร่วม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมอประจำตัวหรือกลุ่มสุขภาพที่ติดตามดูแล",
+          "detailed_interpretation_th": "ในสุขภาพ มีหมอประจำตัวที่ไว้ใจ trainer ที่ช่วยติดตาม กลุ่มออกกำลังกายที่สม่ำเสมอ พวกเขาช่วยให้คุณรักษาวินัยและตรวจสอบสุขภาพอย่างต่อเนื่อง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = trainer",
+            "cups": "King of Cups = หมอที่ดี",
+            "swords": "King of Swords = หมอฉลาด",
+            "pentacles": "King of Pentacles = ระดับสูง, Knight of Pentacles = วินัย",
+            "court_cards": "King of Pentacles = ผู้เชี่ยวชาญ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตภายนอกสุขภาพ คือ 'หมอประจำที่ติดตาม'",
+          "advice_th": "หาหมอประจำตัวที่จะติดตามสุขภาพระยะยาว เข้ากลุ่มออกกำลังกายเพื่อความสม่ำเสมอ ลงทุนผู้เชี่ยวชาญ",
+          "keywords_th": ["หมอประจำ", "กลุ่มสุขภาพ", "ติดตาม"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ครู สถาบัน หรือผู้มีอำนาจรอบตัวที่บีบหรือทำให้อึดอัด",
+          "detailed_interpretation_th": "มหาปุโรหิตกลับหัวในภายนอก เตือนว่ามีครู ครอบครัว ศาสนา หรือสถาบันที่บีบบังคับ ทำให้รู้สึกไม่เป็นตัวเอง อาจเป็นองค์กรราชการที่กดดัน ศาสนาที่เข้มงวด ครอบครัวที่คาดหวังเกินไป ต้องตั้งขีดจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ระบบที่บีบ, The Tower = ระเบิด",
+            "wands": "Five of Wands = ขัดแย้งกับระบบ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขังในระบบ",
+            "pentacles": "Four of Pentacles = ติดในกรอบ",
+            "court_cards": "King กลับหัว = ผู้นำที่บีบ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวภายนอก คือ 'ระบบที่บีบ' ต้องเลือก",
+          "advice_th": "ระบุที่บีบในชีวิต - ครอบครัว? องค์กร? ศาสนา? ตั้งขีดจำกัด เลือกอยู่ในแบบที่เป็นตัวเอง หรือออก",
+          "keywords_th": ["ระบบบีบ", "ขีดจำกัด", "เลือก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวหรือศาสนาแทรกแซงความสัมพันธ์",
+          "detailed_interpretation_th": "ในรัก ระวังครอบครัวที่แทรกแซง - พ่อแม่ที่ไม่อนุญาต แม่ยายที่ควบคุม ครอบครัวที่กดดันให้แต่งงานหรือมีลูก ศาสนาที่ไม่อนุญาตให้คบกัน ความสัมพันธ์ของคุณต้องชัดเจน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดันครอบครัว, The Tower = ระเบิด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ครอบครัวหวง",
+            "court_cards": "King of Swords กลับหัว = ผู้ใหญ่ที่ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวภายนอกรัก คือ 'ครอบครัวแทรก' ตัดสินใจ",
+          "advice_th": "คุยกับคู่รักให้ชัดเจน ทั้งสองต้องเป็นทีมเดียวกัน ถ้าครอบครัวกดดัน ตั้งขีดจำกัดร่วมกัน ปกป้องความสัมพันธ์",
+          "keywords_th": ["ครอบครัวแทรก", "ตัดสินใจ", "ทีมเดียวกัน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หัวหน้าหรือบริษัทที่เข้มงวดเกินไปและไม่เปิดให้สร้างสรรค์",
+          "detailed_interpretation_th": "ในงาน-เงิน อาจมีหัวหน้าที่ rigid ไม่ยืดหยุ่น บริษัทที่มีกฎเยอะ ระบบราชการที่ทำงานช้า องค์กรที่ไม่เปิดให้คิดสร้างสรรค์ คุณรู้สึกว่าศักยภาพถูกขัง ต้องตัดสินใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในระบบ, The Tower = วิกฤต",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "King กลับหัว = หัวหน้าที่ rigid"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวภายนอกงาน-เงิน คือ 'องค์กรที่ rigid'",
+          "advice_th": "ประเมินว่าคุณยังเติบโตได้ในองค์กรนี้ไหม ถ้าไม่ วางแผนเปลี่ยน องค์กรที่เปิดให้สร้างสรรค์ดีกว่าองค์กรที่มีระบบเยอะ",
+          "keywords_th": ["องค์กร rigid", "ระบบเยอะ", "ประเมิน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ระวังครูหรือกลุ่มจิตวิญญาณที่ควบคุมเกินไป",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ระวังครูที่ดูเหมือนทรงปัญญาแต่จริงๆ ควบคุม ขอเงิน ขอความภักดี กลุ่มที่ทำให้รู้สึกว่าออกจากกลุ่มไม่ได้ ครูที่ดีไม่กลัวคำถามและไม่ทำให้ลูกศิษย์รู้สึกขึ้นต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ลัทธิ, The Moon = ลวงตา",
+            "wands": "Wands ข้างเคียง = พลังถูกใช้",
+            "cups": "Seven of Cups = ฝันจิตวิญญาณ",
+            "swords": "Eight of Swords = ขังในการพึ่ง",
+            "pentacles": "Five of Pentacles = เสียเงินกับครู",
+            "court_cards": "King of Wands กลับหัว = guru ปลอม"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวภายนอกจิตวิญญาณ คือ 'ระวังลัทธิ'",
+          "advice_th": "ถ้ารู้สึกว่ากลุ่ม/ครูทำให้คุณรู้สึกขึ้นต่อ กลัวออก หรือต้องจ่ายเงินมาก ออก ครูที่ดีปล่อยให้คุณเป็นอิสระ",
+          "keywords_th": ["ระวังลัทธิ", "ครูควบคุม", "ออก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมอที่ไม่ใส่ใจหรือคลินิกที่เน้นแต่ขายของ",
+          "detailed_interpretation_th": "ในสุขภาพ ระวังหมอที่ไม่ฟัง สั่งยาเยอะ คลินิกที่เน้นขาย service หรือผลิตภัณฑ์มากกว่ารักษา trainer ที่ใช้ one-size-fits-all approach หาผู้เชี่ยวชาญที่เข้าใจคุณจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการรักษาผิด, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = เร่งเกิน",
+            "cups": "Four of Cups = ไม่ใส่ใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = เสียเงินไม่ได้ผล",
+            "court_cards": "King of Pentacles กลับหัว = หมอที่ไม่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวภายนอกสุขภาพ คือ 'หา second opinion'",
+          "advice_th": "ถ้ารู้สึกว่าหมอไม่ฟัง คลินิกเน้นขาย หรือ trainer ไม่ปรับตามคุณ เปลี่ยน หา second opinion สุขภาพคุณสำคัญที่สุด",
+          "keywords_th": ["หมอไม่ใส่ใจ", "เน้นขาย", "เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes",
+      "position_name_th": "ความหวัง",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังเรียนรู้จากครูที่ดีและกลายเป็นผู้ส่งต่อปัญญา",
+          "detailed_interpretation_th": "มหาปุโรหิตหัวตั้งในความหวัง สะท้อนความปรารถนา - อยากเรียนรู้จากครูที่แท้ ได้รับการยอมรับจากผู้เชี่ยวชาญ มีโอกาสแบ่งปันปัญญากับคนอื่น ความหวังนี้ทรงคุณค่า",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ครู, The Star = บรรลุ",
+            "wands": "Page of Wands = เรียน",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ทักษะ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตความหวัง คือ 'เรียนและสอน'",
+          "advice_th": "เก็บความหวังนี้ ลงทุนการเรียนรู้ตลอดชีวิต วันหนึ่งคุณจะเป็นครูของคนอื่น",
+          "keywords_th": ["เรียนจากครู", "เป็นครู", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังสร้างครอบครัวที่มั่นคงตามแบบที่เคารพ",
+          "detailed_interpretation_th": "ในรัก ความหวังคือการแต่งงานและสร้างครอบครัวที่ดี ตามแบบที่พ่อแม่ทำ หรือดีกว่า มีบ้านอบอุ่น ลูกที่ดี ความรักที่ยั่งยืน ความหวังนี้สวยงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่งคั่ง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตความหวังรัก คือ 'ครอบครัวตามแบบที่ดี'",
+          "advice_th": "ใช้ตัวอย่างของคู่ที่แต่งงานสำเร็จเป็นแม่แบบ เรียนรู้วิธีของพวกเขา ปรับใช้กับความสัมพันธ์ของคุณ",
+          "keywords_th": ["ครอบครัวอบอุ่น", "แต่งงาน", "ตามแบบที่ดี"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังเป็นผู้เชี่ยวชาญที่ได้รับการยอมรับและมีอิทธิพล",
+          "detailed_interpretation_th": "ในงาน-เงิน ความหวังคือการเป็นผู้เชี่ยวชาญในวงการ ได้รับการยอมรับจากสถาบัน มีตำแหน่งสูงในองค์กร เป็น mentor ของคนอื่น ความมั่งคั่งมาจากปัญญาและการแบ่งปัน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ผู้นำที่เข้าใจ",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตความหวังงาน-เงิน คือ 'ผู้เชี่ยวชาญที่ได้รับยอมรับ'",
+          "advice_th": "พัฒนาทักษะที่ลึกในด้านที่สนใจ ลงทุน certification ที่สถาบันยอมรับ สร้าง personal brand ที่ตั้งบนปัญญา",
+          "keywords_th": ["ผู้เชี่ยวชาญ", "การยอมรับ", "ปัญญา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังบรรลุปัญญาและเป็นผู้ที่คนอื่นมาขอคำแนะนำ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความหวังคือการบรรลุปัญญาที่แท้ ไม่ใช่แค่อ่านหนังสือ แต่เข้าใจจริง ปฏิบัติได้ คุณอยากเป็นที่พึ่งทางใจ มีคนมาขอคำแนะนำ การเป็นแหล่งของปัญญาคือเป้าหมายลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = บรรลุ",
+            "wands": "King of Wands = ครู",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปัญญาปฏิบัติ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตความหวังจิตวิญญาณ คือ 'บรรลุและสอน'",
+          "advice_th": "ฝึกปฏิบัติทุกวัน ความรู้ที่ไม่ได้ใช้ไม่มีค่า ค่อยๆ สั่งสมประสบการณ์ วันหนึ่งคุณจะเป็นครูได้",
+          "keywords_th": ["บรรลุปัญญา", "เป็นที่พึ่ง", "สอน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังเป็นแบบอย่างเรื่องสุขภาพและช่วยคนรอบข้าง",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือการเป็นคนที่มีร่างกายและจิตใจที่ดี เป็นแบบอย่างให้คนรอบข้าง สามารถแนะนำคนอื่นเรื่องสุขภาพได้ ความสุขจากการเห็นคนใกล้ตัวสุขภาพดีจากคำแนะนำของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "King of Pentacles = สุขภาพระดับสูง",
+            "court_cards": "King of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตความหวังสุขภาพ คือ 'แบบอย่างสุขภาพ'",
+          "advice_th": "ดูแลสุขภาพอย่างจริงจัง ทดลองและบันทึก แบ่งปันความรู้กับครอบครัวและเพื่อน คุณจะเป็นแบบอย่างได้",
+          "keywords_th": ["แบบอย่างสุขภาพ", "ช่วยคนอื่น", "ครู"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวการตามระบบหรือกลัวว่าตัวเองไม่ใช่ครูได้",
+          "detailed_interpretation_th": "มหาปุโรหิตกลับหัวในความหวัง บ่งบอกว่ามีความกลัวซ่อนอยู่ คุณกลัวการตามระบบและสูญเสียตัวเอง หรือกลัวว่าตัวเองไม่มีปัญญาพอจะเป็นครู ไม่กล้าแบ่งปันเพราะคิดว่าไม่ดีพอ ความกลัวขัดขวาง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง, Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = กลัวเสีย",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวความหวัง คือ 'กลัวระบบ vs กลัวไม่ดีพอ'",
+          "advice_th": "ระบุความกลัวเฉพาะเจาะจง กลัวอะไร? ทำงานกับความกลัวทีละข้อ คุณมีปัญญาพอแล้ว แค่ต้องเชื่อ",
+          "keywords_th": ["กลัวระบบ", "กลัวไม่ดีพอ", "ทำงานกับใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวการแต่งงานหรือสร้างครอบครัวเพราะเห็นพ่อแม่ทะเลาะ",
+          "detailed_interpretation_th": "ในรัก ความกลัวซ่อนอยู่ - กลัวว่าจะแต่งงานแล้วทะเลาะเหมือนพ่อแม่ กลัวเป็นพ่อ/แม่ไม่ดี กลัวการรับผิดชอบครอบครัว บาดแผลในวัยเด็กกำลังขัดขวาง ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Devil = ติดในรูปแบบเก่า",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ, Three of Swords = แผลใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ป้องกันใจ",
+            "court_cards": "Knight of Swords กลับหัว = กลัวรับผิดชอบ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวความหวังรัก คือ 'กลัวซ้ำรอยพ่อแม่'",
+          "advice_th": "ทำงานกับ inner child ที่เห็นพ่อแม่ทะเลาะ คุณไม่ใช่พ่อแม่ คุณสามารถสร้างครอบครัวในแบบของคุณ",
+          "keywords_th": ["กลัวซ้ำรอย", "inner child", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ไม่เชื่อว่าจะเป็นผู้เชี่ยวชาญหรือได้รับการยอมรับ",
+          "detailed_interpretation_th": "ในงาน-เงิน ความเชื่อ 'ฉันไม่ใช่ผู้เชี่ยวชาญ' 'คนอื่นเก่งกว่า' 'ไม่มีใครจะมาฟังฉัน' ความเชื่อเหล่านี้คือ imposter syndrome ขัดขวางการก้าวขึ้น ต้องเริ่มเชื่อในตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง, Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ความเชื่อขาด",
+            "court_cards": "Page กลับหัว = imposter"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวความหวังงาน-เงิน คือ 'imposter syndrome'",
+          "advice_th": "จดทักษะและประสบการณ์ที่มี - เยอะกว่าที่คิด เริ่มแบ่งปันเล็กๆ คุณรู้มากพอจะช่วยคนที่อยู่ต่ำกว่าคุณ 1-2 ขั้น",
+          "keywords_th": ["imposter syndrome", "ไม่กล้าก้าว", "เริ่มเล็กๆ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวว่าจะไม่บรรลุปัญญาหรือไม่คู่ควรเป็นครู",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความกลัวว่าตัวเองไม่ดีพอจะบรรลุ ไม่คู่ควรเป็นครู ความเชื่อ 'คนแบบฉันไม่มีทาง enlightened' ผิด ทุกคนเริ่มจากศูนย์ ครูทุกคนเคยเป็นนักเรียน ปัญญาสร้างได้",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Page of Pentacles กลับหัว = ไม่เริ่ม",
+            "court_cards": "Page กลับหัว = ไม่กล้าโต"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวความหวังจิตวิญญาณ คือ 'ทุกคนคู่ควร'",
+          "advice_th": "อ่านเรื่องครูที่เริ่มจากคนธรรมดา - หลักฐานว่าเป็นไปได้ เริ่มฝึกปฏิบัติ ปัญญาสร้างจากการทำ ไม่ใช่จากการคิด",
+          "keywords_th": ["ไม่คู่ควรปลอม", "เริ่มฝึก", "ปัญญาสร้างได้"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ไม่เชื่อว่าจะมีสุขภาพดีได้หรือเป็นแบบอย่างได้",
+          "detailed_interpretation_th": "ในสุขภาพ ความเชื่อ 'ฉันแก่เกินไป' 'พันธุกรรมแย่' 'ไม่มีเวลา' ขัดขวางการเริ่มต้น คุณอยากมีสุขภาพดีแต่ไม่เชื่อว่าเป็นไปได้ ความเชื่อนี้ผิด ร่างกายเปลี่ยนได้เสมอ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ลวงตา, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวความหวังสุขภาพ คือ 'ร่างกายเปลี่ยนได้'",
+          "advice_th": "หาเรื่องราวคนที่ฟื้นฟูสุขภาพในวัยเดียวกัน เริ่มก้าวเล็ก 1 นิสัยใหม่ต่อเดือน 1 ปีจะเปลี่ยน",
+          "keywords_th": ["เชื่อว่าเป็นไปได้", "เริ่มเล็ก", "ค่อยๆ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือคุณกลายเป็นครูหรือผู้เชี่ยวชาญที่คนเคารพ",
+          "detailed_interpretation_th": "มหาปุโรหิตหัวตั้งในผลลัพธ์ บ่งบอกว่าถ้าดำเนินต่อในเส้นทางนี้ คุณจะกลายเป็นผู้เชี่ยวชาญ ที่ปรึกษา หรือครูที่คนเคารพ ปัญญาและประสบการณ์ที่สั่งสมจะกลายเป็นทรัพยากร คนจะมาขอคำแนะนำ คุณจะเป็นที่พึ่งของชุมชน",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Hermit = ปัญญา, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปัญญาปฏิบัติ, Ten of Pentacles = มรดก",
+            "court_cards": "King ทุกชุด = บรรลุระดับ master"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตผลลัพธ์ คือ 'กลายเป็นครู'",
+          "advice_th": "ดำเนินการเรียนรู้และฝึกปฏิบัติ สั่งสมประสบการณ์ ค่อยๆ แบ่งปัน วันหนึ่งคุณจะเป็นแหล่งปัญญา",
+          "keywords_th": ["ครู", "ผู้เชี่ยวชาญ", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือการแต่งงานและสร้างครอบครัวที่มั่นคง",
+          "detailed_interpretation_th": "ในรัก ถ้าดำเนินต่อ ผลลัพธ์คือการแต่งงาน การสร้างครอบครัวที่อบอุ่น ความสัมพันธ์ที่ได้รับการยอมรับจากครอบครัวและสังคม ลูก (ถ้ามี) จะเติบโตในสภาพแวดล้อมที่มั่นคง คุณจะกลายเป็นผู้ใหญ่ที่คนรุ่นต่อไปนับถือ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Empress = ครอบครัว, The Emperor = ความมั่นคง",
+            "wands": "Knight of Wands = คู่หลงใหล",
+            "cups": "Two of Cups = แต่งงาน, Ten of Cups = ครอบครัวสมบูรณ์",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = ครอบครัวมั่งคั่ง",
+            "court_cards": "King of Cups = ผู้ใหญ่ในรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตผลลัพธ์รัก คือ 'แต่งงานและครอบครัว'",
+          "advice_th": "เตรียมตัวสำหรับชีวิตคู่ - การจัดการการเงินร่วม การวางแผนอนาคต การสร้างบ้าน ลงทุนกับความสัมพันธ์",
+          "keywords_th": ["แต่งงาน", "ครอบครัวมั่นคง", "ผู้ใหญ่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือตำแหน่งสูงในวงการและการยอมรับจากสถาบัน",
+          "detailed_interpretation_th": "เส้นทางนี้นำไปสู่ตำแหน่งสูงในวงการ - CEO, expert, ผู้บริหาร, ที่ปรึกษา ได้รับการยอมรับจากสถาบันวิชาชีพ เงินทองมั่งคั่ง ชื่อเสียงดี คุณจะเป็นที่ปรึกษาของรุ่นน้อง mentor",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, The Emperor = ผู้นำ, The Sun = รุ่งเรือง",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตผลลัพธ์งาน-เงิน คือ 'ตำแหน่งสูง + ยอมรับ'",
+          "advice_th": "ดำเนินการเรียนรู้และพัฒนาทักษะ ลงทุน certification และ network ตำแหน่งสูงรอคุณอยู่",
+          "keywords_th": ["ตำแหน่งสูง", "ผู้เชี่ยวชาญ", "การยอมรับ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการบรรลุปัญญาและกลายเป็นที่พึ่งทางใจ",
+          "detailed_interpretation_th": "เส้นทางจิตวิญญาณนี้นำไปสู่การบรรลุปัญญา คุณจะกลายเป็นคนที่เข้าใจชีวิต สามารถช่วยคนอื่น เป็นที่พึ่งทางใจ บางทีอาจเขียนหนังสือ สอน หรือเป็น guru ในชุมชนของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Star = บรรลุ, The World = สมบูรณ์",
+            "wands": "King of Wands = ครู",
+            "cups": "King of Cups = ครูทางใจ",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปัญญาปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตผลลัพธ์จิตวิญญาณ คือ 'บรรลุปัญญา'",
+          "advice_th": "ฝึกปฏิบัติทุกวัน ศึกษาคำสอนอย่างลึก แบ่งปันกับคนรอบข้าง คุณจะกลายเป็นที่พึ่ง",
+          "keywords_th": ["ปัญญา", "ที่พึ่งทางใจ", "ครู"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพที่ดีและเป็นแบบอย่างให้คนรอบข้าง",
+          "detailed_interpretation_th": "ในสุขภาพ เส้นทางนี้นำไปสู่ร่างกายที่แข็งแรง อายุยืนยาว วินัยที่ดี คุณจะเป็นแบบอย่างเรื่องสุขภาพ ครอบครัวและเพื่อนจะมาขอคำแนะนำ การลงทุนกับสุขภาพให้ผลตอบแทน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู, The World = สมบูรณ์",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "King of Pentacles = สุขภาพระดับสูง",
+            "court_cards": "King of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตผลลัพธ์สุขภาพ คือ 'แบบอย่างเรื่องสุขภาพ'",
+          "advice_th": "ดำเนินกิจวัตรสุขภาพต่อ ทดลองและเรียนรู้ บันทึก แบ่งปัน คุณจะเป็นแหล่งความรู้",
+          "keywords_th": ["สุขภาพดี", "แบบอย่าง", "ครูสุขภาพ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์ไม่ดีถ้ายังคงตามระบบที่ไม่ใช่ของตัวเอง",
+          "detailed_interpretation_th": "มหาปุโรหิตกลับหัวในผลลัพธ์ เตือนว่าถ้ายังคงตามระบบที่ไม่ใช่ของคุณ ผลลัพธ์คือความไม่มีความสุข ความสูญเสียตัวตน หรือออกจากระบบในที่สุดด้วยความเจ็บปวด เปลี่ยนตอนนี้ - เลือกระบบที่ใช่ หรือออกอย่างมีแผน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = ติดในระบบ, The Fool = เริ่มใหม่",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = หัวใจสลาย, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King กลับหัว = ผู้นำผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวผลลัพธ์ คือ 'เปลี่ยนระบบก่อนพัง'",
+          "advice_th": "ประเมินระบบที่อยู่ตอนนี้ - งาน ครอบครัว ศาสนา สังคม อันไหนใช่? อันไหนไม่ใช่? วางแผนเปลี่ยนอย่างฉลาด",
+          "keywords_th": ["ออกจากระบบผิด", "เปลี่ยน", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะจบหรือเปลี่ยนรูปแบบจากที่ไม่ใช่",
+          "detailed_interpretation_th": "ในรัก ถ้ายังคงอยู่ในความสัมพันธ์ที่ไม่ใช่ตามแบบที่สังคมคาดหวัง แต่ไม่ใช่ของคุณ ผลลัพธ์อาจเป็นการเลิกรา หรือออกจากการแต่งงาน หรือเปลี่ยนรูปแบบ ฟังใจตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = สัมพันธ์ที่ทำลาย",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ, Eight of Cups = ออกจาก",
+            "swords": "Three of Swords = หัวใจสลาย",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Swords กลับหัว = ก้าวร้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวผลลัพธ์รัก คือ 'ตามใจหรือตามครอบครัว'",
+          "advice_th": "ถ้าความสัมพันธ์ไม่ใช่ของคุณจริง พิจารณาออกอย่างมีศักดิ์ศรี ดีกว่าทนทรมาน ชีวิตของคุณคือของคุณ",
+          "keywords_th": ["จบความสัมพันธ์", "เปลี่ยนรูปแบบ", "ตามใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ออกจากระบบและสร้างเส้นทางใหม่",
+          "detailed_interpretation_th": "ในงาน-เงิน ผลลัพธ์อาจคือการออกจากระบบ - ลาออกจากบริษัทใหญ่ ออกจากองค์กรราชการ เริ่มอาชีพอิสระ ความไม่มั่นคงระยะสั้นแต่อิสรภาพระยะยาว วางแผนการเงินให้ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มใหม่, The Magician = ใช้ทักษะ",
+            "wands": "Ace of Wands = พลังเริ่มต้น, Knight of Wands = ผู้ประกอบการ",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ทักษะใหม่",
+            "court_cards": "Knight of Wands = กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวผลลัพธ์งาน-เงิน คือ 'อิสรภาพอาชีพ'",
+          "advice_th": "ก่อนออกจากระบบ มี emergency fund 6-12 เดือน แผนรายได้ใหม่ ทักษะที่ขายได้ การออกอย่างฉลาดสำคัญ",
+          "keywords_th": ["ออกจากระบบ", "อาชีพใหม่", "วางแผนดี"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ออกจากศาสนา/ครูเดิมและสร้างจิตวิญญาณตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ผลลัพธ์คือการออกจากครูหรือศาสนาเดิม สร้างจิตวิญญาณของตัวเอง รวมส่วนที่ใช่จากหลายเส้นทาง การเดินทางจะโดดเดี่ยวมากขึ้นในตอนแรก แต่อิสระมากขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปลีกตัว, The Star = แรงบันดาลใจใหม่",
+            "wands": "Page of Wands = เริ่มใหม่",
+            "cups": "Eight of Cups = ออกจากเก่า",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Page of Pentacles = ทดลอง",
+            "court_cards": "Knight of Wands = กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวผลลัพธ์จิตวิญญาณ คือ 'จิตวิญญาณของคุณ'",
+          "advice_th": "ออกจากกลุ่ม/ครูเดิมอย่างเคารพ ค้นหาเส้นทางของคุณ ศึกษาหลายแหล่ง ปฏิบัติในแบบของคุณ",
+          "keywords_th": ["จิตวิญญาณตัว", "ออกจากกลุ่ม", "ค้นหาเอง"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ลองวิธีรักษาทางเลือกและสร้างกิจวัตรของตัวเอง",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์อาจคือการลองวิธีทางเลือก - functional medicine, ayurveda, จีนแผนโบราณ การหาหมอที่เข้าใจ holistic การฟังร่างกายตัวเองมากกว่าตามตำรา การสร้างกิจวัตรเฉพาะตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The High Priestess = ฟังร่างกาย",
+            "wands": "Page of Wands = ลองใหม่",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Page of Pentacles = ทดลอง",
+            "court_cards": "Queen of Pentacles = ดูแลแบบตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: มหาปุโรหิตกลับหัวผลลัพธ์สุขภาพ คือ 'วิธีของคุณ'",
+          "advice_th": "ลองวิธีทางเลือกที่มีหลักฐาน อย่าทิ้งการแพทย์กระแสหลัก ใช้ทั้งสอง ฟังร่างกาย",
+          "keywords_th": ["วิธีทางเลือก", "ฟังร่างกาย", "กิจวัตรเฉพาะ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    }
+  }
+}

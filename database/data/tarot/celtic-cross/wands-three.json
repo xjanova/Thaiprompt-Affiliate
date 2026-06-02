@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "Three of Wands",
+    "name_th": "สามไม้เท้า",
+    "number": 3,
+    "type": "minor_arcana",
+    "suit": "wands"
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การขยายตัวและมองหาโอกาสไกล",
+          "detailed_interpretation_th": "สามไม้เท้าในปัจจุบัน บอกว่าคุณกำลังอยู่ในช่วงของการขยายตัวและมองหาโอกาสไกล - การวางแผนสำเร็จแล้ว ผลลัพธ์เริ่มปรากฏ คุณยืนอยู่บนจุดสูงและมองเห็นทิศทาง ไพ่หนุนให้คุณรอผลของแผนและเตรียมรับโอกาสที่กำลังเข้ามา",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ฉลอง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าปัจจุบัน คือ 'รอผลของแผนเตรียมรับโอกาส'",
+          "advice_th": "ขยายและมองไกล - การวางแผนสำเร็จ ผลลัพธ์ปรากฏ เตรียมรับโอกาสที่กำลังเข้ามา",
+          "keywords_th": ["ขยายตัว", "มองไกล", "โอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักขยายและมีโอกาสใหม่",
+          "detailed_interpretation_th": "ในความรัก สามไม้เท้าปัจจุบันชี้ว่าความรักขยายและมีโอกาสใหม่ - การเริ่มต้นช่วงใหม่ การเดินทางร่วมกัน การพบคนที่มาจากที่ไกลหรือต่างวัฒนธรรม ไพ่หนุนให้คุณเปิดใจรับความสัมพันธ์ที่ขยายโลกของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = อนาคต",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าปัจจุบันความรัก คือ 'ความสัมพันธ์ที่ขยายโลก'",
+          "advice_th": "เปิดใจรับโอกาสรัก - ความรักขยาย เดินทางร่วมกัน อาจพบคนจากที่ไกล",
+          "keywords_th": ["รักขยาย", "โอกาสใหม่", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ธุรกิจเริ่มขยายและเห็นผล",
+          "detailed_interpretation_th": "ในการงาน สามไม้เท้าปัจจุบันบอกว่าธุรกิจเริ่มขยายและเห็นผล - การลงทุนเริ่มให้กำไร โครงการขยายตัว โอกาสในต่างประเทศหรือตลาดใหม่ ไพ่หนุนให้คุณรอผลของการทำงานหนัก เตรียมรับโอกาสและคิดต่อยอด",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าปัจจุบันงาน คือ 'รอผลของการทำงานหนัก'",
+          "advice_th": "ขยายและต่อยอด - ธุรกิจเริ่มเห็นผล โอกาสในตลาดใหม่ รอผลและคิดต่อยอด",
+          "keywords_th": ["ธุรกิจขยาย", "เห็นผล", "ต่อยอด"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตและขยายมุมมอง",
+          "detailed_interpretation_th": "ในการเติบโต สามไม้เท้าปัจจุบันชี้ว่าคุณกำลังเติบโตและขยายมุมมอง - การเดินทาง การเรียนรู้สิ่งใหม่ การเปิดรับวัฒนธรรมต่าง ไพ่หนุนให้คุณใช้โอกาสนี้สำรวจโลกและเติบโตเป็นคนที่มีมุมมองกว้างกว่าเดิม",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Star = แรงบันดาลใจ",
+            "wands": "Two of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าปัจจุบันเติบโต คือ 'สำรวจโลกเติบโตมุมมองกว้าง'",
+          "advice_th": "ขยายมุมมอง - เดินทาง เรียนรู้สิ่งใหม่ เปิดรับวัฒนธรรมต่าง เติบโตเป็นคนกว้างขึ้น",
+          "keywords_th": ["ขยายมุมมอง", "เดินทาง", "เรียนรู้"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพเริ่มดีขึ้นจากการดูแลต่อเนื่อง",
+          "detailed_interpretation_th": "ในสุขภาพ สามไม้เท้าปัจจุบันบอกว่าสุขภาพเริ่มดีขึ้นจากการดูแลต่อเนื่อง - การออกกำลังกายเริ่มเห็นผล วิถีชีวิตที่ปรับปรุงให้ความรู้สึกดี ความก้าวหน้าในการฟื้นตัว ไพ่หนุนให้คุณรักษาความสม่ำเสมอและขยายกิจกรรมที่ดีต่อร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Three of Cups = สังสรรค์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าปัจจุบันสุขภาพ คือ 'ขยายกิจกรรมที่ดีต่อร่างกาย'",
+          "advice_th": "ดูแลต่อเนื่อง - การออกกำลังกายเริ่มเห็นผล วิถีชีวิตดีขึ้น รักษาความสม่ำเสมอ",
+          "keywords_th": ["สุขภาพดีขึ้น", "ก้าวหน้า", "สม่ำเสมอ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความล่าช้าและแผนไม่เป็นไปตามหวัง",
+          "detailed_interpretation_th": "สามไม้เท้ากลับหัวในปัจจุบัน บอกว่าคุณกำลังเจอความล่าช้าและแผนไม่เป็นไปตามหวัง - การขยายตัวที่ติดขัด โอกาสที่ล่าช้า อุปสรรคที่ไม่คาดคิด ไพ่หนุนให้คุณอดทน ปรับแผน และไม่ปล่อยให้ความล่าช้าทำให้ท้อ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ติดขัด, The Hanged Man = รอ",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวปัจจุบัน คือ 'ปรับแผนและไม่ปล่อยให้ท้อ'",
+          "advice_th": "อดทนกับความล่าช้า - แผนไม่เป็นไปตามหวัง ปรับแผน ไม่ปล่อยให้ความล่าช้าทำให้ท้อ",
+          "keywords_th": ["ล่าช้า", "แผนติดขัด", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักล่าช้าหรือมีระยะห่าง",
+          "detailed_interpretation_th": "ในความรัก สามไม้เท้ากลับหัวชี้ว่าความรักล่าช้าหรือมีระยะห่าง - การรอคอย คู่ที่อยู่ห่างไกล หรือความสัมพันธ์ที่ไม่ก้าวหน้า ไพ่หนุนให้คุณอดทน รักษาการสื่อสาร และเชื่อมั่นว่าระยะทางไม่ใช่อุปสรรคของความรักแท้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ลังเล, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = ห่างไกล",
+            "pentacles": "Five of Pentacles = ขาดมั่นคง",
+            "court_cards": "Knight of Wands (rev) = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวปัจจุบันความรัก คือ 'ระยะทางไม่ใช่อุปสรรคของรักแท้'",
+          "advice_th": "อดทนในความรัก - ความรักล่าช้าหรือมีระยะห่าง รักษาการสื่อสาร เชื่อมั่นในความรักแท้",
+          "keywords_th": ["รักล่าช้า", "ระยะห่าง", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ธุรกิจหรือโครงการขยายไม่เป็นไปตามแผน",
+          "detailed_interpretation_th": "ในการงาน สามไม้เท้ากลับหัวบอกว่าธุรกิจหรือโครงการขยายไม่เป็นไปตามแผน - การลงทุนที่ผลล่าช้า โอกาสที่ปิด ตลาดที่ไม่เอื้อ ไพ่หนุนให้คุณทบทวนแผน ปรับกลยุทธ์ และมองหาทางใหม่",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Tower = ชะงัก",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวปัจจุบันงาน คือ 'ทบทวนแผนปรับกลยุทธ์'",
+          "advice_th": "ปรับกลยุทธ์ - ธุรกิจขยายไม่เป็นไปตามแผน ทบทวน ปรับกลยุทธ์ มองหาทางใหม่",
+          "keywords_th": ["ขยายไม่ตามแผน", "ทบทวน", "ปรับกลยุทธ์"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตชะงักหรือมุมมองคับแคบ",
+          "detailed_interpretation_th": "ในการเติบโต สามไม้เท้ากลับหัวเผยว่าการเติบโตชะงักหรือมุมมองคับแคบ - การไม่กล้าก้าวออก การยึดติดกับมุมมองเดิม การปฏิเสธประสบการณ์ใหม่ ไพ่หนุนให้คุณกล้าเปิดรับสิ่งใหม่ ขยายขอบเขต และมองโลกในมุมที่กว้างกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Wands (rev) = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวปัจจุบันเติบโต คือ 'กล้าเปิดรับขยายขอบเขต'",
+          "advice_th": "ขยายมุมมอง - การเติบโตชะงัก กล้าเปิดรับสิ่งใหม่ ขยายขอบเขต มองโลกในมุมกว้าง",
+          "keywords_th": ["เติบโตชะงัก", "มุมมองคับ", "ขยาย"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพไม่ก้าวหน้าตามที่หวัง",
+          "detailed_interpretation_th": "ในสุขภาพ สามไม้เท้ากลับหัวบอกว่าสุขภาพไม่ก้าวหน้าตามที่หวัง - การออกกำลังกายที่ไม่เห็นผล วิถีชีวิตที่ไม่สม่ำเสมอ ความท้อแท้ในการดูแลตัวเอง ไพ่หนุนให้คุณทบทวนแผน ปรับวิธี และอดทนรอผล",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = ทบทวน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวปัจจุบันสุขภาพ คือ 'ทบทวนแผนปรับวิธี'",
+          "advice_th": "อดทนและปรับแผน - สุขภาพไม่ก้าวหน้าตามที่หวัง ทบทวน ปรับวิธี อดทนรอผล",
+          "keywords_th": ["ไม่ก้าวหน้า", "ทบทวน", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือการรอผลและขยายโอกาส",
+          "detailed_interpretation_th": "สามไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) บอกว่าสิ่งที่คุณกำลังเจอคือการต้องรอผลและขยายโอกาส - การอดทนรอแผนให้ผล การมองหาทางขยาย การเปิดรับโอกาสใหม่ อุปสรรคนี้คือการสร้างความอดทนและวิสัยทัศน์",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ฉลอง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอุปสรรค คือ 'สร้างความอดทนและวิสัยทัศน์'",
+          "advice_th": "รอผลและขยาย - อดทนรอแผนให้ผล มองหาทางขยาย เปิดรับโอกาสใหม่",
+          "keywords_th": ["รอผล", "ขยาย", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือการรอความรักหรือระยะห่าง",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการรอความรักหรือระยะห่าง - ความรักทางไกล การรอให้คู่พร้อม การรอจังหวะที่เหมาะ อุปสรรคนี้คือการรักษาความเชื่อมั่นและการสื่อสารแม้มีระยะห่าง",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Hanged Man = รอ",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอุปสรรคความรัก คือ 'รักษาความเชื่อมั่นแม้มีระยะห่าง'",
+          "advice_th": "รอด้วยความเชื่อ - รักทางไกล รอให้คู่พร้อม รักษาการสื่อสารและความเชื่อมั่น",
+          "keywords_th": ["รอรัก", "ระยะห่าง", "เชื่อมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือการรอผลตอบแทนและขยายธุรกิจ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการรอผลตอบแทนและขยายธุรกิจ - การรอลงทุนให้ผล การวางแผนขยาย การเปิดตลาดใหม่ อุปสรรคนี้คือการสร้างความอดทน คิดเชิงกลยุทธ์ และมองภาพระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, The Emperor = วางแผน",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ไอเดีย",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอุปสรรคงาน คือ 'อดทนคิดกลยุทธ์มองระยะยาว'",
+          "advice_th": "รอผลตอบแทน - ลงทุนรอผล วางแผนขยาย เปิดตลาดใหม่ คิดเชิงกลยุทธ์",
+          "keywords_th": ["รอผลตอบแทน", "ขยายธุรกิจ", "คิดกลยุทธ์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือการก้าวสู่ประสบการณ์ใหม่",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือการก้าวสู่ประสบการณ์ใหม่ - การเดินทาง การเรียนรู้วัฒนธรรมต่าง การเปิดรับความคิดต่างจากเดิม อุปสรรคนี้คือการก้าวออกจากเขตคุ้นเคยและขยายมุมมอง",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Fool = ก้าวใหม่",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอุปสรรคเติบโต คือ 'ก้าวออกจากเขตคุ้นเคย'",
+          "advice_th": "ก้าวสู่ประสบการณ์ใหม่ - เดินทาง เรียนรู้วัฒนธรรมต่าง เปิดรับความคิดต่าง ขยายมุมมอง",
+          "keywords_th": ["ประสบการณ์ใหม่", "เดินทาง", "ขยายมุมมอง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือการรอผลของการดูแลสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคบอกว่าสิ่งที่คุณเจอคือการรอผลของการดูแลสุขภาพ - การออกกำลังกายที่ต้องใช้เวลา การปรับวิถีที่ต้องสม่ำเสมอ การฟื้นตัวที่ค่อยเป็นค่อยไป อุปสรรคนี้คือการสร้างความอดทนและความสม่ำเสมอ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอุปสรรคสุขภาพ คือ 'สร้างความอดทนและความสม่ำเสมอ'",
+          "advice_th": "รอผลของการดูแล - ออกกำลังกายต้องใช้เวลา ปรับวิถีสม่ำเสมอ ฟื้นตัวค่อยเป็นค่อยไป",
+          "keywords_th": ["รอผล", "สม่ำเสมอ", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อุปสรรคคือความล่าช้าและแผนพัง",
+          "detailed_interpretation_th": "สามไม้เท้าในตำแหน่งอุปสรรค (ตีความตั้งตรงเสมอ) อีกแง่ บอกว่าอุปสรรคคือความล่าช้าและแผนพัง - การรอคอยที่ไม่ให้ผล อุปสรรคที่ทำให้แผนต้องเปลี่ยน ความล่าช้าที่ทำให้ท้อ ไพ่เตือนว่าต้องปรับแผน หาทางใหม่ และไม่ยอมแพ้กับวิสัยทัศน์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอนาน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอุปสรรค คือ 'ปรับแผนหาทางใหม่ไม่ยอมแพ้'",
+          "advice_th": "ปรับแผนรับมือ - ล่าช้าและแผนพัง หาทางใหม่ ไม่ยอมแพ้กับวิสัยทัศน์",
+          "keywords_th": ["ล่าช้า", "แผนพัง", "ปรับแผน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อุปสรรคคือระยะห่างที่ทำลายความรัก",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือระยะห่างที่ทำลายความรัก - ความสัมพันธ์ทางไกลที่ห่างเหิน การรอคอยที่ไม่มีผล การขาดการสื่อสาร ไพ่หนุนให้คุณตัดสินใจอย่างซื่อสัตย์ว่าจะรักษาความสัมพันธ์ต่อหรือก้าวต่อ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ห่างเหิน, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Five of Pentacles = ขาดมั่นคง",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอุปสรรคความรัก คือ 'ตัดสินใจซื่อสัตย์รักษาหรือก้าวต่อ'",
+          "advice_th": "ตัดสินใจอย่างซื่อสัตย์ - ระยะห่างทำลายความรัก ตัดสินใจรักษาต่อหรือก้าวต่อ",
+          "keywords_th": ["ระยะห่างทำลาย", "ห่างเหิน", "ตัดสินใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "อุปสรรคคือธุรกิจขยายล้มเหลว",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือธุรกิจขยายล้มเหลว - การลงทุนที่เสีย โอกาสที่ปิด แผนขยายที่ไม่สำเร็จ ไพ่หนุนให้คุณทบทวนกลยุทธ์ ตัดส่วนที่ไม่ทำเงิน และวางแผนใหม่อย่างรอบคอบ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = หมดแรง",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอุปสรรคงาน คือ 'ทบทวนกลยุทธ์วางแผนใหม่รอบคอบ'",
+          "advice_th": "ทบทวนกลยุทธ์ - ธุรกิจขยายล้มเหลว ตัดส่วนไม่ทำเงิน วางแผนใหม่อย่างรอบคอบ",
+          "keywords_th": ["ขยายล้มเหลว", "ทบทวน", "วางใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อุปสรรคคือมุมมองที่ไม่ขยายและติดอยู่",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งอุปสรรคชี้ว่าสิ่งที่คุณเจอคือมุมมองที่ไม่ขยายและติดอยู่ - การยึดติดกับมุมมองเดิม การปฏิเสธประสบการณ์ใหม่ การไม่กล้าก้าวออกจากเขตคุ้นเคย ไพ่หนุนให้คุณกล้าเปิดรับโลกที่กว้างกว่าและขยายมุมมอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Devil = ติดยึด",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอุปสรรคเติบโต คือ 'กล้าเปิดรับโลกที่กว้างกว่า'",
+          "advice_th": "ขยายมุมมอง - ยึดติดมุมเดิม ปฏิเสธสิ่งใหม่ กล้าเปิดรับโลกที่กว้างกว่า",
+          "keywords_th": ["มุมมองคับ", "ติดอยู่", "เปิดรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อุปสรรคคือสุขภาพไม่ก้าวหน้าจากการไม่อดทน",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งอุปสรรคเตือนว่าสิ่งที่คุณเจอคือสุขภาพไม่ก้าวหน้าจากการไม่อดทน - การคาดหวังผลเร็วเกินไป การยอมแพ้กลางทาง การไม่สม่ำเสมอ ไพ่หนุนให้คุณอดทน รักษาความสม่ำเสมอ และให้เวลาร่างกายในการฟื้น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = อดทน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = ใจร้อน",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอุปสรรคสุขภาพ คือ 'อดทนให้เวลาร่างกายฟื้น'",
+          "advice_th": "อดทนและสม่ำเสมอ - คาดหวังผลเร็วเกินไป ไม่สม่ำเสมอ ให้เวลาร่างกายในการฟื้น",
+          "keywords_th": ["ไม่อดทน", "ยอมแพ้", "สม่ำเสมอ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อดีตเคยขยายและเห็นผลของการวางแผน",
+          "detailed_interpretation_th": "สามไม้เท้าในอดีต เผยว่าคุณเคยขยายและเห็นผลของการวางแผน - ช่วงเวลาที่ความพยายามให้ผล โอกาสที่ขยายตัว วิสัยทัศน์ที่กลายเป็นจริง ประสบการณ์นี้สอนคุณว่าการวางแผนและอดทนนำสู่การเก็บเกี่ยวที่งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ฉลอง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอดีต คือ 'การวางแผนและอดทนนำสู่ผล'",
+          "advice_th": "ใช้บทเรียนการขยาย - คุณเคยเห็นผลของการวางแผน ใช้ความรู้นี้ขยายปัจจุบัน",
+          "keywords_th": ["ขยายเก่า", "เห็นผล", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่ขยายและเติบโต",
+          "detailed_interpretation_th": "ในความรัก สามไม้เท้าอดีตเผยว่าคุณเคยมีความรักที่ขยายและเติบโต - การเดินทางร่วมกัน การผ่านบททดสอบของระยะทาง การเติบโตในความสัมพันธ์ ประสบการณ์นี้สอนคุณว่าความรักที่อดทนและเปิดใจรับการเปลี่ยนแปลงเติบโตได้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = อนาคต",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอดีตความรัก คือ 'ความรักที่อดทนเติบโตได้'",
+          "advice_th": "ใช้บทเรียนความรักที่ขยาย - คุณเคยเห็นความรักเติบโต ใช้ความเชื่อนี้ในปัจจุบัน",
+          "keywords_th": ["ความรักขยายเก่า", "เติบโต", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยขยายธุรกิจและเก็บเกี่ยวผลตอบแทน",
+          "detailed_interpretation_th": "ในการงาน สามไม้เท้าอดีตเผยว่าคุณเคยขยายธุรกิจและเก็บเกี่ยวผลตอบแทน - การลงทุนที่ให้ผล โครงการที่ขยายตัว การเปิดตลาดใหม่สำเร็จ ประสบการณ์นี้กลายเป็นความรู้ว่าคุณสามารถสร้างการเติบโตและเก็บเกี่ยวผลของการทำงานหนัก",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, The Emperor = วางแผน",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอดีตงาน คือ 'คุณสร้างการเติบโตและเก็บเกี่ยวผล'",
+          "advice_th": "ใช้บทเรียนการขยายธุรกิจ - คุณเคยขยายและเก็บเกี่ยวสำเร็จ ใช้ความรู้นี้ในปัจจุบัน",
+          "keywords_th": ["ขยายธุรกิจเก่า", "เก็บเกี่ยว", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยขยายมุมมองและเติบโตเป็นคนใหญ่ขึ้น",
+          "detailed_interpretation_th": "ในการเติบโต สามไม้เท้าอดีตชี้ว่าคุณเคยขยายมุมมองและเติบโตเป็นคนใหญ่ขึ้น - การเดินทาง การเรียนรู้สิ่งใหม่ การเปิดรับวัฒนธรรมต่าง ประสบการณ์นี้กลายเป็นรากฐานของความเข้าใจว่าโลกกว้างและคุณสามารถเติบโตไปกับมัน",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Star = แรงบันดาลใจ",
+            "wands": "Two of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอดีตเติบโต คือ 'โลกกว้างและคุณเติบโตไปกับมัน'",
+          "advice_th": "ใช้ปัญญาการขยายมุมมอง - คุณเคยเติบโตเป็นคนใหญ่ขึ้น ใช้ความเข้าใจนี้ในปัจจุบัน",
+          "keywords_th": ["ขยายมุมมองเก่า", "เติบโต", "บทเรียน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยฟื้นตัวและเห็นผลการดูแล",
+          "detailed_interpretation_th": "ในสุขภาพ สามไม้เท้าอดีตเผยว่าคุณเคยฟื้นตัวและเห็นผลการดูแล - การออกกำลังกายที่ให้ผล วิถีชีวิตที่ปรับปรุงสำเร็จ ร่างกายที่แข็งแรงขึ้นจากการอดทน ประสบการณ์นี้สอนคุณว่าการดูแลสม่ำเสมอนำสู่สุขภาพที่ดีขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอดีตสุขภาพ คือ 'ดูแลสม่ำเสมอนำสู่สุขภาพดี'",
+          "advice_th": "ใช้บทเรียนการฟื้นตัว - คุณเคยเห็นผลของการดูแล ใช้ความรู้นี้ในปัจจุบัน",
+          "keywords_th": ["ฟื้นตัวเก่า", "เห็นผล", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยล่าช้าหรือแผนพังในอดีต",
+          "detailed_interpretation_th": "สามไม้เท้ากลับหัวในอดีต เผยว่าคุณเคยล่าช้าหรือแผนพังในอดีต - การขยายที่ติดขัด โอกาสที่ปิด ความผิดหวังจากการรอที่ไม่ให้ผล บทเรียนคือคุณรู้ว่าต้องปรับตัว ไม่ยึดติดกับแผนเดียว และมีแผนสำรองเสมอ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, The Hanged Man = ติดอยู่",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอนาน",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวอดีต คือ 'ปรับตัวมีแผนสำรองเสมอ'",
+          "advice_th": "ใช้บทเรียนความล่าช้า - คุณรู้ว่าต้องปรับตัว ไม่ยึดติดแผนเดียว มีแผนสำรอง",
+          "keywords_th": ["ล่าช้าเก่า", "แผนพัง", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่ห่างไกลและล้มเหลว",
+          "detailed_interpretation_th": "ในความรัก สามไม้เท้ากลับหัวในอดีตชี้ว่าคุณเคยมีความรักที่ห่างไกลและล้มเหลว - ความสัมพันธ์ทางไกลที่ขาดการสื่อสาร การรอคอยที่ไร้ผล การห่างเหินที่ทำลายความสัมพันธ์ บทเรียนคือคุณรู้ว่าระยะทางและการสื่อสารสำคัญต่อความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ห่างเหิน, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Three of Swords = เจ็บ",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Five of Pentacles = ขาดมั่นคง",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวอดีตความรัก คือ 'ระยะทางและการสื่อสารสำคัญ'",
+          "advice_th": "ใช้บทเรียนรักทางไกล - คุณรู้ค่าของการสื่อสาร ใช้ความรู้นี้ในความรักปัจจุบัน",
+          "keywords_th": ["รักห่างไกลเก่า", "ล้มเหลว", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยขยายธุรกิจล้มเหลวในอดีต",
+          "detailed_interpretation_th": "ในการงาน สามไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยขยายธุรกิจล้มเหลว - การลงทุนที่เสีย โครงการที่ไม่เห็นผล แผนขยายที่พังกลางทาง บทเรียนคือคุณรู้ว่าต้องประเมินความเสี่ยงอย่างรอบคอบและมีแผนสำรองเสมอ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = พัง, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Ten of Swords = ตกต่ำ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "King of Pentacles (rev) = พัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวอดีตงาน คือ 'ประเมินความเสี่ยงรอบคอบมีแผนสำรอง'",
+          "advice_th": "ใช้บทเรียนการขยายล้มเหลว - คุณรู้ค่าของการประเมินความเสี่ยง ใช้ความรู้นี้ในปัจจุบัน",
+          "keywords_th": ["ขยายล้มเก่า", "ประเมินเสี่ยง", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยมีมุมมองคับและไม่กล้าก้าวออก",
+          "detailed_interpretation_th": "ในการเติบโต สามไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยมีมุมมองคับและไม่กล้าก้าวออก - การยึดติดกับสิ่งคุ้นเคย การปฏิเสธประสบการณ์ใหม่ การไม่เปิดรับโลกที่กว้างกว่า บทเรียนคือคุณรู้ว่าการเติบโตต้องการการขยายมุมมองและกล้าก้าว",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวอดีตเติบโต คือ 'การเติบโตต้องการการขยายมุมมอง'",
+          "advice_th": "ใช้บทเรียนมุมมองคับ - คุณรู้ว่าต้องกล้าก้าวและขยายมุมมอง ใช้ความเข้าใจนี้ในปัจจุบัน",
+          "keywords_th": ["มุมมองคับเก่า", "ไม่กล้าก้าว", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยไม่เห็นผลจากการดูแลสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ สามไม้เท้ากลับหัวในอดีตเผยว่าคุณเคยไม่เห็นผลจากการดูแลสุขภาพ - การออกกำลังกายไม่สม่ำเสมอ การยอมแพ้กลางทาง การปรับวิถีที่ไม่ต่อเนื่อง บทเรียนคือคุณรู้ว่าความสม่ำเสมอและความอดทนคือกุญแจสู่สุขภาพดี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = อดทน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = ใจร้อน",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวอดีตสุขภาพ คือ 'สม่ำเสมอและอดทนคือกุญแจ'",
+          "advice_th": "ใช้บทเรียนไม่เห็นผล - คุณรู้ค่าของความสม่ำเสมอ ใช้ความเข้าใจนี้ในปัจจุบัน",
+          "keywords_th": ["ไม่เห็นผลเก่า", "ไม่อดทน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "อนาคตจะมีการขยายและโอกาสไกล",
+          "detailed_interpretation_th": "สามไม้เท้าในอนาคต เป็นข่าวดี - อนาคตจะมีการขยายและโอกาสไกล แผนที่วางจะให้ผล โอกาสในตลาดใหม่หรือต่างประเทศ การเดินทางที่เปิดมุมมอง ไพ่หนุนให้คุณเตรียมพร้อมรับโอกาสและคิดต่อยอด",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ฉลอง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอนาคต คือ 'แผนที่วางจะให้ผล'",
+          "advice_th": "เตรียมรับการขยาย - แผนจะให้ผล โอกาสในตลาดใหม่ การเดินทางเปิดมุมมอง",
+          "keywords_th": ["ขยายอนาคต", "โอกาสไกล", "เตรียมพร้อม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักจะขยายและมีโอกาสใหม่",
+          "detailed_interpretation_th": "ในความรัก สามไม้เท้าอนาคตบอกว่าความรักจะขยายและมีโอกาสใหม่ - การพบคนใหม่จากที่ไกล การเดินทางร่วมกัน การก้าวสู่ช่วงใหม่ของความสัมพันธ์ ไพ่หนุนให้คุณเปิดใจรับความรักที่ขยายโลกของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = อนาคต",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอนาคตความรัก คือ 'ความรักที่ขยายโลก'",
+          "advice_th": "เปิดใจรับโอกาสรัก - ความรักจะขยาย พบคนจากที่ไกล เดินทางร่วมกัน",
+          "keywords_th": ["รักขยาย", "โอกาสใหม่", "ก้าวใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ธุรกิจจะขยายและมีโอกาสในตลาดใหม่",
+          "detailed_interpretation_th": "ในการงาน สามไม้เท้าอนาคตเป็นข่าวดี - ธุรกิจจะขยายและมีโอกาสในตลาดใหม่ การลงทุนจะให้ผล การเปิดสาขาหรือร่วมงานกับต่างประเทศ ไพ่ยืนยันว่าวิสัยทัศน์ของคุณจะกลายเป็นจริงและสร้างความสำเร็จที่ใหญ่กว่า",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอนาคตงาน คือ 'วิสัยทัศน์กลายเป็นจริง'",
+          "advice_th": "เตรียมรับการขยาย - ธุรกิจจะขยาย โอกาสในตลาดใหม่ การลงทุนจะให้ผล",
+          "keywords_th": ["ธุรกิจขยาย", "ตลาดใหม่", "ผลตอบแทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตและขยายมุมมองรออยู่",
+          "detailed_interpretation_th": "ในการเติบโต สามไม้เท้าอนาคตบอกว่าการเติบโตและขยายมุมมองรอคุณอยู่ - การเดินทาง การเรียนรู้สิ่งใหม่ การเปิดรับโลกที่กว้างกว่า ไพ่หนุนให้คุณเตรียมใจรับประสบการณ์ใหม่และเติบโตเป็นคนที่มีมุมมองกว้างกว่าเดิม",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Star = แรงบันดาลใจ",
+            "wands": "Two of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอนาคตเติบโต คือ 'เติบโตเป็นคนที่มีมุมมองกว้างกว่า'",
+          "advice_th": "เตรียมรับการขยายมุมมอง - เดินทาง เรียนรู้สิ่งใหม่ เปิดรับโลกที่กว้างกว่า",
+          "keywords_th": ["ขยายมุมมอง", "เดินทาง", "เปิดใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพจะดีขึ้นจากการดูแลที่สม่ำเสมอ",
+          "detailed_interpretation_th": "ในสุขภาพ สามไม้เท้าอนาคตบอกว่าสุขภาพจะดีขึ้นจากการดูแลที่สม่ำเสมอ - การออกกำลังกายเริ่มให้ผล ร่างกายแข็งแรงขึ้น พลังชีวิตเพิ่มขึ้น ไพ่หนุนให้คุณรักษาความสม่ำเสมอและเตรียมเก็บเกี่ยวผลของการดูแลตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าอนาคตสุขภาพ คือ 'การดูแลสม่ำเสมอนำสู่สุขภาพดี'",
+          "advice_th": "เตรียมเก็บเกี่ยวผล - สุขภาพจะดีขึ้น รักษาความสม่ำเสมอ ร่างกายจะแข็งแรงขึ้น",
+          "keywords_th": ["สุขภาพดีขึ้น", "เก็บเกี่ยวผล", "สม่ำเสมอ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อนาคตอาจมีความล่าช้าหรือแผนติดขัด",
+          "detailed_interpretation_th": "สามไม้เท้ากลับหัวในอนาคต เตือนว่าอนาคตอาจมีความล่าช้าหรือแผนติดขัด - การขยายที่ไม่ราบรื่น โอกาสที่ล่าช้า อุปสรรคที่ไม่คาดคิด ไพ่หนุนให้คุณเตรียมแผนสำรอง ปรับกลยุทธ์ และอดทนเมื่อสิ่งต่างๆ ไม่เป็นไปตามที่หวัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ติดขัด, The Hanged Man = รอ",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวอนาคต คือ 'เตรียมแผนสำรองอดทน'",
+          "advice_th": "เตรียมรับความล่าช้า - การขยายไม่ราบรื่น เตรียมแผนสำรอง ปรับกลยุทธ์ อดทน",
+          "keywords_th": ["ล่าช้า", "ติดขัด", "เตรียมแผน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักอาจมีระยะห่างหรือล่าช้า",
+          "detailed_interpretation_th": "ในความรัก สามไม้เท้ากลับหัวอนาคตเตือนว่าความรักอาจมีระยะห่างหรือล่าช้า - การรอคอย ความสัมพันธ์ทางไกล หรือการพัฒนาที่ช้ากว่าคาด ไพ่หนุนให้คุณรักษาการสื่อสาร อดทน และเชื่อมั่นในความรักที่กำลังเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ทดสอบ, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = ห่างไกล",
+            "pentacles": "Five of Pentacles = ขาดมั่นคง",
+            "court_cards": "Knight of Wands (rev) = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวอนาคตความรัก คือ 'รักษาการสื่อสารและเชื่อมั่น'",
+          "advice_th": "เตรียมรับระยะห่าง - ความรักอาจล่าช้า รักษาการสื่อสาร อดทน เชื่อมั่น",
+          "keywords_th": ["รักล่าช้า", "ระยะห่าง", "รักษาสื่อสาร"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ธุรกิจขยายอาจไม่เป็นไปตามแผน",
+          "detailed_interpretation_th": "ในการงาน สามไม้เท้ากลับหัวอนาคตเตือนว่าธุรกิจขยายอาจไม่เป็นไปตามแผน - การลงทุนที่ผลล่าช้า โอกาสที่ปิด ตลาดที่ไม่เอื้อ ไพ่หนุนให้คุณเตรียมแผนสำรอง ทบทวนกลยุทธ์ และไม่ปล่อยให้ความล่าช้าทำลายวิสัยทัศน์",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Tower = ชะงัก",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวอนาคตงาน คือ 'เตรียมแผนสำรองทบทวนกลยุทธ์'",
+          "advice_th": "เตรียมรับการขยายไม่ตามแผน - การลงทุนล่าช้า เตรียมแผนสำรอง ทบทวนกลยุทธ์",
+          "keywords_th": ["ขยายไม่ตามแผน", "ล่าช้า", "แผนสำรอง"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเติบโตอาจชะงักและมุมมองคับ",
+          "detailed_interpretation_th": "ในการเติบโต สามไม้เท้ากลับหัวอนาคตเตือนว่าการเติบโตอาจชะงักและมุมมองคับ - การไม่กล้าก้าวออก การยึดติดกับสิ่งคุ้นเคย การปฏิเสธประสบการณ์ใหม่ ไพ่หนุนให้คุณเตรียมใจกล้าเปิดรับสิ่งใหม่ ขยายขอบเขต และไม่ปล่อยให้ความกลัวจำกัดการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Moon = สับสน",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวอนาคตเติบโต คือ 'กล้าเปิดรับขยายขอบเขต'",
+          "advice_th": "เตรียมขยายมุมมอง - การเติบโตอาจชะงัก กล้าเปิดรับสิ่งใหม่ ไม่ให้ความกลัวจำกัด",
+          "keywords_th": ["เติบโตชะงัก", "มุมมองคับ", "กล้าเปิดรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพอาจไม่ก้าวหน้าตามที่หวัง",
+          "detailed_interpretation_th": "ในสุขภาพ สามไม้เท้ากลับหัวอนาคตบอกว่าสุขภาพอาจไม่ก้าวหน้าตามที่หวัง - ผลของการดูแลที่ใช้เวลานานกว่าคาด ความท้อแท้ในการรักษาวิถี ไพ่หนุนให้คุณเตรียมใจอดทน รักษาความสม่ำเสมอ และให้เวลาร่างกายในการฟื้น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = อดทน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = ใจร้อน",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวอนาคตสุขภาพ คือ 'อดทนให้เวลาร่างกาย'",
+          "advice_th": "เตรียมรับการฟื้นช้า - สุขภาพไม่ก้าวหน้าตามที่หวัง อดทน รักษาความสม่ำเสมอ",
+          "keywords_th": ["ฟื้นช้า", "ไม่ก้าวหน้า", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือขยายความสำเร็จและมองไกล",
+          "detailed_interpretation_th": "สามไม้เท้าในเป้าหมาย ชี้ว่าเป้าหมายของคุณคือขยายความสำเร็จและมองไกล - การสร้างวิสัยทัศน์ใหญ่ การเปิดโอกาสในที่ไกล การเก็บเกี่ยวผลของการวางแผน เป้าหมายนี้ขับเคลื่อนด้วยความทะเยอทะยานและการมองภาพระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, The Magician = พลัง",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ฉลอง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าเป้าหมาย คือ 'สร้างวิสัยทัศน์ใหญ่เปิดโอกาสไกล'",
+          "advice_th": "ตั้งเป้าขยายความสำเร็จ - สร้างวิสัยทัศน์ใหญ่ เปิดโอกาสในที่ไกล เก็บเกี่ยวผล",
+          "keywords_th": ["ขยายความสำเร็จ", "มองไกล", "วิสัยทัศน์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือความรักที่ขยายและเติบโต",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายคือความรักที่ขยายและเติบโต - การสร้างความสัมพันธ์ที่กว้างไกล การเดินทางร่วมกัน การเปิดรับประสบการณ์ใหม่ในความรัก ไพ่หนุนให้คุณตั้งเป้าหมายความรักที่ไม่จำกัดอยู่ในกรอบเดิม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = อนาคต",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Ace of Swords = ความจริง",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าเป้าหมายความรัก คือ 'ความรักที่ไม่จำกัดในกรอบเดิม'",
+          "advice_th": "ตั้งเป้าความรักขยาย - ความสัมพันธ์กว้างไกล เดินทางร่วมกัน เปิดรับประสบการณ์ใหม่",
+          "keywords_th": ["รักขยาย", "เติบโต", "กว้างไกล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือธุรกิจที่ขยายไปต่างประเทศหรือตลาดใหม่",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายคือธุรกิจที่ขยายไปต่างประเทศหรือตลาดใหม่ - การสร้างเครือข่ายที่กว้าง การลงทุนข้ามพรมแดน การเป็นผู้นำในวงการ ไพ่หนุนให้คุณตั้งเป้าหมายที่ทะเยอทะยานและคิดเชิงโลกาภิวัตน์",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จยิ่งใหญ่, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าเป้าหมายงาน คือ 'คิดเชิงโลกาภิวัตน์'",
+          "advice_th": "ตั้งเป้าธุรกิจขยาย - ไปต่างประเทศ เปิดตลาดใหม่ สร้างเครือข่ายกว้าง เป็นผู้นำในวงการ",
+          "keywords_th": ["ธุรกิจขยาย", "ต่างประเทศ", "โลกาภิวัตน์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือเติบโตเป็นพลเมืองโลก",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายคือเติบโตเป็นพลเมืองโลก - การมีมุมมองที่กว้าง การเข้าใจวัฒนธรรมต่าง การใช้ชีวิตที่ไม่จำกัดอยู่ในที่เดียว ไพ่หนุนให้คุณตั้งเป้าหมายการเติบโตที่ใหญ่ระดับโลก ไม่ใช่แค่ส่วนตัว",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Star = แรงบันดาลใจ",
+            "wands": "Two of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าเป้าหมายเติบโต คือ 'เติบโตระดับโลก'",
+          "advice_th": "ตั้งเป้าเป็นพลเมืองโลก - มุมมองกว้าง เข้าใจวัฒนธรรมต่าง ใช้ชีวิตไม่จำกัด",
+          "keywords_th": ["พลเมืองโลก", "มุมมองกว้าง", "ไม่จำกัด"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือสุขภาพที่แข็งแรงและพลังเหลือเฟือ",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายคือสุขภาพที่แข็งแรงและพลังเหลือเฟือ - การสร้างร่างกายที่ทนทาน พลังที่เพียงพอสำหรับการเดินทางและกิจกรรมต่างๆ ไพ่หนุนให้คุณตั้งเป้าหมายสุขภาพระยะยาวที่ทำให้คุณใช้ชีวิตอย่างเต็มที่",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Strength = พลังกาย",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าเป้าหมายสุขภาพ คือ 'พลังเหลือเฟือใช้ชีวิตเต็มที่'",
+          "advice_th": "ตั้งเป้าสุขภาพแข็งแรง - ร่างกายทนทาน พลังเพียงพอ ใช้ชีวิตอย่างเต็มที่",
+          "keywords_th": ["สุขภาพแข็งแรง", "พลังเหลือ", "ใช้ชีวิตเต็มที่"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เป้าหมายคือฟื้นแผนที่ติดขัด",
+          "detailed_interpretation_th": "สามไม้เท้ากลับหัวในเป้าหมาย ชี้ว่าเป้าหมายคือฟื้นแผนที่ติดขัด - กลับมาทบทวนวิสัยทัศน์ ปรับแผนที่ไม่เป็นไปตามคาด หาทางใหม่ในการขยาย เป้าหมายนี้ต้องการความยืดหยุ่นและความอดทน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Temperance = สมดุล",
+            "wands": "Two of Wands = วางแผนใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวเป้าหมาย คือ 'ความยืดหยุ่นและความอดทน'",
+          "advice_th": "ตั้งเป้าฟื้นแผน - ทบทวนวิสัยทัศน์ ปรับแผน หาทางใหม่ในการขยาย",
+          "keywords_th": ["ฟื้นแผน", "ปรับ", "ยืดหยุ่น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เป้าหมายคือฟื้นความรักที่ห่างเหิน",
+          "detailed_interpretation_th": "ในความรัก เป้าหมายกลับหัวคือฟื้นความรักที่ห่างเหิน - การกลับมาสื่อสาร การปิดช่องว่าง การสร้างความใกล้ชิดอีกครั้ง ไพ่หนุนให้คุณตั้งเป้าหมายที่จะทำงานกับความสัมพันธ์และไม่ปล่อยให้ระยะทางทำลาย",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Three of Pentacles = สร้างคู่",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวเป้าหมายความรัก คือ 'ไม่ปล่อยให้ระยะทางทำลาย'",
+          "advice_th": "ตั้งเป้าฟื้นความรัก - กลับมาสื่อสาร ปิดช่องว่าง สร้างความใกล้ชิดอีกครั้ง",
+          "keywords_th": ["ฟื้นรัก", "ปิดช่องว่าง", "ใกล้ชิด"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เป้าหมายคือฟื้นธุรกิจที่ขยายล้มเหลว",
+          "detailed_interpretation_th": "ในการงาน เป้าหมายกลับหัวคือฟื้นธุรกิจที่ขยายล้มเหลว - การทบทวนกลยุทธ์ การปรับโมเดลธุรกิจ การหาโอกาสใหม่ ไพ่หนุนให้คุณตั้งเป้าหมายที่จะเรียนรู้จากความผิดพลาดและสร้างวิสัยทัศน์ใหม่ที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune = ปรับโชค",
+            "wands": "Two of Wands = วางแผนใหม่",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวเป้าหมายงาน คือ 'เรียนรู้จากความผิดพลาดสร้างวิสัยทัศน์ใหม่'",
+          "advice_th": "ตั้งเป้าฟื้นธุรกิจ - ทบทวนกลยุทธ์ ปรับโมเดล หาโอกาสใหม่ สร้างวิสัยทัศน์ยั่งยืน",
+          "keywords_th": ["ฟื้นธุรกิจ", "ปรับโมเดล", "วิสัยทัศน์ใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เป้าหมายคือฟื้นความกล้าก้าวออกจากเขตสบาย",
+          "detailed_interpretation_th": "ในการเติบโต เป้าหมายกลับหัวคือฟื้นความกล้าก้าวออกจากเขตสบาย - การเอาชนะความกลัว การกล้าเปิดรับสิ่งใหม่ การมองข้ามขอบเขตที่ตั้งไว้เอง ไพ่หนุนให้คุณตั้งเป้าหมายที่จะกล้าฝันใหญ่อีกครั้ง",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Fool = กล้าเริ่ม",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวเป้าหมายเติบโต คือ 'กล้าฝันใหญ่อีกครั้ง'",
+          "advice_th": "ตั้งเป้าฟื้นความกล้า - เอาชนะความกลัว กล้าเปิดรับสิ่งใหม่ มองข้ามขอบเขต",
+          "keywords_th": ["ฟื้นความกล้า", "เอาชนะกลัว", "กล้าฝัน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เป้าหมายคือฟื้นกิจวัตรสุขภาพที่ขาดหาย",
+          "detailed_interpretation_th": "ในสุขภาพ เป้าหมายกลับหัวคือฟื้นกิจวัตรสุขภาพที่ขาดหาย - กลับมาออกกำลังกาย รักษาความสม่ำเสมอ ปรับวิถีชีวิตให้กลับมาดี ไพ่หนุนให้คุณตั้งเป้าหมายที่จะฟื้นนิสัยสุขภาพและไม่ปล่อยให้ความขี้เกียจทำลาย",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวเป้าหมายสุขภาพ คือ 'ฟื้นนิสัยสุขภาพ'",
+          "advice_th": "ตั้งเป้าฟื้นกิจวัตร - กลับมาออกกำลังกาย รักษาสม่ำเสมอ ปรับวิถีให้กลับมาดี",
+          "keywords_th": ["ฟื้นกิจวัตร", "กลับมาออกกำลัง", "สม่ำเสมอ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "รากฐานคือวิสัยทัศน์ที่กว้างและความสามารถวางแผน",
+          "detailed_interpretation_th": "สามไม้เท้าในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือวิสัยทัศน์ที่กว้างและความสามารถวางแผน - คุณมองภาพระยะยาว ชอบขยายโอกาส มีความอดทนรอผล รากฐานนี้ทำให้คุณสร้างความสำเร็จที่ยั่งยืนและเก็บเกี่ยวผลของการทำงานหนัก",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Emperor = วางแผน",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ฉลอง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ารากฐาน คือ 'วิสัยทัศน์กว้างความสามารถวางแผน'",
+          "advice_th": "ใช้วิสัยทัศน์เป็นรากฐาน - คุณมองภาพระยะยาว ชอบขยาย มีความอดทน สร้างความสำเร็จยั่งยืน",
+          "keywords_th": ["วิสัยทัศน์กว้าง", "วางแผน", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือการมองอนาคตและขยายโลก",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือการมองอนาคตและขยายโลก - คุณให้ความสำคัญกับการเติบโตร่วมกัน ชอบประสบการณ์ใหม่กับคู่ มีวิสัยทัศน์ระยะยาว รากฐานนี้ทำให้ความสัมพันธ์ของคุณกว้างและลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = อนาคต",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ารากฐานความรัก คือ 'ความสัมพันธ์กว้างและลึก'",
+          "advice_th": "ใช้การมองอนาคต - เติบโตร่วมกัน ประสบการณ์ใหม่กับคู่ วิสัยทัศน์ระยะยาว",
+          "keywords_th": ["มองอนาคต", "ขยายโลก", "เติบโตร่วม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือการคิดเชิงกลยุทธ์และมองภาพระยะยาว",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือการคิดเชิงกลยุทธ์และมองภาพระยะยาว - คุณวางแผนเป็นปี มีวิสัยทัศน์ในการขยาย รู้จักรอผลของการลงทุน รากฐานนี้ทำให้คุณเป็นนักธุรกิจที่สร้างความสำเร็จที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = วางแผน, The World = สำเร็จ",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ารากฐานงาน คือ 'นักธุรกิจที่สร้างความสำเร็จยั่งยืน'",
+          "advice_th": "ใช้การคิดกลยุทธ์ - วางแผนเป็นปี วิสัยทัศน์ขยาย รอผลของการลงทุน",
+          "keywords_th": ["คิดกลยุทธ์", "มองระยะยาว", "ยั่งยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือความทะเยอทะยานและกล้ามองไกล",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือความทะเยอทะยานและกล้ามองไกล - คุณไม่พอใจกับสิ่งที่มี ชอบขยายโลกตัวเอง กล้าฝันใหญ่ รากฐานนี้ทำให้คุณเติบโตอย่างต่อเนื่องและเป็นคนที่ใหญ่กว่าเดิมเสมอ",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Star = แรงบันดาลใจ",
+            "wands": "Two of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ารากฐานเติบโต คือ 'เป็นคนที่ใหญ่กว่าเดิมเสมอ'",
+          "advice_th": "ใช้ความทะเยอทะยาน - ไม่พอใจกับสิ่งที่มี ชอบขยายโลกตัวเอง กล้าฝันใหญ่",
+          "keywords_th": ["ทะเยอทะยาน", "มองไกล", "เติบโต"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือการดูแลต่อเนื่องและมองระยะยาว",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือการดูแลต่อเนื่องและมองระยะยาว - คุณให้ความสำคัญกับนิสัยที่ดี รู้จักรอผลของการออกกำลังกาย มีวิสัยทัศน์เรื่องสุขภาพ รากฐานนี้ทำให้คุณมีสุขภาพดีไปอีกหลายปี",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Knight of Pentacles = ดูแลสม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ารากฐานสุขภาพ คือ 'สุขภาพดีไปอีกหลายปี'",
+          "advice_th": "ใช้การดูแลต่อเนื่อง - นิสัยดี รอผลของการออกกำลังกาย วิสัยทัศน์เรื่องสุขภาพ",
+          "keywords_th": ["ดูแลต่อเนื่อง", "มองระยะยาว", "นิสัยดี"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "รากฐานคือความใจร้อนและขาดการมองไกล",
+          "detailed_interpretation_th": "สามไม้เท้ากลับหัวในรากฐาน เผยว่าสิ่งที่ขับเคลื่อนคุณคือความใจร้อนและขาดการมองไกล - คุณคาดหวังผลเร็ว ไม่อดทนรอ ไม่วางแผนระยะยาว รากฐานนี้ทำให้คุณท้อง่ายเมื่อสิ่งต่างๆ ไม่เป็นไปตามที่หวัง ถึงเวลาฝึกความอดทนและคิดระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ไม่มั่นคง, The Moon = สับสน",
+            "wands": "Eight of Wands = เร่งรีบ",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Seven of Swords = หลีกเลี่ยง",
+            "pentacles": "Seven of Pentacles = ใจร้อน",
+            "court_cards": "Knight of Wands (rev) = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวรากฐาน คือ 'ฝึกความอดทนคิดระยะยาว'",
+          "advice_th": "ฝึกความอดทน - คาดหวังผลเร็ว ไม่วางแผนระยะยาว ฝึกคิดระยะยาวและอดทน",
+          "keywords_th": ["ใจร้อน", "ขาดมองไกล", "ฝึกอดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รากฐานความรักคือความไม่อดทนและคาดหวังเร็ว",
+          "detailed_interpretation_th": "ในความรัก รากฐานคือความไม่อดทนและคาดหวังเร็ว - คุณต้องการความรักที่ก้าวหน้าทันที ไม่ให้เวลาความสัมพันธ์เติบโต ผิดหวังง่ายเมื่อไม่เป็นไปตามใจ รากฐานนี้ทำให้ความสัมพันธ์ขาดความลึก ถึงเวลาเรียนรู้ที่จะให้เวลาและอดทน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ใจร้อน, The Moon = สับสน",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Three of Swords = เจ็บ",
+            "pentacles": "Seven of Pentacles = ใจร้อน",
+            "court_cards": "Knight of Wands (rev) = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวรากฐานความรัก คือ 'ให้เวลาความสัมพันธ์เติบโต'",
+          "advice_th": "เรียนรู้ให้เวลา - ไม่อดทน คาดหวังเร็ว ให้เวลาความสัมพันธ์เติบโต อดทนรอ",
+          "keywords_th": ["ไม่อดทนรัก", "คาดหวังเร็ว", "ให้เวลา"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "รากฐานคือการขาดวิสัยทัศน์และคิดสั้น",
+          "detailed_interpretation_th": "ในการงาน รากฐานคือการขาดวิสัยทัศน์และคิดสั้น - คุณตัดสินใจตามผลทันที ไม่วางแผนเป็นปี ขาดการมองภาพใหญ่ รากฐานนี้ทำให้ธุรกิจไม่ยั่งยืน ถึงเวลาฝึกคิดเชิงกลยุทธ์และมองระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, The Tower = ไม่มั่นคง",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Seven of Swords = หลีกเลี่ยง",
+            "pentacles": "Seven of Pentacles = ใจร้อน",
+            "court_cards": "Knight of Pentacles (rev) = ไม่วางแผน"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวรากฐานงาน คือ 'ฝึกคิดเชิงกลยุทธ์มองระยะยาว'",
+          "advice_th": "ฝึกวิสัยทัศน์ - ตัดสินใจตามผลทันที ไม่วางแผนเป็นปี ฝึกคิดกลยุทธ์ มองระยะยาว",
+          "keywords_th": ["ขาดวิสัยทัศน์", "คิดสั้น", "วางแผน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "รากฐานคือมุมมองคับและไม่ทะเยอทะยาน",
+          "detailed_interpretation_th": "ในการเติบโต รากฐานคือมุมมองคับและไม่ทะเยอทะยาน - คุณพอใจกับสิ่งที่มี ไม่กล้าฝันใหญ่ ปิดรับประสบการณ์ใหม่ รากฐานนี้จำกัดการเติบโตของคุณ ถึงเวลาเรียนรู้ที่จะกล้าฝันใหญ่และขยายโลกตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Four of Cups = พอใจสบาย",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ติดความสบาย",
+            "court_cards": "Knight of Wands (rev) = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวรากฐานเติบโต คือ 'กล้าฝันใหญ่ขยายโลก'",
+          "advice_th": "ฝึกทะเยอทะยาน - พอใจกับสิ่งที่มี ไม่กล้าฝันใหญ่ กล้าฝัน ขยายโลกตัวเอง",
+          "keywords_th": ["มุมมองคับ", "ไม่ทะเยอ", "กล้าฝัน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รากฐานสุขภาพคือไม่ดูแลต่อเนื่องและคิดสั้น",
+          "detailed_interpretation_th": "ในสุขภาพ รากฐานคือไม่ดูแลต่อเนื่องและคิดสั้น - คุณคาดหวังผลเร็วจากการออกกำลังกาย ไม่อดทนรอ ปล่อยปะละเลยเมื่อไม่เห็นผล รากฐานนี้ทำให้สุขภาพไม่ก้าวหน้า ถึงเวลาเรียนรู้ที่จะดูแลต่อเนื่องและอดทน",
+          "adjacent_influences": {
+            "major_arcana": "Temperance (rev) = ไม่สมดุล, The Hermit = อดทน",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = ใจร้อน",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวรากฐานสุขภาพ คือ 'ดูแลต่อเนื่องและอดทน'",
+          "advice_th": "ฝึกความอดทน - คาดหวังผลเร็ว ปล่อยเลยเมื่อไม่เห็นผล ดูแลต่อเนื่อง อดทนรอ",
+          "keywords_th": ["ไม่ดูแลต่อ", "คิดสั้น", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "มองภาพระยะยาวและรอผลของแผน",
+          "detailed_interpretation_th": "สามไม้เท้าในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีที่สุดคือมองภาพระยะยาวและรอผลของแผน - ใช้วิสัยทัศน์นำทาง ขยายโอกาส ใช้ความอดทน ไพ่หนุนให้คุณคิดเชิงกลยุทธ์และไม่เร่งรีบเก็บเกี่ยวก่อนเวลาที่เหมาะ",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, The Emperor = วางแผน",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ฉลอง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งคำแนะนำ คือ 'ไม่เร่งรีบเก็บเกี่ยวก่อนเวลา'",
+          "advice_th": "มองระยะยาว - ใช้วิสัยทัศน์ ขยายโอกาส ใช้ความอดทน คิดเชิงกลยุทธ์",
+          "keywords_th": ["มองระยะยาว", "รอผล", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ให้ความรักเติบโตอย่างเป็นธรรมชาติ",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำชี้ว่าคุณควรให้ความรักเติบโตอย่างเป็นธรรมชาติ - อย่าเร่งรัด ให้เวลาความสัมพันธ์ค่อยๆ พัฒนา มองอนาคตร่วมกัน ไพ่หนุนให้คุณนำด้วยความอดทนและการมองภาพระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, Temperance = สมดุล",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวต่อ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งคำแนะนำความรัก คือ 'ให้เวลาธรรมชาติพัฒนาความรัก'",
+          "advice_th": "ให้ความรักเติบโตธรรมชาติ - อย่าเร่งรัด ให้เวลาพัฒนา มองอนาคตร่วม อดทน",
+          "keywords_th": ["เติบโตธรรมชาติ", "ให้เวลา", "มองอนาคต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "วางแผนเชิงกลยุทธ์และอดทนรอผล",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำชี้ว่าคุณควรวางแผนเชิงกลยุทธ์และอดทนรอผล - คิดเป็นปี ไม่ใช่เดือน ลงทุนระยะยาว มองโอกาสในตลาดที่กว้างกว่า ไพ่หนุนให้คุณนำด้วยวิสัยทัศน์และไม่หวั่นกับผลระยะสั้น",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = วางแผน, The World = สำเร็จ",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งคำแนะนำงาน คือ 'ไม่หวั่นกับผลระยะสั้น'",
+          "advice_th": "วางแผนกลยุทธ์ - คิดเป็นปี ลงทุนระยะยาว มองโอกาสตลาดกว้าง ไม่หวั่นผลระยะสั้น",
+          "keywords_th": ["กลยุทธ์", "อดทนรอผล", "ระยะยาว"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ขยายมุมมองด้วยประสบการณ์ใหม่",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำชี้ว่าคุณควรขยายมุมมองด้วยประสบการณ์ใหม่ - เดินทาง เรียนรู้วัฒนธรรมต่าง พบคนที่มีมุมมองต่างจากคุณ ไพ่หนุนให้คุณก้าวออกจากเขตคุ้นเคยและเติบโตเป็นคนที่กว้างกว่าเดิม",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Star = แรงบันดาลใจ",
+            "wands": "Two of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งคำแนะนำเติบโต คือ 'เติบโตเป็นคนที่กว้างกว่าเดิม'",
+          "advice_th": "ขยายมุมมอง - เดินทาง เรียนรู้วัฒนธรรมต่าง พบคนต่างมุมมอง ก้าวออกจากเขตคุ้นเคย",
+          "keywords_th": ["ขยายมุมมอง", "ประสบการณ์ใหม่", "เดินทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "รักษาความสม่ำเสมอและรอผลของการดูแล",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำชี้ว่าคุณควรรักษาความสม่ำเสมอและรอผลของการดูแล - ออกกำลังกายเป็นกิจวัตร กินอาหารที่ดี อดทนรอเห็นผล ไพ่หนุนให้คุณคิดระยะยาวเรื่องสุขภาพและไม่ยอมแพ้กลางทาง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Sun = พลัง",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งคำแนะนำสุขภาพ คือ 'ไม่ยอมแพ้กลางทาง'",
+          "advice_th": "รักษาความสม่ำเสมอ - ออกกำลังกายเป็นกิจวัตร กินอาหารดี อดทนรอผล ไม่ยอมแพ้",
+          "keywords_th": ["สม่ำเสมอ", "รอผล", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อย่าใจร้อนและปรับแผนเมื่อจำเป็น",
+          "detailed_interpretation_th": "สามไม้เท้ากลับหัวในตำแหน่งคำแนะนำ บอกว่าวิธีที่ดีคืออย่าใจร้อนและปรับแผนเมื่อจำเป็น - ทบทวนวิสัยทัศน์ ปรับกลยุทธ์ที่ไม่ได้ผล ไม่ยึดติดกับแผนเดียว ไพ่หนุนให้คุณมีความยืดหยุ่นและพร้อมเปลี่ยนทิศทาง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Temperance = สมดุล",
+            "wands": "Two of Wands = วางแผนใหม่",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งคำแนะนำ คือ 'มีความยืดหยุ่นพร้อมเปลี่ยน'",
+          "advice_th": "อย่าใจร้อน - ทบทวนวิสัยทัศน์ ปรับกลยุทธ์ที่ไม่ได้ผล ไม่ยึดติดกับแผนเดียว",
+          "keywords_th": ["อย่าใจร้อน", "ปรับแผน", "ยืดหยุ่น"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อย่าคาดหวังเร็วและปรับการสื่อสาร",
+          "detailed_interpretation_th": "ในความรัก คำแนะนำกลับหัวชี้ว่าคุณควรอย่าคาดหวังเร็วและปรับการสื่อสาร - ให้เวลาความรักพัฒนา ปรับวิธีสื่อสารหากระยะห่างทำให้ห่างเหิน ไพ่หนุนให้คุณอดทนและทำงานกับความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ทบทวน, The Hermit = อดทน",
+            "wands": "Two of Wands = วางแผนใหม่",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งคำแนะนำความรัก คือ 'อดทนทำงานกับความสัมพันธ์'",
+          "advice_th": "อย่าคาดหวังเร็ว - ให้เวลาความรักพัฒนา ปรับวิธีสื่อสาร อดทน ทำงานกับความสัมพันธ์",
+          "keywords_th": ["อย่าคาดหวังเร็ว", "ปรับสื่อสาร", "อดทน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ปรับแผนธุรกิจและเตรียมแผนสำรอง",
+          "detailed_interpretation_th": "ในการงาน คำแนะนำกลับหัวชี้ว่าคุณควรปรับแผนธุรกิจและเตรียมแผนสำรอง - ทบทวนกลยุทธ์ที่ไม่ทำงาน หาทางใหม่ในการขยาย เตรียมแผนสำรองสำหรับอุปสรรค ไพ่หนุนให้คุณมีความยืดหยุ่นและพร้อมปรับตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ทบทวน, Wheel of Fortune = ปรับโชค",
+            "wands": "Two of Wands = วางแผนใหม่",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Pentacles = วางมั่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งคำแนะนำงาน คือ 'มีความยืดหยุ่นพร้อมปรับตัว'",
+          "advice_th": "ปรับแผนธุรกิจ - ทบทวนกลยุทธ์ที่ไม่ทำงาน หาทางใหม่ เตรียมแผนสำรอง",
+          "keywords_th": ["ปรับแผน", "แผนสำรอง", "ยืดหยุ่น"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ทบทวนเส้นทางและเปิดใจรับการเปลี่ยน",
+          "detailed_interpretation_th": "ในการเติบโต คำแนะนำกลับหัวชี้ว่าคุณควรทบทวนเส้นทางและเปิดใจรับการเปลี่ยน - ดูว่าเส้นทางปัจจุบันยังเหมาะกับคุณไหม กล้าปรับทิศทาง เปิดรับมุมมองใหม่ ไพ่หนุนให้คุณมีความยืดหยุ่นในการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Hanged Man = มองมุมใหม่",
+            "wands": "Four of Cups = ทบทวน",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งคำแนะนำเติบโต คือ 'มีความยืดหยุ่นในการเติบโต'",
+          "advice_th": "ทบทวนเส้นทาง - ดูว่ายังเหมาะไหม กล้าปรับทิศทาง เปิดรับมุมมองใหม่",
+          "keywords_th": ["ทบทวนเส้นทาง", "ปรับทิศทาง", "เปิดใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อย่าใจร้อนและปรับวิธีดูแลให้เหมาะ",
+          "detailed_interpretation_th": "ในสุขภาพ คำแนะนำกลับหัวชี้ว่าคุณควรอย่าใจร้อนและปรับวิธีดูแลให้เหมาะ - หากวิธีไม่ได้ผลให้เปลี่ยน อย่าฝืนแผนเดียว ฟังร่างกายและปรับตาม ไพ่หนุนให้คุณมีความยืดหยุ่นในการดูแลสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hermit = อดทน",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = ค่อยเป็นค่อยไป",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งคำแนะนำสุขภาพ คือ 'ฟังร่างกายและปรับตาม'",
+          "advice_th": "อย่าใจร้อน - หากวิธีไม่ได้ผลให้เปลี่ยน ฟังร่างกาย ปรับวิธีดูแลให้เหมาะ",
+          "keywords_th": ["อย่าใจร้อน", "ปรับวิธี", "ฟังร่างกาย"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "โอกาสและพันธมิตรจากที่ไกลเข้ามา",
+          "detailed_interpretation_th": "สามไม้เท้าในตำแหน่งภายนอก บอกว่าโอกาสและพันธมิตรจากที่ไกลกำลังเข้ามา - การร่วมงานกับต่างชาติ โอกาสในต่างประเทศ คนใหม่ที่มาจากที่ไกล ไพ่บอกว่าเปิดใจรับโอกาสที่กว้างไกลและขยายเครือข่ายของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The World = โอกาสกว้าง, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งภายนอก คือ 'เปิดใจรับโอกาสที่กว้างไกล'",
+          "advice_th": "ใช้โอกาสจากที่ไกล - ร่วมงานกับต่างชาติ โอกาสในต่างประเทศ ขยายเครือข่าย",
+          "keywords_th": ["โอกาสจากที่ไกล", "พันธมิตร", "ขยายเครือข่าย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คนใหม่จากที่ไกลอาจเข้ามาในชีวิต",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกชี้ว่าคนใหม่จากที่ไกลอาจเข้ามาในชีวิต - การพบคนที่มาจากต่างประเทศ ความสัมพันธ์ทางไกล หรือการเดินทางที่นำพาความรัก ไพ่หนุนให้คุณเปิดใจรับโอกาสรักที่ไม่จำกัดอยู่ในวงเดิม",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The World = โอกาส",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Two of Pentacles = สมดุล",
+            "court_cards": "Knight of Wands = ผจญภัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งภายนอกความรัก คือ 'โอกาสรักที่ไม่จำกัดในวงเดิม'",
+          "advice_th": "เปิดใจรับคนจากที่ไกล - คนต่างประเทศ ความสัมพันธ์ทางไกล การเดินทางนำพารัก",
+          "keywords_th": ["คนจากที่ไกล", "รักทางไกล", "เดินทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "โอกาสธุรกิจในต่างประเทศหรือต่างวัฒนธรรม",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกบอกว่ามีโอกาสธุรกิจในต่างประเทศหรือต่างวัฒนธรรม - การลงทุนข้ามพรมแดน พันธมิตรต่างชาติ การเปิดตลาดใหม่ ไพ่หนุนให้คุณคว้าโอกาสและขยายธุรกิจไปต่างประเทศ",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Three of Pentacles = ทีม",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งภายนอกงาน คือ 'ขยายธุรกิจไปต่างประเทศ'",
+          "advice_th": "คว้าโอกาสข้ามพรมแดน - โอกาสในต่างประเทศ พันธมิตรต่างชาติ เปิดตลาดใหม่",
+          "keywords_th": ["โอกาสต่างประเทศ", "ข้ามพรมแดน", "ขยายตลาด"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ประสบการณ์จากต่างวัฒนธรรมขยายตัวคุณ",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกชี้ว่าประสบการณ์จากต่างวัฒนธรรมขยายตัวคุณ - การเดินทาง การพบคนต่างมุมมอง การเรียนรู้ภาษาใหม่ ไพ่บอกว่าใช้โลกภายนอกเป็นเครื่องมือเติบโตและขยายมุมมอง",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Hierophant = เรียนรู้",
+            "wands": "Page of Wands = สำรวจ",
+            "cups": "Three of Cups = มิตรภาพ",
+            "swords": "Page of Swords = อยากรู้",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งภายนอกเติบโต คือ 'โลกภายนอกเป็นเครื่องมือเติบโต'",
+          "advice_th": "ใช้ประสบการณ์ต่างวัฒนธรรม - เดินทาง พบคนต่างมุมมอง เรียนรู้ภาษาใหม่ ขยายตัว",
+          "keywords_th": ["ประสบการณ์ต่างวัฒนธรรม", "ขยายตัว", "เดินทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "การเดินทางหรือกิจกรรมกลางแจ้งดีต่อสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกบอกว่าการเดินทางหรือกิจกรรมกลางแจ้งดีต่อสุขภาพ - การออกไปสำรวจ การพักผ่อนในธรรมชาติ การเปลี่ยนสภาพแวดล้อม ไพ่หนุนให้คุณใช้สิ่งแวดล้อมใหม่เป็นเครื่องมือฟื้นพลังและสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Three of Cups = สังสรรค์",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งภายนอกสุขภาพ คือ 'สิ่งแวดล้อมใหม่ฟื้นพลัง'",
+          "advice_th": "เดินทางและกิจกรรมกลางแจ้ง - ออกไปสำรวจ พักผ่อนในธรรมชาติ เปลี่ยนสภาพแวดล้อม",
+          "keywords_th": ["เดินทาง", "กิจกรรมกลางแจ้ง", "ฟื้นพลัง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "โอกาสภายนอกปิดหรือพันธมิตรไม่ได้ผล",
+          "detailed_interpretation_th": "สามไม้เท้ากลับหัวในตำแหน่งภายนอก บอกว่าโอกาสภายนอกปิดหรือพันธมิตรไม่ได้ผล - การร่วมงานล่ม โอกาสต่างประเทศที่ไม่เกิด การเดินทางที่เลื่อน ไพ่เตือนให้คุณหาแหล่งโอกาสอื่นและไม่พึ่งพาแหล่งเดียว",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ติดขัด, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งภายนอก คือ 'หาแหล่งโอกาสอื่นไม่พึ่งแหล่งเดียว'",
+          "advice_th": "หาแหล่งโอกาสอื่น - โอกาสปิด พันธมิตรไม่ได้ผล ไม่พึ่งพาแหล่งเดียว",
+          "keywords_th": ["โอกาสปิด", "พันธมิตรล่ม", "หาแหล่งอื่น"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักทางไกลขาดการสื่อสารและห่างเหิน",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งภายนอกกลับหัวชี้ว่าความรักทางไกลขาดการสื่อสารและห่างเหิน - คู่ที่อยู่ห่างไกลขาดติดต่อ การพบคนใหม่ที่ไม่ลงตัว สถานการณ์ที่ทำให้ความสัมพันธ์ยืดเยื้อ ไพ่หนุนให้คุณตัดสินใจอย่างซื่อสัตย์เรื่องความสัมพันธ์ทางไกล",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ห่างเหิน, The Moon = สับสน",
+            "wands": "Eight of Wands (rev) = ขาดสื่อสาร",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Three of Swords = ใจสลาย",
+            "pentacles": "Five of Pentacles = ขาดมั่นคง",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งภายนอกความรัก คือ 'ตัดสินใจอย่างซื่อสัตย์'",
+          "advice_th": "ตัดสินใจซื่อสัตย์ - คู่ทางไกลขาดติดต่อ คนใหม่ไม่ลงตัว ตัดสินใจเรื่องความสัมพันธ์",
+          "keywords_th": ["รักทางไกลห่าง", "ขาดสื่อสาร", "ตัดสินใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ธุรกิจต่างประเทศไม่ราบรื่นหรือถูกชะลอ",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งภายนอกกลับหัวบอกว่าธุรกิจต่างประเทศไม่ราบรื่นหรือถูกชะลอ - ดีลที่ล่ม การลงทุนข้ามพรมแดนติดขัด พันธมิตรต่างชาติไม่ตอบสนอง ไพ่หนุนให้คุณปรับกลยุทธ์ มองหาตลาดอื่น หรือกลับมาโฟกัสตลาดในประเทศ",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Tower = ชะงัก",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งภายนอกงาน คือ 'มองหาตลาดอื่นหรือโฟกัสในประเทศ'",
+          "advice_th": "ปรับกลยุทธ์ - ดีลล่ม การลงทุนต่างประเทศติดขัด มองตลาดอื่น โฟกัสในประเทศ",
+          "keywords_th": ["ต่างประเทศไม่ราบรื่น", "ชะลอ", "ปรับกลยุทธ์"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเดินทางหรือประสบการณ์ใหม่ไม่ราบรื่น",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งภายนอกกลับหัวชี้ว่าการเดินทางหรือประสบการณ์ใหม่ไม่ราบรื่น - แผนการเดินทางที่เลื่อน ประสบการณ์ที่ไม่เป็นไปตามคาด ความรู้สึกห่างเหินจากต่างวัฒนธรรม ไพ่หนุนให้คุณยืดหยุ่นและหาทางเติบโตจากที่อยู่ปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = มองใน, The Hanged Man = รอ",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Wands (rev) = ขาดทิศ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งภายนอกเติบโต คือ 'หาทางเติบโตจากที่อยู่ปัจจุบัน'",
+          "advice_th": "ยืดหยุ่นในการเติบโต - แผนเดินทางเลื่อน ประสบการณ์ไม่เป็นไปตามคาด หาทางจากที่อยู่",
+          "keywords_th": ["เดินทางไม่ราบรื่น", "ห่างเหิน", "ยืดหยุ่น"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สิ่งแวดล้อมไม่เอื้อต่อสุขภาพและพลังลด",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งภายนอกกลับหัวเตือนว่าสิ่งแวดล้อมไม่เอื้อต่อสุขภาพและพลังลด - การเดินทางที่ทำให้เหนื่อย กิจกรรมกลางแจ้งที่ไม่เกิด สภาพแวดล้อมที่บั่นทอน ไพ่หนุนให้คุณหาวิธีดูแลสุขภาพในสภาพปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Sun (rev) = พลังลด, Temperance (rev) = ไม่สมดุล",
+            "wands": "Ten of Wands = แบกเกิน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = เครียด",
+            "pentacles": "Five of Pentacles = ขาดที่พึ่ง",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งภายนอกสุขภาพ คือ 'หาวิธีดูแลในสภาพปัจจุบัน'",
+          "advice_th": "หาวิธีดูแลในสภาพปัจจุบัน - การเดินทางทำให้เหนื่อย กิจกรรมไม่เกิด ดูแลตัวเองที่บ้าน",
+          "keywords_th": ["แวดล้อมไม่เอื้อ", "พลังลด", "ดูแลที่บ้าน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes-fears",
+      "position_name_th": "ความหวังและความกลัว",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังขยายและกลัวว่าแผนจะไม่ให้ผล",
+          "detailed_interpretation_th": "สามไม้เท้าในตำแหน่งความหวังและความกลัว เผยว่าคุณหวังขยายและสร้างความสำเร็จที่ใหญ่กว่า แต่กลัวว่าแผนจะไม่ให้ผล - กลัวการลงทุนเสีย กลัวโอกาสไม่มา ไพ่บอกว่าวิสัยทัศน์ของคุณคือเข็มทิศ ตามมันแม้กลัว",
+          "adjacent_influences": {
+            "major_arcana": "The World = โอกาส, The Moon = ความกลัว",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ฉลอง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "King of Wands = วิสัยทัศน์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งความหวังกลัว คือ 'วิสัยทัศน์คือเข็มทิศ ตามมันแม้กลัว'",
+          "advice_th": "ตามวิสัยทัศน์ - หวังขยายแต่กลัวแผนไม่ให้ผล วิสัยทัศน์คือเข็มทิศ ตามมันแม้กลัว",
+          "keywords_th": ["หวังขยาย", "กลัวไม่ผล", "ตามวิสัยทัศน์"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังความรักขยาย กลัวระยะทางทำลาย",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้เผยว่าคุณหวังความรักขยายและเติบโต แต่กลัวระยะทางทำลายความสัมพันธ์ - กลัวคู่จากไป กลัวความรักทางไกลล้ม ไพ่บอกว่าความรักแท้ยืนหยัดผ่านระยะทาง ใช้การสื่อสารและความเชื่อมั่นรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรัก, The Moon = ความกลัว",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Three of Swords = กลัวเจ็บ",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งความหวังกลัวความรัก คือ 'ความรักแท้ยืนหยัดผ่านระยะทาง'",
+          "advice_th": "ใช้การสื่อสารและความเชื่อมั่น - หวังรักขยายแต่กลัวระยะทาง ความรักแท้ยืนหยัดได้",
+          "keywords_th": ["หวังรักขยาย", "กลัวระยะทาง", "เชื่อมั่น"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังขยายธุรกิจ กลัวลงทุนผิด",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้เผยว่าคุณหวังขยายธุรกิจและสร้างความสำเร็จใหญ่ แต่กลัวลงทุนผิดหรือเข้าตลาดที่ไม่เหมาะ - กลัวเสียทุน กลัวพันธมิตรไม่ดี ไพ่บอกว่าวางแผนรอบคอบ ประเมินความเสี่ยง และกล้าก้าวอย่างคำนวณได้",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune = โอกาส, The Tower = กลัวพัง",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งความหวังกลัวงาน คือ 'กล้าก้าวอย่างคำนวณได้'",
+          "advice_th": "วางแผนรอบคอบ - หวังขยายแต่กลัวลงทุนผิด ประเมินความเสี่ยง กล้าก้าวคำนวณได้",
+          "keywords_th": ["หวังขยายธุรกิจ", "กลัวลงทุนผิด", "ประเมิน"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเติบโตเป็นคนใหญ่ขึ้น กลัวสูญตัวตน",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้เผยว่าคุณหวังเติบโตเป็นคนใหญ่ขึ้นและขยายโลก แต่กลัวสูญเสียตัวตนหรือรากเหง้าเดิม - กลัวเปลี่ยนแล้วไม่เป็นตัวเอง กลัวลืมที่มา ไพ่บอกว่าการเติบโตคือการขยายไม่ใช่ทิ้ง คุณยังเป็นตัวเองที่ใหญ่ขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The World = โลกกว้าง, The Moon = ความกลัว",
+            "wands": "Two of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งความหวังกลัวเติบโต คือ 'การเติบโตคือการขยายไม่ใช่ทิ้ง'",
+          "advice_th": "เติบโตคือขยาย - หวังเป็นคนใหญ่ขึ้นแต่กลัวสูญตัวตน คุณยังเป็นตัวเองที่ใหญ่ขึ้น",
+          "keywords_th": ["หวังเติบโต", "กลัวสูญตัวตน", "ขยาย"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังสุขภาพดีระยะยาว กลัวทำไม่สำเร็จ",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้เผยว่าคุณหวังสุขภาพดีระยะยาวและเริ่มดูแลตัวเอง แต่กลัวว่าจะทำไม่สำเร็จหรือไม่อดทนพอ - กลัวเริ่มแล้วเลิก กลัวไม่เห็นผล ไพ่บอกว่าเริ่มจากนิสัยเล็กๆ และให้เวลาตัวเองสร้างความสม่ำเสมอ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hermit = อดทน",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งความหวังกลัวสุขภาพ คือ 'เริ่มจากนิสัยเล็กๆ ให้เวลา'",
+          "advice_th": "เริ่มจากนิสัยเล็ก - หวังสุขภาพดีแต่กลัวทำไม่สำเร็จ ให้เวลาสร้างความสม่ำเสมอ",
+          "keywords_th": ["หวังสุขภาพ", "กลัวไม่สำเร็จ", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวขยายล้มเหลวจนไม่กล้าฝัน",
+          "detailed_interpretation_th": "สามไม้เท้ากลับหัวในตำแหน่งความหวังและความกลัว เผยว่าคุณกลัวขยายล้มเหลวจนไม่กล้าฝัน - เพราะกลัวเสียทุน คุณยึดติดกับสิ่งเดิม ลดวิสัยทัศน์ ปฏิเสธโอกาส ไพ่บอกว่าการไม่กล้าฝันเองที่จำกัดอนาคต กล้าฝันใหญ่และวางแผนรอบคอบ",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ความกลัว, The Hanged Man = ติดอยู่",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดติด",
+            "court_cards": "Knight of Wands (rev) = ลังเล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งความหวังกลัว คือ 'กล้าฝันใหญ่และวางแผนรอบคอบ'",
+          "advice_th": "กล้าฝัน - กลัวขยายล้มเหลวจนไม่กล้าฝัน การไม่ฝันเองที่จำกัดอนาคต วางแผนรอบคอบ",
+          "keywords_th": ["กลัวล้มเหลว", "ไม่กล้าฝัน", "กล้าฝัน"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวรักทางไกลล้มจนปิดใจ",
+          "detailed_interpretation_th": "ในความรัก ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวรักทางไกลล้มจนปิดใจ - กลัวการสื่อสารไม่ดี กลัวระยะทางทำลาย จึงไม่กล้าเริ่มหรือทุ่มเทเต็มที่ ไพ่บอกว่าความรักที่กล้าผ่านระยะทางมักลึกซึ้งกว่า กล้าเปิดใจและสื่อสาร",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = กลัวรัก, The Moon = สับสน",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Three of Swords = กลัวเจ็บ",
+            "pentacles": "Four of Pentacles = ปิดกั้น",
+            "court_cards": "Knight of Wands (rev) = ไม่ผูกมัด"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งความหวังกลัวความรัก คือ 'รักที่กล้าผ่านระยะทางลึกซึ้งกว่า'",
+          "advice_th": "กล้าเปิดใจ - กลัวรักทางไกลจนปิดใจ ความรักที่ผ่านระยะทางลึกซึ้งกว่า สื่อสาร",
+          "keywords_th": ["กลัวรักทางไกล", "ปิดใจ", "กล้าเปิด"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวธุรกิจขยายล้มจนยึดตลาดเดิม",
+          "detailed_interpretation_th": "ในการงาน ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวธุรกิจขยายล้มจนยึดตลาดเดิม - ไม่กล้าออกตลาดใหม่ ไม่กล้าร่วมงานกับต่างชาติ จำกัดวิสัยทัศน์ ไพ่บอกว่าการยึดตลาดเดิมไม่ใช่ความปลอดภัยตลอดไป กล้าประเมินและขยายอย่างมีกลยุทธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, Wheel of Fortune (rev) = ติดขัด",
+            "wands": "Seven of Wands = ตั้งรับ",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดความกลัว",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งความหวังกลัวงาน คือ 'ยึดเดิมไม่ใช่ความปลอดภัยตลอดไป'",
+          "advice_th": "กล้าขยาย - กลัวล้มจนยึดตลาดเดิม การยึดเดิมไม่ปลอดภัย ขยายอย่างมีกลยุทธ์",
+          "keywords_th": ["กลัวขยายล้ม", "ยึดเดิม", "กล้าขยาย"],
+          "intensity_level": 4,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวเปลี่ยนจนติดในมุมมองเดิม",
+          "detailed_interpretation_th": "ในการเติบโต ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวเปลี่ยนจนติดในมุมมองเดิม - กลัวประสบการณ์ใหม่ทำให้ไม่เป็นตัวเอง กลัวเดินทางทำให้สูญรากเหง้า จึงปฏิเสธการขยายตัว ไพ่บอกว่าการเติบโตทำให้คุณเข้าใจตัวเองลึกกว่า ไม่ใช่สูญตัวตน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติดอยู่, The Devil = ติดยึด",
+            "wands": "Four of Cups = ถอน",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Four of Pentacles = ยึดเดิม",
+            "court_cards": "Knight of Wands (rev) = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งความหวังกลัวเติบโต คือ 'การเติบโตทำให้เข้าใจตัวเองลึกกว่า'",
+          "advice_th": "กล้าเปลี่ยน - กลัวเปลี่ยนจนติดในมุมเดิม การเติบโตทำให้เข้าใจตัวเองลึก ไม่ใช่สูญ",
+          "keywords_th": ["กลัวเปลี่ยน", "ติดมุมเดิม", "กล้าก้าว"],
+          "intensity_level": 4,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวทำไม่สำเร็จจนไม่เริ่มดูแล",
+          "detailed_interpretation_th": "ในสุขภาพ ตำแหน่งนี้กลับหัวเผยว่าคุณกลัวทำไม่สำเร็จจนไม่เริ่มดูแล - กลัวเริ่มแล้วเลิก กลัวไม่อดทนพอ จึงผัดวันไปเรื่อย ไพ่บอกว่าการไม่เริ่มเองที่ทำให้สุขภาพแย่ลง เริ่มจากนิสัยเล็กๆ ที่ทำได้และให้เวลาตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = อดทน, The Moon = กลัว",
+            "wands": "Eight of Wands (rev) = ผัดวัน",
+            "cups": "Four of Cups = หมดแรง",
+            "swords": "Nine of Swords = วิตก",
+            "pentacles": "Seven of Pentacles = ใจร้อน",
+            "court_cards": "Knight of Wands (rev) = หมดไฟ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งความหวังกลัวสุขภาพ คือ 'เริ่มจากนิสัยเล็กที่ทำได้'",
+          "advice_th": "เริ่มจากเล็กๆ - กลัวทำไม่สำเร็จจนไม่เริ่ม การไม่เริ่มทำให้สุขภาพแย่ เริ่มจากเล็กที่ทำได้",
+          "keywords_th": ["กลัวไม่สำเร็จ", "ไม่เริ่ม", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการขยายตัวและเก็บเกี่ยวความสำเร็จ",
+          "detailed_interpretation_th": "สามไม้เท้าในตำแหน่งผลลัพธ์ เป็นข่าวดี - ผลลัพธ์ของสถานการณ์คือการขยายตัวและเก็บเกี่ยวความสำเร็จ คุณจะเห็นผลของการวางแผน ขยายโอกาส และก้าวสู่ระดับที่ใหญ่กว่า ไพ่ยืนยันว่าวิสัยทัศน์ของคุณจะกลายเป็นจริงและเปิดทางสู่ความสำเร็จที่ยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จ, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ฉลอง",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งผลลัพธ์ คือ 'วิสัยทัศน์กลายเป็นจริงเปิดทางสู่ความสำเร็จ'",
+          "advice_th": "เชื่อในการขยาย - คุณจะเห็นผลของการวางแผน ขยายโอกาส ก้าวสู่ระดับใหญ่กว่า",
+          "keywords_th": ["ขยายตัว", "เก็บเกี่ยวสำเร็จ", "วิสัยทัศน์จริง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่ขยายและเติบโต",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์เป็นข่าวดี - คุณจะมีความรักที่ขยายและเติบโต การพบคนที่ทำให้โลกของคุณกว้างกว่าเดิม การก้าวสู่ช่วงใหม่ของความสัมพันธ์ ไพ่ยืนยันว่าความรักของคุณจะเปิดประตูสู่ประสบการณ์และความลึกซึ้งใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ความรักแท้, The World = อนาคต",
+            "wands": "Two of Wands = วางแผนร่วม",
+            "cups": "Ten of Cups = ใจสมบูรณ์",
+            "swords": "Knight of Swords = กล้า",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Knight of Wands = หลงใหล"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งผลลัพธ์ความรัก คือ 'ความรักเปิดประตูสู่ประสบการณ์ใหม่'",
+          "advice_th": "เปิดใจรับความรักที่ขยาย - พบคนทำให้โลกกว้าง ก้าวสู่ช่วงใหม่ ประสบการณ์ใหม่",
+          "keywords_th": ["รักขยาย", "เติบโต", "ประสบการณ์ใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือธุรกิจขยายและความสำเร็จในตลาดใหม่",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์เป็นข่าวดี - คุณจะได้ธุรกิจขยายและความสำเร็จในตลาดใหม่ การลงทุนข้ามพรมแดน พันธมิตรต่างชาติ การเปิดสาขาใหม่ ไพ่ยืนยันว่าความทะเยอทะยานและการวางแผนของคุณจะให้ผลตอบแทนงดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จยิ่งใหญ่, Wheel of Fortune = โชค",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Three of Cups = ร่วมงาน",
+            "swords": "Ace of Swords = ปัญญา",
+            "pentacles": "Ten of Pentacles = มั่งคั่ง",
+            "court_cards": "King of Pentacles = ปรมาจารย์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งผลลัพธ์งาน คือ 'ความทะเยอทะยานให้ผลตอบแทนงดงาม'",
+          "advice_th": "เชื่อในการขยาย - ธุรกิจจะขยาย สำเร็จในตลาดใหม่ พันธมิตรต่างชาติ ผลตอบแทนงดงาม",
+          "keywords_th": ["ธุรกิจขยาย", "ตลาดใหม่", "ผลตอบแทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการก้าวสู่โลกที่กว้างกว่า",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์เป็นชัยชนะ - คุณจะก้าวสู่โลกที่กว้างกว่า ขยายมุมมอง เป็นคนที่ใหญ่กว่าเดิม ไพ่ยืนยันว่าการเดินทางและประสบการณ์ใหม่จะเปลี่ยนคุณเป็นพลเมืองโลกที่มีปัญญาและมุมมองที่ลึก",
+          "adjacent_influences": {
+            "major_arcana": "The World = สำเร็จสมบูรณ์, The Star = แรงบันดาลใจ",
+            "wands": "Two of Wands = มองไกล",
+            "cups": "Page of Cups = เปิดใจ",
+            "swords": "Ace of Swords = ปัญญาเฉียบ",
+            "pentacles": "Page of Pentacles = เรียนรู้",
+            "court_cards": "Knight of Wands = กล้าก้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งผลลัพธ์เติบโต คือ 'พลเมืองโลกที่มีปัญญาและมุมมองลึก'",
+          "advice_th": "เฉลิมฉลองการก้าวสู่โลกกว้าง - ขยายมุมมอง เป็นคนใหญ่กว่าเดิม ปัญญาและมุมมองลึก",
+          "keywords_th": ["โลกกว้างกว่า", "ขยายมุมมอง", "ปัญญาลึก"],
+          "intensity_level": 5,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพดีจากการดูแลต่อเนื่อง",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์เป็นข่าวดี - คุณจะมีสุขภาพดีจากการดูแลต่อเนื่อง ร่างกายแข็งแรง พลังเพิ่มขึ้น วิถีชีวิตที่ยั่งยืน ไพ่ยืนยันว่าความอดทนและความสม่ำเสมอของคุณจะนำสู่สุขภาพที่ดีในระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลังลงมือ",
+            "cups": "Ten of Cups = สุขสมบูรณ์",
+            "swords": "Six of Swords = ผ่านพ้น",
+            "pentacles": "Nine of Pentacles = แข็งแรง",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้าตำแหน่งผลลัพธ์สุขภาพ คือ 'ความสม่ำเสมอนำสู่สุขภาพดีระยะยาว'",
+          "advice_th": "เชื่อในการดูแลต่อเนื่อง - ร่างกายแข็งแรง พลังเพิ่ม วิถีชีวิตยั่งยืน สุขภาพดีระยะยาว",
+          "keywords_th": ["สุขภาพดี", "ดูแลต่อเนื่อง", "ระยะยาว"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการขยายล่าช้าและต้องปรับแผน",
+          "detailed_interpretation_th": "สามไม้เท้ากลับหัวในตำแหน่งผลลัพธ์ เตือนว่าผลลัพธ์อาจเป็นการขยายล่าช้าและต้องปรับแผน - แผนไม่เป็นไปตามที่หวัง การเก็บเกี่ยวที่ใช้เวลานานกว่าคาด อุปสรรคที่ทำให้ต้องเปลี่ยนทิศ ไพ่บอกว่านี่ไม่ใช่ความล้มเหลว เพียงต้องการความยืดหยุ่นและการปรับตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ปรับ, The Hanged Man = รอ",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "Eight of Swords = ติดกรอบ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งผลลัพธ์ คือ 'ต้องการความยืดหยุ่นและการปรับตัว'",
+          "advice_th": "อดทนและปรับแผน - การขยายล่าช้า ไม่ใช่ความล้มเหลว ปรับแผนและยืดหยุ่น",
+          "keywords_th": ["ขยายล่าช้า", "ต้องปรับ", "ยืดหยุ่น"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่ต้องการเวลาและความอดทน",
+          "detailed_interpretation_th": "ในความรัก ผลลัพธ์กลับหัวบอกว่าความรักต้องการเวลาและความอดทน - ความสัมพันธ์ที่พัฒนาช้า ระยะห่างที่ยังไม่หาย การรอที่ยังไม่จบ ไพ่บอกว่านี่ไม่ใช่จุดจบ ความรักที่อดทนผ่านระยะทางและเวลาจะลึกซึ้งและมั่นคงกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers (rev) = ทดสอบ, The Hermit = อดทน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Four of Cups = เบื่อ",
+            "swords": "Three of Swords = ห่างไกล",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "King of Cups = ครองอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งผลลัพธ์ความรัก คือ 'รักที่อดทนผ่านเวลาลึกซึ้งกว่า'",
+          "advice_th": "อดทนกับความรัก - ต้องการเวลาและความอดทน รักที่ผ่านระยะทางจะลึกซึ้งกว่า",
+          "keywords_th": ["รักต้องการเวลา", "อดทน", "ลึกซึ้งกว่า"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือธุรกิจขยายติดขัดและต้องปรับ",
+          "detailed_interpretation_th": "ในการงาน ผลลัพธ์กลับหัวบอกว่าธุรกิจขยายติดขัดและต้องปรับ - การลงทุนที่ผลล่าช้า โอกาสที่ปิด ตลาดที่ไม่เอื้อ ไพ่บอกว่านี่ไม่ใช่ความล้มเหลว ทบทวนกลยุทธ์ ปรับโมเดล หาทางใหม่ในการขยาย จะเปลี่ยนผลลัพธ์ได้",
+          "adjacent_influences": {
+            "major_arcana": "Wheel of Fortune (rev) = ติดขัด, The Hermit = ทบทวน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Five of Cups = ผิดหวัง",
+            "swords": "King of Swords = วิเคราะห์",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Knight of Pentacles (rev) = นิ่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งผลลัพธ์งาน คือ 'ทบทวนกลยุทธ์ปรับโมเดลเปลี่ยนผลลัพธ์'",
+          "advice_th": "อย่าท้อ - ธุรกิจขยายติดขัด ทบทวนกลยุทธ์ ปรับโมเดล หาทางใหม่ เปลี่ยนผลลัพธ์ได้",
+          "keywords_th": ["ขยายติดขัด", "ปรับโมเดล", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือต้องยอมเปลี่ยนเส้นทางการเติบโต",
+          "detailed_interpretation_th": "ในการเติบโต ผลลัพธ์กลับหัวบอกว่าต้องยอมเปลี่ยนเส้นทางการเติบโต - เส้นทางที่วางไม่เหมาะอีก ประสบการณ์ที่ไม่เป็นไปตามคาด ความเข้าใจใหม่ที่ต้องการการปรับทิศ ไพ่บอกว่านี่คือโอกาสในการค้นพบเส้นทางที่เหมาะกับคุณจริง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Moon = สำรวจ",
+            "wands": "Four of Cups = ทบทวน",
+            "cups": "Four of Cups = ไตร่ตรอง",
+            "swords": "Two of Swords = ชั่งใจ",
+            "pentacles": "Seven of Pentacles = รอ",
+            "court_cards": "Queen of Swords = เห็นจริง"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งผลลัพธ์เติบโต คือ 'โอกาสค้นพบเส้นทางที่เหมาะกับคุณจริง'",
+          "advice_th": "ปรับเส้นทาง - เส้นทางวางไม่เหมาะอีก ใช้เป็นโอกาสค้นพบเส้นทางที่เหมาะกับคุณจริง",
+          "keywords_th": ["ต้องเปลี่ยนทิศ", "ค้นพบใหม่", "ปรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "transformative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือสุขภาพต้องการเวลาฟื้นมากกว่าคาด",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์กลับหัวบอกว่าสุขภาพต้องการเวลาฟื้นมากกว่าคาด - ผลของการดูแลที่ใช้เวลานาน ร่างกายที่ต้องการการพักผ่อน ไพ่บอกว่านี่ไม่ใช่ความล้มเหลว ให้เวลาตัวเองและรักษาความสม่ำเสมอ ผลจะมาในเวลาที่เหมาะ",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hermit = อดทน",
+            "wands": "Eight of Wands (rev) = ล่าช้า",
+            "cups": "Six of Cups = เยียวยา",
+            "swords": "Six of Swords = ก้าวพ้น",
+            "pentacles": "Seven of Pentacles = ค่อยเป็นค่อยไป",
+            "court_cards": "Queen of Pentacles = ดูแลกาย"
+          },
+          "secret_keys_th": "เคล็ดลับ: สามไม้เท้ากลับหัวตำแหน่งผลลัพธ์สุขภาพ คือ 'ผลจะมาในเวลาที่เหมาะ'",
+          "advice_th": "ให้เวลาตัวเอง - ฟื้นใช้เวลานานกว่าคาด รักษาความสม่ำเสมอ ผลจะมาในเวลาที่เหมาะ",
+          "keywords_th": ["ฟื้นใช้เวลานาน", "ให้เวลา", "สม่ำเสมอ"],
+          "intensity_level": 3,
+          "emotional_tone": "challenging"
+        }
+      }
+    }
+  }
+}
