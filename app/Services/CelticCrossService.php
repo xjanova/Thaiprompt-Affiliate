@@ -847,6 +847,7 @@ class CelticCrossService
             .$this->buildLifeReadingDirective($reading, $userQuestion)
             .$this->buildDestinyDirective($reading, $userQuestion)
             .$this->buildExtraKnowledgeDirectives($reading, $userQuestion)
+            .$this->buildCardComboDirective($reading)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1284,7 +1285,8 @@ class CelticCrossService
                 .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
                 .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
                 .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
-                .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext);
+                .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
+                .$this->buildCardComboDirective($reading);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1391,6 +1393,7 @@ class CelticCrossService
             .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
             .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
             .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
+            .$this->buildCardComboDirective($reading)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2755,6 +2758,47 @@ class CelticCrossService
     }
 
     /**
+     * 🔗 (2026-06-02) ไพ่คู่/ไพ่สัมพันธ์ — กลไก "เชื่อมโยงไพ่" ที่ prompt สั่งแต่เดิมไม่มีคลังรองรับ
+     *
+     * หมอดูจริงอ่าน "ความสัมพันธ์ระหว่างไพ่" ไม่ใช่ทีละใบ — เช่น หอคอย+ดาบ10 = จบเจ็บ,
+     *   คู่รัก+ถ้วย2 = เนื้อคู่, ปีศาจ+พระจันทร์ = โดนหลอก/เสพติด
+     *
+     * ไม่ใช่ detect-based (ไม่ผูก keyword) — คู่ไพ่เกี่ยวกับ "หน้าไพ่ที่เปิด" เสมอ
+     *   inject เฉพาะเมื่อ "เจอคู่เด่นจริงบนโต๊ะ" → ไม่เปลือง token ถ้าไม่มีคู่
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildCardComboDirective(FortuneReading $reading): string
+    {
+        // settings gate — admin ปิดได้ (default เปิด ถ้าคอลัมน์ยังไม่มีก็ถือว่าเปิด)
+        if (! (bool) ($this->settings->enable_celtic_combos ?? true)) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $combos = app(\App\Services\FortuneKnowledgeService::class)->comboLinesForCards($cards);
+        if (trim($combos) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🔗 ไพ่คู่/ไพ่สัมพันธ์ (พบคู่ไพ่เด่นบนโต๊ะ) — \"เชื่อมโยงไพ่\" ตามที่หลักการสั่ง\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ด้านล่างคือคู่ไพ่ที่ \"ออกด้วยกัน\" ในสำรับนี้ มีความหมายพิเศษเมื่อมาเจอกัน — "
+            ."ใช้ \"ร้อยเรื่องราว\" ไม่ใช่แปลทีละใบ:\n\n"
+            .$combos."\n\n"
+            ."🎯 *วิธีใช้:* หยิบคู่ที่ตรงกับคำถามลูกค้ามา \"เน้นเป็นแกนคำทำนาย\" — "
+            ."เล่าว่าพลัง 2 ใบนี้มาเจอกันแล้วเกิดอะไร เชื่อมกับตำแหน่งที่มันอยู่\n"
+            ."• คู่ ✨ = จุดแข็ง/โอกาสที่ควรย้ำ · คู่ ⚠️/⚠️⚠️ = จุดเตือน/บทเรียน (สื่อ \"เปลี่ยนผ่าน\" ไม่ใช่ขู่)\n"
+            ."• ❌ ห้ามยกคู่ไพ่ที่ไม่เกี่ยวคำถามมาทื่อๆ — เลือกที่ \"ตอบโจทย์เขา\"\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ — อ่าน "คน" จากหน้าไพ่
      *
      * User directive 2026-06-01: "เพิ่มตำราโหงวเฮ้ง ลักษณะคน ประจำไพ่ให้ครบ 78 ใบ"
@@ -3431,6 +3475,7 @@ class CelticCrossService
             .$this->buildLifeReadingDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildDestinyDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildExtraKnowledgeDirectives($reading, $questions->pluck('question')->implode(' '))
+            .$this->buildCardComboDirective($reading)
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"

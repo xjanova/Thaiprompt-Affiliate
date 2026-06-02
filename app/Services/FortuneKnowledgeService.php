@@ -522,6 +522,108 @@ class FortuneKnowledgeService
         });
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // 🔗 ไพ่คู่/ไพ่สัมพันธ์ — ความหมายพิเศษเมื่อไพ่ 2 ใบออกด้วยกัน
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * สร้างบล็อก "ไพ่คู่" ที่ปรากฏจริงบนโต๊ะ (เช็คทุกคู่ใน 10 ใบที่เปิด)
+     *
+     * คู่ไพ่ = กลไก "เชื่อมโยงไพ่" (ไม่ใช่ความหมายรายใบ) — ออกเฉพาะคู่ที่มีจริง
+     *
+     * @param  array<int, array>  $cards  ไพ่ 10 ใบ (จาก FortuneReading::getCelticCards)
+     * @return string ว่าง = ไม่เจอคู่เด่นในสำรับนี้
+     */
+    public function comboLinesForCards(array $cards): string
+    {
+        $combos = $this->comboMap();
+        if (empty($combos)) {
+            return '';
+        }
+
+        // รวบรวมไพ่ที่เปิด (name_en => meta ใบแรกที่เจอ)
+        $present = [];
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $nameEn = (string) ($card['card_name_en'] ?? '');
+            if ($nameEn === '' || isset($present[$nameEn])) {
+                continue;
+            }
+            $present[$nameEn] = [
+                'pos' => $pos,
+                'th' => ((string) ($card['card_name_th'] ?? '')) ?: $nameEn,
+                'rev' => ! empty($card['is_reversed']),
+            ];
+        }
+
+        $names = array_keys($present);
+        $count = count($names);
+        $lines = [];
+
+        // เช็คทุกคู่ (ไม่ซ้ำ ไม่สนลำดับ)
+        for ($i = 0; $i < $count; $i++) {
+            for ($j = $i + 1; $j < $count; $j++) {
+                $key = $this->comboKey($names[$i], $names[$j]);
+                if (! isset($combos[$key])) {
+                    continue;
+                }
+                $entry = $combos[$key];
+                $a = $present[$names[$i]];
+                $b = $present[$names[$j]];
+                $oa = $a['rev'] ? '(กลับหัว)' : '';
+                $ob = $b['rev'] ? '(กลับหัว)' : '';
+                $tone = trim((string) ($entry['tone'] ?? ''));
+                $tone = ($tone === '' || $tone === '—') ? '' : $tone.' ';
+                $lines[] = "• {$a['th']}{$oa} [ต.{$a['pos']}] + {$b['th']}{$ob} [ต.{$b['pos']}] → "
+                    .$tone.trim((string) ($entry['meaning'] ?? ''));
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * แผนที่ไพ่คู่: 'a|b'(เรียง) => ['tone','meaning'] (จาก config) + cache
+     *
+     * @return array<string, array>
+     */
+    protected function comboMap(): array
+    {
+        return Cache::remember('fortune_knowledge:combos', self::CACHE_TTL, function () {
+            $map = [];
+            foreach ((array) config('fortune_card_combos.combos', []) as $entry) {
+                if (! is_array($entry)) {
+                    continue;
+                }
+                $a = (string) ($entry['a'] ?? '');
+                $b = (string) ($entry['b'] ?? '');
+                if ($a === '' || $b === '') {
+                    continue;
+                }
+                $map[$this->comboKey($a, $b)] = [
+                    'tone' => (string) ($entry['tone'] ?? ''),
+                    'meaning' => (string) ($entry['meaning'] ?? ''),
+                ];
+            }
+
+            return $map;
+        });
+    }
+
+    /**
+     * key ของคู่ไพ่ — เรียงชื่อให้ lookup ได้ไม่สนลำดับ a/b
+     */
+    protected function comboKey(string $a, string $b): string
+    {
+        $pair = [$a, $b];
+        sort($pair);
+
+        return implode('|', $pair);
+    }
+
     /**
      * ล้าง cache (เรียกตอนแอดมินแก้คลังความรู้)
      */
@@ -529,6 +631,7 @@ class FortuneKnowledgeService
     {
         Cache::forget('fortune_knowledge:health_map');
         Cache::forget('fortune_knowledge:persona_map');
+        Cache::forget('fortune_knowledge:combos');
         foreach (FortuneKnowledge::CATEGORIES as $cat) {
             Cache::forget("fortune_knowledge:mucards:{$cat}");
         }
