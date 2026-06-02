@@ -850,6 +850,7 @@ class CelticCrossService
             .$this->buildCardComboDirective($reading)
             .$this->buildSpreadPatternDirective($reading)
             .$this->buildElementalDignityDirective($reading)
+            .$this->buildPositionDynamicDirective($reading)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1290,7 +1291,8 @@ class CelticCrossService
                 .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
                 .$this->buildCardComboDirective($reading)
                 .$this->buildSpreadPatternDirective($reading)
-                .$this->buildElementalDignityDirective($reading);
+                .$this->buildElementalDignityDirective($reading)
+                .$this->buildPositionDynamicDirective($reading);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1400,6 +1402,7 @@ class CelticCrossService
             .$this->buildCardComboDirective($reading)
             .$this->buildSpreadPatternDirective($reading)
             .$this->buildElementalDignityDirective($reading)
+            .$this->buildPositionDynamicDirective($reading)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2885,6 +2888,46 @@ class CelticCrossService
     }
 
     /**
+     * 📍 (2026-06-03) ความสัมพันธ์ตำแหน่ง Celtic (Position Dynamics — diagnostic pairs)
+     *
+     * reading mechanic ตัวที่ 4 — หมอดูไม่ได้อ่านตำแหน่งทีละช่อง แต่อ่าน "คู่ตำแหน่ง"
+     *   เช่น ต.5 (หวัง) vs ต.7 (ตัวเอง) → ตรงกันไหม / ต.9 vs ต.10 → หวังจริงไหม
+     *
+     * เลเยอร์นี้ไม่ฟันธงเอง — ส่ง "ชุดคำถาม diagnostic + เคล็ดวิเคราะห์" ให้ AI
+     *   เพื่อให้สังเคราะห์เอง (เหมือนหมอดูเก่าๆ ที่อ่านโดยถามตัวเอง)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildPositionDynamicDirective(FortuneReading $reading): string
+    {
+        if (! (bool) ($this->settings->enable_celtic_dynamics ?? true)) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $lines = app(\App\Services\FortuneKnowledgeService::class)->positionDynamicLines($cards);
+        if (trim($lines) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."📍 ความสัมพันธ์ตำแหน่ง Celtic (Diagnostic Pairs)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."หมอดูเก่าๆ ไม่อ่านตำแหน่งทีละช่อง แต่อ่าน \"คู่ตำแหน่ง\" — ด้านล่างคือ\n"
+            ."\"ชุดคำถามวิเคราะห์ + เคล็ดอ่าน\" ที่แม่หมอควรตอบให้ครบ:\n\n"
+            .$lines."\n\n"
+            ."🎯 *วิธีใช้:* แม่หมอ \"ถามตัวเอง\" แต่ละคู่ก่อน แล้วเอาคำตอบมาประกอบเป็นคำทำนาย\n"
+            ."• โดยเฉพาะคู่ ต.9↔ต.10 (หวัง→ผลลัพธ์) และ ต.3↔ต.6 (อดีต→อนาคต) — ใช้ในการ \"ฟันธง\" ปลายเรื่อง\n"
+            ."• คู่ ต.7↔ต.8 (เรา-คนรอบ) ใช้เวลาเรื่องเป็นความสัมพันธ์ — ชี้จุดที่ \"คนละมุม\"\n"
+            ."• ❌ ห้ามอ่านตำแหน่งเป็นเอกเทศแล้วลืม \"คู่\" — เพราะตำแหน่งต่างๆ เชื่อมเป็นเรื่องเดียวกัน\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ — อ่าน "คน" จากหน้าไพ่
      *
      * User directive 2026-06-01: "เพิ่มตำราโหงวเฮ้ง ลักษณะคน ประจำไพ่ให้ครบ 78 ใบ"
@@ -3564,6 +3607,7 @@ class CelticCrossService
             .$this->buildCardComboDirective($reading)
             .$this->buildSpreadPatternDirective($reading)
             .$this->buildElementalDignityDirective($reading)
+            .$this->buildPositionDynamicDirective($reading)
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"

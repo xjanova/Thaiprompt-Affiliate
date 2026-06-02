@@ -887,6 +887,64 @@ class FortuneKnowledgeService
         return null;
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // 📍 ความสัมพันธ์ตำแหน่ง Celtic (Position Dynamics — diagnostic pairs)
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * สร้างบล็อก "ความสัมพันธ์คู่ตำแหน่ง" ตามคู่ที่ตำราหมอดูใช้วิเคราะห์
+     *
+     * @param  array<int, array>  $cards
+     */
+    public function positionDynamicLines(array $cards): string
+    {
+        $cfg = (array) config('fortune_position_dynamics', []);
+        $dynamics = (array) ($cfg['dynamics'] ?? []);
+        $posLabel = (array) ($cfg['position_label'] ?? []);
+
+        if (empty($dynamics)) {
+            return '';
+        }
+
+        // เก็บไพ่รายตำแหน่ง
+        $byPos = [];
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $byPos[$pos] = [
+                'th' => ((string) ($card['card_name_th'] ?? '')) ?: ((string) ($card['card_name_en'] ?? '')),
+                'rev' => ! empty($card['is_reversed']),
+            ];
+        }
+        if (count($byPos) < 10) {
+            return '';
+        }
+
+        $lines = [];
+        foreach ($dynamics as $dyn) {
+            $a = (int) ($dyn['a'] ?? 0);
+            $b = (int) ($dyn['b'] ?? 0);
+            if (! isset($byPos[$a], $byPos[$b])) {
+                continue;
+            }
+            $oa = $byPos[$a]['rev'] ? '(กลับหัว)' : '';
+            $ob = $byPos[$b]['rev'] ? '(กลับหัว)' : '';
+            $label = (string) ($dyn['label'] ?? '');
+            $question = (string) ($dyn['question'] ?? '');
+            $tip = (string) ($dyn['tip'] ?? '');
+
+            $lines[] = "▸ {$label}\n"
+                ."   ต.{$a} ({$posLabel[$a]}): {$byPos[$a]['th']}{$oa}\n"
+                ."   ต.{$b} ({$posLabel[$b]}): {$byPos[$b]['th']}{$ob}\n"
+                ."   ❓ ถามตัวเอง: {$question}\n"
+                ."   💡 {$tip}";
+        }
+
+        return implode("\n\n", $lines);
+    }
+
     /**
      * จำแนกไพ่จาก name_en → arcana/suit/rank/isCourt/isAce/number
      *
