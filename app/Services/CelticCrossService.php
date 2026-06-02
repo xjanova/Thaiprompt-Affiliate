@@ -847,6 +847,11 @@ class CelticCrossService
             .$this->buildLifeReadingDirective($reading, $userQuestion)
             .$this->buildDestinyDirective($reading, $userQuestion)
             .$this->buildExtraKnowledgeDirectives($reading, $userQuestion)
+            .$this->buildCardComboDirective($reading)
+            .$this->buildSpreadPatternDirective($reading)
+            .$this->buildElementalDignityDirective($reading)
+            .$this->buildPositionDynamicDirective($reading)
+            .$this->buildYesNoDirective($reading, $userQuestion)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1284,7 +1289,12 @@ class CelticCrossService
                 .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
                 .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
                 .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
-                .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext);
+                .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
+                .$this->buildCardComboDirective($reading)
+                .$this->buildSpreadPatternDirective($reading)
+                .$this->buildElementalDignityDirective($reading)
+                .$this->buildPositionDynamicDirective($reading)
+                .$this->buildYesNoDirective($reading, $userQuestion, $previousContext);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1391,6 +1401,11 @@ class CelticCrossService
             .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
             .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
             .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
+            .$this->buildCardComboDirective($reading)
+            .$this->buildSpreadPatternDirective($reading)
+            .$this->buildElementalDignityDirective($reading)
+            .$this->buildPositionDynamicDirective($reading)
+            .$this->buildYesNoDirective($reading, $userQuestion, $previousContext)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2755,6 +2770,233 @@ class CelticCrossService
     }
 
     /**
+     * 🔗 (2026-06-02) ไพ่คู่/ไพ่สัมพันธ์ — กลไก "เชื่อมโยงไพ่" ที่ prompt สั่งแต่เดิมไม่มีคลังรองรับ
+     *
+     * หมอดูจริงอ่าน "ความสัมพันธ์ระหว่างไพ่" ไม่ใช่ทีละใบ — เช่น หอคอย+ดาบ10 = จบเจ็บ,
+     *   คู่รัก+ถ้วย2 = เนื้อคู่, ปีศาจ+พระจันทร์ = โดนหลอก/เสพติด
+     *
+     * ไม่ใช่ detect-based (ไม่ผูก keyword) — คู่ไพ่เกี่ยวกับ "หน้าไพ่ที่เปิด" เสมอ
+     *   inject เฉพาะเมื่อ "เจอคู่เด่นจริงบนโต๊ะ" → ไม่เปลือง token ถ้าไม่มีคู่
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildCardComboDirective(FortuneReading $reading): string
+    {
+        // settings gate — admin ปิดได้ (default เปิด ถ้าคอลัมน์ยังไม่มีก็ถือว่าเปิด)
+        if (! (bool) ($this->settings->enable_celtic_combos ?? true)) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $combos = app(\App\Services\FortuneKnowledgeService::class)->comboLinesForCards($cards);
+        if (trim($combos) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🔗 ไพ่คู่/ไพ่สัมพันธ์ (พบคู่ไพ่เด่นบนโต๊ะ) — \"เชื่อมโยงไพ่\" ตามที่หลักการสั่ง\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ด้านล่างคือคู่ไพ่ที่ \"ออกด้วยกัน\" ในสำรับนี้ มีความหมายพิเศษเมื่อมาเจอกัน — "
+            ."ใช้ \"ร้อยเรื่องราว\" ไม่ใช่แปลทีละใบ:\n\n"
+            .$combos."\n\n"
+            ."🎯 *วิธีใช้:* หยิบคู่ที่ตรงกับคำถามลูกค้ามา \"เน้นเป็นแกนคำทำนาย\" — "
+            ."เล่าว่าพลัง 2 ใบนี้มาเจอกันแล้วเกิดอะไร เชื่อมกับตำแหน่งที่มันอยู่\n"
+            ."• คู่ ✨ = จุดแข็ง/โอกาสที่ควรย้ำ · คู่ ⚠️/⚠️⚠️ = จุดเตือน/บทเรียน (สื่อ \"เปลี่ยนผ่าน\" ไม่ใช่ขู่)\n"
+            ."• ❌ ห้ามยกคู่ไพ่ที่ไม่เกี่ยวคำถามมาทื่อๆ — เลือกที่ \"ตอบโจทย์เขา\"\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
+     * 🎴 (2026-06-02) อ่านภาพรวมสำรับ — ดูบรรยากาศ 10 ใบก่อนเจาะรายใบ (reading mechanic)
+     *
+     * หมอดูจริงดู "ภาพใหญ่" ก่อน: Major เยอะ = พรหมลิขิต/เรื่องใหญ่, สำรับเด่น = ธีม,
+     *   กลับหัวเยอะ = ติดขัด/ภายใน, ราชสำนักเยอะ = คนหลายคน, Ace หลายใบ = เริ่มใหม่
+     *
+     * ไม่ผูก keyword — ภาพรวมมีในทุกสำรับเสมอ (ออกเสมอถ้า toggle เปิด + ครบ 10 ใบ)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildSpreadPatternDirective(FortuneReading $reading): string
+    {
+        // settings gate — admin ปิดได้ (default เปิด)
+        if (! (bool) ($this->settings->enable_celtic_patterns ?? true)) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $patterns = app(\App\Services\FortuneKnowledgeService::class)->spreadPatternLines($cards);
+        if (trim($patterns) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🎴 ภาพรวมสำรับ (อ่านบรรยากาศ 10 ใบ ก่อนเจาะรายใบ)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."สถิติสำรับนี้บ่งทิศทาง \"พลังรวม\" ของดวง — ใช้ \"ตั้งโทน\" คำทำนายทั้งบท:\n\n"
+            .$patterns."\n\n"
+            ."🎯 *วิธีใช้:* เปิดคำทำนายด้วย \"ภาพรวม\" นี้ก่อน (เช่น \"สำรับนี้ไพ่ชุดใหญ่เด่น "
+            ."บอกว่าเรื่องนี้เป็นจังหวะใหญ่ของชีวิต...\") แล้วค่อยเจาะรายใบ/ตำแหน่งให้สอดคล้องโทนรวม\n"
+            ."• ❌ ห้ามอ่านภาพรวมแล้วขัดกับรายใบ — ต้อง \"ร้อยให้เป็นเรื่องเดียวกัน\"\n"
+            ."• ภาพรวม = บรรยากาศ/ทิศทาง ไม่ใช่คำฟันธง (กลับหัวเยอะ/Major เยอะ = ช่วงเปลี่ยนผ่าน ไม่ใช่ลางร้าย)\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
+     * 🔥💧 (2026-06-03) ธาตุเสริม-ขัด (Elemental Dignities — Golden Dawn)
+     *
+     * reading mechanic ตัวที่ 3 — ตำรา Golden Dawn: ไพ่ที่อยู่คู่กัน "เสริม-หักล้าง"
+     *   กันด้วยธาตุ (ไฟ-ลม/น้ำ-ดิน เสริม · ไฟ-น้ำ/ลม-ดิน ขัด · ธาตุเดียวกัน ทวีคูณ)
+     *
+     * คำนวณคู่ตำแหน่งสำคัญ (1↔2, 3↔6, 4↔5, 7↔8, 9↔10) + สรุปสำรับ
+     * ไม่ผูก keyword — ธาตุมีอยู่ในทุกสำรับ (ออกเสมอเมื่อ toggle เปิด + ครบ 10 ใบ)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildElementalDignityDirective(FortuneReading $reading): string
+    {
+        // settings gate — admin ปิดได้ (default เปิด)
+        if (! (bool) ($this->settings->enable_celtic_dignity ?? true)) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $lines = app(\App\Services\FortuneKnowledgeService::class)->elementalDignityLines($cards);
+        if (trim($lines) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🔥💧 ธาตุเสริม-ขัด (Elemental Dignities — ตำรา Golden Dawn)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ไพ่ที่อยู่คู่กัน \"เสริม-หักล้าง\" กันด้วยธาตุ — บอกว่าพลังในเรื่องนี้ \"ไหลลื่น\" หรือ \"ปะทะกัน\":\n\n"
+            .$lines."\n\n"
+            ."🎯 *วิธีใช้:* นี่คือ \"แผนภาพพลัง\" เบื้องหลัง — เอาไปประกอบคำทำนายว่า\n"
+            ."• คู่ ✨ เสริม = หยิบมาเล่าได้ว่า \"พลังนี้หนุนกัน เรื่องจะลื่นไหลทางนี้\"\n"
+            ."• คู่ ⚡ ขัด = สะท้อนความตึง/ทางเลือก/ต้องประนีประนอม — แม่หมอเล่าให้เห็น \"จุดที่บีบ\"\n"
+            ."• คู่ 🔁 เหมือนกัน = ทวีคูณ-พุ่งทางเดียว ไม่มีตัวถ่วง (ดี/ร้ายแล้วแต่ธาตุนั้น)\n"
+            ."• ❌ ห้ามใช้คำว่า \"ขัด\" แบบขู่ — สื่อ \"ความตึง/บทเรียน\" เชิงสร้างสรรค์\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
+     * 📍 (2026-06-03) ความสัมพันธ์ตำแหน่ง Celtic (Position Dynamics — diagnostic pairs)
+     *
+     * reading mechanic ตัวที่ 4 — หมอดูไม่ได้อ่านตำแหน่งทีละช่อง แต่อ่าน "คู่ตำแหน่ง"
+     *   เช่น ต.5 (หวัง) vs ต.7 (ตัวเอง) → ตรงกันไหม / ต.9 vs ต.10 → หวังจริงไหม
+     *
+     * เลเยอร์นี้ไม่ฟันธงเอง — ส่ง "ชุดคำถาม diagnostic + เคล็ดวิเคราะห์" ให้ AI
+     *   เพื่อให้สังเคราะห์เอง (เหมือนหมอดูเก่าๆ ที่อ่านโดยถามตัวเอง)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildPositionDynamicDirective(FortuneReading $reading): string
+    {
+        if (! (bool) ($this->settings->enable_celtic_dynamics ?? true)) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $lines = app(\App\Services\FortuneKnowledgeService::class)->positionDynamicLines($cards);
+        if (trim($lines) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."📍 ความสัมพันธ์ตำแหน่ง Celtic (Diagnostic Pairs)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."หมอดูเก่าๆ ไม่อ่านตำแหน่งทีละช่อง แต่อ่าน \"คู่ตำแหน่ง\" — ด้านล่างคือ\n"
+            ."\"ชุดคำถามวิเคราะห์ + เคล็ดอ่าน\" ที่แม่หมอควรตอบให้ครบ:\n\n"
+            .$lines."\n\n"
+            ."🎯 *วิธีใช้:* แม่หมอ \"ถามตัวเอง\" แต่ละคู่ก่อน แล้วเอาคำตอบมาประกอบเป็นคำทำนาย\n"
+            ."• โดยเฉพาะคู่ ต.9↔ต.10 (หวัง→ผลลัพธ์) และ ต.3↔ต.6 (อดีต→อนาคต) — ใช้ในการ \"ฟันธง\" ปลายเรื่อง\n"
+            ."• คู่ ต.7↔ต.8 (เรา-คนรอบ) ใช้เวลาเรื่องเป็นความสัมพันธ์ — ชี้จุดที่ \"คนละมุม\"\n"
+            ."• ❌ ห้ามอ่านตำแหน่งเป็นเอกเทศแล้วลืม \"คู่\" — เพราะตำแหน่งต่างๆ เชื่อมเป็นเรื่องเดียวกัน\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
+     * 🎯 (2026-06-03) น้ำหนัก Yes/No — ฟันธงคำถามใช่/ไม่ใช่
+     *
+     * reading mechanic ตัวที่ 5 (เลเยอร์สุดท้าย) — คำนวณคะแนน + ตัดสิน
+     *   detect "คำถาม yes/no" จากข้อความก่อน inject (ไม่งั้นจะ inject ทุกเซสชัน)
+     *
+     * คะแนน: รายไพ่ +/- × ตัวคูณตำแหน่ง (ต.10 ×2.5, ต.6 ×2.0 สำคัญสุด)
+     *   กลับหัว = พลิกสัญลักษณ์ (Tower กลับหัว = ลบน้อยลง, Sun กลับหัว = บวกน้อยลง)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildYesNoDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    {
+        if (! (bool) ($this->settings->enable_celtic_yesno ?? true)) {
+            return '';
+        }
+
+        // Detect คำถาม yes/no (ภาษาไทย — \b ใน regex ไม่ทำงานกับไทย ใช้ mb_strpos ตรงๆ)
+        $haystack = mb_strtolower(trim($userQuestion.' '.$previousContext));
+        if ($haystack === '') {
+            return '';
+        }
+        // คำชี้ Yes/No ที่พบบ่อย (เรียงจากเฉพาะเจาะจง → ทั่วไป)
+        $signals = [
+            'หรือเปล่า', 'รึเปล่า', 'หรือไม่', 'ใช่ไหม', 'ใช่มั้ย', 'ใช่หรือ',
+            'ได้ไหม', 'ได้มั้ย', 'ดีไหม', 'ดีมั้ย', 'ควรไหม', 'ควรมั้ย',
+            'เขาจะ', 'เค้าจะ', 'เธอจะ', 'จะกลับ', 'จะรัก', 'จะแต่ง', 'จะเลิก',
+            'จะได้', 'จะรวย', 'จะติด', 'จะผ่าน', 'จะมา', 'จะเป็น',
+            // อันนี้กว้างสุด — วางท้าย
+            'ไหม', 'มั้ย', 'หรือ',
+        ];
+        $hit = false;
+        foreach ($signals as $kw) {
+            if (mb_strpos($haystack, $kw) !== false) {
+                $hit = true;
+                break;
+            }
+        }
+        if (! $hit) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $block = app(\App\Services\FortuneKnowledgeService::class)->yesNoVerdict($cards);
+        if (trim($block) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🎯 น้ำหนัก Yes/No (ตรวจพบคำถามใช่/ไม่ใช่) — เลขฟันธงเชิงสถิติ\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ระบบคำนวณ \"น้ำหนักดี/ร้ายรายไพ่ × ตัวคูณตำแหน่ง\" (ต.10 ผลลัพธ์ ×2.5, ต.6 อนาคต ×2.0):\n\n"
+            .$block."\n\n"
+            ."🎯 *วิธีใช้:* นี่คือ \"เข็มทิศ\" สำหรับฟันธง — ผลรวมบอกแนวโน้มชัด\n"
+            ."• ✅/🟢 = ฟันธงทางบวก · 🟡 = ก้ำกึ่งให้ทางเลือกได้ · 🔶/🔴 = ฟันธงทางลบ\n"
+            ."• ❌ ห้ามตอบเลขดิบ (ลูกค้าไม่ต้องการเห็นคะแนน) — แปลเป็นภาษาคน เช่น \"ใช่ค่ะ ไพ่หนุน\" หรือ \"ไม่ค่ะ ยังไม่ใช่จังหวะ\"\n"
+            ."• ใช้ \"ฟันธงตอนท้าย\" เป็นหลัก — เนื้อทำนายยังอ่านจากไพ่ตามปกติ\n"
+            ."• ผลก้ำกึ่ง 🟡 = ตอบ \"ขึ้นกับเจ้าชะตา\" + บอกเงื่อนไขที่ตัดสินผลได้\n"
+            ."• ⚠️ ถ้าผลขัดกับคำตอบที่ได้จากเลเยอร์อื่น → ให้น้ำหนักไพ่ในตำแหน่ง 6 และ 10 มากกว่า\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ — อ่าน "คน" จากหน้าไพ่
      *
      * User directive 2026-06-01: "เพิ่มตำราโหงวเฮ้ง ลักษณะคน ประจำไพ่ให้ครบ 78 ใบ"
@@ -3431,6 +3673,11 @@ class CelticCrossService
             .$this->buildLifeReadingDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildDestinyDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildExtraKnowledgeDirectives($reading, $questions->pluck('question')->implode(' '))
+            .$this->buildCardComboDirective($reading)
+            .$this->buildSpreadPatternDirective($reading)
+            .$this->buildElementalDignityDirective($reading)
+            .$this->buildPositionDynamicDirective($reading)
+            .$this->buildYesNoDirective($reading, $questions->pluck('question')->implode(' '))
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"

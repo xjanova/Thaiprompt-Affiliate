@@ -522,6 +522,534 @@ class FortuneKnowledgeService
         });
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // 🔗 ไพ่คู่/ไพ่สัมพันธ์ — ความหมายพิเศษเมื่อไพ่ 2 ใบออกด้วยกัน
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * สร้างบล็อก "ไพ่คู่" ที่ปรากฏจริงบนโต๊ะ (เช็คทุกคู่ใน 10 ใบที่เปิด)
+     *
+     * คู่ไพ่ = กลไก "เชื่อมโยงไพ่" (ไม่ใช่ความหมายรายใบ) — ออกเฉพาะคู่ที่มีจริง
+     *
+     * @param  array<int, array>  $cards  ไพ่ 10 ใบ (จาก FortuneReading::getCelticCards)
+     * @return string ว่าง = ไม่เจอคู่เด่นในสำรับนี้
+     */
+    public function comboLinesForCards(array $cards): string
+    {
+        $combos = $this->comboMap();
+        if (empty($combos)) {
+            return '';
+        }
+
+        // รวบรวมไพ่ที่เปิด (name_en => meta ใบแรกที่เจอ)
+        $present = [];
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $nameEn = (string) ($card['card_name_en'] ?? '');
+            if ($nameEn === '' || isset($present[$nameEn])) {
+                continue;
+            }
+            $present[$nameEn] = [
+                'pos' => $pos,
+                'th' => ((string) ($card['card_name_th'] ?? '')) ?: $nameEn,
+                'rev' => ! empty($card['is_reversed']),
+            ];
+        }
+
+        $names = array_keys($present);
+        $count = count($names);
+        $lines = [];
+
+        // เช็คทุกคู่ (ไม่ซ้ำ ไม่สนลำดับ)
+        for ($i = 0; $i < $count; $i++) {
+            for ($j = $i + 1; $j < $count; $j++) {
+                $key = $this->comboKey($names[$i], $names[$j]);
+                if (! isset($combos[$key])) {
+                    continue;
+                }
+                $entry = $combos[$key];
+                $a = $present[$names[$i]];
+                $b = $present[$names[$j]];
+                $oa = $a['rev'] ? '(กลับหัว)' : '';
+                $ob = $b['rev'] ? '(กลับหัว)' : '';
+                $tone = trim((string) ($entry['tone'] ?? ''));
+                $tone = ($tone === '' || $tone === '—') ? '' : $tone.' ';
+                $lines[] = "• {$a['th']}{$oa} [ต.{$a['pos']}] + {$b['th']}{$ob} [ต.{$b['pos']}] → "
+                    .$tone.trim((string) ($entry['meaning'] ?? ''));
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * แผนที่ไพ่คู่: 'a|b'(เรียง) => ['tone','meaning'] (จาก config) + cache
+     *
+     * @return array<string, array>
+     */
+    protected function comboMap(): array
+    {
+        return Cache::remember('fortune_knowledge:combos', self::CACHE_TTL, function () {
+            $map = [];
+            foreach ((array) config('fortune_card_combos.combos', []) as $entry) {
+                if (! is_array($entry)) {
+                    continue;
+                }
+                $a = (string) ($entry['a'] ?? '');
+                $b = (string) ($entry['b'] ?? '');
+                if ($a === '' || $b === '') {
+                    continue;
+                }
+                $map[$this->comboKey($a, $b)] = [
+                    'tone' => (string) ($entry['tone'] ?? ''),
+                    'meaning' => (string) ($entry['meaning'] ?? ''),
+                ];
+            }
+
+            return $map;
+        });
+    }
+
+    /**
+     * key ของคู่ไพ่ — เรียงชื่อให้ lookup ได้ไม่สนลำดับ a/b
+     */
+    protected function comboKey(string $a, string $b): string
+    {
+        $pair = [$a, $b];
+        sort($pair);
+
+        return implode('|', $pair);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // 🎴 อ่านภาพรวมสำรับ — Major/สำรับเด่น/กลับหัว/ราชสำนัก/Ace/เลขซ้ำ
+    // ════════════════════════════════════════════════════════════════
+
+    /** ชื่อ Major Arcana 22 ใบ (name_en) สำหรับจำแนกสำรับ */
+    protected const MAJOR_ARCANA = [
+        'The Fool', 'The Magician', 'The High Priestess', 'The Empress', 'The Emperor',
+        'The Hierophant', 'The Lovers', 'The Chariot', 'Strength', 'The Hermit',
+        'Wheel of Fortune', 'Justice', 'The Hanged Man', 'Death', 'Temperance',
+        'The Devil', 'The Tower', 'The Star', 'The Moon', 'The Sun', 'Judgement', 'The World',
+    ];
+
+    /** Rank → เลข (Pip + ราชสำนัก) */
+    protected const RANK_NUMBER = [
+        'Ace' => 1, 'Two' => 2, 'Three' => 3, 'Four' => 4, 'Five' => 5,
+        'Six' => 6, 'Seven' => 7, 'Eight' => 8, 'Nine' => 9, 'Ten' => 10,
+    ];
+
+    /**
+     * สร้างบล็อก "ภาพรวมสำรับ" จากการนับ 10 ใบ (Major/สำรับ/กลับหัว/ราชสำนัก/Ace/เลขซ้ำ)
+     *
+     * @param  array<int, array>  $cards
+     * @return string ว่าง = สำรับไม่ครบ 10
+     */
+    public function spreadPatternLines(array $cards): string
+    {
+        // นับสถิติสำรับ
+        $total = 0;
+        $major = 0;
+        $reversed = 0;
+        $court = 0;
+        $aces = 0;
+        $suit = ['Wands' => 0, 'Cups' => 0, 'Swords' => 0, 'Pentacles' => 0];
+        $numberCount = [];
+
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $nameEn = (string) ($card['card_name_en'] ?? '');
+            if ($nameEn === '') {
+                continue;
+            }
+            $total++;
+            if (! empty($card['is_reversed'])) {
+                $reversed++;
+            }
+
+            $c = $this->classifyCard($nameEn);
+            if ($c['arcana'] === 'major') {
+                $major++;
+
+                continue;
+            }
+            if (isset($suit[$c['suit']])) {
+                $suit[$c['suit']]++;
+            }
+            if ($c['isCourt']) {
+                $court++;
+            }
+            if ($c['isAce']) {
+                $aces++;
+            }
+            if ($c['number'] !== null && ! $c['isCourt']) {
+                $numberCount[$c['number']] = ($numberCount[$c['number']] ?? 0) + 1;
+            }
+        }
+
+        if ($total < 10) {
+            return '';
+        }
+
+        $cfg = (array) config('fortune_spread_patterns', []);
+        $lines = [];
+
+        // 1) Major Arcana (เกณฑ์: ≤2 น้อย / 5-6 เด่น / 7+ ท่วม)
+        if ($major >= 7) {
+            $lines[] = '• '.($cfg['major']['dominant'] ?? '')." (Major {$major}/10)";
+        } elseif ($major >= 5) {
+            $lines[] = '• '.($cfg['major']['heavy'] ?? '')." (Major {$major}/10)";
+        } elseif ($major <= 2) {
+            $lines[] = '• '.($cfg['major']['few'] ?? '')." (Major {$major}/10)";
+        }
+
+        // 2) สำรับเด่น (≥4 ใบในสำรับเดียว)
+        foreach ($suit as $s => $n) {
+            if ($n >= 4) {
+                $lines[] = '• '.($cfg['suit_dominant'][$s] ?? '')." ({$s} {$n} ใบ)";
+            }
+        }
+
+        // 3) สำรับขาด (0 ใบ — ชี้เฉพาะเมื่อ Major ไม่ท่วม ไม่งั้นกำกวม)
+        if ($major <= 5) {
+            foreach ($suit as $s => $n) {
+                if ($n === 0) {
+                    $lines[] = '• '.($cfg['suit_absent'][$s] ?? '');
+                }
+            }
+        }
+
+        // 4) กลับหัว (≤2 ลื่น / 5-6 ติดขัด / 7+ ปิดกั้น)
+        if ($reversed >= 7) {
+            $lines[] = '• '.($cfg['reversed']['dominant'] ?? '')." (กลับหัว {$reversed}/10)";
+        } elseif ($reversed >= 5) {
+            $lines[] = '• '.($cfg['reversed']['heavy'] ?? '')." (กลับหัว {$reversed}/10)";
+        } elseif ($reversed <= 2) {
+            $lines[] = '• '.($cfg['reversed']['few'] ?? '')." (กลับหัว {$reversed}/10)";
+        }
+
+        // 5) ราชสำนักเยอะ (≥4)
+        if ($court >= 4) {
+            $lines[] = '• '.($cfg['court']['heavy'] ?? '')." (ราชสำนัก {$court} ใบ)";
+        }
+
+        // 6) Ace หลายใบ (≥2)
+        if ($aces >= 2) {
+            $lines[] = '• '.($cfg['aces']['multiple'] ?? '')." (Ace {$aces} ใบ)";
+        }
+
+        // 7) เลขซ้ำ (Pip เลขเดียวกัน ≥3 ใบ)
+        foreach ($numberCount as $num => $n) {
+            if ($n >= 3 && isset($cfg['repeated_number'][$num])) {
+                $lines[] = '• '.$cfg['repeated_number'][$num]." (เลข {$num} ซ้ำ {$n} ใบ)";
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // 🔥💧 ธาตุเสริม-ขัด (Elemental Dignities — Golden Dawn)
+    // ════════════════════════════════════════════════════════════════
+
+    /** Suit → element (Minor Arcana) */
+    protected const SUIT_ELEMENT = [
+        'Wands' => 'fire',
+        'Cups' => 'water',
+        'Swords' => 'air',
+        'Pentacles' => 'earth',
+    ];
+
+    /**
+     * สร้างบล็อก "ธาตุเสริม-ขัด" จากการคำนวณคู่ตำแหน่งสำคัญ + สรุปสำรับ
+     *
+     * @param  array<int, array>  $cards
+     * @return string ว่าง = สำรับไม่ครบ 10
+     */
+    public function elementalDignityLines(array $cards): string
+    {
+        $cfg = (array) config('fortune_elemental_dignities', []);
+        $matrix = (array) ($cfg['matrix'] ?? []);
+        $elementLabel = (array) ($cfg['element_label'] ?? []);
+        $pairText = (array) ($cfg['pair_interpretation'] ?? []);
+        $pairs = (array) ($cfg['celtic_pairs'] ?? []);
+
+        if (empty($matrix) || empty($pairs)) {
+            return '';
+        }
+
+        // คำนวณธาตุของไพ่แต่ละตำแหน่ง
+        $byPos = [];
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $nameEn = (string) ($card['card_name_en'] ?? '');
+            if ($nameEn === '') {
+                continue;
+            }
+            $byPos[$pos] = [
+                'en' => $nameEn,
+                'th' => ((string) ($card['card_name_th'] ?? '')) ?: $nameEn,
+                'rev' => ! empty($card['is_reversed']),
+                'el' => $this->elementOf($nameEn),
+            ];
+        }
+        if (count($byPos) < 10) {
+            return '';
+        }
+
+        // 1) คู่ตำแหน่งสำคัญ (Celtic dynamics)
+        $pairLines = [];
+        foreach ($pairs as $pair) {
+            [$a, $b, $name] = [$pair[0] ?? null, $pair[1] ?? null, $pair[2] ?? ''];
+            if (! isset($byPos[$a], $byPos[$b])) {
+                continue;
+            }
+            $ea = $byPos[$a]['el'];
+            $eb = $byPos[$b]['el'];
+            if ($ea === null || $eb === null) {
+                continue;
+            }
+            $tone = $matrix[$ea][$eb] ?? null;
+            if ($tone === null) {
+                continue;
+            }
+            $icon = ['same' => '🔁', 'friendly' => '✨', 'contrary' => '⚡', 'neutral' => '➖'][$tone] ?? '';
+            $pairLines[] = "{$icon} {$name}: "
+                ."{$byPos[$a]['th']} ({$elementLabel[$ea]}) × {$byPos[$b]['th']} ({$elementLabel[$eb]}) "
+                .'→ '.($pairText[$tone] ?? $tone);
+        }
+
+        // 2) สรุประดับสำรับ — นับ tone ทุกคู่ของ 10 ใบ
+        $toneCount = ['same' => 0, 'friendly' => 0, 'contrary' => 0, 'neutral' => 0];
+        $positions = array_keys($byPos);
+        $n = count($positions);
+        for ($i = 0; $i < $n; $i++) {
+            for ($j = $i + 1; $j < $n; $j++) {
+                $ea = $byPos[$positions[$i]]['el'];
+                $eb = $byPos[$positions[$j]]['el'];
+                if ($ea === null || $eb === null) {
+                    continue;
+                }
+                $t = $matrix[$ea][$eb] ?? null;
+                if ($t && isset($toneCount[$t])) {
+                    $toneCount[$t]++;
+                }
+            }
+        }
+        $totalPairs = array_sum($toneCount);
+        $friendlyPct = $totalPairs > 0 ? (($toneCount['friendly'] + $toneCount['same']) / $totalPairs) : 0;
+        $contraryPct = $totalPairs > 0 ? ($toneCount['contrary'] / $totalPairs) : 0;
+
+        $summaryKey = 'balanced';
+        if ($friendlyPct >= 0.55) {
+            $summaryKey = 'highly_friendly';
+        } elseif ($contraryPct >= 0.40) {
+            $summaryKey = 'highly_contrary';
+        }
+        $summary = (string) ($cfg['spread_summary'][$summaryKey] ?? '');
+
+        $out = "📊 ภาพรวมธาตุของสำรับ: {$summary}\n"
+            ."   (เสริม {$toneCount['friendly']} · เหมือนกัน {$toneCount['same']} · ขัด {$toneCount['contrary']} · กลาง {$toneCount['neutral']} จาก {$totalPairs} คู่)\n";
+
+        if (! empty($pairLines)) {
+            $out .= "\n🔍 คู่ตำแหน่งสำคัญ:\n".implode("\n", $pairLines);
+        }
+
+        return $out;
+    }
+
+    /**
+     * ธาตุของไพ่ — Minor: ตาม suit / Major: ตาม Golden Dawn assignment
+     */
+    protected function elementOf(string $nameEn): ?string
+    {
+        // Major Arcana
+        $majorMap = (array) config('fortune_elemental_dignities.major_elements', []);
+        if (isset($majorMap[$nameEn])) {
+            return (string) $majorMap[$nameEn];
+        }
+
+        // Minor Arcana — Suit → element
+        $c = $this->classifyCard($nameEn);
+        if ($c['suit'] !== null && isset(self::SUIT_ELEMENT[$c['suit']])) {
+            return self::SUIT_ELEMENT[$c['suit']];
+        }
+
+        return null;
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // 📍 ความสัมพันธ์ตำแหน่ง Celtic (Position Dynamics — diagnostic pairs)
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * สร้างบล็อก "ความสัมพันธ์คู่ตำแหน่ง" ตามคู่ที่ตำราหมอดูใช้วิเคราะห์
+     *
+     * @param  array<int, array>  $cards
+     */
+    public function positionDynamicLines(array $cards): string
+    {
+        $cfg = (array) config('fortune_position_dynamics', []);
+        $dynamics = (array) ($cfg['dynamics'] ?? []);
+        $posLabel = (array) ($cfg['position_label'] ?? []);
+
+        if (empty($dynamics)) {
+            return '';
+        }
+
+        // เก็บไพ่รายตำแหน่ง
+        $byPos = [];
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $byPos[$pos] = [
+                'th' => ((string) ($card['card_name_th'] ?? '')) ?: ((string) ($card['card_name_en'] ?? '')),
+                'rev' => ! empty($card['is_reversed']),
+            ];
+        }
+        if (count($byPos) < 10) {
+            return '';
+        }
+
+        $lines = [];
+        foreach ($dynamics as $dyn) {
+            $a = (int) ($dyn['a'] ?? 0);
+            $b = (int) ($dyn['b'] ?? 0);
+            if (! isset($byPos[$a], $byPos[$b])) {
+                continue;
+            }
+            $oa = $byPos[$a]['rev'] ? '(กลับหัว)' : '';
+            $ob = $byPos[$b]['rev'] ? '(กลับหัว)' : '';
+            $label = (string) ($dyn['label'] ?? '');
+            $question = (string) ($dyn['question'] ?? '');
+            $tip = (string) ($dyn['tip'] ?? '');
+
+            $lines[] = "▸ {$label}\n"
+                ."   ต.{$a} ({$posLabel[$a]}): {$byPos[$a]['th']}{$oa}\n"
+                ."   ต.{$b} ({$posLabel[$b]}): {$byPos[$b]['th']}{$ob}\n"
+                ."   ❓ ถามตัวเอง: {$question}\n"
+                ."   💡 {$tip}";
+        }
+
+        return implode("\n\n", $lines);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // 🎯 น้ำหนัก Yes/No (Weighted Verdict)
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * คำนวณคะแนน Yes/No พร้อมรายละเอียดต่อใบ + ตัดสินผลลัพธ์
+     *
+     * @param  array<int, array>  $cards
+     * @return string ว่าง = สำรับไม่ครบ
+     */
+    public function yesNoVerdict(array $cards): string
+    {
+        $cfg = (array) config('fortune_yes_no_weights', []);
+        $weights = (array) ($cfg['card_weights'] ?? []);
+        $multipliers = (array) ($cfg['position_multiplier'] ?? []);
+        $verdicts = (array) ($cfg['verdicts'] ?? []);
+
+        if (empty($weights)) {
+            return '';
+        }
+
+        $total = 0.0;
+        $contributions = [];
+        $present = 0;
+
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $nameEn = (string) ($card['card_name_en'] ?? '');
+            if ($nameEn === '' || ! array_key_exists($nameEn, $weights)) {
+                continue;
+            }
+            $present++;
+            $rawScore = (int) $weights[$nameEn];
+            // กลับหัว = พลิกสัญลักษณ์ (Tower กลับหัวกลายเป็นน้อยร้าย, Sun กลับหัวอ่อนลง ฯลฯ)
+            if (! empty($card['is_reversed'])) {
+                $rawScore = -$rawScore;
+            }
+            $mult = (float) ($multipliers[$pos] ?? 1.0);
+            $weighted = $rawScore * $mult;
+            $total += $weighted;
+
+            $th = ((string) ($card['card_name_th'] ?? '')) ?: $nameEn;
+            $rev = ! empty($card['is_reversed']) ? '(กลับหัว)' : '';
+            $sign = $rawScore > 0 ? '+' : '';
+            $contributions[] = "   ต.{$pos} {$th}{$rev}: {$sign}{$rawScore} × {$mult} = "
+                .number_format($weighted, 1);
+        }
+
+        if ($present < 10) {
+            return '';
+        }
+
+        // ตัดสินผลลัพธ์
+        $verdictKey = 'strong_no';
+        foreach (['strong_yes', 'lean_yes', 'unclear', 'lean_no'] as $k) {
+            $threshold = (float) ($verdicts[$k]['threshold'] ?? 0);
+            if ($total >= $threshold) {
+                $verdictKey = $k;
+                break;
+            }
+        }
+        $verdict = (array) ($verdicts[$verdictKey] ?? []);
+
+        return "📊 คะแนนรวม: ".number_format($total, 1)." (จาก 10 ใบ)\n"
+            .($verdict['icon'] ?? '').' ผลฟันธง: '.($verdict['text'] ?? '')."\n\n"
+            ."🔍 รายละเอียดต่อใบ (คะแนน × ตัวคูณตำแหน่ง):\n"
+            .implode("\n", $contributions);
+    }
+
+    /**
+     * จำแนกไพ่จาก name_en → arcana/suit/rank/isCourt/isAce/number
+     *
+     * @return array{arcana:string, suit:?string, rank:?string, isCourt:bool, isAce:bool, number:?int}
+     */
+    protected function classifyCard(string $nameEn): array
+    {
+        $base = [
+            'arcana' => 'minor', 'suit' => null, 'rank' => null,
+            'isCourt' => false, 'isAce' => false, 'number' => null,
+        ];
+
+        if (in_array($nameEn, self::MAJOR_ARCANA, true)) {
+            $base['arcana'] = 'major';
+
+            return $base;
+        }
+
+        // รูปแบบ "{Rank} of {Suit}"
+        if (! preg_match('/^(.+?)\s+of\s+(Wands|Cups|Swords|Pentacles)$/', $nameEn, $m)) {
+            return $base;
+        }
+
+        $rank = $m[1];
+        $base['suit'] = $m[2];
+        $base['rank'] = $rank;
+        $base['isCourt'] = in_array($rank, ['Page', 'Knight', 'Queen', 'King'], true);
+        $base['isAce'] = ($rank === 'Ace');
+        $base['number'] = self::RANK_NUMBER[$rank] ?? null;
+
+        return $base;
+    }
+
     /**
      * ล้าง cache (เรียกตอนแอดมินแก้คลังความรู้)
      */
@@ -529,6 +1057,7 @@ class FortuneKnowledgeService
     {
         Cache::forget('fortune_knowledge:health_map');
         Cache::forget('fortune_knowledge:persona_map');
+        Cache::forget('fortune_knowledge:combos');
         foreach (FortuneKnowledge::CATEGORIES as $cat) {
             Cache::forget("fortune_knowledge:mucards:{$cat}");
         }
