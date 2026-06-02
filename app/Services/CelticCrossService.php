@@ -846,6 +846,7 @@ class CelticCrossService
             .$this->buildPhysiognomyDirective($reading, $userQuestion)
             .$this->buildLifeReadingDirective($reading, $userQuestion)
             .$this->buildDestinyDirective($reading, $userQuestion)
+            .$this->buildExtraKnowledgeDirectives($reading, $userQuestion)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1282,7 +1283,8 @@ class CelticCrossService
                 .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
                 .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
                 .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
-                .$this->buildDestinyDirective($reading, $userQuestion, $previousContext);
+                .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
+                .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1388,6 +1390,7 @@ class CelticCrossService
             .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
             .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
             .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
+            .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2664,6 +2667,94 @@ class CelticCrossService
     }
 
     /**
+     * 🧩 (2026-06-02) ความรู้รายไพ่ 10 หมวดเสริม — ต่อยอดคลัง RAG ให้ครบทุกหัวข้อยอดฮิต
+     *
+     * ความรัก/เนื้อคู่ + การเงิน/โชคลาภ + ฤกษ์ยาม/วันมงคล + เลขศาสตร์/เบอร์มงคล + ของมงคล/เครื่องราง +
+     *   จิตใจ/อารมณ์ + ครอบครัว/บุตร/บริวาร + เดินทาง/ต่างแดน + คดีความ/สัญญา + แก้กรรม/เสริมดวง
+     *
+     * ใช้ retriever ตัวเดียวกับหมวดเดิม ([[App\Services\FortuneKnowledgeService]]::muLinesForCards →
+     *   DB fortune_knowledge → config fallback). Detect-based: inject เฉพาะหมวดที่ลูกค้าถาม (keyword)
+     *   → ลูกค้าทั่วไปไม่เปลือง token. แต่ละหมวดมี toggle (enable_celtic_*) + จรรยาบรรณเฉพาะหมวด
+     *   (คดี→ไม่ใช่ทนาย / แก้กรรม→ทำเองฟรี / จิตใจวิกฤต→1323 / ความรัก→กันสแกม / การเงิน→ไม่เชียร์พนัน)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildExtraKnowledgeDirectives(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    {
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $svc = app(\App\Services\FortuneKnowledgeService::class);
+        $ctx = trim($userQuestion.' '.$previousContext);
+
+        // 10 หมวดเสริม — [toggle key, detect method, ไอคอน+ชื่อหมวด, จรรยาบรรณเฉพาะหมวด]
+        $groups = [
+            ['enable_celtic_love', 'detectLoveCategories', '❤️ ความรัก/เนื้อคู่',
+                "• ทำนายตามไพ่ตรงๆ — ❌ ห้ามการันตี \"คนรักกลับมาแน่/ได้แต่งแน่\" หรือให้ความหวังลมๆ\n"
+                .'• ❌ ห้ามแนะของมัดใจ/เสน่ห์/พิธีเรียกคนรักราคาแพง — เน้นปรับตัว/สื่อสาร/ดูแลใจตนเองที่ทำได้จริง'],
+            ['enable_celtic_wealth', 'detectWealthCategories', '💰 การเงิน/โชคลาภ',
+                "• เตือนกระแสเงิน/หนี้/จังหวะลงทุนตามไพ่ตามจริง — ❌ ห้ามเชียร์พนัน/หวย/ลงทุนเสี่ยงเกินตัว\n"
+                .'• โชคลาภ = "แนวโน้ม" ไม่ใช่การันตีถูกรางวัล — เน้นวินัยการเงิน/ลงมือหาเพิ่มเป็นหลัก'],
+            ['enable_celtic_auspicious', 'detectAuspiciousCategories', '📅 ฤกษ์ยาม/วันมงคล',
+                '• ฤกษ์จากไพ่ = "ช่วงจังหวะที่หนุน" (อ่านจากตำแหน่ง+ธาตุไพ่) ไม่ใช่วัน-เวลาเป๊ะ — ❌ ห้ามมั่ววันเป๊ะถ้าไพ่ไม่ได้ชี้'],
+            ['enable_celtic_numerology', 'detectNumerologyCategories', '🔢 เลขศาสตร์/เบอร์มงคล',
+                '• เลข/เบอร์ = ตัวเสริมพลังตามไพ่ ไม่ใช่ตัวชี้ชะตา — ❌ ห้ามขายความกลัว "เบอร์นี้พังชีวิต" หรือบังคับเปลี่ยนเบอร์'],
+            ['enable_celtic_lucky_items', 'detectLuckyItemsCategories', '🧿 ของมงคล/สีมงคล/เครื่องราง',
+                '• เน้นของ/สีที่หาได้-ทำเองได้ตามไพ่ — ❌ ห้ามเชียร์เครื่องราง/วัตถุมงคลราคาแพงหรือบังคับซื้อ'],
+            ['enable_celtic_mental', 'detectMentalCategories', '🧠 จิตใจ/อารมณ์',
+                "• อ่านอารมณ์/ความเครียดตามไพ่อย่างอ่อนโยน ดึงสติ ให้กำลังใจ\n"
+                .'• 🚨 ถ้าไพ่+คำถามชี้วิกฤต (คิดทำร้ายตัวเอง/ซึมหนัก/หมดหวัง) → แนะปรึกษาแพทย์/สายด่วนสุขภาพจิต 1323 ทันที'],
+            ['enable_celtic_family', 'detectFamilyCategories', '👨‍👩‍👧 ครอบครัว/บุตร/บริวาร',
+                "• เรื่องคนในครอบครัว/บุตร = อ่านจากไพ่ตำแหน่งที่ตรงกับบุคคลนั้น\n"
+                .'• เรื่องมีบุตร/มีบุตรยาก = "แนวโน้มจากไพ่" ❌ ห้ามฟันธงแทนแพทย์ — มีปัญหาจริงให้แนะปรึกษาแพทย์'],
+            ['enable_celtic_travel', 'detectTravelCategories', '✈️ เดินทาง/ต่างแดน/ย้ายถิ่น',
+                '• ทริป/ย้ายถิ่น/ทำงานต่างแดน = แนวโน้มจากไพ่ — เรื่องวีซ่า/เอกสาร ❌ ห้ามการันตีผลอนุมัติ ให้ทำตามระเบียบจริงควบคู่'],
+            ['enable_celtic_legal', 'detectLegalCategories', '⚖️ คดีความ/ข้อพิพาท/สัญญา',
+                "• ❗ ไพ่ชี้ \"แนวโน้ม/ท่าที\" เท่านั้น — *ไม่ใช่คำปรึกษากฎหมาย* ❌ ห้ามการันตีแพ้/ชนะคดี\n"
+                .'• เรื่องคดี/สัญญาจริง ให้แนะปรึกษาทนาย/ผู้รู้กฎหมายควบคู่เสมอ'],
+            ['enable_celtic_remedy', 'detectRemedyCategories', '🪷 แก้กรรม/สะเดาะเคราะห์/เสริมดวง',
+                "• แก้กรรม/เสริมดวง = ทำดี/ทำบุญ/ให้อภัย/ปรับการกระทำ — *ทำเองได้ฟรี*\n"
+                .'• ❌ ห้ามขู่เรื่องกรรม/เจ้ากรรมนายเวร หรือขายพิธีแก้กรรม-สะเดาะเคราะห์ราคาแพงเด็ดขาด'],
+        ];
+
+        $blocks = [];
+        foreach ($groups as [$gate, $detectMethod, $heading, $ethics]) {
+            // toggle gate — admin ปิดรายหมวดได้ (default เปิด ถ้าคอลัมน์ยังไม่มีก็ถือว่าเปิด)
+            if (! (bool) ($this->settings->{$gate} ?? true)) {
+                continue;
+            }
+
+            $categories = $svc->{$detectMethod}($ctx);
+            if (empty($categories)) {
+                continue;
+            }
+
+            $knowledge = $svc->muLinesForCards($cards, $categories);
+            if (trim($knowledge) === '') {
+                continue;
+            }
+
+            $blocks[] = "▸ {$heading} (ตรวจพบคำถามหมวดนี้)\n"
+                .$knowledge."\n"
+                ."*จรรยาบรรณหมวดนี้:*\n".$ethics;
+        }
+
+        if (empty($blocks)) {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🧩 คลังความรู้รายไพ่ (หมวดที่ลูกค้าถาม) — ใช้ \"ประกอบการอ่านไพ่\" ให้เจาะจง ไม่ตอบกว้าง\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            .'🎯 *card-first:* อ่านจากไพ่ที่เปิด (ใบไหน/ตำแหน่งไหน/ธาตุ/ตั้งตรง-กลับหัว) ก่อน → แล้วดึงความรู้ด้านล่างมาเสริมให้ตรง '
+            ."ทุกคำแนะนำต้อง \"งอกจากไพ่\" + actionable (ลูกค้าจ่าย 99฿ ต้องได้คำเฉพาะ ไม่ใช่ \"ทำบุญเยอะๆ\")\n\n"
+            .implode("\n\n", $blocks)."\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ — อ่าน "คน" จากหน้าไพ่
      *
      * User directive 2026-06-01: "เพิ่มตำราโหงวเฮ้ง ลักษณะคน ประจำไพ่ให้ครบ 78 ใบ"
@@ -3339,6 +3430,7 @@ class CelticCrossService
             .$this->buildPhysiognomyDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildLifeReadingDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildDestinyDirective($reading, $questions->pluck('question')->implode(' '))
+            .$this->buildExtraKnowledgeDirectives($reading, $questions->pluck('question')->implode(' '))
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"

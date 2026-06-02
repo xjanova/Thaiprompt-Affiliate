@@ -250,6 +250,17 @@ class FortuneTellingSetting extends Model
         'enable_celtic_life_reading',
         // 🔮 (2026-06-01) ดวงจิต/กรรมรายไพ่ (สายญาณ/ผู้มีองค์/อดีตชาติ) จาก RAG
         'enable_celtic_destiny',
+        // 🧩 (2026-06-02) 10 หมวดความรู้รายไพ่เสริม จาก RAG — รัก/เงิน/ฤกษ์/เลข/ของมงคล/จิตใจ/ครอบครัว/เดินทาง/คดี/แก้กรรม
+        'enable_celtic_love',
+        'enable_celtic_wealth',
+        'enable_celtic_auspicious',
+        'enable_celtic_numerology',
+        'enable_celtic_lucky_items',
+        'enable_celtic_mental',
+        'enable_celtic_family',
+        'enable_celtic_travel',
+        'enable_celtic_legal',
+        'enable_celtic_remedy',
         // 🛡️ (2026-05-27) Abuse Clapback — แม่หมอ savage mode ตอบลูกค้าหยาบคาย
         'enable_abuse_clapback',
         'abuse_clapback_use_grok',
@@ -418,6 +429,17 @@ class FortuneTellingSetting extends Model
         'enable_celtic_physiognomy' => 'boolean',
         'enable_celtic_life_reading' => 'boolean',
         'enable_celtic_destiny' => 'boolean',
+        // 🧩 (2026-06-02) 10 หมวดความรู้รายไพ่เสริม
+        'enable_celtic_love' => 'boolean',
+        'enable_celtic_wealth' => 'boolean',
+        'enable_celtic_auspicious' => 'boolean',
+        'enable_celtic_numerology' => 'boolean',
+        'enable_celtic_lucky_items' => 'boolean',
+        'enable_celtic_mental' => 'boolean',
+        'enable_celtic_family' => 'boolean',
+        'enable_celtic_travel' => 'boolean',
+        'enable_celtic_legal' => 'boolean',
+        'enable_celtic_remedy' => 'boolean',
         // 🛡️ (2026-05-27) Abuse Clapback toggles
         'enable_abuse_clapback' => 'boolean',
         'abuse_clapback_use_grok' => 'boolean',
