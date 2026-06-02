@@ -75,6 +75,11 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_MENTAL_EMOTIONAL,
     ];
 
+    /** หมวด "ครอบครัว/บุตร/บริวาร" ที่ detect ได้ (per-card ใน config/fortune_card_family.php) */
+    public const FAMILY_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_FAMILY_CHILDREN,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -326,6 +331,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "ครอบครัว/บุตร/บริวาร"
+     *
+     * @return array<string>
+     */
+    public function detectFamilyCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::FAMILY_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -376,6 +391,9 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::MENTAL_DETECTABLE, true)) {
             return "fortune_card_mental.{$category}";
+        }
+        if (in_array($category, self::FAMILY_DETECTABLE, true)) {
+            return "fortune_card_family.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";
