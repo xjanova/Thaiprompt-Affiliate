@@ -45,6 +45,11 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_PAST_LIFE,
     ];
 
+    /** หมวด "ความรัก/เนื้อคู่" ที่ detect ได้ (per-card ใน config/fortune_card_love.php) */
+    public const LOVE_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_LOVE_RELATIONSHIP,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -236,6 +241,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "ความรัก/เนื้อคู่"
+     *
+     * @return array<string>
+     */
+    public function detectLoveCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::LOVE_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -268,6 +283,9 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::DESTINY_DETECTABLE, true)) {
             return "fortune_card_destiny.{$category}";
+        }
+        if (in_array($category, self::LOVE_DETECTABLE, true)) {
+            return "fortune_card_love.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";
