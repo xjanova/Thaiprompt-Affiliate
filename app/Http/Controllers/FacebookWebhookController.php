@@ -1817,7 +1817,7 @@ class FacebookWebhookController extends Controller
             // 📸 มี active flow + รูป (อาจเป็นสลิป) → handleSlipImageOnly
             //   จะตอบเฉพาะ PENDING_PAYMENT + PAID (พฤติกรรมเดิม)
             if (empty($messageText) && $userImageUrl && $hasActiveFortune) {
-                $this->handleSlipImageOnly($senderId, $userImageUrl);
+                $this->handleSlipImageOnly($senderId, $userImageUrl, $hasSticker);
 
                 return;
             }
@@ -1981,7 +1981,7 @@ class FacebookWebhookController extends Controller
         }
     }
 
-    protected function handleSlipImageOnly(string $senderId, ?string $imageUrl = null): void
+    protected function handleSlipImageOnly(string $senderId, ?string $imageUrl = null, bool $hasSticker = false): void
     {
         try {
             // หา reading ที่ user กำลังใช้งานอยู่
@@ -2073,7 +2073,10 @@ class FacebookWebhookController extends Controller
                     // ⚠️ (2026-06-01, user) ข้าม sticker (👍 ฯลฯ) — ไม่ใช่สลิปแน่นอน
                     //   กันตอบ "ได้รับสลิป" ผิด + เปลือง SlipOK quota (เคสจริง: ลูกค้ายกนิ้ว → บอทบอกได้รับสลิป)
                     //   ข้อความเปลี่ยนเป็น "ได้รับรูป — ถ้าเป็นสลิปกำลังตรวจ" (ถูกต้องทั้งสลิป+ไม่ใช่สลิป — เผื่อ classifier ล่ม)
-                    if ($slipSvc->isEnabled() && ! empty($imageUrl) && ! $hasSticker && empty($activeReading->slipok_verified_at)) {
+                    // 💰 (2026-06-02, user) SMS ตัดบิลไปแล้ว → ข้ามเก็บ+ตรวจสลิป (กันเปลือง SlipOK quota ฟรี)
+                    //   guard ชั้นนี้เสริมจาก is_paid guard ใน VerifySlipFallbackJob + trySlipOkVerifyForReading
+                    if ($slipSvc->isEnabled() && ! empty($imageUrl) && ! $hasSticker
+                        && ! $activeReading->is_paid && empty($activeReading->slipok_verified_at)) {
                         $stored = $this->conversationService->storeIncomingSlipFromUrl($activeReading, $imageUrl);
                         if ($stored) {
                             $this->facebookService->sendMessage(
