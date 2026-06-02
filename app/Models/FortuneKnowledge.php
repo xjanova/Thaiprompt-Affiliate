@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
  *   - family_children  = ครอบครัว/บุตร/บริวาร (พ่อแม่/พี่น้อง/ลูก/ลูกน้อง) — per-card
  *   - travel_abroad    = เดินทาง/ต่างแดน/ย้ายถิ่น (ทริป/วีซ่า/ย้ายประเทศ) — per-card
  *   - legal_disputes   = คดีความ/ข้อพิพาท/สัญญา (อาญา-แพ่ง-หย่า-สัญญา) — per-card
+ *   - remedy_boost     = แก้กรรม/สะเดาะเคราะห์/เสริมดวง (ทำเอง-ไม่ต้องจ่าย) — per-card
  *
  * แอดมินจัดการได้เต็มที่ผ่าน /admin/fortune/knowledge (เห็น/เพิ่ม/แก้/ปิด ทุก row)
  * Retrieval = เจาะจงตาม category + card_name + keyword (ดู App\Services\FortuneKnowledgeService)
@@ -86,6 +87,8 @@ class FortuneKnowledge extends Model
 
     public const CATEGORY_LEGAL_DISPUTES = 'legal_disputes';
 
+    public const CATEGORY_REMEDY_BOOST = 'remedy_boost';
+
     public const CATEGORY_GENERAL = 'general';
 
     /**
@@ -113,6 +116,7 @@ class FortuneKnowledge extends Model
         self::CATEGORY_FAMILY_CHILDREN,
         self::CATEGORY_TRAVEL_ABROAD,
         self::CATEGORY_LEGAL_DISPUTES,
+        self::CATEGORY_REMEDY_BOOST,
         self::CATEGORY_GENERAL,
     ];
 
@@ -138,6 +142,7 @@ class FortuneKnowledge extends Model
         self::CATEGORY_FAMILY_CHILDREN => '👨‍👩‍👧 ครอบครัว/บุตร/บริวาร',
         self::CATEGORY_TRAVEL_ABROAD => '✈️ เดินทาง/ต่างแดน/ย้ายถิ่น',
         self::CATEGORY_LEGAL_DISPUTES => '⚖️ คดีความ/ข้อพิพาท/สัญญา',
+        self::CATEGORY_REMEDY_BOOST => '🪷 แก้กรรม/สะเดาะเคราะห์/เสริมดวง',
         self::CATEGORY_GENERAL => '📚 ทั่วไป',
     ];
 

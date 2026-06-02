@@ -90,6 +90,11 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_LEGAL_DISPUTES,
     ];
 
+    /** หมวด "แก้กรรม/สะเดาะเคราะห์/เสริมดวง" ที่ detect ได้ (per-card ใน config/fortune_card_remedy.php) */
+    public const REMEDY_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_REMEDY_BOOST,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -371,6 +376,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "แก้กรรม/สะเดาะเคราะห์/เสริมดวง"
+     *
+     * @return array<string>
+     */
+    public function detectRemedyCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::REMEDY_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -430,6 +445,9 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::LEGAL_DETECTABLE, true)) {
             return "fortune_card_legal.{$category}";
+        }
+        if (in_array($category, self::REMEDY_DETECTABLE, true)) {
+            return "fortune_card_remedy.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";
