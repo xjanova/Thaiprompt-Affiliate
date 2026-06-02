@@ -851,6 +851,7 @@ class CelticCrossService
             .$this->buildSpreadPatternDirective($reading)
             .$this->buildElementalDignityDirective($reading)
             .$this->buildPositionDynamicDirective($reading)
+            .$this->buildYesNoDirective($reading, $userQuestion)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1292,7 +1293,8 @@ class CelticCrossService
                 .$this->buildCardComboDirective($reading)
                 .$this->buildSpreadPatternDirective($reading)
                 .$this->buildElementalDignityDirective($reading)
-                .$this->buildPositionDynamicDirective($reading);
+                .$this->buildPositionDynamicDirective($reading)
+                .$this->buildYesNoDirective($reading, $userQuestion, $previousContext);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1403,6 +1405,7 @@ class CelticCrossService
             .$this->buildSpreadPatternDirective($reading)
             .$this->buildElementalDignityDirective($reading)
             .$this->buildPositionDynamicDirective($reading)
+            .$this->buildYesNoDirective($reading, $userQuestion, $previousContext)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2928,6 +2931,72 @@ class CelticCrossService
     }
 
     /**
+     * 🎯 (2026-06-03) น้ำหนัก Yes/No — ฟันธงคำถามใช่/ไม่ใช่
+     *
+     * reading mechanic ตัวที่ 5 (เลเยอร์สุดท้าย) — คำนวณคะแนน + ตัดสิน
+     *   detect "คำถาม yes/no" จากข้อความก่อน inject (ไม่งั้นจะ inject ทุกเซสชัน)
+     *
+     * คะแนน: รายไพ่ +/- × ตัวคูณตำแหน่ง (ต.10 ×2.5, ต.6 ×2.0 สำคัญสุด)
+     *   กลับหัว = พลิกสัญลักษณ์ (Tower กลับหัว = ลบน้อยลง, Sun กลับหัว = บวกน้อยลง)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildYesNoDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    {
+        if (! (bool) ($this->settings->enable_celtic_yesno ?? true)) {
+            return '';
+        }
+
+        // Detect คำถาม yes/no (ภาษาไทย — \b ใน regex ไม่ทำงานกับไทย ใช้ mb_strpos ตรงๆ)
+        $haystack = mb_strtolower(trim($userQuestion.' '.$previousContext));
+        if ($haystack === '') {
+            return '';
+        }
+        // คำชี้ Yes/No ที่พบบ่อย (เรียงจากเฉพาะเจาะจง → ทั่วไป)
+        $signals = [
+            'หรือเปล่า', 'รึเปล่า', 'หรือไม่', 'ใช่ไหม', 'ใช่มั้ย', 'ใช่หรือ',
+            'ได้ไหม', 'ได้มั้ย', 'ดีไหม', 'ดีมั้ย', 'ควรไหม', 'ควรมั้ย',
+            'เขาจะ', 'เค้าจะ', 'เธอจะ', 'จะกลับ', 'จะรัก', 'จะแต่ง', 'จะเลิก',
+            'จะได้', 'จะรวย', 'จะติด', 'จะผ่าน', 'จะมา', 'จะเป็น',
+            // อันนี้กว้างสุด — วางท้าย
+            'ไหม', 'มั้ย', 'หรือ',
+        ];
+        $hit = false;
+        foreach ($signals as $kw) {
+            if (mb_strpos($haystack, $kw) !== false) {
+                $hit = true;
+                break;
+            }
+        }
+        if (! $hit) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $block = app(\App\Services\FortuneKnowledgeService::class)->yesNoVerdict($cards);
+        if (trim($block) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🎯 น้ำหนัก Yes/No (ตรวจพบคำถามใช่/ไม่ใช่) — เลขฟันธงเชิงสถิติ\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ระบบคำนวณ \"น้ำหนักดี/ร้ายรายไพ่ × ตัวคูณตำแหน่ง\" (ต.10 ผลลัพธ์ ×2.5, ต.6 อนาคต ×2.0):\n\n"
+            .$block."\n\n"
+            ."🎯 *วิธีใช้:* นี่คือ \"เข็มทิศ\" สำหรับฟันธง — ผลรวมบอกแนวโน้มชัด\n"
+            ."• ✅/🟢 = ฟันธงทางบวก · 🟡 = ก้ำกึ่งให้ทางเลือกได้ · 🔶/🔴 = ฟันธงทางลบ\n"
+            ."• ❌ ห้ามตอบเลขดิบ (ลูกค้าไม่ต้องการเห็นคะแนน) — แปลเป็นภาษาคน เช่น \"ใช่ค่ะ ไพ่หนุน\" หรือ \"ไม่ค่ะ ยังไม่ใช่จังหวะ\"\n"
+            ."• ใช้ \"ฟันธงตอนท้าย\" เป็นหลัก — เนื้อทำนายยังอ่านจากไพ่ตามปกติ\n"
+            ."• ผลก้ำกึ่ง 🟡 = ตอบ \"ขึ้นกับเจ้าชะตา\" + บอกเงื่อนไขที่ตัดสินผลได้\n"
+            ."• ⚠️ ถ้าผลขัดกับคำตอบที่ได้จากเลเยอร์อื่น → ให้น้ำหนักไพ่ในตำแหน่ง 6 และ 10 มากกว่า\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ — อ่าน "คน" จากหน้าไพ่
      *
      * User directive 2026-06-01: "เพิ่มตำราโหงวเฮ้ง ลักษณะคน ประจำไพ่ให้ครบ 78 ใบ"
@@ -3608,6 +3677,7 @@ class CelticCrossService
             .$this->buildSpreadPatternDirective($reading)
             .$this->buildElementalDignityDirective($reading)
             .$this->buildPositionDynamicDirective($reading)
+            .$this->buildYesNoDirective($reading, $questions->pluck('question')->implode(' '))
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"

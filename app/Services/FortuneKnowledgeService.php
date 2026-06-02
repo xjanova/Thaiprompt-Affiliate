@@ -945,6 +945,78 @@ class FortuneKnowledgeService
         return implode("\n\n", $lines);
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // 🎯 น้ำหนัก Yes/No (Weighted Verdict)
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * คำนวณคะแนน Yes/No พร้อมรายละเอียดต่อใบ + ตัดสินผลลัพธ์
+     *
+     * @param  array<int, array>  $cards
+     * @return string ว่าง = สำรับไม่ครบ
+     */
+    public function yesNoVerdict(array $cards): string
+    {
+        $cfg = (array) config('fortune_yes_no_weights', []);
+        $weights = (array) ($cfg['card_weights'] ?? []);
+        $multipliers = (array) ($cfg['position_multiplier'] ?? []);
+        $verdicts = (array) ($cfg['verdicts'] ?? []);
+
+        if (empty($weights)) {
+            return '';
+        }
+
+        $total = 0.0;
+        $contributions = [];
+        $present = 0;
+
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $nameEn = (string) ($card['card_name_en'] ?? '');
+            if ($nameEn === '' || ! array_key_exists($nameEn, $weights)) {
+                continue;
+            }
+            $present++;
+            $rawScore = (int) $weights[$nameEn];
+            // กลับหัว = พลิกสัญลักษณ์ (Tower กลับหัวกลายเป็นน้อยร้าย, Sun กลับหัวอ่อนลง ฯลฯ)
+            if (! empty($card['is_reversed'])) {
+                $rawScore = -$rawScore;
+            }
+            $mult = (float) ($multipliers[$pos] ?? 1.0);
+            $weighted = $rawScore * $mult;
+            $total += $weighted;
+
+            $th = ((string) ($card['card_name_th'] ?? '')) ?: $nameEn;
+            $rev = ! empty($card['is_reversed']) ? '(กลับหัว)' : '';
+            $sign = $rawScore > 0 ? '+' : '';
+            $contributions[] = "   ต.{$pos} {$th}{$rev}: {$sign}{$rawScore} × {$mult} = "
+                .number_format($weighted, 1);
+        }
+
+        if ($present < 10) {
+            return '';
+        }
+
+        // ตัดสินผลลัพธ์
+        $verdictKey = 'strong_no';
+        foreach (['strong_yes', 'lean_yes', 'unclear', 'lean_no'] as $k) {
+            $threshold = (float) ($verdicts[$k]['threshold'] ?? 0);
+            if ($total >= $threshold) {
+                $verdictKey = $k;
+                break;
+            }
+        }
+        $verdict = (array) ($verdicts[$verdictKey] ?? []);
+
+        return "📊 คะแนนรวม: ".number_format($total, 1)." (จาก 10 ใบ)\n"
+            .($verdict['icon'] ?? '').' ผลฟันธง: '.($verdict['text'] ?? '')."\n\n"
+            ."🔍 รายละเอียดต่อใบ (คะแนน × ตัวคูณตำแหน่ง):\n"
+            .implode("\n", $contributions);
+    }
+
     /**
      * จำแนกไพ่จาก name_en → arcana/suit/rank/isCourt/isAce/number
      *
