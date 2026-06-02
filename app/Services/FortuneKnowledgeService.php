@@ -65,6 +65,11 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_NUMEROLOGY,
     ];
 
+    /** หมวด "ของมงคล/สีมงคล/เครื่องราง" ที่ detect ได้ (per-card ใน config/fortune_card_lucky_items.php) */
+    public const LUCKY_ITEMS_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_LUCKY_ITEMS,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -296,6 +301,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "ของมงคล/สีมงคล/เครื่องราง"
+     *
+     * @return array<string>
+     */
+    public function detectLuckyItemsCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::LUCKY_ITEMS_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -340,6 +355,9 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::NUMEROLOGY_DETECTABLE, true)) {
             return "fortune_card_numerology.{$category}";
+        }
+        if (in_array($category, self::LUCKY_ITEMS_DETECTABLE, true)) {
+            return "fortune_card_lucky_items.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";
