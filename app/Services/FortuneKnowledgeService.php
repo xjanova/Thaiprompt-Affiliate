@@ -754,6 +754,139 @@ class FortuneKnowledgeService
         return implode("\n", $lines);
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // 🔥💧 ธาตุเสริม-ขัด (Elemental Dignities — Golden Dawn)
+    // ════════════════════════════════════════════════════════════════
+
+    /** Suit → element (Minor Arcana) */
+    protected const SUIT_ELEMENT = [
+        'Wands' => 'fire',
+        'Cups' => 'water',
+        'Swords' => 'air',
+        'Pentacles' => 'earth',
+    ];
+
+    /**
+     * สร้างบล็อก "ธาตุเสริม-ขัด" จากการคำนวณคู่ตำแหน่งสำคัญ + สรุปสำรับ
+     *
+     * @param  array<int, array>  $cards
+     * @return string ว่าง = สำรับไม่ครบ 10
+     */
+    public function elementalDignityLines(array $cards): string
+    {
+        $cfg = (array) config('fortune_elemental_dignities', []);
+        $matrix = (array) ($cfg['matrix'] ?? []);
+        $elementLabel = (array) ($cfg['element_label'] ?? []);
+        $pairText = (array) ($cfg['pair_interpretation'] ?? []);
+        $pairs = (array) ($cfg['celtic_pairs'] ?? []);
+
+        if (empty($matrix) || empty($pairs)) {
+            return '';
+        }
+
+        // คำนวณธาตุของไพ่แต่ละตำแหน่ง
+        $byPos = [];
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $nameEn = (string) ($card['card_name_en'] ?? '');
+            if ($nameEn === '') {
+                continue;
+            }
+            $byPos[$pos] = [
+                'en' => $nameEn,
+                'th' => ((string) ($card['card_name_th'] ?? '')) ?: $nameEn,
+                'rev' => ! empty($card['is_reversed']),
+                'el' => $this->elementOf($nameEn),
+            ];
+        }
+        if (count($byPos) < 10) {
+            return '';
+        }
+
+        // 1) คู่ตำแหน่งสำคัญ (Celtic dynamics)
+        $pairLines = [];
+        foreach ($pairs as $pair) {
+            [$a, $b, $name] = [$pair[0] ?? null, $pair[1] ?? null, $pair[2] ?? ''];
+            if (! isset($byPos[$a], $byPos[$b])) {
+                continue;
+            }
+            $ea = $byPos[$a]['el'];
+            $eb = $byPos[$b]['el'];
+            if ($ea === null || $eb === null) {
+                continue;
+            }
+            $tone = $matrix[$ea][$eb] ?? null;
+            if ($tone === null) {
+                continue;
+            }
+            $icon = ['same' => '🔁', 'friendly' => '✨', 'contrary' => '⚡', 'neutral' => '➖'][$tone] ?? '';
+            $pairLines[] = "{$icon} {$name}: "
+                ."{$byPos[$a]['th']} ({$elementLabel[$ea]}) × {$byPos[$b]['th']} ({$elementLabel[$eb]}) "
+                .'→ '.($pairText[$tone] ?? $tone);
+        }
+
+        // 2) สรุประดับสำรับ — นับ tone ทุกคู่ของ 10 ใบ
+        $toneCount = ['same' => 0, 'friendly' => 0, 'contrary' => 0, 'neutral' => 0];
+        $positions = array_keys($byPos);
+        $n = count($positions);
+        for ($i = 0; $i < $n; $i++) {
+            for ($j = $i + 1; $j < $n; $j++) {
+                $ea = $byPos[$positions[$i]]['el'];
+                $eb = $byPos[$positions[$j]]['el'];
+                if ($ea === null || $eb === null) {
+                    continue;
+                }
+                $t = $matrix[$ea][$eb] ?? null;
+                if ($t && isset($toneCount[$t])) {
+                    $toneCount[$t]++;
+                }
+            }
+        }
+        $totalPairs = array_sum($toneCount);
+        $friendlyPct = $totalPairs > 0 ? (($toneCount['friendly'] + $toneCount['same']) / $totalPairs) : 0;
+        $contraryPct = $totalPairs > 0 ? ($toneCount['contrary'] / $totalPairs) : 0;
+
+        $summaryKey = 'balanced';
+        if ($friendlyPct >= 0.55) {
+            $summaryKey = 'highly_friendly';
+        } elseif ($contraryPct >= 0.40) {
+            $summaryKey = 'highly_contrary';
+        }
+        $summary = (string) ($cfg['spread_summary'][$summaryKey] ?? '');
+
+        $out = "📊 ภาพรวมธาตุของสำรับ: {$summary}\n"
+            ."   (เสริม {$toneCount['friendly']} · เหมือนกัน {$toneCount['same']} · ขัด {$toneCount['contrary']} · กลาง {$toneCount['neutral']} จาก {$totalPairs} คู่)\n";
+
+        if (! empty($pairLines)) {
+            $out .= "\n🔍 คู่ตำแหน่งสำคัญ:\n".implode("\n", $pairLines);
+        }
+
+        return $out;
+    }
+
+    /**
+     * ธาตุของไพ่ — Minor: ตาม suit / Major: ตาม Golden Dawn assignment
+     */
+    protected function elementOf(string $nameEn): ?string
+    {
+        // Major Arcana
+        $majorMap = (array) config('fortune_elemental_dignities.major_elements', []);
+        if (isset($majorMap[$nameEn])) {
+            return (string) $majorMap[$nameEn];
+        }
+
+        // Minor Arcana — Suit → element
+        $c = $this->classifyCard($nameEn);
+        if ($c['suit'] !== null && isset(self::SUIT_ELEMENT[$c['suit']])) {
+            return self::SUIT_ELEMENT[$c['suit']];
+        }
+
+        return null;
+    }
+
     /**
      * จำแนกไพ่จาก name_en → arcana/suit/rank/isCourt/isAce/number
      *

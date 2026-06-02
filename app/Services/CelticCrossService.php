@@ -849,6 +849,7 @@ class CelticCrossService
             .$this->buildExtraKnowledgeDirectives($reading, $userQuestion)
             .$this->buildCardComboDirective($reading)
             .$this->buildSpreadPatternDirective($reading)
+            .$this->buildElementalDignityDirective($reading)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1288,7 +1289,8 @@ class CelticCrossService
                 .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
                 .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
                 .$this->buildCardComboDirective($reading)
-                .$this->buildSpreadPatternDirective($reading);
+                .$this->buildSpreadPatternDirective($reading)
+                .$this->buildElementalDignityDirective($reading);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1397,6 +1399,7 @@ class CelticCrossService
             .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
             .$this->buildCardComboDirective($reading)
             .$this->buildSpreadPatternDirective($reading)
+            .$this->buildElementalDignityDirective($reading)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
             .$complaintHandlingQ1
@@ -2841,6 +2844,47 @@ class CelticCrossService
     }
 
     /**
+     * 🔥💧 (2026-06-03) ธาตุเสริม-ขัด (Elemental Dignities — Golden Dawn)
+     *
+     * reading mechanic ตัวที่ 3 — ตำรา Golden Dawn: ไพ่ที่อยู่คู่กัน "เสริม-หักล้าง"
+     *   กันด้วยธาตุ (ไฟ-ลม/น้ำ-ดิน เสริม · ไฟ-น้ำ/ลม-ดิน ขัด · ธาตุเดียวกัน ทวีคูณ)
+     *
+     * คำนวณคู่ตำแหน่งสำคัญ (1↔2, 3↔6, 4↔5, 7↔8, 9↔10) + สรุปสำรับ
+     * ไม่ผูก keyword — ธาตุมีอยู่ในทุกสำรับ (ออกเสมอเมื่อ toggle เปิด + ครบ 10 ใบ)
+     *
+     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     */
+    protected function buildElementalDignityDirective(FortuneReading $reading): string
+    {
+        // settings gate — admin ปิดได้ (default เปิด)
+        if (! (bool) ($this->settings->enable_celtic_dignity ?? true)) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $lines = app(\App\Services\FortuneKnowledgeService::class)->elementalDignityLines($cards);
+        if (trim($lines) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🔥💧 ธาตุเสริม-ขัด (Elemental Dignities — ตำรา Golden Dawn)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ไพ่ที่อยู่คู่กัน \"เสริม-หักล้าง\" กันด้วยธาตุ — บอกว่าพลังในเรื่องนี้ \"ไหลลื่น\" หรือ \"ปะทะกัน\":\n\n"
+            .$lines."\n\n"
+            ."🎯 *วิธีใช้:* นี่คือ \"แผนภาพพลัง\" เบื้องหลัง — เอาไปประกอบคำทำนายว่า\n"
+            ."• คู่ ✨ เสริม = หยิบมาเล่าได้ว่า \"พลังนี้หนุนกัน เรื่องจะลื่นไหลทางนี้\"\n"
+            ."• คู่ ⚡ ขัด = สะท้อนความตึง/ทางเลือก/ต้องประนีประนอม — แม่หมอเล่าให้เห็น \"จุดที่บีบ\"\n"
+            ."• คู่ 🔁 เหมือนกัน = ทวีคูณ-พุ่งทางเดียว ไม่มีตัวถ่วง (ดี/ร้ายแล้วแต่ธาตุนั้น)\n"
+            ."• ❌ ห้ามใช้คำว่า \"ขัด\" แบบขู่ — สื่อ \"ความตึง/บทเรียน\" เชิงสร้างสรรค์\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ — อ่าน "คน" จากหน้าไพ่
      *
      * User directive 2026-06-01: "เพิ่มตำราโหงวเฮ้ง ลักษณะคน ประจำไพ่ให้ครบ 78 ใบ"
@@ -3519,6 +3563,7 @@ class CelticCrossService
             .$this->buildExtraKnowledgeDirectives($reading, $questions->pluck('question')->implode(' '))
             .$this->buildCardComboDirective($reading)
             .$this->buildSpreadPatternDirective($reading)
+            .$this->buildElementalDignityDirective($reading)
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"
