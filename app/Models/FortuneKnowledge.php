@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  *   - lucky_items      = ของมงคล/สีมงคล/เครื่องราง (พกพา/แต่งกาย/เสริมดวง) — per-card
  *   - mental_emotional = จิตใจ/อารมณ์ (เครียด/วิตก/ฮีลใจ — เติม health ที่เน้นกายล้วน) — per-card
  *   - family_children  = ครอบครัว/บุตร/บริวาร (พ่อแม่/พี่น้อง/ลูก/ลูกน้อง) — per-card
+ *   - travel_abroad    = เดินทาง/ต่างแดน/ย้ายถิ่น (ทริป/วีซ่า/ย้ายประเทศ) — per-card
  *
  * แอดมินจัดการได้เต็มที่ผ่าน /admin/fortune/knowledge (เห็น/เพิ่ม/แก้/ปิด ทุก row)
  * Retrieval = เจาะจงตาม category + card_name + keyword (ดู App\Services\FortuneKnowledgeService)
@@ -80,6 +81,8 @@ class FortuneKnowledge extends Model
 
     public const CATEGORY_FAMILY_CHILDREN = 'family_children';
 
+    public const CATEGORY_TRAVEL_ABROAD = 'travel_abroad';
+
     public const CATEGORY_GENERAL = 'general';
 
     /**
@@ -105,6 +108,7 @@ class FortuneKnowledge extends Model
         self::CATEGORY_LUCKY_ITEMS,
         self::CATEGORY_MENTAL_EMOTIONAL,
         self::CATEGORY_FAMILY_CHILDREN,
+        self::CATEGORY_TRAVEL_ABROAD,
         self::CATEGORY_GENERAL,
     ];
 
@@ -128,6 +132,7 @@ class FortuneKnowledge extends Model
         self::CATEGORY_LUCKY_ITEMS => '🧿 ของมงคล/สีมงคล/เครื่องราง',
         self::CATEGORY_MENTAL_EMOTIONAL => '🧠 จิตใจ/อารมณ์',
         self::CATEGORY_FAMILY_CHILDREN => '👨‍👩‍👧 ครอบครัว/บุตร/บริวาร',
+        self::CATEGORY_TRAVEL_ABROAD => '✈️ เดินทาง/ต่างแดน/ย้ายถิ่น',
         self::CATEGORY_GENERAL => '📚 ทั่วไป',
     ];
 

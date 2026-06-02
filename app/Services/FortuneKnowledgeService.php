@@ -80,6 +80,11 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_FAMILY_CHILDREN,
     ];
 
+    /** หมวด "เดินทาง/ต่างแดน/ย้ายถิ่น" ที่ detect ได้ (per-card ใน config/fortune_card_travel.php) */
+    public const TRAVEL_DETECTABLE = [
+        FortuneKnowledge::CATEGORY_TRAVEL_ABROAD,
+    ];
+
     /** cache TTL สั้น — คลังความรู้เปลี่ยนไม่บ่อย แต่ให้แอดมินแก้แล้วเห็นไว */
     protected const CACHE_TTL = 300;
 
@@ -341,6 +346,16 @@ class FortuneKnowledgeService
     }
 
     /**
+     * ตรวจหมวด "เดินทาง/ต่างแดน/ย้ายถิ่น"
+     *
+     * @return array<string>
+     */
+    public function detectTravelCategories(string $text): array
+    {
+        return $this->detectCategories($text, self::TRAVEL_DETECTABLE);
+    }
+
+    /**
      * ตรวจว่าคำถามตรงหมวดใดใน $categories (จาก keyword ใน config — logic)
      *
      * @param  array<string>  $categories
@@ -394,6 +409,9 @@ class FortuneKnowledgeService
         }
         if (in_array($category, self::FAMILY_DETECTABLE, true)) {
             return "fortune_card_family.{$category}";
+        }
+        if (in_array($category, self::TRAVEL_DETECTABLE, true)) {
+            return "fortune_card_travel.{$category}";
         }
 
         return "fortune_mu_knowledge.{$category}";
