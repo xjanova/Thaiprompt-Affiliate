@@ -19683,6 +19683,10 @@ PROMPT;
             //   Fallback chain:
             //     Pro AI (sensitive key) → chat AI (chatWithCustomSystemPromptHistory)
             //     → null ถ้าทั้งคู่ fail
+            // 📚 (2026-06-02) RAG-enriched prompt สำหรับ fallback chat — ดึงคำตอบแอดมินจริง
+            //   primary generatePostReadingDeepResponse → generateProResponse inject เองแล้ว (ไม่ double)
+            $systemMessageRag = $aiService->injectAdminQARagFewShot($systemMessage, $messageText, $reading);
+
             try {
                 $proResult = $aiService->generatePostReadingDeepResponse(
                     $messageText,
@@ -19698,7 +19702,7 @@ PROMPT;
                         return null;
                     }
                     $result = $aiService->chatWithCustomSystemPromptHistory(
-                        $systemMessage,
+                        $systemMessageRag,
                         $historyMessages,
                         ['temperature' => 0.7, 'max_tokens' => 1200]
                     );
@@ -19712,7 +19716,7 @@ PROMPT;
                     return null;
                 }
                 $result = $aiService->chatWithCustomSystemPromptHistory(
-                    $systemMessage,
+                    $systemMessageRag,
                     $historyMessages,
                     ['temperature' => 0.7, 'max_tokens' => 1200]
                 );

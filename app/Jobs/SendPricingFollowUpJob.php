@@ -106,6 +106,19 @@ class SendPricingFollowUpJob implements ShouldQueue
             $systemMessage = $this->buildSystemMessage($personaContext);
             $userMessage = $this->buildUserMessage($deepPrice, $celticPrice, $celticEnabled, $deepEnabled);
 
+            // 📚 (2026-06-02) Inject RAG admin Q&A — เลียน tone อธิบาย "ราคา/ค่าครู" ของแอดมินจริง
+            //   proactive ไม่มี customer message → ใช้ query สังเคราะห์ (ครอบหมวด pre_purchase/pre_payment)
+            try {
+                $ragQuery = 'ราคาดูดวงเท่าไหร่ ทำไมไม่ฟรี ค่าครูคืออะไร โอนเงินยังไง';
+                $systemMessage = $aiService->injectAdminQARagFewShot($systemMessage, $ragQuery, null);
+            } catch (\Throwable $e) {
+                // RAG ล้ม → ใช้ system message เดิม (ไม่ break job)
+                Log::debug('SendPricingFollowUpJob: RAG inject ล้ม fallback no-RAG', [
+                    'user_id' => $this->userId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             $directKey = $settings->getChatAIApiKey();
 
             if (! empty($directKey)) {

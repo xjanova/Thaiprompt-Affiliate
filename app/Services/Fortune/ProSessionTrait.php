@@ -509,6 +509,10 @@ trait ProSessionTrait
             }
             $historyMessages[] = ['role' => 'user', 'content' => $messageText];
 
+            // 📚 (2026-06-02) RAG-enriched prompt สำหรับ fallback chat — ดึงคำตอบแอดมินจริง
+            //   primary generatePostReadingDeepResponse → generateProResponse inject เองแล้ว (ไม่ double)
+            $systemPromptRag = $aiService->injectAdminQARagFewShot($systemPrompt, $messageText, $reading);
+
             // Pro AI fallback chain — sensitive key → chat AI fallback
             $result = null;
             try {
@@ -524,7 +528,7 @@ trait ProSessionTrait
                 if (empty($result['response'] ?? null) && method_exists($aiService, 'chatWithCustomSystemPromptHistory')) {
                     if (! empty($this->settings->getChatAIApiKey())) {
                         $result = $aiService->chatWithCustomSystemPromptHistory(
-                            $systemPrompt,
+                            $systemPromptRag,
                             $historyMessages,
                             ['temperature' => 0.7, 'max_tokens' => 1200]
                         );
@@ -538,7 +542,7 @@ trait ProSessionTrait
                 if (method_exists($aiService, 'chatWithCustomSystemPromptHistory')
                     && ! empty($this->settings->getChatAIApiKey())) {
                     $result = $aiService->chatWithCustomSystemPromptHistory(
-                        $systemPrompt,
+                        $systemPromptRag,
                         $historyMessages,
                         ['temperature' => 0.7, 'max_tokens' => 1200]
                     );

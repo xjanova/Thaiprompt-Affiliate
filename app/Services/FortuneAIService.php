@@ -2089,6 +2089,17 @@ PROMPT;
             // 👤 (2026-05-19 Batch 6a) Name directive — บอก AI ห้ามเรียกชื่อบ่อย (additive only)
             $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
+            // 📚 (2026-06-02) Inject RAG admin Q&A — เลียนสไตล์ "ปลอบ/ดูแล" จากคำตอบแอดมินจริง
+            //   ⚠️ กรองหมวดสายขายออก (pre_payment/pre_purchase/payment_confirm) — ลูกค้าเปราะบาง
+            //      ต้องการการรับฟัง ไม่ใช่ปิดการขาย. crisis directive ใน system prompt ยังเป็นหลัก
+            //      few-shot เป็นแค่ "อ้างอิงสไตล์" (เห็น formatAsFewShot — บอก AI ปรับให้เหมาะ ไม่ copy)
+            $systemMessage = $this->injectAdminQARagFewShot(
+                $systemMessage,
+                $messageText,
+                null,
+                self::SENSITIVE_QA_EXCLUDE_CATEGORIES,
+            );
+
             // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive แล้ว
             $prompt = $messageText;
 
@@ -3085,13 +3096,29 @@ PROMPT;
     }
 
     /**
+     * 🫂 (2026-06-02) หมวด Q&A สายขาย — ตัดออกตอนแชทกลุ่มเปราะบาง/วิกฤต
+     *
+     * ลูกค้าเปราะบางต้องการ "การรับฟัง/ปลอบ" ไม่ใช่การปิดการขาย
+     *   → inject เฉพาะตัวอย่างคำตอบแอดมินที่ไม่ใช่บริบทขาย (เลียนสไตล์ดูแล ไม่ใช่เสนอราคา)
+     *
+     * @var array<string>
+     */
+    private const SENSITIVE_QA_EXCLUDE_CATEGORIES = [
+        \App\Models\FortuneAdminQA::CATEGORY_PRE_PAYMENT,
+        \App\Models\FortuneAdminQA::CATEGORY_PRE_PURCHASE,
+        \App\Models\FortuneAdminQA::CATEGORY_PAYMENT_CONFIRM,
+    ];
+
+    /**
      * 📚 (2026-05-19) Inject RAG admin Q&A few-shot ลง system prompt
      *     (2026-05-20) v2 — รับ FortuneReading optional + classify category → pre-filter
+     *     (2026-06-02) v3 — รองรับ $excludeCategories (โหมดแชทเปราะบาง: ตัดหมวดสายขาย)
      *
      * Flow:
      *   1. ถ้า settings admin_qa_rag_enabled=false → ข้าม
-     *   2. Classify category จาก reading state (ถ้ามี)
-     *   3. Retrieve top-3 admin Q&A ที่ category ตรง + cosine ≥ threshold
+     *   2. มี $excludeCategories → ค้นข้ามหมวด แล้วกรองหมวดที่ห้ามทิ้ง
+     *      ไม่มี → classify category จาก reading state แล้ว pre-filter (เดิม)
+     *   3. Retrieve top-K admin Q&A ที่ cosine ≥ threshold
      *   4. ถ้ามี ≥ 1 row → append section "ตัวอย่างคำตอบของแอดมิน..."
      *   5. AI ใช้เป็นแนวสไตล์ + เนื้อหา (ไม่ copy ตรงๆ)
      *
@@ -3099,11 +3126,13 @@ PROMPT;
      *          → คืน $systemMessage เดิม (silent fallback)
      *
      * @param  \App\Models\FortuneReading|null  $reading  reading ปัจจุบันของลูกค้า (ถ้ามี) ใช้ classify category
+     * @param  array<string>|null  $excludeCategories  หมวดที่ห้าม inject (null = โหมดปกติ classify+filter)
      */
     public function injectAdminQARagFewShot(
         string $systemMessage,
         string $messageText,
         ?\App\Models\FortuneReading $reading = null,
+        ?array $excludeCategories = null,
     ): string {
         $messageText = trim($messageText);
         if ($messageText === '') {
@@ -3121,24 +3150,38 @@ PROMPT;
             $topK = (int) ($this->settings->admin_qa_rag_top_k ?? 3);
             $threshold = (float) ($this->settings->admin_qa_rag_threshold ?? \App\Models\FortuneAdminQA::DEFAULT_THRESHOLD);
 
-            // 🏷 (2026-05-20) classify category จาก reading state ของลูกค้าปัจจุบัน
-            //    → pre-filter Q&A ที่ context เดียวกัน = AI ค้นถูกบริบทเร็วขึ้น 5-10x
-            //    ถ้าไม่มี reading → classifier ใช้ keyword heuristic
-            $category = \App\Services\FortuneAdminQAClassifier::currentCategoryForRetrieve(
-                $reading,
-                $messageText,
-            );
+            $category = null;
+            $exclude = array_values(array_filter((array) $excludeCategories));
 
-            $results = $retriever->searchSimilar($messageText, $topK, $threshold, $category);
+            if (! empty($exclude)) {
+                // 🫂 (2026-06-02) โหมดกรองหมวด (แชทเปราะบาง) — ค้นข้ามหมวดแล้วตัดหมวดสายขายทิ้ง
+                //    ดึง buffer มากกว่า topK เผื่อกรอง → คงเหลือ top-K ที่ "ไม่ใช่บริบทขาย"
+                $candidates = $retriever->searchSimilar($messageText, $topK + count($exclude) + 5, $threshold, null);
+                $results = array_values(array_filter(
+                    $candidates,
+                    fn ($r) => ! in_array($r['qa']->category, $exclude, true),
+                ));
+                $results = array_slice($results, 0, $topK);
+            } else {
+                // 🏷 (2026-05-20) classify category จาก reading state ของลูกค้าปัจจุบัน
+                //    → pre-filter Q&A ที่ context เดียวกัน = AI ค้นถูกบริบทเร็วขึ้น 5-10x
+                //    ถ้าไม่มี reading → classifier ใช้ keyword heuristic
+                $category = \App\Services\FortuneAdminQAClassifier::currentCategoryForRetrieve(
+                    $reading,
+                    $messageText,
+                );
 
-            // 🔁 Fallback — ถ้า category-filter ไม่เจอ ลอง search แบบไม่ filter (legacy data)
-            //    ทำเฉพาะถ้า category ไม่ใช่ general (general ก็คือ "ไม่ filter อยู่แล้ว")
-            if (empty($results) && $category !== \App\Models\FortuneAdminQA::CATEGORY_GENERAL) {
-                $results = $retriever->searchSimilar($messageText, $topK, $threshold, null);
-                if (! empty($results)) {
-                    Log::debug('FortuneAIService: RAG fallback to all-categories', [
-                        'preferred_category' => $category,
-                    ]);
+                $results = $retriever->searchSimilar($messageText, $topK, $threshold, $category);
+
+                // 🔁 Fallback — ถ้า category-filter ไม่เจอ ลอง search แบบไม่ filter (legacy data)
+                //    ทำเฉพาะถ้า category ไม่ใช่ general (general ก็คือ "ไม่ filter อยู่แล้ว")
+                if (empty($results) && $category !== \App\Models\FortuneAdminQA::CATEGORY_GENERAL) {
+                    $results = $retriever->searchSimilar($messageText, $topK, $threshold, null);
+                    if (! empty($results)) {
+                        Log::debug('FortuneAIService: RAG fallback to all-categories', [
+                            'preferred_category' => $category,
+                        ]);
+                    }
                 }
             }
 
@@ -3154,6 +3197,7 @@ PROMPT;
             Log::debug('FortuneAIService: inject RAG admin Q&A few-shot', [
                 'query_preview' => mb_substr($messageText, 0, 50),
                 'category' => $category,
+                'excluded' => $exclude ?: null,
                 'matched_count' => count($results),
                 'top_similarity' => $results[0]['similarity'] ?? null,
             ]);
