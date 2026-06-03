@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneReading;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
+use App\Services\FortuneTakeoverService;
 use App\Services\LineFortuneService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -131,5 +132,131 @@ class ChatController extends Controller
                 'message' => 'suggest failed: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * 🎮 (2026-06-04) Admin takeover from the warroom /chat "คืนงานให้บอท" toggle.
+     *
+     * Exposes the existing FortuneTakeoverService over the Sanctum admin API so
+     * the warroom operator can pause the bot for a conversation exactly like the
+     * web /admin/takeover page does. Additive — reuses the same service + audit
+     * trail (fortune_takeover_logs), so cache invalidation + webhook bypass logic
+     * all stay consistent across both UIs.
+     */
+    public function takeover(Request $request, FortuneTakeoverService $takeover): JsonResponse
+    {
+        $data = $request->validate([
+            'reading_id' => 'required|integer|exists:fortune_readings,id',
+            'minutes' => 'nullable|integer|min:1|max:1440',
+        ]);
+
+        $reading = FortuneReading::find($data['reading_id']);
+        if (! $reading) {
+            return response()->json(['success' => false, 'message' => 'reading not found'], 404);
+        }
+
+        try {
+            // forceIgnoreDisabled: this is an explicit operator action, so honour
+            // it even if auto-takeover is disabled in settings (parity with the
+            // admin panel button).
+            $minutes = $takeover->takeover(
+                $reading,
+                FortuneReading::TAKEOVER_REASON_MANUAL,
+                $request->user()?->id,
+                $data['minutes'] ?? null,
+                null,
+                true,
+            );
+            $reading->refresh();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'reading_id' => $reading->id,
+                    'is_takeover' => true,
+                    'minutes' => $minutes,
+                    'until' => optional($reading->admin_takeover_until)->toIso8601String(),
+                    'remaining_minutes' => $reading->isAdminTakenOver() ? $reading->takeoverRemainingMinutes() : 0,
+                ],
+                'message' => 'admin took over — bot paused',
+            ]);
+        } catch (Throwable $e) {
+            Log::error('AdminChat: takeover failed', [
+                'error' => $e->getMessage(),
+                'reading_id' => $reading->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'takeover failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ✨ (2026-06-04) Hand the conversation back to the AI bot (warroom toggle
+     * flipped to "bot on"). Mirrors the /ai resume command.
+     */
+    public function resume(Request $request, FortuneTakeoverService $takeover): JsonResponse
+    {
+        $data = $request->validate([
+            'reading_id' => 'required|integer|exists:fortune_readings,id',
+        ]);
+
+        $reading = FortuneReading::find($data['reading_id']);
+        if (! $reading) {
+            return response()->json(['success' => false, 'message' => 'reading not found'], 404);
+        }
+
+        try {
+            $takeover->resume($reading, $request->user()?->id, true);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'reading_id' => $reading->id,
+                    'is_takeover' => false,
+                ],
+                'message' => 'bot resumed',
+            ]);
+        } catch (Throwable $e) {
+            Log::error('AdminChat: resume failed', [
+                'error' => $e->getMessage(),
+                'reading_id' => $reading->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'resume failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * 🪪 (2026-06-04) Current takeover state for a reading — drives the warroom
+     * chat toggle's initial position + per-thread polling. Cheap (cache hit).
+     */
+    public function takeoverStatus(Request $request, FortuneTakeoverService $takeover): JsonResponse
+    {
+        $data = $request->validate([
+            'reading_id' => 'required|integer|exists:fortune_readings,id',
+        ]);
+
+        $reading = FortuneReading::find($data['reading_id']);
+        if (! $reading) {
+            return response()->json(['success' => false, 'message' => 'reading not found'], 404);
+        }
+
+        $active = $takeover->isActive($reading);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'reading_id' => $reading->id,
+                'is_takeover' => $active,
+                'until' => optional($reading->admin_takeover_until)->toIso8601String(),
+                'remaining_minutes' => $active ? $reading->takeoverRemainingMinutes() : 0,
+            ],
+        ]);
     }
 }

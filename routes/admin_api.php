@@ -156,6 +156,10 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
     Route::prefix('chat')->name('api.admin.chat.')->group(function () {
         Route::post('/send', [ChatController::class, 'send'])->name('send');
         Route::post('/suggest', [ChatController::class, 'suggest'])->name('suggest');
+        // 🎮 (2026-06-04) Bot ⇄ admin takeover toggle for the warroom /chat header.
+        Route::post('/takeover', [ChatController::class, 'takeover'])->name('takeover');
+        Route::post('/resume', [ChatController::class, 'resume'])->name('resume');
+        Route::get('/takeover-status', [ChatController::class, 'takeoverStatus'])->name('takeover-status');
     });
 
     // ── Eve (Warroom AI assistant — operator-facing) ──
