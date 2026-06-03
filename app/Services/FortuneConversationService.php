@@ -1116,6 +1116,12 @@ class FortuneConversationService
             //   นโยบาย: ถ้ามี active reading + is_paid=true → bypass silent + double rapid threshold
             $hasPaidActiveReading = $this->hasPaidActiveReading($facebookUserId);
 
+            // 💳 (2026-06-03) บิลค้างจ่าย (ยังไม่ paid) — ลูกค้ากำลัง checkout
+            //   → ห้าม farewell/no-intent silence (กำลังจะจ่ายเงิน ไม่ได้ลาก่อน)
+            //   ปล่อยให้ข้อความไหลไป payment handler (soft-decline จัดการ "ไม่เอา" เองอยู่แล้ว)
+            //   เคส FTU-260603-M1895: false-farewell → "โอนแล้วค่ะ" โดนเมิน
+            $hasPendingUnpaidBill = $this->hasPendingUnpaidBill($facebookUserId);
+
             // 🎯 Phase N — ถ้าผู้ใช้อยู่ใน silent mode → ไม่ตอบกลับเลย (สแปมตรวจพบแล้ว)
             //   ⚠️ ยกเว้น: ลูกค้าจ่ายเงินแล้ว (paid customer) → bypass + clear silent mode
             if ($this->isInSilentMode($facebookUserId)) {
@@ -1146,12 +1152,12 @@ class FortuneConversationService
             //     • conv 4835 ลูกค้า "ยกเลิก" → บอท chitchat 2 turns กว่าจะปิดได้
             //   นโยบาย: ลูกค้าพูด farewell → อวยพรสไตล์แม่หมอ 1 บรรทัด → set flag → silent
             //   Wake up: (1) พิมพ์ขอดูดวง / (2) cache TTL หมด (endOfDay) / (3) paid_active_reading
-            if (! $hasPaidActiveReading) {
+            if (! $hasPaidActiveReading && ! $hasPendingUnpaidBill) {
                 if ($this->isFarewellClosed($facebookUserId)) {
-                    if ($this->isGenericFortuneRequest($messageText)) {
-                        // wake up — ลูกค้ากลับมาขอดูดวง
+                    if ($this->isGenericFortuneRequest($messageText) || $this->looksLikePaymentIntent($messageText)) {
+                        // wake up — ลูกค้ากลับมาขอดูดวง หรือ แจ้งว่าจ่ายเงินแล้ว (2026-06-03)
                         $this->clearFarewellClose($facebookUserId);
-                        Log::info('Fortune: farewell — wake up (fortune intent)', [
+                        Log::info('Fortune: farewell — wake up (fortune/payment intent)', [
                             'facebook_user_id' => $facebookUserId,
                             'text_preview' => mb_substr($messageText, 0, 30),
                         ]);
@@ -5131,6 +5137,13 @@ class FortuneConversationService
     protected function startDeepReadingFlow(string $facebookUserId, ?array $userProfile = null, ?string $forceTier = null, ?string $originalMessage = null): array
     {
         try {
+            // 🛡️ (2026-06-03) เริ่ม flow ดูดวง = ลูกค้ากำลัง engage ไม่ใช่ลาก่อน
+            //   → ล้าง farewell/no-intent flag ที่อาจถูกตั้งผิดพลาดก่อนหน้า (false-farewell)
+            //   เคส FTU-260603-M1895: false-farewell ตั้ง flag → postback สร้างบิล แต่ flag ค้าง
+            //   → "โอนแล้วค่ะ" หลังจากนั้นโดน silent_skip (ลูกค้าเข้าใจว่าระบบเงียบ)
+            $this->clearFarewellClose($facebookUserId);
+            $this->clearNoIntentClose($facebookUserId);
+
             // 🔒 (2026-05-20) Defense-in-depth — ห้ามสร้างบิลใหม่ระหว่างทำนาย
             //   ผู้ใช้มี IN_PREDICTION reading (PAID / CELTIC_*) → return silent_skip
             //   Hard Guard ที่ processMessage จับไปแล้ว แต่ caller ยังมี 13+ จุด
@@ -10133,6 +10146,35 @@ class FortuneConversationService
     {
         Cache::forget("fortune:has_paid_active:{$userId}");
         Cache::forget("fortune:in_prediction:{$userId}");
+        Cache::forget("fortune:has_pending_bill:{$userId}"); // 💳 (2026-06-03)
+    }
+
+    /**
+     * 💳 (2026-06-03) ตรวจว่า user มี "บิลค้างจ่าย" (ยังไม่ paid) หรือไม่
+     *
+     * = reading ที่ conversation_status ∈ PENDING_PAYMENT_STATUSES + is_paid=false
+     *   + ยังไม่หมดอายุ (บิล pending หมดอายุ 30 นาที — ใช้ window 35 นาทีกันคาบเกี่ยว)
+     *
+     * นโยบาย: ระหว่างนี้ลูกค้ากำลัง checkout → ห้าม farewell/no-intent silence
+     *   ปล่อยข้อความไหลไป payment handler (soft-decline จัดการ "ไม่เอา/ไว้คราวหน้า" เองอยู่แล้ว)
+     *   เคส FTU-260603-M1895: false-farewell → "โอนแล้วค่ะ" โดน silent_skip
+     *
+     * Cache 30s — สอดคล้องกับ hasPaidActiveReading / isInPrediction
+     */
+    public function hasPendingUnpaidBill(string $userId): bool
+    {
+        $key = "fortune:has_pending_bill:{$userId}";
+
+        return (bool) Cache::remember($key, 30, function () use ($userId) {
+            return FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)
+                    ->orWhere('platform_user_id', $userId);
+            })
+                ->where('is_paid', false)
+                ->whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
+                ->where('updated_at', '>=', now()->subMinutes(35))
+                ->exists();
+        });
     }
 
     /**
@@ -13027,6 +13069,14 @@ class FortuneConversationService
             return false;
         }
 
+        // 🛡️ (2026-06-03) Payment-intent exemption — ลูกค้าที่กำลังพูดเรื่อง "จ่ายเงิน"
+        //   ไม่ใช่การลาก่อน แม้จะมีคำสุภาพ "ขอบคุณ" ห้อยท้าย
+        //   เคสจริง FTU-260603-M1895 (แม่ลูกชายเสีย): "โอนแบบธรรมดานะคะ สแกนฉันไม่เป็น ... ขอบคุณค่ะ"
+        //   → เดิม match "ขอบคุณ" → farewell + เงียบยาว → "โอนแล้วค่ะ" หลังจากนั้นถูก silent_skip
+        if ($this->looksLikePaymentIntent($message)) {
+            return false;
+        }
+
         // Normalize ลบคำลงท้าย + punctuation/emoji ทั่วไป
         $normalized = preg_replace(
             '/\s*(ค่ะ|ครับ|คะ|คับ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|มาก|มากๆ|มากครับ|มากค่ะ|ครับผม|ค่ะ ขอบคุณ)\s*$/u',
@@ -13067,6 +13117,45 @@ class FortuneConversationService
                 if ($normalized === $kw) {
                     return true;
                 }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 💳 (2026-06-03) ตรวจว่าข้อความเกี่ยวกับการ "จ่ายเงิน/โอน" หรือไม่
+     *
+     * ใช้ 2 จุด:
+     *   1. looksLikeFarewell — ยกเว้น ไม่ให้ข้อความจ่ายเงินถูกตีเป็น farewell
+     *      (ลูกค้ากำลัง checkout ไม่ได้ลาก่อน แม้พิมพ์ "...ขอบคุณค่ะ")
+     *   2. wake-up จาก farewell silence — "โอนแล้ว/จ่ายแล้ว/สลิป" ต้องปลุกบอททันที
+     *
+     * เน้น action การชำระเงินจริง — ไม่รวมคำถามราคา (ค่าครู/กี่บาท จัดการที่ pricing gate)
+     * เคสต้นเรื่อง: FTU-260603-M1895 (แม่ลูกชายเสีย โอน 179 แต่ "โอนแล้วค่ะ" โดน silent_skip)
+     */
+    public function looksLikePaymentIntent(string $message): bool
+    {
+        $t = mb_strtolower($message);
+        if ($t === '') {
+            return false;
+        }
+
+        $paymentKeywords = [
+            'โอน',           // โอน, โอนแล้ว, โอนเงิน, โอนแบบ, โอนให้, โอนเรียบร้อย
+            'สแกน', 'สะแกน', // QR scan (ลูกค้าพิมพ์ผิดได้)
+            'จ่าย',          // จ่าย, จ่ายแล้ว, จ่ายเงิน
+            'ชำระ',          // ชำระ, ชำระเงิน, ชำระแล้ว
+            'บัญชี', 'เลขบัญชี',
+            'พร้อมเพย์', 'พร้อมเพ', 'promptpay',
+            'qr', 'คิวอาร์', 'คิวอา',
+            'สลิป', 'slip',
+            'ตัดเงิน', 'ตัดบิล',
+        ];
+
+        foreach ($paymentKeywords as $kw) {
+            if (str_contains($t, $kw)) {
+                return true;
             }
         }
 
