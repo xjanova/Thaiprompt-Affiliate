@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin\Dev;
 
 use App\Http\Controllers\Controller;
-use App\Services\UpdateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
@@ -16,12 +15,11 @@ use Illuminate\Support\Facades\Process;
  */
 class DevReleaseController extends Controller
 {
-    protected UpdateService $updateService;
-
-    public function __construct(UpdateService $updateService)
-    {
-        $this->updateService = $updateService;
-    }
+    // 🩹 (2026-06-04) Removed an unused constructor injection of the
+    //   non-existent App\Services\UpdateService — it was never referenced in any
+    //   method but made the container fail to resolve this controller
+    //   ("Class App\Services\UpdateService does not exist"), crashing
+    //   php artisan route:list (and any boot that enumerates routes).
 
     /**
      * Show developer release manager
