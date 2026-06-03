@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float|null $amount ยอด
  * @property string|null $sender_name ชื่อผู้โอน
  * @property string|null $receiver_account บัญชีปลายทาง
+ * @property string|null $slip_image_path path รูปสลิปที่ส่งไปตรวจ (archived)
  * @property string|null $note หมายเหตุ
  */
 class SlipVerificationLog extends Model
@@ -43,6 +44,7 @@ class SlipVerificationLog extends Model
         'amount',
         'sender_name',
         'receiver_account',
+        'slip_image_path',
         'note',
     ];
 

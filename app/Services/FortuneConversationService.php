@@ -11988,6 +11988,7 @@ class FortuneConversationService
                 'amount' => $data['amount'] ?? null,
                 'sender_name' => isset($data['sender_name']) ? mb_substr((string) $data['sender_name'], 0, 190) : null,
                 'receiver_account' => $data['receiver_account'] ?? null,
+                'slip_image_path' => $data['slip_image_path'] ?? null,
                 'note' => isset($data['note']) ? mb_substr((string) $data['note'], 0, 250) : null,
             ]);
         } catch (\Throwable $e) {
@@ -11998,7 +11999,7 @@ class FortuneConversationService
     /**
      * 🧾 helper: สร้าง audit log จากผล evaluateForReading (= ยิง SlipOK แล้ว)
      */
-    protected function recordSlipCheckFromEval(array $verify, array $eval, ?int $readingId, ?string $platform, ?string $userId, string $context): void
+    protected function recordSlipCheckFromEval(array $verify, array $eval, ?int $readingId, ?string $platform, ?string $userId, string $context, ?string $imagePath = null): void
     {
         $decision = $eval['decision'] ?? null;
         $this->recordSlipCheckLog([
@@ -12016,8 +12017,63 @@ class FortuneConversationService
             'amount' => $verify['amount'] ?? null,
             'sender_name' => $verify['sender_name'] ?? null,
             'receiver_account' => $verify['receiver_account'] ?? null,
+            'slip_image_path' => $imagePath,
             'note' => $eval['reason'] ?? null,
         ]);
+    }
+
+    /**
+     * 🗄️ (2026-06-03) คัดลอกรูปสลิป "ที่ส่งไปตรวจจริง" → เก็บถาวร (archive) สำหรับ debug ใน admin
+     *
+     * เก็บรูปไว้ 30 วัน (purge โดย fortune:purge-slip-archive) — แอดมินเปิดดูได้ว่า
+     * ส่งรูปอะไรไป SlipOK เคส no_qr (ลูกค้าบอกมี QR แต่ระบบอ่านไม่เจอ → ดูว่ารูปเพี้ยน/ผิดรูปไหม)
+     *
+     * non-blocking: archive ล้มเหลว → คืน null, ไม่กระทบ flow ตรวจสลิป
+     *
+     * @param  string  $absPath  absolute path ของไฟล์ที่ส่งไป SlipOK
+     * @return string|null relative path บน disk local หรือ null
+     */
+    protected function archiveSlipForLog(string $absPath, ?int $readingId): ?string
+    {
+        try {
+            if (! is_file($absPath)) {
+                return null;
+            }
+            $bytes = @file_get_contents($absPath);
+            if ($bytes === false || $bytes === '' || strlen($bytes) > 6 * 1024 * 1024) {
+                return null;
+            }
+
+            return $this->archiveSlipBytes($bytes, $readingId, strtolower((string) pathinfo($absPath, PATHINFO_EXTENSION)));
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * 🗄️ (2026-06-03) เขียน bytes รูปสลิปลง archive (ใช้ทั้งจากไฟล์ + จาก pre-check ที่ดาวน์โหลดมา)
+     *
+     * @return string|null relative path บน disk local
+     */
+    protected function archiveSlipBytes(string $bytes, ?int $readingId, ?string $ext = null): ?string
+    {
+        try {
+            if ($bytes === '' || strlen($bytes) > 6 * 1024 * 1024) {
+                return null;
+            }
+            $ext = $ext ?: 'jpg';
+            // กัน extension แปลกปลอม
+            if (! in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+                $ext = 'jpg';
+            }
+            $rel = \App\Console\Commands\FortunePurgeSlipArchive::ARCHIVE_DIR
+                .'/'.($readingId ?: 'x').'_'.now()->timestamp.'_'.substr(md5($bytes), 0, 8).'.'.$ext;
+            \Illuminate\Support\Facades\Storage::disk('local')->put($rel, $bytes);
+
+            return $rel;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
@@ -12029,6 +12085,7 @@ class FortuneConversationService
 
         $verify = null;
         $eval = null;
+        $usedAbs = null;
         foreach ($this->getSlipCandidatePaths($platform, $userId) as $cand) {
             $abs = \Illuminate\Support\Facades\Storage::disk('local')->path($cand);
             if (! is_file($abs)) {
@@ -12038,6 +12095,7 @@ class FortuneConversationService
             $e = $svc->evaluateForReading($recentCeltic, $v);
             $verify = $v;
             $eval = $e;
+            $usedAbs = $abs;
             if ($e['decision'] === \App\Services\Fortune\SlipOkService::DECISION_APPROVE) {
                 break;
             }
@@ -12061,8 +12119,9 @@ class FortuneConversationService
             'transRef' => $verify['transRef'] ?? null,
         ]);
 
-        // 🧾 (2026-06-01) audit log — ทุก decision (approve/duplicate/reject/...)
-        $this->recordSlipCheckFromEval($verify, $eval, $recentCeltic->id, $platform, $userId, 'returning_image');
+        // 🗄️ (2026-06-03) เก็บรูปที่ส่งไปตรวจ + 🧾 audit log — ทุก decision (approve/duplicate/reject/...)
+        $archivedSlip = $usedAbs ? $this->archiveSlipForLog($usedAbs, $recentCeltic->id) : null;
+        $this->recordSlipCheckFromEval($verify, $eval, $recentCeltic->id, $platform, $userId, 'returning_image', $archivedSlip);
 
         switch ($eval['decision']) {
             case \App\Services\Fortune\SlipOkService::DECISION_APPROVE:
@@ -12373,10 +12432,11 @@ class FortuneConversationService
                 'transRef' => $verify['transRef'] ?? null,
             ]);
 
-            // 🧾 (2026-06-01) audit log — active-bill (fallback job / on-ping)
+            // 🗄️ (2026-06-03) เก็บรูปที่ส่งไปตรวจไว้ใน log (debug no_qr) + 🧾 audit log — active-bill
+            $archivedSlip = $this->archiveSlipForLog($abs, $reading->id);
             $this->recordSlipCheckFromEval(
                 $verify, $eval, $reading->id,
-                $platform ?? $reading->platform, $userId ?? $reading->facebook_user_id, 'active_bill'
+                $platform ?? $reading->platform, $userId ?? $reading->facebook_user_id, 'active_bill', $archivedSlip
             );
 
             switch ($eval['decision']) {
@@ -12502,6 +12562,7 @@ class FortuneConversationService
         $reading->forceFill([
             'slipok_verified_at' => now(),
             'slipok_trans_ref' => $transRef,
+            'amount_received' => $verify['amount'] ?? null, // 🆕 (2026-06-03) ยอดที่รับจริงจากสลิป (เช่น 179) ไม่ใช่ยอดบิล
         ])->save();
 
         // ตัดบิล (idempotent — ไม่มี SMS notification)

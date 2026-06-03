@@ -310,6 +310,15 @@ Schedule::command('smschecker:cleanup')
     ->name('smschecker-cleanup')
     ->runInBackground();
 
+// 6.1) Purge Slip Archive — ลบรูปสลิปที่ archive ไว้เกิน 30 วัน (PDPA retention)
+//      รูปสลิปมีชื่อ/เลขบัญชีลูกค้า → เก็บ debug ได้ 30 วันแล้วลบอัตโนมัติ (user 2026-06-03)
+Schedule::command('fortune:purge-slip-archive --days=30')
+    ->dailyAt('03:30')
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->name('fortune-purge-slip-archive')
+    ->runInBackground();
+
 // 7) Crypto Scan Deposits — สแกน blockchain หา deposits ใหม่ (TPIX)
 Schedule::command('crypto:scan-deposits')
     ->everyMinute()

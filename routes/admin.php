@@ -70,11 +70,10 @@ use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneCelticCrossController;
 use App\Http\Controllers\Admin\FortuneChannelController;
-use App\Http\Controllers\Admin\FortuneSlipLogController;
 use App\Http\Controllers\Admin\FortuneCommissionController;
 use App\Http\Controllers\Admin\FortuneDebugToolsController;
-use App\Http\Controllers\Admin\FortuneKnowledgeController;
 use App\Http\Controllers\Admin\FortuneHoroscopeController;
+use App\Http\Controllers\Admin\FortuneKnowledgeController;
 use App\Http\Controllers\Admin\FortuneMarketingController;
 use App\Http\Controllers\Admin\FortuneMysticController;
 use App\Http\Controllers\Admin\FortunePersonasController;
@@ -84,6 +83,7 @@ use App\Http\Controllers\Admin\FortuneRichMenuDeployController;
 use App\Http\Controllers\Admin\FortuneRichMenuEditorController;
 use App\Http\Controllers\Admin\FortuneSavedQuestionsController;
 use App\Http\Controllers\Admin\FortuneSettingsController;
+use App\Http\Controllers\Admin\FortuneSlipLogController;
 use App\Http\Controllers\Admin\FortuneTakeoverController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
 use App\Http\Controllers\Admin\FortuneUsersController;
@@ -4259,6 +4259,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     // SLIP VERIFICATION LOGS — ประวัติการตรวจสลิป (SlipOK) audit
     // ========================================
     Route::get('slip-logs', [FortuneSlipLogController::class, 'index'])->name('slip-logs.index');
+    // 🖼️ (2026-06-03) สตรีมรูปสลิปที่ส่งไปตรวจ (auth admin เท่านั้น — PDPA) เพื่อ debug no_qr
+    Route::get('slip-logs/{log}/image', [FortuneSlipLogController::class, 'image'])->name('slip-logs.image');
 
     // ========================================
     // CELTIC CROSS TAROT — โหมดดูดวงไพ่ยิปซีเต็มสำรับ 99฿

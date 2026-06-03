@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\SlipVerificationLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * ประวัติการตรวจสลิป (SlipOK) — audit log
@@ -94,6 +95,31 @@ class FortuneSlipLogController extends Controller
                 'date_from' => $dateFrom ?? '',
                 'date_to' => $dateTo ?? '',
             ],
+        ]);
+    }
+
+    /**
+     * 🖼️ (2026-06-03) สตรีมรูปสลิป "ที่ส่งไปตรวจจริง" ของ log นั้น
+     *
+     * PDPA: รูปมีชื่อผู้โอน/เลขบัญชี → เสิร์ฟผ่าน route ที่ login admin เท่านั้น (ไม่ public)
+     * รูป archive ไว้ 30 วัน (purge โดย fortune:purge-slip-archive) — เปิดดูเพื่อ debug no_qr
+     *
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
+     */
+    public function image(SlipVerificationLog $log)
+    {
+        $path = (string) $log->slip_image_path;
+
+        // ไม่มีรูป / รูปถูก purge ไปแล้ว (เกิน 30 วัน)
+        if ($path === '' || ! Storage::disk('local')->exists($path)) {
+            abort(404, 'ไม่พบรูปสลิป (อาจถูกลบตามรอบ 30 วัน)');
+        }
+
+        $mime = Storage::disk('local')->mimeType($path) ?: 'image/jpeg';
+
+        return Storage::disk('local')->response($path, null, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, max-age=60',
         ]);
     }
 }

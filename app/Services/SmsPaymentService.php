@@ -745,244 +745,244 @@ class SmsPaymentService
                 $reading->setConversationState('sms_match_processed_at', now()->toIso8601String());
             };
 
-        // ✅ ยืนยันการชำระเงินทันที (ก่อน dispatch job)
-        // เพื่อให้ response กลับไปแอพ SMS Checker แสดงสถานะ "auto_approved" ทันที
-        // ไม่ใช่ค้างที่ "pending_review" จนกว่า job จะรัน confirmPayment()
-        $reading->confirmPayment($notification);
+            // ✅ ยืนยันการชำระเงินทันที (ก่อน dispatch job)
+            // เพื่อให้ response กลับไปแอพ SMS Checker แสดงสถานะ "auto_approved" ทันที
+            // ไม่ใช่ค้างที่ "pending_review" จนกว่า job จะรัน confirmPayment()
+            $reading->confirmPayment($notification);
 
-        // 🛡️ (2026-05-05) Clear spam guards — ลูกค้าจ่ายเงินแล้ว ห้ามถูก silent_mode ดัก
-        //   เคส: ลูกค้ารัวข้อความก่อนจ่าย → silent_mode triggered → จ่ายแล้ว push prompt
-        //   → ลูกค้าตอบ "พร้อม" → silent_mode ยังอยู่ → บอทเงียบ
-        //   Fix: clear silent + rapid + paid_active cache ทุกครั้งที่ payment matched
-        \Illuminate\Support\Facades\Cache::forget("fortune:silent:{$userId}");
-        \Illuminate\Support\Facades\Cache::forget("fortune:rapid:{$userId}");
-        \Illuminate\Support\Facades\Cache::forget("fortune:has_paid_active:{$userId}");
+            // 🛡️ (2026-05-05) Clear spam guards — ลูกค้าจ่ายเงินแล้ว ห้ามถูก silent_mode ดัก
+            //   เคส: ลูกค้ารัวข้อความก่อนจ่าย → silent_mode triggered → จ่ายแล้ว push prompt
+            //   → ลูกค้าตอบ "พร้อม" → silent_mode ยังอยู่ → บอทเงียบ
+            //   Fix: clear silent + rapid + paid_active cache ทุกครั้งที่ payment matched
+            \Illuminate\Support\Facades\Cache::forget("fortune:silent:{$userId}");
+            \Illuminate\Support\Facades\Cache::forget("fortune:rapid:{$userId}");
+            \Illuminate\Support\Facades\Cache::forget("fortune:has_paid_active:{$userId}");
 
-        Log::info('SMS Payment: confirmPayment ทันที (ก่อน dispatch job)', [
-            'reading_id' => $reading->id,
-            'notification_id' => $notification->id,
-            'is_paid' => $reading->is_paid,
-            'conversation_status' => $reading->conversation_status,
-            'reading_type' => $reading->reading_type,
-        ]);
-
-        // 🔮 Celtic Cross fork — push "ตัดบิลแล้ว + เปิดไพ่ใบ 1/10" ทันที (ไม่ต้องรอ AI generate)
-        if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
-            $celticResult = $this->handleCelticPaymentMatched($reading, $notification, $platform, $userId, $amount);
-            $markProcessed();
-
-            return $celticResult;
-        }
-
-        // 💰 (2026-05-10) Deep 39 Pay-First fork — จ่ายก่อนเก็บข้อมูล
-        //   เดิม: ตรวจ flag pay_first_mode + ไม่มี birth_date → ขอวันเกิดต่อ
-        //   ปัญหา (2026-05-13 user report): บิลที่สร้างก่อน $payFirst fix → flag ไม่ถูก set
-        //     → fall through → dispatch AI Job → AI gen โดยไม่มีวันเกิด → fail → ส่ง error
-        //     "😔 ขออภัยค่ะ ระบบ AI ขัดข้องชั่วคราว..." ให้ลูกค้า
-        //   ใหม่: ตรวจ data presence แทน flag — ถ้า Deep + จ่ายแล้วแต่ไม่มี birth_date → ขอวันเกิด
-        //         (ครอบคลุมทั้งบิลใหม่ที่มี flag + บิลเก่าที่ไม่มี flag)
-        $isDeepReading = $reading->reading_type === FortuneReading::READING_TYPE_DEEP;
-        $hasNoBirthdate = empty($reading->birth_date);
-        if ($isDeepReading && $hasNoBirthdate) {
-            // ตั้ง flag ให้บิลนี้รู้ว่า pay-first (สำหรับ flow ต่อเนื่อง — Job retry, scheduler ฯลฯ)
-            $reading->setConversationState('pay_first_mode', true);
-
-            $payFirstResult = $this->handleDeepPayFirstPaymentMatched($reading, $notification, $platform, $userId, $amount);
-            $markProcessed();
-
-            return $payFirstResult;
-        }
-
-        // ✅ Push แจ้งผู้ใช้ทันทีว่า "ชำระเงินเรียบร้อย กำลังวิเคราะห์ดวง"
-        // ใช้ message_tag: POST_PURCHASE_UPDATE เพื่อ push นอก messaging window ได้
-        $reading->setConversationState('wait_message_sent', true);
-        $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
-
-        try {
-            $settings = FortuneTellingSetting::getSettings();
-            $channelManager = new FortuneChannelManager($settings);
-
-            $userName = $reading->facebook_user_name ?? 'คุณ';
-            $billRef = $reading->bill_reference ?? '-';
-            $paymentConfirmedMessage = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
-                ."🔖 เลขที่บิล: {$billRef}\n"
-                .'💰 ยอดที่ได้รับ: ฿'.number_format($amount, 2)."\n\n"
-                ."═══════════════════════\n"
-                ."🌙 *แม่หมอจันทรากำลังคำนวณดวงดาวให้*\n"
-                ."═══════════════════════\n\n"
-                ."✨ กำลังเปิดดาวเจ้าชนะของเจ้าชะตา\n"
-                ."🃏 เรียงไพ่ยิปซีตามพลังจิตที่เลือก\n"
-                ."🔮 รวบรวมพลังจักรวาลเข้าสู่คำทำนาย\n\n"
-                ."⏳ ใช้เวลา 1-3 นาที — ขอให้เจ้าชะตารอสักครู่\n"
-                .'จะส่งคำทำนายให้ทันทีเมื่อพร้อมนะคะ 🙏';
-
-            $pushSent = $channelManager->sendResponse($platform, $userId, [
-                'action' => 'payment_confirmed_wait',
-                'message' => $paymentConfirmedMessage,
-                'reading' => $reading,
-            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-
-            Log::info('SMS Payment: push แจ้ง "ชำระเงินเรียบร้อย" สำเร็จ', [
-                'reading_id' => $reading->id,
-                'platform' => $platform,
-                'sent' => $pushSent,
-            ]);
-
-            // ⏳ แสดง loading animation บน LINE ให้ลูกค้ารู้ว่าบอทกำลังทำงาน (ไม่ได้เงียบ)
-            // Animation นี้จะแสดง 60 วินาที — Job retry/check-pending จะเติมต่อถ้านานกว่านั้น
-            if ($platform === 'line') {
-                try {
-                    $lineService = new \App\Services\LineFortuneService($settings);
-                    $lineService->showLoadingAnimation($userId, 60);
-                } catch (\Exception $loadingErr) {
-                    // ไม่ critical — ถ้า loading animation ล้มเหลวก็ไม่ต้องหยุดโฟล
-                    Log::debug('SMS Payment: LINE loading animation ล้มเหลว (ไม่ critical)', [
-                        'error' => $loadingErr->getMessage(),
-                    ]);
-                }
-            }
-        } catch (\Exception $pushErr) {
-            // Push ล้มเหลวไม่ critical — ผู้ใช้จะได้รับแจ้งเมื่อส่งข้อความมา
-            Log::warning('SMS Payment: push แจ้ง "ชำระเงินเรียบร้อย" ล้มเหลว (ไม่ critical)', [
-                'reading_id' => $reading->id,
-                'platform' => $platform,
-                'error' => $pushErr->getMessage(),
-            ]);
-        }
-
-        // ✅ เช็คว่ามีคำทำนายพร้อมแล้วหรือยัง → ตั้ง flag เพื่อให้ replyMessage ส่งได้
-        $reading->refresh();
-        if (! empty($reading->deep_response) && ! $reading->getConversationState('reading_sent_directly', false)) {
-            $reading->setConversationState('reading_ready_for_reply', true);
-            $reading->setConversationState('reading_ready_at', now()->toIso8601String());
-
-            Log::info('SMS Payment: คำทำนายพร้อมแล้ว → ตั้ง flag reading_ready_for_reply', [
-                'reading_id' => $reading->id,
-            ]);
-        }
-
-        // 🌙 (2026-05-08 v3) Quiet Period — กันลูกค้ารัวข้อความระหว่าง AI gen
-        //   ลูกค้าโอนเงินแล้วใจร้อน รัวพิมพ์ "ทำนายให้แล้ว?" / "เร็วหน่อย" หลายข้อความ
-        //   bot ตอบทุกข้อความ → คำทำนายที่กำลัง gen ถูก spam messages เลื่อนหายในแชท
-        //   Fix: set flag → processMessage silent skip + announce 1 ครั้งต่อ 60 วิ
-        //   Clear flag: ตอน processPaymentConfirmed return success (predictions ส่งหมดแล้ว)
-        try {
-            \Illuminate\Support\Facades\Cache::put(
-                "fortune:gen_processing:{$userId}",
-                ['reading_id' => $reading->id, 'started_at' => now()->toIso8601String()],
-                now()->addMinutes(5)
-            );
-        } catch (\Throwable $cacheErr) {
-            // Cache fail = ไม่ block flow ของ payment matching
-            Log::debug('SMS Payment: gen_processing flag set fail (non-blocking)', [
-                'error' => $cacheErr->getMessage(),
-            ]);
-        }
-
-        // Dispatch background job → ไม่ติด web server timeout / SMS webhook timeout
-        // Job จะ: สร้าง chart → สร้างคำทำนาย 2 ข้อ → ส่ง Messenger → save DB
-        // (confirmPayment() ถูกเรียกแล้วด้านบน — job จะเรียกซ้ำก็ไม่เป็นไร เป็น idempotent)
-        // ⚠️ อัพเดท notification เป็น matched หลัง dispatch สำเร็จ (ไม่ใช่ก่อน)
-        try {
-            ProcessDeepFortuneReadingJob::dispatchSmart(
-                $reading->id, $notification->id, $platform, $userId
-            );
-
-            // Dispatch สำเร็จ → อัพเดท notification เป็น matched
-            $notification->update([
-                'status' => 'matched',
-                'matched_transaction_id' => $reading->id,
-            ]);
-
-            Log::info('SMS Payment: dispatch ProcessDeepFortuneReadingJob สำเร็จ', [
+            Log::info('SMS Payment: confirmPayment ทันที (ก่อน dispatch job)', [
                 'reading_id' => $reading->id,
                 'notification_id' => $notification->id,
-                'platform' => $platform,
-                'user_id' => $userId,
+                'is_paid' => $reading->is_paid,
+                'conversation_status' => $reading->conversation_status,
+                'reading_type' => $reading->reading_type,
             ]);
 
-            // ส่ง FCM push ให้แอพอัพเดทสถานะทันที (จาก "รอจับคู่" → "ชำระแล้ว")
+            // 🔮 Celtic Cross fork — push "ตัดบิลแล้ว + เปิดไพ่ใบ 1/10" ทันที (ไม่ต้องรอ AI generate)
+            if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                $celticResult = $this->handleCelticPaymentMatched($reading, $notification, $platform, $userId, $amount);
+                $markProcessed();
+
+                return $celticResult;
+            }
+
+            // 💰 (2026-05-10) Deep 39 Pay-First fork — จ่ายก่อนเก็บข้อมูล
+            //   เดิม: ตรวจ flag pay_first_mode + ไม่มี birth_date → ขอวันเกิดต่อ
+            //   ปัญหา (2026-05-13 user report): บิลที่สร้างก่อน $payFirst fix → flag ไม่ถูก set
+            //     → fall through → dispatch AI Job → AI gen โดยไม่มีวันเกิด → fail → ส่ง error
+            //     "😔 ขออภัยค่ะ ระบบ AI ขัดข้องชั่วคราว..." ให้ลูกค้า
+            //   ใหม่: ตรวจ data presence แทน flag — ถ้า Deep + จ่ายแล้วแต่ไม่มี birth_date → ขอวันเกิด
+            //         (ครอบคลุมทั้งบิลใหม่ที่มี flag + บิลเก่าที่ไม่มี flag)
+            $isDeepReading = $reading->reading_type === FortuneReading::READING_TYPE_DEEP;
+            $hasNoBirthdate = empty($reading->birth_date);
+            if ($isDeepReading && $hasNoBirthdate) {
+                // ตั้ง flag ให้บิลนี้รู้ว่า pay-first (สำหรับ flow ต่อเนื่อง — Job retry, scheduler ฯลฯ)
+                $reading->setConversationState('pay_first_mode', true);
+
+                $payFirstResult = $this->handleDeepPayFirstPaymentMatched($reading, $notification, $platform, $userId, $amount);
+                $markProcessed();
+
+                return $payFirstResult;
+            }
+
+            // ✅ Push แจ้งผู้ใช้ทันทีว่า "ชำระเงินเรียบร้อย กำลังวิเคราะห์ดวง"
+            // ใช้ message_tag: POST_PURCHASE_UPDATE เพื่อ push นอก messaging window ได้
+            $reading->setConversationState('wait_message_sent', true);
+            $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
+
             try {
-                app(FcmNotificationService::class)->notifyFortuneReadingMatched($reading, $notification);
-            } catch (\Exception $fcmErr) {
-                Log::warning('SMS Payment: FCM push fortune_reading_matched ล้มเหลว (ไม่ critical)', [
-                    'error' => $fcmErr->getMessage(),
+                $settings = FortuneTellingSetting::getSettings();
+                $channelManager = new FortuneChannelManager($settings);
+
+                $userName = $reading->facebook_user_name ?? 'คุณ';
+                $billRef = $reading->bill_reference ?? '-';
+                $paymentConfirmedMessage = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
+                    ."🔖 เลขที่บิล: {$billRef}\n"
+                    .'💰 ยอดที่ได้รับ: ฿'.number_format($amount, 2)."\n\n"
+                    ."═══════════════════════\n"
+                    ."🌙 *แม่หมอจันทรากำลังคำนวณดวงดาวให้*\n"
+                    ."═══════════════════════\n\n"
+                    ."✨ กำลังเปิดดาวเจ้าชนะของเจ้าชะตา\n"
+                    ."🃏 เรียงไพ่ยิปซีตามพลังจิตที่เลือก\n"
+                    ."🔮 รวบรวมพลังจักรวาลเข้าสู่คำทำนาย\n\n"
+                    ."⏳ ใช้เวลา 1-3 นาที — ขอให้เจ้าชะตารอสักครู่\n"
+                    .'จะส่งคำทำนายให้ทันทีเมื่อพร้อมนะคะ 🙏';
+
+                $pushSent = $channelManager->sendResponse($platform, $userId, [
+                    'action' => 'payment_confirmed_wait',
+                    'message' => $paymentConfirmedMessage,
+                    'reading' => $reading,
+                ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                Log::info('SMS Payment: push แจ้ง "ชำระเงินเรียบร้อย" สำเร็จ', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                    'sent' => $pushSent,
+                ]);
+
+                // ⏳ แสดง loading animation บน LINE ให้ลูกค้ารู้ว่าบอทกำลังทำงาน (ไม่ได้เงียบ)
+                // Animation นี้จะแสดง 60 วินาที — Job retry/check-pending จะเติมต่อถ้านานกว่านั้น
+                if ($platform === 'line') {
+                    try {
+                        $lineService = new \App\Services\LineFortuneService($settings);
+                        $lineService->showLoadingAnimation($userId, 60);
+                    } catch (\Exception $loadingErr) {
+                        // ไม่ critical — ถ้า loading animation ล้มเหลวก็ไม่ต้องหยุดโฟล
+                        Log::debug('SMS Payment: LINE loading animation ล้มเหลว (ไม่ critical)', [
+                            'error' => $loadingErr->getMessage(),
+                        ]);
+                    }
+                }
+            } catch (\Exception $pushErr) {
+                // Push ล้มเหลวไม่ critical — ผู้ใช้จะได้รับแจ้งเมื่อส่งข้อความมา
+                Log::warning('SMS Payment: push แจ้ง "ชำระเงินเรียบร้อย" ล้มเหลว (ไม่ critical)', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                    'error' => $pushErr->getMessage(),
                 ]);
             }
 
-            $markProcessed();
+            // ✅ เช็คว่ามีคำทำนายพร้อมแล้วหรือยัง → ตั้ง flag เพื่อให้ replyMessage ส่งได้
+            $reading->refresh();
+            if (! empty($reading->deep_response) && ! $reading->getConversationState('reading_sent_directly', false)) {
+                $reading->setConversationState('reading_ready_for_reply', true);
+                $reading->setConversationState('reading_ready_at', now()->toIso8601String());
 
-            return true;
+                Log::info('SMS Payment: คำทำนายพร้อมแล้ว → ตั้ง flag reading_ready_for_reply', [
+                    'reading_id' => $reading->id,
+                ]);
+            }
 
-        } catch (\Exception $e) {
-            Log::error('SMS Payment: dispatch job ล้มเหลว — ลอง sync fallback', [
-                'reading_id' => $reading->id,
-                'platform' => $platform,
-                'error' => $e->getMessage(),
-            ]);
-
-            // Fallback: ลอง process sync ทันที (ขยาย execution time)
+            // 🌙 (2026-05-08 v3) Quiet Period — กันลูกค้ารัวข้อความระหว่าง AI gen
+            //   ลูกค้าโอนเงินแล้วใจร้อน รัวพิมพ์ "ทำนายให้แล้ว?" / "เร็วหน่อย" หลายข้อความ
+            //   bot ตอบทุกข้อความ → คำทำนายที่กำลัง gen ถูก spam messages เลื่อนหายในแชท
+            //   Fix: set flag → processMessage silent skip + announce 1 ครั้งต่อ 60 วิ
+            //   Clear flag: ตอน processPaymentConfirmed return success (predictions ส่งหมดแล้ว)
             try {
-                \set_time_limit(300);
+                \Illuminate\Support\Facades\Cache::put(
+                    "fortune:gen_processing:{$userId}",
+                    ['reading_id' => $reading->id, 'started_at' => now()->toIso8601String()],
+                    now()->addMinutes(5)
+                );
+            } catch (\Throwable $cacheErr) {
+                // Cache fail = ไม่ block flow ของ payment matching
+                Log::debug('SMS Payment: gen_processing flag set fail (non-blocking)', [
+                    'error' => $cacheErr->getMessage(),
+                ]);
+            }
 
-                // Flush response กลับ user ก่อน (ถ้าเป็น FPM)
-                if (\function_exists('fastcgi_finish_request')) {
-                    \fastcgi_finish_request();
-                }
-
-                $settings = FortuneTellingSetting::getSettings();
-                $conversationService = new FortuneConversationService($settings);
-                $channelManager = new FortuneChannelManager($settings);
-
-                $result = $conversationService->processPaymentConfirmed(
-                    $reading, $notification, $channelManager, $platform, $userId
+            // Dispatch background job → ไม่ติด web server timeout / SMS webhook timeout
+            // Job จะ: สร้าง chart → สร้างคำทำนาย 2 ข้อ → ส่ง Messenger → save DB
+            // (confirmPayment() ถูกเรียกแล้วด้านบน — job จะเรียกซ้ำก็ไม่เป็นไร เป็น idempotent)
+            // ⚠️ อัพเดท notification เป็น matched หลัง dispatch สำเร็จ (ไม่ใช่ก่อน)
+            try {
+                ProcessDeepFortuneReadingJob::dispatchSmart(
+                    $reading->id, $notification->id, $platform, $userId
                 );
 
-                // ถ้าไม่ได้ streaming (fallback) → ส่งข้อความรวม
-                if (empty($result['streaming']) && ! empty($result['message'])) {
-                    $channelManager->sendResponse($platform, $userId, $result);
-                }
-
-                // Sync สำเร็จ → mark matched
+                // Dispatch สำเร็จ → อัพเดท notification เป็น matched
                 $notification->update([
                     'status' => 'matched',
                     'matched_transaction_id' => $reading->id,
                 ]);
 
-                Log::info('SMS Payment: sync fallback สำเร็จ', [
+                Log::info('SMS Payment: dispatch ProcessDeepFortuneReadingJob สำเร็จ', [
                     'reading_id' => $reading->id,
-                    'action' => $result['action'] ?? 'unknown',
+                    'notification_id' => $notification->id,
+                    'platform' => $platform,
+                    'user_id' => $userId,
                 ]);
+
+                // ส่ง FCM push ให้แอพอัพเดทสถานะทันที (จาก "รอจับคู่" → "ชำระแล้ว")
+                try {
+                    app(FcmNotificationService::class)->notifyFortuneReadingMatched($reading, $notification);
+                } catch (\Exception $fcmErr) {
+                    Log::warning('SMS Payment: FCM push fortune_reading_matched ล้มเหลว (ไม่ critical)', [
+                        'error' => $fcmErr->getMessage(),
+                    ]);
+                }
 
                 $markProcessed();
 
                 return true;
 
-            } catch (\Exception $syncErr) {
-                Log::critical('SMS Payment: sync fallback ล้มเหลว!', [
+            } catch (\Exception $e) {
+                Log::error('SMS Payment: dispatch job ล้มเหลว — ลอง sync fallback', [
                     'reading_id' => $reading->id,
-                    'error' => $syncErr->getMessage(),
-                    'trace' => substr($syncErr->getTraceAsString(), 0, 500),
+                    'platform' => $platform,
+                    'error' => $e->getMessage(),
                 ]);
 
-                // Mark เป็น matched เพราะเงินโอนมาแล้ว แต่ใส่ notes ว่า dispatch ล้มเหลว
-                $notification->update([
-                    'status' => 'matched',
-                    'matched_transaction_id' => $reading->id,
-                    'notes' => 'dispatch + sync fallback failed: '.$syncErr->getMessage(),
-                ]);
+                // Fallback: ลอง process sync ทันที (ขยาย execution time)
+                try {
+                    \set_time_limit(300);
 
-                // ❌ ไม่ส่ง error message ให้ลูกค้า — ลูกค้าได้รับ "รอสักครู่" ไปแล้ว
-                // fortune:check-pending จะ retry ให้อัตโนมัติทุก 1 นาที
-                Log::info('SMS Payment: dispatch ล้มเหลว → รอ check-pending retry', [
-                    'reading_id' => $reading->id,
-                ]);
+                    // Flush response กลับ user ก่อน (ถ้าเป็น FPM)
+                    if (\function_exists('fastcgi_finish_request')) {
+                        \fastcgi_finish_request();
+                    }
 
-                $markProcessed();
+                    $settings = FortuneTellingSetting::getSettings();
+                    $conversationService = new FortuneConversationService($settings);
+                    $channelManager = new FortuneChannelManager($settings);
 
-                return true; // return true เพราะ matched แล้ว (เงินโอนมาจริง) แค่ dispatch ล้มเหลว
+                    $result = $conversationService->processPaymentConfirmed(
+                        $reading, $notification, $channelManager, $platform, $userId
+                    );
+
+                    // ถ้าไม่ได้ streaming (fallback) → ส่งข้อความรวม
+                    if (empty($result['streaming']) && ! empty($result['message'])) {
+                        $channelManager->sendResponse($platform, $userId, $result);
+                    }
+
+                    // Sync สำเร็จ → mark matched
+                    $notification->update([
+                        'status' => 'matched',
+                        'matched_transaction_id' => $reading->id,
+                    ]);
+
+                    Log::info('SMS Payment: sync fallback สำเร็จ', [
+                        'reading_id' => $reading->id,
+                        'action' => $result['action'] ?? 'unknown',
+                    ]);
+
+                    $markProcessed();
+
+                    return true;
+
+                } catch (\Exception $syncErr) {
+                    Log::critical('SMS Payment: sync fallback ล้มเหลว!', [
+                        'reading_id' => $reading->id,
+                        'error' => $syncErr->getMessage(),
+                        'trace' => substr($syncErr->getTraceAsString(), 0, 500),
+                    ]);
+
+                    // Mark เป็น matched เพราะเงินโอนมาแล้ว แต่ใส่ notes ว่า dispatch ล้มเหลว
+                    $notification->update([
+                        'status' => 'matched',
+                        'matched_transaction_id' => $reading->id,
+                        'notes' => 'dispatch + sync fallback failed: '.$syncErr->getMessage(),
+                    ]);
+
+                    // ❌ ไม่ส่ง error message ให้ลูกค้า — ลูกค้าได้รับ "รอสักครู่" ไปแล้ว
+                    // fortune:check-pending จะ retry ให้อัตโนมัติทุก 1 นาที
+                    Log::info('SMS Payment: dispatch ล้มเหลว → รอ check-pending retry', [
+                        'reading_id' => $reading->id,
+                    ]);
+
+                    $markProcessed();
+
+                    return true; // return true เพราะ matched แล้ว (เงินโอนมาจริง) แค่ dispatch ล้มเหลว
+                }
             }
-        }
         } finally {
             // 🔓 (2026-05-09 audit fix P3) Release lock — auto release ผ่าน TTL 30s ก็ได้
             //    แต่ explicit release ดีกว่า กัน lock contention โดยไม่จำเป็น
@@ -1090,6 +1090,17 @@ class SmsPaymentService
     ): bool {
         try {
             $settings = FortuneTellingSetting::getSettings();
+
+            // 🆕 (2026-06-03) บันทึกยอดที่รับจริงลงบิล (SMS amount / admin force actual)
+            //   amount_paid = ยอดบิลตั้งไว้ (unique amount) — ไม่ทับ
+            //   amount_received = ยอดจริงที่โอนเข้ามา → แสดงในหน้า admin ให้ตรงตามจริง
+            if ($amount > 0) {
+                try {
+                    $reading->forceFill(['amount_received' => $amount])->save();
+                } catch (\Throwable $e) {
+                    // non-blocking — ไม่ให้กระทบ flow ตัดบิล
+                }
+            }
 
             // 1. ส่งข้อความ "ตัดบิลเรียบร้อย" + เริ่มเปิดไพ่ใบที่ 1/10
             //    เรียก trait method ผ่าน FortuneConversationService::onCelticPaymentConfirmed

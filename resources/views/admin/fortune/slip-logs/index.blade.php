@@ -105,6 +105,7 @@
                         <th class="px-3 py-3">transRef</th>
                         <th class="px-3 py-3">บัญชีปลายทาง</th>
                         <th class="px-3 py-3">ผู้โอน</th>
+                        <th class="px-3 py-3 text-center">รูปสลิป<br><span class="text-[9px] normal-case text-gray-400">ที่ส่งไปตรวจ</span></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -159,10 +160,21 @@
                             </td>
                             <td class="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{{ $log->receiver_account ?? '—' }}</td>
                             <td class="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{{ $log->sender_name ?? '—' }}</td>
+                            <td class="px-3 py-3 text-center">
+                                @if ($log->slip_image_path)
+                                    <a href="{{ route('admin.fortune.slip-logs.image', $log->id) }}" target="_blank" rel="noopener"
+                                       title="เปิดรูปสลิปที่ส่งไปตรวจ (ดูว่า QR ชัดไหม)">
+                                        <img src="{{ route('admin.fortune.slip-logs.image', $log->id) }}" loading="lazy" alt="slip"
+                                             class="h-12 w-12 object-cover rounded border border-gray-200 dark:border-gray-600 inline-block hover:scale-[2.5] hover:shadow-xl transition origin-center relative z-10">
+                                    </a>
+                                @else
+                                    <span class="text-gray-300 dark:text-gray-600" title="ไม่มีรูป (ไม่ได้เก็บ / purge หลัง 30 วัน)">—</span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="px-3 py-12 text-center text-gray-400 dark:text-gray-500">
+                            <td colspan="11" class="px-3 py-12 text-center text-gray-400 dark:text-gray-500">
                                 ยังไม่มีประวัติการตรวจสลิป
                             </td>
                         </tr>

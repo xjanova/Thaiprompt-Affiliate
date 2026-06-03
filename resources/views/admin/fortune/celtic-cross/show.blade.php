@@ -271,10 +271,23 @@
             <p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ $reading->conversation_status }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
-            <p class="text-xs text-gray-500 dark:text-gray-400">ค่าครู</p>
-            <p class="text-base font-bold {{ $reading->is_paid ? 'text-green-600' : 'text-gray-400' }} mt-1">
-                {{ $reading->is_paid ? '฿' . number_format($reading->amount_paid, 0) . ' ✓' : 'รอ' }}
-            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">ค่าครู (รับจริง)</p>
+            @if ($reading->is_paid)
+                @php $recv = $reading->amount_received; $billed = $reading->amount_paid; @endphp
+                <p class="text-base font-bold text-green-600 mt-1">
+                    ฿{{ number_format((float) ($recv ?? $billed), 2) }} ✓
+                </p>
+                @if ($recv !== null && abs((float) $recv - (float) $billed) >= 0.01)
+                    <p class="text-[10px] text-gray-400 mt-0.5">
+                        ตั้งบิล ฿{{ number_format((float) $billed, 2) }}
+                        @if ((float) $recv > (float) $billed)
+                            <span class="text-amber-500">(เกิน ฿{{ number_format((float) $recv - (float) $billed, 2) }})</span>
+                        @endif
+                    </p>
+                @endif
+            @else
+                <p class="text-base font-bold text-gray-400 mt-1">รอ</p>
+            @endif
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
             <p class="text-xs text-gray-500 dark:text-gray-400">คำถามใช้ไป</p>

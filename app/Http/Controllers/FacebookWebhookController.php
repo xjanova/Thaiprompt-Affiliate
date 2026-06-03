@@ -3988,22 +3988,15 @@ class FacebookWebhookController extends Controller
             // 🔄 (2026-05-27 reverted) เลิกตั้ง skip_payment_gate (เหมือน TIER_DEEP_39/TIER_CELTIC_99)
             //   user feedback: "กด ดูดวง แล้วไม่ให้เลือก วิธีชำระเงิน มันไปสร้างบิลเลย"
             //   เก็บ force_tier ไว้ (skip intro card) — แต่ askPaymentMethod gate ทำงานปกติ
-            'FORTUNE_BASIC' => (function () use ($senderId) {
-                $tier = ($this->settings->enable_celtic_cross ?? false) ? 'celtic'
-                    : ($this->settings->isDeepReadingEnabled() ? 'deep' : null);
-                if ($tier) {
-                    Cache::put("fortune:force_tier:{$senderId}", $tier, 30);
-                }
-                $this->processConversationalMessage($senderId, 'ดูดวง');
-            })(),
-            'FORTUNE_DEEP' => (function () use ($senderId) {
-                $tier = ($this->settings->enable_celtic_cross ?? false) ? 'celtic'
-                    : ($this->settings->isDeepReadingEnabled() ? 'deep' : null);
-                if ($tier) {
-                    Cache::put("fortune:force_tier:{$senderId}", $tier, 30);
-                }
-                $this->processConversationalMessage($senderId, 'ดูดวง');
-            })(),
+            // 🛡️ (2026-06-03) ปุ่ม "ดูดวง" ทั่วไป → ห้าม set force_tier อีกต่อไป
+            //   user: "กดปุ่มดูดวงธรรมดา มันสร้างบิลเลย ไม่ผ่านระบบคัดกรอง ลูกค้าแค่ลองก็มีบิลรก"
+            //   เดิม: set force_tier → โดน Single-click bypass (FCS ~line 1031) → สร้างบิลทันที (ข้าม intro)
+            //   ใหม่: ส่ง 'ดูดวง' generic → ผ่าน Soft Intro Gate (เห็นราคา+กติกาก่อน) → ลูกค้ากดยืนยัน
+            //         "💎 โอนค่าบูชาครู 99฿" (= TIER_CELTIC_99) ค่อยสร้างบิล
+            //   หมายเหตุ: ปุ่มยืนยันราคา (TIER_CELTIC_99 / TIER_DEEP_39) ยังตั้ง force_tier ตามเดิม
+            //             → force_tier = "ลูกค้าเลือก tier ที่รู้ราคาแล้ว" เท่านั้น (semantic ชัดขึ้น)
+            'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            'FORTUNE_DEEP' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'SUBSCRIBE' => $this->facebookService->sendMessage(
                 $senderId,
