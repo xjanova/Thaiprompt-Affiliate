@@ -266,6 +266,8 @@ class FortuneSettingsController extends Controller
             'fuzzy_window_minutes' => 'nullable|integer|min:5|max:1440',
             'fuzzy_name_auto_threshold' => 'nullable|integer|min:0|max:100',
             'fuzzy_admin_alert_above_baht' => 'nullable|numeric|min:0|max:1000',
+            // 🌍 (2026-06-03) เปิด/ปิดบริการลูกค้าต่างประเทศ
+            'enable_foreign_customer_service' => 'boolean',
             // 🧾 (2026-05-31) SlipOK slip verification (fallback เมื่อ SMS checker ไม่พบ)
             'enable_slipok_verify' => 'boolean',
             'slipok_branch_id' => 'nullable|string|max:64',

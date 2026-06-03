@@ -230,6 +230,8 @@ class FortuneTellingSetting extends Model
         'brave_search_api_key',
         // 🔮 Celtic Cross Tarot Mode (2026-04-29)
         'enable_celtic_cross',
+        // 🌍 (2026-06-03) เปิด/ปิดบริการลูกค้าต่างประเทศ
+        'enable_foreign_customer_service',
         'celtic_cross_price',
         'celtic_cross_max_questions',
         'celtic_cross_qa_window_minutes',
@@ -418,6 +420,7 @@ class FortuneTellingSetting extends Model
         'mystic_content_hashtag_count' => 'integer',
         // 🔮 Celtic Cross
         'enable_celtic_cross' => 'boolean',
+        'enable_foreign_customer_service' => 'boolean',
         'celtic_cross_price' => 'decimal:2',
         'celtic_cross_max_questions' => 'integer',
         'celtic_cross_qa_window_minutes' => 'integer',
@@ -552,6 +555,8 @@ class FortuneTellingSetting extends Model
         'mystic_content_hashtag_count' => 6,
         // 🔮 Celtic Cross — ค่าเริ่มต้น (admin ต้องเปิด toggle ก่อนใช้งาน)
         'enable_celtic_cross' => false,
+        // 🌍 (2026-06-03) บริการต่างประเทศ — default เปิด (ไม่ block ใคร = พฤติกรรมเดิม)
+        'enable_foreign_customer_service' => true,
         'celtic_cross_price' => 99.00,
         'celtic_cross_max_questions' => 5, // (2026-05-23 v3) 5 คำถาม — บังคับ hard cap + บอกกติกาให้ชัด
         'celtic_cross_qa_window_minutes' => 15, // (2026-05-23 v3) 15 นาที — ลดจาก 30

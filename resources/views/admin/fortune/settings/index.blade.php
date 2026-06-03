@@ -2343,6 +2343,30 @@ Format 2 — JSON array:
                 </div>
             </div>
 
+            {{-- 🌍 (2026-06-03) เปิด/ปิดบริการลูกค้าต่างประเทศ (เช่น ลาว) --}}
+            <div class="mt-6 p-4 bg-sky-50 dark:bg-sky-900/20 rounded-xl border border-sky-200 dark:border-sky-700">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="pr-3">
+                        <label class="block text-sm font-bold text-gray-900 dark:text-white">
+                            🌍 เปิดบริการลูกค้าต่างประเทศ
+                        </label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <strong>เปิด</strong> = ลูกค้าทุกประเทศสร้างบิลได้ &nbsp;•&nbsp; <strong>ปิด</strong> = ลูกค้าที่ระบบตรวจว่าเป็นต่างชาติ (พิมพ์/ชื่อเป็นภาษาลาว) จะขึ้นว่า “ยังไม่เปิดบริการในประเทศของคุณ” และไม่สร้างบิล
+                        </p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="hidden" name="enable_foreign_customer_service" value="0">
+                        <input type="checkbox" name="enable_foreign_customer_service" value="1"
+                               {{ ($settings->enable_foreign_customer_service ?? true) ? 'checked' : '' }}
+                               class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:ring-2 peer-focus:ring-sky-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                    </label>
+                </div>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500">
+                    ⚠️ ตรวจจากสคริปต์ภาษาลาวในข้อความ/ชื่อโปรไฟล์ (เหตุผล: QR/พร้อมเพย์เป็นของไทย ลูกค้าต่างชาติจ่ายไม่ได้ → บิลค้างรก) — ลูกค้าไทยไม่ได้รับผลกระทบ
+                </p>
+            </div>
+
             {{-- 🧾 (2026-05-31) SlipOK ตรวจสลิป — fallback เมื่อ SMS ไม่เข้า --}}
             <div class="mt-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-700"
                  x-data="{

@@ -687,6 +687,21 @@ trait CelticCrossConversationTrait
      */
     protected function doStartCelticCrossFlow(FortuneReading $reading, bool $skipStripeGate = false): array
     {
+        // 🌍 (2026-06-03) Foreign-customer gate (defense ที่ chokepoint สร้างบิล Celtic)
+        //   ครอบ path ที่ไม่ผ่าน startDeepReadingFlow (เช่น พิมพ์ "99" ตอน TIER_CHOICE)
+        $fcUserId = $reading->facebook_user_id ?: $reading->platform_user_id;
+        if ($fcUserId) {
+            $fcPlat = $reading->platform ?: $this->detectPlatformFromUserId((string) $fcUserId);
+            if ($this->isForeignCustomerBlocked($fcPlat, (string) $fcUserId, null, $reading->facebook_user_name)) {
+                \Illuminate\Support\Facades\Log::info('Fortune: foreign customer blocked — service off (Celtic chokepoint)', [
+                    'reading_id' => $reading->id,
+                ]);
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                return $this->foreignServiceClosedResponse();
+            }
+        }
+
         // 💳 (2026-05-22) Payment method matrix:
         //   - both / stripe_only → ถามวิธีชำระก่อน
         //   - sms_only / none → ไป QR Thai (createPaymentBill ด้านล่าง) ตรงเลย

@@ -5134,6 +5134,62 @@ class FortuneConversationService
      * ใช้เมื่อผู้ใช้กดปุ่ม "💎 ดูดวงละเอียด" โดยไม่มี active reading (เช่น หลังจาก ai_limit)
      * ข้าม canMakeAICall() เพราะเป็นบริการเสียเงิน ไม่ใช่บริการฟรี
      */
+    /**
+     * 🌍 (2026-06-03) ตรวจว่าควร "บล็อกลูกค้าต่างประเทศ" หรือไม่ (admin toggle)
+     *
+     * ใช้เมื่อ admin ปิด enable_foreign_customer_service:
+     *   - ตรวจจากสคริปต์ลาวในข้อความ (detectFromText) / ชื่อโปรไฟล์ (detectFromName) / locale ที่บันทึกไว้
+     *   - conservative: block เฉพาะตอนมั่นใจว่าเป็นลาว (ไทย/อังกฤษ/ระบุไม่ได้ → ไม่ block กัน false-positive)
+     *
+     * หมายเหตุ: ใช้แค่ script-detection ของ FortuneLocaleService — ไม่เกี่ยวกับ Lao language output
+     *   (kill switch ENABLED=false ยังปิดอยู่ ไม่แตะ). นี่คือ "การคัดกรองบริการ" ไม่ใช่ "รองรับภาษาลาว"
+     *
+     * @return bool true = ต่างชาติ + บริการปิด → ห้ามสร้างบิล
+     */
+    public function isForeignCustomerBlocked(string $platform, string $userId, ?string $messageText = null, ?string $profileName = null): bool
+    {
+        // บริการเปิดอยู่ (default) → ไม่ block ใคร (ไม่ต้อง detect ให้เปลือง)
+        if ((bool) ($this->settings->enable_foreign_customer_service ?? true)) {
+            return false;
+        }
+
+        try {
+            $lo = \App\Services\FortuneLocaleService::LOCALE_LO;
+
+            // 1) สคริปต์ลาวในข้อความล่าสุด (สัญญาณชัดสุด — เราควบคุมได้)
+            if (\App\Services\FortuneLocaleService::detectFromText($messageText) === $lo) {
+                return true;
+            }
+            // 2) ชื่อโปรไฟล์เป็นลาวล้วน
+            if (\App\Services\FortuneLocaleService::detectFromName($profileName) === $lo) {
+                return true;
+            }
+            // 3) locale ที่เคยตรวจ/บันทึกไว้ (ถ้ามี)
+            if (\App\Services\FortuneLocaleService::getStored($platform, $userId) === $lo) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            // detection ล้มเหลว → fail-open (ไม่ block กันบล็อกลูกค้าไทยผิด)
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * 🌍 (2026-06-03) ข้อความแจ้งลูกค้าต่างประเทศว่ายังไม่เปิดบริการในประเทศของเขา
+     */
+    protected function foreignServiceClosedResponse(): array
+    {
+        return [
+            'action' => 'foreign_service_closed',
+            'message' => "🙏 ขออภัยค่ะ ขณะนี้ยังไม่เปิดให้บริการดูดวงในประเทศของคุณ\n\n"
+                ."บริการนี้เปิดเฉพาะลูกค้าในประเทศไทยค่ะ 🇹🇭\n"
+                .'(Sorry, this service is not yet available in your country.)',
+            'reading' => null,
+        ];
+    }
+
     protected function startDeepReadingFlow(string $facebookUserId, ?array $userProfile = null, ?string $forceTier = null, ?string $originalMessage = null): array
     {
         try {
@@ -5161,6 +5217,19 @@ class FortuneConversationService
                     'message' => null,
                     'reading' => null,
                 ];
+            }
+
+            // 🌍 (2026-06-03) Foreign-customer service gate (admin toggle enable_foreign_customer_service)
+            //   ปิดบริการต่างประเทศ + ตรวจพบลูกค้าต่างชาติ (สคริปต์ลาว) → ไม่สร้างบิล + แจ้ง "ยังไม่เปิดบริการ"
+            //   gate นี้อยู่ก่อนสร้าง reading → ลูกค้าต่างชาติไม่มีบิลค้างเลย
+            $fcPlatform = $this->currentPlatform ?: $this->detectPlatformFromUserId($facebookUserId);
+            if ($this->isForeignCustomerBlocked($fcPlatform, $facebookUserId, $originalMessage, $userProfile['name'] ?? null)) {
+                Log::info('Fortune: foreign customer blocked — service off (startDeepReadingFlow)', [
+                    'facebook_user_id' => $facebookUserId,
+                    'platform' => $fcPlatform,
+                ]);
+
+                return $this->foreignServiceClosedResponse();
             }
 
             // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
@@ -7451,6 +7520,20 @@ class FortuneConversationService
             ]);
 
             return $this->startCelticCrossFlow($reading, skipStripeGate: true);
+        }
+
+        // 🌍 (2026-06-03) Foreign-customer gate (defense ที่ chokepoint สร้างบิล Deep)
+        $fcUserId = $reading->facebook_user_id ?: $reading->platform_user_id;
+        if ($fcUserId) {
+            $fcPlat = $reading->platform ?: $this->detectPlatformFromUserId((string) $fcUserId);
+            if ($this->isForeignCustomerBlocked($fcPlat, (string) $fcUserId, null, $reading->facebook_user_name)) {
+                Log::info('Fortune: foreign customer blocked — service off (createPaymentBill)', [
+                    'reading_id' => $reading->id,
+                ]);
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                return $this->foreignServiceClosedResponse();
+            }
         }
 
         try {
