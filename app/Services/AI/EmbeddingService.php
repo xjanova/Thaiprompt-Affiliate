@@ -38,20 +38,29 @@ class EmbeddingService
         $this->endpoint = (string) ($provider->api_endpoint ?? '');
         $this->apiKey = (string) ($provider->api_key ?? '');
 
-        // Get embedding model
-        $this->model = AiModel::where('provider_id', $provider->id)
+        // Get embedding model.
+        // 🩹 (2026-06-04) Resolve into a LOCAL first, fall back, THEN assign the
+        //   typed property. Assigning ->first() (nullable) straight to the
+        //   non-nullable AiModel $model threw "Cannot assign null to property
+        //   $model of type AiModel" AT this line — before the fallback below could
+        //   run — crashing service boot (php artisan route:list / any artisan
+        //   eager-boot) when no active embedding model row exists. Same class of
+        //   bug as the endpoint/apiKey fix above; $model was the one left unfixed.
+        $model = AiModel::where('provider_id', $provider->id)
             ->where('model_identifier', 'LIKE', '%embedding%')
             ->where('is_active', true)
             ->first();
 
-        if (! $this->model) {
+        if (! $model) {
             // Fallback to text-embedding-3-small
-            $this->model = new AiModel([
+            $model = new AiModel([
                 'model_identifier' => 'text-embedding-3-small',
                 'display_name' => 'Text Embedding 3 Small',
                 'context_window' => 8191,
             ]);
         }
+
+        $this->model = $model;
     }
 
     /**
