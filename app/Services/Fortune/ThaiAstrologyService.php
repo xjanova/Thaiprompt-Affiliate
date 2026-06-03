@@ -29,6 +29,9 @@ class ThaiAstrologyService
     /** จำนวนคนสูงสุดที่จะคำนวณต่อหนึ่งข้อความ (กัน prompt บวม + กัน abuse) */
     public const MAX_PEOPLE = 3;
 
+    /** เวลาเกิดล่าสุดที่ parse ได้ (ชั่วโมง 0-23) — null = ไม่ได้ระบุ */
+    protected ?int $lastBirthHour = null;
+
     /**
      * สร้างบล็อกดวงดาวสำหรับ Celtic — ตรวจจับวันเกิดในข้อความแล้วคำนวณให้ครบ
      *
@@ -47,6 +50,9 @@ class ThaiAstrologyService
         if (empty($dates)) {
             return '';
         }
+
+        // parse เวลาเกิด (ถ้ามี) — เก็บไว้ใช้คำนวณลัคนา
+        $this->lastBirthHour = $this->extractBirthHourFromText($text);
 
         $multi = count($dates) > 1;
         $people = '';
@@ -75,6 +81,9 @@ class ThaiAstrologyService
             ."• 🔥 คู่ธาตุดวง = ถ้าราศีกับดาวขัดกัน สะท้อน \"แรงดึงสองด้าน\" ในตัวเขา ใช้ช่วยอ่านนิสัยลึก\n"
             ."• 📅 วันมงคล/กาลกิณี = ฤกษ์ส่วนบุคคล แนะวันทำเรื่องสำคัญ (เซ็น/แต่ง/เปิดร้าน) แบบ \"เลือกได้ก็ดี\" ไม่ใช่ \"ห้ามเด็ดขาด\"\n"
             ."• ✍️ ชื่อมงคล = ถ้าถามเรื่องตั้งชื่อ/เปลี่ยนชื่อ → แนะอักษรเดช/ศรี/มนตรี (ดี) + เลี่ยงอักษรกาลกิณี (❌ ห้ามขายดูชื่อแพง — เป็นแนวทาง)\n"
+            ."• 🌀 ดวงพื้น (ผูกดวง) = ใช้ราศีอาทิตย์ + ลัคนา(ถ้ามีเวลา) + ดิ๊กนิตี้(เกษตร/อุจ/นิจ) เป็นกรอบอ่าน 12 ภพ\n"
+            ."   ⚠️ ระบบไม่มี ephemeris → ดาวอื่นๆ ใช้ภาพรวมจากดาวเจ้าชนะ+ดาวเสวยอายุแทน (ไม่ระบุองศาเป๊ะ)\n"
+            ."   📐 ถ้าไม่มีเวลาเกิด → \"แนะให้ลูกค้าใส่เวลาเกิดเพื่อแม่นขึ้น\" (อย่ามั่วลัคนา)\n"
             ."• 🔢 เลขชะตา (Life Path) = บุคลิกพื้นฐาน-ภารกิจชีวิต ใช้ยืนยัน/เสริมพื้นนิสัยจากดาวเจ้าชนะ\n"
             ."• 📆 ดวงรายปี (Personal Year) = โทนของ \"ปีนี้\" เชื่อมตรงกับคำถามอนาคต (เช่น ปี 1=เริ่มใหม่, 9=ปิดบท)\n";
 
@@ -290,6 +299,7 @@ class ThaiAstrologyService
         $base .= $this->formatPeriodLine($dow, $age);
         $base .= $this->formatLuckyDayLine($dow);
         $base .= $this->formatZodiacYearLine($date->year);
+        $base .= $this->formatBirthChartBlock($zodiac, $date, $dow);
         $base .= $this->formatNamingLine($dow);
         $base .= $this->formatLifePathLine($date->day, $date->month, $date->year);
         $base .= $this->formatPersonalYearLine($date->day, $date->month);
@@ -335,6 +345,129 @@ class ThaiAstrologyService
         }
 
         return $out;
+    }
+
+    /**
+     * 🌀 ผูกดวง (ดวงพื้น) — แสดงราศีอาทิตย์ + ลัคนาประมาณ (ถ้ามีเวลา) + 12 ภพ + เกษตร/อุจ/นิจ
+     *
+     * ⚠️ ข้อจำกัด (โปร่งใส):
+     *   - ระบบไม่มี ephemeris → ระบุได้แค่ "ดาวอาทิตย์" แม่นเป๊ะ (ตามวันที่)
+     *   - ดาวจันทร์/อังคาร/พุธ/พฤหัส/ศุกร์/เสาร์ ต้องใช้ ephemeris → แจ้ง AI ว่าให้อ่านภาพรวม
+     *   - ลัคนา = ประมาณจากเวลาเกิด (ทุก 2 ชม. = ขยับ 1 ราศี เริ่มจากราศีอาทิตย์ตอนเช้าตรู่)
+     *     วิธีนี้ "พื้นๆ" — แม่นพอใช้ทิศทาง ไม่ใช่องศาเป๊ะ
+     *
+     * @param  string  $zodiacName  ชื่อราศีไทย (จาก getZodiacSign)
+     */
+    protected function formatBirthChartBlock(string $zodiacName, \Carbon\Carbon $date, int $dow): string
+    {
+        $sunSign = $this->extractSignFromName($zodiacName);
+        if ($sunSign === null) {
+            return '';
+        }
+
+        // ลัคนา (ถ้ามีเวลาเกิดในบริบท)
+        $birthHour = $this->lastBirthHour;
+        $lagna = $birthHour !== null ? $this->approximateLagna($sunSign, $birthHour) : null;
+
+        // เกษตร/อุจ/นิจ ของอาทิตย์
+        $sunDignity = $this->dignityOf('อาทิตย์', $sunSign);
+
+        $out = "🌀 ดวงพื้น (ผูกดวง):\n"
+            ."   ☉ อาทิตย์อยู่ราศี{$sunSign} {$sunDignity}\n";
+
+        if ($lagna !== null) {
+            $out .= "   ⬆️ ลัคนาประมาณ: ราศี{$lagna} (จากเวลาเกิด {$birthHour}:00)\n";
+            $out .= "   📐 ระยะอาทิตย์–ลัคนา: ".$this->houseFromLagna($lagna, $sunSign).' (ภพอาทิตย์)'."\n";
+        } else {
+            $out .= "   ⬆️ ลัคนา: (ไม่มีเวลาเกิด — ขอเวลาเกิดเพื่อแม่นขึ้น)\n";
+        }
+
+        // 3 ภพหลักที่ใช้บ่อย
+        $out .= "   🏛️ 12 ภพหลัก: ตนุ(ตัวเอง)/กฎุมพะ(ทรัพย์)/พันธุ(บ้าน)/ปุตตะ(บุตร-รัก)/อริ(ศัตรู-โรค)/ปัตนิ(คู่)/กัมมะ(งาน)/ลาภะ(โชค)\n";
+        $out .= "   ⚠️ ดาวอื่นๆ (จันทร์/อังคาร/พุธ/พฤหัส/ศุกร์/เสาร์) — ไม่มี ephemeris ใช้ภาพรวมจากดาวเจ้าชนะ+ดาวเสวยอายุแทน\n";
+
+        return $out;
+    }
+
+    /**
+     * 🌀 คำนวณลัคนาประมาณจากเวลาเกิด + ราศีอาทิตย์
+     *   หลัก: 24 ชม. = 12 ราศี → 2 ชม./ราศี · เริ่ม Sun-sign ที่ 06:00 (sunrise)
+     *
+     * @param  string  $sunSign  ชื่อราศีไทย (เมษ..มีน)
+     * @param  int     $hour     ชั่วโมง 0-23
+     */
+    public function approximateLagna(string $sunSign, int $hour): ?string
+    {
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+        if (count($order) !== 12) {
+            return null;
+        }
+        $sunIdx = array_search($sunSign, $order, true);
+        if ($sunIdx === false) {
+            return null;
+        }
+        // shift = floor((hour - 6) / 2) mod 12 (sunrise=6 → ลัคนา=อาทิตย์)
+        $shift = (int) floor((($hour - 6 + 24) % 24) / 2);
+        $lagnaIdx = ($sunIdx + $shift) % 12;
+
+        return (string) $order[$lagnaIdx];
+    }
+
+    /**
+     * นับว่าราศีหนึ่งตกภพที่เท่าไหร่ของลัคนา (1-12)
+     */
+    public function houseFromLagna(string $lagna, string $sign): string
+    {
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+        $houses = (array) config('thai_astrology_knowledge.twelve_houses', []);
+        $i = array_search($lagna, $order, true);
+        $j = array_search($sign, $order, true);
+        if ($i === false || $j === false) {
+            return '';
+        }
+        $h = (($j - $i + 12) % 12) + 1;
+        $name = (string) ($houses[$h]['name'] ?? '');
+        $icon = (string) ($houses[$h]['icon'] ?? '');
+
+        return "ภพที่ {$h} ({$icon} {$name})";
+    }
+
+    /**
+     * 🌟 ระดับกำลังของดาวในราศี (เกษตร/อุจ/นิจ/กลาง)
+     */
+    public function dignityOf(string $planet, string $sign): string
+    {
+        $dig = (array) config("thai_astrology_knowledge.planet_dignity.{$planet}", []);
+        $label = (array) config('thai_astrology_knowledge.dignity_label', []);
+        if (empty($dig)) {
+            return '';
+        }
+        if (in_array($sign, (array) ($dig['rules'] ?? []), true)) {
+            return (string) ($label['rules'] ?? '');
+        }
+        if ($sign === ($dig['exalted'] ?? '')) {
+            return (string) ($label['exalted'] ?? '');
+        }
+        if ($sign === ($dig['debilitated'] ?? '')) {
+            return (string) ($label['debilitated'] ?? '');
+        }
+
+        return (string) ($label['neutral'] ?? '');
+    }
+
+    /**
+     * ตัดชื่อราศีไทยล้วนจาก "เมษ (Aries)" → "เมษ"
+     */
+    protected function extractSignFromName(string $zodiacName): ?string
+    {
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+        foreach ($order as $name) {
+            if (mb_strpos($zodiacName, (string) $name) === 0) {
+                return (string) $name;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -717,6 +850,54 @@ class ThaiAstrologyService
      * @param  string  $text  ข้อความที่อาจมีเลขไทย
      * @return string ข้อความที่เลขไทยถูกแปลงแล้ว
      */
+    /**
+     * ⏰ ดึงเวลาเกิดจากข้อความ — รองรับ "HH:MM", "HH.MM น.", "เวลา 14:30", "ตอน 8 โมง", "เกิดเช้า/บ่าย"
+     *
+     * @return int|null ชั่วโมง 0-23 หรือ null = ไม่พบ
+     */
+    public function extractBirthHourFromText(string $text): ?int
+    {
+        $t = $this->normalizeThaiDigits($text);
+
+        // ลำดับ 1: HH:MM หรือ HH.MM (+ optional น./AM/PM)
+        if (preg_match('/(?<!\d)(\d{1,2})[:\.](\d{2})\s*(น\.?|AM|PM|am|pm)?/u', $t, $m)) {
+            $h = (int) $m[1];
+            $suffix = mb_strtolower((string) ($m[3] ?? ''));
+            if (($suffix === 'pm' || $suffix === 'p.m.') && $h < 12) {
+                $h += 12;
+            } elseif (($suffix === 'am' || $suffix === 'a.m.') && $h === 12) {
+                $h = 0;
+            }
+            if ($h >= 0 && $h <= 23) {
+                return $h;
+            }
+        }
+
+        // ลำดับ 2: คำไทย "โมงเช้า/บ่าย/เย็น/ค่ำ/ดึก"
+        if (preg_match('/(\d{1,2})\s*โมง\s*(เช้า|บ่าย|เย็น|ค่ำ|ดึก)?/u', $t, $m)) {
+            $h = (int) $m[1];
+            $period = (string) ($m[2] ?? '');
+            if ($period === 'บ่าย' || $period === 'เย็น') {
+                $h = $h < 12 ? $h + 12 : $h;
+            } elseif ($period === 'ค่ำ' || $period === 'ดึก') {
+                $h = $h < 12 ? $h + 18 : $h;
+            }
+            if ($h >= 0 && $h <= 23) {
+                return $h;
+            }
+        }
+
+        // ลำดับ 3: ช่วงเวลาคร่าวๆ
+        if (preg_match('/เกิด.*?(เช้าตรู่|เช้า|สาย|เที่ยง|บ่าย|เย็น|ค่ำ|ดึก|กลางคืน)/u', $t, $m)) {
+            return [
+                'เช้าตรู่' => 5, 'เช้า' => 8, 'สาย' => 10, 'เที่ยง' => 12,
+                'บ่าย' => 14, 'เย็น' => 17, 'ค่ำ' => 20, 'ดึก' => 23, 'กลางคืน' => 22,
+            ][$m[1]] ?? null;
+        }
+
+        return null;
+    }
+
     protected function normalizeThaiDigits(string $text): string
     {
         return str_replace(
