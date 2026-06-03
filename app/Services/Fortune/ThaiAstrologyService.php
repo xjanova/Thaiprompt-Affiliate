@@ -72,7 +72,10 @@ class ThaiAstrologyService
             ."• 🏛️ ทักษา: ใช้ เดช(อำนาจ)/ศรี(ทรัพย์-รัก)/มนตรี(ผู้อุปถัมภ์) เสริมจุดแข็ง — กาลกิณี = เตือนสี/ดาวที่ควรเลี่ยง\n"
             ."• ⏳ ดาวเสวยอายุ = \"โทนของช่วงชีวิตนี้\" ใช้บอกว่าตอนนี้เป็นช่วงรุ่ง/ทดสอบ/พลิกผัน แล้วโยงกับไพ่ตำแหน่งอนาคต\n"
             ."• 🐉 ปีนักษัตร/ชง = ถ้าปีนี้ชง → เตือนระวังอย่างสร้างสรรค์ (❌ ห้ามขายพิธีแก้ชงแพง — ทำบุญเองได้)\n"
-            ."• 🔥 คู่ธาตุดวง = ถ้าราศีกับดาวขัดกัน สะท้อน \"แรงดึงสองด้าน\" ในตัวเขา ใช้ช่วยอ่านนิสัยลึก\n";
+            ."• 🔥 คู่ธาตุดวง = ถ้าราศีกับดาวขัดกัน สะท้อน \"แรงดึงสองด้าน\" ในตัวเขา ใช้ช่วยอ่านนิสัยลึก\n"
+            ."• 📅 วันมงคล/กาลกิณี = แนะวันทำเรื่องสำคัญ (เซ็น/แต่ง/เปิดร้าน) แบบ \"เลือกได้ก็ดี\" ไม่ใช่ \"ห้ามเด็ดขาด\"\n"
+            ."• 🔢 เลขชะตา (Life Path) = บุคลิกพื้นฐาน-ภารกิจชีวิต ใช้ยืนยัน/เสริมพื้นนิสัยจากดาวเจ้าชนะ\n"
+            ."• 📆 ดวงรายปี (Personal Year) = โทนของ \"ปีนี้\" เชื่อมตรงกับคำถามอนาคต (เช่น ปี 1=เริ่มใหม่, 9=ปิดบท)\n";
 
         if ($multi) {
             $directive .= "• ถ้าถามเรื่อง \"เข้ากันไหม/ความสัมพันธ์\" → ใช้บล็อก 💞 ความเข้ากันด้านล่าง + เทียบดาวมิตร/ศัตรู ให้ชัด\n";
@@ -284,10 +287,123 @@ class ThaiAstrologyService
         // 🔯 (2026-06-03) เติมระบบโหรเจ้าชนะให้ครบ: ทักษา + ดาวเสวยอายุ + นักษัตร/ชง + คู่ธาตุ
         $base .= $this->formatThaksaLine($dow);
         $base .= $this->formatPeriodLine($dow, $age);
+        $base .= $this->formatLuckyDayLine($dow);
         $base .= $this->formatZodiacYearLine($date->year);
+        $base .= $this->formatLifePathLine($date->day, $date->month, $date->year);
+        $base .= $this->formatPersonalYearLine($date->day, $date->month);
         $base .= $this->formatElementPairingLine($zodiac, (string) $p['element']);
 
         return $base;
+    }
+
+    /**
+     * 📅 วันมงคล/วันกาลกิณี — derive จากดาวเดช(2)/ศรี(3)/มนตรี(6)/กาลกิณี(7) ในทักษา
+     */
+    protected function formatLuckyDayLine(int $dayOfWeek): string
+    {
+        $thaksa = $this->getThaksa($dayOfWeek);
+        $map = (array) config('thai_astrology_knowledge.planet_to_day', []);
+        if (empty($thaksa) || empty($map)) {
+            return '';
+        }
+
+        $dech = $thaksa[2]['planet'] ?? '';
+        $sri = $thaksa[3]['planet'] ?? '';
+        $montri = $thaksa[6]['planet'] ?? '';
+        $kala = $thaksa[7]['planet'] ?? '';
+
+        $dechDay = (string) ($map[$dech] ?? '');
+        $sriDay = (string) ($map[$sri] ?? '');
+        $montriDay = (string) ($map[$montri] ?? '');
+        $kalaDay = (string) ($map[$kala] ?? '');
+
+        $good = array_filter(array_unique([$dechDay, $sriDay, $montriDay]));
+        if (empty($good) && $kalaDay === '') {
+            return '';
+        }
+
+        $out = '';
+        if (! empty($good)) {
+            $out .= "📅 วันมงคล (ทำเรื่องสำคัญ): ".implode(' · ', $good)."\n";
+        }
+        if ($kalaDay !== '') {
+            $out .= "🚫 วันกาลกิณี (เลี่ยงเริ่มงานใหญ่): {$kalaDay}\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 🔢 เลขชะตา (Life Path Number) — เลขศาสตร์จากวันเดือนปีเกิด (ค.ศ.)
+     */
+    protected function formatLifePathLine(int $day, int $month, int $year): string
+    {
+        $num = $this->lifePathNumber($day, $month, $year);
+        $info = (array) config('thai_astrology_knowledge.life_path.'.$num, []);
+        if (empty($info)) {
+            return '';
+        }
+
+        return "🔢 เลขชะตา (Life Path): {$num} — {$info['trait']}\n"
+            ."   ✨ จุดแข็ง: {$info['strength']}\n"
+            ."   ⚠️ ระวัง: {$info['caution']}\n";
+    }
+
+    /**
+     * 📆 ดวงรายปี (Personal Year) — โทนของปีปัจจุบันสำหรับคนนี้
+     */
+    protected function formatPersonalYearLine(int $day, int $month): string
+    {
+        $currentYear = (int) date('Y');
+        $py = $this->personalYearNumber($day, $month, $currentYear);
+        $text = (string) config('thai_astrology_knowledge.personal_year.'.$py, '');
+        if ($text === '') {
+            return '';
+        }
+
+        return "📆 ดวงรายปี ".($currentYear + 543)." (Personal Year {$py}): {$text}\n";
+    }
+
+    /**
+     * คำนวณเลขชะตา (Life Path) — รวมทุกตัวเลขใน d/m/y แล้วลดเป็นเลขเดี่ยว
+     *   เก็บ Master Number 11, 22 ไว้ไม่ลด
+     */
+    public function lifePathNumber(int $day, int $month, int $year): int
+    {
+        $sum = array_sum(str_split((string) $day))
+            + array_sum(str_split((string) $month))
+            + array_sum(str_split((string) $year));
+
+        return $this->reduceKeepMaster($sum);
+    }
+
+    /**
+     * คำนวณ Personal Year — วัน+เดือนเกิด + ปีปัจจุบัน → เลขเดี่ยว (ไม่เก็บ master)
+     */
+    public function personalYearNumber(int $day, int $month, int $year): int
+    {
+        $sum = array_sum(str_split((string) $day))
+            + array_sum(str_split((string) $month))
+            + array_sum(str_split((string) $year));
+
+        // Personal Year ลดถึงเลขเดี่ยว 1-9 (ไม่เก็บ master)
+        while ($sum > 9) {
+            $sum = array_sum(str_split((string) $sum));
+        }
+
+        return $sum;
+    }
+
+    /**
+     * ลดเลขเดี่ยว แต่เก็บ Master Number (11, 22)
+     */
+    protected function reduceKeepMaster(int $n): int
+    {
+        while ($n > 9 && $n !== 11 && $n !== 22) {
+            $n = array_sum(str_split((string) $n));
+        }
+
+        return $n;
     }
 
     /**
