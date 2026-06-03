@@ -73,7 +73,8 @@ class ThaiAstrologyService
             ."• ⏳ ดาวเสวยอายุ = \"โทนของช่วงชีวิตนี้\" ใช้บอกว่าตอนนี้เป็นช่วงรุ่ง/ทดสอบ/พลิกผัน แล้วโยงกับไพ่ตำแหน่งอนาคต\n"
             ."• 🐉 ปีนักษัตร/ชง = ถ้าปีนี้ชง → เตือนระวังอย่างสร้างสรรค์ (❌ ห้ามขายพิธีแก้ชงแพง — ทำบุญเองได้)\n"
             ."• 🔥 คู่ธาตุดวง = ถ้าราศีกับดาวขัดกัน สะท้อน \"แรงดึงสองด้าน\" ในตัวเขา ใช้ช่วยอ่านนิสัยลึก\n"
-            ."• 📅 วันมงคล/กาลกิณี = แนะวันทำเรื่องสำคัญ (เซ็น/แต่ง/เปิดร้าน) แบบ \"เลือกได้ก็ดี\" ไม่ใช่ \"ห้ามเด็ดขาด\"\n"
+            ."• 📅 วันมงคล/กาลกิณี = ฤกษ์ส่วนบุคคล แนะวันทำเรื่องสำคัญ (เซ็น/แต่ง/เปิดร้าน) แบบ \"เลือกได้ก็ดี\" ไม่ใช่ \"ห้ามเด็ดขาด\"\n"
+            ."• ✍️ ชื่อมงคล = ถ้าถามเรื่องตั้งชื่อ/เปลี่ยนชื่อ → แนะอักษรเดช/ศรี/มนตรี (ดี) + เลี่ยงอักษรกาลกิณี (❌ ห้ามขายดูชื่อแพง — เป็นแนวทาง)\n"
             ."• 🔢 เลขชะตา (Life Path) = บุคลิกพื้นฐาน-ภารกิจชีวิต ใช้ยืนยัน/เสริมพื้นนิสัยจากดาวเจ้าชนะ\n"
             ."• 📆 ดวงรายปี (Personal Year) = โทนของ \"ปีนี้\" เชื่อมตรงกับคำถามอนาคต (เช่น ปี 1=เริ่มใหม่, 9=ปิดบท)\n";
 
@@ -289,11 +290,77 @@ class ThaiAstrologyService
         $base .= $this->formatPeriodLine($dow, $age);
         $base .= $this->formatLuckyDayLine($dow);
         $base .= $this->formatZodiacYearLine($date->year);
+        $base .= $this->formatNamingLine($dow);
         $base .= $this->formatLifePathLine($date->day, $date->month, $date->year);
         $base .= $this->formatPersonalYearLine($date->day, $date->month);
         $base .= $this->formatElementPairingLine($zodiac, (string) $p['element']);
 
         return $base;
+    }
+
+    /**
+     * ✍️ ชื่อมงคล (อักษรทักษา) — อักษรมงคลควรมีในชื่อ + อักษรกาลกิณีห้ามใช้
+     *   เดช(2)/ศรี(3)/มนตรี(6) = อักษรดี · กาลกิณี(7) = อักษรห้าม
+     */
+    protected function formatNamingLine(int $dayOfWeek): string
+    {
+        $thaksa = $this->getThaksa($dayOfWeek);
+        $letters = (array) config('thai_astrology_knowledge.naming_letters', []);
+        if (empty($thaksa) || empty($letters)) {
+            return '';
+        }
+
+        $dechP = $thaksa[2]['planet'] ?? '';
+        $sriP = $thaksa[3]['planet'] ?? '';
+        $montriP = $thaksa[6]['planet'] ?? '';
+        $kalaP = $thaksa[7]['planet'] ?? '';
+
+        $good = [];
+        if (isset($letters[$dechP])) {
+            $good[] = "เดช: {$letters[$dechP]}";
+        }
+        if (isset($letters[$sriP])) {
+            $good[] = "ศรี: {$letters[$sriP]}";
+        }
+        if (isset($letters[$montriP])) {
+            $good[] = "มนตรี: {$letters[$montriP]}";
+        }
+
+        $out = '';
+        if (! empty($good)) {
+            $out .= "✍️ ชื่อมงคล (อักษรควรมีในชื่อ) — ".implode(' | ', $good)."\n";
+        }
+        if (isset($letters[$kalaP])) {
+            $out .= "🚫 อักษรกาลกิณี (ห้ามใช้ในชื่อ): {$letters[$kalaP]}\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 📜 อักษร/ดาวมงคลของวันเกิด (สำหรับวิเคราะห์ชื่อ — public ใช้ที่อื่นได้)
+     *
+     * @return array{good_planets:array<string>, good_letters:array<string>, kala_planet:string, kala_letters:string}
+     */
+    public function getNamingGuide(int $dayOfWeek): array
+    {
+        $thaksa = $this->getThaksa($dayOfWeek);
+        $letters = (array) config('thai_astrology_knowledge.naming_letters', []);
+        if (empty($thaksa)) {
+            return ['good_planets' => [], 'good_letters' => [], 'kala_planet' => '', 'kala_letters' => ''];
+        }
+
+        $goodPlanets = array_values(array_unique(array_filter([
+            $thaksa[2]['planet'] ?? '', $thaksa[3]['planet'] ?? '', $thaksa[6]['planet'] ?? '',
+        ])));
+        $kalaPlanet = $thaksa[7]['planet'] ?? '';
+
+        return [
+            'good_planets' => $goodPlanets,
+            'good_letters' => array_map(fn ($p) => (string) ($letters[$p] ?? ''), $goodPlanets),
+            'kala_planet' => $kalaPlanet,
+            'kala_letters' => (string) ($letters[$kalaPlanet] ?? ''),
+        ];
     }
 
     /**
