@@ -3997,6 +3997,8 @@ class FacebookWebhookController extends Controller
             //             → force_tier = "ลูกค้าเลือก tier ที่รู้ราคาแล้ว" เท่านั้น (semantic ชัดขึ้น)
             'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'FORTUNE_DEEP' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            // 🌍 (2026-06-03) ลูกค้าต่างชาติยืนยันว่าจ่ายเงินไทยได้ → ส่ง keyword ไปปลด override (กรณีพิเศษ)
+            'FOREIGN_CONFIRM_PAY' => $this->processConversationalMessage($senderId, 'ยืนยันจ่ายเงินไทยได้'),
             'CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'SUBSCRIBE' => $this->facebookService->sendMessage(
                 $senderId,

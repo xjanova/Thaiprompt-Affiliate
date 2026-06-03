@@ -1169,6 +1169,12 @@ class FortuneChannelManager
                 ], $extra),
 
                 // อื่นๆ → ส่ง text ธรรมดา
+                // 🌍 (2026-06-03) ลูกค้าต่างชาติ — ถามยืนยัน + ปุ่ม "แน่ใจ จ่ายเงินไทยได้"
+                'foreign_service_confirm' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '✅ แน่ใจ จ่ายเงินไทยได้', 'payload' => 'FOREIGN_CONFIRM_PAY'],
+                    ['content_type' => 'text', 'title' => '🙏 ไว้คราวหน้า', 'payload' => 'CANCEL_FORTUNE'],
+                ], $extra),
+
                 default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏', $extra),
             };
 
@@ -2578,6 +2584,12 @@ class FortuneChannelManager
                 ]),
 
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
+                // 🌍 (2026-06-03) ลูกค้าต่างชาติ — ถามยืนยัน + ปุ่ม "แน่ใจ จ่ายเงินไทยได้"
+                'foreign_service_confirm' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '✅ แน่ใจ จ่ายเงินไทยได้', 'text' => 'ยืนยันจ่ายเงินไทยได้'],
+                    ['label' => '🙏 ไว้คราวหน้า', 'text' => 'ยกเลิก'],
+                ]),
+
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };
 

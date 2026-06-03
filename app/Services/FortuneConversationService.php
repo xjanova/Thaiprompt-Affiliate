@@ -1122,6 +1122,18 @@ class FortuneConversationService
             //   เคส FTU-260603-M1895: false-farewell → "โอนแล้วค่ะ" โดนเมิน
             $hasPendingUnpaidBill = $this->hasPendingUnpaidBill($facebookUserId);
 
+            // 🌍 (2026-06-03) ลูกค้าต่างชาติกดปุ่ม "แน่ใจ จ่ายเงินไทยได้" → ปลด override + เริ่ม flow (กรณีพิเศษ)
+            //   บางคนมีวิธีจ่ายจริง (เพื่อนในไทยโอนให้) — เคารพเจตนา ยอมให้สร้างบิลได้
+            //   วางก่อน silent/farewell guard เพื่อให้การยืนยันไม่ถูก skip
+            if ($this->matchesForeignPayConfirm($messageText)) {
+                Cache::put("fortune:foreign_override:{$facebookUserId}", true, 1800); // 30 นาที (พอสร้างบิล)
+                Log::info('Fortune: foreign customer confirmed Thai payment → override granted', [
+                    'facebook_user_id' => $facebookUserId,
+                ]);
+
+                return $this->startDeepReadingFlow($facebookUserId, null, null, $messageText);
+            }
+
             // 🎯 Phase N — ถ้าผู้ใช้อยู่ใน silent mode → ไม่ตอบกลับเลย (สแปมตรวจพบแล้ว)
             //   ⚠️ ยกเว้น: ลูกค้าจ่ายเงินแล้ว (paid customer) → bypass + clear silent mode
             if ($this->isInSilentMode($facebookUserId)) {
@@ -5153,6 +5165,15 @@ class FortuneConversationService
             return false;
         }
 
+        // 🆕 (2026-06-03) ลูกค้ากดยืนยัน "จ่ายเงินไทยได้" (เช่น เพื่อนในไทยโอนให้) → ปล่อยผ่าน (กรณีพิเศษ)
+        try {
+            if (Cache::get("fortune:foreign_override:{$userId}")) {
+                return false;
+            }
+        } catch (\Throwable $e) {
+            // ignore — ถือว่าไม่มี override
+        }
+
         try {
             $lo = \App\Services\FortuneLocaleService::LOCALE_LO;
 
@@ -5177,15 +5198,33 @@ class FortuneConversationService
     }
 
     /**
-     * 🌍 (2026-06-03) ข้อความแจ้งลูกค้าต่างประเทศว่ายังไม่เปิดบริการในประเทศของเขา
+     * 🌍 (2026-06-03) ตรวจว่าลูกค้ากดปุ่ม "แน่ใจ จ่ายเงินไทยได้" (กรณีพิเศษ)
+     *   FB postback FOREIGN_CONFIRM_PAY → map มาเป็น text นี้ / LINE quick-reply ส่ง text นี้
+     *   → ทั้งสองช่องทางมาลงที่ detector เดียวกัน
+     */
+    protected function matchesForeignPayConfirm(?string $text): bool
+    {
+        if (empty($text)) {
+            return false;
+        }
+        $t = mb_strtolower(trim($text));
+
+        return str_contains($t, 'ยืนยันจ่ายเงินไทย') || str_contains($t, 'แน่ใจจ่ายเงินไทย');
+    }
+
+    /**
+     * 🌍 (2026-06-03) ลูกค้าต่างประเทศ — ยังไม่เปิดบริการ แต่ถามอีกครั้ง + ปุ่ม "แน่ใจ"
+     *   ถ้าแน่ใจว่าจ่ายเงินบาทไทยได้ (เช่น ให้เพื่อนในไทยโอนให้) → กดปุ่ม → สร้างบิลได้ (กรณีพิเศษ)
+     *   ปุ่ม render โดย FortuneChannelManager (action foreign_service_confirm) ทั้ง FB + LINE
      */
     protected function foreignServiceClosedResponse(): array
     {
         return [
-            'action' => 'foreign_service_closed',
+            'action' => 'foreign_service_confirm',
             'message' => "🙏 ขออภัยค่ะ ขณะนี้ยังไม่เปิดให้บริการดูดวงในประเทศของคุณ\n\n"
-                ."บริการนี้เปิดเฉพาะลูกค้าในประเทศไทยค่ะ 🇹🇭\n"
-                .'(Sorry, this service is not yet available in your country.)',
+                ."แต่ถ้าคุณ “แน่ใจว่าชำระเป็นเงินบาทไทยได้” — เช่น ให้เพื่อนในไทยโอนให้ —\n"
+                ."กดปุ่ม “✅ แน่ใจ จ่ายได้” เพื่อเริ่มดูดวงต่อได้เลยค่ะ ✨\n"
+                .'(If you can pay in Thai Baht, e.g. a friend in Thailand transfers for you, tap “✅ แน่ใจ จ่ายได้”.)',
             'reading' => null,
         ];
     }
