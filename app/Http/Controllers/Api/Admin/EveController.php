@@ -35,19 +35,38 @@ class EveController extends Controller
 
         $provider = $data['provider'] ?? 'groq';
         $model = $data['model'] ?? 'llama-3.3-70b-versatile';
+        $config = [
+            'temperature' => isset($data['temperature']) ? (float) $data['temperature'] : 0.55,
+            'max_tokens' => isset($data['max_tokens']) ? (int) $data['max_tokens'] : 320,
+        ];
 
         $started = microtime(true);
         try {
-            $result = $aiService->chatWithCustomSystemPrompt(
-                systemMessage: $systemPrompt,
-                userMessage: $userMessage,
-                config: [
-                    'temperature' => isset($data['temperature']) ? (float) $data['temperature'] : 0.55,
-                    'max_tokens' => isset($data['max_tokens']) ? (int) $data['max_tokens'] : 320,
-                ],
-                providerOverride: $provider,
-                modelOverride: $model,
-            );
+            try {
+                $result = $aiService->chatWithCustomSystemPrompt(
+                    systemMessage: $systemPrompt,
+                    userMessage: $userMessage,
+                    config: $config,
+                    providerOverride: $provider,
+                    modelOverride: $model,
+                );
+            } catch (Throwable $inner) {
+                // 🩹 (2026-06-04) The requested provider may have no Chat-AI key
+                //   (e.g. groq isn't used for chat per the AI-pool routing). Rather
+                //   than hard-fail Eve, fall back to the DEFAULT AI pool — the same
+                //   keyless path ChatController::suggest + the fortune bot use — so
+                //   Eve still answers using whatever provider has an active key.
+                if (stripos($inner->getMessage(), 'API Key') === false) {
+                    throw $inner;
+                }
+                $result = $aiService->chatWithCustomSystemPrompt(
+                    systemMessage: $systemPrompt,
+                    userMessage: $userMessage,
+                    config: $config,
+                );
+                $provider = 'pool';
+                $model = 'auto';
+            }
 
             // FortuneAIService::chatWithCustomSystemPrompt returns
             // ['response' => string, ...] via sanitizeChatResult.
