@@ -29,6 +29,9 @@ class ThaiAstrologyService
     /** จำนวนคนสูงสุดที่จะคำนวณต่อหนึ่งข้อความ (กัน prompt บวม + กัน abuse) */
     public const MAX_PEOPLE = 3;
 
+    /** เวลาเกิดที่ parse ได้ล่าสุด (ชม. เป็น float รวมนาที, 0-23.99) — null = ไม่ได้ระบุ */
+    protected ?float $lastBirthHour = null;
+
     /**
      * สร้างบล็อกดวงดาวสำหรับ Celtic — ตรวจจับวันเกิดในข้อความแล้วคำนวณให้ครบ
      *
@@ -48,6 +51,9 @@ class ThaiAstrologyService
             return '';
         }
 
+        // parse เวลาเกิด (ถ้ามี) — เก็บไว้ใช้คำนวณลัคนา
+        $this->lastBirthHour = $this->extractBirthHourFromText($text);
+
         $multi = count($dates) > 1;
         $people = '';
 
@@ -60,23 +66,125 @@ class ThaiAstrologyService
             $people .= $label."\n".$this->formatPersonBlock($d['ymd'])."\n";
         }
 
+        // 💞 (2026-06-03) Compatibility — ถ้ามี ≥2 คน คำนวณความเข้ากันให้เลย
+        $compat = '';
+        if ($multi) {
+            $compat = $this->buildCompatibility($dates[0]['ymd'], $dates[1]['ymd']);
+        }
+
         // directive — บอก AI ชัดเจนว่าให้ใช้ดวงดาวนี้ผสานไพ่ + ห้ามขอวันเกิดซ้ำ
         $directive = "👉 วิธีใช้ดวงดาวนี้ (สำคัญ):\n"
-            ."• ผสาน ราศี/ดาวเจ้าชนะ/ธาตุ/พื้นนิสัย เข้ากับไพ่ที่เปิดไว้ — อย่าทำนายจากไพ่อย่างเดียว\n";
+            ."• ผสาน ราศี/ดาวเจ้าชนะ/ธาตุ/พื้นนิสัย เข้ากับไพ่ที่เปิดไว้ — อย่าทำนายจากไพ่อย่างเดียว\n"
+            ."• 🏛️ ทักษา: ใช้ เดช(อำนาจ)/ศรี(ทรัพย์-รัก)/มนตรี(ผู้อุปถัมภ์) เสริมจุดแข็ง — กาลกิณี = เตือนสี/ดาวที่ควรเลี่ยง\n"
+            ."• ⏳ ดาวเสวยอายุ = \"โทนของช่วงชีวิตนี้\" ใช้บอกว่าตอนนี้เป็นช่วงรุ่ง/ทดสอบ/พลิกผัน แล้วโยงกับไพ่ตำแหน่งอนาคต\n"
+            ."• 🐉 ปีนักษัตร/ชง = ถ้าปีนี้ชง → เตือนระวังอย่างสร้างสรรค์ (❌ ห้ามขายพิธีแก้ชงแพง — ทำบุญเองได้)\n"
+            ."• 🔥 คู่ธาตุดวง = ถ้าราศีกับดาวขัดกัน สะท้อน \"แรงดึงสองด้าน\" ในตัวเขา ใช้ช่วยอ่านนิสัยลึก\n"
+            ."• 📅 วันมงคล/กาลกิณี = ฤกษ์ส่วนบุคคล แนะวันทำเรื่องสำคัญ (เซ็น/แต่ง/เปิดร้าน) แบบ \"เลือกได้ก็ดี\" ไม่ใช่ \"ห้ามเด็ดขาด\"\n"
+            ."• ✍️ ชื่อมงคล = ถ้าถามเรื่องตั้งชื่อ/เปลี่ยนชื่อ → แนะอักษรเดช/ศรี/มนตรี (ดี) + เลี่ยงอักษรกาลกิณี (❌ ห้ามขายดูชื่อแพง — เป็นแนวทาง)\n"
+            ."• 🌀 ดวงพื้น (ผูกดวง) = ดาวทั้ง 9 (☉☽♂☿♃♀♄☊☋) คำนวณจาก ephemeris ของเราเอง — ใช้ \"ตำแหน่งดาว+ภพ+เกษตร/อุจ/นิจ\" ในการอ่าน\n"
+            ."   • ดาวในภพไหน = เรื่องนั้นเด่น (เช่น อังคารในปัตนิ = คู่เด็ดขาด/ขัดแย้ง · ศุกร์ในกัมมะ = งานสาย art-รัก)\n"
+            ."   • ดาวอุจ = พลังแรงดี · ดาวเกษตร = บ้านตัวเอง-มั่นคง · ดาวนิจ = อ่อน-ต้องระวัง · ดาวพักร = พลังสะท้อนใน/ทบทวน\n"
+            ."   📐 ถ้าไม่มีเวลาเกิด → \"ดาวจันทร์/ลัคนาอาจคลาดเคลื่อน ขอเวลาเกิดเพื่อแม่นขึ้น\"\n"
+            ."• 🔢 เลขชะตา (Life Path) = บุคลิกพื้นฐาน-ภารกิจชีวิต ใช้ยืนยัน/เสริมพื้นนิสัยจากดาวเจ้าชนะ\n"
+            ."• 📆 ดวงรายปี (Personal Year) = โทนของ \"ปีนี้\" เชื่อมตรงกับคำถามอนาคต (เช่น ปี 1=เริ่มใหม่, 9=ปิดบท)\n";
 
         if ($multi) {
-            $directive .= "• ถ้าถามเรื่อง \"เข้ากันไหม/ความสัมพันธ์\" → เทียบธาตุ + ดาวมิตร/ดาวศัตรู ของทั้งสองคนให้ชัด\n";
+            $directive .= "• ถ้าถามเรื่อง \"เข้ากันไหม/ความสัมพันธ์\" → ใช้บล็อก 💞 ความเข้ากันด้านล่าง + เทียบดาวมิตร/ศัตรู ให้ชัด\n";
         }
 
         $directive .= "• เชื่อมจังหวะดาว/วันมงคล กับไพ่ตำแหน่งอนาคต → ระบุช่วงเวลาให้แม่นขึ้น\n"
             ."• พื้นนิสัยจากดาวเจ้าชนะ = \"พื้นฐานดวง\" ของคนนั้น ใช้ยืนยัน/เสริมสิ่งที่ไพ่บอก\n"
+            ."• ⚠️ ทั้งหมดนี้ = \"พื้นฐานดวง\" ประกอบไพ่ ไม่ใช่คำฟันธงแยก — ร้อยให้เป็นเรื่องเดียวกับหน้าไพ่\n"
             .'• ⚠️ เจ้าชะตาให้วันเกิดมาแล้ว — ห้ามถามวันเกิดซ้ำ ใช้ข้อมูลด้านบนได้เลย';
 
         return "\n━━━━━━━━━━━━━━━━━\n"
-            ."🌟 ดวงดาวจากวันเกิดที่เจ้าชะตาให้ (แม่หมอคำนวณให้แล้ว — ใช้ผสานกับไพ่)\n"
+            ."🌟 ดวงดาวจากวันเกิด (โหรเจ้าชนะ — แม่หมอคำนวณให้แล้ว ใช้ผสานกับไพ่)\n"
             ."━━━━━━━━━━━━━━━━━\n"
             .$people."\n"
+            .($compat !== '' ? $compat."\n" : '')
             .$directive."\n\n";
+    }
+
+    /**
+     * 💞 คำนวณความเข้ากัน (compatibility) ระหว่าง 2 คน
+     *   เทียบ: ธาตุดาวเจ้าชนะ + ดาวมิตร/ศัตรู + ธาตุราศี → คะแนน + สรุป
+     *
+     * @param  string  $ymdA  วันเกิดคนที่ 1 (Y-m-d)
+     * @param  string  $ymdB  วันเกิดคนที่ 2 (Y-m-d)
+     * @return string ว่าง = คำนวณไม่ได้
+     */
+    public function buildCompatibility(string $ymdA, string $ymdB): string
+    {
+        try {
+            $a = Carbon::parse($ymdA);
+            $b = Carbon::parse($ymdB);
+        } catch (\Throwable $e) {
+            return '';
+        }
+
+        $pa = $this->getPlanetByDayOfWeek($a->dayOfWeek);
+        $pb = $this->getPlanetByDayOfWeek($b->dayOfWeek);
+        $score = 0;
+        $notes = [];
+
+        // 1) ธาตุดาวเจ้าชนะ (ไทย)
+        $elA = trim(str_replace('ธาตุ', '', (string) $pa['element']));
+        $elB = trim(str_replace('ธาตุ', '', (string) $pb['element']));
+        $toEn = (array) config('thai_astrology_knowledge.thai_element_en', []);
+        $matrix = (array) config('fortune_elemental_dignities.matrix', []);
+        $tone = $matrix[$toEn[$elA] ?? ''][$toEn[$elB] ?? ''] ?? null;
+        if ($tone === 'friendly' || $tone === 'same') {
+            $score += 2;
+            $notes[] = "ธาตุดาวประจำตัว ({$elA}–{$elB}) เข้ากันดี ✨";
+        } elseif ($tone === 'contrary') {
+            $score -= 2;
+            $notes[] = "ธาตุดาวประจำตัว ({$elA}–{$elB}) ขัดกัน ⚡ ต้องปรับเข้าหากัน";
+        } else {
+            $notes[] = "ธาตุดาวประจำตัว ({$elA}–{$elB}) เป็นกลาง ➖";
+        }
+
+        // 2) ดาวมิตร/ศัตรู — ดาว A อยู่ในมิตรของ B ไหม (ตัดคำ "ดาว" ออกเทียบ)
+        $planetA = trim(str_replace(['ดาว', '(☉)', '(☽)', '(♂)', '(☿)', '(♃)', '(♀)', '(♄)'], '', (string) $pa['planet']));
+        $planetB = trim(str_replace(['ดาว', '(☉)', '(☽)', '(♂)', '(☿)', '(♃)', '(♀)', '(♄)'], '', (string) $pb['planet']));
+        $friendHit = (mb_strpos((string) $pb['friends'], $planetA) !== false) || (mb_strpos((string) $pa['friends'], $planetB) !== false);
+        $enemyHit = (mb_strpos((string) $pb['enemies'], $planetA) !== false) || (mb_strpos((string) $pa['enemies'], $planetB) !== false);
+        if ($friendHit) {
+            $score += 2;
+            $notes[] = 'ดาวประจำตัวเป็น "ดาวมิตร" กัน 🤝 หนุนเกื้อกัน';
+        }
+        if ($enemyHit) {
+            $score -= 2;
+            $notes[] = 'ดาวประจำตัวเป็น "ดาวศัตรู" กัน ⚔️ ระวังกระทบกระทั่ง';
+        }
+
+        // 3) ธาตุราศี
+        $zElA = $this->getZodiacElement($this->getZodiacSign($a->month, $a->day));
+        $zElB = $this->getZodiacElement($this->getZodiacSign($b->month, $b->day));
+        if ($zElA !== null && $zElB !== null) {
+            $ztone = $matrix[$toEn[$zElA] ?? ''][$toEn[$zElB] ?? ''] ?? null;
+            if ($ztone === 'friendly' || $ztone === 'same') {
+                $score += 1;
+                $notes[] = "ธาตุราศี ({$zElA}–{$zElB}) เข้ากัน ✨";
+            } elseif ($ztone === 'contrary') {
+                $score -= 1;
+                $notes[] = "ธาตุราศี ({$zElA}–{$zElB}) ขัดกัน ⚡";
+            }
+        }
+
+        // สรุปคะแนน → ระดับความเข้ากัน
+        if ($score >= 3) {
+            $verdict = '💞💞 เข้ากันสูง — ดวงหนุนกัน เป็นคู่ที่เกื้อหนุน (ที่เหลือคือใจ+ไพ่)';
+        } elseif ($score >= 1) {
+            $verdict = '💞 เข้ากันได้ — มีจุดหนุนมากกว่าขัด ปรับนิดหน่อยลงตัว';
+        } elseif ($score >= -1) {
+            $verdict = '⚖️ ก้ำกึ่ง — เข้ากันได้ถ้าเข้าใจกัน ขึ้นกับการปรับตัว';
+        } else {
+            $verdict = '⚡ ต้องปรับเยอะ — ดวงมีแรงขัด แต่ "ไม่ใช่คู่ไม่ได้" ถ้าทั้งคู่ตั้งใจเข้าหากัน';
+        }
+
+        return "💞 ความเข้ากันของดวง (คนที่ 1 × คนที่ 2):\n"
+            .'   '.implode("\n   ", $notes)."\n"
+            ."   → {$verdict}\n";
     }
 
     /**
@@ -180,12 +288,664 @@ class ThaiAstrologyService
         $zodiac = $this->getZodiacSign($date->month, $date->day);
         $p = $this->getPlanetByDayOfWeek($dow);
 
-        return "📅 {$date->day} {$thaiMonths[$date->month]} {$thaiYear} (วัน{$dayName}, อายุ {$age} ปี)\n"
+        $base = "📅 {$date->day} {$thaiMonths[$date->month]} {$thaiYear} (วัน{$dayName}, อายุ {$age} ปี)\n"
             ."♈ ราศี: {$zodiac}\n"
             ."⭐ ดาวเจ้าชนะ: {$p['planet']} | 🔥 ธาตุ: {$p['element']}\n"
             ."🤝 ดาวมิตร: {$p['friends']} | ⚔️ ดาวศัตรู: {$p['enemies']}\n"
             ."🎨 สีมงคล: {$p['lucky_color']} | 🔢 เลขมงคล: {$p['lucky_number']}\n"
             ."💎 พื้นนิสัย (ตามดาวเจ้าชนะ): {$p['personality']}\n";
+
+        // 🔯 (2026-06-03) เติมระบบโหรเจ้าชนะให้ครบ: ทักษา + ดาวเสวยอายุ + นักษัตร/ชง + คู่ธาตุ
+        $base .= $this->formatThaksaLine($dow);
+        $base .= $this->formatPeriodLine($dow, $age);
+        $base .= $this->formatLuckyDayLine($dow);
+        $base .= $this->formatZodiacYearLine($date->year);
+        $base .= $this->formatBirthChartBlock($zodiac, $date, $dow);
+        $base .= $this->formatNamingLine($dow);
+        $base .= $this->formatLifePathLine($date->day, $date->month, $date->year);
+        $base .= $this->formatPersonalYearLine($date->day, $date->month);
+        $base .= $this->formatElementPairingLine($zodiac, (string) $p['element']);
+
+        return $base;
+    }
+
+    /**
+     * ✍️ ชื่อมงคล (อักษรทักษา) — อักษรมงคลควรมีในชื่อ + อักษรกาลกิณีห้ามใช้
+     *   เดช(2)/ศรี(3)/มนตรี(6) = อักษรดี · กาลกิณี(7) = อักษรห้าม
+     */
+    protected function formatNamingLine(int $dayOfWeek): string
+    {
+        $thaksa = $this->getThaksa($dayOfWeek);
+        $letters = (array) config('thai_astrology_knowledge.naming_letters', []);
+        if (empty($thaksa) || empty($letters)) {
+            return '';
+        }
+
+        $dechP = $thaksa[2]['planet'] ?? '';
+        $sriP = $thaksa[3]['planet'] ?? '';
+        $montriP = $thaksa[6]['planet'] ?? '';
+        $kalaP = $thaksa[7]['planet'] ?? '';
+
+        $good = [];
+        if (isset($letters[$dechP])) {
+            $good[] = "เดช: {$letters[$dechP]}";
+        }
+        if (isset($letters[$sriP])) {
+            $good[] = "ศรี: {$letters[$sriP]}";
+        }
+        if (isset($letters[$montriP])) {
+            $good[] = "มนตรี: {$letters[$montriP]}";
+        }
+
+        $out = '';
+        if (! empty($good)) {
+            $out .= "✍️ ชื่อมงคล (อักษรควรมีในชื่อ) — ".implode(' | ', $good)."\n";
+        }
+        if (isset($letters[$kalaP])) {
+            $out .= "🚫 อักษรกาลกิณี (ห้ามใช้ในชื่อ): {$letters[$kalaP]}\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 🌀 ผูกดวงเต็มสูตร — คำนวณตำแหน่งดาวทั้ง 9 (☉☽♂☿♃♀♄☊☋) ด้วย PlanetEphemeris
+     *
+     * - ดาวอาทิตย์ แม่นเป๊ะ (±0.5° จาก JPL)
+     * - ดาวจันทร์ แม่นระดับราศี (~±5° ใช้พอ)
+     * - ดาวอื่น 5 ดวง คำนวณจาก Keplerian elements (พุธ-ศุกร์-อังคาร-พฤหัส-เสาร์)
+     * - ราหู/เกตุ จากจุดโหนดจันทร์ (เป๊ะ ±0.1°)
+     * - ตรวจพักร (retrograde) ทุกดาว
+     * - ลัคนา (ถ้ามีเวลาเกิด) + 12 ภพ + เกษตร/อุจ/นิจ ทุกดาว
+     *
+     * @param  string  $zodiacName  ชื่อราศีไทย (จาก getZodiacSign)
+     */
+    protected function formatBirthChartBlock(string $zodiacName, \Carbon\Carbon $date, int $dow): string
+    {
+        $sunSign = $this->extractSignFromName($zodiacName);
+        if ($sunSign === null) {
+            return '';
+        }
+
+        // ลัคนา (ถ้ามีเวลาเกิด) — ใช้นาที + Local Sidereal Time จริง
+        $birthHour = $this->lastBirthHour;
+        if ($birthHour !== null) {
+            $hh = (int) floor($birthHour);
+            $mm = (int) round(($birthHour - $hh) * 60);
+            if ($mm >= 60) {
+                $mm = 0;
+                $hh++;
+            }
+            $dtForCalc = $date->copy()->setTime($hh, $mm, 0);
+            $lagna = $this->siderealLagna($dtForCalc);
+            $timeStr = sprintf('%02d:%02d', $hh, $mm);
+        } else {
+            $dtForCalc = $date->copy()->setTime(12, 0, 0);
+            $lagna = null;
+            $timeStr = '';
+        }
+
+        // ⭐ คำนวณตำแหน่งดาวทั้ง 9 ด้วย ephemeris ของเราเอง
+        $eph = new PlanetEphemeris();
+        $positions = $eph->positions($dtForCalc);
+
+        $out = "🌀 ดวงพื้น (ผูกดวงเต็มสูตร — คำนวณดาว 9 ดวง):\n";
+
+        if ($lagna !== null) {
+            $out .= "   ⬆️ ลัคนา: ราศี{$lagna} (จากเวลาเกิด {$timeStr} น. · LST + ละติจูดกรุงเทพ)\n";
+        } else {
+            $out .= "   ⬆️ ลัคนา: (ไม่ระบุเวลาเกิด — ดาวจันทร์/ลัคนาอาจคลาดเคลื่อน · ถามเวลาเกิดเพื่อแม่นขึ้น)\n";
+        }
+
+        // ตำแหน่งดาวทั้ง 9 + ภพ (ถ้ามีลัคนา) + ดิ๊กนิตี้
+        $out .= "   📍 ตำแหน่งดาว:\n";
+        foreach ($positions as $key => $p) {
+            $deg = floor($p['lon']) % 30;
+            $line = "      {$p['sym']} {$p['th']} ราศี{$p['sign']} ".sprintf('%2d°', $deg);
+            if ($lagna !== null) {
+                $h = $this->houseNumber($lagna, $p['sign']);
+                $line .= " · ภพ{$h}";
+            }
+            $dig = $this->dignityOf($p['th'], $p['sign']);
+            if ($dig !== '' && strpos($dig, 'เป็นกลาง') === false) {
+                $line .= ' · '.$dig;
+            }
+            if (! empty($p['retro'])) {
+                $line .= ' · ⏪ พักร';
+            }
+            $out .= $line."\n";
+        }
+
+        // 12 ภพ สำหรับให้ AI อ้างอิง
+        $out .= "   🏛️ 12 ภพ: ตนุ(ตัวเอง)/กฎุมพะ(ทรัพย์)/สหัชชะ(พี่น้อง)/พันธุ(บ้าน)/ปุตตะ(บุตร-รัก)/อริ(ศัตรู-โรค)/ปัตนิ(คู่)/มรณะ(วิกฤต)/ศุภะ(โชค-บุญ)/กัมมะ(งาน)/ลาภะ(โชคลาภ)/วินาสนะ(สูญเสีย)\n";
+
+        return $out;
+    }
+
+    /**
+     * คืนเลขภพ 1-12 (ใช้ภายในคู่กับ houseFromLagna ที่คืนข้อความ)
+     */
+    protected function houseNumber(string $lagna, string $sign): int
+    {
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+        $i = array_search($lagna, $order, true);
+        $j = array_search($sign, $order, true);
+        if ($i === false || $j === false) {
+            return 0;
+        }
+
+        return (($j - $i + 12) % 12) + 1;
+    }
+
+    /**
+     * 🌀 คำนวณลัคนา จาก Local Sidereal Time (แม่นจริง — ราศีขึ้นเร็วต่างกัน)
+     *
+     *   1. คำนวณ LST จาก JD + ลองจิจูดสถานที่ (กรุงเทพ 100.5°E)
+     *   2. หา RA ของลัคนา = LST (จุดที่ horizon ตัด equator)
+     *   3. แปลง RA → ecliptic longitude ด้วยสูตร Asc (Meeus ch.13)
+     *      tan(λ) = -cos(LST) / (sin(LST)·cos(ε) + tan(φ)·sin(ε))
+     *      โดย ε = ความเอียง 23.44°, φ = ละติจูดสถานที่
+     *
+     * @param  \Carbon\Carbon  $dt  วันเวลาเกิด (Thai time UTC+7)
+     * @param  float           $lat ละติจูด (default กรุงเทพ 13.75)
+     * @param  float           $lon ลองจิจูด (default กรุงเทพ 100.5)
+     */
+    public function siderealLagna(\Carbon\Carbon $dt, float $lat = 13.75, float $lon = 100.5): ?string
+    {
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+        if (count($order) !== 12) {
+            return null;
+        }
+
+        $eph = new PlanetEphemeris();
+        $jdUT = $eph->julianDay($dt) - 7.0 / 24.0; // Thai → UT
+
+        // Greenwich Mean Sidereal Time (Meeus ch.12 eq. 12.4 — แม่นแม้วันที่ห่าง J2000)
+        // แยก integer day + fractional hour เพื่อกัน float precision loss
+        $jd0 = floor($jdUT - 0.5) + 0.5; // 0h UT
+        $hUT = ($jdUT - $jd0) * 24.0;
+        $d0 = $jd0 - 2451545.0;
+        $t = ($jdUT - 2451545.0) / 36525.0;
+        $gmstH = 6.697374558 + 0.06570982441908 * $d0
+            + 1.00273790935 * $hUT + 0.000026 * $t * $t;
+        $gmstDeg = fmod($gmstH * 15.0, 360.0);
+        if ($gmstDeg < 0) {
+            $gmstDeg += 360.0;
+        }
+        $lst = fmod($gmstDeg + $lon, 360.0);
+        if ($lst < 0) {
+            $lst += 360.0;
+        }
+
+        // Ecliptic obliquity (ความเอียงสุริยวิถี)
+        $epsilon = deg2rad(23.4392911 - 0.0130041667 * $t);
+        $lstRad = deg2rad($lst);
+        $phiRad = deg2rad($lat);
+
+        // ลัคนา — Meeus 13.6 (Ascendant คือจุดขึ้นตะวันออก ไม่ใช่ Descendant)
+        //   λ_asc = atan2( cos(LST), -[sin(LST)·cos(ε) + tan(φ)·sin(ε)] )
+        // วิธีนี้ได้ quadrant ถูก — ลัคนาอยู่ "ทางตะวันออก" (LST+90° ประมาณ)
+        $asc = rad2deg(atan2(
+            cos($lstRad),
+            -(sin($lstRad) * cos($epsilon) + tan($phiRad) * sin($epsilon))
+        ));
+        if ($asc < 0) {
+            $asc += 360.0;
+        }
+
+        $signIdx = (int) floor($asc / 30.0) % 12;
+
+        return (string) $order[$signIdx];
+    }
+
+    /**
+     * @deprecated ใช้ siderealLagna แทน — สูตรเก่า 2 ชม./ราศี ไม่แม่น
+     */
+    public function approximateLagna(string $sunSign, int $hour): ?string
+    {
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+        if (count($order) !== 12) {
+            return null;
+        }
+        $sunIdx = array_search($sunSign, $order, true);
+        if ($sunIdx === false) {
+            return null;
+        }
+        $shift = (int) floor((($hour - 6 + 24) % 24) / 2);
+        $lagnaIdx = ($sunIdx + $shift) % 12;
+
+        return (string) $order[$lagnaIdx];
+    }
+
+    /**
+     * นับว่าราศีหนึ่งตกภพที่เท่าไหร่ของลัคนา (1-12)
+     */
+    public function houseFromLagna(string $lagna, string $sign): string
+    {
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+        $houses = (array) config('thai_astrology_knowledge.twelve_houses', []);
+        $i = array_search($lagna, $order, true);
+        $j = array_search($sign, $order, true);
+        if ($i === false || $j === false) {
+            return '';
+        }
+        $h = (($j - $i + 12) % 12) + 1;
+        $name = (string) ($houses[$h]['name'] ?? '');
+        $icon = (string) ($houses[$h]['icon'] ?? '');
+
+        return "ภพที่ {$h} ({$icon} {$name})";
+    }
+
+    /**
+     * 🌟 ระดับกำลังของดาวในราศี (เกษตร/อุจ/นิจ/กลาง)
+     */
+    public function dignityOf(string $planet, string $sign): string
+    {
+        $dig = (array) config("thai_astrology_knowledge.planet_dignity.{$planet}", []);
+        $label = (array) config('thai_astrology_knowledge.dignity_label', []);
+        if (empty($dig)) {
+            return '';
+        }
+        if (in_array($sign, (array) ($dig['rules'] ?? []), true)) {
+            return (string) ($label['rules'] ?? '');
+        }
+        if ($sign === ($dig['exalted'] ?? '')) {
+            return (string) ($label['exalted'] ?? '');
+        }
+        if ($sign === ($dig['debilitated'] ?? '')) {
+            return (string) ($label['debilitated'] ?? '');
+        }
+
+        return (string) ($label['neutral'] ?? '');
+    }
+
+    /**
+     * ตัดชื่อราศีไทยล้วนจาก "เมษ (Aries)" → "เมษ"
+     */
+    protected function extractSignFromName(string $zodiacName): ?string
+    {
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+        foreach ($order as $name) {
+            if (mb_strpos($zodiacName, (string) $name) === 0) {
+                return (string) $name;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 📜 อักษร/ดาวมงคลของวันเกิด (สำหรับวิเคราะห์ชื่อ — public ใช้ที่อื่นได้)
+     *
+     * @return array{good_planets:array<string>, good_letters:array<string>, kala_planet:string, kala_letters:string}
+     */
+    public function getNamingGuide(int $dayOfWeek): array
+    {
+        $thaksa = $this->getThaksa($dayOfWeek);
+        $letters = (array) config('thai_astrology_knowledge.naming_letters', []);
+        if (empty($thaksa)) {
+            return ['good_planets' => [], 'good_letters' => [], 'kala_planet' => '', 'kala_letters' => ''];
+        }
+
+        $goodPlanets = array_values(array_unique(array_filter([
+            $thaksa[2]['planet'] ?? '', $thaksa[3]['planet'] ?? '', $thaksa[6]['planet'] ?? '',
+        ])));
+        $kalaPlanet = $thaksa[7]['planet'] ?? '';
+
+        return [
+            'good_planets' => $goodPlanets,
+            'good_letters' => array_map(fn ($p) => (string) ($letters[$p] ?? ''), $goodPlanets),
+            'kala_planet' => $kalaPlanet,
+            'kala_letters' => (string) ($letters[$kalaPlanet] ?? ''),
+        ];
+    }
+
+    /**
+     * 📅 วันมงคล/วันกาลกิณี — derive จากดาวเดช(2)/ศรี(3)/มนตรี(6)/กาลกิณี(7) ในทักษา
+     */
+    protected function formatLuckyDayLine(int $dayOfWeek): string
+    {
+        $thaksa = $this->getThaksa($dayOfWeek);
+        $map = (array) config('thai_astrology_knowledge.planet_to_day', []);
+        if (empty($thaksa) || empty($map)) {
+            return '';
+        }
+
+        $dech = $thaksa[2]['planet'] ?? '';
+        $sri = $thaksa[3]['planet'] ?? '';
+        $montri = $thaksa[6]['planet'] ?? '';
+        $kala = $thaksa[7]['planet'] ?? '';
+
+        $dechDay = (string) ($map[$dech] ?? '');
+        $sriDay = (string) ($map[$sri] ?? '');
+        $montriDay = (string) ($map[$montri] ?? '');
+        $kalaDay = (string) ($map[$kala] ?? '');
+
+        $good = array_filter(array_unique([$dechDay, $sriDay, $montriDay]));
+        if (empty($good) && $kalaDay === '') {
+            return '';
+        }
+
+        $out = '';
+        if (! empty($good)) {
+            $out .= "📅 วันมงคล (ทำเรื่องสำคัญ): ".implode(' · ', $good)."\n";
+        }
+        if ($kalaDay !== '') {
+            $out .= "🚫 วันกาลกิณี (เลี่ยงเริ่มงานใหญ่): {$kalaDay}\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 🔢 เลขชะตา (Life Path Number) — เลขศาสตร์จากวันเดือนปีเกิด (ค.ศ.)
+     */
+    protected function formatLifePathLine(int $day, int $month, int $year): string
+    {
+        $num = $this->lifePathNumber($day, $month, $year);
+        $info = (array) config('thai_astrology_knowledge.life_path.'.$num, []);
+        if (empty($info)) {
+            return '';
+        }
+
+        return "🔢 เลขชะตา (Life Path): {$num} — {$info['trait']}\n"
+            ."   ✨ จุดแข็ง: {$info['strength']}\n"
+            ."   ⚠️ ระวัง: {$info['caution']}\n";
+    }
+
+    /**
+     * 📆 ดวงรายปี (Personal Year) — โทนของปีปัจจุบันสำหรับคนนี้
+     */
+    protected function formatPersonalYearLine(int $day, int $month): string
+    {
+        $currentYear = (int) date('Y');
+        $py = $this->personalYearNumber($day, $month, $currentYear);
+        $text = (string) config('thai_astrology_knowledge.personal_year.'.$py, '');
+        if ($text === '') {
+            return '';
+        }
+
+        return "📆 ดวงรายปี ".($currentYear + 543)." (Personal Year {$py}): {$text}\n";
+    }
+
+    /**
+     * คำนวณเลขชะตา (Life Path) — รวมทุกตัวเลขใน d/m/y แล้วลดเป็นเลขเดี่ยว
+     *   เก็บ Master Number 11, 22 ไว้ไม่ลด
+     */
+    public function lifePathNumber(int $day, int $month, int $year): int
+    {
+        $sum = array_sum(str_split((string) $day))
+            + array_sum(str_split((string) $month))
+            + array_sum(str_split((string) $year));
+
+        return $this->reduceKeepMaster($sum);
+    }
+
+    /**
+     * คำนวณ Personal Year — วัน+เดือนเกิด + ปีปัจจุบัน → เลขเดี่ยว (ไม่เก็บ master)
+     */
+    public function personalYearNumber(int $day, int $month, int $year): int
+    {
+        $sum = array_sum(str_split((string) $day))
+            + array_sum(str_split((string) $month))
+            + array_sum(str_split((string) $year));
+
+        // Personal Year ลดถึงเลขเดี่ยว 1-9 (ไม่เก็บ master)
+        while ($sum > 9) {
+            $sum = array_sum(str_split((string) $sum));
+        }
+
+        return $sum;
+    }
+
+    /**
+     * ลดเลขเดี่ยว แต่เก็บ Master Number (11, 22)
+     */
+    protected function reduceKeepMaster(int $n): int
+    {
+        while ($n > 9 && $n !== 11 && $n !== 22) {
+            $n = array_sum(str_split((string) $n));
+        }
+
+        return $n;
+    }
+
+    /**
+     * 🏛️ ทักษาพยากรณ์ 8 ภพ — เน้น เดช/ศรี/มนตรี (ดาวดี) + กาลกิณี (ดาวร้าย/สีเลี่ยง)
+     */
+    protected function formatThaksaLine(int $dayOfWeek): string
+    {
+        $thaksa = $this->getThaksa($dayOfWeek);
+        if (empty($thaksa)) {
+            return '';
+        }
+
+        $dech = $thaksa[2] ?? null;
+        $sri = $thaksa[3] ?? null;
+        $montri = $thaksa[6] ?? null;
+        $kala = $thaksa[7] ?? null;
+
+        $line = "🏛️ ทักษา: บริวาร={$thaksa[0]['planet']} · เดช={$dech['planet']} · ศรี={$sri['planet']} · มนตรี={$montri['planet']}\n";
+
+        if ($kala) {
+            $meta = (array) config('thai_astrology_knowledge.planet_meta.'.$kala['planet'], []);
+            $avoidColor = (string) ($meta['color'] ?? '');
+            $line .= "⚠️ กาลกิณี (ดาวร้าย): {$kala['planet']}"
+                .($avoidColor !== '' ? " → สีกลุ่มนี้ควรเลี่ยงใส่เสริมดวง: {$avoidColor}" : '')."\n";
+        }
+
+        return $line;
+    }
+
+    /**
+     * ⏳ ดาวเสวยอายุ (มหาทักษา) — โทนของช่วงชีวิตปัจจุบัน
+     */
+    protected function formatPeriodLine(int $dayOfWeek, int $age): string
+    {
+        $period = $this->getPlanetaryPeriod($dayOfWeek, $age);
+        if (empty($period)) {
+            return '';
+        }
+
+        return "⏳ ดาวเสวยอายุ (ช่วง {$period['from']}-{$period['to']} ปี): {$period['planet']}\n"
+            ."   → {$period['tone']}\n";
+    }
+
+    /**
+     * 🐉 ปีนักษัตร + สถานะชงปีปัจจุบัน
+     */
+    protected function formatZodiacYearLine(int $birthYear): string
+    {
+        $zy = $this->getZodiacYear($birthYear);
+        if (empty($zy)) {
+            return '';
+        }
+        $chong = $this->getChong($birthYear);
+
+        return "🐉 ปีนักษัตร: ปี{$zy['name']} ({$zy['animal']}) · ธาตุ{$zy['element']}\n"
+            .'   '.($chong['text'] ?? '')."\n";
+    }
+
+    /**
+     * 🔥 คู่ธาตุดวง: ราศี vs ดาวเจ้าชนะ (เสริม/ขัด/กลาง) — diagnostic ในตัว
+     */
+    protected function formatElementPairingLine(string $zodiacName, string $planetElementRaw): string
+    {
+        $zEl = $this->getZodiacElement($zodiacName);
+        $pEl = trim(str_replace('ธาตุ', '', $planetElementRaw));
+        if ($zEl === null || $pEl === '') {
+            return '';
+        }
+        $tone = $this->elementPairTone($zEl, $pEl);
+        if ($tone === '') {
+            return '';
+        }
+
+        return "🔥 คู่ธาตุดวง (ราศีธาตุ{$zEl} × ดาวธาตุ{$pEl}): {$tone}\n";
+    }
+
+    /**
+     * 🏛️ คำนวณทักษา 8 ภพ จากวันเกิด
+     *
+     * @param  int  $dayOfWeek  0=อาทิตย์..6=เสาร์
+     * @return array<int, array{name:string, icon:string, planet:string, meaning:string}>
+     */
+    public function getThaksa(int $dayOfWeek): array
+    {
+        $order = (array) config('thai_astrology_knowledge.thaksa_order', []);
+        $bhava = (array) config('thai_astrology_knowledge.thaksa_bhava', []);
+        $startMap = (array) config('thai_astrology_knowledge.day_to_thaksa_start', []);
+
+        if (empty($order) || empty($bhava) || ! isset($startMap[$dayOfWeek])) {
+            return [];
+        }
+
+        $start = (int) $startMap[$dayOfWeek];
+        $count = count($order);
+        $result = [];
+
+        foreach ($bhava as $i => $b) {
+            $planet = $order[($start + $i) % $count];
+            $result[$i] = [
+                'name' => (string) ($b['name'] ?? ''),
+                'icon' => (string) ($b['icon'] ?? ''),
+                'planet' => (string) $planet,
+                'meaning' => (string) ($b['meaning'] ?? ''),
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * ⏳ คำนวณดาวเสวยอายุ (มหาทักษา 108 ปี) — เริ่มที่ดาววันเกิด เดินตามลำดับทักษา
+     *
+     * @return array{planet:string, from:int, to:int, tone:string} ว่าง = คำนวณไม่ได้
+     */
+    public function getPlanetaryPeriod(int $dayOfWeek, int $age): array
+    {
+        $order = (array) config('thai_astrology_knowledge.thaksa_order', []);
+        $startMap = (array) config('thai_astrology_knowledge.day_to_thaksa_start', []);
+        $meta = (array) config('thai_astrology_knowledge.planet_meta', []);
+        $tones = (array) config('thai_astrology_knowledge.period_tone', []);
+
+        if (empty($order) || ! isset($startMap[$dayOfWeek]) || $age < 0) {
+            return [];
+        }
+
+        $start = (int) $startMap[$dayOfWeek];
+        $count = count($order);
+        $ageInCycle = $age % 108; // มหาทักษารวม 108 ปี — วนรอบ
+
+        $cursor = 0;
+        for ($i = 0; $i < $count; $i++) {
+            $planet = $order[($start + $i) % $count];
+            $years = (int) ($meta[$planet]['period_years'] ?? 0);
+            if ($years <= 0) {
+                continue;
+            }
+            if ($ageInCycle < $cursor + $years) {
+                return [
+                    'planet' => (string) $planet,
+                    'from' => $cursor,
+                    'to' => $cursor + $years,
+                    'tone' => (string) ($tones[$planet] ?? ''),
+                ];
+            }
+            $cursor += $years;
+        }
+
+        return [];
+    }
+
+    /**
+     * 🐉 ปีนักษัตรจาก ค.ศ.
+     *
+     * @return array{name:string, animal:string, element:string, index:int} ว่าง = คำนวณไม่ได้
+     */
+    public function getZodiacYear(int $year): array
+    {
+        $years = (array) config('thai_astrology_knowledge.zodiac_years', []);
+        if (count($years) !== 12) {
+            return [];
+        }
+        $idx = (($year - 4) % 12 + 12) % 12;
+        $zy = $years[$idx] ?? null;
+        if (! is_array($zy)) {
+            return [];
+        }
+
+        return [
+            'name' => (string) ($zy['name'] ?? ''),
+            'animal' => (string) ($zy['animal'] ?? ''),
+            'element' => (string) ($zy['element'] ?? ''),
+            'index' => $idx,
+        ];
+    }
+
+    /**
+     * 🚫 สถานะชง เทียบปีเกิดกับปีปัจจุบัน
+     *
+     * @return array{status:string, text:string}
+     */
+    public function getChong(int $birthYear, ?int $currentYear = null): array
+    {
+        $currentYear ??= (int) date('Y');
+        $birth = $this->getZodiacYear($birthYear);
+        $now = $this->getZodiacYear($currentYear);
+        $cfg = (array) config('thai_astrology_knowledge.chong', []);
+
+        if (empty($birth) || empty($now)) {
+            return ['status' => 'none', 'text' => ''];
+        }
+
+        $diff = (($now['index'] - $birth['index']) % 12 + 12) % 12;
+
+        if ($diff === 0) {
+            return ['status' => 'self', 'text' => (string) ($cfg['self_text'] ?? '')];
+        }
+        if ($diff === 6) {
+            return ['status' => 'direct', 'text' => (string) ($cfg['direct_text'] ?? '')];
+        }
+
+        return ['status' => 'none', 'text' => (string) ($cfg['none_text'] ?? '')];
+    }
+
+    /**
+     * ♈ ธาตุของราศี (จากชื่อราศีที่ getZodiacSign คืนมา — match prefix ไทย)
+     */
+    public function getZodiacElement(string $zodiacName): ?string
+    {
+        $map = (array) config('thai_astrology_knowledge.zodiac_element', []);
+        foreach ($map as $prefix => $element) {
+            if (mb_strpos($zodiacName, (string) $prefix) === 0) {
+                return (string) $element;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🔥 เทียบ 2 ธาตุ (ไทย) → tone (reuse matrix ของ fortune_elemental_dignities)
+     */
+    public function elementPairTone(string $thaiElA, string $thaiElB): string
+    {
+        $toEn = (array) config('thai_astrology_knowledge.thai_element_en', []);
+        $matrix = (array) config('fortune_elemental_dignities.matrix', []);
+        $tones = (array) config('thai_astrology_knowledge.pairing_tone', []);
+
+        $a = $toEn[$thaiElA] ?? null;
+        $b = $toEn[$thaiElB] ?? null;
+        if ($a === null || $b === null) {
+            return '';
+        }
+        $tone = $matrix[$a][$b] ?? null;
+        if ($tone === null) {
+            return '';
+        }
+
+        return (string) ($tones[$tone] ?? '');
     }
 
     /**
@@ -194,6 +954,60 @@ class ThaiAstrologyService
      * @param  string  $text  ข้อความที่อาจมีเลขไทย
      * @return string ข้อความที่เลขไทยถูกแปลงแล้ว
      */
+    /**
+     * ⏰ ดึงเวลาเกิดจากข้อความ — รองรับ "HH:MM", "HH.MM น.", "เวลา 14:30", "ตอน 8 โมง", "เกิดเช้า/บ่าย"
+     *
+     * @return int|null ชั่วโมง 0-23 หรือ null = ไม่พบ
+     */
+    public function extractBirthHourFromText(string $text): ?float
+    {
+        $t = $this->normalizeThaiDigits($text);
+
+        // ลำดับ 1: HH:MM หรือ HH.MM (+ optional น./AM/PM) — เก็บนาทีด้วย
+        if (preg_match('/(?<!\d)(\d{1,2})[:\.](\d{2})\s*(น\.?|AM|PM|am|pm)?/u', $t, $m)) {
+            $h = (int) $m[1];
+            $min = (int) $m[2];
+            if ($min >= 60) {
+                $min = 0;
+            }
+            $suffix = mb_strtolower((string) ($m[3] ?? ''));
+            if (($suffix === 'pm' || $suffix === 'p.m.') && $h < 12) {
+                $h += 12;
+            } elseif (($suffix === 'am' || $suffix === 'a.m.') && $h === 12) {
+                $h = 0;
+            }
+            if ($h >= 0 && $h <= 23) {
+                return $h + $min / 60.0; // ⭐ คืนเป็น float รวมนาที
+            }
+        }
+
+        // ลำดับ 2: คำไทย "โมงเช้า/บ่าย/เย็น/ค่ำ/ดึก"
+        if (preg_match('/(\d{1,2})\s*โมง\s*(เช้า|บ่าย|เย็น|ค่ำ|ดึก)?/u', $t, $m)) {
+            $h = (int) $m[1];
+            $period = (string) ($m[2] ?? '');
+            if ($period === 'บ่าย' || $period === 'เย็น') {
+                $h = $h < 12 ? $h + 12 : $h;
+            } elseif ($period === 'ค่ำ' || $period === 'ดึก') {
+                $h = $h < 12 ? $h + 18 : $h;
+            }
+            if ($h >= 0 && $h <= 23) {
+                return (float) $h;
+            }
+        }
+
+        // ลำดับ 3: ช่วงเวลาคร่าวๆ
+        if (preg_match('/เกิด.*?(เช้าตรู่|เช้า|สาย|เที่ยง|บ่าย|เย็น|ค่ำ|ดึก|กลางคืน)/u', $t, $m)) {
+            $map = [
+                'เช้าตรู่' => 5.0, 'เช้า' => 8.0, 'สาย' => 10.0, 'เที่ยง' => 12.0,
+                'บ่าย' => 14.0, 'เย็น' => 17.0, 'ค่ำ' => 20.0, 'ดึก' => 23.0, 'กลางคืน' => 22.0,
+            ];
+
+            return $map[$m[1]] ?? null;
+        }
+
+        return null;
+    }
+
     protected function normalizeThaiDigits(string $text): string
     {
         return str_replace(
