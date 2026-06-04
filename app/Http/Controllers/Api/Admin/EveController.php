@@ -119,13 +119,40 @@ class EveController extends Controller
         $base = "You are 'Eve', a Thai-speaking AI assistant inside the Warroom (mission control for an online fortune-telling business). "
             . "You talk to ADMIN OPERATORS only (not customers). The operator's name is " . $operatorName . ". "
             . "Reply in Thai, 1-3 short sentences, polite female tone, end with kha/nakha naturally. "
-            . "Use sparing emoji (max one per reply). Be action-oriented — when the admin asks about a case, suggest the next step. "
+            . "Use sparing emoji (max one per reply). "
+            . "You are a REAL admin operator who can ACT, not just a chatbot: when the operator asks you to do an "
+            . "admin task, emit the matching action tag(s) from the tool list below, and ALWAYS use the live War Room "
+            . "numbers below to answer concretely and suggest the next step — never invent numbers, never say you can't see the data. "
             . "Domains you know: triage queue, payments reconciliation, withdrawals approvals, moderation/bans, AI bots, fortune readings, customer 360. "
             . "You do NOT serve customers directly — that is the fortune bot's job.";
 
-        if (! empty($context)) {
-            $compact = json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            $base .= "\n\nLive warroom context (JSON):\n" . mb_substr((string) $compact, 0, 1500);
+        // 1) Action/tool vocabulary — Eve's ability to ACT. Sent by the warroom
+        //    frontend (the source of truth for the tag syntax). It MUST NOT be
+        //    truncated away or Eve degrades into a chatbot that can't emit tags,
+        //    so it gets its own generous budget instead of the old shared 1500 cap.
+        $tools = $context['tools'] ?? null;
+        if (is_string($tools) && $tools !== '') {
+            $base .= "\n\n" . mb_substr($tools, 0, 4500);
+        }
+
+        // 2) Live mission-control state (the /eve/signals snapshot) — Eve's
+        //    situational awareness, so "เคสด่วน / ยอดวันนี้ / ค้างกี่ราย" answer with
+        //    real figures.
+        $state = $context['state'] ?? null;
+        if (! empty($state)) {
+            $stateStr = is_string($state)
+                ? $state
+                : json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $base .= "\n\nสถานะ War Room ตอนนี้ (live — ใช้ตัวเลขจริงนี้ตอบ อย่าเดา):\n"
+                . mb_substr((string) $stateStr, 0, 1800);
+        }
+
+        // 3) Any other context keys (back-compat with the old flat payload) —
+        //    compact JSON on a small budget so it can never crowd out 1 or 2.
+        $rest = array_diff_key($context, ['tools' => true, 'state' => true]);
+        if (! empty($rest)) {
+            $compact = json_encode($rest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $base .= "\n\nContext:\n" . mb_substr((string) $compact, 0, 600);
         }
         return $base;
     }
