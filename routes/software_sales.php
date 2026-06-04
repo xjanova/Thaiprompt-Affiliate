@@ -66,8 +66,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('software-products', App\Http\Controllers\Admin\SoftwareProductManagementController::class);
 
     // จัดการออฟชั่นของสินค้า
-    Route::resource('software-products.options', App\Http\Controllers\Admin\SoftwareProductOptionController::class);
-    Route::resource('software-products.options.values', App\Http\Controllers\Admin\SoftwareProductOptionValueController::class);
+    // 🩹 (2026-06-04) Commented out — SoftwareProductOptionController +
+    //   SoftwareProductOptionValueController do not exist in the codebase
+    //   (feature never landed). Registering them crashed `php artisan route:list`
+    //   ("Class ... does not exist"). Restore the controllers to re-enable.
+    // Route::resource('software-products.options', App\Http\Controllers\Admin\SoftwareProductOptionController::class);
+    // Route::resource('software-products.options.values', App\Http\Controllers\Admin\SoftwareProductOptionValueController::class);
 
     // จัดการใบเสนอราคา
     Route::resource('software-quotations', App\Http\Controllers\Admin\SoftwareQuotationManagementController::class);
@@ -81,8 +85,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('installment-plans/{plan}/cancel', [App\Http\Controllers\Admin\InstallmentPlanController::class, 'cancel'])->name('installment-plans.cancel');
 
     // รายงานและสถิติ
-    Route::get('software-sales/dashboard', [App\Http\Controllers\Admin\SoftwareSalesDashboardController::class, 'index'])->name('software-sales.dashboard');
-    Route::get('software-sales/reports', [App\Http\Controllers\Admin\SoftwareSalesReportController::class, 'index'])->name('software-sales.reports');
+    // 🩹 (2026-06-04) Commented out — SoftwareSalesDashboardController +
+    //   SoftwareSalesReportController do not exist (feature never landed).
+    //   Registering them crashed `php artisan route:list`. Restore to re-enable.
+    // Route::get('software-sales/dashboard', [App\Http\Controllers\Admin\SoftwareSalesDashboardController::class, 'index'])->name('software-sales.dashboard');
+    // Route::get('software-sales/reports', [App\Http\Controllers\Admin\SoftwareSalesReportController::class, 'index'])->name('software-sales.reports');
 });
 
 /*
