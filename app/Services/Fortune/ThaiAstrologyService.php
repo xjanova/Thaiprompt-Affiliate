@@ -29,8 +29,8 @@ class ThaiAstrologyService
     /** จำนวนคนสูงสุดที่จะคำนวณต่อหนึ่งข้อความ (กัน prompt บวม + กัน abuse) */
     public const MAX_PEOPLE = 3;
 
-    /** เวลาเกิดล่าสุดที่ parse ได้ (ชั่วโมง 0-23) — null = ไม่ได้ระบุ */
-    protected ?int $lastBirthHour = null;
+    /** เวลาเกิดที่ parse ได้ล่าสุด (ชม. เป็น float รวมนาที, 0-23.99) — null = ไม่ได้ระบุ */
+    protected ?float $lastBirthHour = null;
 
     /**
      * สร้างบล็อกดวงดาวสำหรับ Celtic — ตรวจจับวันเกิดในข้อความแล้วคำนวณให้ครบ
@@ -367,12 +367,23 @@ class ThaiAstrologyService
             return '';
         }
 
-        // ลัคนา (ถ้ามีเวลาเกิด)
+        // ลัคนา (ถ้ามีเวลาเกิด) — ใช้นาที + Local Sidereal Time จริง
         $birthHour = $this->lastBirthHour;
-        $dtForCalc = $birthHour !== null
-            ? $date->copy()->setTime($birthHour, 0, 0)
-            : $date->copy()->setTime(12, 0, 0); // ใช้เที่ยงเป็น default ถ้าไม่มีเวลา
-        $lagna = $birthHour !== null ? $this->approximateLagna($sunSign, $birthHour) : null;
+        if ($birthHour !== null) {
+            $hh = (int) floor($birthHour);
+            $mm = (int) round(($birthHour - $hh) * 60);
+            if ($mm >= 60) {
+                $mm = 0;
+                $hh++;
+            }
+            $dtForCalc = $date->copy()->setTime($hh, $mm, 0);
+            $lagna = $this->siderealLagna($dtForCalc);
+            $timeStr = sprintf('%02d:%02d', $hh, $mm);
+        } else {
+            $dtForCalc = $date->copy()->setTime(12, 0, 0);
+            $lagna = null;
+            $timeStr = '';
+        }
 
         // ⭐ คำนวณตำแหน่งดาวทั้ง 9 ด้วย ephemeris ของเราเอง
         $eph = new PlanetEphemeris();
@@ -381,7 +392,7 @@ class ThaiAstrologyService
         $out = "🌀 ดวงพื้น (ผูกดวงเต็มสูตร — คำนวณดาว 9 ดวง):\n";
 
         if ($lagna !== null) {
-            $out .= "   ⬆️ ลัคนา: ราศี{$lagna} (จากเวลาเกิด {$birthHour}:00 น.)\n";
+            $out .= "   ⬆️ ลัคนา: ราศี{$lagna} (จากเวลาเกิด {$timeStr} น. · LST + ละติจูดกรุงเทพ)\n";
         } else {
             $out .= "   ⬆️ ลัคนา: (ไม่ระบุเวลาเกิด — ดาวจันทร์/ลัคนาอาจคลาดเคลื่อน · ถามเวลาเกิดเพื่อแม่นขึ้น)\n";
         }
@@ -427,11 +438,68 @@ class ThaiAstrologyService
     }
 
     /**
-     * 🌀 คำนวณลัคนาประมาณจากเวลาเกิด + ราศีอาทิตย์
-     *   หลัก: 24 ชม. = 12 ราศี → 2 ชม./ราศี · เริ่ม Sun-sign ที่ 06:00 (sunrise)
+     * 🌀 คำนวณลัคนา จาก Local Sidereal Time (แม่นจริง — ราศีขึ้นเร็วต่างกัน)
      *
-     * @param  string  $sunSign  ชื่อราศีไทย (เมษ..มีน)
-     * @param  int     $hour     ชั่วโมง 0-23
+     *   1. คำนวณ LST จาก JD + ลองจิจูดสถานที่ (กรุงเทพ 100.5°E)
+     *   2. หา RA ของลัคนา = LST (จุดที่ horizon ตัด equator)
+     *   3. แปลง RA → ecliptic longitude ด้วยสูตร Asc (Meeus ch.13)
+     *      tan(λ) = -cos(LST) / (sin(LST)·cos(ε) + tan(φ)·sin(ε))
+     *      โดย ε = ความเอียง 23.44°, φ = ละติจูดสถานที่
+     *
+     * @param  \Carbon\Carbon  $dt  วันเวลาเกิด (Thai time UTC+7)
+     * @param  float           $lat ละติจูด (default กรุงเทพ 13.75)
+     * @param  float           $lon ลองจิจูด (default กรุงเทพ 100.5)
+     */
+    public function siderealLagna(\Carbon\Carbon $dt, float $lat = 13.75, float $lon = 100.5): ?string
+    {
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+        if (count($order) !== 12) {
+            return null;
+        }
+
+        $eph = new PlanetEphemeris();
+        $jdUT = $eph->julianDay($dt) - 7.0 / 24.0; // Thai → UT
+
+        // Greenwich Mean Sidereal Time (Meeus ch.12 eq. 12.4 — แม่นแม้วันที่ห่าง J2000)
+        // แยก integer day + fractional hour เพื่อกัน float precision loss
+        $jd0 = floor($jdUT - 0.5) + 0.5; // 0h UT
+        $hUT = ($jdUT - $jd0) * 24.0;
+        $d0 = $jd0 - 2451545.0;
+        $t = ($jdUT - 2451545.0) / 36525.0;
+        $gmstH = 6.697374558 + 0.06570982441908 * $d0
+            + 1.00273790935 * $hUT + 0.000026 * $t * $t;
+        $gmstDeg = fmod($gmstH * 15.0, 360.0);
+        if ($gmstDeg < 0) {
+            $gmstDeg += 360.0;
+        }
+        $lst = fmod($gmstDeg + $lon, 360.0);
+        if ($lst < 0) {
+            $lst += 360.0;
+        }
+
+        // Ecliptic obliquity (ความเอียงสุริยวิถี)
+        $epsilon = deg2rad(23.4392911 - 0.0130041667 * $t);
+        $lstRad = deg2rad($lst);
+        $phiRad = deg2rad($lat);
+
+        // ลัคนา — Meeus 13.6 (Ascendant คือจุดขึ้นตะวันออก ไม่ใช่ Descendant)
+        //   λ_asc = atan2( cos(LST), -[sin(LST)·cos(ε) + tan(φ)·sin(ε)] )
+        // วิธีนี้ได้ quadrant ถูก — ลัคนาอยู่ "ทางตะวันออก" (LST+90° ประมาณ)
+        $asc = rad2deg(atan2(
+            cos($lstRad),
+            -(sin($lstRad) * cos($epsilon) + tan($phiRad) * sin($epsilon))
+        ));
+        if ($asc < 0) {
+            $asc += 360.0;
+        }
+
+        $signIdx = (int) floor($asc / 30.0) % 12;
+
+        return (string) $order[$signIdx];
+    }
+
+    /**
+     * @deprecated ใช้ siderealLagna แทน — สูตรเก่า 2 ชม./ราศี ไม่แม่น
      */
     public function approximateLagna(string $sunSign, int $hour): ?string
     {
@@ -443,7 +511,6 @@ class ThaiAstrologyService
         if ($sunIdx === false) {
             return null;
         }
-        // shift = floor((hour - 6) / 2) mod 12 (sunrise=6 → ลัคนา=อาทิตย์)
         $shift = (int) floor((($hour - 6 + 24) % 24) / 2);
         $lagnaIdx = ($sunIdx + $shift) % 12;
 
@@ -892,13 +959,17 @@ class ThaiAstrologyService
      *
      * @return int|null ชั่วโมง 0-23 หรือ null = ไม่พบ
      */
-    public function extractBirthHourFromText(string $text): ?int
+    public function extractBirthHourFromText(string $text): ?float
     {
         $t = $this->normalizeThaiDigits($text);
 
-        // ลำดับ 1: HH:MM หรือ HH.MM (+ optional น./AM/PM)
+        // ลำดับ 1: HH:MM หรือ HH.MM (+ optional น./AM/PM) — เก็บนาทีด้วย
         if (preg_match('/(?<!\d)(\d{1,2})[:\.](\d{2})\s*(น\.?|AM|PM|am|pm)?/u', $t, $m)) {
             $h = (int) $m[1];
+            $min = (int) $m[2];
+            if ($min >= 60) {
+                $min = 0;
+            }
             $suffix = mb_strtolower((string) ($m[3] ?? ''));
             if (($suffix === 'pm' || $suffix === 'p.m.') && $h < 12) {
                 $h += 12;
@@ -906,7 +977,7 @@ class ThaiAstrologyService
                 $h = 0;
             }
             if ($h >= 0 && $h <= 23) {
-                return $h;
+                return $h + $min / 60.0; // ⭐ คืนเป็น float รวมนาที
             }
         }
 
@@ -920,16 +991,18 @@ class ThaiAstrologyService
                 $h = $h < 12 ? $h + 18 : $h;
             }
             if ($h >= 0 && $h <= 23) {
-                return $h;
+                return (float) $h;
             }
         }
 
         // ลำดับ 3: ช่วงเวลาคร่าวๆ
         if (preg_match('/เกิด.*?(เช้าตรู่|เช้า|สาย|เที่ยง|บ่าย|เย็น|ค่ำ|ดึก|กลางคืน)/u', $t, $m)) {
-            return [
-                'เช้าตรู่' => 5, 'เช้า' => 8, 'สาย' => 10, 'เที่ยง' => 12,
-                'บ่าย' => 14, 'เย็น' => 17, 'ค่ำ' => 20, 'ดึก' => 23, 'กลางคืน' => 22,
-            ][$m[1]] ?? null;
+            $map = [
+                'เช้าตรู่' => 5.0, 'เช้า' => 8.0, 'สาย' => 10.0, 'เที่ยง' => 12.0,
+                'บ่าย' => 14.0, 'เย็น' => 17.0, 'ค่ำ' => 20.0, 'ดึก' => 23.0, 'กลางคืน' => 22.0,
+            ];
+
+            return $map[$m[1]] ?? null;
         }
 
         return null;
