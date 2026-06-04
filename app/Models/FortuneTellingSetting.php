@@ -332,6 +332,10 @@ class FortuneTellingSetting extends Model
         'slipok_min_amount',
         'slipok_fallback_delay_seconds',
         'slipok_use_log',
+        // 🛡️ (2026-06-04) SlipOK flood guard — กันส่งสลิปปลอมรัวๆ ดูดโควต้า
+        'slipok_max_checks_per_user',
+        'slipok_check_window_hours',
+        'slipok_ban_after_rounds',
     ];
 
     /**
@@ -483,6 +487,10 @@ class FortuneTellingSetting extends Model
         'slipok_min_amount' => 'decimal:2',
         'slipok_fallback_delay_seconds' => 'integer',
         'slipok_use_log' => 'boolean',
+        // 🛡️ (2026-06-04) SlipOK flood guard
+        'slipok_max_checks_per_user' => 'integer',
+        'slipok_check_window_hours' => 'integer',
+        'slipok_ban_after_rounds' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -646,6 +654,10 @@ class FortuneTellingSetting extends Model
         'slipok_min_amount' => 99.00,
         'slipok_fallback_delay_seconds' => 60,
         'slipok_use_log' => true,
+        // 🛡️ (2026-06-04) SlipOK flood guard — 1 คนยิงได้ 2 ครั้ง/24 ชม. ; ก่อกวน 2 รอบ → แบน
+        'slipok_max_checks_per_user' => 2,
+        'slipok_check_window_hours' => 24,
+        'slipok_ban_after_rounds' => 2,
     ];
 
     /**

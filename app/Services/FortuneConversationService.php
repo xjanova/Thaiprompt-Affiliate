@@ -11660,8 +11660,19 @@ class FortuneConversationService
         // 📅 นัดเช็ค fallback หลังหน่วงเวลา (default 60 วิ) — ถ้า SMS ยังไม่ตัด
         $delay = (int) ($this->settings->slipok_fallback_delay_seconds ?? 60);
         try {
-            \App\Jobs\VerifySlipFallbackJob::dispatch($reading->id)
-                ->delay(now()->addSeconds(max(10, $delay)));
+            // 🛡️ (2026-06-04) รวบ job — collapse burst (ส่งรูปรัวๆ → job storm → ยิง SlipOK รัว) เป็น job เดียว
+            //   Cache::add คืน false ถ้ามี lock อยู่แล้ว → ข้าม dispatch (on-ping path ยัง trigger ได้)
+            //   TTL = delay (ไม่บวกเพิ่ม) → lock หมดตอน job รัน → รูปใบใหม่หลัง job รันได้ job ใหม่ (ไม่ตกหล่น)
+            //   job อ่าน slip_image_path ล่าสุดเสมอ → 1 job ครอบทุกรูปในช่วง burst อยู่แล้ว
+            $jobLock = 'fortune:slip_job:'.$reading->id;
+            if (\Illuminate\Support\Facades\Cache::add($jobLock, 1, max(10, $delay))) {
+                \App\Jobs\VerifySlipFallbackJob::dispatch($reading->id)
+                    ->delay(now()->addSeconds(max(10, $delay)));
+            } else {
+                Log::debug('SlipOK: ข้าม dispatch fallback job (มีนัดอยู่แล้ว — รวบกัน job storm)', [
+                    'reading_id' => $reading->id,
+                ]);
+            }
         } catch (\Throwable $e) {
             // queue ล่มก็ไม่เป็นไร — on-ping path จะ trigger เอง
             Log::debug('SlipOK: dispatch fallback job ล้มเหลว (on-ping จะ trigger แทน)', [
@@ -11864,6 +11875,12 @@ class FortuneConversationService
                 return null;
             }
 
+            // 🛡️ (2026-06-04) Flood guard — เกินเพดาน → หยุดก่อนดาวน์โหลด/Gemini/SlipOK (ประหยัดทั้งสองโควต้า)
+            $floodResp = $this->slipFloodGate($platform, $userId, null, 'returning_image');
+            if ($floodResp !== null) {
+                return $floodResp;
+            }
+
             // กู้เฉพาะบิลที่ "ยังไม่ได้ดู" — กันนำสลิปมาเปิดบิลที่ทำนายไปแล้วซ้ำ (req #4)
             $recentCeltic = $this->findRecoverableCelticReading($userId);
             if (! $recentCeltic) {
@@ -11955,7 +11972,7 @@ class FortuneConversationService
         if (! empty($bytes) && strlen($bytes) <= 6 * 1024 * 1024) {
             $relPath = 'fortune/slips/nobill_'.md5($userId).'_'.now()->timestamp.'.jpg';
             \Illuminate\Support\Facades\Storage::disk('local')->put($relPath, $bytes);
-            $verify = $svc->verifyByFile(\Illuminate\Support\Facades\Storage::disk('local')->path($relPath));
+            $verify = $svc->verifyByFile(\Illuminate\Support\Facades\Storage::disk('local')->path($relPath), $platform, $userId);
         }
 
         $ok = (bool) ($verify['ok'] ?? false);
@@ -12091,6 +12108,139 @@ class FortuneConversationService
     }
 
     /**
+     * 🛡️ (2026-06-04) Flood Guard — ด่านกันคนส่งสลิป/บิลปลอมรัวๆ ดูดโควต้า SlipOK ฟรี
+     *
+     * เรียกก่อนเก็บ/ยิงสลิปทุก path (webhook active-bill, ping, returning, no-bill)
+     * เพดาน + การแบน ปรับได้ใน admin (slipok_max_checks_per_user / _check_window_hours / _ban_after_rounds)
+     *
+     *   - ยังไม่เกินเพดาน  → คืน null (caller ทำงานต่อปกติ)
+     *   - เกินเพดานรอบแรก  → คืนข้อความ "ส่งให้แอดมินตรวจ" (ตอบครั้งเดียว/หน้าต่าง)
+     *   - เกินเพดานรอบถัดไป → คืน message=null (เงียบ)
+     *   - ก่อกวนซ้ำหลายรอบ → แบนอัตโนมัติ (bot ban + FB page block) + เงียบ
+     *
+     * @return array|null  null = ผ่าน ; array = บล็อก (caller ส่ง message ถ้าไม่ null แล้วหยุด)
+     */
+    public function slipFloodGate(string $platform, string $userId, ?FortuneReading $reading = null, string $context = 'flood'): ?array
+    {
+        try {
+            $svc = new \App\Services\Fortune\SlipOkService($this->settings);
+            if (! $svc->isEnabled() || empty($userId)) {
+                return null;
+            }
+
+            // 🔓 ลูกค้าจ่ายแล้ว + กำลังทำนายอยู่ → ไม่ติด guard ใดๆ (rule: paid customer bypass all guards)
+            if ($this->hasPaidActiveReading($userId)) {
+                return null;
+            }
+
+            // ยังไม่เกินเพดาน → ปล่อยผ่าน (caller ยิง SlipOK ได้ตามปกติ)
+            if ($svc->canSpendForUser($platform, $userId)) {
+                return null;
+            }
+
+            // ── เกินเพดานแล้ว ──────────────────────────────────────
+            $ov = $svc->registerOverflowStrike($platform, $userId);
+
+            // audit (admin เห็นในหน้า slip-logs)
+            $this->recordSlipCheckLog([
+                'reading_id' => $reading?->id,
+                'platform' => $platform,
+                'user_id' => $userId,
+                'context' => $context,
+                'sent_to_slipok' => false,
+                'decision' => 'rate_limited',
+                'note' => 'flood guard: เกินเพดาน '.$svc->maxChecksPerUser().' ครั้ง/หน้าต่าง'
+                    .' (strike '.$ov['strikes'].', overflow '.$ov['overflow'].')',
+            ]);
+
+            Log::warning('🧾 ADMIN_REVIEW: SlipOK flood — ผู้ใช้ยิงเกินเพดาน', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'reading_id' => $reading?->id,
+                'strikes' => $ov['strikes'],
+                'overflow' => $ov['overflow'],
+                'should_ban' => $ov['should_ban'],
+            ]);
+
+            // ── ก่อกวนซ้ำหลายรอบ → แบน (ยกเว้นเคยจ่ายจริง = กัน false ban) ──
+            if ($ov['should_ban'] && ! $this->userHasPaidHistory($userId)) {
+                $this->executeSlipFloodBan($platform, $userId, $reading, $ov['strikes']);
+
+                // เงียบ — ban service จะจัดการข้อความเตือนเองตอน webhook entry รอบถัดไป
+                return ['action' => 'slip_flood_banned', 'message' => null, 'reading' => $reading];
+            }
+
+            // ── รอบแรกในหน้าต่าง → ตอบครั้งเดียวว่าให้แอดมินตรวจ ; รอบถัดไป → เงียบ ──
+            $notifyKey = 'fortune:slipok:notified:'.$svc->userKey($platform, $userId);
+            if (! \Illuminate\Support\Facades\Cache::get($notifyKey, false)) {
+                \Illuminate\Support\Facades\Cache::put($notifyKey, true, $svc->checkWindowSeconds());
+
+                return [
+                    'action' => 'slip_flood_admin_review',
+                    'message' => "🙏 แม่หมอได้รับสลิปหลายใบแล้วนะคะ\n\n"
+                        ."📌 ตอนนี้ส่งให้*แอดมินตรวจยอดให้โดยตรง* — ถ้าโอนเข้ามาจริง เดี๋ยวได้ดูแน่นอนค่ะ\n"
+                        .'⏳ ขอเวลาสักครู่ (อาจนานกว่าปกตินิดนึง) 🌙',
+                    'reading' => $reading,
+                ];
+            }
+
+            return ['action' => 'slip_flood_silent', 'message' => null, 'reading' => $reading];
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK: slipFloodGate ล้มเหลว (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null; // error → ปล่อยผ่าน (ไม่บล็อกลูกค้า)
+        }
+    }
+
+    /**
+     * เคยจ่ายเงินจริงไหม — กัน auto-ban ลูกค้าจริง (safety-net เดียวกับ scan-link-spammers)
+     */
+    protected function userHasPaidHistory(string $userId): bool
+    {
+        try {
+            return FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)->orWhere('platform_user_id', $userId);
+            })->where('is_paid', true)->exists();
+        } catch (\Throwable $e) {
+            return true; // error → ถือว่าเคยจ่าย (ปลอดภัยไว้ก่อน ไม่แบน)
+        }
+    }
+
+    /**
+     * 🚫 (2026-06-04) แบนผู้ใช้ที่ส่งสลิป/บิลปลอมรัวๆ — bot ban + FB page block (reuse ระบบเดิม)
+     */
+    protected function executeSlipFloodBan(string $platform, string $userId, ?FortuneReading $reading, int $strikes): void
+    {
+        try {
+            $reason = 'auto: ส่งสลิป/บิลปลอมรัวๆ เกินเพดาน SlipOK ('.$strikes.' รอบ)';
+            $displayName = $reading ? ($reading->customer_name ?? null) : null;
+            app(\App\Services\FortuneBanService::class)->ban($platform, $userId, null, $reason, null, $displayName);
+
+            // FB เท่านั้น — block ระดับเพจ (ห้าม DM + ห้ามคอมเมนต์/โพส) — ต้องมี permission pages_manage_metadata
+            if ($platform === 'facebook') {
+                try {
+                    (new \App\Services\FacebookWebhookService($this->settings))->blockPageUser($userId);
+                } catch (\Throwable $fb) {
+                    Log::warning('SlipOK flood ban: FB page block ล้มเหลว (bot ban ยังทำงาน)', [
+                        'user_id' => $userId, 'error' => $fb->getMessage(),
+                    ]);
+                }
+            }
+
+            Log::warning('🚫 SLIP_FLOOD_BAN: แบนผู้ใช้ส่งสลิปปลอมรัวๆ', [
+                'platform' => $platform, 'user_id' => $userId, 'strikes' => $strikes, 'reading_id' => $reading?->id,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK flood ban ล้มเหลว (non-blocking)', [
+                'user_id' => $userId, 'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * 🧾 (2026-06-01, user) บันทึกประวัติการตรวจสลิป (audit) — slip_verification_logs
      *   ให้แอดมินเห็น: ส่งไป SlipOK จริงไหม / สลิปซ้ำไหม / บิลไหน (ทุกการตรวจ รวมที่ล้มเหลว/ไม่มีบิล)
      */
@@ -12203,17 +12353,31 @@ class FortuneConversationService
      */
     protected function respondReturningSlip(FortuneReading $recentCeltic, string $platform, string $userId): array
     {
+        // 🛡️ (2026-06-04) Flood guard — เกินเพดานยิง SlipOK → ส่งแอดมินตรวจ/แบน (ไม่ลูป candidate ยิงรัว)
+        $floodResp = $this->slipFloodGate($platform, $userId, $recentCeltic, 'returning');
+        if ($floodResp !== null) {
+            return $floodResp;
+        }
+
         $svc = new \App\Services\Fortune\SlipOkService($this->settings);
 
         $verify = null;
         $eval = null;
         $usedAbs = null;
+        // จำกัดจำนวนยิง SlipOK ต่อ 1 ครั้งเรียก = เพดานต่อคน (กันลูป candidate ยิงรัว แม้ผล transient ไม่นับ budget)
+        $maxAttempts = $svc->maxChecksPerUser() > 0 ? $svc->maxChecksPerUser() : 99;
+        $attempts = 0;
         foreach ($this->getSlipCandidatePaths($platform, $userId) as $cand) {
+            // 🛡️ กันลูป candidate ยิง SlipOK เกินเพดานในครั้งเดียว (look-back ย้อนได้ถึง 10 ใบ)
+            if ($attempts >= $maxAttempts || ! $svc->canSpendForUser($platform, $userId)) {
+                break;
+            }
             $abs = \Illuminate\Support\Facades\Storage::disk('local')->path($cand);
             if (! is_file($abs)) {
                 continue;
             }
-            $v = $svc->verifyByFile($abs);
+            $v = $svc->verifyByFile($abs, $platform, $userId);
+            $attempts++;
             $e = $svc->evaluateForReading($recentCeltic, $v);
             $verify = $v;
             $eval = $e;
@@ -12294,6 +12458,9 @@ class FortuneConversationService
     protected function recoverCelticFromVerifiedSlip(FortuneReading $reading, array $verify, string $platform, string $userId): array
     {
         $transRef = (string) $verify['transRef'];
+
+        // 🛡️ (2026-06-04) verify ผ่าน = จ่ายจริง → เคลียร์ตัวนับ flood (ลูกค้าซ้ำไม่ติดเพดานข้ามบิล)
+        (new \App\Services\Fortune\SlipOkService($this->settings))->clearFloodCounters($platform, $userId);
 
         // 🛡️ defense-in-depth (req #4): ห้าม recover บิลที่ "ดูไปแล้ว" (จ่าย + ใช้คำถามแล้ว)
         //   ปกติถูกกรองที่ findRecoverableCelticReading แล้ว — กันไว้อีกชั้นเผื่อ call site อื่น
@@ -12521,6 +12688,13 @@ class FortuneConversationService
                 return null;
             }
 
+            // 🛡️ (2026-06-04) Flood guard — เกินเพดานยิง SlipOK ต่อคน → หยุด ส่งแอดมินตรวจ/แบน
+            //   ครอบ on-ping ("เช็คสถานะ/โอนแล้ว") + fallback job — กันยิง SlipOK รัวจากสลิปปลอม
+            $floodResp = $this->slipFloodGate($platform, $userId, $reading, 'active_bill');
+            if ($floodResp !== null) {
+                return $floodResp;
+            }
+
             // 🔎 หาไฟล์สลิป: ของบิลนี้ก่อน → ไม่มีก็ย้อน candidate cache (look-back 10, today)
             $abs = null;
             if (! empty($reading->slip_image_path)) {
@@ -12543,7 +12717,7 @@ class FortuneConversationService
                 return $askIfNoSlip ? $this->askForSlipMessage($reading) : null;
             }
 
-            $verify = $svc->verifyByFile($abs);
+            $verify = $svc->verifyByFile($abs, $platform, $userId);
             $eval = $svc->evaluateForReading($reading, $verify);
 
             Log::info('SlipOK: verify result', [
@@ -12652,6 +12826,9 @@ class FortuneConversationService
     protected function finalizeSlipOkApproved(FortuneReading $reading, array $verify, string $platform, string $userId): array
     {
         $transRef = (string) $verify['transRef'];
+
+        // 🛡️ (2026-06-04) verify ผ่าน = จ่ายจริง → เคลียร์ตัวนับ flood (ลูกค้าซ้ำไม่ติดเพดานข้ามบิล)
+        (new \App\Services\Fortune\SlipOkService($this->settings))->clearFloodCounters($platform, $userId);
 
         // audit + dedup (trans_ref unique)
         try {

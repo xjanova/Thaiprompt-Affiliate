@@ -1876,6 +1876,21 @@ class LineFortuneWebhookController extends Controller
                     ]);
                 }
 
+                // 🛡️ (2026-06-04) Flood guard — คนส่งสลิป/บิลปลอมรัวๆ เกินเพดาน → หยุดยิง SlipOK ให้แอดมินตรวจ/แบน
+                $floodGate = $this->conversationService->slipFloodGate('line', $userId, $activeReading, 'active_bill');
+                if ($floodGate !== null) {
+                    if (! empty($floodGate['message'])) {
+                        $this->lineService->sendMessageWithReplyFallback($userId, $floodGate['message'], $replyToken);
+                    }
+                    Log::info('LINE: slip flood guard ทำงาน → หยุดเก็บ/ตรวจสลิป', [
+                        'user_id' => $userId,
+                        'reading_id' => $activeReading->id,
+                        'action' => $floodGate['action'] ?? null,
+                    ]);
+
+                    return;
+                }
+
                 // 🧾 (2026-05-31) SlipOK fallback — SMS ยังไม่ตัด → เก็บสลิปไว้ตรวจใน 1 นาที (หรือ on-ping)
                 try {
                     $slipSvc = new \App\Services\Fortune\SlipOkService($this->settings);

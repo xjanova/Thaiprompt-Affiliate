@@ -2066,6 +2066,24 @@ class FacebookWebhookController extends Controller
                     ]);
                 }
 
+                // 🛡️ (2026-06-04) Flood guard — คนส่งสลิป/บิลปลอมรัวๆ เกินเพดาน → หยุดยิง SlipOK ให้แอดมินตรวจ/แบน
+                //   วางก่อนเก็บ/ตรวจ — กันเปลืองทั้ง Gemini classify + SlipOK quota + job storm
+                if (! empty($imageUrl) && ! $hasSticker) {
+                    $floodGate = $this->conversationService->slipFloodGate('facebook', $senderId, $activeReading, 'active_bill');
+                    if ($floodGate !== null) {
+                        if (! empty($floodGate['message'])) {
+                            $this->facebookService->sendMessage($senderId, $floodGate['message']);
+                        }
+                        Log::info('Facebook: slip flood guard ทำงาน → หยุดเก็บ/ตรวจสลิป', [
+                            'sender_id' => $senderId,
+                            'reading_id' => $activeReading->id,
+                            'action' => $floodGate['action'] ?? null,
+                        ]);
+
+                        return;
+                    }
+                }
+
                 // 🧾 (2026-05-31) SlipOK fallback — SMS ยังไม่ตัด → เก็บสลิปไว้ตรวจใน 1 นาที (หรือ on-ping)
                 //   ประหยัดโควตา: ไม่ยิง SlipOK ทันที รอ SMS ตัดก่อน (job หน่วงเวลา + ลูกค้า ping จะ trigger)
                 try {

@@ -396,7 +396,9 @@ class FortuneChannelManager
         // ✅ Silent skip actions — ข้ามเงียบๆ ไม่ส่งข้อความตอบใดๆ
         // 🩹 (2026-05-08) เพิ่ม smart_skip / silent_skip / silent_warning
         //   เดิม fall through ไป default ทำให้ส่ง "ระบบกำลังดำเนินการ 🙏" — ตรงข้ามกับ intent
-        if (in_array($action, ['dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning'], true)) {
+        // 🛡️ (2026-06-04) slip_flood_silent / slip_flood_banned = flood guard เกินเพดานรอบถัดไป/แบน → เงียบ
+        //   (กัน VerifySlipFallbackJob / on-ping ส่ง "ระบบกำลังดำเนินการ" ตอน message ว่าง — flooder ไม่ควรได้ตอบ)
+        if (in_array($action, ['dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'slip_flood_silent', 'slip_flood_banned'], true)) {
             // silent_warning อาจมี message ที่ต้องส่ง 1 ครั้ง — แยก case
             if ($action === 'silent_warning' && ! empty($message)) {
                 $platformService = $this->getPlatform($platform);

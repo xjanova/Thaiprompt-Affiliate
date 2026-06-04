@@ -277,6 +277,10 @@ class FortuneSettingsController extends Controller
             'slipok_min_amount' => 'nullable|numeric|min:0|max:100000',
             'slipok_fallback_delay_seconds' => 'nullable|integer|min:10|max:600',
             'slipok_use_log' => 'boolean',
+            // 🛡️ (2026-06-04) SlipOK flood guard — กันส่งสลิปปลอมรัวๆ ดูดโควต้า
+            'slipok_max_checks_per_user' => 'nullable|integer|min:0|max:50',
+            'slipok_check_window_hours' => 'nullable|integer|min:1|max:168',
+            'slipok_ban_after_rounds' => 'nullable|integer|min:0|max:10',
             // Affiliate/MLM Settings สำหรับดูดวง
             'fortune_affiliate_enabled' => 'boolean',
             'fortune_auto_register_enabled' => 'boolean',

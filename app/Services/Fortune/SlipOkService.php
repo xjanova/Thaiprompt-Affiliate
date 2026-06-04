@@ -6,6 +6,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\PaymentBankAccount;
 use App\Models\SlipVerification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -50,6 +51,14 @@ class SlipOkService
     public const DECISION_DISABLED = 'disabled';
 
     /**
+     * 🛡️ (2026-06-04) เกินเพดานยิง SlipOK ต่อคน (flood guard) — ไม่ยิง API, ส่งให้แอดมินตรวจ
+     */
+    public const DECISION_RATE_LIMITED = 'rate_limited';
+
+    /** prefix cache สำหรับ flood guard */
+    protected const FLOOD_KEY = 'fortune:slipok:';
+
+    /**
      * 📅 (2026-06-01, user directive) อนุโลมรับสลิปย้อนหลังได้ไม่เกินกี่วัน
      *   เดิม "วันนี้เท่านั้น" — ผ่อนเป็น 3 วัน (กันลูกค้าที่โอนเมื่อวาน/2-3 วันก่อนแล้วเพิ่งกลับมา)
      *   ความปลอดภัยยังอยู่: transRef dedup (slip_verifications unique) กันใช้สลิปซ้ำ + เช็คบัญชีผู้รับ + ยอดขั้นต่ำ
@@ -75,6 +84,181 @@ class SlipOkService
         $branch = trim((string) $this->settings->slipok_branch_id);
 
         return 'https://api.slipok.com/api/line/apikey/'.rawurlencode($branch);
+    }
+
+    // ================================================================
+    // 🛡️ (2026-06-04) Flood Guard — กันส่งสลิป/บิลปลอมรัวๆ ดูดโควต้า SlipOK ฟรี
+    //   หลักการ: 1 คนยิง SlipOK ได้ไม่เกิน N ครั้ง/หน้าต่างเวลา (default 2/24ชม.)
+    //   เกินแล้ว → หยุดยิง ส่งให้แอดมินตรวจ ; ก่อกวนซ้ำหลายรอบ → แบนอัตโนมัติ
+    // ================================================================
+
+    /** เพดานยิง SlipOK ต่อคน/หน้าต่าง (0 = ไม่จำกัด) */
+    public function maxChecksPerUser(): int
+    {
+        return (int) ($this->settings->slipok_max_checks_per_user ?? 2);
+    }
+
+    /** ความยาวหน้าต่างเวลานับเพดาน (วินาที) */
+    public function checkWindowSeconds(): int
+    {
+        return max(1, (int) ($this->settings->slipok_check_window_hours ?? 24)) * 3600;
+    }
+
+    /** ก่อกวนเกินเพดานกี่รอบแล้วแบน (0 = ไม่แบนอัตโนมัติ) */
+    public function banAfterRounds(): int
+    {
+        return (int) ($this->settings->slipok_ban_after_rounds ?? 2);
+    }
+
+    /** สร้าง key ระบุตัวผู้ใช้ (platform:userId) */
+    public function userKey(?string $platform, ?string $userId): string
+    {
+        return ($platform ?: 'x').':'.($userId ?: 'x');
+    }
+
+    /** จำนวนครั้งที่ยิง SlipOK ไปแล้วในหน้าต่างปัจจุบัน */
+    public function checksUsed(?string $platform, ?string $userId): int
+    {
+        if (empty($userId)) {
+            return 0;
+        }
+
+        return (int) Cache::get(self::FLOOD_KEY.'spend:'.$this->userKey($platform, $userId), 0);
+    }
+
+    /**
+     * 🚦 ยังยิง SlipOK ให้ผู้ใช้คนนี้ได้อีกไหม (ยังไม่เกินเพดาน)
+     *   - max <= 0 → ไม่จำกัด (true เสมอ)
+     *   - ไม่มี userId → ปล่อยผ่าน (กันบล็อกเคสที่ระบุตัวไม่ได้)
+     */
+    public function canSpendForUser(?string $platform, ?string $userId): bool
+    {
+        $max = $this->maxChecksPerUser();
+        if ($max <= 0 || empty($userId)) {
+            return true;
+        }
+
+        return $this->checksUsed($platform, $userId) < $max;
+    }
+
+    /**
+     * บันทึกว่ายิง SlipOK จริงไป 1 ครั้ง (เลื่อนหน้าต่าง TTL — driver-agnostic)
+     *   เรียกเฉพาะตอนยิง API จริง (hash-hit ไม่นับ)
+     */
+    protected function noteSpend(?string $platform, ?string $userId): void
+    {
+        if (empty($userId)) {
+            return;
+        }
+        $key = self::FLOOD_KEY.'spend:'.$this->userKey($platform, $userId);
+        $cur = (int) Cache::get($key, 0);
+        Cache::put($key, $cur + 1, $this->checkWindowSeconds());
+    }
+
+    /**
+     * 🚨 บันทึก "รอบ" การก่อกวน (overflow) เมื่อผู้ใช้ยิงเกินเพดาน
+     *   - นับเป็น strike แค่ 1 ครั้งต่อหน้าต่าง (flag struck TTL = window) — กันนับรัวทุกใบ
+     *   - strike สะสม 7 วัน → ถึง banAfterRounds → ควรแบน
+     *
+     * @return array{strikes: int, should_ban: bool, overflow: int}
+     */
+    public function registerOverflowStrike(?string $platform, ?string $userId): array
+    {
+        $key = $this->userKey($platform, $userId);
+
+        // นับจำนวนรูป overflow ในหน้าต่างนี้ (ไว้ดู severity)
+        $ovKey = self::FLOOD_KEY.'overflow:'.$key;
+        $overflow = (int) Cache::get($ovKey, 0) + 1;
+        Cache::put($ovKey, $overflow, $this->checkWindowSeconds());
+
+        // strike — 1 ครั้ง/หน้าต่าง
+        $struckKey = self::FLOOD_KEY.'struck:'.$key;
+        $strikesKey = self::FLOOD_KEY.'strikes:'.$key;
+        $strikes = (int) Cache::get($strikesKey, 0);
+
+        if (! Cache::get($struckKey, false)) {
+            $strikes++;
+            Cache::put($strikesKey, $strikes, 7 * 86400); // สะสม 7 วัน
+            Cache::put($struckKey, true, $this->checkWindowSeconds());
+        }
+
+        $banAfter = $this->banAfterRounds();
+        $shouldBan = $banAfter > 0 && $strikes >= $banAfter;
+
+        return ['strikes' => $strikes, 'should_ban' => $shouldBan, 'overflow' => $overflow];
+    }
+
+    /** เคลียร์ตัวนับ flood ของผู้ใช้ (เช่นเมื่อ verify ผ่าน/แอดมินอนุมัติ) */
+    public function clearFloodCounters(?string $platform, ?string $userId): void
+    {
+        $key = $this->userKey($platform, $userId);
+        foreach (['spend:', 'overflow:', 'struck:', 'strikes:'] as $p) {
+            Cache::forget(self::FLOOD_KEY.$p.$key);
+        }
+    }
+
+    /** ดึงผล verify ที่ cache ไว้ตาม hash รูป (กันยิงซ้ำรูปเดิม) */
+    protected function cachedVerifyByHash(?string $platform, ?string $userId, string $sha): ?array
+    {
+        if (empty($userId)) {
+            return null;
+        }
+        $cached = Cache::get(self::FLOOD_KEY.'hash:'.$this->userKey($platform, $userId).':'.$sha);
+
+        return is_array($cached) ? $cached : null;
+    }
+
+    /**
+     * 🚦 ผลนี้ "นับเป็น spend (เก็บเพดาน) + cache" ได้ไหม
+     *   นับเฉพาะผลที่ SlipOK ประมวลผลจริง + เป็นความรับผิดชอบของผู้ส่ง:
+     *     ✅ verify สำเร็จ / สลิปซ้ำ (1012) / บัญชีผิด (1014) / ไม่มี QR (1007/1008/1011)
+     *   ไม่นับ (transient — ไม่ใช่ความผิดลูกค้า, ให้ retry ได้ฟรี กัน false-block):
+     *     ❌ network error (http != 200) / ธนาคารยังไม่อัปเดต (1009/1010) / โควต้าเราหมด (1003/1004/1015)
+     */
+    protected function isCountableSpend(array $result): bool
+    {
+        if ((int) ($result['http'] ?? 0) !== 200) {
+            return false; // network/timeout/5xx → transient
+        }
+        if (! empty($result['ok'])) {
+            return true; // verify สำเร็จ (มี transRef)
+        }
+
+        $code = $result['error_code'] ?? null;
+
+        // ธนาคารยังไม่อัปเดต / โควต้าเราเองหมด → transient ไม่ลงโทษลูกค้า
+        if (in_array($code, [1009, 1010, 1003, 1004, 1015], true)) {
+            return false;
+        }
+        // ปฏิเสธชัดเจน (ซ้ำ/บัญชีผิด/ไม่มี QR) → SlipOK ประมวลผลจริง = นับ
+        if (in_array($code, [1012, 1014, 1007, 1008, 1011], true)) {
+            return true;
+        }
+
+        // 200 แต่ error code แปลก/ไม่รู้จัก → ไม่นับ (ปลอดภัยไว้ก่อน ไม่ลงโทษลูกค้า)
+        return false;
+    }
+
+    /**
+     * หลังยิง SlipOK จริง 1 ครั้ง: นับ spend + cache ผลตาม hash (กันยิงซ้ำรูปเดิม)
+     *   ⚠️ นับ + cache เฉพาะผล "definitive" (isCountableSpend) — transient (bank delay/quota/network)
+     *      ไม่นับ + ไม่ cache → ลูกค้าจริงที่ธนาคารช้า retry ได้ ไม่เผาเพดาน + ไม่ติด cache ค้าง
+     */
+    protected function afterRealSpend(?string $platform, ?string $userId, string $sha, array $result): void
+    {
+        if (! $this->isCountableSpend($result)) {
+            return; // transient → ไม่นับ spend + ไม่ cache (retry แล้วยิงจริงได้)
+        }
+
+        $this->noteSpend($platform, $userId);
+
+        if (empty($userId)) {
+            return;
+        }
+        // cache แบบเบา (ตัด raw ออก) TTL 24 ชม. — รูปเดิมส่งซ้ำ → คืนผลเดิม ไม่ยิง API
+        $light = $result;
+        unset($light['raw']);
+        Cache::put(self::FLOOD_KEY.'hash:'.$this->userKey($platform, $userId).':'.$sha, $light, 86400);
     }
 
     /**
@@ -119,23 +303,42 @@ class SlipOkService
 
     /**
      * 🔎 ตรวจสลิปจากไฟล์ในเครื่อง (multipart) — ใช้กับสลิปที่ดาวน์โหลด/เก็บไว้
+     *
+     * @param  string|null  $platform  'facebook'|'line' — ใช้นับ flood guard + hash dedup (ส่งมาเสมอถ้ามี)
+     * @param  string|null  $userId  PSID/LINE id — ใช้นับ flood guard + hash dedup
      */
-    public function verifyByFile(string $absolutePath): array
+    public function verifyByFile(string $absolutePath, ?string $platform = null, ?string $userId = null): array
     {
         if (! is_file($absolutePath)) {
             return $this->normalize(0, ['message' => 'ไฟล์สลิปไม่พบ'], null);
         }
 
+        $bytes = @file_get_contents($absolutePath);
+        if ($bytes === false || $bytes === '') {
+            return $this->normalize(0, ['message' => 'อ่านไฟล์สลิปไม่ได้'], null);
+        }
+
+        // 🛡️ (2026-06-04) hash dedup — รูปไบต์เดิมที่เคยส่ง → คืนผลเดิม ไม่ยิง SlipOK ซ้ำ (กันเปลืองโควต้า)
+        $sha = sha1($bytes);
+        $cached = $this->cachedVerifyByHash($platform, $userId, $sha);
+        if ($cached !== null) {
+            return $cached;
+        }
+
         try {
-            $req = Http::timeout(25)
+            $resp = Http::timeout(25)
                 ->withHeaders(['x-authorization' => (string) $this->settings->slipok_api_key])
-                ->attach('files', file_get_contents($absolutePath), 'slip.jpg');
+                ->attach('files', $bytes, 'slip.jpg')
+                ->post($this->baseUrl(), [
+                    'log' => $this->settings->slipok_use_log ? 'true' : 'false',
+                ]);
 
-            $resp = $req->post($this->baseUrl(), [
-                'log' => $this->settings->slipok_use_log ? 'true' : 'false',
-            ]);
+            $result = $this->normalize($resp->status(), $resp->json() ?? [], $resp->json());
 
-            return $this->normalize($resp->status(), $resp->json() ?? [], $resp->json());
+            // ยิง API จริงแล้ว → นับ spend (flood guard) + cache ผลตาม hash
+            $this->afterRealSpend($platform, $userId, $sha, $result);
+
+            return $result;
         } catch (\Throwable $e) {
             Log::warning('SlipOkService: verifyByFile exception', ['error' => $e->getMessage()]);
 
@@ -145,9 +348,19 @@ class SlipOkService
 
     /**
      * 🔎 ตรวจสลิปจาก URL รูป (FB CDN เป็น public URL)
+     *
+     * @param  string|null  $platform  ใช้นับ flood guard (ส่งมาเสมอถ้ามี)
+     * @param  string|null  $userId  ใช้นับ flood guard
      */
-    public function verifyByUrl(string $url): array
+    public function verifyByUrl(string $url, ?string $platform = null, ?string $userId = null): array
     {
+        // hash dedup ตาม URL (FB CDN URL ต่างกันทุกอัปโหลด → ช่วยได้น้อย แต่กัน retry ลิงก์เดิม)
+        $sha = sha1($url);
+        $cached = $this->cachedVerifyByHash($platform, $userId, $sha);
+        if ($cached !== null) {
+            return $cached;
+        }
+
         try {
             $resp = Http::timeout(25)
                 ->withHeaders(['x-authorization' => (string) $this->settings->slipok_api_key])
@@ -157,7 +370,11 @@ class SlipOkService
                     'log' => (bool) $this->settings->slipok_use_log,
                 ]);
 
-            return $this->normalize($resp->status(), $resp->json() ?? [], $resp->json());
+            $result = $this->normalize($resp->status(), $resp->json() ?? [], $resp->json());
+
+            $this->afterRealSpend($platform, $userId, $sha, $result);
+
+            return $result;
         } catch (\Throwable $e) {
             Log::warning('SlipOkService: verifyByUrl exception', ['error' => $e->getMessage()]);
 
