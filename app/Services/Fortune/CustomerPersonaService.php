@@ -33,6 +33,7 @@ class CustomerPersonaService
 
     /** Cache TTL สำหรับ extraction throttle (วินาที) */
     private const EXTRACTION_THROTTLE_TTL = 1800; // 30 นาที (default)
+
     private const EXTRACTION_THROTTLE_TTL_CRITICAL = 600; // 10 นาที (เคสวิกฤต)
 
     /** ข้อความที่สั้นกว่านี้จะไม่ extract (ไม่มีอะไรให้วิเคราะห์) */
@@ -64,9 +65,11 @@ class CustomerPersonaService
     /**
      * 🎯 สร้าง context block สำหรับ inject ใน AI system message
      *
-     * @return string  block พร้อม inject (อาจเป็น empty string ถ้าไม่มี persona ที่มีข้อมูล)
+     * @param  string|null  $currentMessage  ข้อความล่าสุดของลูกค้า — ส่งต่อให้ persona ตัดสินว่า
+     *                                       ควรยื่นสายด่วนใจไหม (เฉพาะตอนวิกฤตจริง); proactive job ส่ง null
+     * @return string block พร้อม inject (อาจเป็น empty string ถ้าไม่มี persona ที่มีข้อมูล)
      */
-    public function buildInjectBlock(string $platform, string $userId): string
+    public function buildInjectBlock(string $platform, string $userId, ?string $currentMessage = null): string
     {
         // 📅 (2026-05-25) Timeline header — รู้จักลูกค้า + รู้ช่วงเวลา
         //   ห้ามทำเหมือนคนใหม่ ถ้าเคยดูดวงมาก่อน
@@ -78,7 +81,7 @@ class CustomerPersonaService
             return $timeline;
         }
 
-        return $timeline.$persona->toAiContextBlock();
+        return $timeline.$persona->toAiContextBlock($currentMessage);
     }
 
     /**
@@ -91,8 +94,8 @@ class CustomerPersonaService
      * Cached 1 ชม. — invalidate ตอน paid reading ใหม่ (ไม่ critical หากช้า)
      *
      * @param  string  $platform  'facebook' / 'line'
-     * @param  string  $userId    FB PSID / LINE userId
-     * @return string  ว่างเปล่าถ้าไม่ใช่ FB user (line ใช้ user_id table — ต้อง resolve ก่อน)
+     * @param  string  $userId  FB PSID / LINE userId
+     * @return string ว่างเปล่าถ้าไม่ใช่ FB user (line ใช้ user_id table — ต้อง resolve ก่อน)
      */
     public function buildTimelineHeader(string $platform, string $userId): string
     {
@@ -114,6 +117,7 @@ class CustomerPersonaService
                 // LINE: ผ่าน user_id (line_user_id ไม่มีใน fortune_readings ตาม code comment)
                 //   skip ชั่วคราว — return empty (จะปรับให้ resolve ภายหลัง)
                 Cache::put($cacheKey, 'EMPTY', 3600);
+
                 return '';
             }
 
@@ -123,6 +127,7 @@ class CustomerPersonaService
             if ($count === 0 || ! $last) {
                 $header = "🆕 [CUSTOMER_TIMELINE] ลูกค้าใหม่ครั้งแรก — ยังไม่เคยดูดวงแบบจ่ายเงินมาก่อน\n\n";
                 Cache::put($cacheKey, $header, 3600);
+
                 return $header;
             }
 
@@ -135,11 +140,12 @@ class CustomerPersonaService
             $topicSnippet = mb_substr(trim($firstQ), 0, 60);
             $topicText = $topicSnippet ? "เรื่อง \"{$topicSnippet}\"" : 'ไม่ระบุเรื่อง';
 
-            $header = "👤 [CUSTOMER_TIMELINE] ลูกค้าเก่า — ดูดวงแบบจ่ายเงินเป็นครั้งที่ ".($count + 1).
+            $header = '👤 [CUSTOMER_TIMELINE] ลูกค้าเก่า — ดูดวงแบบจ่ายเงินเป็นครั้งที่ '.($count + 1).
                 " / ครั้งล่าสุด {$daysText} {$topicText}\n".
                 "  ⚠️ AI: รู้จักลูกค้าคนนี้แล้ว — ห้ามทำเหมือนพบครั้งแรก ห้ามถามชื่อ/ทักทาย formal เกินไป\n\n";
 
             Cache::put($cacheKey, $header, 3600);
+
             return $header;
         } catch (\Throwable $e) {
             Log::debug('CustomerPersonaService: buildTimelineHeader fail (non-blocking)', [
@@ -148,6 +154,7 @@ class CustomerPersonaService
                 'error' => $e->getMessage(),
             ]);
             Cache::put($cacheKey, 'EMPTY', 600);
+
             return '';
         }
     }
@@ -427,7 +434,7 @@ class CustomerPersonaService
      *  - caller ต้องตรวจ looksLikeMetaOrChitchat() เอง
      *
      * @return array{triggered: bool, goodbye_message: ?string}
-     *   triggered = true → silence เริ่ม → caller ส่ง goodbye_message แทน AI response
+     *                                                          triggered = true → silence เริ่ม → caller ส่ง goodbye_message แทน AI response
      */
     public function recordChitchatAfterPitch(string $platform, string $userId, string $messageText): array
     {
@@ -504,7 +511,7 @@ class CustomerPersonaService
      * ⚠️ Caller ต้องเช็ค hasPaidActiveReading ก่อนเรียก (ลูกค้าจ่าย = bypass ทั้งหมด)
      *
      * @return array{triggered: bool, goodbye_message: ?string}
-     *   triggered = true → silence เริ่ม → caller ส่ง goodbye_message แทน AI response
+     *                                                          triggered = true → silence เริ่ม → caller ส่ง goodbye_message แทน AI response
      */
     public function recordFreeChatTurn(string $platform, string $userId, string $messageText): array
     {
@@ -664,6 +671,39 @@ class CustomerPersonaService
         ];
 
         foreach ($critical as $kw) {
+            if (mb_strpos($lower, mb_strtolower($kw)) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🤍 (2026-06-03) ตรวจ "สัญญาณคิดสั้น/ทำร้ายตัวเอง/หมดหวัง" เฉพาะข้อความปัจจุบัน
+     *
+     * แคบกว่า hasCriticalKeyword() มาก — ❌ ตัดคำหยาบ/โดนโกง/troll ออกทั้งหมด
+     * (คนโกรธ/โดนหลอก/บ่น ≠ คนคิดสั้น — ห้ามยื่นสายด่วนใจให้จนรู้สึกถูกตราหน้าว่า "โรคจิต")
+     *
+     * ใช้ gate การแสดงเบอร์ 1323 ให้ออกเฉพาะตอนวิกฤตจริงในเทิร์นนั้น
+     * (ดู FortuneCustomerPersona::buildRiskGuidanceLines)
+     */
+    public function hasSelfHarmSignal(string $text): bool
+    {
+        $lower = mb_strtolower(trim($text));
+        if ($lower === '') {
+            return false;
+        }
+
+        // เฉพาะสัญญาณทำร้ายตัวเอง / สิ้นหวังหนัก — ไม่รวมคำหยาบ / scam / ขี้บ่น
+        $signals = [
+            'ฆ่าตัวตาย', 'ฆ่าตัวเอง', 'อยากตาย', 'ไม่อยากอยู่', 'ไม่อยากมีชีวิต',
+            'อยากจบชีวิต', 'จบชีวิต', 'ปลิดชีพ', 'ทำร้ายตัวเอง', 'ทําร้ายตัวเอง',
+            'กรีดข้อมือ', 'กินยาตาย', 'กระโดดตึก', 'ผูกคอ',
+            'หมดหวัง', 'สิ้นหวัง', 'ไม่ไหวแล้ว', 'อยู่ไปก็เท่านั้น', 'หายไปจากโลก',
+        ];
+
+        foreach ($signals as $kw) {
             if (mb_strpos($lower, mb_strtolower($kw)) !== false) {
                 return true;
             }

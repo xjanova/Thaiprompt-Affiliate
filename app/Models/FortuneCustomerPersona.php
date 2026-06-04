@@ -13,19 +13,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * แยกจาก LineBotConversation (24hr session) — persona เก็บถาวร update ทุกครั้งที่คุย
  *
- * @property int    $id
- * @property string $platform              'facebook' / 'line'
- * @property string $platform_user_id      FB PSID / LINE userId
+ * @property int $id
+ * @property string $platform 'facebook' / 'line'
+ * @property string $platform_user_id FB PSID / LINE userId
  * @property string|null $display_name
- * @property array|null  $demographics      {age_range, gender_hint, job_hint, location_hint}
- * @property array|null  $traits            personality traits array
- * @property array|null  $likes
- * @property array|null  $dislikes
- * @property array|null  $conversation_themes
- * @property array|null  $communication_style
- * @property string|null $topic_tags        comma-separated (Obsidian-style)
+ * @property array|null $demographics {age_range, gender_hint, job_hint, location_hint}
+ * @property array|null $traits personality traits array
+ * @property array|null $likes
+ * @property array|null $dislikes
+ * @property array|null $conversation_themes
+ * @property array|null $communication_style
+ * @property string|null $topic_tags comma-separated (Obsidian-style)
  * @property string|null $note_markdown
- * @property int         $observation_count
+ * @property int $observation_count
  * @property \Carbon\Carbon|null $last_observed_at
  * @property \Carbon\Carbon|null $last_persona_sync_at
  * @property \Carbon\Carbon $created_at
@@ -219,6 +219,7 @@ class FortuneCustomerPersona extends Model
                 if ($flag === 'crisis_resources_sent') {
                     // Timestamp field — ทับได้
                     $merged[$flag] = $value;
+
                     continue;
                 }
                 // Boolean sticky: true ทับ false / true ไม่โดนทับ
@@ -275,8 +276,11 @@ class FortuneCustomerPersona extends Model
      *
      * แสดงแค่ข้อมูลที่มี (ไม่เปลือง token)
      * ใช้เพื่อปรับ tone — **ไม่ใช่อ้างตรงๆ ในคำตอบ**
+     *
+     * @param  string|null  $currentMessage  ข้อความล่าสุดของลูกค้า — ใช้ตัดสินว่าควรยื่นสายด่วน
+     *                                       เฉพาะตอนวิกฤตจริงในเทิร์นนี้ (proactive job ส่ง null)
      */
-    public function toAiContextBlock(): string
+    public function toAiContextBlock(?string $currentMessage = null): string
     {
         $lines = [];
 
@@ -294,25 +298,25 @@ class FortuneCustomerPersona extends Model
             $demoParts[] = "งาน: {$demo['job_hint']}";
         }
         if (! empty($demoParts)) {
-            $lines[] = '• ' . implode(' / ', $demoParts);
+            $lines[] = '• '.implode(' / ', $demoParts);
         }
 
         // Traits
         if (! empty($this->traits)) {
-            $lines[] = '• บุคลิก: ' . implode(', ', array_slice($this->traits, -5));
+            $lines[] = '• บุคลิก: '.implode(', ', array_slice($this->traits, -5));
         }
 
         // Likes / Dislikes (cap แต่ละด้าน 3-5 รายการ)
         if (! empty($this->likes)) {
-            $lines[] = '• ชอบ: ' . implode(', ', array_slice($this->likes, -5));
+            $lines[] = '• ชอบ: '.implode(', ', array_slice($this->likes, -5));
         }
         if (! empty($this->dislikes)) {
-            $lines[] = '• ไม่ชอบ: ' . implode(', ', array_slice($this->dislikes, -3));
+            $lines[] = '• ไม่ชอบ: '.implode(', ', array_slice($this->dislikes, -3));
         }
 
         // Conversation themes
         if (! empty($this->conversation_themes)) {
-            $lines[] = '• เคยคุยเรื่อง: ' . implode(', ', array_slice($this->conversation_themes, -3));
+            $lines[] = '• เคยคุยเรื่อง: '.implode(', ', array_slice($this->conversation_themes, -3));
         }
 
         // Communication style
@@ -328,7 +332,7 @@ class FortuneCustomerPersona extends Model
             $styleParts[] = "emoji: {$style['emoji_usage']}";
         }
         if (! empty($styleParts)) {
-            $lines[] = '• สไตล์การคุย: ' . implode(' / ', $styleParts);
+            $lines[] = '• สไตล์การคุย: '.implode(' / ', $styleParts);
         }
 
         // 🚫 (2026-05-18) Rambler/time-waster directive — inject เมื่อคะแนนสูง
@@ -340,7 +344,7 @@ class FortuneCustomerPersona extends Model
         }
 
         // 🚩 (2026-05-25) Risk flags directive — guidance ละเอียดตามความเสี่ยง
-        $riskGuidance = $this->buildRiskGuidanceLines();
+        $riskGuidance = $this->buildRiskGuidanceLines($currentMessage);
         if (! empty($riskGuidance)) {
             $lines = array_merge($lines, $riskGuidance);
         }
@@ -350,8 +354,8 @@ class FortuneCustomerPersona extends Model
         }
 
         return "[👤 CUSTOMER_PERSONA — ใช้ปรับ tone เท่านั้น ห้ามอ้างตรงๆ ในคำตอบ]\n"
-            . implode("\n", $lines)
-            . "\n⚠️ AI ใช้ข้อมูลนี้ \"ใต้พรม\" — ปรับน้ำเสียง/คำพูดให้เข้ากับลูกค้า แต่อย่าเอ่ยถึงว่า \"จำได้ว่า...\" ตรงๆ";
+            .implode("\n", $lines)
+            ."\n⚠️ AI ใช้ข้อมูลนี้ \"ใต้พรม\" — ปรับน้ำเสียง/คำพูดให้เข้ากับลูกค้า แต่อย่าเอ่ยถึงว่า \"จำได้ว่า...\" ตรงๆ";
     }
 
     /**
@@ -359,8 +363,10 @@ class FortuneCustomerPersona extends Model
      *
      * แต่ละ flag → 1 บรรทัด directive ที่ AI ต้องปฏิบัติ
      * ใช้ใน toAiContextBlock() — append หลัง persona lines
+     *
+     * @param  string|null  $currentMessage  ข้อความล่าสุด — gate การยื่นสายด่วนใจให้ออกเฉพาะตอนวิกฤตจริง
      */
-    public function buildRiskGuidanceLines(): array
+    public function buildRiskGuidanceLines(?string $currentMessage = null): array
     {
         $flags = $this->risk_flags ?? [];
         if (empty($flags)) {
@@ -369,23 +375,23 @@ class FortuneCustomerPersona extends Model
 
         $lines = [];
 
-        // mental_fragile — วิกฤต ฆ่าตัวตาย ดื้อยา
+        // mental_fragile — เคยพูดเรื่องวิกฤต/ทำร้ายตัวเอง
         if (! empty($flags['mental_fragile'])) {
-            $lines[] = '⚠️ MENTAL_FRAGILE: ลูกค้าเคยพูดเรื่องวิกฤต/ทำร้ายตัวเอง → ตอบสั้น 1-2 บรรทัด / ห้าม pitch / ไม่ถามขุดอารมณ์';
+            // 🤍 directive "ใต้พรม" — ปรับวิธีคุยให้นุ่ม ลูกค้ามองไม่เห็น (ไม่ตราหน้า)
+            $lines[] = '⚠️ MENTAL_FRAGILE: ลูกค้าเคยพูดเรื่องวิกฤต/ทำร้ายตัวเอง → ตอบสั้น 1-2 บรรทัด / ห้าม pitch / ไม่ถามขุดอารมณ์'
+                .' / ❌ ห้ามใช้คำว่า "สุขภาพจิต/จิตแพทย์/โรคจิต/ป่วยทางใจ" ที่ทำให้ลูกค้ารู้สึกถูกตราหน้า';
 
-            // 7-day cadence สำหรับ 1323/1669
-            $lastSent = $flags['crisis_resources_sent'] ?? null;
-            $needsResource = true;
-            if ($lastSent) {
-                try {
-                    $needsResource = \Carbon\Carbon::parse($lastSent)
-                        ->lt(now()->subDays(7));
-                } catch (\Throwable $e) {
-                    $needsResource = true;
-                }
-            }
-            if ($needsResource) {
-                $lines[] = '   → แทรกบรรทัด "หากต้องการคนคุย โทร 1323 (สุขภาพจิต) หรือ 1669 (ฉุกเฉิน) ฟรี 24 ชม. นะคะ 🙏" ในคำตอบนี้';
+            // 🤍 (2026-06-03) เบอร์สายด่วน → ยื่นเฉพาะตอน "ข้อความปัจจุบันมีสัญญาณคิดสั้น/หมดหวังจริง" เท่านั้น
+            //   เดิม: ยิงทุกแชทแม้ลูกค้าถามความรัก/การเงิน → รู้สึกเหมือนถูกหาว่าเป็น "โรคจิต"
+            //   (cadence 7 วันเดิมพังด้วย เพราะ markCrisisResourcesSent() ไม่เคยถูกเรียก → ยิงทุกเทิร์น)
+            //   ใหม่: gate ด้วย hasSelfHarmSignal(ข้อความนี้) — แคบเฉพาะคิดสั้น/หมดหวัง (ไม่รวมคำหยาบ/โดนโกง)
+            //   proactive job (เตือนบิล/follow-up) ส่ง currentMessage=null → ไม่ยื่นเบอร์เด็ดขาด
+            $currentlyInCrisis = is_string($currentMessage)
+                && trim($currentMessage) !== ''
+                && app(\App\Services\Fortune\CustomerPersonaService::class)->hasSelfHarmSignal($currentMessage);
+            if ($currentlyInCrisis) {
+                $lines[] = '   → ปิดท้ายด้วยประโยคห่วงใยอย่างเพื่อน (❌ ห้ามคำว่า "สุขภาพจิต/โรคจิต"):'
+                    .' "ถ้าอยากมีคนรับฟัง มีสายด่วนใจ 1323 พร้อมคุยเป็นเพื่อน 24 ชม. ฟรีนะคะ 🤍"';
             }
         }
 
@@ -516,6 +522,7 @@ class FortuneCustomerPersona extends Model
         // Lazy resume — ถ้าหมดเวลาแล้ว clear state
         if ($this->chat_silenced_until && $this->chat_silenced_until->lte(now())) {
             $this->resumeFromCooldown();
+
             return false;
         }
 
@@ -682,14 +689,14 @@ class FortuneCustomerPersona extends Model
         // Formal / polite — สุภาพ
         if (in_array($formality, ['formal', 'polite', 'very_polite'], true)) {
             return "ขออภัยค่ะ {$greet} ✨ ตอนนี้แม่หมอติดดูแลลูกค้าหลายท่าน\n"
-                . "ถ้าพร้อมดูดวง พิมพ์ \"ดูดวง\" ได้เลยนะคะ ❤️\n"
-                . "เดี๋ยวกลับมาคุยใหม่ตอนว่างค่ะ 🙏";
+                ."ถ้าพร้อมดูดวง พิมพ์ \"ดูดวง\" ได้เลยนะคะ ❤️\n"
+                .'เดี๋ยวกลับมาคุยใหม่ตอนว่างค่ะ 🙏';
         }
 
         // Casual / informal — กันเอง
         return "เดี๋ยวก่อนนะ {$greet} 🌙 แม่ติดดูคนอื่นเยอะ\n"
-            . "พร้อมดูดวงเมื่อไหร่พิมพ์ \"ดูดวง\" มาได้เลย ❤️\n"
-            . "ไว้เจอกันใหม่นะ";
+            ."พร้อมดูดวงเมื่อไหร่พิมพ์ \"ดูดวง\" มาได้เลย ❤️\n"
+            .'ไว้เจอกันใหม่นะ';
     }
 
     /**
@@ -982,7 +989,7 @@ class FortuneCustomerPersona extends Model
 
         $parts = preg_split('/\s+/', $name);
         if (count($parts) >= 2) {
-            return mb_substr($parts[0], 0, 1) . mb_substr($parts[1], 0, 1);
+            return mb_substr($parts[0], 0, 1).mb_substr($parts[1], 0, 1);
         }
 
         return mb_substr($name, 0, 2);
@@ -1002,14 +1009,14 @@ class FortuneCustomerPersona extends Model
             : [];
         $tagsYaml = empty($tagsList)
             ? '[]'
-            : "\n  - " . implode("\n  - ", $tagsList);
+            : "\n  - ".implode("\n  - ", $tagsList);
 
         $md = "---\n";
         $md .= "title: \"{$name}\"\n";
         $md .= "platform: {$this->platform}\n";
         $md .= "user_id: {$this->platform_user_id}\n";
-        $md .= 'observation_count: ' . $this->observation_count . "\n";
-        $md .= 'last_observed: ' . ($this->last_observed_at?->toIso8601String() ?? '-') . "\n";
+        $md .= 'observation_count: '.$this->observation_count."\n";
+        $md .= 'last_observed: '.($this->last_observed_at?->toIso8601String() ?? '-')."\n";
         $md .= "tags:{$tagsYaml}\n";
         $md .= "---\n\n";
         $md .= "# {$name}\n\n";

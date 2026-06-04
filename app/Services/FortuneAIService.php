@@ -696,7 +696,7 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
                     'response_len' => mb_strlen($cleaned),
                     'preview' => mb_substr($cleaned, 0, 200),
                 ]);
-                $result['response'] = "🌙 การเปิดไพ่ทำนายต้องผ่านระบบจริงค่ะ พิมพ์ \"ดูดวง\" เพื่อให้แม่หมอเปิดไพ่ Celtic Cross 10 ใบให้ ค่าครู 99 บาท [OFFER_FORTUNE]";
+                $result['response'] = '🌙 การเปิดไพ่ทำนายต้องผ่านระบบจริงค่ะ พิมพ์ "ดูดวง" เพื่อให้แม่หมอเปิดไพ่ Celtic Cross 10 ใบให้ ค่าครู 99 บาท [OFFER_FORTUNE]';
                 $result['hallucination_blocked'] = $detected;
 
                 return $result;
@@ -739,8 +739,8 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
      *     → ลูกค้าจ่ายแล้ว ถามต่อเรื่องไพ่เก่า = legitimate — bypass
      *
      * @param  string  $text  AI response (หลัง strip context tags)
-     * @param  bool    $hasPaidContext  true ถ้าลูกค้ามี paid Celtic/Deep ที่ active (bypass)
-     * @return string|null  pattern name ถ้าจับได้ / null = clean
+     * @param  bool  $hasPaidContext  true ถ้าลูกค้ามี paid Celtic/Deep ที่ active (bypass)
+     * @return string|null pattern name ถ้าจับได้ / null = clean
      */
     public static function detectHallucinatedReading(string $text, bool $hasPaidContext = false): ?string
     {
@@ -841,7 +841,7 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
      *   - "เขียนจดหมาย" → ไม่มี "code/script/python" — safe
      *
      * @param  string  $text  user input
-     * @return string|null  attack type ถ้าจับได้ / null = clean
+     * @return string|null attack type ถ้าจับได้ / null = clean
      */
     public static function detectAdversarialInput(string $text): ?string
     {
@@ -957,20 +957,13 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
     public static function buildAdversarialReply(string $attackType): string
     {
         return match ($attackType) {
-            'prompt_injection', 'role_hijack', 'leak_attempt'
-                => "หมอจันทราคือหมอดูค่ะ ไม่มี script หรือคำสั่งภายในอะไรหรอก ? มีเรื่องดวงอะไรอยากให้ช่วยดูไหม?",
-            'code_request', 'code_fence'
-                => "แม่หมอเชี่ยวชาญดูดวงอย่างเดียวค่ะ เขียนโค้ดให้ไม่ได้นะ ? อยากให้ดูดวงเรื่องอะไรไหม?",
-            'token_injection'
-                => "หมอจันทราไม่เข้าใจสัญลักษณ์ที่ส่งมาค่ะ ลองพิมพ์ใหม่ด้วยข้อความปกตินะ ?",
-            'cost_attack'
-                => "ข้อความยาวเกินไปค่ะ ลองสรุปสั้นๆ ว่าอยากให้หมอจันทราช่วยดูดวงเรื่องอะไร ?",
-            'off_topic_political'
-                => "หมอจันทราไม่ตอบเรื่องการเมืองค่ะ มาคุยเรื่องดวงดีกว่าไหม? ?",
-            'off_topic_violence'
-                => "หมอจันทราไม่ตอบเรื่องแบบนั้นค่ะ ขอช่วยดูดวงเรื่องชีวิตให้ดีกว่านะ ?",
-            default
-                => "หมอจันทราช่วยได้แค่เรื่องดวงนะคะ มีอะไรอยากปรึกษาเรื่องดวงไหม? ?",
+            'prompt_injection', 'role_hijack', 'leak_attempt' => 'หมอจันทราคือหมอดูค่ะ ไม่มี script หรือคำสั่งภายในอะไรหรอก ? มีเรื่องดวงอะไรอยากให้ช่วยดูไหม?',
+            'code_request', 'code_fence' => 'แม่หมอเชี่ยวชาญดูดวงอย่างเดียวค่ะ เขียนโค้ดให้ไม่ได้นะ ? อยากให้ดูดวงเรื่องอะไรไหม?',
+            'token_injection' => 'หมอจันทราไม่เข้าใจสัญลักษณ์ที่ส่งมาค่ะ ลองพิมพ์ใหม่ด้วยข้อความปกตินะ ?',
+            'cost_attack' => 'ข้อความยาวเกินไปค่ะ ลองสรุปสั้นๆ ว่าอยากให้หมอจันทราช่วยดูดวงเรื่องอะไร ?',
+            'off_topic_political' => 'หมอจันทราไม่ตอบเรื่องการเมืองค่ะ มาคุยเรื่องดวงดีกว่าไหม? ?',
+            'off_topic_violence' => 'หมอจันทราไม่ตอบเรื่องแบบนั้นค่ะ ขอช่วยดูดวงเรื่องชีวิตให้ดีกว่านะ ?',
+            default => 'หมอจันทราช่วยได้แค่เรื่องดวงนะคะ มีอะไรอยากปรึกษาเรื่องดวงไหม? ?',
         };
     }
 
@@ -1002,7 +995,7 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
      * เพื่อ sync pattern ระหว่าง output sanitizer กับ history sanitizer
      *
      * @param  string  $text  AI response (อาจมี leaked context tags)
-     * @return string  cleaned response (พร้อมส่งให้ลูกค้า)
+     * @return string cleaned response (พร้อมส่งให้ลูกค้า)
      */
     public static function stripInternalContextTags(string $text): string
     {
@@ -1503,7 +1496,7 @@ PROMPT;
      *
      * @param  string  $imageData  URL (http/https) หรือ data:URL อยู่แล้ว
      * @param  string  $caller  ชื่อ caller สำหรับ log
-     * @return string|null  data:image/...;base64,... หรือ null ถ้า fail
+     * @return string|null data:image/...;base64,... หรือ null ถ้า fail
      */
     protected function ensureImageAsDataUrl(string $imageData, string $caller = 'vision'): ?string
     {
@@ -2541,7 +2534,7 @@ PROMPT;
 
 5. **กรณีหัวข้อหนัก** (ตาย/ฆ่าตัวตาย/ป่วยร้าย/abuse)
    - **ห้ามทำนายเรื่องตาย/อายุสั้น** เด็ดขาด
-   - แนะนำให้ปรึกษาผู้เชี่ยวชาญ (จิตแพทย์/หมอ/สายด่วน 1323)
+   - ชวนหาคนที่ไว้ใจรับฟัง / สายด่วนใจ 1323 (มีคนคุยเป็นเพื่อน 24 ชม. ฟรี) — พูดแบบห่วงใย ห้ามใช้คำว่าจิตแพทย์/สุขภาพจิต/โรคจิต
    - ดูดวงเป็นแนวทางใจ ไม่ใช่คำตัดสิน
 
 🚫 ห้าม:
@@ -3440,9 +3433,9 @@ PROMPT;
                     ."- ลูกค้าทักว่า 'อยู่ต่างประเทศ', 'ลาว', 'USA', 'บัตรเครดิต', 'ไม่มี QR' (ก่อนถึงขั้นชำระเงิน)\n"
                     ."  → แนะ \"พอถึงขั้นชำระเงิน ระบบจะให้เลือกได้ค่ะ — มีบัตรเครดิตรับทุกประเทศ +{$serviceFee} บาทค่าบริการ\"\n"
                     ."- ลูกค้าอยู่ขั้น 'เลือกวิธีชำระ' (ระบบเพิ่งส่งปุ่มไป)\n"
-                    ."  → แนะให้กดปุ่ม หรือพิมพ์ 'บัตร'".($smsOn ? " / 'QR ไทย'" : "")."\n"
+                    ."  → แนะให้กดปุ่ม หรือพิมพ์ 'บัตร'".($smsOn ? " / 'QR ไทย'" : '')."\n"
                     ."- ลูกค้าอยู่ขั้น 'รอจ่ายบัตร' (ส่งลิงก์ Stripe ไปแล้ว)\n"
-                    ."  → ย้ำว่ากดลิงก์ที่ส่งให้".($smsOn ? " หรือพิมพ์ 'qr ไทย' เพื่อกลับไป QR Thai" : "")."\n"
+                    .'  → ย้ำว่ากดลิงก์ที่ส่งให้'.($smsOn ? " หรือพิมพ์ 'qr ไทย' เพื่อกลับไป QR Thai" : '')."\n"
                     .'⚠️ ห้าม AI พิมพ์ลิงก์ Stripe เอง — ระบบจัดการเอง AI แค่ "แนะคำสั่ง" เท่านั้น';
             }
         } catch (\Throwable $e) {
@@ -3487,7 +3480,7 @@ PROMPT;
             ."      ถ้าอยากให้แม่หมอเปิดไพ่ดูทางออกเรื่องนี้ให้ — พิมพ์ 'ดูดวง' ได้เลย [OFFER_FORTUNE]\"\n"
             ."   • หลักการ: ไม่ใช่ฉวยโอกาส แต่เป็นการเสนอ \"ตัวช่วย\" ในเวลาที่ลูกค้าต้องการจริง\n"
             ."   • **ยกเว้น**: ถ้ามี keyword วิกฤต (\"ฆ่าตัวตาย / ทำร้ายตัวเอง / ไม่อยากอยู่\") → ห้าม pitch\n"
-            ."     ส่งหมายเลข crisis line 1323/1669 + ตอบเห็นใจ ไม่เสนอบริการ\n"
+            ."     ส่งสายด่วนใจ 1323 (มีคนรับฟัง 24 ชม. ฟรี) อย่างห่วงใย + ตอบเห็นใจ ไม่เสนอบริการ ไม่ตราหน้าว่าป่วย\n"
             ."\n"
             ."⚠️ **กฎ override:** Section C สำคัญกว่า EMPATHY-FIRST TURN 1 — เข้าตาจน = pitch ได้ตั้งแต่ TURN 1\n"
             ."⚠️ **แต่ห้าม**: hard sell / push หลายครั้ง / รบกวนถ้าลูกค้าปฏิเสธ\n";
@@ -5074,7 +5067,7 @@ PROMPT;
                 ."การทำนายนี้คือ Celtic Cross 10 ใบ ที่เจ้าชะตาจับเองครบแล้ว (รายการไพ่อยู่ใน user message):\n"
                 ."• ❌ ยกเลิกกฎ \"สุ่มจับไพ่ทาโร่ 1 ใบทุกครั้ง\" และบรรทัด \"🃏 ไพ่ที่จับได้\" — ห้ามสุ่ม/จับ/เพิ่มไพ่ใบใหม่นอกเหนือ 10 ใบเด็ดขาด\n"
                 ."• ✅ ทำนายจากไพ่ 10 ใบที่ระบุ × ตำแหน่งของมัน 100% ตามโครงสร้างใน user message\n"
-                ."• เคล็ด/มู/ธรรมะ \"ไม่บังคับทุกครั้ง\" — ใส่เฉพาะเมื่อสัมพันธ์กับไพ่/คำถามจริง (ไม่ต้องมี ✨เคล็ด/🙏ธรรมะ ติดทุกคำตอบ)";
+                .'• เคล็ด/มู/ธรรมะ "ไม่บังคับทุกครั้ง" — ใส่เฉพาะเมื่อสัมพันธ์กับไพ่/คำถามจริง (ไม่ต้องมี ✨เคล็ด/🙏ธรรมะ ติดทุกคำตอบ)';
         }
 
         return $base;

@@ -15384,7 +15384,7 @@ PROMPT;
             //   ใหม่: ใส่ใน userProfile → FortuneAIService::generateChatResponse จะ append เป็น
             //         system directive ที่ถูกต้อง (เห็นเป็น role:system ไม่ใช่ user msg)
             $personaService = app(\App\Services\Fortune\CustomerPersonaService::class);
-            $personaInjectBlock = $personaService->buildInjectBlock($platformDetected, $userId);
+            $personaInjectBlock = $personaService->buildInjectBlock($platformDetected, $userId, $messageText);
             if (! empty($personaInjectBlock)) {
                 if (! is_array($userProfile)) {
                     $userProfile = ['name' => 'คุณ'];
