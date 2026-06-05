@@ -2,8 +2,8 @@
 
 namespace App\Services\Fortune;
 
-use App\Services\FortuneAIService;
 use App\Models\FortuneTellingSetting;
+use App\Services\FortuneAIService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -65,9 +65,12 @@ class ImageIntentClassifier
      *
      * @param  string  $imageData  URL (http/https) หรือ data:URL
      * @param  string|null  $contextHint  context ของ flow (เช่น 'celtic_active', 'payment_pending', 'chat_normal')
+     * @param  bool  $reliableMode  (2026-06-05) true = slip pre-check → ใช้ OpenAI vision (paid, ล่มยาก) ก่อน
+     *                              + bypass master image-vision gate (ด่านประหยัดโควต้า SlipOK ต้องทำงานแม้ปิด vision)
+     *                              + fallback Gemini ฟรีถ้า OpenAI ล่ม. false = เดิม (Gemini ฟรี, เคารพ gate)
      * @return array{intent: string, confidence: float, reason: string, raw_response: ?string}
      */
-    public function classify(string $imageData, ?string $contextHint = null): array
+    public function classify(string $imageData, ?string $contextHint = null, bool $reliableMode = false): array
     {
         // 🗄️ Cache check — ถ้า classify รูปนี้แล้ว 10 นาทีที่ผ่านมา → return cached
         $cacheKey = $this->buildCacheKey($imageData);
@@ -85,21 +88,50 @@ class ImageIntentClassifier
         $userPrompt = $this->buildUserPrompt($contextHint);
 
         try {
-            $result = $this->ai->chatWithImageGemini(
-                $imageData,
-                $systemPrompt,
-                $userPrompt,
-                null,           // apiKey — Pool resolve
-                null,           // model — Pool resolve
-                [
-                    'temperature' => 0.2,   // ต่ำ — ต้องการ output structured JSON
-                    'max_tokens' => 200,
-                ]
-            );
+            $result = null;
+            $via = null;
+
+            if ($reliableMode) {
+                // 🌟 (2026-06-05, user) slip pre-check ใช้ API เสียเงินที่ล่มยาก — OpenAI gpt-5.x vision ก่อน
+                //   + bypass_vision_gate (master toggle enable_image_vision=false ปิด classifier → fail-open
+                //   ทุกภาพทะลุไป SlipOK เปลืองโควต้า). cache 10 นาที กันเรียกซ้ำ
+                $cfg = ['temperature' => 0.2, 'max_tokens' => 200, 'bypass_vision_gate' => true];
+                try {
+                    $result = $this->ai->chatWithImage($imageData, $systemPrompt, $userPrompt, $cfg);
+                    if ($result !== null && ! empty($result['response'])) {
+                        $via = 'openai';
+                    }
+                } catch (\Throwable $e) {
+                    Log::debug('ImageIntentClassifier: OpenAI vision ล้มเหลว → fallback Gemini', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                // OpenAI ไม่พร้อม/ตอบว่าง → fallback Gemini ฟรี (ยัง bypass gate)
+                if ($result === null || empty($result['response'])) {
+                    $result = $this->ai->chatWithImageGemini($imageData, $systemPrompt, $userPrompt, null, null, $cfg);
+                    $via = ($result !== null && ! empty($result['response'])) ? 'gemini_fallback' : null;
+                }
+            } else {
+                // เดิม: Gemini Flash ฟรี (เคารพ master image-vision gate) — ใช้กับ webhook image-intent routing
+                $result = $this->ai->chatWithImageGemini(
+                    $imageData,
+                    $systemPrompt,
+                    $userPrompt,
+                    null,           // apiKey — Pool resolve
+                    null,           // model — Pool resolve
+                    [
+                        'temperature' => 0.2,   // ต่ำ — ต้องการ output structured JSON
+                        'max_tokens' => 200,
+                    ]
+                );
+                $via = ($result !== null && ! empty($result['response'])) ? 'gemini' : null;
+            }
 
             if ($result === null || empty($result['response'])) {
-                Log::warning('ImageIntentClassifier: Gemini returned null/empty', [
+                Log::warning('ImageIntentClassifier: vision returned null/empty', [
                     'context_hint' => $contextHint,
+                    'reliable_mode' => $reliableMode,
                 ]);
 
                 return $this->failResult('AI vision unavailable');
@@ -114,6 +146,7 @@ class ImageIntentClassifier
                 'intent' => $parsed['intent'],
                 'confidence' => $parsed['confidence'],
                 'context_hint' => $contextHint,
+                'via' => $via,
                 'tokens_used' => $result['tokens_used'] ?? 0,
                 'model' => $result['model'] ?? null,
             ]);
@@ -140,7 +173,7 @@ class ImageIntentClassifier
             ."• payment_slip — สลิปการโอนเงิน/โอนแบงค์/PromptPay (มีเลขจำนวนเงิน, เวลา, ชื่อบัญชี)\n"
             ."• fortune_subject — รูปบุคคล/สถานที่/สิ่งของที่ใช้ดูดวง (รูปคน, คู่รัก, บ้าน, รถ, ลายมือ)\n"
             ."• general_photo — รูปทั่วไป (วิว, อาหาร, สัตว์, หน้าจอ, มีม) — ไม่เกี่ยวดวง\n"
-            ."• emoji_sticker — อีโมจิ/สติ๊กเกอร์ LINE/Facebook (รูปการ์ตูนเล็กๆ ไม่ใช่ภาพถ่ายจริง)\n"
+            ."• emoji_sticker — อีโมจิ/สติ๊กเกอร์ LINE/Facebook + รูปนิ้วโป้ง/ยกนิ้ว/ไลค์/รูปรีแอคการ์ตูน (ไม่ใช่ภาพถ่ายจริง/ไม่ใช่สลิป)\n"
             ."• nonsense — รูปดำ/ขาว/ไม่ชัด/ไม่มีเนื้อหา/junk\n\n"
             ."กฎ:\n"
             ."1. ตอบเป็น JSON เท่านั้น — ห้ามมี markdown, ห้ามมีคำอธิบายภาษาธรรมชาตินอก JSON\n"
@@ -167,10 +200,10 @@ class ImageIntentClassifier
         }
 
         $hintMap = [
-            'celtic_active' => "(บริบท: ลูกค้าอยู่ใน Celtic 99 active session — รูปอาจเป็นรูปคน/สถานที่ที่ดูดวง)",
-            'payment_pending' => "(บริบท: ลูกค้ารอจ่ายเงิน — รูปอาจเป็นสลิปการโอน)",
-            'chat_normal' => "(บริบท: ลูกค้าคุยปกติ — รูปอาจเป็นอะไรก็ได้)",
-            'free_card' => "(บริบท: ลูกค้าทำนายฟรี — รูปอาจเป็นรูปคน/สิ่งของที่ดูดวง)",
+            'celtic_active' => '(บริบท: ลูกค้าอยู่ใน Celtic 99 active session — รูปอาจเป็นรูปคน/สถานที่ที่ดูดวง)',
+            'payment_pending' => '(บริบท: ลูกค้ารอจ่ายเงิน — รูปอาจเป็นสลิปการโอน)',
+            'chat_normal' => '(บริบท: ลูกค้าคุยปกติ — รูปอาจเป็นอะไรก็ได้)',
+            'free_card' => '(บริบท: ลูกค้าทำนายฟรี — รูปอาจเป็นรูปคน/สิ่งของที่ดูดวง)',
         ];
 
         $hint = $hintMap[$contextHint] ?? "(บริบท: {$contextHint})";

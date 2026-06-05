@@ -1394,7 +1394,9 @@ PROMPT;
         //   User spec: "ปิด image_vision ให้ครอบคลุมทุก provider"
         //   เมื่อ enable_image_vision=false → return null ทันที (ไม่แตะ key/AI/cost)
         //   ครอบ Celtic 99 vision read (caller: CelticCrossService:1236)
-        if (! $this->settings->isImageVisionEnabled()) {
+        //   🛡️ (2026-06-05) bypass_vision_gate=true → ข้าม master toggle — ใช้เฉพาะ slip pre-check classifier
+        //     ซึ่งเป็น "ด่านประหยัดโควต้า SlipOK" (cost-guard) ไม่ใช่ฟีเจอร์ vision → ต้องทำงานแม้ปิด image vision
+        if (! ($config['bypass_vision_gate'] ?? false) && ! $this->settings->isImageVisionEnabled()) {
             Log::info('🚫 FortuneAIService chatWithImage skipped — enable_image_vision=false', [
                 'provider' => 'openai',
                 'gate' => 'master_image_vision_toggle',
@@ -1402,6 +1404,7 @@ PROMPT;
 
             return null;
         }
+        unset($config['bypass_vision_gate']);
 
         // 🔒 (2026-05-16) บังคับ OpenAI only — ไม่ fallback Gemini/Anthropic
         //   เหตุผล: Gemini ต้อง fetch + base64 ก่อน (latency สูง) ส่วน chat provider หลัก
@@ -1596,7 +1599,8 @@ PROMPT;
         //   เมื่อ enable_image_vision=false → return null ทันที (ไม่แตะ key/AI/cost)
         //   ครอบ ImageIntentClassifier (slip routing) — caller: FB:1660 + LINE:283
         //   ⚠️ Side effect: slip auto-detect ปิดด้วย — ลูกค้าต้องพิมพ์เลขบิลแทน
-        if (! $this->settings->isImageVisionEnabled()) {
+        //   🛡️ (2026-06-05) bypass_vision_gate=true → ข้าม master toggle (slip pre-check classifier fallback)
+        if (! ($config['bypass_vision_gate'] ?? false) && ! $this->settings->isImageVisionEnabled()) {
             Log::info('🚫 FortuneAIService chatWithImageGemini skipped — enable_image_vision=false', [
                 'provider' => 'gemini',
                 'gate' => 'master_image_vision_toggle',
@@ -1604,6 +1608,7 @@ PROMPT;
 
             return null;
         }
+        unset($config['bypass_vision_gate']);
 
         // 1. Download → base64 (Gemini ก็ดึง external URL ไม่ได้ในหลายกรณี — ทำ base64 เสมอเพื่อความสม่ำเสมอ)
         $dataUrl = $this->ensureImageAsDataUrl($imageData, 'chatWithImageGemini');

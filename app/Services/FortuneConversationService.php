@@ -12061,14 +12061,16 @@ class FortuneConversationService
     }
 
     /**
-     * 🛡️ (2026-06-01) Pre-check ถูกๆ: รูปที่ลูกค้า returning ส่งมา "ดูเป็นสลิป" ไหม ก่อนยิง SlipOK
-     *   ใช้ ImageIntentClassifier (Gemini Flash — ถูก/ฟรี, cache 10 นาที) คัดรูปที่ไม่ใช่สลิปออก
-     *   เพื่อไม่เปลืองโควต้า SlipOK (จำกัด ~100/เดือน) กับรูปที่ไม่มี QR แน่ๆ (เซลฟี่/วิว/มีม/สติ๊กเกอร์)
+     * 🛡️ (2026-06-01) Pre-check: รูปที่ลูกค้า returning ส่งมา "ดูเป็นสลิป" ไหม ก่อนยิง SlipOK
+     *   🌟 (2026-06-05, user) ใช้ ImageIntentClassifier reliableMode — OpenAI vision (paid, ล่มยาก) ก่อน +
+     *      bypass master image-vision gate (เดิม enable_image_vision=false ปิด classifier → fail-open ทุกภาพ
+     *      ทะลุไป SlipOK เปลืองโควต้า ~100/เดือน) + fallback Gemini ฟรีถ้า OpenAI ล่ม. cache 10 นาที
      *
-     *   ปรัชญา "เอนเอียงปล่อยผ่าน" — บล็อกเฉพาะตอนมั่นใจว่าไม่ใช่สลิป (กัน false-reject สลิปจริง):
-     *     • payment_slip                       → ผ่าน (true)
-     *     • classifier fail / ไม่มั่นใจ         → ผ่าน (true) ให้ SlipOK ตัดสิน ดีกว่าบล็อกลูกค้าจ่ายเงิน
-     *     • general/selfie/emoji/nonsense ที่มั่นใจ (confidence ≥ 0.55) → บล็อก (false)
+     *   ปรัชญา "เข้มสุด แต่กัน false-reject สลิปจริง" (user 2026-06-05):
+     *     • payment_slip                          → ผ่าน (true)
+     *     • emoji_sticker/nonsense (รูปยกนิ้ว/junk) → บล็อกแม้ confidence ต่ำ (ไม่มีทางเป็นสลิป)
+     *     • general_photo/fortune_subject ที่มั่นใจ ≥ 0.50 → บล็อก (false)
+     *     • classifier ล้มจริง (conf 0) / ไม่มั่นใจ < 0.50 → ผ่าน (true) ให้ SlipOK ตัดสิน ดีกว่าบล็อกลูกค้าจ่ายเงิน
      *
      * @param  string|null  $url  URL รูป (FB CDN) — ถ้ามี
      * @param  string|null  $base64  base64 ของรูป (LINE) — ถ้ามี
@@ -12088,16 +12090,27 @@ class FortuneConversationService
                 return true; // ไม่มีข้อมูลรูป → ไม่บล็อก
             }
 
-            $r = (new \App\Services\Fortune\ImageIntentClassifier($this->settings))->classify($imageData, 'payment_pending');
+            // 🌟 (2026-06-05, user) reliableMode=true → OpenAI vision (paid, ล่มยาก) ก่อน + bypass master image-vision gate
+            //   เดิม: enable_image_vision=false ปิด classifier → conf 0 → fail-open ทุกภาพทะลุไป SlipOK เปลืองโควต้าฟรี
+            $r = (new \App\Services\Fortune\ImageIntentClassifier($this->settings))->classify($imageData, 'payment_pending', true);
             $intent = $r['intent'] ?? null;
             $conf = (float) ($r['confidence'] ?? 0.0);
+            $C = \App\Services\Fortune\ImageIntentClassifier::class;
 
-            if ($intent === \App\Services\Fortune\ImageIntentClassifier::INTENT_PAYMENT_SLIP) {
+            // สลิป → ยิง SlipOK ได้
+            if ($intent === $C::INTENT_PAYMENT_SLIP) {
                 return true;
             }
 
-            // ไม่ใช่สลิป + classifier มั่นใจพอ → บล็อก (ประหยัดโควต้า) ; ไม่ชัด/fail (conf 0) → ปล่อยผ่าน
-            return $conf < 0.55;
+            // 🚫 (2026-06-05, user "เข้มสุด") อีโมจิ/สติ๊กเกอร์ (รูปยกนิ้ว/ไลค์) / junk = ไม่มีทางเป็นสลิป
+            //   → บล็อกแม้ confidence ต่ำ ; ปล่อยผ่านเฉพาะตอน classifier ล้มจริง (conf 0 = ตอบไม่ได้)
+            if (in_array($intent, [$C::INTENT_EMOJI_STICKER, $C::INTENT_NONSENSE], true)) {
+                return $conf <= 0.0;
+            }
+
+            // รูปทั่วไป/รูปดูดวง (วิว/อาหาร/คน/รถ) → บล็อกถ้ามั่นใจ ≥ 0.50 (เข้มขึ้นจาก 0.55)
+            //   conf < 0.50 หรือ intent ไม่ชัด/unknown → ปล่อยผ่าน ให้ SlipOK ตัดสิน (กัน false-reject สลิปจริง)
+            return $conf < 0.50;
         } catch (\Throwable $e) {
             Log::debug('SlipOK pre-check classifier ล้มเหลว → ปล่อยผ่าน (ไม่บล็อกลูกค้า)', [
                 'error' => $e->getMessage(),
@@ -12118,7 +12131,7 @@ class FortuneConversationService
      *   - เกินเพดานรอบถัดไป → คืน message=null (เงียบ)
      *   - ก่อกวนซ้ำหลายรอบ → แบนอัตโนมัติ (bot ban + FB page block) + เงียบ
      *
-     * @return array|null  null = ผ่าน ; array = บล็อก (caller ส่ง message ถ้าไม่ null แล้วหยุด)
+     * @return array|null null = ผ่าน ; array = บล็อก (caller ส่ง message ถ้าไม่ null แล้วหยุด)
      */
     public function slipFloodGate(string $platform, string $userId, ?FortuneReading $reading = null, string $context = 'flood'): ?array
     {
