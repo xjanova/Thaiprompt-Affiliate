@@ -12427,8 +12427,22 @@ class FortuneConversationService
      *
      * @param  string  $context  'active_bill' | 'returning' — ใช้ route ตอนครบ + บอก caller
      */
-    protected function handlePartialPayment(FortuneReading $reading, array $verify, string $platform, string $userId, string $context): array
+    protected function handlePartialPayment(FortuneReading $reading, array $verify, ?string $platform, ?string $userId, string $context): array
     {
+        // null-safety — LINE reading ใช้ platform_user_id (facebook_user_id = null) → กัน TypeError ใน string params
+        $platform = $platform ?: ($reading->platform ?: 'facebook');
+        $userId = (string) ($userId ?: ($reading->facebook_user_id ?: ($reading->platform_user_id ?: '')));
+
+        // 🔒 (2026-06-05) per-reading lock — กันเครดิตซ้อน/สร้างบิล top-up ซ้อน เมื่อมี 2 สลิปเข้ามาพร้อมกัน (money safety)
+        $lockKey = 'fortune:partial_lock:'.$reading->id;
+        if (! \Illuminate\Support\Facades\Cache::add($lockKey, 1, 12)) {
+            return [
+                'action' => 'partial_processing',
+                'message' => '🙏 แม่หมอกำลังตรวจยอดให้อยู่นะคะ รอสักครู่แล้วพิมพ์ "เช็คสถานะ" อีกครั้งค่ะ ✨',
+                'reading' => $reading,
+            ];
+        }
+
         try {
             $reading->refresh();
             $amount = round((float) ($verify['amount'] ?? 0), 2);
@@ -12505,7 +12519,7 @@ class FortuneConversationService
                     'action' => 'partial_hold',
                     'message' => '🙏 เจ้าชะตาคะ... แม่หมอได้รับยอดบางส่วนไว้แล้ว (รวม ฿'.number_format($newPaid, 2).")\n"
                         .'แต่ยอดยังไม่ครบค่าครู ฿'.number_format($target, 2)." ถึง 3 ครั้งแล้วนะคะ\n\n"
-                        ."🌙 การส่งยอดไม่ครบซ้ำๆ ทำให้สมาธิและจังหวะดวงของเจ้าชะตติดขัด สิ่งต่างๆ จะถูกเลื่อนและคลาดเคลื่อน\n\n"
+                        ."🌙 การส่งยอดไม่ครบซ้ำๆ ทำให้สมาธิและจังหวะดวงของเจ้าชะตาติดขัด สิ่งต่างๆ จะถูกเลื่อนและคลาดเคลื่อน\n\n"
                         ."✋ ตอนนี้แม่หมอขอ *พักยอดที่รับไว้* ให้แม่หมอตรวจสอบเอง — *เงินที่โอนมาไม่หายค่ะ* อยู่ระหว่างตรวจ\n"
                         .'⏳ รอแม่หมอมาตรวจแล้วจะติดต่อกลับนะคะ 🌙',
                     'reading' => $reading,
@@ -12549,6 +12563,8 @@ class FortuneConversationService
                 'message' => '🙏 ยอดในสลิปยังไม่ครบค่าครูค่ะ รบกวนโอนเพิ่มแล้วส่งสลิปใหม่นะคะ',
                 'reading' => $reading,
             ];
+        } finally {
+            \Illuminate\Support\Facades\Cache::forget($lockKey);
         }
     }
 
@@ -12562,10 +12578,13 @@ class FortuneConversationService
             return \DB::transaction(function () use ($reading, $shortfallBase) {
                 $oldUpa = $reading->uniquePaymentAmount;
 
+                // ใช้ transaction_type เดิม (Celtic + Deep = 'fortune_reading') — กัน SMS match filter หลุด ถ้าอนาคตเปลี่ยน
+                $txnType = $oldUpa?->transaction_type ?: 'fortune_reading';
+
                 $newUpa = \App\Models\UniquePaymentAmount::generate(
                     (float) $shortfallBase,
                     $reading->id,
-                    'fortune_reading',
+                    $txnType,
                     FortuneReading::PAYMENT_TIMEOUT_MINUTES
                 );
 
