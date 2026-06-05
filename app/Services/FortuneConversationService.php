@@ -11562,54 +11562,63 @@ class FortuneConversationService
     // 🧾 (2026-05-31) SlipOK Slip Verification — fallback เมื่อ SMS ไม่พบ
     // ================================================================
 
+    /** 🧾 (2026-06-05) ผลการเก็บสลิปขาเข้า — storeIncomingSlip* คืนค่าเหล่านี้ (แทน bool เดิม) */
+    public const SLIP_STORE_OK = 'stored';          // เก็บสำเร็จ (รูปดูเป็นสลิป) → รอ verify
+
+    public const SLIP_STORE_NOT_SLIP = 'not_slip';  // ไม่ใช่สลิป (ยกนิ้ว/เซลฟี่/สติ๊กเกอร์) → ต้องบอกให้ส่งสลิปจริง
+
+    public const SLIP_STORE_FAILED = 'failed';      // ดาวน์โหลด/decode ล้มเหลว → ปล่อย flow เดิม
+
     /**
      * 💾 เก็บสลิปจาก URL (FB CDN) ไว้รอ verify fallback + นัด job 1 นาที
      *
-     * @return bool true = เก็บสำเร็จ (พร้อมให้ fallback ตรวจ)
+     * @return string SLIP_STORE_OK = เก็บสำเร็จ / SLIP_STORE_NOT_SLIP = ไม่ใช่สลิป (ขอสลิป) / SLIP_STORE_FAILED = ล้มเหลว
      */
-    public function storeIncomingSlipFromUrl(FortuneReading $reading, string $url): bool
+    public function storeIncomingSlipFromUrl(FortuneReading $reading, string $url): string
     {
         try {
             // 🛡️ (2026-06-01, user) Pre-check ก่อนเก็บ+นัด fallback job — รูปไม่ใช่สลิป (เซลฟี่/สติ๊กเกอร์) → ไม่เก็บ
-            //   กันเปลืองโควต้า SlipOK (fallback job จะยิง SlipOK กับรูปไม่มี QR) + ไม่ตอบ "ได้รับสลิป" ผิดๆ
-            //   (FB classify ด้วย URL เดียวกับ webhook upstream → cache hit ไม่เรียก Gemini ซ้ำ)
+            //   กันเปลืองโควต้า SlipOK (fallback job จะยิง SlipOK กับรูปไม่มี QR)
+            //   🚫 (2026-06-05, user) คืน NOT_SLIP → webhook บอกชัด "ส่งสลิปจริง" (ไม่เงียบ/ไม่ตอบ "ได้รับสลิป" ผิด)
             if (! $this->returningImageLooksLikeSlip($url, null)) {
-                Log::info('SlipOK: active-bill image ไม่ใช่สลิป (classifier) → ไม่เก็บ/ไม่นัด fallback (ประหยัดโควต้า)', [
+                Log::info('SlipOK: active-bill image ไม่ใช่สลิป (classifier) → ขอสลิปจริง (ไม่เก็บ/ไม่นัด fallback ประหยัดโควต้า)', [
                     'reading_id' => $reading->id,
                 ]);
 
-                return false;
+                return self::SLIP_STORE_NOT_SLIP;
             }
 
             $resp = \Illuminate\Support\Facades\Http::timeout(20)->get($url);
             if (! $resp->successful()) {
-                return false;
+                return self::SLIP_STORE_FAILED;
             }
 
-            return $this->persistSlipBytes($reading, $resp->body());
+            return $this->persistSlipBytes($reading, $resp->body()) ? self::SLIP_STORE_OK : self::SLIP_STORE_FAILED;
         } catch (\Throwable $e) {
             Log::warning('SlipOK: storeIncomingSlipFromUrl ล้มเหลว (non-blocking)', [
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return false;
+            return self::SLIP_STORE_FAILED;
         }
     }
 
     /**
      * 💾 เก็บสลิปจาก base64 (LINE content API) ไว้รอ verify fallback + นัด job
+     *
+     * @return string SLIP_STORE_OK / SLIP_STORE_NOT_SLIP / SLIP_STORE_FAILED
      */
-    public function storeIncomingSlipFromBase64(FortuneReading $reading, string $base64): bool
+    public function storeIncomingSlipFromBase64(FortuneReading $reading, string $base64): string
     {
         try {
-            // 🛡️ (2026-06-01, user) Pre-check ก่อนเก็บ+นัด fallback job — รูปไม่ใช่สลิป → ไม่เก็บ (กันเปลืองโควต้า SlipOK)
+            // 🛡️ (2026-06-01, user) Pre-check ก่อนเก็บ+นัด fallback job — รูปไม่ใช่สลิป → ขอสลิปจริง (กันเปลืองโควต้า SlipOK)
             if (! $this->returningImageLooksLikeSlip(null, $base64)) {
-                Log::info('SlipOK: active-bill image ไม่ใช่สลิป (classifier) → ไม่เก็บ/ไม่นัด fallback (ประหยัดโควต้า)', [
+                Log::info('SlipOK: active-bill image ไม่ใช่สลิป (classifier) → ขอสลิปจริง (ไม่เก็บ/ไม่นัด fallback ประหยัดโควต้า)', [
                     'reading_id' => $reading->id,
                 ]);
 
-                return false;
+                return self::SLIP_STORE_NOT_SLIP;
             }
 
             // รองรับทั้ง data URI และ base64 ดิบ
@@ -11618,18 +11627,38 @@ class FortuneConversationService
             }
             $bytes = base64_decode($base64, true);
             if ($bytes === false || $bytes === '') {
-                return false;
+                return self::SLIP_STORE_FAILED;
             }
 
-            return $this->persistSlipBytes($reading, $bytes);
+            return $this->persistSlipBytes($reading, $bytes) ? self::SLIP_STORE_OK : self::SLIP_STORE_FAILED;
         } catch (\Throwable $e) {
             Log::warning('SlipOK: storeIncomingSlipFromBase64 ล้มเหลว (non-blocking)', [
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return false;
+            return self::SLIP_STORE_FAILED;
         }
+    }
+
+    /**
+     * 🙏 (2026-06-05, user) ข้อความบอกลูกค้าว่า "นี่ไม่ใช่สลิป — ส่งสลิปจริงด้วย"
+     *   ใช้ตอน active-bill ส่งรูปที่ไม่ใช่สลิป (ยกนิ้ว/เซลฟี่) — กันเงียบ + กันระบบตีว่าก่อกวน
+     *   + ให้ลูกค้ารู้ว่าระบบตรวจสลิปได้จริง (จะได้ไม่กล้าส่งมั่ว). cooldown 45 วิ กันบอทย้ำรัวๆ ดูเสีย
+     *
+     * @return string|null ข้อความ — null = เพิ่งบอกไปใน 45 วิ (ไม่ย้ำซ้ำ ลูกค้ารู้แล้ว)
+     */
+    public function notSlipNudgeMessage(string $platform, string $userId): ?string
+    {
+        $key = 'fortune:slip_nudge:'.$platform.':'.$userId;
+        if (\Illuminate\Support\Facades\Cache::get($key)) {
+            return null;
+        }
+        \Illuminate\Support\Facades\Cache::put($key, true, 45);
+
+        return "🙏 รูปที่ส่งมายังไม่ใช่สลิปการโอนนะคะ\n\n"
+            ."📸 รบกวนส่ง*รูปสลิปจริง* (ที่มี QR หรือเลขอ้างอิงธนาคาร) มาให้แม่หมอตรวจ\n"
+            .'✨ ระบบจะตรวจสอบกับธนาคารแล้วตัดบิลให้อัตโนมัติค่ะ';
     }
 
     /**

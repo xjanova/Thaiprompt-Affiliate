@@ -2096,7 +2096,7 @@ class FacebookWebhookController extends Controller
                     if ($slipSvc->isEnabled() && ! empty($imageUrl) && ! $hasSticker
                         && ! $activeReading->is_paid && empty($activeReading->slipok_verified_at)) {
                         $stored = $this->conversationService->storeIncomingSlipFromUrl($activeReading, $imageUrl);
-                        if ($stored) {
+                        if ($stored === \App\Services\FortuneConversationService::SLIP_STORE_OK) {
                             $this->facebookService->sendMessage(
                                 $senderId,
                                 "🌙 ได้รับรูปแล้วค่ะ ขอบคุณนะคะ\n\n"
@@ -2111,6 +2111,24 @@ class FacebookWebhookController extends Controller
 
                             return;
                         }
+
+                        // 🚫 (2026-06-05, user) รูปไม่ใช่สลิป (ยกนิ้ว/เซลฟี่) → บอกชัดให้ส่งสลิปจริง
+                        //   กันเงียบ + กันระบบตีว่าก่อกวน + ให้ลูกค้ารู้ว่าระบบตรวจสลิปได้จริง (ไม่กล้าส่งมั่ว)
+                        if ($stored === \App\Services\FortuneConversationService::SLIP_STORE_NOT_SLIP) {
+                            $nudge = $this->conversationService->notSlipNudgeMessage('facebook', $senderId);
+                            if ($nudge !== null) {
+                                $this->facebookService->sendMessage($senderId, $nudge);
+                            }
+
+                            Log::info('Facebook: รูปไม่ใช่สลิป → บอกให้ส่งสลิปจริง (ไม่เงียบ)', [
+                                'sender_id' => $senderId,
+                                'reading_id' => $activeReading->id,
+                                'nudged' => $nudge !== null,
+                            ]);
+
+                            return;
+                        }
+                        // SLIP_STORE_FAILED → ปล่อย fall through ไปข้อความ generic ด้านล่าง
                     }
                 } catch (\Throwable $slipErr) {
                     Log::warning('Facebook: SlipOK store ล้มเหลว (non-blocking)', [

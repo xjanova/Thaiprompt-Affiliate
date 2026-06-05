@@ -1901,22 +1901,41 @@ class LineFortuneWebhookController extends Controller
                             $b64 = $this->downloadLineImageAsBase64($messageId);
                         }
 
-                        if (! empty($b64)
-                            && $this->conversationService->storeIncomingSlipFromBase64($activeReading, $b64)) {
-                            $this->lineService->sendMessageWithReplyFallback(
-                                $userId,
-                                "🌙 ได้รับรูปแล้วค่ะ ขอบคุณนะคะ\n\n"
-                                ."⏳ ถ้าเป็น*สลิปการโอน* ระบบกำลังตรวจสอบให้ — ถ้าโอนเข้าจริง จะตัดบิลและเริ่มดูดวงให้ภายใน 1 นาที ✨\n\n"
-                                .'💡 อยากให้เช็คทันที พิมพ์ "เช็คสถานะ" ได้เลยค่ะ',
-                                $replyToken
-                            );
+                        if (! empty($b64)) {
+                            $stored = $this->conversationService->storeIncomingSlipFromBase64($activeReading, $b64);
+                            if ($stored === \App\Services\FortuneConversationService::SLIP_STORE_OK) {
+                                $this->lineService->sendMessageWithReplyFallback(
+                                    $userId,
+                                    "🌙 ได้รับรูปแล้วค่ะ ขอบคุณนะคะ\n\n"
+                                    ."⏳ ถ้าเป็น*สลิปการโอน* ระบบกำลังตรวจสอบให้ — ถ้าโอนเข้าจริง จะตัดบิลและเริ่มดูดวงให้ภายใน 1 นาที ✨\n\n"
+                                    .'💡 อยากให้เช็คทันที พิมพ์ "เช็คสถานะ" ได้เลยค่ะ',
+                                    $replyToken
+                                );
 
-                            Log::info('LINE: เก็บสลิป → รอ SlipOK fallback', [
-                                'user_id' => $userId,
-                                'reading_id' => $activeReading->id,
-                            ]);
+                                Log::info('LINE: เก็บสลิป → รอ SlipOK fallback', [
+                                    'user_id' => $userId,
+                                    'reading_id' => $activeReading->id,
+                                ]);
 
-                            return;
+                                return;
+                            }
+
+                            // 🚫 (2026-06-05, user) รูปไม่ใช่สลิป → บอกชัดให้ส่งสลิปจริง (กันเงียบ/ก่อกวน + รู้ว่าตรวจได้จริง)
+                            if ($stored === \App\Services\FortuneConversationService::SLIP_STORE_NOT_SLIP) {
+                                $nudge = $this->conversationService->notSlipNudgeMessage('line', $userId);
+                                if ($nudge !== null) {
+                                    $this->lineService->sendMessageWithReplyFallback($userId, $nudge, $replyToken);
+                                }
+
+                                Log::info('LINE: รูปไม่ใช่สลิป → บอกให้ส่งสลิปจริง (ไม่เงียบ)', [
+                                    'user_id' => $userId,
+                                    'reading_id' => $activeReading->id,
+                                    'nudged' => $nudge !== null,
+                                ]);
+
+                                return;
+                            }
+                            // SLIP_STORE_FAILED → ปล่อย fall through ไปข้อความ generic ด้านล่าง
                         }
                     }
                 } catch (\Throwable $slipErr) {
