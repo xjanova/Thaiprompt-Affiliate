@@ -193,7 +193,12 @@ class FortuneContactSignalService
     }
 
     /**
-     * attachment นี้เป็นสื่อจริงไหม (ไม่ใช่ sticker / location)
+     * attachment นี้เป็นสื่อจริงไหม (ไม่ใช่ sticker / location / เสียง)
+     *
+     * 🛡️ (2026-06-04) ตัด 'audio' ออกจากการนับสแปม:
+     *   ข้อความเสียงแปะลิงก์/รูปโปรโมทไม่ได้ → คนส่ง voice note เกือบทั้งหมด = ลูกค้าจริง
+     *   ที่พยายามถามด้วยเสียง (บอทไม่รองรับเสียงเลยเงียบ → ลูกค้าส่งซ้ำ) ไม่ใช่สแปม
+     *   ถ้านับ audio = link_image จะ false-ban ลูกค้าจริง (เคสจริง 2026-06-04: 2/6 suspects เป็นคนส่งเสียง)
      */
     protected function isMedia(array $att): bool
     {
@@ -204,7 +209,8 @@ class FortuneContactSignalService
             return false;
         }
 
-        return in_array($type, ['image', 'video', 'audio', 'file', 'fallback'], true);
+        // ❌ ไม่รวม 'audio' — เสียงไม่ใช่สแปมลิงก์/รูป (กัน false-ban ลูกค้าที่ถามด้วยเสียง)
+        return in_array($type, ['image', 'video', 'file', 'fallback'], true);
     }
 
     /**

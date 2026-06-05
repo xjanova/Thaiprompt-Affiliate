@@ -124,14 +124,31 @@ class FortuneScanLinkSpammers extends Command
         $banned = 0;
         $blocked = 0;
         $blockFailed = 0;
+        $bannedPsids = [];
 
         foreach ($actionable as $c) {
             $psid = $c->platform_user_id;
+
+            // 🛡️ (2026-06-04) เก็บชื่อ FB ถ้ายังไม่มี (display_name = null) — ให้ ban record + audit เห็นว่าใคร
+            //   ดึงเฉพาะตอนจะแบน (suspects ไม่กี่คน/วัน) — ไม่ยิง Graph API ใน flow ข้อความปกติ
+            if (empty($c->display_name)) {
+                try {
+                    $prof = $fbService->getUserProfile($psid);
+                    $name = is_array($prof) ? ($prof['name'] ?? null) : null;
+                    if (! empty($name)) {
+                        $c->display_name = $name;
+                    }
+                } catch (\Throwable $e) {
+                    // non-blocking — ไม่มีชื่อก็แบนต่อได้
+                }
+            }
+
             $reason = 'auto: ส่งแต่ลิงก์/รูป ไม่เคยพิมพ์คุย ('.$c->link_image_count.' ครั้ง)';
 
             // 1) บอทเลิกคุย (ถาวร) — ใช้ระบบ ban เดิม
             $banService->ban('facebook', $psid, null, $reason, null, $c->display_name);
             $banned++;
+            $bannedPsids[] = $psid;
 
             // 2) block บน FB Page จริง (ห้าม DM + ห้ามโพส/คอมเมนต์)
             if ($fbService->blockPageUser($psid)) {
@@ -154,6 +171,7 @@ class FortuneScanLinkSpammers extends Command
             'banned' => $banned,
             'blocked' => $blocked,
             'block_failed' => $blockFailed,
+            'psids' => $bannedPsids,
         ]);
 
         return self::SUCCESS;
