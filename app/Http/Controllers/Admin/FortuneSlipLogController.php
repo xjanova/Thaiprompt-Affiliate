@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\FortuneTellingSetting;
 use App\Models\SlipVerificationLog;
+use App\Services\Fortune\SlipOkService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -81,10 +84,19 @@ class FortuneSlipLogController extends Controller
             ->select('decision')->distinct()->whereNotNull('decision')
             ->orderBy('decision')->pluck('decision');
 
+        // 📊 (2026-06-05) โควตา SlipOK คงเหลือ — แสดงด้านบนข้างการ์ดสถิติ
+        //   cache 5 นาที กันยิง API SlipOK ทุกครั้งที่เปิด/รีเฟรชหน้า (ถ้าล้มเหลว cache สั้น 60 วิ ให้รีเทอรีเร็ว)
+        $slipokQuota = Cache::get('fortune:slipok:quota_display');
+        if ($slipokQuota === null) {
+            $slipokQuota = (new SlipOkService(FortuneTellingSetting::getSettings()))->checkQuota();
+            Cache::put('fortune:slipok:quota_display', $slipokQuota, ($slipokQuota['success'] ?? false) ? 300 : 60);
+        }
+
         return view('admin.fortune.slip-logs.index', [
             'logs' => $logs,
             'stats' => $stats,
             'decisions' => $decisions,
+            'slipokQuota' => $slipokQuota,
             'pageTitle' => 'ประวัติการตรวจสลิป (SlipOK)',
             'filters' => [
                 'search' => $search ?? '',

@@ -31,6 +31,64 @@
         </a>
     </div>
 
+    {{-- 📊 (2026-06-05) โควตา SlipOK คงเหลือ — เห็นชัดว่าเหลือยิงตรวจได้กี่ครั้ง (กันโดนสลิปปลอมดูดหมด) --}}
+    @php
+        $q = $slipokQuota ?? [];
+        $qOk = (bool) ($q['success'] ?? false);
+        $qLeft = (int) ($q['quota'] ?? 0);
+        // โทนสีตามจำนวนคงเหลือ: < 50 = แดง (ใกล้หมด) / < 200 = เหลือง / ปกติ = เขียว / เช็คไม่ได้ = เทา
+        $qTone = ! $qOk ? 'gray' : ($qLeft < 50 ? 'red' : ($qLeft < 200 ? 'amber' : 'green'));
+        $qToneMap = [
+            'green' => 'border-green-200 dark:border-green-800 from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20',
+            'amber' => 'border-amber-200 dark:border-amber-800 from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20',
+            'red'   => 'border-red-200 dark:border-red-800 from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20',
+            'gray'  => 'border-gray-200 dark:border-gray-700 from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800',
+        ];
+        $qNumColor = [
+            'green' => 'text-green-600 dark:text-green-400',
+            'amber' => 'text-amber-600 dark:text-amber-400',
+            'red'   => 'text-red-600 dark:text-red-400',
+            'gray'  => 'text-gray-500 dark:text-gray-400',
+        ];
+    @endphp
+    <div class="bg-gradient-to-r {{ $qToneMap[$qTone] }} border rounded-xl shadow-sm p-4 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="text-3xl">📊</div>
+            <div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">โควตา SlipOK คงเหลือ (ตรวจสลิปได้อีก)</div>
+                @if ($qOk)
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-3xl font-bold {{ $qNumColor[$qTone] }}">{{ number_format($qLeft) }}</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">ครั้ง</span>
+                        @if ($qTone === 'red')
+                            <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">⚠️ ใกล้หมด</span>
+                        @endif
+                    </div>
+                @else
+                    <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                        เช็คโควตาไม่ได้ — {{ $q['message'] ?? 'เชื่อมต่อ SlipOK ไม่สำเร็จ' }}
+                    </div>
+                @endif
+            </div>
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 text-left sm:text-right space-y-0.5">
+            @if ($qOk)
+                @if (! empty($q['overQuota']))
+                    <div>เกินโควตา (over): <span class="font-medium text-gray-700 dark:text-gray-300">{{ number_format((int) $q['overQuota']) }}</span></div>
+                @endif
+                @if (! empty($q['specialQuota']))
+                    <div>โควตาพิเศษ: <span class="font-medium text-gray-700 dark:text-gray-300">{{ number_format((int) $q['specialQuota']) }}</span></div>
+                @endif
+                @if (! empty($q['endDate']))
+                    <div>หมดรอบ: <span class="font-medium text-gray-700 dark:text-gray-300">{{ $q['endDate'] }}</span></div>
+                @endif
+            @else
+                <a href="{{ route('admin.fortune.settings.index') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">→ ตั้งค่า SlipOK</a>
+            @endif
+            <div class="text-[10px] text-gray-400 dark:text-gray-500">อัปเดตทุก 5 นาที</div>
+        </div>
+    </div>
+
     {{-- Stats --}}
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         @foreach ([
@@ -162,9 +220,12 @@
                             <td class="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{{ $log->sender_name ?? '—' }}</td>
                             <td class="px-3 py-3 text-center">
                                 @if ($log->slip_image_path)
+                                    {{-- ⚠️ (2026-06-05) onerror: ถ้าไฟล์ถูกลบ (404 — purge 30 วัน / โดน deploy เก่าลบ)
+                                         แทนที่ลิงก์ด้วยป้าย "🚫 ลบแล้ว" แทนไอคอนรูปแตก ให้แอดมินเข้าใจว่าไฟล์หาย ไม่ใช่ระบบพัง --}}
                                     <a href="{{ route('admin.fortune.slip-logs.image', $log->id) }}" target="_blank" rel="noopener"
                                        title="เปิดรูปสลิปที่ส่งไปตรวจ (ดูว่า QR ชัดไหม)">
                                         <img src="{{ route('admin.fortune.slip-logs.image', $log->id) }}" loading="lazy" alt="slip"
+                                             onerror="this.onerror=null;var s=document.createElement('span');s.className='text-[10px] text-gray-300 dark:text-gray-600';s.title='ไฟล์รูปถูกลบแล้ว (เกิน 30 วัน หรือถูก deploy ลบก่อนแพตช์ 2026-06-05)';s.textContent='🚫 ลบแล้ว';this.closest('a').replaceWith(s);"
                                              class="h-12 w-12 object-cover rounded border border-gray-200 dark:border-gray-600 inline-block hover:scale-[2.5] hover:shadow-xl transition origin-center relative z-10">
                                     </a>
                                 @else

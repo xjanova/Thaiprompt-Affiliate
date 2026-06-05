@@ -804,7 +804,11 @@ fi
 # Step 4.4: Clean all untracked files and directories (SAFE - excludes critical files)
 print_info "Removing untracked files and directories..."
 # Note: Critical files (.env, uploads) are backed up and will be restored
-git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' || print_warning "Git clean failed (continuing anyway)"
+# ⚠️ (2026-06-05) ต้อง exclude 'storage/app/fortune' ด้วย — เก็บสลิปที่ลูกค้าส่ง (fortune/slips)
+#   + รูปสลิป archive ให้แอดมินดู audit 30 วัน (fortune/slip_archive). ถ้าไม่ exclude
+#   git clean -fdx จะลบทุก deploy → หน้า admin/fortune/slip-logs รูปเปิดไม่ได้ (เหลือแค่ใบล่าสุด)
+#   ⛔ ห้ามย้ายไป storage/app/public (เหมือน banner) เพราะสลิปมีชื่อผู้โอน/เลขบัญชี = PDPA leak
+git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."
