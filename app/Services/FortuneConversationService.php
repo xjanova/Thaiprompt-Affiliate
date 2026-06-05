@@ -656,6 +656,15 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // 💰 (2026-06-05, user) Partial-payment HOLD — โอนขาดครบ 3 รอบ → พักรอแม่หมอตรวจ (60 นาที)
+            //   user spec: ระหว่าง HOLD ลูกค้าพิมพ์อะไรมาก็ตอบ "รอแม่หมอตรวจ" จนครบ 60 นาที → ออกจาก ride
+            // ═══════════════════════════════════════════════════════════════
+            $partialHold = $this->partialHoldResponse($facebookUserId);
+            if ($partialHold !== null) {
+                return $partialHold;
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // 🔒 (2026-05-20) IN-PREDICTION Hard Guard — ห้ามแทรกระหว่างทำนาย
             // ═══════════════════════════════════════════════════════════════
             //   User spec: "ระหว่างการทำนาย ห้ามมีการสร้างบิล หรือออกนอกเรื่องทำนาย
@@ -11569,6 +11578,8 @@ class FortuneConversationService
 
     public const SLIP_STORE_FAILED = 'failed';      // ดาวน์โหลด/decode ล้มเหลว → ปล่อย flow เดิม
 
+    public const SLIP_STORE_HOLD = 'partial_hold';  // (2026-06-05) reading พัก HOLD โอนขาด → ตอบ "รอแม่หมอตรวจ" ไม่ประมวลผลสลิป
+
     /**
      * 💾 เก็บสลิปจาก URL (FB CDN) ไว้รอ verify fallback + นัด job 1 นาที
      *
@@ -11577,6 +11588,11 @@ class FortuneConversationService
     public function storeIncomingSlipFromUrl(FortuneReading $reading, string $url): string
     {
         try {
+            // 💰 (2026-06-05) reading พัก HOLD (โอนขาดครบ 3 รอบ) → ไม่ประมวลผลสลิป รอแม่หมอตรวจ
+            if ($reading->isPartialHoldActive()) {
+                return self::SLIP_STORE_HOLD;
+            }
+
             // 🛡️ (2026-06-01, user) Pre-check ก่อนเก็บ+นัด fallback job — รูปไม่ใช่สลิป (เซลฟี่/สติ๊กเกอร์) → ไม่เก็บ
             //   กันเปลืองโควต้า SlipOK (fallback job จะยิง SlipOK กับรูปไม่มี QR)
             //   🚫 (2026-06-05, user) คืน NOT_SLIP → webhook บอกชัด "ส่งสลิปจริง" (ไม่เงียบ/ไม่ตอบ "ได้รับสลิป" ผิด)
@@ -11612,6 +11628,11 @@ class FortuneConversationService
     public function storeIncomingSlipFromBase64(FortuneReading $reading, string $base64): string
     {
         try {
+            // 💰 (2026-06-05) reading พัก HOLD (โอนขาดครบ 3 รอบ) → ไม่ประมวลผลสลิป รอแม่หมอตรวจ
+            if ($reading->isPartialHoldActive()) {
+                return self::SLIP_STORE_HOLD;
+            }
+
             // 🛡️ (2026-06-01, user) Pre-check ก่อนเก็บ+นัด fallback job — รูปไม่ใช่สลิป → ขอสลิปจริง (กันเปลืองโควต้า SlipOK)
             if (! $this->returningImageLooksLikeSlip(null, $base64)) {
                 Log::info('SlipOK: active-bill image ไม่ใช่สลิป (classifier) → ขอสลิปจริง (ไม่เก็บ/ไม่นัด fallback ประหยัดโควต้า)', [
@@ -11902,6 +11923,12 @@ class FortuneConversationService
             $svc = new \App\Services\Fortune\SlipOkService($this->settings);
             if (! $svc->isEnabled() || empty($userId)) {
                 return null;
+            }
+
+            // 💰 (2026-06-05) reading พัก HOLD (โอนขาด 3 รอบ) → ตอบ "รอแม่หมอตรวจ" ไม่ประมวลผลสลิป
+            $hold = $this->partialHoldResponse($userId);
+            if ($hold !== null) {
+                return $hold;
             }
 
             // 🛡️ (2026-06-04) Flood guard — เกินเพดาน → หยุดก่อนดาวน์โหลด/Gemini/SlipOK (ประหยัดทั้งสองโควต้า)
@@ -12391,6 +12418,265 @@ class FortuneConversationService
     }
 
     /**
+     * 💰 (2026-06-05, user) จัดการ "โอนขาด" — เครดิตยอด + บอกยอดที่ขาด + สร้างบิล top-up ผูก reading เดิม
+     *   วนจนครบเป้า (เช่น 99). ครบ 3 รอบยังไม่ครบ → พักเงินไว้ให้แม่หมอ/แอดมินตรวจ (HOLD 60 นาที, ไม่แบน ไม่คืนอัตโนมัติ)
+     *
+     *   เรียกแทนข้อความ "โอนเพิ่ม" เดิม ใน switch DECISION_REJECT_AMOUNT (active-bill + returning)
+     *   กลไก: re-point reading->unique_payment_amount_id → UPA ใหม่ (base=ยอดที่ขาด) → pipeline SMS/SlipOK เดิม
+     *         จัดการ "ครบ=อนุมัติ" ให้เอง (ไม่ต้องแก้ pipeline จ่ายเงิน)
+     *
+     * @param  string  $context  'active_bill' | 'returning' — ใช้ route ตอนครบ + บอก caller
+     */
+    protected function handlePartialPayment(FortuneReading $reading, array $verify, string $platform, string $userId, string $context): array
+    {
+        try {
+            $reading->refresh();
+            $amount = round((float) ($verify['amount'] ?? 0), 2);
+            $transRef = (string) ($verify['transRef'] ?? '');
+
+            // เป้าหมายเต็ม — จับครั้งแรกจากราคาบิล (UPA base เดิม เช่น 99) ; ครั้งถัดไปใช้ที่จำไว้ (UPA หดเป็น 60/30)
+            $target = (float) ($reading->partial_target_total ?? 0);
+            if ($target <= 0) {
+                $target = (float) ($reading->uniquePaymentAmount?->base_amount ?? 0);
+                if ($target <= 0) {
+                    $target = (float) ($this->settings->slipok_min_amount ?? 99);
+                }
+            }
+
+            $alreadyPaid = (float) ($reading->partial_paid_total ?? 0);
+            $refs = is_array($reading->partial_transrefs) ? $reading->partial_transrefs : [];
+
+            // 🛡️ กันสลิปใบเดิมเครดิตซ้ำ (ปกติ SlipOK ด่าน 4 จับ DUPLICATE ก่อนแล้ว — กันชั้นนี้อีก)
+            if ($transRef !== '' && in_array($transRef, $refs, true)) {
+                $remain = max(0, round($target - $alreadyPaid, 2));
+
+                return [
+                    'action' => 'partial_duplicate_slip',
+                    'message' => "🙏 สลิปใบนี้แม่หมอเครดิตให้ไปแล้วนะคะ\n"
+                        .'ยอดสะสม ฿'.number_format($alreadyPaid, 2).' / ฿'.number_format($target, 2)
+                        .' — ขาดอีก ฿'.number_format($remain, 2).' ค่ะ',
+                    'reading' => $reading,
+                ];
+            }
+
+            // เครดิตยอดใหม่
+            $newPaid = round($alreadyPaid + $amount, 2);
+            $rounds = (int) ($reading->partial_rounds ?? 0) + 1;
+            if ($transRef !== '') {
+                $refs[] = $transRef;
+            }
+            $remaining = round($target - $newPaid, 2);
+
+            // บันทึก transRef registry กลาง (กันเอาสลิปขาดไปเครดิตข้าม reading) + เคลียร์สลิปที่เก็บ (กัน job เก่า re-verify)
+            $this->registerPartialSlip($reading, $verify, $platform, $userId);
+            $this->cleanupStoredSlip($reading);
+
+            // ครบแล้ว (พอดี/เกิน) — safety net (ปกติ reject_amount ไม่ถึงตรงนี้) → อนุมัติ
+            if ($newPaid + 0.001 >= $target) {
+                $reading->forceFill([
+                    'partial_paid_total' => $newPaid, 'partial_target_total' => $target,
+                    'partial_rounds' => $rounds, 'partial_transrefs' => $refs, 'partial_hold_at' => null,
+                ])->save();
+
+                return $context === 'returning'
+                    ? $this->recoverCelticFromVerifiedSlip($reading, $verify, $platform, $userId)
+                    : $this->finalizeSlipOkApproved($reading, $verify, $platform, $userId);
+            }
+
+            // ❌ ครบ 3 รอบยังไม่ครบ → HOLD พักให้แม่หมอ/แอดมินตรวจ (เงินไม่หาย ไม่แบน)
+            if ($rounds >= 3) {
+                try {
+                    $reading->uniquePaymentAmount?->cancel(); // กัน SMS auto-match อนุมัติระหว่าง HOLD
+                } catch (\Throwable $e) {
+                }
+
+                $reading->forceFill([
+                    'partial_paid_total' => $newPaid, 'partial_target_total' => $target,
+                    'partial_rounds' => $rounds, 'partial_transrefs' => $refs, 'partial_hold_at' => now(),
+                ])->save();
+
+                Log::warning('🧾 ADMIN_REVIEW / 💰 PARTIAL_HOLD: โอนขาดครบ 3 รอบ → พักรอแม่หมอ/แอดมินตรวจ', [
+                    'reading_id' => $reading->id, 'bill_reference' => $reading->bill_reference,
+                    'platform' => $platform, 'user_id' => $userId,
+                    'paid_total' => $newPaid, 'target' => $target, 'rounds' => $rounds,
+                ]);
+
+                return [
+                    'action' => 'partial_hold',
+                    'message' => '🙏 เจ้าชะตาคะ... แม่หมอได้รับยอดบางส่วนไว้แล้ว (รวม ฿'.number_format($newPaid, 2).")\n"
+                        .'แต่ยอดยังไม่ครบค่าครู ฿'.number_format($target, 2)." ถึง 3 ครั้งแล้วนะคะ\n\n"
+                        ."🌙 การส่งยอดไม่ครบซ้ำๆ ทำให้สมาธิและจังหวะดวงของเจ้าชะตติดขัด สิ่งต่างๆ จะถูกเลื่อนและคลาดเคลื่อน\n\n"
+                        ."✋ ตอนนี้แม่หมอขอ *พักยอดที่รับไว้* ให้แม่หมอตรวจสอบเอง — *เงินที่โอนมาไม่หายค่ะ* อยู่ระหว่างตรวจ\n"
+                        .'⏳ รอแม่หมอมาตรวจแล้วจะติดต่อกลับนะคะ 🌙',
+                    'reading' => $reading,
+                ];
+            }
+
+            // ✅ ยังไม่ถึง 3 รอบ → สร้างบิล top-up (ยอดที่ขาด ปัดขึ้นเป็นจำนวนเต็ม ไม่ undershoot) ผูก reading เดิม
+            $shortfall = max(1, (int) ceil($remaining - 0.001));
+            $topupUpa = $this->createPartialTopupBill($reading, $shortfall);
+
+            $reading->forceFill([
+                'partial_paid_total' => $newPaid, 'partial_target_total' => $target,
+                'partial_rounds' => $rounds, 'partial_transrefs' => $refs, 'partial_hold_at' => null,
+            ])->save();
+
+            if (! $topupUpa) {
+                return [
+                    'action' => 'partial_topup_failed',
+                    'message' => '🙏 ได้รับยอด ฿'.number_format($amount, 2).' แล้วค่ะ (รวม ฿'.number_format($newPaid, 2).")\n"
+                        .'ยังขาดอีก ฿'.number_format($remaining, 2).' ให้ครบ ฿'.number_format($target, 2)."\n"
+                        .'รบกวนโอนส่วนที่ขาดแล้วส่งสลิปมาให้แม่หมอตรวจอีกครั้งนะคะ ✨',
+                    'reading' => $reading,
+                ];
+            }
+
+            return [
+                'action' => 'partial_topup',
+                'message' => '🙏 ได้รับยอด ฿'.number_format($amount, 2).' แล้วค่ะ — แต่ยัง *ขาดอีก ฿'.number_format($remaining, 2).'* ให้ครบค่าครู ฿'.number_format($target, 2)."\n\n"
+                    .'💸 รบกวนโอนเพิ่ม *฿'.number_format((float) $topupUpa->unique_amount, 2)."* (ใส่เศษสตางค์ด้วย ระบบจะตัดให้อัตโนมัติ)\n"
+                    .'   หรือโอน ฿'.number_format($shortfall, 2)." แล้วส่งสลิปมาให้แม่หมอตรวจก็ได้ค่ะ\n\n"
+                    .'✨ พอครบ แม่หมอจะเปิดไพ่ให้ทันทีเลยนะคะ 🌙',
+                'reading' => $reading,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('💰 handlePartialPayment ล้มเหลว', [
+                'reading_id' => $reading->id ?? null, 'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'action' => 'slipok_amount_low',
+                'message' => '🙏 ยอดในสลิปยังไม่ครบค่าครูค่ะ รบกวนโอนเพิ่มแล้วส่งสลิปใหม่นะคะ',
+                'reading' => $reading,
+            ];
+        }
+    }
+
+    /**
+     * 💰 (2026-06-05) สร้างบิล top-up (ยอดที่ขาด) ผูก reading เดิม — cancel UPA เก่า + generate UPA ใหม่
+     *   ⚠️ ไม่สร้าง reading ใหม่ (กัน incident บิลถูกทับ + กฎ paid-resume) ; ไม่ใช้ setPendingPayment (มันบังคับ type=deep)
+     */
+    protected function createPartialTopupBill(FortuneReading $reading, int $shortfallBase): ?\App\Models\UniquePaymentAmount
+    {
+        try {
+            return \DB::transaction(function () use ($reading, $shortfallBase) {
+                $oldUpa = $reading->uniquePaymentAmount;
+
+                $newUpa = \App\Models\UniquePaymentAmount::generate(
+                    (float) $shortfallBase,
+                    $reading->id,
+                    'fortune_reading',
+                    FortuneReading::PAYMENT_TIMEOUT_MINUTES
+                );
+
+                if (! $newUpa) {
+                    return null;
+                }
+
+                if ($oldUpa && $oldUpa->id !== $newUpa->id) {
+                    try {
+                        $oldUpa->cancel(); // free suffix (ไม่ DELETE กัน orphan FK)
+                    } catch (\Throwable $e) {
+                    }
+                }
+
+                // re-point reading → UPA ใหม่ ; คงสถานะ PENDING_PAYMENT + reading_type เดิม (ไม่แตะ Celtic)
+                $reading->forceFill([
+                    'unique_payment_amount_id' => $newUpa->id,
+                    'amount_paid' => $newUpa->unique_amount,
+                    'conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT,
+                ])->save();
+
+                return $newUpa;
+            });
+        } catch (\Throwable $e) {
+            Log::error('💰 createPartialTopupBill ล้มเหลว', [
+                'reading_id' => $reading->id, 'shortfall' => $shortfallBase, 'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🗒️ (2026-06-05) บันทึกสลิปโอนขาดลง registry กลาง (กันเอา transRef เดิมไปเครดิตข้าม reading) + audit
+     */
+    protected function registerPartialSlip(FortuneReading $reading, array $verify, string $platform, string $userId): void
+    {
+        $transRef = (string) ($verify['transRef'] ?? '');
+        if ($transRef === '') {
+            return;
+        }
+        try {
+            \App\Models\SlipVerification::updateOrCreate(
+                ['trans_ref' => $transRef],
+                [
+                    'fortune_reading_id' => $reading->id,
+                    'consumed_by_platform' => $platform,
+                    'consumed_by_user_id' => $userId,
+                    'amount' => $verify['amount'] ?? null,
+                    'sending_bank' => $verify['sending_bank'] ?? null,
+                    'receiving_bank' => $verify['receiving_bank'] ?? null,
+                    'receiver_account' => $verify['receiver_account'] ?? null,
+                    'sender_name' => $verify['sender_name'] ?? null,
+                    'status' => 'partial',
+                    'raw' => $verify['raw'] ?? null,
+                    'verified_at' => now(),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::debug('registerPartialSlip ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 💰 (2026-06-05) ด่าน HOLD — ถ้า user มี reading พักรอแม่หมอตรวจ (โอนขาด 3 รอบ) → ตอบ "รอแม่หมอตรวจ"
+     *   ครบ 60 นาที → ออกจาก ride (ปิด reading, เก็บ record ไว้ให้แอดมิน). ไม่งั้นคืน null (flow ปกติ)
+     */
+    public function partialHoldResponse(string $userId): ?array
+    {
+        try {
+            if (empty($userId)) {
+                return null;
+            }
+            $reading = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)->orWhere('platform_user_id', $userId);
+            })
+                ->whereNotNull('partial_hold_at')
+                ->where('is_paid', false) // 🛡️ แอดมิน force-approve แล้ว (is_paid=true) → เลิก HOLD ทันที
+                ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
+                ->orderByDesc('id')
+                ->first();
+
+            if (! $reading) {
+                return null;
+            }
+
+            // หมดเวลา HOLD (เกิน 60 นาที) → ออกจาก ride (เก็บ record partial_* ไว้ให้แอดมิน)
+            if ($reading->isPartialHoldExpired()) {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                Log::info('💰 Partial HOLD หมดเวลา 60 นาที → ออกจาก ride', ['reading_id' => $reading->id]);
+
+                return null;
+            }
+
+            if (! $reading->isPartialHoldActive()) {
+                return null;
+            }
+
+            // ตอบทุกครั้งระหว่าง HOLD (user spec: ลูกค้าพิมพ์อะไรมาก็ตอบ) — เงินไม่หาย รอแม่หมอ
+            return [
+                'action' => 'partial_hold',
+                'message' => "🌙 เจ้าชะตาคะ ตอนนี้ยอดที่โอนมาอยู่ระหว่าง *แม่หมอตรวจสอบเอง* นะคะ\n"
+                    .'🙏 เงินที่โอนมาไม่หายค่ะ รอแม่หมอสักครู่ แล้วจะติดต่อกลับนะคะ ✨',
+                'reading' => $reading,
+            ];
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
      * core: look-back สลิป candidate → verify → recover / reject / ขอสลิป
      */
     protected function respondReturningSlip(FortuneReading $recentCeltic, string $platform, string $userId): array
@@ -12472,12 +12758,8 @@ class FortuneConversationService
                 ];
 
             case \App\Services\Fortune\SlipOkService::DECISION_REJECT_AMOUNT:
-                return [
-                    'action' => 'slipok_amount_low',
-                    'message' => "🙏 ยอดในสลิปยังไม่ครบค่าครูค่ะ ({$eval['reason']})\n"
-                        .'รบกวนโอนเพิ่มแล้วส่งสลิปใหม่นะคะ',
-                    'reading' => $recentCeltic,
-                ];
+                // 💰 (2026-06-05, user) โอนขาด → เครดิต + บอกยอดที่ขาด + สร้างบิล top-up (วนจนครบ / HOLD รอบ 3)
+                return $this->handlePartialPayment($recentCeltic, $verify, $platform, $userId, 'returning');
 
             case \App\Services\Fortune\SlipOkService::DECISION_STALE:
                 return [
@@ -12713,6 +12995,11 @@ class FortuneConversationService
 
             $reading->refresh();
 
+            // 💰 (2026-06-05) reading พัก HOLD → ตอบ "รอแม่หมอตรวจ" ไม่ verify (กัน job/on-ping เก่า re-process)
+            if ($reading->isPartialHoldActive()) {
+                return $this->partialHoldResponse($userId ?? $reading->facebook_user_id ?? $reading->platform_user_id);
+            }
+
             // จ่ายแล้ว (SMS ตัดไปก่อน) → ลบสลิป + ไม่เรียก API (ประหยัดโควตา)
             if ($reading->is_paid) {
                 $this->cleanupStoredSlip($reading);
@@ -12802,14 +13089,13 @@ class FortuneConversationService
                     ];
 
                 case \App\Services\Fortune\SlipOkService::DECISION_REJECT_AMOUNT:
-                    $this->cleanupStoredSlip($reading);
-
-                    return [
-                        'action' => 'slipok_amount_low',
-                        'message' => "🙏 ยอดในสลิปยังไม่ครบค่าครูค่ะ\n({$eval['reason']})\n\n"
-                            .'รบกวนโอนเพิ่มให้ครบแล้วส่งสลิปใหม่ หรือพิมพ์ "คุยกับแม่หมอ" นะคะ',
-                        'reading' => $reading,
-                    ];
+                    // 💰 (2026-06-05, user) โอนขาด → เครดิต + บอกยอดที่ขาด + สร้างบิล top-up (วนจนครบ / HOLD รอบ 3)
+                    return $this->handlePartialPayment(
+                        $reading, $verify,
+                        $platform ?? $reading->platform,
+                        $userId ?? $reading->facebook_user_id,
+                        'active_bill'
+                    );
 
                 case \App\Services\Fortune\SlipOkService::DECISION_BANK_DELAY:
                     return [

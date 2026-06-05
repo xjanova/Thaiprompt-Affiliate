@@ -428,6 +428,12 @@ class FortuneReading extends Model
         'is_paid',
         'amount_paid',
         'amount_received',
+        // 💰 (2026-06-05) โอนขาด → ทยอยเติม (partial payment)
+        'partial_paid_total',
+        'partial_target_total',
+        'partial_rounds',
+        'partial_transrefs',
+        'partial_hold_at',
         'paid_at',
         'sms_notification_id',
         'unique_payment_amount_id',
@@ -527,6 +533,12 @@ class FortuneReading extends Model
         // 🧾 SlipOK slip verification — 2026-05-31
         'slip_received_at' => 'datetime',
         'slipok_verified_at' => 'datetime',
+        // 💰 (2026-06-05) Partial payment (โอนขาด → ทยอยเติม)
+        'partial_paid_total' => 'decimal:2',
+        'partial_target_total' => 'decimal:2',
+        'partial_rounds' => 'integer',
+        'partial_transrefs' => 'array',
+        'partial_hold_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -2338,6 +2350,40 @@ class FortuneReading extends Model
         }
 
         $this->update($updateData);
+    }
+
+    /**
+     * ⏱️ (2026-06-05) นาทีที่พัก HOLD (โอนขาดครบ 3 รอบ → รอแม่หมอ/แอดมินตรวจ) ก่อนออกจาก ride
+     */
+    public const PARTIAL_HOLD_MINUTES = 60;
+
+    /**
+     * 💰 (2026-06-05) กำลังพัก HOLD รอแม่หมอ/แอดมินตรวจอยู่ไหม (ยังไม่เกิน 60 นาที)
+     */
+    public function isPartialHoldActive(): bool
+    {
+        return $this->partial_hold_at !== null
+            && $this->partial_hold_at->gt(now()->subMinutes(self::PARTIAL_HOLD_MINUTES));
+    }
+
+    /**
+     * 💰 (2026-06-05) HOLD หมดเวลาแล้ว (เกิน 60 นาที) — ควรออกจาก ride
+     */
+    public function isPartialHoldExpired(): bool
+    {
+        return $this->partial_hold_at !== null
+            && $this->partial_hold_at->lte(now()->subMinutes(self::PARTIAL_HOLD_MINUTES));
+    }
+
+    /**
+     * 💰 (2026-06-05) ยอดที่ยังขาดอยู่ (เป้าหมาย - ที่รับแล้ว) — ปัด 2 ตำแหน่ง ไม่ติดลบ
+     */
+    public function partialRemaining(): float
+    {
+        $target = (float) ($this->partial_target_total ?? 0);
+        $paid = (float) ($this->partial_paid_total ?? 0);
+
+        return max(0, round($target - $paid, 2));
     }
 
     /**

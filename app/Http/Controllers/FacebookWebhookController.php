@@ -2128,6 +2128,16 @@ class FacebookWebhookController extends Controller
 
                             return;
                         }
+
+                        // 💰 (2026-06-05) reading พัก HOLD (โอนขาด 3 รอบ) → ตอบ "รอแม่หมอตรวจ" (เงินไม่หาย)
+                        if ($stored === \App\Services\FortuneConversationService::SLIP_STORE_HOLD) {
+                            $holdResp = $this->conversationService->partialHoldResponse($senderId);
+                            if ($holdResp !== null && ! empty($holdResp['message'])) {
+                                $this->facebookService->sendMessage($senderId, $holdResp['message']);
+                            }
+
+                            return;
+                        }
                         // SLIP_STORE_FAILED → ปล่อย fall through ไปข้อความ generic ด้านล่าง
                     }
                 } catch (\Throwable $slipErr) {
