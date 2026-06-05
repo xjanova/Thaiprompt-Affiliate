@@ -2049,22 +2049,10 @@ trait CelticCrossConversationTrait
      */
     protected function extractCelticNextQuestions(string &$aiResponse): array
     {
-        $pattern = '/\[\s*NEXTQ\s*\](.*?)\[\s*\/\s*NEXTQ\s*\]/su';
-        if (! preg_match($pattern, $aiResponse, $m)) {
-            return [];
-        }
-
-        // ตัด token ออกจากคำทำนาย (กล่องคำทำนายต้องไม่มีรายการคำถามแนะนำ)
-        $aiResponse = trim((string) preg_replace($pattern, '', $aiResponse));
-
-        // แยกด้วย | → ทำความสะอาด → เอาแค่ 2 ข้อแรก
-        $parts = array_map('trim', explode('|', $m[1]));
-        $parts = array_values(array_filter($parts, function ($q) {
-            // กันค่าว่าง + จำกัดความยาว (สั้นไป = ไม่ใช่คำถามจริง / ยาวไป = ปุ่ม/กล่องเพี้ยน)
-            return $q !== '' && mb_strlen($q) >= 4 && mb_strlen($q) <= 120;
-        }));
-
-        return array_slice($parts, 0, 2);
+        // 🔢 (2026-06-05 v2) delegate ไป parser กลางที่ทน token ผิดรูป (AI ดรอป tag เปิด — เคส 5023)
+        //   เดิม regex ครบคู่ที่นี่ก็ match ไม่ได้เหมือน askQuestion → token รั่ว. รวม source เดียว
+        //   กัน drift: askQuestion + askQuestionAsAdmin + fallback นี้ ใช้ logic เดียวกันหมด
+        return \App\Services\CelticCrossService::pullNextQuestions($aiResponse);
     }
 
     /**
@@ -2773,6 +2761,18 @@ trait CelticCrossConversationTrait
             return false;
         }
 
+        // 🆕 (2026-06-05) compound readiness — ขึ้นต้น "พร้อม..." = ตอบรับพร้อม ไม่ใช่คำถาม
+        //   เคส R5023 (FTU-260605-X8071): ลูกค้าพิมพ์ "พร้อมฟัง" → เดิมไม่อยู่ใน whitelist (มีแค่
+        //   "พร้อม") → หลุดไปให้ AI classifier ที่ bias→A → นับเป็น Q1 มั่ว (เสีย 1/5 สิทธิ์ จ่าย 99฿).
+        //   ครอบ "พร้อมฟัง/พร้อมแล้ว/พร้อมรับฟัง/พร้อมเริ่ม" ฯลฯ ด้วย prefix แทน enumerate ทุกแบบ.
+        //   ปลอดภัย: คำถามจริงถูก reject ที่ questionMarkers ด้านบนแล้ว (เช่น "พร้อมดูเรื่องงานไหม")
+        //   + core ≤ 18 ตัวอักษร (ผ่าน guard ความยาวมาแล้ว) → กันประโยคเล่าเรื่องยาว
+        //   ใช้เฉพาะ prefix "พร้อม" (= ready ชัดเจน) — ไม่ใช้ "เริ่ม" prefix กัน false positive
+        //   "เริ่มต้นชีวิตใหม่"/"เริ่มงานใหม่" (เริ่ม-ack จริงอยู่ใน $acks ด้านล่างแล้ว)
+        if (str_starts_with($core, 'พร้อม')) {
+            return true;
+        }
+
         // whitelist คำตอบรับ/พร้อม (ไทย/อังกฤษ/ลาว) — exact match แก่นคำ
         //   topic word (ความรัก/งาน/เงิน) ไม่อยู่ใน list → ผ่านไปทำนายจริง ✅
         $acks = [
@@ -2780,6 +2780,8 @@ trait CelticCrossConversationTrait
             'โอเค', 'โอเก', 'oke', 'ok', 'okay', 'okk', 'yes', 'yep', 'y',
             'ใช่', 'ตกลง', 'จัดมา', 'จัดไป', 'จัด', 'ได้', 'ได้เลย', 'ดี', 'เยี่ยม',
             'อืม', 'อืมม', 'อึม', 'รับทราบ', 'เข้าใจ', 'เข้าใจแล้ว', 'จ้า', 'ค่ะ', 'คะ', 'ครับ',
+            // 🆕 (2026-06-05) ตอบรับแบบ "รอฟัง" (เคส 5023 เผื่อพิมพ์สั้น) — listen-ack ที่ไม่ขึ้นต้นพร้อม/เริ่ม
+            'ฟัง', 'ฟังอยู่', 'รอฟัง', 'รับฟัง', 'รออยู่', 'ว่ามา', 'ว่ามาเลย', 'บอกมา', 'บอกมาเลย',
             'ພ້ອມ', 'ໂອເຄ', 'ໄດ້', 'ໄດ້ເລີຍ',
         ];
 

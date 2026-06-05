@@ -295,19 +295,12 @@ class CelticCrossService
             $response = trim(preg_replace('/\n{3,}/', "\n\n", (string) $response));
             $response = trim(preg_replace('/^\s*[:：]\s*/u', '', $response)); // กรณี "หมอว่า :" เหลือ colon ลอย
 
-            // 🔢 (2026-06-05) ดึง "คำถามแนะนำต่อยอด" [NEXTQ]q1|q2[/NEXTQ] + strip ออกจาก response
+            // 🔢 (2026-06-05 v2) ดึง "คำถามแนะนำต่อยอด" + strip token ออกจาก response
             //   ⚠️ ต้องทำที่นี่ (จุดเดียวกับ strip [TYPE:X]/[END_SESSION]) — ไม่งั้น token รั่วเข้า
             //   DB (response/ai_response) + bridgeToConversationLog (ป้อนกลับ AI) + redeliver cron ส่งซ้ำ
+            //   pullNextQuestions ทน token ผิดรูป (AI ดรอป tag เปิด — เคส 5023) + กันรั่ว 100%
             //   คืนเป็น structured 'next_questions' ให้ caller (trait) แปลงเป็นปุ่มเลข 1️⃣2️⃣
-            $nextQuestions = [];
-            $nextQPattern = '/\[\s*NEXTQ\s*\](.*?)\[\s*\/\s*NEXTQ\s*\]/su';
-            if (preg_match($nextQPattern, $response, $nqm)) {
-                $response = trim((string) preg_replace($nextQPattern, '', $response));
-                $nqParts = array_map('trim', explode('|', $nqm[1]));
-                $nextQuestions = array_slice(array_values(array_filter($nqParts, function ($q) {
-                    return $q !== '' && mb_strlen($q) >= 4 && mb_strlen($q) <= 120;
-                })), 0, 2);
-            }
+            $nextQuestions = self::pullNextQuestions($response);
 
             // 🚫 Non-prediction (B/C/D) — ไม่บันทึก row + ไม่ increment counter
             //   user spec 2026-05-20: "นับเป็นคำถามที่ต้องบันทึกคือคำถามที่เราตอบเพื่อทำนายเท่านั้น"
@@ -565,9 +558,10 @@ class CelticCrossService
             $response = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{00A0}]/u', '', (string) $response);
             $response = trim((string) preg_replace('/[`*]{0,3}[\[\【\［\「]?\s*TYPE\s*[:：]\s*[A-D]\s*[\]\】\］\」]?[`*]{0,3}/iu', '', (string) $response));
 
-            // 🔢 (2026-06-05) Strip [NEXTQ]q1|q2[/NEXTQ] — buildFollowupPrompt มี directive คำถามแนะนำ
+            // 🔢 (2026-06-05 v2) Strip token คำถามแนะนำ — buildFollowupPrompt มี directive คำถามแนะนำ
             //   admin path ไม่สร้างปุ่มแนะนำ → แค่ลบ token กันรั่วหน้าลูกค้า + DB + bridge
-            $response = trim((string) preg_replace('/\[\s*NEXTQ\s*\].*?\[\s*\/\s*NEXTQ\s*\]/su', '', (string) $response));
+            //   ใช้ pullNextQuestions (ทน token ผิดรูป AI ดรอป tag เปิด) ทิ้งค่า return ที่ดึงได้
+            self::pullNextQuestions($response);
 
             $questionRecord->update([
                 'response' => $response,
@@ -1554,6 +1548,58 @@ class CelticCrossService
             ."   • ระบบจะ *ตัด token นี้ออกก่อนส่ง* แล้วแปลงเป็น *ปุ่มเลข 1️⃣ 2️⃣* ให้เจ้าชะตากดเลือก\n"
             ."   • ❌ *ห้ามเขียนรายการคำถามแนะนำในเนื้อคำทำนาย* — ใส่เฉพาะใน token เท่านั้น (กล่องคำทำนายต้องสะอาด)\n"
             ."   • ถ้าข้อความนี้ไม่ใช่การทำนาย ([TYPE:B/C/D]) → *ห้ามใส่* token นี้\n\n";
+    }
+
+    /**
+     * 🔢 (2026-06-05 v2) ดึง "คำถามแนะนำต่อยอด" จาก response + ตัด token ออกให้สะอาด — ทนทุก format
+     *
+     * 🐛 Root cause (reading 5023 / FTU-260605-X8071): gpt-5.4-mini คาย token "ผิดรูป" —
+     *    มี [/NEXTQ] ปิด + คำถาม q1|q2 แต่ "ดรอป [NEXTQ] เปิด" (จริง 0/4 มี tag เปิด, 4/4 มี tag ปิด).
+     *    regex เดิม `[NEXTQ](.*?)[/NEXTQ]` บังคับครบคู่ → ไม่ match → คำถามดิบ + [/NEXTQ] รั่วเข้า
+     *    กล่องคำทำนายที่ลูกค้าเห็น + ปุ่มเลขไม่ขึ้น (รั่ว 100% ของทำนายจริง).
+     *
+     * กลยุทธ์ใหม่ — ยึด [/NEXTQ] ปิด (AI คายเสมอ) เป็น anchor:
+     *   1) ดึงคำถาม: ครบคู่ [NEXTQ]..[/NEXTQ] หรือ q1|q2[/NEXTQ] (กรณีดรอป tag เปิด)
+     *   2) กันรั่ว 100%: ตัดบล็อกคำถามแนะนำออก — ยึด marker NEXTQ ตัวแรก ถอยไปจุดเริ่มบล็อก
+     *      (ย่อหน้าว่าง > บรรทัด > ต้นข้อความ) + กวาด marker เดี่ยวที่หลงเหลือทุกกรณี
+     *
+     * ใช้ร่วมกัน 3 จุด: askQuestion (สร้างปุ่ม) / askQuestionAsAdmin (แค่ตัด) / trait (fallback)
+     *
+     * @param  string  $response  คำทำนาย (แก้ไขโดยอ้างอิง — token + บล็อกคำถามถูกตัดออกหมด)
+     * @return array<int,string>  คำถามแนะนำ 0-2 ข้อ
+     */
+    public static function pullNextQuestions(string &$response): array
+    {
+        // marker NEXTQ ใดๆ — ทั้งเปิด [NEXTQ] และปิด [/NEXTQ]
+        $markerPattern = '/\[\s*\/?\s*NEXTQ\s*\]/u';
+        if (! preg_match($markerPattern, $response, $mm, PREG_OFFSET_CAPTURE)) {
+            return []; // ไม่มี token ใด ๆ → ไม่มีคำถามแนะนำ
+        }
+        $firstMarkerPos = $mm[0][1]; // byte offset ของ marker ตัวแรก (เป็น '[' = ASCII ตัดได้ปลอดภัย)
+
+        // 1) ดึงเนื้อหาคำถาม — ลองครบคู่ก่อน แล้วค่อย fallback แบบดรอป tag เปิด
+        $content = '';
+        if (preg_match('/\[\s*NEXTQ\s*\](.*?)\[\s*\/\s*NEXTQ\s*\]/su', $response, $m)) {
+            $content = $m[1];                                                  // ครบคู่
+        } elseif (preg_match('/(?:^|\n)([^\n\[\]]*\|[^\n\[\]]*?)\s*\[\s*\/\s*NEXTQ\s*\]/u', $response, $m)) {
+            $content = $m[1];                                                  // ดรอป tag เปิด (เคสจริง 5023)
+        }
+        $questions = array_slice(array_values(array_filter(
+            array_map('trim', explode('|', $content)),
+            static fn ($q) => $q !== '' && mb_strlen($q) >= 4 && mb_strlen($q) <= 120
+        )), 0, 2);
+
+        // 2) ตัดบล็อกคำถามแนะนำออกจาก response (กันรั่ว 100% — ไม่ว่า format จะเพี้ยนแค่ไหน)
+        //    ถอยจาก marker ตัวแรกไปจุดเริ่มบล็อก: ย่อหน้าว่างล่าสุด > บรรทัดล่าสุด > ต้นข้อความ
+        $head = substr($response, 0, $firstMarkerPos);
+        $cut = strrpos($head, "\n\n");
+        if ($cut === false) {
+            $nl = strrpos($head, "\n");
+            $cut = $nl !== false ? $nl : strlen($head);
+        }
+        $response = trim((string) preg_replace($markerPattern, '', substr($response, 0, $cut)));
+
+        return $questions;
     }
 
     /**
