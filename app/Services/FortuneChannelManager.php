@@ -1045,6 +1045,16 @@ class FortuneChannelManager
                         ]);
                     }
 
+                    // 🔢 (2026-06-05) กล่องที่ 2 — คำถามแนะนำต่อยอด + ปุ่มเลข 1️⃣2️⃣ (best-effort)
+                    //   ส่งหลังคำทำนายถึงแล้ว — ถ้า fail ไม่ retry/ไม่ redeliver (เป็นแค่ตัวช่วย ไม่ใช่คำตอบ)
+                    if ($ok && ! empty($result['suggestion_box']) && ! empty($result['quick_replies'])) {
+                        try {
+                            $fbService->sendQuickReplies($userId, $result['suggestion_box'], $result['quick_replies'], $extra);
+                        } catch (\Throwable $e) {
+                            \Log::debug('FB Celtic: suggestion box send fail (non-blocking)', ['error' => $e->getMessage()]);
+                        }
+                    }
+
                     return $ok;
                 })(),
 
@@ -2464,6 +2474,16 @@ class FortuneChannelManager
                             'reading_id' => $reading?->id,
                             'msg_preview' => mb_substr($message, 0, 200),
                         ]);
+                    }
+
+                    // 🔢 (2026-06-05) กล่องที่ 2 — คำถามแนะนำต่อยอด + ปุ่มเลข 1️⃣2️⃣ (best-effort)
+                    //   ปุ่มเลข (label/text) ไม่มีคำว่า "ดูดวง" → ไม่โดน stripFortuneStartQuickReplies
+                    if ($textOk && ! empty($result['suggestion_box']) && ! empty($result['quick_replies'])) {
+                        try {
+                            $lineService->sendMessage($userId, $result['suggestion_box'], ['quick_replies' => $result['quick_replies']]);
+                        } catch (\Throwable $e) {
+                            \Log::debug('LINE Celtic: suggestion box send fail (non-blocking)', ['error' => $e->getMessage()]);
+                        }
                     }
 
                     return $textOk;

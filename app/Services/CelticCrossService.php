@@ -295,6 +295,20 @@ class CelticCrossService
             $response = trim(preg_replace('/\n{3,}/', "\n\n", (string) $response));
             $response = trim(preg_replace('/^\s*[:：]\s*/u', '', $response)); // กรณี "หมอว่า :" เหลือ colon ลอย
 
+            // 🔢 (2026-06-05) ดึง "คำถามแนะนำต่อยอด" [NEXTQ]q1|q2[/NEXTQ] + strip ออกจาก response
+            //   ⚠️ ต้องทำที่นี่ (จุดเดียวกับ strip [TYPE:X]/[END_SESSION]) — ไม่งั้น token รั่วเข้า
+            //   DB (response/ai_response) + bridgeToConversationLog (ป้อนกลับ AI) + redeliver cron ส่งซ้ำ
+            //   คืนเป็น structured 'next_questions' ให้ caller (trait) แปลงเป็นปุ่มเลข 1️⃣2️⃣
+            $nextQuestions = [];
+            $nextQPattern = '/\[\s*NEXTQ\s*\](.*?)\[\s*\/\s*NEXTQ\s*\]/su';
+            if (preg_match($nextQPattern, $response, $nqm)) {
+                $response = trim((string) preg_replace($nextQPattern, '', $response));
+                $nqParts = array_map('trim', explode('|', $nqm[1]));
+                $nextQuestions = array_slice(array_values(array_filter($nqParts, function ($q) {
+                    return $q !== '' && mb_strlen($q) >= 4 && mb_strlen($q) <= 120;
+                })), 0, 2);
+            }
+
             // 🚫 Non-prediction (B/C/D) — ไม่บันทึก row + ไม่ increment counter
             //   user spec 2026-05-20: "นับเป็นคำถามที่ต้องบันทึกคือคำถามที่เราตอบเพื่อทำนายเท่านั้น"
             if ($responseType !== 'A') {
@@ -384,6 +398,7 @@ class CelticCrossService
                 'is_prediction' => true,                // 🆕 (Phase 2) — TYPE:A = คำถามทำนายจริง
                 'response_type' => 'A',                 // 🆕 (Phase 2) — สำหรับ caller log
                 'wants_end' => $wantsEnd, // 🔚 AI signal ว่าพร้อมจบ session แล้ว
+                'next_questions' => $nextQuestions,     // 🔢 (2026-06-05) คำถามแนะนำต่อยอด → ปุ่มเลข 1️⃣2️⃣
             ];
         } catch (\Throwable $e) {
             // ⚠️ catch Throwable (ไม่ใช่แค่ Exception) — กัน PHP Error/TypeError
@@ -549,6 +564,10 @@ class CelticCrossService
             //   ใช้ pattern เดียวกับ askQuestion (รองรับ fullwidth bracket/markdown wrapper)
             $response = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{00A0}]/u', '', (string) $response);
             $response = trim((string) preg_replace('/[`*]{0,3}[\[\【\［\「]?\s*TYPE\s*[:：]\s*[A-D]\s*[\]\】\］\」]?[`*]{0,3}/iu', '', (string) $response));
+
+            // 🔢 (2026-06-05) Strip [NEXTQ]q1|q2[/NEXTQ] — buildFollowupPrompt มี directive คำถามแนะนำ
+            //   admin path ไม่สร้างปุ่มแนะนำ → แค่ลบ token กันรั่วหน้าลูกค้า + DB + bridge
+            $response = trim((string) preg_replace('/\[\s*NEXTQ\s*\].*?\[\s*\/\s*NEXTQ\s*\]/su', '', (string) $response));
 
             $questionRecord->update([
                 'response' => $response,
@@ -1501,7 +1520,40 @@ class CelticCrossService
 
             ."🎯 *เป้าหมายสุดท้าย*: ทำให้ลูกค้ารู้สึก \"โดน\" + เข้าใจสถานการณ์ + เห็นทางเลือกชัดขึ้น\n\n"
 
+            .$this->buildNextQuestionsDirective()
+
             .'เริ่มทำนายทันทีจากข้อมูลที่ได้รับ (ตอบกระชับ 800-1500 chars):';
+    }
+
+    /**
+     * 🔢 (2026-06-05) Directive — ให้แม่หมอเสนอ "คำถามแนะนำต่อยอด" 2 ข้อ ท้ายคำทำนาย
+     *
+     * user spec: "ตอนท้ายแม่หมอแนะนำคำถามที่ควรถาม → เอาออกจากกล่องคำทำนาย ทำเป็นปุ่มเลข
+     *             2 คำถาม ต่อยอดเรื่องเดียวกันให้ไพ่แม่นขึ้น (ยกเว้นคำถามสุดท้ายที่หมดโควต้า)"
+     *
+     * กลไก: AI คาย token [NEXTQ]คำถาม1|คำถาม2[/NEXTQ] บรรทัดสุดท้าย —
+     *       trait (extractCelticNextQuestions) ตัด token ออกจากคำทำนาย แล้วแปลงเป็นปุ่มเลข 1️⃣ 2️⃣
+     *       คำถามเต็มอยู่ใน "กล่องที่ 2" (ไม่จำกัด 20 ตัวอักษรเหมือน label ปุ่ม) ปุ่มโชว์แค่ตัวเลข
+     *
+     * วาง: ต่อท้ายทั้ง buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+)
+     *
+     * @return string directive block
+     */
+    protected function buildNextQuestionsDirective(): string
+    {
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🔢 คำถามแนะนำต่อยอด (เฉพาะเมื่อทำนายเต็ม [TYPE:A] เท่านั้น)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."หลังจบคำทำนาย ให้เสนอ \"คำถามที่เจ้าชะตาควรถามต่อ\" 2 ข้อ ที่ *ต่อยอดเรื่องเดิมที่กำลังดูอยู่*:\n"
+            ."   • เจาะลึก/มองอีกมุมของ *เรื่องเดียวกัน* (ห้ามเปลี่ยนเรื่อง) — เพื่อให้ไพ่ชุดเดิมทำนายแม่นยิ่งขึ้น\n"
+            ."   • เขียนเป็นคำถามธรรมชาติจากปากเจ้าชะตา (เช่น \"ความสัมพันธ์นี้จะไปถึงขั้นแต่งงานไหม\")\n"
+            ."   • แต่ละข้อสั้นกระชับ ≤ 60 ตัวอักษร\n\n"
+            ."📌 *รูปแบบบังคับ* — ปิดท้ายข้อความด้วยบรรทัดพิเศษนี้ (วางท้ายสุดจริง ๆ บรรทัดเดียว):\n"
+            ."[NEXTQ]คำถามที่ 1|คำถามที่ 2[/NEXTQ]\n"
+            ."   • คั่น 2 คำถามด้วยเครื่องหมาย | เท่านั้น — ห้ามมีเลขข้อ/bullet/emoji ภายใน token\n"
+            ."   • ระบบจะ *ตัด token นี้ออกก่อนส่ง* แล้วแปลงเป็น *ปุ่มเลข 1️⃣ 2️⃣* ให้เจ้าชะตากดเลือก\n"
+            ."   • ❌ *ห้ามเขียนรายการคำถามแนะนำในเนื้อคำทำนาย* — ใส่เฉพาะใน token เท่านั้น (กล่องคำทำนายต้องสะอาด)\n"
+            ."   • ถ้าข้อความนี้ไม่ใช่การทำนาย ([TYPE:B/C/D]) → *ห้ามใส่* token นี้\n\n";
     }
 
     /**
@@ -1922,6 +1974,8 @@ class CelticCrossService
             .$sandbagBlock."\n\n"
 
             ."❓ ข้อความล่าสุดของเจ้าชะตา: \"{$userQuestion}\"\n\n"
+
+            .$this->buildNextQuestionsDirective()
 
             .'⏱️ จัดประเภท ([A]/[B]/[C]/[D]) ใน 1 วินาที แล้วตอบทันทีตาม style ที่เหมาะ:';
     }

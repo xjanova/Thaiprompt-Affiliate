@@ -3968,6 +3968,10 @@ class FacebookWebhookController extends Controller
             'CELTIC_READY' => $this->processConversationalMessage($senderId, 'พร้อม'),
             'CELTIC_RESET' => $this->processConversationalMessage($senderId, 'สับใหม่'),
             'CELTIC_CONTINUE' => $this->processConversationalMessage($senderId, 'ถามต่อ'),
+            // 🔢 (2026-06-05) ปุ่มเลขคำถามแนะนำต่อยอด → ส่งเลขเข้า flow
+            //   → resolveCelticSuggestionPick คืนคำถามเต็มจาก Cache (เผื่อ FB ส่ง payload แทน title)
+            'CELTIC_SUGGQ_1' => $this->processConversationalMessage($senderId, '1'),
+            'CELTIC_SUGGQ_2' => $this->processConversationalMessage($senderId, '2'),
 
             // 🌙 (2026-05-23) Celtic end-session 2-step confirm
             //    user spec: "ปุ่มยุติทำนายเปลี่ยนเป็น เลิกทำนายและสรุปผล + ถามก่อนว่าจะเลิกแล้วสรุปเลย

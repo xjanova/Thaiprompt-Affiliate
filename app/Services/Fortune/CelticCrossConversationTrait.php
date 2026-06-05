@@ -1676,6 +1676,21 @@ trait CelticCrossConversationTrait
     {
         $question = trim($messageText);
 
+        // 🔢 (2026-06-05) ลูกค้ากดปุ่มเลข 1/2 = เลือก "คำถามแนะนำต่อยอด" ที่แม่หมอเสนอไว้กล่องก่อนหน้า
+        //   user spec: "เผื่อลูกค้าขี้เกียจพิมพ์ ก็ให้กดแทน" — คืนเป็นคำถามเต็มจาก Cache
+        //   แล้วไหลเข้า askQuestion ปกติ (นับเป็นคำถามจริง 1 ข้อ เหมือนพิมพ์เอง)
+        //   ต้องอยู่บนสุด — ก่อน end-confirm/readiness-ack เพื่อให้ "1"/"2" กลายเป็นคำถามเต็มก่อนถูกด่านอื่นจับ
+        $pickedSuggestion = $this->resolveCelticSuggestionPick($reading, $question);
+        if ($pickedSuggestion !== null) {
+            \Log::info('Celtic: customer tapped suggested-question number → expand to full question', [
+                'reading_id' => $reading->id,
+                'tapped' => $question,
+                'resolved' => mb_substr($pickedSuggestion, 0, 60),
+            ]);
+            $question = $pickedSuggestion;
+            $messageText = $pickedSuggestion;
+        }
+
         // 🔚 (2026-05-23) ลูกค้าขอจบ → 2-step confirm กันมือลั่น
         //    user spec: "ปุ่มยุติทำนายเปลี่ยนเป็น เลิกทำนายและสรุปผล แทน และถามก่อนว่าจะเลิกแล้วสรุปเลย
         //                 จริงไหม เพราะบางคนมือไปกดผิด"
@@ -1863,6 +1878,16 @@ trait CelticCrossConversationTrait
         //   Pattern กว้างเผื่อ AI แต่งรูปแบบ — รับ space / underscore / hyphen / dot ระหว่างคำ
         $offTopicPattern = '/\[\s*OFF[_\s.-]?TOPIC[_\s.-]?REPICK\s*\]/iu';
         $aiResponse = (string) ($result['response'] ?? '');
+
+        // 🔢 (2026-06-05) คำถามแนะนำต่อยอด — askQuestion ดึง+strip [NEXTQ] ให้แล้ว (DB/bridge/redeliver สะอาด)
+        //   อ่าน structured 'next_questions' เป็นหลัก + defense-in-depth: strip token ที่อาจหลงเหลือใน
+        //   $aiResponse (เผื่อ path เก่า/อื่นไม่ strip) — กัน token รั่วถึงลูกค้าทุกกรณี รวม Grand Finale Q5
+        $celticNextQuestions = $result['next_questions'] ?? [];
+        $leftoverNextQuestions = $this->extractCelticNextQuestions($aiResponse); // strips $aiResponse ในตัว
+        if (empty($celticNextQuestions) && ! empty($leftoverNextQuestions)) {
+            $celticNextQuestions = $leftoverNextQuestions;
+        }
+
         if (preg_match($offTopicPattern, $aiResponse)) {
             $aiResponse = trim(preg_replace($offTopicPattern, '', $aiResponse));
 
@@ -1985,13 +2010,134 @@ trait CelticCrossConversationTrait
             'platform' => $platform,
         ]);
 
+        // 🔢 (2026-06-05) กล่องที่ 2 — คำถามแนะนำต่อยอดเป็นปุ่มเลข (เฉพาะตอนยังเหลือสิทธิ์ถาม)
+        //   user spec: "ยกเว้นคำถาม Q5 ไม่ต้องสร้างปุ่ม เพราะหมดโควต้าถามแล้ว"
+        //   ที่นี่ผ่าน hard-cap (usedQ >= maxQ) มาแล้ว → usedQ < maxQ → ยังถามต่อได้เสมอ
+        //   remainingQ === null = admin ตั้งถามไม่จำกัด (maxQ=0) → ยังโชว์ปุ่มได้
+        //   sync Cache กับคำตอบล่าสุด: มีคำถามแนะนำ → put / ไม่มี → forget (กันกดเลขเก่าค้าง)
+        $suggestionBox = null;
+        $suggestionButtons = [];
+        if (! empty($celticNextQuestions) && ($remainingQ === null || $remainingQ > 0)) {
+            $suggestionBox = $this->buildCelticSuggestionBox($celticNextQuestions);
+            $suggestionButtons = $this->buildCelticSuggestionButtons($celticNextQuestions);
+            // เก็บคำถามเต็มไว้ map ตอนลูกค้ากดเลข (TTL ยาวกว่า qa window เผื่อกดช้า)
+            cache()->put("celtic:suggq:{$reading->id}", $celticNextQuestions, now()->addMinutes(20));
+        } else {
+            cache()->forget("celtic:suggq:{$reading->id}");
+        }
+
         return [
             'action' => 'celtic_question_answered',
             'message' => $finalMessage,
             'reading' => $reading,
             // 🐛 (2026-05-29) ส่ง sequence ให้ ChannelManager mark delivered ตรง row (กัน redeliver ซ้ำ)
             'sequence' => $sequence,
+            // 🔢 (2026-06-05) กล่องที่ 2 (คำถามแนะนำ + ปุ่มเลข) — ChannelManager ส่งต่อหลังคำทำนายถึงแล้ว
+            'suggestion_box' => $suggestionBox,
+            'quick_replies' => $suggestionButtons,
         ];
+    }
+
+    /**
+     * 🔢 (2026-06-05) ดึง "คำถามแนะนำต่อยอด" จาก token [NEXTQ]q1|q2[/NEXTQ] + ตัด token ออกจากคำทำนาย
+     *
+     * AI คาย token ท้ายข้อความ — เราตัดออก (กล่องคำทำนายต้องสะอาด ไม่มีรายการคำถาม)
+     * แล้วคืน 2 คำถามไปทำเป็นปุ่มเลข. pattern กว้าง — เผื่อ AI ใส่ช่องว่าง/ขีดในชื่อ token
+     *
+     * @param  string  $aiResponse  คำทำนาย (แก้ไขโดยอ้างอิง — token ถูกตัดออก)
+     * @return array<int,string> รายการคำถาม 0-2 ข้อ
+     */
+    protected function extractCelticNextQuestions(string &$aiResponse): array
+    {
+        $pattern = '/\[\s*NEXTQ\s*\](.*?)\[\s*\/\s*NEXTQ\s*\]/su';
+        if (! preg_match($pattern, $aiResponse, $m)) {
+            return [];
+        }
+
+        // ตัด token ออกจากคำทำนาย (กล่องคำทำนายต้องไม่มีรายการคำถามแนะนำ)
+        $aiResponse = trim((string) preg_replace($pattern, '', $aiResponse));
+
+        // แยกด้วย | → ทำความสะอาด → เอาแค่ 2 ข้อแรก
+        $parts = array_map('trim', explode('|', $m[1]));
+        $parts = array_values(array_filter($parts, function ($q) {
+            // กันค่าว่าง + จำกัดความยาว (สั้นไป = ไม่ใช่คำถามจริง / ยาวไป = ปุ่ม/กล่องเพี้ยน)
+            return $q !== '' && mb_strlen($q) >= 4 && mb_strlen($q) <= 120;
+        }));
+
+        return array_slice($parts, 0, 2);
+    }
+
+    /**
+     * 🔢 (2026-06-05) สร้าง "กล่องที่ 2" — คำถามแนะนำเป็นเลข + เตือน "ถามเรื่องเดิม ไพ่แม่นกว่า"
+     *
+     * user spec: คำถามเต็มอยู่ในกล่อง (ไม่จำกัด 20 ตัวอักษรเหมือน label ปุ่ม) / ปุ่มโชว์แค่เลข /
+     *            เตือนว่าถ้าเปลี่ยนเรื่อง พลังไพ่กระจาย ความแม่นลดลง
+     *
+     * @param  array<int,string>  $questions  1-2 คำถาม
+     */
+    protected function buildCelticSuggestionBox(array $questions): string
+    {
+        $box = "🔮 อยากให้แม่หมอเปิดไพ่ *เรื่องไหนต่อ* ดีคะ — กดเลขเลือกได้เลย\n\n";
+        foreach ($questions as $i => $q) {
+            $num = $i === 0 ? '1️⃣' : '2️⃣';
+            $box .= "{$num} {$q}\n";
+        }
+        $box .= "\n💬 หรือพิมพ์เรื่องที่อยากรู้มาเองก็ได้\n\n"
+            ."✨ *เคล็ดความแม่น*: ไพ่ชุดนี้ผูกพลังกับ *เรื่องเดิม* — ถามต่อเรื่องเดียวกันยิ่งลึกยิ่งแม่น\n"
+            .'ถ้าเปลี่ยนไปถามเรื่องใหม่ พลังไพ่จะเริ่มกระจาย ความแม่นอาจลดลงมากค่ะ 🌙';
+
+        return $box;
+    }
+
+    /**
+     * 🔢 (2026-06-05) สร้างปุ่มเลข (โชว์แค่ตัวเลข) — โครงเดียวใช้ได้ทั้ง FB + LINE
+     *
+     * FB อ่าน title/payload | LINE อ่าน label/text — ใส่ครบทั้ง 4 key ในปุ่มเดียว
+     * • payload `CELTIC_SUGGQ_N` → FB handleQuickReply map เป็น text 'N'
+     * • text 'N' → LINE ส่งตรงตอนกด
+     * เลข N เข้า resolveCelticSuggestionPick → คืนคำถามเต็มจาก Cache
+     *
+     * @param  array<int,string>  $questions  1-2 คำถาม
+     */
+    protected function buildCelticSuggestionButtons(array $questions): array
+    {
+        $emoji = ['1️⃣', '2️⃣'];
+        $buttons = [];
+        foreach ($questions as $i => $q) {
+            $n = (string) ($i + 1);
+            $buttons[] = [
+                'title' => $emoji[$i] ?? $n,        // FB label (โชว์แค่เลข)
+                'label' => $emoji[$i] ?? $n,        // LINE label (โชว์แค่เลข)
+                'text' => $n,                       // LINE ส่งข้อความนี้ตอนกด
+                'payload' => 'CELTIC_SUGGQ_'.$n,    // FB quick_reply payload
+            ];
+        }
+
+        return $buttons;
+    }
+
+    /**
+     * 🔢 (2026-06-05) ลูกค้ากดปุ่มเลข 1/2 → คืนคำถามแนะนำเต็มที่เก็บไว้ (Cache) มาแทน
+     *
+     * รองรับทั้ง "1"/"2" (LINE text / FB payload→processConversationalMessage)
+     * + "1️⃣"/"2️⃣" (เผื่อ FB ส่ง title แทน payload — strip keycap ก่อนเทียบ)
+     *
+     * @return string|null คำถามเต็ม หรือ null ถ้าไม่ใช่การกดเลข/ไม่มี suggestion ค้างอยู่
+     */
+    protected function resolveCelticSuggestionPick(FortuneReading $reading, string $text): ?string
+    {
+        // strip variation-selector (FE0F) + keycap (20E3) → "1️⃣" กลายเป็น "1"
+        $n = trim((string) preg_replace('/[\x{FE00}-\x{FE0F}\x{20E3}]/u', '', $text));
+        if (! preg_match('/^[12]$/', $n)) {
+            return null; // ไม่ใช่การกดเลขแนะนำ
+        }
+
+        $stored = cache()->get("celtic:suggq:{$reading->id}");
+        if (! is_array($stored)) {
+            return null; // ไม่มี suggestion ค้าง (หมดอายุ/ไม่เคยเสนอ) → ปล่อยเป็นข้อความปกติ
+        }
+
+        return $stored[(int) $n - 1] ?? null;
     }
 
     // 🛑 (2026-05-14) handleCelticPredictAll + buildPredictAllPrompt + CELTIC_PREDICT_NOW
