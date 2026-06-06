@@ -7,6 +7,7 @@ use App\Listeners\SendNewTransactionFcmNotification;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -48,6 +49,17 @@ class AppServiceProvider extends ServiceProvider
 
         // Use Tailwind pagination views
         Paginator::useTailwind();
+
+        // 🔄 (2026-06-06) Queue worker daemon — เคลียร์ static settings cache ก่อนทุก job
+        //   FortuneTellingSetting::getSettings() แคชใน static $cachedInstance (ไม่มี TTL)
+        //   → worker (long-running) ถือ snapshot ค้างข้าม job ตลอดอายุ process
+        //   → ถ้าแอดมินแก้ setting (เปิด/ปิด SlipOK, แบนเนอร์ DM ฯลฯ) job เห็นค่าเก่า → ทำงานผิด
+        //   เคสจริง: VerifySlipFallbackJob เห็น SlipOK "ปิด" (stale) → ไม่ตรวจสลิป (บิล FTU-260606-C8706)
+        //   แก้รวมศูนย์: clear ก่อนทุก job → job ที่อ่าน settings ได้ค่าสดจาก DB เสมอ
+        //   (web request สด per-request อยู่แล้ว ; เป็น no-op สำหรับ job ที่ไม่แตะ settings)
+        Queue::before(function () {
+            \App\Models\FortuneTellingSetting::clearSettingsCache();
+        });
 
         // เพิ่ม Carbon macro สำหรับแสดงวันที่ภาษาไทย
         Carbon::macro('thaidate', function (string $format = 'j M Y') {

@@ -47,6 +47,14 @@ class VerifySlipFallbackJob implements ShouldQueue
         }
 
         try {
+            // 🔄 (2026-06-06) FIX — Queue worker เป็น daemon → static settings cache ($cachedInstance)
+            //   ค้างข้าม job ตลอดอายุ worker. ถ้า snapshot เก่ามองว่า SlipOK ปิด (enable_slipok_verify
+            //   /branch_id/api_key) → trySlipOkVerifyForReading() เด้งที่ด่าน isEnabled() ทันที
+            //   (ไม่ยิง API + ไม่เขียน slip_verification_logs) → สลิปลูกค้าไม่เคยถูกตรวจ
+            //   เคสจริง: บิล FTU-260606-C8706 (reading 5068) สลิปเก็บแล้วแต่ fallback ไม่ตรวจ
+            //   แก้: clear static cache ก่อนอ่าน → อ่านค่าล่าสุดจาก DB เสมอ (web request สดอยู่แล้ว)
+            //   mirror การแก้ของ ProcessCommentEngagement (commit 9d7cd039a)
+            FortuneTellingSetting::clearSettingsCache();
             $settings = FortuneTellingSetting::getSettings();
             $conversationService = new FortuneConversationService($settings);
 
