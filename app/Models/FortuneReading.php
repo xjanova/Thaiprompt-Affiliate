@@ -1576,14 +1576,22 @@ class FortuneReading extends Model
                 //    (ส่งก่อน update status เพื่อให้ flow handler ไม่ตีเป็น completed)
                 if ($channelManager) {
                     try {
-                        $cancelMessage = self::buildCancelWakeupMessage($reading);
                         $platform = $reading->platform ?? 'facebook';
                         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
                         if (! empty($userId)) {
                             $platformService = $channelManager->getPlatform($platform);
                             if ($platformService) {
-                                $platformService->sendMessage($userId, $cancelMessage);
+                                // 📜 (2026-06-07) บิลยกเลิกโดยระบบ (หมดเวลา 30 นาที) → เตือนด้วยเช่นกัน
+                                //   user: "บิลที่ยกเลิกโดยระบบ มันไม่เตือน ต้องเตือนด้วยเช่นกัน"
+                                //   auto-expire = สร้างบิลแล้วปล่อยหมดเวลา = ฝืนกติกา → รูป + เตือนแรง (consent cancel)
+                                //   helper เช็ค toggle เอง → ปิด/ไม่มีรูป-ปิด = false → fallback wakeup เดิม (20 variants)
+                                $sentWarning = \App\Models\FortuneConsentImage::deliverCancelWarning($platformService, (string) $userId);
+                                if ($sentWarning) {
+                                    $reading->setConversationState('cancel_warning_sent', true);
+                                } else {
+                                    $platformService->sendMessage($userId, self::buildCancelWakeupMessage($reading));
+                                }
                             }
                         }
                     } catch (\Throwable $dmErr) {

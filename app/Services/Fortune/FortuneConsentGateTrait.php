@@ -213,28 +213,11 @@ trait FortuneConsentGateTrait
             && $this->looksLikeNeedPaymentHelp($cancelReasonText);
         $alreadyWarned = (bool) $cancelledReading->getConversationState('cancel_warning_sent');
 
-        $shouldWarnHard = $this->settings->isConsentCancelEnabled()
-            && $intentional
-            && ! $forceMajeure
-            && ! $alreadyWarned;
+        $shouldWarnHard = $intentional && ! $forceMajeure && ! $alreadyWarned;
 
-        if ($shouldWarnHard) {
-            // 🔴 เจตนาเบี้ยว → รูปเตือน (ถ้ามี) + ข้อความเตือนแรง
-            try {
-                $img = FortuneConsentImage::pickByStrategy(
-                    $this->settings->fortune_consent_pick_strategy ?? 'random',
-                    FortuneConsentImage::SCOPE_CANCEL
-                );
-                if ($img) {
-                    $platformService->sendImage($userId, $img->image_url);
-                    $img->recordSend();
-                    usleep(400000); // 400ms ให้รูปมาก่อน text
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Fortune: cancel consent image failed (non-blocking)', ['error' => $e->getMessage()]);
-            }
-
-            $platformService->sendMessage($userId, $this->settings->getConsentCancelText());
+        // 🔴 เจตนาเบี้ยว → รูป (scope cancel) + ข้อความเตือนแรง
+        //   helper เช็ค consent_cancel_enabled เอง → ปิด/fail = false → fallthrough wakeup เดิม
+        if ($shouldWarnHard && FortuneConsentImage::deliverCancelWarning($platformService, (string) $userId)) {
             $cancelledReading->setConversationState('cancel_warning_sent', true);
 
             Log::info('Fortune: ส่งคำเตือนยกเลิก (เจตนาเบี้ยว) + รูป', [

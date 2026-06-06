@@ -164,4 +164,51 @@ class FortuneConsentImage extends Model
         $this->increment('send_count');
         $this->update(['last_sent_at' => now()]);
     }
+
+    /**
+     * 🔴 ส่งคำเตือน "ยกเลิกบิล" (รูป scope=cancel + ข้อความเตือนแรง) ผ่าน platform service
+     *
+     * ใช้ร่วมกันโดย:
+     *   - FortuneConsentGateTrait::sendCancelConsentOrWakeup (ลูกค้ากดยกเลิกแบบเบี้ยว)
+     *   - FortuneReading::cancelExpiredPendingBills (ระบบยกเลิกอัตโนมัติเมื่อบิลหมดเวลา 30 นาที)
+     *
+     * helper เช็ค toggle `fortune_consent_cancel_enabled` เอง → ปิด = return false (caller ใช้ wakeup เดิม)
+     *
+     * @param  mixed  $platformService  FB/LINE service (ต้องมี sendImage()/sendMessage())
+     * @return bool true = ส่งคำเตือน consent สำเร็จ / false = ปิดระบบ หรือ service ไม่พร้อม
+     */
+    public static function deliverCancelWarning($platformService, string $userId): bool
+    {
+        if (empty($userId) || ! $platformService) {
+            return false;
+        }
+
+        $settings = \App\Models\FortuneTellingSetting::getSettings();
+        if (! $settings->isConsentCancelEnabled()) {
+            return false;
+        }
+
+        try {
+            $img = self::pickByStrategy(
+                $settings->fortune_consent_pick_strategy ?? 'random',
+                self::SCOPE_CANCEL
+            );
+            if ($img) {
+                $platformService->sendImage($userId, $img->image_url);
+                $img->recordSend();
+                usleep(400000); // 400ms ให้รูปมาก่อน text
+            }
+
+            $platformService->sendMessage($userId, $settings->getConsentCancelText());
+
+            return true;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Fortune: deliverCancelWarning failed (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
 }
