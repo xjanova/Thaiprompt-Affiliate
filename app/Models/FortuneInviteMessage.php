@@ -110,6 +110,27 @@ class FortuneInviteMessage extends Model
     }
 
     /**
+     * 🔘 Quick Replies 3 ปุ่ม ที่แนบไปกับข้อความชวน (Facebook)
+     *
+     * 1. 🔮 ดูดวงเลย      → INVITE_READ_NOW  (เข้า flow ดูดวง + เคลียร์ opt-out)
+     * 2. 🔕 พัก 7 วัน      → INVITE_SNOOZE_7D (พัก DM 7 วัน)
+     * 3. 🚫 ไม่ต้องส่งอีก   → INVITE_OPTOUT    (หยุด DM ตาม comment/reaction ถาวร)
+     *
+     * payload เป็น namespace ใหม่ (INVITE_*) ไม่ชนกับปุ่มเดิมในระบบ
+     * route ผ่าน FacebookWebhookController::handleQuickReply()
+     *
+     * @return array<int, array{content_type: string, title: string, payload: string}>
+     */
+    public static function quickReplies(): array
+    {
+        return [
+            ['content_type' => 'text', 'title' => '🔮 ดูดวงเลย', 'payload' => 'INVITE_READ_NOW'],
+            ['content_type' => 'text', 'title' => '🔕 พัก 7 วัน', 'payload' => 'INVITE_SNOOZE_7D'],
+            ['content_type' => 'text', 'title' => '🚫 ไม่ต้องส่งอีก', 'payload' => 'INVITE_OPTOUT'],
+        ];
+    }
+
+    /**
      * แทนที่ {name} ด้วยชื่อจริงของลูกค้า
      *
      * - ชื่อ valid (เป็นชื่อคนจริง) → "คุณ{name}" → "คุณสมชาย"

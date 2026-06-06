@@ -55,6 +55,11 @@ class ProcessCommentEngagement implements ShouldQueue
     public function handle(): void
     {
         try {
+            // 🔄 (2026-06-06) FIX — Queue worker เป็น daemon → static settings cache
+            //   ($cachedInstance) ค้างข้าม job. ถ้าแอดมินเปลี่ยน setting (เช่น ปิดแบนเนอร์ DM)
+            //   worker จะอ่านค่าเก่าจนกว่าจะ restart → "ปิดแล้วยังส่งรูป".
+            //   แก้: clear cache ทุก job → อ่านค่าล่าสุดจาก DB เสมอ (web request fresh อยู่แล้ว)
+            FortuneTellingSetting::clearSettingsCache();
             $settings = FortuneTellingSetting::getSettings();
 
             if (! $settings->isCommentEngagementEnabled()) {
@@ -113,6 +118,16 @@ class ProcessCommentEngagement implements ShouldQueue
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                     'month' => now()->format('Y-m'),
+                ]);
+
+                return;
+            }
+
+            // 🔕 (2026-06-06) เคารพปุ่ม opt-out/snooze (safety — เผื่อ dispatch ก่อนลูกค้ากด opt-out)
+            if (! \App\Models\FortuneUserCredit::canReceiveOutbound($userId, 'facebook')) {
+                Log::info('🔕 Comment engagement skip — ลูกค้าเลือกพัก/ไม่รับ DM', [
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
                 ]);
 
                 return;
@@ -291,7 +306,8 @@ class ProcessCommentEngagement implements ShouldQueue
             if ($useInviteText) {
                 // 💬 (2026-06-06) ได้รูปสัปดาห์นี้แล้ว → ส่งข้อความชวน + QR ผ่าน Private Reply (ไม่มีรูป)
                 //    text+QR atomic ใน 1 call — ไม่มี race, CTA (ปุ่มดูดวง) ครบ
-                $stage2TextSent = $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
+                // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
+                $stage2TextSent = $facebookService->sendQuickReplies($userId, $dmMessage, \App\Models\FortuneInviteMessage::quickReplies(), [
                     'from_comment_engagement' => true,
                     'comment_id' => $commentId,
                 ]);

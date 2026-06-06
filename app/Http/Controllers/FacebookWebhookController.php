@@ -565,6 +565,17 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 🔕 (2026-06-06) เคารพปุ่ม opt-out/snooze (กด "พัก 7 วัน" / "ไม่ต้องส่งอีก")
+            if (! \App\Models\FortuneUserCredit::canReceiveOutbound($userId, 'facebook')) {
+                Log::info('🔕 Reaction DM ข้าม — ลูกค้าเลือกพัก/ไม่รับ DM', [
+                    'user_id' => $userId,
+                ]);
+                $reaction->dm_success = false;
+                $reaction->save();
+
+                return;
+            }
+
             // 🌙 (2026-05-21) Daily Horoscope greeting — แทน returning-user variants เดิม
             //    มี birth_date ใน DB → ส่งดวงประจำวันตาม day_of_birth
             //    ไม่มี → ทักทายชวนดูดวง + promise ส่งดวงฟรีหลังจากนั้น
@@ -588,6 +599,8 @@ class FacebookWebhookController extends Controller
             $useInviteText = $inviteMessage !== null;
             if ($useInviteText) {
                 $message = $inviteMessage->render($userName ?? 'คุณ');
+                // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
+                $quickReplies = \App\Models\FortuneInviteMessage::quickReplies();
             }
 
             // 🖼️ ส่งแบนเนอร์ก่อน text (ถ้าเปิดใน admin) — ข้ามถ้าได้รูปสัปดาห์นี้แล้ว
@@ -821,6 +834,17 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 🔕 (2026-06-06) เคารพปุ่ม opt-out/snooze — ลูกค้ากด "พัก 7 วัน" / "ไม่ต้องส่งอีก"
+            //   ครอบ comment DM ทุกแบบ (affiliate + template + Job dispatch) ในที่เดียว
+            //   ⚠️ guard เฉพาะ outbound — ไม่กระทบ flow จ่ายเงิน/รับคำทำนาย (inbound)
+            if (! \App\Models\FortuneUserCredit::canReceiveOutbound($fromId, 'facebook')) {
+                Log::info('🔕 Comment Engagement: ข้าม — ลูกค้าเลือกพัก/ไม่รับ DM', [
+                    'user_id' => $fromId,
+                ]);
+
+                return;
+            }
+
             // 🛑 Admin Handover: ถ้าแอดมินกำลังดูแล user คนนี้ใน DM
             // → บอทไม่ควรส่ง DM แทรกระหว่าง conversation ของแอดมิน
             try {
@@ -1012,6 +1036,8 @@ class FacebookWebhookController extends Controller
         $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($fromId, 'facebook');
         if ($inviteMessage) {
             $dmMessage = $inviteMessage->render($name);
+            // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
+            $quickReplies = \App\Models\FortuneInviteMessage::quickReplies();
         } elseif ($this->bannerService) {
             // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
             // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)
@@ -3106,7 +3132,13 @@ class FacebookWebhookController extends Controller
             //   handleGetStarted ส่ง "รูปอย่างเดียว" — ถ้างดรูปต้องมี text แทน ไม่งั้นลูกค้าไม่ได้อะไร
             $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($senderId, 'facebook');
             if ($inviteMessage) {
-                $this->facebookService->sendMessage($senderId, $inviteMessage->render($userName));
+                // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
+                $this->facebookService->sendQuickReplies(
+                    $senderId,
+                    $inviteMessage->render($userName),
+                    \App\Models\FortuneInviteMessage::quickReplies(),
+                    ['messaging_type' => 'RESPONSE']
+                );
                 $inviteMessage->recordSend();
             } elseif ($this->bannerService) {
                 $welcomeImgSent = $this->bannerService->sendBannerOnce(
@@ -3915,6 +3947,41 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * 🔮 (2026-06-06) ปุ่ม "ดูดวงเลย" จากข้อความชวน
+     *   re-engage → เคลียร์ opt-out/snooze แล้วเข้า flow ดูดวงปกติ (เหมือน MENU_FORTUNE)
+     */
+    protected function handleInviteReadNow(string $senderId): void
+    {
+        \App\Models\FortuneUserCredit::clearOutboundOptOut($senderId, 'facebook');
+        $this->processConversationalMessage($senderId, 'ดูดวง');
+    }
+
+    /**
+     * 🔕 (2026-06-06) ปุ่ม "พัก 7 วัน" — พัก DM ตาม comment/reaction 7 วัน
+     */
+    protected function handleInviteSnooze(string $senderId): void
+    {
+        \App\Models\FortuneUserCredit::snoozeOutbound($senderId, 'facebook', 7);
+        $this->facebookService->sendMessage(
+            $senderId,
+            "🔕 รับทราบค่ะ แม่หมอจะพักการทักไปหา 7 วันนะคะ\n\nถ้าช่วงไหนอยากดูดวง ทักมาหาแม่หมอได้เสมอเลยค่ะ ✨"
+        );
+    }
+
+    /**
+     * 🚫 (2026-06-06) ปุ่ม "ไม่ต้องส่งอีก" — หยุด DM ตาม comment/reaction ถาวร
+     *   ลูกค้ายังทักมาเอง + ดูดวงได้ปกติ (guard เฉพาะ outbound)
+     */
+    protected function handleInviteOptOut(string $senderId): void
+    {
+        \App\Models\FortuneUserCredit::optOutOutbound($senderId, 'facebook');
+        $this->facebookService->sendMessage(
+            $senderId,
+            "🙏 รับทราบค่ะ แม่หมอจะไม่ทักไปรบกวนอีกนะคะ\n\nแต่ถ้าวันไหนเปลี่ยนใจอยากดูดวง ทักมาได้ตลอดเลยค่ะ แม่หมอยินดีเสมอ 🌙"
+        );
+    }
+
+    /**
      * จัดการ Quick Reply payload
      */
     protected function handleQuickReply(string $senderId, string $payload): void
@@ -3951,6 +4018,11 @@ class FacebookWebhookController extends Controller
             // (FB ส่ง quick_reply.payload เป็น message event ไม่ใช่ postback)
             'AFFILIATE_RECRUIT_YES' => $this->handleAffiliateRecruitYes($senderId),
             'AFFILIATE_RECRUIT_NO' => $this->handleAffiliateRecruitNo($senderId),
+
+            // 🔕 (2026-06-06) ปุ่มในข้อความชวน (invite) — ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
+            'INVITE_READ_NOW' => $this->handleInviteReadNow($senderId),
+            'INVITE_SNOOZE_7D' => $this->handleInviteSnooze($senderId),
+            'INVITE_OPTOUT' => $this->handleInviteOptOut($senderId),
 
             // Quick Replies ที่ mirror Postback payloads จาก Rich Templates
             // ผู้สูงอายุงง → ทั้ง 2 ปุ่มเข้า deep flow ตรงๆ (→ tier menu 39 vs 99)

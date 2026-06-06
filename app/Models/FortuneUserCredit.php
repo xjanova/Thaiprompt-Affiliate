@@ -54,6 +54,9 @@ class FortuneUserCredit extends Model
         'last_warmup_sent_at',
         // 💬 (2026-06-06) Weekly image dedup — เวลาส่งรูปแบนเนอร์ใน DM ล่าสุด
         'last_dm_image_at',
+        // 🔕 (2026-06-06) Outbound opt-out — ปุ่ม "พัก 7 วัน" / "ไม่ต้องส่งอีก"
+        'dm_snooze_until',
+        'dm_opted_out_at',
         // 👁️ Follow-page tracking (2026-04-28)
         'facebook_follow_prompted_at',
         'facebook_followed_confirmed_at',
@@ -78,6 +81,9 @@ class FortuneUserCredit extends Model
         'last_warmup_sent_at' => 'datetime',
         // 💬 (2026-06-06) Weekly image dedup
         'last_dm_image_at' => 'datetime',
+        // 🔕 (2026-06-06) Outbound opt-out
+        'dm_snooze_until' => 'datetime',
+        'dm_opted_out_at' => 'datetime',
         // 👁️ Follow-page tracking
         'facebook_follow_prompted_at' => 'datetime',
         'facebook_followed_confirmed_at' => 'datetime',
@@ -496,6 +502,70 @@ class FortuneUserCredit extends Model
         self::getOrCreate($userId, $platform)
             ->forceFill(['last_dm_image_at' => now()])
             ->save();
+    }
+
+    // ============================================================
+    // 🔕 (2026-06-06) Outbound opt-out / snooze
+    //   ปุ่มในข้อความชวน: "พัก 7 วัน" / "ไม่ต้องส่งอีก"
+    //   guard เฉพาะ DM ตาม comment/reaction (outbound) — ไม่แตะ inbound/paid flow
+    // ============================================================
+
+    /**
+     * 🔕 user คนนี้ยังรับ DM ตาม comment/reaction (outbound) ได้ไหม
+     *
+     * false เมื่อ: opted-out ถาวร หรือ ยังอยู่ในช่วง snooze
+     *
+     * @param  string  $platform  'facebook' | 'line'
+     */
+    public static function canReceiveOutbound(string $userId, string $platform = 'facebook'): bool
+    {
+        $record = self::findByUser($userId, $platform);
+
+        if (! $record) {
+            return true; // ไม่มี record = ไม่เคย opt-out
+        }
+
+        if ($record->dm_opted_out_at !== null) {
+            return false; // กด "ไม่ต้องส่งอีก"
+        }
+
+        if ($record->dm_snooze_until !== null && $record->dm_snooze_until->isFuture()) {
+            return false; // ยังอยู่ในช่วงพัก
+        }
+
+        return true;
+    }
+
+    /**
+     * 🔕 พัก DM ตาม comment/reaction N วัน (ปุ่ม "พัก 7 วัน")
+     */
+    public static function snoozeOutbound(string $userId, string $platform = 'facebook', int $days = 7): void
+    {
+        self::getOrCreate($userId, $platform)
+            ->forceFill(['dm_snooze_until' => now()->addDays($days)])
+            ->save();
+    }
+
+    /**
+     * 🚫 หยุด DM ตาม comment/reaction ถาวร (ปุ่ม "ไม่ต้องส่งอีก")
+     */
+    public static function optOutOutbound(string $userId, string $platform = 'facebook'): void
+    {
+        self::getOrCreate($userId, $platform)
+            ->forceFill(['dm_opted_out_at' => now()])
+            ->save();
+    }
+
+    /**
+     * ♻️ เคลียร์ opt-out + snooze (ลูกค้า re-engage — กดปุ่ม "ดูดวงเลย")
+     */
+    public static function clearOutboundOptOut(string $userId, string $platform = 'facebook'): void
+    {
+        $record = self::findByUser($userId, $platform);
+
+        if ($record && ($record->dm_opted_out_at !== null || $record->dm_snooze_until !== null)) {
+            $record->forceFill(['dm_snooze_until' => null, 'dm_opted_out_at' => null])->save();
+        }
     }
 
     // ============================================================
