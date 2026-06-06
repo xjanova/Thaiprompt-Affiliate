@@ -7,7 +7,9 @@
     $scopeBadges = [
         'consent' => ['📜 อ่านกติกา', 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200'],
         'cancel' => ['🚫 ตอนยกเลิก', 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200'],
-        'both' => ['🔁 ทั้งคู่', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'],
+        'expire' => ['⏰ หมดเวลาเอง', 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'],
+        'both' => ['🔁 กติกา+ยกเลิก', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'],
+        'all' => ['🌐 ทุกจังหวะ', 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200'],
     ];
 @endphp
 <div class="container mx-auto px-4 py-8 max-w-6xl">
@@ -59,6 +61,16 @@
                         <div class="text-xs text-gray-500 dark:text-gray-400">เฉพาะเจตนาเบี้ยว (ไม่ใช่เหตุสุดวิสัย)</div>
                     </div>
                 </label>
+
+                <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                    <input type="checkbox" name="fortune_consent_expire_enabled" value="1"
+                           @checked($settings->fortune_consent_expire_enabled ?? true)
+                           class="w-5 h-5 text-blue-600 rounded">
+                    <div>
+                        <div class="font-medium text-gray-900 dark:text-white">เตือนตอนบิลหมดเวลาเอง</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">โทนนุ่ม (อาจแค่ลืม) + รูป scope=หมดเวลา</div>
+                    </div>
+                </label>
             </div>
 
             <div class="mb-4">
@@ -89,6 +101,16 @@
                 <textarea name="fortune_consent_cancel_text" rows="9"
                           class="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white font-mono text-sm"
                           placeholder="{{ $defaultCancelText }}">{{ old('fortune_consent_cancel_text', $settings->fortune_consent_cancel_text) }}</textarea>
+            </div>
+
+            {{-- ข้อความตอนบิลหมดเวลาเอง (โทนนุ่ม) --}}
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    ⏰ ข้อความตอนบิลหมดเวลาเอง (โทนนุ่ม) <span class="text-gray-400">— เว้นว่าง = ใช้ข้อความเริ่มต้น</span>
+                </label>
+                <textarea name="fortune_consent_expire_text" rows="8"
+                          class="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white font-mono text-sm"
+                          placeholder="{{ $defaultExpireText }}">{{ old('fortune_consent_expire_text', $settings->fortune_consent_expire_text) }}</textarea>
             </div>
 
             <button type="submit"

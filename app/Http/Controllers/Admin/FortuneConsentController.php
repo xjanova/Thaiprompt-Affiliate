@@ -34,6 +34,7 @@ class FortuneConsentController extends Controller
             'settings' => $settings,
             'defaultConsentText' => FortuneTellingSetting::defaultConsentText(),
             'defaultCancelText' => FortuneTellingSetting::defaultConsentCancelText(),
+            'defaultExpireText' => FortuneTellingSetting::defaultConsentExpireText(),
             'pageTitle' => 'กติกาก่อนจองคิว',
         ]);
     }
@@ -56,7 +57,7 @@ class FortuneConsentController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string|max:500',
-            'usage_scope' => 'required|in:consent,cancel,both',
+            'usage_scope' => 'required|in:consent,cancel,both,expire,all',
             'image' => 'required|image|mimes:png,jpg,jpeg|max:10240', // 10 MB
             'is_active' => 'nullable|boolean',
             'sort_order' => 'nullable|integer|min:0',
@@ -122,7 +123,7 @@ class FortuneConsentController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string|max:500',
-            'usage_scope' => 'required|in:consent,cancel,both',
+            'usage_scope' => 'required|in:consent,cancel,both,expire,all',
             'image' => 'nullable|image|mimes:png,jpg,jpeg|max:10240',
             'is_active' => 'nullable|boolean',
             'sort_order' => 'nullable|integer|min:0',
@@ -214,19 +215,23 @@ class FortuneConsentController extends Controller
         $validated = $request->validate([
             'fortune_consent_enabled' => 'nullable|boolean',
             'fortune_consent_cancel_enabled' => 'nullable|boolean',
+            'fortune_consent_expire_enabled' => 'nullable|boolean',
             'fortune_consent_pick_strategy' => 'required|in:random,rotation,sequential',
             'fortune_consent_text' => 'nullable|string|max:5000',
             'fortune_consent_cancel_text' => 'nullable|string|max:5000',
+            'fortune_consent_expire_text' => 'nullable|string|max:5000',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
         $settings->update([
             'fortune_consent_enabled' => (bool) ($validated['fortune_consent_enabled'] ?? false),
             'fortune_consent_cancel_enabled' => (bool) ($validated['fortune_consent_cancel_enabled'] ?? false),
+            'fortune_consent_expire_enabled' => (bool) ($validated['fortune_consent_expire_enabled'] ?? false),
             'fortune_consent_pick_strategy' => $validated['fortune_consent_pick_strategy'],
             // ว่าง = ใช้ default ใน model (เก็บ null)
             'fortune_consent_text' => trim((string) ($validated['fortune_consent_text'] ?? '')) ?: null,
             'fortune_consent_cancel_text' => trim((string) ($validated['fortune_consent_cancel_text'] ?? '')) ?: null,
+            'fortune_consent_expire_text' => trim((string) ($validated['fortune_consent_expire_text'] ?? '')) ?: null,
         ]);
         FortuneTellingSetting::clearSettingsCache();
 

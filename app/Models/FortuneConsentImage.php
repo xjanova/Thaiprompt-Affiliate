@@ -41,8 +41,14 @@ class FortuneConsentImage extends Model
     /** scope: ส่งตอนยกเลิกบิล */
     public const SCOPE_CANCEL = 'cancel';
 
-    /** scope: ใช้ทั้งสองจังหวะ */
+    /** scope: ใช้ทั้งสองจังหวะ (consent + cancel — legacy ไม่รวม expire) */
     public const SCOPE_BOTH = 'both';
+
+    /** scope: ส่งตอนบิลหมดเวลาเอง (auto-expire — โทนนุ่ม) */
+    public const SCOPE_EXPIRE = 'expire';
+
+    /** scope: ใช้ทุกจังหวะ (consent + cancel + expire) */
+    public const SCOPE_ALL = 'all';
 
     protected $table = 'fortune_consent_images';
 
@@ -112,7 +118,15 @@ class FortuneConsentImage extends Model
      */
     public function scopeForScope($query, string $scope)
     {
-        return $query->whereIn('usage_scope', [$scope, self::SCOPE_BOTH]);
+        // ทุกจังหวะ → match scope ที่ระบุ + 'all' เสมอ
+        $match = [$scope, self::SCOPE_ALL];
+
+        // legacy 'both' = consent + cancel (ไม่รวม expire ที่เป็นจังหวะใหม่)
+        if (in_array($scope, [self::SCOPE_CONSENT, self::SCOPE_CANCEL], true)) {
+            $match[] = self::SCOPE_BOTH;
+        }
+
+        return $query->whereIn('usage_scope', array_values(array_unique($match)));
     }
 
     /**
@@ -177,21 +191,35 @@ class FortuneConsentImage extends Model
      * @param  mixed  $platformService  FB/LINE service (ต้องมี sendImage()/sendMessage())
      * @return bool true = ส่งคำเตือน consent สำเร็จ / false = ปิดระบบ หรือ service ไม่พร้อม
      */
-    public static function deliverCancelWarning($platformService, string $userId): bool
+    public static function deliverCancelWarning($platformService, string $userId, string $mode = 'cancel'): bool
     {
         if (empty($userId) || ! $platformService) {
             return false;
         }
 
         $settings = \App\Models\FortuneTellingSetting::getSettings();
-        if (! $settings->isConsentCancelEnabled()) {
-            return false;
+
+        // เลือก toggle / scope รูป / ข้อความ ตามโหมด
+        //   'expire' = บิลหมดเวลาเอง (โทนนุ่ม + รูป scope=expire) — ลูกค้าอาจแค่ลืม
+        //   'cancel' = ลูกค้ากดยกเลิกแบบเบี้ยว (โทนแรง + รูป scope=cancel)
+        if ($mode === 'expire') {
+            if (! $settings->isConsentExpireEnabled()) {
+                return false;
+            }
+            $scope = self::SCOPE_EXPIRE;
+            $text = $settings->getConsentExpireText();
+        } else {
+            if (! $settings->isConsentCancelEnabled()) {
+                return false;
+            }
+            $scope = self::SCOPE_CANCEL;
+            $text = $settings->getConsentCancelText();
         }
 
         try {
             $img = self::pickByStrategy(
                 $settings->fortune_consent_pick_strategy ?? 'random',
-                self::SCOPE_CANCEL
+                $scope
             );
             if ($img) {
                 $platformService->sendImage($userId, $img->image_url);
@@ -199,12 +227,13 @@ class FortuneConsentImage extends Model
                 usleep(400000); // 400ms ให้รูปมาก่อน text
             }
 
-            $platformService->sendMessage($userId, $settings->getConsentCancelText());
+            $platformService->sendMessage($userId, $text);
 
             return true;
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Fortune: deliverCancelWarning failed (non-blocking)', [
                 'user_id' => $userId,
+                'mode' => $mode,
                 'error' => $e->getMessage(),
             ]);
 

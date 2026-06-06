@@ -1582,11 +1582,11 @@ class FortuneReading extends Model
                         if (! empty($userId)) {
                             $platformService = $channelManager->getPlatform($platform);
                             if ($platformService) {
-                                // 📜 (2026-06-07) บิลยกเลิกโดยระบบ (หมดเวลา 30 นาที) → เตือนด้วยเช่นกัน
-                                //   user: "บิลที่ยกเลิกโดยระบบ มันไม่เตือน ต้องเตือนด้วยเช่นกัน"
-                                //   auto-expire = สร้างบิลแล้วปล่อยหมดเวลา = ฝืนกติกา → รูป + เตือนแรง (consent cancel)
-                                //   helper เช็ค toggle เอง → ปิด/ไม่มีรูป-ปิด = false → fallback wakeup เดิม (20 variants)
-                                $sentWarning = \App\Models\FortuneConsentImage::deliverCancelWarning($platformService, (string) $userId);
+                                // 📜 (2026-06-07) บิลยกเลิกโดยระบบ (หมดเวลา 30 นาที) → เตือนด้วย (โทนนุ่ม)
+                                //   user: "ปล่อยให้หมดเวลาเอง → โทนนุ่มกว่า + แยกรูปต่างหาก"
+                                //   mode='expire' → รูป scope=expire + ข้อความนุ่ม (อาจแค่ลืม ไม่ใช่เจตนาเบี้ยว)
+                                //   helper เช็ค toggle expire เอง → ปิด/ไม่มีรูป = false → fallback wakeup เดิม (20 variants)
+                                $sentWarning = \App\Models\FortuneConsentImage::deliverCancelWarning($platformService, (string) $userId, 'expire');
                                 if ($sentWarning) {
                                     $reading->setConversationState('cancel_warning_sent', true);
                                 } else {

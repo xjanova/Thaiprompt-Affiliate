@@ -223,6 +223,8 @@ class FortuneTellingSetting extends Model
         'fortune_consent_text',
         'fortune_consent_cancel_enabled',
         'fortune_consent_cancel_text',
+        'fortune_consent_expire_enabled',
+        'fortune_consent_expire_text',
         // 🧠 Discovery Chat Mode (2026-04-28)
         'enable_discovery_chat',
         'discovery_chat_max_turns',
@@ -427,6 +429,7 @@ class FortuneTellingSetting extends Model
         // 📜 Consent Gate (2026-06-06)
         'fortune_consent_enabled' => 'boolean',
         'fortune_consent_cancel_enabled' => 'boolean',
+        'fortune_consent_expire_enabled' => 'boolean',
         // 🔮 Daily Horoscope Per Day toggle
         'daily_horoscope_per_day_enabled' => 'boolean',
         // 🌙 Mystic Content
@@ -573,7 +576,8 @@ class FortuneTellingSetting extends Model
         'fortune_consent_enabled' => true,
         'fortune_consent_pick_strategy' => 'random',
         'fortune_consent_cancel_enabled' => true,
-        // fortune_consent_text / fortune_consent_cancel_text → null = ใช้ default*() ใน model
+        'fortune_consent_expire_enabled' => true,
+        // fortune_consent_text / *_cancel_text / *_expire_text → null = ใช้ default*() ใน model
         // 🔮 Daily Horoscope Per Day — ปิดเป็น default หลัง deploy v3 (2026-04-29)
         'daily_horoscope_per_day_enabled' => false,
         // 🌙 Mystic Content — ค่าเริ่มต้น (admin ต้องเปิด toggle ก่อนใช้งาน)
@@ -841,6 +845,43 @@ TXT;
 
 คราวหน้า เมื่อพร้อมโอนค่าครูจริง ค่อยกดสร้างบิลนะคะ
 แล้วแม่หมอจะเปิดไพ่ให้เต็มกำลัง ✨
+TXT;
+    }
+
+    /**
+     * เปิดเตือนตอนบิลหมดเวลาเอง (auto-expire) หรือไม่ — แยกจาก cancel เพื่อโทนนุ่มกว่า
+     */
+    public function isConsentExpireEnabled(): bool
+    {
+        return (bool) ($this->fortune_consent_expire_enabled ?? true);
+    }
+
+    /**
+     * ข้อความเตือนตอนบิลหมดเวลาเอง (โทนนุ่ม — แอดมินแก้ได้ — ว่าง = ใช้ default)
+     */
+    public function getConsentExpireText(): string
+    {
+        $text = trim((string) ($this->fortune_consent_expire_text ?? ''));
+
+        return $text !== '' ? $text : self::defaultConsentExpireText();
+    }
+
+    /**
+     * ข้อความเตือนตอนหมดเวลาเริ่มต้น (โทนนุ่ม — ลูกค้าอาจแค่ลืม ไม่ใช่เจตนาเบี้ยว)
+     */
+    public static function defaultConsentExpireText(): string
+    {
+        return <<<'TXT'
+🌙 เจ้าชะตาคะ — บิลนี้หมดเวลาแล้วนะคะ
+
+แม่หมอเปิดคิวรอไว้ แต่ยังไม่ได้รับชำระค่าครูภายในเวลาที่กำหนด
+จึงขอปิดบิลนี้ไว้ก่อนนะคะ 🙏
+
+ไม่เป็นไรเลยค่ะ — เมื่อใดที่เจ้าชะตาพร้อมจริง
+พิมพ์ "ดูดวง" กลับมาได้เสมอ แม่หมอยินดีเปิดไพ่ให้ใหม่ ✨
+
+🌟 ครั้งหน้าเมื่อพร้อมโอนค่าครูแล้ว ค่อยกดสร้างบิลนะคะ
+ดวงดีๆ รอเจ้าชะตาอยู่ค่ะ
 TXT;
     }
 
