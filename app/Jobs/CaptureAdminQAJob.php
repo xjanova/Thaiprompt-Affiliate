@@ -60,6 +60,7 @@ class CaptureAdminQAJob implements ShouldQueue
         public string $adminReplyText,     // A — admin reply text
         public ?int $adminUserId = null,   // null ถ้าไม่รู้ admin (FB Page Inbox)
         public ?array $contextMeta = null, // เพิ่มเติม (page_id, reading_id, reading_type, app_id, echo)
+        public ?string $explicitQuestion = null, // (2026-06-06) Q ตรงๆ — ใช้เมื่อรู้คำถามแน่ชัด (saved-questions/ฝากคำถาม) ไม่ต้องเดาจาก history
     ) {}
 
     public function handle(): void
@@ -81,14 +82,24 @@ class CaptureAdminQAJob implements ShouldQueue
             return;
         }
 
-        // 2) หา last customer message (Q) + prev turns จาก conversation history
-        [$questionText, $prevTurns] = $this->extractQuestionAndContext();
-        if ($questionText === null) {
-            Log::debug('CaptureAdminQAJob: ไม่มี last customer message — skip', [
-                'customer_id' => $this->customerUserId,
-            ]);
+        // 2) หา Q (คำถามลูกค้า) + prev turns
+        //    - ถ้า caller ส่ง explicitQuestion มา (เช่น หน้า saved-questions / โหมดฝากคำถาม)
+        //      → ใช้คำถามนั้นตรงๆ ไม่ต้องเดาจาก history
+        //      เพราะ conversation 24 ชม. อาจหมดอายุ → extract ได้ Q ผิด/null
+        //    - ไม่งั้น (FB echo จาก Page Inbox) → ดึง last customer message จาก history เหมือนเดิม
+        $explicit = $this->explicitQuestion !== null ? trim($this->explicitQuestion) : '';
+        if ($explicit !== '') {
+            $questionText = $explicit;
+            $prevTurns = [];
+        } else {
+            [$questionText, $prevTurns] = $this->extractQuestionAndContext();
+            if ($questionText === null) {
+                Log::debug('CaptureAdminQAJob: ไม่มี last customer message — skip', [
+                    'customer_id' => $this->customerUserId,
+                ]);
 
-            return;
+                return;
+            }
         }
 
         // 3) Derive category — load reading ถ้ามี reading_id

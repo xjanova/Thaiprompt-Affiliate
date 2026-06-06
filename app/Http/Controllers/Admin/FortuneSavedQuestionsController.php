@@ -80,6 +80,10 @@ class FortuneSavedQuestionsController extends Controller
             auth()->id()
         );
 
+        // 📚 (2026-06-06) เก็บคู่ Q&A เข้า RAG (fortune_admin_qa) ให้บอทเรียนรู้คำตอบจริงของแอดมิน
+        //    คำถามหน้านี้คือ gap ที่ AI ตอบไม่ได้ → คำตอบแอดมิน = ข้อมูลสอนคุณภาพสูงสุด
+        $this->captureAdminQAForRag($question, $validated['admin_reply']);
+
         // ส่งคำตอบกลับหาผู้ใช้ (อัตโนมัติแยก platform)
         $result = $this->sendReplyToUser($question, $validated['admin_reply']);
 
@@ -99,6 +103,46 @@ class FortuneSavedQuestionsController extends Controller
         return redirect()
             ->route('admin.fortune.saved-questions.index')
             ->with('error', $message);
+    }
+
+    /**
+     * เก็บคู่ Q&A เข้า RAG (fortune_admin_qa) ผ่าน CaptureAdminQAJob
+     *
+     * - ใช้ explicitQuestion = คำถามที่ลูกค้าฝากไว้ (ไม่เดาจาก history → กัน Q ผิด/null)
+     * - เคารพ toggle admin_qa_capture_enabled — ถ้าแอดมินปิดไว้ ก็ไม่เก็บ
+     * - non-blocking: error ไม่กระทบการตอบ/ส่งคำตอบ
+     *
+     * หมายเหตุ: ส่งคำตอบผ่าน API จากหน้านี้ → FB echo จะมี app_id = บอทเรา → echo handler skip
+     *           จึงไม่เกิด capture ซ้ำกับ path FB Page Inbox
+     */
+    protected function captureAdminQAForRag(FortuneSavedQuestion $question, string $adminReply): void
+    {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+
+            // ปิด capture ทั้งระบบ → ไม่เก็บ
+            if (! (bool) ($settings->admin_qa_capture_enabled ?? true)) {
+                return;
+            }
+
+            \App\Jobs\CaptureAdminQAJob::dispatch(
+                $question->platform ?: 'line',
+                $question->platform_user_id,
+                $adminReply,
+                auth()->id(), // รู้ตัวแอดมินที่ตอบ (ต่างจาก FB Page Inbox ที่ไม่รู้)
+                [
+                    'source' => 'saved_question',
+                    'saved_question_id' => $question->id,
+                    'reason' => $question->reason,
+                ],
+                $question->question, // explicitQuestion — คำถามที่ลูกค้าฝากไว้
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Fortune SavedQuestion: dispatch CaptureAdminQAJob ล้มเหลว', [
+                'question_id' => $question->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

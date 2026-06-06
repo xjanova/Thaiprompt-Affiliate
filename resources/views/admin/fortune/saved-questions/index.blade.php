@@ -160,7 +160,9 @@
                     {{-- Actions --}}
                     <div class="flex md:flex-col gap-2 shrink-0">
                         @if(!$q->is_replied)
-                            <button @click="openReply({{ $q->id }}, '{{ addslashes($q->question) }}', '{{ $q->platform ?? 'line' }}')"
+                            {{-- ใช้ Js::from() แทน addslashes — escape ขึ้นบรรทัดใหม่/U+2028/quote ได้ครบ
+                                 (addslashes ไม่ escape newline → คำถามหลายบรรทัดจาก LINE/FB ทำให้ JS พัง กดตอบไม่ได้) --}}
+                            <button @click="openReply({{ $q->id }}, {{ \Illuminate\Support\Js::from($q->question) }}, {{ \Illuminate\Support\Js::from($q->platform ?? 'line') }})"
                                     class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition">
                                 ✏️ ตอบ
                             </button>

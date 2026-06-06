@@ -323,6 +323,17 @@ Schedule::command('fortune:purge-slip-archive --days=30')
     ->name('fortune-purge-slip-archive')
     ->runInBackground();
 
+// 6.2) (2026-06-06) Prune Saved Questions — ล้างคำถามรอแอดมินที่จบงาน/เป็น noise (ประหยัด DB)
+//      - noise: ai_failed/fallback ที่ลูกค้าไม่ได้กดขอแอดมิน + ไม่เคยตอบ เกิน 48 ชม. → ลบ
+//      - done:  ตอบแล้ว+ส่งถึงผู้ใช้แล้ว เกิน 7 วัน → ลบ (Q&A capture เข้า fortune_admin_qa RAG แล้ว ไม่หาย)
+//      - ไม่แตะ: pending ที่ลูกค้าฝากจริง (ai_cannot_answer/user_initiated ยังไม่ตอบ)
+Schedule::command('fortune:prune-saved-questions --failed-hours=48 --replied-days=7')
+    ->dailyAt('03:45')
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->name('fortune-prune-saved-questions')
+    ->runInBackground();
+
 // 7) Crypto Scan Deposits — สแกน blockchain หา deposits ใหม่ (TPIX)
 Schedule::command('crypto:scan-deposits')
     ->everyMinute()
