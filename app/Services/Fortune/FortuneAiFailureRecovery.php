@@ -183,10 +183,11 @@ class FortuneAiFailureRecovery
                 return;
             }
 
-            $message = "😔 ขออภัยค่ะ ระบบ AI ขัดข้องชั่วคราว\n\n"
-                ."คำทำนายของคุณยังไม่เสร็จสมบูรณ์ ทีมงานได้รับแจ้งแล้วและจะดูแลให้โดยเร็วที่สุด\n\n"
+            // 🌙 (2026-06-06) user spec: "อย่าแจ้งลูกค้าว่าเอไอขัดข้องเด็ดขาด" — โทนนุ่ม คงคำมั่น+ปุ่มไว้
+            $message = "🌙 ขออภัยค่ะ คำทำนายของคุณใช้เวลามากกว่าปกติเล็กน้อย\n\n"
+                ."ทีมงานแม่หมอกำลังดูแลให้อยู่ และจะส่งคำทำนายให้ครบแน่นอนค่ะ\n\n"
                 ."💬 กดปุ่ม 'คุยกับแม่หมอ' เพื่อให้ทีมงานช่วยโดยตรง\n"
-                .'🔮 ทีมงานจะส่งคำทำนายให้คุณแน่นอน — ขอเวลาสักครู่ค่ะ';
+                .'🔮 ขอเวลาสักครู่นะคะ — คำทำนายของคุณไม่หายไปไหนค่ะ';
 
             $settings = FortuneTellingSetting::getSettings();
 
@@ -194,14 +195,14 @@ class FortuneAiFailureRecovery
                 $lineService = new LineFortuneService($settings);
 
                 $richContent = [
-                    'alt_text' => '😔 AI ขัดข้อง — กดคุยกับแม่หมอ',
+                    'alt_text' => '🌙 คำทำนายกำลังมา — กดคุยกับแม่หมอได้ค่ะ',
                     'contents' => [
                         'type' => 'bubble',
                         'body' => [
                             'type' => 'box',
                             'layout' => 'vertical',
                             'contents' => [
-                                ['type' => 'text', 'text' => '😔 ระบบ AI ขัดข้อง', 'weight' => 'bold', 'size' => 'lg', 'color' => '#D97706'],
+                                ['type' => 'text', 'text' => '🌙 คำทำนายของคุณกำลังมาค่ะ', 'weight' => 'bold', 'size' => 'lg', 'color' => '#D97706'],
                                 ['type' => 'text', 'text' => $message, 'wrap' => true, 'size' => 'sm', 'margin' => 'md'],
                             ],
                         ],

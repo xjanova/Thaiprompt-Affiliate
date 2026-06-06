@@ -120,9 +120,10 @@ class FortuneCheckPendingReadings extends Command
                         $channelManager = new FortuneChannelManager($settings);
                         $name = $reading->facebook_user_name ?? 'คุณ';
 
+                        // 🌙 (2026-06-06) user spec: "อย่าแจ้งลูกค้าว่าเอไอ/ระบบขัดข้อง" — โทนนุ่ม
                         $failMessage = "🔮 ขออภัยค่ะ คุณ{$name}\n\n"
-                            . "ระบบประมวลผลคำทำนายขัดข้องชั่วคราว\n"
-                            . "แอดมินจะดำเนินการให้เร็วที่สุดค่ะ\n\n"
+                            . "คำทำนายของคุณกำลังใช้เวลามากกว่าปกติเล็กน้อย\n"
+                            . "แอดมินกำลังดูแลให้เร็วที่สุดค่ะ\n\n"
                             . "💬 พิมพ์ 'ดูคำทำนาย' เพื่อตรวจสอบสถานะได้ตลอดนะคะ 🙏";
 
                         $channelManager->sendResponse($platform, $userId, [

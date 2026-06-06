@@ -2565,9 +2565,9 @@ class FortuneConversationService
 
                         return [
                             'action' => 'retry_question',
-                            'message' => "ขออภัย ระบบขัดข้องชั่วคราว 🙏\n\n"
+                            'message' => "🌙 ขอแม่หมอทวนอีกครั้งนะคะ\n\n"
                                 ."ตอนนี้หมอจันทรารับคำถามแล้ว {$collected} ข้อ\n"
-                                ."กรุณาพิมพ์คำถามอีก {$remaining} ข้อใหม่อีกครั้ง",
+                                ."กรุณาพิมพ์คำถามอีก {$remaining} ข้อค่ะ",
                             'reading' => $activeReading,
                         ];
                     }
@@ -2576,7 +2576,7 @@ class FortuneConversationService
                     if ($status === FortuneReading::STATUS_COLLECTING_BIRTHDATE) {
                         return [
                             'action' => 'retry_birthdate',
-                            'message' => "ขออภัย ระบบขัดข้องชั่วคราว 🙏\n\nกรุณาพิมพ์วันเกิดอีกครั้ง\n📅 เช่น 15/08/1990",
+                            'message' => "🌙 ขอแม่หมอทวนอีกครั้งนะคะ\n\nกรุณาพิมพ์วันเกิดอีกครั้ง\n📅 เช่น 15/08/1990",
                             'reading' => $activeReading,
                         ];
                     }
@@ -2590,7 +2590,7 @@ class FortuneConversationService
                     if ($status === FortuneReading::STATUS_COLLECTING_TAROT) {
                         return [
                             'action' => 'draw_tarot_card',
-                            'message' => "🃏 ขออภัย ระบบขัดข้องชั่วคราว 🙏\n\nกรุณากด 'สุ่มไพ่ยิปซี' อีกครั้ง ✨",
+                            'message' => "🃏 ขอแม่หมอเริ่มใหม่อีกครั้งนะคะ\n\nกรุณากด 'สุ่มไพ่ยิปซี' อีกครั้ง ✨",
                             'reading' => $activeReading,
                         ];
                     }
@@ -2611,7 +2611,7 @@ class FortuneConversationService
                     if ($status === FortuneReading::STATUS_AWAITING_CONFIRMATION) {
                         return [
                             'action' => 'awaiting_confirmation',
-                            'message' => "🔮 ขออภัย ระบบขัดข้องชั่วคราว 🙏\n\nพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ได้เลย ✨",
+                            'message' => "🔮 ขอแม่หมอเริ่มใหม่อีกครั้งนะคะ\n\nพิมพ์ 'ดูดวง' เพื่อเริ่มได้เลย ✨",
                             'reading' => $activeReading,
                         ];
                     }
@@ -3732,7 +3732,7 @@ class FortuneConversationService
             // ไม่ควรเกิด — fall back เป็น error
             return [
                 'action' => 'error',
-                'message' => "🙏 ขออภัยค่ะ ระบบขัดข้อง กรุณาพิมพ์ 'ดูดวง' อีกครั้ง",
+                'message' => "🌙 ขอแม่หมอเริ่มใหม่อีกครั้งนะคะ — พิมพ์ 'ดูดวง' ได้เลยค่ะ",
                 'reading' => $reading,
             ];
         }

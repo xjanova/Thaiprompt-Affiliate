@@ -134,7 +134,8 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
             $reading->refresh();
 
             if (! $result['success']) {
-                $this->sendErrorReply($result['message'] ?? 'AI ระบบขัดข้อง');
+                // 🌙 (2026-06-06) user spec: "อย่าแจ้งลูกค้าว่าเอไอขัดข้องเด็ดขาด" — ไม่ echo technical msg
+                $this->sendErrorReply('🌙 แม่หมอขอตั้งสมาธิที่ไพ่อีกครู่นะคะ — พิมพ์คำถามเดิมส่งมาอีกครั้งได้เลยค่ะ ✨');
                 $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
                 return;

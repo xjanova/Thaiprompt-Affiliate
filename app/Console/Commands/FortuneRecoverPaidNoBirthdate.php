@@ -198,8 +198,9 @@ class FortuneRecoverPaidNoBirthdate extends Command
                 $billRef = $reading->bill_reference ?? '-';
                 $payAmountStr = number_format((float) ($reading->amount_paid ?? 39), 2);
 
+                // 🌙 (2026-06-06) user spec: "อย่าแจ้งลูกค้าว่าเอไอ/ระบบขัดข้อง" — โทนนุ่ม คงคำว่า "พร้อมแล้ว"
                 $thanksMessage = "🙏 ขออภัยอย่างสูงค่ะ คุณ{$userName}\n\n"
-                    ."ระบบเกิดข้อขัดข้องเล็กน้อย — ตอนนี้แก้แล้ว ✨\n\n"
+                    ."ใช้เวลาประมวลผลนานกว่าปกตินิดหน่อย — ตอนนี้พร้อมแล้วค่ะ ✨\n\n"
                     ."═══════════════════════\n"
                     ."🌙 *แม่หมอจันทรากำลังเปิดประตูดวงให้ใหม่*\n"
                     ."═══════════════════════\n\n"

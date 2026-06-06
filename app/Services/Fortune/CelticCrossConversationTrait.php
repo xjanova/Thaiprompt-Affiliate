@@ -919,7 +919,7 @@ trait CelticCrossConversationTrait
 
             return [
                 'action' => 'celtic_bill_creation_failed',
-                'message' => "🙏 ขออภัยค่ะ ระบบขัดข้องชั่วคราว\nกรุณาลองใหม่อีกครั้งใน 10 วินาที",
+                'message' => "🌙 ขอแม่หมอสักครู่นะคะ\nกรุณาลองใหม่อีกครั้งใน 10 วินาทีค่ะ",
                 'reading' => $reading,
             ];
         }
