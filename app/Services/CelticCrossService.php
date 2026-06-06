@@ -1007,75 +1007,57 @@ class CelticCrossService
             return ['success' => false, 'message' => 'เปิดไพ่ไม่ครบ 10 ใบ'];
         }
 
-        $brandName = $this->settings->fortune_brand_name ?: 'แม่หมอจันทรา';
         $name = $reading->resolveCustomerName();
-        $cardsText = $this->formatCardsForPrompt($cards);
 
-        $prompt = "คุณคือ \"{$brandName}\" — หมอดูไพ่ยิปซีระดับเซียน 30+ ปี\n"
-            ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง — พูดน้อย แต่แทงใจดำได้ทุกประโยค\n"
-            ."ลูกค้าชื่อ: คุณ{$name}\n\n"
-            ."สถานการณ์: ลูกค้าเพิ่งเปิดไพ่ Celtic Cross ครบ 10 ใบ — กำลังรอแม่หมอเริ่มสนทนา\n\n"
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."🃏 ไพ่ทั้ง 10 ใบที่ลูกค้าเปิด:\n{$cardsText}\n"
-            ."━━━━━━━━━━━━━━━━━\n\n"
-            ."ภารกิจ: ทักทายลูกค้าและ \"เริ่มถาม\" เพื่อเปิดบทสนทนา\n\n"
-            ."โครงสร้าง (สั้น 400-700 chars):\n"
-            ."1. ทักทาย คุณ{$name} อบอุ่น (1-2 ประโยค)\n"
-            ."2. *แม่หมอบอกสิ่งที่ \"เห็น\" จากไพ่ 1-2 ประเด็น* — เริ่มจาก position ที่สำคัญที่สุด\n"
-            ."   เช่น: \"แม่หมอเห็นในใจเจ้าชะตามีเรื่องค้างคา...\" / \"ไพ่บอกแม่หมอว่าเจ้าชะตากำลัง...\"\n"
-            ."   → ใช้พลังเชิงสังเกต ไม่ใช่ทำนายฟันธง (เก็บไว้ตอนลูกค้าถาม)\n"
-            ."3. ถามลูกค้า 1 คำถามเปิดใจ — เช่น:\n"
-            ."   \"เจ้าชะตาอยากเริ่มเล่าเรื่องไหนให้แม่หมอฟังก่อน?\"\n"
-            ."   \"แม่หมอรู้สึกว่ามีเรื่องค้างคา — เจ้าชะตาเล่าให้ฟังหน่อยได้ไหม?\"\n\n"
-            ."น้ำเสียง: อบอุ่น เข้าใจ มีพลัง — เหมือนแม่หมอจริงเริ่มต้นนั่งคุยกับเจ้าชะตา\n"
-            ."ภาษา: ไทย, plain text + emoji หัวประโยคได้\n"
-            ."ห้าม: ทำนายฟันธง 5 ด้าน / list ไพ่ทีละใบ / markdown / ลงท้ายด้วย \"พิมพ์คำถาม\"\n\n"
-            .'เริ่มทักทายเลย:';
+        // 🌙 (2026-06-06 R5125) Opening = "ทักทาย + ชวนถาม" ล้วนๆ — ห้ามทำนาย/เกริ่นไพ่ก่อนลูกค้าถาม
+        //   user spec (บิล FTU-260606-W4360): "เขายังไม่ได้ถามคำถาม ทำไมชอบตอบก่อน เคยแก้หลายรอบ
+        //   แล้วไม่หายสักที"
+        //
+        //   ROOT CAUSE ที่แก้ไม่หาย 3 รอบ: prompt เดิม (ข้อ 2) สั่ง AI ว่า "แม่หมอบอกสิ่งที่เห็น
+        //   จากไพ่ 1-2 ประเด็น" → AI เดาธีมก่อนลูกค้าถามทุกครั้ง (= ตอบก่อนถาม). รอบก่อนๆ (R4474/
+        //   R4543/R5023) แก้แค่ readiness-ack whitelist ("พร้อม"/"ขอบคุณ"/"พร้อมฟัง") ไม่เคยแตะ
+        //   opening เลย → อาการ "ตอบก่อน" ไม่หาย.
+        //
+        //   FIX ที่ราก: ทำเป็น template ตายตัว (ไม่เรียก AI) → AI เดาธีมไม่ได้เด็ดขาด + ตอบทันที 0s
+        //   + ไม่เปลือง token. คำทำนายจะเกิด "หลัง" ลูกค้าพิมพ์คำถามเท่านั้น (ผ่าน askQuestion).
+        //   user เลือกแนวทางนี้ (AskUserQuestion 2026-06-06): "ทักทาย+ชวนถามล้วน".
+        $variants = [
+            "🌙 สวัสดีค่ะ คุณ{$name} — แม่หมอจันทราเปิดไพ่ Celtic Cross ครบทั้ง 10 ใบให้แล้วค่ะ ✨\n\n"
+                ."🃏 ไพ่พร้อมแล้ว เหลือแค่รอเจ้าชะตาเปิดใจ\n\n"
+                .'💬 อยากให้แม่หมอดูเรื่องอะไรก่อนดีคะ? เล่าเรื่องที่ค้างคาใจมาได้เลย — '
+                .'ความรัก การงาน การเงิน สุขภาพ หรือเรื่องไหนก็บอกแม่หมอมาค่ะ',
+
+            "🌙✨ แม่หมอจันทราพร้อมแล้วค่ะ คุณ{$name} ✨🌙\n\n"
+                ."🃏 ไพ่ทั้ง 10 ใบของเจ้าชะตาเปิดออกหมดแล้ว — พลังพร้อมให้แม่หมออ่าน\n\n"
+                .'💬 เจ้าชะตาอยากเริ่มจากเรื่องไหนก่อนคะ? พิมพ์เรื่องที่อยากรู้มาได้เลย '
+                .'แม่หมอจะเปิดไพ่ทำนายให้ทีละเรื่องค่ะ',
+
+            "🌙 คุณ{$name}คะ — แม่หมอเปิดไพ่ครบทั้งสำรับให้แล้วนะคะ 🃏✨\n\n"
+                ."ทุกใบพร้อมเล่าเรื่องราวของเจ้าชะตา\n\n"
+                .'💬 มีเรื่องอะไรที่อยากให้แม่หมอดูให้เป็นเรื่องแรกคะ? บอกมาได้เลย — '
+                .'ความรัก งาน เงิน สุขภาพ หรือเรื่องที่กำลังหนักใจอยู่',
+        ];
+
+        // เลือก variant แบบ deterministic ต่อ reading (ไม่ใช้ random — กัน flapping ตอน retry)
+        $idx = abs(crc32(($reading->bill_reference ?? '').'|'.$reading->id)) % count($variants);
+        $response = $variants[$idx];
 
         try {
-            // 🌙 (2026-05-14) Celtic 99฿ — user spec: "ใช้ openai เป็นหลัก"
-            //   preferredProvider='openai' → Pool ลอง openai key ก่อน fallback any-provider
-            $aiService = new FortuneAIService($this->settings, 'prediction_celtic', 'openai');
-            $result = $aiService->generateWithRetryAndFallback(
-                questions: [$prompt],
-                userProfile: null,
-                userPosts: null,
-                promptTemplate: '{questions}',
-                readingType: 'deep',
-                birthDate: null,
-                userContext: "celtic_opening:{$reading->id}",
-                purpose: 'prediction_celtic',
-            );
-
-            $response = trim($result['response'] ?? '');
-            if ($response === '' || mb_strlen($response) < 50) {
-                return ['success' => false, 'message' => 'AI ตอบสั้นเกินไป'];
-            }
-
-            // ลบ [END_SESSION] token ที่อาจติดมา
-            $response = trim(preg_replace('/\[\s*(END[_\s]?SESSION|จบ|END)\s*\]/iu', '', $response));
-
-            Log::info('Celtic: opening greeting generated', [
-                'reading_id' => $reading->id,
-                'response_len' => mb_strlen($response),
-                'provider' => $result['provider'] ?? null,
-                'model' => $result['model'] ?? null,
-            ]);
-
-            // 🌙 (2026-05-14) Bridge → LineBotConversation
-            //   AI opening เป็น "assistant" turn แรกของ Celtic session
-            //   → post-Celtic Groq chat จะเห็น context นี้เป็นจุดเริ่ม
+            // bridge → LineBotConversation (assistant turn แรก) ให้ post-Celtic chat เห็น context
             $this->bridgeToConversationLog($reading, 'assistant', $response);
-
-            return ['success' => true, 'response' => $response];
         } catch (\Throwable $e) {
-            Log::warning('Celtic: opening greeting generation fail', [
+            Log::warning('Celtic: opening greeting bridge fail (non-blocking)', [
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
-
-            return ['success' => false, 'message' => $e->getMessage()];
         }
+
+        Log::info('Celtic: opening greeting (template, no-predict)', [
+            'reading_id' => $reading->id,
+            'variant' => $idx,
+        ]);
+
+        return ['success' => true, 'response' => $response];
     }
 
     /**

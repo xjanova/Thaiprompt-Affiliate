@@ -1684,19 +1684,60 @@ trait CelticCrossConversationTrait
     {
         $question = trim($messageText);
 
-        // 🔢 (2026-06-05) ลูกค้ากดปุ่มเลข 1/2 = เลือก "คำถามแนะนำต่อยอด" ที่แม่หมอเสนอไว้กล่องก่อนหน้า
-        //   user spec: "เผื่อลูกค้าขี้เกียจพิมพ์ ก็ให้กดแทน" — คืนเป็นคำถามเต็มจาก Cache
-        //   แล้วไหลเข้า askQuestion ปกติ (นับเป็นคำถามจริง 1 ข้อ เหมือนพิมพ์เอง)
-        //   ต้องอยู่บนสุด — ก่อน end-confirm/readiness-ack เพื่อให้ "1"/"2" กลายเป็นคำถามเต็มก่อนถูกด่านอื่นจับ
-        $pickedSuggestion = $this->resolveCelticSuggestionPick($reading, $question);
-        if ($pickedSuggestion !== null) {
-            \Log::info('Celtic: customer tapped suggested-question number → expand to full question', [
+        // 🔢 (2026-06-06 R5125) ลูกค้าเลือก "ทั้งสองข้อ" จากกล่องคำถามแนะนำ (1และ2 / เอาสองข้อ / ทั้งคู่)
+        //   เคสจริง FTU-260606-W4360 seq3: ลูกค้าพิมพ์ "1และ2" → resolveCelticSuggestionPick รับแค่
+        //   ^[12]$ → หลุดไปให้ AI ตอบรับมั่ว ("ได้ เลือกทั้ง 1 และ 2 เลย...") + กินสิทธิ์ 1 ข้อฟรี
+        //   user spec: "ตอบข้อที่เลือกก่อน แล้วคำถามที่เหลือ + คำถามแนะนำใหม่ เป็นรูทแยกให้กดต่อ"
+        //   → ตอบข้อ 1 เต็มๆ ตอนนี้ (กิน 1 สิทธิ์ ตามจริง) + carry ข้อ 2 ไป re-offer หลังคำตอบ (ไม่หล่น)
+        //   ต้องอยู่บนสุด — ก่อน end-confirm/readiness-ack
+        $carryForwardQuestion = null;
+        $bothPick = $this->resolveCelticSuggestionPickBoth($reading, $question);
+        if ($bothPick !== null) {
+            \Log::info('Celtic: customer picked BOTH suggested questions → answer #1 now, carry #2', [
                 'reading_id' => $reading->id,
                 'tapped' => $question,
-                'resolved' => mb_substr($pickedSuggestion, 0, 60),
+                'answer_now' => mb_substr($bothPick['answer'], 0, 50),
+                'carry' => mb_substr((string) ($bothPick['carry'] ?? ''), 0, 50),
             ]);
-            $question = $pickedSuggestion;
-            $messageText = $pickedSuggestion;
+            $question = $bothPick['answer'];
+            $messageText = $bothPick['answer'];
+            $carryForwardQuestion = $bothPick['carry'] ?? null;
+        } else {
+            // 🔢 (2026-06-05) กดปุ่มเลขเดี่ยว 1/2 = เลือกคำถามแนะนำข้อนั้น → คืนคำถามเต็มจาก Cache
+            //   แล้วไหลเข้า askQuestion ปกติ (นับเป็นคำถามจริง 1 ข้อ เหมือนพิมพ์เอง)
+            $pickedSuggestion = $this->resolveCelticSuggestionPick($reading, $question);
+            if ($pickedSuggestion !== null) {
+                \Log::info('Celtic: customer tapped suggested-question number → expand to full question', [
+                    'reading_id' => $reading->id,
+                    'tapped' => $question,
+                    'resolved' => mb_substr($pickedSuggestion, 0, 60),
+                ]);
+                $question = $pickedSuggestion;
+                $messageText = $pickedSuggestion;
+            } elseif ($this->looksLikeSuggestionNumberInput($question)) {
+                // 🔢 (2026-06-06 R5125) พิมพ์เลข/"ทั้งสอง" แต่ไม่มี suggestion ค้าง (cache หมด/ไม่เคยเสนอ)
+                //   เคสจริง FTU-260606-W4360 seq4: "1" ตกไปให้ askQuestion เป็นข้อความ literal →
+                //   AI งง → seq ว่าง answered_at=NULL (หล่นหาย ลูกค้าไม่ได้คำตอบ)
+                //   user spec: "ระบบต้องดำเนินต่อได้" — ชวนถามใหม่แทนการทิ้ง + ไม่กินสิทธิ์
+                //   ⏳ ghost-bug guard: ถ้าหมดเวลา QA แล้ว → ปิด session ตามปกติ (อย่า re-invite ลอยๆ
+                //   ข้ามด่าน canAskMoreCeltic ด้านล่างเพราะ return ก่อน) — ลูกค้าต้องได้ Grand Finale
+                if (! $reading->canAskMoreCeltic()) {
+                    return $this->endCelticSession($reading, 'time_expired');
+                }
+
+                \Log::info('Celtic: bare suggestion-number without cached suggestions → re-invite (no burn)', [
+                    'reading_id' => $reading->id,
+                    'text' => mb_substr($question, 0, 20),
+                ]);
+
+                return [
+                    'action' => 'celtic_invite_question',
+                    'message' => "🌙 อยากให้แม่หมอทำนายเรื่องไหนต่อดีคะ?\n\n"
+                        .'💬 พิมพ์เรื่องที่อยากรู้มาได้เลย — ความรัก การงาน การเงิน สุขภาพ '
+                        .'หรือเรื่องที่ค้างคาใจค่ะ ✨',
+                    'reading' => $reading,
+                ];
+            }
         }
 
         // 🔚 (2026-05-23) ลูกค้าขอจบ → 2-step confirm กันมือลั่น
@@ -1812,7 +1853,8 @@ trait CelticCrossConversationTrait
         //   → บอทเงียบตลอดกาล ลูกค้าจ่าย 99฿ แล้วใช้ไม่ได้
         //   Fix: finally block restore state เป็น AWAITING_QUESTION ทุกกรณี (ถ้าไม่สำเร็จ)
         $service = app(CelticCrossService::class);
-        $result = ['success' => false, 'message' => 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'];
+        // 🌙 (2026-06-06) user spec: "อย่าแจ้งลูกค้าว่าเอไอขัดข้องเด็ดขาด" — default message นุ่ม (ไม่ใช้คำว่า AI/ขัดข้อง)
+        $result = ['success' => false, 'message' => 'แม่หมอขอตั้งสมาธิที่ไพ่อีกครู่นะคะ'];
         $exceptionThrown = null;
         try {
             $result = $service->askQuestion($reading, $question);
@@ -1844,10 +1886,16 @@ trait CelticCrossConversationTrait
             }
         }
 
+        // 🌙 (2026-06-06) user spec: "อย่าแจ้งลูกค้าว่าเอไอขัดข้องเด็ดขาด"
+        //   ห้ามใช้คำว่า "AI/เอไอ/ขัดข้อง" + ห้าม echo $result['message'] (อาจมี technical text)
+        //   state ถูกคืนเป็น AWAITING_QUESTION ใน finally block แล้ว → ลูกค้าพิมพ์คำถามซ้ำได้ทันที (resume)
+        //   ใช้โทน "แม่หมอตั้งสมาธิอีกครู่" — ลูกค้าไม่รู้สึกว่าระบบพัง + รู้ว่าถามซ้ำได้
+        $softRetryMessage = '🌙 แม่หมอขอตั้งสมาธิที่ไพ่อีกครู่นะคะ — พิมพ์คำถามเดิมส่งมาอีกครั้งได้เลยค่ะ ✨';
+
         if ($exceptionThrown !== null) {
             return [
                 'action' => 'celtic_ai_failed',
-                'message' => '⚠️ AI ระบบขัดข้องชั่วคราว ลองพิมพ์คำถามอีกครั้งค่ะ',
+                'message' => $softRetryMessage,
                 'reading' => $reading,
             ];
         }
@@ -1855,7 +1903,7 @@ trait CelticCrossConversationTrait
         if (! $result['success']) {
             return [
                 'action' => 'celtic_ai_failed',
-                'message' => '⚠️ '.($result['message'] ?? 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'),
+                'message' => $softRetryMessage,
                 'reading' => $reading,
             ];
         }
@@ -2023,6 +2071,18 @@ trait CelticCrossConversationTrait
         //   ที่นี่ผ่าน hard-cap (usedQ >= maxQ) มาแล้ว → usedQ < maxQ → ยังถามต่อได้เสมอ
         //   remainingQ === null = admin ตั้งถามไม่จำกัด (maxQ=0) → ยังโชว์ปุ่มได้
         //   sync Cache กับคำตอบล่าสุด: มีคำถามแนะนำ → put / ไม่มี → forget (กันกดเลขเก่าค้าง)
+        // 🔢 (2026-06-06 R5125) ลูกค้าเลือก "ทั้งสองข้อ" — เอาข้อ 2 ที่ค้างมา re-offer เป็นปุ่มแรก
+        //   รวมกับคำถามแนะนำใหม่ที่เพิ่งทำนายได้ (user spec: "คำถามที่เหลือ + คำถามแนะนำใหม่ เพิ่มอีก 1")
+        //   → กล่องถัดไป = [ข้อ 2 ที่ค้าง] + [คำถามแนะนำใหม่] (ตัดซ้ำ + ตัดค่าว่าง + จำกัด 2 ปุ่ม 1️⃣2️⃣)
+        if ($carryForwardQuestion !== null && trim((string) $carryForwardQuestion) !== '') {
+            array_unshift($celticNextQuestions, $carryForwardQuestion);
+            $celticNextQuestions = array_values(array_unique(array_filter(
+                $celticNextQuestions,
+                static fn ($q) => is_string($q) && trim($q) !== ''
+            )));
+            $celticNextQuestions = array_slice($celticNextQuestions, 0, 2);
+        }
+
         $suggestionBox = null;
         $suggestionButtons = [];
         if (! empty($celticNextQuestions) && ($remainingQ === null || $remainingQ > 0)) {
@@ -2134,6 +2194,94 @@ trait CelticCrossConversationTrait
         }
 
         return $stored[(int) $n - 1] ?? null;
+    }
+
+    /**
+     * 🔢 (2026-06-06 R5125) ลูกค้าเลือก "ทั้งสองข้อ" จากกล่องคำถามแนะนำ
+     *
+     * รองรับ: "1และ2" / "1 และ 2" / "1,2" / "1 2" / "1กับ2" / "1+2" / "ข้อ1และ2"
+     *         + วลีไทย: "ทั้งสอง" / "ทั้งคู่" / "ทั้ง2" / "เอาสองข้อ" / "เอาทั้งสอง" / "ขอทั้งคู่" / "both"
+     *
+     * คืน ['answer' => คำถามข้อ1เต็ม, 'carry' => คำถามข้อ2เต็ม] เมื่อมี suggestion ค้าง ≥ 2 ข้อ
+     * คืน null ถ้าไม่ใช่ both-pick หรือ suggestion ค้างไม่ถึง 2 (ให้ guard อื่นจัดการ)
+     *
+     * @return array{answer:string,carry:?string}|null
+     */
+    protected function resolveCelticSuggestionPickBoth(FortuneReading $reading, string $text): ?array
+    {
+        if (! $this->looksLikeCelticPickBoth($text)) {
+            return null;
+        }
+
+        $stored = cache()->get("celtic:suggq:{$reading->id}");
+        if (! is_array($stored) || count($stored) < 2) {
+            return null; // ไม่มีคำถามแนะนำ ≥ 2 ให้เลือก → ปล่อยให้ re-invite guard จัดการ
+        }
+
+        return [
+            'answer' => (string) $stored[0],
+            'carry' => isset($stored[1]) ? (string) $stored[1] : null,
+        ];
+    }
+
+    /**
+     * 🔢 (2026-06-06 R5125) ข้อความ = "เลือกทั้งสองข้อ" ไหม (เลข 1<sep>2 หรือวลี both)
+     *
+     * เน้น precision สูง — เฉพาะรูปแบบที่ชัดเจนว่าเลือกทั้งคู่ (กัน false positive คำถามจริง)
+     */
+    protected function looksLikeCelticPickBoth(string $text): bool
+    {
+        // strip keycap (20E3) + variation selector (FE0F) → "1️⃣" เป็น "1"
+        $t = mb_strtolower(trim((string) preg_replace('/[\x{FE00}-\x{FE0F}\x{20E3}]/u', '', $text)));
+        if ($t === '') {
+            return false;
+        }
+
+        // 🚫 มี particle คำถาม → เป็นคำถามจริง ไม่ใช่การเลือก
+        //   ⚠️ ghost-bug guard: กัน "ทั้งคู่จะรักกันไหม" / "เราทั้งสองจะรอดไหม" (คำถามรักที่มี "ทั้งคู่")
+        //   ถูกตีเป็น both-pick แล้วไฮแจ็กไปตอบคำถามแนะนำแทนคำถามจริงของลูกค้า
+        foreach (['ไหม', 'มั้ย', 'มัย', 'หรือ', 'เหรอ', 'หรอ', 'รึ', 'อะไร', 'ทำไม', 'ยังไง',
+            'อย่างไร', 'เมื่อไหร่', 'เมื่อไร', 'ที่ไหน', 'ใคร', 'กี่', 'เท่าไหร่', 'เท่าไร', '?'] as $qm) {
+            if (str_contains($t, $qm)) {
+                return false;
+            }
+        }
+
+        // strip คำขึ้นต้น (เอา/ขอ/อยาก/ดู) + คำลงท้ายสุภาพ → เหลือ "แก่น"
+        $core = trim((string) preg_replace('/^(เอาที่|เอา|ขอดู|ขอ|อยากได้|อยากดู|อยาก|ดู)\s*/u', '', $t));
+        $core = trim((string) preg_replace('/\s*(ค่ะ|คะ|ค่า|ครับ|คับ|ครับผม|นะ|น่ะ|เลย|ด้วย|ก่อน|จ้า|จ้ะ|จ๊ะ|จ๋า|ละ|ล่ะ|ๆ)+$/u', '', $core));
+        $coreNs = (string) preg_replace('/\s+/u', '', $core); // ตัดช่องว่าง
+
+        // วลี both แบบ EXACT (=== ไม่ใช่ str_contains) — กัน substring ในประโยค ("เราทั้งคู่จะรอด")
+        $baseBoth = ['ทั้งสองข้อ', 'ทั้งสอง', 'ทั้งคู่', 'ทั้ง2', 'สองข้อ', 'both'];
+        if (in_array($coreNs, $baseBoth, true)) {
+            return true;
+        }
+
+        // เลข "1<sep>2" — sep = ข้อ/และ/กับ/,/./+/&/ หรือ "ช่องว่าง" ("1 2")
+        //   ใช้ $core (คงช่องว่าง) แยก "1 2" (=ทั้งคู่) ออกจาก "12" (=สิบสอง กำกวม ไม่นับ)
+        //   anchored ^...$ → ทั้ง string ต้องเป็น 1<sep>2 เท่านั้น (ประโยคยาวไม่ผ่าน เช่น "1 บวก 2 เท่ากับ 3")
+        $norm = (string) preg_replace('/(ข้อที่|ข้อ|และ|กับ|\+|&|,|\.|\/|\s+)/u', '|', $core);
+        if (preg_match('/^\|*1\|+2\|*$/u', $norm) || preg_match('/^\|*2\|+1\|*$/u', $norm)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 🔢 (2026-06-06 R5125) input เป็น "เลขเลือก/ทั้งสอง" ล้วนๆ (ไม่มีเนื้อคำถาม) ไหม
+     *
+     * ใช้กันเคส cache หมด/ไม่เคยเสนอ แล้วลูกค้ากดเลข → ชวนถามใหม่แทนการ feed "1" ให้ AI (หล่นหาย)
+     */
+    protected function looksLikeSuggestionNumberInput(string $text): bool
+    {
+        $n = trim((string) preg_replace('/[\x{FE00}-\x{FE0F}\x{20E3}]/u', '', $text));
+        if (preg_match('/^[12]$/', $n)) {
+            return true;
+        }
+
+        return $this->looksLikeCelticPickBoth($text);
     }
 
     // 🛑 (2026-05-14) handleCelticPredictAll + buildPredictAllPrompt + CELTIC_PREDICT_NOW
