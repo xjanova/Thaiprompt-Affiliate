@@ -66,6 +66,7 @@ use App\Http\Controllers\Admin\FortuneAdminQAController;
 use App\Http\Controllers\Admin\FortuneAstrologyController;
 use App\Http\Controllers\Admin\FortuneBanController;
 use App\Http\Controllers\Admin\FortuneBannerController;
+use App\Http\Controllers\Admin\FortuneInviteMessageController;
 use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneCelticCrossController;
@@ -4098,6 +4099,17 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{banner}/toggle', [FortuneBannerController::class, 'toggle'])->name('toggle');
         Route::post('/reorder', [FortuneBannerController::class, 'reorder'])->name('reorder');
         Route::post('/settings', [FortuneBannerController::class, 'saveSettings'])->name('settings');
+    });
+
+    // 💬 ข้อความชวนดูดวง (สุ่ม) — ส่งแทนรูปเมื่อลูกค้าได้รูปในสัปดาห์นี้แล้ว
+    Route::prefix('invite-messages')->name('invite-messages.')->group(function () {
+        Route::get('/', [FortuneInviteMessageController::class, 'index'])->name('index');
+        Route::post('/', [FortuneInviteMessageController::class, 'store'])->name('store');
+        Route::put('/{inviteMessage}', [FortuneInviteMessageController::class, 'update'])->name('update');
+        Route::delete('/{inviteMessage}', [FortuneInviteMessageController::class, 'destroy'])->name('destroy');
+        Route::post('/{inviteMessage}/toggle', [FortuneInviteMessageController::class, 'toggle'])->name('toggle');
+        Route::post('/reorder', [FortuneInviteMessageController::class, 'reorder'])->name('reorder');
+        Route::post('/settings', [FortuneInviteMessageController::class, 'saveSettings'])->name('settings');
     });
 
     // 📚 RAG Admin Q&A — เก็บ + ใช้คำตอบของแอดมินเป็น few-shot

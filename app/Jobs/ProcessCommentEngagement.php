@@ -209,6 +209,22 @@ class ProcessCommentEngagement implements ShouldQueue
             $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
             $dmMessage = $greetingService->buildDailyHoroscopeGreeting($userId, $name);
 
+            // 💬 (2026-06-06) WEEKLY IMAGE DEDUP → TEXT INVITE ROTATION
+            //   USER SPEC: "ใครเคยส่งรูปแล้วในสัปดาห์นั้นก็ไม่ต้องส่งอีก แต่ส่งเป็นคำพูดไป"
+            //   คนที่ได้รูปแบนเนอร์ไปแล้วในสัปดาห์นี้ → ไม่ส่งรูปซ้ำ ส่งข้อความชวนแบบเนียน
+            //   (สุ่มจาก fortune_invite_messages 100 ข้อความ) แทน
+            //   ข้อดีแถม: text+QR ส่งถึงเสถียรกว่า image atomic (FB Reels race ~70% ภาพหาย)
+            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook');
+            $useInviteText = $inviteMessage !== null;
+            if ($useInviteText) {
+                $dmMessage = $inviteMessage->render($name);
+                Log::info('💬 Comment Engagement: สลับเป็นข้อความชวน (ได้รูปสัปดาห์นี้แล้ว)', [
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
+                    'invite_id' => $inviteMessage->id,
+                ]);
+            }
+
             // 3. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
             //    🚫 (2026-05-24) Skip ทั้งหมดถ้า public reply ปิดอยู่ (กัน FB API call เปล่า)
             if ($publicReplyEnabled && ! empty($commentReply)) {
@@ -272,67 +288,87 @@ class ProcessCommentEngagement implements ShouldQueue
             $stage2TextSent = false;          // FALLBACK: text+QR (เมื่อ atomic fail/banner ปิด)
             $stage3ImageOnlySent = false;     // LAST RESORT: image only
 
-            // STAGE 1 (NEW PRIMARY): Atomic image+QR — ภาพ + QR ใน 1 call atomic
-            //   ผ่าน sendPrivateReplyImageWithQuickReplies — recipient.comment_id + attachment + quick_replies
-            //   No race possible: 1 API call ใช้ comment_id ครั้งเดียว ภาพ + QR ส่งพร้อมกัน
-            try {
-                $bannerService = new FortuneBannerService($settings);
-                $stage1AtomicSent = (bool) $bannerService->sendBannerThenWait(
-                    fn ($url) => $facebookService->sendPrivateReplyImageWithQuickReplies(
-                        $commentId,
-                        $url,
-                        $quickReplies
-                    ),
-                    'comment',
-                    'facebook',
-                    $userId
-                );
-            } catch (Throwable $atomicErr) {
-                Log::debug('Comment Engagement: Stage 1 (atomic image+QR) ล้ม (non-blocking): '.$atomicErr->getMessage());
-            }
-
-            // STAGE 2 (FALLBACK): text+QR ผ่าน comment_id — เมื่อ Stage 1 ไม่ได้ส่ง
-            //   เกิดเฉพาะ:
-            //     - Banner ปิด (enable_dm_banner=false หรือ per-channel toggle off)
-            //     - ไม่มี active banner ในตาราง fortune_banners
-            //     - FB API ล่ม ตอน atomic call
-            //   ใช้ Stage 1 v2 เดิม (text+QR ผ่าน Private Reply) — ลูกค้ายังได้ CTA
-            if (! $stage1AtomicSent) {
-                Log::info('🔁 Comment Engagement: Stage 1 (atomic) skip/fail → fallback Stage 2 (text+QR)', [
-                    'user_id' => $userId,
-                    'comment_id' => $commentId,
-                ]);
-
+            if ($useInviteText) {
+                // 💬 (2026-06-06) ได้รูปสัปดาห์นี้แล้ว → ส่งข้อความชวน + QR ผ่าน Private Reply (ไม่มีรูป)
+                //    text+QR atomic ใน 1 call — ไม่มี race, CTA (ปุ่มดูดวง) ครบ
                 $stage2TextSent = $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
                     'from_comment_engagement' => true,
                     'comment_id' => $commentId,
                 ]);
+                if ($stage2TextSent && $inviteMessage) {
+                    $inviteMessage->recordSend();
+                }
+            } else {
 
-                // STAGE 3 (LAST RESORT): image only — ถ้า Stage 2 ก็ fail (FB privacy block ฯลฯ)
-                //   ลูกค้าได้อย่างน้อยภาพ banner (ถ้าเปิด) — แม้ไม่มี text/QR
-                if (! $stage2TextSent) {
-                    Log::info('🔁 Comment Engagement: Stage 2 (text+QR) ล้ม → ลอง Stage 3 (image only last resort)', [
+                // STAGE 1 (NEW PRIMARY): Atomic image+QR — ภาพ + QR ใน 1 call atomic
+                //   ผ่าน sendPrivateReplyImageWithQuickReplies — recipient.comment_id + attachment + quick_replies
+                //   No race possible: 1 API call ใช้ comment_id ครั้งเดียว ภาพ + QR ส่งพร้อมกัน
+                try {
+                    $bannerService = new FortuneBannerService($settings);
+                    $stage1AtomicSent = (bool) $bannerService->sendBannerThenWait(
+                        fn ($url) => $facebookService->sendPrivateReplyImageWithQuickReplies(
+                            $commentId,
+                            $url,
+                            $quickReplies
+                        ),
+                        'comment',
+                        'facebook',
+                        $userId
+                    );
+                } catch (Throwable $atomicErr) {
+                    Log::debug('Comment Engagement: Stage 1 (atomic image+QR) ล้ม (non-blocking): '.$atomicErr->getMessage());
+                }
+
+                // STAGE 2 (FALLBACK): text+QR ผ่าน comment_id — เมื่อ Stage 1 ไม่ได้ส่ง
+                //   เกิดเฉพาะ:
+                //     - Banner ปิด (enable_dm_banner=false หรือ per-channel toggle off)
+                //     - ไม่มี active banner ในตาราง fortune_banners
+                //     - FB API ล่ม ตอน atomic call
+                //   ใช้ Stage 1 v2 เดิม (text+QR ผ่าน Private Reply) — ลูกค้ายังได้ CTA
+                if (! $stage1AtomicSent) {
+                    Log::info('🔁 Comment Engagement: Stage 1 (atomic) skip/fail → fallback Stage 2 (text+QR)', [
                         'user_id' => $userId,
                         'comment_id' => $commentId,
                     ]);
 
-                    try {
-                        $bannerService = $bannerService ?? new FortuneBannerService($settings);
-                        $stage3ImageOnlySent = (bool) $bannerService->sendBannerThenWait(
-                            fn ($url) => $facebookService->sendImage($userId, $url, null, ['comment_id' => $commentId]),
-                            'comment',
-                            'facebook',
-                            $userId
-                        );
-                    } catch (Throwable $hErr) {
-                        Log::debug('Comment Engagement: Stage 3 (image only) ล้ม (non-blocking): '.$hErr->getMessage());
+                    $stage2TextSent = $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
+                        'from_comment_engagement' => true,
+                        'comment_id' => $commentId,
+                    ]);
+
+                    // STAGE 3 (LAST RESORT): image only — ถ้า Stage 2 ก็ fail (FB privacy block ฯลฯ)
+                    //   ลูกค้าได้อย่างน้อยภาพ banner (ถ้าเปิด) — แม้ไม่มี text/QR
+                    if (! $stage2TextSent) {
+                        Log::info('🔁 Comment Engagement: Stage 2 (text+QR) ล้ม → ลอง Stage 3 (image only last resort)', [
+                            'user_id' => $userId,
+                            'comment_id' => $commentId,
+                        ]);
+
+                        try {
+                            $bannerService = $bannerService ?? new FortuneBannerService($settings);
+                            $stage3ImageOnlySent = (bool) $bannerService->sendBannerThenWait(
+                                fn ($url) => $facebookService->sendImage($userId, $url, null, ['comment_id' => $commentId]),
+                                'comment',
+                                'facebook',
+                                $userId
+                            );
+                        } catch (Throwable $hErr) {
+                            Log::debug('Comment Engagement: Stage 3 (image only) ล้ม (non-blocking): '.$hErr->getMessage());
+                        }
                     }
                 }
-            }
+
+            } // end else (image-first path — เมื่อยังไม่ได้รูปสัปดาห์นี้)
 
             // map สำหรับ engagement record logic
             $dmSent = $stage1AtomicSent || $stage2TextSent;          // ลูกค้าได้ CTA (QR) แบบใดแบบหนึ่ง
             $bannerSent = $stage1AtomicSent || $stage3ImageOnlySent; // ลูกค้าได้ภาพ banner แบบใดแบบหนึ่ง
+
+            // 💬 (2026-06-06) มาร์คว่าได้รูปสัปดาห์นี้แล้ว — เฉพาะเมื่อส่งรูปสำเร็จจริง
+            //    ครั้งถัดไปในสัปดาห์เดียวกัน จะ swap เป็นข้อความชวนแทน (USER SPEC)
+            if ($bannerSent) {
+                \App\Models\FortuneUserCredit::markImageSent($userId, 'facebook');
+            }
             // ตัวแปร backward-compat สำหรับ log section ด้านล่าง
             $stage1TextSent = $stage2TextSent;       // alias เพื่อให้ log path เดิม work
             $stage2gImageQrSent = $stage1AtomicSent; // alias — Option G คือ atomic เดิม
@@ -423,8 +459,8 @@ class ProcessCommentEngagement implements ShouldQueue
      * → match pattern → ใช้ canned reply ที่มี variation 4-6 แบบ (ดูไม่ spam)
      *
      * @param  string  $commentText  ข้อความคอมเม้นต์ดิบ
-     * @param  string  $name         ชื่อลูกค้า (มาจาก FB profile)
-     * @return string|null  reply ถ้า match, null ถ้าไม่ตรง (caller จะ fallback ไป AI)
+     * @param  string  $name  ชื่อลูกค้า (มาจาก FB profile)
+     * @return string|null reply ถ้า match, null ถ้าไม่ตรง (caller จะ fallback ไป AI)
      */
     protected function matchCommonGratitudePattern(string $commentText, string $name): ?string
     {
@@ -537,16 +573,17 @@ class ProcessCommentEngagement implements ShouldQueue
         $stripped = preg_replace('/[\.,\-\!\?\"\'`~@#\$%\^&\*\(\)\[\]\{\}<>\/\\\\|_=\+]+/u', '', $stripped);
         // collapse whitespace
         $stripped = preg_replace('/\s+/u', '', $stripped);
+
         return mb_strtolower(trim($stripped));
     }
 
     /**
      * เลือก canned reply ตาม category + locale (มี variation กัน FB spam detection)
      *
-     * @param  string  $name      ชื่อลูกค้า
-     * @param  bool    $isLao     true = ภาษาลาว, false = ไทย
+     * @param  string  $name  ชื่อลูกค้า
+     * @param  bool  $isLao  true = ภาษาลาว, false = ไทย
      * @param  string  $category  'blessing' | 'emoji'
-     * @return string  reply ที่ใส่ name แล้ว
+     * @return string reply ที่ใส่ name แล้ว
      */
     protected function pickCannedReply(string $name, bool $isLao, string $category): string
     {
@@ -585,6 +622,7 @@ class ProcessCommentEngagement implements ShouldQueue
         }
 
         $reply = $replies[array_rand($replies)];
+
         return str_replace('{name}', $name, $reply);
     }
 }

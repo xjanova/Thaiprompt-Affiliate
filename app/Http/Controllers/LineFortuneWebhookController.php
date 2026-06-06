@@ -613,14 +613,19 @@ class LineFortuneWebhookController extends Controller
             //   ก่อน fix: banner sendImage (push API ~500-800ms) block ก่อน processMessage
             //   ใหม่: reuse $hasActiveForAffiliate ที่เช็คทั้ง 2 condition แล้ว
             //   → critical path เร็วขึ้น 500-800ms
-            if (! $hasActiveForAffiliate) {
-                $this->bannerService->sendBannerOnce(
+            // 💬 (2026-06-06) งดรูป welcome ถ้าได้รูปสัปดาห์นี้แล้ว (USER SPEC) — คำตอบยังส่งผ่าน processMessage
+            if (! $hasActiveForAffiliate
+                && ! \App\Models\FortuneInviteMessage::shouldSuppressImage($userId, 'line')) {
+                $lineWelcomeImgSent = $this->bannerService->sendBannerOnce(
                     $userId,
                     fn ($url) => $this->lineService->sendImage($userId, $url),
                     'welcome',
                     24,
                     'line'
                 );
+                if ($lineWelcomeImgSent) {
+                    \App\Models\FortuneUserCredit::markImageSent($userId, 'line');
+                }
             }
 
             // ประมวลผลข้อความผ่าน Channel Manager
@@ -781,12 +786,21 @@ class LineFortuneWebhookController extends Controller
         //   ลูกค้าพิมพ์ทักมา → AI chat ตอบเป็นกันเอง
         try {
             $bannerService = app(\App\Services\FortuneBannerService::class);
-            $sent = $bannerService->sendBannerOnce(
-                $userId,
-                fn ($url) => $this->lineService->sendImageMessage($userId, $url, $url),
-                'welcome',
-                24
-            );
+
+            // 💬 (2026-06-06) งดรูป welcome ถ้าได้รูปสัปดาห์นี้แล้ว (USER SPEC) → ปล่อยให้ greeting text แทน
+            if (\App\Models\FortuneInviteMessage::shouldSuppressImage($userId, 'line')) {
+                $sent = false;
+            } else {
+                $sent = $bannerService->sendBannerOnce(
+                    $userId,
+                    fn ($url) => $this->lineService->sendImageMessage($userId, $url, $url),
+                    'welcome',
+                    24
+                );
+                if ($sent) {
+                    \App\Models\FortuneUserCredit::markImageSent($userId, 'line');
+                }
+            }
 
             // ถ้า banner ปิดอยู่หรือไม่มี — ส่ง greeting สั้น ๆ แทน (ไม่มี flex card)
             if (! $sent) {

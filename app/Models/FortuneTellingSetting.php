@@ -103,6 +103,8 @@ class FortuneTellingSetting extends Model
         //    ถ้า Page Token ยังไม่มี pages_manage_engagement scope → ปิด toggle นี้
         //    เพื่อกัน AI quota เผาเปล่าตอนพยายาม replyToComment แล้ว fail 403
         'enable_public_comment_reply',
+        // 💬 (2026-06-06) เปิดระบบสุ่มข้อความชวนแทนรูป เมื่อลูกค้าได้รูปในสัปดาห์นี้แล้ว
+        'enable_invite_rotation',
         // 🖼️ (2026-05-24) Master toggle: image vision ครอบทุก provider — default=false
         //    OFF: gate chatWithImage (OpenAI) + chatWithImageGemini (classifier) entry points
         //    → Celtic vision read ปิด + slip auto-detect classifier ปิด
@@ -355,6 +357,8 @@ class FortuneTellingSetting extends Model
         'comment_engagement_enabled' => 'boolean',
         // 🚫 (2026-05-24) Sub-toggle public comment reply (default false)
         'enable_public_comment_reply' => 'boolean',
+        // 💬 (2026-06-06) Toggle invite-message rotation (default true)
+        'enable_invite_rotation' => 'boolean',
         // 🖼️ (2026-05-24) Master toggle image vision (default false) — ครอบทุก provider
         'enable_image_vision' => 'boolean',
         'admin_handover_enabled' => 'boolean',
@@ -521,6 +525,8 @@ class FortuneTellingSetting extends Model
         'comment_engagement_mode' => 'ai',
         // 🚫 (2026-05-24) Default false — รอ App Review อนุมัติ pages_manage_engagement
         'enable_public_comment_reply' => false,
+        // 💬 (2026-06-06) Default true — เปิดสุ่มข้อความชวนแทนรูปเมื่อได้รูปสัปดาห์นี้แล้ว
+        'enable_invite_rotation' => true,
         // 🖼️ (2026-05-24) Default false — ปิด vision ทุก provider ประหยัด quota
         'enable_image_vision' => false,
         // LINE Settings
@@ -1352,6 +1358,19 @@ EOT;
     public function isPublicCommentReplyEnabled(): bool
     {
         return (bool) ($this->enable_public_comment_reply ?? false);
+    }
+
+    /**
+     * 💬 (2026-06-06) เช็คว่าเปิดระบบ "สุ่มข้อความชวนแทนรูป" หรือไม่
+     *
+     * Default: true (เปิด)
+     * เมื่อ true: ลูกค้าที่ได้รูปแบนเนอร์ในสัปดาห์นี้แล้ว → DM กลับครั้งถัดไป
+     *            ส่งข้อความเชิญชวนสุ่มจาก fortune_invite_messages (ไม่ส่งรูปซ้ำ)
+     * เมื่อ false: คงพฤติกรรมเดิม (ส่งรูปแบนเนอร์ทุกครั้งตาม cooldown 24 ชม.)
+     */
+    public function isInviteRotationEnabled(): bool
+    {
+        return (bool) ($this->enable_invite_rotation ?? true);
     }
 
     /**

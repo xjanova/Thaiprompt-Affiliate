@@ -52,6 +52,8 @@ class FortuneUserCredit extends Model
         'last_dm_at',
         'dm_count',
         'last_warmup_sent_at',
+        // 💬 (2026-06-06) Weekly image dedup — เวลาส่งรูปแบนเนอร์ใน DM ล่าสุด
+        'last_dm_image_at',
         // 👁️ Follow-page tracking (2026-04-28)
         'facebook_follow_prompted_at',
         'facebook_followed_confirmed_at',
@@ -74,6 +76,8 @@ class FortuneUserCredit extends Model
         'last_dm_at' => 'datetime',
         'dm_count' => 'integer',
         'last_warmup_sent_at' => 'datetime',
+        // 💬 (2026-06-06) Weekly image dedup
+        'last_dm_image_at' => 'datetime',
         // 👁️ Follow-page tracking
         'facebook_follow_prompted_at' => 'datetime',
         'facebook_followed_confirmed_at' => 'datetime',
@@ -453,6 +457,45 @@ class FortuneUserCredit extends Model
         $this->update(['last_warmup_sent_at' => now()]);
 
         return $this->fresh();
+    }
+
+    // ============================================================
+    // 💬 (2026-06-06) Weekly DM Image Dedup
+    //   "ใครได้รูปแบนเนอร์ในสัปดาห์นี้แล้ว → DM กลับครั้งถัดไปส่งข้อความชวนแทนรูป"
+    //   เก็บใน DB (ไม่ใช่ Cache) เพราะ auto-deploy รัน cache:clear ทุกครั้ง
+    // ============================================================
+
+    /**
+     * 💬 ตรวจว่า user คนนี้ได้รับรูปแบนเนอร์ใน DM มาแล้วในสัปดาห์นี้หรือยัง
+     *
+     * "สัปดาห์นี้" = ตั้งแต่วันจันทร์ 00:00 (ISO week, Asia/Bangkok) ถึงปัจจุบัน
+     *
+     * @param  string  $userId  facebook_user_id / platform_user_id
+     * @param  string  $platform  'facebook' | 'line'
+     * @return bool true = เคยได้รูปสัปดาห์นี้แล้ว (caller จะส่งข้อความชวนแทน)
+     */
+    public static function hasReceivedImageThisWeek(string $userId, string $platform = 'facebook'): bool
+    {
+        $record = self::findByUser($userId, $platform);
+
+        if (! $record || empty($record->last_dm_image_at)) {
+            return false;
+        }
+
+        return $record->last_dm_image_at->greaterThanOrEqualTo(now()->startOfWeek());
+    }
+
+    /**
+     * 💬 บันทึกว่าเพิ่งส่งรูปแบนเนอร์ใน DM ให้ user คนนี้ (สร้าง record ถ้ายังไม่มี)
+     *
+     * @param  string  $userId  facebook_user_id / platform_user_id
+     * @param  string  $platform  'facebook' | 'line'
+     */
+    public static function markImageSent(string $userId, string $platform = 'facebook'): void
+    {
+        self::getOrCreate($userId, $platform)
+            ->forceFill(['last_dm_image_at' => now()])
+            ->save();
     }
 
     // ============================================================

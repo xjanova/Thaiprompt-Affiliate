@@ -582,15 +582,27 @@ class FacebookWebhookController extends Controller
             // ⚠️ ไม่ใส่ Quick Reply ปุ่มขาย/ดูดวง — ให้ลูกค้าพิมพ์ตอบเอง (ตอบอะไรก็ทำนายฟรี)
             $quickReplies = [];
 
-            // 🖼️ ส่งแบนเนอร์ก่อน text (ถ้าเปิดใน admin)
+            // 💬 (2026-06-06) WEEKLY IMAGE DEDUP → TEXT INVITE ROTATION
+            //   ได้รูปแบนเนอร์ในสัปดาห์นี้แล้ว → ไม่ส่งรูปซ้ำ ส่งข้อความชวนแบบสุ่มแทน (USER SPEC)
+            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook');
+            $useInviteText = $inviteMessage !== null;
+            if ($useInviteText) {
+                $message = $inviteMessage->render($userName ?? 'คุณ');
+            }
+
+            // 🖼️ ส่งแบนเนอร์ก่อน text (ถ้าเปิดใน admin) — ข้ามถ้าได้รูปสัปดาห์นี้แล้ว
             //   👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — pass platform+userId เพื่อ skip ลูกค้าเก่า
-            if ($this->bannerService) {
-                $this->bannerService->sendBannerThenWait(
+            if ($this->bannerService && ! $useInviteText) {
+                $reactionImgSent = $this->bannerService->sendBannerThenWait(
                     fn ($url) => $this->facebookService->sendImage($userId, $url),
                     'reaction',
                     'facebook',
                     $userId
                 );
+                // 💬 มาร์คว่าได้รูปสัปดาห์นี้แล้ว → ครั้งถัดไป swap เป็นข้อความชวน
+                if ($reactionImgSent) {
+                    \App\Models\FortuneUserCredit::markImageSent($userId, 'facebook');
+                }
             }
 
             $success = $this->facebookService->sendQuickReplies(
@@ -599,6 +611,11 @@ class FacebookWebhookController extends Controller
                 $quickReplies,
                 ['messaging_type' => 'RESPONSE']
             );
+
+            // 💬 บันทึกสถิติข้อความชวน เมื่อ DM ส่งสำเร็จ
+            if ($success && $useInviteText && $inviteMessage) {
+                $inviteMessage->recordSend();
+            }
 
             $reaction->dm_success = (bool) $success;
             $reaction->save();
@@ -991,22 +1008,35 @@ class FacebookWebhookController extends Controller
         //    เมื่อตอบกลับ → tryAutoFreeCardForFirstReply ทำนายฟรีทันที
         $quickReplies = [];
 
-        // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
-        // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)
-        // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — skip ลูกค้าเก่า
-        if ($this->bannerService) {
-            $this->bannerService->sendBannerThenWait(
+        // 💬 (2026-06-06) ได้รูปสัปดาห์นี้แล้ว → สลับเป็นข้อความชวน (USER SPEC) ไม่ส่งรูปซ้ำ
+        $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($fromId, 'facebook');
+        if ($inviteMessage) {
+            $dmMessage = $inviteMessage->render($name);
+        } elseif ($this->bannerService) {
+            // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
+            // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)
+            // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — skip ลูกค้าเก่า
+            $tmplImgSent = $this->bannerService->sendBannerThenWait(
                 fn ($url) => $this->facebookService->sendImage($fromId, $url, null, ['comment_id' => $commentId]),
                 'comment',
                 'facebook',
                 $fromId
             );
+            // 💬 มาร์คว่าได้รูปสัปดาห์นี้แล้ว → ครั้งถัดไป swap เป็นข้อความชวน
+            if ($tmplImgSent) {
+                \App\Models\FortuneUserCredit::markImageSent($fromId, 'facebook');
+            }
         }
 
         $dmSent = $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies, [
             'from_comment_engagement' => true,
             'comment_id' => $commentId,
         ]);
+
+        // 💬 บันทึกสถิติข้อความชวน เมื่อ DM ส่งสำเร็จ
+        if ($dmSent && $inviteMessage) {
+            $inviteMessage->recordSend();
+        }
 
         // 2.5 ส่งปุ่มติดตามเพจ (best-effort — เพื่อ algorithm boost)
         // ลูกค้ากดติดตาม → FB อัลกอริธึมเห็นว่าเพจมี follower เพิ่ม + แจ้งเตือนได้ตลอด
@@ -3072,14 +3102,23 @@ class FacebookWebhookController extends Controller
             // 🖼️ (2026-05-06) ส่ง banner welcome ก่อน (ครั้งแรกที่กด GET_STARTED ก็ควรเห็น)
             //   เดิม: banner ส่งเฉพาะใน processConversationalMessage → คนที่กด GET_STARTED แล้วไม่ทักต่อ ไม่เคยเห็น
             //   👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — pass platform+userId
-            if ($this->bannerService) {
-                $this->bannerService->sendBannerOnce(
+            // 💬 (2026-06-06) ได้รูปสัปดาห์นี้แล้ว → ส่งข้อความชวนแทนรูป welcome (USER SPEC)
+            //   handleGetStarted ส่ง "รูปอย่างเดียว" — ถ้างดรูปต้องมี text แทน ไม่งั้นลูกค้าไม่ได้อะไร
+            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($senderId, 'facebook');
+            if ($inviteMessage) {
+                $this->facebookService->sendMessage($senderId, $inviteMessage->render($userName));
+                $inviteMessage->recordSend();
+            } elseif ($this->bannerService) {
+                $welcomeImgSent = $this->bannerService->sendBannerOnce(
                     $senderId,
                     fn ($url) => $this->facebookService->sendImage($senderId, $url),
                     'welcome',
                     24,
                     'facebook'
                 );
+                if ($welcomeImgSent) {
+                    \App\Models\FortuneUserCredit::markImageSent($senderId, 'facebook');
+                }
             }
 
             // ปิด typing indicator
@@ -3285,14 +3324,19 @@ class FacebookWebhookController extends Controller
                 ->where('created_at', '>=', now()->subHours(24))
                 ->exists();
 
-            if (! $hasActiveFlow && $this->bannerService) {
-                $this->bannerService->sendBannerOnce(
+            // 💬 (2026-06-06) งดรูป welcome ถ้าได้รูปสัปดาห์นี้แล้ว — คำตอบสนทนายังส่งผ่าน processMessage ปกติ
+            if (! $hasActiveFlow && $this->bannerService
+                && ! \App\Models\FortuneInviteMessage::shouldSuppressImage($senderId, 'facebook')) {
+                $welcomeImgSent = $this->bannerService->sendBannerOnce(
                     $senderId,
                     fn ($url) => $this->facebookService->sendImage($senderId, $url),
                     'welcome',
                     24,
                     'facebook'
                 );
+                if ($welcomeImgSent) {
+                    \App\Models\FortuneUserCredit::markImageSent($senderId, 'facebook');
+                }
             } elseif ($hasActiveFlow) {
                 Log::debug('FB: skip welcome banner — มี active flow', [
                     'sender_id' => $senderId,

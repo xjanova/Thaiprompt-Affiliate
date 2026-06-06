@@ -741,6 +741,7 @@ return [
                 ['label' => '📂 หมวดหมู่การทำนาย', 'route' => 'admin.fortune.categories.index', 'description' => 'ความรัก, การเงิน, สุขภาพ'],
                 ['label' => '📜 ประวัติคำทำนาย', 'route' => 'admin.fortune.readings.index', 'description' => 'ดูประวัติการทำนายทั้งหมด (มีปุ่ม Export CSV ในหน้านี้)'],
                 ['label' => '🖼️ แบนเนอร์ DM', 'route' => 'admin.fortune.banners.index', 'description' => 'อัพโหลด/จัดการแบนเนอร์ที่ส่งให้ลูกค้าใน DM (reaction/comment/welcome)'],
+                ['label' => '💬 ข้อความชวนดูดวง (สุ่ม)', 'route' => 'admin.fortune.invite-messages.index', 'description' => 'คลังข้อความเชิญชวนแบบเนียน — ส่งแทนรูปเมื่อลูกค้าได้รูปในสัปดาห์นี้แล้ว (เพิ่ม/แก้/ลบได้)'],
                 ['label' => '🎨 Payment Banner (QR+ธนาคาร)', 'route' => 'admin.fortune.payment-banner.index', 'description' => 'ฝัง Dynamic QR ใน banner ธนาคาร — anti-FB-detection + SMS checker จับคู่ได้'],
                 ['label' => '🎯 เทคโอเวอร์ (แม่หมอคุยเอง)', 'route' => 'admin.fortune.takeover.index', 'description' => 'หยุด AI ให้แม่หมอ/แอดมินคุยเอง — LINE + Facebook'],
                 ['label' => '🚫 ระบบคุก (แบน user)', 'route' => 'admin.fortune.bans.index', 'description' => 'แบน user ไม่ให้บอทคุยด้วย (สแปม/ก่อกวน) — แอดมินยังคุยผ่าน Inbox ได้'],
