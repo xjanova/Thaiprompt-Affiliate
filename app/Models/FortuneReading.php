@@ -1579,7 +1579,10 @@ class FortuneReading extends Model
                         $platform = $reading->platform ?? 'facebook';
                         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
-                        if (! empty($userId)) {
+                        // 🛡️ (2026-06-07) เช็ค cancel_warning_sent ก่อนส่ง — กัน cron รันซ้อน (ทุก 5 นาที)
+                        //   ส่งคำเตือน/รูปซ้ำ ก่อน status COMPLETED commit (race double-send)
+                        $alreadyWarned = (bool) $reading->getConversationState('cancel_warning_sent');
+                        if (! empty($userId) && ! $alreadyWarned) {
                             $platformService = $channelManager->getPlatform($platform);
                             if ($platformService) {
                                 // 📜 (2026-06-07) บิลยกเลิกโดยระบบ (หมดเวลา 30 นาที) → เตือนด้วย (โทนนุ่ม)
@@ -1591,6 +1594,7 @@ class FortuneReading extends Model
                                     $reading->setConversationState('cancel_warning_sent', true);
                                 } else {
                                     $platformService->sendMessage($userId, self::buildCancelWakeupMessage($reading));
+                                    $reading->setConversationState('cancel_warning_sent', true);
                                 }
                             }
                         }
