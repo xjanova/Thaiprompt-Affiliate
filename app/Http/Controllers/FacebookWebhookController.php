@@ -595,7 +595,7 @@ class FacebookWebhookController extends Controller
 
             // 💬 (2026-06-06) WEEKLY IMAGE DEDUP → TEXT INVITE ROTATION
             //   ได้รูปแบนเนอร์ในสัปดาห์นี้แล้ว → ไม่ส่งรูปซ้ำ ส่งข้อความชวนแบบสุ่มแทน (USER SPEC)
-            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook');
+            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook', 'reaction');
             $useInviteText = $inviteMessage !== null;
             if ($useInviteText) {
                 $message = $inviteMessage->render($userName ?? 'คุณ');
@@ -1033,7 +1033,7 @@ class FacebookWebhookController extends Controller
         $quickReplies = [];
 
         // 💬 (2026-06-06) ได้รูปสัปดาห์นี้แล้ว → สลับเป็นข้อความชวน (USER SPEC) ไม่ส่งรูปซ้ำ
-        $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($fromId, 'facebook');
+        $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($fromId, 'facebook', 'comment');
         if ($inviteMessage) {
             $dmMessage = $inviteMessage->render($name);
             // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
@@ -3130,7 +3130,7 @@ class FacebookWebhookController extends Controller
             //   👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — pass platform+userId
             // 💬 (2026-06-06) ได้รูปสัปดาห์นี้แล้ว → ส่งข้อความชวนแทนรูป welcome (USER SPEC)
             //   handleGetStarted ส่ง "รูปอย่างเดียว" — ถ้างดรูปต้องมี text แทน ไม่งั้นลูกค้าไม่ได้อะไร
-            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($senderId, 'facebook');
+            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($senderId, 'facebook', 'welcome');
             if ($inviteMessage) {
                 // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
                 $this->facebookService->sendQuickReplies(

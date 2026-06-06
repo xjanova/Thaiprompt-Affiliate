@@ -83,10 +83,30 @@ class FortuneInviteMessage extends Model
      * @param  string  $userId  facebook_user_id / line_user_id
      * @param  string  $platform  'facebook' | 'line'
      */
-    public static function shouldSuppressImage(string $userId, string $platform = 'facebook'): bool
+    public static function shouldSuppressImage(string $userId, string $platform = 'facebook', ?string $channel = null): bool
     {
-        return FortuneTellingSetting::getSettings()->isInviteRotationEnabled()
-            && FortuneUserCredit::hasReceivedImageThisWeek($userId, $platform);
+        $settings = FortuneTellingSetting::getSettings();
+
+        if (! $settings->isInviteRotationEnabled()) {
+            return false;
+        }
+
+        // (1) ได้รูปแบนเนอร์ในสัปดาห์นี้แล้ว → ส่งข้อความแทน (ไม่ส่งรูปซ้ำ)
+        if (FortuneUserCredit::hasReceivedImageThisWeek($userId, $platform)) {
+            return true;
+        }
+
+        // (2) (2026-06-06) แบนเนอร์ของ channel นี้ปิดอยู่ → ไม่มีรูปจะส่งอยู่แล้ว
+        //     → ใช้ข้อความชวน (100 ข้อ) เป็นเนื้อหา DM แทน "daily greeting" เดิม
+        //     กันเคส USER: "ปิด banner แล้วแต่ข้อความที่ส่งไม่ใช่ 100 ข้อความที่เขียนไว้"
+        if ($channel !== null) {
+            $banner = new \App\Services\FortuneBannerService($settings);
+            if (! $banner->isEnabledFor($channel)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -100,9 +120,9 @@ class FortuneInviteMessage extends Model
      * @param  string  $userId  facebook_user_id / line_user_id
      * @param  string  $platform  'facebook' | 'line'
      */
-    public static function resolveFor(string $userId, string $platform = 'facebook'): ?self
+    public static function resolveFor(string $userId, string $platform = 'facebook', ?string $channel = null): ?self
     {
-        if (! self::shouldSuppressImage($userId, $platform)) {
+        if (! self::shouldSuppressImage($userId, $platform, $channel)) {
             return null;
         }
 

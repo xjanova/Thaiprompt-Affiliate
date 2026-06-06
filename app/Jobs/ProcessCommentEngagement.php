@@ -229,7 +229,7 @@ class ProcessCommentEngagement implements ShouldQueue
             //   คนที่ได้รูปแบนเนอร์ไปแล้วในสัปดาห์นี้ → ไม่ส่งรูปซ้ำ ส่งข้อความชวนแบบเนียน
             //   (สุ่มจาก fortune_invite_messages 100 ข้อความ) แทน
             //   ข้อดีแถม: text+QR ส่งถึงเสถียรกว่า image atomic (FB Reels race ~70% ภาพหาย)
-            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook');
+            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook', 'comment');
             $useInviteText = $inviteMessage !== null;
             if ($useInviteText) {
                 $dmMessage = $inviteMessage->render($name);
