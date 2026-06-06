@@ -188,6 +188,24 @@ class CelticCrossService
             $celticPurpose = 'prediction_celtic';
             $preferredProvider = 'openai';
             $aiService = new FortuneAIService($this->settings, $celticPurpose, $preferredProvider);
+
+            // 📚 (2026-06-06) แนบ "คลังคำตอบของแอดมิน" (AdminQA RAG) ท้าย prompt ทำนาย
+            //   ลูกค้าระหว่างทำนายมักถามเรื่องนอกการดูไพ่ (บริการ/ราคา/วิธีใช้/ขั้นตอน) — บอทต้อง
+            //   ดึง "คำตอบจริงที่แอดมินเคยพิมพ์" มาตอบ ไม่ใช่เดาเอง แล้วจัดเป็น [TYPE:E] (ไม่หักโควต้า)
+            //   self-gate: retrieval คืนเฉพาะ Q&A ที่ similarity ≥ threshold → คำถามทำนายจริง
+            //   ("เขาจะกลับไหม") ไม่ match FAQ → ไม่ inject (ไม่เปลือง token / ไม่กวนคำทำนาย)
+            //   กรองหมวดสายขายออก — ลูกค้าจ่าย 99฿ แล้ว ไม่ upsell กลางทำนาย. gate: admin_qa_rag_enabled
+            $prompt = $aiService->injectAdminQARagFewShot(
+                $prompt,
+                $userQuestion,
+                $reading,
+                [
+                    \App\Models\FortuneAdminQA::CATEGORY_PRE_PAYMENT,
+                    \App\Models\FortuneAdminQA::CATEGORY_PRE_PURCHASE,
+                    \App\Models\FortuneAdminQA::CATEGORY_PAYMENT_CONFIRM,
+                ],
+            );
+
             $result = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
                 userProfile: null,                  // 🌙 แม่หมอจันทรา ไม่ดูโปรไฟล์ FB — ใช้พลังไพ่ + จิตเจ้าชะตา
@@ -217,7 +235,7 @@ class CelticCrossService
             //   Fix: เฉพาะ TYPE:A (ฟอร์มทำนายเต็ม) ที่ต้องยาว — B/C/D (ชวนถาม/ปลอบ/ฟัง) สั้นได้
             //   (detection เต็ม + strip token ทำที่บล็อกล่าง — นี่แค่ peek เพื่อเลือก threshold)
             $preType = 'A';
-            if (preg_match('/TYPE\s*[:：]\s*([A-D])/iu', $response, $ptm)) {
+            if (preg_match('/TYPE\s*[:：]\s*([A-E])/iu', $response, $ptm)) {
                 $preType = strtoupper($ptm[1]);
             }
 
@@ -265,6 +283,7 @@ class CelticCrossService
             //     • TYPE:B = empathy/ปลอบใจ → ไม่ save + ไม่นับ
             //     • TYPE:C = chitchat สั้น → ไม่ save + ไม่นับ
             //     • TYPE:D = เล่าเรื่อง/บริบท → ไม่ save + ไม่นับ
+            //     • TYPE:E = ถามนอกเรื่องทำนาย/บริการ-ราคา (ตอบจาก AdminQA RAG) → ไม่ save + ไม่นับ
             //   Fallback: ถ้าไม่มี token → default 'A' (เพื่อปลอดภัย — ลูกค้าจ่ายเงินต้องได้ Q)
             //
             // 🛡️ (2026-05-20 hotfix v2) Strip TYPE token — bulletproof variant
@@ -277,7 +296,7 @@ class CelticCrossService
             //
             // detection ก่อน strip — จับ type จาก response ดิบ
             $responseType = 'A';
-            if (preg_match('/TYPE\s*[:：]\s*([A-D])/iu', $response, $tm)) {
+            if (preg_match('/TYPE\s*[:：]\s*([A-E])/iu', $response, $tm)) {
                 $responseType = strtoupper($tm[1]);
             }
 
@@ -288,7 +307,7 @@ class CelticCrossService
             //   - bracket: [ ] หรือ 【 】 หรือ ［ ］ (fullwidth) หรือไม่มี bracket
             //   - markdown wrapper: ** ** หรือ * * หรือ ` ` รอบ token
             //   - colon: : (ASCII) หรือ ： (fullwidth)
-            $typeStripPattern = '/[`*]{0,3}[\[\【\［\「]?\s*TYPE\s*[:：]\s*[A-D]\s*[\]\】\］\」]?[`*]{0,3}/iu';
+            $typeStripPattern = '/[`*]{0,3}[\[\【\［\「]?\s*TYPE\s*[:：]\s*[A-E]\s*[\]\】\］\」]?[`*]{0,3}/iu';
             $response = preg_replace($typeStripPattern, '', $response);
 
             // Cleanup leftover whitespace + empty lines
@@ -556,7 +575,7 @@ class CelticCrossService
             //   มาทุก turn แต่ path admin นี้เดิมไม่ strip → [TYPE:A] หลุดโผล่หน้าลูกค้า
             //   ใช้ pattern เดียวกับ askQuestion (รองรับ fullwidth bracket/markdown wrapper)
             $response = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{00A0}]/u', '', (string) $response);
-            $response = trim((string) preg_replace('/[`*]{0,3}[\[\【\［\「]?\s*TYPE\s*[:：]\s*[A-D]\s*[\]\】\］\」]?[`*]{0,3}/iu', '', (string) $response));
+            $response = trim((string) preg_replace('/[`*]{0,3}[\[\【\［\「]?\s*TYPE\s*[:：]\s*[A-E]\s*[\]\】\］\」]?[`*]{0,3}/iu', '', (string) $response));
 
             // 🔢 (2026-06-05 v2) Strip token คำถามแนะนำ — buildFollowupPrompt มี directive คำถามแนะนำ
             //   admin path ไม่สร้างปุ่มแนะนำ → แค่ลบ token กันรั่วหน้าลูกค้า + DB + bridge
@@ -1394,6 +1413,7 @@ class CelticCrossService
             ."• *[TYPE:C]* = แค่ทักทาย/ตอบรับ ไม่มีเนื้อคำถาม — \"พร้อม\" \"ค่ะ\" \"โอเค\" \"เริ่มเลย\" \"อืม\" → ตอบสั้น 40-80 ตัวอักษร *ชวนถามว่าอยากรู้เรื่องอะไร* (ห้ามทำนาย, **ห้ามเดาเรื่องเอง**) *(ไม่นับ)*\n"
             ."• *[TYPE:D]* = เล่าเรื่อง/ให้บริบท ยังไม่มีคำถาม → ฟัง + ชวนถามต่อสั้น ๆ *(ไม่นับ)*\n"
             ."• *[TYPE:B]* = ระบายล้วน ไม่มีคำถาม (\"เหนื่อยจัง\") → ปลอบสั้น *(ไม่นับ)*\n"
+            ."• *[TYPE:E]* = ถาม *บริการ/ราคา/วิธีใช้/ขั้นตอน/ทั่วไป* ที่ไม่ใช่การขอดูไพ่ทำนาย (เช่น \"99฿ ได้กี่คำถาม\" \"กี่นาที\" \"เก็บคำทำนายไว้ได้ไหม\" \"ทักแอดมินยังไง\") → ตอบจากบล็อก *📚 ตัวอย่างคำตอบของแอดมิน* (ถ้าแนบมาท้าย prompt — ยึดเนื้อหานั้น ไม่เดาเอง) ไม่มีก็ตอบสุภาพสั้น ๆ แล้วชวนกลับมาทำนายต่อ *(ไม่นับโควต้า)*\n"
             ."🚫 *ห้ามเดาเรื่องที่เจ้าชะตายังไม่ได้บอก* — ถ้ายังไม่รู้ว่าจะถามอะไร (เช่น ทักว่า \"พร้อม\") → `[TYPE:C]` ถามกลับ ห้ามสุ่มทำนายเรื่องรัก/งาน/เงินเอง (ฟอร์มทำนายเต็มใช้กับ [TYPE:A] เท่านั้น)\n"
             ."⚠️ ไม่แน่ใจ A หรือไม่ → เลือก *A* (ลูกค้าจ่าย 99฿ ควรได้ทำนาย)\n\n";
 
@@ -1958,7 +1978,11 @@ class CelticCrossService
             ."   → ⚖️ *กฎแยก A vs D*: ข้อความ *ขึ้นเรื่องใหม่/ถามชัด* = A / *เป็นส่วนต่อของเรื่องที่กำลังคุย หรือตอบสิ่งที่แม่หมอเพิ่งถาม* = D\n"
             ."   → ถ้าเล่าจบลงด้วยคำถามใหม่ → จัดเป็นแบบ [A] วิเคราะห์ด้วยไพ่ + ใช้ `[TYPE:A]`\n\n"
 
-            ."⚠️ *กฎสำคัญเรื่อง TOKEN*: ทุกคำตอบต้องขึ้นต้นด้วย `[TYPE:X]` (X = A/B/C/D)\n"
+            ."📌 *[E] ถามเรื่องบริการ/ราคา/วิธีใช้/ขั้นตอน/ทั่วไป ที่ไม่ใช่การขอดูไพ่* — \"99฿ ได้กี่คำถาม\" \"เหลือกี่นาที\" \"เก็บคำทำนายไว้ได้ไหม\" \"ทักแอดมินยังไง\"\n"
+            ."   → ตอบจากบล็อก *📚 ตัวอย่างคำตอบของแอดมิน* (ถ้าแนบมาท้าย prompt) — ยึดเนื้อหานั้นเป็นหลัก ไม่เดาเอง. ไม่มีบล็อก → ตอบสุภาพสั้น ๆ ตามจริง\n"
+            ."   → **ขึ้นต้นด้วย token `[TYPE:E]`** (ไม่นับโควต้า) แล้วชวนกลับมาทำนายต่อ \"แล้วอยากให้แม่หมอทำนายเรื่องไหนต่อคะ\"\n\n"
+
+            ."⚠️ *กฎสำคัญเรื่อง TOKEN*: ทุกคำตอบต้องขึ้นต้นด้วย `[TYPE:X]` (X = A/B/C/D/E)\n"
             ."   • ระบบจะ *ลบ token ออกก่อนส่งให้เจ้าชะตา* — เจ้าชะตาไม่เห็น\n"
             ."   • ระบบใช้ token เพื่อ *นับ quota* — เฉพาะ TYPE:A นับเป็นคำถามทำนาย (ลูกค้าจ่าย 99฿)\n"
             ."   • ถ้าลืมใส่ token → ระบบ default เป็น TYPE:A (จะนับเป็นคำถามทำนาย)\n\n"

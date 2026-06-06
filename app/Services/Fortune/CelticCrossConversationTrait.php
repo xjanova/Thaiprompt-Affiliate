@@ -2065,7 +2065,7 @@ trait CelticCrossConversationTrait
      */
     protected function buildCelticSuggestionBox(array $questions): string
     {
-        $box = "🔮 อยากให้แม่หมอเปิดไพ่ *เรื่องไหนต่อ* ดีคะ — กดเลขเลือกได้เลย\n\n";
+        $box = "🔮 อยากให้แม่หมอทำนาย *เรื่องไหนต่อ* ดีคะ — กดเลขเลือกได้เลย\n\n";
         foreach ($questions as $i => $q) {
             $num = $i === 0 ? '1️⃣' : '2️⃣';
             $box .= "{$num} {$q}\n";
