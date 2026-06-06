@@ -747,6 +747,22 @@ class FortuneChannelManager
                     return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
                 })(),
 
+                // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมโอน/ยกเลิก)
+                'consent_gate' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    $imageUrl = $result['consent_image_url'] ?? null;
+                    $buttons = $result['quick_replies'] ?? [];
+                    if (! empty($imageUrl)) {
+                        try {
+                            $fbService->sendImage($userId, $imageUrl);
+                            usleep(400000); // ให้รูปมาก่อน text
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning('Fortune: consent image FB send failed', ['error' => $e->getMessage()]);
+                        }
+                    }
+
+                    return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+                })(),
+
                 // 💰 (2026-05-08) Pricing menu — ส่งกล่องราคา + ปุ่มเริ่มดูดวงทันที
                 //   trigger เมื่อลูกค้าถาม "ราคา/อัตรา/กี่บาท" (ไม่ต้องอยู่ใน fortune flow)
                 'pricing_menu' => (function () use ($fbService, $userId, $message, $result, $extra) {
@@ -1977,6 +1993,26 @@ class FortuneChannelManager
                     ['label' => '🔄 เช็คอีกครั้ง', 'text' => 'เช็คสถานะ'],
                     ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                 ]),
+
+                // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมโอน/ยกเลิก)
+                'consent_gate' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $imageUrl = $result['consent_image_url'] ?? null;
+                    // แปลง quick_replies (FB format: title/text) → LINE format (label/text)
+                    $lineQr = [];
+                    foreach (($result['quick_replies'] ?? []) as $b) {
+                        $lineQr[] = [
+                            'label' => mb_substr($b['title'] ?? '', 0, 20),
+                            'text' => $b['text'] ?? ($b['title'] ?? ''),
+                        ];
+                    }
+
+                    if (! empty($imageUrl)) {
+                        // รูป + คำเตือน + ปุ่ม ในชุดเดียว
+                        return $lineService->sendImageAndText($userId, $imageUrl, $message, $lineQr);
+                    }
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
+                })(),
 
                 // บิลหมดอายุ → Flex แจ้ง + ปุ่มเริ่มใหม่
                 'payment_expired' => $this->sendLinePaymentExpiredResponse($lineService, $userId, $result, $replyToken),

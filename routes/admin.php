@@ -73,6 +73,7 @@ use App\Http\Controllers\Admin\FortuneCelticCrossController;
 use App\Http\Controllers\Admin\FortuneChannelController;
 use App\Http\Controllers\Admin\FortuneCommissionController;
 use App\Http\Controllers\Admin\FortuneDebugToolsController;
+use App\Http\Controllers\Admin\FortuneConsentController;
 use App\Http\Controllers\Admin\FortuneHoroscopeController;
 use App\Http\Controllers\Admin\FortuneKnowledgeController;
 use App\Http\Controllers\Admin\FortuneMarketingController;
@@ -4099,6 +4100,19 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{banner}/toggle', [FortuneBannerController::class, 'toggle'])->name('toggle');
         Route::post('/reorder', [FortuneBannerController::class, 'reorder'])->name('reorder');
         Route::post('/settings', [FortuneBannerController::class, 'saveSettings'])->name('settings');
+    });
+
+    // 📜 (2026-06-06) กติกาก่อนจองคิว (Consent Gate) — รูป + คำเตือน + เตือนตอนยกเลิก
+    Route::prefix('consent')->name('consent.')->group(function () {
+        Route::get('/', [FortuneConsentController::class, 'index'])->name('index');
+        Route::post('/settings', [FortuneConsentController::class, 'saveSettings'])->name('settings');
+        Route::get('/create', [FortuneConsentController::class, 'create'])->name('create');
+        Route::post('/', [FortuneConsentController::class, 'store'])->name('store');
+        Route::get('/{consent}/edit', [FortuneConsentController::class, 'edit'])->name('edit');
+        Route::put('/{consent}', [FortuneConsentController::class, 'update'])->name('update');
+        Route::delete('/{consent}', [FortuneConsentController::class, 'destroy'])->name('destroy');
+        Route::post('/{consent}/toggle', [FortuneConsentController::class, 'toggle'])->name('toggle');
+        Route::post('/reorder', [FortuneConsentController::class, 'reorder'])->name('reorder');
     });
 
     // 💬 ข้อความชวนดูดวง (สุ่ม) — ส่งแทนรูปเมื่อลูกค้าได้รูปในสัปดาห์นี้แล้ว

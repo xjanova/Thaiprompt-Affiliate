@@ -217,6 +217,12 @@ class FortuneTellingSetting extends Model
         'banner_send_on_reaction',
         'banner_send_on_comment',
         'banner_send_on_welcome',
+        // 📜 Consent Gate — กติกาก่อนจองคิว (2026-06-06)
+        'fortune_consent_enabled',
+        'fortune_consent_pick_strategy',
+        'fortune_consent_text',
+        'fortune_consent_cancel_enabled',
+        'fortune_consent_cancel_text',
         // 🧠 Discovery Chat Mode (2026-04-28)
         'enable_discovery_chat',
         'discovery_chat_max_turns',
@@ -418,6 +424,9 @@ class FortuneTellingSetting extends Model
         'banner_send_on_reaction' => 'boolean',
         'banner_send_on_comment' => 'boolean',
         'banner_send_on_welcome' => 'boolean',
+        // 📜 Consent Gate (2026-06-06)
+        'fortune_consent_enabled' => 'boolean',
+        'fortune_consent_cancel_enabled' => 'boolean',
         // 🔮 Daily Horoscope Per Day toggle
         'daily_horoscope_per_day_enabled' => 'boolean',
         // 🌙 Mystic Content
@@ -560,6 +569,11 @@ class FortuneTellingSetting extends Model
         'banner_send_on_reaction' => true,
         'banner_send_on_comment' => true,
         'banner_send_on_welcome' => true,
+        // 📜 Consent Gate — กติกาก่อนจองคิว (default เปิด)
+        'fortune_consent_enabled' => true,
+        'fortune_consent_pick_strategy' => 'random',
+        'fortune_consent_cancel_enabled' => true,
+        // fortune_consent_text / fortune_consent_cancel_text → null = ใช้ default*() ใน model
         // 🔮 Daily Horoscope Per Day — ปิดเป็น default หลัง deploy v3 (2026-04-29)
         'daily_horoscope_per_day_enabled' => false,
         // 🌙 Mystic Content — ค่าเริ่มต้น (admin ต้องเปิด toggle ก่อนใช้งาน)
@@ -720,6 +734,114 @@ class FortuneTellingSetting extends Model
     public static function clearSettingsCache(): void
     {
         static::$cachedInstance = null;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // 📜 Consent Gate — กติกาก่อนจองคิว (2026-06-06)
+    // ════════════════════════════════════════════════════════════
+
+    /**
+     * เปิดใช้กล่องกติกาก่อนสร้างบิลหรือไม่
+     */
+    public function isConsentEnabled(): bool
+    {
+        return (bool) ($this->fortune_consent_enabled ?? true);
+    }
+
+    /**
+     * เปิดเตือนสติ + ส่งรูปตอนลูกค้ากดยกเลิกบิลหรือไม่
+     */
+    public function isConsentCancelEnabled(): bool
+    {
+        return (bool) ($this->fortune_consent_cancel_enabled ?? true);
+    }
+
+    /**
+     * ข้อความกติกา (แอดมินแก้ได้ — ว่าง = ใช้ default)
+     */
+    public function getConsentText(): string
+    {
+        $text = trim((string) ($this->fortune_consent_text ?? ''));
+
+        return $text !== '' ? $text : self::defaultConsentText();
+    }
+
+    /**
+     * ข้อความเตือนตอนลูกค้ายกเลิกบิล (แอดมินแก้ได้ — ว่าง = ใช้ default)
+     */
+    public function getConsentCancelText(): string
+    {
+        $text = trim((string) ($this->fortune_consent_cancel_text ?? ''));
+
+        return $text !== '' ? $text : self::defaultConsentCancelText();
+    }
+
+    /**
+     * ข้อความกติกาเริ่มต้น (ใช้เมื่อแอดมินยังไม่ตั้งค่า)
+     */
+    public static function defaultConsentText(): string
+    {
+        return <<<'TXT'
+🔮 กติกาก่อน "จองคิว" รับการทำนาย 🔮
+โปรดอ่านให้จบทุกบรรทัด ก่อนกดยืนยัน 🙏
+
+━━━━━━━━━━━━━━━
+📿 ๑. นี่คือการ "จองคิว" — ต้องชำระค่าครูก่อน
+เมื่อกดยืนยัน เจ้าชะตากำลังจองคิวกับแม่หมอ
+และต้องชำระ "ค่าครู" ก่อน ไพ่จึงจะถูกเปิด
+
+‼️ ถ้ายังไม่พร้อมจ่าย — อย่าเพิ่งกดยืนยัน
+การจองแล้วทิ้ง = แย่งคิวคนที่ตั้งใจดูจริง
+ทำให้เขาถูกเลื่อนออกไป สิ่งนี้คือ "กรรม"
+และจะดึงให้พลังงานโชค-วาสนาของเจ้าชะตาเอง
+เลื่อนถอยตามออกไปด้วย ⚠️
+
+━━━━━━━━━━━━━━━
+🕯️ ๒. กติกาการถาม
+• ถามทีละคำถาม ช้าๆ ใจเย็น — ❌ ห้ามถามรัว
+• พิมพ์คำถามให้ครบจบในข้อความเดียว
+  ❌ อย่าพิมพ์ทีละนิดทีละหน่อยส่งหลายครั้ง (ไพ่จะอ่านสับสน)
+• รอบนี้ถามได้ ๕ คำถาม ภายใน ๑๕ นาที
+  ครบเมื่อใด แม่หมอจะสรุปดวงปิดรอบให้เอง
+
+━━━━━━━━━━━━━━━
+🪬 ๓. เรื่องคุณไสย / มนต์ดำ / โดนของ
+• ถ้าจะถามเรื่องนี้ "ต้องถามเป็นคำถามแรก" เท่านั้น
+• เพราะแม่หมอต้องล็อกพลังไพ่ทั้งสำรับ ทะลุของ
+  และกันผลร้ายย้อนกลับมาหาเจ้าชะตาและแม่หมอ
+• เปิดเรื่องนี้แล้ว = ทั้งรอบถามได้แต่เรื่องนี้
+  จะปนเงิน/รัก/งานไม่ได้ ต้องเปิดรอบใหม่
+
+━━━━━━━━━━━━━━━
+🙏 คำเตือนสุดท้าย
+อย่าล้อเล่นกับดวง กับครูบาอาจารย์
+ผู้ใดล้อเล่นกับสิ่งศักดิ์สิทธิ์ ชีวิตก็จะล้อเล่นกับผู้นั้น
+มาด้วยใจศรัทธาและจริงจัง ดวงจึงจะเปิดทางให้ ✨
+
+━━━━━━━━━━━━━━━
+พร้อมด้วยใจจริงและเข้าใจกติกาครบแล้ว
+จึงกดปุ่ม "พร้อมโอนค่าครู" ด้านล่าง เพื่อรับ QR ค่ะ
+TXT;
+    }
+
+    /**
+     * ข้อความเตือนตอนยกเลิกบิลเริ่มต้น (เจตนาเบี้ยว — ไม่ใช่เหตุสุดวิสัย)
+     */
+    public static function defaultConsentCancelText(): string
+    {
+        return <<<'TXT'
+⚠️ เจ้าชะตาคะ — บิลนี้ถูกยกเลิกแล้ว
+
+แม่หมอแจ้งกติกาก่อนสร้างบิลไว้ชัดแล้วว่า
+"ถ้ายังไม่พร้อมโอนค่าครู อย่าเพิ่งกดสร้างบิล" 🙏
+
+การกดจองคิวแล้วทิ้ง ทำให้คิวเต็มโดยเปล่า —
+คนที่ตั้งใจดูจริงต้องเสียเวลา เสียโอกาส และถูกเลื่อนออกไป
+สิ่งนี้ย่อมส่งผลย้อนกลับมาเป็น "กรรม" ต่อดวงและวาสนาของเจ้าชะตาเอง
+
+คราวหน้า เมื่อพร้อมโอนค่าครูจริง ค่อยกดสร้างบิลนะคะ
+แล้วแม่หมอจะเปิดไพ่ให้เต็มกำลัง ✨
+TXT;
     }
 
     /**

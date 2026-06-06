@@ -35,6 +35,7 @@ class FortuneConversationService
     use \App\Services\Fortune\FreeCardConversationTrait;
     use \App\Services\Fortune\PayFirstGateTrait;
     use \App\Services\Fortune\ProSessionTrait;
+    use \App\Services\Fortune\FortuneConsentGateTrait;
 
     /**
      * 🔔 Per-request warning prefix — set by payFirstGate, applied by FortuneChannelManager
@@ -766,6 +767,16 @@ class FortuneConversationService
                 Log::warning('Fortune: in-prediction guard fail (non-blocking)', [
                     'error' => $inPredErr->getMessage(),
                 ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // 📜 (2026-06-06) Consent Gate accept — ลูกค้ากด "พร้อมโอนค่าครู" จากกล่องกติกา
+            //   มี Cache pending guard (ทำงานเฉพาะตอนมีกล่องกติกาค้าง) → set ok flag → re-dispatch
+            //   วางหลัง in-prediction guard: ลูกค้าจ่ายแล้ว/กำลังทำนาย จะถูกดักไปก่อน ไม่ถึงตรงนี้
+            // ═══════════════════════════════════════════════════════════════
+            $consentAccept = $this->handleConsentAcceptIfPending($facebookUserId, $messageText, $userProfile);
+            if ($consentAccept !== null) {
+                return $consentAccept;
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -2047,7 +2058,8 @@ class FortuneConversationService
                             ];
                         }
 
-                        $this->closeAllActiveConversations($facebookUserId);
+                        // 📜 (2026-06-06) ส่ง messageText → sendCancelConsentOrWakeup แยกเจตนา (เบี้ยว vs สุดวิสัย)
+                        $this->closeAllActiveConversations($facebookUserId, $messageText);
 
                         return [
                             'action' => 'cancelled',
@@ -3795,7 +3807,7 @@ class FortuneConversationService
      * ป้องกัน orphan conversations ที่ทำให้ findActiveConversation() สับสน
      * เรียกก่อนสร้าง conversation ใหม่เสมอ
      */
-    protected function closeAllActiveConversations(string $facebookUserId): int
+    protected function closeAllActiveConversations(string $facebookUserId, ?string $cancelReasonText = null): int
     {
         // ✅ ยกเลิกบิล (UniquePaymentAmount) ของ reading ที่ pending_payment ก่อน
         // 🩹 (2026-05-08 audit fix CRIT-1) — รวม Celtic pending payment ด้วย
@@ -3887,19 +3899,9 @@ class FortuneConversationService
             if ($pendingReadings->isNotEmpty()) {
                 try {
                     foreach ($pendingReadings as $cancelledReading) {
-                        $wakeupMessage = FortuneReading::buildCancelWakeupMessage(
-                            $cancelledReading,
-                            'user_cancelled'
-                        );
-                        $platform = $cancelledReading->platform ?? 'facebook';
-                        $userId = $cancelledReading->platform_user_id ?? $cancelledReading->facebook_user_id;
-
-                        if (! empty($userId)) {
-                            $platformService = app(FortuneChannelManager::class)->getPlatform($platform);
-                            if ($platformService) {
-                                $platformService->sendMessage($userId, $wakeupMessage);
-                            }
-                        }
+                        // 📜 (2026-06-06) แยกเจตนา: ฝืนกติกา/เบี้ยว → รูป + เตือนแรง /
+                        //   เหตุสุดวิสัย (โอนไม่ได้) หรือ flow-internal ($cancelReasonText=null) → wakeup เดิม
+                        $this->sendCancelConsentOrWakeup($cancelledReading, $cancelReasonText);
                     }
                 } catch (\Throwable $wakeupErr) {
                     Log::warning('Fortune: ส่งคำเตือนสติ user_cancelled ล้มเหลว (best-effort)', [
@@ -7582,6 +7584,12 @@ class FortuneConversationService
 
                 return $this->foreignServiceClosedResponse();
             }
+        }
+
+        // 📜 (2026-06-06) Consent Gate — กล่องกติกาก่อนสร้างบิล Deep 39 (safety net "ทุกบิลเสียเงิน")
+        //   Deep = Pay-First (createPaymentBill ตรง ไม่ collect ก่อน) → re-dispatch หลังกดยอมรับปลอดภัย
+        if ($fcUserId && ($consentGate = $this->consentGateOrNull((string) $fcUserId, 'deep', $reading))) {
+            return $consentGate;
         }
 
         try {

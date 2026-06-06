@@ -702,6 +702,13 @@ trait CelticCrossConversationTrait
             }
         }
 
+        // 📜 (2026-06-06) Consent Gate — กล่องกติกาก่อนสร้างบิล Celtic 99
+        //   ครอบทุกทางเข้า (กดปุ่ม/พิมพ์ "99"/"celtic") — มาก่อนเลือกวิธีชำระ + ก่อน UPA
+        //   เด้งทุกครั้ง (Cache::pull กิน flag) เว้นเพิ่งกด "พร้อมโอนค่าครู" / ลูกค้าจ่ายแล้ว
+        if ($fcUserId && ($consentGate = $this->consentGateOrNull((string) $fcUserId, 'celtic', $reading))) {
+            return $consentGate;
+        }
+
         // 💳 (2026-05-22) Payment method matrix:
         //   - both / stripe_only → ถามวิธีชำระก่อน
         //   - sms_only / none → ไป QR Thai (createPaymentBill ด้านล่าง) ตรงเลย
@@ -937,7 +944,8 @@ trait CelticCrossConversationTrait
         if ($this->matchesExactKeyword($messageText, ['ยกเลิก', 'cancel', 'stop', 'ไม่จ่าย'])) {
             $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
             if (! empty($userId) && method_exists($this, 'closeAllActiveConversations')) {
-                $this->closeAllActiveConversations($userId);
+                // 📜 (2026-06-06) ส่ง messageText → แยกเจตนายกเลิก (เบี้ยว → รูป+เตือนแรง / สุดวิสัย → ปกติ)
+                $this->closeAllActiveConversations($userId, $messageText);
             } else {
                 $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
             }
