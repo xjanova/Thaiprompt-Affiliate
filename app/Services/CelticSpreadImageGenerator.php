@@ -18,10 +18,10 @@ use Illuminate\Support\Facades\Log;
  *               [9]
  *      [3]      [8]      ← Staff (right column, bottom-up: 7,8,9,10)
  *               [7]
- * [5] [1+2] [6]
+ * [5] [1] [2]  [6]
  *      [4]
  *
- * Position 2 ทับ Position 1 หมุน 90° (ลายไพ่ "cross")
+ * Position 2 (ไพ่ขวาง หมุน 90°) วางถัดจาก Position 1 ทางขวา — แยกกัน ไม่ทับแล้ว
  * ไพ่กลับหัว = หมุน 180°
  */
 class CelticSpreadImageGenerator
@@ -31,8 +31,9 @@ class CelticSpreadImageGenerator
 
     protected const CANVAS_H = 1500;
 
-    // Card size (standard tarot proportion 5:8)
-    protected const CARD_W = 130;
+    // Card size — 🃏 (2026-06-08) อัตราส่วน 9:16 ให้ตรงกับไพ่ที่ออกแบบใหม่ (เดิม 5:8 = 130×208)
+    //   drawCard scale แบบ contain อยู่แล้ว → รูป 9:16 พอดีกรอบ ไม่ครอป ไม่บีบ
+    protected const CARD_W = 117; // = 208 × 9 / 16 ≈ 117
 
     protected const CARD_H = 208;
 
@@ -40,11 +41,11 @@ class CelticSpreadImageGenerator
     protected const POSITIONS = [
         // Cross (left side, around center 380, 750)
         1 => ['x' => 380, 'y' => 750, 'rotation' => 0],   // ใจกลาง
-        2 => ['x' => 380, 'y' => 750, 'rotation' => 90],  // ทับ 1 หมุน 90° (lying horizontal)
+        2 => ['x' => 560, 'y' => 750, 'rotation' => 90],  // 🃏(2026-06-08) ไพ่ขวาง (หมุน 90°) ขยับมาขวา ไม่ทับใบ 1
         3 => ['x' => 380, 'y' => 460, 'rotation' => 0],   // เหนือ
         4 => ['x' => 380, 'y' => 1040, 'rotation' => 0],  // ใต้
         5 => ['x' => 180, 'y' => 750, 'rotation' => 0],   // ซ้าย (อดีต)
-        6 => ['x' => 580, 'y' => 750, 'rotation' => 0],   // ขวา (อนาคต)
+        6 => ['x' => 760, 'y' => 750, 'rotation' => 0],   // ขวา (อนาคต) — ขยับขวาเปิดที่ให้ใบ 2
         // Staff (right column, bottom-up: 7,8,9,10)
         7 => ['x' => 920, 'y' => 1230, 'rotation' => 0],
         8 => ['x' => 920, 'y' => 990, 'rotation' => 0],
@@ -266,7 +267,8 @@ class CelticSpreadImageGenerator
         imagedestroy($resized);
 
         // วาดเลข position ใต้ไพ่
-        $this->drawPositionNumber($canvas, $coords['x'], $coords['y'] + (self::CARD_H / 2) + 22, $position, $isReversed);
+        // 🃏 (2026-06-08) ใช้ความสูงจริงหลังหมุน ($finalH) — ไพ่ขวาง (ใบ 2) เตี้ยกว่า เลขจะได้ไม่ลอยห่างจากไพ่
+        $this->drawPositionNumber($canvas, $coords['x'], $coords['y'] + intdiv($finalH, 2) + 22, $position, $isReversed);
     }
 
     /**

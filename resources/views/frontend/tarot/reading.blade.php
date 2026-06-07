@@ -606,7 +606,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Create card meshes with textures
     function createCards() {
-        const cardWidth = 3;
+        // 🃏 (2026-06-08) อัตราส่วน 9:16 ให้ตรงรูปไพ่ใหม่ (เดิม 3×4.5 = 2:3 → รูป 9:16 ถูกบีบแนวนอน)
+        //   หุบความกว้างแทนเพิ่มความสูง → กล้อง/แนวตั้งของฉากไม่กระทบ
+        const cardWidth = 2.53; // = 4.5 × 9 / 16 ≈ 2.53
         const cardHeight = 4.5;
         const cardDepth = 0.1;
         const spacing = cardWidth + 1.5;

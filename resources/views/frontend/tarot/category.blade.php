@@ -250,9 +250,10 @@
                     </svg>
                     รูปหลังไพ่
                 </p>
+                {{-- 🃏 (2026-06-08) 9:16 + object-contain แสดงหลังไพ่เต็มใบไม่ขาด --}}
                 <img src="{{ $cardBackImage->image_url ?? asset('images/tarot/card-back-default.png') }}"
                      alt="Card Back"
-                     class="w-16 h-24 rounded-lg shadow-lg ring-2 ring-purple-500/30 object-cover">
+                     class="w-[54px] h-24 rounded-lg shadow-lg ring-2 ring-purple-500/30 object-contain">
             </div>
         </div>
     </div>
