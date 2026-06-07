@@ -85,7 +85,7 @@ trait FortuneConsentGateTrait
      *
      * @param  string  $tier  'celtic' | 'deep'
      */
-    protected function buildConsentGateResponse(string $tier, ?FortuneReading $reading = null): array
+    protected function buildConsentGateResponse(string $tier, ?FortuneReading $reading = null, bool $reshow = false): array
     {
         // ราคาค่าครูตาม tier (ดึงจริง ไม่ฮาร์ดโค้ด)
         $price = $tier === 'celtic'
@@ -93,23 +93,32 @@ trait FortuneConsentGateTrait
             : (int) $this->getDeepReadingPrice();
 
         // รูปสุ่ม scope=consent (อาจไม่มี → ส่งแค่ text)
+        // 🩹 (2026-06-07) $reshow=true → เด้งกล่องซ้ำเพราะลูกค้าพิมพ์ข้อความไม่ชัดที่กล่องกติกา
+        //   → ไม่ส่งรูปซ้ำ (กัน spam + ประหยัดโทเค็น) ส่งแค่ข้อความย้ำ + ปุ่ม
         $imageUrl = null;
-        try {
-            $img = FortuneConsentImage::pickByStrategy(
-                $this->settings->fortune_consent_pick_strategy ?? 'random',
-                FortuneConsentImage::SCOPE_CONSENT
-            );
-            if ($img) {
-                $imageUrl = $img->image_url;
-                $img->recordSend();
+        if (! $reshow) {
+            try {
+                $img = FortuneConsentImage::pickByStrategy(
+                    $this->settings->fortune_consent_pick_strategy ?? 'random',
+                    FortuneConsentImage::SCOPE_CONSENT
+                );
+                if ($img) {
+                    $imageUrl = $img->image_url;
+                    $img->recordSend();
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Fortune: consent image pick failed (non-blocking)', ['error' => $e->getMessage()]);
             }
-        } catch (\Throwable $e) {
-            Log::warning('Fortune: consent image pick failed (non-blocking)', ['error' => $e->getMessage()]);
         }
+
+        // 🩹 (2026-06-07) reshow → ข้อความสั้นย้ำให้กดปุ่ม (ลูกค้าเห็นกติกาเต็มไปแล้วรอบแรก)
+        $message = $reshow
+            ? "🙏 ก่อนเริ่มดูดวง รบกวนกดปุ่มยืนยันด้านล่างก่อนนะคะ — \"💎 พร้อมโอนค่าครู {$price}฿\" หรือ \"🙏 ยังไม่พร้อม\""
+            : $this->settings->getConsentText();
 
         return [
             'action' => 'consent_gate',
-            'message' => $this->settings->getConsentText(),
+            'message' => $message,
             'consent_image_url' => $imageUrl,
             'quick_replies' => [
                 // 🛡️ ต้องมีทั้ง 'text' (LINE ใช้) และ 'payload' (FB ใช้ payload ?? title — ไม่อ่าน text)
@@ -138,7 +147,29 @@ trait FortuneConsentGateTrait
         }
 
         if (! $this->matchesConsentAccept($messageText)) {
-            return null; // ไม่ใช่การกดยอมรับ → ปล่อยไหล flow ปกติ (เช่นพิมพ์ยกเลิก)
+            // 🩹 (2026-06-07) Consent-gate fall-through guard — กันบั๊ก "บอทขอวันเกิด"
+            //   ราก: startDeepReadingFlow สร้าง reading ด้วย default status=collecting_birthdate
+            //   (FortuneConversationService:5427) + doStartCelticCrossFlow → consentGateOrNull
+            //   return ก่อน update status เป็น celtic (CelticCrossConversationTrait:708)
+            //   → reading ค้างที่ collecting_birthdate. ถ้าลูกค้าพิมพ์ข้อความที่ไม่ใช่ยอมรับ/
+            //   ไม่ใช่ยกเลิก ที่กล่องกติกา → router ตามสถานะ → handleBirthdateInput → ขอวันเกิด
+            //   (ผิด! Celtic = card-first ไม่ใช้วันเกิด) — เคสจริง: ลูกค้าอามร reading 5204
+            //   พิมพ์ "งั้นรอคนโอนออกมาก่อนนะคะ" → บอทขอวันเกิด
+            //
+            //   - cancel/ปฏิเสธ (ยกเลิก/ไม่เอา/เลิก/หยุด) → return null ให้ isCancelRequest
+            //     (processMessage:1989) จัดการ cancel + คำเตือนตามเดิม
+            //   - ข้อความอื่น → เด้งกล่องกติกาซ้ำ (ย้ำให้กดปุ่ม) ไม่ปล่อย leak ไปขอวันเกิด
+            if ($this->isCancelRequest($messageText)) {
+                return null;
+            }
+
+            Log::info('Fortune: consent gate ค้าง + ข้อความไม่ชัด → เด้งกล่องกติกาซ้ำ (กัน leak ไปขอวันเกิด)', [
+                'user_id' => $uid,
+                'tier' => $pendingTier,
+                'text_preview' => mb_substr($messageText, 0, 40),
+            ]);
+
+            return $this->buildConsentGateResponse($pendingTier, null, true);
         }
 
         // ตั้ง flag one-shot + เคลียร์ pending
