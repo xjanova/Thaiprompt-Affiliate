@@ -7040,6 +7040,36 @@ class FortuneConversationService
      */
     protected function routePayFirstDeep(FortuneReading $reading, bool $skipPaymentGate = false): array
     {
+        // 🛡️ (2026-06-07) Deep ปิดอยู่ → ห้ามสร้างบิล 39 ทุกกรณี (top-guard chokepoint)
+        //   เคสจริง: reading 5162 (ลูกค้า "ตัวประกอบ เมืองสตูล") ได้บิล 39.30 ทั้งที่ Deep ปิด
+        //   vector: ปุ่ม/postback "tier_deep_39" หรือพิมพ์ "39" เก่าค้างใน Messenger →
+        //     handleTierChoice deep branch (CelticCrossConversationTrait:536) /
+        //     startDeepReadingFlow(forceTier='deep', FCS:5474) → routePayFirstDeep (ไม่เช็ค toggle)
+        //   FIX: Deep ปิด + Celtic เปิด → redirect Celtic 99 (เหมือน default guard FCS:5505) /
+        //        ทั้งคู่ปิด → service closed. (paid/in-prediction ถูกกันที่ chokepoint ก่อนหน้า —
+        //        จุดนี้เป็น pre-payment เสมอ ปลอดภัยที่จะเปลี่ยนเส้นทาง)
+        if (! $this->settings->isDeepReadingEnabled()) {
+            if ($this->settings->enable_celtic_cross ?? false) {
+                Log::info('Fortune: routePayFirstDeep แต่ Deep ปิด → redirect Celtic (กันบิล 39)', [
+                    'reading_id' => $reading->id,
+                    'facebook_user_id' => $reading->facebook_user_id ?? $reading->platform_user_id,
+                ]);
+
+                return $this->startCelticCrossFlow($reading);
+            }
+
+            Log::info('Fortune: routePayFirstDeep แต่ Deep + Celtic ปิดทั้งคู่ → service closed', [
+                'reading_id' => $reading->id,
+            ]);
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return [
+                'action' => 'deep_reading_disabled',
+                'message' => '🙏 ขออภัยค่ะ ขณะนี้บริการดูดวงปิดปรับปรุงชั่วคราว เดี๋ยวแม่หมอจันทรากลับมาให้บริการใหม่นะคะ ✨',
+                'reading' => $reading,
+            ];
+        }
+
         $mode = $this->getActivePaymentMode();
 
         // ⚡ (2026-05-25) skip_payment_gate (จาก postback button) → QR ไทยเลย ไม่ถาม "QR/บัตร?"
