@@ -27,6 +27,20 @@ class AppServiceProvider extends ServiceProvider
 
         // Register StakingService as singleton
         $this->app->singleton(\App\Services\StakingService::class);
+
+        // 🌙 (2026-06-07) Bind FortuneTellingSetting → live DB row (getSettings)
+        //   ปัญหา: service ที่ constructor เป็น `?FortuneTellingSetting $settings = null`
+        //   เมื่อ resolve ผ่าน app(Service::class) โดยไม่ส่ง settings → Laravel container
+        //   auto-wire `new FortuneTellingSetting()` (empty model) แทน null → `$settings ?? getSettings()`
+        //   ใช้ empty model → อ่านค่าจาก `$attributes` default ไม่ใช่ค่าจริงใน DB
+        //   (เคสจริง: admin ตั้ง celtic_cross_max_questions=0 ใน DB แต่ app(CelticCrossService)->getMaxQuestions()=5)
+        //   แก้รวมศูนย์: bind ให้ทุก auto-wire ของ FortuneTellingSetting คืน getSettings() (DB จริง)
+        //   ปลอดภัย: ไม่มีโค้ดใช้ app(FortuneTellingSetting::class) เพื่อขอ empty model (grep แล้ว 0 จุด)
+        //   getSettings() แคช per-request + เคลียร์ที่ Queue::before อยู่แล้ว
+        $this->app->bind(
+            \App\Models\FortuneTellingSetting::class,
+            fn () => \App\Models\FortuneTellingSetting::getSettings()
+        );
     }
 
     /**
