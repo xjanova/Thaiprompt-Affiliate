@@ -611,7 +611,7 @@ class FortuneTellingSetting extends Model
         // 🌍 (2026-06-03) บริการต่างประเทศ — default เปิด (ไม่ block ใคร = พฤติกรรมเดิม)
         'enable_foreign_customer_service' => true,
         'celtic_cross_price' => 99.00,
-        'celtic_cross_max_questions' => 5, // (2026-05-23 v3) 5 คำถาม — บังคับ hard cap + บอกกติกาให้ชัด
+        'celtic_cross_max_questions' => 0, // (2026-06-07) 0 = ไม่จำกัดคำถาม ภายในเวลา 15 นาที (เดิม 5 คำถาม — ยกเลิก hard cap จำนวน)
         'celtic_cross_qa_window_minutes' => 15, // (2026-05-23 v3) 15 นาที — ลดจาก 30
         'celtic_cross_proactive_enabled' => true,
         // 🔍 (2026-05-25) Celtic enrichment — default true (admin ปิดได้ที่ admin UI)

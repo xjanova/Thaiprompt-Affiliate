@@ -556,12 +556,16 @@ trait FreeCardConversationTrait
             : null;
         // 🌙 (2026-05-24) บอกสเปคชัด — เดิม "ถามได้หลายคำถาม / ຖາມໄດ້ຫຼາຍຄຳຖາມ" (vague)
         //   ปัจจุบัน 5 คำถาม / 15 นาที (Session 2026-05-23 #7) — admin override ได้
-        $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
         $celticQaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+        // 🌙 (2026-06-07) maxQ=0 = ไม่จำกัดคำถาม → แสดง "ไม่จำกัด" แทน "0 คำถาม"
+        $celticAskTh = $celticMaxQ > 0
+            ? "ถามได้ {$celticMaxQ} คำถาม / {$celticQaWindow} นาที"
+            : "ถามได้ไม่จำกัด ภายใน {$celticQaWindow} นาที";
 
         $celticLine = $celticEnabled
             ? FortuneLocaleService::lo(
-                "🔮 *Celtic Cross {$celticPriceInt} บาท* — ไพ่ 10 ใบ ถามได้ {$celticMaxQ} คำถาม / {$celticQaWindow} นาที",
+                "🔮 *Celtic Cross {$celticPriceInt} บาท* — ไพ่ 10 ใบ {$celticAskTh}",
                 "🔮 *Celtic Cross {$celticPriceInt} ບາດ* — ໄພ່ 10 ໃບ ຖາມໄດ້ {$celticMaxQ} ຄຳຖາມ / {$celticQaWindow} ນາທີ"
             )
             : null;

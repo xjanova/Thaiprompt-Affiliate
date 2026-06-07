@@ -702,9 +702,12 @@ class FacebookRichMessageService
         $qCount = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
 
         // 🌙 (2026-05-24) Celtic spec announce — 5 คำถาม / 15 นาที (dynamic จาก settings)
-        $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
         $celticQaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
-        $celticSpec = "{$celticMaxQ} คำถาม / {$celticQaWindow} นาที";
+        // 🌙 (2026-06-07) maxQ=0 = ไม่จำกัดคำถาม → แสดง "ไม่จำกัด" แทน "0 คำถาม"
+        $celticSpec = $celticMaxQ > 0
+            ? "{$celticMaxQ} คำถาม / {$celticQaWindow} นาที"
+            : "ไม่จำกัดคำถาม ภายใน {$celticQaWindow} นาที";
 
         if ($freeEnabled) {
             if ($deepEnabled) {

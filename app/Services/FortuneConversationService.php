@@ -2462,9 +2462,9 @@ class FortuneConversationService
                     return $this->presentPricingMenu();
                 }
 
-                // 🔒 (2026-05-24) Post-Celtic 5Q cap — ลูกค้าถามต่อหลังจบ Celtic
-                //   user spec: "ใครที่ถามเกิน 5 คำถาม ก็ตอบ แม่หมอมีพลังเปิดให้ 5 คำถาม
-                //   เจ้าชะตาต้องเปิดไพ่ชุดใหม่สำหรับคำถามใหม่ ไพ่ชุดเดิมตอบจริงไม่เกิน 5 คำถาม"
+                // 🔒 (2026-05-24) Post-Celtic follow-up — ลูกค้าถามต่อหลังรอบ Celtic จบ
+                //   🌙 (2026-06-07) ยกเลิก "5Q cap" — รอบจบด้วย "เวลา 15 นาที" (ไม่จำกัดจำนวนคำถาม)
+                //     หลักการเดิมคงไว้: ไพ่ 1 ชุด = 1 รอบ → คำถามรอบใหม่ต้องเปิดไพ่ชุดใหม่
                 //   เคส: Celtic completed (Grand Finale ส่งแล้ว) → ลูกค้ายังพิมพ์ถามต่อ
                 //   ไม่ใช่ "ดูดวง" (Tier 3 จับแล้ว → flow ใหม่) + ไม่ใช่ pricing (gate จับแล้ว)
                 if ($this->looksLikeFortuneFollowupQuestion($messageText)) {
@@ -2487,8 +2487,7 @@ class FortuneConversationService
                         return [
                             'action' => 'celtic_5q_cap_followup',
                             'message' => "🌙 ต้องขออภัยนะคะ\n\n"
-                                ."แม่หมอมีพลังเปิดให้ได้เพียง *5 คำถาม* ต่อครั้งค่ะ\n"
-                                ."ไพ่ชุดเดิมตอบให้ตามจริงได้ไม่เกิน 5 คำถาม\n\n"
+                                ."รอบทำนายที่แล้วของเจ้าชะตาจบไปแล้ว — ไพ่ชุดเดิมผูกพลังไว้กับรอบนั้นค่ะ\n"
                                 ."ถ้าเจ้าชะตามีคำถามใหม่ ต้อง*เปิดไพ่ชุดใหม่*สำหรับคำถามใหม่นะคะ ✨\n\n"
                                 .'พิมพ์ "ดูดวง" เพื่อเริ่ม session ใหม่ได้เลยค่ะ 🔮',
                             'reading' => null,
@@ -4108,9 +4107,15 @@ class FortuneConversationService
             } elseif ($celticEnabled) {
                 // 🌙 (2026-05-24) Deep off + Celtic on → offer Celtic แทน "กลับมาใหม่พรุ่งนี้"
                 $celticPrice = (int) ($this->settings->celtic_cross_price ?? 99);
+                // 🌙 (2026-06-07) ถามได้ไม่จำกัด (maxQ=0) / หรือ X คำถาม ถ้า admin ตั้ง cap
+                $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
+                $celticWin = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+                $celticAskLine = $celticMaxQ > 0
+                    ? "📌 ถามได้สูงสุด {$celticMaxQ} คำถามภายใน {$celticWin} นาที\n\n"
+                    : "📌 ถามได้ไม่จำกัด ภายใน {$celticWin} นาที\n\n";
                 $message .= "🔮 *Celtic Cross 10 ใบ — {$celticPrice} บาท*\n";
                 $message .= "📌 ไพ่ 10 ใบครอบคลุมรอบด้าน — งาน ความรัก สุขภาพ\n";
-                $message .= "📌 ถามได้สูงสุด 5 คำถามภายใน 15 นาที\n\n";
+                $message .= $celticAskLine;
                 $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
             } else {
                 $message .= 'กลับมาใหม่พรุ่งนี้ได้ 🙏';
@@ -10910,11 +10915,17 @@ class FortuneConversationService
         } elseif ((bool) ($this->settings->enable_celtic_cross ?? false)) {
             // 🌙 (2026-05-24) Deep off + Celtic on → offer Celtic แทนข้อความปิด
             $celticPrice = (int) ($this->settings->celtic_cross_price ?? 99);
+            // 🌙 (2026-06-07) ถามได้ไม่จำกัด (maxQ=0) / หรือ X คำถาม ถ้า admin ตั้ง cap
+            $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
+            $celticWin = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+            $celticAskLine = $celticMaxQ > 0
+                ? "📌 ถามได้สูงสุด {$celticMaxQ} คำถามภายใน {$celticWin} นาที\n\n"
+                : "📌 ถามได้ไม่จำกัด ภายใน {$celticWin} นาที\n\n";
             $message .= "═══════════════════════\n";
             $message .= "🔮 *Celtic Cross 10 ใบ — {$celticPrice} บาท*\n";
             $message .= "═══════════════════════\n\n";
             $message .= "📌 ไพ่ 10 ใบครอบคลุมรอบด้าน\n";
-            $message .= "📌 ถามได้สูงสุด 5 คำถามภายใน 15 นาที\n\n";
+            $message .= $celticAskLine;
             $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
         } elseif ($freeEnabled) {
             $message .= 'กลับมาใหม่พรุ่งนี้ได้ 🙏';

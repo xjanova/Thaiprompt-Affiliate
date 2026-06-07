@@ -61,7 +61,8 @@ class FortuneCelticAutoFinalize extends Command
         // 🩹 (2026-05-24) Fix: ดึง max_q เป็น local var ไม่ attach กับ model
         //   เดิม: $r->settings_max_q = ... → Eloquent dirty-track → save SQL ERROR
         //         (Column not found: 'settings_max_q') → cron ค้างทุกรอบ ลูกค้าไม่ได้ Grand Finale
-        $maxQDisplay = (int) (FortuneTellingSetting::getSettings()->celtic_cross_max_questions ?? 5);
+        $maxQRawDisplay = (int) (FortuneTellingSetting::getSettings()->celtic_cross_max_questions ?? 0);
+        $maxQDisplay = $maxQRawDisplay > 0 ? (string) $maxQRawDisplay : '∞'; // (2026-06-07) 0 = ไม่จำกัด
 
         $this->info("🔍 พบ {$candidates->count()} session ที่จะ finalize:");
         $this->table(

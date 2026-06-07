@@ -202,7 +202,7 @@ trait CelticCrossConversationTrait
         $deepPrice = number_format($this->getDeepReadingPrice(), 0);
         $celticPrice = number_format(app(CelticCrossService::class)->getPrice(), 0);
         // 🔢 (2026-05-03) อ่านจาก settings — ตรงกับที่ admin ตั้ง (0 = ไม่จำกัด)
-        $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 0);
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
         $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
 
@@ -881,7 +881,7 @@ trait CelticCrossConversationTrait
             }
 
             $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
-            $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+            $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
             $qLimitTxt = $maxQ > 0 ? "{$maxQ} คำถาม" : 'ไม่จำกัด';
 
             return [
@@ -1511,7 +1511,7 @@ trait CelticCrossConversationTrait
                 // 🌙 (2026-05-23 v3) เริ่มต้น / resume — ประกาศกติกาให้ชัด (5 คำถาม / 15 นาที)
                 //    + ถ้าเริ่มถามแล้ว — แสดง "เหลือ X คำถาม / Y นาที"
                 $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
-                $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+                $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
                 $usedQ = (int) ($reading->celtic_questions_used ?? 0);
                 $remainingMin = $reading->getCelticQaRemainingMinutes();
 
@@ -1657,7 +1657,7 @@ trait CelticCrossConversationTrait
 
         // 🌙 (2026-05-23 v3) Footer — ประกาศกติกาให้ชัด (5 คำถาม / 15 นาที)
         //    user spec: "ต้องบอกกติการให้ชัดทุกที่"
-        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
         $qLimitLine = $maxQ > 0
             ? "❓ ถามได้ *{$maxQ} คำถาม* ภายใน *{$qaWindow} นาที*\n"
             : "⏳ คุยกับแม่หมอได้ *{$qaWindow} นาที* นับจากนี้\n";
@@ -1978,6 +1978,11 @@ trait CelticCrossConversationTrait
         //     - ✅ ส่งทันทีทุกคำถาม (zero delay)
         //     - ✅ บังคับ 5 คำถาม + 15 นาที (hard cap ทั้งคู่)
         //     - ✅ ประกาศกติกาให้ชัดทุกข้อความ (เหลือ X คำถาม / Y นาที)
+        //
+        //   🌙 (2026-06-07 UPDATE) ยกเลิก hard cap "จำนวนคำถาม" — กลับไป "ถามได้ไม่จำกัด ภายใน 15 นาที"
+        //     user spec: "ตอนตีสองคนเข้ามาดู บอทตอบและหักโควต้าจนไม่ได้ถาม = ประสบการณ์ไม่ดี"
+        //     ตอนนี้ maxQ=0 (DB) → block hard-cap ด้านล่าง ($maxQ > 0) ถูกข้าม → เหลือแค่ time window 15 นาที
+        //     (TYPE/quota machinery คงไว้ — ไม่ทำงานเมื่อ maxQ=0 เท่านั้น ไม่ต้องรื้อ)
 
         // ดึง platform + user ID สำหรับ logging
         $platform = $reading->platform;
@@ -1993,7 +1998,7 @@ trait CelticCrossConversationTrait
         $reading->refresh();
         $remainingMin = $reading->getCelticQaRemainingMinutes();
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
-        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
         $usedQ = (int) ($reading->celtic_questions_used ?? 0);
         $remainingQ = $maxQ > 0 ? max(0, $maxQ - $usedQ) : null;
 
@@ -2033,6 +2038,10 @@ trait CelticCrossConversationTrait
             $qHint = $remainingQ > 0
                 ? "\n❓ เหลือถามได้อีก *{$remainingQ} คำถาม* (จากทั้งหมด {$maxQ} คำถาม)"
                 : "\n❓ ครบ {$maxQ} คำถามแล้ว — แม่หมอกำลังเตรียมสรุปท้ายให้";
+        } else {
+            // 🌙 (2026-06-07) maxQ=0 = ไม่จำกัดคำถาม → บอกลูกค้าให้ชัดว่าถามได้เรื่อยๆ ในเวลานี้
+            //   ตั้ง expectation กันเคสตีสอง "ถามแล้วบอทตัดจบ ไม่รู้เรื่อง" — ถามได้ไม่อั้นจนหมดเวลา
+            $qHint = "\n❓ ถามแม่หมอได้ *ไม่จำกัด* ในเวลานี้เลยค่ะ — สงสัยเรื่องไหนถามต่อได้เรื่อยๆ";
         }
 
         $followupOffer = "\n\n──────────────────────\n"
@@ -2368,7 +2377,7 @@ trait CelticCrossConversationTrait
             ? $this->getProSessionRemainingMinutes($reading)
             : 0;
 
-        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
 
         // 🌟 (2026-05-05) Grand Finale Master Summary — generate ทุกครั้งที่เข้าเงื่อนไข

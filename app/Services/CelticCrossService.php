@@ -124,11 +124,16 @@ class CelticCrossService
 
         if (! $reading->canAskMoreCeltic()) {
             // 🌙 (2026-05-24) ใช้ dynamic settings — เดิม hardcode "1 ชั่วโมง" ตั้งแต่สเปคเก่า
-            //   ปัจจุบันสเปคใหม่ 5 คำถาม / 15 นาที (Session 2026-05-23 #7)
+            //   🌙 (2026-06-07) maxQ=0 = ไม่จำกัดคำถาม → ข้อความต้องไม่โชว์ "(0 คำถาม)"
+            //     เมื่อ maxQ=0 canAskMoreCeltic จะ false เฉพาะตอน "หมดเวลา" เท่านั้น (ไม่มี cap จำนวน)
             $maxQ = $this->getMaxQuestions();
             $qaWindow = $this->getQaWindowMinutes();
 
-            return ['success' => false, 'message' => "ครบจำนวนคำถามแล้ว ({$maxQ} คำถาม) หรือเลยเวลา {$qaWindow} นาทีค่ะ"];
+            $capMsg = $maxQ > 0
+                ? "ครบจำนวนคำถามแล้ว ({$maxQ} คำถาม) หรือเลยเวลา {$qaWindow} นาทีค่ะ"
+                : "หมดเวลาคุยกับแม่หมอแล้ว (ครบ {$qaWindow} นาที) — ถ้าอยากดูต่อ เปิดไพ่ใหม่ได้เลยค่ะ ✨";
+
+            return ['success' => false, 'message' => $capMsg];
         }
 
         // 🛡️ (2026-05-21) Sequence จาก records จริง — กัน counter inconsistency
@@ -3514,8 +3519,8 @@ class CelticCrossService
 
     public function getMaxQuestions(): int
     {
-        // 🌙 (2026-05-23 v3) Default 5 — ตามสเปคใหม่ "5 คำถาม ภายใน 15 นาที"
-        return (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        // 🌙 (2026-06-07) Default 0 = ไม่จำกัดคำถาม ภายในเวลา 15 นาที (เดิม 5 — ยกเลิก hard cap จำนวน)
+        return (int) ($this->settings->celtic_cross_max_questions ?? 0);
     }
 
     public function getPrice(): float

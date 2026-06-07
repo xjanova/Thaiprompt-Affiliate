@@ -6616,9 +6616,13 @@ TXT;
         if ($celticEnabled) {
             // 🌙 (2026-05-24) บอกสเปคชัด — เดิม "ถามได้หลายคำถาม" (vague)
             //   ปัจจุบัน 5 คำถาม / 15 นาที (Session 2026-05-23 #7) — admin override ได้
-            $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+            $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
             $celticQaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
-            $upsellLines[] = "🔮 *ไพ่ยิปซีเต็มสำรับ Celtic Cross {$celticPrice} บาท* — เปิด 10 ใบ ถามได้ {$celticMaxQ} คำถาม / {$celticQaWindow} นาที + ภาพไพ่สวยงาม";
+            // 🌙 (2026-06-07) maxQ=0 = ไม่จำกัดคำถาม
+            $celticAsk = $celticMaxQ > 0
+                ? "ถามได้ {$celticMaxQ} คำถาม / {$celticQaWindow} นาที"
+                : "ถามได้ไม่จำกัด ภายใน {$celticQaWindow} นาที";
+            $upsellLines[] = "🔮 *ไพ่ยิปซีเต็มสำรับ Celtic Cross {$celticPrice} บาท* — เปิด 10 ใบ {$celticAsk} + ภาพไพ่สวยงาม";
         }
         $upsellBlock = empty($upsellLines) ? '' : implode("\n", $upsellLines);
 

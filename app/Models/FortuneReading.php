@@ -2757,7 +2757,7 @@ class FortuneReading extends Model
     {
         $settings = FortuneTellingSetting::getSettings();
         $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 15);
-        $maxQuestions = (int) ($settings->celtic_cross_max_questions ?? 5);
+        $maxQuestions = (int) ($settings->celtic_cross_max_questions ?? 0); // 0 = ไม่จำกัด (2026-06-07)
 
         // ยังไม่ได้ตอบ Q1 → ถามได้
         if (! $this->celtic_first_answered_at) {
@@ -2790,7 +2790,7 @@ class FortuneReading extends Model
     public function getCelticRemainingQuestions(): ?int
     {
         $settings = FortuneTellingSetting::getSettings();
-        $maxQuestions = (int) ($settings->celtic_cross_max_questions ?? 5);
+        $maxQuestions = (int) ($settings->celtic_cross_max_questions ?? 0); // 0 = ไม่จำกัด (2026-06-07)
 
         if ($maxQuestions <= 0) {
             return null;
