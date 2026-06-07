@@ -55,6 +55,11 @@ class TarotManagementController extends Controller
         // 🐛 (2026-06-08) แก้บัค: เดิม controller ไม่อ่าน query params เลย
         //   → ตัวกรอง (ประเภท/ชุด/ค้นหา) บนหน้ากดแล้ว "ไม่มีผล" แสดงไพ่ทั้งหมดเสมอ
         //   ฟอร์ม Alpine ส่ง ?type=&suit=&search= มาแต่ถูกโยนทิ้ง
+
+        // 🧭 (2026-06-08) จำ filter ล่าสุดไว้ใน session → หลังบันทึก/อัพโหลดรูป/ลบไพ่
+        //   จะ redirect กลับมาที่หน้านี้พร้อม filter เดิม (ไม่เด้งไปรายการทั้งหมด)
+        session(['tarot_cards_last_filter' => $request->only(['type', 'suit', 'search', 'page'])]);
+
         $cards = TarotCard::query()
             ->when($request->filled('type'), fn ($q) => $q->where('type', $request->input('type')))
             ->when($request->filled('suit'), fn ($q) => $q->where('suit', $request->input('suit')))
@@ -116,7 +121,8 @@ class TarotManagementController extends Controller
 
         TarotCard::create($data);
 
-        return redirect()->route('admin.tarot.cards.index')
+        // 🧭 กลับไปที่ filter ล่าสุด (session) ไม่เด้งไปรายการทั้งหมด
+        return redirect()->route('admin.tarot.cards.index', session('tarot_cards_last_filter', []))
             ->with('success', 'สร้างไพ่สำเร็จ');
     }
 
@@ -188,7 +194,8 @@ class TarotManagementController extends Controller
             'image_url' => $card->fresh()->getRawImageUrl(),
         ]);
 
-        return redirect()->route('admin.tarot.cards.index')
+        // 🧭 กลับไปที่ filter ล่าสุด (session) ไม่เด้งไปรายการทั้งหมด
+        return redirect()->route('admin.tarot.cards.index', session('tarot_cards_last_filter', []))
             ->with('success', 'อัพเดทไพ่สำเร็จ');
     }
 
@@ -204,7 +211,8 @@ class TarotManagementController extends Controller
 
         $card->delete();
 
-        return redirect()->route('admin.tarot.cards.index')
+        // 🧭 กลับไปที่ filter ล่าสุด (session) ไม่เด้งไปรายการทั้งหมด
+        return redirect()->route('admin.tarot.cards.index', session('tarot_cards_last_filter', []))
             ->with('success', 'ลบไพ่สำเร็จ');
     }
 
