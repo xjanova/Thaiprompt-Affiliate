@@ -815,6 +815,31 @@ print_info "Restoring critical files (.env, uploads)..."
 restore_critical_files
 print_success "Critical files restored successfully"
 
+# Step 4.5.1: 🗄️ (2026-06-07) ย้าย slip storage ออกนอก git tree — กัน git clean ลบทุก deploy
+#   ปัญหาเดิม: git clean -fdx ลบ storage/app/fortune (รูปสลิป audit 30 วัน + working slips) ทุก deploy
+#     → หน้า admin/fortune/slip-logs เปิดรูปได้แค่ใบล่าสุด (อันก่อนหน้าหายหมด) — exclude/backup ไม่ holding
+#   แก้: เก็บไฟล์จริงที่ ../fortune_data (sibling public_html, นอก git working tree) แล้ว symlink เข้ามา
+#     git clean ลบได้แค่ "ตัว symlink" (สร้างใหม่ตรงนี้ทุก deploy) — ของจริงนอก repo ไม่โดนแตะ
+#   PDPA: ยัง private 100% (นอก public_html + เสิร์ฟผ่าน route auth admin + perms 700 = เจ้าของเท่านั้น)
+print_info "Ensuring external slip storage (survives git clean)..."
+FORTUNE_EXTERNAL="$(dirname "$SCRIPT_DIR")/fortune_data"
+mkdir -p "$FORTUNE_EXTERNAL/slip_archive" "$FORTUNE_EXTERNAL/slips" 2>/dev/null || true
+chmod 700 "$FORTUNE_EXTERNAL" 2>/dev/null || true
+if [ ! -L "storage/app/fortune" ]; then
+    # ถ้ายังเป็นโฟลเดอร์จริง (รอบแรก / หรือลูกค้าส่งสลิประหว่าง deploy) → ย้ายไฟล์เข้า external ก่อน (ไม่ทับของใหม่)
+    if [ -d "storage/app/fortune" ]; then
+        cp -rn storage/app/fortune/. "$FORTUNE_EXTERNAL/" 2>/dev/null || true
+        rm -rf storage/app/fortune 2>/dev/null || true
+    fi
+    if ln -s "$FORTUNE_EXTERNAL" storage/app/fortune 2>/dev/null; then
+        print_success "✓ Linked storage/app/fortune → $FORTUNE_EXTERNAL"
+    else
+        print_warning "⚠ ไม่สามารถสร้าง symlink fortune storage (สลิปอาจไม่คงอยู่ข้าม deploy)"
+    fi
+else
+    print_success "✓ storage/app/fortune symlink อยู่แล้ว (external storage)"
+fi
+
 # Step 4.6: Smart ENV Sync - Auto-update .env with new variables
 print_substep "4.6" "Syncing .env with .env.example..."
 if ! sync_env_file; then

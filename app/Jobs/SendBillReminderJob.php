@@ -44,6 +44,18 @@ class SendBillReminderJob implements ShouldQueue
             return; // safety — บิลจ่ายแล้ว
         }
 
+        // 🩹 (2026-06-07) ลูกค้าส่งสลิปแล้วกำลังรอ SlipOK ตรวจ → อย่าทวง "ยังไม่จ่าย/ติดขัดการโอน"
+        //   ไม่งั้นดูเหมือนระบบไม่เห็นเงิน ลูกค้างง + แอดมินต้องเข้าช่วย
+        //   (เคส FTU-260607-P3861: ลูกค้าส่งสลิป 21:23:50 แต่บอททวง 21:25:20 ทั้งที่สลิปรอตรวจอยู่)
+        //   หมายเหตุ: approve แล้ว is_paid=true (เด้งด้านบน) → เงื่อนไขนี้ครอบเฉพาะ "สลิปรอตรวจ/เพิ่งเข้า fallback"
+        if (! empty($reading->slip_received_at) && empty($reading->slipok_verified_at)) {
+            Log::debug('SendBillReminderJob: มีสลิปรอ SlipOK ตรวจ — skip ทวง', [
+                'reading_id' => $reading->id,
+            ]);
+
+            return;
+        }
+
         // 🌙 (2026-05-24) Branch ตาม state:
         //   - AWAITING_PAYMENT_METHOD → ยังไม่มี UPA — nudge ให้กดปุ่มเลือกวิธีจ่าย
         //   - PENDING_PAYMENT / CELTIC_PENDING_PAYMENT → require UPA reserved ยังไม่หมดอายุ
@@ -284,7 +296,7 @@ EOT;
 
             return "สถานการณ์:\n"
                 ."- ลูกค้าเห็นเมนูเลือกวิธีชำระเงิน ({$type}) เมื่อ {$minutesAgo} นาทีก่อน\n"
-                .'- มีปุ่ม "QR ไทย" และ "บัตรเครดิต" ให้กด แต่ยังไม่กดเลือก' . "\n"
+                .'- มีปุ่ม "QR ไทย" และ "บัตรเครดิต" ให้กด แต่ยังไม่กดเลือก'."\n"
                 .$amountLine
                 ."- อาจจะลังเล หรือสับสน หรือกำลังหาเงิน\n\n"
                 .'ตอบเหมือนแอดมินตอบลูกค้าในจังหวะนี้ (ดูตัวอย่าง 📚 ถ้ามี) — ไม่ทวง ไม่ฮาร์ดเซล';

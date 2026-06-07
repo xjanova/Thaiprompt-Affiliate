@@ -1318,8 +1318,10 @@ if ! git reset --hard "origin/$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
 fi
 
 # Step 5.4: Clean all untracked files and directories
-print_info "Removing untracked files and directories..."
-git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' || print_warning "Git clean failed (continuing anyway)"
+# ⚠️ (2026-06-07) exclude 'storage/app/fortune' (symlink → ../fortune_data นอก repo, ดู deploy.sh)
+#   กัน git clean ลบ symlink สลิป. สคริปต์นี้ไม่ active (CI ใช้ deploy.sh) แต่กันพลาดถ้ามีคนรันมือ
+#   หมายเหตุ: ถ้า activate สคริปต์นี้จริง ต้อง port block สร้าง symlink จาก deploy.sh มาด้วย
+git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 5.5: Restore Critical Files
 print_info "Restoring critical files (.env, uploads)..."

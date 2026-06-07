@@ -960,8 +960,12 @@ class FortuneChannelManager
                 // celtic_card_picked → ส่งรูปไพ่ + ข้อความ + ปุ่ม "เปิดไพ่" สำหรับใบถัดไป
                 // ✏️ (2026-05-03) เปลี่ยน label ให้คนแก่เข้าใจชัดเจน + เพิ่มปุ่มสับใหม่
                 // 🧾 (2026-06-01) slipok_recovered_celtic — กู้บิลด้วยสลิป → render แบบ celtic (ปุ่ม "เปิดไพ่") ไม่ใช่ default
+                // 🧾 (2026-06-07) slipok_approved_celtic + fuzzy_auto_approved_celtic — จ่ายผ่าน SlipOK fallback / SMS-fuzzy
+                //   ก็คืน onCelticPaymentConfirmed (promptNextCelticCard) เหมือนกัน → ต้อง render แบบ celtic ด้วย
+                //   ไม่งั้นตกไป default = text ล้วน (รูปหาย) ลูกค้าไม่รู้ต้องพิมพ์ "พร้อม" → แอดมินต้อง reset เอง (เคส FTU-260607-P3861)
                 'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset',
-                'celtic_restart_hint', 'celtic_already_in_session', 'slipok_recovered_celtic' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                'celtic_restart_hint', 'celtic_already_in_session', 'slipok_recovered_celtic',
+                'slipok_approved_celtic', 'fuzzy_auto_approved_celtic' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // ส่งรูปไพ่ก่อน (ถ้ามี)
                     if (! empty($result['tarot_image_url'])) {
                         try {
@@ -2331,8 +2335,10 @@ class FortuneChannelManager
                 // 🧾 (2026-06-01) slipok_recovered_celtic — กู้บิลด้วยสลิป (recoverCelticFromVerifiedSlip)
                 //   override action แต่ response = promptNextCelticCard → ต้อง render แบบ celtic (ปุ่ม "เปิดไพ่")
                 //   เดิมตกไป default → ได้ปุ่ม generic "ดูดวง" (สับสน — ลูกค้าจ่ายแล้วต้องพิมพ์ "พร้อม" เปิดไพ่)
+                // 🧾 (2026-06-07) + slipok_approved_celtic + fuzzy_auto_approved_celtic — เหตุผลเดียวกับ FB ด้านบน (promptNextCelticCard → ต้อง render celtic)
                 'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset',
-                'celtic_restart_hint', 'celtic_already_in_session', 'slipok_recovered_celtic' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                'celtic_restart_hint', 'celtic_already_in_session', 'slipok_recovered_celtic',
+                'slipok_approved_celtic', 'fuzzy_auto_approved_celtic' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
                     // 🃏 Dynamic label ตามจำนวนไพ่ที่เปิด
                     $reading = $result['reading'] ?? null;
                     $picked = method_exists($reading, 'getCelticPickedCount') ? $reading->getCelticPickedCount() : 0;
