@@ -377,6 +377,22 @@ class LineFortuneWebhookController extends Controller
                     }
                 }
 
+                // 💎 (2026-06-07, owner) ไม่มี flag/บิล แต่มีรูป → เก็บไว้เงียบๆ 30 นาที (ไม่รัน AI)
+                //   เผื่อลูกค้าพิมพ์ "โอนแล้ว/เช็คสลิป" ทีหลัง → ย้อนเอารูปนี้มาเช็คได้ ไม่ต้องส่งใหม่
+                //   เคารพ enable_image_vision=false: แค่ดาวน์โหลดเก็บ ไม่วิเคราะห์จนกว่าจะมีคำว่าโอนแล้ว
+                if (! empty($messageId)
+                    && ($this->settings->slipok_auto_provision ?? true)
+                    && (new \App\Services\Fortune\SlipOkService($this->settings))->isEnabled()) {
+                    try {
+                        $capB64 = $this->downloadLineImageAsBase64($messageId);
+                        if (! empty($capB64)) {
+                            $this->conversationService->capturePendingSlipFromImage('line', $userId, null, $capB64);
+                        }
+                    } catch (\Throwable $capErr) {
+                        Log::debug('LINE: capturePendingSlip ล้มเหลว (non-blocking)', ['error' => $capErr->getMessage()]);
+                    }
+                }
+
                 Log::debug('LINE: silent ignore image (no active fortune flow, vision skipped)', [
                     'user_id' => $userId,
                 ]);

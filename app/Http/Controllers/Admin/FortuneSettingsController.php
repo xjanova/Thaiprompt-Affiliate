@@ -281,6 +281,8 @@ class FortuneSettingsController extends Controller
             'slipok_max_checks_per_user' => 'nullable|integer|min:0|max:50',
             'slipok_check_window_hours' => 'nullable|integer|min:1|max:168',
             'slipok_ban_after_rounds' => 'nullable|integer|min:0|max:10',
+            // 💎 (2026-06-07) Auto-provision — โอนก่อนสร้างบิล → สร้างบิล Celtic + เปิดไพ่เอง
+            'slipok_auto_provision' => 'boolean',
             // Affiliate/MLM Settings สำหรับดูดวง
             'fortune_affiliate_enabled' => 'boolean',
             'fortune_auto_register_enabled' => 'boolean',
@@ -463,6 +465,8 @@ class FortuneSettingsController extends Controller
             // 🧾 (2026-05-31) SlipOK
             'enable_slipok_verify',
             'slipok_use_log',
+            // 💎 (2026-06-07) SlipOK auto-provision (โอนก่อนสร้างบิล)
+            'slipok_auto_provision',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {

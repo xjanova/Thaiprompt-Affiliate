@@ -355,6 +355,8 @@ class FortuneTellingSetting extends Model
         'slipok_max_checks_per_user',
         'slipok_check_window_hours',
         'slipok_ban_after_rounds',
+        // 💎 (2026-06-07) Auto-provision — ลูกค้าโอนก่อนสร้างบิล/QR → สร้างบิล Celtic + เปิดไพ่เอง
+        'slipok_auto_provision',
     ];
 
     /**
@@ -523,6 +525,8 @@ class FortuneTellingSetting extends Model
         'slipok_max_checks_per_user' => 'integer',
         'slipok_check_window_hours' => 'integer',
         'slipok_ban_after_rounds' => 'integer',
+        // 💎 (2026-06-07) Auto-provision จากสลิปที่ไม่มีบิล
+        'slipok_auto_provision' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -703,6 +707,8 @@ class FortuneTellingSetting extends Model
         'slipok_max_checks_per_user' => 2,
         'slipok_check_window_hours' => 24,
         'slipok_ban_after_rounds' => 2,
+        // 💎 (2026-06-07) Auto-provision — โอนก่อนสร้างบิล → สร้างบิล Celtic + เปิดไพ่เอง (default เปิด)
+        'slipok_auto_provision' => true,
     ];
 
     /**

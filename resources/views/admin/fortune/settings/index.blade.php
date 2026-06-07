@@ -2486,6 +2486,26 @@ Format 2 — JSON array:
                         เปิด log mode — กันสลิปซ้ำ + เช็คบัญชีผู้รับอัตโนมัติ + ส่งสลิปซ้ำไม่กินโควตา <strong>(แนะนำเปิด)</strong>
                     </label>
 
+                    {{-- 💎 (2026-06-07) Auto-provision — ลูกค้าโอนก่อนสร้างบิล/QR --}}
+                    <div class="p-3 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800">
+                        <label class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                            <input type="hidden" name="slipok_auto_provision" value="0">
+                            <input type="checkbox" name="slipok_auto_provision" value="1"
+                                   {{ ($settings->slipok_auto_provision ?? true) ? 'checked' : '' }}
+                                   class="mt-0.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500">
+                            <span>
+                                💎 <strong>เปิดบิลให้อัตโนมัติเมื่อลูกค้าโอนก่อนสร้างบิล/QR</strong>
+                                <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    ลูกค้าโอนเงิน + ส่งสลิปมาทั้งที่ยังไม่มีบิล → ถ้าสลิปจริง + เข้าบัญชีร้าน + ยอด ≥ {{ number_format($settings->slipok_min_amount ?? 99, 0) }} + ไม่ใช่สลิปซ้ำ
+                                    → ระบบสร้างบิล Celtic + เปิดไพ่ให้เองทันที (โอนขาด → เครดิตไว้ + บอกยอดที่ขาด) — <strong>แอดมินไม่ต้องมานั่งจัดการเอง</strong>
+                                </span>
+                                <span class="block text-xs text-amber-700 dark:text-amber-300 mt-1">
+                                    ⚠️ ปิดสวิตช์นี้ = กลับไปโหมดเดิม (ตรวจสลิปแล้วส่งให้แอดมินจัดการ)
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+
                     <div class="flex items-center gap-3 flex-wrap">
                         <button type="button" @click="testConn()" :disabled="testing"
                                 class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition disabled:opacity-50">

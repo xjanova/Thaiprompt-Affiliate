@@ -32,10 +32,10 @@ use Illuminate\Support\Facades\Log;
 class FortuneConversationService
 {
     use \App\Services\Fortune\CelticCrossConversationTrait;
+    use \App\Services\Fortune\FortuneConsentGateTrait;
     use \App\Services\Fortune\FreeCardConversationTrait;
     use \App\Services\Fortune\PayFirstGateTrait;
     use \App\Services\Fortune\ProSessionTrait;
-    use \App\Services\Fortune\FortuneConsentGateTrait;
 
     /**
      * 🔔 Per-request warning prefix — set by payFirstGate, applied by FortuneChannelManager
@@ -11151,6 +11151,8 @@ class FortuneConversationService
             // เช็คสถานะ
             'เช็คสถานะ', 'เช็คบิล', 'เช็คยอด', 'ตรวจสอบยอด', 'ตรวจสอบบิล', 'ตรวจสอบการชำระ',
             'ตัดบิลหรือยัง', 'ตัดบิลหรือไม่', 'ระบบรับเงินหรือยัง', 'รับเงินหรือยัง',
+            // 💎 (2026-06-07, owner) เช็คสลิป → ย้อนดูรูปที่ส่งมา (มาก่อนหรือหลังคำนี้)
+            'เช็คสลิป', 'ตรวจสลิป', 'ตรวจสอบสลิป',
             // English / payload
             'paid', 'transferred', 'check_payment', 'payment_check',
         ];
@@ -11839,6 +11841,116 @@ class FortuneConversationService
     }
 
     /**
+     * 💎 (2026-06-07, owner) เก็บรูปที่ลูกค้าส่งมา "เงียบๆ" ตอนยังไม่มีบิล/ยังไม่พิมพ์โอนแล้ว
+     *   → เพื่อย้อนมาเช็คได้ตอนลูกค้าพิมพ์ "โอนแล้ว/เช็คสลิป" ทีหลัง (ไม่ต้องส่งรูปใหม่)
+     *
+     * ⚠️ "เก็บ" ≠ "AI ดูรูป" — แค่ดาวน์โหลดไฟล์เก็บไว้ 30 นาที ไม่รัน classifier/SlipOK ใดๆ
+     *    (AI จะดูรูปก็ต่อเมื่อ popRecentPendingSlipBase64 → autoProvisionCelticFromSlip ตอนลูกค้าพิมพ์โอนแล้ว)
+     *    เคารพ enable_image_vision=false — ไม่วิเคราะห์รูปจนกว่าจะมีสัญญาณการจ่าย
+     *
+     * @param  string  $platform  'facebook' | 'line'
+     * @param  string|null  $url  URL รูป (FB CDN)
+     * @param  string|null  $base64  base64 รูป (LINE — controller download มาแล้ว)
+     */
+    public function capturePendingSlipFromImage(string $platform, string $userId, ?string $url, ?string $base64): void
+    {
+        try {
+            if (empty($userId)) {
+                return;
+            }
+
+            // 🛡️ cooldown 5 วิ/คน — กันส่งรูปรัวๆ ดาวน์โหลดเปลือง bandwidth (ไม่กระทบส่งสลิปจริง 1 ใบ)
+            $cdKey = 'fortune:pending_capture_cd:'.$platform.':'.$userId;
+            if (\Illuminate\Support\Facades\Cache::has($cdKey)) {
+                return;
+            }
+            \Illuminate\Support\Facades\Cache::put($cdKey, 1, 5);
+
+            // ดาวน์โหลด bytes
+            $bytes = null;
+            if (! empty($base64)) {
+                $clean = str_contains($base64, ',') ? substr($base64, strpos($base64, ',') + 1) : $base64;
+                $bytes = base64_decode($clean, true) ?: null;
+            } elseif (! empty($url)) {
+                $resp = \Illuminate\Support\Facades\Http::timeout(20)->get($url);
+                $bytes = $resp->successful() ? $resp->body() : null;
+            }
+            if (empty($bytes) || strlen($bytes) > 6 * 1024 * 1024) {
+                return;
+            }
+
+            $cacheKey = 'fortune:pending_slip:'.$platform.':'.$userId;
+
+            // ลบไฟล์ pending เก่า (กัน orphan สะสมใน storage)
+            $old = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            if (is_string($old) && $old !== '') {
+                try {
+                    \Illuminate\Support\Facades\Storage::disk('local')->delete($old);
+                } catch (\Throwable $e) {
+                    // non-blocking
+                }
+            }
+
+            $relPath = 'fortune/slips/pend_'.md5($userId).'_'.now()->timestamp.'.jpg';
+            \Illuminate\Support\Facades\Storage::disk('local')->put($relPath, $bytes);
+            \Illuminate\Support\Facades\Cache::put($cacheKey, $relPath, now()->addMinutes(30));
+
+            Log::debug('💎 SlipOK: เก็บรูป pending เงียบๆ (รอลูกค้าพิมพ์โอนแล้ว ค่อยย้อนเช็ค)', [
+                'platform' => $platform, 'user_id' => $userId, 'path' => $relPath,
+            ]);
+        } catch (\Throwable $e) {
+            Log::debug('💎 SlipOK: capturePendingSlipFromImage ล้มเหลว (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 💎 (2026-06-07) ดึง base64 ของรูป pending ล่าสุด (ที่ stash ไว้ ≤30 นาที) + เคลียร์ออกจาก stash
+     *   ใช้ตอนลูกค้าพิมพ์ "โอนแล้ว/เช็คสลิป" → ย้อนเอารูปมา autoProvision
+     *
+     * @return string|null base64 ของรูป หรือ null = ไม่มี/อ่านไม่ได้
+     */
+    protected function popRecentPendingSlipBase64(string $platform, string $userId): ?string
+    {
+        try {
+            $cacheKey = 'fortune:pending_slip:'.$platform.':'.$userId;
+            $relPath = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            if (! is_string($relPath) || $relPath === '') {
+                return null;
+            }
+
+            // consume — เคลียร์ pointer ทันที (ครั้งเดียว) ; ไฟล์จะถูก cleanup/purge ตามรอบ
+            \Illuminate\Support\Facades\Cache::forget($cacheKey);
+
+            $disk = \Illuminate\Support\Facades\Storage::disk('local');
+            if (! $disk->exists($relPath)) {
+                return null;
+            }
+            $bytes = $disk->get($relPath);
+
+            // consume เสร็จ → ลบไฟล์ทิ้ง (กัน orphan สะสมใน storage ; autoProvision ใช้ base64 ไม่ใช้ไฟล์นี้แล้ว)
+            try {
+                $disk->delete($relPath);
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+
+            if (empty($bytes)) {
+                return null;
+            }
+
+            return base64_encode($bytes);
+        } catch (\Throwable $e) {
+            Log::debug('💎 SlipOK: popRecentPendingSlipBase64 ล้มเหลว (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * 🙏 ข้อความขอสลิป (ใช้เมื่อไม่เจอสลิป/รูปไม่ใช่สลิป)
      */
     protected function askForSlipMessage(?FortuneReading $reading = null): array
@@ -11931,11 +12043,31 @@ class FortuneConversationService
             // ต้องเคยพยายามดู Celtic เร็ว ๆ นี้ + "ยังไม่ได้ดู" (กัน fire ใส่ลูกค้าใหม่ + กันเปิดบิลที่ดูไปแล้วซ้ำ)
             $recentCeltic = $this->findRecoverableCelticReading($userId);
             if (! $recentCeltic) {
-                // 🆕 (2026-06-01, user) paid-claim แต่ไม่มีบิล celtic ค้าง recent → ขอสลิปเสมอ (ไม่ขายใหม่)
-                //   user: "FB ลูกค้าพิมพ์โอนแล้วไม่ได้ดู ระบบไม่ตรวจเช็คเหมือนไลน์"
-                //   return non-null → preempt early-gate "generic fortune" (line ~1857) ไม่ให้เปิดบิลขายใหม่
-                //   ตั้ง flag 1 ชม. → รูปสลิปที่ตามมาถูกตรวจ (webhook gate + handleReturningSlipImage เช็ค flag นี้)
+                // 🆕 (2026-06-01, user) paid-claim ไม่มีบิลค้าง → ตั้ง flag 1 ชม. ก่อนเสมอ
+                //   → รูปสลิป "ใบถัดไป" ถูกตรวจทันที (webhook gate + handleReturningSlipImage เช็ค flag นี้)
+                //   ตั้งก่อน look-back: ถ้า look-back สำเร็จ autoProvision จะ clear flag เอง ; ถ้ารูป stash ไม่ใช่สลิป
+                //   flag ยังอยู่ → ลูกค้าส่งสลิปจริงตามมาถูกตรวจเลย ไม่ต้องพิมพ์ "โอนแล้ว" ซ้ำ
                 \Illuminate\Support\Facades\Cache::put('fortune:returning_slip_ask:'.$userId, true, now()->addHour());
+
+                // 💎 (2026-06-07, owner) ลูกค้า "ส่งรูปก่อน → พิมพ์โอนแล้วทีหลัง" → ย้อนดูรูปที่ stash ไว้ (≤30 นาที)
+                //   ถ้าเป็นสลิป → เช็ค+เปิดบิลให้เลย ไม่ต้องขอส่งใหม่ ; ไม่ใช่สลิป → ตกไปขอสลิปด้านล่าง
+                //   (เก็บรูปตอนได้รับเงียบๆ ไม่ใช้ AI — AI ดูก็ต่อเมื่อถึงตรงนี้ที่ลูกค้าพิมพ์โอนแล้ว/เช็คสลิป)
+                if ($this->isSlipAutoProvisionEnabled()) {
+                    $pendingB64 = $this->popRecentPendingSlipBase64($platform, $userId);
+                    if ($pendingB64 !== null) {
+                        Log::info('💎 SlipOK: paid-claim + พบรูป stash ไว้ → ย้อนเช็คสลิป (ไม่ขอส่งใหม่)', [
+                            'platform' => $platform, 'user_id' => $userId,
+                            'text_preview' => mb_substr($messageText, 0, 40),
+                        ]);
+                        $lookback = $this->autoProvisionCelticFromSlip($platform, $userId, null, $pendingB64);
+                        if ($lookback !== null) {
+                            return $lookback;
+                        }
+                    }
+                }
+
+                // ไม่มีรูป stash (หรือ look-back ไม่สำเร็จ) → ขอสลิป (ไม่ขายใหม่)
+                //   return non-null → preempt early-gate "generic fortune" (line ~1857) ไม่ให้เปิดบิลขายใหม่
                 Log::info('SlipOK: paid-claim ไม่มีบิลค้าง recent → ขอสลิป (ไม่ขายใหม่)', [
                     'platform' => $platform,
                     'user_id' => $userId,
@@ -11989,10 +12121,19 @@ class FortuneConversationService
             // กู้เฉพาะบิลที่ "ยังไม่ได้ดู" — กันนำสลิปมาเปิดบิลที่ทำนายไปแล้วซ้ำ (req #4)
             $recentCeltic = $this->findRecoverableCelticReading($userId);
             if (! $recentCeltic) {
-                // 🆕 (2026-06-01, user) ไม่มีบิลค้าง — ถ้าเพิ่งขอสลิปไป (flag) → ตรวจสลิปจริงผ่าน SlipOK
-                //   user: "รับรูปแล้วแต่ไม่ได้ส่งไปเช็ค เลยไม่รู้" → verify ให้รู้ผล (จริงไหม/ยอด/บัญชี) + log แอดมิน
+                $hasAskFlag = \Illuminate\Support\Facades\Cache::has('fortune:returning_slip_ask:'.$userId);
+
+                // 🆕 (2026-06-01, user) ไม่มีบิลค้าง — แตะรูป "เฉพาะ" เมื่อลูกค้าพิมพ์ว่าโอนแล้ว (ask-flag)
+                //   ⚠️ owner setting: enable_image_vision=false (ไม่ให้ AI สนรูป) → ไม่มี flag = ไม่แตะรูปเลย (เงียบ)
                 //   ใช้ has (ไม่ consume) → ส่งสลิป blurry/ผิดได้ใหม่ใน 1 ชม. ; เคลียร์ flag เฉพาะตอน verify ผ่าน
-                if (\Illuminate\Support\Facades\Cache::has('fortune:returning_slip_ask:'.$userId)) {
+                if ($hasAskFlag) {
+                    // 💎 (2026-06-07, owner) toggle slipok_auto_provision เปิด (default) → สร้างบิล Celtic + ตรวจสลิป + เปิดไพ่ให้เอง
+                    //   (เดิม: verifyNoBillSlipForAdmin = "ส่งต่อแอดมิน" → แอดมินต้องมานั่งสร้างบิล/เปิดไพ่เอง)
+                    if ($this->isSlipAutoProvisionEnabled()) {
+                        return $this->autoProvisionCelticFromSlip($platform, $userId, $url, $base64);
+                    }
+
+                    // toggle ปิด → ตรวจสลิปจริง + แจ้งแอดมิน (พฤติกรรมเดิม)
                     return $this->verifyNoBillSlipForAdmin($platform, $userId, $url, $base64);
                 }
 
@@ -12037,6 +12178,180 @@ class FortuneConversationService
             ]);
 
             return null;
+        }
+    }
+
+    /**
+     * 💎 (2026-06-07) เปิดใช้ auto-provision จากสลิปที่ไม่มีบิลไหม
+     *   = SlipOK เปิด + สวิตช์ slipok_auto_provision เปิด (default true — เจ้าของสั่งเปิดไว้)
+     */
+    protected function isSlipAutoProvisionEnabled(): bool
+    {
+        return (new \App\Services\Fortune\SlipOkService($this->settings))->isEnabled()
+            && (bool) ($this->settings->slipok_auto_provision ?? true);
+    }
+
+    /**
+     * 💎 (2026-06-07) สร้างบิล Celtic "ชั่วคราว" สำหรับ auto-provision (ลูกค้าโอนก่อนสร้างบิล)
+     *   ตั้งสถานะ celtic_pending_payment + bill_reference จริง (audit) — ยังไม่จ่าย
+     *   จากนั้น respondReturningSlip จะตัดสิน: ผ่าน → ตัดบิล+เปิดไพ่ / ขาด → top-up / reject → ถูก cleanup
+     *
+     * @param  string  $platform  'facebook' | 'line'
+     * @param  string  $userId  facebook_user_id (LINE เก็บ field เดียวกัน ขึ้นต้น U)
+     * @return FortuneReading|null บิลใหม่ หรือ null = สร้างไม่สำเร็จ
+     */
+    protected function createProvisionalCelticReading(string $platform, string $userId): ?FortuneReading
+    {
+        try {
+            return FortuneReading::create([
+                'facebook_user_id' => $userId,           // LINE id เก็บ field เดียวกัน (ขึ้นต้น U)
+                'facebook_user_name' => null,
+                'user_profile' => null,
+                'questions' => [],
+                'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS,
+                'conversation_status' => FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                'response_type' => 'private_message',
+                'ai_response' => '',
+                'ai_provider' => '',
+                'platform' => $platform,
+                'platform_user_id' => $userId,
+                'bill_reference' => FortuneReading::generateBillReference(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('💎 SlipOK auto-provision: createProvisionalCelticReading ล้มเหลว', [
+                'platform' => $platform, 'user_id' => $userId, 'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 💎 (2026-06-07, owner) Auto-provision — ลูกค้าโอน "ก่อน" สร้างบิล/QR แล้วส่งสลิปมา (ไม่มีบิลให้กู้)
+     *
+     *   เดิม: verifyNoBillSlipForAdmin → "ส่งต่อแอดมิน" → แอดมินต้องมานั่งสร้างบิล/เปิดไพ่เอง
+     *   ใหม่: สร้างบิล Celtic ชั่วคราว → ส่งเข้า pipeline เดิม (respondReturningSlip) ที่พิสูจน์แล้ว:
+     *     • สลิปจริง + เข้าบัญชีเรา + ยอด ≥ 99 + ไม่ซ้ำ → ตัดบิล + เปิดไพ่ให้ทันที (recoverCelticFromVerifiedSlip)
+     *     • โอนขาด (< 99) → เครดิตไว้ + บอกยอดขาด + สร้างบิล top-up (handlePartialPayment)
+     *     • สลิปซ้ำ / บัญชีผิด / เก่าเกิน 3 วัน / อ่าน QR ไม่ได้ → ตอบตามเคส + ลบบิลชั่วคราวทิ้ง
+     *
+     *   🛡️ guard เดิมทั้งหมดทำงานครบ (transRef dedup / receiver / amount / staleness / flood / classifier)
+     *   🔒 ใช้ celtic_create_lock เดียวกับ startCelticCrossFlow → กันสร้างบิลซ้อนจาก 2 สลิป/2 webhook พร้อมกัน
+     *   ⚠️ เรียกเฉพาะตอนลูกค้าพิมพ์ว่าโอนแล้ว (ask-flag set) — เคารพ enable_image_vision=false (ไม่สแกนรูปสุ่ม)
+     *
+     * @return array|null response หรือ null = ปล่อยให้ handler อื่นจัดการ
+     */
+    protected function autoProvisionCelticFromSlip(string $platform, string $userId, ?string $url, ?string $base64): ?array
+    {
+        // 🔒 serialize กับการสร้างบิล (กัน double-provision เมื่อมี 2 สลิป/2 webhook พร้อมกัน)
+        $lockKey = 'fortune:celtic_create_lock:'.$userId;
+        $haveLock = \Illuminate\Support\Facades\Cache::add($lockKey, 1, 15);
+        if (! $haveLock) {
+            // มี request กำลังสร้าง/กู้บิลอยู่ → รอ commit แล้วเช็คว่ามีบิลให้กู้แล้วหรือยัง
+            usleep(700000); // 700ms
+            $now = $this->findRecoverableCelticReading($userId);
+            if ($now) {
+                // จ่ายครบแล้ว (request แรกเปิดไพ่ไปแล้ว) → เงียบ กันรีเซ็ตไพ่/ตอบซ้ำ ; ยังไม่จ่าย/โอนขาด → ให้ pipeline เติมเครดิต
+                if ($now->is_paid) {
+                    return ['action' => 'slipok_provision_inflight', 'message' => null, 'reading' => $now];
+                }
+
+                return $this->respondReturningSlip($now, $platform, $userId);
+            }
+
+            // ยังไม่มี → เงียบ (อีก request กำลังจัดการอยู่ จะตอบเอง)
+            return ['action' => 'slipok_provision_inflight', 'message' => null, 'reading' => null];
+        }
+
+        try {
+            // 🔁 race re-check ใต้ lock — ลูกค้ากำลังทำนายอยู่/มีบิลกู้ได้แล้ว → ไม่สร้างใหม่
+            if ($this->hasPaidActiveReading($userId)) {
+                return null; // กำลังทำนายอยู่ → ปล่อย handler อื่น (paid customer bypass)
+            }
+            $existing = $this->findRecoverableCelticReading($userId);
+            if ($existing) {
+                return $this->respondReturningSlip($existing, $platform, $userId);
+            }
+
+            // 🛡️ (2026-06-07) มี flow อื่นค้างอยู่ (Deep 39 / basic / Celtic ที่ดูไปแล้ว) → ห้ามสร้าง Celtic ใหม่
+            //   กันเคส handleSlipImageOnly fallback (มี active reading) เรียกมา → สลิป Deep 39 ถูกมองเป็น Celtic โอนขาด
+            //   no-flow path ปกติจะไม่มี active → ผ่านด่านนี้ไปสร้างบิลได้
+            if (FortuneReading::activeConversation($userId)->exists()) {
+                Log::info('💎 SlipOK auto-provision: มี flow อื่นค้างอยู่ → ไม่สร้างบิลใหม่ ปล่อย handler เดิม', [
+                    'platform' => $platform, 'user_id' => $userId,
+                ]);
+
+                return null;
+            }
+
+            // 🛡️ classifier pre-check (ถูก/ฟรีกว่า SlipOK quota) — ลูกค้าบอกว่าโอนแล้วแต่รูปไม่ใช่สลิป → ขอสลิปจริง
+            if (! $this->returningImageLooksLikeSlip($url, $base64)) {
+                Log::info('💎 SlipOK auto-provision: รูปไม่ใช่สลิป (classifier) → ขอสลิป ไม่สร้างบิล', [
+                    'platform' => $platform, 'user_id' => $userId,
+                ]);
+
+                return $this->askForSlipMessage(null);
+            }
+
+            // ดาวน์โหลด bytes (mirror handleReturningSlipImage)
+            $bytes = null;
+            if (! empty($base64)) {
+                if (str_contains($base64, ',')) {
+                    $base64 = substr($base64, strpos($base64, ',') + 1);
+                }
+                $bytes = base64_decode($base64, true) ?: null;
+            } elseif (! empty($url)) {
+                $resp = \Illuminate\Support\Facades\Http::timeout(20)->get($url);
+                $bytes = $resp->successful() ? $resp->body() : null;
+            }
+            if (empty($bytes) || strlen($bytes) > 6 * 1024 * 1024) {
+                return null;
+            }
+
+            // สร้างบิล Celtic ชั่วคราว (มี bill_reference จริงสำหรับ audit)
+            $reading = $this->createProvisionalCelticReading($platform, $userId);
+            if (! $reading) {
+                return null;
+            }
+
+            // เก็บสลิป + push candidate (respondReturningSlip จะดึงจาก candidate cache มาตรวจ)
+            $relPath = 'fortune/slips/prov_'.md5($userId).'_'.now()->timestamp.'.jpg';
+            \Illuminate\Support\Facades\Storage::disk('local')->put($relPath, $bytes);
+            $this->pushSlipCandidate($platform, $userId, $relPath);
+
+            Log::warning('💎 SlipOK auto-provision: สร้างบิลชั่วคราว + ตรวจสลิป', [
+                'platform' => $platform, 'user_id' => $userId,
+                'reading_id' => $reading->id, 'bill_reference' => $reading->bill_reference,
+            ]);
+
+            // ส่งเข้า pipeline เดิมที่พิสูจน์แล้ว (APPROVE→เปิดไพ่ / REJECT_AMOUNT→top-up / dup / receiver / stale)
+            $resp = $this->respondReturningSlip($reading, $platform, $userId);
+
+            // 🧹 cleanup บิลชั่วคราวที่ "ไม่ผ่าน" (ไม่ได้จ่าย + ไม่ใช่โอนขาดที่กำลังรอเติม)
+            //   เก็บไว้เฉพาะ: is_paid (ตัดบิลแล้ว) หรือ partial_rounds>0 (โอนขาด มี top-up รออยู่)
+            $fresh = $reading->fresh();
+            $kept = $fresh && ($fresh->is_paid || (int) ($fresh->partial_rounds ?? 0) > 0);
+            if (! $kept) {
+                if ($fresh) {
+                    $fresh->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                }
+                Log::info('💎 SlipOK auto-provision: บิลชั่วคราวไม่ผ่าน → ปิดทิ้ง (ไม่ค้างในระบบ)', [
+                    'reading_id' => $reading->id, 'action' => $resp['action'] ?? null,
+                ]);
+            } else {
+                // ผ่าน/โอนขาด → เคลียร์ ask-flag (ไม่ต้องตรวจรูปต่อแล้ว)
+                \Illuminate\Support\Facades\Cache::forget('fortune:returning_slip_ask:'.$userId);
+            }
+
+            return $resp;
+        } catch (\Throwable $e) {
+            Log::warning('💎 SlipOK auto-provision ล้มเหลว (non-blocking)', [
+                'platform' => $platform, 'user_id' => $userId, 'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } finally {
+            \Illuminate\Support\Facades\Cache::forget($lockKey);
         }
     }
 
