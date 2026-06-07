@@ -90,10 +90,10 @@
             <div class="group glass-fusion rounded-xl shadow overflow-hidden border border-white/20 dark:border-white/10 hover:shadow-xl transition-all duration-300 hover:scale-[1.03] cursor-pointer"
                  @click="window.location.href='{{ route('admin.tarot.cards.edit', $card->id) }}'">
                 {{-- Card Image --}}
-                <div class="relative aspect-[2/3] bg-gradient-to-br from-purple-900/20 to-indigo-900/20 overflow-hidden">
+                <div class="relative aspect-[9/16] bg-gradient-to-br from-purple-900/20 to-indigo-900/20 overflow-hidden">
                     @if($card->image_url)
                         <img src="{{ $card->image_url }}" alt="{{ $card->name_th }}"
-                             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+                             class="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105">
                     @else
                         <div class="w-full h-full flex items-center justify-center text-gray-400">
                             <i class="fas fa-image text-4xl"></i>
@@ -173,9 +173,9 @@
                     @foreach($cards as $card)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
                             <td class="px-4 py-3">
-                                <div class="w-12 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-purple-900/20 to-indigo-900/20 shadow">
+                                <div class="w-9 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-purple-900/20 to-indigo-900/20 shadow">
                                     @if($card->image_url)
-                                        <img src="{{ $card->image_url }}" alt="{{ $card->name_th }}" class="w-full h-full object-cover">
+                                        <img src="{{ $card->image_url }}" alt="{{ $card->name_th }}" class="w-full h-full object-contain">
                                     @else
                                         <div class="w-full h-full flex items-center justify-center text-gray-400">
                                             <i class="fas fa-image"></i>

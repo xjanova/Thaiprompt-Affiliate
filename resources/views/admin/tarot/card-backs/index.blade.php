@@ -48,16 +48,16 @@
                 {{-- Left - Preview --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตัวอย่างรูป</label>
-                    <div class="relative aspect-[2/3] bg-gradient-to-br from-purple-900/20 to-indigo-900/20 rounded-xl overflow-hidden border-2 border-dashed border-purple-300 dark:border-purple-700"
+                    <div class="relative aspect-[9/16] bg-gradient-to-br from-purple-900/20 to-indigo-900/20 rounded-xl overflow-hidden border-2 border-dashed border-purple-300 dark:border-purple-700"
                          @dragover.prevent="isDragging = true"
                          @dragleave.prevent="isDragging = false"
                          @drop.prevent="handleDrop($event)"
                          :class="{ 'border-purple-500 bg-purple-50 dark:bg-purple-900/30': isDragging }">
 
-                        {{-- Preview Image --}}
+                        {{-- Preview Image — 9:16 object-contain แสดงเต็มใบไม่ขาด --}}
                         <img x-show="previewUrl"
                              :src="previewUrl"
-                             class="w-full h-full object-cover">
+                             class="w-full h-full object-contain">
 
                         {{-- Placeholder --}}
                         <div x-show="!previewUrl"
@@ -141,10 +141,10 @@
         @forelse($cardBacks as $cardBack)
             <div class="group glass-fusion rounded-xl shadow overflow-hidden border border-white/20 dark:border-white/10 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
                 {{-- Image --}}
-                <div class="relative aspect-[2/3] bg-gradient-to-br from-purple-900/20 to-indigo-900/20">
+                <div class="relative aspect-[9/16] bg-gradient-to-br from-purple-900/20 to-indigo-900/20">
                     <img src="{{ $cardBack->image_url }}"
                          alt="{{ $cardBack->name }}"
-                         class="w-full h-full object-cover">
+                         class="w-full h-full object-contain">
 
                     {{-- Default Badge --}}
                     @if($cardBack->is_default)

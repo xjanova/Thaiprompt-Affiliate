@@ -9,7 +9,7 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
         <div class="flex items-center gap-4">
             <img src="{{ $card->image_url }}" alt="{{ $card->name_th }}"
-                 class="h-20 w-14 rounded-lg object-cover shadow-lg">
+                 class="h-20 w-14 rounded-lg object-contain shadow-lg">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">แก้ไขคำทำนาย</h1>
                 <p class="text-gray-600 dark:text-gray-400">{{ $card->name_th }} ({{ $card->name_en }})</p>

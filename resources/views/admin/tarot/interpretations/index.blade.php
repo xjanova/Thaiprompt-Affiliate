@@ -80,7 +80,7 @@
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-12 w-8">
                                         <img src="{{ $card->image_url }}" alt="{{ $card->name_th }}"
-                                             class="h-12 w-8 rounded object-cover shadow">
+                                             class="h-12 w-8 rounded object-contain shadow">
                                     </div>
                                     <div class="ml-4">
                                         <div class="text-sm font-medium text-gray-900 dark:text-white">

@@ -50,9 +50,25 @@ class TarotManagementController extends Controller
     /**
      * Cards Management
      */
-    public function cardsIndex()
+    public function cardsIndex(Request $request)
     {
-        $cards = TarotCard::orderBy('type')->orderBy('suit')->orderBy('number')->paginate(30);
+        // 🐛 (2026-06-08) แก้บัค: เดิม controller ไม่อ่าน query params เลย
+        //   → ตัวกรอง (ประเภท/ชุด/ค้นหา) บนหน้ากดแล้ว "ไม่มีผล" แสดงไพ่ทั้งหมดเสมอ
+        //   ฟอร์ม Alpine ส่ง ?type=&suit=&search= มาแต่ถูกโยนทิ้ง
+        $cards = TarotCard::query()
+            ->when($request->filled('type'), fn ($q) => $q->where('type', $request->input('type')))
+            ->when($request->filled('suit'), fn ($q) => $q->where('suit', $request->input('suit')))
+            ->when($request->filled('search'), function ($q) use ($request) {
+                // ค้นหาจากชื่อไทยและอังกฤษ
+                $term = trim((string) $request->input('search'));
+                $q->where(function ($sub) use ($term) {
+                    $sub->where('name_th', 'like', "%{$term}%")
+                        ->orWhere('name_en', 'like', "%{$term}%");
+                });
+            })
+            ->orderBy('type')->orderBy('suit')->orderBy('number')
+            ->paginate(30)
+            ->withQueryString(); // คงค่าตัวกรองไว้เวลาเปลี่ยนหน้า pagination
 
         return view('admin.tarot.cards.index', compact('cards'));
     }

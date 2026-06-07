@@ -41,17 +41,17 @@
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">รูปภาพไพ่</h2>
 
                     {{-- Image Preview --}}
-                    <div class="relative aspect-[2/3] bg-gradient-to-br from-purple-900/20 to-indigo-900/20 rounded-xl overflow-hidden mb-4 border-2 border-dashed border-purple-300 dark:border-purple-700"
+                    <div class="relative aspect-[9/16] bg-gradient-to-br from-purple-900/20 to-indigo-900/20 rounded-xl overflow-hidden mb-4 border-2 border-dashed border-purple-300 dark:border-purple-700"
                          @dragover.prevent="isDragging = true"
                          @dragleave.prevent="isDragging = false"
                          @drop.prevent="handleDrop($event)"
                          :class="{ 'border-purple-500 bg-purple-50 dark:bg-purple-900/30': isDragging }">
 
-                        {{-- Current/Preview Image --}}
+                        {{-- Current/Preview Image — object-contain แสดงไพ่ 9:16 เต็มใบไม่ขาด --}}
                         <img x-show="currentImageUrl"
                              :src="currentImageUrl"
                              alt="{{ $card->name_th }}"
-                             class="w-full h-full object-cover">
+                             class="w-full h-full object-contain">
 
                         {{-- Placeholder when no image --}}
                         <div x-show="!currentImageUrl"

@@ -222,8 +222,8 @@ class ImageUploadService
     public function uploadTarotCard(
         UploadedFile $file,
         string $directory = 'tarot/cards',
-        int $width = 400,
-        int $height = 600,
+        int $width = 540,
+        int $height = 960,
         int $quality = 90
     ): string {
         try {
@@ -234,8 +234,10 @@ class ImageUploadService
             // อ่านและประมวลผลรูป
             $image = $this->manager->read($file->getPathname());
 
-            // Resize และ crop ให้พอดีกับขนาดการ์ด (cover = crop to fill)
-            $image->cover($width, $height);
+            // 🃏 (2026-06-08) ย่อให้พอดีกรอบ 9:16 โดยคงสัดส่วนต้นฉบับ — "ไม่ครอป ไม่ยืด"
+            //   เดิม cover(400×600 = 2:3) บังคับเต็มกรอบ → ครอปหัว/ตีนไพ่ที่ออกแบบมาเป็น 9:16 ทิ้งถาวร
+            //   ใหม่ scaleDown(540×960 = 9:16) → เก็บภาพไพ่เต็มใบไม่ขาด (display ใช้ object-contain คู่กัน)
+            $image->scaleDown($width, $height);
 
             // Encode เป็น WebP และบันทึก
             $encoded = $image->toWebp(quality: $quality);
@@ -257,8 +259,8 @@ class ImageUploadService
      */
     public function uploadTarotCardBack(
         UploadedFile $file,
-        int $width = 400,
-        int $height = 600
+        int $width = 540,
+        int $height = 960
     ): string {
         return $this->uploadTarotCard($file, 'tarot/card-backs', $width, $height, 90);
     }
