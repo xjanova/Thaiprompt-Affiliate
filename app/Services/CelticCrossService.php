@@ -3517,6 +3517,47 @@ class CelticCrossService
         return implode("\n\n", $lines);
     }
 
+    /**
+     * 🃏 (2026-06-07) รายการไพ่ 10 ใบ ต่อท้ายบทสรุป VIP — เลขกำกับ + ชื่อไพ่ + (ตั้งตรง/กลับหัว)
+     *
+     * user spec: "ในบทสรุป vip master reading อยากให้ใส่ชื่อไพ่และการตั้งตรงหรือกลับหัว
+     *             เป็นวงเล็บไว้ และใส่เลขไว้ด้วยกำกับ เพราะบางคนต้องการ"
+     *
+     * ดึงจากข้อมูลไพ่จริง (celtic_cards position 1-10) → ชื่อ + หัวไพ่แม่นยำ 100%
+     * (ไม่พึ่ง AI จำ — กันชื่อไพ่เพี้ยน). หัวไพ่อยู่ในวงเล็บตามสเปค + แนบชื่ออังกฤษให้ค้นต่อได้
+     *
+     * @param  array<int, array>  $cards  key = position 1-10
+     */
+    protected function buildCelticCardListBlock(array $cards): string
+    {
+        $lines = [];
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! is_array($card)) {
+                continue;
+            }
+            $nameTh = trim((string) ($card['card_name_th'] ?? ''));
+            $nameEn = trim((string) ($card['card_name_en'] ?? ''));
+            if ($nameTh === '' && $nameEn === '') {
+                continue; // ไพ่ไม่มีชื่อ — ข้าม (กันบรรทัดว่าง)
+            }
+            $label = $nameTh !== '' ? $nameTh : $nameEn;
+            // 🃏 หัวไพ่ในวงเล็บ (ตามสเปค) — ตรงกับ formatCardsForPrompt
+            $orient = ! empty($card['is_reversed']) ? 'กลับหัว' : 'ตั้งตรง';
+            // แนบชื่ออังกฤษไว้ค้นหาต่อ (ถ้ามี + ไม่ซ้ำกับชื่อไทย)
+            $enSuffix = ($nameEn !== '' && $nameEn !== $label) ? " · {$nameEn}" : '';
+            $lines[] = "{$pos}. {$label} ({$orient}){$enSuffix}";
+        }
+
+        if (empty($lines)) {
+            return '';
+        }
+
+        return "\n\n━━━━━━━━━━━━━━━\n"
+            .'🃏 *สรุปไพ่ทั้ง '.count($lines).' ใบที่แม่หมอเปิดให้* (เลขกำกับ = ลำดับไพ่)'."\n"
+            .implode("\n", $lines);
+    }
+
     public function getMaxQuestions(): int
     {
         // 🌙 (2026-06-07) Default 0 = ไม่จำกัดคำถาม ภายในเวลา 15 นาที (เดิม 5 — ยกเลิก hard cap จำนวน)
@@ -3642,6 +3683,11 @@ class CelticCrossService
             if ($summary === '' || mb_strlen($summary) < 200) {
                 throw new Exception('AI Grand Finale ตอบสั้นเกินไป ('.mb_strlen($summary).' chars)');
             }
+
+            // 🃏 (2026-06-07) ต่อท้าย "รายการไพ่ 10 ใบ" (เลข + ชื่อ + ตั้งตรง/กลับหัว) — user spec "บางคนต้องการ"
+            //   ใส่หลัง length-check (เช็คเฉพาะเนื้อ AI prose) + ก่อน save → เก็บถาวรใน summary (อ่านซ้ำได้)
+            //   sendMessage (FB/LINE) แบ่ง chunk เองถ้ายาวเกิน 2000 → รายการไพ่ไม่โดนตัด
+            $summary .= $this->buildCelticCardListBlock($cards);
 
             // อัพเดต token tracking
             $reading->update([
