@@ -80,16 +80,34 @@ class FortuneAudienceFilter
     }
 
     /**
-     * เดาว่า user คนนี้ "เป็นคนต่างชาติ" ไหม จากชื่อ + ข้อความ
+     * 🌍 สคริปต์ "ต่างภาษา" ที่ถือว่าเป็นต่างชาติ (ลาว/พม่า/เขมร/จีน/ญี่ปุ่น/เกาหลี/อาหรับ ฯลฯ)
+     *   ❌ ไม่รวม Latin (อังกฤษ) และ Thai
+     */
+    private const FOREIGN_SCRIPT_REGEX = '/['
+        .'\x{0E80}-\x{0EFF}'  // Lao (ลาว)
+        .'\x{1000}-\x{109F}'  // Myanmar (พม่า)
+        .'\x{1780}-\x{17FF}'  // Khmer (เขมร)
+        .'\x{4E00}-\x{9FFF}'  // CJK (จีน)
+        .'\x{3040}-\x{30FF}'  // Hiragana + Katakana (ญี่ปุ่น)
+        .'\x{AC00}-\x{D7AF}'  // Hangul (เกาหลี)
+        .'\x{0600}-\x{06FF}'  // Arabic (อาหรับ)
+        .'\x{0400}-\x{04FF}'  // Cyrillic (รัสเซีย)
+        .'\x{0900}-\x{097F}'  // Devanagari (ฮินดี)
+        .'\x{0980}-\x{09FF}'  // Bengali
+        .']/u';
+
+    /**
+     * เดาว่า user คนนี้ "เป็นคนต่างชาติ" ไหม
+     *
+     * 🎯 (2026-06-07) ดู "ชื่อ" เป็นหลัก (per owner: "ต้องดูชื่อเป็นหลัก")
+     *   — ข้อความคอมเมนต์ไม่ override ชื่อ. คนลาว/พม่า/เขมร/จีน ที่คอมเมนต์เป็นไทย ("สาธุ")
+     *   ก็ยังถูกตรวจเป็นต่างชาติจาก "ชื่อ". ดูข้อความเป็น fallback เฉพาะเมื่อชื่อไม่มีสัญญาณ
      *
      * วิธีตรวจ (basis):
-     *   - 'script'   (แนะนำ) นับเฉพาะสคริปต์ต่างภาษาชัดเจน (ลาว/จีน/ญี่ปุ่น/เกาหลี/อาหรับ/
-     *                ซีริลลิก/เทวนาครี ฯลฯ) = ต่างชาติ ; ชื่ออังกฤษล้วน = "ไม่ชัด" → ไม่ถือว่าต่างชาติ
-     *                (กันบล็อกคนไทยที่ตั้งชื่อ FB เป็นอังกฤษ)
-     *   - 'no_thai'  ไม่มีอักษรไทยเลย (อังกฤษ/ลาว/จีน ฯลฯ) = ต่างชาติ — เข้มสุด
-     *   - 'lao_only' เฉพาะคนลาว (ใช้ FortuneLocaleService ที่มีอยู่)
-     *
-     * กฎร่วม: ถ้าพบ "อักษรไทย" ในชื่อหรือข้อความ → ถือเป็นคนไทยเสมอ (target audience) ไม่ใช่ต่างชาติ
+     *   - 'script'   (แนะนำ) ชื่อเป็นสคริปต์ต่างภาษา (ลาว/พม่า/เขมร/จีน/ญี่ปุ่น/เกาหลี/อาหรับ ฯลฯ)
+     *                = ต่างชาติ ; **ชื่ออังกฤษล้วน = ไม่ถือว่าต่างชาติ** (ยกเว้นอังกฤษ ตามที่เจ้าของขอ)
+     *   - 'no_thai'  ชื่อไม่มีอักษรไทยเลย (รวมอังกฤษ) = ต่างชาติ — เข้มสุด
+     *   - 'lao_only' เฉพาะคนลาว
      */
     public static function isForeigner(
         string $platform,
@@ -99,60 +117,66 @@ class FortuneAudienceFilter
         string $basis = 'script',
     ): bool {
         try {
-            // มีอักษรไทยที่ไหนสักที่ → คนไทย (ไม่ใช่ต่างชาติ)
-            if (self::hasThai($name) || self::hasThai($text)) {
-                return false;
+            // 1) ชื่อเป็นหลัก — ถ้าชื่อให้คำตอบชัด (ไทย→false / ต่างชาติ→true / อังกฤษ→false) ใช้เลย
+            $byName = self::classifyScript($name, $basis, $platform, $userId);
+            if ($byName !== null) {
+                return $byName;
             }
 
-            $blob = trim((string) $name.' '.(string) $text);
-
-            if ($basis === 'lao_only') {
-                $lo = FortuneLocaleService::LOCALE_LO;
-                if (FortuneLocaleService::detectFromText($text) === $lo) {
-                    return true;
-                }
-                if (FortuneLocaleService::detectFromName($name) === $lo) {
-                    return true;
-                }
-                if (FortuneLocaleService::getStored($platform, $userId) === $lo) {
-                    return true;
-                }
-
-                return false;
-            }
-
-            if ($basis === 'no_thai') {
-                // ต้องมีตัวอักษร (letter) อย่างน้อย 1 ตัว — กัน emoji/ตัวเลข/ว่าง → "ไม่ชัด"
-                if ($blob === '' || ! preg_match('/\p{L}/u', $blob)) {
-                    return false;
-                }
-
-                // ไม่มีอักษรไทย (เช็คด้านบนแล้ว) + มีตัวอักษร → ต่างชาติ
-                return true;
-            }
-
-            // default 'script' — เฉพาะสคริปต์ต่างภาษาชัดเจน (ไม่นับ Latin/อังกฤษ)
-            if ($blob === '') {
-                return false;
-            }
-
-            $foreignScript = '/['
-                .'\x{0E80}-\x{0EFF}'  // Lao
-                .'\x{4E00}-\x{9FFF}'  // CJK (จีน)
-                .'\x{3040}-\x{30FF}'  // Hiragana + Katakana (ญี่ปุ่น)
-                .'\x{AC00}-\x{D7AF}'  // Hangul (เกาหลี)
-                .'\x{0600}-\x{06FF}'  // Arabic
-                .'\x{0400}-\x{04FF}'  // Cyrillic
-                .'\x{0900}-\x{097F}'  // Devanagari (ฮินดี)
-                .'\x{0980}-\x{09FF}'  // Bengali
-                .'\x{1000}-\x{109F}'  // Myanmar (พม่า)
-                .'\x{1780}-\x{17FF}'  // Khmer (เขมร)
-                .']/u';
-
-            return (bool) preg_match($foreignScript, $blob);
+            // 2) ชื่อไม่มีสัญญาณ (ว่าง/ตัวเลข/อีโมจิ/ไม่มีชื่อ เช่น reaction) → fallback ดูข้อความ
+            return self::classifyScript($text, $basis, $platform, $userId) === true;
         } catch (\Throwable $e) {
             return false; // fail-open — ไม่ถือว่าต่างชาติเมื่อ detect ล้ม
         }
+    }
+
+    /**
+     * จำแนกสคริปต์ของสตริงเดียว (ชื่อ หรือ ข้อความ) ตาม basis
+     *
+     * @return bool|null true = ต่างชาติ / false = ไทยหรืออังกฤษ(ตาม basis) / null = ไม่มีสัญญาณ
+     */
+    protected static function classifyScript(?string $value, string $basis, string $platform, string $userId): ?bool
+    {
+        if ($value === null) {
+            return null;
+        }
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        // มีอักษรไทย → คนไทยเสมอ (ไม่ใช่ต่างชาติ)
+        if (self::hasThai($value)) {
+            return false;
+        }
+
+        if ($basis === 'lao_only') {
+            $lo = FortuneLocaleService::LOCALE_LO;
+            if (FortuneLocaleService::detectFromText($value) === $lo
+                || FortuneLocaleService::detectFromName($value) === $lo) {
+                return true;
+            }
+
+            // ไม่ใช่ลาว: มีตัวอักษรอื่น (จีน/อังกฤษ ฯลฯ) → ไม่ถือว่าต่างชาติ (lao_only) ; ไม่มีตัวอักษร → ไม่มีสัญญาณ
+            return preg_match('/\p{L}/u', $value) ? false : null;
+        }
+
+        // มีสคริปต์ต่างภาษาชัดเจน (ลาว/พม่า/เขมร/จีน ฯลฯ) → ต่างชาติ
+        if (preg_match(self::FOREIGN_SCRIPT_REGEX, $value)) {
+            return true;
+        }
+
+        // ไม่มีไทย ไม่มีสคริปต์ต่างภาษา → เหลือ Latin/ตัวเลข/อีโมจิ
+        if (! preg_match('/\p{L}/u', $value)) {
+            return null; // ไม่มีตัวอักษรเลย (ตัวเลข/อีโมจิ) → ไม่มีสัญญาณ
+        }
+
+        // Latin ล้วน (อังกฤษ ฯลฯ)
+        if ($basis === 'no_thai') {
+            return true; // เข้มสุด: ไม่มีไทย = ต่างชาติ (รวมอังกฤษ)
+        }
+
+        return false; // 'script' — ยกเว้นอังกฤษ → ไม่ถือว่าต่างชาติ
     }
 
     /**

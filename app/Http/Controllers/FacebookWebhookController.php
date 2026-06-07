@@ -588,6 +588,19 @@ class FacebookWebhookController extends Controller
                     ->value('facebook_user_name');
             }
 
+            // 🌍 (2026-06-07) reaction มักไม่มีชื่อใน webhook → ดึงโปรไฟล์ (cached 24hr)
+            //   เพื่อให้ "ตัวกรองต่างชาติแบบดูชื่อเป็นหลัก" ทำงานได้ + ช่วย personalize greeting
+            if (empty($userName)) {
+                try {
+                    $prof = $this->facebookService->getUserProfile($userId);
+                    if (is_array($prof) && ! empty($prof['name'])) {
+                        $userName = $prof['name'];
+                    }
+                } catch (\Throwable $e) {
+                    Log::debug('tryReactionDm: getUserProfile failed (non-blocking): '.$e->getMessage());
+                }
+            }
+
             // 🌍 (2026-06-07) ตัวกรองกลุ่มเป้าหมาย — เลือกส่ง/ไม่ส่งตามสัญชาติ (ต่างชาติ) + อายุ
             //   reaction ไม่มีข้อความ → ใช้ชื่อโปรไฟล์เป็นสัญญาณหลัก
             $audience = \App\Services\Fortune\FortuneAudienceFilter::evaluate(

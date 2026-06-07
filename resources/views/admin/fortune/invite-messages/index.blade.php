@@ -113,7 +113,7 @@
                 <select name="dm_foreigner_detect_basis"
                         class="px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm w-full sm:w-96">
                     <option value="script" @selected(($settings->dm_foreigner_detect_basis ?? 'script') === 'script')>
-                        เฉพาะสคริปต์ต่างภาษา (ลาว/จีน/เกาหลี/อาหรับ ฯลฯ) — แนะนำ
+                        ดูจากชื่อเป็นภาษาต่างชาติ (ลาว/พม่า/เขมร/จีน/เกาหลี/อาหรับ ฯลฯ) ยกเว้นอังกฤษ — แนะนำ
                     </option>
                     <option value="no_thai" @selected(($settings->dm_foreigner_detect_basis ?? 'script') === 'no_thai')>
                         ไม่มีอักษรไทยเลย = ต่างชาติ (รวมชื่ออังกฤษ) — เข้มสุด
