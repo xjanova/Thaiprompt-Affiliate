@@ -65,13 +65,24 @@ class FortuneInviteMessage extends Model
     /**
      * 🎲 สุ่มข้อความที่เปิดใช้งาน 1 ข้อความ
      *
-     * ใช้ DB-side random (inRandomOrder) — ไม่ต้องโหลดทั้ง 100 ข้อความเข้า memory
+     * ใช้ DB-side random (inRandomOrder) — ไม่ต้องโหลดทั้ง 300 ข้อความเข้า memory
+     *
+     * 🗂️ (2026-06-07) เคารพ "หมวดที่ปิด" (invite_disabled_categories) — ไม่สุ่มหมวดที่แอดมินปิด
+     *   เป็น chokepoint เดียวของทุก DM path (comment/reaction/welcome) → ปิดหมวดที่นี่ครอบทั้งหมด
      *
      * @return self|null null ถ้าไม่มีข้อความ active เลย (caller จะ fallback ไปส่งรูป/ทักทายปกติ)
      */
     public static function pickActive(): ?self
     {
-        return self::active()->inRandomOrder()->first();
+        $query = self::active();
+
+        // 🗂️ ตัดหมวดที่แอดมินปิด (ถ้ามี)
+        $disabled = FortuneTellingSetting::getSettings()->getDisabledInviteCategories();
+        if (! empty($disabled)) {
+            $query->whereNotIn('category', $disabled);
+        }
+
+        return $query->inRandomOrder()->first();
     }
 
     /**

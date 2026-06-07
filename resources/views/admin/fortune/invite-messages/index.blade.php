@@ -71,6 +71,105 @@
         </form>
     </div>
 
+    {{-- 🌍 ตัวกรองกลุ่มเป้าหมาย DM กลับ (สัญชาติ + อายุ) --}}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+         x-data="{
+            sendForeigners: {{ ($settings->dm_send_to_foreigners ?? true) ? 'true' : 'false' }},
+            ageEnabled: {{ ($settings->dm_filter_age_enabled ?? false) ? 'true' : 'false' }}
+         }">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">🌍 กรองกลุ่มเป้าหมาย (DM กลับ)</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            เลือกได้ว่าจะ DM กลับหาคนที่คอมเมนต์/กดไลก์ ตามสัญชาติหรืออายุ —
+            ใช้เฉพาะ DM อัตโนมัติ (ไม่กระทบคนที่ทักมาเอง/จ่ายเงิน)
+        </p>
+
+        {{-- ⚠️ ข้อจำกัดของ Facebook --}}
+        <div class="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200">
+            ⚠️ Facebook ไม่บอกสัญชาติ/อายุของคนคอมเมนต์โดยตรง — ระบบจึง<strong>เดา</strong>ให้:
+            <ul class="list-disc list-inside mt-1 space-y-0.5">
+                <li><strong>สัญชาติ</strong> → ดูจากตัวอักษรในชื่อ + ข้อความ (ไทย/ลาว/จีน/อังกฤษ ฯลฯ)</li>
+                <li><strong>อายุ</strong> → รู้เฉพาะลูกค้าที่<strong>เคยกรอกวันเกิดตอนดูดวง</strong>มาก่อนเท่านั้น</li>
+            </ul>
+        </div>
+
+        <form action="{{ route('admin.fortune.invite-messages.audience-filters') }}" method="POST">
+            @csrf
+
+            {{-- สัญชาติ --}}
+            <label class="flex items-start gap-3 cursor-pointer mb-3">
+                <input type="checkbox" name="dm_send_to_foreigners" value="1" x-model="sendForeigners"
+                       class="w-5 h-5 mt-0.5 text-blue-600 rounded">
+                <div>
+                    <div class="font-medium text-gray-900 dark:text-white">ส่ง DM ให้คนต่างชาติด้วย</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        ติ๊ก = ส่งทุกคน (ค่าเริ่มต้น) • ไม่ติ๊ก = ไม่ส่งให้คนที่ตรวจว่าเป็นต่างชาติ
+                    </div>
+                </div>
+            </label>
+
+            {{-- วิธีตรวจสัญชาติ (โชว์เมื่อเลือกไม่ส่งต่างชาติ) --}}
+            <div x-show="!sendForeigners" x-cloak class="ml-8 mb-4">
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">วิธีตรวจว่าใคร "ต่างชาติ"</label>
+                <select name="dm_foreigner_detect_basis"
+                        class="px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm w-full sm:w-96">
+                    <option value="script" @selected(($settings->dm_foreigner_detect_basis ?? 'script') === 'script')>
+                        เฉพาะสคริปต์ต่างภาษา (ลาว/จีน/เกาหลี/อาหรับ ฯลฯ) — แนะนำ
+                    </option>
+                    <option value="no_thai" @selected(($settings->dm_foreigner_detect_basis ?? 'script') === 'no_thai')>
+                        ไม่มีอักษรไทยเลย = ต่างชาติ (รวมชื่ออังกฤษ) — เข้มสุด
+                    </option>
+                    <option value="lao_only" @selected(($settings->dm_foreigner_detect_basis ?? 'script') === 'lao_only')>
+                        เฉพาะคนลาว
+                    </option>
+                </select>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    "แนะนำ" ปลอดภัยสุด — ไม่บล็อกคนไทยที่ตั้งชื่อ FB เป็นภาษาอังกฤษ
+                </p>
+            </div>
+
+            {{-- อายุ --}}
+            <label class="flex items-start gap-3 cursor-pointer mb-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                <input type="checkbox" name="dm_filter_age_enabled" value="1" x-model="ageEnabled"
+                       class="w-5 h-5 mt-0.5 text-blue-600 rounded">
+                <div>
+                    <div class="font-medium text-gray-900 dark:text-white">กรองตามอายุ</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        ส่งเฉพาะช่วงอายุที่กำหนด (มีผลเฉพาะคนที่เรารู้อายุ)
+                    </div>
+                </div>
+            </label>
+
+            <div x-show="ageEnabled" x-cloak class="ml-8 mb-2 space-y-3">
+                <div class="flex flex-wrap items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <span>อายุ</span>
+                    <input type="number" name="dm_age_min" min="0" max="120" value="{{ $settings->dm_age_min }}" placeholder="ต่ำสุด"
+                           class="w-24 px-2 py-1.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <span>ถึง</span>
+                    <input type="number" name="dm_age_max" min="0" max="120" value="{{ $settings->dm_age_max }}" placeholder="สูงสุด"
+                           class="w-24 px-2 py-1.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <span>ปี</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">ถ้า "ไม่รู้อายุ" ของคนนั้น</label>
+                    <select name="dm_age_unknown_action"
+                            class="px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm w-full sm:w-96">
+                        <option value="send" @selected(($settings->dm_age_unknown_action ?? 'send') === 'send')>
+                            ส่งตามปกติ (แนะนำ — คนส่วนใหญ่ไม่รู้อายุ)
+                        </option>
+                        <option value="skip" @selected(($settings->dm_age_unknown_action ?? 'send') === 'skip')>
+                            ไม่ส่ง ⚠️ (บอทจะแทบไม่ DM ใครเลย)
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit"
+                    class="mt-4 px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg shadow transition">
+                💾 บันทึกตัวกรอง
+            </button>
+        </form>
+    </div>
+
     {{-- 📊 Stats --}}
     <div class="grid grid-cols-3 gap-3 mb-6">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 text-center">
@@ -86,6 +185,57 @@
             <div class="text-xs text-gray-500 dark:text-gray-400">ส่งไปแล้ว (ครั้ง)</div>
         </div>
     </div>
+
+    {{-- 🗂️ เปิด/ปิดหมวดข้อความ --}}
+    @if($categoryStats->count() > 0)
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" x-data="{ open: {{ count($disabledCategories) > 0 ? 'true' : 'false' }} }">
+        <button type="button" @click="open = !open" class="w-full flex items-center justify-between gap-3">
+            <div class="text-left">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">🗂️ เปิด/ปิดหมวดข้อความ</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    ปิดหมวดไหน = บอทจะไม่สุ่มข้อความจากหมวดนั้นไปส่ง
+                    @if(count($disabledCategories) > 0)
+                        <span class="text-yellow-600 dark:text-yellow-400">• ปิดอยู่ {{ count($disabledCategories) }} หมวด</span>
+                    @endif
+                </p>
+            </div>
+            <span x-text="open ? '▲' : '▼'" class="text-gray-400 shrink-0"></span>
+        </button>
+
+        <div x-show="open" x-cloak x-transition class="mt-4">
+            <form action="{{ route('admin.fortune.invite-messages.categories') }}" method="POST">
+                @csrf
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <button type="button" @click="$root.querySelectorAll('.cat-cb').forEach(c => c.checked = true)"
+                            class="px-3 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                        เปิดทั้งหมด
+                    </button>
+                    <button type="button" @click="$root.querySelectorAll('.cat-cb').forEach(c => c.checked = false)"
+                            class="px-3 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                        ปิดทั้งหมด
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    @foreach($categoryStats as $cat)
+                        <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer">
+                            <input type="checkbox" class="cat-cb w-4 h-4 text-blue-600 rounded"
+                                   name="enabled_categories[]" value="{{ $cat['category'] }}"
+                                   @checked($cat['enabled'])>
+                            <span class="text-sm text-gray-800 dark:text-gray-200 flex-1 truncate" title="{{ $cat['category'] }}">{{ $cat['category'] }}</span>
+                            <span class="text-xs shrink-0 {{ $cat['enabled'] ? 'text-gray-400 dark:text-gray-500' : 'text-yellow-600 dark:text-yellow-400' }}">
+                                {{ $cat['active'] }}/{{ $cat['total'] }}{{ $cat['enabled'] ? '' : ' ⏸️' }}
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <button type="submit"
+                        class="mt-4 px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg shadow transition">
+                    💾 บันทึกหมวด
+                </button>
+            </form>
+        </div>
+    </div>
+    @endif
 
     {{-- ➕ Add form --}}
     <div x-show="showAdd" x-cloak x-transition class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">

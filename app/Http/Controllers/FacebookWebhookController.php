@@ -587,6 +587,23 @@ class FacebookWebhookController extends Controller
                     ->latest('updated_at')
                     ->value('facebook_user_name');
             }
+
+            // 🌍 (2026-06-07) ตัวกรองกลุ่มเป้าหมาย — เลือกส่ง/ไม่ส่งตามสัญชาติ (ต่างชาติ) + อายุ
+            //   reaction ไม่มีข้อความ → ใช้ชื่อโปรไฟล์เป็นสัญญาณหลัก
+            $audience = \App\Services\Fortune\FortuneAudienceFilter::evaluate(
+                'facebook', $userId, $userName, null, $this->settings
+            );
+            if (! $audience['allow']) {
+                Log::info('🌍 Reaction DM ข้าม — ไม่ผ่านตัวกรองกลุ่มเป้าหมาย', [
+                    'user_id' => $userId,
+                    'reason' => $audience['reason'],
+                ]);
+                $reaction->dm_success = false;
+                $reaction->save();
+
+                return;
+            }
+
             $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
             $message = $greetingService->buildDailyHoroscopeGreeting($userId, $userName ?? 'คุณ');
 
@@ -840,6 +857,20 @@ class FacebookWebhookController extends Controller
             if (! \App\Models\FortuneUserCredit::canReceiveOutbound($fromId, 'facebook')) {
                 Log::info('🔕 Comment Engagement: ข้าม — ลูกค้าเลือกพัก/ไม่รับ DM', [
                     'user_id' => $fromId,
+                ]);
+
+                return;
+            }
+
+            // 🌍 (2026-06-07) ตัวกรองกลุ่มเป้าหมาย — เลือกส่ง/ไม่ส่งตามสัญชาติ (ต่างชาติ) + อายุ
+            //   ใช้ชื่อ + ข้อความคอมเมนต์เป็นสัญญาณ ; guard เฉพาะ outbound (ไม่แตะ inbound/จ่ายเงิน)
+            $audience = \App\Services\Fortune\FortuneAudienceFilter::evaluate(
+                'facebook', $fromId, $fromName, $message, $this->settings
+            );
+            if (! $audience['allow']) {
+                Log::info('🌍 Comment Engagement: ข้าม — ไม่ผ่านตัวกรองกลุ่มเป้าหมาย', [
+                    'user_id' => $fromId,
+                    'reason' => $audience['reason'],
                 ]);
 
                 return;

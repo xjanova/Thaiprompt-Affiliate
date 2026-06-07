@@ -105,6 +105,15 @@ class FortuneTellingSetting extends Model
         'enable_public_comment_reply',
         // 💬 (2026-06-06) เปิดระบบสุ่มข้อความชวนแทนรูป เมื่อลูกค้าได้รูปในสัปดาห์นี้แล้ว
         'enable_invite_rotation',
+        // 🌍 (2026-06-07) ตัวกรองกลุ่มเป้าหมายของ DM กลับ (คอมเมนต์/ไลก์) — สัญชาติ + อายุ
+        'dm_send_to_foreigners',
+        'dm_foreigner_detect_basis',
+        'dm_filter_age_enabled',
+        'dm_age_min',
+        'dm_age_max',
+        'dm_age_unknown_action',
+        // 🗂️ (2026-06-07) หมวดข้อความชวนที่ปิดอยู่ (pickActive จะไม่สุ่มมา)
+        'invite_disabled_categories',
         // 🖼️ (2026-05-24) Master toggle: image vision ครอบทุก provider — default=false
         //    OFF: gate chatWithImage (OpenAI) + chatWithImageGemini (classifier) entry points
         //    → Celtic vision read ปิด + slip auto-detect classifier ปิด
@@ -367,6 +376,13 @@ class FortuneTellingSetting extends Model
         'enable_public_comment_reply' => 'boolean',
         // 💬 (2026-06-06) Toggle invite-message rotation (default true)
         'enable_invite_rotation' => 'boolean',
+        // 🌍 (2026-06-07) DM audience filter — สัญชาติ + อายุ
+        'dm_send_to_foreigners' => 'boolean',
+        'dm_filter_age_enabled' => 'boolean',
+        'dm_age_min' => 'integer',
+        'dm_age_max' => 'integer',
+        // 🗂️ (2026-06-07) หมวดข้อความชวนที่ปิด (JSON array)
+        'invite_disabled_categories' => 'array',
         // 🖼️ (2026-05-24) Master toggle image vision (default false) — ครอบทุก provider
         'enable_image_vision' => 'boolean',
         'admin_handover_enabled' => 'boolean',
@@ -539,6 +555,11 @@ class FortuneTellingSetting extends Model
         'enable_public_comment_reply' => false,
         // 💬 (2026-06-06) Default true — เปิดสุ่มข้อความชวนแทนรูปเมื่อได้รูปสัปดาห์นี้แล้ว
         'enable_invite_rotation' => true,
+        // 🌍 (2026-06-07) DM audience filter — default = ส่งทุกคน/ไม่กรองอายุ (พฤติกรรมเดิม)
+        'dm_send_to_foreigners' => true,
+        'dm_foreigner_detect_basis' => 'script',
+        'dm_filter_age_enabled' => false,
+        'dm_age_unknown_action' => 'send',
         // 🖼️ (2026-05-24) Default false — ปิด vision ทุก provider ประหยัด quota
         'enable_image_vision' => false,
         // LINE Settings
@@ -1534,6 +1555,44 @@ EOT;
     public function isInviteRotationEnabled(): bool
     {
         return (bool) ($this->enable_invite_rotation ?? true);
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // 🗂️ (2026-06-07) เปิด/ปิดหมวดข้อความชวน (invite-message categories)
+    // ════════════════════════════════════════════════════════════
+
+    /**
+     * รายชื่อหมวดข้อความชวนที่ "ปิด" อยู่ — pickActive() จะไม่สุ่มหมวดเหล่านี้
+     *
+     * @return array<int, string>
+     */
+    public function getDisabledInviteCategories(): array
+    {
+        $value = $this->invite_disabled_categories;
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        // กรองเอาเฉพาะ string ที่ไม่ว่าง + unique
+        return array_values(array_unique(array_filter(
+            $value,
+            fn ($c) => is_string($c) && trim($c) !== ''
+        )));
+    }
+
+    /**
+     * หมวดนี้เปิดใช้งานอยู่ไหม (ไม่อยู่ในรายการที่ปิด)
+     *
+     * หมวดว่าง/null = ถือว่าเปิด (ข้อความไม่มีหมวดยังสุ่มได้)
+     */
+    public function isInviteCategoryEnabled(?string $category): bool
+    {
+        if ($category === null || trim($category) === '') {
+            return true;
+        }
+
+        return ! in_array($category, $this->getDisabledInviteCategories(), true);
     }
 
     /**

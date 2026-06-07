@@ -4124,6 +4124,9 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{inviteMessage}/toggle', [FortuneInviteMessageController::class, 'toggle'])->name('toggle');
         Route::post('/reorder', [FortuneInviteMessageController::class, 'reorder'])->name('reorder');
         Route::post('/settings', [FortuneInviteMessageController::class, 'saveSettings'])->name('settings');
+        // 🌍 (2026-06-07) ตัวกรองกลุ่มเป้าหมาย DM กลับ (สัญชาติ + อายุ) + เปิด/ปิดหมวด
+        Route::post('/audience-filters', [FortuneInviteMessageController::class, 'saveAudienceFilters'])->name('audience-filters');
+        Route::post('/categories', [FortuneInviteMessageController::class, 'saveCategories'])->name('categories');
     });
 
     // 📚 RAG Admin Q&A — เก็บ + ใช้คำตอบของแอดมินเป็น few-shot

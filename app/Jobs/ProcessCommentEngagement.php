@@ -147,6 +147,22 @@ class ProcessCommentEngagement implements ShouldQueue
             //   → flow ดูดวงครั้งต่อไปจะหาชื่อจริงเจอ ไม่ตก fallback "FACEBOOK-XXXXXX"
             \App\Models\FortuneUserCredit::rememberName($userId, 'facebook', $name);
 
+            // 🌍 (2026-06-07) ตัวกรองกลุ่มเป้าหมาย — เลือกส่ง/ไม่ส่งตามสัญชาติ (ต่างชาติ) + อายุ
+            //   defense-in-depth: handleCommentEngagement กรองก่อน dispatch แล้ว แต่กันเคส dispatch ตรง
+            //   ใช้ชื่อจริงจาก profile (แม่นกว่า payload) + ข้อความคอมเมนต์
+            $audience = \App\Services\Fortune\FortuneAudienceFilter::evaluate(
+                'facebook', $userId, $name, $commentText, $settings
+            );
+            if (! $audience['allow']) {
+                Log::info('🌍 Comment engagement skip — ไม่ผ่านตัวกรองกลุ่มเป้าหมาย', [
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
+                    'reason' => $audience['reason'],
+                ]);
+
+                return;
+            }
+
             // 🌐 (2026-05-03) Detect locale จาก comment text + ชื่อ FB — ตอบภาษาเดียวกับที่ comment
             //   AI mirror ภาษา input อยู่แล้ว → set current() ก็พอ ไม่ต้องแตะ prompt
             //   ชื่อลาวล้วน → DM เป็นลาวแม้ comment สั้น/ใช้อิโมจิ

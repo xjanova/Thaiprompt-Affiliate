@@ -31,11 +31,26 @@ class FortuneInviteMessageController extends Controller
         $messages = FortuneInviteMessage::ordered()->get();
         $settings = FortuneTellingSetting::getSettings();
 
+        // 🗂️ (2026-06-07) สรุปจำนวนข้อความต่อหมวด (ทั้งหมด/เปิด) + สถานะเปิด-ปิดหมวด
+        $disabledCategories = $settings->getDisabledInviteCategories();
+        $categoryStats = $messages
+            ->groupBy(fn ($m) => $m->category ?: 'general')
+            ->map(fn ($group, $cat) => [
+                'category' => $cat,
+                'total' => $group->count(),
+                'active' => $group->where('is_active', true)->count(),
+                'enabled' => ! in_array($cat, $disabledCategories, true),
+            ])
+            ->sortKeys()
+            ->values();
+
         return view('admin.fortune.invite-messages.index', [
             'messages' => $messages,
             'settings' => $settings,
             'totalSent' => (int) $messages->sum('send_count'),
             'activeCount' => $messages->where('is_active', true)->count(),
+            'categoryStats' => $categoryStats,
+            'disabledCategories' => $disabledCategories,
             'pageTitle' => 'ข้อความชวนดูดวง (สุ่ม)',
         ]);
     }
@@ -54,9 +69,12 @@ class FortuneInviteMessageController extends Controller
             'message.max' => 'ข้อความยาวเกินไป (สูงสุด 1000 ตัวอักษร)',
         ]);
 
+        // 🗂️ normalize หมวด — ว่าง/เว้นวรรค → 'general' (กันหมวด '' ที่ปิด/กรองไม่ได้)
+        $category = trim((string) ($validated['category'] ?? ''));
+
         FortuneInviteMessage::create([
             'message' => trim($validated['message']),
-            'category' => $validated['category'] ?? 'general',
+            'category' => $category !== '' ? $category : 'general',
             'is_active' => (bool) ($validated['is_active'] ?? true),
             'sort_order' => (int) (FortuneInviteMessage::max('sort_order') + 1),
             'created_by' => auth()->id(),
@@ -84,9 +102,12 @@ class FortuneInviteMessageController extends Controller
             'message.max' => 'ข้อความยาวเกินไป (สูงสุด 1000 ตัวอักษร)',
         ]);
 
+        // 🗂️ normalize หมวด — ว่าง/เว้นวรรค → คงของเดิม หรือ 'general'
+        $category = trim((string) ($validated['category'] ?? ''));
+
         $inviteMessage->update([
             'message' => trim($validated['message']),
-            'category' => $validated['category'] ?? $inviteMessage->category,
+            'category' => $category !== '' ? $category : ($inviteMessage->category ?: 'general'),
             'is_active' => (bool) ($validated['is_active'] ?? false),
         ]);
 
@@ -155,8 +176,95 @@ class FortuneInviteMessageController extends Controller
         $settings->update([
             'enable_invite_rotation' => (bool) $request->boolean('enable_invite_rotation'),
         ]);
+        FortuneTellingSetting::clearSettingsCache();
 
         return redirect()->route('admin.fortune.invite-messages.index')
             ->with('success', '✅ บันทึกการตั้งค่าสำเร็จ');
+    }
+
+    /**
+     * 🌍 (2026-06-07) บันทึกตัวกรองกลุ่มเป้าหมายของ DM กลับ (สัญชาติ + อายุ)
+     *
+     * ใช้กับ DM ตอบอัตโนมัติ เมื่อมีคนคอมเมนต์/กดไลก์ (outbound)
+     * ไม่กระทบ flow จ่ายเงิน/รับคำทำนาย (inbound)
+     */
+    public function saveAudienceFilters(Request $request)
+    {
+        $validated = $request->validate([
+            'dm_send_to_foreigners' => 'nullable|boolean',
+            'dm_foreigner_detect_basis' => 'nullable|in:script,no_thai,lao_only',
+            'dm_filter_age_enabled' => 'nullable|boolean',
+            'dm_age_min' => 'nullable|integer|min:0|max:120',
+            'dm_age_max' => 'nullable|integer|min:0|max:120',
+            'dm_age_unknown_action' => 'nullable|in:send,skip',
+        ], [
+            'dm_age_min.max' => 'อายุต่ำสุดต้องไม่เกิน 120 ปี',
+            'dm_age_max.max' => 'อายุสูงสุดต้องไม่เกิน 120 ปี',
+            'dm_foreigner_detect_basis.in' => 'วิธีตรวจสัญชาติไม่ถูกต้อง',
+        ]);
+
+        $min = $validated['dm_age_min'] ?? null;
+        $max = $validated['dm_age_max'] ?? null;
+
+        // ถ้ากรอกทั้งคู่ + min > max → สลับให้ถูก (กันแอดมินกรอกกลับด้าน)
+        if ($min !== null && $max !== null && $min > $max) {
+            [$min, $max] = [$max, $min];
+        }
+
+        $settings = FortuneTellingSetting::getSettings();
+        $settings->update([
+            'dm_send_to_foreigners' => $request->boolean('dm_send_to_foreigners'),
+            'dm_foreigner_detect_basis' => $validated['dm_foreigner_detect_basis'] ?? 'script',
+            'dm_filter_age_enabled' => $request->boolean('dm_filter_age_enabled'),
+            'dm_age_min' => $min,
+            'dm_age_max' => $max,
+            'dm_age_unknown_action' => $validated['dm_age_unknown_action'] ?? 'send',
+        ]);
+        FortuneTellingSetting::clearSettingsCache();
+
+        return redirect()->route('admin.fortune.invite-messages.index')
+            ->with('success', '✅ บันทึกตัวกรองกลุ่มเป้าหมายสำเร็จ');
+    }
+
+    /**
+     * 🗂️ (2026-06-07) บันทึกการเปิด/ปิดหมวดข้อความชวน
+     *
+     * รับ enabled_categories[] = หมวดที่ "เปิด" (checkbox ที่ติ๊ก)
+     * หมวดที่ไม่ได้ส่งมา = ปิด → เก็บลง invite_disabled_categories
+     * pickActive() จะไม่สุ่มข้อความจากหมวดที่ปิด
+     */
+    public function saveCategories(Request $request)
+    {
+        $request->validate([
+            'enabled_categories' => 'nullable|array',
+            'enabled_categories.*' => 'string|max:50',
+        ]);
+
+        $enabled = (array) $request->input('enabled_categories', []);
+
+        // หมวดทั้งหมดที่มีจริงในคลังข้อความ (distinct จาก DB)
+        $allCategories = FortuneInviteMessage::query()
+            ->whereNotNull('category')
+            ->distinct()
+            ->pluck('category')
+            ->filter(fn ($c) => trim((string) $c) !== '')
+            ->values()
+            ->all();
+
+        // ปิด = ทั้งหมด - ที่เปิด
+        $disabled = array_values(array_diff($allCategories, $enabled));
+
+        $settings = FortuneTellingSetting::getSettings();
+        $settings->update([
+            'invite_disabled_categories' => $disabled,
+        ]);
+        FortuneTellingSetting::clearSettingsCache();
+
+        $offCount = count($disabled);
+
+        return redirect()->route('admin.fortune.invite-messages.index')
+            ->with('success', $offCount > 0
+                ? "✅ บันทึกหมวดสำเร็จ — ปิดอยู่ {$offCount} หมวด"
+                : '✅ บันทึกหมวดสำเร็จ — เปิดทุกหมวด');
     }
 }
