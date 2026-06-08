@@ -1220,18 +1220,50 @@ class SmsPaymentService
             $billRef = $reading->bill_reference ?? '-';
             $payAmountStr = number_format($amount, 2);
 
-            $thanksMessage = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
-                ."🔖 เลขที่บิล: {$billRef}\n"
-                ."💰 ค่าครู: ฿{$payAmountStr}\n\n"
-                ."═══════════════════════\n"
-                ."🌙 *แม่หมอจันทรากำลังเปิดประตูดวงให้*\n"
-                ."═══════════════════════\n\n"
-                ."🪄 ตอนนี้ขั้นตอนแรกของการเปิดดวง —\n"
-                ."ขอ*วันเดือนปีเกิด*ของเจ้าชะตาก่อนนะคะ ✨\n\n"
-                ."📝 *ตัวอย่าง:* 15 มีนาคม 2538\n"
-                ."   หรือ 15/3/2538 / 15-3-2538\n\n"
-                ."💡 หากจำไม่ได้แม่นยำ — ใส่ปีก่อน เดือน ก็พอค่ะ\n"
-                .'(ค่าครูที่จ่ายแล้วจะรอเก็บไว้ตลอด ไม่หมดอายุนะคะ 🙏)';
+            // 🔁 (2026-06-08) ดึง 2 ทาง — เคยให้วันเกิด (39/Celtic) → ไม่ถามซ้ำ ข้ามไปตั้งจิตเปิดไพ่เลย
+            //   พื้นชะตาเก็บที่ column birth_date เดียวกันทั้ง 39 และ Celtic → reuse ข้ามระบบได้
+            $reuseResult = null;
+            try {
+                $fcsForReuse = new \App\Services\FortuneConversationService($settings);
+                $priorBirth = $fcsForReuse->findReusableBirthDateForUser($reading);
+                if ($priorBirth !== null) {
+                    $reuseResult = $fcsForReuse->beginDeepGeneralReading($reading, $priorBirth->format('Y-m-d'));
+                    Log::info('SMS Payment (Pay-First Deep 39): reuse วันเกิดเดิม → ข้ามขั้นถามวันเกิด', [
+                        'reading_id' => $reading->id,
+                        'birth_date' => $priorBirth->format('Y-m-d'),
+                    ]);
+                }
+            } catch (\Throwable $reuseErr) {
+                Log::warning('SMS Payment (Pay-First Deep 39): reuse วันเกิดล้มเหลว → ถามตามปกติ', [
+                    'reading_id' => $reading->id,
+                    'error' => $reuseErr->getMessage(),
+                ]);
+                $reuseResult = null;
+            }
+
+            if ($reuseResult !== null) {
+                // ✅ มีวันเกิดเดิม → ตัดบิล + ตั้งจิตเปิดไพ่ทันที
+                //   (beginDeepGeneralReading ตั้ง status = COLLECTING_TAROT + ใส่คำถามพื้นดวงให้แล้ว)
+                $thanksMessage = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
+                    ."🔖 เลขที่บิล: {$billRef}\n"
+                    ."💰 ค่าครู: ฿{$payAmountStr}\n\n"
+                    ."🎂 แม่หมอจำวันเกิดของเจ้าชะตาได้แล้ว ไม่ต้องบอกใหม่นะคะ ✨\n\n"
+                    .($reuseResult['message'] ?? '');
+            } else {
+                // ไม่เคยมีวันเกิด → ขอวันเกิด (ตามเดิม)
+                $thanksMessage = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
+                    ."🔖 เลขที่บิล: {$billRef}\n"
+                    ."💰 ค่าครู: ฿{$payAmountStr}\n\n"
+                    ."═══════════════════════\n"
+                    ."🌙 *แม่หมอจันทรากำลังเปิดประตูดวงให้*\n"
+                    ."═══════════════════════\n\n"
+                    ."🪄 ตอนนี้ขั้นตอนแรกของการเปิดดวง —\n"
+                    ."ขอ*วันเดือนปีเกิด*ของเจ้าชะตาก่อนนะคะ ✨\n\n"
+                    ."📝 *ตัวอย่าง:* 15 มีนาคม 2538\n"
+                    ."   หรือ 15/3/2538 / 15-3-2538\n\n"
+                    ."💡 หากจำไม่ได้แม่นยำ — ใส่ปีก่อน เดือน ก็พอค่ะ\n"
+                    .'(ค่าครูที่จ่ายแล้วจะรอเก็บไว้ตลอด ไม่หมดอายุนะคะ 🙏)';
+            }
 
             // 3. Push ผ่าน channel manager (POST_PURCHASE_UPDATE — push ได้นอก 24hr window)
             // 🛡️ (2026-05-13 v3) Async retry — กัน webhook block
@@ -1243,11 +1275,21 @@ class SmsPaymentService
             $pushSent = false;
 
             try {
-                $pushSent = $channelManager->sendResponse($platform, $userId, [
-                    'action' => 'collecting_birthdate',
+                // 🔁 (2026-06-08) ถ้า reuse วันเกิด → ส่ง action ตั้งจิตเปิดไพ่ + ปุ่ม "พร้อมเปิดไพ่"
+                //   ถ้าไม่ → action ขอวันเกิดตามเดิม
+                $pushPayload = [
+                    'action' => $reuseResult !== null
+                        ? ($reuseResult['action'] ?? 'awaiting_tarot_intention')
+                        : 'collecting_birthdate',
                     'message' => $thanksMessage,
                     'reading' => $reading,
-                ], [
+                ];
+                if ($reuseResult !== null && ! empty($reuseResult['quick_replies'])) {
+                    $pushPayload['quick_replies'] = $reuseResult['quick_replies'];
+                    $pushPayload['show_quick_replies'] = true;
+                }
+
+                $pushSent = $channelManager->sendResponse($platform, $userId, $pushPayload, [
                     'from_admin' => true,
                     'message_tag' => 'POST_PURCHASE_UPDATE',
                 ]);
@@ -1271,6 +1313,10 @@ class SmsPaymentService
                         $platform,
                         $userId,
                         $thanksMessage,
+                        // 🔁 (2026-06-08) reuse วันเกิด → retry ด้วย action ตั้งจิตเปิดไพ่ (ไม่โดน birth_date guard skip)
+                        $reuseResult !== null
+                            ? ($reuseResult['action'] ?? 'awaiting_tarot_intention')
+                            : 'collecting_birthdate',
                     )->delay(now()->addSeconds(5)); // 5s grace ก่อน first retry
 
                     Log::warning('SMS Payment (Pay-First): inline push fail — dispatched async retry job', [

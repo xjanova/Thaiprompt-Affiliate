@@ -5859,6 +5859,101 @@ class FortuneConversationService
     }
 
     /**
+     * 🔁 (2026-06-08) หาวันเกิดที่ลูกค้าเคยให้มาก่อน (39 หรือ Celtic) — "ดึง 2 ทาง"
+     *
+     * พื้นชะตา (birth_date) เก็บที่ column เดียวกันทั้ง 39 และ Celtic → ดึงข้ามระบบได้
+     * (compute ครั้งเดียว reuse ทุกที่). ⚠️ fortune_readings ไม่มี line_user_id — LINE ใช้ platform_user_id
+     *
+     * @return \Carbon\Carbon|null วันเกิดล่าสุดของลูกค้า หรือ null ถ้าไม่เคยมี
+     */
+    public function findReusableBirthDateForUser(FortuneReading $reading): ?\Carbon\Carbon
+    {
+        $fbId = (string) ($reading->facebook_user_id ?? '');
+        $platformId = (string) ($reading->platform_user_id ?? '');
+        if ($fbId === '' && $platformId === '') {
+            return null;
+        }
+
+        try {
+            $prior = FortuneReading::query()
+                ->where('id', '!=', $reading->id)
+                ->where(function ($q) use ($fbId, $platformId) {
+                    if ($fbId !== '') {
+                        $q->where('facebook_user_id', $fbId);
+                    }
+                    if ($platformId !== '') {
+                        $q->orWhere('platform_user_id', $platformId);
+                    }
+                })
+                ->whereNotNull('birth_date')
+                ->orderByDesc('id')
+                ->first();
+        } catch (\Throwable $e) {
+            Log::warning('findReusableBirthDateForUser query fail (treat as none)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        if ($prior && ! empty($prior->birth_date)) {
+            try {
+                return \Carbon\Carbon::parse($prior->birth_date);
+            } catch (\Throwable $e) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🔁 (2026-06-08) เริ่มทำนายพื้นดวง 39 ด้วยวันเกิดที่มีอยู่แล้ว (ไม่ถามซ้ำ)
+     *
+     * ใช้โดย path "ดึง 2 ทาง" (handleDeepPayFirstPaymentMatched) เมื่อลูกค้าเคยให้วันเกิดมาก่อน
+     * → ข้ามขั้นถามวันเกิด ไปตั้งจิตเปิดไพ่เลย
+     *
+     * ⚠️ ตรรกะ proceed นี้ mirror กับ handleBirthdateInput (หลัง parse วันเกิดสำเร็จ) —
+     *    ถ้าแก้ flow ตั้งจิต/คำถามพื้นดวง ต้องแก้ทั้ง 2 ที่ให้ตรงกัน
+     */
+    public function beginDeepGeneralReading(FortuneReading $reading, string $birthDate): array
+    {
+        // คำถามพื้นดวงรวม (อัตโนมัติ — ลูกค้าไม่ต้องพิมพ์) → COLLECTING_TAROT ตรง
+        $generalQuestion = 'ขอดูพื้นดวงโดยรวมของเจ้าชะตา — ภาพรวมชีวิตช่วงนี้ ทั้งนิสัยพื้นฐาน ความรัก '
+            .'การงาน การเงิน สุขภาพ โชคลาภ และสิ่งที่ควรระวัง พร้อมคำแนะนำจากแม่หมอ';
+
+        $reading->addQuestion($generalQuestion);
+        $reading->setConversationState('deep_general_reading', true);
+        $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
+        $reading->update([
+            'birth_date' => $birthDate,
+            'questions' => [$generalQuestion],
+            'conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT,
+        ]);
+
+        $formatted = $this->formatThaiDate($birthDate);
+
+        return [
+            'action' => 'awaiting_tarot_intention',
+            'message' => "📅 *รับวันเกิดแล้ว: {$formatted}* ✨\n\n"
+                ."═══════════════════════\n"
+                ."🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
+                ."═══════════════════════\n\n"
+                ."หลับตา หายใจลึก ๆ 3 ครั้ง นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
+                ."🃏 แม่หมอจะเปิดไพ่ให้ แล้ว*อ่านพื้นดวงรวม*จากวันเกิด + ไพ่ของเจ้าชะตาให้ทันที\n"
+                ."จากนั้นถามแม่หมอต่อได้เลยค่ะ ✨\n\n"
+                ."เมื่อพร้อม → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
+                .'หรือกดปุ่มด้านล่าง 👇',
+            'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
+            ],
+        ];
+    }
+
+    /**
      * 🌙 (2026-05-14) ขอคำถามจากลูกค้า — พร้อม category buttons fallback
      *
      * user spec: "หากลูกค้ามั่วกรอกอะไรไม่รู้... ให้ AI บอกให้ลูกค้าพิมพ์คำถาม

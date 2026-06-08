@@ -50,6 +50,8 @@ class RetryPayFirstPushJob implements ShouldQueue
         public string $platform,
         public string $userId,
         public string $messageText,
+        // 🔁 (2026-06-08) action ปลายทาง — default = ขอวันเกิด (เดิม) / reuse ส่ง 'awaiting_tarot_intention'
+        public string $action = 'collecting_birthdate',
     ) {}
 
     public function handle(): void
@@ -63,13 +65,32 @@ class RetryPayFirstPushJob implements ShouldQueue
             return;
         }
 
-        // 🛡️ Idempotency — ลูกค้าอาจใส่วันเกิดไปแล้ว ระหว่าง job อยู่ใน queue
+        // 🛡️ Idempotency — ลูกค้าอาจดำเนินการต่อไปแล้ว ระหว่าง job อยู่ใน queue
         $reading->refresh();
-        if (! empty($reading->birth_date) || ! $reading->is_paid) {
-            Log::info('RetryPayFirstPushJob: skip — reading state changed', [
+        if (! $reading->is_paid) {
+            Log::info('RetryPayFirstPushJob: skip — ไม่ใช่บิลที่จ่ายแล้ว', [
                 'reading_id' => $reading->id,
-                'has_birth_date' => ! empty($reading->birth_date),
-                'is_paid' => $reading->is_paid,
+            ]);
+
+            return;
+        }
+
+        // 🔁 (2026-06-08) reuse flow (มีวันเกิดเดิม → ข้ามไป COLLECTING_TAROT): birth_date ถูกตั้งโดยตั้งใจ
+        //   → ต้อง guard ด้วย "ทำนายเสร็จ/จบแล้ว" แทน birth_date (ไม่งั้น push ยืนยันตัดบิลจะถูก skip)
+        //   ส่วน flow ขอวันเกิดปกติ → guard ด้วย birth_date เดิม (ลูกค้าให้วันเกิดแล้ว = ไม่ต้อง push ซ้ำ)
+        $isReuseFlow = $this->action !== 'collecting_birthdate';
+        if ($isReuseFlow) {
+            if (! empty($reading->deep_response)
+                || $reading->conversation_status === FortuneReading::STATUS_COMPLETED) {
+                Log::info('RetryPayFirstPushJob: skip (reuse) — reading เสร็จแล้ว', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return;
+            }
+        } elseif (! empty($reading->birth_date)) {
+            Log::info('RetryPayFirstPushJob: skip — ได้วันเกิดแล้ว', [
+                'reading_id' => $reading->id,
             ]);
 
             return;
@@ -98,7 +119,7 @@ class RetryPayFirstPushJob implements ShouldQueue
 
         try {
             $pushSent = $channelManager->sendResponse($this->platform, $this->userId, [
-                'action' => 'collecting_birthdate',
+                'action' => $this->action,
                 'message' => $this->messageText,
                 'reading' => $reading,
             ], [
