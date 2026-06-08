@@ -1664,7 +1664,12 @@ class FortuneChannelManager
 
         // 🃏 (2026-05-04) ส่งรูปไพ่ยิปซีก่อน chart (ถ้ามี) — เห็นไพ่ก่อนเข้าคำทำนาย
         //    user request: "การดูแบบ 39 ต้องส่งรูปไพ่ที่จับได้ด้วย ตอนนี้มีแต่กราฟดวงดาว"
-        $tarotImageUrls = $this->normalizeTarotImageUrls($result);
+        // 🌙 (2026-06-08) action 'processing' = ตอน "เปิดไพ่" ของ ดูดวง 39 (พื้นดวง) — ยังไม่ส่งรูป
+        //    ส่งรูป "ไพ่ + ดวงดาว" ครั้งเดียวพร้อมคำทำนาย ตอน delivery (view_reading_deep)
+        //    user 2026-06-08: "ส่งครั้งเดียวพร้อมกันกับคำทำนาย ทั้งไพ่ทั้งแผนที่ดวงดาว"
+        //    เดิม: รูปไพ่ออกตอนเปิด (processing) + ออกซ้ำตอนส่งคำทำนาย (view_reading_deep) + ดวงดาว = เยอะ
+        $skipDrawImages = ($action === 'processing');
+        $tarotImageUrls = $skipDrawImages ? [] : $this->normalizeTarotImageUrls($result);
         foreach ($tarotImageUrls as $imgUrl) {
             try {
                 $fbService->sendImage($userId, $imgUrl);
@@ -1675,7 +1680,7 @@ class FortuneChannelManager
         }
 
         // ส่ง chart image ก่อน (ถ้ามี)
-        $chartUrl = $result['chart_image_url'] ?? null;
+        $chartUrl = $skipDrawImages ? null : ($result['chart_image_url'] ?? null);
         if ($chartUrl) {
             try {
                 $fbService->sendImage($userId, $chartUrl);
