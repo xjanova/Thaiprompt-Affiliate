@@ -272,6 +272,16 @@ Schedule::command('fortune:celtic-auto-finalize --limit=20')
     ->name('fortune-celtic-auto-finalize')
     ->runInBackground();
 
+// 3a) Fortune Deep Auto-Finalize — 🌙 (2026-06-08) แจ้ง "หมดเวลาทำนาย" ลูกค้า Deep 39฿
+//     window คุย 7 นาที (deep_reading_qa_window_minutes) → ทุก 3 นาทีสแกน session ที่หมดเวลา
+//     ส่ง "หมดเวลา + ขอบคุณ + อ่านคำทำนายย้อนหลังได้" — ไม่มีบทสรุปแบบ Celtic 99 (user spec)
+Schedule::command('fortune:deep-auto-finalize --limit=30')
+    ->everyThreeMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('fortune-deep-auto-finalize')
+    ->runInBackground();
+
 // 3b) Fortune Celtic Re-Deliver — 🐛 (2026-05-28) หลักประกันลูกค้าได้รับคำทำนายเสมอ
 //     เคส FTU-260528-E8815: AI ตอบสำเร็จ + บันทึก DB แต่ push แรกไม่ถึงลูกค้า (เห็นแค่ "ติดขัด")
 //     ทุกนาที — หา question ที่ answered แต่ delivered_at null (ภายใน 2 ชม.) → re-push

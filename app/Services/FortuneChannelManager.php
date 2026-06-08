@@ -644,7 +644,7 @@ class FortuneChannelManager
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     if ($celticEnabled) {
                         return $fbService->sendQuickReplies($userId, $message, [
-                            ['content_type' => 'text', 'title' => '💎 โอนค่าบูชาครู 99฿', 'payload' => 'TIER_CELTIC_99'],
+                            ['content_type' => 'text', 'title' => '👑 VIP ดูไพ่เต็ม 99฿', 'payload' => 'TIER_CELTIC_99'],
                             ['content_type' => 'text', 'title' => '🙏 ไว้คราวหน้า', 'payload' => 'NOT_INTERESTED'],
                         ], $extra);
                     }
@@ -713,7 +713,7 @@ class FortuneChannelManager
                     if ($celticOnlyIntro) {
                         $celticPriceLabel = (int) ($result['celtic_price'] ?? 99);
                         $buttons[] = ['content_type' => 'text',
-                            'title' => FortuneLocaleService::lo("💎 โอนค่าบูชาครู {$celticPriceLabel}฿", "💎 ໂອນຄ່າບູຊາຄູ {$celticPriceLabel}฿"),
+                            'title' => FortuneLocaleService::lo("👑 VIP ดูไพ่เต็ม {$celticPriceLabel}฿", "💎 ໂອນຄ່າບູຊາຄູ {$celticPriceLabel}฿"),
                             'payload' => 'TIER_CELTIC_99'];
                         $buttons[] = ['content_type' => 'text',
                             'title' => FortuneLocaleService::lo('🙏 ไว้คราวหน้า', '🙏 ໄວ້ຄາວໜ້າ'),
@@ -737,7 +737,7 @@ class FortuneChannelManager
                     }
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
-                            'title' => FortuneLocaleService::lo('💎 โอนค่าบูชาครู 99฿', '💎 ໂອນຄ່າບູຊາຄູ 99฿'),
+                            'title' => FortuneLocaleService::lo('👑 VIP ดูไพ่เต็ม 99฿', '💎 ໂອນຄ່າບູຊາຄູ 99฿'),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     $buttons[] = ['content_type' => 'text',
@@ -785,7 +785,7 @@ class FortuneChannelManager
                     }
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
-                            'title' => '💎 โอนค่าบูชาครู 99฿',
+                            'title' => '👑 VIP ดูไพ่เต็ม 99฿',
                             'payload' => 'TIER_CELTIC_99'];
                     }
 
@@ -848,7 +848,7 @@ class FortuneChannelManager
                     if ($celticEnabled) {
                         // 🛡️ FB QR title cap = 20 chars — เลิก "— " เพื่อ fit ใน 19 chars
                         $buttons[] = ['content_type' => 'text',
-                            'title' => FortuneLocaleService::lo("💎 โอนค่าบูชาครู {$celticPrice}฿", "💎 ໂອນຄ່າບູຊາຄູ {$celticPrice}฿"),
+                            'title' => FortuneLocaleService::lo("👑 VIP ดูไพ่เต็ม {$celticPrice}฿", "💎 ໂອນຄ່າບູຊາຄູ {$celticPrice}฿"),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     $buttons[] = ['content_type' => 'text',

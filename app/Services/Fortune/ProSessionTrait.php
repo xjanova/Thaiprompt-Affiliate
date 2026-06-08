@@ -152,6 +152,88 @@ trait ProSessionTrait
     }
 
     /**
+     * 🌙 (2026-06-08) เช็คว่าเป็น Deep 39 Pro Session ที่หมดเวลาแล้ว + ยังไม่ได้แจ้ง "หมดเวลา"
+     *
+     * ใช้ timestamp (pro_session_started_at + window) — ไม่พึ่ง pro_session_active flag
+     *   เพราะ isInProSession() เคลียร์ active flag ทันทีเมื่อหมดเวลา → cron จะหาไม่เจอ
+     * idempotent ผ่าน pro_session_timeout_notified
+     */
+    protected function isDeepProSessionTimedOutUnnotified(FortuneReading $reading): bool
+    {
+        if ((string) $reading->getConversationState('pro_session_type', 'deep') !== 'deep') {
+            return false;
+        }
+        if ($reading->getConversationState('pro_session_timeout_notified', false)) {
+            return false;
+        }
+        $startedAt = $reading->getConversationState('pro_session_started_at');
+        if (empty($startedAt)) {
+            return false; // ไม่เคยเข้า Pro Session → ไม่ต้องแจ้ง
+        }
+        $windowMin = (int) $reading->getConversationState('pro_session_window_minutes', self::PRO_SESSION_DEEP_MINUTES);
+        if ($windowMin < 1) {
+            $windowMin = self::PRO_SESSION_DEEP_MINUTES;
+        }
+        try {
+            $elapsed = (int) Carbon::parse($startedAt)->diffInMinutes(now(), true);
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return $elapsed >= $windowMin;
+    }
+
+    /**
+     * 🌙 (2026-06-08) ปิด Deep 39 Pro Session เมื่อหมดเวลา + สร้างข้อความแจ้ง
+     *   "หมดเวลาทำนาย + ขอบคุณ + อ่านคำทำนายย้อนหลังได้" — ไม่มีบทสรุปแบบ Celtic 99
+     *
+     * public — ให้ cron (fortune:deep-auto-finalize) เรียกได้
+     */
+    public function finalizeDeepProSessionTimeout(FortuneReading $reading): array
+    {
+        $reading->setConversationState('pro_session_active', false);
+        $reading->setConversationState('pro_session_pending_exit', false);
+        $reading->setConversationState('pro_session_timeout_notified', true);
+        $reading->setConversationState('pro_session_timeout_notified_at', now()->toIso8601String());
+
+        $name = $reading->resolveCustomerName();
+
+        return [
+            'action' => 'deep_pro_session_timeout',
+            'message' => "🌙✨ *หมดเวลาทำนายแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
+                ."🙏 ขอบคุณที่ให้แม่หมอจันทราได้ดูพื้นดวงให้ในวันนี้นะคะ\n"
+                ."ขอให้เจ้าชะตาเจอแต่สิ่งดี ๆ มีโชคลาภหนุนนำ เดินทางต่อด้วยใจสงบ ✨\n\n"
+                ."📖 อยากอ่านคำทำนายอีกครั้ง — พิมพ์ *\"อ่านคำทำนายล่าสุด\"* ได้ตลอดเลยค่ะ\n"
+                .'🔮 อยากให้แม่หมอดูใหม่ — พิมพ์ *"ดูดวง"* ได้เสมอนะคะ',
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 🌙 (2026-06-08) ดึง Deep 39 Pro Session ที่หมดเวลา + ยังไม่แจ้ง (สำหรับ cron auto-finalize)
+     *
+     * public — ให้ FortuneDeepAutoFinalize command เรียก
+     */
+    public function getTimedOutDeepProSessions(int $limit = 30, ?int $specificId = null): \Illuminate\Support\Collection
+    {
+        $query = FortuneReading::query()
+            ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
+            ->where('is_paid', true)
+            ->where('paid_at', '>=', now()->subHours(2)); // window 7 นาที — 2 ชม. ครอบ stragglers
+
+        if ($specificId) {
+            $query->where('id', (int) $specificId);
+        } else {
+            $query->limit(100); // pre-filter cap กัน load หนัก
+        }
+
+        return $query->orderBy('paid_at', 'desc')->get()
+            ->filter(fn ($r) => $this->isDeepProSessionTimedOutUnnotified($r))
+            ->take(max(1, $limit))
+            ->values();
+    }
+
+    /**
      * Loose match: "พอแค่นี้" / "ขอบคุณ" + คำใกล้เคียง
      *
      * ⚠️ ใช้ confirmation gate — เจอ keyword แล้ว "ยังไม่ปิด" จนกว่าลูกค้าตอบ "ใช่"
@@ -572,9 +654,16 @@ trait ProSessionTrait
             $reading->setConversationState('pro_session_history', array_slice($history, -16));
 
             // Footer แจ้งเวลาคงเหลือ
+            // 🌙 (2026-06-08) Deep 39 — โชว์ "กล่องเวลาที่เหลือ" ทุกคำตอบ (user spec) ไม่ใช่แค่ 3 นาทีท้าย
             $remainingMin = $this->getProSessionRemainingMinutes($reading);
             $footer = '';
-            if ($remainingMin > 0 && $remainingMin <= 3) {
+            if ($type === 'deep') {
+                if ($remainingMin > 3) {
+                    $footer = "\n\n──────────────────────\n⏳ *เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที* — ถามต่อได้เลยค่ะ ✨";
+                } elseif ($remainingMin > 0) {
+                    $footer = "\n\n──────────────────────\n⏳ *เหลือเวลาอีก {$remainingMin} นาที* — เมื่อพอใจพิมพ์ \"ขอบคุณ\" ได้เลยค่ะ";
+                }
+            } elseif ($remainingMin > 0 && $remainingMin <= 3) {
                 $footer = "\n\n_(⏳ เหลือเวลาอีก {$remainingMin} นาที — เมื่อพอใจพิมพ์ \"ขอบคุณ\" ได้เลยค่ะ)_";
             }
 
@@ -635,6 +724,8 @@ trait ProSessionTrait
                 // ✅ Confirmed → ปิด session
                 $closingMessage = $this->buildProSessionClosingMessage($reading);
                 $this->clearProSessionFlags($reading);
+                // 🌙 (2026-06-08) กัน Deep 39 cron ส่ง "หมดเวลา" ซ้ำ หลังลูกค้าปิด session เอง (deep-only path)
+                $reading->setConversationState('pro_session_timeout_notified', true);
 
                 // ถ้ายังอยู่ใน Celtic state — เคลียร์ status ให้เป็น COMPLETED ด้วย
                 if (in_array($reading->conversation_status, [

@@ -467,7 +467,7 @@ class FacebookRichMessageService
         } elseif ($celticEnabled) {
             $buttons[] = [
                 'type' => 'postback',
-                'title' => "💎 โอนค่าบูชาครู {$celticPrice}฿",
+                'title' => "👑 VIP ดูไพ่เต็ม {$celticPrice}฿",
                 'payload' => 'TIER_CELTIC_99',
             ];
         }
@@ -620,7 +620,7 @@ class FacebookRichMessageService
             }
             $buttons[] = [
                 'type' => 'postback',
-                'title' => "💎 โอนค่าบูชาครู {$celticPriceX}฿",
+                'title' => "👑 VIP ดูไพ่เต็ม {$celticPriceX}฿",
                 'payload' => 'TIER_CELTIC_99',
             ];
         }
@@ -682,7 +682,7 @@ class FacebookRichMessageService
         } elseif ($celticEnabled) {
             $buttons[] = [
                 'type' => 'postback',
-                'title' => "💎 โอนค่าบูชาครู {$celticPrice}฿",
+                'title' => "👑 VIP ดูไพ่เต็ม {$celticPrice}฿",
                 'payload' => 'TIER_CELTIC_99',
             ];
         }
