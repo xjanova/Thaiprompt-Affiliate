@@ -1606,6 +1606,51 @@ trait CelticCrossConversationTrait
             ]);
         }
 
+        // 🎂 (2026-06-08) Celtic 99 — ถามวันเดือนปีเกิดเป็นคำถามแรก (บังคับ) + ทำนายพื้นดวงผสมไพ่
+        //   user spec: "คำถามแรก = วันเดือนปีเกิด. ถ้ายังไม่เคยมีในฐาน 39 (ไม่เคยให้วันเกิด/ทำนาย)
+        //   ให้ทำนายพื้นดวงก่อน แล้วค่อยนำพื้นดวง (ดาวเจ้าชนะแบบที่ 39 ใช้) มาทำนายร่วมกับไพ่ต่อไป"
+        //     • เคยให้วันเกิด/ทำ 39 แล้ว → ใช้เลย ไม่ถามซ้ำ (Q&A ฉีด astrology อัตโนมัติใน buildFollowupPrompt)
+        //     • ไม่เคย → ถามวันเกิด (ยังไม่ start QA window กันกินเวลา 15 นาที) → ได้แล้วทำนายพื้นดวง 1 ชุด
+        //   องค์ความรู้แม่หมอ (FortuneKnowledge RAG) + AdminQA RAG ติดมากับ askQuestion อยู่แล้ว (ไม่ bypass)
+        //   fail-safe: ถ้าด่านนี้พัง → ไหลต่อทักทายปกติ (card-first) ไม่ให้ flow เรือธงแตก
+        try {
+            if ($this->celticBirthdateFirstEnabled()
+                && empty($reading->getConversationState('celtic_birthdate_text'))
+                && empty($reading->getConversationState('celtic_birthdate_skipped'))) {
+
+                $priorBirth = $this->findPriorBirthDateForCeltic($reading);
+                if ($priorBirth !== null) {
+                    // เคยให้วันเกิด/ทำ 39 มาแล้ว → ใช้เลย ไม่ถามซ้ำ
+                    $reading->setConversationState('celtic_birthdate_text', 'เจ้าชะตาเกิด '.$priorBirth);
+                    $reading->setConversationState('celtic_birthdate_from_prior', true);
+                    // ไหลต่อไปทักทายปกติด้านล่าง — Q&A จะอ่านไพ่ผสมดวงดาวให้เอง
+                } else {
+                    // ไม่เคยมีในฐาน → ถามวันเกิดก่อน (ยังไม่ตั้ง celtic_first_answered_at = ยังไม่ start window)
+                    $reading->setConversationState('celtic_birthdate_pending', true);
+                    $reading->setConversationState('celtic_birthdate_attempts', 0);
+
+                    return [
+                        // reuse 'celtic_all_picked' → ส่งรูปไพ่ใบสุดท้าย + ข้อความขอวันเกิด (render เดิม ปลอดภัย)
+                        'action' => 'celtic_all_picked',
+                        'message' => $lastCardMessage."\n\n──────────────────────\n\n"
+                            .$this->buildCelticAskBirthdateMessage($reading),
+                        'reading' => $reading,
+                        'tarot_image_url' => $lastCardImage,
+                    ];
+                }
+            }
+        } catch (\Throwable $bdErr) {
+            \Log::warning('Celtic: birthdate-first step fail (fallback to normal opening)', [
+                'reading_id' => $reading->id,
+                'error' => $bdErr->getMessage(),
+            ]);
+            try {
+                $reading->setConversationState('celtic_birthdate_pending', false);
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
         // 🆕 (2026-05-14) AI initiates conversation
         //   user spec: "เมื่อเปิดไพ่ครบ ให้ AI ถามเลยคุยกับ user เลย ให้เริ่มถาม"
         //   เดิม: ส่ง static text "เล่าให้แม่หมอฟัง" + รอ user พิมพ์ก่อน
@@ -1645,6 +1690,12 @@ trait CelticCrossConversationTrait
                 ."🃏 ไพ่ทั้ง 10 ใบของเจ้าชะตาเปิดออกแล้ว — แม่หมอเห็นพลังงานที่ห่อหุ้มเจ้าชะตาอยู่\n\n"
                 .'💬 เล่าให้แม่หมอฟังได้เลย — ตอนนี้มีเรื่องอะไรคาใจที่สุด?';
 
+        // 🎂 (2026-06-08) เคยมีวันเกิดในฐาน (39/เคยทำ) → บอกว่าจำได้ + จะอ่านไพ่ผสมดวงดาวให้
+        if ($reading->getConversationState('celtic_birthdate_from_prior')) {
+            $openingText = "🎂 แม่หมอจำวันเกิดของเจ้าชะตาได้แล้วนะคะ — จะอ่านไพ่ผสมกับดวงดาว (ดาวเจ้าชนะ) ให้เลยค่ะ ✨\n\n"
+                .$openingText;
+        }
+
         // 🌙 (2026-05-23 v3) Start QA window only — เก็บแค่ timestamp ไม่ bump counter
         //    เดิม: markCelticAnswered(1) → celtic_questions_used = 1 (offset 1 คำถามผิด)
         //    ใหม่: set celtic_first_answered_at ตรงๆ — ปล่อยให้ counter เริ่ม 0
@@ -1682,12 +1733,249 @@ trait CelticCrossConversationTrait
     }
 
     /**
+     * 🎂 (2026-06-08) เปิด/ปิดด่านถามวันเกิดก่อนใน Celtic 99 (default เปิด)
+     *   ถ้า column ยังไม่ถูก migrate → ?? true → เปิดไว้ (graceful)
+     */
+    protected function celticBirthdateFirstEnabled(): bool
+    {
+        return (bool) ($this->settings->enable_celtic_birthdate_first ?? true);
+    }
+
+    /**
+     * 🎂 (2026-06-08) หาวันเกิดที่ลูกค้าเคยให้/เคยทำ 39 มาก่อน (เพื่อไม่ถามซ้ำ)
+     *
+     * ⚠️ fortune_readings ไม่มี column line_user_id — LINE ใช้ platform_user_id
+     *    (อ้างอิง FortuneReading::scopeForUser + persona lookup)
+     *
+     * @return string|null วันเกิด d/m/Y (ค.ศ.) หรือ null ถ้าไม่เคยมี
+     */
+    protected function findPriorBirthDateForCeltic(FortuneReading $reading): ?string
+    {
+        $fbId = (string) ($reading->facebook_user_id ?? '');
+        $platformId = (string) ($reading->platform_user_id ?? '');
+        if ($fbId === '' && $platformId === '') {
+            return null;
+        }
+
+        try {
+            $prior = FortuneReading::query()
+                ->where('id', '!=', $reading->id)
+                ->where(function ($q) use ($fbId, $platformId) {
+                    if ($fbId !== '') {
+                        $q->where('facebook_user_id', $fbId);
+                    }
+                    if ($platformId !== '') {
+                        $q->orWhere('platform_user_id', $platformId);
+                    }
+                })
+                ->whereNotNull('birth_date')
+                ->orderByDesc('id')
+                ->first();
+        } catch (\Throwable $e) {
+            \Log::warning('Celtic: findPriorBirthDateForCeltic query fail (treat as none)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        if ($prior && ! empty($prior->birth_date)) {
+            try {
+                return \Carbon\Carbon::parse($prior->birth_date)->format('d/m/Y');
+            } catch (\Throwable $e) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🎂 (2026-06-08) ข้อความขอวันเกิด (ครั้งแรก หลังเปิดไพ่ครบ 10 ใบ)
+     */
+    protected function buildCelticAskBirthdateMessage(FortuneReading $reading): string
+    {
+        $name = $reading->resolveCustomerName();
+
+        return "🌙✨ แม่หมอจันทราเปิดไพ่ Celtic Cross ครบทั้ง 10 ใบให้คุณ{$name}แล้วค่ะ ✨\n\n"
+            ."🎂 ก่อนเริ่มทำนาย แม่หมอขอ *วันเดือนปีเกิด* ของเจ้าชะตาก่อนนะคะ\n"
+            ."   แม่หมอจะได้ดู *ดาวเจ้าชนะ* (พื้นดวงจากวันเกิด) ผสมกับพลังไพ่ทั้ง 10 ใบ — ทำนายแม่นและลึกขึ้นค่ะ\n\n"
+            ."📅 พิมพ์มาได้เลย เช่น *29 มกราคม 2516* หรือ *29/01/2516*\n"
+            .'(ถ้าไม่สะดวกบอก พิมพ์ว่า *ข้าม* แม่หมอจะดูจากไพ่ให้ค่ะ)';
+    }
+
+    /**
+     * 🎂 (2026-06-08) ลูกค้าขอข้ามการให้วันเกิด → ดูจากไพ่อย่างเดียว (card-first)
+     */
+    protected function looksLikeBirthdateSkip(string $text): bool
+    {
+        $t = mb_strtolower(trim($text), 'UTF-8');
+        if ($t === '') {
+            return false;
+        }
+        $skipWords = ['ข้าม', 'ไม่บอก', 'ไม่อยากบอก', 'ไม่ให้', 'ไม่ระบุ', 'จำไม่ได้',
+            'ไม่ทราบ', 'ไม่รู้', 'ไม่สะดวก', 'ดูจากไพ่', 'ไพ่อย่างเดียว', 'skip'];
+        foreach ($skipWords as $w) {
+            if (mb_strpos($t, $w) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🎂 (2026-06-08) เริ่มนับ QA window ถ้ายังไม่เริ่ม — เรียกหลังได้/ข้ามวันเกิด
+     *   (กันด่านวันเกิดกินเวลา 15 นาทีของลูกค้า — window เริ่มหลังด่านนี้จบ)
+     */
+    protected function startCelticQaWindowIfNeeded(FortuneReading $reading): void
+    {
+        try {
+            if (empty($reading->celtic_first_answered_at)) {
+                $reading->update(['celtic_first_answered_at' => now()]);
+            }
+            // 🎂 (2026-06-08) align Pro Session avatar timer กับ QA window — กันด่านวันเกิดกินเวลา
+            //   (enterProSession ตั้ง pro_session_started_at ตั้งแต่เปิดไพ่ครบ → reset ให้เริ่มนับตรงนี้)
+            if ($reading->getConversationState('pro_session_active')) {
+                $reading->setConversationState('pro_session_started_at', now()->toIso8601String());
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Celtic: start QA window fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 🎂 (2026-06-08) ขั้นรับวันเกิดของ Celtic 99 (คำถามแรกบังคับ — ข้ามได้ถ้าไม่ให้)
+     *
+     * @return array|string
+     *                      - array  = จัดการจบแล้ว (ถามวันเกิดซ้ำ / ข้ามไป card-first) → ส่งกลับลูกค้าเลย
+     *                      - string = ได้วันเกิดแล้ว = คำถามสังเคราะห์ "พื้นดวงรวม" → ให้ไหลเข้า askQuestion ต่อ
+     */
+    protected function handleCelticBirthdateStep(FortuneReading $reading, string $text)
+    {
+        $text = trim($text);
+
+        // ลองอ่านวันเกิด "ก่อน" เสมอ (ตัวเดียวกับ 39 — เข้าใจไทยธรรมชาติ เช่น "29 มกราคม 2516")
+        //   ⚠️ ต้อง parse ก่อนเช็คคำว่า "ข้าม" — กันเคสมีวันเกิดจริงปนคำพูดเผลอ
+        //   เช่น "จำไม่ได้แน่ แต่ 29 มกราคม 2516" → ต้องอ่านวันเกิดได้ ไม่ใช่ตีเป็นข้าม
+        $parsed = null;
+        try {
+            $parsed = $this->parseBirthDate($text);
+        } catch (\Throwable $e) {
+            $parsed = null;
+        }
+
+        if (! empty($parsed)) {
+            // ✅ ได้วันเกิด → เก็บ + start window + สร้างคำถามพื้นดวง
+            try {
+                $reading->update(['birth_date' => $parsed]);
+            } catch (\Throwable $e) {
+                // non-blocking — เขียน birth_date ไม่ได้ ไม่ควรทำ flow แตก (ยังมี celtic_birthdate_text)
+            }
+
+            $human = $parsed;
+            try {
+                $human = \Carbon\Carbon::parse($parsed)->format('d/m/Y');
+            } catch (\Throwable $e) {
+                // ใช้ค่าดิบ
+            }
+
+            $reading->setConversationState('celtic_birthdate_text', 'เจ้าชะตาเกิด '.$human);
+            $reading->setConversationState('celtic_birthdate_pending', false);
+            $this->startCelticQaWindowIfNeeded($reading);
+
+            \Log::info('Celtic: birthdate captured → generate พื้นดวง', [
+                'reading_id' => $reading->id,
+                'birth_date' => $human,
+            ]);
+
+            // คำถามสังเคราะห์ = พื้นดวงรวม (ดาวเจ้าชนะจากวันเกิด + ภาพรวมไพ่ 10 ใบ)
+            //   ผ่าน askQuestion → buildFollowupPrompt → ฉีด birthAstroBlock + แม่หมอ Knowledge RAG +
+            //   AdminQA RAG อัตโนมัติ (ไม่ bypass องค์ความรู้เดิม)
+            return 'ช่วยอ่านพื้นดวงรวมของเจ้าชะตาให้หน่อยค่ะ โดยดูจากดาวเจ้าชนะ (วันเดือนปีเกิด) '
+                .'ผสมกับภาพรวมไพ่ทั้ง 10 ใบที่เปิด — ทั้งนิสัยพื้นฐาน จุดเด่นจุดอ่อน และภาพรวม '
+                .'ความรัก การงาน การเงิน สุขภาพ ในช่วงนี้';
+        }
+
+        // อ่านวันเกิดไม่ได้ → ลูกค้าขอข้าม / ไม่ให้วันเกิด → ดูจากไพ่อย่างเดียว
+        if ($this->looksLikeBirthdateSkip($text)) {
+            $reading->setConversationState('celtic_birthdate_pending', false);
+            $reading->setConversationState('celtic_birthdate_skipped', true);
+            $this->startCelticQaWindowIfNeeded($reading);
+
+            return [
+                'action' => 'celtic_ask_birthdate',
+                'message' => "🌙 ได้ค่ะ ไม่เป็นไร — แม่หมอจะอ่านจากพลังไพ่ทั้ง 10 ใบให้ก็แม่นได้เช่นกัน ✨\n\n"
+                    .'💬 อยากให้แม่หมอดูเรื่องอะไรก่อนดีคะ? พิมพ์มาได้เลยค่ะ',
+                'reading' => $reading,
+            ];
+        }
+
+        // ❌ parse ไม่ได้ + ไม่ใช่ข้าม → นับครั้ง + ถามซ้ำ / ข้ามถ้าครบ 2 ครั้ง (ไม่บล็อกลูกค้า)
+        $attempts = (int) $reading->getConversationState('celtic_birthdate_attempts', 0) + 1;
+        $reading->setConversationState('celtic_birthdate_attempts', $attempts);
+
+        if ($attempts >= 2) {
+            // ครบ 2 ครั้ง → เลิกถามวันเกิด ดูจากไพ่ให้
+            //   🛡️ (A3) กันคำถามหล่นหาย: ถ้าลูกค้าพิมพ์ "คำถามจริง" แทนวันเกิด → ส่งคำถามนั้นเข้า
+            //   askQuestion ตอบจากไพ่ทันที (ไม่ทิ้งให้พิมพ์ใหม่) — ไหลต่อเป็น card-first
+            $reading->setConversationState('celtic_birthdate_pending', false);
+            $reading->setConversationState('celtic_birthdate_skipped', true);
+            $this->startCelticQaWindowIfNeeded($reading);
+
+            $carry = trim($text);
+            if ($carry !== '') {
+                \Log::info('Celtic: birthdate 2 fails → carry ข้อความเป็นคำถาม (card-first)', [
+                    'reading_id' => $reading->id,
+                    'text' => mb_substr($carry, 0, 40),
+                ]);
+
+                return $carry; // ไหลเข้า askQuestion ปกติ — ตอบจากไพ่ (ยังไม่มี astrology)
+            }
+
+            return [
+                'action' => 'celtic_ask_birthdate',
+                'message' => "🌙 ไม่เป็นไรค่ะ — แม่หมอจะอ่านจากพลังไพ่ทั้ง 10 ใบให้ก็แม่นได้เช่นกัน ✨\n\n"
+                    .'💬 อยากให้แม่หมอดูเรื่องอะไรก่อนดีคะ? พิมพ์มาได้เลยค่ะ',
+                'reading' => $reading,
+            ];
+        }
+
+        return [
+            'action' => 'celtic_ask_birthdate',
+            'message' => "🌙 แม่หมอขอ *วันเดือนปีเกิด* ของเจ้าชะตาก่อนนะคะ เพื่อดูดาวเจ้าชนะผสมกับไพ่ค่ะ\n\n"
+                ."📅 พิมพ์มาได้เลย เช่น *29 มกราคม 2516* หรือ *29/01/2516*\n"
+                .'(ถ้าไม่สะดวกบอก พิมพ์ว่า *ข้าม* แม่หมอจะดูจากไพ่ให้ค่ะ)',
+            'reading' => $reading,
+        ];
+    }
+
+    /**
      * State: CELTIC_AWAITING_QUESTION
      * ลูกค้าพิมพ์คำถาม Q1, Q2, หรือ Q3
      */
     protected function handleCelticAwaitingQuestion(FortuneReading $reading, string $messageText): array
     {
         $question = trim($messageText);
+
+        // 🎂 (2026-06-08) ขั้นถามวันเกิด (คำถามแรกบังคับใน Celtic 99) — ต้องอยู่บนสุด ก่อน Q&A ปกติ
+        //   handleCelticBirthdateStep คืน:
+        //     • array  = จัดการจบแล้ว (ถามวันเกิดซ้ำ / ข้าม) → ส่งกลับลูกค้าเลย
+        //     • string = ได้วันเกิดแล้ว = คำถามสังเคราะห์ "พื้นดวงรวม" → ไหลเข้า askQuestion ปกติด้านล่าง
+        //       (buildFollowupPrompt ฉีด ดาวเจ้าชนะ + แม่หมอ Knowledge RAG + AdminQA RAG ให้อัตโนมัติ)
+        if ($reading->getConversationState('celtic_birthdate_pending')) {
+            $bdStep = $this->handleCelticBirthdateStep($reading, $question);
+            if (is_array($bdStep)) {
+                return $bdStep;
+            }
+            // ได้วันเกิดแล้ว → แทนข้อความลูกค้าด้วยคำถามพื้นดวง แล้วไหลต่อเข้า askQuestion ปกติ
+            $question = $bdStep;
+            $messageText = $bdStep;
+        }
 
         // 🔢 (2026-06-06 R5125) ลูกค้าเลือก "ทั้งสองข้อ" จากกล่องคำถามแนะนำ (1และ2 / เอาสองข้อ / ทั้งคู่)
         //   เคสจริง FTU-260606-W4360 seq3: ลูกค้าพิมพ์ "1และ2" → resolveCelticSuggestionPick รับแค่

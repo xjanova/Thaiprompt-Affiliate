@@ -272,6 +272,8 @@ class FortuneTellingSetting extends Model
         'enable_celtic_life_reading',
         // 🔮 (2026-06-01) ดวงจิต/กรรมรายไพ่ (สายญาณ/ผู้มีองค์/อดีตชาติ) จาก RAG
         'enable_celtic_destiny',
+        // 🎂 (2026-06-08) Celtic 99: ถามวันเกิดก่อน + ทำนายพื้นดวง (ดาวเจ้าชนะ) ผสมไพ่
+        'enable_celtic_birthdate_first',
         // 🧩 (2026-06-02) 10 หมวดความรู้รายไพ่เสริม จาก RAG — รัก/เงิน/ฤกษ์/เลข/ของมงคล/จิตใจ/ครอบครัว/เดินทาง/คดี/แก้กรรม
         'enable_celtic_love',
         'enable_celtic_wealth',
@@ -472,6 +474,7 @@ class FortuneTellingSetting extends Model
         'enable_celtic_physiognomy' => 'boolean',
         'enable_celtic_life_reading' => 'boolean',
         'enable_celtic_destiny' => 'boolean',
+        'enable_celtic_birthdate_first' => 'boolean',
         // 🧩 (2026-06-02) 10 หมวดความรู้รายไพ่เสริม
         'enable_celtic_love' => 'boolean',
         'enable_celtic_wealth' => 'boolean',
@@ -635,6 +638,8 @@ class FortuneTellingSetting extends Model
         'enable_celtic_life_reading' => true,
         // 🔮 (2026-06-01) ดวงจิต/กรรมรายไพ่ — default true (admin ปิดได้ผ่าน DB UPDATE)
         'enable_celtic_destiny' => true,
+        // 🎂 (2026-06-08) Celtic 99 ถามวันเกิดก่อน + พื้นดวงผสมไพ่ — default true (admin ปิดได้ทันที)
+        'enable_celtic_birthdate_first' => true,
         // 🛡️ (2026-05-27) Abuse Clapback — default ปิด (admin opt-in เท่านั้น)
         'enable_abuse_clapback' => false,
         'abuse_clapback_use_grok' => true,
