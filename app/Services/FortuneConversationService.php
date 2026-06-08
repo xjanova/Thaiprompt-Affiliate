@@ -6743,6 +6743,24 @@ class FortuneConversationService
         $isPaid = (bool) $reading->is_paid;
 
         if ($payFirstMode && $isPaid) {
+            // 🛡️ (2026-06-08) Dispatch idempotency lock — กัน "ส่งคำทำนายซ้ำหลายครั้ง"
+            //   เคสจริง FTU-260608-A3995 (retry=2): ลูกค้าพิมพ์ "พร้อม" ซ้ำ / FB ส่ง webhook ซ้ำ →
+            //   idempotent card-draw guard (handleTarotCardDraw) คืน afterTarotCardDrawn อีกรอบ →
+            //   dispatch ProcessDeepFortuneReadingJob ซ้ำ → 2 Job race → push คำทำนาย 2 ครั้ง
+            //   Cache::add = atomic: ตัวแรกได้ lock → dispatch, ตัวซ้ำ skip (TTL 600s ครอบเวลา Job)
+            $deepDispatchLock = "fortune:deep_dispatch:{$reading->id}";
+            if (! \Illuminate\Support\Facades\Cache::add($deepDispatchLock, 1, 600)) {
+                Log::info('Fortune: Pay-First — afterTarotCardDrawn ซ้ำ → skip dispatch (กันคำทำนายซ้ำ)', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return [
+                    'action' => 'processing',
+                    'message' => trim($prefixMessage),
+                    'reading' => $reading,
+                ];
+            }
+
             Log::info('Fortune: Pay-First — ครบข้อมูลแล้ว dispatch ProcessDeepFortuneReadingJob', [
                 'reading_id' => $reading->id,
                 'questions' => $collectedQuestions,
