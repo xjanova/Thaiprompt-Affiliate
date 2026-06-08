@@ -1958,6 +1958,45 @@ trait CelticCrossConversationTrait
     }
 
     /**
+     * 🗺️ (2026-06-08) สร้าง/ดึง "แผนที่ดาวชะตา" (birth chart) ของ Celtic — ส่งคู่ภาพไพ่ตอนสรุป
+     *
+     * user spec: "ตอนสรุปให้ส่งแผนที่ดาวชะตาไปกับแผนภูมิภาพไพ่พร้อมกัน"
+     * ใช้ตัวสร้างเดียวกับ 39 (FortuneChartService::generateBirthChart) + cache ลง reading_image_url
+     * (กัน gen ซ้ำ). ถ้าลูกค้าข้ามวันเกิด (ไม่มี birth_date) → null = ส่งแค่ภาพไพ่
+     *
+     * @return string|null URL ภาพแผนที่ดาว หรือ null
+     */
+    protected function buildCelticBirthChartUrl(FortuneReading $reading): ?string
+    {
+        // ใช้ภาพเดิมถ้าเคยสร้างแล้ว (กัน render ซ้ำ)
+        if (! empty($reading->reading_image_url)) {
+            return $reading->reading_image_url;
+        }
+        if (empty($reading->birth_date)) {
+            return null; // ไม่มีวันเกิด (ลูกค้าข้าม) → ไม่มีแผนที่ดาว
+        }
+
+        try {
+            $name = $reading->resolveCustomerName();
+            $bd = \Carbon\Carbon::parse($reading->birth_date)->format('Y-m-d');
+            $chartService = new \App\Services\FortuneChartService;
+            $url = $chartService->generateBirthChart($bd, $name, null);
+            if (! empty($url)) {
+                $reading->update(['reading_image_url' => $url]);
+
+                return $url;
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Celtic: birth chart image gen fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
      * State: CELTIC_AWAITING_QUESTION
      * ลูกค้าพิมพ์คำถาม Q1, Q2, หรือ Q3
      */
@@ -2658,6 +2697,8 @@ trait CelticCrossConversationTrait
                 'message' => $aiMessage,
                 'reading' => $reading,
                 'celtic_summary_image_url' => $composeUrl,
+                // 🗺️ (2026-06-08) แผนที่ดาวชะตา ส่งคู่ภาพไพ่ตอนสรุป (null ถ้าไม่มีวันเกิด)
+                'chart_image_url' => $this->buildCelticBirthChartUrl($reading),
             ];
         }
 
@@ -2861,6 +2902,8 @@ trait CelticCrossConversationTrait
             'reading' => $reading,
             'end_reason' => $reason,
             'celtic_summary_image_url' => $composeUrl,
+            // 🗺️ (2026-06-08) แผนที่ดาวชะตา ส่งคู่ภาพไพ่ตอนสรุป (null ถ้าไม่มีวันเกิด)
+            'chart_image_url' => $this->buildCelticBirthChartUrl($reading),
             'has_grand_finale' => ! empty($grandFinale),
             // 🎙️ (2026-05-08) ตอนนี้ voice ส่งผ่าน async job ไม่ใช่ใน return อีก
             //    เก็บ flag ไว้เผื่อ admin debug ต้อง trigger inline (เช่น playground)

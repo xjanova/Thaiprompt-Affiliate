@@ -1164,6 +1164,15 @@ class FortuneChannelManager
                 // 🎙️ (2026-05-08) Voice ส่งผ่าน ProcessVoiceSummaryJob async (push หลัง 5-15s)
                 //                 ตรงนี้แค่ส่ง image+closing — ไม่ block UI
                 'celtic_session_ended' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    // 🗺️ (2026-06-08) แผนที่ดาวชะตา (พื้นดวง) ส่งก่อนภาพไพ่ — ตอนสรุป (user spec)
+                    if (! empty($result['chart_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['chart_image_url']);
+                            usleep(500000);
+                        } catch (\Throwable $e) {
+                            // ignore image fail
+                        }
+                    }
                     if (! empty($result['celtic_summary_image_url'])) {
                         try {
                             $fbService->sendImage($userId, $result['celtic_summary_image_url']);
@@ -2568,6 +2577,14 @@ class FortuneChannelManager
                 // 🎙️ (2026-05-08) celtic_session_ended (LINE) — ภาพ + closing
                 //                 Voice ส่งผ่าน ProcessVoiceSummaryJob async (push หลัง 5-15s)
                 'celtic_session_ended' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
+                    // 🗺️ (2026-06-08) แผนที่ดาวชะตา (พื้นดวง) ส่งก่อนภาพไพ่ — ตอนสรุป (user spec)
+                    if (! empty($result['chart_image_url'])) {
+                        try {
+                            $lineService->sendImage($userId, $result['chart_image_url']);
+                        } catch (\Throwable $e) {
+                            // ignore
+                        }
+                    }
                     if (! empty($result['celtic_summary_image_url'])) {
                         try {
                             $lineService->sendImage($userId, $result['celtic_summary_image_url']);
