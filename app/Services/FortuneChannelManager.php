@@ -1495,7 +1495,17 @@ class FortuneChannelManager
      */
     protected function sendFacebookBirthdateResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
-        // ✅ ส่งเฉพาะ Button Template เท่านั้น (ไม่ส่ง text ก่อน — เพราะ template มีข้อความขอวันเกิดอยู่แล้ว)
+        // 🌙 (2026-06-08) ถ้ามีข้อความ (เช่น "✅ ตัดบิลเรียบร้อยแล้ว ... 🪄 ขอวันเกิด" จาก pay-first / recover)
+        //   → ส่งเป็นข้อความ text ที่เห็นชัด แทน Button Template (การ์ดสีเทา)
+        //   เดิม: ทิ้ง $result['message'] + ส่ง template ที่มีแค่ "ขอวันเกิด" → ลูกค้า "ไม่เห็นบล็อกตัดบิลแล้ว"
+        //   + การ์ดเทากลมกลืน → ลูกค้า (ที่มัวส่งสลิป) ไม่รู้ว่าเริ่มขั้นรับวันเกิดแล้ว
+        //   user 2026-06-08: "รับวันเกิดต้องเกิดหลังบล็อกตัดบิลเสมอ + บล็อกเทาเห็นไม่ชัด"
+        $message = trim((string) ($result['message'] ?? ''));
+        if ($message !== '') {
+            return $fbService->sendMessage($userId, $message);
+        }
+
+        // ไม่มีข้อความ (ขอวันเกิดแบบ generic ก่อนจ่าย) → ใช้ Button Template เดิม
         $template = $richService->buildBirthdatePromptTemplate($this->getReadingPrice());
 
         return $fbService->sendButtonTemplate($userId, $template);
@@ -3499,6 +3509,13 @@ class FortuneChannelManager
      */
     protected function sendLineBirthdateResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
+        // 🌙 (2026-06-08) ถ้ามีข้อความ (เช่น "✅ ตัดบิลเรียบร้อยแล้ว ... 🪄 ขอวันเกิด") → ส่ง text ชัดเจน
+        //   เดิม: ทิ้ง message + ส่ง Flex (บล็อกสีเทา) ที่มีแค่ "ขอวันเกิด" → ลูกค้าไม่เห็นบล็อกตัดบิลแล้ว
+        $message = trim((string) ($result['message'] ?? ''));
+        if ($message !== '') {
+            return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+        }
+
         $deepPrice = $this->getReadingPrice();
         $flex = $lineService->buildBirthdateRequestFlexMessage($deepPrice);
 
