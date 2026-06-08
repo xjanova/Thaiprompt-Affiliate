@@ -1886,9 +1886,12 @@ trait CelticCrossConversationTrait
 
             $reading->setConversationState('celtic_birthdate_text', 'เจ้าชะตาเกิด '.$human);
             $reading->setConversationState('celtic_birthdate_pending', false);
+            // 🌟 (2026-06-08) flag คำทำนายพื้นดวงเปิดตัว — รอบแรกใช้โครงสร้างแบบ 39 (ดวงดาวเต็ม)
+            //   ผสานไพ่ 10 ใบ + ยาว 1500-3000 (buildFollowupPrompt อ่าน flag นี้ + เคลียร์ทิ้งหลังใช้)
+            $reading->setConversationState('celtic_base_chart', true);
             $this->startCelticQaWindowIfNeeded($reading);
 
-            \Log::info('Celtic: birthdate captured → generate พื้นดวง', [
+            \Log::info('Celtic: birthdate captured → generate พื้นดวง (39-style base chart)', [
                 'reading_id' => $reading->id,
                 'birth_date' => $human,
             ]);
