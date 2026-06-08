@@ -5,10 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
-use App\Models\FortuneTellingSetting;
 use App\Models\User;
-use App\Services\FortuneChannelManager;
-use App\Services\FortuneConversationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -223,15 +220,21 @@ class FortuneBillingController extends Controller
             return back()->with('error', 'ไม่สามารถยกเลิกบิลที่ยังไม่ได้ชำระ');
         }
 
-        $reading->update([
-            'is_paid' => false,
-            'amount_paid' => 0,
-            'paid_at' => null,
-            'conversation_status' => FortuneReading::STATUS_BASIC_DONE,
-            'sender_info' => 'Voided at '.now()->format('Y-m-d H:i:s'),
-        ]);
+        // 🚫 (2026-06-08) ใช้ engine กลาง FortuneReading::voidApproval() — reverse ครบทุกอย่าง
+        //    เดิม flip is_paid อย่างเดียว → UPA ค้าง used + SMS ผูกค้าง + commission ไม่ถูกดึงคืน
+        //    ใหม่: คืน UPA → cancelled, ปลด SMS notification, ดึงคืน commission, ปิดบิล + audit log
+        $result = $reading->voidApproval('void จากหน้า billing', auth()->id());
 
-        return back()->with('success', 'ยกเลิกบิลสำเร็จ');
+        if (! ($result['ok'] ?? false)) {
+            return back()->with('error', $result['message'] ?? 'ยกเลิกบิลไม่สำเร็จ');
+        }
+
+        $msg = 'ยกเลิกบิลสำเร็จ';
+        if (! empty($result['warnings'])) {
+            $msg .= ' ⚠️ '.implode('; ', $result['warnings']);
+        }
+
+        return back()->with('success', $msg);
     }
 
     /**
@@ -502,7 +505,7 @@ class FortuneBillingController extends Controller
             return back()->withErrors(['error' => 'ไม่พบ Stripe payment_intent_id']);
         }
 
-        $service = new \App\Services\Fortune\FortuneStripeService();
+        $service = new \App\Services\Fortune\FortuneStripeService;
         $result = $service->refundPayment(
             $reading->stripe_payment_intent_id,
             $validated['amount'] ?? null,
@@ -543,7 +546,7 @@ class FortuneBillingController extends Controller
             return back()->withErrors(['error' => 'ไม่พบ Stripe session_id']);
         }
 
-        $service = new \App\Services\Fortune\FortuneStripeService();
+        $service = new \App\Services\Fortune\FortuneStripeService;
         $ok = $service->expireSession($reading->stripe_session_id);
 
         if (! $ok) {
@@ -579,7 +582,7 @@ class FortuneBillingController extends Controller
             return back()->withErrors(['error' => 'ไม่พบ Stripe session_id']);
         }
 
-        $service = new \App\Services\Fortune\FortuneStripeService();
+        $service = new \App\Services\Fortune\FortuneStripeService;
         $session = $service->retrieveSession($reading->stripe_session_id);
 
         if (! $session) {

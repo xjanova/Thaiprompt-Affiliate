@@ -420,6 +420,56 @@ class FortuneCelticCrossController extends Controller
     }
 
     /**
+     * ⛔ (2026-06-08) ยกเลิกการอนุมัติบิล (Void Approval)
+     *
+     * Use case: แอดมินกด Force Approve ผิดบิล/ผิดคน → บิลขึ้น "จ่ายแล้ว ✓"
+     *   ทั้งที่ลูกค้าไม่ได้จ่ายจริง (ค้างที่ celtic_picking, ลูกค้าจริงไม่ได้อยู่ตรงนั้น)
+     *   ปุ่มนี้ถอยกลับเป็น "ยังไม่จ่าย" + ปลด UPA/SMS + ดึงคืน commission (ถ้ามี)
+     *
+     * รองรับทั้ง Celtic + Deep — engine กลางอยู่ที่ FortuneReading::voidApproval()
+     *
+     * Safety:
+     *   - บิลที่ลูกค้าใช้บริการไปแล้ว (เปิดไพ่/ได้คำทำนาย) ต้องส่ง force=1 (กันเผลอยกเลิกลูกค้าจริง)
+     *   - idempotent: ถ้าบิล is_paid=false อยู่แล้ว engine คืน ok=false เฉยๆ
+     */
+    public function voidApproval(Request $request, FortuneReading $reading)
+    {
+        $reason = trim((string) $request->input('reason', ''));
+        $force = (bool) $request->input('force', false);
+
+        // กันยกเลิกบิลที่ลูกค้าใช้บริการไปแล้วจริง (เปิดไพ่/ได้คำทำนาย) — ต้อง force
+        $consumed = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+            ? ($reading->getCelticPickedCount() > 0 || (int) ($reading->celtic_questions_used ?? 0) > 0)
+            : ! empty($reading->deep_response);
+
+        if ($consumed && ! $force) {
+            return back()->with('error', '⚠️ บิลนี้ลูกค้าใช้บริการไปแล้ว (เปิดไพ่/ได้คำทำนาย) — ถ้าแน่ใจว่าอนุมัติผิดจริง ให้ยืนยันซ้ำ (force)');
+        }
+
+        $result = $reading->voidApproval($reason !== '' ? $reason : null, auth()->id());
+
+        if (! ($result['ok'] ?? false)) {
+            return back()->with('error', $result['message'] ?? '❌ ยกเลิกการอนุมัติไม่สำเร็จ');
+        }
+
+        Log::warning('Celtic admin VOID approval (web)', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'admin_id' => auth()->id(),
+            'reason' => $reason,
+            'reverted' => $result['reverted'] ?? [],
+            'warnings' => $result['warnings'] ?? [],
+        ]);
+
+        $msg = "✅ ยกเลิกการอนุมัติบิล {$reading->bill_reference} แล้ว — คืนเป็น \"ยังไม่จ่าย\"";
+        if (! empty($result['warnings'])) {
+            $msg .= ' ⚠️ '.implode('; ', $result['warnings']);
+        }
+
+        return back()->with('success', $msg);
+    }
+
+    /**
      * 🔄 (2026-05-16) คืนสถานะ "กำลังดูอยู่" — เปิด Pro Session ใหม่ให้ลูกค้าคุยต่อ
      *
      * Use case: ลูกค้ากดปุ่ม "🛑 ยุติการทำนาย" + ยืนยัน "ใช่" โดยเข้าใจผิด

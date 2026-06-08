@@ -2456,6 +2456,171 @@ class FortuneReading extends Model
         }
     }
 
+    /**
+     * 🚫 (2026-06-08) ยกเลิกการอนุมัติบิล (Void Approval) — reverse ของ confirmPayment()
+     *
+     * Use case: แอดมินกด Force Approve ผิดบิล/ผิดคน (ลูกค้าไม่ได้จ่ายจริง)
+     *   → บิลขึ้น "จ่ายแล้ว ✓" ค้างที่ celtic_picking → ต้องถอยกลับเป็น "ยังไม่จ่าย"
+     *
+     * คืนทุกอย่างที่ confirmPayment + commission distribution ทำไว้:
+     *   1. UPA (unique payment amount) used → cancelled  (ปลดล็อกยอดทศนิยม ไม่ให้ค้าง used ถาวร)
+     *   2. ปลด SMS notification ที่ผูกผิด → matched_transaction_id = null
+     *      (เผื่อเงินจริงของคนอื่นถูก match ผิด — ปล่อยให้ไป match บิลถูกได้)
+     *   3. reverse commission ที่จ่ายไปแล้ว (claw back wallet) — ถ้ามี
+     *   4. is_paid=false, paid_at=null, amount_received=null, status=COMPLETED (= ปิดบิล)
+     *   5. บันทึก audit flag ใน conversation_state
+     *
+     * Idempotent: ถ้าบิลยัง is_paid=false → คืน ['ok'=>false] เฉยๆ (ไม่ทำซ้ำ)
+     *
+     * ⚠️ ไม่แจ้งลูกค้า (ตาม spec — เคสนี้ลูกค้าไม่ได้จ่ายจริง การแจ้งจะสร้างความสับสน)
+     *
+     * @param  string|null  $reason  เหตุผลที่ยกเลิก (เก็บใน audit log)
+     * @param  int|null  $adminId  id ของแอดมินที่กดยกเลิก
+     * @return array{ok: bool, message?: string, reverted: array, warnings: array}
+     */
+    public function voidApproval(?string $reason = null, ?int $adminId = null): array
+    {
+        // Idempotent guard — ยังไม่จ่าย = ไม่มีอะไรให้ถอย
+        if (! $this->is_paid) {
+            return [
+                'ok' => false,
+                'message' => 'บิลนี้ยังไม่ได้มาร์คว่าจ่าย — ไม่มีอะไรให้ยกเลิก',
+                'reverted' => [],
+                'warnings' => [],
+            ];
+        }
+
+        $reverted = [];
+        $warnings = [];
+
+        // 1) Reverse commission ก่อน (แต่ละแถวแยก transaction — กัน 1 แถวพังลาก reading flip ตาม)
+        $commissions = FortuneCommission::where('fortune_reading_id', $this->id)
+            ->where('status', FortuneCommission::STATUS_PAID)
+            ->get();
+        foreach ($commissions as $comm) {
+            try {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($comm) {
+                    $this->reverseCommissionRow($comm);
+                });
+                $reverted[] = "commission#{$comm->id} (-{$comm->amount})";
+            } catch (\Throwable $e) {
+                $warnings[] = "commission#{$comm->id} ดึงคืนไม่สำเร็จ — ต้องแก้มือ";
+                \Illuminate\Support\Facades\Log::error('FortuneReading::voidApproval — commission reverse failed', [
+                    'reading_id' => $this->id,
+                    'commission_id' => $comm->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // 2) Reading + UPA + SMS notification — 1 transaction เดียว (atomic)
+        \Illuminate\Support\Facades\DB::transaction(function () use ($reason, $adminId, &$reverted) {
+            // 2.1 UPA used → cancelled (ปลดล็อกยอด)
+            if ($this->unique_payment_amount_id) {
+                $upaAffected = UniquePaymentAmount::where('id', $this->unique_payment_amount_id)
+                    ->where('status', 'used')
+                    ->update(['status' => 'cancelled', 'matched_at' => null]);
+                if ($upaAffected) {
+                    $reverted[] = 'unique_payment_amount → cancelled';
+                }
+            }
+
+            // 2.2 ปลด SMS notification ที่ผูกกับบิลนี้ (ให้เงินจริงไป match บิลถูกได้)
+            $notifAffected = SmsPaymentNotification::where('matched_transaction_id', $this->id)
+                ->update(['status' => 'pending', 'matched_transaction_id' => null]);
+            if ($notifAffected) {
+                $reverted[] = "ปลด SMS notification {$notifAffected} รายการ";
+            }
+
+            // 2.3 พลิกบิลกลับเป็น "ยังไม่จ่าย" + ปิด conversation
+            //     (ไม่มี STATUS_CANCELLED แยก — ใช้ STATUS_COMPLETED + is_paid=false ตาม convention)
+            $state = is_array($this->conversation_state) ? $this->conversation_state : [];
+            $state['approval_voided'] = true;
+            $state['approval_voided_at'] = now()->toIso8601String();
+            $state['approval_void_reason'] = $reason;
+            $state['approval_voided_by_admin_id'] = $adminId;
+            // เคลียร์ flag ค้างที่ cron expire-stuck-paid ตั้งไว้ (ไม่งั้นโผล่ใน admin review ซ้ำ)
+            $state['admin_review_needed'] = false;
+
+            $this->update([
+                'is_paid' => false,
+                'paid_at' => null,
+                'amount_received' => null,
+                'sms_notification_id' => null,
+                'conversation_status' => self::STATUS_COMPLETED,
+                'conversation_state' => $state,
+            ]);
+            $reverted[] = 'is_paid → false (ปิดบิล)';
+        });
+
+        \Illuminate\Support\Facades\Log::warning('FortuneReading: ⛔ approval VOIDED by admin', [
+            'reading_id' => $this->id,
+            'bill_reference' => $this->bill_reference,
+            'reading_type' => $this->reading_type,
+            'admin_id' => $adminId,
+            'reason' => $reason,
+            'reverted' => $reverted,
+            'warnings' => $warnings,
+        ]);
+
+        return ['ok' => true, 'reverted' => $reverted, 'warnings' => $warnings];
+    }
+
+    /**
+     * 🔁 (2026-06-08) Reverse 1 commission row + ดึงเงินคืนจาก wallet
+     *
+     * mirror ของ FortuneCommissionService::depositToWallet (ทำกลับด้าน)
+     * ⚠️ เรียกภายใน DB::transaction จาก voidApproval เท่านั้น
+     */
+    protected function reverseCommissionRow(FortuneCommission $comm): void
+    {
+        // ดึงเงินคืนจาก wallet (ถ้าเคยจ่ายเข้า wallet จริง)
+        $wallet = Wallet::where('user_id', $comm->user_id)->first();
+        if ($wallet) {
+            $before = (float) ($wallet->balance ?? 0);
+            $after = $before - (float) $comm->amount;
+
+            WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'user_id' => $wallet->user_id,
+                'type' => 'withdrawal',
+                'amount' => (float) $comm->amount,
+                'balance_before' => $before,
+                'balance_after' => $after,
+                'currency' => $wallet->currency,
+                'description' => "ดึงคืนค่าแนะนำดูดวง — บิล #{$this->id} ถูกยกเลิกการอนุมัติ",
+                'reference_type' => FortuneCommission::class,
+                'reference_id' => $comm->id,
+                'status' => 'completed',
+                'metadata' => [
+                    'reading_id' => $this->id,
+                    'mode' => 'fortune_commission_reversal',
+                ],
+                'completed_at' => now(),
+            ]);
+
+            if ($after < 0) {
+                \Illuminate\Support\Facades\Log::warning('FortuneReading::reverseCommissionRow — wallet ติดลบหลังดึงคืน (ลูกค้าใช้เงินไปแล้ว)', [
+                    'reading_id' => $this->id,
+                    'wallet_id' => $wallet->id,
+                    'balance_after' => $after,
+                ]);
+            }
+
+            $wallet->update([
+                'balance' => $after,
+                'total_income' => max(0, (float) ($wallet->total_income ?? 0) - (float) $comm->amount),
+                'last_transaction_at' => now(),
+            ]);
+        }
+
+        // mark commission เป็น rejected (= ยกเลิก) + บันทึกเหตุผล
+        $comm->update([
+            'status' => FortuneCommission::STATUS_REJECTED,
+            'notes' => trim((string) ($comm->notes ?? '')).' | ⛔ REVERSED: void approval บิล #'.$this->id,
+        ]);
+    }
+
     // ============================================================
     // Bill Reference Number
     // ============================================================

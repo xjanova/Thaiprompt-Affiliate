@@ -314,6 +314,17 @@
                                             <button type="submit" class="text-red-600 hover:underline text-xs">🗑️ ลบ</button>
                                         </form>
                                     @endif
+                                    @if($reading->is_paid)
+                                        {{-- ⛔ (2026-06-08) Void Approval — ยกเลิกการอนุมัติบิลที่กดผิด/ลูกค้าไม่ได้จ่ายจริง --}}
+                                        @php($celticConsumed = ($reading->getCelticPickedCount() > 0) || ((int) ($reading->celtic_questions_used ?? 0) > 0))
+                                        <form action="{{ route('admin.fortune.celtic-cross.void-approval', $reading) }}" method="POST"
+                                              onsubmit="return confirm('⛔ ยกเลิกการอนุมัติบิล {{ $reading->bill_reference ?? '#'.$reading->id }} ? จะคืนเป็นยังไม่จ่าย + ปลดยอด/SMS + ดึงคืนคอมมิชชั่น @if($celticConsumed)(⚠️ ลูกค้าเปิดไพ่/ถามไปแล้ว) @endif— ใช้เฉพาะกรณีอนุมัติผิด/ลูกค้าไม่ได้จ่ายจริง');"
+                                              class="inline ml-2">
+                                            @csrf
+                                            @if($celticConsumed)<input type="hidden" name="force" value="1">@endif
+                                            <button type="submit" class="text-red-700 hover:underline text-xs font-semibold">⛔ ยกเลิกอนุมัติ</button>
+                                        </form>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach

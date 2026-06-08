@@ -4308,6 +4308,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/readings/{reading}/cancel', [FortuneCelticCrossController::class, 'cancelReading'])->name('cancel');
         // 🚀 (2026-05-08) Force Approve — โอนยอดไม่ตรง → admin มาร์คจ่ายแล้ว + push เริ่มเปิดไพ่ (ใช้แทนเปิด SMS app มือถือ)
         Route::post('/readings/{reading}/force-approve', [FortuneCelticCrossController::class, 'forceApprove'])->name('force-approve');
+        // ⛔ (2026-06-08) Void Approval — ยกเลิกการอนุมัติบิลที่กดผิด/ลูกค้าไม่ได้จ่าย (reverse confirmPayment + UPA/SMS/commission)
+        Route::post('/readings/{reading}/void-approval', [FortuneCelticCrossController::class, 'voidApproval'])->name('void-approval');
         // 🤖 (2026-05-17 Phase 2) Admin Ask AI — AJAX sync endpoint (return JSON, ไม่ใช่ redirect)
         Route::post('/readings/{reading}/ask-ai', [FortuneCelticCrossController::class, 'adminAskAi'])->name('ask-ai');
         // 🚨 (2026-05-05) Emergency Recovery — กู้บิลด่วน (ใส่เลขบิล / auto-scan)
