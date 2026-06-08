@@ -5817,12 +5817,45 @@ class FortuneConversationService
         $reading->setConversationState('awaiting_birthdate_confirmation', false);
         $reading->setConversationState('pending_birthdate', null);
 
+        // 🌙 (2026-06-08) ดูดวง 39 เวอร์ชันใหม่ — ไม่มีขั้น "รับคำถาม" แล้ว
+        //   user spec: "ขั้นตอนรับคำถามไม่มี + ทำนายทันทีเมื่อเปิดไพ่เป็นพื้นดวงทั่วไป แล้วคุยต่อ 7 นาที"
+        //   เดิม: birthdate → COLLECTING_QUESTIONS → ขอคำถาม → COLLECTING_TAROT (ตั้งจิต) → เปิดไพ่
+        //   ใหม่: birthdate → ใส่ "คำถามพื้นดวงรวม" อัตโนมัติ (ลูกค้าไม่ต้องพิมพ์) → COLLECTING_TAROT ตรงเลย
+        //         เปิดไพ่ครบ → afterTarotCardDrawn → ทำนายพื้นดวงรวมทันที → enterProSession('deep') คุยต่อ 7 นาที
+        $generalQuestion = 'ขอดูพื้นดวงโดยรวมของเจ้าชะตา — ภาพรวมชีวิตช่วงนี้ ทั้งนิสัยพื้นฐาน ความรัก '
+            .'การงาน การเงิน สุขภาพ โชคลาภ และสิ่งที่ควรระวัง พร้อมคำแนะนำจากแม่หมอ';
+
+        // เก็บคำถามพื้นดวงทั้งใน collected_questions (state) และคอลัมน์ questions
+        //   → กัน Pay-First data guard (FCS ~8007) เด้งกลับไปขอคำถาม ถ้ามี payment-confirm ซ้ำ
+        //     ระหว่างยังเปิดไพ่ไม่เสร็จ (column ยังไม่ถูก copy จาก afterTarotCardDrawn)
+        $reading->addQuestion($generalQuestion);
+        $reading->setConversationState('deep_general_reading', true);
+        $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
         $reading->update([
             'birth_date' => $birthDate,
-            'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
+            'questions' => [$generalQuestion],
+            'conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT,
         ]);
 
-        return $this->askForQuestionWithCategoryButtons($reading, $birthDate);
+        $formatted = $this->formatThaiDate($birthDate);
+
+        return [
+            'action' => 'awaiting_tarot_intention',
+            'message' => "📅 *รับวันเกิดแล้ว: {$formatted}* ✨\n\n"
+                ."═══════════════════════\n"
+                ."🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
+                ."═══════════════════════\n\n"
+                ."หลับตา หายใจลึก ๆ 3 ครั้ง นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
+                ."🃏 แม่หมอจะเปิดไพ่ให้ แล้ว*อ่านพื้นดวงรวม*จากวันเกิด + ไพ่ของเจ้าชะตาให้ทันที\n"
+                ."จากนั้นถามแม่หมอต่อได้เลยค่ะ ✨\n\n"
+                ."เมื่อพร้อม → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
+                .'หรือกดปุ่มด้านล่าง 👇',
+            'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
+            ],
+        ];
     }
 
     /**

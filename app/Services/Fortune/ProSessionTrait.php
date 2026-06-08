@@ -28,8 +28,10 @@ trait ProSessionTrait
 {
     /**
      * Window ของ Deep 39 หลังส่งคำทำนายเสร็จ
+     *   (ใช้ deep_reading_qa_window_minutes ของ admin ก่อน — ค่านี้เป็น fallback)
+     *   🌙 (2026-06-08) ปรับเป็น 7 — สเปคใหม่ "ดูดวง 39 คุยกับแม่หมอ 7 นาที"
      */
-    public const PRO_SESSION_DEEP_MINUTES = 10;
+    public const PRO_SESSION_DEEP_MINUTES = 7;
 
     /**
      * Window ของ Celtic 99 หลังเปิดไพ่ใบที่ 10
@@ -53,7 +55,14 @@ trait ProSessionTrait
     {
         $window = $type === 'celtic'
             ? (int) ($this->settings->celtic_cross_qa_window_minutes ?? self::PRO_SESSION_CELTIC_MINUTES)
-            : self::PRO_SESSION_DEEP_MINUTES;
+            : (int) ($this->settings->deep_reading_qa_window_minutes ?? self::PRO_SESSION_DEEP_MINUTES);
+
+        // กันค่าพังเป็น 0 (เช่น setting ว่าง/0) → ใช้ fallback constant แทน
+        if ($window < 1) {
+            $window = $type === 'celtic'
+                ? self::PRO_SESSION_CELTIC_MINUTES
+                : self::PRO_SESSION_DEEP_MINUTES;
+        }
 
         $reading->setConversationState('pro_session_active', true);
         $reading->setConversationState('pro_session_type', $type);
@@ -225,7 +234,7 @@ trait ProSessionTrait
                 .$timeLine."\n\n"
                 ."──────────────────────\n"
                 ."✅ *แน่ใจแล้ว* — พิมพ์ *\"ใช่\"* เพื่อยืนยันยุติ\n"
-                ."💬 *ยังไม่ยุติ* — พิมพ์คำถามต่อมาได้เลย แม่หมอรอฟังอยู่ ✨";
+                .'💬 *ยังไม่ยุติ* — พิมพ์คำถามต่อมาได้เลย แม่หมอรอฟังอยู่ ✨';
         }
 
         // Deep 39฿ — ข้อความเดิม (ไม่กระทบ flow Deep)
@@ -277,7 +286,10 @@ trait ProSessionTrait
         $name = $reading->resolveCustomerName();
         $minutes = $type === 'celtic'
             ? (int) ($this->settings->celtic_cross_qa_window_minutes ?? self::PRO_SESSION_CELTIC_MINUTES)
-            : self::PRO_SESSION_DEEP_MINUTES;
+            : (int) ($this->settings->deep_reading_qa_window_minutes ?? self::PRO_SESSION_DEEP_MINUTES);
+        if ($minutes < 1) {
+            $minutes = $type === 'celtic' ? self::PRO_SESSION_CELTIC_MINUTES : self::PRO_SESSION_DEEP_MINUTES;
+        }
 
         if ($type === 'celtic') {
             // 🛑 (2026-05-16) เปลี่ยน "พอแค่นี้/ขอบคุณ" → "ยุติการทำนาย" (Celtic 99฿ — ลูกค้าเข้าใจผิด)

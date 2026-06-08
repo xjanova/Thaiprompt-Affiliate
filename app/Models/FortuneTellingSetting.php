@@ -81,6 +81,7 @@ class FortuneTellingSetting extends Model
         'reading_price',
         'enable_deep_reading',
         'deep_reading_price',
+        'deep_reading_qa_window_minutes',
         'allow_try_before_buy',
         'free_deep_per_day',
         'subscription_enabled',
@@ -402,6 +403,7 @@ class FortuneTellingSetting extends Model
         'free_deep_per_day' => 'integer',
         'reading_price' => 'decimal:2',
         'deep_reading_price' => 'decimal:2',
+        'deep_reading_qa_window_minutes' => 'integer',
         'subscription_monthly_price' => 'decimal:2',
         'subscription_yearly_price' => 'decimal:2',
         'fortune_affiliate_enabled' => 'boolean',
@@ -543,8 +545,9 @@ class FortuneTellingSetting extends Model
         'ai_model' => 'gemini-2.5-flash',
         'max_free_readings' => 1,
         'reading_price' => 0,
-        'enable_deep_reading' => false, // 🌙 (2026-05-23) ปิด 39฿ default — เหลือแต่ Celtic 99฿
+        'enable_deep_reading' => true, // 🌙 (2026-06-08) เปิด 39฿ กลับ — เวอร์ชันคุยโต้ตอบใหม่ (พื้นดวง + คุย 7 นาที)
         'deep_reading_price' => 39,
+        'deep_reading_qa_window_minutes' => 7, // (2026-06-08) หน้าต่างคุยกับแม่หมอหลังเปิดไพ่ (คู่ขนาน Celtic 99)
         'allow_try_before_buy' => true,
         'free_deep_per_day' => 1,
         'subscription_enabled' => true,

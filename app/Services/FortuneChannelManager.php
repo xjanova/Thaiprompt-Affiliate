@@ -1740,8 +1740,13 @@ class FortuneChannelManager
             $rawName = $reading?->facebook_user_name ?? '';
             $greet = ($rawName !== '' && $rawName !== 'คุณ') ? " คุณ{$rawName}" : '';
 
-            // 🌙 ใช้ window จาก setting (default 10 นาที — ProSessionTrait::PRO_SESSION_DEEP_MINUTES)
-            $windowMinutes = (int) ($this->settings->pro_session_deep_minutes ?? 10);
+            // 🌙 (2026-06-08) ใช้ window จริงของแพคเกจ 39 = deep_reading_qa_window_minutes (default 7)
+            //   เดิมอ่าน pro_session_deep_minutes (ไม่มีคอลัมน์นี้) → fallback 10 เสมอ → ไม่ตรง window จริง
+            //   ทำให้ลูกค้าถูกบอก "10 นาที" แต่ session จริงสั้นกว่า
+            $windowMinutes = (int) ($this->settings->deep_reading_qa_window_minutes ?? 7);
+            if ($windowMinutes < 1) {
+                $windowMinutes = 7;
+            }
 
             $followUp = "🌙✨ *แม่หมอจันทราอยู่ตอบเพิ่มอีก {$windowMinutes} นาที{$greet}* ✨\n\n"
                 ."💬 ถ้ามีอะไรสงสัย หรืออยากให้แม่หมอขยายความ — *รีบถามได้เลยค่ะ*\n"
