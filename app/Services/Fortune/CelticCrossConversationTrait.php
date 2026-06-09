@@ -1904,6 +1904,19 @@ trait CelticCrossConversationTrait
                 .'ความรัก การงาน การเงิน สุขภาพ ในช่วงนี้';
         }
 
+        // 🔍 (2026-06-09 FTU-260609-P3147) parse วันเกิดไม่ผ่าน — เก็บ raw input ไว้ debug
+        //   เคสจริง reading 5528 (San Jun): ลูกค้าพิมพ์วันเกิดมา แต่ parseBirthDate คืน null → ถามซ้ำ
+        //   → ลูกค้าเงียบ. success path มี log 'birthdate captured' อยู่แล้ว แต่ fail path ไม่มี
+        //   → มองไม่เห็นว่าลูกค้าพิมพ์อะไรจริง. เติม log นี้ให้ครบ (log-only, ไม่กระทบ flow)
+        \Log::info('Celtic: birthdate parse ไม่ผ่าน (raw input สำหรับ debug)', [
+            'reading_id' => $reading->id,
+            'platform' => $reading->platform,
+            'raw_input' => mb_substr($text, 0, 160),
+            'len' => mb_strlen($text),
+            'is_skip' => $this->looksLikeBirthdateSkip($text),
+            'attempts_so_far' => (int) $reading->getConversationState('celtic_birthdate_attempts', 0),
+        ]);
+
         // อ่านวันเกิดไม่ได้ → ลูกค้าขอข้าม / ไม่ให้วันเกิด → ดูจากไพ่อย่างเดียว
         if ($this->looksLikeBirthdateSkip($text)) {
             $reading->setConversationState('celtic_birthdate_pending', false);

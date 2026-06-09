@@ -758,6 +758,11 @@ class FortuneConversationService
                         'facebook_user_id' => $facebookUserId,
                         'reading_id' => $inPredictionReading->id,
                         'status' => $status,
+                        // 🔍 (2026-06-09 FTU-260609-P3147) log ข้อความดิบที่ลูกค้าส่งเข้า in-prediction
+                        //   เคสจริง reading 5528: ลูกค้าพิมพ์วันเกิด แต่ parse null → ถามซ้ำ
+                        //   เดิม path นี้ไม่ log text เลย → debug ไม่ได้ว่าลูกค้าพิมพ์อะไรจริง
+                        'text_preview' => mb_substr($messageText, 0, 120),
+                        'text_len' => mb_strlen($messageText),
                     ]);
 
                     return $this->continueConversation($inPredictionReading, $messageText, $userProfile);
