@@ -4292,6 +4292,19 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('slip-logs/{log}/image', [FortuneSlipLogController::class, 'image'])->name('slip-logs.image');
 
     // ========================================
+    // 🪪 (2026-06-09) SLIPOK ACCOUNT POOL — หมุนหลายบัญชี SlipOK กัน quota ตัน
+    // ========================================
+    Route::prefix('slipok-accounts')->name('slipok-accounts.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\FortuneSlipOkAccountController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Admin\FortuneSlipOkAccountController::class, 'store'])->name('store');
+        Route::put('/mode', [\App\Http\Controllers\Admin\FortuneSlipOkAccountController::class, 'updateMode'])->name('update-mode');
+        Route::put('/{account}', [\App\Http\Controllers\Admin\FortuneSlipOkAccountController::class, 'update'])->name('update');
+        Route::delete('/{account}', [\App\Http\Controllers\Admin\FortuneSlipOkAccountController::class, 'destroy'])->name('destroy');
+        Route::post('/{account}/toggle', [\App\Http\Controllers\Admin\FortuneSlipOkAccountController::class, 'toggle'])->name('toggle');
+        Route::post('/{account}/test', [\App\Http\Controllers\Admin\FortuneSlipOkAccountController::class, 'test'])->name('test');
+    });
+
+    // ========================================
     // CELTIC CROSS TAROT — โหมดดูดวงไพ่ยิปซีเต็มสำรับ 99฿
     // ========================================
     Route::prefix('celtic-cross')->name('celtic-cross.')->group(function () {

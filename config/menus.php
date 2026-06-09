@@ -757,6 +757,7 @@ return [
                 ['label' => '📜 กติกาก่อนจองคิว (เด้งก่อนสร้างบิล)', 'route' => 'admin.fortune.consent.index', 'description' => 'แก้ข้อความกติกา + คลังรูปเตือน (สุ่ม) เด้งให้ลูกค้ายืนยันก่อนออก QR ค่าครู + เตือนตอนยกเลิก'],
                 ['label' => '🚨 Emergency Recover (Celtic)', 'route' => 'admin.fortune.celtic-cross.emergency-recover', 'description' => 'กู้บิล Celtic ด่วน — ใส่เลขบิลแล้วระบบ re-push prompt ทันที'],
                 ['label' => '🧾 ประวัติตรวจสลิป (SlipOK)', 'route' => 'admin.fortune.slip-logs.index', 'description' => 'ประวัติการตรวจสลิปทุกครั้ง — ส่งไปเช็คจริงไหม / สลิปซ้ำไหม / บิลไหน + กรอง'],
+                ['label' => '🪪 SlipOK Account Pool', 'route' => 'admin.fortune.slipok-accounts.index', 'description' => 'หลายบัญชี SlipOK หมุนเวียนกัน quota ฟรี (~100/เดือน) ตัน — โหมด near-empty / failover / balance + auto-failover'],
                 ['label' => '🩺 TTS Voice Diagnostic', 'route' => 'admin.fortune.voice-diagnostic', 'description' => 'ตรวจระบบสังเคราะห์เสียง — provider ไหนพัง · storage health · ทดลองฟังตัวอย่าง'],
                 ['label' => '🐛 Debug Tools', 'route' => 'admin.fortune.debug-tools.index', 'description' => 'Tail laravel.log + ทดสอบ AI sync — debug Fortune flows โดยไม่ต้อง SSH'],
                 ['label' => '❓ คำถามรอตอบ', 'route' => 'admin.fortune.saved-questions.index', 'description' => 'คำถามที่ AI ตอบไม่ได้ รอแอดมินตอบกลับ'],

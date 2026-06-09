@@ -5,6 +5,7 @@ namespace App\Services\Fortune;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\PaymentBankAccount;
+use App\Models\SlipOkAccount;
 use App\Models\SlipVerification;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -67,23 +68,84 @@ class SlipOkService
 
     protected FortuneTellingSetting $settings;
 
+    /** 🪪 (2026-06-09) Account Pool — หมุนเวียนหลายบัญชี SlipOK กัน quota ตัน */
+    protected SlipOkAccountPool $pool;
+
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
+        $this->pool = new SlipOkAccountPool($this->settings);
     }
 
     public function isEnabled(): bool
     {
-        return (bool) ($this->settings->enable_slipok_verify ?? false)
-            && ! empty($this->settings->slipok_branch_id)
-            && ! empty($this->settings->slipok_api_key);
+        if (! (bool) ($this->settings->enable_slipok_verify ?? false)) {
+            return false;
+        }
+
+        // เปิดได้ถ้า: มีบัญชีใน pool พร้อมใช้ หรือ มี key เดี่ยวเดิม (backward-compat)
+        return $this->pool->isEnabled()
+            || (! empty($this->settings->slipok_branch_id) && ! empty($this->settings->slipok_api_key));
     }
 
-    protected function baseUrl(): string
+    /**
+     * 🪪 (2026-06-09) เลือก credential (branch + key) สำหรับยิงครั้งนี้
+     *   - pool เปิด → เลือกบัญชีตามโหมด (pick / nextAfter สำหรับ failover)
+     *   - pool ปิด/ไม่มีบัญชี → key เดี่ยวเดิม (legacy)
+     *
+     * @param  array<int>  $triedAccountIds  id บัญชีที่ลองแล้วในรอบ failover นี้
+     * @return array{branch: string, key: string, account: ?SlipOkAccount}|null
+     */
+    protected function resolveCreds(array $triedAccountIds = []): ?array
     {
-        $branch = trim((string) $this->settings->slipok_branch_id);
+        if ($this->pool->isEnabled()) {
+            $account = empty($triedAccountIds)
+                ? $this->pool->pick()
+                : $this->pool->nextAfter($triedAccountIds);
 
-        return 'https://api.slipok.com/api/line/apikey/'.rawurlencode($branch);
+            if ($account) {
+                return [
+                    'branch' => trim((string) $account->branch_id),
+                    'key' => (string) $account->api_key,
+                    'account' => $account,
+                ];
+            }
+
+            // pool เปิด = แหล่งความจริง — บัญชีหมดทั้ง pool → ไม่ fallback legacy (กันยิงคีย์หมดซ้ำ)
+            return null;
+        }
+
+        // pool ปิด → key เดี่ยวเดิม
+        if (! empty($this->settings->slipok_branch_id) && ! empty($this->settings->slipok_api_key)) {
+            return [
+                'branch' => trim((string) $this->settings->slipok_branch_id),
+                'key' => (string) $this->settings->slipok_api_key,
+                'account' => null,
+            ];
+        }
+
+        return null;
+    }
+
+    protected function baseUrl(string $branch): string
+    {
+        return 'https://api.slipok.com/api/line/apikey/'.rawurlencode(trim($branch));
+    }
+
+    /**
+     * ❌ ผลลัพธ์เป็น "บัญชีหมดโควต้า" หรือไม่ (codes 1003/1004/1015) → ต้องสลับบัญชี
+     */
+    protected function isAccountQuotaFailure(array $result): bool
+    {
+        return in_array((int) ($result['error_code'] ?? 0), [1003, 1004, 1015], true);
+    }
+
+    /**
+     * ❌ ผลลัพธ์เป็น "key พัง / auth ล้ม" หรือไม่ (HTTP 401/403) → สลับบัญชี + พักบัญชีนี้
+     */
+    protected function isAccountAuthFailure(array $result): bool
+    {
+        return in_array((int) ($result['http'] ?? 0), [401, 403], true);
     }
 
     // ================================================================
@@ -268,14 +330,45 @@ class SlipOkService
      */
     public function checkQuota(): array
     {
-        if (empty($this->settings->slipok_branch_id) || empty($this->settings->slipok_api_key)) {
+        $creds = $this->resolveCreds();
+        if ($creds === null) {
+            return ['success' => false, 'message' => 'ยังไม่ได้กรอก Branch ID / API Key (หรือ pool ว่าง)'];
+        }
+
+        return $this->checkQuotaWithCreds($creds['branch'], $creds['key']);
+    }
+
+    /**
+     * 📊 (2026-06-09) เช็คโควตาของบัญชี pool ที่ระบุ + sync ค่าจริงกลับ DB
+     */
+    public function checkQuotaForAccount(SlipOkAccount $account): array
+    {
+        $result = $this->checkQuotaWithCreds(trim((string) $account->branch_id), (string) $account->api_key);
+
+        if ($result['success']) {
+            // โควต้าคงเหลือจริง = quota (+ specialQuota ถ้ามี) — ใช้ sync เกณฑ์ near_empty/balance
+            $remaining = (int) ($result['quota'] ?? 0) + (int) ($result['specialQuota'] ?? 0);
+            $account->syncQuota($remaining, $result['endDate'] ?? null);
+        }
+
+        return $result;
+    }
+
+    /**
+     * เช็คโควตาด้วย credential ที่ระบุ (ใช้ร่วมทั้ง key เดี่ยว + บัญชี pool)
+     *
+     * @return array{success: bool, quota?: int, overQuota?: int, message?: string}
+     */
+    protected function checkQuotaWithCreds(string $branch, string $key): array
+    {
+        if (empty($branch) || empty($key)) {
             return ['success' => false, 'message' => 'ยังไม่ได้กรอก Branch ID / API Key'];
         }
 
         try {
             $resp = Http::timeout(15)
-                ->withHeaders(['x-authorization' => (string) $this->settings->slipok_api_key])
-                ->get($this->baseUrl().'/quota');
+                ->withHeaders(['x-authorization' => $key])
+                ->get($this->baseUrl($branch).'/quota');
 
             $json = $resp->json() ?? [];
 
@@ -325,25 +418,8 @@ class SlipOkService
             return $cached;
         }
 
-        try {
-            $resp = Http::timeout(25)
-                ->withHeaders(['x-authorization' => (string) $this->settings->slipok_api_key])
-                ->attach('files', $bytes, 'slip.jpg')
-                ->post($this->baseUrl(), [
-                    'log' => $this->settings->slipok_use_log ? 'true' : 'false',
-                ]);
-
-            $result = $this->normalize($resp->status(), $resp->json() ?? [], $resp->json());
-
-            // ยิง API จริงแล้ว → นับ spend (flood guard) + cache ผลตาม hash
-            $this->afterRealSpend($platform, $userId, $sha, $result);
-
-            return $result;
-        } catch (\Throwable $e) {
-            Log::warning('SlipOkService: verifyByFile exception', ['error' => $e->getMessage()]);
-
-            return $this->normalize(0, ['message' => $e->getMessage()], null);
-        }
+        // 🪪 (2026-06-09) ยิงผ่าน pool + auto-failover (สลับบัญชีถ้าโควต้าหมด/key พัง)
+        return $this->runVerifyWithFailover('file', ['bytes' => $bytes], $platform, $userId, $sha);
     }
 
     /**
@@ -361,25 +437,116 @@ class SlipOkService
             return $cached;
         }
 
-        try {
+        // 🪪 (2026-06-09) ยิงผ่าน pool + auto-failover
+        return $this->runVerifyWithFailover('url', ['url' => $url], $platform, $userId, $sha);
+    }
+
+    /**
+     * 🔁 (2026-06-09) ยิง SlipOK พร้อม auto-failover ข้ามบัญชีใน pool
+     *
+     * - เลือกบัญชีตามโหมด → ยิง → ถ้าโควต้าหมด (1003/1004/1015) หรือ key พัง (401/403)
+     *   → พักบัญชีนั้น + ลองบัญชีถัดไป (วนได้สูงสุด = จำนวนบัญชี active)
+     * - ผลชัดเจน (definitive spend) → นับ used + เคลียร์ error counter ของบัญชี
+     * - afterRealSpend (flood guard ต่อคน + hash cache) ยิงครั้งเดียวหลังจบ
+     *
+     * @param  'file'|'url'  $kind
+     * @param  array{bytes?: string, url?: string}  $payload
+     */
+    protected function runVerifyWithFailover(string $kind, array $payload, ?string $platform, ?string $userId, string $sha): array
+    {
+        $tried = [];
+        $maxAttempts = max(1, $this->pool->isEnabled() ? $this->pool->activeCount() : 1);
+        $result = null;
+
+        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+            $creds = $this->resolveCreds($tried);
+            if ($creds === null) {
+                // ไม่มีบัญชีเหลือใน pool → ถ้าเคยได้ผล quota มาแล้วก็คืนผลนั้น ไม่งั้นแจ้ง quota
+                $result ??= $this->normalize(0, ['code' => 1003, 'message' => 'บัญชี SlipOK หมดโควตาทุกตัวในรอบนี้'], null);
+                break;
+            }
+
+            $account = $creds['account'] ?? null;
+
+            try {
+                $result = $this->attemptVerify($kind, $payload, $creds);
+            } catch (\Throwable $e) {
+                Log::warning('SlipOkService: attemptVerify exception', [
+                    'kind' => $kind,
+                    'account_id' => $account?->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $result = $this->normalize(0, ['message' => $e->getMessage()], null);
+            }
+
+            // ไม่มีบัญชี (legacy key เดี่ยว) → ไม่ต้องหมุน จบเลย
+            if ($account === null) {
+                break;
+            }
+
+            // โควต้าหมด → พักบัญชีถึงสิ้นเดือน + ลองตัวถัดไป
+            if ($this->isAccountQuotaFailure($result)) {
+                $account->markQuotaExhausted('SlipOK code '.($result['error_code'] ?? '?'));
+                $tried[] = $account->id;
+
+                continue;
+            }
+
+            // key พัง / auth ล้ม → พักสั้นๆ + ลองตัวถัดไป
+            if ($this->isAccountAuthFailure($result)) {
+                $account->markError('HTTP '.($result['http'] ?? '?'));
+                $tried[] = $account->id;
+
+                continue;
+            }
+
+            // ผลชัดเจน (เจอสลิป/ปฏิเสธยอด/ซ้ำ/บัญชีผิด ฯลฯ) → นับโควต้าที่เสียจริง + เคลียร์ error
+            if ($this->isCountableSpend($result)) {
+                $account->markUsed();
+                $account->markSuccess();
+            }
+
+            break;
+        }
+
+        if ($result === null) {
+            $result = $this->normalize(0, ['message' => 'ไม่มีบัญชี SlipOK พร้อมใช้งาน'], null);
+        }
+
+        // นับ spend ต่อคน (flood guard) + cache ผลตาม hash — ครั้งเดียวต่อการตรวจ
+        $this->afterRealSpend($platform, $userId, $sha, $result);
+
+        return $result;
+    }
+
+    /**
+     * ยิง SlipOK 1 ครั้งด้วย credential ที่ระบุ (ไม่มี failover — runner จัดการ)
+     *
+     * @param  'file'|'url'  $kind
+     * @param  array{branch: string, key: string}  $creds
+     */
+    protected function attemptVerify(string $kind, array $payload, array $creds): array
+    {
+        $url = $this->baseUrl($creds['branch']);
+
+        if ($kind === 'file') {
             $resp = Http::timeout(25)
-                ->withHeaders(['x-authorization' => (string) $this->settings->slipok_api_key])
+                ->withHeaders(['x-authorization' => $creds['key']])
+                ->attach('files', $payload['bytes'], 'slip.jpg')
+                ->post($url, [
+                    'log' => $this->settings->slipok_use_log ? 'true' : 'false',
+                ]);
+        } else {
+            $resp = Http::timeout(25)
+                ->withHeaders(['x-authorization' => $creds['key']])
                 ->asJson()
-                ->post($this->baseUrl(), [
-                    'url' => $url,
+                ->post($url, [
+                    'url' => $payload['url'],
                     'log' => (bool) $this->settings->slipok_use_log,
                 ]);
-
-            $result = $this->normalize($resp->status(), $resp->json() ?? [], $resp->json());
-
-            $this->afterRealSpend($platform, $userId, $sha, $result);
-
-            return $result;
-        } catch (\Throwable $e) {
-            Log::warning('SlipOkService: verifyByUrl exception', ['error' => $e->getMessage()]);
-
-            return $this->normalize(0, ['message' => $e->getMessage()], null);
         }
+
+        return $this->normalize($resp->status(), $resp->json() ?? [], $resp->json());
     }
 
     /**

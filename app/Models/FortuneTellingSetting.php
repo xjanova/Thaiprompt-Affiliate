@@ -354,6 +354,10 @@ class FortuneTellingSetting extends Model
         'slipok_min_amount',
         'slipok_fallback_delay_seconds',
         'slipok_use_log',
+        // 🪪 (2026-06-09) SlipOK Account Pool — หมุนหลายบัญชีกัน quota ตัน
+        'slipok_pool_enabled',
+        'slipok_pool_mode',
+        'slipok_pool_threshold',
         // 🛡️ (2026-06-04) SlipOK flood guard — กันส่งสลิปปลอมรัวๆ ดูดโควต้า
         'slipok_max_checks_per_user',
         'slipok_check_window_hours',
@@ -526,6 +530,9 @@ class FortuneTellingSetting extends Model
         'slipok_min_amount' => 'decimal:2',
         'slipok_fallback_delay_seconds' => 'integer',
         'slipok_use_log' => 'boolean',
+        // 🪪 (2026-06-09) SlipOK Account Pool
+        'slipok_pool_enabled' => 'boolean',
+        'slipok_pool_threshold' => 'integer',
         // 🛡️ (2026-06-04) SlipOK flood guard
         'slipok_max_checks_per_user' => 'integer',
         'slipok_check_window_hours' => 'integer',
@@ -711,6 +718,10 @@ class FortuneTellingSetting extends Model
         'slipok_min_amount' => 99.00,
         'slipok_fallback_delay_seconds' => 60,
         'slipok_use_log' => true,
+        // 🪪 (2026-06-09) SlipOK Account Pool — default ปิด (ใช้ key เดี่ยวเดิม) จนแอดมินเปิด
+        'slipok_pool_enabled' => false,
+        'slipok_pool_mode' => 'near_empty',
+        'slipok_pool_threshold' => 10,
         // 🛡️ (2026-06-04) SlipOK flood guard — 1 คนยิงได้ 2 ครั้ง/24 ชม. ; ก่อกวน 2 รอบ → แบน
         'slipok_max_checks_per_user' => 2,
         'slipok_check_window_hours' => 24,
