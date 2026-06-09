@@ -575,6 +575,10 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             // 🩹 (2026-05-09) catch \Throwable แทน \Exception — PHP 8 TypeError/Error
             //                 ไม่ extends \Exception → จะ leak ผ่าน gen_processing clear ใน failed()
             //                 ก่อนหน้า: TypeError = silent skip 5 นาที, customer งง
+            // 🔓 (2026-06-09) ปล่อย delivery lock เผื่อ crash (\Error) ระหว่าง push ก่อนตั้ง flag
+            //   → queue retry deliver ได้ (ถ้า deliver สำเร็จไปแล้ว flag-guard กันซ้ำอยู่แล้ว)
+            \Illuminate\Support\Facades\Cache::forget("fortune:deep_deliver:{$this->readingId}");
+
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
             Log::error('❌ ProcessDeepFortuneReadingJob: ล้มเหลว', [
