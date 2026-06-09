@@ -413,7 +413,23 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                 $alreadyNotified = $reading->getConversationState('reading_notification_sent', false);
                 $retryCount = (int) $reading->getConversationState('reading_notification_retry_count', 0);
 
-                if (! $alreadySent && ! $alreadyNotified && $retryCount < 3) {
+                // 🔒 (2026-06-09) Atomic delivery lock — กัน 2 job (primary sync + auto-retry) push ซ้ำ
+                //   Bug (FTU-260609-B8104): guard read-then-write มีช่องว่าง ~45s (gen 14s + push ช้า)
+                //   → auto-retry re-dispatch ระหว่าง job แรกยัง deliver ไม่เสร็จ → 2 job ผ่าน flag-guard
+                //   พร้อมกัน → push view_reading_deep (chart + ไพ่) 2 ครั้ง.
+                //   Cache::add() = atomic → มีแค่ job เดียวที่ได้ lock → deliver ครั้งเดียว
+                $deliverLockKey = "fortune:deep_deliver:{$this->readingId}";
+                $passFlagGuard = ! $alreadySent && ! $alreadyNotified && $retryCount < 3;
+                $gotDeliverLock = $passFlagGuard
+                    && \Illuminate\Support\Facades\Cache::add($deliverLockKey, 1, 600);
+
+                if ($passFlagGuard && ! $gotDeliverLock) {
+                    Log::info('ProcessDeepFortuneReadingJob: delivery lock ถูกถือโดย job อื่น — skip duplicate push', [
+                        'reading_id' => $this->readingId,
+                    ]);
+                }
+
+                if ($gotDeliverLock) {
                     $name = $reading->facebook_user_name ?? 'คุณ';
                     $reading->setConversationState('reading_notification_attempted', true);
                     $reading->setConversationState('reading_notification_retry_count', $retryCount + 1);
@@ -461,6 +477,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                                 $reading->setConversationState('reading_notification_sent', true);
                                 $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
                             } else {
+                                // 🔓 push ล้ม → ปล่อย delivery lock เพื่อให้ retry/ทักกลับ deliver ได้
+                                \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
                                 Log::warning('ProcessDeepFortuneReadingJob: LINE push fail (transient) — ไม่ lock, fallback ตอน user ทักกลับ', [
                                     'reading_id' => $this->readingId,
                                     'retry_count' => $retryCount,
@@ -520,6 +538,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                                 $reading->setConversationState('reading_notification_sent', true);
                                 $reading->setConversationState('delivered_by_push', true);
                             } else {
+                                // 🔓 push ล้ม → ปล่อย delivery lock เพื่อให้ retry/ทักกลับ deliver ได้
+                                \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
                                 Log::warning('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม fail (transient) — fallback ตอน user ทักกลับ', [
                                     'reading_id' => $this->readingId,
                                     'retry_count' => $retryCount,
@@ -531,6 +551,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                                 'sent' => $sent,
                             ]);
                         } catch (\Exception $notifyErr) {
+                            // 🔓 push exception → ปล่อย delivery lock เพื่อให้ retry/ทักกลับ deliver ได้
+                            \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
                             Log::warning('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม ล้มเหลว (จะ fallback ตอน user ทักกลับมา)', [
                                 'reading_id' => $this->readingId,
                                 'error' => $notifyErr->getMessage(),

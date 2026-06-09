@@ -13753,9 +13753,42 @@ class FortuneConversationService
             return $resp;
         }
 
+        $deepFresh = $reading->fresh();
+
+        // 💰 (2026-06-09) Deep 39 Pay-First: จ่ายผ่าน SlipOK แล้วแต่ยังไม่มีวันเกิด → ขอวันเกิดก่อน
+        //   Bug (FTU-260609-B8104): เดิมเรียก processPaymentConfirmed (guard push "ขอวันเกิด") แล้ว
+        //     return "กำลังคำนวณดวงดาว รอสักครู่" → ลูกค้าได้ 2 ข้อความขัดกัน เข้าใจว่าให้รอ ไม่ส่งวันเกิด
+        //     (SMS path ไม่เจอปัญหานี้เพราะ branch ผ่าน handleDeepPayFirstPaymentMatched)
+        //   Fix: mirror SMS — ถ้าไม่มี birth_date → set COLLECTING_BIRTHDATE + ส่ง "ตัดบิลแล้ว → ขอวันเกิด"
+        //        ข้อความเดียว ชัดเจน (ไม่เรียก processPaymentConfirmed ที่จะ gen เปล่า/ส่งข้อความซ้อน)
+        if (empty($deepFresh->birth_date)) {
+            $deepFresh->setConversationState('pay_first_mode', true);
+            $deepFresh->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE]);
+
+            $name = $deepFresh->facebook_user_name ?? 'คุณ';
+            $billRef = $deepFresh->bill_reference ?? '-';
+            $amountStr = number_format((float) ($verify['amount'] ?? $deepFresh->amount_paid ?? 39), 2);
+
+            Log::info('SlipOK: Deep pay-first — ตัดบิลแล้ว ขอวันเกิดก่อน (ยังไม่มี birth_date)', [
+                'reading_id' => $deepFresh->id,
+                'bill_reference' => $deepFresh->bill_reference,
+            ]);
+
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => "✅ *ตรวจสลิปสำเร็จ — ตัดบิลเรียบร้อยแล้วค่ะ* คุณ{$name}\n\n"
+                    ."🔖 เลขที่บิล: {$billRef}\n"
+                    ."💸 ยอดที่ตรวจพบ: ฿{$amountStr}\n\n"
+                    ."🪄 ขอ*วันเดือนปีเกิด*ก่อนนะคะ แม่หมอจะได้คำนวณดวงดาวให้ ✨\n"
+                    .'📝 *ตัวอย่าง:* 15 มีนาคม 2538 / 15/3/2538',
+                'reading' => $deepFresh,
+            ];
+        }
+
+        // มีวันเกิดครบแล้ว → gen คำทำนายตามปกติ
         try {
             $cm = new \App\Services\FortuneChannelManager($this->settings);
-            $this->processPaymentConfirmed($reading->fresh(), null, $cm, $platform, $userId);
+            $this->processPaymentConfirmed($deepFresh, null, $cm, $platform, $userId);
         } catch (\Throwable $e) {
             Log::error('SlipOK: Deep processPaymentConfirmed ล้มเหลว', [
                 'reading_id' => $reading->id,
