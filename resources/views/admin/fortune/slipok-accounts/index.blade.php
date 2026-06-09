@@ -136,15 +136,17 @@
                                         <span x-show="testing !== {{ $a->id }}">เทส</span>
                                         <span x-show="testing === {{ $a->id }}">...</span>
                                     </button>
+                                    {{-- 🔧 (2026-06-09) ใช้ double-quote ครอบ @click — Js::from() output = JSON.parse('...')
+                                         มี single-quote ข้างใน ถ้าครอบด้วย single-quote attribute จะตัดจบเร็ว → @click พัง → modal ไม่เปิด --}}
                                     <button type="button"
-                                            @click='openEdit({{ Js::from([
+                                            @click="openEdit({{ Js::from([
                                                 'id' => $a->id,
                                                 'label' => $a->label,
                                                 'branch_id' => $a->branch_id,
                                                 'priority' => $a->priority,
                                                 'monthly_quota' => $a->monthly_quota,
                                                 'notes' => $a->notes,
-                                            ]) }})'
+                                            ]) }})"
                                             class="px-2.5 py-1 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 text-xs hover:bg-amber-100">
                                         แก้ไข
                                     </button>
@@ -188,7 +190,9 @@
                     : '{{ route('admin.fortune.slipok-accounts.store') }}'"
                   method="POST" class="space-y-4">
                 @csrf
-                <template x-if="form.id"><input type="hidden" name="_method" value="PUT"></template>
+                {{-- 🔧 (2026-06-09) method spoof แบบ always-present + bound — เชื่อถือได้กว่า <template x-if>
+                     (x-if บางครั้ง inject ไม่ทัน → POST /{account} ไม่มี route → 405 → แก้ไขไม่บันทึก) --}}
+                <input type="hidden" name="_method" x-bind:value="form.id ? 'PUT' : 'POST'">
 
                 <div>
                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">ชื่อเรียก (label)</label>
@@ -237,7 +241,11 @@
         </div>
     </div>
 </div>
+@endsection
 
+{{-- 🔧 (2026-06-09) Alpine component อยู่ใน @push('scripts') (โหลดก่อน Alpine init)
+     — ตรงกับ pattern ที่ใช้ได้จริงในหน้าอื่น (saved-questions ฯลฯ) --}}
+@push('scripts')
 <script>
 function slipokPool() {
     return {
@@ -287,4 +295,4 @@ function slipokPool() {
     };
 }
 </script>
-@endsection
+@endpush
