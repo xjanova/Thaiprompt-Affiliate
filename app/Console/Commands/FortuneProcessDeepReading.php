@@ -98,46 +98,66 @@ class FortuneProcessDeepReading extends Command
             $skipAiGeneration = ! empty($reading->deep_response);
 
             if (! $skipAiGeneration) {
-                // ✅ สร้างคำทำนายด้วย AI (ไม่ push ให้ลูกค้าผ่าน pushMessage)
-                // แนวทาง V3: ไม่ใช้ pushMessage สำหรับ fortune delivery (โควต้าจำกัด!)
-                // → บันทึกลง DB เท่านั้น → เมื่อลูกค้าส่งข้อความมา จะส่งผ่าน replyMessage (ฟรี!)
-                // ✅ ส่ง platform + userId เพื่อให้ affiliate auto-register ทำงาน
-                // channelManager = null → ไม่ push เนื้อหาคำทำนาย (streaming = false)
+                // 🔒 (2026-06-10) Generation lock — กัน fortune:process-deep รันซ้อนหลาย process
+                //   เคสจริง (R5604): webhook sync + check-pending Phase 1 re-dispatch (proc_open)
+                //   → AI generate ขนานกัน 3 รอบ → คำทำนายเขียนทับ + ส่งซ้ำ 3 ชุด + AI cost ×3
+                //   Cache::add = atomic (redis) → process เดียวเท่านั้นที่ได้ generate
+                $genLockKey = "fortune:deep_gen:{$readingId}";
+                if (! \Illuminate\Support\Facades\Cache::add($genLockKey, 1, 300)) {
+                    $this->info("FortuneReading #{$readingId} มี process อื่นกำลัง generate อยู่ — ข้าม (กัน gen ซ้อน)");
+                    Log::info('fortune:process-deep: generation lock ถูกถือโดย process อื่น — skip duplicate generation', [
+                        'reading_id' => $readingId,
+                    ]);
 
-                // 🔔 (2026-05-14) AI Ping — Loading update 10s/30s/60s + admin alert > 1 min
-                //   เปิด AI session ก่อน call AI — pings วิ่ง async ใน queue worker
-                //   ถ้า AI เสร็จก่อน 10s → ping ทั้งหมด skip (cache cleared)
-                \App\Services\Fortune\FortuneAiPingDispatcher::start(
-                    $readingId,
-                    $platform,
-                    $userId,
-                    'deep'
-                );
-
-                try {
-                    $result = $conversationService->processPaymentConfirmed(
-                        $reading, $notification, null, $platform, $userId
-                    );
-                } finally {
-                    // ปิด AI session — pings ที่ยังไม่ run จะ skip
-                    \App\Services\Fortune\FortuneAiPingDispatcher::complete($readingId);
+                    return self::SUCCESS;
                 }
 
-                $duration = round((microtime(true) - $startTime) * 1000, 2);
+                try {
+                    // ✅ สร้างคำทำนายด้วย AI (ไม่ push ให้ลูกค้าผ่าน pushMessage)
+                    // แนวทาง V3: ไม่ใช้ pushMessage สำหรับ fortune delivery (โควต้าจำกัด!)
+                    // → บันทึกลง DB เท่านั้น → เมื่อลูกค้าส่งข้อความมา จะส่งผ่าน replyMessage (ฟรี!)
+                    // ✅ ส่ง platform + userId เพื่อให้ affiliate auto-register ทำงาน
+                    // channelManager = null → ไม่ push เนื้อหาคำทำนาย (streaming = false)
 
-                $this->info("✅ สร้างคำทำนาย สำเร็จ ({$duration}ms) — บันทึก DB แล้ว รอ user ดึงผ่าน replyMessage");
-                Log::info('✅ fortune:process-deep สำเร็จ — ไม่ push (รอ replyMessage)', [
-                    'reading_id' => $readingId,
-                    'action' => $result['action'] ?? 'unknown',
-                    'duration_ms' => $duration,
-                    'deep_response_length' => mb_strlen($reading->fresh()?->deep_response ?? ''),
-                ]);
+                    // 🔔 (2026-05-14) AI Ping — Loading update 10s/30s/60s + admin alert > 1 min
+                    //   เปิด AI session ก่อน call AI — pings วิ่ง async ใน queue worker
+                    //   ถ้า AI เสร็จก่อน 10s → ping ทั้งหมด skip (cache cleared)
+                    \App\Services\Fortune\FortuneAiPingDispatcher::start(
+                        $readingId,
+                        $platform,
+                        $userId,
+                        'deep'
+                    );
 
-                // ✅ ตั้ง flag "คำทำนายพร้อม" → เมื่อ user ส่งข้อความมาจะได้รับผ่าน replyMessage
-                $reading->refresh();
-                if (! empty($reading->deep_response)) {
-                    $reading->setConversationState('reading_ready_for_reply', true);
-                    $reading->setConversationState('reading_ready_at', now()->toIso8601String());
+                    try {
+                        $result = $conversationService->processPaymentConfirmed(
+                            $reading, $notification, null, $platform, $userId
+                        );
+                    } finally {
+                        // ปิด AI session — pings ที่ยังไม่ run จะ skip
+                        \App\Services\Fortune\FortuneAiPingDispatcher::complete($readingId);
+                    }
+
+                    $duration = round((microtime(true) - $startTime) * 1000, 2);
+
+                    $this->info("✅ สร้างคำทำนาย สำเร็จ ({$duration}ms) — บันทึก DB แล้ว รอ user ดึงผ่าน replyMessage");
+                    Log::info('✅ fortune:process-deep สำเร็จ — ไม่ push (รอ replyMessage)', [
+                        'reading_id' => $readingId,
+                        'action' => $result['action'] ?? 'unknown',
+                        'duration_ms' => $duration,
+                        'deep_response_length' => mb_strlen($reading->fresh()?->deep_response ?? ''),
+                    ]);
+
+                    // ✅ ตั้ง flag "คำทำนายพร้อม" → เมื่อ user ส่งข้อความมาจะได้รับผ่าน replyMessage
+                    $reading->refresh();
+                    if (! empty($reading->deep_response)) {
+                        $reading->setConversationState('reading_ready_for_reply', true);
+                        $reading->setConversationState('reading_ready_at', now()->toIso8601String());
+                    }
+                } finally {
+                    // 🔓 ปล่อย gen lock เสมอ — gen เสร็จแล้ว deep_response มี (Phase 1 ไม่จับซ้ำ)
+                    //    ถ้า gen ล้ม → check-pending retry รอบหน้าได้
+                    \Illuminate\Support\Facades\Cache::forget($genLockKey);
                 }
             } else {
                 Log::info('fortune:process-deep: ข้าม AI generation (deep_response มีอยู่แล้ว)', [
@@ -156,13 +176,29 @@ class FortuneProcessDeepReading extends Command
                 $alreadyNotified = $reading->getConversationState('reading_notification_sent', false);
                 $retryCount = (int) $reading->getConversationState('reading_notification_retry_count', 0);
 
-                if (! $alreadyNotified && $retryCount < 3) {
+                // 🔒 (2026-06-10) Atomic delivery lock — กันส่งคำทำนายซ้ำจากหลาย process
+                //   เคสจริง (R5644): command นี้กำลัง push อยู่ (~18s ภาพ+ไพ่+ข้อความ) →
+                //   check-pending Phase 2 เห็น flag ยังไม่ตั้ง → push ซ้ำ → ลูกค้าได้ 2 ชุด
+                //   key เดียวกับ ProcessDeepFortuneReadingJob + check-pending Phase 2
+                //   (fix เดิม 2026-06-09 อยู่ใน Job::handle() แต่ prod ใช้ Artisan::call → ไม่ผ่าน Job)
+                $deliverLockKey = "fortune:deep_deliver:{$readingId}";
+                $passFlagGuard = ! $alreadyNotified && $retryCount < 3;
+                $deliverLockAcquired = $passFlagGuard
+                    && \Illuminate\Support\Facades\Cache::add($deliverLockKey, 1, 600);
+
+                if ($passFlagGuard && ! $deliverLockAcquired) {
+                    Log::info('fortune:process-deep: delivery lock ถูกถือโดย process อื่น — skip duplicate push', [
+                        'reading_id' => $readingId,
+                    ]);
+                }
+
+                if ($deliverLockAcquired) {
                     try {
                         $name = $reading->facebook_user_name ?? 'คุณ';
                         $readyMessage = "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
-                            . '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n\n"
-                            . "🔮 พร้อมอ่านเลยไหมคะ?\n"
-                            . "💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
+                            .'📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n\n"
+                            ."🔮 พร้อมอ่านเลยไหมคะ?\n"
+                            ."💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
 
                         // ✅ เช็คโควต้า LINE ก่อนส่ง push (วินิจฉัยสาเหตุ push ล้มเหลว)
                         $quotaInfo = null;
@@ -275,6 +311,11 @@ class FortuneProcessDeepReading extends Command
                             }
                         }
 
+                        if (! $notifySent) {
+                            // 🔓 push ล้ม → ปล่อย delivery lock ให้ retry/check-pending/ทักกลับ deliver ได้
+                            \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
+                        }
+
                         $reading->setConversationState('reading_notification_sent', $notifySent);
                         $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
 
@@ -291,6 +332,9 @@ class FortuneProcessDeepReading extends Command
                             $this->warn('⚠️ Push แจ้งเตือนไม่สำเร็จ — ลูกค้าจะได้รับเมื่อพิมพ์ข้อความมา');
                         }
                     } catch (\Exception $notifyErr) {
+                        // 🔓 push exception → ปล่อย delivery lock ให้ retry/ทักกลับ deliver ได้
+                        \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
+
                         // push ล้มเหลว → ไม่เป็นไร user ส่งข้อความมาจะได้รับผ่าน replyMessage
                         Log::warning('fortune:process-deep: push แจ้งเตือนล้มเหลว (fallback replyMessage)', [
                             'reading_id' => $readingId,
@@ -308,6 +352,13 @@ class FortuneProcessDeepReading extends Command
         } catch (\Throwable $e) {
             // 🩹 (2026-05-09) catch \Throwable แทน \Exception — กัน TypeError/Error leak ผ่าน
             //                 status update + recovery (PHP 8 type errors extends Throwable ไม่ใช่ Exception)
+            // 🔓 (2026-06-10) ปล่อย delivery lock ถ้าเราถืออยู่แต่ยังส่งไม่สำเร็จ —
+            //   \Error ระหว่าง push ข้าม catch(\Exception) ด้านใน → lock จะค้างจน TTL หมด
+            //   (ถ้าส่งสำเร็จแล้ว $notifySent=true → คง lock ไว้ — flag guard กันซ้ำอยู่แล้ว)
+            if (! empty($deliverLockAcquired) && empty($notifySent)) {
+                \Illuminate\Support\Facades\Cache::forget("fortune:deep_deliver:{$readingId}");
+            }
+
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->error("❌ ล้มเหลว: {$e->getMessage()} ({$duration}ms)");

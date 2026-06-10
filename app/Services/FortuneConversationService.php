@@ -1556,10 +1556,25 @@ class FortuneConversationService
                     $alreadySent = $unsentReading->getConversationState('reading_sent_directly', false);
                     $notificationSent = $unsentReading->getConversationState('reading_notification_sent', false);
 
+                    // 🔒 (2026-06-10) Delivery in-flight check — push path (fortune:process-deep /
+                    //   check-pending Phase 2) กำลังส่งอยู่ (ถือ lock, flag ยังไม่ทันตั้ง) →
+                    //   ห้าม reply path ส่งซ้ำเป็นชุดที่ 2 — ปล่อยข้อความลูกค้าไหลไป handler ปกติ
+                    //   เงื่อนไข ! $notificationSent สำคัญ: LINE ที่แจ้งเตือนสำเร็จแล้ว (lock ยังถืออยู่)
+                    //   ลูกค้าตอบกลับต้องได้คำทำนายเต็มตามเดิม
+                    $deliverInFlight = ! $alreadySent
+                        && ! $notificationSent
+                        && \Illuminate\Support\Facades\Cache::has("fortune:deep_deliver:{$unsentReading->id}");
+
+                    if ($deliverInFlight) {
+                        Log::info('Fortune processMessage: delivery กำลังส่งอยู่ (lock) — ข้าม reply duplicate', [
+                            'reading_id' => $unsentReading->id,
+                        ]);
+                    }
+
                     // ✅ FIX: ไม่พึ่ง reading_ready_for_reply flag อีกต่อไป
                     // ถ้ามี COMPLETED + deep_response + ยังไม่ส่ง → ต้องจัดการเสมอ
                     // (flag อาจไม่ถูก set เนื่องจาก race condition ระหว่าง save กับ set flag)
-                    if (! $alreadySent) {
+                    if (! $alreadySent && ! $deliverInFlight) {
 
                         // ✅ ตั้ง flag ให้ถูกต้อง (self-healing)
                         if (! $unsentReading->getConversationState('reading_ready_for_reply', false)) {

@@ -107,6 +107,18 @@ class FortuneCheckPendingReadings extends Command
             $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
             $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
+            // 🔒 (2026-06-10) มี process กำลัง generate/ส่งอยู่ → ข้ามรอบนี้ (กัน dispatch ซ้อน)
+            //   เคสจริง (R5604): Pay-First ลูกค้าให้วันเกิด "หลัง" จ่าย → paid_at เก่ากว่า
+            //   ตอนเริ่ม generate จริงได้หลายนาที → MIN_WAIT จาก paid_at คิดว่า job ค้าง
+            //   → dispatch ซ้อนระหว่าง AI กำลัง gen → รัน 3 รอบขนาน ส่งซ้ำ 3 ชุด + AI cost ×3
+            if (\Illuminate\Support\Facades\Cache::has("fortune:deep_gen:{$reading->id}")
+                || \Illuminate\Support\Facades\Cache::has("fortune:deep_deliver:{$reading->id}")) {
+                $this->info("  ⏳ {$billRef} — มี process กำลัง generate/ส่งอยู่ (ข้ามรอบนี้)");
+                $skipped++;
+
+                continue;
+            }
+
             // ตรวจสอบ retry count จาก conversation_state
             $retryCount = $reading->getConversationState('auto_retry_count', 0);
             if ($retryCount >= self::MAX_AUTO_RETRIES && ! $isForce) {
@@ -122,9 +134,9 @@ class FortuneCheckPendingReadings extends Command
 
                         // 🌙 (2026-06-06) user spec: "อย่าแจ้งลูกค้าว่าเอไอ/ระบบขัดข้อง" — โทนนุ่ม
                         $failMessage = "🔮 ขออภัยค่ะ คุณ{$name}\n\n"
-                            . "คำทำนายของคุณกำลังใช้เวลามากกว่าปกติเล็กน้อย\n"
-                            . "แอดมินกำลังดูแลให้เร็วที่สุดค่ะ\n\n"
-                            . "💬 พิมพ์ 'ดูคำทำนาย' เพื่อตรวจสอบสถานะได้ตลอดนะคะ 🙏";
+                            ."คำทำนายของคุณกำลังใช้เวลามากกว่าปกติเล็กน้อย\n"
+                            ."แอดมินกำลังดูแลให้เร็วที่สุดค่ะ\n\n"
+                            ."💬 พิมพ์ 'ดูคำทำนาย' เพื่อตรวจสอบสถานะได้ตลอดนะคะ 🙏";
 
                         $channelManager->sendResponse($platform, $userId, [
                             'action' => 'error',
@@ -175,7 +187,7 @@ class FortuneCheckPendingReadings extends Command
 
                     $name = $reading->facebook_user_name ?? 'คุณ';
                     $busyMessage = "🔮 เนื่องจากตอนนี้มีคนใช้งานมาก จันทรากำลังพยายามตรวจดวงชะตาให้อยู่ค่ะ\n\n"
-                        . "กรุณารอสักครู่นะคะ {$name} 🙏";
+                        ."กรุณารอสักครู่นะคะ {$name} 🙏";
 
                     $channelManager->sendResponse($platform, $userId, [
                         'action' => 'busy_processing',
@@ -334,7 +346,17 @@ class FortuneCheckPendingReadings extends Command
                 $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
                 $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
-                if (! empty($userId)) {
+                // 🔒 (2026-06-10) Atomic delivery lock — key เดียวกับ fortune:process-deep + Job
+                //   เคสจริง (R5644): fortune:process-deep กำลัง push อยู่ (~18s) → Phase 2 รอบนาทีนั้น
+                //   เห็น flag ยังไม่ตั้ง → push ซ้ำ → ลูกค้าได้ภาพ+ไพ่+คำทำนาย 2 ชุด
+                $deliverLockKey = "fortune:deep_deliver:{$reading->id}";
+
+                if (! empty($userId) && ! \Illuminate\Support\Facades\Cache::add($deliverLockKey, 1, 600)) {
+                    $this->info("  ⏳ {$billRef} — delivery lock ถูกถือโดย process อื่น (ข้ามรอบนี้)");
+                    Log::info('fortune:check-pending Phase 2: delivery lock ถูกถือ — skip duplicate push', [
+                        'reading_id' => $reading->id,
+                    ]);
+                } elseif (! empty($userId)) {
                     try {
                         $settings = $settings ?? FortuneTellingSetting::getSettings();
                         $channelManager = $channelManager ?? new FortuneChannelManager($settings);
@@ -369,15 +391,17 @@ class FortuneCheckPendingReadings extends Command
                                 $reading->setConversationState('delivered_by_push', true);
                                 $this->info("  📨 {$billRef} — push คำทำนายเต็มสำเร็จ (FB)");
                             } else {
+                                // 🔓 push ล้ม → ปล่อย delivery lock ให้รอบหน้า/ทักกลับ deliver ได้
+                                \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
                                 $reading->setConversationState('reading_notification_attempted', true);
                                 $this->warn("  ⚠️ {$billRef} — push คำทำนายเต็มไม่สำเร็จ (FB) — ลูกค้าจะได้รับเมื่อทักกลับมา");
                             }
                         } else {
                             // 💎 LINE: คงเดิม push Flex notification (quota จำกัด)
                             $readyMessage = "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
-                                . '📋 เลขที่บิล: ' . ($reading->bill_reference ?? '-') . "\n\n"
-                                . "🔮 พร้อมอ่านเลยไหมคะ?\n"
-                                . "💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
+                                .'📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n\n"
+                                ."🔮 พร้อมอ่านเลยไหมคะ?\n"
+                                ."💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
 
                             $pushSent = $channelManager->sendResponse($platform, $userId, [
                                 'action' => 'fortune_ready_notification',
@@ -393,11 +417,15 @@ class FortuneCheckPendingReadings extends Command
                                 $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
                                 $this->info("  📨 {$billRef} — push แจ้ง 'คำทำนายพร้อมแล้ว' สำเร็จ (LINE)");
                             } else {
+                                // 🔓 push ล้ม → ปล่อย delivery lock ให้รอบหน้า/ทักกลับ deliver ได้
+                                \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
                                 $reading->setConversationState('reading_notification_attempted', true);
                                 $this->warn("  ⚠️ {$billRef} — push แจ้งไม่สำเร็จ (LINE) — user พิมพ์มาก็จะได้รับผ่าน replyMessage");
                             }
                         }
                     } catch (\Exception $notifyErr) {
+                        // 🔓 push exception → ปล่อย delivery lock
+                        \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
                         $reading->setConversationState('reading_notification_attempted', true);
                         $reading->setConversationState('phase2_notify_retry_count', $notifyRetryCount + 1);
                         Log::warning('fortune:check-pending Phase 2: push แจ้งเตือนล้มเหลว', [
