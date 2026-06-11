@@ -522,6 +522,10 @@ class FortuneChannelManager
 
         try {
             $sent = match ($action) {
+                // 🃏 (2026-06-11) กล่อง "ได้ไพ่..." ส่งไปก่อน dispatch แล้ว (afterTarotCardDrawn)
+                //   → ไม่ต้องส่งอะไรซ้ำ (กันกล่องไพ่โผล่ท้ายสุดหลังคำทำนาย)
+                'deep_card_announced' => true,
+
                 // ทำนายพื้นฐานเสร็จ → ส่งคำทำนาย + Upsell Template
                 'basic_done' => $this->sendFacebookBasicDoneResponse($fbService, $richService, $userId, $result),
 
@@ -1886,6 +1890,9 @@ class FortuneChannelManager
         // ⚡ ใช้ Flex Message สวยงามทุก action — ห่อด้วย try-catch เพื่อ fallback เป็น text ถ้า Flex ล้มเหลว
         try {
             $sent = match ($action) {
+                // 🃏 (2026-06-11) กล่อง "ได้ไพ่..." ส่งไปก่อน dispatch แล้ว (afterTarotCardDrawn)
+                'deep_card_announced' => true,
+
                 // ทำนายพื้นฐานเสร็จ → ส่งคำทำนาย + Upsell Flex
                 'basic_done' => $this->sendLineBasicDoneResponse($lineService, $userId, $result, $replyToken),
 

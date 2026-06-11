@@ -2011,17 +2011,37 @@ class LineFortuneWebhookController extends Controller
                 && ($activeReading->conversation_status === FortuneReading::STATUS_PAID
                     || ($activeReading->is_paid && empty($activeReading->deep_response)))) {
                 $billRef = $activeReading->bill_reference ?? '-';
-                $message = "✅ ระบบรับเงินไปเรียบร้อยแล้วค่ะ\n\n"
-                    ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
-                    ."🌙 *แม่หมอกำลังคำนวณดวงดาวให้เจ้าชะตาอยู่*\n"
-                    ."ใช้เวลาประมาณ 1-3 นาที — รอสักครู่ คำทำนายจะส่งไปให้ทันทีเมื่อเสร็จ ✨\n\n"
-                    .'💡 ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ)';
+
+                // 🪄 (2026-06-11) State-aware — เคสเดียวกับ FB (FTU-260611-Z9851):
+                //   รอวันเกิด/เปิดไพ่อยู่ ต้องบอกขั้นตอนจริง ไม่ใช่ "กำลังคำนวณ"
+                if ($activeReading->conversation_status === FortuneReading::STATUS_COLLECTING_BIRTHDATE
+                    || empty($activeReading->birth_date)) {
+                    $message = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ (ไม่ต้องส่งสลิปซ้ำนะคะ)\n\n"
+                        ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                        ."🪄 *ตอนนี้แม่หมอรอ วันเดือนปีเกิด ของเจ้าชะตาอยู่ค่ะ*\n"
+                        ."พิมพ์บอกได้เลย เช่น:\n"
+                        ."  • 15 มีนาคม 2538\n"
+                        .'  • 15/3/2538';
+                } elseif ($activeReading->conversation_status === FortuneReading::STATUS_COLLECTING_TAROT) {
+                    $message = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ (ไม่ต้องส่งสลิปซ้ำนะคะ)\n\n"
+                        ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                        ."🧘 *ตั้งจิตนึกถึงเรื่องที่อยากรู้ แล้วพิมพ์ \"พร้อม\"*\n"
+                        .'🃏 แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ทันทีค่ะ';
+                } else {
+                    $message = "✅ ระบบรับเงินไปเรียบร้อยแล้วค่ะ\n\n"
+                        ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                        ."🌙 *แม่หมอกำลังคำนวณดวงดาวให้เจ้าชะตาอยู่*\n"
+                        ."ใช้เวลาประมาณ 1-3 นาที — รอสักครู่ คำทำนายจะส่งไปให้ทันทีเมื่อเสร็จ ✨\n\n"
+                        .'💡 ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ)';
+                }
 
                 $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
 
-                Log::info('LINE: รับสลิประหว่าง PAID → ปลอบ แม่หมอกำลังคำนวณ', [
+                Log::info('LINE: รับสลิประหว่าง PAID → ตอบตามขั้นตอนจริง', [
                     'user_id' => $userId,
                     'reading_id' => $activeReading->id,
+                    'status' => $activeReading->conversation_status,
+                    'has_birthdate' => ! empty($activeReading->birth_date),
                 ]);
 
                 return;

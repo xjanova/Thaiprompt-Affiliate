@@ -5635,7 +5635,10 @@ class FortuneConversationService
 
             $name = $userProfile['name'] ?? 'คุณ';
 
-            // สร้าง FortuneReading ใหม่ — มี birth_date พร้อมแล้ว → จัมพ์ไป COLLECTING_QUESTIONS
+            // สร้าง FortuneReading ใหม่ — มี birth_date พร้อมแล้ว
+            // 🌙 (2026-06-11) โฟลใหม่ 39: ไม่มีขั้นรับคำถาม → beginDeepGeneralReading
+            //   (คำถามพื้นดวงอัตโนมัติ + COLLECTING_TAROT ตั้งจิตเปิดไพ่เลย)
+            //   เดิมจัมพ์ไป COLLECTING_QUESTIONS = โฟลเก่าตกค้าง
             $reading = FortuneReading::create([
                 'facebook_user_id' => $userId,
                 'facebook_user_name' => $name,
@@ -5643,7 +5646,7 @@ class FortuneConversationService
                 'questions' => [],
                 'reading_type' => 'deep',
                 'birth_date' => $birthDate,
-                'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
+                'conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT,
                 'response_type' => 'private_message',
                 'ai_response' => '',
                 'ai_provider' => '',
@@ -5658,14 +5661,7 @@ class FortuneConversationService
                 'birth_date' => $birthDate,
             ]);
 
-            $formattedDate = $this->formatThaiDate($birthDate);
-
-            return [
-                'action' => 'collecting_questions',
-                'message' => "✅ รับวันเกิด {$formattedDate} แล้วค่ะ\n\n"
-                    .$this->getQuestionsRequestMessage($name, $birthDate),
-                'reading' => $reading,
-            ];
+            return $this->beginDeepGeneralReading($reading, $birthDate);
         } catch (\Exception $e) {
             Log::error('Fortune: startDeepReadingFlowWithBirthdate ล้มเหลว', [
                 'user_id' => $userId,
@@ -5791,6 +5787,22 @@ class FortuneConversationService
             return $this->handleBirthdateStepMode($reading, $messageText);
         }
 
+        // 🔘 (2026-06-11) ปุ่มเมนู/แพคเกจค้างในแชท — ลูกค้ากดซ้ำระหว่างรอวันเกิด
+        //   เคสจริง (FTU-260611-Z9851): กด "🔹 เริ่ม 39 บาท" → ถูกนับเป็นวันเกิดผิด attempt 1
+        //   → พิมพ์วันเกิดจริงพลาดอีกครั้งเดียวก็หลุดเข้า step mode เร็วเกิน
+        //   → ตอบ re-prompt ขอวันเกิดชัดๆ โดยไม่นับ attempt
+        if (preg_match('/เริ่ม\s*(ดูดวง\s*)?(39|99)|ดูดวง\s*39|39\s*บาท|TIER_/iu', $messageText)) {
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => "✅ บิลของเจ้าชะตาชำระแล้ว — ไม่ต้องเริ่มใหม่นะคะ\n\n"
+                    ."🪄 *ตอนนี้แม่หมอรอ วันเดือนปีเกิด ของเจ้าชะตาอยู่ค่ะ*\n"
+                    ."พิมพ์บอกได้เลย เช่น:\n"
+                    ."  • 15 มีนาคม 2538\n"
+                    .'  • 15/3/2538',
+                'reading' => $reading,
+            ];
+        }
+
         $birthDate = $this->parseBirthDate($messageText);
 
         if (! $birthDate) {
@@ -5842,40 +5854,9 @@ class FortuneConversationService
         //   เดิม: birthdate → COLLECTING_QUESTIONS → ขอคำถาม → COLLECTING_TAROT (ตั้งจิต) → เปิดไพ่
         //   ใหม่: birthdate → ใส่ "คำถามพื้นดวงรวม" อัตโนมัติ (ลูกค้าไม่ต้องพิมพ์) → COLLECTING_TAROT ตรงเลย
         //         เปิดไพ่ครบ → afterTarotCardDrawn → ทำนายพื้นดวงรวมทันที → enterProSession('deep') คุยต่อ 7 นาที
-        $generalQuestion = 'ขอดูพื้นดวงโดยรวมของเจ้าชะตา — ภาพรวมชีวิตช่วงนี้ ทั้งนิสัยพื้นฐาน ความรัก '
-            .'การงาน การเงิน สุขภาพ โชคลาภ และสิ่งที่ควรระวัง พร้อมคำแนะนำจากแม่หมอ';
-
-        // เก็บคำถามพื้นดวงทั้งใน collected_questions (state) และคอลัมน์ questions
-        //   → กัน Pay-First data guard (FCS ~8007) เด้งกลับไปขอคำถาม ถ้ามี payment-confirm ซ้ำ
-        //     ระหว่างยังเปิดไพ่ไม่เสร็จ (column ยังไม่ถูก copy จาก afterTarotCardDrawn)
-        $reading->addQuestion($generalQuestion);
-        $reading->setConversationState('deep_general_reading', true);
-        $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
-        $reading->update([
-            'birth_date' => $birthDate,
-            'questions' => [$generalQuestion],
-            'conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT,
-        ]);
-
-        $formatted = $this->formatThaiDate($birthDate);
-
-        return [
-            'action' => 'awaiting_tarot_intention',
-            'message' => "📅 *รับวันเกิดแล้ว: {$formatted}* ✨\n\n"
-                ."═══════════════════════\n"
-                ."🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
-                ."═══════════════════════\n\n"
-                ."หลับตา หายใจลึก ๆ 3 ครั้ง นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
-                ."🃏 แม่หมอจะเปิดไพ่ให้ แล้ว*อ่านพื้นดวงรวม*จากวันเกิด + ไพ่ของเจ้าชะตาให้ทันที\n"
-                ."จากนั้นถามแม่หมอต่อได้เลยค่ะ ✨\n\n"
-                ."เมื่อพร้อม → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
-                .'หรือกดปุ่มด้านล่าง 👇',
-            'reading' => $reading,
-            'show_quick_replies' => true,
-            'quick_replies' => [
-                ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
-            ],
-        ];
+        // 🧹 (2026-06-11) รวม logic เข้า beginDeepGeneralReading — ใช้ร่วมกับ path ยืนยันวันเกิด
+        //   + path วันเกิดที่รู้อยู่แล้ว (เดิมโค้ดก้อนเดียวกันซ้ำ 2 ที่ — path ที่สามตกหล่นเป็นบั๊ก)
+        return $this->beginDeepGeneralReading($reading, $birthDate);
     }
 
     /**
@@ -6069,12 +6050,19 @@ class FortuneConversationService
         $normalized = preg_replace('/\s*(แล้ว|ละ|ล่ะ|ค่ะ|ครับ|คะ|จ้า|จ้ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ)+\s*$/u', '', $text);
         $normalized = trim($normalized);
 
+        // 🩹 (2026-06-11) ตัดอีโมจิ/สัญลักษณ์นำหน้า — FB quick reply ส่ง "title" เป็นข้อความ
+        //   เคสจริง (FTU-260611-Z9851): ปุ่ม "✅ ใช่ ถูกต้อง" → text เข้ามาทั้งก้อนรวม "✅ "
+        //   → ทุก keyword fail (=== / starts_with) → ลูกค้ากดยืนยัน 4 รอบ วน loop ไม่ไปต่อ
+        //   จนแอดมินต้องเข้ามากดให้ — ปุ่มของระบบเองทำให้ handler ตัวเองพัง
+        $normalized = trim(preg_replace('/^[^\p{L}\p{N}]+/u', '', $normalized) ?? $normalized);
+
         $pendingBirthdate = $reading->getConversationState('pending_birthdate');
 
         // ✅ ยืนยัน → commit + ไปต่อ
         // 🩹 (2026-05-05) เพิ่ม keyword variants — ครอบคลุม "ใช่แล้ว", "ถูกแล้ว", "ใช่ๆ"
+        // 🩹 (2026-06-11) เพิ่ม "ใช้" — ลูกค้าพิมพ์ผิดวรรณยุกต์ (ใช้จ้า = ใช่จ้า) พบจริงใน FTU-260611-Z9851
         $confirmKeywords = [
-            'ใช่', 'ยืนยัน', 'ok', 'okay', 'โอเค', 'ถูกต้อง', 'ถูก',
+            'ใช่', 'ใช้', 'ยืนยัน', 'ok', 'okay', 'โอเค', 'ถูกต้อง', 'ถูก',
             'ใช่ค่ะ', 'ใช่ครับ', 'ใช่ๆ', 'ใช่ๆๆ',
             'yes', 'y', 'confirm', 'ตกลง', 'ครับ', 'ค่ะ',  // ครับ/ค่ะ เดี่ยว ๆ ก็ถือว่ายืนยัน (หลัง strip suffix)
             // 🇱🇦 ลาว
@@ -6095,17 +6083,14 @@ class FortuneConversationService
 
                 $reading->setConversationState('awaiting_birthdate_confirmation', false);
                 $reading->setConversationState('pending_birthdate', null);
-                $reading->update([
-                    'birth_date' => $pendingBirthdate,
-                    'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
-                ]);
-                $reading->setConversationState('collected_questions', []);
+                $reading->setConversationState('birthdate_attempts', 0);
 
-                return [
-                    'action' => 'collecting_questions',
-                    'message' => $this->getQuestionsRequestMessage($reading->facebook_user_name ?? 'คุณ', $pendingBirthdate),
-                    'reading' => $reading,
-                ];
+                // 🌙 (2026-06-11) โฟลใหม่ 39 — ไม่มีขั้น "รับคำถาม" แล้ว (เคสจริง FTU-260611-Z9851)
+                //   เดิม: ยืนยันแล้ว → COLLECTING_QUESTIONS ถามคำถาม (โฟลเก่า — commit 30fa6d842
+                //   แก้เฉพาะ path หลัก parse สำเร็จ แต่ path step-mode→ยืนยัน ตกหล่น)
+                //   ใหม่: ใช้ beginDeepGeneralReading เหมือน path หลัก → คำถามพื้นดวงอัตโนมัติ
+                //   → ตั้งจิตเปิดไพ่ → ทำนายทันที → คุยต่อ 7 นาที (Pro Session)
+                return $this->beginDeepGeneralReading($reading, $pendingBirthdate);
             }
         }
 
@@ -6838,17 +6823,19 @@ class FortuneConversationService
     protected function afterTarotCardDrawn(FortuneReading $reading, array $collectedQuestions, int $questionCount, string $prefixMessage = ''): array
     {
         if ($questionCount < self::REQUIRED_QUESTIONS) {
-            // ยังไม่ครบ → กลับไปถามคำถามต่อ
-            $nextNumber = $questionCount + 1;
-            $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS]);
+            // 🌙 (2026-06-11) Self-heal — โฟลใหม่ 39 ไม่มีขั้นรับคำถามแล้ว
+            //   path เก่า/ตกค้างใดๆ ที่มาถึงนี่โดยไม่มีคำถาม → ใส่คำถามพื้นดวงรวมให้อัตโนมัติ
+            //   (เดิม: เด้งกลับ COLLECTING_QUESTIONS ถามคำถาม = โฟลเก่า ลูกค้างง)
+            $generalQuestion = 'ขอดูพื้นดวงโดยรวมของเจ้าชะตา — ภาพรวมชีวิตช่วงนี้ ทั้งนิสัยพื้นฐาน ความรัก '
+                .'การงาน การเงิน สุขภาพ โชคลาภ และสิ่งที่ควรระวัง พร้อมคำแนะนำจากแม่หมอ';
+            $reading->addQuestion($generalQuestion);
+            $reading->setConversationState('deep_general_reading', true);
+            $collectedQuestions = $reading->getCollectedQuestions();
+            $questionCount = count($collectedQuestions);
 
-            return [
-                'action' => 'need_more_questions',
-                'message' => $prefixMessage
-                    ."📝 คำถามข้อที่ {$nextNumber} จาก ".self::REQUIRED_QUESTIONS.' — เลือกหมวดหรือพิมพ์เองได้เลย 👇',
-                'reading' => $reading,
-                'question_number' => $nextNumber,
-            ];
+            Log::info('Fortune: afterTarotCardDrawn — ไม่มีคำถาม → ใส่คำถามพื้นดวงอัตโนมัติ (self-heal)', [
+                'reading_id' => $reading->id,
+            ]);
         }
 
         // 💰 (2026-05-10) Pay-First flow — ลูกค้าจ่ายไปแล้วตั้งแต่กดปุ่ม "39"
@@ -6908,6 +6895,33 @@ class FortuneConversationService
                 }
             }
 
+            // 🃏 (2026-06-11) ส่งกล่อง "ได้ไพ่ X ความหมาย..." ทันที *ก่อน* dispatch
+            //   Root cause (FTU-260611-Z9851 + R5644): dispatchSmart รัน sync (fastcgi —
+            //   gen AI + ส่งคำทำนายทั้งชุด ~30-60s เสร็จก่อน) แล้วค่อย return ข้อความนี้
+            //   → กล่องรายงานไพ่ไปโผล่ "ท้ายสุด" หลังคำทำนาย + กล่อง 7 นาที (ผิดลำดับ)
+            //   ใหม่: push กล่องไพ่เดี๋ยวนี้ → dispatch → return silent (ไม่ส่งซ้ำ)
+            //   ลำดับที่ลูกค้าเห็น: ได้ไพ่+ความหมาย → รูปไพ่ → รูปดวงดาว → คำทำนาย → กล่อง 7 นาที
+            if (trim($prefixMessage) !== '') {
+                try {
+                    $ackManager = new FortuneChannelManager($this->settings);
+                    $ackManager->sendResponse(
+                        $reading->platform ?? $this->currentPlatform ?? 'facebook',
+                        $reading->facebook_user_id ?? $reading->platform_user_id,
+                        [
+                            'action' => 'processing',
+                            'message' => trim($prefixMessage),
+                            'reading' => $reading,
+                        ],
+                        []
+                    );
+                } catch (\Throwable $ackErr) {
+                    Log::warning('Fortune: Pay-First ส่งกล่องไพ่ก่อน dispatch ล้ม (non-blocking)', [
+                        'reading_id' => $reading->id,
+                        'error' => $ackErr->getMessage(),
+                    ]);
+                }
+            }
+
             // Dispatch Job — Smart variant (sync ถ้า worker ไม่ active, async ถ้าใช่)
             try {
                 \App\Jobs\ProcessDeepFortuneReadingJob::dispatchSmart(
@@ -6921,18 +6935,13 @@ class FortuneConversationService
                     'reading_id' => $reading->id,
                     'error' => $jobErr->getMessage(),
                 ]);
-                // ลูกค้าจ่ายแล้ว — return processing message ไว้ก่อน, retry job ภายหลังได้
+                // ลูกค้าจ่ายแล้ว — กล่องไพ่ส่งไปแล้วด้านบน, check-pending จะ retry job ให้
             }
 
-            // 🎯 (2026-05-13) Pay-First UX — ตัดข้อความ "จะส่งคำทำนาย 1-3 นาที"
-            //   user spec: "เก็บขั้นไพ่ไว้ แต่ตัดข้อความ 'จะส่งคำทำนาย' — รวมส่งไพ่+คำทำนาย 1 รอบ"
-            //   เดิม: ส่ง tarot image + "🌙 หมอกำลังทำนาย... 1-3 นาที..." → ลูกค้ารอ → คำทำนายมา
-            //   ใหม่: ส่ง tarot image + ชื่อไพ่ (prefixMessage) เท่านั้น
-            //         AI Job ส่งคำทำนายตามมาเป็นชุดต่อเนื่อง (typing indicator + reading)
-            //   prefixMessage มาจาก handleTarotCardDraw แล้ว: "🃏✨ ได้ไพ่ X (หงาย)\n📖 ความหมาย: ..."
+            // กล่องไพ่ส่งไปแล้วก่อน dispatch + คำทำนายส่งโดย Job → ไม่ต้องส่งอะไรเพิ่ม
             return [
-                'action' => 'processing',
-                'message' => trim($prefixMessage),
+                'action' => 'deep_card_announced',
+                'message' => '',
                 'reading' => $reading,
             ];
         }
@@ -8178,9 +8187,19 @@ class FortuneConversationService
                     'caller_streaming' => $streaming,
                 ]);
 
+                // 🌙 (2026-06-11) โฟลใหม่ 39: มีวันเกิดแต่ไม่มีคำถาม → ใส่คำถามพื้นดวงรวม
+                //   อัตโนมัติ + ไปขั้นเปิดไพ่ (เดิม: COLLECTING_QUESTIONS ถามคำถาม = โฟลเก่า)
+                if ($hasBirthdate && ! $hasQuestions) {
+                    $generalQuestion = 'ขอดูพื้นดวงโดยรวมของเจ้าชะตา — ภาพรวมชีวิตช่วงนี้ ทั้งนิสัยพื้นฐาน ความรัก '
+                        .'การงาน การเงิน สุขภาพ โชคลาภ และสิ่งที่ควรระวัง พร้อมคำแนะนำจากแม่หมอ';
+                    $reading->addQuestion($generalQuestion);
+                    $reading->setConversationState('deep_general_reading', true);
+                    $reading->update(['questions' => [$generalQuestion]]);
+                }
+
                 $nextStatus = ! $hasBirthdate
                     ? FortuneReading::STATUS_COLLECTING_BIRTHDATE
-                    : FortuneReading::STATUS_COLLECTING_QUESTIONS;
+                    : FortuneReading::STATUS_COLLECTING_TAROT;
 
                 $reading->update(['conversation_status' => $nextStatus]);
                 $reading->setConversationState('pay_first_mode', true);
@@ -8202,7 +8221,8 @@ class FortuneConversationService
                             ."🪄 ขอ*วันเดือนปีเกิด*ก่อนนะคะ ✨\n"
                             .'📝 *ตัวอย่าง:* 15 มีนาคม 2538 / 15/3/2538'
                         : "🙏 รับชำระเงิน ฿{$amountStr} สำเร็จค่ะ ✨\n\n"
-                            .'📝 ขอ*คำถาม*ที่อยากให้แม่หมอทำนายค่ะ';
+                            ."🧘 *ตั้งจิตก่อนเปิดไพ่* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
+                            .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ทันทีค่ะ';
 
                     try {
                         $channelManager->sendResponse($platform, $userId, [
@@ -8219,7 +8239,7 @@ class FortuneConversationService
                             'error' => $pushErr->getMessage(),
                         ]);
                     }
-                } else {
+                } elseif (! $hasBirthdate) {
                     // Job context — เรียก recover command (มี FB Graph push + retry handling)
                     try {
                         \Illuminate\Support\Facades\Artisan::call('fortune:recover-paid-no-birthdate', [
@@ -8229,6 +8249,28 @@ class FortuneConversationService
                         Log::error('Fortune: Pay-First guard — recover command ล้ม', [
                             'reading_id' => $reading->id,
                             'error' => $cmdErr->getMessage(),
+                        ]);
+                    }
+                } else {
+                    // 🌙 (2026-06-11) Job context + มีวันเกิดแล้ว (รอเปิดไพ่) — recover command
+                    //   เป็นของ birthdate เท่านั้น → push prompt ตั้งจิตเปิดไพ่ตรงเอง
+                    try {
+                        $tarotManager = new FortuneChannelManager($this->settings);
+                        $tarotManager->sendResponse($platform, $userId, [
+                            'action' => 'awaiting_tarot_intention',
+                            'message' => "🙏 รับชำระเงินเรียบร้อยแล้วค่ะ ✨\n\n"
+                                ."🧘 *ตั้งจิตก่อนเปิดไพ่* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
+                                .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ทันทีค่ะ',
+                            'reading' => $reading,
+                            'show_quick_replies' => true,
+                            'quick_replies' => [
+                                ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
+                            ],
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                    } catch (\Throwable $pushErr) {
+                        Log::warning('Fortune: Pay-First guard — push ตั้งจิตเปิดไพ่ ล้ม (non-blocking)', [
+                            'reading_id' => $reading->id,
+                            'error' => $pushErr->getMessage(),
                         ]);
                     }
                 }
@@ -17445,6 +17487,11 @@ PROMPT;
         $text = preg_replace('/เกิดวันที่|วันเกิด|วันที่|เกิด|เดือน|ปีพ\.?ศ\.?|ปีค\.?ศ\.?|พ\.?ศ\.?|ค\.?ศ\.?|ปี|ที่/u', ' ', $text);
         $text = preg_replace('/(?:วัน)?(?:จันทร์|จัน|อังคาร|พุธ|พฤหัสบดี|พฤหัส|ศุกร์|เสาร์|อาทิตย์)/u', ' ', $text);
         $text = preg_replace('/วัน|ค่ะ|คะ|ครับ|ค่า|จ้า|จ้ะ|นะคะ|นะครับ|นะ|จร้า/u', ' ', $text);
+        // 🩹 (2026-06-11) จุดคั่นระหว่าง "เลข" กับ "ตัวอักษรไทย" → เว้นวรรค
+        //   เคสจริง (FTU-260611-Z9851): "เกิดวันที่14.ก.พ.วันอังคาร2507" → "14.ก.พ. 2507"
+        //   จุดหลัง 14 ทำให้ \s* ใน pattern ชื่อเดือนไม่ match → parse fail → ลูกค้าหลุดเข้า step mode
+        //   (จุดระหว่างเลขกับเลข เช่น "15.8.90" ไม่แตะ — pattern แรกรองรับอยู่แล้ว)
+        $text = preg_replace('/(\d)\.(?=[\x{0E00}-\x{0E7F}])/u', '$1 ', $text);
         $text = trim(preg_replace('/\s+/', ' ', $text));
 
         // รูปแบบ: dd/mm/yyyy (รับ separator หลากหลาย: / - . space)
