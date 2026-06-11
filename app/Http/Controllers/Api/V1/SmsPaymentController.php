@@ -322,6 +322,11 @@ class SmsPaymentController extends Controller
             default => 'ดูดวง',
         };
 
+        // 📱 (2026-06-11) ช่องทางที่ลูกค้าทักมา (facebook / line) — ให้ SMS Checker app
+        //    แสดง badge โลโก้ FB/LINE บนการ์ดบิล (logic เดียวกับ approveOrder delivery routing)
+        $platform = $reading->platform
+            ?: ((preg_match('/^U[0-9a-f]{32}$/i', $reading->facebook_user_id ?? '')) ? 'line' : 'facebook');
+
         // 🛑 (2026-05-06) Pay-Later removed — ไม่มี suffix "ดูก่อนจ่าย" + ไม่ส่ง flag
         $orderDetails = [
             'order_number' => $reading->bill_reference,
@@ -331,6 +336,7 @@ class SmsPaymentController extends Controller
             'website_name' => config('app.name'),
             'customer_name' => $customerName,
             'amount' => $displayAmount,
+            'platform' => $platform,
         ];
 
         // ดึง matched notification ถ้ามี
