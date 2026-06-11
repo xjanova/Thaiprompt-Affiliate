@@ -143,8 +143,11 @@ class EveController extends Controller
             $stateStr = is_string($state)
                 ? $state
                 : json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            // 3000 (2026-06-12, was 1800) — the warroom now injects actionable
+            // record rows (withdrawals / sms / stuck readings / unpaid bills,
+            // top-5 each) on top of the counts; 1800 truncated the later lists.
             $base .= "\n\nสถานะ War Room ตอนนี้ (live — ใช้ตัวเลขจริงนี้ตอบ อย่าเดา):\n"
-                . mb_substr((string) $stateStr, 0, 1800);
+                . mb_substr((string) $stateStr, 0, 3000);
         }
 
         // 3) Any other context keys (back-compat with the old flat payload) —
