@@ -12936,6 +12936,72 @@ class FortuneConversationService
     }
 
     /**
+     * 📨 (2026-06-11) ตรวจว่าลูกค้ารายนี้ถูกบอท DM ทักก่อนจาก funnel กดไลก์/คอมเมนต์
+     *
+     * ใช้ตอนลูกค้าตอบ DM กลับ — ให้ AI รู้ว่า "เราเป็นฝ่ายทักก่อน" ไม่ใช่ลูกค้าทักมา
+     *   - reaction: fortune_post_reactions ที่ dm_attempted=1 ภายใน 24 ชม.
+     *   - comment: fortune_comment_engagements ที่ engaged ภายใน 24 ชม.
+     *   reaction มาก่อน (signal ตรงสุด — มีคอลัมน์ dm_attempted ชัด)
+     *
+     * @return array{source: string, hours_ago: int}|null
+     */
+    protected function detectBotInitiatedOutreach(string $userId, string $platform): ?array
+    {
+        // เฉพาะ Facebook — funnel กดไลก์/คอมเมนต์มีบน FB เท่านั้น (LINE ไม่มี)
+        if ($platform !== 'facebook') {
+            return null;
+        }
+
+        try {
+            $since = now()->subHours(24);
+
+            $reaction = \App\Models\FortunePostReaction::where('facebook_user_id', $userId)
+                ->where('dm_attempted', true)
+                ->where('reacted_at', '>=', $since)
+                ->orderByDesc('reacted_at')
+                ->first(['reacted_at']);
+            if ($reaction && $reaction->reacted_at) {
+                return [
+                    'source' => 'reaction',
+                    'hours_ago' => (int) now()->diffInHours($reaction->reacted_at, true),
+                ];
+            }
+
+            $comment = \App\Models\FortuneCommentEngagement::where('facebook_user_id', $userId)
+                ->where('engaged_at', '>=', $since)
+                ->orderByDesc('engaged_at')
+                ->first(['engaged_at']);
+            if ($comment && $comment->engaged_at) {
+                return [
+                    'source' => 'comment',
+                    'hours_ago' => (int) now()->diffInHours($comment->engaged_at, true),
+                ];
+            }
+        } catch (\Throwable $e) {
+            Log::debug('detectBotInitiatedOutreach: query ล้มเหลว (non-blocking): '.$e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * 📨 (2026-06-11) Directive บอก AI ว่าเป็นฝ่ายทัก DM ก่อน (จาก funnel กดไลก์/คอมเมนต์)
+     *   inject เป็น system-level context — กัน AI ตอบ "คุณทักผมมาเอง" / ทำเหมือนลูกค้าเปิดบทสนทนา
+     */
+    protected function buildBotInitiatedOutreachDirective(string $source): string
+    {
+        $action = $source === 'comment' ? 'คอมเมนต์ใต้โพสต์' : 'กดไลก์/กดถูกใจโพสต์';
+
+        return "[บริบทสำคัญ — แม่หมอเป็นฝ่ายทักก่อน]\n"
+            ."ลูกค้าคนนี้เพิ่ง{$action}ของเพจ แล้วระบบของแม่หมอเป็นฝ่ายส่งข้อความทักทายไปก่อน "
+            ."(ลูกค้าไม่ได้พิมพ์ทักมาเอง) ตอนนี้ลูกค้ากำลังตอบกลับข้อความที่แม่หมอทักไป\n"
+            ."→ ห้ามพูดทำนองว่า 'ขอบคุณที่ทักมา' หรือถามว่า 'มีอะไรให้ช่วย' เหมือนลูกค้าเปิดบทสนทนา\n"
+            ."→ ถ้าลูกค้าบอกว่า 'ไม่ได้ทักไป/คุณทักมาเอง' ให้ยอมรับอย่างเป็นมิตร เช่น "
+            ."'ใช่ค่ะ แม่หมอเห็นเจ้าชะตาแวะมา{$action} เลยทักมาทักทายเองค่ะ' — ห้ามเถียงว่าลูกค้าทักมา\n"
+            .'→ น้ำเสียงสบายๆ ไม่ยัดเยียด ถ้าลูกค้าไม่สนใจก็ไม่ต้องตื๊อ';
+    }
+
+    /**
      * 🚫 (2026-06-11) แบนผู้ใช้คำหยาบรุนแรงซ้ำครบเกณฑ์ — bot ban ถาวร + FB page block
      *   (mirror executeSlipFloodBan — owner: "หยาบรุนแรงต้องรีบแบน ไม่ปล่อยนาน")
      *   ปลดแบนได้เสมอผ่าน admin Moderation UI / FortuneBanService::unban
@@ -16627,6 +16693,30 @@ PROMPT;
             // 🔢 นับ rapport turns — จำนวนครั้งที่ user พูด
             // เพื่อให้ AI รู้ว่าคุยมากี่รอบแล้ว (≥2 → เสนอดูดวง)
             $userTurnCount = collect($history)->where('role', 'user')->count() + 1; // +1 = ข้อความปัจจุบัน
+
+            // 📨 (2026-06-11) Bot-initiated outreach — บอท DM ทักก่อนจาก funnel กดไลก์/คอมเมนต์
+            //   ปัญหา: ลูกค้ากดไลก์/คอมเมนต์โพสต์ → ระบบยิง DM ทักก่อน → ลูกค้าตอบกลับ
+            //   แต่ AI ไม่รู้ว่าตัวเองทักก่อน เลยคุยเหมือนลูกค้าทักมา ("คุณทักผมมาเอง" = งง/หงุดหงิด)
+            //   แก้: ตรวจ funnel source (24 ชม.) + inject directive ให้ AI รับรู้ว่าเป็นฝ่ายเปิดบทสนทนา
+            //   gate ที่ช่วงต้น (turn ≤ 3) — หลังคุยไปหลายรอบแล้ว framing นี้ไม่จำเป็น
+            if ($userTurnCount <= 3) {
+                try {
+                    $outreach = $this->detectBotInitiatedOutreach($userId, $platformDetected);
+                    if ($outreach !== null) {
+                        $outreachDirective = $this->buildBotInitiatedOutreachDirective($outreach['source']);
+                        if ($outreachDirective !== '') {
+                            if (! is_array($userProfile)) {
+                                $userProfile = ['name' => 'คุณ'];
+                            }
+                            $userProfile['_persona_context'] = trim(
+                                ($userProfile['_persona_context'] ?? '')."\n\n".$outreachDirective
+                            );
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    Log::debug('Fortune: bot-initiated outreach detect ล้มเหลว (non-blocking): '.$e->getMessage());
+                }
+            }
 
             // 🎯 Phase B.1 — สร้าง context prefix สำหรับ AI
             //  - [TURN N] บอกจำนวนรอบ (เดิม)
