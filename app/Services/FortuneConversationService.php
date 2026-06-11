@@ -5736,6 +5736,27 @@ class FortuneConversationService
             'text_preview' => mb_substr($messageText, 0, 50),
         ]);
 
+        // 🛑 (2026-06-11) Orphan guard — reading deep ค้างที่ collecting_birthdate แต่ "ยังไม่จ่าย"
+        //   ราก: startDeepReadingFlow สร้าง reading ด้วย default status=collecting_birthdate
+        //   ก่อนถึงขั้นสร้างบิล — ถ้าลูกค้าค้างที่กล่องกติกา/เมนู (ไม่กดยอมรับ) จน consent TTL หมด
+        //   → router ตามสถานะพาเข้านี่ → บอทขอวันเกิดทั้งที่ "ไม่มีบิล ไม่ได้จ่าย" → ลูกค้างง
+        //   + ขอ QR ใหม่ไม่ได้ (เคสจริง R5800 / FB 27004874569110137)
+        //   Pay-First จริง is_paid=true เสมอก่อนถึงขั้นวันเกิด → unpaid ที่นี่ = กำพร้าแน่นอน
+        //   (เว้น partial payment — ลูกค้าโอนแล้วบางส่วนต้อง resume ได้เสมอ)
+        if (! $reading->is_paid && (float) ($reading->partial_paid_total ?? 0) <= 0) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            Log::info('Fortune: ปิด reading กำพร้า (collecting_birthdate แต่ยังไม่จ่าย) → เริ่ม flow ใหม่', [
+                'reading_id' => $reading->id,
+                'text_preview' => mb_substr($messageText, 0, 40),
+            ]);
+
+            return $this->startDeepReadingFlow(
+                $reading->facebook_user_id ?? $reading->platform_user_id,
+                $userProfile
+            );
+        }
+
         // 🔓 Escape hatch — ถ้ายูสเซ่อร์อยากเริ่มใหม่/ยกเลิก/คุยกับคน
         // 🧹 ใช้ matchesExactKeyword (normalize ก่อน compare) เพื่อรองรับ
         //    "ยกเลิก ค่ะ", "ยกเลิก.", "YKLK " ฯลฯ — ก่อนหน้านี้พลาดเพราะ exact match

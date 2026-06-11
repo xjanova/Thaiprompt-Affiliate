@@ -163,6 +163,28 @@ trait FortuneConsentGateTrait
                 return null;
             }
 
+            // 🙏 (2026-06-11) Soft decline (ไม่ดูแล้ว/ไม่เอา/ไว้ก่อน ฯลฯ) → ปิดทันที ไม่ตื้อ
+            //   เคสจริง (FB 27004874569110137 / R5800): ลูกค้าบอก "ผมไม่ดูแล้ว" แต่บอท
+            //   เด้งกล่องกติกาซ้ำอีก — ผิดกฎ "ลูกค้าปฏิเสธ ห้ามโน้มน้าว"
+            if (method_exists($this, 'looksLikeSoftDeclineDuringPayment')
+                && $this->looksLikeSoftDeclineDuringPayment($messageText)) {
+                Cache::forget(self::CONSENT_PENDING_PREFIX.$uid);
+                if (method_exists($this, 'closeAllActiveConversations')) {
+                    $this->closeAllActiveConversations($uid);
+                }
+
+                Log::info('Fortune: consent gate — ลูกค้าปฏิเสธ (soft decline) → ปิด ไม่ตื้อ', [
+                    'user_id' => $uid,
+                    'text_preview' => mb_substr($messageText, 0, 40),
+                ]);
+
+                return [
+                    'action' => 'cancelled',
+                    'message' => "🙏 รับทราบค่ะ ไม่เป็นไรเลยนะคะ\n\nไว้พร้อมเมื่อไหร่ พิมพ์ \"ดูดวง\" ทักมาหาแม่หมอได้เสมอค่ะ ✨",
+                    'reading' => null,
+                ];
+            }
+
             Log::info('Fortune: consent gate ค้าง + ข้อความไม่ชัด → เด้งกล่องกติกาซ้ำ (กัน leak ไปขอวันเกิด)', [
                 'user_id' => $uid,
                 'tier' => $pendingTier,
@@ -198,16 +220,38 @@ trait FortuneConsentGateTrait
 
         // 🛡️ กัน over-match: "ยังไม่พร้อม(โอน)" / "ไม่พร้อม" / "ยกเลิก" = ปฏิเสธ ไม่ใช่ยอมรับ
         //   (keyword 'พร้อมโอน' เป็น substring ของ 'ยังไม่พร้อมโอน' → ต้องตัดออกก่อน)
-        foreach (['ไม่พร้อม', 'ยังไม่', 'ยกเลิก', 'ไม่เอา', 'ไว้ก่อน', 'ไว้คราวหน้า'] as $neg) {
+        foreach (['ไม่พร้อม', 'ยังไม่', 'ยกเลิก', 'ไม่เอา', 'ไว้ก่อน', 'ไว้คราวหน้า', 'ไม่ตกลง', 'ไม่ยอมรับ', 'ไม่จ่าย', 'ไม่โอน'] as $neg) {
             if (mb_strpos($t, $neg) !== false) {
                 return false;
             }
         }
 
-        foreach (['พร้อมโอนค่าครู', 'พร้อมโอน', 'ยืนยันพร้อมโอน', '__consent_ok__'] as $kw) {
+        // 🩹 (2026-06-11) ขยาย accept — ลูกค้าพิมพ์เอง (ไม่กดปุ่ม) + typo เยอะ
+        //   เคสจริง (FB 27004874569110137): "พร้อมค่าครู99฿เลขบัญชีด้วยครับ" — ไม่มีคำว่า
+        //   "โอน" → ไม่ match → เด้งกล่องกติกาวน 3 รอบจนลูกค้าเลิกดู ทั้งที่ขอเลขบัญชีจะจ่ายแล้ว
+        $acceptKeywords = [
+            'พร้อมโอนค่าครู', 'พร้อมโอน', 'ยืนยันพร้อมโอน', '__consent_ok__',
+            // ขอช่องทางจ่าย = ตั้งใจจ่ายแล้ว (gated ด้วย consent pending — ไม่ over-match บริบทอื่น)
+            'เลขบัญชี', 'ขอบัญชี', 'เลขบช', 'qr', 'คิวอาร์', 'สแกนจ่าย',
+            'โอนเลย', 'โอนยังไง', 'โอนที่ไหน', 'จ่ายเลย', 'จ่ายยังไง', 'ชำระเงิน',
+            // คำตอบรับทั่วไปที่กล่องกติกา
+            'เอาเลย', 'เริ่มเลย', 'จัดเลย', 'ตกลง', 'ยอมรับ', 'โอเค',
+        ];
+        foreach ($acceptKeywords as $kw) {
             if (mb_strpos($t, mb_strtolower($kw)) !== false) {
                 return true;
             }
+        }
+
+        // "พร้อม" + บริบทค่าครู/ราคา/จ่าย — เช่น "พร้อมค่าครู99", "พร้อมจ่ายครับ"
+        if (mb_strpos($t, 'พร้อม') !== false
+            && preg_match('/ครู|99|39|โอน|จ่าย|เริ่ม|บัญชี/u', $t)) {
+            return true;
+        }
+
+        // "พร้อม(แล้ว)" สั้นๆ เดี่ยวๆ
+        if (preg_match('/^พร้อม(แล้ว)?(ค่ะ|ครับ|คะ|จ้า|เลย)?$/u', $t)) {
+            return true;
         }
 
         return false;
