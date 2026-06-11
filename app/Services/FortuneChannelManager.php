@@ -245,7 +245,7 @@ class FortuneChannelManager
     protected function prependPendingCommissionNotification(array &$result, string $platform, string $userId): void
     {
         $action = $result['action'] ?? '';
-        if (in_array($action, ['skipped_takeover', 'dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning'], true)) {
+        if (in_array($action, ['skipped_takeover', 'dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'abuse_auto_banned'], true)) {
             return;
         }
 
@@ -398,7 +398,8 @@ class FortuneChannelManager
         //   เดิม fall through ไป default ทำให้ส่ง "ระบบกำลังดำเนินการ 🙏" — ตรงข้ามกับ intent
         // 🛡️ (2026-06-04) slip_flood_silent / slip_flood_banned = flood guard เกินเพดานรอบถัดไป/แบน → เงียบ
         //   (กัน VerifySlipFallbackJob / on-ping ส่ง "ระบบกำลังดำเนินการ" ตอน message ว่าง — flooder ไม่ควรได้ตอบ)
-        if (in_array($action, ['dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'slip_flood_silent', 'slip_flood_banned'], true)) {
+        // 🚫 (2026-06-11) abuse_auto_banned = แบนคำหยาบรุนแรง → เงียบ (FB ถูก page block แล้ว ส่งไม่ถึงอยู่ดี)
+        if (in_array($action, ['dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'slip_flood_silent', 'slip_flood_banned', 'abuse_auto_banned'], true)) {
             // silent_warning อาจมี message ที่ต้องส่ง 1 ครั้ง — แยก case
             if ($action === 'silent_warning' && ! empty($message)) {
                 $platformService = $this->getPlatform($platform);

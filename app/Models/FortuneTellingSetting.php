@@ -288,6 +288,9 @@ class FortuneTellingSetting extends Model
         // 🛡️ (2026-05-27) Abuse Clapback — แม่หมอ savage mode ตอบลูกค้าหยาบคาย
         'enable_abuse_clapback',
         'abuse_clapback_use_grok',
+        // 🚫 (2026-06-11) Abuse Auto-Ban — คำหยาบรุนแรงซ้ำครบเกณฑ์ → แบนทันที
+        'enable_abuse_auto_ban',
+        'abuse_auto_ban_min_strikes',
         // 📦 (2026-05-20 Phase 4) Message debounce — รอรวมข้อความที่ลูกค้าพิมพ์ติด ๆ
         'message_debounce_seconds',
         // 🎁 Free Card Reading (2026-05-03) — ฟรี 1 ใบ ครั้งแรก/platform
@@ -493,6 +496,9 @@ class FortuneTellingSetting extends Model
         // 🛡️ (2026-05-27) Abuse Clapback toggles
         'enable_abuse_clapback' => 'boolean',
         'abuse_clapback_use_grok' => 'boolean',
+        // 🚫 (2026-06-11) Abuse Auto-Ban
+        'enable_abuse_auto_ban' => 'boolean',
+        'abuse_auto_ban_min_strikes' => 'integer',
         // 🎁 Free Card Reading (2026-05-03)
         'enable_free_card_reading' => 'boolean',
         // 🌟 Group Invite + Monthly Free Claim (2026-05-04)
@@ -650,6 +656,9 @@ class FortuneTellingSetting extends Model
         // 🛡️ (2026-05-27) Abuse Clapback — default ปิด (admin opt-in เท่านั้น)
         'enable_abuse_clapback' => false,
         'abuse_clapback_use_grok' => true,
+        // 🚫 (2026-06-11) Abuse Auto-Ban — default ปิด (admin opt-in ผ่าน DB UPDATE)
+        'enable_abuse_auto_ban' => false,
+        'abuse_auto_ban_min_strikes' => 2,
         // 🎁 Free Card Reading — ค่าเริ่มต้นเปิด (ลูกค้าใหม่ครั้งแรก/platform ได้สิทธิ์)
         'enable_free_card_reading' => true,
         // 🎙️ (2026-05-08) Voice Summary — ปิดเป็น default (admin เปิด + ตั้ง MiniMax key ก่อน)

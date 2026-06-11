@@ -70,6 +70,24 @@ class AbuseClapbackService
      */
     private const ESCALATION_TTL_HOURS = 24;
 
+    /**
+     * 🚫 (2026-06-11) รายการคำหยาบ "รุนแรงชัดเจน" สำหรับ Auto-Ban เท่านั้น
+     *
+     * ⚠️ กฎการเพิ่มคำ:
+     *   - ใส่เฉพาะคำที่ไม่กำกวม — ห้ามใส่คำที่เป็น substring ของคำปกติ
+     *     (เช่น 'กาก' ติด กากบาท/กากเพชร, 'อ๊อด' เป็นชื่อเล่นคน, 'หี' ติด หีบ)
+     *   - ห้ามใส่ กู/มึง เดี่ยวๆ — ลูกค้าโกรธ/บ่นใช้ได้ ไม่ใช่เหตุแบน
+     *   - คนละชุดกับ nuclear ของ clapback (ชุดนั้นแค่ปรับโทนตอบ ผิดพลาดได้
+     *     แต่ชุดนี้ "แบนจริง" ต้อง false-positive เป็นศูนย์)
+     */
+    public const SEVERE_BAN_PATTERNS = [
+        // คำหยาบรุนแรง / ด่าตรง
+        'ควย', 'เย็ด', 'เหี้ย', 'สัส', 'ส้นตีน', 'อีดอก', 'ดอกทอง',
+        'กระหรี่', 'กะหรี่', 'เงี่ยน', 'หน้าหี', 'อีสัตว์', 'ไอ้สัตว์',
+        // ขู่ทำร้าย/แช่ง
+        'ฆ่ามึง', 'ฆ่าให้ตาย', 'ไปตายซะ', 'มึงตายแน่',
+    ];
+
     public function __construct(
         protected FortuneTellingSetting $settings
     ) {}
@@ -80,6 +98,88 @@ class AbuseClapbackService
     public function isEnabled(): bool
     {
         return (bool) ($this->settings->enable_abuse_clapback ?? false);
+    }
+
+    /**
+     * ⚙️ (2026-06-11) Auto-Ban master switch — แยกจาก clapback toggle
+     *   (เปิด auto-ban ได้โดยไม่ต้องเปิด savage reply)
+     */
+    public function isAutoBanEnabled(): bool
+    {
+        return (bool) ($this->settings->enable_abuse_auto_ban ?? false);
+    }
+
+    /**
+     * จำนวนข้อความหยาบรุนแรง (ภายใน 24 ชม.) ก่อนแบน — ขั้นต่ำ 1
+     */
+    public function autoBanMinStrikes(): int
+    {
+        return max(1, (int) ($this->settings->abuse_auto_ban_min_strikes ?? 2));
+    }
+
+    /**
+     * 🚫 (2026-06-11) Auto-Ban decision — ตรวจคำหยาบรุนแรง + นับ strike
+     *
+     * ทำแค่ "ตัดสินใจ" — การแบนจริง (FortuneBanService + FB page block + paid guard)
+     * อยู่ที่ FortuneConversationService::executeAbuseAutoBan (mirror slip-flood ban)
+     *
+     * Returns:
+     *   null = ไม่เข้าเกณฑ์ (toggle ปิด / ไม่มีคำรุนแรง / persona วิกฤต)
+     *   array{should_ban: bool, strikes: int, evidence: string}
+     */
+    public function maybeAutoBan(string $platform, string $userId, string $userText): ?array
+    {
+        if (! $this->isAutoBanEnabled() || trim($userText) === '') {
+            return null;
+        }
+
+        $lower = mb_strtolower($userText);
+        $matched = [];
+        foreach (self::SEVERE_BAN_PATTERNS as $kw) {
+            if (mb_strpos($lower, $kw) !== false) {
+                $matched[] = $kw;
+            }
+        }
+
+        if (empty($matched)) {
+            return null;
+        }
+
+        // 🛡️ persona วิกฤต (ปราสาทเสีย/ขี้ยา/สัญญาณทำร้ายตัวเอง) → ห้ามแบน — hotline path จัดการ
+        $detection = $this->detect($userText);
+        if (in_array($detection['persona'], [self::PERSONA_MENTAL, self::PERSONA_DRUGGED], true)) {
+            Log::info('AbuseAutoBan: ข้าม — persona วิกฤต ไม่แบน', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'persona' => $detection['persona'],
+            ]);
+
+            return null;
+        }
+
+        // นับ strike (Cache 24 ชม. — แยกจาก escalation counter ของ clapback)
+        $key = "abuse_severe_strikes:{$platform}:{$userId}";
+        $strikes = (int) Cache::get($key, 0) + 1;
+        Cache::put($key, $strikes, now()->addHours(self::ESCALATION_TTL_HOURS));
+
+        $evidence = implode(', ', array_unique($matched));
+        $shouldBan = $strikes >= $this->autoBanMinStrikes();
+
+        Log::warning('🚫 AbuseAutoBan: เจอคำหยาบรุนแรง', [
+            'platform' => $platform,
+            'user_id' => $userId,
+            'strikes' => $strikes,
+            'min_strikes' => $this->autoBanMinStrikes(),
+            'should_ban' => $shouldBan,
+            'evidence' => $evidence,
+            'text_preview' => mb_substr($userText, 0, 100),
+        ]);
+
+        return [
+            'should_ban' => $shouldBan,
+            'strikes' => $strikes,
+            'evidence' => $evidence,
+        ];
     }
 
     /**
@@ -115,6 +215,8 @@ class AbuseClapbackService
             'ฆ่ามึง', 'ตายซะ', 'ฆ่าให้ตาย',
             // racial/severe slurs
             'อีดอก', 'อีตัว', 'ดอกทอง', 'กาก',
+            // (2026-06-11) severe profanity ที่หลุดลิสต์เดิม — เคสจริง "หั้วควย" ไม่ถูก detect
+            'ควย', 'ส้นตีน',
         ];
         foreach ($nuclearPatterns as $kw) {
             if (mb_strpos($lower, $kw) !== false) {

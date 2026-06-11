@@ -1261,6 +1261,39 @@ class FortuneConversationService
             //   → ดักก่อน normal AI call, ตอบด้วย Grok savage + escalation L1→L4
             //   → L4 = admin alert (NO auto-ban — admin ตัดสินเอง)
             if (! $hasPaidActiveReading) {
+                // 🚫 (2026-06-11) Abuse Auto-Ban — คำหยาบรุนแรงชัดเจนซ้ำครบเกณฑ์ → แบนทันที
+                //   owner: "ใช้คำหยาบคายรุนแรง ต้องรีบแบน ไม่ควรปล่อยนาน"
+                //   เกราะ: ห้ามแบนคนเคยจ่ายจริง (userHasPaidHistory) + persona วิกฤตถูกกรองใน service
+                //   strike 1 → ปล่อยผ่านให้ clapback เตือนก่อน / strike ≥2 → แบน + FB page block (เงียบ)
+                try {
+                    $abusePlatform = $this->currentPlatform ?? 'facebook';
+                    $autoBan = app(\App\Services\Fortune\AbuseClapbackService::class)
+                        ->maybeAutoBan($abusePlatform, $facebookUserId, $messageText);
+
+                    if (($autoBan['should_ban'] ?? false) && ! $this->userHasPaidHistory($facebookUserId)) {
+                        $this->executeAbuseAutoBan(
+                            $abusePlatform,
+                            $facebookUserId,
+                            $autoBan['evidence'] ?? '',
+                            $autoBan['strikes'] ?? 0,
+                            $userProfile['name'] ?? null
+                        );
+
+                        // เงียบ — ไม่ส่งข้อความอำลา (FB ถูก block ระดับเพจแล้ว ส่งไม่ถึงอยู่ดี)
+                        return [
+                            'action' => 'abuse_auto_banned',
+                            'message' => null,
+                            'reading' => null,
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    // auto-ban fail → log + ปล่อยไป normal flow (fail-safe ห้ามบล็อกแชทปกติ)
+                    Log::warning('AbuseAutoBan: ตรวจล้มเหลว (non-blocking)', [
+                        'facebook_user_id' => $facebookUserId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
                 try {
                     $abusePlatform = $this->currentPlatform ?? 'facebook';
                     $personaModel = null;
@@ -12897,6 +12930,42 @@ class FortuneConversationService
             ]);
         } catch (\Throwable $e) {
             Log::warning('SlipOK flood ban ล้มเหลว (non-blocking)', [
+                'user_id' => $userId, 'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 🚫 (2026-06-11) แบนผู้ใช้คำหยาบรุนแรงซ้ำครบเกณฑ์ — bot ban ถาวร + FB page block
+     *   (mirror executeSlipFloodBan — owner: "หยาบรุนแรงต้องรีบแบน ไม่ปล่อยนาน")
+     *   ปลดแบนได้เสมอผ่าน admin Moderation UI / FortuneBanService::unban
+     */
+    protected function executeAbuseAutoBan(string $platform, string $userId, string $evidence, int $strikes, ?string $displayName = null): void
+    {
+        try {
+            $reason = 'auto: คำหยาบคายรุนแรงซ้ำ '.$strikes.' ครั้ง/24ชม. (คำที่เจอ: '.mb_substr($evidence, 0, 120).')';
+            app(\App\Services\FortuneBanService::class)->ban($platform, $userId, null, $reason, null, $displayName);
+
+            // FB เท่านั้น — block ระดับเพจ (ห้าม DM + คอมเมนต์) — LINE ใช้ bot ban อย่างเดียว
+            if ($platform === 'facebook') {
+                try {
+                    (new \App\Services\FacebookWebhookService($this->settings))->blockPageUser($userId);
+                } catch (\Throwable $fb) {
+                    Log::warning('AbuseAutoBan: FB page block ล้มเหลว (bot ban ยังทำงาน)', [
+                        'user_id' => $userId, 'error' => $fb->getMessage(),
+                    ]);
+                }
+            }
+
+            Log::warning('🚨 ABUSE_AUTO_BAN: แบนผู้ใช้คำหยาบรุนแรง — admin review ที่ Moderation', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'display_name' => $displayName,
+                'strikes' => $strikes,
+                'evidence' => $evidence,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('AbuseAutoBan: แบนล้มเหลว (non-blocking)', [
                 'user_id' => $userId, 'error' => $e->getMessage(),
             ]);
         }
