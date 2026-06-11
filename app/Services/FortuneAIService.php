@@ -1136,7 +1136,27 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
         //   ถ้า override ระบุ → ใช้แทน settings; ถ้าไม่ระบุ → fall back settings เดิม
         $chatProvider = $providerOverride ?? $this->settings->getChatAIProvider();
         $chatModel = $modelOverride ?? $this->settings->getChatAIModel();
-        $chatApiKey = $apiKeyOverride ?? $this->settings->getChatAIApiKey();
+
+        // 🔑 (2026-06-12) providerOverride must re-resolve the KEY for that
+        //   provider too. Previously the key always came from the settings'
+        //   chat provider, so Eve overriding to gemini still died with
+        //   "ไม่พบ API Key สำหรับ Chat AI (groq)" — even though the pool held
+        //   active gemini keys. Same lookup order as getChatAIApiKey() step 2.
+        $chatApiKey = $apiKeyOverride;
+        if (empty($chatApiKey) && $providerOverride !== null) {
+            try {
+                $chatApiKey = AiApiKey::where('provider', $providerOverride)
+                    ->where('is_active', true)
+                    ->whereNull('disabled_until')
+                    ->orderBy('priority', 'desc')
+                    ->first()?->api_key;
+            } catch (\Throwable $e) {
+                // Pool table missing — fall through to settings resolution.
+            }
+        }
+        if (empty($chatApiKey)) {
+            $chatApiKey = $this->settings->getChatAIApiKey();
+        }
 
         if (empty($chatApiKey)) {
             throw new Exception("ไม่พบ API Key สำหรับ Chat AI ({$chatProvider})");
