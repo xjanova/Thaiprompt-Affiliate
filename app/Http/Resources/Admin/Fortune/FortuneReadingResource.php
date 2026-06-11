@@ -47,6 +47,20 @@ class FortuneReadingResource extends JsonResource
             'response_type' => $this->response_type,
             'responded_at' => $this->responded_at?->toIso8601String(),
 
+            // 🔲 (2026-06-12) Funnel state for the warroom multi-view — the fine
+            //    conversation stage (celtic_picking / celtic_generating /
+            //    pending_payment …) plus the cancellation verdict. Cancellation
+            //    lives in conversation_state JSON, NOT a status column — bills
+            //    cancelled by cron and by the customer both end up
+            //    STATUS_COMPLETED + is_paid=false, so isCancelled() is the only
+            //    correct discriminator.
+            'conversation_status' => $this->conversation_status,
+            'cancellation' => $this->isCancelled() ? [
+                'reason' => (string) ($this->getConversationState('cancellation_reason') ?? 'unknown'),
+                'label' => $this->getCancellationReasonLabelOrNull(),
+                'cancelled_at' => $this->getConversationState('cancelled_at'),
+            ] : null,
+
             // AI provenance
             'ai' => [
                 'provider' => $this->ai_provider,
