@@ -314,6 +314,21 @@
 </style>
 @endpush
 
+@php
+    // เตรียมข้อมูลสำหรับ JS — ห้ามใช้ @json กับ expression ที่มีวงเล็บซ้อน/closure
+    // (Blade directive regex ตัดที่วงเล็บปิดตัวแรก → compiled view พัง)
+    $memberSearchList = $members->map(function ($m) {
+        return [
+            'id' => $m->id,
+            'code' => $m->member_code,
+            'name' => $m->user->name ?? 'ไม่ระบุชื่อ',
+        ];
+    })->values();
+
+    $treeDataUrlTemplate = route('admin.mlm.members.tree-data', ['member' => '__ID__']);
+    $memberShowUrlTemplate = route('admin.mlm.members.show', ['member' => '__ID__']);
+@endphp
+
 @section('content')
 <div class="space-y-4"
      x-data="genealogyNexus()"
@@ -598,11 +613,7 @@
 function genealogyNexus() {
     return {
         // ข้อมูลสมาชิกสำหรับช่องค้นหา (มาจาก controller — 100 รายล่าสุด)
-        members: @json($members->map(fn ($m) => [
-            'id' => $m->id,
-            'code' => $m->member_code,
-            'name' => $m->user->name ?? 'ไม่ระบุชื่อ',
-        ])->values()),
+        members: {{ Js::from($memberSearchList) }},
 
         nexus: null,
         search: '',
@@ -618,7 +629,7 @@ function genealogyNexus() {
         /** เริ่มต้น: สร้าง renderer + โหลดสมาชิกคนแรก */
         init() {
             this.nexus = new GenealogyNexus(document.getElementById('nexus-canvas'), {
-                treeDataUrlTemplate: @json(route('admin.mlm.members.tree-data', ['member' => '__ID__'])).replace('__ID__', ':id'),
+                treeDataUrlTemplate: {{ Js::from($treeDataUrlTemplate) }}.replace('__ID__', ':id'),
                 treeType: this.treeType,
                 depth: parseInt(this.depth),
                 onSelect: (node) => {
@@ -719,7 +730,7 @@ function genealogyNexus() {
 
         memberShowUrl(node) {
             if (!node) return '#';
-            return @json(route('admin.mlm.members.show', ['member' => '__ID__'])).replace('__ID__', node.id);
+            return {{ Js::from($memberShowUrlTemplate) }}.replace('__ID__', node.id);
         },
 
         statusLabel(node) {
