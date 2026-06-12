@@ -367,6 +367,10 @@ class FortuneTellingSetting extends Model
         'slipok_ban_after_rounds',
         // 💎 (2026-06-07) Auto-provision — ลูกค้าโอนก่อนสร้างบิล/QR → สร้างบิล Celtic + เปิดไพ่เอง
         'slipok_auto_provision',
+        // ⏰ (2026-06-12) อายุบิลรอชำระ (นาที) — default 180 (3 ชม.) แอดมินปรับได้
+        'bill_payment_timeout_minutes',
+        // 🛡️ (2026-06-12) แบนถาวรคนสร้างบิลเล่นๆ ไม่ชำระ 3 ครั้งใน 3 วัน
+        'enable_bill_troll_ban',
     ];
 
     /**
@@ -545,6 +549,9 @@ class FortuneTellingSetting extends Model
         'slipok_ban_after_rounds' => 'integer',
         // 💎 (2026-06-07) Auto-provision จากสลิปที่ไม่มีบิล
         'slipok_auto_provision' => 'boolean',
+        // ⏰🛡️ (2026-06-12) Bill timeout 3 ชม. + Bill-Troll Guard
+        'bill_payment_timeout_minutes' => 'integer',
+        'enable_bill_troll_ban' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -564,6 +571,8 @@ class FortuneTellingSetting extends Model
         'enable_deep_reading' => true, // 🌙 (2026-06-08) เปิด 39฿ กลับ — เวอร์ชันคุยโต้ตอบใหม่ (พื้นดวง + คุย 7 นาที)
         'deep_reading_price' => 39,
         'deep_reading_qa_window_minutes' => 7, // (2026-06-08) หน้าต่างคุยกับแม่หมอหลังเปิดไพ่ (คู่ขนาน Celtic 99)
+        'bill_payment_timeout_minutes' => 180, // ⏰ (2026-06-12) อายุบิลรอชำระ 3 ชม. (เจ้าของสั่ง — เดิม 30 นาทีเร็วไป)
+        'enable_bill_troll_ban' => true, // 🛡️ (2026-06-12) แบนคนสร้างบิลเล่นๆ 3 ครั้งใน 3 วัน
         'allow_try_before_buy' => true,
         'free_deep_per_day' => 1,
         'subscription_enabled' => true,

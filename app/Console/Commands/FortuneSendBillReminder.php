@@ -10,25 +10,32 @@ use Illuminate\Support\Facades\Log;
 /**
  * 💸 (2026-05-14) Bill Reminder Scanner — หาบิลค้างจ่ายแล้ว dispatch job ทวง
  *
- * Schedule: every 5 min (ดู routes/console.php)
+ * Schedule: every minute (ดู routes/console.php)
+ *
+ * ⏰ (2026-06-12) ปรับเป็น 3 จังหวะตลอดอายุบิล (เดิมทวงครั้งเดียวที่ 2-10 นาที):
+ *   เจ้าของสั่ง: "คอยเตือนเป็นระยะถึงบิลที่ยังไม่ได้ชำระ — อย่าเอาแต่ส่งกล่องข้อความเดิมๆ"
+ *   บิลอายุ 3 ชม. (bill_payment_timeout_minutes) → เตือน 3 ครั้ง โทนต่างกัน:
+ *     - stage 1: นาทีที่ {min}-15      (เช็คอินแรก — ติดขัดอะไรไหม)
+ *     - stage 2: ~45-60% ของอายุบิล   (เช็คอินกลาง — ทักนุ่มๆ)
+ *     - stage 3: 35 นาทีสุดท้าย        (ครั้งสุดท้าย — บอกตรงๆ ว่าบิลใกล้ถูกยกเลิก)
+ *   ข้อความ AI สร้างใหม่ทุกครั้ง (persona + RAG) → ไม่ใช่กล่องเดิมซ้ำ
+ *   dedup ผ่าน conversation_state.bill_reminder_stage (job เช็คซ้ำอีกชั้น)
  *
  * เงื่อนไข:
  *   - status = pending_payment / celtic_pending_payment
  *   - is_paid = false
- *   - created_at อายุ {min_minutes}-{max_minutes} นาที (default 20-60)
  *   - UPA reserved + expires_at > now()
- *   - ยังไม่เคยทวง (bill_reminder_sent_at = null)
  */
 class FortuneSendBillReminder extends Command
 {
     protected $signature = 'fortune:bill-reminder
-        {--min=2 : นาทีต่ำสุดที่บิลค้าง (pending_payment) ก่อนเริ่มทวง (default 2)}
-        {--max=10 : นาทีสูงสุดที่บิลค้าง — เก่ากว่านี้ถือว่าไม่ตอบสนอง (default 10)}
+        {--min=2 : นาทีต่ำสุดที่บิลค้าง (pending_payment) ก่อนเริ่มทวง stage 1 (default 2)}
+        {--max=15 : นาทีสูงสุดของ stage 1 (default 15)}
         {--method-min=2 : นาทีต่ำสุดสำหรับ awaiting_payment_method (default 2)}
         {--method-max=10 : นาทีสูงสุดสำหรับ awaiting_payment_method (default 10)}
         {--dry-run : ไม่ dispatch จริง — แค่ scan + รายงาน}';
 
-    protected $description = 'สแกนบิลที่ค้างจ่าย + dispatch SendBillReminderJob ทวงลูกค้าด้วย AI (รองรับ awaiting_payment_method)';
+    protected $description = 'สแกนบิลที่ค้างจ่าย + dispatch SendBillReminderJob ทวงลูกค้าด้วย AI 3 จังหวะ (รองรับ awaiting_payment_method)';
 
     public function handle(): int
     {
@@ -48,11 +55,20 @@ class FortuneSendBillReminder extends Command
             FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
         ];
 
+        // ⏰ หน้าต่าง 3 จังหวะ คำนวณจากอายุบิลจริง (default 180 นาที)
+        //   ตัวอย่าง 180 นาที: stage1 = 2-15 / stage2 = 81-108 / stage3 = 145-172
+        $timeout = FortuneReading::billTimeoutMinutes();
+        $stageWindows = [
+            1 => [$minMinutes, min($maxMinutes, $timeout - 5)],
+            2 => [(int) floor($timeout * 0.45), (int) floor($timeout * 0.6)],
+            3 => [max(1, $timeout - 35), max(2, $timeout - 8)],
+        ];
+
         $pendingReadings = FortuneReading::query()
             ->whereIn('conversation_status', $pendingStatuses)
             ->where('is_paid', false)
             ->where('created_at', '<=', now()->subMinutes($minMinutes))
-            ->where('created_at', '>=', now()->subMinutes($maxMinutes))
+            ->where('created_at', '>=', now()->subMinutes($timeout))
             ->whereHas('uniquePaymentAmount', function ($q) {
                 $q->where('status', 'reserved')
                     ->where('expires_at', '>', now());
@@ -60,7 +76,28 @@ class FortuneSendBillReminder extends Command
             ->get();
 
         foreach ($pendingReadings as $reading) {
-            if ($reading->getConversationState('bill_reminder_sent_at')) {
+            $ageMinutes = (int) $reading->created_at->diffInMinutes(now());
+
+            // หา stage ที่อายุบิลตกอยู่ในหน้าต่าง
+            $desiredStage = 0;
+            foreach ($stageWindows as $stage => [$from, $to]) {
+                if ($ageMinutes >= $from && $ageMinutes <= $to) {
+                    $desiredStage = $stage;
+                    break;
+                }
+            }
+
+            if ($desiredStage === 0) {
+                continue; // อยู่นอกหน้าต่างทุก stage — เงียบไว้
+            }
+
+            // stage ที่ส่งไปแล้ว (รองรับ legacy: bill_reminder_sent_at เดิม = stage 1)
+            $sentStage = (int) $reading->getConversationState('bill_reminder_stage', 0);
+            if ($sentStage === 0 && $reading->getConversationState('bill_reminder_sent_at')) {
+                $sentStage = 1;
+            }
+
+            if ($sentStage >= $desiredStage) {
                 $skipped++;
 
                 continue;
@@ -68,12 +105,13 @@ class FortuneSendBillReminder extends Command
 
             if ($dryRun) {
                 $this->line(sprintf(
-                    '  [dry-pending] #%d  %s  %s  ฿%s  อายุ %d นาที',
+                    '  [dry-pending] #%d  %s  %s  ฿%s  อายุ %d นาที  stage %d',
                     $reading->id,
                     str_pad((string) $reading->conversation_status, 25, ' '),
                     $reading->bill_reference ?? '-',
                     $reading->amount_paid,
-                    (int) $reading->created_at->diffInMinutes(now())
+                    $ageMinutes,
+                    $desiredStage
                 ));
                 $dispatched++;
 
@@ -81,11 +119,12 @@ class FortuneSendBillReminder extends Command
             }
 
             try {
-                SendBillReminderJob::dispatch($reading->id);
+                SendBillReminderJob::dispatch($reading->id, $desiredStage);
                 $dispatched++;
             } catch (\Throwable $e) {
                 Log::warning('FortuneSendBillReminder: dispatch fail (pending)', [
                     'reading_id' => $reading->id,
+                    'stage' => $desiredStage,
                     'error' => $e->getMessage(),
                 ]);
             }

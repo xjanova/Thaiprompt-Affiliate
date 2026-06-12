@@ -806,7 +806,7 @@ trait CelticCrossConversationTrait
                     $basePrice,
                     $reading->id,
                     'fortune_reading',
-                    30 // หมดอายุใน 30 นาที (เหมือน 39฿)
+                    FortuneReading::billTimeoutMinutes() // ⏰ (2026-06-12) ตาม setting default 3 ชม. (เหมือน 39฿)
                 );
 
                 if (! $uniqueAmount) {
@@ -889,6 +889,17 @@ trait CelticCrossConversationTrait
             $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 0);
             $qLimitTxt = $maxQ > 0 ? "{$maxQ} คำถาม" : 'ไม่จำกัด';
 
+            // ⏰ (2026-06-12) อายุบิลตาม setting (default 3 ชม. — เดิมฮาร์ดโค้ด "30 นาที")
+            $billTimeout = FortuneReading::billTimeoutMinutes();
+            $billTimeoutLabel = $billTimeout >= 60
+                ? intdiv($billTimeout, 60).' ชั่วโมง'.($billTimeout % 60 > 0 ? ' '.($billTimeout % 60).' นาที' : '')
+                : $billTimeout.' นาที';
+
+            // 🛡️ (2026-06-12) Bill-Troll Guard — แนบคำเตือนถ้าลูกค้ามีประวัติไม่ชำระ 2 ครั้งใน 3 วัน
+            $trollWarning = method_exists($this, 'appendTrollWarningIfNeeded')
+                ? $this->appendTrollWarningIfNeeded($reading)
+                : '';
+
             return [
                 'action' => 'celtic_pending_payment',
                 // 🌙 (2026-05-23 v3) ประกาศกติกาให้ชัดในบิล — 5 คำถาม / 15 นาที
@@ -902,10 +913,11 @@ trait CelticCrossConversationTrait
                     ."──────────────────────\n"
                     ."💸 *ค่าบูชาครูสำหรับบิลนี้: {$payAmount} บาท*\n"
                     ."(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิลเจ้าชะตา)\n\n"
-                    ."📲 *สแกน QR ในภาพได้เลย* — บิลหมดอายุใน 30 นาที\n"
+                    ."📲 *สแกน QR ในภาพได้เลย* — บิลหมดอายุใน {$billTimeoutLabel}\n"
                     ."หรือโอนเข้าเลขบัญชีด้านล่างก็ได้นะคะ ✨\n\n"
                     .$this->getBankAccountsListMessage(true)
-                    ."\n💚 *กรุณาโอนให้ตรง ตรงจุดทศนิยมด้วย* เพื่อเปิดไพ่ยิปซี 10 ใบ ค่ะ ✨",
+                    ."\n💚 *กรุณาโอนให้ตรง ตรงจุดทศนิยมด้วย* เพื่อเปิดไพ่ยิปซี 10 ใบ ค่ะ ✨"
+                    .$trollWarning,
                 'reading' => $reading,
                 'celtic_price' => $payAmount,
                 'celtic_base_price' => $basePrice,
@@ -1028,6 +1040,14 @@ trait CelticCrossConversationTrait
             return $this->executeCancelAndReturnToChat($reading, 'soft_decline');
         }
 
+        // 🔄 (2026-06-12) ลูกค้าขอเปลี่ยนแพคเกจ (Celtic 99 → Deep 39) — รับฟัง ไม่ดันบิลเดิม
+        //   ยกเลิกบิลเดิม (reason=package_switch ไม่นับ strike) + เปิดบิลใหม่ทันที
+        if (method_exists($this, 'detectTierSwitchRequest')
+            && method_exists($this, 'switchPendingBillTier')
+            && ($switchTarget = $this->detectTierSwitchRequest($messageText, 'celtic')) !== null) {
+            return $this->switchPendingBillTier($reading, $switchTarget);
+        }
+
         // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" — แจ้งสถานะรอจ่ายให้ชัด
         if ($this->looksLikeFortuneRestartRequest($messageText)) {
             return [
@@ -1049,12 +1069,15 @@ trait CelticCrossConversationTrait
         // 🌧️ (2026-05-22) เพิ่ม looksLikeCustomerExcuseOrLifeUpdate —
         //   ลูกค้าพิมพ์ "ไฟดับ/รอแป๊บ/ไม่มีเงิน/แบตหมด" — bot จะรับฟัง ไม่ใช่ส่ง QR ซ้ำเดิม
         //   เคสจริง FB: ลูกค้าโกรธ "พอรอโอนแล้ว ส่งแต่แบบนี้ไม่ฟังที่ลูกค้าบอกเลย"
+        // 💬 (2026-06-12) ขยาย: ข้อความยาว ≥ 10 ตัวอักษร = ลูกค้าคุย → AI ตอบบทสนทนา
+        //   (บิลอายุ 3 ชม. — "คุยก็ต้องคุยก่อน" ไม่ใช่ส่งกล่องจ่ายเงินซ้ำเดิม)
         $aiPrefix = '';
         $shouldTriggerAi = method_exists($this, 'looksLikeMetaOrChitchat')
             && (
                 $this->looksLikeMetaOrChitchat($messageText)
                 || (method_exists($this, 'looksLikeCustomerExcuseOrLifeUpdate')
                     && $this->looksLikeCustomerExcuseOrLifeUpdate($messageText))
+                || mb_strlen(trim($messageText)) >= 10
             );
 
         if ($shouldTriggerAi && method_exists($this, 'tryBillPsychologyResponse')) {

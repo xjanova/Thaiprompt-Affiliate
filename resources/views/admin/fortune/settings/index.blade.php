@@ -3103,6 +3103,48 @@ Format 2 — JSON array:
             </div>
         </div>
 
+        {{-- ⏰🛡️ (2026-06-12) Bill Timeout + Bill-Troll Guard --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="service">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                ⏰ อายุบิลรอชำระ + 🛡️ กันคนสร้างบิลเล่นๆ
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        ⏰ อายุบิลก่อนยกเลิกอัตโนมัติ (นาที)
+                    </label>
+                    <input type="number" name="bill_payment_timeout_minutes" min="10" max="1440"
+                           value="{{ old('bill_payment_timeout_minutes', $settings->bill_payment_timeout_minutes ?? 180) }}"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        บิลรอชำระ (39/99) ที่ไม่จ่ายภายในเวลานี้ ระบบจะยกเลิกให้อัตโนมัติ — ค่าเริ่มต้น 180 นาที (3 ชั่วโมง)
+                        ระหว่างรอ ระบบจะเตือนนุ่มๆ 3 จังหวะ และลูกค้ายังคุยกับแม่หมอได้ปกติ
+                    </p>
+                </div>
+
+                <div class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                    <label class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input type="hidden" name="enable_bill_troll_ban" value="0">
+                        <input type="checkbox" name="enable_bill_troll_ban" value="1"
+                               {{ old('enable_bill_troll_ban', $settings->enable_bill_troll_ban ?? true) ? 'checked' : '' }}
+                               class="mt-0.5 rounded border-gray-300 text-red-600 focus:ring-red-500">
+                        <span>
+                            🛡️ <strong>แบนถาวรคนสร้างบิลเล่นๆ ไม่ยอมชำระ</strong>
+                            <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                สร้างบิลแล้วไม่จ่าย (หมดเวลา/กดยกเลิก) 2 ครั้งใน 3 วัน → บิลที่ 3 ระบบแนบคำเตือนชัดเจน
+                                → ถ้าบิลที่ 3 ก็ไม่จ่ายอีก = แบนถาวร (บอทเงียบ + Facebook บล็อกจากเพจจริง ห้าม DM/คอมเมนต์)
+                            </span>
+                            <span class="block text-xs text-emerald-700 dark:text-emerald-300 mt-1">
+                                ✅ ปลอดภัยกับลูกค้าดี: จ่ายสำเร็จเมื่อไหร่ล้างประวัติทันที • เปลี่ยนแพคเกจไม่นับ •
+                                ลูกค้าที่เคยจ่ายใน 30 วันไม่โดน auto-ban • ปลดแบนได้ที่หน้า Banned Users
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
         {{-- Subscription Settings --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="service" x-data="{ enableSub: {{ old('subscription_enabled', $settings->subscription_enabled ?? true) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">

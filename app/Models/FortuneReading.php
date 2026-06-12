@@ -872,7 +872,7 @@ class FortuneReading extends Model
                     $basePrice,
                     $locked->id,
                     'fortune_reading',
-                    30
+                    self::billTimeoutMinutes() // ⏰ (2026-06-12) เดิม 30 — ตาม setting (default 3 ชม.)
                 );
 
                 if (! $newUpa) {
@@ -1207,6 +1207,33 @@ class FortuneReading extends Model
     public const PAYMENT_TIMEOUT_MINUTES = 30;
 
     /**
+     * ⏰ (2026-06-12) อายุบิลรอชำระ (นาที) — อ่านจาก admin setting, fallback 180 (3 ชม.)
+     *
+     * เจ้าของสั่ง: "บิลยกเลิกโดยระบบเร็วไป ให้ปรับใหม่เป็น 3 ชั่วโมง บางคนลืม"
+     *
+     * ⚠️ ใช้กับ **บิล** (PENDING_PAYMENT / CELTIC_PENDING_PAYMENT + อายุ UPA) เท่านั้น
+     *    conversation state อื่นๆ (กรอกวันเกิด/รอยืนยัน/เลือก tier) ยังใช้
+     *    CONVERSATION_TIMEOUT_MINUTES = 30 นาทีเหมือนเดิม — กัน orphan ค้างทั้งระบบ
+     */
+    public static function billTimeoutMinutes(): int
+    {
+        // static cache ต่อ request — setting ถูกเรียกหลายจุดใน flow เดียว
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        try {
+            $minutes = (int) (FortuneTellingSetting::getSettings()->bill_payment_timeout_minutes ?? 0);
+            $cached = $minutes > 0 ? $minutes : 180;
+        } catch (\Throwable $e) {
+            $cached = 180;
+        }
+
+        return $cached;
+    }
+
+    /**
      * 💎 (2026-05-04) Request-Before-Pay timeout — ลูกค้าได้คำทำนายไปแล้ว ต้องโอนภายใน 24 ชม
      *
      * ต่างจาก pay-first (30 นาที):
@@ -1318,10 +1345,11 @@ class FortuneReading extends Model
                                     $sub->where('conversation_status', self::STATUS_PENDING_STRIPE_PAYMENT)
                                         ->where('updated_at', '>=', now()->subMinutes(90));
                                 })
-                            // pending_payment (Deep + Celtic): timeout 30 นาที (รอโอนเงิน)
+                            // pending_payment (Deep + Celtic): timeout ตาม admin setting (default 3 ชม.)
+                            // ⏰ (2026-06-12) เดิม 30 นาที — เจ้าของสั่งขยายเป็น 3 ชม. (บางคนลืม)
                                 ->orWhere(function ($sub) {
                                     $sub->whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
-                                        ->where('updated_at', '>=', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES));
+                                        ->where('updated_at', '>=', now()->subMinutes(self::billTimeoutMinutes()));
                                 })
                             // 🎁 free_predicted: timeout 15 นาที (ลูกค้ามีโอกาสเลือกซื้อ 39/99 หลังเห็นคำทำนาย)
                                 ->orWhere(function ($sub) {
@@ -1528,15 +1556,25 @@ class FortuneReading extends Model
      */
     public static function cancelExpiredPendingBills(): int
     {
-        // 🛑 (2026-05-06) Pay-Later removed — pay-first timeout 30 นาที สำหรับทุกบิล
-        //   เดิม: แยก pay-first 30 นาที vs Request-Before-Pay 24 ชม
-        //   ใหม่: ทุกบิล expire ที่ 30 นาที — pay-first only
-        $payFirstCutoff = now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES);
+        // 🛑 (2026-05-06) Pay-Later removed — pay-first timeout เดียวสำหรับทุกบิล
+        // ⏰ (2026-06-12) เดิม 30 นาที → อ่านจาก admin setting (default 180 นาที = 3 ชม.)
+        //   เจ้าของสั่ง: "บิลยกเลิกโดยระบบเร็วไป บางคนลืม — 3 ชม. ค่อยยกเลิก"
+        //
+        // 🩹 (2026-06-12 จับผี #3) ตัดอายุจาก UPA expires_at (fix ตอนสร้างบิล) เป็นหลัก
+        //   — ไม่ใช่ updated_at เพราะ reminder 3 จังหวะ + แชทระหว่างรอ bump updated_at
+        //   → บิลซอมบี้ลาก ~2 เท่าของอายุจริง ขัดกับที่บอกลูกค้า "เหลือ X นาที"
+        //   updated_at เก็บไว้เป็น fallback กรณี UPA record ผิดปกติ
+        $payFirstCutoff = now()->subMinutes(self::billTimeoutMinutes());
 
         $expiredReadings = self::whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
             ->where('is_paid', false)
             ->whereNotNull('unique_payment_amount_id')
-            ->where('updated_at', '<', $payFirstCutoff)
+            ->where(function ($q) use ($payFirstCutoff) {
+                $q->whereHas('uniquePaymentAmount', function ($uq) {
+                    $uq->where('expires_at', '<', now());
+                })
+                    ->orWhere('updated_at', '<', $payFirstCutoff);
+            })
             ->with('uniquePaymentAmount')
             ->get();
 
@@ -1632,13 +1670,25 @@ class FortuneReading extends Model
 
                 $cancelled++;
 
-                \Log::info('FortuneReading: บิลค้างเกิน 30 นาที → ยกเลิกอัตโนมัติ', [
+                \Log::info('FortuneReading: บิลค้างเกิน timeout → ยกเลิกอัตโนมัติ', [
                     'reading_id' => $reading->id,
                     'bill_reference' => $reading->bill_reference,
                     'facebook_user_id' => $reading->facebook_user_id,
                     'amount' => $reading->amount_paid,
+                    'timeout_minutes' => self::billTimeoutMinutes(),
                     'age_minutes' => (int) now()->diffInMinutes($reading->updated_at, true),
                 ]);
+
+                // 🛡️ (2026-06-12) Bill-Troll Guard — บิลที่ 3 ที่ไม่ชำระ (หลังเตือนแล้ว) → แบนถาวร
+                //   best-effort: พังก็ไม่ block การยกเลิกบิลอื่นๆ
+                try {
+                    app(\App\Services\Fortune\BillTrollGuardService::class)->maybeBanAfterUnpaidCancel($reading);
+                } catch (\Throwable $banErr) {
+                    \Log::warning('FortuneReading: BillTrollGuard check ล้มเหลว (best-effort)', [
+                        'reading_id' => $reading->id,
+                        'error' => $banErr->getMessage(),
+                    ]);
+                }
             } catch (\Throwable $e) {
                 \Log::error('FortuneReading::cancelExpiredPendingBills ล้มเหลว', [
                     'reading_id' => $reading->id,
@@ -1663,7 +1713,11 @@ class FortuneReading extends Model
     {
         // 🚫 / ✋ Header — เปลี่ยนตาม reason
         $billRef = $reading->bill_reference ?? '-';
-        $timeoutMin = self::PAYMENT_TIMEOUT_MINUTES;
+        // ⏰ (2026-06-12) แสดงเป็น ชม.+นาที ตาม setting จริง (default 3 ชม.)
+        $timeoutTotal = self::billTimeoutMinutes();
+        $timeoutMin = $timeoutTotal >= 60
+            ? (intdiv($timeoutTotal, 60).' ชั่วโมง'.($timeoutTotal % 60 > 0 ? ' '.($timeoutTotal % 60).' นาที' : ''))
+            : $timeoutTotal.' นาที';
 
         if ($reason === 'user_cancelled') {
             // ลูกค้ากดยกเลิกเอง — ใช้โทน "ขอบคุณที่แจ้ง" + เตือนสติเบา ๆ
@@ -1677,7 +1731,7 @@ class FortuneReading extends Model
             $header = "🚫 *บิลดูดวงของเจ้าชะตาถูกยกเลิกอัตโนมัติแล้ว*\n"
                 ."═══════════════════════\n"
                 ."📋 เลขบิล: {$billRef}\n"
-                ."⏱️ เหตุผล: ไม่ได้รับการชำระเงินภายใน {$timeoutMin} นาที\n"
+                ."⏱️ เหตุผล: ไม่ได้รับการชำระเงินภายใน {$timeoutMin}\n"
                 ."═══════════════════════\n\n"
                 ."💭 *ก่อนปิดท้าย แม่หมอขอฝากข้อคิดสักนิด...*\n\n";
         }
@@ -1911,12 +1965,22 @@ class FortuneReading extends Model
                 self::STATUS_DISCOVERY_CHAT,
                 self::STATUS_DISCOVERY_CONFIRM,
                 self::STATUS_TIER_CHOICE,
-                self::STATUS_PENDING_PAYMENT,
-                self::STATUS_CELTIC_PENDING_PAYMENT, // 🔮 Celtic ก็ expire 30 นาที (UPA หมดอายุพอดี)
             ])
             ->where('updated_at', '<', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))
             ->where('is_paid', false) // 🛡️ paid bills ห้าม expire — ปล่อย auto-recovery รับช่วง
             ->update(['conversation_status' => self::STATUS_COMPLETED]);
+
+        // ⏰ (2026-06-12) บิลรอชำระ (Deep + Celtic) แยก timeout ตาม admin setting (default 3 ชม.)
+        //   เดิมรวมอยู่ก้อนเดียวกับ 30 นาทีด้านบน — เจ้าของสั่งขยายเฉพาะ "บิล" เป็น 3 ชม.
+        //   หมายเหตุ: บิลที่มี UPA จะถูก cancelExpiredPendingBills จัดการก่อน (cancel UPA + FCM + เตือนสติ)
+        //   ก้อนนี้เป็น safety net สำหรับบิลที่ไม่มี UPA / หลุดจาก cron
+        $expiredBills = (clone $baseQuery)
+            ->whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
+            ->where('updated_at', '<', now()->subMinutes(self::billTimeoutMinutes()))
+            ->where('is_paid', false)
+            ->update(['conversation_status' => self::STATUS_COMPLETED]);
+
+        $expired += $expiredBills;
 
         // ปิด PAID ที่ค้างเกิน timeout (AI processing ล้มเหลว/timeout)
         // 🛡️ (2026-05-24) USER RULE: paid bills ห้าม expire ทุกกรณี

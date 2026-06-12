@@ -283,6 +283,10 @@ class FortuneSettingsController extends Controller
             'slipok_ban_after_rounds' => 'nullable|integer|min:0|max:10',
             // 💎 (2026-06-07) Auto-provision — โอนก่อนสร้างบิล → สร้างบิล Celtic + เปิดไพ่เอง
             'slipok_auto_provision' => 'boolean',
+            // ⏰ (2026-06-12) อายุบิลรอชำระ (นาที) — default 180 (3 ชม.)
+            'bill_payment_timeout_minutes' => 'nullable|integer|min:10|max:1440',
+            // 🛡️ (2026-06-12) แบนถาวรคนสร้างบิลเล่นๆ ไม่ชำระ 3 ครั้งใน 3 วัน
+            'enable_bill_troll_ban' => 'boolean',
             // Affiliate/MLM Settings สำหรับดูดวง
             'fortune_affiliate_enabled' => 'boolean',
             'fortune_auto_register_enabled' => 'boolean',
@@ -467,6 +471,8 @@ class FortuneSettingsController extends Controller
             'slipok_use_log',
             // 💎 (2026-06-07) SlipOK auto-provision (โอนก่อนสร้างบิล)
             'slipok_auto_provision',
+            // 🛡️ (2026-06-12) Bill-Troll Guard
+            'enable_bill_troll_ban',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {

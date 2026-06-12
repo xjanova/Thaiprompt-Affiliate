@@ -22,7 +22,8 @@ use Illuminate\Support\Facades\Log;
  * Behavior:
  *   - Load FortuneCustomerPersona → AI ปรับ tone ตามนิสัยลูกค้า (อ่อนโยน ไม่บีบ)
  *   - Fallback hardcoded text ถ้า AI ใช้ไม่ได้
- *   - Mark `bill_reminder_sent_at` ใน conversation_state — ส่งครั้งเดียวพอ
+ *   - ⏰ (2026-06-12) รองรับ 3 จังหวะ (stage 1/2/3) ตลอดอายุบิล 3 ชม. — โทนต่างกันทุกครั้ง
+ *     Mark `bill_reminder_stage` ใน conversation_state (เก็บ `bill_reminder_sent_at` ไว้ compat)
  *   - Sanitize box chars ที่ AI อาจ leak
  *
  * ลูกค้าตอบ "ไม่จ่าย" / "ยกเลิก" → isCancelRequest จับ → ปิดบิล + ขอบคุณ (existing flow)
@@ -35,7 +36,7 @@ class SendBillReminderJob implements ShouldQueue
 
     public int $timeout = 45;
 
-    public function __construct(public int $readingId) {}
+    public function __construct(public int $readingId, public int $stage = 1) {}
 
     public function handle(): void
     {
@@ -69,20 +70,32 @@ class SendBillReminderJob implements ShouldQueue
         }
 
         // 🩹 Dedup re-check — กัน race (command + queue overlap)
-        if ($reading->getConversationState('bill_reminder_sent_at')) {
-            Log::debug('SendBillReminderJob: ส่งทวงแล้ว — skip', [
+        // ⏰ (2026-06-12) stage-aware: stage ที่ ≤ stage ที่ส่งไปแล้ว → skip
+        //   (awaiting_payment_method = one-shot เดิม — เช็ค bill_reminder_sent_at)
+        $sentStage = (int) $reading->getConversationState('bill_reminder_stage', 0);
+        if ($sentStage === 0 && $reading->getConversationState('bill_reminder_sent_at')) {
+            $sentStage = 1;
+        }
+        if ($sentStage >= $this->stage) {
+            Log::debug('SendBillReminderJob: ส่งทวง stage นี้แล้ว — skip', [
                 'reading_id' => $reading->id,
+                'stage' => $this->stage,
+                'sent_stage' => $sentStage,
             ]);
 
             return;
         }
 
         // Determine platform + user id
-        $platform = ! empty($reading->line_user_id) ? 'line' : 'facebook';
-        $userId = $reading->facebook_user_id ?: $reading->line_user_id ?: $reading->platform_user_id;
+        // 🩹 (2026-06-12 จับผี #8) fortune_readings ไม่มีคอลัมน์ line_user_id (hotfix 2026-05-08)
+        //   เดิม: $reading->line_user_id = null เสมอ → platform='facebook' ตลอด → reminder LINE ตายเงียบ
+        //   ใหม่: ใช้คอลัมน์ platform เป็นหลัก + fallback ตรวจ format LINE userId (U + hex 32 ตัว)
+        $userId = $reading->facebook_user_id ?: $reading->platform_user_id;
         if (empty($userId)) {
             return;
         }
+        $platform = $reading->platform
+            ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
 
         // Load persona context (optional)
         $persona = FortuneCustomerPersona::findByPlatformUser($platform, $userId);
@@ -94,12 +107,14 @@ class SendBillReminderJob implements ShouldQueue
         try {
             $this->sendMessage($platform, $userId, $message);
 
-            // Mark sent — ส่งครั้งเดียวพอ
+            // Mark stage ที่ส่งแล้ว (+ sent_at compat กับโค้ดเก่า)
+            $reading->setConversationState('bill_reminder_stage', $this->stage);
             $reading->setConversationState('bill_reminder_sent_at', now()->toIso8601String());
 
             Log::info('SendBillReminderJob: ส่งสำเร็จ', [
                 'reading_id' => $reading->id,
                 'platform' => $platform,
+                'stage' => $this->stage,
                 'reading_type' => $reading->reading_type,
                 'amount' => $reading->amount_paid,
                 'has_persona' => $persona !== null,
@@ -251,9 +266,13 @@ class SendBillReminderJob implements ShouldQueue
     {
         $personaBlock = ! empty($personaContext) ? "\n\n{$personaContext}\n" : '';
 
-        $situationLine = $isAwaitingMethod
-            ? 'สถานการณ์: ลูกค้าเห็นเมนูเลือกวิธีชำระเงิน (QR ไทย / บัตรเครดิต) แต่ยังไม่ได้กดเลือก ผ่านมาสักพัก'
-            : 'สถานการณ์: ลูกค้าสร้างบิลดูดวงไว้แต่ยังไม่ได้โอนเงิน ผ่านมาสักพัก';
+        // ⏰ (2026-06-12) สถานการณ์ตาม stage — โทนต่างกัน ไม่ใช่กล่องเดิมซ้ำ
+        $situationLine = match (true) {
+            $isAwaitingMethod => 'สถานการณ์: ลูกค้าเห็นเมนูเลือกวิธีชำระเงิน (QR ไทย / บัตรเครดิต) แต่ยังไม่ได้กดเลือก ผ่านมาสักพัก',
+            $this->stage >= 3 => 'สถานการณ์: ลูกค้าสร้างบิลดูดวงไว้นานแล้วยังไม่โอน — บิลใกล้หมดอายุเต็มที (นี่คือการเตือนครั้งสุดท้าย ต้องบอกตรงๆ อย่างสุภาพว่าบิลกำลังจะถูกยกเลิกอัตโนมัติ)',
+            $this->stage === 2 => 'สถานการณ์: ลูกค้าสร้างบิลดูดวงไว้ราวชั่วโมงแล้วยังไม่โอน — เคยทักไปครั้งหนึ่งแล้ว รอบนี้ทักเช็คอินเบาๆ มุมใหม่ อย่าซ้ำคำเดิม',
+            default => 'สถานการณ์: ลูกค้าสร้างบิลดูดวงไว้แต่ยังไม่ได้โอนเงิน ผ่านมาสักพัก',
+        };
 
         // 🗣️ (2026-06-02) ตอบ "เหมือนแอดมินตัวจริงตอบ" — อิงตัวอย่างจริงจาก RAG admin เป็นหลัก
         //   ไม่แต่ง persona อบอุ่น/benefit เอง (user: "ไปดูที่แอดมินตอบไว้ ตอบคล้ายแอดมินเลย")
@@ -308,11 +327,19 @@ EOT;
             ? max(1, (int) now()->diffInMinutes($upa->expires_at, false))
             : 5;
 
+        // ⏰ (2026-06-12) บอก stage ให้ AI รู้จังหวะ
+        $stageHint = match ($this->stage) {
+            3 => '- ⚠️ นี่คือการเตือน *ครั้งสุดท้าย* — บอกสุภาพแต่ชัดเจนว่าถ้าไม่โอน บิลจะถูกยกเลิกอัตโนมัติ และแจ้งเวลาที่เหลือ',
+            2 => '- นี่คือการทักครั้งที่ 2 — เช็คอินเบาๆ มุมใหม่ ถามว่าติดขัดอะไรไหม อย่าใช้คำเดิมกับครั้งแรก',
+            default => '- นี่คือการทักครั้งแรกหลังสร้างบิล',
+        };
+
         return "สถานการณ์:\n"
             ."- ลูกค้าสร้างบิล {$type} ไว้เมื่อ {$minutesAgo} นาทีก่อน\n"
             ."- ยอดที่ต้องโอน: ฿{$amount}\n"
             ."- บิล: {$billRef}\n"
-            ."- ยังเหลือเวลา ~{$remainingMin} นาทีก่อนบิลหมดอายุ\n\n"
+            ."- ยังเหลือเวลา ~{$remainingMin} นาทีก่อนบิลหมดอายุ\n"
+            .$stageHint."\n\n"
             .'ตอบเหมือนแอดมินตอบลูกค้าในจังหวะนี้ (ดูตัวอย่าง 📚 ถ้ามี) — ไม่ทวง ไม่กดดัน';
     }
 
@@ -347,6 +374,23 @@ EOT;
         $remainingMin = $upa && $upa->expires_at
             ? max(1, (int) now()->diffInMinutes($upa->expires_at, false))
             : 5;
+
+        // ⏰ (2026-06-12) Fallback แยกตาม stage — ไม่ใช่ข้อความเดิมซ้ำ 3 รอบ
+        if ($this->stage >= 3) {
+            return "🌙 ลูกศิษย์... แม่หมอขอเตือนเป็น *ครั้งสุดท้าย* นะคะ\n\n"
+                ."📋 บิล {$type}: {$billRef}\n"
+                ."💰 ยอด: ฿{$amount}\n"
+                ."⏰ เหลือเวลาอีกเพียง ~{$remainingMin} นาที — หลังจากนั้นระบบจะยกเลิกบิลอัตโนมัติค่ะ\n\n"
+                ."ถ้ายังอยากดูอยู่ โอนได้เลยนะคะ แม่หมอเปิดไพ่ให้ทันที ✨\n"
+                ."ถ้าไม่สะดวกแล้ว → พิมพ์ 'ยกเลิก' ได้เลย ไม่เป็นไรค่ะ 🙏";
+        }
+
+        if ($this->stage === 2) {
+            return "🌙 ลูกศิษย์ยังอยู่ไหมคะ... แม่หมอยังเตรียมไพ่รอไว้อยู่นะ\n\n"
+                ."ติดขัดเรื่องการโอน หรือมีอะไรให้แม่หมอช่วย พิมพ์ 'ช่วยหน่อย' ได้เลยค่ะ\n"
+                ."📋 บิล {$billRef} ยอด ฿{$amount} ยังรออยู่ (เหลือ ~{$remainingMin} นาที)\n\n"
+                .'ไม่รีบนะคะ แม่หมอรอได้ ✨';
+        }
 
         return "🌙 ลูกศิษย์... แม่หมอเห็นว่าบิล {$type} ที่ทำไว้ ยังไม่ได้โอนเลยนะคะ\n\n"
             ."📋 บิล: {$billRef}\n"

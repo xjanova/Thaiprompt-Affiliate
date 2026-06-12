@@ -29,14 +29,16 @@ Artisan::command('inspire', function () {
 // ════════════════════════════════════════════════════════════════
 // 💸 (2026-05-14) Bill Reminder — ทวงลูกค้าที่สร้างบิลแล้วยังไม่โอน
 // 🌙 (2026-05-24) ขยาย: ครอบ AWAITING_PAYMENT_METHOD + กระตุ้นภายใน 2 นาทีถ้า idle
+// ⏰ (2026-06-12) บิลอายุ 3 ชม. (bill_payment_timeout_minutes) → เตือน 3 จังหวะ
 // ════════════════════════════════════════════════════════════════
 // สแกน every minute — 2 จุด:
-//   1) AWAITING_PAYMENT_METHOD อายุ 2-10 นาที (ลูกค้าเห็นปุ่ม QR/บัตร แต่ไม่กด)
-//   2) PENDING_PAYMENT / CELTIC_PENDING_PAYMENT อายุ 2-10 นาที (สร้างบิลแล้วไม่โอน)
-// → dispatch SendBillReminderJob (AI + RAG admin Q&A few-shot + persona)
-// → mark bill_reminder_sent_at — ส่งครั้งเดียว/บิล (กัน spam)
+//   1) AWAITING_PAYMENT_METHOD อายุ 2-10 นาที (ลูกค้าเห็นปุ่ม QR/บัตร แต่ไม่กด) — one-shot เดิม
+//   2) PENDING_PAYMENT / CELTIC_PENDING_PAYMENT — 3 จังหวะตลอดอายุบิล:
+//      stage 1 = นาที 2-15 / stage 2 = ~45-60% ของอายุบิล / stage 3 = 35 นาทีสุดท้าย (ครั้งสุดท้าย)
+// → dispatch SendBillReminderJob (AI + RAG admin Q&A few-shot + persona — โทนต่างกันทุก stage)
+// → mark bill_reminder_stage (เก็บ bill_reminder_sent_at ไว้ compat)
 //
-// Dedup safe: command + job ต่างเช็ค bill_reminder_sent_at
+// Dedup safe: command + job ต่างเช็ค bill_reminder_stage
 Schedule::command('fortune:bill-reminder')
     ->everyMinute()
     ->withoutOverlapping(5)

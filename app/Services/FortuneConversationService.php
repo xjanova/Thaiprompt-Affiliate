@@ -3961,6 +3961,20 @@ class FortuneConversationService
                         'error' => $wakeupErr->getMessage(),
                     ]);
                 }
+
+                // 🛡️ (2026-06-12) Bill-Troll Guard — "สร้างแล้วยกเลิก สร้างใหม่" ก็นับ strike
+                //   ถ้าบิลที่ยกเลิกเป็นบิลที่ 3 (เคยเตือนแล้ว) → แบนถาวร
+                foreach ($pendingReadings as $cancelledReading) {
+                    try {
+                        app(\App\Services\Fortune\BillTrollGuardService::class)
+                            ->maybeBanAfterUnpaidCancel($cancelledReading);
+                    } catch (\Throwable $banErr) {
+                        Log::warning('Fortune: BillTrollGuard check (user cancel) ล้มเหลว', [
+                            'reading_id' => $cancelledReading->id,
+                            'error' => $banErr->getMessage(),
+                        ]);
+                    }
+                }
             }
         }
 
@@ -7684,6 +7698,16 @@ class FortuneConversationService
                 'facebook_user_id' => $reading->facebook_user_id,
             ]);
 
+            // 🛡️ (2026-06-12) Bill-Troll Guard — บิลที่ 3 หมดอายุโดยไม่ชำระ (on-ping path)
+            try {
+                app(\App\Services\Fortune\BillTrollGuardService::class)->maybeBanAfterUnpaidCancel($reading);
+            } catch (\Throwable $banErr) {
+                Log::warning('Fortune: BillTrollGuard check (on-ping expiry) ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'error' => $banErr->getMessage(),
+                ]);
+            }
+
             return [
                 'action' => 'payment_expired',
                 'message' => "⏰ บิลดูดวงหมดอายุแล้ว\n\n".
@@ -7722,7 +7746,14 @@ class FortuneConversationService
             return $this->buildPayFirstObjectionReply($reading, $uniqueAmount);
         }
 
-        // บิลยังไม่หมดอายุ → ไม่ว่าจะพิมพ์อะไรมา แสดงยอด+บัญชีธนาคาร+เวลาเหลือ
+        // 🔄 (2026-06-12) ลูกค้าขอเปลี่ยนแพคเกจระหว่างรอจ่าย (Deep 39 → Celtic 99)
+        //   เจ้าของสั่ง: "ลูกค้าอาจอยากเปลี่ยนแพคเกจ ก็ต้องรับฟังลูกค้า"
+        //   ยกเลิกบิลเดิม (reason=package_switch — ไม่นับ strike ก่อกวน) + เปิดบิลใหม่ทันที
+        if (($switchTarget = $this->detectTierSwitchRequest($messageText, 'deep')) !== null) {
+            return $this->switchPendingBillTier($reading, $switchTarget);
+        }
+
+        // บิลยังไม่หมดอายุ → ตอบตามบริบท (คุยได้ — ไม่ส่งกล่องบิลเดิมๆ รัวๆ)
         $payAmount = number_format($uniqueAmount->unique_amount, 2);
         $expiresAt = $uniqueAmount->expires_at->format('H:i');
         $billRef = $reading->bill_reference;
@@ -7731,6 +7762,16 @@ class FortuneConversationService
         $remainingMinutes = (int) now()->diffInMinutes($uniqueAmount->expires_at, false);
         $remainingMinutes = max(0, $remainingMinutes);
 
+        // ⏰ (2026-06-12) label เวลาเหลือแบบอ่านง่าย (บิลอายุ 3 ชม. — "175 นาที" อ่านยาก)
+        $remainHours = intdiv($remainingMinutes, 60);
+        $remainLabel = $remainHours > 0
+            ? "{$remainHours} ชม.".($remainingMinutes % 60 > 0 ? ' '.($remainingMinutes % 60).' นาที' : '')
+            : "{$remainingMinutes} นาที";
+
+        // 🔄 (2026-06-12) ลูกค้าขอ "ดูดวง/เริ่มใหม่" ขณะมีบิลค้าง → พาไปจ่ายบิลเดิมก่อน (ไม่สร้างใหม่)
+        //   เจ้าของสั่ง: "ถ้าลูกค้าสร้างบิลใหม่ขณะบิลเก่ายังไม่หมดอายุ ให้ระบบพาไปจ่ายบิลเก่าก่อน"
+        $isRestartRequest = $this->looksLikeFortuneRestartRequest($messageText);
+
         // 🎯 AI Pre-Cancel Nudge — ถ้าลูกค้าพูดอะไรที่ไม่ใช่คำแจ้งชำระ
         //    → AI persona "นักปราชญ์" soft-encourage ด้วยปรัชญาค่าครู (ไม่ฮาร์ดเซล)
         //    จำกัด 3 รอบต่อบิล (กัน loop) — ถ้าเกินรอบ → ใช้แค่ payment details
@@ -7738,9 +7779,14 @@ class FortuneConversationService
         // 🌧️ (2026-05-22) เพิ่ม looksLikeCustomerExcuseOrLifeUpdate —
         //    จับ "ไฟดับ/รอแป๊บ/ไม่มีเงิน/แบตหมด/ป่วย/ไปหมด" ที่ chitchat detector เดิมพลาด
         //    เคสจริง: ลูกค้าพิมพ์ "ไฟดิดขัด" → บอทตอบ payment reminder เดิมซ้ำ 3 รอบ
+        //
+        // 💬 (2026-06-12) ขยาย: ข้อความยาว ≥ 10 ตัวอักษรที่ไม่ใช่คำสั่ง → ถือว่าลูกค้าคุย
+        //    (บิลอายุ 3 ชม.แล้ว — "ลูกค้าไม่ได้จ่ายแล้วคุยก็ต้องคุยก่อน" ไม่ใช่ยัดกล่องบิลใส่)
         $aiPrefix = '';
-        if ($this->looksLikeMetaOrChitchat($messageText)
-            || $this->looksLikeCustomerExcuseOrLifeUpdate($messageText)) {
+        if (! $isRestartRequest
+            && ($this->looksLikeMetaOrChitchat($messageText)
+                || $this->looksLikeCustomerExcuseOrLifeUpdate($messageText)
+                || mb_strlen(trim($messageText)) >= 10)) {
             // 💳 (2026-05-07 Phase 2) Bill Psychology ก่อน — Pro model + bill-aware
             //   ถ้า sensitive key + budget OK → ตอบแบบจิตวิทยาขั้นสูง (replace nudge เดิม)
             //   ถ้าไม่มี Pro → fallback เป็น nudge เดิม
@@ -7773,28 +7819,63 @@ class FortuneConversationService
             }
         }
 
+        // 💬 (2026-06-12) มี AI ตอบ (ลูกค้าคุย) → ตอบบทสนทนา + ท้ายบิลสั้น 1 บรรทัด
+        //   ไม่แนบรายการบัญชี + QR ซ้ำ — เจ้าของสั่ง "อย่าเอาแต่ส่งกล่องข้อความเดิมๆ"
+        //   (ลูกค้าขอดู QR/บัญชีเมื่อไหร่ maybePresentPaymentInfo ด้านบนจัดให้ทันที)
+        if (! empty($aiPrefix)) {
+            return [
+                'action' => 'waiting_payment',
+                'message' => rtrim($aiPrefix)."\n\n"
+                    ."💎 _บิล {$billRef} ฿{$payAmount} ยังรออยู่ (เหลือ {$remainLabel})_\n"
+                    .'_พิมพ์ "บัญชี" ดูช่องทางโอน • "โอนแล้ว" เช็คสถานะ • "ช่วยหน่อย" ติดปัญหา_',
+                'reading' => $reading,
+            ];
+        }
+
+        // 🔇 (2026-06-12) Throttle กล่องบิลเต็ม (บัญชี+QR) — ส่งซ้ำได้ทุก 10 นาที
+        //   ยกเว้น: ลูกค้าขอดูดวง/เริ่มใหม่ (พาไปจ่ายบิลเดิม) → ส่งเต็มเสมอ
+        $lastBoxAt = $reading->getConversationState('last_payment_box_at');
+        $boxRecently = false;
+        if (! empty($lastBoxAt)) {
+            try {
+                $boxRecently = \Illuminate\Support\Carbon::parse($lastBoxAt)->gt(now()->subMinutes(10));
+            } catch (\Throwable $e) {
+                $boxRecently = false;
+            }
+        }
+
+        if ($boxRecently && ! $isRestartRequest) {
+            return [
+                'action' => 'waiting_payment',
+                'message' => "💎 บิล {$billRef} รอค่าครู *฿{$payAmount}* (ทศนิยมต้องตรง)\n"
+                    ."⏰ เหลืออีก {$remainLabel}\n\n"
+                    .'_พิมพ์ "บัญชี" ดูช่องทางโอนอีกครั้ง • "โอนแล้ว" เช็คสถานะ • "ช่วยหน่อย" ติดปัญหา_',
+                'reading' => $reading,
+            ];
+        }
+
         // 🩹 (2026-05-15 v2) Ultra-short reminder — user feedback: "บล๊อกแจ้งยอดเยอะไป คนกลัว"
         //   เก็บแค่ ยอด / บิล / เวลาเหลือ / บัญชี / hint สั้น
-        $message = $aiPrefix;
-        if (empty($aiPrefix)) {
-            $message .= "💎 *รอค่าครู ฿{$payAmount}* (ตรงทศนิยม!)\n";
-            $message .= "🔖 บิล: {$billRef}\n";
-            $message .= "⏰ เหลืออีก {$remainingMinutes} นาที\n\n";
+        $message = '';
+        if ($isRestartRequest) {
+            // 🔄 พาไปจ่ายบิลเดิมก่อน — ไม่สร้างบิลใหม่ซ้อน
+            $message .= "🌙 เจ้าชะตามีบิลดูดวงค้างอยู่แล้วนะคะ — จ่ายบิลเดิมก่อน แม่หมอจะเปิดไพ่ให้ทันทีค่ะ\n\n";
         }
+        $message .= "💎 *รอค่าครู ฿{$payAmount}* (ตรงทศนิยม!)\n";
+        $message .= "🔖 บิล: {$billRef}\n";
+        $message .= "⏰ เหลืออีก {$remainLabel}\n\n";
 
-        // แสดงบัญชีธนาคารทุกครั้ง
+        // แสดงบัญชีธนาคาร
         $message .= $this->getBankAccountsListMessage();
 
-        if (empty($aiPrefix)) {
-            if ($remainingMinutes <= 10) {
-                $message .= "\n⚡ เหลือ {$remainingMinutes} นาที — รีบโอนนะคะ\n";
-            }
-            $message .= "\n_โอนเสร็จ พิมพ์ \"โอนแล้ว\"_\n";
-            $message .= '_ติดปัญหา พิมพ์ "ช่วยหน่อย"_';
-        } else {
-            // มี AI prefix — เก็บแค่ guidance สั้น ๆ
-            $message .= "\n_ทศนิยมต้องตรงเป๊ะ • พิมพ์ \"โอนแล้ว\" หรือ \"ช่วยหน่อย\"_";
+        if ($remainingMinutes <= 10) {
+            $message .= "\n⚡ เหลือ {$remainingMinutes} นาที — รีบโอนนะคะ\n";
         }
+        $message .= "\n_โอนเสร็จ พิมพ์ \"โอนแล้ว\"_\n";
+        $message .= '_ติดปัญหา พิมพ์ "ช่วยหน่อย"_';
+
+        // mark เวลาส่งกล่องบิลเต็มล่าสุด (ใช้ throttle รอบหน้า)
+        $reading->setConversationState('last_payment_box_at', now()->toIso8601String());
 
         // สร้าง Dynamic PromptPay QR Code พร้อมยอดเงิน
         $qrImageUrl = $this->generatePromptPayQrImage((float) $uniqueAmount->unique_amount, $reading->id);
@@ -7866,8 +7947,8 @@ class FortuneConversationService
             //         แล้ว fresh query verify หลัง commit ว่าทุกอย่างอยู่จริง
             $billData = \DB::transaction(function () use ($reading, $questions, $payFirst) {
                 $basePrice = $this->getDeepReadingPrice();
-                // 🛑 (2026-05-06) Pay-Later removed — ทุกบิล UPA 30 นาที (pay-first only)
-                $expiryMinutes = FortuneReading::PAYMENT_TIMEOUT_MINUTES; // 30
+                // ⏰ (2026-06-12) อายุ UPA ตาม admin setting (default 180 นาที = 3 ชม. — เดิม 30)
+                $expiryMinutes = FortuneReading::billTimeoutMinutes();
                 $uniqueAmount = UniquePaymentAmount::generate(
                     $basePrice,
                     $reading->id,
@@ -7958,6 +8039,9 @@ class FortuneConversationService
                 // ใช้ pitch message แบบ pay-first (ไม่มีสรุปคำถาม + คำคม "ของที่ปิดหุ้ม")
                 $message = $this->getPayFirstPaymentMessage($reading, $uniqueAmount);
 
+                // 🛡️ (2026-06-12) Bill-Troll Guard — บิลที่ 3 หลังไม่ชำระ 2 ครั้งใน 3 วัน → แนบคำเตือน
+                $message .= $this->appendTrollWarningIfNeeded($reading);
+
                 // ส่ง FCM ให้ SMS app เห็นบิลทันที
                 try {
                     app(\App\Services\FcmNotificationService::class)->notifyNewFortuneReading($reading);
@@ -8035,6 +8119,9 @@ class FortuneConversationService
 
             // สร้างข้อความสรุป + บัญชีธนาคาร
             $message = $this->getPaymentSummaryMessage($reading, $questions, $uniqueAmount);
+
+            // 🛡️ (2026-06-12) Bill-Troll Guard — บิลที่ 3 หลังไม่ชำระ 2 ครั้งใน 3 วัน → แนบคำเตือน
+            $message .= $this->appendTrollWarningIfNeeded($reading);
 
             Log::info('Fortune Conversation: สร้างบิลรอชำระ', [
                 'reading_id' => $reading->id,
@@ -10589,7 +10676,7 @@ class FortuneConversationService
      * 💳 (2026-06-03) ตรวจว่า user มี "บิลค้างจ่าย" (ยังไม่ paid) หรือไม่
      *
      * = reading ที่ conversation_status ∈ PENDING_PAYMENT_STATUSES + is_paid=false
-     *   + ยังไม่หมดอายุ (บิล pending หมดอายุ 30 นาที — ใช้ window 35 นาทีกันคาบเกี่ยว)
+     *   + ยังไม่หมดอายุ (⏰ 2026-06-12: ใช้ billTimeoutMinutes + 5 กันคาบเกี่ยว — เดิม 35 ของยุคบิล 30 นาที)
      *
      * นโยบาย: ระหว่างนี้ลูกค้ากำลัง checkout → ห้าม farewell/no-intent silence
      *   ปล่อยข้อความไหลไป payment handler (soft-decline จัดการ "ไม่เอา/ไว้คราวหน้า" เองอยู่แล้ว)
@@ -10608,7 +10695,7 @@ class FortuneConversationService
             })
                 ->where('is_paid', false)
                 ->whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
-                ->where('updated_at', '>=', now()->subMinutes(35))
+                ->where('updated_at', '>=', now()->subMinutes(FortuneReading::billTimeoutMinutes() + 5))
                 ->exists();
         });
     }
@@ -13313,7 +13400,7 @@ class FortuneConversationService
                     (float) $shortfallBase,
                     $reading->id,
                     $txnType,
-                    FortuneReading::PAYMENT_TIMEOUT_MINUTES
+                    FortuneReading::billTimeoutMinutes() // ⏰ (2026-06-12) ตาม setting (default 3 ชม.)
                 );
 
                 if (! $newUpa) {
@@ -15225,6 +15312,150 @@ PROMPT;
     }
 
     /**
+     * 🔄 (2026-06-12) ตรวจจับคำขอเปลี่ยนแพคเกจระหว่างรอจ่ายบิล
+     *
+     * เจ้าของสั่ง: "ลูกค้าอาจอยากเปลี่ยนแพคเกจ ก็ต้องรับฟังลูกค้า"
+     *
+     * @param  string  $currentTier  'deep' (บิล 39 อยากเปลี่ยนเป็น celtic) | 'celtic' (บิล 99 อยากเปลี่ยนเป็น deep)
+     * @return string|null tier ปลายทาง ('deep'|'celtic') หรือ null ถ้าไม่ใช่คำขอเปลี่ยน
+     */
+    protected function detectTierSwitchRequest(string $messageText, string $currentTier): ?string
+    {
+        $text = mb_strtolower(trim($messageText));
+        // ข้อความยาว = ลูกค้าเล่าเรื่อง ไม่ใช่คำสั่งเปลี่ยนแพคเกจ (กัน false positive เช่นเลข 99 ในเบอร์โทร)
+        if ($text === '' || mb_strlen($text) > 60) {
+            return null;
+        }
+
+        // 🛡️ (2026-06-12 จับผี #4) ลูกค้า "ถาม" เรื่องอีกแพคเกจ ≠ "ขอเปลี่ยน" — ห้ามยกเลิกบิลจากคำถาม
+        //   เคส: "celtic cross คืออะไรคะ" / "อยากรู้เชิงลึกหน่อย" ต้องไม่ trigger switch
+        //   เกณฑ์: (a) พิมพ์ชื่อแพคเกจ/ราคาเดี่ยวๆ แบบ exact = เลือกชัด หรือ
+        //          (b) มีกริยาเปลี่ยน (เปลี่ยน/สลับ/เอา/ขอ) ตามด้วย filler จำกัด (เป็น/แพคเกจ/แบบ/อัน/ตัว)
+        //              ก่อนถึงชื่อแพคเกจ — "ขอถามเชิงลึก" จะไม่ match เพราะ "ถาม" ไม่ใช่ filler
+        $glue = '(?:เป็น|แพคเกจ|แพ็คเกจ|แบบ|อัน|ตัว|ราคา|\s)*';
+
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
+
+        if ($currentTier === 'deep' && $celticEnabled) {
+            $exact = ['99', 'เอา99', 'เอา 99', 'celtic', 'celtic cross', 'เซลติก', 'ไพ่ยิปซีเต็ม', 'ไพ่ยิปซีเต็มสำรับ', 'เต็มสำรับ'];
+            if (in_array($text, $exact, true)
+                || preg_match('/(เปลี่ยน|สลับ|เอา|ขอ)'.$glue.'(99|เก้าสิบเก้า|celtic|เซลติก|ไพ่ยิปซีเต็ม|เต็มสำรับ)/u', $text)) {
+                return 'celtic';
+            }
+        }
+
+        if ($currentTier === 'celtic' && $deepEnabled) {
+            $exact = ['39', 'เอา39', 'เอา 39', 'เชิงลึก', 'ดูดวงเชิงลึก'];
+            if (in_array($text, $exact, true)
+                || preg_match('/(เปลี่ยน|สลับ|เอา|ขอ)'.$glue.'(39|สามสิบเก้า|เชิงลึก)/u', $text)) {
+                return 'deep';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🔄 (2026-06-12) เปลี่ยนแพคเกจระหว่างรอจ่าย — ยกเลิกบิลเดิม + เปิดบิลใหม่ทันที
+     *
+     * การยกเลิกแบบนี้ mark reason = 'package_switch' → BillTrollGuard ไม่นับ strike
+     * (ลูกค้าดีที่แค่เปลี่ยนใจ ต้องไม่โดนระบบแบนคนก่อกวน)
+     *
+     * @param  string  $target  'deep' | 'celtic'
+     */
+    protected function switchPendingBillTier(FortuneReading $reading, string $target): array
+    {
+        Log::info('Fortune: ลูกค้าขอเปลี่ยนแพคเกจระหว่างรอจ่าย → ยกเลิกบิลเดิม + เปิดบิลใหม่', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'from_tier' => $reading->reading_type,
+            'to_tier' => $target,
+        ]);
+
+        // 1) ยกเลิกบิลเดิม — reason=package_switch (ไม่นับ strike + ไม่ส่งคำเตือนสติ)
+        try {
+            $upa = $reading->uniquePaymentAmount;
+            if ($upa && $upa->status === 'reserved') {
+                $upa->cancel();
+            }
+            $reading->setConversationState('cancelled_at', now()->toIso8601String());
+            $reading->setConversationState('cancellation_reason', 'package_switch');
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            // แจ้งแอพ SMS Checker ลบบิลเก่าออกจากรายการรอ
+            try {
+                app(FcmNotificationService::class)->notifyFortuneReadingCancelled($reading);
+            } catch (\Throwable $fcmErr) {
+                Log::warning('Fortune: FCM cancel push (package switch) ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'error' => $fcmErr->getMessage(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Fortune: ยกเลิกบิลเดิมตอนเปลี่ยนแพคเกจล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // 2) สร้าง reading ใหม่ (บิลใหม่จะได้ bill_reference ใหม่ — ไม่ชนกับ FCM cancel ของบิลเก่า)
+        $newReading = FortuneReading::create([
+            'facebook_user_id' => $reading->facebook_user_id,
+            'facebook_user_name' => $reading->facebook_user_name,
+            'user_profile' => $reading->user_profile,
+            'questions' => $reading->questions ?? [],
+            'reading_type' => 'basic',
+            'conversation_status' => FortuneReading::STATUS_NEW,
+            'response_type' => 'private_message',
+            'ai_response' => '',
+            'ai_provider' => '',
+            'platform' => $reading->platform ?: $this->currentPlatform,
+            'platform_user_id' => $reading->platform_user_id ?: $reading->facebook_user_id,
+        ]);
+
+        // 3) เข้า flow แพคเกจใหม่ทันที (กดเปลี่ยน = intent ชัด ไม่ต้องถามวิธีจ่ายซ้ำ)
+        $result = $target === 'celtic'
+            ? $this->startCelticCrossFlow($newReading, skipStripeGate: true)
+            : $this->routePayFirstDeep($newReading, skipPaymentGate: true);
+
+        // 4) แจ้งรับทราบการเปลี่ยน (prepend หน้า message ของบิลใหม่)
+        //   🩹 (จับผี #5) อย่าเคลม "เปลี่ยนให้แล้ว" — flow ใหม่อาจติด consent gate ก่อนได้บิลจริง
+        //   ใช้ "ยกเลิกบิลเดิมแล้ว กำลังเปลี่ยน..." ซึ่งจริงเสมอทั้งสองกรณี
+        $label = $target === 'celtic' ? 'Celtic Cross ไพ่ 10 ใบ' : 'ดูดวงเชิงลึก';
+        if (is_array($result) && ! empty($result['message'])) {
+            $result['message'] = "🔄 รับทราบค่ะ — ยกเลิกบิลเดิมเรียบร้อย กำลังเปลี่ยนเป็นแพคเกจ *{$label}* ให้นะคะ\n\n"
+                .$result['message'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * 🛡️ (2026-06-12) Bill-Troll Guard — แนบคำเตือนกับบิลใหม่ถ้าลูกค้ามีประวัติไม่ชำระ 2 ครั้ง
+     *
+     * @return string ข้อความเตือน (มี \n\n นำหน้า) หรือ '' ถ้าไม่เข้าเกณฑ์
+     */
+    protected function appendTrollWarningIfNeeded(FortuneReading $reading): string
+    {
+        try {
+            $warning = app(\App\Services\Fortune\BillTrollGuardService::class)->warningForNewBill($reading);
+            if ($warning !== null) {
+                $reading->setConversationState('troll_warning_shown', true);
+
+                return "\n\n".$warning;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: BillTrollGuard warning check ล้มเหลว (best-effort)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return '';
+    }
+
+    /**
      * 🆘 (2026-05-15) ลูกค้าต้องการความช่วยเหลือเรื่องโอน — "ทำไม่เป็น"/"ใช้ไม่ได้"/"งง"
      *
      * เคสจริง — คุณสุนันทา คำนวณจิต (2026-05-15 12:39-12:40 production):
@@ -15277,6 +15508,12 @@ PROMPT;
         $text = mb_strtolower(trim($message));
         if ($text === '') {
             return false;
+        }
+
+        // 💳 (2026-06-12) "บัญชี" / "qr" คำเดี่ยว — บอทสอนลูกค้าเองว่า 'พิมพ์ "บัญชี" ดูช่องทางโอน'
+        //   (ข้อความ throttle ใน handlePendingPayment) → ต้องจับ exact match ให้ได้
+        if (in_array($text, ['บัญชี', 'qr', 'คิวอาร์', 'เลขบัญชี'], true)) {
+            return true;
         }
 
         $patterns = [

@@ -46,12 +46,13 @@ class FortuneExpireConversations extends Command
         $remindersSent = 0;
 
         if ($dryRun) {
+            // ⏰ (2026-06-12) ใช้ billTimeoutMinutes (setting, default 180) แทน 30 นาทีเดิม
             $remindersSent = FortuneReading::whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
                 ->where('is_paid', false)
                 ->whereNotNull('unique_payment_amount_id')
                 ->whereBetween('updated_at', [
-                    now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES),
-                    now()->subMinutes(max(1, FortuneReading::PAYMENT_TIMEOUT_MINUTES - 5)),
+                    now()->subMinutes(FortuneReading::billTimeoutMinutes()),
+                    now()->subMinutes(max(1, FortuneReading::billTimeoutMinutes() - 5)),
                 ])
                 ->count();
         } else {
@@ -59,8 +60,9 @@ class FortuneExpireConversations extends Command
         }
 
         // ========================================
-        // 🎯 Phase J — ยกเลิกบิล pending_payment ที่ค้างเกิน 30 นาที
+        // 🎯 Phase J — ยกเลิกบิล pending_payment ที่ค้างเกิน timeout (setting, default 3 ชม.)
         //    (cancel UPA + ส่ง FCM แจ้งแอพ SMS Checker) ก่อนปิด conversation
+        // ⏰ (2026-06-12) เดิม 30 นาที — เจ้าของสั่งขยายเป็น 3 ชม. ผ่าน bill_payment_timeout_minutes
         // ========================================
         $cancelledBills = 0;
 
@@ -68,7 +70,7 @@ class FortuneExpireConversations extends Command
             $cancelledBills = FortuneReading::whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
                 ->where('is_paid', false)
                 ->whereNotNull('unique_payment_amount_id')
-                ->where('updated_at', '<', now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES))
+                ->where('updated_at', '<', now()->subMinutes(FortuneReading::billTimeoutMinutes()))
                 ->count();
         } else {
             $cancelledBills = FortuneReading::cancelExpiredPendingBills();
