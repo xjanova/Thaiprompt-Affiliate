@@ -66,6 +66,7 @@ class DatabaseSeeder extends Seeder
             FortuneInviteMessageSeeder::class,   // 💬 ข้อความชวนดูดวงแบบสุ่ม 100 ข้อความ (ส่งแทนรูปเมื่อได้รูปสัปดาห์นี้แล้ว)
             FortuneInviteMessageBatch2Seeder::class, // 💬 ข้อความชวนดูดวง ชุดที่ 2 — สายมู 100 ข้อความ (มนต์ดำ/คุณไสย/เจ้ากรรมนายเวร ฯลฯ)
             FortuneInviteMessageBatch3Seeder::class, // 💬 ข้อความชวนดูดวง ชุดที่ 3 — จุดจบ/กรรม 100 ข้อความ (คนโกง/มือที่สาม/คนทรยศ/อยู่เหนือกว่า)
+            FortuneInviteMessageBatch4Seeder::class, // 💬 ข้อความชวนดูดวง ชุดที่ 4 — โชคลาภ/ข่าวดี 30 ข้อความ (windfall/good_news)
             FortuneMysticTopicSeeder::class,     // 🔮 หมวดคอนเทนต์สายมู (5 หมวด: สายมู/แก้เคล็ด/ปัญหาชีวิต/สิ่งลี้ลับ/รู้หรือไม่ทั่วโลก)
             FortuneKnowledgeSeeder::class,       // 🧠 คลังความรู้แม่หมอ (RAG) — สุขภาพ/ฮวงจุ้ย/เจ้าที่/องค์เทพ/มนต์ดำ (จาก config → DB)
 
