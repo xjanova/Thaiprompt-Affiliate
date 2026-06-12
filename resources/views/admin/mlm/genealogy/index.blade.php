@@ -1,10 +1,17 @@
 {{--
-    Global Genealogy Viewer - Admin
-    แสดงผังสายงานทั้งหมดของระบบ MLM
-    รองรับทั้ง Desktop และ Mobile (Touch events)
+    Genealogy Nexus — ผังสายงาน MLM (V3 Redesign)
+
+    ดีไซน์ใหม่ทั้งหน้า: canvas เต็มจอแบบ immersive
+    - การ์ดสมาชิก: avatar + rank ring + PV chips + สถานะ pulse
+    - ลากย้ายโหนด / แพน / ซูม (เมาส์+ทัช) ลื่นด้วย rAF tween
+    - คลิกการ์ด → detail panel / ย่อ-ขยายสายงาน / re-root + breadcrumb
+    - Minimap + stats HUD + ค้นหาสมาชิกแบบ combobox
+
+    ใช้ API เดิม: admin.mlm.members.tree-data (ไม่แตะ backend)
+    Renderer: public/assets/js/genealogy-nexus.js (vanilla JS)
 
     @author TP-Affiliate Team
-    @version 3.0.0
+    @version 4.0.0
 --}}
 
 @extends('layouts.admin-v3')
@@ -13,401 +20,729 @@
 
 @push('styles')
 <style>
-    /* กำหนดความสูงขั้นต่ำสำหรับ chart container */
-    .org-chart-container {
-        height: calc(100vh - 450px);
-        min-height: 500px;
-        max-height: 700px;
+    /* ============================================================
+       Genealogy Nexus — โทนสีผ่าน CSS variables (รองรับ dark/light)
+       ============================================================ */
+    :root {
+        --gnx-surface: #f1f5f9;
+        --gnx-grid: rgba(100, 116, 139, .14);
+        --gnx-card-bg: rgba(255, 255, 255, .88);
+        --gnx-card-border: rgba(148, 163, 184, .45);
+        --gnx-text: #0f172a;
+        --gnx-text-dim: #64748b;
+        --gnx-edge: rgba(100, 116, 139, .5);
+        --gnx-edge-hot: #10b981;
+        --gnx-glow: rgba(16, 185, 129, .35);
+    }
+    .dark {
+        --gnx-surface: #070d1a;
+        --gnx-grid: rgba(94, 234, 212, .07);
+        --gnx-card-bg: rgba(15, 23, 42, .82);
+        --gnx-card-border: rgba(94, 234, 212, .22);
+        --gnx-text: #f1f5f9;
+        --gnx-text-dim: #94a3b8;
+        --gnx-edge: rgba(94, 234, 212, .35);
+        --gnx-edge-hot: #34d399;
+        --gnx-glow: rgba(52, 211, 153, .45);
     }
 
-    @media (max-width: 768px) {
-        .org-chart-container {
-            height: calc(100vh - 350px);
-            min-height: 400px;
-        }
+    /* ---------- Canvas ---------- */
+    /* หมายเหตุ: ไม่ตั้ง position ที่นี่ — ใช้ absolute จาก Tailwind ของ #nexus-canvas
+       (style ที่ push มาทีหลัง app.css จะ override utility ถ้าตั้งซ้ำ) */
+    .gnx-container {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--gnx-surface);
+        touch-action: none;
+        user-select: none;
+        cursor: grab;
+        border-radius: 1rem;
     }
+    .gnx-container.gnx-panning { cursor: grabbing; }
+    .gnx-bg {
+        position: absolute;
+        inset: -200px;
+        background-image:
+            radial-gradient(ellipse 60% 50% at 30% 20%, var(--gnx-glow) 0%, transparent 60%),
+            linear-gradient(var(--gnx-grid) 1px, transparent 1px),
+            linear-gradient(90deg, var(--gnx-grid) 1px, transparent 1px);
+        background-size: 100% 100%, 44px 44px, 44px 44px;
+        opacity: .8;
+        pointer-events: none;
+    }
+    .gnx-edges {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        pointer-events: none;
+    }
+    .gnx-world {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: 0 0;
+        will-change: transform;
+    }
+
+    /* ---------- เส้นเชื่อม ---------- */
+    .gnx-edge {
+        fill: none;
+        stroke: var(--gnx-edge);
+        stroke-width: 2;
+        transition: stroke .25s;
+    }
+    .gnx-edge-hot {
+        stroke: var(--gnx-edge-hot);
+        stroke-width: 2.5;
+        stroke-dasharray: 7 5;
+        animation: gnx-flow 1s linear infinite;
+        filter: drop-shadow(0 0 4px var(--gnx-glow));
+    }
+    .gnx-edge-ghost { stroke-dasharray: 4 6; opacity: .45; }
+    @keyframes gnx-flow { to { stroke-dashoffset: -12; } }
+
+    /* ---------- การ์ดสมาชิก ---------- */
+    .gnx-node {
+        position: absolute;
+        top: 0;
+        left: 0;
+        will-change: transform;
+        cursor: pointer;
+        transition: opacity .25s, filter .25s;
+    }
+    .gnx-node.gnx-entering { opacity: 0; }
+    .gnx-node.gnx-leaving { opacity: 0; pointer-events: none; }
+    .gnx-node.gnx-dragging { z-index: 30; }
+    .gnx-node.gnx-dragging .gnx-card {
+        box-shadow: 0 18px 44px -8px var(--gnx-glow);
+        transform: scale(1.04);
+    }
+    .gnx-card {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        height: 96px;
+        border-radius: 16px;
+        background: var(--gnx-card-bg);
+        border: 1px solid var(--gnx-card-border);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 6px 20px -6px rgba(2, 6, 23, .35);
+        transition: box-shadow .25s, transform .25s, border-color .25s;
+        overflow: hidden;
+    }
+    .gnx-card::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--rank, #10b981), transparent 80%);
+        opacity: .9;
+    }
+    .gnx-node:hover .gnx-card {
+        border-color: var(--rank, #10b981);
+        box-shadow: 0 10px 30px -6px var(--gnx-glow);
+    }
+    .gnx-node.gnx-selected .gnx-card {
+        border-color: var(--gnx-edge-hot);
+        box-shadow: 0 0 0 2px var(--gnx-edge-hot), 0 14px 38px -8px var(--gnx-glow);
+    }
+
+    .gnx-avatar {
+        flex-shrink: 0;
+        width: 52px;
+        height: 52px;
+        border-radius: 9999px;
+        padding: 2px;
+        background: conic-gradient(from 210deg, var(--rank, #10b981), transparent 65%, var(--rank, #10b981));
+    }
+    .gnx-avatar img, .gnx-avatar .gnx-initial {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        border-radius: 9999px;
+        object-fit: cover;
+        background: linear-gradient(135deg, #334155, #0f172a);
+        color: #fff;
+        font-weight: 800;
+        font-size: 20px;
+    }
+    .gnx-info { min-width: 0; flex: 1; }
+    .gnx-name {
+        font-weight: 700;
+        font-size: 13.5px;
+        color: var(--gnx-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .gnx-code {
+        font-size: 11px;
+        color: var(--gnx-text-dim);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .gnx-code i { font-style: normal; font-weight: 600; }
+    .gnx-chips { display: flex; gap: 4px; margin-top: 5px; }
+    .gnx-chip {
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        padding: 4px 7px;
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+    .gnx-chip-l { background: rgba(16, 185, 129, .16); color: #059669; }
+    .gnx-chip-r { background: rgba(59, 130, 246, .16); color: #2563eb; }
+    .dark .gnx-chip-l { color: #34d399; }
+    .dark .gnx-chip-r { color: #60a5fa; }
+
+    .gnx-status {
+        position: absolute;
+        top: 9px;
+        right: 10px;
+        width: 9px;
+        height: 9px;
+        border-radius: 9999px;
+    }
+    .gnx-status.is-active { background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: gnx-pulse 2s infinite; }
+    .gnx-status.is-grace { background: #f59e0b; }
+    .gnx-status.is-inactive { background: #ef4444; }
+    @keyframes gnx-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(34,197,94,.55); }
+        70% { box-shadow: 0 0 0 7px rgba(34,197,94,0); }
+        100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+
+    .gnx-toggle {
+        position: absolute;
+        left: 50%;
+        bottom: -13px;
+        transform: translateX(-50%);
+        min-width: 26px;
+        height: 26px;
+        padding: 0 7px;
+        border-radius: 9999px;
+        border: 1.5px solid var(--gnx-edge-hot);
+        background: var(--gnx-card-bg);
+        color: var(--gnx-edge-hot);
+        font-size: 12px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        transition: transform .2s, box-shadow .2s;
+        z-index: 5;
+    }
+    .gnx-toggle:hover { transform: translateX(-50%) scale(1.15); box-shadow: 0 0 12px var(--gnx-glow); }
+    .gnx-toggle-minus { font-size: 15px; line-height: 1; }
+
+    /* ---------- ช่องว่าง binary (ghost slot) ---------- */
+    .gnx-ghost { cursor: default; }
+    .gnx-ghost-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        height: 96px;
+        border-radius: 16px;
+        border: 1.5px dashed var(--gnx-card-border);
+        color: var(--gnx-text-dim);
+        font-size: 11px;
+        opacity: .65;
+    }
+    .gnx-ghost-plus { font-size: 18px; opacity: .7; }
+
+    /* ---------- Loading / Minimap ---------- */
+    .gnx-loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        background: color-mix(in srgb, var(--gnx-surface) 72%, transparent);
+        backdrop-filter: blur(4px);
+        color: var(--gnx-text-dim);
+        font-size: 14px;
+        z-index: 40;
+    }
+    .gnx-loading.hidden { display: none; }
+    .gnx-loading .gnx-error { color: #f87171; font-weight: 600; }
+    .gnx-orbit { position: relative; width: 54px; height: 54px; }
+    .gnx-orbit span {
+        position: absolute;
+        inset: 0;
+        border: 2.5px solid transparent;
+        border-top-color: var(--gnx-edge-hot);
+        border-radius: 9999px;
+        animation: gnx-spin 1.1s linear infinite;
+    }
+    .gnx-orbit span:nth-child(2) { inset: 8px; animation-duration: .85s; animation-direction: reverse; opacity: .7; }
+    .gnx-orbit span:nth-child(3) { inset: 16px; animation-duration: .65s; opacity: .45; }
+    @keyframes gnx-spin { to { transform: rotate(360deg); } }
+
+    .gnx-minimap {
+        position: absolute;
+        right: 14px;
+        bottom: 14px;
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--gnx-surface) 80%, transparent);
+        border: 1px solid var(--gnx-card-border);
+        backdrop-filter: blur(8px);
+        cursor: crosshair;
+        z-index: 20;
+    }
+    @media (max-width: 640px) { .gnx-minimap { display: none; } }
+
+    /* ---------- ความสูง canvas ---------- */
+    .gnx-stage { height: calc(100vh - 240px); min-height: 540px; }
+    @media (max-width: 768px) { .gnx-stage { height: calc(100vh - 200px); min-height: 460px; } }
+
+    [x-cloak] { display: none !important; }
 </style>
 @endpush
 
 @section('content')
-<div class="space-y-6">
-    {{-- Premium Hero Header with Gradient & Animations --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-800 dark:via-teal-800 dark:to-cyan-800 rounded-2xl shadow-2xl p-6 md:p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 left-0 w-72 h-72 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 right-0 w-72 h-72 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s;"></div>
+<div class="space-y-4"
+     x-data="genealogyNexus()"
+     x-init="init()">
+
+    {{-- ============ Header แถบบาง + สลับโหมดมุมมอง ============ --}}
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v3m0 0a3 3 0 100 6 3 3 0 000-6zm-6 13a3 3 0 116 0m0 0a3 3 0 116 0M6 14v-1.5M18 14v-1.5"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                    ผังสายงาน <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-cyan-500">Nexus</span>
+                </h1>
+                <p class="text-xs text-gray-500 dark:text-gray-400">ลากย้ายโหนด · ซูม · คลิกดูข้อมูล · เจาะสายงานได้ทุกคน</p>
+            </div>
         </div>
 
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                <div class="flex items-center gap-4">
-                    <div class="bg-white/20 backdrop-blur-sm p-4 rounded-2xl">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">ผังสายงาน MLM</h1>
-                        <p class="text-teal-100 text-base md:text-lg mt-1">แสดงโครงสร้างสายงาน MLM แบบ Interactive</p>
-                    </div>
-                </div>
+        <div class="flex flex-wrap items-center gap-2 text-sm">
+            <a href="{{ route('admin.mlm.genealogy.workflow') }}"
+               class="px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all font-medium">
+                Workflow
+            </a>
+            <a href="{{ route('admin.mlm.genealogy.bloodline') }}"
+               class="px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all font-medium">
+                ผังสายเลือด
+            </a>
+            <a href="{{ route('admin.mlm.members.index') }}"
+               class="px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all font-medium">
+                รายชื่อสมาชิก
+            </a>
+        </div>
+    </div>
 
-                {{-- View Mode Toggle & Quick Actions --}}
-                <div class="flex flex-wrap items-center gap-3">
-                    {{-- View Mode Toggle --}}
-                    <div class="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded-xl p-1">
-                        <span class="px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
-                            </svg>
-                            Classic
+    {{-- ============ แถบควบคุม (glass) ============ --}}
+    <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-3 flex flex-col md:flex-row gap-3 md:items-center relative z-30">
+
+        {{-- ค้นหาสมาชิก (combobox) --}}
+        <div class="relative flex-1 min-w-[220px]" @click.outside="searchOpen = false">
+            <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+            <input type="text"
+                   x-model="search"
+                   @focus="searchOpen = true"
+                   @input="searchOpen = true"
+                   placeholder="ค้นหาสมาชิก… (ชื่อ หรือ รหัส)"
+                   class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+
+            {{-- dropdown ผลค้นหา --}}
+            <div x-show="searchOpen && filteredMembers.length"
+                 x-cloak
+                 x-transition.origin.top
+                 class="absolute z-50 mt-2 w-full max-h-72 overflow-y-auto rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-2xl divide-y divide-gray-100 dark:divide-gray-700/60">
+                <template x-for="m in filteredMembers.slice(0, 30)" :key="m.id">
+                    <button type="button"
+                            @click="pickMember(m)"
+                            class="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                        <span class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0"
+                              x-text="(m.name || '?').charAt(0).toUpperCase()"></span>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-semibold text-gray-900 dark:text-white truncate" x-text="m.name"></span>
+                            <span class="block text-xs text-gray-500 dark:text-gray-400" x-text="m.code"></span>
                         </span>
-                        <a href="{{ route('admin.mlm.genealogy.workflow') }}"
-                           class="px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg font-medium text-sm flex items-center gap-2 transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
-                            </svg>
-                            Workflow
-                        </a>
-                    </div>
-
-                    <div class="h-6 w-px bg-white/20"></div>
-
-                    <a href="{{ route('admin.mlm.members.index') }}"
-                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg text-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                        รายชื่อสมาชิก
-                    </a>
-                    <a href="{{ route('admin.mlm.plans.index') }}"
-                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg text-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
-                        จัดการแผน
-                    </a>
-                    <a href="{{ route('admin.mlm.genealogy.bloodline') }}"
-                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg text-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                        </svg>
-                        ผังสายเลือด
-                    </a>
-                </div>
+                    </button>
+                </template>
             </div>
+        </div>
+
+        {{-- ประเภทผัง (segmented) --}}
+        <div class="flex items-center bg-gray-100 dark:bg-gray-900/60 rounded-xl p-1 text-sm font-semibold">
+            <button type="button"
+                    @click="setTreeType('binary')"
+                    :class="treeType === 'binary' ? 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 shadow' : 'text-gray-500 dark:text-gray-400'"
+                    class="px-4 py-1.5 rounded-lg transition-all">Binary</button>
+            <button type="button"
+                    @click="setTreeType('unilevel')"
+                    :class="treeType === 'unilevel' ? 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 shadow' : 'text-gray-500 dark:text-gray-400'"
+                    class="px-4 py-1.5 rounded-lg transition-all">Unilevel</button>
+        </div>
+
+        {{-- ความลึก --}}
+        <select x-model="depth" @change="reload()"
+                class="px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 transition-all">
+            <option value="3">ลึก 3 ชั้น</option>
+            <option value="5">ลึก 5 ชั้น</option>
+            <option value="7">ลึก 7 ชั้น</option>
+            <option value="10">ลึก 10 ชั้น</option>
+        </select>
+
+        {{-- ปุ่มจัดการมุมมอง --}}
+        <div class="flex items-center gap-1.5">
+            <button type="button" @click="nexus?.zoomBy(1.25)" title="ซูมเข้า"
+                    class="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-emerald-500 hover:border-emerald-400 transition-all font-bold">+</button>
+            <button type="button" @click="nexus?.zoomBy(0.8)" title="ซูมออก"
+                    class="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-emerald-500 hover:border-emerald-400 transition-all font-bold">−</button>
+            <button type="button" @click="nexus?.fitToScreen()" title="จัดให้พอดีจอ (หรือดับเบิลคลิกพื้นหลัง)"
+                    class="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-emerald-500 hover:border-emerald-400 transition-all flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V5a1 1 0 011-1h3m8 0h3a1 1 0 011 1v3m0 8v3a1 1 0 01-1 1h-3m-8 0H5a1 1 0 01-1-1v-3"/>
+                </svg>
+            </button>
+            <button type="button" @click="nexus?.resetPositions()" title="รีเซ็ตตำแหน่งโหนดที่ลากย้าย"
+                    class="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-emerald-500 hover:border-emerald-400 transition-all flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-3m2 8a8 8 0 01-14 3"/>
+                </svg>
+            </button>
         </div>
     </div>
 
-    {{-- Member Selector Card --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
-        <div class="flex items-center gap-3 mb-6">
-            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-            </div>
-            <div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">เลือกสมาชิกเพื่อดูผังสายงาน</h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400">เลือกสมาชิกที่ต้องการดูโครงสร้างสายงาน</p>
-            </div>
-        </div>
+    {{-- ============ Canvas + Breadcrumb + HUD + Detail Panel ============ --}}
+    <div class="relative gnx-stage rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
 
-        <div class="flex flex-col md:flex-row gap-4">
-            <div class="flex-1">
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                    สมาชิก
-                </label>
-                <select id="member-selector"
-                        class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm">
-                    <option value="">-- เลือกสมาชิก --</option>
-                    @foreach($members as $member)
-                        <option value="{{ $member->id }}" data-code="{{ $member->member_code }}">
-                            {{ $member->member_code }} - {{ $member->user->name ?? 'Unknown' }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="flex flex-col sm:flex-row items-start sm:items-end gap-3">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ประเภทผัง</label>
-                    <select id="tree-type-selector"
-                            class="px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm min-w-[140px]">
-                        <option value="binary">Binary</option>
-                        <option value="unilevel">Unilevel</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ความลึก</label>
-                    <select id="depth-selector"
-                            class="px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm min-w-[120px]">
-                        <option value="3">3 ระดับ</option>
-                        <option value="5" selected>5 ระดับ</option>
-                        <option value="7">7 ระดับ</option>
-                        <option value="10">10 ระดับ</option>
-                    </select>
-                </div>
-                <button id="btn-view-genealogy"
-                        class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 min-w-[160px]">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                    </svg>
-                    แสดงผังสายงาน
+        {{-- breadcrumb สาย re-root (ลอยบน canvas) --}}
+        <div class="absolute top-3 left-3 z-30 flex flex-wrap items-center gap-1.5 max-w-[70%]" x-show="trail.length || rootName" x-cloak>
+            <template x-for="(t, i) in trail" :key="t.id">
+                <button type="button"
+                        @click="jumpTrail(i)"
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/80 dark:bg-gray-800/80 backdrop-blur border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-emerald-500 hover:border-emerald-400 transition-all flex items-center gap-1">
+                    <span x-text="t.name"></span>
+                    <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </button>
+            </template>
+            <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/90 text-white shadow-lg shadow-emerald-500/30 backdrop-blur"
+                  x-text="rootName"></span>
+        </div>
+
+        {{-- stats HUD --}}
+        <div class="absolute top-3 right-3 z-30 flex items-center gap-1.5" x-show="stats.nodes" x-cloak>
+            <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/80 dark:bg-gray-800/80 backdrop-blur border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                👥 <span x-text="stats.nodes"></span> คน
+            </span>
+            <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/80 dark:bg-gray-800/80 backdrop-blur border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                🌿 <span x-text="stats.depth"></span> ชั้น
+            </span>
+            <span class="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/80 dark:bg-gray-800/80 backdrop-blur border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                ⚡ PV รวม <span class="ml-1 text-emerald-500 font-bold" x-text="formatPv(stats.totalPv)"></span>
+            </span>
+        </div>
+
+        {{-- ตัว canvas --}}
+        <div id="nexus-canvas" class="absolute inset-0"></div>
+
+        {{-- empty state เมื่อยังไม่มีสมาชิกในระบบ --}}
+        <div x-show="!members.length" x-cloak
+             class="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 text-gray-400 dark:text-gray-500">
+            <svg class="w-14 h-14 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <p class="text-sm font-medium">ยังไม่มีสมาชิก MLM ในระบบ</p>
+        </div>
+
+        {{-- ============ Detail Panel (slide-in ขวา) ============ --}}
+        <div x-show="selected"
+             x-cloak
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="translate-x-full opacity-0"
+             x-transition:enter-end="translate-x-0 opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="translate-x-0 opacity-100"
+             x-transition:leave-end="translate-x-full opacity-0"
+             class="absolute top-0 right-0 bottom-0 w-full sm:w-[340px] z-40 p-3">
+            <div class="h-full rounded-2xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col overflow-hidden">
+
+                {{-- หัว panel + ปุ่มปิด --}}
+                <div class="relative p-5 pb-4"
+                     :style="`background: linear-gradient(135deg, ${selected?.rank_color || '#10b981'}22, transparent 70%)`">
+                    <button type="button" @click="selected = null"
+                            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-full p-0.5 flex-shrink-0"
+                             :style="`background: conic-gradient(from 210deg, ${selected?.rank_color || '#10b981'}, transparent 65%, ${selected?.rank_color || '#10b981'})`">
+                            <template x-if="selected?.avatar_url">
+                                <img :src="selected.avatar_url" class="w-full h-full rounded-full object-cover" alt="">
+                            </template>
+                            <template x-if="!selected?.avatar_url">
+                                <span class="w-full h-full rounded-full bg-gradient-to-br from-slate-600 to-slate-900 text-white text-2xl font-extrabold flex items-center justify-center"
+                                      x-text="(selected?.name || '?').charAt(0).toUpperCase()"></span>
+                            </template>
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="text-lg font-extrabold text-gray-900 dark:text-white truncate" x-text="selected?.name"></h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 font-mono" x-text="selected?.member_code"></p>
+                            <div class="flex items-center gap-2 mt-1.5">
+                                <span x-show="selected?.rank_name"
+                                      class="px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white shadow"
+                                      :style="`background: ${selected?.rank_color || '#10b981'}`"
+                                      x-text="selected?.rank_name"></span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                                      :class="statusBadgeClass(selected)"
+                                      x-text="statusLabel(selected)"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- เนื้อหา scroll ได้ --}}
+                <div class="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
+
+                    {{-- กริดสถิติ PV --}}
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <template x-for="card in statCards" :key="card.label">
+                            <div class="rounded-xl p-3 bg-gray-50 dark:bg-gray-800/70 border border-gray-100 dark:border-gray-700/60">
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 font-medium" x-text="card.label"></p>
+                                <p class="text-lg font-extrabold mt-0.5" :class="card.color" x-text="card.value"></p>
+                            </div>
+                        </template>
+                    </div>
+
+                    {{-- ข้อมูลทั่วไป --}}
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between items-center py-1.5 border-b border-gray-100 dark:border-gray-800">
+                            <span class="text-gray-500 dark:text-gray-400 text-xs">อีเมล</span>
+                            <span class="text-gray-900 dark:text-white font-medium text-xs truncate max-w-[180px]" x-text="selected?.email || '—'"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-1.5 border-b border-gray-100 dark:border-gray-800">
+                            <span class="text-gray-500 dark:text-gray-400 text-xs">สมัครเมื่อ</span>
+                            <span class="text-gray-900 dark:text-white font-medium text-xs" x-text="selected?.joined_at || '—'"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-1.5 border-b border-gray-100 dark:border-gray-800">
+                            <span class="text-gray-500 dark:text-gray-400 text-xs">แนะนำตรง</span>
+                            <span class="text-gray-900 dark:text-white font-bold text-xs"><span x-text="selected?.direct_referrals ?? 0"></span> คน</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1.5 border-b border-gray-100 dark:border-gray-800"
+                             x-show="selected?.retention_days_left !== null && selected?.retention_days_left !== undefined">
+                            <span class="text-gray-500 dark:text-gray-400 text-xs">รักษายอดเหลือ</span>
+                            <span class="font-bold text-xs"
+                                  :class="(selected?.retention_days_left ?? 99) <= 3 ? 'text-red-500' : 'text-emerald-500'">
+                                <span x-text="selected?.retention_days_left"></span> วัน
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ปุ่ม action --}}
+                <div class="p-4 pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
+                    <button type="button"
+                            @click="drillDown()"
+                            class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-sm font-bold shadow-lg shadow-emerald-500/30 transition-all flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        เจาะดูสายงานคนนี้
+                    </button>
+                    <a :href="memberShowUrl(selected)"
+                       class="w-full py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-bold transition-all flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        โปรไฟล์สมาชิก
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    {{-- Genealogy Viewer Container --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div class="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">โครงสร้างสายงาน</h3>
-                </div>
-                <div id="current-member-info" class="text-sm text-gray-600 dark:text-gray-400 hidden">
-                    <span id="current-member-name"></span>
-                </div>
-            </div>
-        </div>
-        <div class="org-chart-container">
-            <div id="genealogy-container" class="w-full h-full"></div>
-        </div>
-    </div>
-
-    {{-- Help Section --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 md:p-8 border border-gray-200 dark:border-gray-700">
-        <div class="flex items-center gap-3 mb-6">
-            <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                </svg>
-            </div>
-            <div>
-                <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">วิธีใช้งานผังสายงาน</h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400">คู่มือการใช้งานฟีเจอร์ต่างๆ</p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {{-- Mobile Instructions --}}
-            <div class="md:hidden bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-5 border-2 border-blue-200 dark:border-blue-700">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <span class="text-2xl">👆</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">ลากนิ้วเพื่อเลื่อน</h3>
-                </div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">ใช้นิ้วเดียวลากเพื่อเลื่อนดูผังสายงาน</p>
-            </div>
-
-            <div class="md:hidden bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-5 border-2 border-purple-200 dark:border-purple-700">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <span class="text-2xl">🤏</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">บีบนิ้วเพื่อซูม</h3>
-                </div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">ใช้สองนิ้วบีบเข้า-ออกเพื่อซูมดูรายละเอียด</p>
-            </div>
-
-            {{-- Desktop Instructions --}}
-            <div class="hidden md:block bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-5 border-2 border-purple-200 dark:border-purple-700 hover:shadow-lg transition-all">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">เลื่อนดูผัง</h3>
-                </div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">คลิกค้างและลากเมาส์เพื่อเลื่อนดูผังสายงานในทิศทางต่างๆ</p>
-            </div>
-
-            <div class="hidden md:block bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-5 border-2 border-blue-200 dark:border-blue-700 hover:shadow-lg transition-all">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">ซูมเข้า-ออก</h3>
-                </div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">ใช้ scroll wheel หรือปุ่ม +/- ด้านขวาบนเพื่อซูมดูรายละเอียด</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-5 border-2 border-green-200 dark:border-green-700 hover:shadow-lg transition-all">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">คลิก/แตะดูรายละเอียด</h3>
-                </div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">คลิกหรือแตะที่การ์ดสมาชิกเพื่อดูข้อมูลเพิ่มเติมและสถิติ</p>
-            </div>
-        </div>
-    </div>
-
-    {{-- Feature Highlights --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-lg border-l-4 border-emerald-500 dark:border-emerald-400 hover:shadow-xl transition-all">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
-                    </svg>
-                </div>
-                <h3 class="text-base font-bold text-gray-900 dark:text-white">Binary System</h3>
-            </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">โครงสร้าง 2 ขา (Left/Right) สำหรับการคำนวณคอมมิชชั่นแบบ Binary</p>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-lg border-l-4 border-teal-500 dark:border-teal-400 hover:shadow-xl transition-all">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                    </svg>
-                </div>
-                <h3 class="text-base font-bold text-gray-900 dark:text-white">Unilevel System</h3>
-            </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">รองรับสูงสุด 10 ระดับสำหรับการคำนวณคอมมิชชั่นแบบ Unilevel</p>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-lg border-l-4 border-cyan-500 dark:border-cyan-400 hover:shadow-xl transition-all">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                </div>
-                <h3 class="text-base font-bold text-gray-900 dark:text-white">Touch-Friendly</h3>
-            </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">รองรับการใช้งานบนมือถือ ลากเลื่อนและซูมด้วยนิ้วได้</p>
-        </div>
+    {{-- ============ แถบช่วยเหลือสั้นๆ ============ --}}
+    <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-xs text-gray-400 dark:text-gray-500 pb-2">
+        <span>🖱️ ลากพื้นหลัง = เลื่อน</span>
+        <span>🧲 ลากการ์ด = ย้ายโหนด</span>
+        <span>🔍 scroll / บีบนิ้ว = ซูม</span>
+        <span>👆 คลิกการ์ด = ดูข้อมูล</span>
+        <span>➖ ปุ่มใต้การ์ด = ย่อ/ขยายสายงาน</span>
+        <span>⛶ ดับเบิลคลิกพื้นหลัง = พอดีจอ</span>
     </div>
 </div>
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/org-chart-viewer.js') }}"></script>
+<script src="{{ asset('assets/js/genealogy-nexus.js') }}?v=4.0.0"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    let viewer = null;
-    const container = document.getElementById('genealogy-container');
-    const memberSelector = document.getElementById('member-selector');
-    const treeTypeSelector = document.getElementById('tree-type-selector');
-    const depthSelector = document.getElementById('depth-selector');
-    const btnView = document.getElementById('btn-view-genealogy');
-    const currentMemberInfo = document.getElementById('current-member-info');
-    const currentMemberName = document.getElementById('current-member-name');
+/**
+ * Alpine component ควบคุมหน้า Genealogy Nexus
+ * - จัดการ search/combobox, tree type, depth, detail panel, breadcrumb
+ * - ตัว render จริงอยู่ใน GenealogyNexus (genealogy-nexus.js)
+ */
+function genealogyNexus() {
+    return {
+        // ข้อมูลสมาชิกสำหรับช่องค้นหา (มาจาก controller — 100 รายล่าสุด)
+        members: @json($members->map(fn ($m) => [
+            'id' => $m->id,
+            'code' => $m->member_code,
+            'name' => $m->user->name ?? 'ไม่ระบุชื่อ',
+        ])->values()),
 
-    /**
-     * โหลดและแสดงผังสายงาน
-     */
-    async function loadGenealogy() {
-        const memberId = memberSelector.value;
-        const treeType = treeTypeSelector.value;
-        const depth = depthSelector.value;
+        nexus: null,
+        search: '',
+        searchOpen: false,
+        treeType: 'binary',
+        depth: '5',
+        selected: null,
+        stats: { nodes: 0, depth: 0, totalPv: 0 },
+        trail: [],
+        rootName: '',
+        currentRootId: null,
 
-        if (!memberId) {
-            alert('กรุณาเลือกสมาชิก');
-            return;
-        }
-
-        // แสดงชื่อสมาชิกที่เลือก
-        const selectedOption = memberSelector.options[memberSelector.selectedIndex];
-        currentMemberName.textContent = selectedOption.text;
-        currentMemberInfo.classList.remove('hidden');
-
-        // สร้าง viewer ถ้ายังไม่มี
-        if (!viewer) {
-            viewer = new OrgChartViewer(container, {
-                treeType: treeType,
-                maxDepth: parseInt(depth),
-                nodeWidth: window.innerWidth < 768 ? 160 : 200,
-                nodeHeight: window.innerWidth < 768 ? 110 : 120,
-                horizontalSpacing: window.innerWidth < 768 ? 20 : 40,
-                verticalSpacing: window.innerWidth < 768 ? 80 : 100
+        /** เริ่มต้น: สร้าง renderer + โหลดสมาชิกคนแรก */
+        init() {
+            this.nexus = new GenealogyNexus(document.getElementById('nexus-canvas'), {
+                treeDataUrlTemplate: @json(route('admin.mlm.members.tree-data', ['member' => '__ID__'])).replace('__ID__', ':id'),
+                treeType: this.treeType,
+                depth: parseInt(this.depth),
+                onSelect: (node) => {
+                    // คัดเฉพาะ field ข้อมูล — ตัด reference ภายใน (parent/children/DOM) กัน Alpine proxy หนัก
+                    const clean = {};
+                    Object.keys(node).forEach((k) => {
+                        if (!k.startsWith('_') && !['parent', 'children', 'slots', 'left', 'right'].includes(k)) {
+                            clean[k] = node[k];
+                        }
+                    });
+                    this.selected = clean;
+                },
+                onRootChange: (root, trail) => {
+                    this.rootName = root.name || '';
+                    this.currentRootId = root.id;
+                    this.trail = trail.map((t) => ({ id: t.id, name: t.name }));
+                },
+                onStats: (s) => { this.stats = s; },
             });
-        } else {
-            viewer.options.treeType = treeType;
-            viewer.options.maxDepth = parseInt(depth);
-            viewer.showLoading();
-        }
 
-        // Fetch tree data จาก API
-        try {
-            const response = await fetch(`/admin/mlm/members/${memberId}/tree-data?type=${treeType}&depth=${depth}`);
-            const result = await response.json();
-
-            if (result.success && result.data) {
-                viewer.setData(result.data);
-            } else {
-                viewer.hideLoading();
-                alert('ไม่พบข้อมูลผังสายงาน');
+            // โหลดคนแรกในลิสต์อัตโนมัติ
+            if (this.members.length) {
+                this.loadMember(this.members[0].id);
             }
-        } catch (error) {
-            console.error('Error loading genealogy:', error);
-            viewer.hideLoading();
-            alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-        }
-    }
+        },
 
-    // Event Listeners
-    btnView.addEventListener('click', loadGenealogy);
+        /** รายชื่อที่กรองตามคำค้น */
+        get filteredMembers() {
+            const q = this.search.trim().toLowerCase();
+            if (!q) return this.members;
+            return this.members.filter((m) =>
+                (m.name || '').toLowerCase().includes(q) || (m.code || '').toLowerCase().includes(q)
+            );
+        },
 
-    // เปลี่ยน type หรือ depth ให้โหลดใหม่
-    treeTypeSelector.addEventListener('change', function() {
-        if (viewer && memberSelector.value) {
-            loadGenealogy();
-        }
-    });
-
-    depthSelector.addEventListener('change', function() {
-        if (viewer && memberSelector.value) {
-            loadGenealogy();
-        }
-    });
-
-    // Auto-load first member if available
-    const firstMember = memberSelector.querySelector('option:nth-child(2)');
-    if (firstMember) {
-        memberSelector.value = firstMember.value;
-        loadGenealogy();
-    }
-
-    // Responsive handling
-    let resizeTimeout;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            if (viewer) {
-                viewer.options.nodeWidth = window.innerWidth < 768 ? 160 : 200;
-                viewer.options.nodeHeight = window.innerWidth < 768 ? 110 : 120;
-                viewer.options.horizontalSpacing = window.innerWidth < 768 ? 20 : 40;
-                viewer.options.verticalSpacing = window.innerWidth < 768 ? 80 : 100;
-
-                if (viewer.data) {
-                    viewer.nodeCount = 0;
-                    viewer.maxDepthReached = 0;
-                    viewer.render();
-                    viewer.fitToScreen();
-                }
+        /** การ์ดสถิติใน detail panel — สลับชุดตามประเภทผัง */
+        get statCards() {
+            const s = this.selected || {};
+            const f = (v) => this.formatPv(v);
+            if (this.treeType === 'binary') {
+                return [
+                    { label: 'PV สะสม', value: f(s.total_pv), color: 'text-emerald-500' },
+                    { label: 'PV เดือนนี้', value: f(s.monthly_pv), color: 'text-teal-500' },
+                    { label: 'PV ขาซ้าย', value: f(s.left_leg_pv), color: 'text-cyan-500' },
+                    { label: 'PV ขาขวา', value: f(s.right_leg_pv), color: 'text-blue-500' },
+                ];
             }
-        }, 250);
-    });
-});
+            return [
+                { label: 'PV สะสม', value: f(s.total_pv), color: 'text-emerald-500' },
+                { label: 'PV เดือนนี้', value: f(s.monthly_pv), color: 'text-teal-500' },
+                { label: 'PV ทีมรวม', value: f(s.total_team_pv), color: 'text-cyan-500' },
+                { label: 'รายได้รวม', value: '฿' + f(s.total_earnings), color: 'text-amber-500' },
+            ];
+        },
+
+        loadMember(id, pushTrail = false) {
+            this.selected = null;
+            this.nexus.load(id, pushTrail);
+        },
+
+        pickMember(m) {
+            this.search = `${m.code} — ${m.name}`;
+            this.searchOpen = false;
+            this.loadMember(m.id);
+        },
+
+        /** เจาะดูสายงานจากโหนดที่เลือก (re-root + เก็บ breadcrumb) */
+        drillDown() {
+            if (!this.selected || this.selected.id === this.currentRootId) {
+                this.selected = null;
+                return;
+            }
+            this.loadMember(this.selected.id, true);
+        },
+
+        /** กระโดดกลับตาม breadcrumb */
+        jumpTrail(index) {
+            const target = this.trail[index];
+            if (!target) return;
+            // ตัด trail ให้เหลือก่อนตำแหน่งที่กด แล้วโหลด root นั้น (คง trail ที่ตัดแล้วไว้)
+            this.trail = this.trail.slice(0, index);
+            this.nexus.trail = [...this.trail];
+            this.selected = null;
+            this.nexus.load(target.id, false, false);
+        },
+
+        setTreeType(type) {
+            if (this.treeType === type) return;
+            this.treeType = type;
+            this.nexus.setTreeType(type);
+            this.reload();
+        },
+
+        reload() {
+            this.nexus.setDepth(parseInt(this.depth));
+            if (this.currentRootId) this.loadMember(this.currentRootId);
+        },
+
+        memberShowUrl(node) {
+            if (!node) return '#';
+            return @json(route('admin.mlm.members.show', ['member' => '__ID__'])).replace('__ID__', node.id);
+        },
+
+        statusLabel(node) {
+            const s = node?.retention_status || node?.status;
+            if (s === 'active') return '● รักษายอด';
+            if (s === 'grace_period') return '● ผ่อนผัน';
+            return '● ไม่รักษายอด';
+        },
+
+        statusBadgeClass(node) {
+            const s = node?.retention_status || node?.status;
+            if (s === 'active') return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400';
+            if (s === 'grace_period') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400';
+            return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400';
+        },
+
+        formatPv(v) {
+            const n = parseFloat(v) || 0;
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+            return n % 1 === 0 ? n.toLocaleString() : n.toFixed(1);
+        },
+    };
+}
 </script>
 @endpush
