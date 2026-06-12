@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\EveMemory;
 use App\Services\FortuneAIService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,20 @@ class EveController extends Controller
         $operatorName = $admin?->name ?? 'admin';
 
         $systemPrompt = $this->buildSystemPrompt($operatorName, $data['context'] ?? []);
+
+        // 🧠 (2026-06-12) RAG-lite — fold lessons from past solved incidents into
+        //    the prompt so Eve learns day over day. Keyword retrieval (no
+        //    embeddings — EmbeddingService has a prod boot bug; Thai substrings
+        //    are reliable + free). Best-effort: a missing table never blocks chat.
+        try {
+            $memories = $this->retrieveMemories($data['message']);
+            if ($memories->isNotEmpty()) {
+                $systemPrompt .= $this->buildMemoryBlock($memories);
+            }
+        } catch (Throwable $e) {
+            // table not migrated yet / db hiccup — Eve answers without memory
+        }
+
         $userMessage = $this->buildUserMessage($data['history'] ?? [], $data['message']);
 
         $provider = $data['provider'] ?? 'groq';
@@ -73,6 +88,16 @@ class EveController extends Controller
             $reply = is_array($result)
                 ? ($result['response'] ?? $result['content'] ?? $result['text'] ?? '')
                 : (string) $result;
+
+            // 🧠 Persist any [REMEMBER:keywords|lesson] tags the model emitted —
+            //    the LLM curates its own memory — then strip them from the reply
+            //    (they are a server-side side-channel, not for the operator).
+            try {
+                $reply = $this->extractAndStoreMemories($reply, $operatorName);
+            } catch (Throwable $e) {
+                $reply = preg_replace('/\[REMEMBER:[^\]]*\]/u', '', $reply) ?? $reply;
+            }
+
             $tokens = is_array($result) ? ($result['tokens_used'] ?? $result['tokens'] ?? null) : null;
             $latencyMs = (int) round((microtime(true) - $started) * 1000);
 
@@ -405,5 +430,144 @@ class EveController extends Controller
         if (preg_match('/(\?|ลอง|คิดว่า|น่าจะ|อาจจะ)/u', $lower)) return 'thinking';
         if (preg_match('/(โอ้|ว้าว|ตกใจ|จริงหรือ)/u', $lower)) return 'surprise';
         return 'talking';
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // 🧠 Eve long-term memory (RAG-lite) — lessons distilled from daily work
+    // ════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Keyword retrieval: score recent memories by how many of their keywords
+     * (and title words) appear as substrings of the operator's message. Loads a
+     * bounded window (300 newest) and scores in PHP — no FULLTEXT/ngram/
+     * embedding dependency, works for Thai (no word boundaries needed).
+     */
+    private function retrieveMemories(string $message, int $limit = 5)
+    {
+        $msg = mb_strtolower($message);
+
+        return EveMemory::orderByDesc('updated_at')
+            ->limit(300)
+            ->get(['id', 'title', 'keywords', 'content', 'use_count'])
+            ->map(function (EveMemory $m) use ($msg) {
+                $score = 0;
+                $terms = array_filter(array_map('trim', explode(',', mb_strtolower((string) $m->keywords))));
+                foreach ($terms as $t) {
+                    if (mb_strlen($t) >= 2 && mb_stripos($msg, $t) !== false) {
+                        $score += 2;
+                    }
+                }
+                // title words give a weaker signal (titles are Thai prose)
+                foreach (preg_split('/\s+/u', mb_strtolower($m->title)) as $w) {
+                    if (mb_strlen($w) >= 4 && mb_stripos($msg, $w) !== false) {
+                        $score += 1;
+                    }
+                }
+                $m->setAttribute('match_score', $score);
+
+                return $m;
+            })
+            ->filter(fn ($m) => $m->getAttribute('match_score') > 0)
+            ->sortByDesc(fn ($m) => [$m->getAttribute('match_score'), $m->use_count])
+            ->take($limit)
+            ->values()
+            ->each(function (EveMemory $m) {
+                // fire-and-forget usage bookkeeping
+                EveMemory::where('id', $m->id)->update([
+                    'use_count' => $m->use_count + 1,
+                    'last_used_at' => now(),
+                ]);
+            });
+    }
+
+    /** Render retrieved lessons as a system-prompt section (bounded). */
+    private function buildMemoryBlock($memories): string
+    {
+        $lines = [];
+        foreach ($memories as $m) {
+            $lines[] = '- ' . $m->title . ': ' . mb_substr($m->content, 0, 300);
+        }
+
+        return "\n\n🧠 บทเรียนจากเหตุการณ์ที่เคยแก้มาแล้ว (ความจำระยะยาวของคุณ — ใช้ประกอบการวิเคราะห์/ตอบ ถ้าเกี่ยวข้อง):\n"
+            . mb_substr(implode("\n", $lines), 0, 1500);
+    }
+
+    /**
+     * Extract [REMEMBER:keywords|lesson] (or [REMEMBER:lesson]) tags the LLM
+     * emitted, persist them, and strip them from the reply.
+     */
+    private function extractAndStoreMemories(string $reply, string $operatorName): string
+    {
+        if (! preg_match_all('/\[REMEMBER:([^\]]+)\]/u', $reply, $m)) {
+            return $reply;
+        }
+
+        foreach ($m[1] as $raw) {
+            $raw = trim($raw);
+            if ($raw === '') {
+                continue;
+            }
+            [$keywords, $lesson] = str_contains($raw, '|')
+                ? array_map('trim', explode('|', $raw, 2))
+                : ['', $raw];
+            if ($lesson === '') {
+                continue;
+            }
+            EveMemory::create([
+                'title' => mb_substr($lesson, 0, 150),
+                'keywords' => mb_substr($keywords, 0, 490) ?: null,
+                'content' => mb_substr($lesson, 0, 4000),
+                'source' => 'chat',
+                'admin_name' => $operatorName,
+            ]);
+        }
+
+        Log::info('Eve: memories stored', ['count' => count($m[1])]);
+
+        return trim((string) preg_replace('/\[REMEMBER:[^\]]+\]/u', '', $reply));
+    }
+
+    /** GET /api/admin/eve/memories — browse/search Eve's lessons. */
+    public function memories(Request $request): JsonResponse
+    {
+        $q = (string) $request->query('q', '');
+        $rows = EveMemory::orderByDesc('updated_at')
+            ->when($q !== '', fn ($query) => $query->where(function ($w) use ($q) {
+                $w->where('title', 'like', "%{$q}%")
+                    ->orWhere('keywords', 'like', "%{$q}%")
+                    ->orWhere('content', 'like', "%{$q}%");
+            }))
+            ->limit(min(200, (int) $request->query('per_page', 50)))
+            ->get();
+
+        return response()->json(['success' => true, 'data' => ['memories' => $rows, 'total' => EveMemory::count()]]);
+    }
+
+    /** POST /api/admin/eve/memories — operator saves a lesson manually. */
+    public function storeMemory(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'content' => 'required|string|min:3|max:4000',
+            'title' => 'nullable|string|max:150',
+            'keywords' => 'nullable|string|max:490',
+        ]);
+
+        $row = EveMemory::create([
+            'title' => $data['title'] ?? mb_substr($data['content'], 0, 150),
+            'keywords' => $data['keywords'] ?? null,
+            'content' => $data['content'],
+            'source' => 'manual',
+            'admin_name' => $request->user()?->name,
+        ]);
+
+        return response()->json(['success' => true, 'data' => ['memory' => $row]]);
+    }
+
+    /** DELETE /api/admin/eve/memories/{memory} — forget a bad lesson. */
+    public function deleteMemory(EveMemory $memory): JsonResponse
+    {
+        $memory->delete();
+
+        return response()->json(['success' => true, 'data' => ['deleted' => true]]);
     }
 }

@@ -167,6 +167,10 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         Route::post('/chat', [EveController::class, 'chat'])->name('chat');
         // Aggregated mission-control signals Eve reasons over.
         Route::get('/signals', [EveController::class, 'signals'])->name('signals');
+        // 🧠 (2026-06-12) Eve's long-term memory (RAG-lite) — lessons from daily ops.
+        Route::get('/memories', [EveController::class, 'memories'])->name('memories.index');
+        Route::post('/memories', [EveController::class, 'storeMemory'])->name('memories.store');
+        Route::delete('/memories/{memory}', [EveController::class, 'deleteMemory'])->name('memories.delete');
     });
 
     // ── Moderation (Warroom /moderation + /chat ban badge) ──
