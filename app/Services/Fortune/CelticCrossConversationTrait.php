@@ -3277,17 +3277,33 @@ trait CelticCrossConversationTrait
             }
         }
 
-        // 🆕 (2026-05-31 v2) คำขอบคุณ = ack (เคส R4543 FTU-260531-V2978: "ขอบคุณค่ะแม่" → ยิง Q1 มั่ว)
-        //   ตามด้วยคำลงท้าย/honorific หลากหลาย (ค่ะ/แม่/แม่หมอ/มาก) — ใช้ prefix แทน enumerate ทุกแบบ
-        //   ปลอดภัย: ถ้ามีคำถามจริงปน ("ขอบคุณค่ะ แล้วงานล่ะ") จะถูก reject ที่ questionMarkers ด้านบนก่อน
-        foreach (['ขอบคุณ', 'ขอบใจ', 'ขอบพระคุณ', 'ขอบคุน', 'thank', 'thx', 'ขอบคุณค่ะ', 'ขอบคุณนะ'] as $thx) {
-            if (str_starts_with($clean, mb_strtolower($thx))) {
-                return true;
-            }
-        }
-
-        // strip คำลงท้ายสุภาพไทย + honorific (แม่/หมอ) 2 รอบ (เผื่อซ้อน เช่น "พร้อมแล้วค่ะ"/"โอเคแม่" → แก่นคำ)
+        // strip คำลงท้ายสุภาพไทย + honorific (แม่/หมอ) — define ก่อน ใช้ทั้ง thx-remainder + core ด้านล่าง
         $tailPattern = '/\s*(ค่ะ|คะ|ค่า|ครับ|คับ|ครับผม|จ้า|จ้ะ|จ๊ะ|จ้าา|จ๋า|นะ|น่ะ|แล้ว|เลย|ละ|ล่ะ|ฮะ|ฮ่ะ|แม่หมอ|แม่|หมอ|ๆ)\s*$/u';
+
+        // 🆕 (2026-05-31 v2) คำขอบคุณ = ack (เคส R4543 FTU-260531-V2978: "ขอบคุณค่ะแม่" → ยิง Q1 มั่ว)
+        // 🩹 (2026-06-12 v3) เดิม return true ทันทีที่ขึ้นต้น "ขอบคุณ" — comment เดิมอ้างว่า
+        //   "ขอบคุณค่ะ แล้วงานล่ะ" ถูก reject ที่ questionMarkers = ไม่จริง ("แล้วเรื่องงานล่ะ"
+        //   ไม่มี marker สักตัวในลิสต์) → คำถามที่ตามหลังคำขอบคุณโดนกินเป็น ack
+        //   ใหม่: ตัดคำขอบคุณ + intensifier + คำลงท้ายออก → ถ้ายังเหลือเนื้อหา = ไม่ใช่ ack ล้วน
+        //   ปล่อยไหลไปให้ AI TYPE classifier ตัดสิน (อาจเป็นคำถามต่อ)
+        foreach (['ขอบพระคุณ', 'ขอบคุณ', 'ขอบคุน', 'ขอบใจ', 'thank you', 'thankyou', 'thanks', 'thank', 'thx'] as $thx) {
+            if (! str_starts_with($clean, mb_strtolower($thx))) {
+                continue;
+            }
+
+            $rest = trim(mb_substr($clean, mb_strlen($thx)));
+            // ตัด intensifier นำหน้า (มากๆ/จริงๆ/หลายๆ/เด้อ) + คำลงท้าย 3 รอบ (เผื่อซ้อน "นะคะแม่หมอ")
+            $rest = trim((string) preg_replace('/^(?:มากมาย|มาก|จริง|หลาย|เด้อ|งับ|ฮะ|ค้าบ|ๆ)+/u', '', $rest));
+            for ($i = 0; $i < 3; $i++) {
+                $rest = trim((string) preg_replace($tailPattern, '', $rest));
+            }
+
+            if ($rest === '' || mb_strlen($rest) <= 2) {
+                return true; // ขอบคุณล้วน (เคส R4543 "ขอบคุณค่ะแม่") = ack
+            }
+
+            return false; // มีเนื้อหาตามหลังคำขอบคุณ ("ขอบคุณค่ะ แล้วเรื่องงานล่ะ") — ไม่ใช่ ack ล้วน
+        }
         $core = trim((string) preg_replace($tailPattern, '', $clean));
         $core = trim((string) preg_replace($tailPattern, '', $core));
 
