@@ -320,19 +320,44 @@ class FortuneCustomerPersona extends Model
         }
 
         // Communication style
+        // 🪞 (2026-06-12) แปลงค่า enum ดิบ → directive ที่ AI ทำตามได้จริง
+        //   เดิม: "tone: warm / formality: polite / emoji: low" — AI ไม่รู้ต้องทำอะไรกับมัน
+        //   ใหม่: "กระจกสไตล์" บอกตรงๆ ว่าควรตอบยังไงให้เข้ากับลูกค้าคนนี้
         $style = $this->communication_style ?? [];
         $styleParts = [];
+
+        $toneMap = [
+            'warm' => 'อบอุ่นเป็นกันเอง',
+            'casual' => 'คุยสบายๆ ภาษาพูด',
+            'formal' => 'รักษาความสุภาพเรียบร้อย',
+            'emotional' => 'อ่อนไหวง่าย — ใช้คำนุ่มนวล ปลอบมากกว่าสั่งสอน',
+            'reserved' => 'พูดน้อยเก็บตัว — ตอบกระชับ ไม่ถามรัวหลายคำถาม',
+        ];
         if (! empty($style['tone'])) {
-            $styleParts[] = "tone: {$style['tone']}";
+            $styleParts[] = $toneMap[$style['tone']] ?? "tone: {$style['tone']}";
         }
+
+        $formalityMap = [
+            'informal' => 'ใช้ภาษาบ้านๆ ได้ ไม่ต้องทางการ',
+            'polite' => 'สุภาพปกติ ลงท้าย "ค่ะ"',
+            'formal' => 'ทางการ — ห้ามเล่นมุก/แซว',
+        ];
         if (! empty($style['formality'])) {
-            $styleParts[] = "formality: {$style['formality']}";
+            $styleParts[] = $formalityMap[$style['formality']] ?? "formality: {$style['formality']}";
         }
+
+        $emojiMap = [
+            'none' => 'ลูกค้าไม่ใช้อีโมจิเลย → งด/ใช้น้อยสุด',
+            'low' => 'อีโมจิน้อย ≤1 ต่อข้อความ',
+            'medium' => 'อีโมจิพอประมาณ 1-2',
+            'high' => 'อีโมจิได้เต็มที่ 2-3',
+        ];
         if (! empty($style['emoji_usage'])) {
-            $styleParts[] = "emoji: {$style['emoji_usage']}";
+            $styleParts[] = $emojiMap[$style['emoji_usage']] ?? "emoji: {$style['emoji_usage']}";
         }
+
         if (! empty($styleParts)) {
-            $lines[] = '• สไตล์การคุย: '.implode(' / ', $styleParts);
+            $lines[] = '• 🪞 กระจกสไตล์ (ตอบให้เข้ากับลูกค้าคนนี้): '.implode(' / ', $styleParts);
         }
 
         // 🚫 (2026-05-18) Rambler/time-waster directive — inject เมื่อคะแนนสูง

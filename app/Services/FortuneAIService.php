@@ -598,6 +598,9 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
         // 📚 (2026-05-19) RAG Admin Q&A — inject few-shot ตัวอย่างคำตอบของแอดมิน
         $systemMessage = $this->injectAdminQARagFewShot($systemMessage, $messageText);
 
+        // 🎼 (2026-06-12) ประสาน persona × few-shot แอดมิน — บอก AI ว่าอันไหนชนะเรื่องอะไร
+        $systemMessage = $this->appendPersonaAdminFusionDirective($systemMessage, (string) ($userProfile['_persona_context'] ?? ''));
+
         // 👤 (2026-05-19 Batch 6b) ลบ prefix "(ผู้ใช้ชื่อ: XXX)" — AI รู้ชื่อจาก system directive (Batch 6a) แล้ว
         //   เดิม: prefix ทุก user message → AI เห็นชื่อทุก turn → เรียกบ่อย = บอท-feel
         //   ใหม่: ใช้แค่ system directive ของ injectCustomerNameDirective
@@ -2005,7 +2008,11 @@ PROMPT;
         $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
         // 📚 (2026-05-19) RAG Admin Q&A — inject few-shot ตัวอย่างคำตอบของแอดมิน
-        $systemMessage = $this->injectAdminQARagFewShot($systemMessage, $messageText);
+        //   (2026-06-12) ส่ง $history → query expansion สำหรับข้อความสั้น ("แล้วยังไงต่อ")
+        $systemMessage = $this->injectAdminQARagFewShot($systemMessage, $messageText, null, null, $history);
+
+        // 🎼 (2026-06-12) ประสาน persona × few-shot แอดมิน — บอก AI ว่าอันไหนชนะเรื่องอะไร
+        $systemMessage = $this->appendPersonaAdminFusionDirective($systemMessage, (string) ($userProfile['_persona_context'] ?? ''));
 
         // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive (Batch 6a) แล้ว
         $prompt = $messageText;
@@ -2116,6 +2123,7 @@ PROMPT;
                 $messageText,
                 null,
                 self::SENSITIVE_QA_EXCLUDE_CATEGORIES,
+                $history, // (2026-06-12) query expansion สำหรับข้อความสั้น
             );
 
             // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive แล้ว
@@ -2332,7 +2340,8 @@ PROMPT;
             // 📚 (2026-05-19) RAG Admin Q&A — ครอบ Bill Psychology / Celtic Premium / Post-Reading Deep / Sensitive
             //   ลูกค้าลังเลเลือกแพคเกจ + บิลค้างยังไม่โอน = สถานการณ์ที่ admin ตอบบ่อยที่สุด
             //   → Pro AI ใช้ few-shot ของ admin → ตอบกระตุ้น/แนะนำในแนวสไตล์เดียวกัน
-            $systemPromptWithName = $this->injectAdminQARagFewShot($systemPromptWithName, $messageText);
+            //   (2026-06-12) ส่ง $history → query expansion สำหรับข้อความสั้น
+            $systemPromptWithName = $this->injectAdminQARagFewShot($systemPromptWithName, $messageText, null, null, $history);
 
             // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive แล้ว
             $prompt = $messageText;
@@ -2693,7 +2702,11 @@ PROMPT;
         // 📚 (2026-05-19) RAG Admin Q&A — inject few-shot ตัวอย่างคำตอบของแอดมิน
         //   ถ้าเปิด setting admin_qa_rag_enabled และมี Q&A ที่คล้าย ≥ threshold
         //   → AI จะเห็นตัวอย่างคำตอบของแอดมิน + เลียนสไตล์/เนื้อหา
-        $systemMessage = $this->injectAdminQARagFewShot($systemMessage, $messageText);
+        //   (2026-06-12) ส่ง $history → query expansion สำหรับข้อความสั้น
+        $systemMessage = $this->injectAdminQARagFewShot($systemMessage, $messageText, null, null, $history);
+
+        // 🎼 (2026-06-12) ประสาน persona × few-shot แอดมิน — บอก AI ว่าอันไหนชนะเรื่องอะไร
+        $systemMessage = $this->appendPersonaAdminFusionDirective($systemMessage, (string) ($userProfile['_persona_context'] ?? ''));
 
         // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive แล้ว
         $prompt = $messageText;
@@ -3145,12 +3158,14 @@ PROMPT;
      *
      * @param  \App\Models\FortuneReading|null  $reading  reading ปัจจุบันของลูกค้า (ถ้ามี) ใช้ classify category
      * @param  array<string>|null  $excludeCategories  หมวดที่ห้าม inject (null = โหมดปกติ classify+filter)
+     * @param  array  $history  ประวัติสนทนา [['role'=>'user'|'assistant','content'=>...], ...] — ใช้ขยาย query สั้นๆ
      */
     public function injectAdminQARagFewShot(
         string $systemMessage,
         string $messageText,
         ?\App\Models\FortuneReading $reading = null,
         ?array $excludeCategories = null,
+        array $history = [],
     ): string {
         $messageText = trim($messageText);
         if ($messageText === '') {
@@ -3163,6 +3178,17 @@ PROMPT;
             return $systemMessage;
         }
 
+        // 🪶 (2026-06-12) ข้ามข้อความไร้เนื้อหา — ack/อีโมจิล้วน ("ค่ะ" "อืม" "555")
+        //   ไม่มีอะไรให้ค้น → ประหยัด Gemini embed call + กัน few-shot มั่วจาก noise vector
+        if (self::isLowContentForRag($messageText)) {
+            return $systemMessage;
+        }
+
+        // 🔗 (2026-06-12) Multi-turn query expansion — ข้อความสั้น/อ้างถึงของเดิม
+        //   ("แล้วยังไงต่อ" "เท่าไหร่คะ") embed เดี่ยวๆ ไม่มีบริบท → ค้นไม่เจอ/เจอมั่ว
+        //   ขยาย query ด้วย user turn ก่อนหน้า (เฉพาะตอนค้น — prompt ที่ส่ง AI ใช้ข้อความเดิม)
+        $retrievalQuery = self::buildRagQueryWithHistory($messageText, $history);
+
         try {
             $retriever = new \App\Services\AdminQARetriever;
             $topK = (int) ($this->settings->admin_qa_rag_top_k ?? 3);
@@ -3174,7 +3200,7 @@ PROMPT;
             if (! empty($exclude)) {
                 // 🫂 (2026-06-02) โหมดกรองหมวด (แชทเปราะบาง) — ค้นข้ามหมวดแล้วตัดหมวดสายขายทิ้ง
                 //    ดึง buffer มากกว่า topK เผื่อกรอง → คงเหลือ top-K ที่ "ไม่ใช่บริบทขาย"
-                $candidates = $retriever->searchSimilar($messageText, $topK + count($exclude) + 5, $threshold, null);
+                $candidates = $retriever->searchSimilar($retrievalQuery, $topK + count($exclude) + 5, $threshold, null);
                 $results = array_values(array_filter(
                     $candidates,
                     fn ($r) => ! in_array($r['qa']->category, $exclude, true),
@@ -3183,18 +3209,18 @@ PROMPT;
             } else {
                 // 🏷 (2026-05-20) classify category จาก reading state ของลูกค้าปัจจุบัน
                 //    → pre-filter Q&A ที่ context เดียวกัน = AI ค้นถูกบริบทเร็วขึ้น 5-10x
-                //    ถ้าไม่มี reading → classifier ใช้ keyword heuristic
+                //    ถ้าไม่มี reading → classifier ใช้ keyword heuristic (ใช้ query ขยายแล้ว — เห็นบริบทเดิมด้วย)
                 $category = \App\Services\FortuneAdminQAClassifier::currentCategoryForRetrieve(
                     $reading,
-                    $messageText,
+                    $retrievalQuery,
                 );
 
-                $results = $retriever->searchSimilar($messageText, $topK, $threshold, $category);
+                $results = $retriever->searchSimilar($retrievalQuery, $topK, $threshold, $category);
 
                 // 🔁 Fallback — ถ้า category-filter ไม่เจอ ลอง search แบบไม่ filter (legacy data)
                 //    ทำเฉพาะถ้า category ไม่ใช่ general (general ก็คือ "ไม่ filter อยู่แล้ว")
                 if (empty($results) && $category !== \App\Models\FortuneAdminQA::CATEGORY_GENERAL) {
-                    $results = $retriever->searchSimilar($messageText, $topK, $threshold, null);
+                    $results = $retriever->searchSimilar($retrievalQuery, $topK, $threshold, null);
                     if (! empty($results)) {
                         Log::debug('FortuneAIService: RAG fallback to all-categories', [
                             'preferred_category' => $category,
@@ -3213,7 +3239,8 @@ PROMPT;
             }
 
             Log::debug('FortuneAIService: inject RAG admin Q&A few-shot', [
-                'query_preview' => mb_substr($messageText, 0, 50),
+                'query_preview' => mb_substr($retrievalQuery, 0, 80),
+                'query_expanded' => $retrievalQuery !== $messageText,
                 'category' => $category,
                 'excluded' => $exclude ?: null,
                 'matched_count' => count($results),
@@ -3228,6 +3255,105 @@ PROMPT;
 
             return $systemMessage;
         }
+    }
+
+    /**
+     * 🪶 (2026-06-12) ตรวจข้อความ "ไร้เนื้อหา" สำหรับ RAG — ไม่ควรเสีย embed call
+     *
+     * เข้าข่าย: ว่างเปล่า / อีโมจิ-สติกเกอร์ล้วน / particle ack ล้วน ("ค่ะ" "อืม" "โอเค" "555")
+     * ไม่เข้าข่าย: คำถามจริง / "ขอบคุณ" (อาจมี Q&A ปิดบทสนทนาของแอดมิน)
+     */
+    public static function isLowContentForRag(string $text): bool
+    {
+        $t = trim($text);
+        if ($t === '') {
+            return true;
+        }
+
+        // ตัดช่องว่าง/เครื่องหมาย/สัญลักษณ์/อีโมจิ → เหลือแก่นข้อความ
+        $core = preg_replace('/[\s\p{P}\p{S}\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}]+/u', '', $t);
+        $core = $core ?? $t;
+        if (mb_strlen($core) === 0) {
+            return true; // อีโมจิ/เครื่องหมายล้วน
+        }
+
+        // ack particle ล้วน — ไม่มีคำถาม/เนื้อหาให้ค้น
+        return (bool) preg_match(
+            '/^(?:ค่ะ|คะ|ค้า+|ครับ+|คับ+|จ้า+|จ้ะ|จร้า|อืม+|อ่อ+|ออ+|เออ+|โอเค+|โอเช|ok(?:ay)?|ได้ค่ะ|ได้ครับ|ได้เลย|5{3,}|ฮ่า+|ๆ+)+$/iu',
+            $core
+        );
+    }
+
+    /**
+     * 🔗 (2026-06-12) ขยาย RAG query ด้วย user turn ก่อนหน้า — แก้ปัญหา anaphora
+     *
+     * ลูกค้าพิมพ์สั้น ("แล้วยังไงต่อ" "เท่าไหร่คะ" "อันนั้นล่ะ") → embedding เดี่ยวๆ
+     * ไม่มีบริบทพอให้ match กับ Q&A แอดมิน → ดึง user turn ล่าสุดมาต่อหน้า query
+     *
+     * ใช้เฉพาะตอน "ค้น" — ข้อความที่ส่งให้ AI ตอบยังเป็นข้อความเดิมของลูกค้า
+     *
+     * @param  array  $history  [['role'=>'user'|'assistant','content'=>...], ...] เรียงเก่า→ใหม่
+     */
+    public static function buildRagQueryWithHistory(string $messageText, array $history): string
+    {
+        $current = trim($messageText);
+
+        // ข้อความยาวพอ = มีบริบทในตัวแล้ว ไม่ต้องขยาย
+        if (mb_strlen($current) >= 25 || empty($history)) {
+            return $current;
+        }
+
+        // หา user turn ล่าสุด (วนถอยหลังจากท้าย history)
+        for ($i = count($history) - 1; $i >= 0; $i--) {
+            $turn = $history[$i];
+            if (($turn['role'] ?? '') !== 'user') {
+                continue;
+            }
+
+            $prev = trim((string) ($turn['content'] ?? ''));
+            // ตัด context tag [TURN N] / [RETURNING_24H ...] ที่ระบบ prepend ไว้ (กันเหนียว)
+            $prev = preg_replace('/^(?:\[[^\]]{1,120}\]\s*)+/u', '', $prev) ?? $prev;
+            $prev = trim($prev);
+
+            if ($prev !== '' && $prev !== $current && mb_strlen($prev) >= 6) {
+                return mb_substr($prev, 0, 160).' '.$current;
+            }
+            break; // turn ล่าสุดสั้นเกิน/ซ้ำ → ไม่ขยาย (ไม่วนหาเก่ากว่านั้น — บริบทอาจเปลี่ยนเรื่องแล้ว)
+        }
+
+        return $current;
+    }
+
+    /**
+     * 🎼 (2026-06-12) คำสั่งประสาน 2 ชั้น — Persona × ตัวอย่างคำตอบแอดมิน
+     *
+     * ปัญหาเดิม: AI ได้ทั้ง CUSTOMER_PERSONA และ few-shot แอดมิน แต่ไม่มีใครบอกว่า
+     * เวลาขัดกันอันไหนชนะ → บางทีลอกความยาว/น้ำเสียงแอดมินทั้งดุ้น ทั้งที่ลูกค้าเป็นคนพูดน้อย
+     *
+     * กฎ: เนื้อหา/ข้อเท็จจริง = แอดมิน / วิธีพูด = persona ลูกค้า
+     * Append เฉพาะเมื่อมี "ทั้งสอง" block จริง (ไม่งั้น directive ลอย = สับสน)
+     *
+     * ⚠️ ห้ามเช็ค persona ด้วย str_contains($systemMessage, 'CUSTOMER_PERSONA') —
+     *   default chat template มีข้อความ "อธิบาย tag" นี้ฝังอยู่ → true เสมอ (false positive)
+     *   ต้องเช็คจาก _persona_context ที่ caller inject จริงเท่านั้น
+     *
+     * @param  string  $personaContext  ค่า userProfile['_persona_context'] ที่ inject ไป (ว่าง = ไม่มี persona)
+     */
+    public function appendPersonaAdminFusionDirective(string $systemMessage, string $personaContext = ''): string
+    {
+        $hasPersona = str_contains($personaContext, 'CUSTOMER_PERSONA');
+        $hasFewShot = str_contains($systemMessage, 'ตัวอย่างคำตอบของแอดมิน');
+        if (! $hasPersona || ! $hasFewShot) {
+            return $systemMessage;
+        }
+
+        return $systemMessage
+            ."\n\n[🎼 วิธีประสานข้อมูล 2 ชั้น (สำคัญ)]\n"
+            ."- \"จะพูดอะไร\" (เนื้อหา/แนวทาง/ข้อเท็จจริง/ราคา/ขั้นตอน) → ยึดตัวอย่างคำตอบของแอดมิน\n"
+            ."- \"จะพูดยังไง\" (น้ำเสียง/ความยาว/อีโมจิ/ความเป็นกันเอง) → ยึด CUSTOMER_PERSONA ของลูกค้าคนนี้\n"
+            ."- ถ้าขัดกัน: persona ชนะเรื่อง \"วิธีพูด\" / แอดมินชนะเรื่อง \"ข้อเท็จจริง\"\n"
+            ."  เช่น ตัวอย่างแอดมินตอบยาว แต่ลูกค้าเป็นคนพูดน้อย → เอาแก่นจากแอดมินมาตอบสั้นๆ แทน\n"
+            .'- ห้ามลอกตัวอย่างคำต่อคำ — เรียบเรียงใหม่ให้เหมือนคุยสดกับลูกค้าคนนี้';
     }
 
     /**

@@ -114,11 +114,10 @@ class CustomerPersonaService
             if ($platform === 'facebook') {
                 $query->where('facebook_user_id', $userId);
             } else {
-                // LINE: ผ่าน user_id (line_user_id ไม่มีใน fortune_readings ตาม code comment)
-                //   skip ชั่วคราว — return empty (จะปรับให้ resolve ภายหลัง)
-                Cache::put($cacheKey, 'EMPTY', 3600);
-
-                return '';
+                // 📱 (2026-06-12) LINE: ใช้ platform_user_id (universal field)
+                //   pattern เดียวกับ FortuneReading::hasActiveReading — เดิม skip ทั้งหมด
+                //   ทำให้ลูกค้าเก่าฝั่ง LINE ถูกทักเหมือนคนแปลกหน้าทุกครั้ง
+                $query->where('platform_user_id', $userId);
             }
 
             $count = $query->count();
