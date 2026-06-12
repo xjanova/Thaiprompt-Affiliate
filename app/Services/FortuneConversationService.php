@@ -13592,6 +13592,12 @@ class FortuneConversationService
                 ];
 
             case \App\Services\Fortune\SlipOkService::DECISION_REJECT_AMOUNT:
+                // 🩹 (2026-06-12, owner) สลิปยอด Deep (เช่น 39) + ลูกค้ามีบิล 39 เก่ายังไม่จ่าย
+                //   → ไม่ใช่ "โอนขาด" ของ Celtic 99 — ลูกค้าจ่ายบิล Deep เดิม → ตัดบิล Deep ให้เลย
+                if (($deepResp = $this->tryRecoverDeepFromUnderpaidSlip($recentCeltic, $verify, $platform, $userId)) !== null) {
+                    return $deepResp;
+                }
+
                 // 💰 (2026-06-05, user) โอนขาด → เครดิต + บอกยอดที่ขาด + สร้างบิล top-up (วนจนครบ / HOLD รอบ 3)
                 return $this->handlePartialPayment($recentCeltic, $verify, $platform, $userId, 'returning');
 
@@ -13606,6 +13612,87 @@ class FortuneConversationService
             default:
                 // NO_QR / quota / error → ขอสลิปจริง
                 return $this->askForSlipMessage($recentCeltic);
+        }
+    }
+
+    /**
+     * 🩹 (2026-06-12, owner) แก้เข้าใจผิด "โอนเงินขาด" — สลิปยอด Deep 39 ถูกตีเป็น Celtic 99 โอนขาด
+     *
+     * เคสจริง: ลูกค้าสร้างบิล Deep 39 ไว้ → บิลหมดอายุ/ระบบมองไม่เห็น → ส่งสลิป 39 มา
+     *   → auto-provision สร้างบิล Celtic ชั่วคราว (ไม่มี UPA → ขั้นต่ำ floor 99)
+     *   → evaluateForReading ตีเป็น REJECT_AMOUNT → "โอนขาด 60 บาท ให้เติม" ← ลูกค้างง จ่ายครบแล้ว!
+     *
+     * Fix: ก่อนเข้า partial top-up — ถ้า:
+     *   1. บิลที่ใช้ประเมินเป็น Celtic แบบ*ไม่มีราคาจริง* (ไม่มี UPA = provisional จากสลิป)
+     *      ⚠️ บิล Celtic จริง (มี UPA 99.xx) = ลูกค้าเลือก Celtic เอง → โอนขาดจริง ใช้ top-up เดิม
+     *   2. ยอดสลิป ≥ ราคา Deep (deep_reading_price)
+     *   3. ลูกค้ามีบิล Deep เก่าที่ยังไม่จ่าย ภายใน 3 วัน (sync MAX_SLIP_AGE_DAYS)
+     *   → ถือว่าลูกค้าจ่าย*บิล Deep เดิม* → ตัดบิล Deep + เข้า flow Deep (ขอวันเกิด/gen คำทำนาย)
+     *
+     * หมายเหตุ: สลิปผ่านด่าน duplicate/receiver/stale มาแล้ว (fail แค่ amount) → ตัดบิล Deep ได้ปลอดภัย
+     *
+     * @return array|null response จาก finalizeSlipOkApproved หรือ null = ไม่เข้าเงื่อนไข (ใช้ partial เดิม)
+     */
+    protected function tryRecoverDeepFromUnderpaidSlip(FortuneReading $evaluated, array $verify, string $platform, string $userId): ?array
+    {
+        try {
+            // เงื่อนไข 1: เฉพาะบิล Celtic ที่ไม่มีราคาจริง (provisional — floor 99)
+            if ($evaluated->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS
+                || ! empty($evaluated->unique_payment_amount_id)) {
+                return null;
+            }
+
+            // เงื่อนไข 2: ยอดสลิปถึงราคา Deep
+            $amount = (float) ($verify['amount'] ?? 0);
+            $deepPrice = (float) ($this->settings->deep_reading_price ?? 39);
+            if ($amount <= 0 || $deepPrice <= 0 || $amount + 0.001 < $deepPrice) {
+                return null;
+            }
+
+            // เงื่อนไข 3: มีบิล Deep เก่าที่ยังไม่จ่าย ภายใน 3 วัน
+            $deep = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)
+                    ->orWhere('platform_user_id', $userId);
+            })
+                ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
+                ->where('is_paid', false)
+                ->whereNotNull('unique_payment_amount_id')
+                ->where('created_at', '>=', now()->subDays(3))
+                ->latest()
+                ->first();
+
+            if (! $deep) {
+                return null;
+            }
+
+            Log::warning('💎 SlipOK: สลิปยอด Deep + มีบิล 39 เก่าไม่จ่าย → ตัดบิล Deep เดิม (ไม่ใช่ Celtic โอนขาด)', [
+                'deep_reading_id' => $deep->id,
+                'deep_bill_reference' => $deep->bill_reference,
+                'provisional_reading_id' => $evaluated->id,
+                'slip_amount' => $amount,
+                'deep_price' => $deepPrice,
+                'user_id' => $userId,
+            ]);
+
+            // ปิดบิล Celtic ชั่วคราวทิ้ง (ไม่มี UPA → ไม่นับ strike อยู่แล้ว — reason กันสับสนตอน audit)
+            if ($evaluated->id !== $deep->id) {
+                try {
+                    $evaluated->setConversationState('cancellation_reason', 'provisional_replaced_by_deep');
+                    $evaluated->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                } catch (\Throwable $e) {
+                    // non-blocking — autoProvision cleanup จะปิดให้อีกชั้นถ้าจุดนี้พลาด
+                }
+            }
+
+            // ตัดบิล Deep + เข้า flow ตามปกติ (ขอวันเกิดถ้ายังไม่มี / gen คำทำนายถ้ามีแล้ว)
+            return $this->finalizeSlipOkApproved($deep, $verify, $platform, $userId);
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK: tryRecoverDeepFromUnderpaidSlip ล้มเหลว (fallback partial เดิม)', [
+                'evaluated_reading_id' => $evaluated->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
         }
     }
 
@@ -13923,6 +14010,16 @@ class FortuneConversationService
                     ];
 
                 case \App\Services\Fortune\SlipOkService::DECISION_REJECT_AMOUNT:
+                    // 🩹 (2026-06-12, owner) บิล Celtic ชั่วคราว (ไม่มี UPA — floor 99) + สลิปยอด Deep
+                    //   + มีบิล 39 เก่า → ตัดบิล Deep เดิม ไม่ใช่ "โอนขาด" (guard ใน helper)
+                    if (($deepResp = $this->tryRecoverDeepFromUnderpaidSlip(
+                        $reading, $verify,
+                        $platform ?? $reading->platform,
+                        $userId ?? $reading->facebook_user_id
+                    )) !== null) {
+                        return $deepResp;
+                    }
+
                     // 💰 (2026-06-05, user) โอนขาด → เครดิต + บอกยอดที่ขาด + สร้างบิล top-up (วนจนครบ / HOLD รอบ 3)
                     return $this->handlePartialPayment(
                         $reading, $verify,
