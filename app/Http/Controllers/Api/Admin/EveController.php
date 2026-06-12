@@ -92,10 +92,32 @@ class EveController extends Controller
             // 🧠 Persist any [REMEMBER:keywords|lesson] tags the model emitted —
             //    the LLM curates its own memory — then strip them from the reply
             //    (they are a server-side side-channel, not for the operator).
+            $storedCount = 0;
             try {
-                $reply = $this->extractAndStoreMemories($reply, $operatorName);
+                $reply = $this->extractAndStoreMemories($reply, $operatorName, $storedCount);
             } catch (Throwable $e) {
                 $reply = preg_replace('/\[REMEMBER:[^\]]*\]/u', '', $reply) ?? $reply;
+            }
+
+            // Deterministic capture: an explicit "จำไว้/จำให้/remember" from the
+            // operator ALWAYS persists, even when the model answers "จำแล้วค่ะ"
+            // without emitting the tag (observed with gpt-5.4-mini).
+            try {
+                if ($storedCount === 0 && preg_match('/(จำไว้|จำให้|ช่วยจำ|remember this)/iu', $data['message'])) {
+                    $lesson = trim((string) preg_replace('/^(จำไว้เลยนะ|จำไว้นะ|จำไว้ว่า|จำไว้|จำให้หน่อย|จำให้|ช่วยจำ|remember this)[:\s,]*/iu', '', $data['message']));
+                    if ($lesson !== '') {
+                        EveMemory::create([
+                            'title' => mb_substr($lesson, 0, 150),
+                            'keywords' => $this->keywordsFromText($lesson),
+                            'content' => mb_substr($lesson, 0, 4000),
+                            'source' => 'manual',
+                            'admin_name' => $operatorName,
+                        ]);
+                        Log::info('Eve: memory stored (deterministic จำไว้ fallback)');
+                    }
+                }
+            } catch (Throwable $e) {
+                // best-effort — never block the reply
             }
 
             $tokens = is_array($result) ? ($result['tokens_used'] ?? $result['tokens'] ?? null) : null;
@@ -157,7 +179,10 @@ class EveController extends Controller
         //    so it gets its own generous budget instead of the old shared 1500 cap.
         $tools = $context['tools'] ?? null;
         if (is_string($tools) && $tools !== '') {
-            $base .= "\n\n" . mb_substr($tools, 0, 4500);
+            // 6000 (2026-06-12, was 4500) — the vocabulary now carries genius-admin
+            // + RAG-memory directives at the tail; a silent truncation here is how
+            // Eve "forgets" entire capabilities (the original 1500-cap bug class).
+            $base .= "\n\n" . mb_substr($tools, 0, 6000);
         }
 
         // 2) Live mission-control state (the /eve/signals snapshot) — Eve's
@@ -496,8 +521,9 @@ class EveController extends Controller
      * Extract [REMEMBER:keywords|lesson] (or [REMEMBER:lesson]) tags the LLM
      * emitted, persist them, and strip them from the reply.
      */
-    private function extractAndStoreMemories(string $reply, string $operatorName): string
+    private function extractAndStoreMemories(string $reply, string $operatorName, int &$storedCount = 0): string
     {
+        $storedCount = 0;
         if (! preg_match_all('/\[REMEMBER:([^\]]+)\]/u', $reply, $m)) {
             return $reply;
         }
@@ -515,16 +541,31 @@ class EveController extends Controller
             }
             EveMemory::create([
                 'title' => mb_substr($lesson, 0, 150),
-                'keywords' => mb_substr($keywords, 0, 490) ?: null,
+                'keywords' => mb_substr($keywords, 0, 490) ?: $this->keywordsFromText($lesson),
                 'content' => mb_substr($lesson, 0, 4000),
                 'source' => 'chat',
                 'admin_name' => $operatorName,
             ]);
+            $storedCount++;
         }
 
-        Log::info('Eve: memories stored', ['count' => count($m[1])]);
+        Log::info('Eve: memories stored', ['count' => $storedCount]);
 
         return trim((string) preg_replace('/\[REMEMBER:[^\]]+\]/u', '', $reply));
+    }
+
+    /**
+     * Derive retrieval keywords from free text: space-separated tokens ≥3 chars
+     * (Thai phrases between spaces work as substrings — no segmentation needed).
+     */
+    private function keywordsFromText(string $text): ?string
+    {
+        $tokens = array_values(array_filter(
+            preg_split('/[\s,;:。·]+/u', mb_strtolower($text)) ?: [],
+            fn ($t) => mb_strlen($t) >= 3
+        ));
+
+        return $tokens ? mb_substr(implode(',', array_slice($tokens, 0, 12)), 0, 490) : null;
     }
 
     /** GET /api/admin/eve/memories — browse/search Eve's lessons. */
