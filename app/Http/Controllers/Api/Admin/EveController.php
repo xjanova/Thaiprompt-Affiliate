@@ -38,7 +38,17 @@ class EveController extends Controller
         //    embeddings — EmbeddingService has a prod boot bug; Thai substrings
         //    are reliable + free). Best-effort: a missing table never blocks chat.
         try {
-            $memories = $this->retrieveMemories($data['message']);
+            // Context-aware retrieval: follow-ups ("แล้วเรื่องเมื่อกี้ล่ะ") rarely
+            // repeat the topic words — score against the last USER turns too.
+            $ragQuery = $data['message'];
+            $userTurns = array_values(array_filter(
+                $data['history'] ?? [],
+                fn ($h) => ($h['role'] ?? '') === 'user'
+            ));
+            foreach (array_slice($userTurns, -2) as $turn) {
+                $ragQuery .= ' ' . ($turn['content'] ?? '');
+            }
+            $memories = $this->retrieveMemories($ragQuery);
             if ($memories->isNotEmpty()) {
                 $systemPrompt .= $this->buildMemoryBlock($memories);
             }
@@ -118,6 +128,15 @@ class EveController extends Controller
                 }
             } catch (Throwable $e) {
                 // best-effort — never block the reply
+            }
+
+            // 🧠 Auto-journal: every turn lands in today's "บันทึกสนทนา" row so
+            //    Eve can answer "เมื่อกี้/เมื่อวานคุยเรื่องอะไร" across reloads,
+            //    devices and days — zero LLM cost, bounded size.
+            try {
+                $this->appendDailyJournal($data['message'], $reply, $operatorName);
+            } catch (Throwable $e) {
+                // best-effort
             }
 
             $tokens = is_array($result) ? ($result['tokens_used'] ?? $result['tokens'] ?? null) : null;
@@ -471,9 +490,9 @@ class EveController extends Controller
     {
         $msg = mb_strtolower($message);
 
-        return EveMemory::orderByDesc('updated_at')
+        $scored = EveMemory::orderByDesc('updated_at')
             ->limit(300)
-            ->get(['id', 'title', 'keywords', 'content', 'use_count'])
+            ->get(['id', 'title', 'keywords', 'content', 'source', 'use_count'])
             ->map(function (EveMemory $m) use ($msg) {
                 $score = 0;
                 $terms = array_filter(array_map('trim', explode(',', mb_strtolower((string) $m->keywords))));
@@ -495,14 +514,26 @@ class EveController extends Controller
             ->filter(fn ($m) => $m->getAttribute('match_score') > 0)
             ->sortByDesc(fn ($m) => [$m->getAttribute('match_score'), $m->use_count])
             ->take($limit)
-            ->values()
-            ->each(function (EveMemory $m) {
-                // fire-and-forget usage bookkeeping
-                EveMemory::where('id', $m->id)->update([
-                    'use_count' => $m->use_count + 1,
-                    'last_used_at' => now(),
-                ]);
-            });
+            ->values();
+
+        // "เมื่อกี้/เมื่อวานคุยเรื่องอะไร" carries no topic words — recall intent
+        // force-includes the newest conversation journals so Eve can answer
+        // without the operator ท้าวความ.
+        if (preg_match('/(เมื่อกี้|เมื่อวาน|ก่อนหน้านี้|ที่คุยกัน|คุยอะไร|คุยถึงไหน|ค้างไว้|ต่อจากเดิม)/u', $msg)) {
+            $journals = EveMemory::where('source', 'journal')
+                ->orderByDesc('updated_at')
+                ->limit(2)
+                ->get(['id', 'title', 'keywords', 'content', 'source', 'use_count']);
+            $scored = $journals->concat($scored)->unique('id')->take(max($limit, 3))->values();
+        }
+
+        return $scored->each(function (EveMemory $m) {
+            // fire-and-forget usage bookkeeping
+            EveMemory::where('id', $m->id)->update([
+                'use_count' => $m->use_count + 1,
+                'last_used_at' => now(),
+            ]);
+        });
     }
 
     /** Render retrieved lessons as a system-prompt section (bounded). */
@@ -510,11 +541,45 @@ class EveController extends Controller
     {
         $lines = [];
         foreach ($memories as $m) {
-            $lines[] = '- ' . $m->title . ': ' . mb_substr($m->content, 0, 300);
+            // Journals append chronologically — the TAIL holds the freshest
+            // exchanges; lessons read from the head.
+            $body = $m->source === 'journal'
+                ? mb_substr($m->content, -400)
+                : mb_substr($m->content, 0, 300);
+            $lines[] = '- ' . $m->title . ': ' . $body;
         }
 
-        return "\n\n🧠 บทเรียนจากเหตุการณ์ที่เคยแก้มาแล้ว (ความจำระยะยาวของคุณ — ใช้ประกอบการวิเคราะห์/ตอบ ถ้าเกี่ยวข้อง):\n"
-            . mb_substr(implode("\n", $lines), 0, 1500);
+        return "\n\n🧠 ความจำระยะยาวของคุณ (บทเรียน + บันทึกสนทนาที่ผ่านมา — ใช้ตอบให้ต่อเนื่อง ผู้ใช้ไม่ต้องท้าวความ):\n"
+            . mb_substr(implode("\n", $lines), 0, 1800);
+    }
+
+    /**
+     * 🧠 Append this turn to today's conversation journal (one row per day,
+     * source='journal'). Bounded: content keeps the newest ~3800 chars;
+     * keywords accumulate topic tokens so retrieval finds today's subjects.
+     */
+    private function appendDailyJournal(string $question, string $reply, string $operatorName): void
+    {
+        $title = 'บันทึกสนทนา ' . now()->format('Y-m-d');
+        $row = EveMemory::firstOrCreate(
+            ['source' => 'journal', 'title' => $title],
+            ['content' => '', 'keywords' => null, 'admin_name' => $operatorName],
+        );
+
+        $line = '• ' . now()->format('H:i') . ' ถาม: ' . mb_substr(trim($question), 0, 140)
+            . ' → Eve: ' . mb_substr(trim($reply), 0, 160);
+        $content = trim($row->content . "\n" . $line);
+        if (mb_strlen($content) > 3800) {
+            $content = mb_substr($content, mb_strlen($content) - 3800);
+        }
+
+        $merged = array_values(array_unique(array_filter(array_map('trim', array_merge(
+            explode(',', (string) $row->keywords),
+            explode(',', (string) $this->keywordsFromText($question)),
+        )))));
+        $keywords = mb_substr(implode(',', array_slice($merged, 0, 40)), 0, 490);
+
+        $row->update(['content' => $content, 'keywords' => $keywords ?: null]);
     }
 
     /**
