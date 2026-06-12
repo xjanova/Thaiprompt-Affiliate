@@ -28,43 +28,18 @@
                     <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 mb-6">
                         <h2 class="text-2xl font-bold text-white mb-6">เลือกช่องทางชำระเงิน</h2>
 
+                        {{-- 🔒 รับเฉพาะช่องทางที่ระบบยืนยันเงินเข้าได้จริง (SMS Checker)
+                             wallet/credit_card เดิมเป็น demo mode จ่ายผ่านโดยไม่มีเงินเข้า → ถอดออก --}}
                         <div class="grid sm:grid-cols-2 gap-4">
-                            <!-- Wallet -->
-                            <label class="relative cursor-pointer">
-                                <input type="radio" name="payment_method" value="wallet" required class="peer sr-only">
-                                <div class="p-6 bg-white/5 border-2 border-white/20 rounded-lg peer-checked:border-yellow-400 peer-checked:bg-white/10 hover:bg-white/10 transition-all">
-                                    <div class="flex items-center gap-3 mb-2">
-                                        <span class="text-3xl">💰</span>
-                                        <span class="text-lg font-bold text-white">กระเป๋าเงิน</span>
-                                    </div>
-                                    <p class="text-purple-200 text-sm">ใช้เงินในกระเป๋าของคุณ</p>
-                                    @auth
-                                    <p class="text-yellow-300 text-sm mt-2">คงเหลือ: ฿{{ number_format(auth()->user()->wallet_balance ?? 0, 0) }}</p>
-                                    @endauth
-                                </div>
-                            </label>
-
                             <!-- PromptPay -->
                             <label class="relative cursor-pointer">
-                                <input type="radio" name="payment_method" value="promptpay" required class="peer sr-only">
+                                <input type="radio" name="payment_method" value="promptpay" required class="peer sr-only" checked>
                                 <div class="p-6 bg-white/5 border-2 border-white/20 rounded-lg peer-checked:border-yellow-400 peer-checked:bg-white/10 hover:bg-white/10 transition-all">
                                     <div class="flex items-center gap-3 mb-2">
                                         <span class="text-3xl">📱</span>
                                         <span class="text-lg font-bold text-white">พร้อมเพย์</span>
                                     </div>
                                     <p class="text-purple-200 text-sm">สแกน QR Code ชำระเงิน</p>
-                                </div>
-                            </label>
-
-                            <!-- Credit Card -->
-                            <label class="relative cursor-pointer">
-                                <input type="radio" name="payment_method" value="credit_card" required class="peer sr-only">
-                                <div class="p-6 bg-white/5 border-2 border-white/20 rounded-lg peer-checked:border-yellow-400 peer-checked:bg-white/10 hover:bg-white/10 transition-all">
-                                    <div class="flex items-center gap-3 mb-2">
-                                        <span class="text-3xl">💳</span>
-                                        <span class="text-lg font-bold text-white">บัตรเครดิต</span>
-                                    </div>
-                                    <p class="text-purple-200 text-sm">Visa, Mastercard, JCB</p>
                                 </div>
                             </label>
 

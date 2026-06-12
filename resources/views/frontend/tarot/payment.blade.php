@@ -49,14 +49,8 @@
                         <i class="fas fa-qrcode text-2xl text-blue-600"></i>
                     </label>
 
-                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-purple-400 transition-all">
-                        <input type="radio" name="payment_method" value="credit_card" class="mr-3">
-                        <div class="flex-1">
-                            <div class="font-semibold text-gray-800">บัตรเครดิต/เดบิต</div>
-                            <div class="text-sm text-gray-500">ชำระด้วยบัตรเครดิตหรือเดบิต</div>
-                        </div>
-                        <i class="fas fa-credit-card text-2xl text-green-600"></i>
-                    </label>
+                    {{-- บัตรเครดิตถูกถอดออก — ยังไม่มี payment gateway รองรับ
+                         (เดิมเลือกแล้วระบบ mark จ่ายสำเร็จทันทีโดยไม่มีเงินเข้า) --}}
 
                     <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-purple-400 transition-all">
                         <input type="radio" name="payment_method" value="bank_transfer" class="mr-3">
@@ -117,7 +111,19 @@ function processPayment() {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
+        if (data.success && data.pending) {
+            // โอนเงิน/พร้อมเพย์ — สร้างรายการแล้ว พาไปหน้ารอชำระเงิน
+            Swal.fire({
+                title: 'สร้างรายการแล้ว',
+                text: 'กรุณาโอนเงินตามยอดที่แสดงในหน้าถัดไป',
+                icon: 'info',
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = data.redirect_url;
+            });
+        } else if (data.success) {
+            // wallet — หักเงินสำเร็จ เปิดผลทำนายได้เลย
             Swal.fire({
                 title: 'ชำระเงินสำเร็จ!',
                 text: 'กำลังนำคุณไปยังหน้าผลการทำนาย',

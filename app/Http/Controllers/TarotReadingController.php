@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PaymentBankAccount;
 use App\Models\PaymentTransaction;
-use App\Models\SmsCheckerDevice;
 use App\Models\TarotCard;
 use App\Models\TarotCardBackImage;
 use App\Models\TarotReading;
@@ -12,7 +10,6 @@ use App\Models\TarotReadingCard;
 use App\Models\TarotReadingCategory;
 use App\Models\TarotSpreadType;
 use App\Models\TarotUserLimit;
-use App\Models\UniquePaymentAmount;
 use App\Models\VendorStore;
 use App\Services\TarotCommissionService;
 use App\Services\TarotInterpretationService;
@@ -142,9 +139,29 @@ class TarotReadingController extends Controller
             abort(403, 'Unauthorized access to this reading');
         }
 
+        // 🔒 Payment gate: ยังไม่ชำระเงิน → ห้ามดูคำทำนาย พากลับไปหน้ารอโอน
+        if ($reading->isAwaitingPayment()) {
+            return $this->redirectToPaymentWaiting($reading);
+        }
+
         $cardBackImage = TarotCardBackImage::getDefault();
 
         return view('frontend.tarot.reading', compact('reading', 'cardBackImage'));
+    }
+
+    /**
+     * พา reading ที่ยังไม่ชำระเงินกลับไปหน้ารอโอน (หรือหน้าแรกถ้าไม่มี transaction)
+     */
+    private function redirectToPaymentWaiting(TarotReading $reading)
+    {
+        if ($reading->payment_transaction_id) {
+            return redirect()
+                ->route('tarot.payment.waiting', $reading->payment_transaction_id)
+                ->with('info', 'กรุณาชำระเงินก่อนเปิดคำทำนาย');
+        }
+
+        return redirect()->route('tarot.index')
+            ->with('error', 'รายการนี้ยังไม่ได้ชำระเงิน');
     }
 
     /**
@@ -222,19 +239,21 @@ class TarotReadingController extends Controller
     /**
      * Process payment and create reading
      *
-     * ขั้นตอนการทำงาน:
-     * 1. ตรวจสอบข้อมูล input
-     * 2. สร้าง payment transaction
-     * 3. สร้าง reading record
-     * 4. ประมวลผลการชำระเงินและแบ่งคอมมิชชั่น (TarotCommissionService)
-     * 5. สุ่มไพ่และสร้างคำทำนาย
+     * 🔒 กฎเหล็ก: ห้ามจ่ายคอมมิชชั่น/เปิดไพ่ก่อนเงินเข้าจริง
+     *
+     * แยก flow ตามวิธีชำระเงิน:
+     * - wallet: หักเงินทันที (เงินเข้าระบบแล้ว) → จ่ายคอม + สุ่มไพ่ + คำทำนายเลย
+     * - promptpay/bank_transfer: สร้าง reading สถานะ pending_payment
+     *   → พาไปหน้ารอโอน → SMS Checker ยืนยันเงินเข้า → PaymentService::completePayment
+     *   → TarotPaymentService::finalizePaidTransaction ค่อยจ่ายคอม + เปิดให้เลือกไพ่
+     * - credit_card: ยังไม่มี gateway → ไม่รับ (เดิมรับแล้ว mark completed ทันที = ดูฟรี)
      */
     public function processPayment(Request $request)
     {
         $request->validate([
             'category_id' => 'required|exists:tarot_reading_categories,id',
             'spread_type_id' => 'required|exists:tarot_spread_types,id',
-            'payment_method' => 'required|in:wallet,promptpay,credit_card,bank_transfer',
+            'payment_method' => 'required|in:wallet,promptpay,bank_transfer',
             'question' => 'nullable|string|max:500',
         ]);
 
@@ -244,11 +263,17 @@ class TarotReadingController extends Controller
         $userId = Auth::id();
         $paymentMethod = $request->payment_method;
 
-        // ตรวจสอบยอดเงินใน wallet ก่อน (ถ้าชำระผ่าน wallet)
-        if ($paymentMethod === 'wallet' && $userId) {
-            $user = Auth::user();
-            $wallet = $user->wallet;
+        // ===== Wallet: เงินอยู่ในระบบแล้ว หักได้ทันที =====
+        if ($paymentMethod === 'wallet') {
+            // ชำระผ่าน wallet ต้อง login เท่านั้น
+            if (! $userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรุณาเข้าสู่ระบบก่อนชำระผ่าน Wallet',
+                ], 401);
+            }
 
+            $wallet = Auth::user()->wallet;
             if (! $wallet || $wallet->balance < $category->price) {
                 return response()->json([
                     'success' => false,
@@ -257,43 +282,40 @@ class TarotReadingController extends Controller
                     'current_balance' => $wallet ? $wallet->balance : 0,
                 ], 400);
             }
+
+            return $this->processWalletPayment($request, $category, $spreadType);
         }
 
-        // Create payment transaction
-        $transaction = PaymentTransaction::create([
-            'transaction_id' => 'TAROT-'.strtoupper(Str::random(12)),
-            'user_id' => $userId,
-            'store_id' => VendorStore::getPlatformStoreId(),
-            'type' => 'order_payment',
-            'payment_method' => $paymentMethod,
-            'status' => 'pending',
-            'amount' => $category->price,
-            'currency' => 'THB',
-            'metadata' => [
-                'type' => 'tarot_reading',
-                'category_id' => $category->id,
-                'spread_type_id' => $spreadType->id,
-                'question' => $request->question,
-            ],
-        ]);
+        // ===== PromptPay / Bank Transfer: รอเงินเข้าก่อน =====
+        return $this->createPendingPaymentReading($request, $category, $spreadType, $paymentMethod);
+    }
 
-        // สร้าง unique amount สำหรับ SMS Checker auto-matching (promptpay/bank_transfer)
-        if (in_array($paymentMethod, ['promptpay', 'bank_transfer'])) {
-            $this->generateUniqueAmountForTransaction($transaction);
-        }
+    /**
+     * ชำระผ่าน Wallet — หักเงิน + จ่ายคอม + สุ่มไพ่ + คำทำนายทันที
+     * (เงินเข้าระบบ ณ วินาทีที่หักสำเร็จ จึงเปิดผลได้เลย)
+     */
+    private function processWalletPayment(Request $request, TarotReadingCategory $category, TarotSpreadType $spreadType)
+    {
+        $userId = Auth::id();
 
-        // Create the reading
+        // สร้าง transaction + reading
+        $transaction = $this->createTarotTransaction($category, $spreadType, 'wallet', $request->question);
         $reading = $this->createReading($category, $spreadType, $request->question, false, $category->price);
 
-        // ประมวลผลการชำระเงินและแบ่งคอมมิชชั่น
-        $commissionResult = $this->commissionService->processPayment(
-            $reading,
-            $paymentMethod,
-            $transaction->id
-        );
+        // ผูก reading เข้ากับ transaction (TarotPaymentService/paymentStatus ใช้ตามหา)
+        $transaction->update([
+            'metadata' => array_merge($transaction->metadata ?? [], ['reading_id' => $reading->id]),
+        ]);
+        $reading->update([
+            'payment_transaction_id' => $transaction->id,
+            'payment_status' => 'pending',
+        ]);
+
+        // หักเงินจาก wallet + แบ่งคอมมิชชั่น (TarotCommissionService หักผ่าน WalletService)
+        $commissionResult = $this->commissionService->processPayment($reading, 'wallet', $transaction->id);
 
         if (! $commissionResult['success']) {
-            // ถ้าชำระเงินไม่สำเร็จ ให้ลบ reading และอัพเดท transaction
+            // หักเงินไม่สำเร็จ → ยกเลิกทั้งคู่
             $reading->delete();
             $transaction->update([
                 'status' => 'failed',
@@ -308,7 +330,7 @@ class TarotReadingController extends Controller
             ], 400);
         }
 
-        // อัพเดท transaction เป็น completed
+        // เงินเข้าแล้วจริง → ปิด transaction + mark reading paid
         $transaction->update([
             'status' => 'completed',
             'paid_at' => now(),
@@ -318,11 +340,10 @@ class TarotReadingController extends Controller
                 'total_commission' => $commissionResult['data']['total_commission'] ?? 0,
             ]),
         ]);
+        $reading->update(['payment_status' => 'paid', 'paid_at' => now()]);
 
-        // Select random cards
+        // สุ่มไพ่ + สร้างคำทำนาย
         $cards = $this->selectRandomCards($spreadType->card_count, $spreadType);
-
-        // Create reading cards
         foreach ($cards as $index => $cardData) {
             TarotReadingCard::create([
                 'reading_id' => $reading->id,
@@ -333,35 +354,102 @@ class TarotReadingController extends Controller
             ]);
         }
 
-        // Update user limits
-        TarotUserLimit::incrementPaidReading(
-            $category->id,
-            $userId,
-            session()->getId(),
-            $request->ip()
-        );
+        // นับ paid reading
+        TarotUserLimit::incrementPaidReading($category->id, $userId, session()->getId(), $request->ip());
 
         // สร้างคำทำนายละเอียดสำหรับไพ่ทั้งหมด
         $this->interpretationService->generateInterpretations($reading);
 
-        Log::info('Tarot reading created with commission', [
+        Log::info('Tarot: ชำระผ่าน wallet สำเร็จ (หักเงิน+คอม+เปิดไพ่)', [
             'reading_id' => $reading->id,
             'user_id' => $userId,
             'amount' => $category->price,
-            'platform_fee' => $reading->platform_fee,
-            'pv_amount' => $reading->pv_amount,
             'total_commission' => $reading->total_commission,
         ]);
 
         return response()->json([
             'success' => true,
+            'pending' => false,
             'reading_id' => $reading->id,
             'redirect_url' => route('tarot.reading.show', $reading->id),
-            'commission_info' => [
-                'platform_fee' => $reading->platform_fee,
-                'pv_amount' => $reading->pv_amount,
-                'total_commission' => $reading->total_commission,
-            ],
+        ]);
+    }
+
+    /**
+     * PromptPay / Bank Transfer — สร้างรายการรอชำระ (ยังไม่เปิดไพ่ ไม่จ่ายคอม)
+     *
+     * Flow ต่อจากนี้:
+     * 1. ลูกค้าโอนตามยอด unique amount (สร้างอัตโนมัติใน PaymentTransaction::created)
+     * 2. SMS Checker จับยอด → PaymentService::completePayment()
+     * 3. TarotPaymentService::finalizePaidTransaction → mark paid + คอม + นับ limit
+     * 4. หน้า waiting polling เจอ paid → พาไปเลือกไพ่ (select-cards)
+     */
+    private function createPendingPaymentReading(Request $request, TarotReadingCategory $category, TarotSpreadType $spreadType, string $paymentMethod)
+    {
+        // สร้าง reading สถานะรอชำระ (ยังไม่มีไพ่/คำทำนาย — เปิดหลังเงินเข้า)
+        $reading = $this->createReading($category, $spreadType, $request->question, false, $category->price);
+
+        // สร้าง transaction pending — unique amount ถูก generate อัตโนมัติ
+        // ใน PaymentTransaction::created event (เฉพาะ promptpay/bank_transfer)
+        $transaction = $this->createTarotTransaction($category, $spreadType, $paymentMethod, $request->question, $reading->id);
+
+        $reading->update([
+            'payment_status' => 'pending',
+            'payment_method' => $paymentMethod,
+            'payment_transaction_id' => $transaction->id,
+        ]);
+
+        // refresh เพื่อให้ได้ amount ที่ติดทศนิยม unique แล้ว
+        $transaction->refresh();
+
+        Log::info('Tarot: สร้างรายการรอชำระ (pending payment)', [
+            'reading_id' => $reading->id,
+            'transaction_id' => $transaction->id,
+            'payment_method' => $paymentMethod,
+            'amount' => $transaction->amount,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'pending' => true,
+            'reading_id' => $reading->id,
+            'amount' => (float) $transaction->amount,
+            'redirect_url' => route('tarot.payment.waiting', $transaction->id),
+        ]);
+    }
+
+    /**
+     * สร้าง PaymentTransaction สำหรับบิลทำนายไพ่ (single flow)
+     *
+     * @param  int|null  $readingId  ใส่เมื่อสร้าง reading ก่อน transaction
+     */
+    private function createTarotTransaction(
+        TarotReadingCategory $category,
+        TarotSpreadType $spreadType,
+        string $paymentMethod,
+        ?string $question,
+        ?int $readingId = null
+    ): PaymentTransaction {
+        $metadata = [
+            'type' => 'tarot_reading',
+            'category_id' => $category->id,
+            'spread_type_id' => $spreadType->id,
+            'question' => $question,
+        ];
+        if ($readingId) {
+            $metadata['reading_id'] = $readingId;
+        }
+
+        return PaymentTransaction::create([
+            'transaction_id' => 'TAROT-'.strtoupper(Str::random(12)),
+            'user_id' => Auth::id(),
+            'store_id' => VendorStore::getPlatformStoreId(),
+            'type' => 'order_payment',
+            'payment_method' => $paymentMethod,
+            'status' => 'pending',
+            'amount' => $category->price,
+            'currency' => 'THB',
+            'metadata' => $metadata,
         ]);
     }
 
@@ -378,6 +466,11 @@ class TarotReadingController extends Controller
 
         if (! $reading->belongsToUser($userId, $sessionId) && ! Auth::check()) {
             abort(403, 'Unauthorized access to this reading');
+        }
+
+        // 🔒 Payment gate: ยังไม่ชำระเงิน → ห้ามเลือกไพ่ พากลับไปหน้ารอโอน
+        if ($reading->isAwaitingPayment()) {
+            return $this->redirectToPaymentWaiting($reading);
         }
 
         // Check if cards are already selected
@@ -409,6 +502,14 @@ class TarotReadingController extends Controller
 
         if (! $reading->belongsToUser($userId, $sessionId) && ! Auth::check()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        // 🔒 Payment gate: ยังไม่ชำระเงิน → ห้ามบันทึกไพ่ (กันยิง API ตรงข้าม gate หน้าเว็บ)
+        if ($reading->isAwaitingPayment()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาชำระเงินก่อนเปิดคำทำนาย',
+            ], 402);
         }
 
         // Check if cards are already selected
@@ -515,62 +616,7 @@ class TarotReadingController extends Controller
         return response()->json($images);
     }
 
-    /**
-     * สร้าง unique amount (เพิ่มทศนิยม) สำหรับ SMS Checker auto-matching
-     *
-     * ใช้สำหรับ promptpay/bank_transfer เท่านั้น
-     * เก็บยอดเดิมใน metadata['original_amount']
-     */
-    private function generateUniqueAmountForTransaction(PaymentTransaction $transaction): void
-    {
-        try {
-            $hasSmsChecker = false;
-
-            try {
-                $hasSmsChecker = PaymentBankAccount::where('is_active', true)
-                    ->where('sms_checker_enabled', true)
-                    ->exists();
-            } catch (\Exception $e) {
-                Log::debug('PaymentBankAccount check skipped: '.$e->getMessage());
-            }
-
-            if (! $hasSmsChecker) {
-                $hasSmsChecker = SmsCheckerDevice::where('status', 'active')->exists();
-            }
-
-            if (! $hasSmsChecker) {
-                return;
-            }
-
-            $uniqueAmount = UniquePaymentAmount::generate(
-                $transaction->amount,
-                $transaction->id,
-                'tarot_reading',
-                config('smschecker.unique_amount_expiry', 30)
-            );
-
-            if ($uniqueAmount) {
-                $metadata = $transaction->metadata ?? [];
-                $metadata['original_amount'] = $transaction->amount;
-                $metadata['unique_amount_id'] = $uniqueAmount->id;
-                $metadata['decimal_suffix'] = $uniqueAmount->decimal_suffix;
-
-                $transaction->update([
-                    'amount' => $uniqueAmount->unique_amount,
-                    'metadata' => $metadata,
-                ]);
-
-                Log::info('SMS Checker: สร้าง unique amount สำเร็จ (tarot)', [
-                    'transaction_id' => $transaction->id,
-                    'original_amount' => $metadata['original_amount'],
-                    'unique_amount' => $uniqueAmount->unique_amount,
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::error('SMS Checker: เกิดข้อผิดพลาดในการสร้าง unique amount (tarot)', [
-                'transaction_id' => $transaction->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
+    // หมายเหตุ: unique amount สำหรับ SMS Checker ถูกสร้างอัตโนมัติใน
+    // PaymentTransaction::created event (generateUniqueAmountIfNeeded)
+    // — method generate ในไฟล์นี้ถูกถอดออกเพราะซ้ำซ้อน (เคยสร้าง UPA 2 แถวต่อบิล)
 }

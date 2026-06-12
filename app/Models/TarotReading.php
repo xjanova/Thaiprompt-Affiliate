@@ -22,6 +22,12 @@ class TarotReading extends Model
         'commission_status',
         'payment_method',
         'payment_transaction_id',
+        // คอลัมน์ฝั่ง payment flow (เดิมหายจาก fillable ทำให้การตั้ง
+        // payment_status='pending' ตอนสร้างถูก mass-assignment ทิ้งเงียบๆ)
+        'price',
+        'payment_status',
+        'transaction_id',
+        'paid_at',
         'is_free',
         'is_saved',
         'session_id',
@@ -33,9 +39,19 @@ class TarotReading extends Model
         'platform_fee' => 'decimal:2',
         'pv_amount' => 'decimal:2',
         'total_commission' => 'decimal:2',
+        'price' => 'decimal:2',
+        'paid_at' => 'datetime',
         'is_free' => 'boolean',
         'is_saved' => 'boolean',
     ];
+
+    /**
+     * ตรวจว่า reading นี้ยังรอชำระเงินอยู่หรือไม่ (ห้ามเปิดไพ่/ดูคำทำนาย)
+     */
+    public function isAwaitingPayment(): bool
+    {
+        return in_array($this->payment_status, ['pending', 'failed'], true);
+    }
 
     /**
      * Get the user who created this reading

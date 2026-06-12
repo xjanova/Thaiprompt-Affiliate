@@ -131,8 +131,10 @@ class TarotCartController extends Controller
      */
     public function processCheckout(Request $request)
     {
+        // 🔒 รับเฉพาะช่องทางที่ระบบยืนยันเงินเข้าได้จริง (SMS Checker)
+        // wallet/credit_card เดิมเป็น "demo mode" mark paid ทันทีโดยไม่มีเงินเข้า → ถอดออก
         $request->validate([
-            'payment_method' => 'required|in:wallet,promptpay,credit_card,bank_transfer',
+            'payment_method' => 'required|in:promptpay,bank_transfer',
         ]);
 
         $userId = Auth::id();
@@ -222,9 +224,11 @@ class TarotCartController extends Controller
 
                 // Note: unique amount ถูกสร้างอัตโนมัติใน PaymentTransaction::created event
 
-                // Update readings with transaction ID
+                // ผูก readings เข้ากับ transaction
+                // (payment_transaction_id ใช้โดย payment gate + TarotPaymentService)
                 TarotReading::whereIn('id', $readingIds)->update([
                     'transaction_id' => $transaction->id,
+                    'payment_transaction_id' => $transaction->id,
                 ]);
 
                 // Refresh transaction to get updated amount (with unique decimal suffix)
@@ -232,30 +236,10 @@ class TarotCartController extends Controller
 
                 DB::commit();
 
-                // PromptPay / Bank Transfer: แสดงหน้ารอชำระเงิน (ให้ SMS Checker ตรวจจับ)
-                if (in_array($request->payment_method, ['promptpay', 'bank_transfer'])) {
-                    return redirect()->route('tarot.payment.waiting', $transaction->id)
-                        ->with('info', 'กรุณาชำระเงินตามยอดที่แสดง');
-                }
-
-                // สำหรับ payment methods อื่น (wallet, credit_card) - ต้อง implement แยก
-                // ตอนนี้ใช้ demo mode: mark as paid immediately
-                $transaction->update([
-                    'status' => 'completed',
-                    'paid_at' => now(),
-                ]);
-
-                TarotReading::whereIn('id', $readingIds)->update([
-                    'payment_status' => 'paid',
-                    'paid_at' => now(),
-                ]);
-
-                // Clear cart
-                TarotCartItem::clearCart($userId, $sessionId, $ipAddress);
-
-                // Redirect to first reading
-                return redirect()->route('tarot.reading.show', $readingIds[0])
-                    ->with('success', 'ชำระเงินสำเร็จ! ดูผลการทำนายของคุณได้เลย');
+                // แสดงหน้ารอชำระเงิน — SMS Checker ยืนยันเงินเข้าแล้ว
+                // PaymentService::completePayment → TarotPaymentService จะ mark paid + จ่ายคอมให้เอง
+                return redirect()->route('tarot.payment.waiting', $transaction->id)
+                    ->with('info', 'กรุณาชำระเงินตามยอดที่แสดง');
             } else {
                 // Free items - no payment needed
                 DB::commit();
@@ -310,13 +294,11 @@ class TarotCartController extends Controller
             abort(403, 'ไม่มีสิทธิ์เข้าถึงรายการนี้');
         }
 
-        // ตรวจสอบว่าเป็น pending transaction
+        // ชำระเงินแล้ว → พาไปหน้าที่ถูกต้องตาม flow
         if ($transaction->status === 'completed') {
-            // ถ้าชำระเงินแล้ว redirect ไปหน้าผลการทำนาย
-            $readingIds = $transaction->metadata['reading_ids'] ?? [];
-            if (! empty($readingIds)) {
-                return redirect()->route('tarot.reading.show', $readingIds[0])
-                    ->with('success', 'ชำระเงินสำเร็จแล้ว!');
+            $redirectUrl = $this->resolvePaidRedirectUrl($transaction);
+            if ($redirectUrl) {
+                return redirect($redirectUrl)->with('success', 'ชำระเงินสำเร็จแล้ว!');
             }
 
             return redirect()->route('tarot.cart.index')
@@ -345,11 +327,14 @@ class TarotCartController extends Controller
         $transaction->refresh();
 
         $completed = $transaction->status === 'completed';
-        $readingIds = $transaction->metadata['reading_ids'] ?? [];
         $redirectUrl = null;
 
-        if ($completed && ! empty($readingIds)) {
-            $redirectUrl = route('tarot.reading.show', $readingIds[0]);
+        if ($completed) {
+            // Self-heal: ถ้าเงินเข้าแล้วแต่ reading ยังค้าง pending
+            // (finalize ตอน completePayment ล้มเหลว) → retry แบบ idempotent
+            $this->retryFinalizeIfNeeded($transaction);
+
+            $redirectUrl = $this->resolvePaidRedirectUrl($transaction);
         }
 
         return response()->json([
@@ -357,5 +342,49 @@ class TarotCartController extends Controller
             'completed' => $completed,
             'redirect_url' => $redirectUrl,
         ]);
+    }
+
+    /**
+     * หา URL ปลายทางหลังชำระเงินสำเร็จ ตาม flow ของ transaction
+     *
+     * - Single flow (metadata.reading_id): ยังไม่มีไพ่ → พาไปหน้าเลือกไพ่
+     * - Cart flow (metadata.reading_ids): ไพ่+คำทำนายสร้างแล้ว → หน้าผลทำนาย
+     */
+    private function resolvePaidRedirectUrl(PaymentTransaction $transaction): ?string
+    {
+        $metadata = $transaction->metadata ?? [];
+
+        if (! empty($metadata['reading_id'])) {
+            return route('tarot.select-cards', $metadata['reading_id']);
+        }
+
+        $readingIds = $metadata['reading_ids'] ?? [];
+        if (! empty($readingIds)) {
+            return route('tarot.reading.show', $readingIds[0]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Retry finalize เมื่อ transaction completed แต่ reading ยังค้าง pending
+     * (idempotent — TarotPaymentService ข้าม reading ที่ paid แล้วเอง)
+     */
+    private function retryFinalizeIfNeeded(PaymentTransaction $transaction): void
+    {
+        try {
+            $hasPendingReading = TarotReading::where('payment_transaction_id', $transaction->id)
+                ->where('payment_status', 'pending')
+                ->exists();
+
+            if ($hasPendingReading) {
+                app(\App\Services\TarotPaymentService::class)->finalizePaidTransaction($transaction);
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('TarotCart: retry finalize ล้มเหลว (ไม่ block polling)', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -320,6 +320,22 @@ class PaymentService
                     break;
             }
 
+            // 🔮 บิลทำนายไพ่ทาโร่ต์ — ดูจาก metadata.type เพราะมีทั้ง
+            // type='order_payment' (single flow) และ type='tarot_reading' (cart flow)
+            // เงินเข้าจริงแล้วค่อย: mark reading paid + จ่ายคอมมิชชั่น + นับ limit
+            if (($transaction->metadata['type'] ?? null) === 'tarot_reading') {
+                try {
+                    app(\App\Services\TarotPaymentService::class)->finalizePaidTransaction($transaction);
+                } catch (\Throwable $tarotErr) {
+                    // ห้าม error กระทบการ complete transaction (เงินเข้าแล้ว)
+                    // reading ที่ค้าง pending จะถูก retry จาก paymentStatus polling
+                    Log::error('PaymentService: finalize tarot reading ล้มเหลว', [
+                        'transaction_id' => $transaction->id,
+                        'error' => $tarotErr->getMessage(),
+                    ]);
+                }
+            }
+
             return true;
         });
     }
