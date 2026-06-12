@@ -254,7 +254,7 @@ class TarotCommissionService
             }
 
             // ดึงอัตราคอมมิชชั่นของ level นี้
-            $commissionRate = $unilevelLevels["level_{$level}"] ?? 0;
+            $commissionRate = $this->resolveUnilevelRate($unilevelLevels, $level);
 
             if ($commissionRate > 0) {
                 // คำนวณคอมมิชชั่น
@@ -298,6 +298,44 @@ class TarotCommissionService
         }
 
         return $commissions;
+    }
+
+    /**
+     * แปลงค่า unilevel_levels เป็นอัตรา % ของ level ที่กำหนด
+     *
+     * 🐛 Fix 2026-06-12 (Bug #12 ตกหล่นไฟล์นี้): ระบบกลางเก็บ unilevel_levels
+     * เป็น array of objects [{level: N, percentage: X}] (ตาม MlmCommissionService)
+     * แต่ไฟล์นี้เคยอ่านแบบ string key 'level_N' → อัตราเป็น 0 เงียบทุก level
+     *
+     * รองรับทั้ง 2 format เพื่อ backward compatibility:
+     * 1. array of objects: [{level: 1, percentage: 5}, ...]
+     * 2. legacy string keys: ['level_1' => 5, ...] (ค่า default ของไฟล์นี้)
+     *
+     * @param  array  $unilevelLevels  ค่าจาก MlmGlobalSetting
+     * @param  int  $level  ระดับที่ต้องการอัตรา
+     * @return float อัตราคอมมิชชั่น (%)
+     */
+    protected function resolveUnilevelRate(array $unilevelLevels, int $level): float
+    {
+        // Format ใหม่: array of objects [{level: N, percentage: X}]
+        $levelConfig = collect($unilevelLevels)->firstWhere('level', $level);
+        if (is_array($levelConfig)) {
+            return (float) ($levelConfig['percentage'] ?? 0);
+        }
+
+        // Legacy format: ['level_N' => X]
+        $legacy = $unilevelLevels["level_{$level}"] ?? null;
+        if (is_numeric($legacy)) {
+            return (float) $legacy;
+        }
+
+        // Fallback: index-based [X, Y, Z] (เผื่อเก็บเป็น array ตัวเลขล้วน)
+        $indexed = $unilevelLevels[$level - 1] ?? null;
+        if (is_numeric($indexed)) {
+            return (float) $indexed;
+        }
+
+        return 0.0;
     }
 
     /**

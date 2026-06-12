@@ -54,6 +54,14 @@ class MlmRetentionHelper
             return true;
         }
 
+        // 🐛 Fix 2026-06-12: นับบิลดูดวงที่จ่ายแล้วในเดือนนี้เป็นการเคลื่อนไหวด้วย
+        // (commission mode 'static' ของระบบดูดวงไม่สร้าง pvTransactions →
+        // ลูกค้าดูดวงที่เป็นผู้แนะนำเคยถูกนับ inactive ทั้งที่เพิ่งจ่ายเงิน
+        // → ค่าแนะนำไม่ถูกจ่าย ขัดกับเกณฑ์ข้อ 3 "ซื้อสินค้า หรือ ดูดวง")
+        if (self::hasPaidFortuneReadingSince($member, $startOfMonth)) {
+            return true;
+        }
+
         // ตรวจ grace period (ผ่อนผันหลังเคลื่อนไหวล่าสุด — ซื้อสินค้า หรือ ดูดวง)
         $graceDays = (int) MlmGlobalSetting::get('volume_retention_grace_days', 7);
 
@@ -71,7 +79,33 @@ class MlmRetentionHelper
             }
         }
 
+        // Grace period จากบิลดูดวงล่าสุด (กรณีไม่มี pvTransactions เลย)
+        if (self::hasPaidFortuneReadingSince($member, Carbon::now()->subDays($graceDays))) {
+            return true;
+        }
+
         return false;
+    }
+
+    /**
+     * ตรวจว่าสมาชิกมีบิลดูดวงที่จ่ายเงินแล้วตั้งแต่วันที่กำหนดหรือไม่
+     *
+     * ใช้เป็นหลักฐานการเคลื่อนไหวสำหรับ commission mode 'static'
+     * ที่ไม่มีการบันทึก PV transaction
+     *
+     * @param  MlmMember  $member  สมาชิกที่ต้องการตรวจ
+     * @param  Carbon  $since  นับจากวันที่
+     */
+    protected static function hasPaidFortuneReadingSince(MlmMember $member, Carbon $since): bool
+    {
+        if (! $member->user_id) {
+            return false;
+        }
+
+        return \App\Models\FortuneReading::where('user_id', $member->user_id)
+            ->where('is_paid', true)
+            ->where('paid_at', '>=', $since)
+            ->exists();
     }
 
     /**
@@ -102,6 +136,10 @@ class MlmRetentionHelper
             ? Carbon::parse($lastPurchaseDate)->diffInDays(now())
             : null;
 
+        // 🐛 Fix 2026-06-12: นับบิลดูดวงที่จ่ายแล้วเป็นการเคลื่อนไหวด้วย (เหมือน isMemberActive)
+        // เพื่อให้สถานะที่แสดง UI ตรงกับเกณฑ์จ่ายคอมมิชชั่นจริง
+        $hasFortuneActivityThisMonth = self::hasPaidFortuneReadingSince($member, $startOfMonth);
+
         // กำหนดสถานะ
         if (! $retentionEnabled) {
             $status = $member->status === 'active' ? 'active' : 'inactive';
@@ -109,10 +147,13 @@ class MlmRetentionHelper
         } elseif ($member->status !== 'active' || ! $member->is_qualified) {
             $status = 'inactive';
             $color = 'red';
-        } elseif ($monthlyPv >= $requiredMonthlyPv) {
+        } elseif ($monthlyPv >= $requiredMonthlyPv || $hasFortuneActivityThisMonth) {
             $status = 'active';
             $color = 'green';
         } elseif ($daysSinceLastPurchase !== null && $daysSinceLastPurchase <= $graceDays) {
+            $status = 'grace_period';
+            $color = 'yellow';
+        } elseif (self::hasPaidFortuneReadingSince($member, Carbon::now()->subDays($graceDays))) {
             $status = 'grace_period';
             $color = 'yellow';
         } else {

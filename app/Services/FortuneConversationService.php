@@ -20049,15 +20049,7 @@ PROMPT;
                     return;
                 }
             } else {
-                // คำนวณ PV: ใช้ fortune_pv_value (override) หรือ price × global_pv_rate (auto)
-                $manualPv = (float) ($this->settings->fortune_pv_value ?? 0);
-                if ($manualPv > 0) {
-                    $pvValue = $manualPv;
-                } else {
-                    $price = (float) ($this->settings->deep_reading_price ?? 0);
-                    $globalPvRate = (float) \App\Models\MlmGlobalSetting::get('global_pv_rate', 1);
-                    $pvValue = $price * $globalPvRate;
-                }
+                $pvValue = $this->calculateFortunePv($reading);
 
                 if ($pvValue <= 0) {
                     Log::debug('Fortune Commission: PV = 0 (ราคา/pv_rate เป็น 0) ข้ามการแบ่ง', [
@@ -20126,6 +20118,35 @@ PROMPT;
     }
 
     /**
+     * คำนวณ PV ของบิลดูดวง
+     *
+     * ลำดับ: fortune_pv_value (override) → amount_paid จริง × global_pv_rate
+     * → deep_reading_price × global_pv_rate (fallback กรณี amount_paid ยังไม่อัพเดท)
+     *
+     * 🐛 Fix 2026-06-12: เดิมใช้ deep_reading_price จาก settings เสมอ
+     * → บิล Celtic 99฿ ได้ PV ฐานราคา Deep 39฿ (ผิดยอด)
+     *
+     * @param  FortuneReading  $reading  บิลดูดวงที่ชำระเงินแล้ว
+     * @return float PV ที่ใช้แบ่งคอมมิชชั่น
+     */
+    protected function calculateFortunePv(FortuneReading $reading): float
+    {
+        $manualPv = (float) ($this->settings->fortune_pv_value ?? 0);
+        if ($manualPv > 0) {
+            return $manualPv;
+        }
+
+        $price = (float) ($reading->amount_paid ?? 0);
+        if ($price <= 0) {
+            $price = (float) ($this->settings->deep_reading_price ?? 0);
+        }
+
+        $globalPvRate = (float) \App\Models\MlmGlobalSetting::get('global_pv_rate', 1);
+
+        return $price * $globalPvRate;
+    }
+
+    /**
      * แบ่งคอมมิชชั่นแบบ PV mode
      *
      * ส่ง PV เข้า MlmCommissionService::calculateCommissionsWithRollup()
@@ -20133,15 +20154,7 @@ PROMPT;
      */
     protected function distributePvCommissions(FortuneReading $reading, \App\Models\MlmMember $mlmMember): void
     {
-        // คำนวณ PV: ใช้ fortune_pv_value (override) หรือ price × global_pv_rate (auto)
-        $manualPv = (float) ($this->settings->fortune_pv_value ?? 0);
-        if ($manualPv > 0) {
-            $pvValue = $manualPv;
-        } else {
-            $price = (float) ($this->settings->deep_reading_price ?? 0);
-            $globalPvRate = (float) \App\Models\MlmGlobalSetting::get('global_pv_rate', 1);
-            $pvValue = $price * $globalPvRate;
-        }
+        $pvValue = $this->calculateFortunePv($reading);
 
         $commissionService = app(\App\Services\MlmCommissionService::class);
         // ดูดวง: ไม่ roll up — ถ้าผู้แนะนำไม่ active ให้ข้ามเลย (disableRollup = true)

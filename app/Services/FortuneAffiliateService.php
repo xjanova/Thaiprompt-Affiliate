@@ -400,8 +400,32 @@ class FortuneAffiliateService
             }
 
             // หาตำแหน่ง binary แบบ auto-placement
-            $binaryService = app(MlmBinaryService::class);
-            $placement = $binaryService->findPlacementPosition($sponsor);
+            // 🐛 Fix 2026-06-12: placement อาจคืน null (เช่น depth limit เต็ม) — ห้าม access
+            // array offset บน null เพราะ Laravel แปลง warning เป็น ErrorException
+            // → MlmMember ไม่ถูกสร้างเงียบๆ → คอมมิชชั่นดูดวงไม่จ่ายทั้งระบบ (ตายมา 3.5 เดือน)
+            $placement = null;
+            try {
+                $binaryService = app(MlmBinaryService::class);
+                $placement = $binaryService->findPlacementPosition($sponsor);
+            } catch (\Throwable $placementErr) {
+                Log::warning('Fortune Affiliate: binary placement ล้มเหลว — ใช้ fallback วางใต้ sponsor ตรง', [
+                    'user_id' => $user->id,
+                    'sponsor_id' => $sponsor->id,
+                    'error' => $placementErr->getMessage(),
+                ]);
+            }
+
+            if (! is_array($placement) || ! isset($placement['parent_id'])) {
+                Log::warning('Fortune Affiliate: ไม่พบตำแหน่ง binary — fallback วางใต้ sponsor ตรง (ขาซ้าย)', [
+                    'user_id' => $user->id,
+                    'sponsor_id' => $sponsor->id,
+                ]);
+            }
+
+            // Fallback: วางใต้ sponsor ตรงขาซ้าย (unilevel commission ไม่กระทบ —
+            // ค่าแนะนำดูดวงใช้ unilevel_sponsor_id เท่านั้น)
+            $binaryParentId = $placement['parent_id'] ?? $sponsor->id;
+            $binaryPosition = $placement['position'] ?? 'left';
 
             // สร้าง MLM member
             $member = MlmMember::create([
@@ -414,8 +438,8 @@ class FortuneAffiliateService
                 'original_sponsor_id' => $sponsor->id,
                 // Binary structure (auto-placement)
                 'binary_sponsor_id' => $sponsor->id,
-                'binary_parent_id' => $placement['parent_id'],
-                'binary_position' => $placement['position'],
+                'binary_parent_id' => $binaryParentId,
+                'binary_position' => $binaryPosition,
                 // Status
                 'status' => 'active',
                 'joined_at' => now(),
@@ -427,9 +451,9 @@ class FortuneAffiliateService
             $sponsor->increment('total_direct_referrals');
 
             // Update binary parent stats
-            $binaryParent = MlmMember::find($placement['parent_id']);
+            $binaryParent = MlmMember::find($binaryParentId);
             if ($binaryParent) {
-                if ($placement['position'] === 'left') {
+                if ($binaryPosition === 'left') {
                     $binaryParent->increment('left_leg_members');
                 } else {
                     $binaryParent->increment('right_leg_members');
@@ -445,7 +469,7 @@ class FortuneAffiliateService
                 'member_id' => $member->id,
                 'member_code' => $member->member_code,
                 'sponsor_id' => $sponsor->id,
-                'binary_position' => $placement['position'],
+                'binary_position' => $binaryPosition,
                 'from_referral' => $referral !== null,
             ]);
 

@@ -51,29 +51,56 @@ class FortuneCommissionService
             return;
         }
 
-        // ตรวจสอบว่าบิลนี้จ่ายคอมมิชชั่นใน fortune_commissions ไปแล้วหรือยัง
-        $alreadyDistributed = FortuneCommission::where('fortune_reading_id', $reading->id)->exists();
-        if ($alreadyDistributed) {
-            Log::info('FortuneCommission: บิลนี้จ่ายไปแล้ว ข้าม', [
-                'reading_id' => $reading->id,
-            ]);
-
-            return;
-        }
-
         // ใช้ amount_paid จริง, fallback ไปที่ deep_reading_price (กรณี amount_paid ยังไม่อัพเดท)
         $readingPrice = (float) ($reading->amount_paid ?? 0);
         if ($readingPrice <= 0) {
             $readingPrice = (float) ($settings->deep_reading_price ?? 0);
         }
 
+        // 🐛 Fix 2026-06-12: เช็คจ่ายซ้ำแยกราย level (เดิมเช็ครวมทั้งบิล —
+        // ถ้า L1 สำเร็จแต่ L2 fail การ retry จะถูกข้ามทั้งบิล L2 ไม่มีวันได้จ่าย)
+        // + แยก try/catch ราย level — L1 ล้มเหลวต้องไม่บล็อก L2
+        // (unique index fc_reading_user_level_unique เป็น backstop กัน race ที่ DB)
+
         // ===== Level 1: จ่ายให้ sponsor ตรง =====
-        $this->payLevel1($reading, $mlmMember, $settings, $readingPrice);
+        if ($this->levelAlreadyPaid($reading, 1)) {
+            Log::info('FortuneCommission [L1]: บิลนี้จ่าย L1 ไปแล้ว ข้าม', ['reading_id' => $reading->id]);
+        } else {
+            try {
+                $this->payLevel1($reading, $mlmMember, $settings, $readingPrice);
+            } catch (\Throwable $l1Err) {
+                Log::error('FortuneCommission [L1]: จ่ายล้มเหลว (ไม่บล็อก L2)', [
+                    'reading_id' => $reading->id,
+                    'error' => $l1Err->getMessage(),
+                ]);
+            }
+        }
 
         // ===== Level 2: จ่ายให้ grandparent (ถ้าเปิด) =====
         if ($settings->isFortuneLevel2Enabled()) {
-            $this->payLevel2($reading, $mlmMember, $settings, $readingPrice);
+            if ($this->levelAlreadyPaid($reading, 2)) {
+                Log::info('FortuneCommission [L2]: บิลนี้จ่าย L2 ไปแล้ว ข้าม', ['reading_id' => $reading->id]);
+            } else {
+                try {
+                    $this->payLevel2($reading, $mlmMember, $settings, $readingPrice);
+                } catch (\Throwable $l2Err) {
+                    Log::error('FortuneCommission [L2]: จ่ายล้มเหลว', [
+                        'reading_id' => $reading->id,
+                        'error' => $l2Err->getMessage(),
+                    ]);
+                }
+            }
         }
+    }
+
+    /**
+     * ตรวจว่าบิลนี้จ่ายคอมมิชชั่น level นี้ไปแล้วหรือยัง (กันจ่ายซ้ำราย level)
+     */
+    protected function levelAlreadyPaid(FortuneReading $reading, int $level): bool
+    {
+        return FortuneCommission::where('fortune_reading_id', $reading->id)
+            ->where('level', $level)
+            ->exists();
     }
 
     /**
@@ -603,7 +630,11 @@ class FortuneCommissionService
     ): void {
         try {
             // หา wallet ที่มีอยู่ หรือสร้างใหม่โดยตรง
-            $wallet = Wallet::where('user_id', $recipientMember->user_id)->first();
+            // 🐛 Fix 2026-06-12: lockForUpdate กัน race — สองคอมมิชชั่นเข้ากระเป๋าเดียว
+            // พร้อมกันเคยอ่าน balance เดิมซ้ำ → ยอดเงินหาย (lost update)
+            $wallet = Wallet::where('user_id', $recipientMember->user_id)
+                ->lockForUpdate()
+                ->first();
 
             if (! $wallet) {
                 $wallet = Wallet::create([
@@ -617,9 +648,11 @@ class FortuneCommissionService
             }
 
             if ($wallet->status !== 'active') {
-                Log::warning("FortuneCommission: wallet ไม่ active สำหรับ user {$recipientMember->user_id}");
-
-                return;
+                // 🐛 Fix 2026-06-12: ต้อง throw เพื่อให้ commission record rollback ด้วย
+                // (เดิม return เงียบ → commission สถานะ PAID แต่เงินไม่เข้ากระเป๋า)
+                throw new \RuntimeException(
+                    "wallet ไม่ active สำหรับ user {$recipientMember->user_id} (status: {$wallet->status})"
+                );
             }
 
             $balanceBefore = (float) ($wallet->balance ?? 0);
@@ -657,13 +690,18 @@ class FortuneCommissionService
 
             // อัพเดท wallet_transaction_id ใน commission record
             $commission->update(['wallet_transaction_id' => $transaction->id]);
-        } catch (\Exception $walletErr) {
-            Log::warning("FortuneCommission: เพิ่มเงินเข้า wallet L{$level} ไม่สำเร็จ", [
+        } catch (\Throwable $walletErr) {
+            Log::warning("FortuneCommission: เพิ่มเงินเข้า wallet L{$level} ไม่สำเร็จ — rollback commission", [
                 'user_id' => $recipientMember->user_id,
                 'amount' => $amount,
                 'error' => $walletErr->getMessage(),
                 'trace' => $walletErr->getTraceAsString(),
             ]);
+
+            // 🐛 Fix 2026-06-12: rethrow ให้ DB::transaction ที่ครอบอยู่ rollback
+            // commission record ด้วย — ห้ามมี record สถานะ PAID โดยเงินไม่เข้ากระเป๋า
+            // (caller จับ exception ราย level ใน distributeCommissions แล้ว ไม่กระทบคำทำนาย)
+            throw $walletErr;
         }
     }
 }

@@ -434,8 +434,13 @@ class FreshMarketChannelManager
             try {
                 $binaryService = app(\App\Services\MlmBinaryService::class);
 
-                return $binaryService->findPlacementPosition($sponsor);
-            } catch (\Exception $e) {
+                // 🐛 Fix 2026-06-12: placement อาจคืน null — return type ของ method นี้
+                // คือ array → คืน null ตรงๆ จะ TypeError (\Error ไม่ใช่ \Exception จับไม่ติด)
+                $placement = $binaryService->findPlacementPosition($sponsor);
+                if (is_array($placement) && isset($placement['parent_id'])) {
+                    return $placement;
+                }
+            } catch (\Throwable $e) {
                 // Fallback
             }
         }

@@ -411,37 +411,87 @@ class MlmBinaryService
     }
 
     /**
-     * Find right-to-left placement
-     * รองรับ depth/width limits
+     * ตรวจ depth limit + คืน depth ปัจจุบันของ node
+     *
+     * 🐛 Fix 2026-06-12: เดิมทุก DFS strategy เช็ค canPlaceChild() ที่บรรทัดแรก
+     * → node ที่มีลูกครบ (width เต็ม) ถูก return null ทันที โค้ด recursion ลง subtree
+     * กลายเป็น dead code → sponsor ที่มีลูกครบ 2 ข้างวางสมาชิกใหม่ไม่ได้ตลอดกาล
+     * → MlmMember ไม่ถูกสร้าง → คอมมิชชั่นดูดวงไม่จ่ายทั้งระบบ
+     *
+     * หลักที่ถูก: width เต็ม = วางตรง node นี้ไม่ได้ แต่ subtree ข้างล่างยังวางได้
+     * มีแค่ depth limit เท่านั้นที่หยุดการค้นทั้งสาขา
+     *
+     * @param  MlmMember  $member  node ที่กำลังตรวจ
+     * @param  int|null  $maxDepth  ความลึกสูงสุด (null = ไม่จำกัด)
+     * @param  int|null  $currentDepth  depth ที่ thread ลงมาจาก recursion (null = คำนวณใหม่)
+     * @return array{exceeded: bool, depth: int|null} exceeded = ลึกเกิน limit แล้ว
      */
-    protected function findRightToLeftPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
+    protected function resolveDepthGuard(MlmMember $member, ?int $maxDepth, ?int $currentDepth): array
     {
-        // ตรวจสอบว่าสามารถวางที่ node นี้ได้หรือไม่
-        if (! $this->canPlaceChild($member, $maxDepth, $maxWidth)) {
+        if ($maxDepth === null) {
+            return ['exceeded' => false, 'depth' => null];
+        }
+
+        $depth = $currentDepth ?? $this->getMemberDepth($member);
+
+        return ['exceeded' => $depth >= $maxDepth, 'depth' => $depth];
+    }
+
+    /**
+     * หาช่องว่างที่วางตรง node นี้ได้เลย (ถ้า width ยังไม่เต็ม)
+     *
+     * @return array|null ['parent_id' => ..., 'position' => ...] หรือ null ถ้า node เต็ม
+     */
+    protected function findDirectSlot(MlmMember $member, int $maxWidth): ?array
+    {
+        if ($this->getChildrenCount($member) >= $maxWidth) {
             return null;
         }
 
-        // Check if right is available (ถ้า maxWidth > 1)
-        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
-            return ['parent_id' => $member->id, 'position' => 'right'];
-        }
-
-        // Check if left is available
         if (! $member->binaryLeftChild) {
             return ['parent_id' => $member->id, 'position' => 'left'];
         }
 
-        // Recursively check right subtree first
+        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
+            return ['parent_id' => $member->id, 'position' => 'right'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Find right-to-left placement
+     * รองรับ depth/width limits
+     */
+    protected function findRightToLeftPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2, ?int $currentDepth = null)
+    {
+        $guard = $this->resolveDepthGuard($member, $maxDepth, $currentDepth);
+        if ($guard['exceeded']) {
+            return null;
+        }
+
+        // วางตรง node นี้ได้เลยถ้ามีช่อง (ขวาก่อน)
+        if ($this->getChildrenCount($member) < $maxWidth) {
+            if ($maxWidth >= 2 && ! $member->binaryRightChild) {
+                return ['parent_id' => $member->id, 'position' => 'right'];
+            }
+            if (! $member->binaryLeftChild) {
+                return ['parent_id' => $member->id, 'position' => 'left'];
+            }
+        }
+
+        $childDepth = $guard['depth'] !== null ? $guard['depth'] + 1 : null;
+
+        // node เต็ม → ค้นใน subtree ขวาก่อน แล้วค่อยซ้าย
         if ($member->binaryRightChild) {
-            $rightPlacement = $this->findRightToLeftPlacement($member->binaryRightChild, $maxDepth, $maxWidth);
+            $rightPlacement = $this->findRightToLeftPlacement($member->binaryRightChild, $maxDepth, $maxWidth, $childDepth);
             if ($rightPlacement) {
                 return $rightPlacement;
             }
         }
 
-        // Then check left subtree
         if ($member->binaryLeftChild) {
-            return $this->findRightToLeftPlacement($member->binaryLeftChild, $maxDepth, $maxWidth);
+            return $this->findRightToLeftPlacement($member->binaryLeftChild, $maxDepth, $maxWidth, $childDepth);
         }
 
         return null;
@@ -451,61 +501,68 @@ class MlmBinaryService
      * Find strong leg placement
      * รองรับ depth/width limits
      */
-    protected function findStrongLegPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
+    protected function findStrongLegPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2, ?int $currentDepth = null)
     {
-        // ตรวจสอบว่าสามารถวางที่ node นี้ได้หรือไม่
-        if (! $this->canPlaceChild($member, $maxDepth, $maxWidth)) {
+        $guard = $this->resolveDepthGuard($member, $maxDepth, $currentDepth);
+        if ($guard['exceeded']) {
             return null;
         }
 
-        if (! $member->binaryLeftChild) {
-            return ['parent_id' => $member->id, 'position' => 'left'];
+        // วางตรง node นี้ได้เลยถ้ามีช่อง
+        $direct = $this->findDirectSlot($member, $maxWidth);
+        if ($direct) {
+            return $direct;
         }
 
-        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
-            return ['parent_id' => $member->id, 'position' => 'right'];
+        $childDepth = $guard['depth'] !== null ? $guard['depth'] + 1 : null;
+
+        // เลือกขาที่ PV มากกว่าก่อน (strong leg) — ถ้าขานั้นเต็มให้ลองอีกขา
+        $strongFirst = $member->left_leg_pv >= $member->right_leg_pv;
+        $legs = $strongFirst
+            ? [$member->binaryLeftChild, $member->binaryRightChild]
+            : [$member->binaryRightChild, $member->binaryLeftChild];
+
+        foreach ($legs as $leg) {
+            if ($leg) {
+                $placement = $this->findLeftToRightPlacement($leg, $maxDepth, $maxWidth, $childDepth);
+                if ($placement) {
+                    return $placement;
+                }
+            }
         }
 
-        // Find the leg with more PV (strong leg)
-        if ($member->left_leg_pv >= $member->right_leg_pv) {
-            return $this->findLeftToRightPlacement($member->binaryLeftChild, $maxDepth, $maxWidth);
-        }
-
-        return $this->findLeftToRightPlacement($member->binaryRightChild, $maxDepth, $maxWidth);
+        return null;
     }
 
     /**
      * Find left-to-right placement
      * รองรับ depth/width limits
      */
-    protected function findLeftToRightPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
+    protected function findLeftToRightPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2, ?int $currentDepth = null)
     {
-        // ตรวจสอบว่าสามารถวางที่ node นี้ได้หรือไม่
-        if (! $this->canPlaceChild($member, $maxDepth, $maxWidth)) {
+        $guard = $this->resolveDepthGuard($member, $maxDepth, $currentDepth);
+        if ($guard['exceeded']) {
             return null;
         }
 
-        // Check if left is available
-        if (! $member->binaryLeftChild) {
-            return ['parent_id' => $member->id, 'position' => 'left'];
+        // วางตรง node นี้ได้เลยถ้ามีช่อง (ซ้ายก่อน)
+        $direct = $this->findDirectSlot($member, $maxWidth);
+        if ($direct) {
+            return $direct;
         }
 
-        // Check if right is available (ถ้า maxWidth > 1)
-        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
-            return ['parent_id' => $member->id, 'position' => 'right'];
-        }
+        $childDepth = $guard['depth'] !== null ? $guard['depth'] + 1 : null;
 
-        // Recursively check left subtree first
+        // node เต็ม → ค้นใน subtree ซ้ายก่อน แล้วค่อยขวา
         if ($member->binaryLeftChild) {
-            $leftPlacement = $this->findLeftToRightPlacement($member->binaryLeftChild, $maxDepth, $maxWidth);
+            $leftPlacement = $this->findLeftToRightPlacement($member->binaryLeftChild, $maxDepth, $maxWidth, $childDepth);
             if ($leftPlacement) {
                 return $leftPlacement;
             }
         }
 
-        // Then check right subtree
         if ($member->binaryRightChild) {
-            return $this->findLeftToRightPlacement($member->binaryRightChild, $maxDepth, $maxWidth);
+            return $this->findLeftToRightPlacement($member->binaryRightChild, $maxDepth, $maxWidth, $childDepth);
         }
 
         return null;
@@ -515,54 +572,74 @@ class MlmBinaryService
      * Find balanced placement
      * รองรับ depth/width limits
      */
-    protected function findBalancedPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
+    protected function findBalancedPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2, ?int $currentDepth = null)
     {
-        // ตรวจสอบว่าสามารถวางที่ node นี้ได้หรือไม่
-        if (! $this->canPlaceChild($member, $maxDepth, $maxWidth)) {
+        $guard = $this->resolveDepthGuard($member, $maxDepth, $currentDepth);
+        if ($guard['exceeded']) {
             return null;
         }
 
-        if (! $member->binaryLeftChild) {
-            return ['parent_id' => $member->id, 'position' => 'left'];
+        // วางตรง node นี้ได้เลยถ้ามีช่อง
+        $direct = $this->findDirectSlot($member, $maxWidth);
+        if ($direct) {
+            return $direct;
         }
 
-        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
-            return ['parent_id' => $member->id, 'position' => 'right'];
+        $childDepth = $guard['depth'] !== null ? $guard['depth'] + 1 : null;
+
+        // เลือกขาที่สมาชิกน้อยกว่าก่อน — ถ้าขานั้นเต็มให้ลองอีกขา
+        $leftFirst = $member->left_leg_members <= $member->right_leg_members;
+        $legs = $leftFirst
+            ? [$member->binaryLeftChild, $member->binaryRightChild]
+            : [$member->binaryRightChild, $member->binaryLeftChild];
+
+        foreach ($legs as $leg) {
+            if ($leg) {
+                $placement = $this->findLeftToRightPlacement($leg, $maxDepth, $maxWidth, $childDepth);
+                if ($placement) {
+                    return $placement;
+                }
+            }
         }
 
-        // Find the leg with fewer members
-        if ($member->left_leg_members <= $member->right_leg_members) {
-            return $this->findLeftToRightPlacement($member->binaryLeftChild, $maxDepth, $maxWidth);
-        }
-
-        return $this->findLeftToRightPlacement($member->binaryRightChild, $maxDepth, $maxWidth);
+        return null;
     }
 
     /**
      * Find weak leg placement
      * รองรับ depth/width limits
      */
-    protected function findWeakLegPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
+    protected function findWeakLegPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2, ?int $currentDepth = null)
     {
-        // ตรวจสอบว่าสามารถวางที่ node นี้ได้หรือไม่
-        if (! $this->canPlaceChild($member, $maxDepth, $maxWidth)) {
+        $guard = $this->resolveDepthGuard($member, $maxDepth, $currentDepth);
+        if ($guard['exceeded']) {
             return null;
         }
 
-        if (! $member->binaryLeftChild) {
-            return ['parent_id' => $member->id, 'position' => 'left'];
+        // วางตรง node นี้ได้เลยถ้ามีช่อง
+        $direct = $this->findDirectSlot($member, $maxWidth);
+        if ($direct) {
+            return $direct;
         }
 
-        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
-            return ['parent_id' => $member->id, 'position' => 'right'];
+        $childDepth = $guard['depth'] !== null ? $guard['depth'] + 1 : null;
+
+        // เลือกขาที่ PV น้อยกว่าก่อน (weak leg) — ถ้าขานั้นเต็มให้ลองอีกขา
+        $weakFirst = $member->left_leg_pv <= $member->right_leg_pv;
+        $legs = $weakFirst
+            ? [$member->binaryLeftChild, $member->binaryRightChild]
+            : [$member->binaryRightChild, $member->binaryLeftChild];
+
+        foreach ($legs as $leg) {
+            if ($leg) {
+                $placement = $this->findLeftToRightPlacement($leg, $maxDepth, $maxWidth, $childDepth);
+                if ($placement) {
+                    return $placement;
+                }
+            }
         }
 
-        // Find the leg with less PV
-        if ($member->left_leg_pv <= $member->right_leg_pv) {
-            return $this->findLeftToRightPlacement($member->binaryLeftChild, $maxDepth, $maxWidth);
-        }
-
-        return $this->findLeftToRightPlacement($member->binaryRightChild, $maxDepth, $maxWidth);
+        return null;
     }
 
     /**
