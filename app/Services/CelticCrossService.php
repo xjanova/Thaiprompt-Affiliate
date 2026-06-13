@@ -3059,7 +3059,25 @@ class CelticCrossService
         }
 
         $svc = app(\App\Services\FortuneKnowledgeService::class);
-        $ctx = trim($userQuestion.' '.$previousContext);
+
+        // 🎯 (2026-06-13) detect หมวดความรู้จาก "คำถามลูกค้า" (ปัจจุบัน + ย้อนหลัง 3 รอบ = topic ที่กำลังคุย)
+        //   เดิมใช้ $previousContext เต็ม — แต่ตอนนี้ที่นั่นมีคำทำนาย Q1 "พื้นดวง" ที่พูดถึง *ทุกด้าน*
+        //   (รัก/งาน/เงิน/สุขภาพ/ฤกษ์) → detect fire เกือบทุกหมวดทุก turn = ฉีดความรู้เกินจำเป็น + ไม่โฟกัส + เปลือง token
+        //   ใหม่: ใช้ "คำถามลูกค้า" เป็นสัญญาณ topic → โฟกัสเรื่องที่ถามจริง (ตรงกับ "ตอบตามคำถาม")
+        //   + ยังจับ follow-up กำกวม ("เขาจะกลับมาไหม" หลังเพิ่งถามความรัก) ผ่าน topic continuity โดยไม่เหวี่ยงแหทุกหมวด
+        $priorQuestions = '';
+        try {
+            $priorQuestions = $reading->celticQuestions()
+                ->whereNotNull('answered_at')
+                ->orderByDesc('sequence')
+                ->limit(3)
+                ->pluck('question')
+                ->map(fn ($q) => trim((string) $q) === '__PREDICT_ALL__' ? '' : (string) $q)
+                ->implode(' ');
+        } catch (\Throwable $e) {
+            // non-blocking — fallback ใช้คำถามปัจจุบันอย่างเดียว
+        }
+        $ctx = trim($userQuestion.' '.$priorQuestions);
 
         // 10 หมวดเสริม — [toggle key, detect method, ไอคอน+ชื่อหมวด, จรรยาบรรณเฉพาะหมวด]
         $groups = [
