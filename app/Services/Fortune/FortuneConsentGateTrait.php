@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
  * Flow:
  *   1. ลูกค้าเลือกแพ็กเกจ → doStartCelticCrossFlow / startDeepReadingFlow เรียก consentGateOrNull()
  *   2. ถ้ายังไม่ยอมรับ → ส่งกล่องกติกา (action 'consent_gate') + ตั้ง Cache pending
- *   3. ลูกค้ากด "พร้อมโอนค่าครู" → processMessage detect → handleConsentAcceptIfPending()
+ *   3. ลูกค้ากด "พร้อมบูชาครู" → processMessage detect → handleConsentAcceptIfPending()
  *        → ตั้ง flag consent_ok → re-dispatch start flow (รอบนี้ผ่าน gate → ออก QR)
  *   4. ลูกค้ากด "ยังไม่พร้อม/ยกเลิก" → flow เดิมจับ → closeAllActiveConversations()
  *        → sendCancelConsentOrWakeup() เตือนสติ (แยกเจตนาเบี้ยว vs เหตุสุดวิสัย)
@@ -113,7 +113,7 @@ trait FortuneConsentGateTrait
 
         // 🩹 (2026-06-07) reshow → ข้อความสั้นย้ำให้กดปุ่ม (ลูกค้าเห็นกติกาเต็มไปแล้วรอบแรก)
         $message = $reshow
-            ? "🙏 ก่อนเริ่มดูดวง รบกวนกดปุ่มยืนยันด้านล่างก่อนนะคะ — \"💎 พร้อมโอนค่าครู {$price}฿\" หรือ \"🙏 ยังไม่พร้อม\""
+            ? "🙏 ก่อนเริ่มดูดวง รบกวนกดปุ่มยืนยันด้านล่างก่อนนะคะ — \"🙏 พร้อมบูชาครู {$price}฿\" หรือ \"🙏 ยังไม่พร้อม\""
             : $this->settings->getConsentText();
 
         return [
@@ -122,7 +122,7 @@ trait FortuneConsentGateTrait
             'consent_image_url' => $imageUrl,
             'quick_replies' => [
                 // 🛡️ ต้องมีทั้ง 'text' (LINE ใช้) และ 'payload' (FB ใช้ payload ?? title — ไม่อ่าน text)
-                ['content_type' => 'text', 'title' => "💎 พร้อมโอนค่าครู {$price}฿", 'text' => 'พร้อมโอนค่าครูแล้ว', 'payload' => 'พร้อมโอนค่าครูแล้ว'],
+                ['content_type' => 'text', 'title' => "🙏 พร้อมบูชาครู {$price}฿", 'text' => 'พร้อมบูชาครูแล้ว', 'payload' => 'พร้อมบูชาครูแล้ว'],
                 ['content_type' => 'text', 'title' => '🙏 ยังไม่พร้อม', 'text' => 'ยกเลิก', 'payload' => 'ยกเลิก'],
             ],
             'show_quick_replies' => true,
@@ -132,7 +132,7 @@ trait FortuneConsentGateTrait
     }
 
     /**
-     * ✅ ตรวจ + จัดการเมื่อลูกค้ากด "พร้อมโอนค่าครู" จากกล่องกติกา
+     * ✅ ตรวจ + จัดการเมื่อลูกค้ากด "พร้อมบูชาครู" จากกล่องกติกา
      *
      * เรียกจาก processMessage ต้นทาง (หลัง in-prediction guard) — มี Cache pending guard
      * กัน over-match (ทำงานเฉพาะตอนมีกล่องกติกาค้างอยู่)
@@ -230,6 +230,8 @@ trait FortuneConsentGateTrait
         //   เคสจริง (FB 27004874569110137): "พร้อมค่าครู99฿เลขบัญชีด้วยครับ" — ไม่มีคำว่า
         //   "โอน" → ไม่ match → เด้งกล่องกติกาวน 3 รอบจนลูกค้าเลิกดู ทั้งที่ขอเลขบัญชีจะจ่ายแล้ว
         $acceptKeywords = [
+            // 🙏 (2026-06-13) ปุ่มใหม่ "พร้อมบูชาครู" + คง 'พร้อมโอนค่าครู' (ปุ่มเก่าในประวัติแชทยังกดได้)
+            'พร้อมบูชาครู', 'พร้อมบูชา',
             'พร้อมโอนค่าครู', 'พร้อมโอน', 'ยืนยันพร้อมโอน', '__consent_ok__',
             // ขอช่องทางจ่าย = ตั้งใจจ่ายแล้ว (gated ด้วย consent pending — ไม่ over-match บริบทอื่น)
             'เลขบัญชี', 'ขอบัญชี', 'เลขบช', 'qr', 'คิวอาร์', 'สแกนจ่าย',

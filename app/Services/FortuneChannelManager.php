@@ -752,7 +752,7 @@ class FortuneChannelManager
                     return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
                 })(),
 
-                // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมโอน/ยกเลิก)
+                // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมบูชาครู/ยกเลิก)
                 'consent_gate' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     $imageUrl = $result['consent_image_url'] ?? null;
                     $buttons = $result['quick_replies'] ?? [];
@@ -2035,7 +2035,7 @@ class FortuneChannelManager
                     ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                 ]),
 
-                // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมโอน/ยกเลิก)
+                // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมบูชาครู/ยกเลิก)
                 'consent_gate' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
                     $imageUrl = $result['consent_image_url'] ?? null;
                     // แปลง quick_replies (FB format: title/text) → LINE format (label/text)

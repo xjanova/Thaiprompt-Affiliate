@@ -685,7 +685,7 @@ trait CelticCrossConversationTrait
 
         // 📜 (2026-06-06) Consent Gate — กล่องกติกาก่อนสร้างบิล Celtic 99
         //   ครอบทุกทางเข้า (กดปุ่ม/พิมพ์ "99"/"celtic") — มาก่อนเลือกวิธีชำระ + ก่อน UPA
-        //   เด้งทุกครั้ง (Cache::pull กิน flag) เว้นเพิ่งกด "พร้อมโอนค่าครู" / ลูกค้าจ่ายแล้ว
+        //   เด้งทุกครั้ง (Cache::pull กิน flag) เว้นเพิ่งกด "พร้อมบูชาครู" / ลูกค้าจ่ายแล้ว
         if ($fcUserId && ($consentGate = $this->consentGateOrNull((string) $fcUserId, 'celtic', $reading))) {
             return $consentGate;
         }
