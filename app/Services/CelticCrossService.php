@@ -1727,11 +1727,16 @@ class CelticCrossService
         try {
             $startTime = microtime(true);
             $aiService = new FortuneAIService($this->settings);
+            // 🛡️ (2026-06-13) bypass_vision_gate=true — ลูกค้า "จ่าย 99฿ + อยู่ในการทำนาย" (active reading)
+            //   ส่งรูปมาเองตั้งใจให้แม่หมอดู = ฟีเจอร์ที่จ่ายเงินแล้ว ไม่ใช่รูปสุ่มในแชทฟรี
+            //   master toggle enable_image_vision=false (เจ้าของตั้งปิด เพื่อไม่วิเคราะห์รูปสุ่ม/ประหยัดโควต้าแชทฟรี)
+            //   ต้องไม่บล็อกการดูรูปในรอบทำนายที่จ่ายแล้ว — เคสจริง R6002 ลูกค้าส่งรูปแล้วบอทตอบ "ดูรูปไม่ได้ (vision unavailable)"
+            //   (pattern เดียวกับ slip cost-guard — gate vision feature ไม่ควรปิด path ที่ลูกค้าจ่ายเงินใช้จริง)
             $result = $aiService->chatWithImage(
                 $imageData,
                 $systemPrompt,
                 $userText !== '' ? $userText : 'เจ้าชะตาส่งรูปนี้มา — ช่วยวิเคราะห์ในบริบทไพ่ที่เปิดไว้',
-                ['temperature' => 0.7, 'max_tokens' => 800]
+                ['temperature' => 0.7, 'max_tokens' => 800, 'bypass_vision_gate' => true]
             );
 
             if ($result === null || empty($result['response'])) {
