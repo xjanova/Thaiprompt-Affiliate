@@ -171,61 +171,83 @@ class CelticCrossService
         try {
             $startTime = microtime(true);
 
-            // 🆕 (2026-05-14) Single prompt — ใช้ buildFollowupPrompt ทุก turn
-            //   admin override ได้ผ่าน celtic_cross_followup_prompt setting
-            $prompt = $this->buildFollowupPrompt($reading, $userQuestion, $cards, $sequence);
-
-            // 🎯 (2026-05-13) Celtic 99฿ = paid prediction → request 'prediction_celtic' purpose
-            //   ระบบจะเลือก key ที่ admin ตั้ง purpose='prediction_celtic' ก่อน
-            //   fallback chain: prediction_celtic → prediction → any → null
-            //   → ลูกค้า Celtic จ่ายแพง (99฿) — admin มาร์ค key คุณภาพสูงเฉพาะแพคนี้ได้
-            //
-            // 🌙 (2026-05-29) Single-bot — Celtic ใช้ key เดียว prediction_celtic + openai เสมอ
-            //   user spec: "ใช้ตัวเดียวคุยเลย เหมือนพูดคุยกับหมอ แยกแยะคำถาม สรุป ขอข้อมูลเพิ่มในตัว"
-            //   เดิม: resolveSensitiveDecision (heuristic keyword/regex) pre-scan คำถาม
-            //         → สลับ purpose='sensitive' (Pro model) ตอนคำถามหนัก
-            //         = ลูกค้ารู้สึกเหมือนมี "บอทแยกคำถาม" + tone อาจ drift ข้าม provider
-            //   ใหม่: ทำนายทุกคำถามด้วย key prediction_celtic + openai เสมอ → persona "แม่หมอจันทรา"
-            //         คงเส้น ลื่นเหมือนหมอคนเดียว. การ "แยกแยะ/ขอข้อมูลเพิ่ม" จัดการใน prompt อยู่แล้ว
-            //         (buildEnrichmentDirective + buildLifeCoachDirective + TYPE:A/B token)
-            //   ⚠️ ขอบเขต: เอา sensitive ออกเฉพาะ Celtic — purpose 'sensitive' ยังใช้ที่อื่น
-            //      (Vision/รับรูป, Deep 39, Pro Session) จึงไม่แตะ AiApiKey::PURPOSES dropdown
+            // 🌟 (2026-06-13) "พื้นดวงเปิดตัว" — gen แบบแบ่งบล็อก (3 calls, context ลีน/บล็อก)
+            //   โมเดลเล็ก (gpt-5.4-mini) + prompt บวม ~24k + directive 20 บล็อก = ตามฟอร์ม 9/6 ส่วนไม่ครบ
+            //   → เฉพาะรอบแรกหลังได้วันเกิด (flag celtic_base_chart) ยิงทีละกลุ่ม section (lean) แล้วต่อกัน
+            //   ⚠️ ต้องเช็ค flag ก่อนเรียก buildFollowupPrompt (ตัวนั้น "กิน" flag ทิ้งที่ L~1416)
+            //   ล้มเหลว/ทุก call ว่าง → $response คง null → ตก fallback single-call ด้านล่าง (override 6 ส่วนเดิม)
             $celticPurpose = 'prediction_celtic';
-            $preferredProvider = 'openai';
-            $aiService = new FortuneAIService($this->settings, $celticPurpose, $preferredProvider);
+            $response = null;
+            $tokensUsed = 0;
+            $aiProvider = null;
+            $aiModel = null;
+            if ($reading->getConversationState('celtic_base_chart')) {
+                try {
+                    $sectioned = $this->generateBaseChartSectioned($reading, $cards, $userQuestion);
+                    if ($sectioned !== null && trim((string) ($sectioned['response'] ?? '')) !== '') {
+                        $response = trim($sectioned['response']);
+                        $tokensUsed = (int) ($sectioned['tokens_used'] ?? 0);
+                        $aiProvider = $sectioned['provider'] ?? null;
+                        $aiModel = $sectioned['model'] ?? null;
+                        // สำเร็จ → กิน flag (กัน fallback/คำถามถัดไปทำซ้ำ)
+                        try {
+                            $reading->setConversationState('celtic_base_chart', false);
+                        } catch (\Throwable $flagErr) {
+                            // non-blocking
+                        }
+                        Log::info('CelticCross: base-chart sectioned สำเร็จ', [
+                            'reading_id' => $reading->id,
+                            'response_len' => mb_strlen($response),
+                            'tokens' => $tokensUsed,
+                        ]);
+                    }
+                } catch (\Throwable $bcErr) {
+                    // ไม่กิน flag → ปล่อย fallback buildFollowupPrompt ใช้ override เดิม (ลูกค้าได้คำทำนายเสมอ)
+                    Log::warning('CelticCross: base-chart sectioned ล้มเหลว → fallback single-call', [
+                        'reading_id' => $reading->id,
+                        'error' => $bcErr->getMessage(),
+                    ]);
+                }
+            }
 
-            // 📚 (2026-06-06) แนบ "คลังคำตอบของแอดมิน" (AdminQA RAG) ท้าย prompt ทำนาย
-            //   ลูกค้าระหว่างทำนายมักถามเรื่องนอกการดูไพ่ (บริการ/ราคา/วิธีใช้/ขั้นตอน) — บอทต้อง
-            //   ดึง "คำตอบจริงที่แอดมินเคยพิมพ์" มาตอบ ไม่ใช่เดาเอง แล้วจัดเป็น [TYPE:E] (ไม่หักโควต้า)
-            //   self-gate: retrieval คืนเฉพาะ Q&A ที่ similarity ≥ threshold → คำถามทำนายจริง
-            //   ("เขาจะกลับไหม") ไม่ match FAQ → ไม่ inject (ไม่เปลือง token / ไม่กวนคำทำนาย)
-            //   กรองหมวดสายขายออก — ลูกค้าจ่าย 99฿ แล้ว ไม่ upsell กลางทำนาย. gate: admin_qa_rag_enabled
-            $prompt = $aiService->injectAdminQARagFewShot(
-                $prompt,
-                $userQuestion,
-                $reading,
-                [
-                    \App\Models\FortuneAdminQA::CATEGORY_PRE_PAYMENT,
-                    \App\Models\FortuneAdminQA::CATEGORY_PRE_PURCHASE,
-                    \App\Models\FortuneAdminQA::CATEGORY_PAYMENT_CONFIRM,
-                ],
-            );
+            // 🆕 (2026-05-14) Single prompt — buildFollowupPrompt ทุก turn (ปกติ + fallback base-chart)
+            //   🌙 (2026-05-29) Single-bot: Celtic ใช้ key เดียว prediction_celtic + openai เสมอ
+            //     (persona "แม่หมอจันทรา" คงเส้น / การแยกแยะ-ขอข้อมูลเพิ่ม จัดการใน prompt อยู่แล้ว)
+            //     sensitive ยังใช้ที่อื่น (Vision/Deep 39/Pro Session) — ไม่แตะ
+            if ($response === null) {
+                $prompt = $this->buildFollowupPrompt($reading, $userQuestion, $cards, $sequence);
 
-            $result = $aiService->generateWithRetryAndFallback(
-                questions: [$prompt],
-                userProfile: null,                  // 🌙 แม่หมอจันทรา ไม่ดูโปรไฟล์ FB — ใช้พลังไพ่ + จิตเจ้าชะตา
-                userPosts: null,
-                promptTemplate: '{questions}',      // 🚫 ไม่ wrap default deep template — Celtic prompt ออกตรงๆ
-                readingType: 'deep',                // ใช้ config deep — AI ต้องตอบยาว
-                birthDate: null,                    // 🌙 ไม่ใช้วันเกิด — แม่หมอใช้พลังจักรวาลล้วงลึกผ่านไพ่
-                userContext: "celtic_cross:{$reading->id}:q{$sequence}",
-                purpose: $celticPurpose,            // 🆕 (2026-05-07) prediction or sensitive
-            );
+                $preferredProvider = 'openai';
+                $aiService = new FortuneAIService($this->settings, $celticPurpose, $preferredProvider);
 
-            $response = trim($result['response'] ?? '');
-            $tokensUsed = (int) ($result['tokens_used'] ?? 0);
-            $aiProvider = $result['provider'] ?? null;
-            $aiModel = $result['model'] ?? null;
+                // 📚 (2026-06-06) แนบ AdminQA RAG — ตอบเรื่องบริการ/ราคา [TYPE:E] ไม่หักโควต้า (self-gate similarity)
+                $prompt = $aiService->injectAdminQARagFewShot(
+                    $prompt,
+                    $userQuestion,
+                    $reading,
+                    [
+                        \App\Models\FortuneAdminQA::CATEGORY_PRE_PAYMENT,
+                        \App\Models\FortuneAdminQA::CATEGORY_PRE_PURCHASE,
+                        \App\Models\FortuneAdminQA::CATEGORY_PAYMENT_CONFIRM,
+                    ],
+                );
+
+                $result = $aiService->generateWithRetryAndFallback(
+                    questions: [$prompt],
+                    userProfile: null,                  // 🌙 แม่หมอจันทรา ไม่ดูโปรไฟล์ FB — ใช้พลังไพ่ + จิตเจ้าชะตา
+                    userPosts: null,
+                    promptTemplate: '{questions}',      // 🚫 ไม่ wrap default deep template — Celtic prompt ออกตรงๆ
+                    readingType: 'deep',                // ใช้ config deep — AI ต้องตอบยาว
+                    birthDate: null,                    // 🌙 ไม่ใช้วันเกิด — แม่หมอใช้พลังจักรวาลล้วงลึกผ่านไพ่
+                    userContext: "celtic_cross:{$reading->id}:q{$sequence}",
+                    purpose: $celticPurpose,
+                );
+
+                $response = trim($result['response'] ?? '');
+                $tokensUsed = (int) ($result['tokens_used'] ?? 0);
+                $aiProvider = $result['provider'] ?? null;
+                $aiModel = $result['model'] ?? null;
+            }
             $responseTimeMs = (int) round((microtime(true) - $startTime) * 1000);
 
             // 🌙 (2026-05-29) ลบ Sensitive Mode logging/budget tracking ใน Celtic
@@ -445,6 +467,167 @@ class CelticCrossService
                     .'📌 ถ้ายังไม่ได้ พิมพ์ "ขอคุยกับคน" เพื่อให้แอดมินช่วย 🙏',
             ];
         }
+    }
+
+    /**
+     * 🌟 (2026-06-13) "พื้นดวงเปิดตัว" — gen แบบแบ่งบล็อก (3 calls, context ลีน/บล็อก)
+     *
+     * ปัญหา: โมเดลเล็ก (gpt-5.4-mini) + prompt บวม ~24k tokens + directive 20 บล็อก
+     *        → ตามฟอร์มโครงสร้าง (emoji หัวข้อ) ไม่ครบ/ไม่สม่ำเสมอ (chronic, ไม่ใช่ regression)
+     * แก้: ยิง 3 call โฟกัส แต่ละ call ใช้ "context กลางลีน" (persona + card-first + ไพ่ 10 ใบ + ดาวเจ้าชนะ)
+     *      — ไม่ยัด directive 20 บล็อก — + สั่งเขียน "เฉพาะกลุ่ม section ที่กำหนด" → โมเดลทำตามฟอร์มแม่น
+     *      แล้วต่อ 3 บล็อกเป็นคำทำนายเดียว ส่งเข้า pipeline เดิม (นับ/เก็บ/ส่ง เหมือน single-call)
+     *
+     * แต่ละ call แนบ "สรุปย่อบล็อกก่อนหน้า" (cap) เพื่อความต่อเนื่อง + กันทวนไพ่ซ้ำ/เนื้อตีกัน
+     *
+     * @param  array  $cards  ไพ่ 10 ใบ (จาก getCelticCards)
+     * @return array|null ['response'=>str, 'tokens_used'=>int, 'provider'=>?str, 'model'=>?str] | null ถ้าทุก call ว่าง
+     */
+    protected function generateBaseChartSectioned(FortuneReading $reading, array $cards, string $userQuestion): ?array
+    {
+        $brandName = $this->settings->fortune_brand_name ?: 'แม่หมอจันทรา';
+        $cardsText = $this->formatCardsForPrompt($cards);
+
+        // 🌟 ดาวเจ้าชนะ — replicate source-building จาก buildFollowupPrompt (parity)
+        $birthSource = $userQuestion;
+        $persistedBirth = (string) $reading->getConversationState('celtic_birthdate_text', '');
+        if ($persistedBirth !== '') {
+            $birthSource .= "\n".$persistedBirth;
+        }
+        $astro = new ThaiAstrologyService;
+        try {
+            if (empty($astro->extractBirthDatesFromText($birthSource))) {
+                $linkedDeep = $this->findLinkedDeepReading($reading);
+                if ($linkedDeep && $linkedDeep->birth_date) {
+                    $birthSource .= "\nเจ้าชะตาเกิด ".$linkedDeep->birth_date->format('d/m/Y');
+                }
+            }
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+        $birthAstroBlock = '';
+        try {
+            $birthAstroBlock = (string) $astro->buildCelticBirthAstrologyBlock($birthSource);
+        } catch (\Throwable $e) {
+            // non-blocking — ถ้าคำนวณดาวไม่ได้ ก็ทำนายจากไพ่ล้วน
+        }
+
+        // 👤 persona-lite (เบา — ไม่ใช่ directive 20 บล็อก)
+        $personaBlock = '';
+        try {
+            $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
+            $uid = (string) ($reading->facebook_user_id ?? $reading->line_user_id ?? '');
+            if ($uid !== '') {
+                $personaBlock = (string) app(\App\Services\Fortune\CustomerPersonaService::class)
+                    ->buildInjectBlock($platform, $uid, $userQuestion);
+            }
+        } catch (\Throwable $e) {
+            // skip
+        }
+
+        // 🧩 context กลางลีน (ใช้ซ้ำทุก call) — persona + card-first + ไพ่ + ดาวเจ้าชนะ
+        $shared = ($personaBlock !== '' ? $personaBlock."\n\n" : '')
+            ."คุณคือ \"{$brandName}\" — แม่หมอเซียนไพ่เซลติก กำลังอ่าน \"พื้นดวงเปิดตัว\" ครั้งแรกให้เจ้าชะตา (เพิ่งได้วันเกิด)\n"
+            ."ผสาน \"ดวงดาว (หลักเจ้าชนะจากวันเกิด)\" + \"ไพ่ทั้ง 10 ใบ\" เป็นเรื่องเดียวกัน — ดาวยืนยัน/เสริมสิ่งที่ไพ่บอก\n\n"
+            .$this->buildCardFirstMandate()
+            .$this->buildCardNamingDirective()
+            ."━━━━━━━━━━━━━━━━━\n🃏 ไพ่ 10 ใบ (Celtic Cross) ของเจ้าชะตา:\n━━━━━━━━━━━━━━━━━\n".$cardsText."\n\n"
+            .($birthAstroBlock !== ''
+                ? "━━━━━━━━━━━━━━━━━\n🌟 ดวงดาวจากวันเกิด (หลักเจ้าชนะ)\n━━━━━━━━━━━━━━━━━\n".$birthAstroBlock."\n\n"
+                : '');
+
+        // 📐 3 กลุ่ม section (รวม 6 ส่วนของพื้นดวงเปิดตัว)
+        $groups = [
+            [
+                'label' => 'g1-foundation',
+                'len' => '500-800',
+                'spec' => "เขียน 2 ส่วนนี้ (ขึ้นหัวข้อด้วย emoji ตามนี้เป๊ะ เว้นบรรทัดให้อ่านง่าย):\n"
+                    ."🌟 พื้นฐานดวง — ราศี/ปีนักษัตร/ธาตุ + ดาวเจ้าชนะ/ดาวมิตร/ดาวศัตรู + นิสัยพื้นฐาน (จุดแข็ง-จุดอ่อน) ผูกกับไพ่ที่สื่อบุคลิก\n"
+                    .'🔮 ภาพรวมชีวิตช่วงนี้ — โยงดาวเสวยอายุ/ดวงปีนี้ กับภาพรวมไพ่ 10 ใบ (อดีต→ปัจจุบัน→อนาคต)',
+            ],
+            [
+                'label' => 'g2-areas',
+                'len' => '600-900',
+                'spec' => "เขียน 4 ด้านนี้ (ขึ้นหัวข้อด้วย emoji ตามนี้เป๊ะ • แต่ละด้านผูกดาว(ภพ)+ไพ่ที่เกี่ยวข้อง • ฟันธงชัด):\n"
+                    ."💞 ความรัก\n"
+                    ."💼 การงาน\n"
+                    ."💰 การเงิน\n"
+                    .'🌿 สุขภาพ',
+            ],
+            [
+                'label' => 'g3-closing',
+                'len' => '500-800',
+                'spec' => "เขียน 3 ส่วนปิดท้ายนี้ (ขึ้นหัวข้อด้วย emoji ตามนี้เป๊ะ):\n"
+                    ."📅 ฤกษ์/สีมงคล/เลขมงคล/วันมงคล + ทิศ (จากดาวมิตร) + สิ่งที่ควรรีบทำ/ควรเลี่ยง\n"
+                    ."⚠️ สิ่งที่ต้องระวัง (จากดาวศัตรู + ไพ่เตือน) + ทางแก้/วิธีเสริมดวงที่ทำเองได้\n"
+                    .'💫 สรุปภาพรวม + ให้กำลังใจ + ชวนเจ้าชะตาพิมพ์ถามเจาะลึกต่อทีละเรื่อง',
+            ],
+        ];
+
+        $aiService = new FortuneAIService($this->settings, 'prediction_celtic', 'openai');
+        $blocks = [];
+        $totalTokens = 0;
+        $provider = null;
+        $model = null;
+        $priorSummary = '';
+
+        foreach ($groups as $g) {
+            $prompt = $shared
+                ."━━━━━━━━━━━━━━━━━\n📐 งานรอบนี้ — เขียนเฉพาะส่วนที่กำหนด (ห้ามเขียนส่วนอื่น ห้ามสรุปรวบ)\n━━━━━━━━━━━━━━━━━\n"
+                .$g['spec']."\n\n"
+                .($priorSummary !== ''
+                    ? "📜 ส่วนที่เขียนไปแล้ว (อ่านเพื่อให้ต่อเนื่อง • อย่าทวนซ้ำ • อย่าทวนไพ่ใบเดิมแบบลอกข้อความ):\n".$priorSummary."\n\n"
+                    : '')
+                ."📏 ความยาว {$g['len']} ตัวอักษร • plain text + emoji หัวข้อ • ❌ ห้าม markdown (**, ##) • ฟันธงตามไพ่+ดาว ห้ามกำกวม\n"
+                .'ขึ้นต้นด้วยหัวข้อ emoji แรกของส่วนนี้ทันที (ห้ามทักทาย ห้ามเกริ่นนำ ห้ามใส่ [TYPE]):';
+
+            try {
+                $r = $aiService->generateWithRetryAndFallback(
+                    questions: [$prompt],
+                    userProfile: null,
+                    userPosts: null,
+                    promptTemplate: '{questions}',
+                    readingType: 'deep',
+                    birthDate: null,
+                    userContext: "celtic_basechart:{$reading->id}:{$g['label']}",
+                    purpose: 'prediction_celtic',
+                );
+
+                $txt = trim((string) ($r['response'] ?? ''));
+                // strip TYPE token เผื่อ AI ใส่มา (เราจัดเป็น A เองใน askQuestion) — ใช้ pattern เดียวกับ askQuestion
+                $stripped = preg_replace('/[`*]{0,3}[\[\【\［]?\s*TYPE\s*[:：]\s*[A-E]\s*[\]\】\］]?[`*]{0,3}/iu', '', $txt);
+                if (is_string($stripped)) {
+                    $txt = trim($stripped);
+                }
+
+                if ($txt !== '') {
+                    $blocks[] = $txt;
+                    $totalTokens += (int) ($r['tokens_used'] ?? 0);
+                    $provider = $provider ?? ($r['provider'] ?? null);
+                    $model = $model ?? ($r['model'] ?? null);
+                    // running summary (cap ท้าย 700 ตัว) เพื่อความต่อเนื่อง + กันทวนซ้ำ
+                    $priorSummary = mb_substr(trim($priorSummary."\n".$txt), -700);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('CelticCross: base-chart section fail (ข้ามส่วนนี้)', [
+                    'reading_id' => $reading->id,
+                    'group' => $g['label'],
+                    'error' => $e->getMessage(),
+                ]);
+                // ข้าม section นี้ — ทำต่อ (partial ดีกว่า fallback ที่จ่าย token ซ้ำ)
+            }
+        }
+
+        if (empty($blocks)) {
+            return null; // ทุก call ล้มเหลว → ให้ askQuestion fallback ไป single-call
+        }
+
+        return [
+            'response' => implode("\n\n", $blocks),
+            'tokens_used' => $totalTokens,
+            'provider' => $provider,
+            'model' => $model,
+        ];
     }
 
     /**
