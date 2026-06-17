@@ -17112,6 +17112,24 @@ PROMPT;
                 $contextParts[] = 'HAS_FRESH_DEEP_READING';
             }
 
+            // 🧑‍🤝‍🧑 (2026-06-17) ขาประจำ — จ่ายดูดวงไปแล้ว "ในเดือนนี้" → ห้ามตื้อขายซ้ำใน chat
+            //   user spec: "คนเก่าที่ดูดวงแล้วภายในเดือนนี้ อย่าตื้อให้ซื้ออีก ทักแบบขาประจำ
+            //     แต่ถ้าเขาอยากดูเอง (อยากดูดวง/ดูเพิ่ม) ก็เปิดบิลให้ตามปกติ"
+            //   กันซ้อน HAS_FRESH_DEEP_READING (<24 ชม. มี instruction เฉพาะ "อ่านคำทำนายล่าสุด" แล้ว)
+            //     → ใส่ PAID_THIS_MONTH เฉพาะเคสที่เหลือของเดือน (จ่ายเดือนนี้ แต่ไม่ใช่ deep สดใน 24 ชม.)
+            if (empty($dmContext['has_fresh_paid_deep'])) {
+                try {
+                    // FB → facebook_user_id / LINE → platform_user_id (cache semantics ตรงกับ comment guard)
+                    $monthlyFbUid = $platformDetected === 'facebook' ? $userId : null;
+                    $monthlyPlatUid = $platformDetected === 'facebook' ? null : $userId;
+                    if (FortuneReading::hasPaidReadingThisCalendarMonth($monthlyFbUid, $monthlyPlatUid)) {
+                        $contextParts[] = 'PAID_THIS_MONTH';
+                    }
+                } catch (\Throwable $e) {
+                    // non-blocking — เช็คไม่ได้ก็คุยตามปกติ
+                }
+            }
+
             if ($returningContext !== null) {
                 $contextParts[] = $returningContext;
             }
