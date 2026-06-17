@@ -5248,6 +5248,16 @@ class FortuneConversationService
             return false;
         }
 
+        // 🌍 (2026-06-17) ยกเว้น Stripe — ถ้าเปิดชำระผ่านบัตร (Stripe) ลูกค้าต่างชาติชำระได้
+        //   → ไม่ block ปล่อยเข้า flow ปกติ → ขั้นชำระเสนอ Stripe (ได้ลิงก์ checkout จากระบบ)
+        try {
+            if ($this->isStripePaymentAvailable()) {
+                return false;
+            }
+        } catch (\Throwable $e) {
+            // ignore — ถือว่า Stripe ไม่พร้อม → ใช้ logic block ปกติด้านล่าง
+        }
+
         // 🆕 (2026-06-03) ลูกค้ากดยืนยัน "จ่ายเงินไทยได้" (เช่น เพื่อนในไทยโอนให้) → ปล่อยผ่าน (กรณีพิเศษ)
         try {
             if (Cache::get("fortune:foreign_override:{$userId}")) {
@@ -5304,7 +5314,7 @@ class FortuneConversationService
     {
         return [
             'action' => 'foreign_service_confirm',
-            'message' => "🙏 ขออภัยค่ะ ขณะนี้ยังไม่เปิดให้บริการดูดวงในประเทศของคุณ\n\n"
+            'message' => "🙏 ขออภัยค่ะ ตอนนี้แม่หมอยังไม่เปิดบริการสำหรับเจ้าชะตาที่อยู่นอกราชอาณาจักรไทยนะคะ\n\n"
                 ."แต่ถ้าคุณ “แน่ใจว่าชำระเป็นเงินบาทไทยได้” — เช่น ให้เพื่อนในไทยโอนให้ —\n"
                 ."กดปุ่ม “✅ แน่ใจ จ่ายได้” เพื่อเริ่มดูดวงต่อได้เลยค่ะ ✨\n"
                 .'(If you can pay in Thai Baht, e.g. a friend in Thailand transfers for you, tap “✅ แน่ใจ จ่ายได้”.)',
