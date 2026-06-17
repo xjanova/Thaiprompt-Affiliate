@@ -8483,6 +8483,7 @@ class FortuneConversationService
             $lastProvider = '';
             $lastModel = '';
             $streamingSentCount = 0; // นับจำนวนคำทำนายที่ส่งสำเร็จผ่าน streaming
+            $deepIncompleteQuestions = []; // (2026-06-17) เก็บข้อที่ทำนายไม่ครบแม้ retry Pro → escalate ท้าย loop
 
             foreach ($questions as $index => $question) {
                 $questionNum = $index + 1;
@@ -8590,6 +8591,93 @@ class FortuneConversationService
                 $totalTokens += $aiResult['tokens_used'] ?? 0;
                 $lastProvider = $aiResult['provider'] ?? '';
                 $lastModel = $aiResult['model'] ?? '';
+
+                // 🛡️ (2026-06-17) Completeness gate — กัน "ทำนายไม่ครบ" (เคสจริง FTU-260617-M4983 / reading 7053)
+                //   อาการ: gemini-3.5-flash หลุด scaffold อังกฤษ "Block 2: Mars (Winas/Patni)" แล้วตัดจบ
+                //     → คำทำนายเหลือ ~30 ตัวอักษร แต่ระบบเดิมรับเป็น valid → ส่งของไม่ครบให้ลูกค้าที่จ่ายเงินแล้ว
+                //   แก้ 3 ชั้น: (1) sanitize scaffold ที่หลุด (2) validate ยาวพอ+เป็นไทย (3) retry 1 ครั้ง
+                $answerText = \App\Services\FortuneAIService::stripInternalContextTags(
+                    (string) ($aiResult['response'] ?? '')
+                );
+                // retry สูงสุด 1 ครั้ง — cap ไว้กัน gen เกิน gen-lock TTL → check-pending (ทุกนาที) dispatch ซ้ำ/AI ซ้ำซ้อน
+                $deepRetry = 0;
+                while (! $this->isCompleteDeepAnswer($answerText)
+                    && $deepRetry < 1
+                    && LineGatekeeperService::canCallAI('fortune')) {
+                    $deepRetry++;
+                    Log::warning('Fortune Deep: คำทำนายข้อ '.$questionNum.' ไม่ครบ — retry ครั้งที่ '.$deepRetry, [
+                        'reading_id' => $reading->id ?? null,
+                        'length' => mb_strlen($answerText),
+                        'preview' => mb_substr($answerText, 0, 80),
+                        'prev_model' => $lastModel,
+                    ]);
+
+                    // retry: ใช้ purpose เดิม ($deepPurpose) ที่มี fallback chain ปกติ
+                    //   ⚠️ ห้าม force 'sensitive' — scope นั้น strict ไม่ fallback: ถ้า prod ไม่มี key purpose=sensitive
+                    //   จะ downgrade เงียบ ๆ (เปลือง) หรือ throw → abort ทั้ง reading ทิ้งข้อที่ดีไปด้วย (regression)
+                    //   pool หมุน key/โมเดลใหม่ให้เองตอน generate รอบใหม่ (โอกาส sample ใหม่ไม่ตัดจบ)
+                    //   try/catch กัน key pool หมด → ไม่ abort ทั้ง reading, ใช้ candidate ที่ดีที่สุดเท่าที่มี
+                    try {
+                        $retryResult = $this->aiService->generateWithRetryAndFallback(
+                            [$question],
+                            $userProfile,
+                            null,
+                            $perQuestionPrompt,
+                            'deep',
+                            $birthDate,
+                            null,
+                            $deepPurpose
+                        );
+                    } catch (\Throwable $deepRetryErr) {
+                        Log::warning('Fortune Deep: retry คำทำนายข้อ '.$questionNum.' ล้มเหลว — ใช้ candidate ที่ดีที่สุด', [
+                            'reading_id' => $reading->id ?? null,
+                            'error' => $deepRetryErr->getMessage(),
+                        ]);
+                        break;
+                    }
+                    LineGatekeeperService::recordAICall('fortune');
+                    $totalTokens += $retryResult['tokens_used'] ?? 0;
+
+                    // budget guard: ถ้า purpose=sensitive (Pro) ต้องบันทึกค่าใช้จ่าย retry ด้วย (กัน budget tally drift)
+                    if ($deepPurpose === 'sensitive') {
+                        try {
+                            $retryCostThb = \App\Services\Fortune\FortuneSensitiveBudgetGuard::estimateCostThb(
+                                (int) ($retryResult['tokens_used'] ?? 0),
+                                $retryResult['model'] ?? ''
+                            );
+                            app(\App\Services\Fortune\FortuneSensitiveBudgetGuard::class)
+                                ->recordUse($deepPlatform, (string) $deepUserId, $retryCostThb);
+                        } catch (\Throwable $retryBudgetErr) {
+                            // non-blocking — ห้ามให้การบันทึก budget ขวาง flow ทำนาย
+                        }
+                    }
+
+                    $retryText = \App\Services\FortuneAIService::stripInternalContextTags(
+                        (string) ($retryResult['response'] ?? '')
+                    );
+                    // เก็บ candidate ที่ดีกว่า (ยาวกว่า = ครบกว่า)
+                    if (mb_strlen($retryText) > mb_strlen($answerText)) {
+                        $answerText = $retryText;
+                        $aiResult = $retryResult;
+                        $lastProvider = $retryResult['provider'] ?? $lastProvider;
+                        $lastModel = $retryResult['model'] ?? $lastModel;
+                    }
+                }
+
+                // ใช้ข้อความที่ sanitize+best-candidate แล้วเป็นคำตอบจริง (กัน scaffold หลุดถึงลูกค้า)
+                $aiResult['response'] = $answerText;
+
+                // ยังไม่ครบแม้ retry → แทนด้วยข้อความสุภาพ (admin กู้ได้ผ่าน retry-reading + มี LINE alert แจ้ง) + flag
+                if (! $this->isCompleteDeepAnswer($answerText)) {
+                    $deepIncompleteQuestions[] = $questionNum;
+                    $aiResult['response'] = '⚠️ ขออภัยค่ะ แม่หมอกำลังประมวลผลคำทำนายข้อนี้ใหม่ให้สมบูรณ์ — '
+                        .'ทีมงานได้รับแจ้งแล้ว จะส่งคำทำนายฉบับเต็มให้โดยเร็วค่ะ 🙏';
+                    Log::error('Fortune Deep: คำทำนายข้อ '.$questionNum.' ยังไม่ครบหลัง retry — flag escalate', [
+                        'reading_id' => $reading->id ?? null,
+                        'length' => mb_strlen($answerText),
+                        'bill' => $reading->bill_reference ?? '-',
+                    ]);
+                }
 
                 // 🚫 (2026-05-02) DISABLED — ส่วนที่ 2 (AI รอบ 2 วิเคราะห์ไพ่แยก) ถูกปิด
                 //   เหตุผล: ทำให้ output มีบล็อก "วิเคราะห์ไพ่ยิปซี" ตอนท้าย ซึ่งซ้ำกับ main prediction
@@ -8815,6 +8903,30 @@ class FortuneConversationService
 
             // รวม response ทั้งหมดสำหรับบันทึกลง DB
             $fullResponse = $this->combineDeepReadings($deepReadings, $name, $reading->bill_reference);
+
+            // 🛡️ (2026-06-17) มีข้อที่ทำนายไม่ครบแม้ retry แล้ว → flag + แจ้งแอดมินทาง LINE alert
+            //   admin กู้ได้: รัน fortune:retry-reading {id} (alert แนบคำสั่ง) หรือ --all-failed
+            //   (deep_response มี "ทีมงานได้รับแจ้ง" → ตรงกับ filter ของ --all-failed) — ไม่ใช่ auto-recover แบบ cron
+            if (! empty($deepIncompleteQuestions)) {
+                try {
+                    $reading->setConversationState('ai_failed_alert', true);
+                    app(\App\Services\LineAlertService::class)->alertSystemError(
+                        'Fortune Deep: คำทำนายไม่ครบหลัง retry Pro — ลูกค้าจ่ายแล้วแต่ AI ตัดจบ',
+                        [
+                            'reading_id' => $reading->id,
+                            'bill' => $reading->bill_reference ?? '-',
+                            'platform' => $platform ?? $reading->platform ?? '?',
+                            'incomplete_questions' => implode(',', $deepIncompleteQuestions),
+                            'admin_action' => "รัน: php artisan fortune:retry-reading {$reading->id}",
+                        ]
+                    );
+                } catch (\Throwable $incompleteAlertErr) {
+                    Log::warning('Fortune Deep: alert คำทำนายไม่ครบ ล้มเหลว (non-blocking)', [
+                        'reading_id' => $reading->id,
+                        'error' => $incompleteAlertErr->getMessage(),
+                    ]);
+                }
+            }
 
             // บันทึกคำทำนายละเอียดลง DB
             // Note: saveDeepReading ใช้ DB::table query ตรง เพราะหลัง AI generation
@@ -12358,6 +12470,79 @@ class FortuneConversationService
     }
 
     /**
+     * 🛡️ (2026-06-17) แยก "ลูกค้าเล่าเรื่อง (บังเอิญมีคำว่าโอน/จ่าย)" ออกจาก "เคลมว่าจ่ายค่าดูดวงแล้ว"
+     *
+     *   ปัญหา: looksLikePaidNotReceived() จับคำว่า "โอนแล้ว/จ่ายแล้ว/จ่ายไปแล้ว/โอนไปแล้ว" แบบ
+     *   substring — ภาษาไทยไม่มีเว้นวรรค ทำให้ประโยคเล่าเรื่องที่มีคำเหล่านี้ (พูดถึงคนอื่นจ่ายเงิน)
+     *   ถูกเข้าใจผิดว่าเป็น "เคลมจ่ายค่าดูดวง" → บอทขอสลิป กลางวงคุย (เคส Aphichat Phanpha)
+     *
+     *   ใช้ "เฉพาะ cold path" (ไม่มีบิล) ใน tryReturningPaidSlipCheck เท่านั้น —
+     *   ไม่แตะ isPaymentClaimRequest() ซึ่งใช้ตอนมีบิลค้าง (บริบทถูกต้องอยู่แล้ว)
+     *
+     *   ตรรกะ:
+     *     1) ถ้ามี "เคลมจ่ายแต่ยังไม่ได้รับ/เช็คสถานะ/ค่าดูดวง" ชัดเจน → เป็นเคลมจริง (ไม่ veto)
+     *     2) ถ้าเหลือแค่คำว่าโอน/จ่ายลอยๆ ในบริบทเล่าเรื่อง (มีคำเปิดเรื่อง หรือ พูดถึงบุคคลอื่น
+     *        ในข้อความที่ยาวพอ) → เป็นการเล่าเรื่อง (veto = ปล่อยให้คุยปกติ)
+     *
+     * @return bool true = เป็นการเล่าเรื่อง ควรปล่อยให้ AI คุยต่อ (ไม่ขอสลิป)
+     */
+    protected function looksLikeStoryNotPaymentClaim(string $text): bool
+    {
+        $n = str_replace(' ', '', $this->normalizeUserInput($text));
+        if ($n === '') {
+            return false;
+        }
+
+        // 1️⃣ สัญญาณว่าเป็น "เคลมจ่ายค่าดูดวงจริง" → ห้าม veto (ปล่อยให้ขอสลิป/เช็คสถานะตามเดิม)
+        $genuineClaim = [
+            // grievance: จ่ายแล้วแต่ยังไม่ได้คำทำนาย
+            'ยังไม่ได้ดู', 'ยังไม่ได้รับ', 'ยังไม่เปิดไพ่', 'ยังไม่ทำนาย', 'ยังไม่ได้ทำนาย',
+            'ไม่ได้คำทำนาย', 'ยังไม่ได้คำทำนาย', 'โอนแล้วไม่', 'จ่ายแล้วไม่', 'โอนเงินแล้วไม่',
+            'ทำไมยังไม่', 'เมื่อไหร่จะได้ดู', 'ยังไม่ดูให้',
+            // เช็คสถานะ/บิล/สลิป
+            'เช็คสถานะ', 'เช็คบิล', 'เช็คยอด', 'ตรวจสอบยอด', 'ตรวจสอบบิล', 'ตรวจสอบการชำระ',
+            'ตัดบิล', 'รับเงินหรือยัง', 'เช็คสลิป', 'ตรวจสลิป', 'ตรวจสอบสลิป',
+            // อ้างถึงค่าบริการดูดวงตรงๆ
+            'ค่าดูดวง', 'ค่าทำนาย', 'ค่าบริการ', 'เงินค่าดู', 'โอนค่า', 'จ่ายค่า',
+        ];
+        foreach ($genuineClaim as $k) {
+            if (str_contains($n, str_replace(' ', '', $k))) {
+                return false;
+            }
+        }
+
+        // 2️⃣ เหลือแค่คำว่าโอน/จ่ายลอยๆ → เช็คว่าเป็น "การเล่าเรื่อง" ไหม
+        // (ก) คำเปิดเรื่องชัดเจน → veto ทันที
+        $storyOpeners = [
+            'เกิดเหตุการณ์', 'เกิดเรื่อง', 'เล่าให้ฟัง', 'อยากเล่า', 'เรื่องมีอยู่ว่า',
+            'เรื่องของเรื่อง', 'เรื่องมันเป็น', 'มันเป็นแบบนี้', 'มันมีเรื่อง',
+        ];
+        foreach ($storyOpeners as $o) {
+            if (str_contains($n, $o)) {
+                return true;
+            }
+        }
+
+        // (ข) พูดถึง "บุคคลอื่น" (คนที่โอน/จ่ายในเรื่องเล่า ไม่ใช่ตัวลูกค้าจ่ายค่าดูดวง)
+        //     + ข้อความยาวพอ (เคลมจ่ายค่าดูดวงจริงมักสั้น กระชับ) → veto
+        //     threshold 40 = เผื่อเคลมสั้นที่อ้างคนอื่น เช่น "แฟนโอนให้แล้วช่วยดูหน่อย" ไม่ถูก veto ผิด
+        //     เรื่องเล่าจริงมักยาวกว่านี้ + เคสที่รายงานถูกจับด้วยคำเปิดเรื่องข้างบนอยู่แล้ว
+        $thirdParty = [
+            'เขา', 'เค้า', 'หล่อน', 'แฟน', 'ผัว', 'เมีย', 'สามี', 'ภรรยา',
+            'เพื่อน', 'ลูกค้า', 'เจ้านาย', 'ลูกหนี้', 'เจ้าหนี้',
+        ];
+        if (mb_strlen($n) > 40) {
+            foreach ($thirdParty as $p) {
+                if (str_contains($n, $p)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * 🔎 (2026-06-01) หา Celtic reading ล่าสุดที่ "ค้างไว้ยังไม่ได้ดู" สำหรับ recover ด้วยสลิป
      *
      * 🛡️ กันช่องโหว่ req #4 "บิลที่ดูไปแล้วเอามาใช้ใหม่":
@@ -12399,6 +12584,22 @@ class FortuneConversationService
                 return null;
             }
 
+            // 🛡️ (2026-06-17) กัน false-positive — ลูกค้า "เล่าเรื่อง" ที่บังเอิญมีคำว่าโอน/จ่าย
+            //   (ไม่ได้กำลังเคลมว่าจ่ายค่าดูดวง) → เดิมบอทตอบ "ขอสลิป" กลางวงสนทนา + ตั้ง flag
+            //   ขอสลิป 1 ชม. ทำลาย UX การเล่าเรื่อง ซึ่งเป็นหัวใจของบริการดูดวง
+            //   เคสจริง (Aphichat Phanpha, FB, 2026-06-17): ลูกค้าเริ่มเล่าเรื่องเพื่อให้ดูดวง
+            //     "วันนี้มันเกิดเหตุการณ์ประหลาดครับ เขาตกลง...จ่าย/โอน..." → บอทขอสลิป (ผิด)
+            //   ต้องเช็คก่อนตั้ง flag/ขอสลิป → ปล่อยให้ AI คุยต่อตามปกติ (return null)
+            if ($this->looksLikeStoryNotPaymentClaim($messageText)) {
+                Log::info('SlipOK: paid-claim เป็นการเล่าเรื่อง (ไม่ใช่เคลมจ่ายค่าดูดวง) → ปล่อยคุยปกติ ไม่ขอสลิป', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'text_preview' => mb_substr($messageText, 0, 80),
+                ]);
+
+                return null;
+            }
+
             // มีบิล active → ปล่อยให้ handler เดิมจัดการ (มี wiring แล้ว)
             $hasActive = FortuneReading::where('facebook_user_id', $userId)
                 ->whereIn('conversation_status', array_merge(
@@ -12428,7 +12629,7 @@ class FortuneConversationService
                     if ($pendingB64 !== null) {
                         Log::info('💎 SlipOK: paid-claim + พบรูป stash ไว้ → ย้อนเช็คสลิป (ไม่ขอส่งใหม่)', [
                             'platform' => $platform, 'user_id' => $userId,
-                            'text_preview' => mb_substr($messageText, 0, 40),
+                            'text_preview' => mb_substr($messageText, 0, 80),
                         ]);
                         $lookback = $this->autoProvisionCelticFromSlip($platform, $userId, null, $pendingB64);
                         if ($lookback !== null) {
@@ -12442,7 +12643,7 @@ class FortuneConversationService
                 Log::info('SlipOK: paid-claim ไม่มีบิลค้าง recent → ขอสลิป (ไม่ขายใหม่)', [
                     'platform' => $platform,
                     'user_id' => $userId,
-                    'text_preview' => mb_substr($messageText, 0, 40),
+                    'text_preview' => mb_substr($messageText, 0, 80),
                 ]);
 
                 return $this->askForSlipMessage(null);
@@ -12451,7 +12652,7 @@ class FortuneConversationService
             Log::info('SlipOK: returning paid-claim (no active bill) → ตรวจสลิป look-back', [
                 'user_id' => $userId,
                 'recent_celtic_id' => $recentCeltic->id,
-                'text_preview' => mb_substr($messageText, 0, 40),
+                'text_preview' => mb_substr($messageText, 0, 80),
             ]);
 
             return $this->respondReturningSlip($recentCeltic, $platform, $userId);
@@ -19740,6 +19941,33 @@ PROMPT;
         }
 
         return $combined;
+    }
+
+    /**
+     * 🛡️ (2026-06-17) ตรวจว่าคำทำนายเชิงลึก "ครบ" พอจะส่งให้ลูกค้าหรือยัง
+     *
+     * กัน "ทำนายไม่ครบ" (เคสจริง FTU-260617-M4983 / reading 7053):
+     *   gemini-3.5-flash หลุด scaffold อังกฤษ "Block 2: Mars (Winas/Patni)" แล้วตัดจบ
+     *   → คำทำนายเหลือไม่กี่ตัวอักษร แต่ระบบเดิมรับเป็น valid
+     *
+     * เกณฑ์: ต้องยาวพอ (≥ 250 ตัวอักษร) + เป็นภาษาไทยเป็นหลัก (≥ 150 อักขระไทย)
+     *   prompt บังคับ 600-1200 คำ → คำทำนายจริงยาวหลายพันตัว
+     *   threshold นี้ปลอดภัย ไม่ false-reject คำทำนายจริง แต่จับ scaffold/ตัดจบได้แน่นอน
+     *
+     * @param  string|null  $answer  คำทำนาย (หลัง sanitize scaffold แล้ว)
+     */
+    protected function isCompleteDeepAnswer(?string $answer): bool
+    {
+        $answer = trim((string) $answer);
+
+        if (mb_strlen($answer) < 250) {
+            return false;
+        }
+
+        // ต้องเป็นภาษาไทยเป็นหลัก — กัน scaffold อังกฤษล้วน / meta-output หลุด
+        $thaiChars = preg_match_all('/[\x{0E00}-\x{0E7F}]/u', $answer);
+
+        return $thaiChars >= 150;
     }
 
     /**

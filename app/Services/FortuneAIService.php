@@ -1103,9 +1103,11 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
             '/^[ \t]*Revision\s+Sec\s+[A-Z][A-Za-z0-9 _-]{0,30}:\*?\s*/um',
             // 3b. "List of planets/cards/houses/stars/sections/tags/words [used now]:"
             '/^[ \t]*List of (?:planets|cards|stars|houses|sections|tags|words)\s+[^\n]{0,150}\n?/uim',
-            // 3c. "Sec A: Mercury (Tanu)..." — English planet+house mapping
-            //     ต้องมี "(English-word)" ต่อท้าย → กัน false positive Thai content
-            '/^[ \t]*Sec(?:tion)?\s+[A-Z][A-Za-z0-9]*\s*:[^\n]*\([A-Z][A-Za-z]{2,}\)[^\n]*\n?/um',
+            // 3c. "Sec A: Mercury (Tanu)..." / "Block 2: Mars (Winas/Patni)..." — English planet+house mapping
+            //     ต้องมี "(English-word...)" ต่อท้าย → กัน false positive Thai content
+            //     (2026-06-17) เพิ่ม "Block" + ยอมรับเลขหลัง keyword + วงเล็บที่มี "/" เช่น (Winas/Patni)
+            //       เคสจริง FTU-260617-M4983: gemini-3.5-flash หลุด "Block 2: Mars (Winas/Patni)." แล้วตัดจบ
+            '/^[ \t]*(?:Sec(?:tion)?|Block)[ \t]+[A-Za-z0-9][A-Za-z0-9 _-]{0,20}:[^\n]*\([A-Z][^\n)]{1,60}\)[^\n]*\n?/um',
             // 3d. "Perfect. Zero overlap..." / "Perfect, All ..." — AI self-praise
             '/^[ \t]*Perfect[\.\,]\s+(?:Zero|All|No|Each|Every)\s+[^\n]*\n?/um',
             // 3e. "No XXX?* Yes/Checked..." — self-check Q&A

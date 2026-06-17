@@ -359,7 +359,9 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                 //   key เดียวกับ fortune:process-deep command (เคสจริง R5604: รันขนาน 3 รอบ
                 //   → คำทำนายเขียนทับ + ส่งซ้ำ + AI cost ×3)
                 $genLockKey = "fortune:deep_gen:{$this->readingId}";
-                if (! \Illuminate\Support\Facades\Cache::add($genLockKey, 1, 300)) {
+                // (2026-06-17) TTL 300→600s — completeness-gate retry อาจทำให้ gen นานขึ้น;
+                //   กัน lock หมดอายุระหว่าง generate แล้ว check-pending (ทุกนาที) dispatch ซ้ำ → gen ซ้อน
+                if (! \Illuminate\Support\Facades\Cache::add($genLockKey, 1, 600)) {
                     Log::info('ProcessDeepFortuneReadingJob: generation lock ถูกถือโดย process อื่น — skip duplicate generation', [
                         'reading_id' => $this->readingId,
                     ]);

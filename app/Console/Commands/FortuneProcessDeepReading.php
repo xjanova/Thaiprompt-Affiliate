@@ -103,7 +103,9 @@ class FortuneProcessDeepReading extends Command
                 //   → AI generate ขนานกัน 3 รอบ → คำทำนายเขียนทับ + ส่งซ้ำ 3 ชุด + AI cost ×3
                 //   Cache::add = atomic (redis) → process เดียวเท่านั้นที่ได้ generate
                 $genLockKey = "fortune:deep_gen:{$readingId}";
-                if (! \Illuminate\Support\Facades\Cache::add($genLockKey, 1, 300)) {
+                // (2026-06-17) TTL 300→600s — completeness-gate retry อาจทำให้ gen นานขึ้น;
+                //   กัน lock หมดอายุระหว่าง generate แล้ว check-pending (ทุกนาที) dispatch ซ้ำ → gen ซ้อน
+                if (! \Illuminate\Support\Facades\Cache::add($genLockKey, 1, 600)) {
                     $this->info("FortuneReading #{$readingId} มี process อื่นกำลัง generate อยู่ — ข้าม (กัน gen ซ้อน)");
                     Log::info('fortune:process-deep: generation lock ถูกถือโดย process อื่น — skip duplicate generation', [
                         'reading_id' => $readingId,
