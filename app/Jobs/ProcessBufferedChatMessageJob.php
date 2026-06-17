@@ -71,6 +71,16 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
             $settings = FortuneTellingSetting::getSettings();
             $service = new FortuneConversationService($settings);
 
+            // 🛡️ (2026-06-17) ระหว่างรอ buffer (สูงสุด ~1 นาที) ถ้าลูกค้าเริ่ม "ดูดวงที่จ่ายแล้ว" ไปแล้ว
+            //   → ห้ามส่ง chat reply ที่ค้างมาแทรกกลางการทำนาย (reading flow เป็นเจ้าของบทสนทนาแล้ว)
+            if ($service->hasPaidActiveReading($this->userId)) {
+                Log::info('ProcessBufferedChatMessageJob: paid active reading — skip buffered chat reply', [
+                    'user_id' => $this->userId,
+                ]);
+
+                return;
+            }
+
             // เรียก tryAIChatResponse ด้วย bypassBuffer=true → ไม่เข้า buffer อีก
             $result = $service->tryAIChatResponse(
                 $this->userId,

@@ -596,13 +596,14 @@
                     </label>
                     <input type="number" name="message_debounce_seconds"
                            value="{{ old('message_debounce_seconds', $settings->message_debounce_seconds ?? 3) }}"
-                           min="0" max="30" step="1"
+                           min="0" max="120" step="1"
                            class="w-full px-4 py-2 border border-purple-300 dark:border-purple-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
                     <div class="text-xs text-gray-600 dark:text-gray-400 mt-2 space-y-1">
                         <p>💡 <strong>0 = ปิด feature</strong> (บอทตอบทันทีทุกข้อความ — behavior เดิม)</p>
-                        <p>💡 <strong>3-5 วินาที = แนะนำ</strong> — ลูกค้าพิมพ์ติด ๆ จะรวมเป็นข้อความเดียวก่อนตอบ</p>
-                        <p>💡 <strong>10+ วินาที</strong> — รอรวมเยอะขึ้น แต่ลูกค้าอาจคิดว่าบอทช้า</p>
-                        <p class="text-amber-600 dark:text-amber-400">⚠️ ใช้กับ chat ปกติ + Celtic Q2+ (Q1 ตอบทันที / payment/command bypass อัตโนมัติ)</p>
+                        <p>💡 <strong>3-5 วินาที</strong> — รวมข้อความที่ลูกค้าพิมพ์ติด ๆ ก่อนตอบ</p>
+                        <p>💡 <strong>60 วินาที = โหมด "รอ 1 นาทีแล้วตอบทีเดียว"</strong> — รอรวมข้อความทั้งหมดใน 1 นาที แล้วตอบครั้งเดียว (ประหยัด token + เป็นธรรมชาติ)</p>
+                        <p class="text-green-600 dark:text-green-400">⚡ ข้อความที่แสดงเจตนาดูดวง (ดูดวง/ทำนาย/เปิดไพ่/ไพ่/deep/ละเอียด/พร้อม) + payment/command → <strong>bypass ตอบทันที</strong> ไม่ต้องรอ</p>
+                        <p class="text-amber-600 dark:text-amber-400">⚠️ ต้องมี queue worker (redis) ทำงาน — ถ้า worker ล่ม ข้อความจะค้างไม่ตอบ</p>
                     </div>
                 </div>
 
@@ -1989,6 +1990,55 @@ Format 2 — JSON array:
                 <p class="text-xs text-gray-500 mt-1">Variables: <code>{name}</code> = ชื่อลูกค้า (default 'เจ้าชะตา')</p>
             </div>
         </div> {{-- End Satisfaction Detector --}}
+
+        {{-- ===== ⭐ Review Invite (2026-06-17) — ชวนรีวิวเพจ Facebook หลังดูดวงจบ ===== --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="engagement"
+             x-data="{
+                 reviewInviteEnabled: {{ old('review_invite_enabled', $settings->review_invite_enabled ?? false) ? 'true' : 'false' }},
+             }">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    ⭐ ชวนรีวิวเพจ Facebook
+                    <span class="text-xs font-normal text-amber-600 dark:text-amber-400">(ส่งลิงก์รีวิวหลังดูดวงจบ — เฉพาะลูกค้าจ่ายเงิน)</span>
+                </h3>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="hidden" name="review_invite_enabled" value="0">
+                    <input type="checkbox" name="review_invite_enabled" value="1" x-model="reviewInviteEnabled" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-amber-600"></div>
+                </label>
+            </div>
+
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                เมื่อลูกค้าที่จ่ายเงิน (Celtic 99 / Deep 39) ดูดวงจบ — ระบบส่งปุ่มชวนรีวิว/แนะนำเพจ Facebook ให้อัตโนมัติ
+                ต่อจากบทสรุป VIP (ส่งครั้งเดียวต่อบิล)
+            </p>
+
+            <div x-show="reviewInviteEnabled" x-cloak x-collapse class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        🔗 ลิงก์รีวิว/แนะนำเพจ Facebook
+                    </label>
+                    <input type="url" name="review_facebook_url"
+                           value="{{ old('review_facebook_url', $settings->review_facebook_url ?? '') }}"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                           placeholder="https://www.facebook.com/yourpage/reviews/">
+                    <p class="text-xs text-gray-500 mt-1">
+                        เว้นว่าง = ใช้ลิงก์ default จากเพจจริงอัตโนมัติ
+                        (<code>https://www.facebook.com/{Page ID}/reviews/</code>)
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        💬 ข้อความชวนรีวิว (admin custom — เว้นว่าง = ใช้ default)
+                    </label>
+                    <textarea name="review_invite_text" rows="4"
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              placeholder="🌟 ถ้าคำทำนายวันนี้ถูกใจ — แม่หมอขอแรง{name}ช่วยรีวิว/ให้กำลังใจที่เพจหน่อยนะคะ 💜&#10;&#10;รีวิวของ{name} = พลังให้แม่หมอได้ช่วยเหลือเจ้าชะตาท่านอื่นต่อไป ✨&#10;กดปุ่มด้านล่างเพื่อเขียนรีวิวได้เลยค่ะ 🙏">{{ old('review_invite_text', $settings->review_invite_text ?? '') }}</textarea>
+                    <p class="text-xs text-gray-500 mt-1">Variables: <code>{name}</code> = ชื่อลูกค้า (default 'เจ้าชะตา')</p>
+                </div>
+            </div>
+        </div> {{-- End Review Invite --}}
 
         {{-- Comment Engagement Settings --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="engagement">

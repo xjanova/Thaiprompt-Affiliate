@@ -313,7 +313,7 @@ class FortuneSettingsController extends Controller
             'chat_ai_api_key' => 'nullable|string',
             'chat_system_prompt' => 'nullable|string|max:5000',
             // 📦 (2026-05-20 Phase 4) Message Debounce — รวมข้อความก่อนตอบ
-            'message_debounce_seconds' => 'nullable|integer|min:0|max:30',
+            'message_debounce_seconds' => 'nullable|integer|min:0|max:120',
             // Admin Takeover (เทคโอเวอร์ — LINE + Facebook รวมกัน)
             'admin_handover_enabled' => 'boolean',
             'admin_handover_timeout' => 'nullable|integer|min:1|max:1440',
@@ -363,6 +363,10 @@ class FortuneSettingsController extends Controller
             // 🙏 Satisfaction Detector
             'satisfaction_detection_enabled' => 'boolean',
             'satisfaction_close_message' => 'nullable|string|max:1000',
+            // ⭐ (2026-06-17) Review Invite — ชวนรีวิวเพจ Facebook หลังดูดวงจบ
+            'review_invite_enabled' => 'boolean',
+            'review_facebook_url' => 'nullable|url|max:500',
+            'review_invite_text' => 'nullable|string|max:1000',
             // 🎙️ (2026-05-08) Voice Summary (TTS)
             'voice_summary_enabled' => 'boolean',
             'voice_summary_tier_scope' => 'nullable|in:celtic_99_only,paid_all,all',
@@ -456,6 +460,8 @@ class FortuneSettingsController extends Controller
             'bill_psychology_enabled',
             'celtic_premium_chat_enabled',
             'satisfaction_detection_enabled',
+            // ⭐ (2026-06-17) Review Invite (ชวนรีวิวเพจ FB หลังดูดวงจบ)
+            'review_invite_enabled',
             // 🎙️ (2026-05-08) Voice Summary
             'voice_summary_enabled',
             // 💳 (2026-05-09) Stripe payment
