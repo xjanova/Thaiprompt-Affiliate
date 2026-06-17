@@ -214,6 +214,10 @@ class FortuneTellingSetting extends Model
         // 🙏 Satisfaction Detector (2026-05-07 Phase 2)
         'satisfaction_detection_enabled',
         'satisfaction_close_message',
+        // ⭐ Review Invite (2026-06-17) — ชวนรีวิวเพจ Facebook หลังดูดวงจบ (เฉพาะลูกค้าจ่ายเงิน)
+        'review_invite_enabled',
+        'review_facebook_url',
+        'review_invite_text',
         // ระบบดูดวงสาธารณะ (Horoscope Public)
         'horoscope_public_enabled',
         'horoscope_free_daily_limit',
@@ -449,6 +453,8 @@ class FortuneTellingSetting extends Model
         'celtic_premium_chat_max_messages' => 'integer',
         // 🙏 Satisfaction Detector (2026-05-07 Phase 2)
         'satisfaction_detection_enabled' => 'boolean',
+        // ⭐ Review Invite (2026-06-17)
+        'review_invite_enabled' => 'boolean',
         // ระบบดูดวงสาธารณะ
         'horoscope_public_enabled' => 'boolean',
         'horoscope_free_daily_limit' => 'integer',
@@ -714,6 +720,8 @@ class FortuneTellingSetting extends Model
         'celtic_premium_chat_max_messages' => 30,
         // 🙏 Satisfaction Detector defaults
         'satisfaction_detection_enabled' => true,
+        // ⭐ Review Invite defaults (2026-06-17) — ปิดไว้ก่อน (admin เปิด + ตั้งลิงก์เอง)
+        'review_invite_enabled' => false,
         // 💳 (2026-05-09) Stripe Checkout — ค่าเริ่มต้น (admin เปิด + ใส่ key ก่อนใช้)
         'enable_stripe_payment' => false,
         'stripe_service_fee' => 15.00,

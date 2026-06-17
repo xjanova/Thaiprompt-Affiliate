@@ -2908,12 +2908,35 @@ trait CelticCrossConversationTrait
             $this->clearProSessionFlags($reading);
         }
 
+        // ⭐ (2026-06-17) Review Invite — ชวนรีวิวเพจ Facebook หลังสรุป VIP (เฉพาะลูกค้าจ่ายเงิน)
+        //   ตัดสินที่จุดจบ session — ครอบทั้ง webhook + cron auto-finalize (วิ่งผ่าน endCelticSession เหมือนกัน)
+        //   non-blocking: รีวิวพังห้ามกระทบคำทำนาย → fail = null (ChannelManager ข้ามเอง)
+        //   🛡️ ห้ามส่งตอน "linger" (อวยพรหลอก — Pro Session ยังเหลือเวลา ลูกค้าคุยต่อได้)
+        //      เพราะข้อความบอก "ยังไม่ลา ยังเปิดประตูให้อีก X นาที" → ชวนรีวิวตอนนี้จะขัดกัน
+        //      จะส่งตอนจบจริง (time_expired/idle/customer_said_done หรือครบไม่มีเวลา Pro เหลือ)
+        $isLingering = ($proSessionActive ?? false) && ($proSessionRemaining ?? 0) > 0
+            && in_array($reason, ['max_questions_reached', 'ai_signal'], true);
+        $reviewInvite = null;
+        if (! $isLingering) {
+            try {
+                $reviewInvite = (new \App\Services\Fortune\FortuneReviewInviteService($this->settings))
+                    ->attachIfEligible($reading);
+            } catch (\Throwable $e) {
+                \Log::warning('Celtic: review invite attach fail (non-blocking)', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         return [
             'action' => 'celtic_session_ended',
             'message' => $closingMessage,
             'reading' => $reading,
             'end_reason' => $reason,
             'celtic_summary_image_url' => $composeUrl,
+            // ⭐ (2026-06-17) payload ชวนรีวิว (null = ไม่ส่ง) — ChannelManager ส่ง bubble ถัดจากข้อความปิด
+            'review_invite' => $reviewInvite,
             // 🗺️ (2026-06-08) แผนที่ดาวชะตา ส่งคู่ภาพไพ่ตอนสรุป (null ถ้าไม่มีวันเกิด)
             'chart_image_url' => $this->buildCelticBirthChartUrl($reading),
             'has_grand_finale' => ! empty($grandFinale),

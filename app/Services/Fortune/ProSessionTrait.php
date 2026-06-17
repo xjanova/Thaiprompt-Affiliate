@@ -198,6 +198,19 @@ trait ProSessionTrait
 
         $name = $reading->resolveCustomerName();
 
+        // ⭐ (2026-06-17) Review Invite — ชวนรีวิวเพจ Facebook หลังหมดเวลาทำนาย (เฉพาะลูกค้าจ่ายเงิน)
+        //   non-blocking: fail = null (ChannelManager ข้ามเอง)
+        $reviewInvite = null;
+        try {
+            $reviewInvite = (new \App\Services\Fortune\FortuneReviewInviteService($this->settings))
+                ->attachIfEligible($reading);
+        } catch (\Throwable $e) {
+            Log::warning('Deep: review invite attach fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return [
             'action' => 'deep_pro_session_timeout',
             'message' => "🌙✨ *หมดเวลาทำนายแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
@@ -206,6 +219,8 @@ trait ProSessionTrait
                 ."📖 อยากอ่านคำทำนายอีกครั้ง — พิมพ์ *\"อ่านคำทำนายล่าสุด\"* ได้ตลอดเลยค่ะ\n"
                 .'🔮 อยากให้แม่หมอดูใหม่ — พิมพ์ *"ดูดวง"* ได้เสมอนะคะ',
             'reading' => $reading,
+            // ⭐ (2026-06-17) payload ชวนรีวิว (null = ไม่ส่ง)
+            'review_invite' => $reviewInvite,
         ];
     }
 

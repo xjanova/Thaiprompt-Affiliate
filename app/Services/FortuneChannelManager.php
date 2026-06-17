@@ -1187,7 +1187,20 @@ class FortuneChannelManager
                         }
                     }
 
-                    return $fbService->sendMessage($userId, $message, $extra);
+                    $sent = $fbService->sendMessage($userId, $message, $extra);
+
+                    // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — ส่ง bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
+                    $this->sendReviewInviteFacebook($fbService, $userId, $result, $extra);
+
+                    return $sent;
+                })(),
+
+                // 🌙 (2026-06-17) Deep 39 หมดเวลาทำนาย — ข้อความขอบคุณ + ชวนรีวิว (ถ้าเข้าเงื่อนไข)
+                'deep_pro_session_timeout' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    $sent = $fbService->sendMessage($userId, $message, $extra);
+                    $this->sendReviewInviteFacebook($fbService, $userId, $result, $extra);
+
+                    return $sent;
                 })(),
 
                 // celtic actions ที่เป็น text-only (cancelled, completed, expired, ai_failed, etc.)
@@ -2601,7 +2614,21 @@ class FortuneChannelManager
                         }
                     }
 
-                    return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                    $sent = $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+
+                    // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — push bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
+                    $this->sendReviewInviteLine($lineService, $userId, $result);
+
+                    return $sent;
+                })(),
+
+                // 🌙 (2026-06-17) Deep 39 หมดเวลาทำนาย — ข้อความขอบคุณ + ชวนรีวิว (ถ้าเข้าเงื่อนไข)
+                //   ใช้ sendLineFallbackResponse เดิม (คงการห่อ Flex สวยเหมือนตอนตก default) แล้วต่อด้วยรีวิว
+                'deep_pro_session_timeout' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
+                    $sent = $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken);
+                    $this->sendReviewInviteLine($lineService, $userId, $result);
+
+                    return $sent;
                 })(),
 
                 // 💬 (2026-05-14) Celtic chat-style conversation log — LINE
@@ -4574,6 +4601,117 @@ class FortuneChannelManager
                 ['label' => '⏰ ไว้ดูทีหลัง', 'text' => 'ไว้ดูทีหลัง'],
             ],
         ]);
+    }
+
+    /**
+     * ⭐ (2026-06-17) ชวนรีวิวเพจ Facebook — ส่ง bubble ปุ่มถัดจากข้อความปิด session (Facebook)
+     *
+     * เรียกหลังส่งข้อความสรุป VIP / หมดเวลาทำนาย — ส่งเฉพาะเมื่อ $result['review_invite'] มีค่า
+     * non-blocking: รีวิวพังห้ามกระทบข้อความคำทำนายที่ส่งไปแล้ว
+     *
+     * @param  array  $extra  forward from_admin/message_tag (cron ส่งนอก 24 ชม. ผ่าน POST_PURCHASE_UPDATE)
+     */
+    protected function sendReviewInviteFacebook(FacebookWebhookService $fbService, string $userId, array $result, array $extra = []): void
+    {
+        $invite = $result['review_invite'] ?? null;
+        if (empty($invite) || empty($invite['url'])) {
+            return;
+        }
+
+        try {
+            $title = mb_substr((string) ($invite['button_title'] ?? '⭐ เขียนรีวิว'), 0, 20);
+            $text = mb_substr((string) ($invite['text'] ?? ''), 0, 600);
+
+            $template = [
+                'attachment' => [
+                    'type' => 'template',
+                    'payload' => [
+                        'template_type' => 'button',
+                        'text' => $text !== '' ? $text : '🌟 ฝากรีวิวให้แม่หมอด้วยนะคะ 🙏',
+                        'buttons' => [
+                            [
+                                'type' => 'web_url',
+                                'title' => $title,
+                                'url' => $invite['url'],
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+
+            usleep(500000); // 0.5s — ส่งต่อจากข้อความปิด (กัน rate limit)
+            $fbService->sendButtonTemplate($userId, $template, $extra);
+        } catch (\Throwable $e) {
+            Log::warning('Review invite FB send fail (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ⭐ (2026-06-17) ชวนรีวิวเพจ Facebook — push Flex bubble ปุ่มถัดจากข้อความปิด session (LINE)
+     *
+     * non-blocking — ส่งเฉพาะเมื่อ $result['review_invite'] มีค่า
+     */
+    protected function sendReviewInviteLine(LineFortuneService $lineService, string $userId, array $result): void
+    {
+        $invite = $result['review_invite'] ?? null;
+        if (empty($invite) || empty($invite['url'])) {
+            return;
+        }
+
+        try {
+            $primaryColor = $this->settings->getLineFlexPrimaryColor();
+            $text = mb_substr((string) ($invite['text'] ?? ''), 0, 1000);
+            $label = mb_substr((string) ($invite['button_title'] ?? '⭐ เขียนรีวิว'), 0, 20);
+
+            $flex = [
+                'type' => 'bubble',
+                'body' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'spacing' => 'md',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => $text !== '' ? $text : '🌟 ฝากรีวิวให้แม่หมอด้วยนะคะ 🙏',
+                            'wrap' => true,
+                            'size' => 'sm',
+                            'color' => '#333333',
+                        ],
+                    ],
+                ],
+                'footer' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'spacing' => 'sm',
+                    'contents' => [
+                        [
+                            'type' => 'button',
+                            'style' => 'primary',
+                            'color' => $primaryColor,
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'uri',
+                                'label' => $label,
+                                'uri' => $invite['url'],
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+
+            $lineService->sendRichMessage($userId, [
+                'alt_text' => '⭐ ฝากรีวิวให้แม่หมอด้วยนะคะ',
+                'contents' => $flex,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Review invite LINE send fail (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
