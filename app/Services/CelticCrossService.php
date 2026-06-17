@@ -1064,6 +1064,7 @@ class CelticCrossService
             .$this->buildHealthDirective($reading, $userQuestion)
             .$this->buildMuKnowledgeDirective($reading, $userQuestion)
             .$this->buildPhysiognomyDirective($reading, $userQuestion)
+            .$this->buildPersonRoleDirective($reading, $userQuestion)
             .$this->buildLifeReadingDirective($reading, $userQuestion)
             .$this->buildDestinyDirective($reading, $userQuestion)
             .$this->buildExtraKnowledgeDirectives($reading, $userQuestion)
@@ -1502,6 +1503,7 @@ class CelticCrossService
                 .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
                 .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
                 .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
+                .$this->buildPersonRoleDirective($reading, $userQuestion, $previousContext)
                 .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
                 .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
                 .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
@@ -1653,6 +1655,7 @@ class CelticCrossService
             .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
             .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
             .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
+            .$this->buildPersonRoleDirective($reading, $userQuestion, $previousContext)
             .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
             .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
             .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
@@ -3436,6 +3439,80 @@ class CelticCrossService
     }
 
     /**
+     * 🧑‍🤝‍🧑 (2026-06-17) ตำราตำแหน่งบุคคล — ระบุว่าไพ่ใบไหน = "ใคร" ในชีวิตเจ้าชะตา
+     *
+     * User directive: "เพิ่มหมวดตำแหน่งบุคคล (พ่อ/แม่/พี่/ป้า/น้า/อา/น้อง/เพื่อน/ผู้อุปถัมภ์...)
+     *   เพื่อใช้ระบุว่าเป็นใคร เมื่อต้องกล่าวถึงในคำถาม"
+     *
+     * ต่างจาก physiognomy (หน้าตา/นิสัย) — หมวดนี้ตอบ "เป็นใคร/ความสัมพันธ์/ตำแหน่งในชีวิต"
+     *   detect เมื่อคำถามเอ่ยถึงตัวบุคคล (เครือญาติ/สังคม) หรือถามว่า "ใครคือ..."
+     *   → ดึง role tome รายไพ่ 10 ใบ → อ่าน card-first ว่าไพ่ตำแหน่งไหน = บุคคลใด
+     *
+     * gate: enable_celtic_person_role (default on)
+     */
+    protected function buildPersonRoleDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    {
+        // settings gate — admin ปิดได้
+        if (! (bool) ($this->settings->enable_celtic_person_role ?? true)) {
+            return '';
+        }
+
+        // Detect: คำถามเอ่ยถึง "ตัวบุคคล" (เครือญาติ/สังคม) หรือถาม "เป็นใคร" ไหม
+        //   ⚠️ เลี่ยงคำพยางค์เดียวที่เป็น substring คำอื่น (น้า=หน้า, อา=เอา/อาหาร, ตา=ตาม, ย่า=อย่าง)
+        //   ⚠️ ตัดชื่อแม่หมอออกก่อน — กัน 'แม่' bare ไป match "แม่หมอ" (ลูกค้าทักบ่อยมาก) = over-fire
+        $haystack = mb_strtolower($userQuestion.' '.$previousContext);
+        $haystack = str_replace(['แม่หมอดู', 'แม่หมอ', 'พ่อหมอ'], ' ', $haystack);
+        $keywords = [
+            // เครือญาติ
+            'พ่อ', 'แม่', 'ลูกชาย', 'ลูกสาว', 'พี่ชาย', 'พี่สาว', 'น้องชาย', 'น้องสาว', 'พี่น้อง',
+            'พี่', 'น้อง', 'หลาน', 'ญาติ', 'พ่อแม่', 'ครอบครัว', 'คนในบ้าน', 'คนในครอบครัว',
+            'คุณพ่อ', 'คุณแม่', 'คุณป้า', 'คุณน้า', 'คุณอา', 'คุณลุง', 'ลุง', 'คุณตา', 'คุณยาย', 'ยาย', 'ปู่', 'คุณปู่', 'คุณย่า',
+            'ลูกพี่ลูกน้อง',
+            // คู่/สังคม/งาน
+            'สามี', 'ภรรยา', 'เมีย', 'แฟน', 'เนื้อคู่', 'คู่กรณี', 'มือที่สาม',
+            'เพื่อน', 'เจ้านาย', 'หัวหน้า', 'ลูกน้อง', 'หุ้นส่วน', 'นายทุน', 'เจ้าหนี้', 'ลูกหนี้',
+            'คนอุปถัมภ์', 'ผู้อุปถัมภ์', 'ผู้มีพระคุณ', 'ผู้สนับสนุน',
+            // ถาม "เป็นใคร"
+            'เป็นใคร', 'ใครคือ', 'คือใคร', 'หมายถึงใคร', 'ใครกันแน่', 'คนนี้คือ', 'ระบุว่าเป็นใคร',
+            'ตำแหน่งบุคคล', 'ใครในชีวิต', 'ไพ่ใบไหนคือ', 'ใบไหนคือ',
+        ];
+        $hit = false;
+        foreach ($keywords as $kw) {
+            if (mb_strpos($haystack, $kw) !== false) {
+                $hit = true;
+                break;
+            }
+        }
+        if (! $hit) {
+            return '';
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $block = app(\App\Services\FortuneKnowledgeService::class)->personRoleLinesForCards($cards);
+        if (trim($block) === '') {
+            return '';
+        }
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🧑‍🤝‍🧑 ตำราตำแหน่งบุคคล ประจำไพ่ (ตรวจพบคำถามที่เอ่ยถึง \"ตัวบุคคล\")\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."ด้านล่างคือ \"ตำแหน่งบุคคล/ความสัมพันธ์\" ที่ไพ่แต่ละใบที่เปิดมักบ่งถึง — ใช้ \"ระบุว่าใคร\" ตามหน้าไพ่:\n\n"
+            .$block."\n\n"
+
+            ."🎯 *วิธีระบุตัวบุคคล (card-first — ตามหน้าไพ่ + ตำแหน่ง ไม่มั่ว):*\n"
+            ."• จับคู่ \"คนที่ลูกค้าเอ่ยถึง\" กับไพ่ในตำแหน่งที่ตรง — ตัวเจ้าชะตา(ต.1) / สิ่งแวดล้อม-คนรอบข้าง(ต.7?) / ความหวัง-กลัว(ต.9) / ผลลัพธ์(ต.10) หรือไพ่ราชสำนัก (ข้าราชบริพาร=เด็ก/อัศวิน=ชายหนุ่ม/ราชินี=หญิงผู้ใหญ่/กษัตริย์=ชายผู้ใหญ่ = ตัวบุคคลจริง)\n"
+            ."• เพศ/วัย: ราชสำนัก+สำรับช่วยชี้ (เช่น กษัตริย์เหรียญ=ชายผู้ใหญ่มีฐานะ→พ่อ/เจ้านาย/ผู้อุปถัมภ์ ; ราชินีถ้วย=หญิงผู้ใหญ่ใจดี→แม่/คนรัก)\n"
+            ."  ❌ ห้ามตอบกว้างๆ \"คนรอบตัวคุณ\" — ต้องเจาะตามไพ่ (เช่น \"ไพ่ราชาเหรียญในตำแหน่งคนรอบข้าง = ผู้ใหญ่ชายมีฐานะ น่าจะเป็นพ่อหรือเจ้านายที่อุปถัมภ์\")\n"
+            ."• 🔎 *โหมดนักสืบ*: ระบุตำแหน่งบุคคลแล้ว → ชวนเจ้าชะตายืนยัน \"ที่แม่หมอเห็น น่าจะเป็น...ใช่คนนี้ไหม?\" ([TYPE:D] ไม่นับ) แล้วเจาะให้ตรงตัวขึ้น\n"
+            ."• ⚠️ ไพ่บอก \"แนวบุคคล/ความสัมพันธ์ที่เป็นไปได้\" — *ห้ามฟันธงชื่อจริง/ตัวคนเป๊ะ 100%* (ให้ลูกค้าเป็นคนยืนยัน)\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * 🩺 helper — แปลง name_en เป็น suit key สำหรับ fallback ตำราสุขภาพ
      *   (ใช้เมื่อ lookup รายใบไม่เจอ เช่น ชื่อไพ่เพี้ยน)
      */
@@ -4093,6 +4170,7 @@ class CelticCrossService
             .$this->buildHealthDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildMuKnowledgeDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildPhysiognomyDirective($reading, $questions->pluck('question')->implode(' '))
+            .$this->buildPersonRoleDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildLifeReadingDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildDestinyDirective($reading, $questions->pluck('question')->implode(' '))
             .$this->buildExtraKnowledgeDirectives($reading, $questions->pluck('question')->implode(' '))

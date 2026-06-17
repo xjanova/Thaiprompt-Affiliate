@@ -124,7 +124,17 @@ class FortuneKnowledgeService
     }
 
     /**
-     * สร้างบรรทัดรายไพ่จาก map (name_en => ['content']) — ใช้ร่วม health/physiognomy
+     * สร้างบล็อกตำแหน่งบุคคล/ระบุตัวคน ของไพ่ที่เปิด (เฉพาะ 10 ใบ)
+     *
+     * @param  array<int, array>  $cards  ผลจาก FortuneReading::getCelticCards()
+     */
+    public function personRoleLinesForCards(array $cards): string
+    {
+        return $this->linesFromCardMap($cards, $this->personRoleMap());
+    }
+
+    /**
+     * สร้างบรรทัดรายไพ่จาก map (name_en => ['content']) — ใช้ร่วม health/physiognomy/person_role
      *
      * @param  array<int, array>  $cards
      * @param  array<string, array>  $map
@@ -244,6 +254,51 @@ class FortuneKnowledgeService
                     'content' => 'รูปลักษณ์/โหงวเฮ้ง: '.(string) ($e['look'] ?? '')."\n"
                         .'นิสัย/ลักษณะ: '.(string) ($e['trait'] ?? '')."\n"
                         .'กลับหัว (ด้านลบ): '.(string) ($e['rev'] ?? ''),
+                ];
+            }
+
+            return $map;
+        });
+    }
+
+    /**
+     * แผนที่ตำแหน่งบุคคล: name_en => ['content'] (DB → fallback config) + cache
+     *
+     * @return array<string, array>
+     */
+    protected function personRoleMap(): array
+    {
+        return Cache::remember('fortune_knowledge:person_role_map', self::CACHE_TTL, function () {
+            // 1) DB ก่อน (try/catch — DB ล่ม/ยังไม่ migrate → ใช้ config fallback)
+            try {
+                if (Schema::hasTable('fortune_knowledge')) {
+                    $rows = FortuneKnowledge::active()
+                        ->byCategory(FortuneKnowledge::CATEGORY_PERSON_ROLE)
+                        ->whereNotNull('card_name')
+                        ->get();
+                    if ($rows->isNotEmpty()) {
+                        $map = [];
+                        foreach ($rows as $r) {
+                            $map[(string) $r->card_name] = ['content' => (string) $r->content];
+                        }
+
+                        return $map;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // fall through to config fallback
+            }
+
+            // 2) Fallback: config
+            $map = [];
+            foreach ((array) config('fortune_card_person_role.cards', []) as $nameEn => $e) {
+                if (! is_array($e)) {
+                    continue;
+                }
+                $map[(string) $nameEn] = [
+                    'content' => 'ตำแหน่งบุคคลที่ไพ่นี้มักแทน: '.(string) ($e['roles'] ?? '')."\n"
+                        .'อ่านอย่างไร: '.(string) ($e['note'] ?? '')."\n"
+                        .'กลับหัว/ด้านลบ: '.(string) ($e['rev'] ?? ''),
                 ];
             }
 
@@ -1011,7 +1066,7 @@ class FortuneKnowledgeService
         }
         $verdict = (array) ($verdicts[$verdictKey] ?? []);
 
-        return "📊 คะแนนรวม: ".number_format($total, 1)." (จาก 10 ใบ)\n"
+        return '📊 คะแนนรวม: '.number_format($total, 1)." (จาก 10 ใบ)\n"
             .($verdict['icon'] ?? '').' ผลฟันธง: '.($verdict['text'] ?? '')."\n\n"
             ."🔍 รายละเอียดต่อใบ (คะแนน × ตัวคูณตำแหน่ง):\n"
             .implode("\n", $contributions);
@@ -1057,6 +1112,7 @@ class FortuneKnowledgeService
     {
         Cache::forget('fortune_knowledge:health_map');
         Cache::forget('fortune_knowledge:persona_map');
+        Cache::forget('fortune_knowledge:person_role_map');
         Cache::forget('fortune_knowledge:combos');
         foreach (FortuneKnowledge::CATEGORIES as $cat) {
             Cache::forget("fortune_knowledge:mucards:{$cat}");

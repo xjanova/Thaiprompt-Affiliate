@@ -272,6 +272,8 @@ class FortuneTellingSetting extends Model
         'enable_celtic_mu_knowledge',
         // 👤 (2026-06-01) ตำราโหงวเฮ้ง/ลักษณะคน ประจำไพ่ จาก RAG
         'enable_celtic_physiognomy',
+        // 🧑‍🤝‍🧑 (2026-06-17) ตำราตำแหน่งบุคคล/ระบุตัวคน ประจำไพ่ จาก RAG
+        'enable_celtic_person_role',
         // 🗓️ (2026-06-01) ความรู้ชีวิตรายไพ่ (อายุ/สถานการณ์/อาชีพ/การงาน) จาก RAG
         'enable_celtic_life_reading',
         // 🔮 (2026-06-01) ดวงจิต/กรรมรายไพ่ (สายญาณ/ผู้มีองค์/อดีตชาติ) จาก RAG
@@ -489,6 +491,7 @@ class FortuneTellingSetting extends Model
         'enable_celtic_health_tome' => 'boolean',
         'enable_celtic_mu_knowledge' => 'boolean',
         'enable_celtic_physiognomy' => 'boolean',
+        'enable_celtic_person_role' => 'boolean',
         'enable_celtic_life_reading' => 'boolean',
         'enable_celtic_destiny' => 'boolean',
         'enable_celtic_birthdate_first' => 'boolean',
@@ -662,6 +665,8 @@ class FortuneTellingSetting extends Model
         'enable_celtic_mu_knowledge' => true,
         // 👤 (2026-06-01) ตำราโหงวเฮ้ง — default true (admin ปิดได้ผ่าน DB UPDATE)
         'enable_celtic_physiognomy' => true,
+        // 🧑‍🤝‍🧑 (2026-06-17) ตำราตำแหน่งบุคคล — default true (admin ปิดได้ผ่าน DB UPDATE)
+        'enable_celtic_person_role' => true,
         // 🗓️ (2026-06-01) ความรู้ชีวิตรายไพ่ — default true (admin ปิดได้ผ่าน DB UPDATE)
         'enable_celtic_life_reading' => true,
         // 🔮 (2026-06-01) ดวงจิต/กรรมรายไพ่ — default true (admin ปิดได้ผ่าน DB UPDATE)

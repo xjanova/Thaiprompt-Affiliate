@@ -29,6 +29,7 @@ class FortuneKnowledgeSeeder extends Seeder
 
         $health = $this->seedHealth();
         $persona = $this->seedPhysiognomy();
+        $personRole = $this->seedPersonRole();
         $mu = $this->seedPerCardGroup('fortune_mu_knowledge');
         $life = $this->seedPerCardGroup('fortune_card_life');
         $destiny = $this->seedPerCardGroup('fortune_card_destiny');
@@ -43,7 +44,7 @@ class FortuneKnowledgeSeeder extends Seeder
         $legal = $this->seedPerCardGroup('fortune_card_legal');
         $remedy = $this->seedPerCardGroup('fortune_card_remedy');
 
-        $this->command?->info("✅ Seed คลังความรู้สำเร็จ — สุขภาพ {$health} + โหงวเฮ้ง {$persona} + สายมู {$mu} + ชีวิต {$life} + ดวงจิต {$destiny} + ความรัก {$love} + การเงิน {$wealth} + ฤกษ์ {$auspicious} + เลขศาสตร์ {$numerology} + ของมงคล {$lucky} + จิตใจ {$mental} + ครอบครัว {$family} + เดินทาง {$travel} + คดี {$legal} + แก้กรรม {$remedy}");
+        $this->command?->info("✅ Seed คลังความรู้สำเร็จ — สุขภาพ {$health} + โหงวเฮ้ง {$persona} + ตำแหน่งบุคคล {$personRole} + สายมู {$mu} + ชีวิต {$life} + ดวงจิต {$destiny} + ความรัก {$love} + การเงิน {$wealth} + ฤกษ์ {$auspicious} + เลขศาสตร์ {$numerology} + ของมงคล {$lucky} + จิตใจ {$mental} + ครอบครัว {$family} + เดินทาง {$travel} + คดี {$legal} + แก้กรรม {$remedy}");
     }
 
     /**
@@ -125,6 +126,47 @@ class FortuneKnowledgeSeeder extends Seeder
                     'priority' => 0,
                     'is_active' => true,
                     'source' => 'Golden Dawn persona / โหงวเฮ้งจีน',
+                ]
+            );
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Seed ตำราตำแหน่งบุคคล/ระบุตัวคน รายไพ่ จาก config/fortune_card_person_role.php
+     */
+    protected function seedPersonRole(): int
+    {
+        $tome = (array) config('fortune_card_person_role.cards', []);
+        $count = 0;
+
+        foreach ($tome as $nameEn => $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+            $roles = (string) ($entry['roles'] ?? '');
+            $note = (string) ($entry['note'] ?? '');
+            $rev = (string) ($entry['rev'] ?? '');
+
+            $content = "ตำแหน่งบุคคลที่ไพ่นี้มักแทน: {$roles}\n"
+                ."อ่านอย่างไร: {$note}\n"
+                ."กลับหัว/ด้านลบ: {$rev}";
+
+            FortuneKnowledge::firstOrCreate(
+                [
+                    'category' => FortuneKnowledge::CATEGORY_PERSON_ROLE,
+                    'card_name' => $nameEn,
+                ],
+                [
+                    'subject' => $nameEn,
+                    'title' => "{$nameEn} (ตำแหน่งบุคคล)",
+                    'keywords' => $nameEn,
+                    'content' => $content,
+                    'priority' => 0,
+                    'is_active' => true,
+                    'source' => 'significator (court→วัย/เพศ, สำรับ→กลุ่มคน) / อาร์คานาใหญ่',
                 ]
             );
             $count++;
