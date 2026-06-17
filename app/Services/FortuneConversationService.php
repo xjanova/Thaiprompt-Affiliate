@@ -17134,6 +17134,13 @@ PROMPT;
                 $contextParts[] = $returningContext;
             }
 
+            // 📚 (2026-06-17) ลูกค้าพิมพ์มาหลายข้อความติดกัน (debounce รวมเป็นก้อนเดียวแล้ว)
+            //   → บอก AI ให้ "อ่านรวม วิเคราะห์ภาพรวม ตอบทีเดียว" ไม่ตอบทีละบรรทัด (ดู prompt [BATCHED_RAMBLE])
+            $bufferedCount = (int) ($dmContext['buffered_count'] ?? 0);
+            if ($bufferedCount > 1) {
+                $contextParts[] = "BATCHED_RAMBLE count={$bufferedCount}";
+            }
+
             $messageForAI = $messageText;
             if (! empty($contextParts)) {
                 $messageForAI = '['.implode('] [', $contextParts)."] {$messageText}";

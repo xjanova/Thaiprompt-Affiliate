@@ -82,11 +82,13 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
             }
 
             // เรียก tryAIChatResponse ด้วย bypassBuffer=true → ไม่เข้า buffer อีก
+            //   📚 (2026-06-17) ส่ง buffered_count → AI รู้ว่านี่คือ "หลายข้อความรวมเป็นก้อนเดียว"
+            //   (ร่ายยาว) → วิเคราะห์รวมแล้วตอบทีเดียว ไม่ตอบทีละบรรทัด
             $result = $service->tryAIChatResponse(
                 $this->userId,
                 $combined,
                 null,   // userProfile — chat path resolve เอง
-                null,   // dmContext
+                ['buffered_count' => (int) ($flushed['count'] ?? 1)],   // dmContext — จำนวนข้อความที่รวม
                 true,   // bypassBuffer
             );
 
