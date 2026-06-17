@@ -17396,6 +17396,24 @@ PROMPT;
                 return null;
             }
 
+            // 🤫 (2026-06-17) จังหวะเงียบ — บอทไม่ต้องตอบทุกข้อความ (เหมือนคนคุยจริง)
+            //   AI ใส่ [SKIP] เมื่อข้อความล่าสุดไม่ต้องการคำตอบ (รับคำ/อีโมจิ/หัวเราะ/พูดจบ)
+            //   → เก็บ user message ไว้เป็น context (ความต่อเนื่อง) แต่ "ไม่ส่งอะไรกลับ"
+            //   ถ้า AI เผลอใส่ทั้งคำตอบจริง + [SKIP] (เนื้อเหลือ ≥ 8 ตัว) → strip token แล้วส่งเนื้อนั้นต่อ
+            if (preg_match('/\[\s*SKIP\s*\]/i', $responseText)) {
+                $cleanedSkip = trim((string) preg_replace('/\[\s*SKIP\s*\]/i', '', $responseText));
+                if (mb_strlen($cleanedSkip) < 8) {
+                    $this->saveConversationMessage($userId, 'user', $messageText);
+                    Log::info('Fortune: chat [SKIP] — บอทเลือกไม่ตอบ (จังหวะเงียบ)', [
+                        'user_id' => $userId,
+                        'msg_preview' => mb_substr($messageText, 0, 40),
+                    ]);
+
+                    return null;
+                }
+                $responseText = $cleanedSkip;
+            }
+
             // ✅ บันทึก conversation history (ทั้งข้อความผู้ใช้ + คำตอบ AI)
             $this->saveConversationMessage($userId, 'user', $messageText);
             $this->saveConversationMessage($userId, 'assistant', $responseText);
