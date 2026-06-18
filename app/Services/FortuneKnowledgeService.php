@@ -540,6 +540,69 @@ class FortuneKnowledgeService
     }
 
     /**
+     * 🪬 (2026-06-18) ไสยศาสตร์ "เฉพาะใบที่มีสัญญาณจริง" (orientation-aware) — สำหรับ proactive card-scan
+     *
+     * ต่างจาก blackMagicLinesForCards (เต็ม รวมบรรทัด "ไม่มีของ") ที่ใช้ตอนลูกค้า "ถาม" เรื่องของ
+     * โดยตรง (ต้องโชว์ครบเพื่อให้แม่หมอยืนยัน "ใบนี้ไม่มีของ" ปลอบใจได้). เมธอดนี้ใช้ตอน "แม่หมอ
+     * สแกนเอง" (พื้นดวงเปิดตัว) → คืนเฉพาะใบที่ orientation ปัจจุบันส่งสัญญาณจริง (⚠️/อาจมีของ) เพื่อ:
+     *   (1) ตัด noise บรรทัด "ไม่มีของ" ~9 บรรทัด → ลด token
+     *   (2) กัน fear-anchoring (โมเดลเล็กไม่เห็นลิสต์ "ไม่มีของ" ยาวๆ แล้วเผลอปั้นเรื่องของ)
+     *   (3) ทำให้ gate "พาดหัวโดนของได้เฉพาะมีบรรทัดเตือนจริง" สะอาด (ไม่มีสัญญาณ = บล็อกว่าง)
+     *
+     * เนื้อหารายไพ่รูปแบบ "ตั้งตรง · กลับหัว = ..." → เลือก "เฉพาะส่วนของ orientation ที่เปิดจริง"
+     * (กัน false-positive: ⚠️ ที่อยู่ฝั่งกลับหัว จะไม่ติดถ้าไพ่ออกตั้งตรง)
+     *
+     * @param  array<int, array>  $cards
+     * @return string ว่าง = ไม่มีใบไหนส่งสัญญาณของในสำรับนี้
+     */
+    public function blackMagicSignalLinesForCards(array $cards): string
+    {
+        $map = $this->muCardMap(FortuneKnowledge::CATEGORY_BLACK_MAGIC);
+        if (empty($map)) {
+            return '';
+        }
+
+        $lines = [];
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            $entry = $map[(string) ($card['card_name_en'] ?? '')] ?? null;
+            if (! $entry) {
+                continue;
+            }
+            $content = trim((string) ($entry['content'] ?? ''));
+            if ($content === '') {
+                continue;
+            }
+
+            // เลือกเฉพาะส่วนของ orientation ปัจจุบัน (รูปแบบ "ตั้งตรง · กลับหัว = ...")
+            $reversed = ! empty($card['is_reversed']);
+            $active = $content;
+            if (mb_strpos($content, '· กลับหัว =') !== false) {
+                [$up, $rev] = array_pad(explode('· กลับหัว =', $content, 2), 2, '');
+                $active = trim($reversed ? $rev : $up);
+            }
+
+            // มีสัญญาณจริงเฉพาะเมื่อ active portion เตือน (⚠️/อาจมีของ) และไม่ใช่ "ไม่มีของ/ปลอดของ"
+            $hasSignal = (mb_strpos($active, '⚠️') !== false || mb_strpos($active, 'อาจมีของ') !== false)
+                && mb_strpos($active, 'ไม่มีของ') === false
+                && mb_strpos($active, 'ปลอดของ') === false;
+            if (! $hasSignal) {
+                continue;
+            }
+
+            $nameTh = ((string) ($card['card_name_th'] ?? '')) ?: ((string) ($card['card_name_en'] ?? '') ?: '?');
+            $orientation = $reversed ? '(กลับหัว)' : '(ตั้งตรง)';
+            $positionName = (string) ($card['position_name'] ?? '?');
+            $lines[] = "• ตำแหน่ง {$pos} [{$positionName}] — {$nameTh} {$orientation}\n   ".str_replace("\n", "\n   ", $active);
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
      * แผนที่ความรู้สายมูรายไพ่: name_en => ['content'] (DB → fallback config .cards) + cache
      *
      * @return array<string, array>
