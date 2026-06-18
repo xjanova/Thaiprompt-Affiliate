@@ -894,7 +894,7 @@ trait CelticCrossConversationTrait
                     .$this->getBankAccountsListMessage(true)
                     ."\n💚 *กรุณาโอนให้ตรง ตรงจุดทศนิยมด้วย* เพื่อเปิดไพ่ยิปซี 10 ใบ ค่ะ ✨\n"
                     // 🃏 (2026-06-17) แจ้งขั้นต่อไปแบบเป็นธรรมชาติ — โอนครบแล้วรอแม่หมอเปิดไพ่ 10 ใบให้
-                    ."🃏 เมื่อโอนครบแล้วตามยอด รอเปิดไพ่ 10 ใบกับแม่หมอได้เลยนะคะ ✨"
+                    .'🃏 เมื่อโอนครบแล้วตามยอด รอเปิดไพ่ 10 ใบกับแม่หมอได้เลยนะคะ ✨'
                     .$trollWarning,
                 'reading' => $reading,
                 'celtic_price' => $payAmount,
@@ -2138,18 +2138,35 @@ trait CelticCrossConversationTrait
         //   deterministic นี้กันชั้นแรกแบบชัวร์
         //   Scope: เฉพาะตอนยังไม่มีคำถามจริง (celtic_questions_used == 0) — กัน "พร้อม/ค่ะ/โอเค/
         //   เริ่มเลย" ไม่ให้เปลือง Q1. คำถามจริงข้อแรก (มี "ไหม"/ระบุเรื่อง) ผ่านไป askQuestion ปกติ
-        if ((int) ($reading->celtic_questions_used ?? 0) === 0
-            && $this->looksLikeReadinessAck($question)) {
-            \Log::info('Celtic: readiness ack ก่อนคำถามแรก — ชวนถาม ไม่กินโควต้า', [
+        //   🎯 (2026-06-18) ขยายด่านนี้ให้ครอบ "ทุกเทิร์น" (ไม่ใช่แค่ Q1) + เพิ่มเศษวันเกิด
+        //   เคสจริง R7145: ack "วันจันทร"/"ปีฉลู" (เศษวันเกิด) ถูกนับเป็นคำถามทำนาย TYPE:A เพราะ
+        //   Q2+ เดิมพึ่ง classifier โมเดลเล็ก 100%. bias: กำกวม→ปล่อยผ่าน (ลูกค้าจ่ายเงิน) →
+        //   ด่าน deterministic นี้ "แคบ-precision สูง" (ack ล้วน / เศษวันเกิด whole-match) เท่านั้น
+        $usedQ = (int) ($reading->celtic_questions_used ?? 0);
+        $isReadinessAck = $this->looksLikeReadinessAck($question);
+        $isBirthdateFragment = $this->looksLikeBirthdateFragmentOnly($question);
+        if ($isReadinessAck || $isBirthdateFragment) {
+            \Log::info('Celtic: non-prediction message — ชวนถามต่อ ไม่กินโควต้า', [
                 'reading_id' => $reading->id,
+                'used_q' => $usedQ,
+                'kind' => $isBirthdateFragment ? 'birthdate_fragment' : 'readiness_ack',
                 'text' => mb_substr($question, 0, 40),
             ]);
 
+            if ($isBirthdateFragment) {
+                $inviteMsg = "🌙 รับทราบค่ะ — แม่หมอเก็บไว้ผูกกับดวงให้นะคะ\n\n"
+                    .'💬 อยากให้แม่หมอดูเรื่องอะไรต่อคะ? พิมพ์คำถามมาได้เลย (ความรัก งาน เงิน สุขภาพ หรือเรื่องที่ค้างคาใจ)';
+            } elseif ($usedQ === 0) {
+                $inviteMsg = "🌙 เปิดไพ่ครบแล้วค่ะ — เจ้าชะตาอยากให้แม่หมอดูเรื่องอะไรก่อนดีคะ\n\n"
+                    .'💬 พิมพ์ถามเข้ามาได้เลย เช่น ความรัก การงาน การเงิน สุขภาพ ของหาย '
+                    .'หรือเรื่องที่ค้างคาใจ — แม่หมอจะเปิดไพ่ทำนายให้ทีละเรื่องค่ะ ✨';
+            } else {
+                $inviteMsg = '🌙 ได้ค่ะ — พิมพ์ถามเรื่องที่อยากรู้ต่อได้เลยนะคะ แม่หมอจะเปิดไพ่ทำนายให้ ✨';
+            }
+
             return [
                 'action' => 'celtic_invite_question',
-                'message' => "🌙 เปิดไพ่ครบแล้วค่ะ — เจ้าชะตาอยากให้แม่หมอดูเรื่องอะไรก่อนดีคะ\n\n"
-                    .'💬 พิมพ์ถามเข้ามาได้เลย เช่น ความรัก การงาน การเงิน สุขภาพ ของหาย '
-                    .'หรือเรื่องที่ค้างคาใจ — แม่หมอจะเปิดไพ่ทำนายให้ทีละเรื่องค่ะ ✨',
+                'message' => $inviteMsg,
                 'reading' => $reading,
             ];
         }
@@ -3256,6 +3273,40 @@ trait CelticCrossConversationTrait
      *   3. จำกัดความยาว (กันประโยคเล่าเรื่อง)
      *   → "พร้อมดูเรื่องงานไหม" (มี "ไหม") / "ความรัก" (topic word) จะ "ไม่" match
      */
+    /**
+     * 📅 (2026-06-18) เศษวันเกิดล้วน (whole-match) — กันถูกนับเป็นคำถามทำนาย (เคส R7145 "วันจันทร"/"ปีฉลู")
+     *
+     * precision สูงโดยตั้งใจ: คืน true เฉพาะเมื่อ "core" (หลังตัด prefix วัน/ปี/เกิด + คำลงท้าย) = ชื่อวัน
+     *   หรือ ปีนักษัตร *พอดีทั้งคำ* — กัน false positive คำที่บังเอิญมี substring (เช่น "วอกแวก" ≠ "วอก")
+     *   + reject ถ้ามี marker คำถาม (กัน "วันจันทร์ดีไหม"). กำกวม/ยาว → false (ปล่อยให้ AI จัด TYPE)
+     */
+    protected function looksLikeBirthdateFragmentOnly(string $text): bool
+    {
+        $clean = mb_strtolower(trim($text));
+        if ($clean === '' || mb_strlen($clean) > 20) {
+            return false;
+        }
+
+        // ลบ emoji + คำลงท้ายสุภาพ
+        $clean = trim((string) preg_replace('/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2190}-\x{21FF}\x{FE0F}\x{200D}]/u', '', $clean));
+        $clean = trim((string) preg_replace('/\s*(ค่ะ|คะ|ค่า|ครับ|คับ|จ้า|จ้ะ|นะ|น่ะ|ฮะ|ฮ่ะ)\s*$/u', '', $clean));
+
+        // มี marker คำถาม → ไม่ใช่เศษวันเกิดล้วน (กัน "วันจันทร์ดีไหม")
+        foreach (['ไหม', 'มั้ย', 'มัย', 'หรือ', 'เหรอ', 'หรอ', 'เมื่อไหร่', 'ทำไม', 'อะไร', 'ยังไง', 'ที่ไหน', 'ใคร', '?'] as $qm) {
+            if (str_contains($clean, $qm)) {
+                return false;
+            }
+        }
+
+        // ตัด prefix บริบทวันเกิด แล้วต้องเหลือ "ชื่อวัน/ปีนักษัตร" พอดีทั้งคำ (whole-match)
+        $core = trim((string) preg_replace('/^(วันเกิด|เกิดวัน|เกิดปี|วันที่|เกิด|วัน|ปี)\s*/u', '', $clean));
+        $days = ['อาทิตย์', 'จันทร์', 'จันทร', 'อังคาร', 'พุธ', 'พฤหัส', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+        $zodiac = ['ชวด', 'ฉลู', 'ขาล', 'เถาะ', 'มะโรง', 'มะเส็ง', 'มะเมีย', 'มะแม', 'วอก', 'ระกา', 'จอ', 'กุน'];
+        $all = array_merge($days, $zodiac);
+
+        return in_array($core, $all, true) || in_array($clean, $all, true);
+    }
+
     protected function looksLikeReadinessAck(string $text): bool
     {
         $clean = mb_strtolower(trim($text));

@@ -571,7 +571,7 @@ class CelticCrossService
             [
                 'label' => 'g2-areas',
                 'len' => '600-900',
-                'signal' => ['health'], // ด้านสุขภาพใช้ตำราอวัยวะรายไพ่
+                'signal' => ['health', 'love'], // สุขภาพ(อวัยวะ)+ความรัก รายไพ่ — ตัด wealth กัน g2 บวม (เงินอ่านจากความหมายไพ่+ฉีดเมื่อถามใน Q2+)
                 'spec' => "เขียน 4 ด้านนี้ (ขึ้นหัวข้อด้วย emoji ตามนี้เป๊ะ • แต่ละด้านผูกดาว(ภพ)+ไพ่ที่เกี่ยวข้อง • ฟันธงชัด • ไม่ต้องทำพาดหัวเรื่องเด่นซ้ำ):\n"
                     ."💞 ความรัก\n"
                     ."💼 การงาน\n"
@@ -581,7 +581,7 @@ class CelticCrossService
             [
                 'label' => 'g3-closing',
                 'len' => '500-800',
-                'signal' => ['black_magic', 'combo'], // ส่วนเตือน ใช้สัญญาณไสยศาสตร์ + ไพ่คู่
+                'signal' => ['black_magic', 'combo', 'auspicious'], // เตือน(ไสยศาสตร์+ไพ่คู่) + ฤกษ์/มงคลรายไพ่
                 'spec' => "เขียน 3 ส่วนปิดท้ายนี้ (ขึ้นหัวข้อด้วย emoji ตามนี้เป๊ะ • ไม่ต้องทำพาดหัวเรื่องเด่นซ้ำ):\n"
                     ."📅 ฤกษ์/สีมงคล/เลขมงคล/วันมงคล + ทิศ (จากดาวมิตร) + สิ่งที่ควรรีบทำ/ควรเลี่ยง\n"
                     ."⚠️ สิ่งที่ต้องระวัง (จากดาวศัตรู + ไพ่เตือน) + ทางแก้/วิธีเสริมดวงที่ทำเองได้\n"
@@ -723,6 +723,23 @@ class CelticCrossService
             $cb = trim((string) $svc->comboLinesForCards($cards));
             if ($cb !== '') {
                 $sections[] = "🔗 ไพ่คู่เด่นบนโต๊ะ (สัญญาณรวม — \"เชื่อมโยงไพ่\" ไม่ใช่รายใบ):\n".$cb;
+            }
+        }
+
+        // ❤️💰📅 (2026-06-18) ตำราด้าน ความรัก/การเงิน/ฤกษ์ แบบ card-gated — สำหรับพื้นดวงเปิดตัว
+        //   เดิม mu tomes detect จาก $userQuestion (= วันเกิด) → ไม่เคยยิงตอนเปิดดวง ทั้งที่ g2/g3 ถามด้านนี้ตรงๆ
+        //   ดึงตามไพ่ที่เปิด (ไม่ต้องมีคำถาม) เหมือน health/combo — เคารพ toggle เดิม (enable_celtic_*)
+        $muTomes = [
+            'love' => ['enable_celtic_love', \App\Services\FortuneKnowledgeService::LOVE_DETECTABLE, '❤️ ความรัก/เนื้อคู่ (รายไพ่)'],
+            'wealth' => ['enable_celtic_wealth', \App\Services\FortuneKnowledgeService::WEALTH_DETECTABLE, '💰 การเงิน/โชคลาภ (รายไพ่)'],
+            'auspicious' => ['enable_celtic_auspicious', \App\Services\FortuneKnowledgeService::AUSPICIOUS_DETECTABLE, '📅 ฤกษ์/มงคล (รายไพ่)'],
+        ];
+        foreach ($muTomes as $muKey => [$gate, $cats, $label]) {
+            if (in_array($muKey, $include, true) && (bool) ($this->settings->{$gate} ?? true)) {
+                $ml = trim((string) $svc->muLinesForCards($cards, $cats));
+                if ($ml !== '') {
+                    $sections[] = $label.":\n".$ml;
+                }
             }
         }
 
@@ -1874,7 +1891,8 @@ class CelticCrossService
             ."• ห้ามใช้คำทั่วไปที่ใช้ได้กับทุกคน\n"
             ."• ห้ามคำกำกวม \"อาจจะ/แล้วแต่/ขึ้นอยู่กับ\"\n"
             ."• ห้าม markdown headers (##, ###) — ใช้ emoji หัวข้อแทน\n"
-            ."• ✅ ขอวันเกิด/ข้อมูลเพิ่มได้ ถ้าจะทำให้ทำนายแม่นขึ้น — แต่ทำนายเบื้องต้นจากไพ่ก่อนเสมอ\n\n"
+            ."• ✅ ขอวันเกิด/ข้อมูลเพิ่มได้ ถ้าจะทำให้ทำนายแม่นขึ้น — แต่ทำนายเบื้องต้นจากไพ่ก่อนเสมอ\n"
+            .$this->buildAntiFillerBans()."\n\n"
 
             ."━━━━━━━━━━━━━━━━━\n"
             ."📏 ความยาว (สำคัญมาก!)\n"
@@ -2406,8 +2424,7 @@ class CelticCrossService
             ."• ❌ ห้ามชวนดูดวงแพคใหม่/ขายของ\n"
             ."• ❌ ห้ามใช้ markdown headers (##, ###) — plain text + emoji หัวข้อได้\n"
             ."• ❌ ห้ามขัดแย้งตัวเอง (ดวงดี vs สร้างกรรม / รักได้ vs ไม่รัก ในประโยคเดียวกัน)\n"
-            ."• ❌ ห้ามแปะ \"สีมงคล/เลขมงคล/วันมงคล/ทิศ\" ซ้ำท้ายทุกคำตอบ — ใส่เฉพาะเมื่อคำถามเกี่ยวฤกษ์/มงคล หรือลูกค้าถามเอง\n"
-            ."• ❌ ห้ามปิดท้ายด้วยวลีกว้างที่ใช้กับใครก็ได้ (\"ดวงชี้ทางแต่คนเดินเอง\" / \"ทุกอย่างอยู่ที่ใจเรา\" / \"ขอแค่ตั้งใจ\" / \"แล้วแต่กรรม\") — ปิดด้วยข้อสรุปฟันธงเฉพาะคำถามนี้\n"
+            .$this->buildAntiFillerBans()."\n"
             .'• ❌ ห้ามเล่าซ้ำพื้นดวง Q1 หรือลอกไพ่/กรอบเวลาเดิมด้วยถ้อยคำเดิมทุกคำถาม — อ่านไพ่ใหม่ให้ตรงคำถาม'
             .$offTopicGuard
             .$sandbagBlock."\n\n"
@@ -2873,7 +2890,8 @@ class CelticCrossService
         }
 
         // Detect: คำถามนี้ หรือบริบทคำถามก่อนหน้า (เช่น Q1) เกี่ยวคุณไสย์ไหม
-        $haystack = mb_strtolower($userQuestion.' '.$previousContext);
+        //   ⚠️ คงรวม previousContext ไว้ (ต่างจากตำราอื่นที่ใช้ celticTopicContext) — black-magic ต้องเห็น topic Q1 เพื่อ lock รอบ
+        $haystack = mb_strtolower($userQuestion.' '.($previousContext ?? ''));
         $keywords = [
             'คุณไสย', 'มนต์ดำ', 'มนตร์ดำ', 'ทำของ', 'โดนของ', 'ลงของ', 'ปล่อยของ', 'โดนคุณ',
             'เสน่ห์', 'ยาแฝด', 'ยาสั่ง', 'ของกิน', 'ของฝัง', 'อาคม', 'ลงเลข', 'ลงยันต์', 'เลขยันต์',
@@ -2986,7 +3004,7 @@ class CelticCrossService
         }
 
         // Detect: คำถามนี้หรือบริบทก่อนหน้าเกี่ยวสุขภาพไหม
-        $haystack = mb_strtolower($userQuestion.' '.$previousContext);
+        $haystack = mb_strtolower($this->celticTopicContext($reading, $userQuestion));
         $keywords = [
             'สุขภาพ', 'ป่วย', 'ไม่สบาย', 'เจ็บป่วย', 'โรค', 'อาการ', 'รักษา', 'หมอ', 'แพทย์',
             'โรงพยาบาล', 'ผ่าตัด', 'ตรวจสุขภาพ', 'ตรวจร่างกาย', 'มะเร็ง', 'เนื้องอก', 'เบาหวาน',
@@ -3067,7 +3085,7 @@ class CelticCrossService
         }
 
         $svc = app(\App\Services\FortuneKnowledgeService::class);
-        $categories = $svc->detectMuCategories($userQuestion.' '.$previousContext);
+        $categories = $svc->detectMuCategories($this->celticTopicContext($reading, $userQuestion));
         if (empty($categories)) {
             return '';
         }
@@ -3119,7 +3137,7 @@ class CelticCrossService
         }
 
         $svc = app(\App\Services\FortuneKnowledgeService::class);
-        $categories = $svc->detectLifeCategories($userQuestion.' '.$previousContext);
+        $categories = $svc->detectLifeCategories($this->celticTopicContext($reading, $userQuestion));
         if (empty($categories)) {
             return '';
         }
@@ -3167,7 +3185,7 @@ class CelticCrossService
         }
 
         $svc = app(\App\Services\FortuneKnowledgeService::class);
-        $categories = $svc->detectDestinyCategories($userQuestion.' '.$previousContext);
+        $categories = $svc->detectDestinyCategories($this->celticTopicContext($reading, $userQuestion));
         if (empty($categories)) {
             return '';
         }
@@ -3211,6 +3229,50 @@ class CelticCrossService
      *
      * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
+    /**
+     * 🎯 (2026-06-18) Topic context สำหรับ detect-gate ตำราความรู้ (Q2+)
+     *
+     * = "คำถามปัจจุบัน + คำถามล่าสุด 3 ข้อของลูกค้า" (ไม่ใช่ $previousContext)
+     * เหตุผล: $previousContext = คำตอบ AI พื้นดวง Q1 ที่พูดครบทุกด้าน (รัก/งาน/เงิน/สุขภาพ/ฤกษ์)
+     *   → ถ้า detect บนนั้น ตำราเกือบทุกหมวดจะ fire ทุก turn = over-fire + prompt บวมบนโมเดลเล็ก
+     * ใช้ร่วม buildExtraKnowledgeDirectives + ตำราพี่น้อง (health/mu/life/destiny/yesno/physiognomy/personRole)
+     * ยกเว้น buildBlackMagicDirective ที่ต้องเห็น topic Q1 เพื่อ lock รอบ (จึงคง previousContext ไว้)
+     */
+    protected function celticTopicContext(FortuneReading $reading, string $userQuestion): string
+    {
+        $priorQuestions = '';
+        try {
+            $priorQuestions = $reading->celticQuestions()
+                ->whereNotNull('answered_at')
+                ->orderByDesc('sequence')
+                ->limit(3)
+                ->pluck('question')
+                ->map(function ($q) {
+                    // ตัดคำถามสังเคราะห์ (พื้นดวงเปิดตัว) + __PREDICT_ALL__ ออกจาก topic context
+                    //   มันพูดทุกด้าน (รัก/งาน/เงิน/สุขภาพ) → ถ้าค้างใน window จะ detect over-fire ทุกหมวด
+                    $q = (string) $q;
+
+                    return (trim($q) === '__PREDICT_ALL__' || mb_strpos($q, 'พื้นดวงรวม') !== false) ? '' : $q;
+                })
+                ->implode(' ');
+        } catch (\Throwable $e) {
+            // non-blocking — fallback ใช้คำถามปัจจุบันอย่างเดียว
+        }
+
+        return trim($userQuestion.' '.$priorQuestions);
+    }
+
+    /**
+     * 🚫 (2026-06-18) ห้าม filler ซ้ำ — ใช้ร่วมทุก path (Q1 ถามตรง + Q2+) กัน treatment drift
+     *   เดิม ban 2 บรรทัดนี้อยู่แค่ Q2+ → Q1 non-base-chart ยังปิดท้ายด้วย "ดวงชี้ทาง..." + สีมงคล (เคส R7159)
+     *   คืนเป็น bullet ต่อใน "🚫 ห้ามทำ" ได้เลย (บรรทัดแรกขึ้น "• ❌" / บรรทัดท้ายไม่มี \n)
+     */
+    protected function buildAntiFillerBans(): string
+    {
+        return "• ❌ ห้ามแปะ \"สีมงคล/เลขมงคล/วันมงคล/ทิศ\" ซ้ำท้ายทุกคำตอบ — ใส่เฉพาะเมื่อคำถามเกี่ยวฤกษ์/มงคล หรือลูกค้าถามเอง\n"
+            .'• ❌ ห้ามปิดท้ายด้วยวลีกว้างที่ใช้กับใครก็ได้ ("ดวงชี้ทางแต่คนเดินเอง" / "กรรมดีคือที่พึ่ง" / "ทุกอย่างอยู่ที่ใจเรา" / "ขอแค่ตั้งใจ" / "แล้วแต่กรรม") — ปิดด้วยข้อสรุปฟันธงเฉพาะเรื่องนี้';
+    }
+
     protected function buildExtraKnowledgeDirectives(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
     {
         $cards = $reading->getCelticCards();
@@ -3225,19 +3287,7 @@ class CelticCrossService
         //   (รัก/งาน/เงิน/สุขภาพ/ฤกษ์) → detect fire เกือบทุกหมวดทุก turn = ฉีดความรู้เกินจำเป็น + ไม่โฟกัส + เปลือง token
         //   ใหม่: ใช้ "คำถามลูกค้า" เป็นสัญญาณ topic → โฟกัสเรื่องที่ถามจริง (ตรงกับ "ตอบตามคำถาม")
         //   + ยังจับ follow-up กำกวม ("เขาจะกลับมาไหม" หลังเพิ่งถามความรัก) ผ่าน topic continuity โดยไม่เหวี่ยงแหทุกหมวด
-        $priorQuestions = '';
-        try {
-            $priorQuestions = $reading->celticQuestions()
-                ->whereNotNull('answered_at')
-                ->orderByDesc('sequence')
-                ->limit(3)
-                ->pluck('question')
-                ->map(fn ($q) => trim((string) $q) === '__PREDICT_ALL__' ? '' : (string) $q)
-                ->implode(' ');
-        } catch (\Throwable $e) {
-            // non-blocking — fallback ใช้คำถามปัจจุบันอย่างเดียว
-        }
-        $ctx = trim($userQuestion.' '.$priorQuestions);
+        $ctx = $this->celticTopicContext($reading, $userQuestion);
 
         // 10 หมวดเสริม — [toggle key, detect method, ไอคอน+ชื่อหมวด, จรรยาบรรณเฉพาะหมวด]
         $groups = [
@@ -3459,7 +3509,7 @@ class CelticCrossService
             ."\"ชุดคำถามวิเคราะห์ + เคล็ดอ่าน\" ที่แม่หมอควรตอบให้ครบ:\n\n"
             .$lines."\n\n"
             ."🎯 *วิธีใช้:* แม่หมอ \"ถามตัวเอง\" แต่ละคู่ก่อน แล้วเอาคำตอบมาประกอบเป็นคำทำนาย\n"
-            ."• โดยเฉพาะคู่ ต.9↔ต.10 (หวัง→ผลลัพธ์) และ ต.3↔ต.6 (อดีต→อนาคต) — ใช้ในการ \"ฟันธง\" ปลายเรื่อง\n"
+            ."• โดยเฉพาะคู่ ต.9↔ต.10 (หวัง→ผลลัพธ์) และ ต.5↔ต.6 (อดีต→อนาคต) — ใช้ในการ \"ฟันธง\" ปลายเรื่อง\n"
             ."• คู่ ต.7↔ต.8 (เรา-คนรอบ) ใช้เวลาเรื่องเป็นความสัมพันธ์ — ชี้จุดที่ \"คนละมุม\"\n"
             ."• ❌ ห้ามอ่านตำแหน่งเป็นเอกเทศแล้วลืม \"คู่\" — เพราะตำแหน่งต่างๆ เชื่อมเป็นเรื่องเดียวกัน\n"
             ."━━━━━━━━━━━━━━━━━\n\n";
@@ -3483,7 +3533,7 @@ class CelticCrossService
         }
 
         // Detect คำถาม yes/no (ภาษาไทย — \b ใน regex ไม่ทำงานกับไทย ใช้ mb_strpos ตรงๆ)
-        $haystack = mb_strtolower(trim($userQuestion.' '.$previousContext));
+        $haystack = mb_strtolower($this->celticTopicContext($reading, $userQuestion));
         if ($haystack === '') {
             return '';
         }
@@ -3552,7 +3602,7 @@ class CelticCrossService
         }
 
         // Detect: ถามเรื่อง "คน" ไหม
-        $haystack = mb_strtolower($userQuestion.' '.$previousContext);
+        $haystack = mb_strtolower($this->celticTopicContext($reading, $userQuestion));
         $keywords = [
             'เป็นคนยังไง', 'เป็นคนแบบไหน', 'คนยังไง', 'คนแบบไหน', 'นิสัย', 'อุปนิสัย', 'หน้าตา',
             'รูปร่าง', 'ลักษณะ', 'โหงวเฮ้ง', 'ดูคน', 'เขาเป็นคน', 'นิสัยใจคอ', 'เนื้อคู่', 'คู่แท้',
@@ -3617,7 +3667,7 @@ class CelticCrossService
         // Detect: คำถามเอ่ยถึง "ตัวบุคคล" (เครือญาติ/สังคม) หรือถาม "เป็นใคร" ไหม
         //   ⚠️ เลี่ยงคำพยางค์เดียวที่เป็น substring คำอื่น (น้า=หน้า, อา=เอา/อาหาร, ตา=ตาม, ย่า=อย่าง)
         //   ⚠️ ตัดชื่อแม่หมอออกก่อน — กัน 'แม่' bare ไป match "แม่หมอ" (ลูกค้าทักบ่อยมาก) = over-fire
-        $haystack = mb_strtolower($userQuestion.' '.$previousContext);
+        $haystack = mb_strtolower($this->celticTopicContext($reading, $userQuestion));
         $haystack = str_replace(['แม่หมอดู', 'แม่หมอ', 'พ่อหมอ'], ' ', $haystack);
         $keywords = [
             // เครือญาติ
@@ -4354,6 +4404,11 @@ class CelticCrossService
 
             ."🌟 โครงสร้างบทสรุป (ย่อหน้าแยก ไม่มีหัวข้อ ไม่มี markdown):\n\n"
 
+            ."ย่อหน้า 0 — *พาดหัวเรื่องเด่นที่สุด (ฟันธง — มาก่อนทักทาย)* (40-70 คำ):\n"
+            ."   🎯 เปิดบทสรุปด้วย \"สิ่งที่ไพ่ทั้ง 10 ใบส่งเสียงดังที่สุด\" เพียง 1 เรื่อง (ดี/ร้ายก็ได้) — ฟันธงเจาะจง: อะไร/ใคร/เมื่อไหร่/มากน้อย/แหล่ง\n"
+            ."   เน้นไพ่ผลลัพธ์(ต.10)+อนาคตอันใกล้(ต.6) เป็นแกน — เคราะห์หนัก (สูญเสีย/ป่วย/อุบัติเหตุ) → เตือนตรง+ทางแก้จริง / เด่นบวก (โชคลาภ/เลื่อนขั้น/เนื้อคู่) → บอกชัดมาเมื่อไหร่-จากทางไหน\n"
+            ."   ❌ ห้ามเปิดด้วยคำกลางๆ/ทักทายก่อน — พาดหัวฟันธงต้องเป็นบรรทัดแรกสุดของบทสรุป (เรื่องโดนของ = ทักเฉพาะที่ไพ่ชี้จริง ไม่ขายความกลัว)\n\n"
+
             ."ย่อหน้า 1 — *ทักทายและโยงรวมประเด็น* (50-80 คำ):\n"
             ."   เปิดด้วยคำเรียกอบอุ่น (เจ้าชะตา/คุณ) → กล่าวถึงประเด็นหลักที่ถามมา ผูกเป็นเส้นเรื่องเดียว\n"
             ."   ไม่ใช่ \"คำถาม 1 คือ A คำถาม 2 คือ B\" — ต้องเล่าให้เห็นภาพรวมชีวิตเจ้าชะตาที่กำลังเผชิญ\n\n"
@@ -4418,7 +4473,7 @@ class CelticCrossService
             ."   7. ห้ามขายของ ขอติดตาม ขอแชร์ — บทสุดท้ายต้องสุขุม สง่างาม\n"
             ."   8. ห้ามใช้คำว่า \"ไลฟ์โค้ช\" / \"life coach\" — ใช้ \"แม่หมอ\" หรือ \"ที่ปรึกษา\" แทน\n\n"
 
-            ."📏 ความยาวรวม: 1000-1500 คำ (มี 13 ย่อหน้า — แต่ละย่อหน้าสั้นกระชับ)\n"
+            ."📏 ความยาวรวม: 1000-1500 คำ (มี 14 ย่อหน้า: 0 พาดหัวฟันธง + 1-13 — แต่ละย่อหน้าสั้นกระชับ)\n"
             ."🎭 โทน: ปรมาจารย์สุขุมอบอุ่น พูดน้อยแต่ลึก ฟันธง เนื้อๆ ไม่น้ำ\n\n"
 
             .'เริ่มเขียนบทสรุปสุดท้ายเลย (อย่าทักทายซ้ำ อย่าใส่ "นี่คือบทสรุป..."):';
