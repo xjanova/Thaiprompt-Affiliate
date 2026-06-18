@@ -4424,25 +4424,32 @@ class FacebookWebhookController extends Controller
      */
     protected function handleFortuneEarnInfo(string $senderId): void
     {
-        $appUrl = config('app.url', 'https://main.thaiprompt.online');
-        $recruitUrl = $appUrl.'/auth/line?redirect=/user/fortune-referral/recruit';
-        $wealthUrl = $appUrl.'/wealth-guide';
+        // 🌙 (2026-06-18, user) FB referral/recruit เดิม = กล่องไม่สวย/บัค → ส่งคนที่อยากทำการตลาด/แนะนำเพื่อน
+        //   ไปทำผ่าน LINE แทน (LINE มี Flex กราฟฟิก/กล่องสวย + ระบบแนะนำเพื่อนครบ ดูง่ายกว่า FB)
+        //   โค้ดเดิม (recruit-link + wealth-guide) ถูกแทนด้วย LINE invite — ดูประวัติ git ถ้าต้องการกู้
+        $richService = new FacebookRichMessageService($this->settings);
+        $lineUrl = $richService->getLineAddFriendUrl();
 
-        // 🌙 (2026-05-23) ปรับ wording ตาม toggle — ไม่อ้าง "ดูดวงเชิงลึก" ถ้า Deep ปิด
-        $deepEnabledEi = $this->settings->isDeepReadingEnabled();
-        $earnTier = $deepEnabledEi ? 'ดูดวงเชิงลึก' : 'ดูดวง';
+        if ($lineUrl) {
+            $this->facebookService->sendButtonTemplate($senderId, [
+                'template_type' => 'button',
+                'text' => "📢 อยากทำการตลาด / แนะนำเพื่อนรับค่าแนะนำใช่ไหมคะ?\n\n"
+                    ."💚 เชิญแอดไลน์ของแม่หมอ — ระบบแนะนำเพื่อน/รับรายได้ ทำผ่าน LINE ได้สะดวกกว่า\n"
+                    .'มีกล่องแชร์สวยๆ กราฟฟิกชัด ติดตามยอด/ค่าแนะนำง่าย ✨',
+                'buttons' => [
+                    ['type' => 'web_url', 'title' => '💚 แอดไลน์ทำการตลาด', 'url' => $lineUrl],
+                    ['type' => 'postback', 'title' => '🔮 ดูดวงต่อ', 'payload' => 'FORTUNE_BASIC'],
+                ],
+            ]);
 
-        $this->facebookService->sendButtonTemplate($senderId, [
-            'template_type' => 'button',
-            'text' => "📢 เชิญเพื่อนมาดูดวง — ได้รายได้จริง!\n\n"
-                ."💰 ทุกครั้งที่เพื่อนคุณ{$earnTier} คุณจะได้ค่าแนะนำเข้า Wallet ทันที\n"
-                .'🔗 กดศึกษาวิธีและรับลิงก์เชิญเพื่อนได้ด้านล่าง',
-            'buttons' => [
-                ['type' => 'web_url', 'title' => '🔗 รับลิงก์เชิญเพื่อน', 'url' => $recruitUrl],
-                ['type' => 'web_url', 'title' => '📚 ศึกษาวิธีสร้างรายได้', 'url' => $wealthUrl],
-                ['type' => 'postback', 'title' => '🔮 ดูดวงต่อ', 'payload' => 'FORTUNE_BASIC'],
-            ],
-        ]);
+            return;
+        }
+
+        // ไม่มี LINE OA ตั้งค่า → ข้อความ fallback
+        $this->facebookService->sendMessage(
+            $senderId,
+            '📢 อยากทำการตลาด/แนะนำเพื่อนรับค่าแนะนำ — ทักแอดมินเพื่อรับช่องทางทำการตลาดผ่าน LINE ได้เลยค่ะ ✨'
+        );
     }
 
     /**

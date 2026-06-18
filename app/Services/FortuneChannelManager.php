@@ -1654,21 +1654,15 @@ class FortuneChannelManager
      */
     protected function sendFacebookShareResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
-        $referralUrl = $result['referral_url'] ?? null;
-
-        if ($referralUrl) {
-            $template = $richService->buildAffiliateShareTemplate($referralUrl);
-
-            return $fbService->sendButtonTemplate($userId, $template);
-        }
-
-        // ถ้าไม่มี referral URL → ส่ง LINE invite แทน
+        // 🌙 (2026-06-18, user) เลิกใช้ buildAffiliateShareTemplate (FB referral link เดิม = บัค/กล่องไม่สวย)
+        //   → ส่งทุกคนที่อยากทำการตลาด/แนะนำเพื่อน ไปทำผ่าน LINE (Flex สวย + ระบบ referral ครบ)
+        //   เดิม: if ($referralUrl) buildAffiliateShareTemplate($referralUrl) — mark ออก ใช้ LINE invite เป็นหลัก
         $lineInvite = $richService->buildLineInviteTemplate();
         if ($lineInvite) {
             return $fbService->sendButtonTemplate($userId, $lineInvite);
         }
 
-        return $fbService->sendMessage($userId, $result['message'] ?? 'กรุณาสมัครสมาชิกก่อนเพื่อรับลิงก์เชิญเพื่อน');
+        return $fbService->sendMessage($userId, $result['message'] ?? '💚 เชิญแอดไลน์ของแม่หมอเพื่อทำการตลาด/แนะนำเพื่อนผ่าน LINE ได้เลยค่ะ ✨');
     }
 
     /**
@@ -4869,11 +4863,15 @@ class FortuneChannelManager
         $greet = ($rawName !== '' && $rawName !== 'คุณ') ? "คุณ{$rawName}" : '';
 
         $appUrl = rtrim(config('app.url', 'https://main.thaiprompt.online'), '/');
-        $recruitUrl = $appUrl.'/user/fortune-referral/recruit';
         $pageId = $this->settings->facebook_page_id ?? null;
         $pageUrl = $pageId ? "https://www.facebook.com/{$pageId}" : $appUrl;
+        // 🌙 (2026-06-18, user) ปุ่มทำการตลาด/แนะนำเพื่อน → ชี้ไป LINE OA (referral FB เดิม = บัค/กล่องไม่สวย)
+        $lineBasicId = $this->settings->line_bot_basic_id ?? null;
+        $lineMarketingUrl = $lineBasicId
+            ? 'https://line.me/R/ti/p/'.(str_starts_with($lineBasicId, '@') ? $lineBasicId : '@'.$lineBasicId)
+            : $appUrl;
 
-        // 🎯 Phase E — เพิ่ม "อ่านคำทำนายล่าสุด" hint + เน้นส่วนแบ่งการตลาดเมื่อชวนเพื่อน
+        // 🎯 Phase E — เพิ่ม "อ่านคำทำนายล่าสุด" hint + เน้นทำการตลาดผ่าน LINE
         $thankYouLine = $greet !== ''
             ? "🙏 ขอบคุณที่ไว้วางใจหมอจันทรา {$greet}"
             : '🙏 ขอบคุณที่ไว้วางใจหมอจันทรา';
@@ -4881,13 +4879,13 @@ class FortuneChannelManager
         $text = "{$thankYouLine}\n\n"
             ."✨ ขอให้โชคดี สุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ\n\n"
             ."📖 อยากอ่านคำทำนายอีกรอบ → พิมพ์ \"อ่านคำทำนายล่าสุด\"\n\n"
-            .'📢 ถ้าคำทำนายถูกใจ — ชวนเพื่อนมาดูดวง ได้ **ส่วนแบ่งการตลาด** เข้า Wallet ทันที!';
+            .'📢 อยากแนะนำเพื่อนรับค่าแนะนำ — แอดไลน์แม่หมอ ทำการตลาดผ่าน LINE สะดวกกว่า (กล่อง/กราฟฟิกสวย)!';
 
         return $fbService->sendButtonTemplate($userId, [
             'template_type' => 'button',
             'text' => mb_substr($text, 0, 640),
             'buttons' => [
-                ['type' => 'web_url', 'title' => '📢 ชวนเพื่อน/รับส่วนแบ่ง', 'url' => $recruitUrl],
+                ['type' => 'web_url', 'title' => '💚 แอดไลน์ทำการตลาด', 'url' => $lineMarketingUrl],
                 ['type' => 'web_url', 'title' => '📤 แชร์เพจให้เพื่อน', 'url' => $pageUrl],
                 ['type' => 'postback', 'title' => '📖 อ่านคำทำนายล่าสุด', 'payload' => 'VIEW_LAST_READING'],
             ],
