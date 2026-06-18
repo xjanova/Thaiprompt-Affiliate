@@ -371,10 +371,13 @@ class FortuneReadingsController extends Controller
                 'ts' => optional($reading->responded_at ?? $reading->created_at)->toIso8601String(),
             ];
         } elseif (! $reading->responded_at) {
+            // Only a PAID reading is genuinely "awaiting a prediction". An unpaid
+            // row with no response is just an ongoing chat — labeling it "รอคำทำนาย"
+            // is wrong (they haven't paid, so there's no prediction owed).
             $messages[] = [
                 'id' => $mid++,
                 'role' => 'system',
-                'text' => '⌛ รอคำทำนาย',
+                'text' => $reading->is_paid ? '⌛ รอคำทำนาย' : '💬 กำลังสนทนา (ยังไม่ชำระเงิน)',
                 'ts' => null,
             ];
         }

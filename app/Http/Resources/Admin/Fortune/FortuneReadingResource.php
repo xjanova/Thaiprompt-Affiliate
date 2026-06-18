@@ -26,6 +26,13 @@ class FortuneReadingResource extends JsonResource
             ]),
             'facebook_user_name' => $this->facebook_user_name,
             'facebook_user_id' => $this->facebook_user_id,
+            // 🪪 (2026-06-19) Canonical platform identity. `platform` is
+            //   authoritative for FB-vs-LINE (defaults 'facebook'); for LINE the
+            //   ONLY stable user id is platform_user_id (facebook_user_id is null).
+            //   Warroom uses these for correct channel badges + collapsing a
+            //   customer's many readings into ONE card (was guessing via email).
+            'platform' => $this->platform,
+            'platform_user_id' => $this->platform_user_id,
 
             // Question + answer
             'questions' => $this->questions,
@@ -60,6 +67,14 @@ class FortuneReadingResource extends JsonResource
                 'label' => $this->getCancellationReasonLabelOrNull(),
                 'cancelled_at' => $this->getConversationState('cancelled_at'),
             ] : null,
+            // 🔮 (2026-06-19) Fine Celtic-99 sub-state for the warroom funnel so
+            //    the operator sees exactly what each customer is doing — these
+            //    live in conversation_state, NOT conversation_status. Cheap:
+            //    getCelticPickedCount reads the already-loaded JSON (no query).
+            //    celtic_birthdate_pending = picked all 10, now collecting วันเกิด.
+            'celtic_picked_count' => $this->getCelticPickedCount(),
+            'celtic_birthdate_pending' => (bool) $this->getConversationState('celtic_birthdate_pending'),
+            'celtic_questions_used' => (int) ($this->celtic_questions_used ?? 0),
 
             // AI provenance
             'ai' => [
