@@ -1960,8 +1960,8 @@ class CelticCrossService
      */
     public static function pullNextQuestions(string &$response): array
     {
-        // marker NEXTQ ใดๆ — ทั้งเปิด [NEXTQ] และปิด [/NEXTQ]
-        $markerPattern = '/\[\s*\/?\s*NEXTQ\s*\]/u';
+        // marker NEXTQ ใดๆ — bracket [NEXTQ]/[/NEXTQ] หรือ "เปลือย" NEXTQ (โมเดลเล็กดรอป bracket ทั้งคู่ — เคส N9654)
+        $markerPattern = '/\[\s*\/?\s*NEXTQ\s*\]|(?<![A-Za-z])NEXTQ(?![A-Za-z])/u';
         if (! preg_match($markerPattern, $response, $mm, PREG_OFFSET_CAPTURE)) {
             return []; // ไม่มี token ใด ๆ → ไม่มีคำถามแนะนำ
         }
@@ -1973,6 +1973,8 @@ class CelticCrossService
             $content = $m[1];                                                  // ครบคู่
         } elseif (preg_match('/(?:^|\n)([^\n\[\]]*\|[^\n\[\]]*?)\s*\[\s*\/\s*NEXTQ\s*\]/u', $response, $m)) {
             $content = $m[1];                                                  // ดรอป tag เปิด (เคสจริง 5023)
+        } elseif (preg_match('/(?<![A-Za-z])NEXTQ\s*([^\n\[\]]*\|[^\n\[\]]*)/u', $response, $m)) {
+            $content = $m[1];                                                  // เปลือยทั้งคู่ "NEXTQ q1|q2" (เคสจริง N9654 — โมเดลดรอป bracket หมด)
         }
         $questions = array_slice(array_values(array_filter(
             array_map('trim', explode('|', $content)),
