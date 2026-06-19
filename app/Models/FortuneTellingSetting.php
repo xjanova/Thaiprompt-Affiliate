@@ -693,7 +693,7 @@ class FortuneTellingSetting extends Model
         'google_tts_voice' => 'th-TH-Neural2-C',
         'google_tts_speaking_rate' => 0.95,
         'voice_summary_max_chars' => 2000,
-        'voice_summary_intro_message' => '🎙️ แม่หมอจันทราอัดเสียงสรุปคำทำนายให้เจ้าชะตาแล้วค่ะ ลองฟังดูนะ ✨',
+        'voice_summary_intro_message' => '🎧 ผู้ช่วย AI อ่านบทสรุปคำทำนายให้ฟังค่ะ (เป็นเสียงระบบผู้ช่วย AI ไม่ใช่เสียงแม่หมอ) ลองฟังดูนะคะ ✨',
         // 🌥️ (2026-05-18) Cloud storage — default local เพื่อ backward compat
         'voice_storage_driver' => 'local',
         'voice_storage_config' => null,

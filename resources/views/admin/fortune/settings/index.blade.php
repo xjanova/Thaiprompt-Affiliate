@@ -1440,7 +1440,7 @@
                     <div>
                         <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">💬 ข้อความก่อนส่ง audio</label>
                         <input type="text" name="voice_summary_intro_message" maxlength="500"
-                               value="{{ old('voice_summary_intro_message', $settings->voice_summary_intro_message ?? '🎙️ แม่หมอจันทราอัดเสียงสรุปคำทำนายให้เจ้าชะตาแล้วค่ะ ลองฟังดูนะ ✨') }}"
+                               value="{{ old('voice_summary_intro_message', $settings->voice_summary_intro_message ?? '🎧 ผู้ช่วย AI อ่านบทสรุปคำทำนายให้ฟังค่ะ (เป็นเสียงระบบผู้ช่วย AI ไม่ใช่เสียงแม่หมอ) ลองฟังดูนะคะ ✨') }}"
                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
                     </div>
                 </div>

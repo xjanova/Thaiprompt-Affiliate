@@ -208,8 +208,21 @@ class ProcessVoiceSummaryJob implements ShouldQueue
             $settings = FortuneTellingSetting::getSettings();
 
             // 1. Generate voice
+            //    🐛 (2026-06-20) Celtic ไม่เก็บคำทำนายใน deep_response (ว่างเสมอ) → generate()
+            //    เดิม fallback deep_response → "source สั้นเกินไป" เสมอ. ส่ง source ที่ถูกต้องเข้าไป:
+            //    voice_summary_source_text (state ตอนจบ) → celtic_grand_finale_summary → ai_response → deep_response
             $voiceService = new FortuneVoiceSummaryService($settings);
-            $result = $voiceService->generate($reading);
+            $sourceText = (string) $reading->getConversationState('voice_summary_source_text', '');
+            if (mb_strlen(trim($sourceText)) < 50) {
+                $sourceText = (string) $reading->getConversationState('celtic_grand_finale_summary', '');
+            }
+            if (mb_strlen(trim($sourceText)) < 50) {
+                $sourceText = (string) ($reading->ai_response ?? '');
+            }
+            if (mb_strlen(trim($sourceText)) < 50) {
+                $sourceText = (string) ($reading->deep_response ?? '');
+            }
+            $result = $voiceService->generate($reading, $sourceText !== '' ? $sourceText : null);
 
             if (! $result['success']) {
                 $reading->setConversationState('voice_summary_status', 'failed');
@@ -223,8 +236,9 @@ class ProcessVoiceSummaryJob implements ShouldQueue
             }
 
             // 2. Push audio ตาม platform
+            // 🎧 (2026-06-20) เสียง = "ผู้ช่วย AI" อ่านให้ ไม่ใช่เสียงแม่หมอ — สื่อให้ชัด
             $intro = $settings->voice_summary_intro_message
-                ?: '🎙️ แม่หมอจันทราอัดเสียงสรุปคำทำนายให้เจ้าชะตาแล้วค่ะ ลองฟังดูนะ ✨';
+                ?: '🎧 ผู้ช่วย AI อ่านบทสรุปคำทำนายให้ฟังค่ะ (เป็นเสียงระบบผู้ช่วย AI ไม่ใช่เสียงแม่หมอ) ลองฟังดูนะคะ ✨';
 
             $pushed = $this->platform === 'line'
                 ? $this->pushToLine($reading, $intro, $result, $settings)

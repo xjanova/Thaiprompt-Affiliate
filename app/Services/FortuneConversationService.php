@@ -784,6 +784,15 @@ class FortuneConversationService
                 ]);
             }
 
+            // 🎧 (2026-06-20) On-demand voice — ลูกค้าพิมพ์ "อ่านให้ฟัง" → ผู้ช่วย AI อ่านบทสรุปให้ฟัง
+            //   ⚠️ วางหลัง in-prediction guard: ถ้ากำลังทำนายอยู่ guard จับไปก่อน (ไม่แทรกระหว่างทำนาย)
+            //   gate แน่น: เปิด voice + keyword ตรง + มี Celtic ที่ "จบแล้ว (COMPLETED)" พร้อมบทสรุป
+            //   → null = ปล่อยผ่านให้ flow ปกติทำงานต่อ (รับได้ทั้งช่วง Pro Session linger + หลังจบจริง)
+            $voiceRead = $this->handleCelticVoiceReadRequest($facebookUserId, $messageText);
+            if ($voiceRead !== null) {
+                return $voiceRead;
+            }
+
             // ═══════════════════════════════════════════════════════════════
             // 📜 (2026-06-06) Consent Gate accept — ลูกค้ากด "พร้อมบูชาครู" จากกล่องกติกา
             //   มี Cache pending guard (ทำงานเฉพาะตอนมีกล่องกติกาค้าง) → set ok flag → re-dispatch
@@ -16036,10 +16045,10 @@ PROMPT;
             $msg .= "   • เปิดไพ่ยิปซี 10 ใบเต็มสำรับ\n";
             $msg .= "   • คุยกับแม่หมอได้ {$_qTxtCelt} ภายใน {$_winCelt} นาที (ตอบทันที)\n";
             $msg .= "   • ทำนายลึกซึ้ง — แม่นยำที่สุด\n";
-            // 🎙️ (2026-05-16) แสดง "อัดเสียงสรุป" เฉพาะถ้า admin เปิด voice summary
-            //    user spec: "เอาเรื่อง อัดคลิปเสียง ออก ถ้าระบบอัดคลิปเสียงไม่ได้เปิด"
+            // 🎧 (2026-06-20) แสดง "ขอให้ผู้ช่วย AI อ่านสรุปให้ฟัง" เฉพาะถ้า admin เปิด voice summary
+            //    user spec: "เป็นเสียงผู้ช่วย AI ต้องบอกแบบนั้น" + ขอเอง (on-demand)
             if (! empty($this->settings->voice_summary_enabled)) {
-                $msg .= "   • อัดเสียงสรุปคำทำนายให้ฟัง 🎙️\n";
+                $msg .= "   • ขอให้ผู้ช่วย AI อ่านบทสรุปให้ฟังได้ 🎧\n";
             }
             $msg .= "\n";
         }

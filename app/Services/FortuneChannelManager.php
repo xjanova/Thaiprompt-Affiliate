@@ -1225,6 +1225,8 @@ class FortuneChannelManager
                 'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
                 'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
                 'celtic_awaiting_payment', 'celtic_bill_creation_failed',
+                // 🎧 (2026-06-20) On-demand voice ack/fail — text-only
+                'celtic_voice_generating', 'celtic_voice_failed',
                 'celtic_resume_qa' => $fbService->sendMessage($userId, $message, $extra),
 
                 // 📚 (2026-05-09) ประวัติบิล — ส่งข้อความ list + Quick Reply ปุ่มเลือกบิล
@@ -2687,6 +2689,8 @@ class FortuneChannelManager
                 'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
                 'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
                 'celtic_awaiting_payment', 'celtic_bill_creation_failed',
+                // 🎧 (2026-06-20) On-demand voice ack/fail — text-only
+                'celtic_voice_generating', 'celtic_voice_failed',
                 'celtic_resume_qa' => (function () use ($lineService, $userId, $message, $result) {
                     \Log::info('LINE Celtic text-only: force push', [
                         'user_id' => $userId,

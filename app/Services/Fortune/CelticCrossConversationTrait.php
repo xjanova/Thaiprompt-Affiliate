@@ -2918,49 +2918,30 @@ trait CelticCrossConversationTrait
             ]);
         }
 
-        // 🎙️ (2026-05-08) Dispatch voice summary ใน background — ไม่ block closing message
-        //    ทำไมต้อง async:
-        //      AI summary 5-15s + MiniMax synth 3-10s + chain fallback +5-15s = อาจรวม 30s+
-        //      ลูกค้าจ่าย 99฿ — รอนานหลังกด "พอแค่นี้" ทำให้ UX แย่
-        //    แทนที่จะ generate sync ที่นี่ → dispatch job, job จะ push audio ทีหลัง
-        $voiceWillSend = false;
+        // 🎧 (2026-06-20) Voice summary = ON-DEMAND (user spec: "ขึ้นว่าให้บอทอ่านให้ฟัง จึงจะสร้างไฟล์เสียง")
+        //    เดิม: dispatch อัตโนมัติทุกครั้งที่จบ → เปลี่ยนเป็น เก็บ source ไว้ + ขึ้นคำชวนให้ลูกค้า
+        //    พิมพ์ "อ่านให้ฟัง" เอง → handleCelticVoiceReadRequest ค่อย dispatch ProcessVoiceSummaryJob
+        //    ⚠️ เสียง = "ผู้ช่วย AI" อ่านให้ ไม่ใช่เสียงแม่หมอจริง — ต้องสื่อให้ชัดในคำชวน
+        //    🐛 deep_response ว่างสำหรับ Celtic → ใช้ grandFinale / aiMessage / celtic_grand_finale_summary
+        $voiceOnDemandReady = false;
         try {
             if ($this->settings->shouldGenerateVoiceSummary($reading)) {
-                // ใช้ source ที่ดีที่สุดที่มี — เก็บไว้ใน reading state ให้ job อ่าน
                 $voiceSource = $grandFinale
-                    ?: ($aiMessage ?: $reading->fresh()->deep_response);
+                    ?: ($aiMessage ?: (string) $reading->getConversationState('celtic_grand_finale_summary', ''));
 
                 if (! empty($voiceSource) && mb_strlen(trim($voiceSource)) >= 50) {
-                    // เก็บ source text ลง state เผื่อ deep_response ไม่ครอบคลุม
+                    // เก็บ source text ลง state ให้ on-demand job อ่าน (single source of truth)
                     $reading->setConversationState('voice_summary_source_text', mb_substr($voiceSource, 0, 5000));
-                    $reading->setConversationState('voice_summary_status', 'queued');
-                    $reading->setConversationState('voice_summary_queued_at', now()->toIso8601String());
-
-                    // Dispatch async — UI ส่ง closing+image ก่อน, voice push 5-15s หลัง
-                    ProcessVoiceSummaryJob::dispatchSmart(
-                        $reading->id,
-                        $reading->platform ?: 'facebook',
-                        $reading->platform_user_id ?: $reading->facebook_user_id ?: ''
-                    );
-                    $voiceWillSend = true;
-
-                    \Log::info('🎙️ Celtic: dispatched voice summary job', [
-                        'reading_id' => $reading->id,
-                        'source_len' => mb_strlen($voiceSource),
-                    ]);
+                    $reading->setConversationState('voice_summary_status', 'available_on_demand');
+                    $voiceOnDemandReady = true;
                 }
             }
         } catch (\Throwable $e) {
-            // dispatch fail = ไม่กระทบ closing message
-            \Log::warning('Celtic: voice dispatch exception (non-blocking)', [
+            // เก็บ source fail = ไม่กระทบ closing message
+            \Log::warning('Celtic: voice source store exception (non-blocking)', [
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
-        }
-
-        // ถ้าจะส่งเสียงทีหลัง — เพิ่ม hint ใน closing message ให้ลูกค้ารอ
-        if ($voiceWillSend) {
-            $closingMessage .= "\n\n🎙️ _แม่หมอกำลังอัดเสียงสรุปให้ฟังภายใน 1 นาที — รอสักครู่นะคะ_ ✨";
         }
 
         // 🌙 (2026-05-08 v3) Pro Session linger hint
@@ -2985,6 +2966,15 @@ trait CelticCrossConversationTrait
             //    Fix: clear flag explicit เมื่อ reason = customer/time/idle (ไม่ clear ใน
             //         max_questions_reached/ai_signal เพราะ linger hint ใช้งานได้อยู่)
             $this->clearProSessionFlags($reading);
+        }
+
+        // 🎧 (2026-06-20) คำชวนให้ลูกค้าขอฟังเสียง — ผู้ช่วย AI อ่านบทสรุปให้ฟัง (on-demand)
+        //   ขึ้นเฉพาะเมื่อเปิด voice_summary_enabled + มีบทสรุปพร้อม → ลูกค้าพิมพ์ "อ่านให้ฟัง" เอง
+        //   สื่อชัดว่าเป็น "เสียงผู้ช่วย AI" ไม่ใช่เสียงแม่หมอ (กันลูกค้าเข้าใจผิด)
+        if ($voiceOnDemandReady) {
+            $closingMessage .= "\n\n──────────────────────\n"
+                ."🎧 *อยากให้ผู้ช่วย AI อ่านบทสรุปนี้ให้ฟังไหมคะ?*\n"
+                .'พิมพ์ *"อ่านให้ฟัง"* ได้เลยค่ะ — _เป็นเสียงผู้ช่วย AI อ่านให้ ไม่ใช่เสียงแม่หมอนะคะ_ ✨';
         }
 
         // ⭐ (2026-06-17) Review Invite — ชวนรีวิวเพจ Facebook หลังสรุป VIP (เฉพาะลูกค้าจ่ายเงิน)
@@ -3019,9 +3009,142 @@ trait CelticCrossConversationTrait
             // 🗺️ (2026-06-08) แผนที่ดาวชะตา ส่งคู่ภาพไพ่ตอนสรุป (null ถ้าไม่มีวันเกิด)
             'chart_image_url' => $this->buildCelticBirthChartUrl($reading),
             'has_grand_finale' => ! empty($grandFinale),
-            // 🎙️ (2026-05-08) ตอนนี้ voice ส่งผ่าน async job ไม่ใช่ใน return อีก
-            //    เก็บ flag ไว้เผื่อ admin debug ต้อง trigger inline (เช่น playground)
-            'voice_will_send_async' => $voiceWillSend,
+            // 🎧 (2026-06-20) Voice = on-demand — flag บอกว่ามีบทสรุปพร้อมให้ลูกค้าขอฟังเสียง
+            'voice_on_demand_ready' => $voiceOnDemandReady,
+        ];
+    }
+
+    /**
+     * 🎧 (2026-06-20) ตรวจว่าลูกค้าขอให้ "ผู้ช่วย AI อ่านบทสรุปให้ฟัง" หรือไม่
+     *
+     * ใช้ keyword จำเพาะ (contiguous) — กัน false positive กับการขอให้ทำนาย/อ่านไพ่
+     * เช่น "อ่านดวงให้ฟัง" จะไม่ match เพราะไม่ใช่ "อ่านให้ฟัง" ติดกัน
+     */
+    protected function looksLikeVoiceReadRequest(string $text): bool
+    {
+        $t = mb_strtolower(trim($text));
+        if ($t === '') {
+            return false;
+        }
+
+        $keywords = [
+            'อ่านให้ฟัง', 'อ่านให้หน่อย', 'อ่านสรุปให้ฟัง', 'อ่านบทสรุปให้ฟัง',
+            'ฟังเสียงสรุป', 'ฟังเสียง', 'ขอเสียง', 'ขอไฟล์เสียง', 'อยากฟังเสียง',
+            'อ่านเป็นเสียง', 'อ่านออกเสียง', 'เสียงสรุป',
+        ];
+
+        foreach ($keywords as $kw) {
+            if (mb_strpos($t, $kw) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🎧 (2026-06-20) หา Celtic reading ล่าสุดที่จ่ายแล้ว + มีบทสรุปพร้อมอ่านเสียง (24 ชม.)
+     *
+     * เงื่อนไข: celtic_cross + จ่ายแล้ว + จบ session (COMPLETED) + มี voice_summary_source_text
+     * (เก็บใน state ตอน endCelticSession) → กันยิงตอนยังทำนายไม่จบ
+     */
+    protected function findRecentVoiceableCelticReading(string $userId): ?FortuneReading
+    {
+        try {
+            return FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                ->where('is_paid', true)
+                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                ->where(function ($q) use ($userId) {
+                    $q->where('platform_user_id', $userId)
+                        ->orWhere('facebook_user_id', $userId)
+                        ->orWhere('line_user_id', $userId);
+                })
+                ->where('updated_at', '>=', now()->subHours(24))
+                ->where('conversation_state', 'like', '%voice_summary_source_text%')
+                ->orderByDesc('updated_at')
+                ->first();
+        } catch (\Throwable $e) {
+            \Log::debug('Celtic: findRecentVoiceableCeltic fail (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🎧 (2026-06-20) จัดการคำขอ "อ่านให้ฟัง" — dispatch voice job แบบ on-demand
+     *
+     * คืน:
+     *   - array = handled (ส่งข้อความ + dispatch job)
+     *   - null  = ไม่เกี่ยว → ปล่อยให้ flow ปกติทำงานต่อ (ไม่ดักมั่ว)
+     *
+     * Gate แน่น: ต้องเปิด voice_summary_enabled + keyword ตรง + มี reading ที่มีบทสรุปพร้อม
+     */
+    protected function handleCelticVoiceReadRequest(string $userId, string $messageText): ?array
+    {
+        if (empty($this->settings->voice_summary_enabled)) {
+            return null;
+        }
+        if (! $this->looksLikeVoiceReadRequest($messageText)) {
+            return null;
+        }
+
+        $reading = $this->findRecentVoiceableCelticReading($userId);
+        if (! $reading) {
+            // ไม่มีบทสรุปพร้อม → ปล่อย flow ปกติ (อย่า hijack ข้อความ)
+            return null;
+        }
+
+        // กันสั่งซ้ำถี่ๆ (มือลั่น/กดปุ่มรัว) — ภายใน 60 วิ ตอบว่ากำลังทำ
+        $throttleKey = "fortune:voice_ondemand:{$reading->id}";
+        if (\Illuminate\Support\Facades\Cache::has($throttleKey)) {
+            return [
+                'action' => 'celtic_voice_generating',
+                'message' => '🎧 ผู้ช่วย AI กำลังอ่านบทสรุปให้ฟังอยู่ค่ะ รอสักครู่นะคะ ✨',
+                'reading' => $reading,
+            ];
+        }
+        \Illuminate\Support\Facades\Cache::put($throttleKey, true, 60);
+
+        // 🔁 รีเซ็ต pushed flag — ให้ job re-push ได้ทุกครั้งที่ลูกค้าขอ (ใช้ไฟล์ cache เดิม ไม่ regen)
+        //    (job มี idempotent skip ถ้า voice_summary_pushed=true → re-request จะเงียบถ้าไม่ reset)
+        try {
+            $reading->setConversationState('voice_summary_pushed', false);
+        } catch (\Throwable $e) {
+            // ignore — best-effort
+        }
+
+        try {
+            ProcessVoiceSummaryJob::dispatchSmart(
+                $reading->id,
+                $reading->platform ?: ($this->currentPlatform ?? 'facebook'),
+                $reading->platform_user_id ?: $reading->facebook_user_id ?: ($reading->line_user_id ?: $userId)
+            );
+
+            \Log::info('🎧 Celtic: on-demand voice dispatched', [
+                'reading_id' => $reading->id,
+                'platform' => $reading->platform,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Cache::forget($throttleKey);
+            \Log::warning('Celtic: on-demand voice dispatch fail', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'action' => 'celtic_voice_failed',
+                'message' => 'ขออภัยค่ะ ระบบอ่านเสียงขัดข้องชั่วคราว ลองพิมพ์ "อ่านให้ฟัง" ใหม่อีกครั้งนะคะ 🙏',
+                'reading' => $reading,
+            ];
+        }
+
+        return [
+            'action' => 'celtic_voice_generating',
+            'message' => "🎧 ได้เลยค่ะ — ผู้ช่วย AI กำลังอ่านบทสรุปคำทำนายให้ฟัง รอสักครู่นะคะ ✨\n"
+                .'_(เป็นเสียงระบบผู้ช่วย AI ไม่ใช่เสียงแม่หมอนะคะ)_',
+            'reading' => $reading,
         ];
     }
 
