@@ -303,87 +303,115 @@ class FortuneReadingsController extends Controller
     /**
      * GET /api/admin/fortune/readings/{reading}/transcript
      *
-     * Returns the full message trail for a reading, reconstructed from:
-     *   1. fortune_readings — the initial question + AI response
-     *   2. fortune_admin_qa  — extra admin replies typed in Messenger after
-     *      the initial bot reply (joined by reading_id)
+     * Reconstructs the closest-to-Messenger conversation we can from everything
+     * persisted for a reading — so warroom /chat shows the real exchange, not an
+     * empty shell. Sources, woven together in conversation-flow order:
+     *   1. initial customer question(s) + any sent image (slip/photo)
+     *   2. payment confirmation
+     *   3. Celtic Cross: the 10 cards as they were opened (conversation_state),
+     *      the birthdate the customer gave, and every Q&A turn
+     *      (fortune_celtic_questions — the bulk of a 99฿ conversation)
+     *   4. the row-level AI response (Deep/Basic — skipped for Celtic, whose Q1
+     *      is already stored as a celtic question, to avoid a duplicate)
+     *   5. admin replies typed in Messenger after the bot (fortune_admin_qa)
      *
-     * Used by warroom /chat to render real conversation history instead of
-     * just the initial question/answer pair.
+     * NOTE: the Fortune bot does NOT persist a full raw Messenger log — free-form
+     * chatter (small talk, greetings) outside these structured slots isn't stored
+     * anywhere, so it can't be shown. This is the most faithful reconstruction the
+     * data allows.
      */
     public function transcript(FortuneReading $reading): JsonResponse
     {
-        $messages = [];
-        $mid = 1;
+        // Each item carries a coarse conversation PHASE + a timestamp; we sort by
+        // (phase, ts) so the flow reads correctly even where exact timestamps are
+        // missing or identical (e.g. the initial question and the row share
+        // created_at). Phases mirror the real journey: greet → ask → pay → cards
+        // → birthdate → Q&A → final reading → admin follow-ups.
+        $items = [];
+        $created = optional($reading->created_at)->toIso8601String();
+        $add = function (int $phase, string $role, ?string $text, ?string $ts, array $extra = []) use (&$items) {
+            $items[] = array_merge([
+                'role' => $role,
+                'text' => (string) $text,
+                'ts' => $ts,
+                '_phase' => $phase,
+                '_sort' => $ts ? strtotime($ts) : 0,
+            ], $extra);
+        };
 
-        $messages[] = [
-            'id' => $mid++,
-            'role' => 'system',
-            'text' => 'เริ่มสนทนา · ' . optional($reading->created_at)->toIso8601String(),
-            'ts' => optional($reading->created_at)->toIso8601String(),
-        ];
+        $add(0, 'system', 'เริ่มสนทนา · ' . $created, $created);
 
-        // Initial customer question(s)
-        $questions = $this->normalizeQuestions($reading->questions);
-        foreach ($questions as $q) {
-            $messages[] = [
-                'id' => $mid++,
-                'role' => 'user',
-                'text' => (string) $q,
-                'ts' => optional($reading->created_at)->toIso8601String(),
-            ];
+        foreach ($this->normalizeQuestions($reading->questions) as $q) {
+            $add(1, 'user', (string) $q, $created);
         }
 
-        // 📸 (2026-05-24) Customer-sent image (payment slip or fortune-question
-        //    picture). Surface as a dedicated user message so the warroom
-        //    operator can SEE the slip before approving — previously was
-        //    invisible to admins on /chat.
+        // 📸 Customer-sent image (payment slip or fortune-question picture).
         if (! empty($reading->user_image_url)) {
             $isSlip = $reading->is_paid || ! empty($reading->bill_reference);
-            $messages[] = [
-                'id' => $mid++,
-                'role' => 'user',
-                'text' => $isSlip ? '📎 ส่งสลิปการโอน' : '📷 ส่งรูปภาพ',
+            $add(2, 'user', $isSlip ? '📎 ส่งสลิปการโอน' : '📷 ส่งรูปภาพ', $created, [
                 'image_url' => (string) $reading->user_image_url,
-                'ts' => optional($reading->created_at)->toIso8601String(),
-            ];
+            ]);
         }
 
-        // Payment confirmation
+        // Payment confirmation.
         if ($reading->is_paid && $reading->amount_paid > 0 && $reading->paid_at) {
-            $messages[] = [
-                'id' => $mid++,
-                'role' => 'system',
-                'text' => '✓ รับชำระ ฿' . number_format((float) $reading->amount_paid, 2) . ' · ' . optional($reading->paid_at)->toIso8601String(),
-                'ts' => optional($reading->paid_at)->toIso8601String(),
-            ];
+            $paidTs = optional($reading->paid_at)->toIso8601String();
+            $add(3, 'system', '✓ รับชำระ ฿' . number_format((float) $reading->amount_paid, 2), $paidTs);
         }
 
-        // Initial AI response from the row itself
-        if ($reading->ai_response) {
+        // 🃏 Celtic Cross — the cards as they were opened (1..10), the birthdate,
+        //    then every Q&A turn. This is the heart of a 99฿ conversation.
+        $celticCards = $reading->getCelticCards();
+        if (is_array($celticCards) && count($celticCards) > 0) {
+            ksort($celticCards);
+            foreach ($celticCards as $pos => $card) {
+                if (! is_array($card)) continue;
+                $name = $card['card_name_th'] ?? $card['card_name_en'] ?? '?';
+                $rev = ! empty($card['is_reversed']) ? ' (ไพ่กลับหัว)' : '';
+                $posName = $card['position_name'] ?? ('ใบที่ ' . $pos);
+                $add(4, 'system', "🃏 เปิดไพ่ใบที่ {$pos} · {$posName} → {$name}{$rev}", $card['picked_at'] ?? null);
+            }
+        }
+
+        // 🎂 Birthdate the customer provided for the base chart (พื้นดวง).
+        $birthdate = $reading->getConversationState('celtic_birthdate_text');
+        if (! empty($birthdate) && ! $reading->getConversationState('celtic_birthdate_from_prior')) {
+            $add(5, 'user', '🎂 ' . (string) $birthdate, null);
+        }
+
+        // 🔮 Celtic Q&A turns (question + AI answer per row). The reading row's
+        //    ai_response is just a copy of Q1, so when Q&A exists we render the
+        //    Q&A list and skip the row response below (no duplicate).
+        $hasCelticQa = false;
+        if (Schema::hasTable('fortune_celtic_questions')) {
+            foreach ($reading->celticQuestions()->get() as $cq) {
+                $hasCelticQa = true;
+                if (! empty($cq->question)) {
+                    $add(6, 'user', (string) $cq->question, optional($cq->created_at)->toIso8601String());
+                }
+                if (! empty($cq->response)) {
+                    $add(6, 'bot', (string) $cq->response, optional($cq->answered_at ?? $cq->created_at)->toIso8601String(), [
+                        'ai' => $cq->ai_provider ?? null,
+                    ]);
+                }
+            }
+        }
+
+        // Row-level AI response (Deep/Basic). Skipped for Celtic — already shown
+        // as a Q&A turn above.
+        if ($reading->ai_response && ! $hasCelticQa) {
             $isAdmin = ($reading->response_type ?? '') === 'admin';
-            $messages[] = [
-                'id' => $mid++,
-                'role' => $isAdmin ? 'admin' : 'bot',
+            $add(7, $isAdmin ? 'admin' : 'bot', (string) $reading->ai_response, optional($reading->responded_at ?? $reading->created_at)->toIso8601String(), [
                 'by' => $isAdmin ? 'admin' : null,
                 'ai' => $isAdmin ? null : ($reading->ai_provider ?? null),
-                'text' => (string) $reading->ai_response,
-                'ts' => optional($reading->responded_at ?? $reading->created_at)->toIso8601String(),
-            ];
-        } elseif (! $reading->responded_at) {
-            // Only a PAID reading is genuinely "awaiting a prediction". An unpaid
-            // row with no response is just an ongoing chat — labeling it "รอคำทำนาย"
-            // is wrong (they haven't paid, so there's no prediction owed).
-            $messages[] = [
-                'id' => $mid++,
-                'role' => 'system',
-                'text' => $reading->is_paid ? '⌛ รอคำทำนาย' : '💬 กำลังสนทนา (ยังไม่ชำระเงิน)',
-                'ts' => null,
-            ];
+            ]);
+        } elseif (! $reading->ai_response && ! $hasCelticQa && ! $reading->responded_at) {
+            // Nothing delivered yet. Only a PAID reading is genuinely "awaiting a
+            // prediction"; an unpaid row is just an ongoing chat.
+            $add(7, 'system', $reading->is_paid ? '⌛ รอคำทำนาย' : '💬 กำลังสนทนา (ยังไม่ชำระเงิน)', null);
         }
 
-        // Real admin replies typed in Messenger after the initial bot reply.
-        // Stored in fortune_admin_qa keyed by reading_id.
+        // Admin replies typed in Messenger after the bot (fortune_admin_qa).
         if (Schema::hasTable('fortune_admin_qa')) {
             $follows = DB::table('fortune_admin_qa')
                 ->where('reading_id', $reading->id)
@@ -392,24 +420,27 @@ class FortuneReadingsController extends Controller
                 ->get(['q_text', 'a_text', 'admin_user_id', 'created_at']);
 
             foreach ($follows as $row) {
+                $ts = $row->created_at ? (string) $row->created_at : null;
                 if (! empty($row->q_text)) {
-                    $messages[] = [
-                        'id' => $mid++,
-                        'role' => 'user',
-                        'text' => (string) $row->q_text,
-                        'ts' => (string) $row->created_at,
-                    ];
+                    $add(8, 'user', (string) $row->q_text, $ts);
                 }
                 if (! empty($row->a_text)) {
-                    $messages[] = [
-                        'id' => $mid++,
-                        'role' => 'admin',
+                    $add(8, 'admin', (string) $row->a_text, $ts, [
                         'by' => $row->admin_user_id ? ('admin#' . $row->admin_user_id) : 'admin',
-                        'text' => (string) $row->a_text,
-                        'ts' => (string) $row->created_at,
-                    ];
+                    ]);
                 }
             }
+        }
+
+        // Sort by (phase, timestamp) then strip the sort keys + assign ids.
+        usort($items, function ($a, $b) {
+            return [$a['_phase'], $a['_sort']] <=> [$b['_phase'], $b['_sort']];
+        });
+        $messages = [];
+        $mid = 1;
+        foreach ($items as $it) {
+            unset($it['_phase'], $it['_sort']);
+            $messages[] = array_merge(['id' => $mid++], $it);
         }
 
         return response()->json([
