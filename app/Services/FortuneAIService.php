@@ -6942,7 +6942,7 @@ TXT;
      * @param  string  $sourceText  ข้อความต้นฉบับ (deep_response หรือ grand finale)
      * @param  int  $maxChars  จำกัด char output (default 2000)
      */
-    public function generateVoiceSummary(FortuneReading $reading, string $sourceText, int $maxChars = 2000): string
+    public function generateVoiceSummary(\App\Models\FortuneReading $reading, string $sourceText, int $maxChars = 2000): string
     {
         $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
         $customPrompt = $this->settings->voice_summary_prompt;
