@@ -420,6 +420,22 @@ class FortuneChannelManager
             'from_admin' => ! empty($extra['from_admin']),
         ]);
 
+        // 💬 (2026-06-19) Realtime chat log — capture every outbound bot/admin
+        //    message for the warroom transcript (Redis, ephemeral). Fail-safe.
+        if ($message !== '') {
+            try {
+                app(\App\Services\Fortune\FortuneChatLogService::class)->record(
+                    $platform,
+                    $userId,
+                    ! empty($extra['from_admin']) ? 'admin' : 'bot',
+                    $message,
+                    ['ai' => $result['ai_provider'] ?? null]
+                );
+            } catch (\Throwable $logErr) {
+                // ignore — chat log is best-effort
+            }
+        }
+
         $platformService = $this->getPlatform($platform);
         if (! $platformService) {
             Log::error('FortuneChannelManager: Platform not found', ['platform' => $platform]);

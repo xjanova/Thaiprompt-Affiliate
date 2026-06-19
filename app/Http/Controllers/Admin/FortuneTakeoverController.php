@@ -233,6 +233,24 @@ class FortuneTakeoverController extends Controller
         // บันทึก log
         $this->takeoverService->logMessage($reading, Auth::id(), $message);
 
+        // 💬 (2026-06-19) Mirror into the realtime chat log so this (legacy admin
+        //    panel) reply also shows in the warroom transcript. This path bypasses
+        //    FortuneChannelManager::sendResponse, so log explicitly. Fail-safe.
+        try {
+            $uid = $reading->platform_user_id ?: $reading->facebook_user_id;
+            if ($uid) {
+                app(\App\Services\Fortune\FortuneChatLogService::class)->record(
+                    $reading->platform ?: 'facebook',
+                    (string) $uid,
+                    'admin',
+                    $message,
+                    ['by' => 'admin#' . (Auth::id() ?? '?')]
+                );
+            }
+        } catch (\Throwable $logErr) {
+            // ignore — chat log is best-effort
+        }
+
         return response()->json([
             'success' => true,
             'message' => '💬 ส่งข้อความสำเร็จ',

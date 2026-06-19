@@ -47,6 +47,20 @@ Schedule::command('fortune:bill-reminder')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
+// 💬 (2026-06-19) Realtime warroom chat log — midnight cleanup
+// ════════════════════════════════════════════════════════════════
+// The chat log (Redis) keeps only TODAY's conversation for the warroom /chat
+// transcript, then is wiped at midnight to save memory. Keys are TTL'd to ~00:30
+// (self-expire); this command is the explicit purge that frees memory at 00:05
+// Bangkok and sweeps any days a run was missed.
+Schedule::command('fortune:chatlog:purge')
+    ->dailyAt('00:05')
+    ->timezone('Asia/Bangkok')
+    ->onOneServer()
+    ->name('fortune-chatlog-purge')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // 🚨 (2026-05-13) Deep 39฿ Pay-First Auto-Recovery
 // ════════════════════════════════════════════════════════════════
 // เคสที่กัน: ลูกค้าจ่าย 39฿ แล้วระบบไม่ขอวันเดือนปีเกิดต่อ

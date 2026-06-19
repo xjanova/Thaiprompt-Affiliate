@@ -623,6 +623,16 @@ class FortuneConversationService
     public function processMessage(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
         try {
+            // 💬 (2026-06-19) Realtime chat log — capture every inbound customer
+            //    message for the warroom transcript (Redis, ephemeral). Fail-safe:
+            //    never let logging break the bot flow.
+            try {
+                app(\App\Services\Fortune\FortuneChatLogService::class)
+                    ->record($this->currentPlatform ?? 'facebook', $facebookUserId, 'user', $messageText);
+            } catch (\Throwable $logErr) {
+                // ignore — chat log is best-effort
+            }
+
             // ═══════════════════════════════════════════════════════════════
             // 🤝 Admin Handover Hard Guard — ใช้ shouldBypassTakeover (DRY)
             // ═══════════════════════════════════════════════════════════════

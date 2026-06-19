@@ -322,6 +322,44 @@ class FortuneReadingsController extends Controller
      */
     public function transcript(FortuneReading $reading): JsonResponse
     {
+        // 💬 (2026-06-19) Realtime path — if a live chat log exists for this
+        //    customer TODAY (Redis, captured verbatim from Messenger), that's the
+        //    most faithful transcript. Only for recently-active readings; older
+        //    ones fall through to the structured reconstruction below (their day's
+        //    log has expired / cleared at midnight).
+        $tz = \App\Services\Fortune\FortuneChatLogService::TZ;
+        $recentlyActive = optional($reading->updated_at)->gte(\Carbon\Carbon::now($tz)->startOfDay());
+        $pid = $reading->platform_user_id ?: $reading->facebook_user_id;
+        if ($recentlyActive && $pid) {
+            $live = app(\App\Services\Fortune\FortuneChatLogService::class)
+                ->getForCustomer($reading->platform ?: 'facebook', (string) $pid);
+            if (! empty($live)) {
+                $messages = [['id' => 1, 'role' => 'system', 'text' => '💬 บทสนทนาเรียลไทม์วันนี้', 'ts' => null]];
+                $mid = 2;
+                foreach ($live as $m) {
+                    $messages[] = [
+                        'id' => $mid++,
+                        'role' => $m['role'] ?? 'user',
+                        'text' => (string) ($m['text'] ?? ''),
+                        'ts' => $m['ts'] ?? null,
+                        'by' => $m['by'] ?? null,
+                        'ai' => $m['ai'] ?? null,
+                        'image_url' => $m['image_url'] ?? null,
+                    ];
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'reading_id' => $reading->id,
+                        'messages' => $messages,
+                        'source' => 'redis',
+                        'generated_at' => now()->toIso8601String(),
+                    ],
+                ]);
+            }
+        }
+
         // Each item carries a coarse conversation PHASE + a timestamp; we sort by
         // (phase, ts) so the flow reads correctly even where exact timestamps are
         // missing or identical (e.g. the initial question and the row share
@@ -448,6 +486,7 @@ class FortuneReadingsController extends Controller
             'data' => [
                 'reading_id' => $reading->id,
                 'messages' => $messages,
+                'source' => 'structured',
                 'generated_at' => now()->toIso8601String(),
             ],
         ]);

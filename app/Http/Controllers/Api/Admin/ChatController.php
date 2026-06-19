@@ -35,8 +35,11 @@ class ChatController extends Controller
         if (! empty($data['reading_id'])) {
             $reading = FortuneReading::find($data['reading_id']);
             if ($reading) {
-                $platform = 'facebook';
-                $userId = $reading->facebook_user_id;
+                // Use the reading's CANONICAL identity — was hardcoded to
+                // 'facebook' + facebook_user_id, which broke admin replies to
+                // LINE customers (facebook_user_id is null for LINE).
+                $platform = $reading->platform ?: ($reading->facebook_user_id ? 'facebook' : ($platform ?? 'facebook'));
+                $userId = $reading->platform_user_id ?: ($reading->facebook_user_id ?: $userId);
             }
         }
 
@@ -60,6 +63,18 @@ class ChatController extends Controller
                 'text_preview' => mb_substr($data['text'], 0, 80),
                 'delivered' => $ok,
             ]);
+
+            // 💬 (2026-06-19) Mirror the operator's reply into the realtime chat
+            //    log so it shows in the warroom transcript immediately (this path
+            //    bypasses FortuneChannelManager::sendResponse). Fail-safe.
+            if ($ok) {
+                try {
+                    app(\App\Services\Fortune\FortuneChatLogService::class)
+                        ->record($platform, $userId, 'admin', $data['text'], ['by' => 'admin#' . ($request->user()?->id ?? '?')]);
+                } catch (Throwable $logErr) {
+                    // ignore — chat log is best-effort
+                }
+            }
 
             return response()->json([
                 'success' => (bool) $ok,
