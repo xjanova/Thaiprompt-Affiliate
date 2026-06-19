@@ -1922,7 +1922,12 @@ class FortuneConversationService
                     FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
                 ], true) : false;
 
-                if (! $earlyStatusBlocking && $this->looksLikePricingQuestion($messageText)) {
+                //   🩹 (2026-06-19 FTU-260619-A1282) อย่าให้ "เคลมว่าโอนแล้ว" โดน pricing gate แย่ง —
+                //     "โอนค่าครูไปแล้ว" มีคำว่า "ค่าครู" → looksLikePricingQuestion จับ → เด้งเมนูราคา
+                //     ทับ paid-claim/auto-provision. paid-claim ต้องชนะ → ปล่อยไหลไป cold-path สลิป
+                if (! $earlyStatusBlocking
+                    && ! $this->isPaymentClaimRequest($messageText)
+                    && $this->looksLikePricingQuestion($messageText)) {
                     Log::info('Fortune: pricing menu trigger (early-gate, any state)', [
                         'user_id' => $facebookUserId,
                         'text_preview' => mb_substr($messageText, 0, 80),
@@ -11633,6 +11638,13 @@ class FortuneConversationService
         $normalized = $this->normalizeUserInput($text);
         $noSpace = str_replace(' ', '', $normalized);
 
+        // 🛑 (2026-06-19 bug-hunt) ปฏิเสธการจ่าย ("ไม่/ยังไม่/เลิก/ยกเลิก/ไม่อยาก" ใกล้ๆ โอน/จ่าย/ชำระ)
+        //   ≠ เคลมว่าจ่ายแล้ว — กัน "ไม่อยากจ่ายค่าดูดวงแล้ว"/"ไม่โอนแล้ว"/"เลิกจ่ายค่าครูแล้ว" โดนลากไปนับว่า
+        //   "โอนแล้ว" → ตื๊อเก็บเงิน. เคารพกฎ [[rule_listen_dont_pitch_when_declining]] (ลูกค้าปฏิเสธ = ฟัง ไม่ตื๊อ)
+        if (preg_match('/(ไม่|ยังไม่|เลิก|ยกเลิก|ไม่อยาก).{0,12}(โอน|จ่าย|ชำระ)/u', $noSpace)) {
+            return false;
+        }
+
         // 🩹 (2026-05-09 audit fix P4) ลบ "ตรวจสอบ" bare ออก — generic เกินไป
         //   เคสเดิม: "อยากให้แม่หมอตรวจสอบดวงให้หน่อย" → trigger isPaymentClaim → AI ตอบ
         //            "ระบบยังไม่พบเงินโอน" → ลูกค้างง
@@ -11655,6 +11667,21 @@ class FortuneConversationService
             if (str_contains($normalized, $kw) || str_contains($noSpace, str_replace(' ', '', $kw))) {
                 return true;
             }
+        }
+
+        // 🩹 (2026-06-19 FTU-260619-A1282 ครัวกานดา) จับเคลมแบบ "ไม่ติดกัน" —
+        //   "โอนค่าครูไปแล้วค่ะ" / "จ่ายค่าดูดวงแล้ว" / "โอนเงินค่าครูเรียบร้อย" / "โอนไปแล้ว"
+        //   keyword ด้านบนต้องติดกัน ('โอนแล้ว') → มี "ค่าครูไป" คั่น = จับไม่ได้ + ยังโดน pricing gate
+        //   แย่ง (ค่าครู) → auto-provision ไม่ยิง. regex ต้องมี โอน/จ่าย/ชำระ + (ค่า…/เงิน/ไป) + แล้ว/เรียบร้อย
+        //   ⚠️ (bug-hunt) ข้ามถ้าเป็น "คำถาม/เงื่อนไข/ตั้งใจจะทำ" ไม่ใช่ "ทำเสร็จแล้ว" — กัน false-positive
+        //     "จ่ายค่าครูแล้วได้ดูเลยไหม" / "ถ้าโอนค่าครูไปแล้วจะดูได้กี่ข้อ" / "ขอโอน…แล้วกัน" = ยังไม่จ่ายจริง
+        $looksLikeQuestionOrIntent = (bool) preg_match(
+            '/(ไหม|มั้ย|หรือยัง|รึยัง|กี่|เท่าไร|เท่าไหร่|ยังไง|อย่างไร|ถ้า|หาก|แล้วกัน|เดี๋ยว|ขอโอน|ขอจ่าย|จะโอน|จะจ่าย|อยากโอน|อยากจ่าย|ต้องส่ง|ต้องทำ|ต้องรอ)/u',
+            $noSpace
+        );
+        if (! $looksLikeQuestionOrIntent
+            && preg_match('/(โอน|จ่าย|ชำระ)(เงิน)?(ค่า(ครู|ดูดวง|ทำนาย|หมอ|บริการ)?)?(ไป)?(แล้ว|เรียบร้อย)/u', $noSpace)) {
+            return true;
         }
 
         return false;
