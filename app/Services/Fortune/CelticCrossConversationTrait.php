@@ -1624,7 +1624,13 @@ trait CelticCrossConversationTrait
                     // เคยให้วันเกิด/ทำ 39 มาแล้ว → ใช้เลย ไม่ถามซ้ำ
                     $reading->setConversationState('celtic_birthdate_text', 'เจ้าชะตาเกิด '.$priorBirth);
                     $reading->setConversationState('celtic_birthdate_from_prior', true);
-                    // ไหลต่อไปทักทายปกติด้านล่าง — Q&A จะอ่านไพ่ผสมดวงดาวให้เอง
+                    // 🌟 (2026-06-19 FTU-260619-C9002) ลูกค้าซื้อซ้ำ (วันเกิดอยู่ในฐาน) ต้องได้ "พื้นดวงเปิดตัว + เรื่องเด่น"
+                    //   เหมือน path พิมพ์วันเกิดเอง — เดิม path นี้ "ไหลต่อทักทายเฉยๆ" ไม่ตั้ง celtic_base_chart
+                    //   → reading 7238 (C9002) ข้ามพื้นดวง = เรื่องเด่นหาย. ตั้ง flag ที่นี่ + เริ่ม window แล้วยิงพื้นดวง
+                    //   proactive ตอนสร้าง opening ด้านล่าง (ไม่กินสิทธิ์คำถามแรกของลูกค้า — base chart = seq 1 เหมือน manual)
+                    $reading->setConversationState('celtic_base_chart', true);
+                    $this->startCelticQaWindowIfNeeded($reading);
+                    // ไหลต่อไปสร้าง opening ด้านล่าง — จะยิงพื้นดวงเปิดตัวแทนทักทายเฉยๆ
                 } else {
                     // ไม่เคยมีในฐาน → ถามวันเกิดก่อน (ยังไม่ตั้ง celtic_first_answered_at = ยังไม่ start window)
                     $reading->setConversationState('celtic_birthdate_pending', true);
@@ -1676,7 +1682,61 @@ trait CelticCrossConversationTrait
 
         $service = app(CelticCrossService::class);
         try {
-            $openingResult = $service->generateOpeningGreeting($reading);
+            // 🌟 (2026-06-19 FTU-260619-C9002) from_prior → ยิง "พื้นดวงเปิดตัว" (เรื่องเด่น+พื้นฐานดวง)
+            //   proactive แทนทักทายเฉยๆ (ping loading ครอบอยู่แล้ว) — ไม่งั้นลูกค้าซื้อซ้ำข้ามพื้นดวง = เรื่องเด่นหาย
+            //   askQuestion เคลียร์ flag celtic_base_chart ให้เอง (กันคำถามถัดไปยิงซ้ำ)
+            if ($reading->getConversationState('celtic_base_chart')) {
+                // 🔒 (2026-06-19 bug-hunt) Race guard — ตั้ง STATUS_CELTIC_GENERATING ก่อนยิงพื้นดวง
+                //   พื้นดวง = หลาย AI call (30-90s) > mutex 'fortune:processing' TTL 30s → mutex หมดอายุกลางคัน
+                //   ถ้าสถานะยังเป็น AWAITING_QUESTION (ไม่อยู่ใน AI_GENERATING_STATUSES) ข้อความลูกค้าที่พิมพ์
+                //   ระหว่างนั้นจะหลุด IN-PREDICTION Hard Guard → เข้า askQuestion ซ้ำ (celtic_base_chart ยัง true)
+                //   → ยิงพื้นดวงซ้ำ + คำถามจริงของลูกค้าหาย. mirror handleCelticAwaitingQuestion (L~2215)
+                //   → คืน AWAITING_QUESTION เสมอใน finally (พร้อมรับคำถามจริงต่อ ทั้ง success/fail)
+                try {
+                    $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
+                } catch (\Throwable $stErr) {
+                    // non-blocking
+                }
+                try {
+                    $openingResult = $service->askQuestion(
+                        $reading,
+                        'ช่วยอ่านพื้นดวงรวมของเจ้าชะตาให้หน่อยค่ะ โดยดูจากดาวเจ้าชนะ (วันเดือนปีเกิด) '
+                        .'ผสมกับภาพรวมไพ่ทั้ง 10 ใบที่เปิด — ทั้งนิสัยพื้นฐาน จุดเด่นจุดอ่อน และภาพรวม '
+                        .'ความรัก การงาน การเงิน สุขภาพ ในช่วงนี้'
+                    );
+                    // ถ้าพื้นดวง fail → fallback ทักทายปกติ (กัน opening แตก + เคลียร์ flag กันค้าง)
+                    if (empty($openingResult['success']) || trim((string) ($openingResult['response'] ?? '')) === '') {
+                        try {
+                            $reading->setConversationState('celtic_base_chart', false);
+                        } catch (\Throwable $e) {
+                            // ignore
+                        }
+                        $openingResult = $service->generateOpeningGreeting($reading);
+                    }
+                } catch (\Throwable $bcErr) {
+                    // askQuestion ปกติ catch เองคืน success=false แต่ถ้า throw ก่อน try ภายใน (เช่น create row พัง)
+                    //   → กัน opening แตก: เคลียร์ flag + fallback ทักทาย (mirror handleCelticAwaitingQuestion)
+                    \Log::warning('Celtic: from-prior base chart proactive ล้มเหลว → fallback ทักทาย', [
+                        'reading_id' => $reading->id,
+                        'error' => $bcErr->getMessage(),
+                    ]);
+                    try {
+                        $reading->setConversationState('celtic_base_chart', false);
+                    } catch (\Throwable $e) {
+                        // ignore
+                    }
+                    $openingResult = $service->generateOpeningGreeting($reading);
+                } finally {
+                    // คืนสถานะ AWAITING_QUESTION เสมอ — ลูกค้าพร้อมพิมพ์คำถามจริงต่อ (opening จบที่สถานะนี้)
+                    try {
+                        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+                    } catch (\Throwable $stErr) {
+                        // non-blocking
+                    }
+                }
+            } else {
+                $openingResult = $service->generateOpeningGreeting($reading);
+            }
         } finally {
             // ปิด AI session — pings ที่ยังไม่ run จะ skip
             if ($userId) {
