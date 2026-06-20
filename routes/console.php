@@ -116,6 +116,19 @@ Schedule::command('fortune:remind-stuck-celtic --min-minutes=30 --max-hours=6 --
     ->name('fortune-remind-stuck-celtic')
     ->runInBackground();
 
+// ════════════════════════════════════════════════════════════════
+// 🔔 (2026-06-20) Fortune Flow Nudge — กระตุ้นขั้นเลือกแพคเกจ / กล่องกติกา
+// ════════════════════════════════════════════════════════════════
+// user spec: เลือกแพคเกจ/กล่องกติกาก่อนกดโอนค่าบูชาครู เงียบ 1 นาที → ส่งกล่องกระตุ้น
+//   (ครั้งเดียวต่อ step) + เงียบ 30 นาที → ออกจากโฟลว์เงียบๆ (เฉพาะที่ยังไม่สร้างบิล)
+// ⚠️ ที่นี่ (ไม่ใช่ Kernel.php) เพราะ Laravel 11 ไม่ register Kernel schedule
+Schedule::command('fortune:flow-nudge --limit=50')
+    ->everyMinute()
+    ->withoutOverlapping(2)
+    ->onOneServer()
+    ->name('fortune-flow-nudge')
+    ->runInBackground();
+
 // 🛡️ (2026-05-10) Auto-scan คอมเม้นต์สแปม (link spam moderation)
 //   รันทุกชั่วโมง — incremental (เฉพาะคอมใหม่ตั้งแต่ scan ล่าสุด)
 //   ครอบคลุม: posts + Reels, per-post=unlimited (รองรับโพสไวรัลคอมหมื่นๆ)

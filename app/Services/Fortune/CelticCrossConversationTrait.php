@@ -199,6 +199,10 @@ trait CelticCrossConversationTrait
 
         $reading->update(['conversation_status' => FortuneReading::STATUS_TIER_CHOICE]);
 
+        // 🔔 (2026-06-20) marker สำหรับ fortune:flow-nudge — กระตุ้นถ้าเงียบ 1 นาที / ออกถ้า 30 นาที
+        $reading->setConversationState('tier_choice_shown_at', now()->toIso8601String());
+        $reading->setConversationState('flow_nudge_sent_at', null);
+
         $deepPrice = number_format($this->getDeepReadingPrice(), 0);
         $celticPrice = number_format(app(CelticCrossService::class)->getPrice(), 0);
         // 🔢 (2026-05-03) อ่านจาก settings — ตรงกับที่ admin ตั้ง (0 = ไม่จำกัด)

@@ -71,6 +71,14 @@ trait FortuneConsentGateTrait
         // ยังไม่ยอมรับ → จำ tier + ส่งกล่องกติกา
         Cache::put(self::CONSENT_PENDING_PREFIX.$uid, $tier, self::CONSENT_TTL);
 
+        // 🔔 (2026-06-20) marker สำหรับ fortune:flow-nudge — กระตุ้น "กดพร้อมบูชาครู" ถ้าเงียบ 1 นาที
+        //   / ออกจากโฟลว์ถ้าเงียบ 30 นาที (ยังไม่สร้างบิล). เก็บ tier ไว้โชว์ราคาให้ถูก
+        if ($reading) {
+            $reading->setConversationState('consent_gate_shown_at', now()->toIso8601String());
+            $reading->setConversationState('consent_gate_tier', $tier);
+            $reading->setConversationState('flow_nudge_sent_at', null);
+        }
+
         Log::info('Fortune: แสดงกล่องกติกาก่อนสร้างบิล', [
             'user_id' => $uid,
             'tier' => $tier,
