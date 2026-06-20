@@ -1651,3 +1651,12 @@ Route::prefix('v1')->middleware('auth:sanctum')->name('api.juntra.')->group(func
         Route::get('/users',       [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'users'])->name('users');
     });
 });
+
+// ─── Public tarot-card catalog for the จันทรา.online (juntraweb) importer ──────
+// Rotation-proof {name_en, image_url} source for all active cards. Intentionally
+// PUBLIC (card art is already public; the importer carries no user token) and
+// OUTSIDE the auth:sanctum group above. Throttled + cached as DoS defense.
+// Path matches juntraweb TarotImporter exactly: GET /api/v1/juntra/tarot/cards.
+Route::get('v1/juntra/tarot/cards', [\App\Http\Controllers\Api\Juntra\TarotCatalogController::class, 'cards'])
+    ->middleware('throttle:60,1')
+    ->name('api.juntra.tarot.cards');
