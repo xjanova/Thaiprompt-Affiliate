@@ -652,8 +652,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
             }
         }
 
-        // ลอง RESPONSE → fallback MESSAGE_TAG (POST_PURCHASE_UPDATE)
-        $messagingTypes = $messageTag ? ['MESSAGE_TAG'] : ['RESPONSE', 'MESSAGE_TAG'];
+        // 🛡️ (2026-06-20) RESPONSE-first เสมอ — FB เลิกแท็ก POST_PURCHASE_UPDATE แล้ว (subcode 1893061)
+        //   เดิม: มี message_tag → ['MESSAGE_TAG'] อย่างเดียว → ส่ง audio ด้วย tag ที่ตายแล้ว → 400 reject
+        //   → ลูกค้า FB กด/พิมพ์ "อ่านให้ฟัง" ไม่เคยได้ไฟล์เสียง (LINE ได้เพราะไม่ใช้ tag)
+        //   ลูกค้าขอเสียงหลังทำนาย = อยู่ใน 24 ชม.เสมอ → RESPONSE ผ่าน. tag เหลือเป็น fallback นอก 24 ชม.
+        $messagingTypes = ['RESPONSE', 'MESSAGE_TAG'];
 
         foreach ($messagingTypes as $msgType) {
             $payload = [

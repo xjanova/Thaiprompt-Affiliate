@@ -296,17 +296,27 @@ class ProcessVoiceSummaryJob implements ShouldQueue
         try {
             $fbService = new FacebookWebhookService($settings);
 
-            // intro ใช้ message_tag POST_PURCHASE_UPDATE — ลูกค้าจ่ายแล้ว ใช้ tag ได้
+            // intro + audio: sendMessage/sendAudio ลอง RESPONSE ก่อน (อยู่ใน 24 ชม.) → ผ่านชัวร์
+            //   ⚠️ ห้าม force MESSAGE_TAG=POST_PURCHASE_UPDATE (FB เลิกแท็กแล้ว subcode 1893061 → audio ตก)
             $extra = ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE'];
-            $sent = $fbService->sendMessage($this->userId, $intro, $extra);
+            $introSent = $fbService->sendMessage($this->userId, $intro, $extra);
 
+            // 🎧 (2026-06-20) success ต้องวัดที่ "audio ถึงลูกค้าจริง" ไม่ใช่แค่ intro
+            //   เดิม `sendAudio() || $sent` → intro ผ่านก็ return true ทั้งที่เสียงตก → log "✅ สำเร็จ" หลอก
+            $audioSent = true;
             if (! empty($result['audio_url'])) {
-                $sent = $fbService->sendAudio($this->userId, $result['audio_url'], [
-                    'message_tag' => 'POST_PURCHASE_UPDATE',
-                ]) || $sent;
+                $audioSent = $fbService->sendAudio($this->userId, $result['audio_url'], $extra);
+                if (! $audioSent) {
+                    Log::warning('🎙️ ProcessVoiceSummaryJob: FB ส่งไฟล์เสียงไม่สำเร็จ (intro ส่งแล้ว)', [
+                        'reading_id' => $reading->id,
+                        'user_id' => $this->userId,
+                    ]);
+                }
+
+                return $audioSent; // มีเสียง → วัดความสำเร็จที่เสียงถึงลูกค้า
             }
 
-            return $sent;
+            return $introSent;
         } catch (\Throwable $e) {
             Log::warning('ProcessVoiceSummaryJob: FB push exception', [
                 'error' => $e->getMessage(),

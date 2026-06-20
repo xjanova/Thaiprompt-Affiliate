@@ -3103,7 +3103,9 @@ trait CelticCrossConversationTrait
                     $q->where('platform_user_id', $userId)
                         ->orWhere('facebook_user_id', $userId);
                 })
-                ->where('updated_at', '>=', now()->subHours(24))
+                // 🎧 (2026-06-20) 30 วัน — รองรับ "คนเก่า" ที่มีคำทำนายล่าสุดแล้วขอฟังเสียงทีหลัง (owner spec)
+                //   source (deep_response / celtic_grand_finale_summary) อยู่ใน DB ถาวร → regen เสียงได้
+                ->where('updated_at', '>=', now()->subDays(30))
                 ->where(function ($q) {
                     // celtic = source ใน state (voice_summary_source_text ที่เก็บตอนจบ
                     //   หรือ celtic_grand_finale_summary — ครอบ reading เก่าก่อนมีฟีเจอร์ด้วย)
@@ -3128,6 +3130,33 @@ trait CelticCrossConversationTrait
     }
 
     /**
+     * 🎧 (2026-06-20) หา reading ที่ "จ่ายแล้วแต่ยังไม่จบ" (กำลังทำนาย) — ใช้บอกลูกค้าให้รอ
+     *
+     * เมื่อลูกค้าพิมพ์ "อ่านให้ฟัง" ตอนยังไม่มีบทสรุป (ทุกจุด) → ตอบ "รอทำนายจบก่อน" แทนเงียบ
+     * (paid + ยังไม่ COMPLETED + ภายใน 2 ชม. = กำลังอยู่ในกระบวนการทำนายจริง)
+     */
+    protected function findPaidReadingAwaitingSummary(string $userId): ?FortuneReading
+    {
+        try {
+            return FortuneReading::whereIn('reading_type', [
+                FortuneReading::READING_TYPE_CELTIC_CROSS,
+                FortuneReading::READING_TYPE_DEEP,
+            ])
+                ->where('is_paid', true)
+                ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
+                ->where(function ($q) use ($userId) {
+                    $q->where('platform_user_id', $userId)
+                        ->orWhere('facebook_user_id', $userId);
+                })
+                ->where('updated_at', '>=', now()->subHours(2))
+                ->orderByDesc('updated_at')
+                ->first();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
      * 🎧 (2026-06-20) จัดการคำขอ "อ่านให้ฟัง" — dispatch voice job แบบ on-demand
      *
      * คืน:
@@ -3147,7 +3176,19 @@ trait CelticCrossConversationTrait
 
         $reading = $this->findRecentVoiceableReading($userId);
         if (! $reading) {
-            // ไม่มีเนื้อหาพร้อม (Celtic/Deep) → ปล่อย flow ปกติ (อย่า hijack ข้อความ)
+            // 🎧 (2026-06-20 owner spec) ยังไม่มีบทสรุปพร้อมอ่าน:
+            //   - ถ้ามี reading "จ่ายแล้ว + กำลังทำนายอยู่" → บอกให้รอทำนายจบก่อน (ไม่เงียบ)
+            //   - ถ้าไม่มี reading เลย → null ปล่อย flow ปกติ (อย่า hijack แชททั่วไป)
+            $pending = $this->findPaidReadingAwaitingSummary($userId);
+            if ($pending) {
+                return [
+                    'action' => 'celtic_voice_generating',
+                    'message' => "🎧 ตอนนี้แม่หมอกำลังทำนายให้อยู่นะคะ\n\n"
+                        .'รอให้คำทำนายเสร็จก่อน แล้วพิมพ์ *"อ่านให้ฟัง"* อีกครั้ง — ผู้ช่วย AI จะอ่านบทสรุปให้ฟังค่ะ ✨',
+                    'reading' => $pending,
+                ];
+            }
+
             return null;
         }
 
