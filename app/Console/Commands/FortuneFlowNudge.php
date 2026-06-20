@@ -42,8 +42,9 @@ class FortuneFlowNudge extends Command
 
     protected $description = '🔔 กระตุ้นลูกค้าค้างขั้นเลือกแพคเกจ/กล่องกติกา (เงียบ 1 นาที) + ปิดเงียบถ้าเงียบ 30 นาที (ยังไม่สร้างบิล)';
 
-    /** เงียบกี่วินาทีถึงกระตุ้น */
-    private const NUDGE_AFTER_SEC = 60;
+    /** เงียบกี่วินาทีถึงกระตุ้น (50 ไม่ใช่ 60 — cron ทุก 1 นาทีบวก granularity → ให้ยิงรอบ :00
+     *  แรกหลังลูกค้าเงียบ ~1 นาทีจริง ไม่งั้นต้องรอถึง ~2 นาที ลูกค้านึกว่าไม่ทำงาน) */
+    private const NUDGE_AFTER_SEC = 50;
 
     /** เงียบกี่วินาทีถึงออกจากโฟลว์อัตโนมัติ (30 นาที) */
     private const EXIT_AFTER_SEC = 1800;
@@ -69,10 +70,11 @@ class FortuneFlowNudge extends Command
         // ── A. ขั้นเลือกแพคเกจ (tier_choice — ยังไม่กดเลือก = ไม่มี consent marker) ──
         //   ⚠️ ตัวแยกคือ "marker" ไม่ใช่ status: ถ้ากด Celtic แล้ว consent_gate_shown_at จะถูกตั้ง
         //      แม้ status ยังเป็น tier_choice → ย้ายไปประมวลผลเป็น consent (กลุ่ม B) แทน
+        //   ⚠️ ห้ามกรอง whereNull('bill_reference') — model auto-gen bill_reference ตอน create
+        //      ทุก reading → จะ match 0 เสมอ. status=tier_choice (pre-payment) = "ยังไม่สร้างบิลจริง" อยู่แล้ว
         $tierReadings = FortuneReading::query()
             ->where('conversation_status', FortuneReading::STATUS_TIER_CHOICE)
             ->where(fn ($q) => $q->whereNull('is_paid')->orWhere('is_paid', false))
-            ->whereNull('bill_reference')
             ->where(function ($q) {
                 $q->whereNull('conversation_state')
                     ->orWhere('conversation_state', 'not like', '%consent_gate_shown_at%');
@@ -157,8 +159,10 @@ class FortuneFlowNudge extends Command
         $silenceSec = (int) $anchor->diffInSeconds(now(), true);
 
         // ── EXIT: เงียบ ≥ 30 นาที → ปิดเงียบ "เฉพาะที่ยังไม่สร้างบิลใดๆ" (user spec) ──
-        //   มี bill_reference = เคยเริ่มสร้างบิล → ไม่ปิด (ปล่อย flow บิลเดิมจัดการ) แต่ nudge ได้
-        if ($silenceSec >= self::EXIT_AFTER_SEC && empty($reading->bill_reference)) {
+        //   ⚠️ bill_reference auto-gen ทุก reading → ใช้เป็นตัวชี้ "บิลจริง" ไม่ได้
+        //   status (tier_choice/collecting_birthdate) = pre-payment = ยังไม่มีบิลจริง (QR/UPA) อยู่แล้ว
+        //   → query group A/B กรอง status + is_paid ไว้แล้ว ที่นี่ปิดได้เลย
+        if ($silenceSec >= self::EXIT_AFTER_SEC) {
             if (! $dry) {
                 $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
                 $reading->setConversationState('flow_exit_at', now()->toIso8601String());
