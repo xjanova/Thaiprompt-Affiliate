@@ -634,6 +634,35 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // 🌍 (2026-06-20) Sticky Lao detection — จำว่าลูกค้าคนนี้เคย "พิมพ์ภาษาลาว"
+            // ═══════════════════════════════════════════════════════════════
+            //   ปิดช่องโหว่: gate Celtic (doStartCelticCrossFlow) + createPaymentBill
+            //   ส่ง messageText=null → เช็คแค่ "ชื่อโปรไฟล์" ไม่เห็น "ข้อความ"
+            //   ลูกค้าลาวที่ตั้งชื่อเป็นไทย/อังกฤษ แต่พิมพ์ลาวตอนเปิดบท จึงหลุด gate
+            //   วิธีแก้: ตรวจที่นี่ (จุดเดียวที่ inbound text ทุก path ผ่าน) → จด flag
+            //   ลง Cache (key=userId เดียวกับที่ gate ใช้) ให้ทุก gate มองเห็นย้อนหลัง
+            //
+            //   ⚠️ guard กัน false-block คนไทย (จาก adversarial review):
+            //   1) เฉพาะตอน "ปิดบริการต่างชาติ" — เปิดอยู่ = ไม่ต้องจด (ไม่ churn cache)
+            //   2) ต้องลาว ≥2 ตัวจริง — detectFromText branch "ลาวล้วน" ยิงที่ลาว 1 ตัว
+            //      (FortuneLocaleService:71) → คนไทย forward แคปชั่น/เลขลาวตัวเดียวจะโดน
+            //      → บังคับ ≥2 อีกชั้น กัน stray char
+            //   3) ไม่จดให้ลูกค้าที่กำลังจ่าย/ทำนายอยู่ (hasPaidActiveReading) — กันคนจ่ายเงิน
+            //      พิมพ์ลาวกลางบท (ชื่อคน/ถามเรื่องลาว) แล้วโดนบล็อกบิลครั้งหน้า
+            //   4) TTL 7 วัน + override ("แน่ใจจ่ายเงินไทยได้") ล้าง flag นี้ (ดู :1192)
+            //   blocking จริงยังอยู่ที่ gate (เคารพ toggle/Stripe/override) — best-effort
+            try {
+                if (! ($this->settings->enable_foreign_customer_service ?? true)
+                    && \App\Services\FortuneLocaleService::detectFromText($messageText) === \App\Services\FortuneLocaleService::LOCALE_LO
+                    && preg_match_all('/[\x{0E80}-\x{0EFF}]/u', $messageText) >= 2
+                    && ! $this->hasPaidActiveReading($facebookUserId)) {
+                    Cache::put("fortune:foreign_lao_seen:{$facebookUserId}", true, now()->addDays(7));
+                }
+            } catch (\Throwable $laoErr) {
+                // ignore — sticky-lao detection เป็นแค่ตัวช่วย ไม่ critical
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // 🤝 Admin Handover Hard Guard — ใช้ shouldBypassTakeover (DRY)
             // ═══════════════════════════════════════════════════════════════
             try {
@@ -1171,6 +1200,10 @@ class FortuneConversationService
             //   วางก่อน silent/farewell guard เพื่อให้การยืนยันไม่ถูก skip
             if ($this->matchesForeignPayConfirm($messageText)) {
                 Cache::put("fortune:foreign_override:{$facebookUserId}", true, 1800); // 30 นาที (พอสร้างบิล)
+                // 🌍 (2026-06-20) ล้าง sticky Lao flag ด้วย — ลูกค้ายืนยัน "จ่ายเงินไทยได้" แล้ว
+                //   ถ้าไม่ล้าง: flag (7 วัน) จะบล็อกซ้ำหลัง override (30 นาที) หมดอายุ
+                //   = ทำลายเจตนาฟีเจอร์ "เพื่อนในไทยโอนให้" (เคสจ่ายช้า/กลับมาทีหลัง)
+                Cache::forget("fortune:foreign_lao_seen:{$facebookUserId}");
                 Log::info('Fortune: foreign customer confirmed Thai payment → override granted', [
                     'facebook_user_id' => $facebookUserId,
                 ]);
@@ -5289,6 +5322,18 @@ class FortuneConversationService
             }
         } catch (\Throwable $e) {
             // ignore — ถือว่าไม่มี override
+        }
+
+        // 🌍 (2026-06-20) Sticky Lao flag — เคย "พิมพ์ภาษาลาว" ในบทสนทนานี้ (จดที่ processMessage)
+        //   ปิดช่องโหว่ gate ที่ส่ง messageText=null (Celtic chokepoint + createPaymentBill)
+        //   → เช็คแค่ชื่อ ไม่เห็นข้อความ. flag นี้ทำให้ "ข้อความลาว" ตามมาบล็อกได้ทุก gate
+        //   วางหลัง override → ลูกค้าที่กด "แน่ใจจ่ายเงินไทยได้" ยังผ่านได้เหมือนเดิม
+        try {
+            if (Cache::get("fortune:foreign_lao_seen:{$userId}")) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            // ignore — ถือว่าไม่มี flag
         }
 
         try {
