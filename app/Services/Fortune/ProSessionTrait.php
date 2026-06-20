@@ -437,13 +437,10 @@ trait ProSessionTrait
 
         // 🎧 (2026-06-20) คำชวนให้ลูกค้าขอฟังเสียง — ผู้ช่วย AI อ่านคำทำนายให้ฟัง (on-demand)
         //   user: "แบบ 39 ก็ให้อ่านออกเสียงได้" — สื่อชัดว่าเป็นเสียงผู้ช่วย AI ไม่ใช่เสียงแม่หมอ
-        //   ขึ้นเฉพาะเมื่อ voice ใช้ได้กับ reading นี้จริง (shouldGenerateVoiceSummary = enabled+tier scope)
-        //   + มีคำทำนายเชิงลึกพร้อม (deep_response) → ลูกค้าพิมพ์ "อ่านให้ฟัง" เอง (กัน CTA โผล่แต่เสียงไม่มา)
-        if ($this->settings->shouldGenerateVoiceSummary($reading) && ! empty($reading->deep_response)) {
-            $msg .= "\n\n──────────────────────\n"
-                ."🎧 *อยากให้ผู้ช่วย AI อ่านคำทำนายให้ฟังไหมคะ?*\n"
-                .'พิมพ์ *"อ่านให้ฟัง"* ได้เลยค่ะ — _เป็นเสียงผู้ช่วย AI ไม่ใช่เสียงแม่หมอนะคะ_ ✨';
-        }
+        //   ใช้ helper เดียวกับ FB push follow-up (DRY) — gate: enabled+tier scope + มี deep_response
+        //   ⚠️ path นี้ส่งเฉพาะ streaming; Deep prod ส่วนใหญ่ delivery แบบ push → CTA ถูกแนบที่
+        //      FortuneChannelManager::sendFacebookProSessionFollowUp อีกจุด (กล่องที่ push จริง)
+        $msg .= $this->settings->buildVoiceCtaSnippet($reading);
 
         return $msg;
     }

@@ -2487,6 +2487,29 @@ PROMPT;
     }
 
     /**
+     * 🎧 (2026-06-20) สร้างกล่องชวน "อ่านให้ฟัง" (เสียงผู้ช่วย AI) — ต่อท้ายข้อความหลังพื้นดวง
+     *
+     * คืนค่า snippet (มี divider นำหน้า) เฉพาะเมื่อ voice ใช้ได้กับ reading นี้จริง
+     * (enabled + tier scope ผ่าน) + มี deep_response แล้ว → กัน CTA โผล่แต่เสียงสร้างไม่ได้
+     * ไม่เข้าเงื่อนไข = คืน '' (ต่อท้ายว่างไม่กระทบข้อความเดิม)
+     *
+     * ใช้ร่วมกัน 2 จุด (DRY): ProSessionTrait::buildProSessionOpeningMessage (streaming)
+     * + FortuneChannelManager::sendFacebookProSessionFollowUp (push/replyMessage)
+     *
+     * @param  \App\Models\FortuneReading|null  $reading
+     */
+    public function buildVoiceCtaSnippet($reading): string
+    {
+        if (! $reading || ! $this->shouldGenerateVoiceSummary($reading) || empty($reading->deep_response)) {
+            return '';
+        }
+
+        return "\n\n──────────────────────\n"
+            ."🎧 *อยากให้ผู้ช่วย AI อ่านคำทำนายให้ฟังไหมคะ?*\n"
+            .'พิมพ์ *"อ่านให้ฟัง"* ได้เลยค่ะ — _เป็นเสียงผู้ช่วย AI ไม่ใช่เสียงแม่หมอนะคะ_ ✨';
+    }
+
+    /**
      * ดึง provider chain (primary + fallback) สำหรับ TTS
      *
      * @return array<int, string> เช่น ['minimax', 'google_tts', 'gtts']

@@ -1808,6 +1808,11 @@ class FortuneChannelManager
                 ."⏳ หลังหมดเวลา — พลังจะค่อยๆ ปิดลง\n"
                 .'🔚 พอใจแล้วพิมพ์ *"พอแค่นี้"* หรือ *"ขอบคุณ"* แม่หมอจะปิดให้ค่ะ';
 
+            // 🎧 (2026-06-20) แนบ CTA "อ่านให้ฟัง" ที่กล่องนี้ด้วย — Deep prod delivery แบบ push
+            //   ส่งกล่อง follow-up นี้ (ไม่ผ่าน buildProSessionOpeningMessage ซึ่งมีเฉพาะ streaming)
+            //   เดิม CTA จึงไม่เคยถึงลูกค้า Deep (FTU-260620-E3172). helper gate: enabled+paid_all+deep_response
+            $followUp .= $this->settings->buildVoiceCtaSnippet($reading);
+
             usleep(800000); // 0.8s delay กัน race กับ chunks ของคำทำนาย (ห้ามต่ำกว่า 0.5s)
 
             $fbService->sendMessage($userId, $followUp, $extra);
@@ -4653,8 +4658,15 @@ class FortuneChannelManager
                 ],
             ];
 
+            // 🛡️ (2026-06-20) FB เลิกแท็ก POST_PURCHASE_UPDATE (subcode 1893061) → button template ที่ถูก
+            //   บังคับ MESSAGE_TAG ถูกปฏิเสธ (FTU-260620-E3172 รีวิวไม่ขึ้น). timeout/finale ยิงภายใน ~2 ชม.
+            //   หลังจ่าย = อยู่ใน 24 ชม.เสมอ → ตัด message_tag ทิ้งให้ sendButtonTemplate ลอง RESPONSE ก่อน
+            //   (ข้อความปิด text ส่งผ่าน RESPONSE สำเร็จอยู่แล้ว — ปุ่มรีวิวจะตามได้เช่นกัน)
+            $inviteExtra = $extra;
+            unset($inviteExtra['message_tag']);
+
             usleep(500000); // 0.5s — ส่งต่อจากข้อความปิด (กัน rate limit)
-            $fbService->sendButtonTemplate($userId, $template, $extra);
+            $fbService->sendButtonTemplate($userId, $template, $inviteExtra);
         } catch (\Throwable $e) {
             Log::warning('Review invite FB send fail (non-blocking)', [
                 'user_id' => $userId,
