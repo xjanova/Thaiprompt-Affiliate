@@ -1599,12 +1599,16 @@ Route::prefix('pos')->name('api.pos.')->group(function () {
 // SMS Payment Checker Routes
 require __DIR__.'/sms_payment_api.php';
 
-// ─── Juntra (จันทราพยากรณ์) Mobile API ───────────────────────
-// Mobile-facing endpoints for the Juntra fortune-telling Flutter app.
-// All AI calls reuse the existing FortuneAIService key pool — Juntra
-// holds NO provider keys directly. Auth via Sanctum tokens issued by
-// the existing /v1/login + /v1/auth/mobile flow.
-Route::prefix('v1')->middleware('auth:sanctum')->name('api.juntra.')->group(function () {
+// ─── Juntra (จันทราพยากรณ์) server-to-server API ──────────────────────────────
+// Consumed by the juntraweb backend (จันทรา.online), which proxies the Juntra
+// Flutter app and authenticates here with a per-user thaiprompt_token (Sanctum).
+// Every juntraweb client (FortuneBotClient, MlmApiClient, TarotImporter) calls
+// these under /api/v1/juntra/* — so the group is mounted at 'v1/juntra'.
+// (Was 'v1', which 404'd every client: chat silently fell back to its degraded
+// pipeline and MLM downline returned empty. The Flutter app talks only to
+// juntraweb, never here directly, so no mobile path depended on the old prefix.)
+// All AI calls reuse the FortuneAIService key pool — Juntra holds NO provider keys.
+Route::prefix('v1/juntra')->middleware('auth:sanctum')->name('api.juntra.')->group(function () {
 
     Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/categories', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'categories'])->name('categories');
