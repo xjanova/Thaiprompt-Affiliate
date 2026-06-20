@@ -1203,7 +1203,11 @@ class FortuneChannelManager
                         }
                     }
 
-                    $sent = $fbService->sendMessage($userId, $message, $extra);
+                    // 🎧 (2026-06-20) มีบทสรุปพร้อมอ่านเสียง → แนบปุ่ม "🎧 อ่านให้ฟัง" (กดแทนพิมพ์)
+                    //   FB quick reply หายหลังกด 1 ครั้ง = กันกดซ้ำในตัว + handler มี throttle 60s
+                    $sent = ! empty($result['voice_on_demand_ready'])
+                        ? $fbService->sendQuickReplies($userId, $message, $this->voiceReadQuickReplies(), $extra)
+                        : $fbService->sendMessage($userId, $message, $extra);
 
                     // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — ส่ง bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
                     $this->sendReviewInviteFacebook($fbService, $userId, $result, $extra);
@@ -1808,14 +1812,20 @@ class FortuneChannelManager
                 ."⏳ หลังหมดเวลา — พลังจะค่อยๆ ปิดลง\n"
                 .'🔚 พอใจแล้วพิมพ์ *"พอแค่นี้"* หรือ *"ขอบคุณ"* แม่หมอจะปิดให้ค่ะ';
 
-            // 🎧 (2026-06-20) แนบ CTA "อ่านให้ฟัง" ที่กล่องนี้ด้วย — Deep prod delivery แบบ push
+            // 🎧 (2026-06-20) แนบ CTA + ปุ่ม "อ่านให้ฟัง" ที่กล่องนี้ — Deep prod delivery แบบ push
             //   ส่งกล่อง follow-up นี้ (ไม่ผ่าน buildProSessionOpeningMessage ซึ่งมีเฉพาะ streaming)
             //   เดิม CTA จึงไม่เคยถึงลูกค้า Deep (FTU-260620-E3172). helper gate: enabled+paid_all+deep_response
-            $followUp .= $this->settings->buildVoiceCtaSnippet($reading);
+            $voiceCta = $this->settings->buildVoiceCtaSnippet($reading);
+            $followUp .= $voiceCta;
 
             usleep(800000); // 0.8s delay กัน race กับ chunks ของคำทำนาย (ห้ามต่ำกว่า 0.5s)
 
-            $fbService->sendMessage($userId, $followUp, $extra);
+            // มี CTA เสียง → แนบปุ่มกดแทนพิมพ์ (FB quick reply หายหลังกด = กันกดซ้ำ)
+            if ($voiceCta !== '') {
+                $fbService->sendQuickReplies($userId, $followUp, $this->voiceReadQuickReplies(), $extra);
+            } else {
+                $fbService->sendMessage($userId, $followUp, $extra);
+            }
 
             Log::info('FortuneChannelManager: ส่ง Pro Session follow-up สำเร็จ', [
                 'user_id' => $userId,
@@ -1829,6 +1839,22 @@ class FortuneChannelManager
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * 🎧 (2026-06-20) Quick Reply ปุ่ม "อ่านให้ฟัง" — ให้ลูกค้ากดแทนพิมพ์
+     *
+     * title มี keyword "อ่านให้ฟัง" + payload = "อ่านให้ฟัง" → เมื่อกดส่งเป็นข้อความเข้า
+     * processMessage → looksLikeVoiceReadRequest → handleCelticVoiceReadRequest (throttle 60s)
+     * FB quick reply หายไปหลังกด 1 ครั้ง = กันกดซ้ำๆ ในตัว (owner spec)
+     *
+     * @return array<int, array{title:string,payload:string}>
+     */
+    protected function voiceReadQuickReplies(): array
+    {
+        return [
+            ['title' => '🎧 อ่านให้ฟัง', 'payload' => 'อ่านให้ฟัง'],
+        ];
     }
 
     /**
