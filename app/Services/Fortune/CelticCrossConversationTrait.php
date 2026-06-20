@@ -3043,28 +3043,45 @@ trait CelticCrossConversationTrait
     }
 
     /**
-     * 🎧 (2026-06-20) หา Celtic reading ล่าสุดที่จ่ายแล้ว + มีบทสรุปพร้อมอ่านเสียง (24 ชม.)
+     * 🎧 (2026-06-20) หา reading ล่าสุดที่จ่ายแล้ว + มีเนื้อหาพร้อมอ่านเสียง (24 ชม.)
      *
-     * เงื่อนไข: celtic_cross + จ่ายแล้ว + จบ session (COMPLETED) + มี voice_summary_source_text
-     * (เก็บใน state ตอน endCelticSession) → กันยิงตอนยังทำนายไม่จบ
+     * ครอบ 2 แบบ (user: "แบบ 39 ก็ให้อ่านออกเสียงได้"):
+     *   - Celtic 99 → มี voice_summary_source_text ใน state (เก็บตอน endCelticSession)
+     *   - Deep 39  → มี deep_response (column — คำทำนายเชิงลึก)
+     * เงื่อนไข: จ่ายแล้ว + จบ session (COMPLETED) → กันยิงตอนยังทำนายไม่จบ
      */
-    protected function findRecentVoiceableCelticReading(string $userId): ?FortuneReading
+    protected function findRecentVoiceableReading(string $userId): ?FortuneReading
     {
         try {
-            return FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+            return FortuneReading::whereIn('reading_type', [
+                FortuneReading::READING_TYPE_CELTIC_CROSS,
+                FortuneReading::READING_TYPE_DEEP,
+            ])
                 ->where('is_paid', true)
                 ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
                 ->where(function ($q) use ($userId) {
+                    // ⚠️ fortune_readings ไม่มีคอลัมน์ line_user_id — LINE เก็บ id ที่ platform_user_id
+                    //   (+ facebook_user_id ซ้ำ). ห้ามใส่ line_user_id ใน WHERE → QueryException
                     $q->where('platform_user_id', $userId)
-                        ->orWhere('facebook_user_id', $userId)
-                        ->orWhere('line_user_id', $userId);
+                        ->orWhere('facebook_user_id', $userId);
                 })
                 ->where('updated_at', '>=', now()->subHours(24))
-                ->where('conversation_state', 'like', '%voice_summary_source_text%')
+                ->where(function ($q) {
+                    // celtic = source ใน state (voice_summary_source_text ที่เก็บตอนจบ
+                    //   หรือ celtic_grand_finale_summary — ครอบ reading เก่าก่อนมีฟีเจอร์ด้วย)
+                    // deep = deep_response (column — คำทำนายเชิงลึก)
+                    $q->where('conversation_state', 'like', '%voice_summary_source_text%')
+                        ->orWhere('conversation_state', 'like', '%celtic_grand_finale_summary%')
+                        ->orWhere(function ($q2) {
+                            $q2->where('reading_type', FortuneReading::READING_TYPE_DEEP)
+                                ->whereNotNull('deep_response')
+                                ->where('deep_response', '!=', '');
+                        });
+                })
                 ->orderByDesc('updated_at')
                 ->first();
         } catch (\Throwable $e) {
-            \Log::debug('Celtic: findRecentVoiceableCeltic fail (non-blocking)', [
+            \Log::debug('Fortune: findRecentVoiceableReading fail (non-blocking)', [
                 'error' => $e->getMessage(),
             ]);
 
@@ -3090,9 +3107,14 @@ trait CelticCrossConversationTrait
             return null;
         }
 
-        $reading = $this->findRecentVoiceableCelticReading($userId);
+        $reading = $this->findRecentVoiceableReading($userId);
         if (! $reading) {
-            // ไม่มีบทสรุปพร้อม → ปล่อย flow ปกติ (อย่า hijack ข้อความ)
+            // ไม่มีเนื้อหาพร้อม (Celtic/Deep) → ปล่อย flow ปกติ (อย่า hijack ข้อความ)
+            return null;
+        }
+
+        // 🛡️ เคารพ tier scope (celtic_99_only / paid_all / all) — กัน dispatch แล้ว generate() เด้ง
+        if (! $this->settings->shouldGenerateVoiceSummary($reading)) {
             return null;
         }
 
@@ -3119,7 +3141,7 @@ trait CelticCrossConversationTrait
             ProcessVoiceSummaryJob::dispatchSmart(
                 $reading->id,
                 $reading->platform ?: ($this->currentPlatform ?? 'facebook'),
-                $reading->platform_user_id ?: $reading->facebook_user_id ?: ($reading->line_user_id ?: $userId)
+                $reading->platform_user_id ?: ($reading->facebook_user_id ?: $userId)
             );
 
             \Log::info('🎧 Celtic: on-demand voice dispatched', [
