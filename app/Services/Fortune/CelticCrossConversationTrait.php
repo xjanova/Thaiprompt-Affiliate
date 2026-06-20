@@ -522,6 +522,40 @@ trait CelticCrossConversationTrait
             }
         }
 
+        // 💳 (2026-06-20) ลูกค้าบอก "พร้อมจ่าย/ขอ QR" แต่ยังไม่เลือกแพคเกจ (เช่น "QR","พร้อมโอน","โอนเลย")
+        //   เคสจริง (มุกดา แสนนุภาพ FTU-260620): พิมพ์ "QR" ที่ tier_choice → tier_choice_invalid
+        //   "เลือกแพคเกจอีกครั้ง" → ลูกค้างงว่าทำไมไม่ส่ง QR. วางหลัง keyword tier (39/99/celtic ชนะก่อน)
+        //   - เปิดแพคเกจเดียว → route ออก QR เลย / เปิดทั้งคู่ → ชวนเลือกแบบ payment-positive (มีปุ่มด้านล่าง)
+        $paymentIntentNoTier = ['qr', 'คิวอาร์', 'พร้อมโอน', 'ขอโอน', 'โอนเลย', 'พร้อมจ่าย', 'จ่ายเลย', 'ขอเลขบัญชี', 'ขอบัญชี', 'เลขบัญชี'];
+        foreach ($paymentIntentNoTier as $kw) {
+            if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                // เปิดเฉพาะ Deep → ออก QR Deep ทันที
+                if ($deepEnabledLocal && ! $celticEnabledLocal) {
+                    $updateData = ['reading_type' => FortuneReading::READING_TYPE_DEEP];
+                    if (empty($reading->bill_reference)) {
+                        $updateData['bill_reference'] = FortuneReading::generateBillReference();
+                    }
+                    $reading->update($updateData);
+
+                    return $this->routePayFirstDeep($reading);
+                }
+                // เปิดเฉพาะ Celtic → เข้า Celtic flow (ออก QR 99)
+                if ($celticEnabledLocal && ! $deepEnabledLocal) {
+                    return $this->startCelticCrossFlow($reading);
+                }
+
+                // เปิดทั้งคู่ → เลือกแพคเกจไม่ได้แทน ขอให้เลือก (payment-positive ไม่ใช่ "ผิด")
+                return [
+                    'action' => 'tier_choice_invalid',
+                    'message' => "🙏 ยินดีค่ะ! แม่หมอส่ง QR ให้ได้เลย — เลือกแพคเกจก่อนนะคะ แล้ว QR จะตามมาทันที 👇\n\n"
+                        ."🔹 พิมพ์ *\"{$deepPriceInt}\"* — ดูพื้นดวง {$deepPriceInt} บาท\n"
+                        ."🔮 พิมพ์ *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท\n\n"
+                        .'👇 หรือกดปุ่มด้านล่างก็ได้นะคะ ✨',
+                    'reading' => $reading,
+                ];
+            }
+        }
+
         // ❓ ไม่ตรงกับ keyword ใดๆ
         //
         // 🤖 (2026-05-19 Batch 4) ก่อน fallback re-show menu → ลอง AI chitchat ตอบให้

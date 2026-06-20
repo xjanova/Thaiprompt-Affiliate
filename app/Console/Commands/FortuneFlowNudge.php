@@ -209,6 +209,18 @@ class FortuneFlowNudge extends Command
                 $ok = $service->sendQuickReplies($userId, $message, $buttons);
                 if ($ok) {
                     $reading->setConversationState('flow_nudge_sent_at', now()->toIso8601String());
+
+                    // 💳 (2026-06-20) RE-ARM consent flag เมื่อ re-send กล่องกติกา (consent_gate)
+                    //   ราก (มุกดา แสนนุภาพ FTU-260620-*): flow-nudge ส่งปุ่ม "พร้อมบูชาครู" ซ้ำ แต่ไม่ได้
+                    //   ตั้ง fortune:consent_pending → ถ้า flag เดิมหมดอายุ/หาย ลูกค้ากด "พร้อมบูชาครูแล้ว"
+                    //   → handleConsentAcceptIfPending เห็น Cache ว่าง → fall-through → สร้าง reading ใหม่
+                    //   วน tier_choice ไม่ออก QR. แก้: re-arm flag (tier จาก marker) ให้ consent accept ทำงาน
+                    if ($step === 'consent_gate') {
+                        $tier = (string) ($reading->getConversationState('consent_gate_tier')
+                            ?: ($reading->reading_type === FortuneReading::READING_TYPE_DEEP ? 'deep' : 'celtic'));
+                        Cache::put(self::CONSENT_PENDING_PREFIX.$userId, $tier, 600); // 600s = FortuneConsentGateTrait::CONSENT_TTL
+                    }
+
                     Log::info('🔔 FortuneFlowNudge: nudge sent', [
                         'reading_id' => $reading->id,
                         'step' => $step,
