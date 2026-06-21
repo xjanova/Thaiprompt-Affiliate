@@ -127,7 +127,14 @@
                     <option value="speech-02-hd"><option value="speech-02-turbo">
                     <option value="speech-01-hd"><option value="speech-01-turbo">
                 </datalist>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 mt-2">MiniMax — voice id</label>
+                <div class="flex items-center justify-between mb-1 mt-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">MiniMax — voice id</label>
+                    {{-- 🔄 รีเฟรชรายชื่อเสียง — กดหลังไปสร้าง/โคลนเสียงใหม่ที่เว็บ MiniMax --}}
+                    <button type="button" @click="refreshMmVoices()" :disabled="mmRefreshing"
+                            class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50 shrink-0">
+                        <span x-show="!mmRefreshing">🔄 รีเฟรชรายชื่อเสียง</span><span x-show="mmRefreshing">⏳ กำลังดึง...</span>
+                    </button>
+                </div>
                 @php $mmHasVoices = ! empty($minimaxVoices['thai']) || ! empty($minimaxVoices['cloned']) || ! empty($minimaxVoices['system']); @endphp
                 @if($mmHasVoices)
                     <select @change="$refs.mmVoiceInput.value = $event.target.value"
@@ -495,6 +502,7 @@ function voiceManager() {
         mmSampleUrl: '',
         mmSampleLoading: false,
         mmSampleError: '',
+        mmRefreshing: false,
 
         async generate(id) {
             this.clips[id].loading = true;
@@ -601,6 +609,22 @@ function voiceManager() {
                 if (data.success) this.mmSampleUrl = data.audio_url + '?t=' + Date.now();
                 else this.mmSampleError = data.error || 'สร้างเสียงไม่สำเร็จ';
             } catch (e) { this.mmSampleError = e.message; } finally { this.mmSampleLoading = false; }
+        },
+
+        // 🔄 รีเฟรชรายชื่อเสียง MiniMax — ล้าง cache ฝั่งเซิร์ฟเวอร์ แล้ว reload หน้าให้ dropdown ดึงใหม่
+        async refreshMmVoices() {
+            if (this.mmRefreshing) return;
+            this.mmRefreshing = true;
+            try {
+                await fetch(`{{ route('admin.fortune.voice.refresh-minimax-voices') }}`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.CSRF, 'Accept': 'application/json' },
+                });
+                window.location.reload();
+            } catch (e) {
+                this.mmRefreshing = false;
+                this.mmSampleError = 'รีเฟรชไม่สำเร็จ: ' + e.message;
+            }
         },
 
         async regenerate(readingId) {

@@ -4056,6 +4056,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/voice/clips/{clip}/upload', [FortuneVoiceController::class, 'uploadClipAudio'])->name('voice.clips.upload');
     Route::delete('/voice/clips/{clip}/audio', [FortuneVoiceController::class, 'deleteClipAudio'])->name('voice.clips.delete-audio');
     Route::post('/voice/preview', [FortuneVoiceController::class, 'previewText'])->name('voice.preview');
+    // 🔄 รีเฟรชรายชื่อเสียง MiniMax (ล้าง cache ดึงใหม่ — ใช้หลังสร้างเสียงใหม่ที่เว็บ MiniMax)
+    Route::post('/voice/refresh-minimax-voices', [FortuneVoiceController::class, 'refreshMinimaxVoices'])->name('voice.refresh-minimax-voices');
 
     // 🩺 Voice Diagnostic — (2026-06-21) รวมเข้าหน้า "จัดการเสียง" แล้ว → redirect หน้าเดิมไป voice
     //   คง route AJAX test/regenerate ไว้ (หน้า voice ที่รวมแล้วเรียกใช้)

@@ -152,6 +152,29 @@ class FortuneVoiceController extends Controller
     }
 
     /**
+     * รีเฟรชรายชื่อเสียง MiniMax — ล้าง cache แล้วดึงใหม่ทันที
+     *
+     * ใช้เมื่อแอดมินเพิ่งไปสร้าง/โคลนเสียงใหม่ที่เว็บ MiniMax
+     * แล้วอยากให้โผล่ใน dropdown ทันที (ไม่ต้องรอ cache 1 ชม.)
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function refreshMinimaxVoices()
+    {
+        \Illuminate\Support\Facades\Cache::forget('fortune:minimax_voices');
+
+        // ดึงใหม่ทันทีเพื่อรายงานจำนวนที่เจอ + จับเคส key/API ล่ม
+        $voices = $this->fetchMinimaxVoices(FortuneTellingSetting::getSettings());
+        $total = count($voices['thai']) + count($voices['cloned']) + count($voices['system']);
+
+        if ($total === 0) {
+            return back()->with('error', 'ดึงรายชื่อเสียง MiniMax ไม่สำเร็จ — ตรวจสอบ API key หรือเครือข่าย แล้วลองใหม่นะคะ');
+        }
+
+        return back()->with('success', "รีเฟรชรายชื่อเสียง MiniMax แล้ว พบ {$total} เสียง (โคลนในบัญชี ".count($voices['cloned']).' เสียง)');
+    }
+
+    /**
      * เช็คทุก TTS provider (รวมจาก Voice Diagnostic เดิม)
      *
      * @return array<int, array<string, mixed>>
