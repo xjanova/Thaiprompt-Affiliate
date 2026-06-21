@@ -3,9 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\FortuneReading;
 use App\Models\FortuneSystemVoiceClip;
 use App\Models\FortuneTellingSetting;
 use App\Services\FortuneSystemVoiceService;
+use App\Services\FortuneVoiceStorageService;
+use App\Services\Tts\GoogleCloudTtsProvider;
+use App\Services\Tts\GttsProvider;
+use App\Services\Tts\MiniMaxTtsProvider;
+use App\Services\Tts\OpenAITtsProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -39,12 +45,92 @@ class FortuneVoiceController extends Controller
             ->get()
             ->groupBy('step_group');
 
+        // 🩺 (2026-06-21) รวม Voice Diagnostic เข้าหน้านี้ (owner: "ย้ายมาไว้ที่เดียวกัน")
+        $storage = new FortuneVoiceStorageService($settings);
+        $providers = $this->checkAllProviders($settings);
+        $storageStatus = $storage->driverAvailability();
+        $stats = [
+            'total_celtic' => FortuneReading::where('reading_type', 'celtic_cross')->count(),
+            'voice_generated' => FortuneReading::whereNotNull('voice_audio_path')->count(),
+            'voice_failed_state' => FortuneReading::where('reading_type', 'celtic_cross')
+                ->whereRaw("conversation_state LIKE '%\"voice_summary_status\":\"failed%'")
+                ->count(),
+        ];
+        $recentFails = FortuneReading::where('reading_type', 'celtic_cross')
+            ->whereNotNull('conversation_state')
+            ->whereRaw("conversation_state LIKE '%voice_summary_error%'")
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get(['id', 'platform_user_id', 'platform', 'conversation_state', 'created_at'])
+            ->map(function ($r) {
+                $state = is_array($r->conversation_state) ? $r->conversation_state : (json_decode($r->conversation_state, true) ?: []);
+
+                return [
+                    'id' => $r->id,
+                    'platform' => $r->platform,
+                    'user_id' => $r->platform_user_id,
+                    'created_at' => $r->created_at?->diffForHumans(),
+                    'status' => $state['voice_summary_status'] ?? null,
+                    'error' => $state['voice_summary_error'] ?? null,
+                ];
+            });
+
         return view('admin.fortune.voice.index', [
             'pageTitle' => '🎧 จัดการเสียง',
             'settings' => $settings,
             'clipsByGroup' => $clipsByGroup,
             'groupLabels' => $this->groupLabels(),
+            // diagnostic (merged)
+            'providers' => $providers,
+            'storage' => $storage,
+            'storageStatus' => $storageStatus,
+            'stats' => $stats,
+            'recentFails' => $recentFails,
         ]);
+    }
+
+    /**
+     * เช็คทุก TTS provider (รวมจาก Voice Diagnostic เดิม)
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function checkAllProviders(FortuneTellingSetting $settings): array
+    {
+        $list = [
+            ['name' => 'minimax', 'label' => '🎙️ MiniMax (premium, primary)'],
+            ['name' => 'openai_tts', 'label' => '🎙️ OpenAI TTS (paid)'],
+            ['name' => 'google_tts', 'label' => '🎙️ Google Cloud TTS (ฟรี 1M/เดือน)'],
+            ['name' => 'gtts', 'label' => '🆓 gTTS (Google Translate, ไม่ต้องตั้ง key)'],
+        ];
+
+        $checks = [];
+        foreach ($list as $row) {
+            $instance = $this->resolveProvider($row['name'], $settings);
+            $available = $instance && $instance->isAvailable();
+            $checks[] = array_merge($row, [
+                'available' => $available,
+                'hint' => $available ? '✅ พร้อมใช้' : '❗ ยังตั้งค่าไม่ครบ (ดู "แก้ปัญหาที่พบบ่อย" ด้านล่าง)',
+                'is_primary' => ($settings->voice_summary_primary_provider ?? 'minimax') === $row['name'],
+                'in_fallback' => is_array($settings->voice_summary_fallback_providers)
+                    && in_array($row['name'], $settings->voice_summary_fallback_providers, true),
+            ]);
+        }
+
+        return $checks;
+    }
+
+    /**
+     * Resolve TTS provider instance ตามชื่อ
+     */
+    protected function resolveProvider(string $name, FortuneTellingSetting $settings)
+    {
+        return match ($name) {
+            'minimax' => new MiniMaxTtsProvider($settings),
+            'openai_tts' => new OpenAITtsProvider($settings, app(\App\Services\AiApiKeyPoolService::class)),
+            'google_tts' => new GoogleCloudTtsProvider($settings),
+            'gtts' => new GttsProvider,
+            default => null,
+        };
     }
 
     /**

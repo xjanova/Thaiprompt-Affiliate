@@ -4057,8 +4057,9 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::delete('/voice/clips/{clip}/audio', [FortuneVoiceController::class, 'deleteClipAudio'])->name('voice.clips.delete-audio');
     Route::post('/voice/preview', [FortuneVoiceController::class, 'previewText'])->name('voice.preview');
 
-    // 🩺 (2026-05-18) Voice Diagnostic — ตรวจระบบ TTS ทั้งหมด
-    Route::get('/voice-diagnostic', [FortuneVoiceDiagnosticController::class, 'index'])->name('voice-diagnostic');
+    // 🩺 Voice Diagnostic — (2026-06-21) รวมเข้าหน้า "จัดการเสียง" แล้ว → redirect หน้าเดิมไป voice
+    //   คง route AJAX test/regenerate ไว้ (หน้า voice ที่รวมแล้วเรียกใช้)
+    Route::get('/voice-diagnostic', fn () => redirect()->route('admin.fortune.voice.index'))->name('voice-diagnostic');
     Route::post('/voice-diagnostic/test/{provider}', [FortuneVoiceDiagnosticController::class, 'testProvider'])->name('voice-diagnostic.test');
     Route::post('/voice-diagnostic/regenerate/{reading}', [FortuneVoiceDiagnosticController::class, 'regenerateReading'])->name('voice-diagnostic.regenerate');
 
