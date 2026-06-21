@@ -428,7 +428,7 @@
 
 @push('scripts')
 <script>
-    // Alpine component สำหรับหน้าคลังข้อความเชิญชวน (logic เดิมทั้งหมด — ย้ายมา @push('scripts'))
+    // Alpine component สำหรับหน้าคลังข้อความเชิญชวน (logic เดิมทั้งหมด — ย้ายมาไว้ scripts stack ท้าย body)
     function inviteMessages() {
         return {
             showAdd: false,

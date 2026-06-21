@@ -238,7 +238,7 @@
 
 @push('scripts')
 <script>
-    // Alpine component เดิม — ย้ายมา @push('scripts') ตาม layout contract V4
+    // Alpine component เดิม — ย้ายมาไว้ scripts stack ตาม layout contract V4
     function userDetail() {
         return {
             showSendMessage: false,
