@@ -86,7 +86,69 @@ class FortuneVoiceController extends Controller
             'storageStatus' => $storageStatus,
             'stats' => $stats,
             'recentFails' => $recentFails,
+            // 🎙️ (2026-06-21) รายชื่อเสียง MiniMax (dropdown เลือก) — cache 1 ชม.
+            'minimaxVoices' => $this->fetchMinimaxVoices($settings),
         ]);
+    }
+
+    /**
+     * ดึงรายชื่อเสียง MiniMax (system ไทย + เสียงโคลนในบัญชี + อื่นๆ) สำหรับ dropdown
+     *
+     * cache 1 ชม. — fail-safe คืน [] ถ้าไม่มี key / API ล่ม (dropdown ซ่อน เหลือช่องพิมพ์เอง)
+     *
+     * @return array{thai: array<string,string>, cloned: array<string,string>, system: array<string,string>}
+     */
+    protected function fetchMinimaxVoices(FortuneTellingSetting $settings): array
+    {
+        $empty = ['thai' => [], 'cloned' => [], 'system' => []];
+
+        try {
+            $key = $settings->getMinimaxApiKey();
+            if (empty($key)) {
+                return $empty;
+            }
+
+            return \Illuminate\Support\Facades\Cache::remember('fortune:minimax_voices', 3600, function () use ($key, $empty) {
+                $resp = \Illuminate\Support\Facades\Http::withToken($key)->timeout(20)
+                    ->post('https://api.minimax.io/v1/get_voice', ['voice_type' => 'all']);
+                $d = $resp->json();
+                if (($d['base_resp']['status_code'] ?? -1) !== 0) {
+                    return $empty;
+                }
+
+                $thai = [];
+                $system = [];
+                foreach (($d['system_voice'] ?? []) as $v) {
+                    $id = $v['voice_id'] ?? '';
+                    $nm = $v['voice_name'] ?? $id;
+                    if ($id === '') {
+                        continue;
+                    }
+                    if (stripos($id, 'thai') !== false || stripos((string) $nm, 'thai') !== false) {
+                        $thai[$id] = (string) $nm;
+                    } else {
+                        $system[$id] = (string) $nm;
+                    }
+                }
+
+                $cloned = [];
+                foreach (($d['voice_cloning'] ?? []) as $v) {
+                    $id = $v['voice_id'] ?? '';
+                    if ($id === '') {
+                        continue;
+                    }
+                    $desc = $v['description'] ?? null; // ⚠️ บางที description เป็น array
+                    $cloned[$id] = is_string($desc) && $desc !== '' ? $desc : 'เสียงโคลนในบัญชี';
+                }
+
+                asort($thai);
+                asort($system);
+
+                return ['thai' => $thai, 'cloned' => $cloned, 'system' => $system];
+            });
+        } catch (\Throwable $e) {
+            return $empty;
+        }
     }
 
     /**

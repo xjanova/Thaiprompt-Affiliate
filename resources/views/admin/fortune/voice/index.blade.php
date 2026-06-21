@@ -128,8 +128,40 @@
                     <option value="speech-01-hd"><option value="speech-01-turbo">
                 </datalist>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 mt-2">MiniMax — voice id</label>
-                <input type="text" name="minimax_voice_id" value="{{ $settings->minimax_voice_id }}" placeholder="Thai_female_1_sample1"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                @php $mmHasVoices = ! empty($minimaxVoices['thai']) || ! empty($minimaxVoices['cloned']) || ! empty($minimaxVoices['system']); @endphp
+                @if($mmHasVoices)
+                    <select @change="$refs.mmVoiceInput.value = $event.target.value"
+                            class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm mb-1">
+                        <option value="">— เลือกเสียงจากบัญชี MiniMax —</option>
+                        @if(! empty($minimaxVoices['thai']))
+                            <optgroup label="🇹🇭 เสียงไทย">
+                                @foreach($minimaxVoices['thai'] as $id => $nm)<option value="{{ $id }}">{{ $nm }} — {{ $id }}</option>@endforeach
+                            </optgroup>
+                        @endif
+                        @if(! empty($minimaxVoices['cloned']))
+                            <optgroup label="🎙️ เสียงโคลนในบัญชี">
+                                @foreach($minimaxVoices['cloned'] as $id => $nm)<option value="{{ $id }}">{{ $nm }} — {{ \Illuminate\Support\Str::limit($id, 28) }}</option>@endforeach
+                            </optgroup>
+                        @endif
+                        @if(! empty($minimaxVoices['system']))
+                            <optgroup label="🌐 อื่นๆ (system — พูดไทยได้)">
+                                @foreach($minimaxVoices['system'] as $id => $nm)<option value="{{ $id }}">{{ $nm }} — {{ $id }}</option>@endforeach
+                            </optgroup>
+                        @endif
+                    </select>
+                @endif
+                <div class="flex gap-1">
+                    <input type="text" name="minimax_voice_id" x-ref="mmVoiceInput" value="{{ $settings->minimax_voice_id }}" placeholder="Thai_female_1_sample1"
+                           class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                    @if($mmHasVoices)
+                        <button type="button" @click="previewVoiceSample($refs.mmVoiceInput.value)" :disabled="mmSampleLoading"
+                                class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs rounded-lg transition shrink-0">
+                            <span x-show="!mmSampleLoading">🔊 ฟัง</span><span x-show="mmSampleLoading">⏳</span>
+                        </button>
+                    @endif
+                </div>
+                <audio x-show="mmSampleUrl" :src="mmSampleUrl" controls class="mt-1 w-full max-w-xs"></audio>
+                <span x-show="mmSampleError" x-text="mmSampleError" class="text-xs text-red-600 dark:text-red-400"></span>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">OpenAI — model</label>
@@ -459,6 +491,10 @@ function voiceManager() {
         // diagnostic (provider test / regenerate)
         busy: {},
         results: {},
+        // MiniMax voice sample (ฟังตัวอย่างเสียงที่เลือก)
+        mmSampleUrl: '',
+        mmSampleLoading: false,
+        mmSampleError: '',
 
         async generate(id) {
             this.clips[id].loading = true;
@@ -549,6 +585,22 @@ function voiceManager() {
             } finally {
                 this.busy[name] = false;
             }
+        },
+
+        // 🎙️ ฟังตัวอย่างเสียง MiniMax ที่เลือก (ใช้ preview endpoint, provider=minimax)
+        async previewVoiceSample(voiceId) {
+            if (!voiceId || !voiceId.trim()) { this.mmSampleError = 'เลือกหรือใส่ voice id ก่อนนะคะ'; return; }
+            this.mmSampleLoading = true; this.mmSampleError = ''; this.mmSampleUrl = '';
+            try {
+                const res = await fetch(`{{ route('admin.fortune.voice.preview') }}`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: 'สวัสดีค่ะ แม่หมอจันทรา ทดสอบเสียงนะคะ วันที่ 12 เดือน 12 จำนวน 99 บาท', voice_provider: 'minimax', voice_id: voiceId.trim() }),
+                });
+                const data = await res.json();
+                if (data.success) this.mmSampleUrl = data.audio_url + '?t=' + Date.now();
+                else this.mmSampleError = data.error || 'สร้างเสียงไม่สำเร็จ';
+            } catch (e) { this.mmSampleError = e.message; } finally { this.mmSampleLoading = false; }
         },
 
         async regenerate(readingId) {
