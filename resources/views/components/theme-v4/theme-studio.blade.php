@@ -13,7 +13,9 @@
     $tpVariants = ['นวลนุ่ม Clay','แบนทอง Flat','กระจกใส Glass'];
 @endphp
 
-<div>
+{{-- x-data="{}" จำเป็น: Alpine v3 init เฉพาะ subtree ที่มี x-data root —
+     ถ้าไม่มี ปุ่ม @click/x-show/x-cloak ในนี้จะไม่ถูก wire (ปุ่ม 🎨 กดไม่ติด) --}}
+<div x-data="{}">
     {{-- ปุ่มเปิด --}}
     <button type="button" @click="$store.tp.studioOpen = !$store.tp.studioOpen"
             class="tp-tile"
