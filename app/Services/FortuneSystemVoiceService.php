@@ -9,6 +9,7 @@ use App\Services\Tts\GttsProvider;
 use App\Services\Tts\MiniMaxTtsProvider;
 use App\Services\Tts\OpenAITtsProvider;
 use App\Services\Tts\TtsProviderInterface;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -91,6 +92,9 @@ class FortuneSystemVoiceService
             // path ปลายทาง (stable ตาม key — สร้างใหม่ทับไฟล์เดิมได้)
             $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'.mp3';
 
+            // ถ้าเดิมเป็นไฟล์อัปโหลด (นามสกุลอื่น) → ลบไฟล์เก่าก่อน กันไฟล์ค้าง
+            $this->forgetOldFileIfDifferent($clip, $relativePath);
+
             $synth = $this->synthesizeToPublic($text, $clip->clip_key, $clip->voice_config ?? null, $relativePath);
             if (! $synth['success']) {
                 return $synth;
@@ -101,6 +105,8 @@ class FortuneSystemVoiceService
                 'audio_url' => $synth['audio_url'],
                 'audio_duration_ms' => $synth['duration_ms'],
                 'audio_provider' => $synth['provider_used'],
+                'audio_source' => 'tts',
+                'audio_original_name' => null,
                 'audio_voice_id' => $synth['voice_used'],
                 'audio_chars' => mb_strlen($text),
                 'generated_at' => now(),
@@ -109,6 +115,77 @@ class FortuneSystemVoiceService
             return $synth;
         } finally {
             $lock->release();
+        }
+    }
+
+    /**
+     * เก็บไฟล์เสียงที่แอดมิน "อัปโหลดเอง" → ใช้แทน TTS (รองรับทุกฟอร์แมต)
+     *
+     * ⚠️ prod ไม่มี ffmpeg → เก็บไฟล์ตามฟอร์แมตเดิม (ไม่แปลง). เล่นในแอดมินได้ทุกฟอร์แมต
+     *    แต่ส่งจริงบน FB ควรเป็น mp3/m4a (ฟอร์แมตอื่น FB อาจไม่รองรับ — แจ้งเตือนในหน้าแอดมิน)
+     *
+     * @return array{success: bool, audio_url: ?string, provider_used: ?string, duration_ms: ?int, voice_used: ?string, error: ?string}
+     */
+    public function storeUploadedAudio(FortuneSystemVoiceClip $clip, UploadedFile $file): array
+    {
+        // นามสกุลจริง (sanitize) — fallback mp3
+        $ext = strtolower($file->getClientOriginalExtension() ?: ($file->extension() ?: 'mp3'));
+        $ext = preg_replace('/[^a-z0-9]/', '', $ext) ?: 'mp3';
+        $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'.'.$ext;
+
+        try {
+            // ลบไฟล์เดิม (ถ้ามี + path/นามสกุลต่าง) กันไฟล์ค้าง
+            $this->forgetOldFileIfDifferent($clip, $relativePath);
+
+            // เก็บลง public disk (local) — path stable ตาม key
+            $stored = $file->storeAs(self::STORAGE_DIR, $clip->clip_key.'.'.$ext, 'public');
+            if (! $stored || ! Storage::disk('public')->exists($relativePath)) {
+                return $this->fail('บันทึกไฟล์อัปโหลดไม่สำเร็จ');
+            }
+
+            $clip->update([
+                'audio_path' => $relativePath,
+                'audio_url' => Storage::disk('public')->url($relativePath),
+                'audio_duration_ms' => $this->estimateDurationMs($relativePath, (string) $clip->script_text),
+                'audio_provider' => 'upload',
+                'audio_source' => 'upload',
+                'audio_original_name' => mb_substr($file->getClientOriginalName(), 0, 200),
+                'audio_voice_id' => null,
+                'audio_chars' => null,
+                'generated_at' => now(),
+            ]);
+
+            Log::info('🎧 SystemVoice: ⬆️ อัปโหลดไฟล์เสียงสำเร็จ', [
+                'clip_key' => $clip->clip_key,
+                'ext' => $ext,
+                'path' => $relativePath,
+            ]);
+
+            return [
+                'success' => true,
+                'audio_url' => $clip->audio_url,
+                'provider_used' => 'upload',
+                'duration_ms' => $clip->audio_duration_ms,
+                'voice_used' => null,
+                'error' => null,
+            ];
+        } catch (\Throwable $e) {
+            return $this->fail('อัปโหลดไม่สำเร็จ: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * ลบไฟล์เสียงเดิมถ้า path ใหม่ต่างจากเดิม (เช่น เปลี่ยนนามสกุล tts.mp3 → upload.wav)
+     */
+    protected function forgetOldFileIfDifferent(FortuneSystemVoiceClip $clip, string $newPath): void
+    {
+        try {
+            $old = $clip->audio_path;
+            if (! empty($old) && $old !== $newPath && Storage::disk('public')->exists($old)) {
+                Storage::disk('public')->delete($old);
+            }
+        } catch (\Throwable $e) {
+            // ignore
         }
     }
 
@@ -248,6 +325,9 @@ class FortuneSystemVoiceService
             'audio_url' => null,
             'audio_duration_ms' => null,
             'audio_provider' => null,
+            // 🔁 reset กลับเป็น tts — กัน isUploaded() ค้าง true → CLI ข้ามคลิปถาวร
+            'audio_source' => 'tts',
+            'audio_original_name' => null,
             'audio_voice_id' => null,
             'audio_chars' => null,
             'generated_at' => null,

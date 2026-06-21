@@ -222,9 +222,15 @@
                                     <div class="flex items-center gap-2">
                                         <span class="text-xs font-mono px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{{ $clip->clip_key }}</span>
                                         @if($clip->hasAudio())
-                                            <span class="text-xs px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                                                ✅ มีไฟล์เสียง ({{ $clip->audio_provider }})
-                                            </span>
+                                            @if($clip->isUploaded())
+                                                <span class="text-xs px-2 py-0.5 rounded bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+                                                    ⬆️ ไฟล์อัปโหลด{{ $clip->audio_original_name ? ': '.\Illuminate\Support\Str::limit($clip->audio_original_name, 24) : '' }}
+                                                </span>
+                                            @else
+                                                <span class="text-xs px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                                                    🎙️ เสียง AI ({{ $clip->audio_provider }})
+                                                </span>
+                                            @endif
                                         @else
                                             <span class="text-xs px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">⚠️ ยังไม่มีไฟล์เสียง</span>
                                         @endif
@@ -266,6 +272,17 @@
                                     @endif
                                     <span x-show="clipState.msg" x-text="clipState.msg" :class="clipState.ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'" class="text-xs"></span>
                                 </div>
+                            </form>
+
+                            {{-- ⬆️ อัปโหลดไฟล์เสียงเอง (แทน TTS) — รองรับทุกฟอร์แมต (ฟอร์มแยก ห้าม nest) --}}
+                            <form method="POST" action="{{ route('admin.fortune.voice.clips.upload', $clip) }}"
+                                  enctype="multipart/form-data" class="mt-2 flex items-center gap-2 flex-wrap border-t border-dashed border-gray-200 dark:border-gray-700 pt-2">
+                                @csrf
+                                <span class="text-xs text-gray-500 dark:text-gray-400">⬆️ ใช้ไฟล์เสียงเอง:</span>
+                                <input type="file" name="audio_file" accept="audio/*,.m4a,.mp3,.wav,.ogg,.aac,.flac,.opus"
+                                       required class="text-xs text-gray-700 dark:text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-violet-100 file:text-violet-700 hover:file:bg-violet-200">
+                                <button type="submit" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs rounded-lg transition">อัปโหลด</button>
+                                <span class="text-xs text-gray-400">(แนะนำ mp3/m4a สำหรับส่งบน FB)</span>
                             </form>
 
                             {{-- audio player (existing or freshly generated) --}}

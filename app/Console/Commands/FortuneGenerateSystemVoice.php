@@ -56,6 +56,14 @@ class FortuneGenerateSystemVoice extends Command
         $fail = 0;
 
         foreach ($clips as $clip) {
+            // ⬆️ คลิปที่ใช้ไฟล์อัปโหลดเอง — ห้าม TTS ทับ (แม้ --force)
+            if ($clip->isUploaded()) {
+                $this->line("⏭️  ข้าม {$clip->clip_key} (เป็นไฟล์อัปโหลดเอง — ไม่สร้าง TTS ทับ)");
+                $skip++;
+
+                continue;
+            }
+
             if (! $force && $clip->hasAudio()) {
                 $this->line("⏭️  ข้าม {$clip->clip_key} (มีไฟล์อยู่แล้ว — ใช้ --force เพื่อสร้างใหม่)");
                 $skip++;

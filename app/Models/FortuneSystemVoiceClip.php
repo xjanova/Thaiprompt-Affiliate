@@ -49,6 +49,8 @@ class FortuneSystemVoiceClip extends Model
         'audio_url',
         'audio_duration_ms',
         'audio_provider',
+        'audio_source',
+        'audio_original_name',
         'audio_voice_id',
         'audio_chars',
         'generated_at',
@@ -81,5 +83,13 @@ class FortuneSystemVoiceClip extends Model
     public function isDeliverable(): bool
     {
         return $this->enabled && $this->hasAudio();
+    }
+
+    /**
+     * ไฟล์เสียงนี้มาจากการอัปโหลดเองหรือไม่ (ไม่ใช่ TTS)
+     */
+    public function isUploaded(): bool
+    {
+        return $this->audio_source === 'upload';
     }
 }

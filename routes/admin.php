@@ -66,15 +66,15 @@ use App\Http\Controllers\Admin\FortuneAdminQAController;
 use App\Http\Controllers\Admin\FortuneAstrologyController;
 use App\Http\Controllers\Admin\FortuneBanController;
 use App\Http\Controllers\Admin\FortuneBannerController;
-use App\Http\Controllers\Admin\FortuneInviteMessageController;
 use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneCelticCrossController;
 use App\Http\Controllers\Admin\FortuneChannelController;
 use App\Http\Controllers\Admin\FortuneCommissionController;
-use App\Http\Controllers\Admin\FortuneDebugToolsController;
 use App\Http\Controllers\Admin\FortuneConsentController;
+use App\Http\Controllers\Admin\FortuneDebugToolsController;
 use App\Http\Controllers\Admin\FortuneHoroscopeController;
+use App\Http\Controllers\Admin\FortuneInviteMessageController;
 use App\Http\Controllers\Admin\FortuneKnowledgeController;
 use App\Http\Controllers\Admin\FortuneMarketingController;
 use App\Http\Controllers\Admin\FortuneMysticController;
@@ -4053,6 +4053,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::put('/voice/settings', [FortuneVoiceController::class, 'updateSettings'])->name('voice.settings.update');
     Route::put('/voice/clips/{clip}', [FortuneVoiceController::class, 'updateClip'])->name('voice.clips.update');
     Route::post('/voice/clips/{clip}/generate', [FortuneVoiceController::class, 'generateClip'])->name('voice.clips.generate');
+    Route::post('/voice/clips/{clip}/upload', [FortuneVoiceController::class, 'uploadClipAudio'])->name('voice.clips.upload');
     Route::delete('/voice/clips/{clip}/audio', [FortuneVoiceController::class, 'deleteClipAudio'])->name('voice.clips.delete-audio');
     Route::post('/voice/preview', [FortuneVoiceController::class, 'previewText'])->name('voice.preview');
 

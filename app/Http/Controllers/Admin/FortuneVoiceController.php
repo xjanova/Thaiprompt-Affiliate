@@ -172,6 +172,43 @@ class FortuneVoiceController extends Controller
     }
 
     /**
+     * อัปโหลดไฟล์เสียงเอง — ใช้แทน TTS (รองรับทุกฟอร์แมต)
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function uploadClipAudio(Request $request, FortuneSystemVoiceClip $clip)
+    {
+        $request->validate([
+            'audio_file' => 'required|file|max:61440', // สูงสุด 60MB
+        ]);
+
+        $file = $request->file('audio_file');
+        $ext = strtolower((string) $file->getClientOriginalExtension());
+        $mime = (string) $file->getMimeType();
+
+        // รองรับทุกฟอร์แมตเสียง — เช็คว่า "เป็นเสียง" จาก mime หรือ นามสกุล
+        $audioExts = ['mp3', 'm4a', 'wav', 'ogg', 'oga', 'aac', 'flac', 'opus', 'weba', 'webm', '3gp', '3gpp', 'amr', 'wma', 'aiff', 'aif', 'caf', 'mp4'];
+        $looksAudio = str_starts_with($mime, 'audio/')
+            || in_array($ext, $audioExts, true)
+            || $mime === 'video/mp4'; // m4a บางเครื่องส่ง mime เป็น video/mp4
+
+        if (! $looksAudio) {
+            return back()->withErrors(['audio_file' => "ไฟล์นี้ไม่ใช่ไฟล์เสียง (ชนิด: {$mime})"]);
+        }
+
+        $service = new FortuneSystemVoiceService(FortuneTellingSetting::getSettings());
+        $result = $service->storeUploadedAudio($clip, $file);
+
+        if (! $result['success']) {
+            return back()->withErrors(['audio_file' => $result['error']]);
+        }
+
+        $warn = in_array($ext, ['mp3', 'm4a'], true) ? '' : ' ⚠️ ฟอร์แมต .'.$ext.' อาจส่งบน Facebook ไม่ได้ (แนะนำ mp3/m4a)';
+
+        return back()->with('success', '✅ อัปโหลดเสียงคลิป "'.$clip->title.'" สำเร็จ'.$warn);
+    }
+
+    /**
      * ป้ายชื่อกลุ่มขั้นตอน (สำหรับแสดงในหน้า)
      *
      * @return array<string, string>
