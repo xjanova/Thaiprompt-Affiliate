@@ -1,193 +1,218 @@
-{{-- Emergency Recovery — Celtic Cross --}}
-@extends('layouts.admin-v3')
+{{-- ════════════════════════════════════════════════════════════
+     Emergency Recovery — Celtic Cross  (Theme V4 "นวลทองคำ")
+     กู้บิล Celtic Cross ที่ลูกค้าจ่ายแล้วแต่บอทเงียบ — ใส่เลขบิลแล้ว re-push
+     คงฟอร์ม/field/action เดิม 100% (mode/bills/minutes/notify_message)
+     ════════════════════════════════════════════════════════════ --}}
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div class="container mx-auto px-4 py-8 max-w-5xl">
+<div style="display:flex;flex-direction:column;gap:18px;">
 
-    {{-- Header --}}
-    <div class="mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    🚨 Emergency Recovery
-                </h1>
-                <p class="text-gray-500 dark:text-gray-400 text-sm">
-                    กู้บิล Celtic Cross ที่ลูกค้าจ่ายแล้วแต่บอทเงียบ — ใส่เลขบิลแล้ว re-push ทันที
-                </p>
+    {{-- ───────── Header ───────── --}}
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;">
+        <div>
+            <div class="tp-muted" style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">
+                หลังบ้าน · ระบบดูดวง · Celtic Cross
             </div>
-            <a href="{{ route('admin.fortune.celtic-cross.index') }}"
-               class="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition">
-                ← กลับไป Celtic Cross
-            </a>
+            <h1 class="tp-num" style="margin:0;display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-triangle-exclamation" style="color:#d9534f;"></i>
+                กู้บิลด่วน (Emergency Recovery)
+            </h1>
+            <div class="tp-muted" style="margin-top:6px;font-size:13px;max-width:560px;">
+                กู้บิล Celtic Cross ที่ลูกค้าจ่ายแล้วแต่บอทเงียบ — ใส่เลขบิลแล้ว re-push ทันที
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            @if(Route::has('admin.fortune.celtic-cross.index'))
+                <a href="{{ route('admin.fortune.celtic-cross.index') }}" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-arrow-left"></i> กลับไป Celtic Cross
+                </a>
+            @endif
         </div>
     </div>
 
-    {{-- Flash --}}
-    @if(session('success'))
-        <div class="mb-6 p-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl text-green-800 dark:text-green-200">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl text-red-800 dark:text-red-200">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    {{-- Stuck count badge --}}
-    <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="text-3xl">⏳</div>
-            <div>
-                <div class="text-sm text-amber-800 dark:text-amber-200">
-                    ตอนนี้มี <span class="font-bold text-2xl">{{ $stuckCount }}</span> reading ค้าง (paid + ยังไม่ได้ใช้สิทธิ์ + ค้าง ≥ 5 นาที)
+    {{-- ───────── Stuck count tile ───────── --}}
+    <div class="tp-card tp-raise" style="border-left:4px solid #e0a52e;">
+        <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+            <div class="tp-tile" style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#e0a52e;flex:0 0 auto;">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div style="flex:1;min-width:240px;">
+                <div style="font-size:14px;color:var(--ink);">
+                    ตอนนี้มี
+                    <span class="tp-num" style="font-size:26px;font-weight:700;color:#e0a52e;vertical-align:-3px;">{{ $stuckCount }}</span>
+                    reading ค้าง
+                    <span class="tp-pill tp-pill-soft" style="margin-left:6px;">paid · ยังไม่ใช้สิทธิ์ · ค้าง ≥ 5 นาที</span>
                 </div>
-                <div class="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                    Auto-scanner รันทุก 5 นาที — ถ้าเร่งด่วนใช้ปุ่ม "กู้ทั้งหมด" ด้านล่าง
+                <div class="tp-muted" style="font-size:12px;margin-top:6px;">
+                    Auto-scanner รันทุก 5 นาที — ถ้าเร่งด่วนใช้ปุ่ม "สแกน + กู้ทั้งหมด" ด้านล่าง
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Form: Mode A — by bills --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
-            📋 โหมด A — กู้ตามเลขบิล
-        </h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            วางเลขบิล (เช่น <code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-900 rounded text-xs">FTU-260505-J1439</code>) หรือ reading ID — แยกบรรทัด/comma/เว้นวรรค ก็ได้
-        </p>
+    {{-- ───────── Two forms grid ───────── --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px;">
 
-        <form method="POST" action="{{ route('admin.fortune.celtic-cross.emergency-recover.action') }}">
-            @csrf
-            <input type="hidden" name="mode" value="bills">
+        {{-- ───── โหมด A — กู้ตามเลขบิล ───── --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-list-check" style="color:#d9534f;"></i>
+                <span>โหมด A — กู้ตามเลขบิล</span>
+            </div>
+            <div class="tp-muted" style="font-size:13px;margin:8px 0 16px;">
+                วางเลขบิล (เช่น
+                <span class="tp-pill tp-pill-soft" style="font-family:monospace;">FTU-260505-J1439</span>)
+                หรือ reading ID — แยกบรรทัด / comma / เว้นวรรค ก็ได้
+            </div>
 
-            <textarea name="bills"
-                      rows="4"
-                      placeholder="FTU-260505-J1439&#10;FTU-260505-K2345&#10;หรือ reading ID เช่น 12345"
-                      class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:outline-none"
-                      required></textarea>
+            <form method="POST" action="{{ route('admin.fortune.celtic-cross.emergency-recover.action') }}">
+                @csrf
+                <input type="hidden" name="mode" value="bills">
 
-            <div class="mt-3">
-                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                <div class="tp-well tp-input" style="padding:0;margin-bottom:14px;">
+                    <textarea name="bills"
+                              rows="4"
+                              required
+                              placeholder="FTU-260505-J1439&#10;FTU-260505-K2345&#10;หรือ reading ID เช่น 12345"
+                              style="width:100%;background:transparent;border:0;outline:0;padding:12px 14px;color:var(--ink);font-size:14px;font-family:monospace;resize:vertical;line-height:1.6;"></textarea>
+                </div>
+
+                <label class="tp-muted" style="display:block;font-size:12px;margin-bottom:6px;">
                     ข้อความหัวเรื่อง (เปล่า = ใช้ข้อความ default "ขออภัยที่ทำให้รอนะคะ...")
                 </label>
-                <input type="text"
-                       name="notify_message"
-                       placeholder="(optional) เช่น: ขอบคุณที่อดทนรอนะคะ ระบบกลับมาแล้ว 🙏"
-                       class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:outline-none">
+                <div class="tp-well tp-input" style="padding:0;margin-bottom:18px;">
+                    <input type="text"
+                           name="notify_message"
+                           placeholder="(optional) เช่น: ขอบคุณที่อดทนรอนะคะ ระบบกลับมาแล้ว 🙏"
+                           style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                </div>
+
+                <button type="submit"
+                        onclick="return confirm('ยืนยันกู้บิลตามรายการ? ลูกค้าจะได้รับ message ใหม่ทันที')"
+                        class="tp-btn tp-btn-primary"
+                        style="width:100%;justify-content:center;background:#d9534f;border-color:#d9534f;">
+                    <i class="fas fa-triangle-exclamation"></i> กู้บิลตามรายการ
+                </button>
+            </form>
+        </div>
+
+        {{-- ───── โหมด B — กู้ทั้งหมด (auto-scan) ───── --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-rotate" style="color:#d6824a;"></i>
+                <span>โหมด B — กู้ทั้งหมด (auto-scan)</span>
+            </div>
+            <div class="tp-muted" style="font-size:13px;margin:8px 0 16px;">
+                สแกน Celtic readings ที่
+                <strong style="color:var(--ink);">paid + questions_used=0 + ค้าง ≥ N นาที</strong>
+                แล้วกู้ทั้งหมด
             </div>
 
-            <button type="submit"
-                    onclick="return confirm('🚨 ยืนยันกู้บิลตามรายการ? ลูกค้าจะได้รับ message ใหม่ทันที')"
-                    class="mt-4 w-full md:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition shadow-sm">
-                🚨 กู้บิลตามรายการ
-            </button>
-        </form>
-    </div>
+            <form method="POST" action="{{ route('admin.fortune.celtic-cross.emergency-recover.action') }}">
+                @csrf
+                <input type="hidden" name="mode" value="auto">
 
-    {{-- Form: Mode B — auto scan --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
-            🔄 โหมด B — กู้ทั้งหมด (auto-scan)
-        </h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            สแกน Celtic readings ที่ <strong>paid + questions_used=0 + ค้าง ≥ N นาที</strong> แล้วกู้ทั้งหมด
-        </p>
+                <label class="tp-muted" style="display:block;font-size:12px;margin-bottom:6px;">
+                    เกณฑ์เวลาที่ค้าง (นาที)
+                </label>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                    <div class="tp-well tp-input" style="padding:0;width:120px;">
+                        <input type="number"
+                               name="minutes"
+                               value="5"
+                               min="1"
+                               max="1440"
+                               style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                    </div>
+                    <span class="tp-muted" style="font-size:13px;">นาที</span>
+                </div>
 
-        <form method="POST" action="{{ route('admin.fortune.celtic-cross.emergency-recover.action') }}">
-            @csrf
-            <input type="hidden" name="mode" value="auto">
-
-            <div class="flex items-center gap-3 mb-4">
-                <label class="text-sm text-gray-700 dark:text-gray-300">เกณฑ์เวลาที่ค้าง:</label>
-                <input type="number"
-                       name="minutes"
-                       value="5"
-                       min="1"
-                       max="1440"
-                       class="w-24 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100">
-                <span class="text-sm text-gray-600 dark:text-gray-400">นาที</span>
-            </div>
-
-            <div class="mb-4">
-                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                <label class="tp-muted" style="display:block;font-size:12px;margin-bottom:6px;">
                     ข้อความหัวเรื่อง (optional)
                 </label>
-                <input type="text"
-                       name="notify_message"
-                       placeholder="(optional)"
-                       class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-            </div>
+                <div class="tp-well tp-input" style="padding:0;margin-bottom:18px;">
+                    <input type="text"
+                           name="notify_message"
+                           placeholder="(optional)"
+                           style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                </div>
 
-            <button type="submit"
-                    onclick="return confirm('🔄 ยืนยันสแกน + กู้ทั้งหมด? ลูกค้าทุกคนที่ค้างจะได้รับ message ใหม่')"
-                    class="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition shadow-sm">
-                🔄 สแกน + กู้ทั้งหมด
-            </button>
-        </form>
+                <button type="submit"
+                        onclick="return confirm('ยืนยันสแกน + กู้ทั้งหมด? ลูกค้าทุกคนที่ค้างจะได้รับ message ใหม่')"
+                        class="tp-btn tp-btn-primary"
+                        style="width:100%;justify-content:center;background:#d6824a;border-color:#d6824a;">
+                    <i class="fas fa-rotate"></i> สแกน + กู้ทั้งหมด
+                </button>
+            </form>
+        </div>
     </div>
 
-    {{-- Results --}}
+    {{-- ───────── ผลการกู้ ───────── --}}
     @if(! empty($results))
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                    📊 ผลการกู้
-                </h2>
-                <div class="flex items-center gap-2 text-sm">
-                    <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-full">
-                        ✅ สำเร็จ {{ $okCount ?? 0 }}
+        <div class="tp-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+                <div class="tp-section-h" style="margin:0;display:flex;align-items:center;gap:10px;">
+                    <i class="fas fa-chart-column" style="color:var(--accent1);"></i>
+                    <span>ผลการกู้</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span class="tp-pill" style="background:rgba(90,160,126,.16);color:#5aa07e;border-color:rgba(90,160,126,.35);">
+                        <i class="fas fa-circle-check"></i> สำเร็จ {{ $okCount ?? 0 }}
                     </span>
                     @if(($failCount ?? 0) > 0)
-                        <span class="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 rounded-full">
-                            ❌ ล้มเหลว {{ $failCount }}
+                        <span class="tp-pill" style="background:rgba(217,83,79,.16);color:#d9534f;border-color:rgba(217,83,79,.35);">
+                            <i class="fas fa-circle-xmark"></i> ล้มเหลว {{ $failCount }}
                         </span>
                     @endif
                 </div>
             </div>
 
             @if(! empty($notFound))
-                <div class="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
-                    ⚠️ บิลที่ไม่พบ: <code>{{ implode(', ', $notFound) }}</code>
+                <div class="tp-inset" style="padding:12px 14px;margin-bottom:16px;border-left:3px solid #e0a52e;">
+                    <span style="color:#e0a52e;"><i class="fas fa-triangle-exclamation"></i> บิลที่ไม่พบ:</span>
+                    <code style="color:var(--ink);font-size:13px;">{{ implode(', ', $notFound) }}</code>
                 </div>
             @endif
 
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                    <thead class="bg-gray-50 dark:bg-gray-900">
-                        <tr>
-                            <th class="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">ID</th>
-                            <th class="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">บิล</th>
-                            <th class="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">ลูกค้า</th>
-                            <th class="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">Platform</th>
-                            <th class="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">Status (ก่อน → หลัง)</th>
-                            <th class="px-3 py-2 text-center font-semibold text-gray-700 dark:text-gray-300">เปิดไปแล้ว</th>
-                            <th class="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">ผล</th>
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                        <tr style="text-align:left;color:var(--ink2);border-bottom:1px solid var(--sd);">
+                            <th style="padding:10px 12px;font-weight:600;">ID</th>
+                            <th style="padding:10px 12px;font-weight:600;">บิล</th>
+                            <th style="padding:10px 12px;font-weight:600;">ลูกค้า</th>
+                            <th style="padding:10px 12px;font-weight:600;">Platform</th>
+                            <th style="padding:10px 12px;font-weight:600;">Status (ก่อน → หลัง)</th>
+                            <th style="padding:10px 12px;font-weight:600;text-align:center;">เปิดไปแล้ว</th>
+                            <th style="padding:10px 12px;font-weight:600;">ผล</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody>
                         @foreach($results as $row)
-                            <tr class="{{ $row['ok'] ? '' : 'bg-red-50 dark:bg-red-900/10' }}">
-                                <td class="px-3 py-2 font-mono text-gray-900 dark:text-gray-100">
-                                    <a href="{{ route('admin.fortune.celtic-cross.show', $row['id']) }}" class="text-blue-600 dark:text-blue-400 hover:underline">
-                                        #{{ $row['id'] }}
-                                    </a>
-                                </td>
-                                <td class="px-3 py-2 font-mono text-xs text-gray-700 dark:text-gray-300">{{ $row['bill'] }}</td>
-                                <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ $row['user'] }}</td>
-                                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ $row['platform'] }}</td>
-                                <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-400">
-                                    <code>{{ $row['status_before'] }}</code>
-                                    @if(! empty($row['status_after']) && $row['status_after'] !== $row['status_before'])
-                                        <span class="text-gray-400">→</span>
-                                        <code class="text-green-700 dark:text-green-400">{{ $row['status_after'] }}</code>
+                            <tr style="border-bottom:1px solid var(--sd);{{ $row['ok'] ? '' : 'background:rgba(217,83,79,.06);' }}">
+                                <td style="padding:10px 12px;font-family:monospace;">
+                                    @if(Route::has('admin.fortune.celtic-cross.show'))
+                                        <a href="{{ route('admin.fortune.celtic-cross.show', $row['id']) }}"
+                                           style="color:var(--accent1);text-decoration:none;">#{{ $row['id'] }}</a>
+                                    @else
+                                        <span style="color:var(--ink);">#{{ $row['id'] }}</span>
                                     @endif
                                 </td>
-                                <td class="px-3 py-2 text-center text-gray-600 dark:text-gray-400">{{ $row['picked'] }}/10</td>
-                                <td class="px-3 py-2 {{ $row['ok'] ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400' }}">
+                                <td style="padding:10px 12px;font-family:monospace;font-size:12px;color:var(--ink2);">{{ $row['bill'] }}</td>
+                                <td style="padding:10px 12px;color:var(--ink);">{{ $row['user'] }}</td>
+                                <td style="padding:10px 12px;color:var(--ink2);">{{ $row['platform'] }}</td>
+                                <td style="padding:10px 12px;font-size:12px;color:var(--ink2);">
+                                    <code>{{ $row['status_before'] }}</code>
+                                    @if(! empty($row['status_after']) && $row['status_after'] !== $row['status_before'])
+                                        <span class="tp-muted">→</span>
+                                        <code style="color:#5aa07e;">{{ $row['status_after'] }}</code>
+                                    @endif
+                                </td>
+                                <td style="padding:10px 12px;text-align:center;color:var(--ink2);">{{ $row['picked'] }}/10</td>
+                                <td style="padding:10px 12px;color:{{ $row['ok'] ? '#5aa07e' : '#d9534f' }};">
                                     {{ $row['msg'] }}
                                 </td>
                             </tr>
@@ -197,25 +222,34 @@
             </div>
 
             @if(! empty($summary))
-                <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">{{ $summary }}</div>
+                <div class="tp-muted" style="margin-top:16px;font-size:13px;">{{ $summary }}</div>
             @endif
         </div>
     @endif
 
-    {{-- Help --}}
-    <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl">
-        <h3 class="font-semibold text-blue-900 dark:text-blue-200 mb-2">💡 การกู้ทำอะไร</h3>
-        <ul class="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
+    {{-- ───────── Help / CLI fallback ───────── --}}
+    <div class="tp-card" style="border-left:4px solid #5689b8;">
+        <div class="tp-section-h" style="display:flex;align-items:center;gap:10px;">
+            <i class="fas fa-circle-info" style="color:#5689b8;"></i>
+            <span>การกู้ทำอะไร</span>
+        </div>
+        <ul style="margin:12px 0 0;padding-left:20px;color:var(--ink2);font-size:13px;line-height:1.9;">
             <li>เคส <code>celtic_pending_payment</code> + paid → transition → CELTIC_PICKING + ส่ง prompt ใบ 1</li>
-            <li>เคส <code>new</code> + paid (slip transition fail) → 🚨 force-promote → CELTIC_PICKING + ส่ง prompt ใบ 1</li>
+            <li>เคส <code>new</code> + paid (slip transition fail) → force-promote → CELTIC_PICKING + ส่ง prompt ใบ 1</li>
             <li>เคส <code>celtic_picking</code> ค้างกลางทาง → re-push prompt ใบที่กำลังจะเปิด (ไม่ reset ไพ่ที่เปิดแล้ว)</li>
             <li>เคส <code>celtic_awaiting_question</code> → re-push prompt "ถามคำถามได้เลย"</li>
         </ul>
-        <h3 class="font-semibold text-blue-900 dark:text-blue-200 mt-3 mb-2">⚙️ CLI fallback</h3>
-        <code class="block px-3 py-2 bg-blue-100 dark:bg-blue-900/40 rounded text-xs text-blue-900 dark:text-blue-200">
+
+        <div class="tp-divider" style="margin:18px 0;"></div>
+
+        <div class="tp-section-h" style="display:flex;align-items:center;gap:10px;font-size:14px;">
+            <i class="fas fa-terminal" style="color:#5689b8;"></i>
+            <span>CLI fallback</span>
+        </div>
+        <div class="tp-inset-sm" style="margin-top:10px;padding:12px 14px;font-family:monospace;font-size:12px;color:var(--ink);line-height:1.9;">
             php artisan fortune:celtic-recover FTU-260505-J1439<br>
             php artisan fortune:celtic-recover --auto
-        </code>
+        </div>
     </div>
 
 </div>

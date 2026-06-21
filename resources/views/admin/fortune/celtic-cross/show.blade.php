@@ -1,33 +1,48 @@
-{{-- Celtic Cross Reading Detail (admin view) --}}
-@extends('layouts.admin-v3')
+{{-- Celtic Cross Reading Detail (admin view) — ธีม V4 นวลทองคำ --}}
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
+{{-- ===== หน้า "Celtic Cross — รายละเอียด reading" ธีม V4 นวลทองคำ ===== --}}
+{{-- container หลัก: เว้นระยะแนวตั้งสม่ำเสมอ --}}
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
+    {{-- ===== Header: ชื่อหน้า + ปุ่ม action ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:14px;">
         <div>
-            <a href="{{ route('admin.fortune.celtic-cross.index') }}" class="text-sm text-purple-600 hover:underline">← กลับไปหน้ารวม</a>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                🔮 Celtic Cross #{{ $reading->id }}
-            </h1>
-            <p class="text-gray-500 dark:text-gray-400 text-sm">
-                Bill: <code>{{ $reading->bill_reference ?? '-' }}</code> •
-                {{ $reading->facebook_user_name ?? '-' }} •
-                {{ $reading->created_at->format('d/m/Y H:i') }}
-            </p>
-        </div>
-        <div class="flex gap-2 flex-wrap">
-            @if($reading->celtic_summary_image_path)
-                <a href="{{ asset('storage/' . $reading->celtic_summary_image_path) }}" target="_blank"
-                   class="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm">
-                    🖼️ เปิดภาพ Spread
+            @if (Route::has('admin.fortune.celtic-cross.index'))
+                <a href="{{ route('admin.fortune.celtic-cross.index') }}"
+                   style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--accent1); text-decoration:none;">
+                    <i class="fas fa-arrow-left"></i> กลับไปหน้ารวม
                 </a>
             @endif
-            @if($reading->is_paid)
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px; margin-top:8px;">
+                หลังบ้าน · ระบบดูดวง · Celtic Cross 99฿
+            </div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">
+                🔮 Celtic Cross #{{ $reading->id }}
+            </h1>
+            <p class="tp-muted" style="margin:6px 0 0; font-size:13px; line-height:1.55;">
+                Bill:
+                <code style="padding:1px 7px; border-radius:6px; background:var(--inset-sm); box-shadow:var(--inset-sm); color:var(--ink);">{{ $reading->bill_reference ?? '-' }}</code>
+                &nbsp;•&nbsp; {{ $reading->facebook_user_name ?? '-' }}
+                &nbsp;•&nbsp; {{ $reading->created_at->format('d/m/Y H:i') }}
+            </p>
+        </div>
+
+        {{-- ===== กลุ่มปุ่ม action ด้านขวา ===== --}}
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+            @if ($reading->celtic_summary_image_path)
+                <a href="{{ asset('storage/' . $reading->celtic_summary_image_path) }}" target="_blank"
+                   class="tp-btn tp-btn-sm">
+                    <i class="fas fa-image"></i> เปิดภาพ Spread
+                </a>
+            @endif
+
+            @if ($reading->is_paid)
                 {{-- ⏰ (2026-05-22) เพิ่มเวลา Pro Session — admin ให้ลูกค้าคุยต่อได้นานขึ้น --}}
-                @if($reading->getCelticPickedCount() >= 10)
+                @if ($reading->getCelticPickedCount() >= 10)
                     @php
                         // คำนวณเวลาคงเหลือของ Pro Session ปัจจุบัน
                         $_proActive = (bool) $reading->getConversationState('pro_session_active', false);
@@ -44,40 +59,39 @@
                         }
                         $_proLive = $_proActive && $_proRemainingMin > 0;
                     @endphp
-                    <div x-data="{ open: false, minutes: 30, mode: 'add', notify: true, custom: false }" class="inline-block">
-                        <button @click="open = true" type="button"
-                                class="px-4 py-2 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-200 dark:hover:bg-cyan-900/50 rounded-lg text-sm font-semibold">
-                            ⏰ เพิ่มเวลา
-                            @if($_proLive)
-                                <span class="ml-1 text-xs opacity-75">(เหลือ {{ $_proRemainingMin }}m)</span>
+                    <div x-data="{ open: false, minutes: 30, mode: 'add', notify: true, custom: false }" style="display:inline-block;">
+                        <button @click="open = true" type="button" class="tp-btn tp-btn-sm"
+                                style="color:#5689b8;">
+                            <i class="fas fa-clock"></i> เพิ่มเวลา
+                            @if ($_proLive)
+                                <span style="margin-left:2px; font-size:11px; opacity:.75;">(เหลือ {{ $_proRemainingMin }}m)</span>
                             @else
-                                <span class="ml-1 text-xs opacity-75">(session ปิด)</span>
+                                <span style="margin-left:2px; font-size:11px; opacity:.75;">(session ปิด)</span>
                             @endif
                         </button>
 
-                        {{-- Modal --}}
+                        {{-- Modal: เพิ่มเวลา --}}
                         <div x-show="open" x-cloak
-                             class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                             style="position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:50; display:flex; align-items:center; justify-content:center; padding:16px;"
                              @click.self="open = false"
                              @keydown.escape.window="open = false">
-                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                                    ⏰ เพิ่มเวลาคุยกับแม่หมอ
+                            <div class="tp-card" style="max-width:440px; width:100%; padding:24px;">
+                                <h3 class="tp-section-h" style="font-size:17px; font-weight:800; margin:0 0 8px;">
+                                    <i class="fas fa-clock" style="color:#5689b8;"></i> เพิ่มเวลาคุยกับแม่หมอ
                                 </h3>
 
                                 {{-- สถานะ session ปัจจุบัน --}}
-                                <div class="mb-4 p-3 rounded-lg
-                                    @if($_proLive) bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800
-                                    @else bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 @endif">
-                                    @if($_proLive)
-                                        <p class="text-sm text-emerald-700 dark:text-emerald-300">
+                                <div class="tp-inset" style="padding:12px; border-radius:12px; margin-bottom:16px;
+                                    @if ($_proLive) box-shadow:inset 0 0 0 1px #5aa07e; @endif">
+                                    @if ($_proLive)
+                                        <p style="font-size:13px; color:#5aa07e; margin:0; line-height:1.5;">
                                             🟢 <strong>Session กำลังใช้งาน</strong> — เหลือ <strong>{{ $_proRemainingMin }} นาที</strong>
-                                            <br><span class="text-xs opacity-75">window {{ $_proWindowMin }}m | started {{ \Carbon\Carbon::parse($_proStartedAt)->format('H:i:s') }}</span>
+                                            <br><span style="font-size:11px; opacity:.75; color:var(--ink2);">window {{ $_proWindowMin }}m | started {{ \Carbon\Carbon::parse($_proStartedAt)->format('H:i:s') }}</span>
                                         </p>
                                     @else
-                                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                                        <p style="font-size:13px; color:var(--ink); margin:0; line-height:1.5;">
                                             ⚫ <strong>Session ปิด/หมดเวลา</strong> — กดเพิ่มเวลาเพื่อ <strong>เปิด session ใหม่</strong>
-                                            <br><span class="text-xs opacity-75">status: {{ $reading->conversation_status }}</span>
+                                            <br><span style="font-size:11px; opacity:.75; color:var(--ink2);">status: {{ $reading->conversation_status }}</span>
                                         </p>
                                     @endif
                                 </div>
@@ -86,73 +100,74 @@
                                     @csrf
 
                                     {{-- Preset minutes --}}
-                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <label style="display:block; font-size:12px; font-weight:700; color:var(--ink2); margin-bottom:8px;">
                                         จำนวนนาทีที่จะเพิ่ม
                                     </label>
-                                    <div class="grid grid-cols-4 gap-2 mb-2">
-                                        @foreach([10, 30, 60, 120] as $preset)
+                                    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:8px;">
+                                        @foreach ([10, 30, 60, 120] as $preset)
                                             <button type="button" @click="minutes = {{ $preset }}; custom = false"
-                                                    :class="!custom && minutes === {{ $preset }} ? 'bg-cyan-600 text-white border-cyan-600' : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-cyan-400'"
-                                                    class="px-3 py-2 border rounded-lg text-sm font-semibold transition">
+                                                    class="tp-btn tp-btn-sm"
+                                                    :style="!custom && minutes === {{ $preset }} ? 'background:linear-gradient(135deg,var(--accent1),var(--accent2)); color:#fff;' : ''"
+                                                    style="justify-content:center;">
                                                 +{{ $preset }}m
                                             </button>
                                         @endforeach
                                     </div>
-                                    <div class="flex items-center gap-2 mb-4">
-                                        <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
-                                            <input type="checkbox" x-model="custom" class="rounded">
+                                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink2); cursor:pointer;">
+                                            <input type="checkbox" x-model="custom">
                                             <span>กำหนดเอง:</span>
                                         </label>
-                                        <input type="number" name="minutes" x-model.number="minutes"
-                                               :disabled="!custom" min="1" max="300" required
-                                               class="flex-1 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none disabled:opacity-50">
-                                        <span class="text-xs text-gray-500">นาที (1-300)</span>
+                                        <div class="tp-well tp-input" style="padding:0; flex:1;">
+                                            <input type="number" name="minutes" x-model.number="minutes"
+                                                   :disabled="!custom" min="1" max="300" required
+                                                   style="width:100%; background:transparent; border:0; outline:0; padding:9px 12px; color:var(--ink); font-size:14px;">
+                                        </div>
+                                        <span style="font-size:11px; color:var(--ink2);">นาที (1-300)</span>
                                     </div>
 
                                     {{-- Mode --}}
-                                    @if($_proLive)
-                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    @if ($_proLive)
+                                        <label style="display:block; font-size:12px; font-weight:700; color:var(--ink2); margin-bottom:8px;">
                                             โหมด
                                         </label>
-                                        <div class="space-y-1 mb-4">
-                                            <label class="flex items-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
-                                                <input type="radio" name="mode" value="add" x-model="mode" class="mt-0.5">
-                                                <div class="text-sm">
-                                                    <strong class="text-gray-900 dark:text-white">เพิ่มต่อเวลาเดิม</strong>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400">เวลาเหลือ {{ $_proRemainingMin }}m → <span x-text="{{ $_proRemainingMin }} + minutes"></span>m</p>
+                                        <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:16px;">
+                                            <label class="tp-inset-sm" style="display:flex; align-items:flex-start; gap:8px; padding:8px; border-radius:10px; cursor:pointer;">
+                                                <input type="radio" name="mode" value="add" x-model="mode" style="margin-top:2px;">
+                                                <div style="font-size:13px;">
+                                                    <strong style="color:var(--ink);">เพิ่มต่อเวลาเดิม</strong>
+                                                    <p style="font-size:11px; color:var(--ink2); margin:2px 0 0;">เวลาเหลือ {{ $_proRemainingMin }}m → <span x-text="{{ $_proRemainingMin }} + minutes"></span>m</p>
                                                 </div>
                                             </label>
-                                            <label class="flex items-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
-                                                <input type="radio" name="mode" value="reset" x-model="mode" class="mt-0.5">
-                                                <div class="text-sm">
-                                                    <strong class="text-gray-900 dark:text-white">เริ่มเวลาใหม่</strong>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400">รีเซ็ตเวลาเหลือเป็น <span x-text="minutes"></span>m (started=now)</p>
+                                            <label class="tp-inset-sm" style="display:flex; align-items:flex-start; gap:8px; padding:8px; border-radius:10px; cursor:pointer;">
+                                                <input type="radio" name="mode" value="reset" x-model="mode" style="margin-top:2px;">
+                                                <div style="font-size:13px;">
+                                                    <strong style="color:var(--ink);">เริ่มเวลาใหม่</strong>
+                                                    <p style="font-size:11px; color:var(--ink2); margin:2px 0 0;">รีเซ็ตเวลาเหลือเป็น <span x-text="minutes"></span>m (started=now)</p>
                                                 </div>
                                             </label>
                                         </div>
                                     @else
                                         <input type="hidden" name="mode" value="add">
-                                        <div class="mb-4 p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded text-xs text-cyan-700 dark:text-cyan-300">
+                                        <div class="tp-inset-sm" style="margin-bottom:16px; padding:9px; border-radius:10px; font-size:12px; color:#5689b8;">
                                             🔄 จะ <strong>เปิด Pro Session ใหม่</strong> ให้ลูกค้าคุยกับแม่หมอ <span x-text="minutes"></span> นาที
                                         </div>
                                     @endif
 
                                     {{-- Notify --}}
-                                    <label class="flex items-center gap-2 mb-5 cursor-pointer">
-                                        <input type="checkbox" name="notify" value="1" x-model="notify" class="rounded">
-                                        <span class="text-sm text-gray-700 dark:text-gray-300">
+                                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:20px; cursor:pointer;">
+                                        <input type="checkbox" name="notify" value="1" x-model="notify">
+                                        <span style="font-size:13px; color:var(--ink2);">
                                             📤 แจ้งลูกค้าทันที (แม่หมอจะส่งข้อความ "ได้เวลาเพิ่ม")
                                         </span>
                                     </label>
 
-                                    <div class="flex gap-2">
-                                        <button @click="open = false" type="button"
-                                                class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600">
+                                    <div style="display:flex; gap:8px;">
+                                        <button @click="open = false" type="button" class="tp-btn" style="flex:1; justify-content:center;">
                                             ยกเลิก
                                         </button>
-                                        <button type="submit"
-                                                class="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold">
-                                            ⏰ ยืนยัน +<span x-text="minutes"></span>m
+                                        <button type="submit" class="tp-btn tp-btn-primary" style="flex:1; justify-content:center;">
+                                            <i class="fas fa-clock"></i> ยืนยัน +<span x-text="minutes"></span>m
                                         </button>
                                     </div>
                                 </form>
@@ -162,15 +177,14 @@
                 @endif
 
                 {{-- 🔄 (2026-05-16) Restore active chat — เปิด Pro Session กลับให้ลูกค้าคุยต่อ --}}
-                @if($reading->getCelticPickedCount() >= 10)
+                @if ($reading->getCelticPickedCount() >= 10)
                     <form action="{{ route('admin.fortune.celtic-cross.restore', $reading) }}" method="POST"
                           onsubmit="return confirm('ยืนยันคืนสถานะ &quot;กำลังดูอยู่&quot; ให้ #{{ $reading->id }}?\n\nลูกค้าจะกลับมาคุยกับแม่หมอต่อได้ตามเวลาที่เหลือ\n(ถ้าหมดเวลาแล้ว ระบบจะ reset window ใหม่)');"
-                          class="inline">
+                          style="display:inline;">
                         @csrf
                         <input type="hidden" name="notify" value="1">
-                        <button type="submit"
-                                class="px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 rounded-lg text-sm font-semibold">
-                            🔄 คืนสถานะกำลังดู + แจ้งลูกค้า
+                        <button type="submit" class="tp-btn tp-btn-sm" style="color:#5aa07e;">
+                            <i class="fas fa-rotate"></i> คืนสถานะกำลังดู + แจ้งลูกค้า
                         </button>
                     </form>
                 @endif
@@ -178,56 +192,55 @@
                 {{-- 🔄 (2026-05-03) Admin reset — ใช้เมื่อ flow ไม่สมบูรณ์ --}}
                 <form action="{{ route('admin.fortune.celtic-cross.reset', $reading) }}" method="POST"
                       onsubmit="return confirm('ยืนยัน reset reading #{{ $reading->id }}?\n\nจะล้างไพ่ + Q&A ทั้งหมด แล้วให้ลูกค้าเริ่มเปิดไพ่ใหม่ (ไม่ต้องจ่ายซ้ำ)');"
-                      class="inline">
+                      style="display:inline;">
                     @csrf
                     <input type="hidden" name="notify" value="1">
-                    <button type="submit"
-                            class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 rounded-lg text-sm font-semibold">
-                        🔄 Reset + แจ้งลูกค้า
+                    <button type="submit" class="tp-btn tp-btn-sm" style="color:#e0a52e;">
+                        <i class="fas fa-rotate"></i> Reset + แจ้งลูกค้า
                     </button>
                 </form>
             @else
                 {{-- 🚀 (2026-05-08) Force Approve — โอนยอดไม่ตรง → admin มาร์คจ่าย + push เริ่มเปิดไพ่ --}}
-                <div x-data="{ open: false, amount: '{{ $reading->amount_paid ?? 99 }}' }" class="inline-block">
-                    <button @click="open = true" type="button"
-                            class="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 rounded-lg text-sm font-semibold">
-                        🚀 Force Approve (โอนไม่ตรงยอด)
+                <div x-data="{ open: false, amount: '{{ $reading->amount_paid ?? 99 }}' }" style="display:inline-block;">
+                    <button @click="open = true" type="button" class="tp-btn tp-btn-sm" style="color:#5aa07e;">
+                        <i class="fas fa-rocket"></i> Force Approve (โอนไม่ตรงยอด)
                     </button>
 
-                    {{-- Modal --}}
+                    {{-- Modal: Force Approve --}}
                     <div x-show="open" x-cloak
-                         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                         style="position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:50; display:flex; align-items:center; justify-content:center; padding:16px;"
                          @click.self="open = false">
-                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                                🚀 Force Approve บิล {{ $reading->bill_reference ?? '#' . $reading->id }}
+                        <div class="tp-card" style="max-width:440px; width:100%; padding:24px;">
+                            <h3 class="tp-section-h" style="font-size:17px; font-weight:800; margin:0 0 8px;">
+                                <i class="fas fa-rocket" style="color:#5aa07e;"></i> Force Approve บิล {{ $reading->bill_reference ?? '#' . $reading->id }}
                             </h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            <p class="tp-muted" style="font-size:13px; margin:0 0 16px; line-height:1.55;">
                                 ใช้กรณีลูกค้าโอนยอดไม่ตรง (เช่น 99 แทน 99.37) → SMS app จับคู่ไม่ได้<br>
                                 ระบบจะ <strong>มาร์คบิลจ่ายแล้ว</strong> + <strong>ส่งให้ลูกค้าเริ่มเปิดไพ่ทันที</strong>
                             </p>
 
                             <form action="{{ route('admin.fortune.celtic-cross.force-approve', $reading) }}" method="POST">
                                 @csrf
-                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                <label style="display:block; font-size:12px; font-weight:700; color:var(--ink2); margin-bottom:6px;">
                                     จำนวนเงินที่ลูกค้าโอนจริง (บาท)
                                 </label>
-                                <input type="number" name="actual_amount" x-model="amount"
-                                       step="0.01" min="0.01" max="9999" required
-                                       class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:outline-none">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <div class="tp-well tp-input" style="padding:0;">
+                                    <input type="number" name="actual_amount" x-model="amount"
+                                           step="0.01" min="0.01" max="9999" required
+                                           style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px;">
+                                </div>
+                                <p class="tp-muted" style="font-size:11px; margin:6px 0 0;">
                                     ยอดบิลที่ตั้งไว้: ฿{{ number_format($reading->amount_paid ?? 99, 2) }}
                                 </p>
 
-                                <div class="flex gap-2 mt-5">
-                                    <button @click="open = false" type="button"
-                                            class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600">
+                                <div style="display:flex; gap:8px; margin-top:20px;">
+                                    <button @click="open = false" type="button" class="tp-btn" style="flex:1; justify-content:center;">
                                         ยกเลิก
                                     </button>
                                     <button type="submit"
                                             onclick="return confirm('ยืนยัน? ระบบจะมาร์คบิลจ่ายแล้ว + ส่งให้ลูกค้าเริ่มเปิดไพ่ — ย้อนกลับไม่ได้');"
-                                            class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold">
-                                        🚀 ยืนยัน Force Approve
+                                            class="tp-btn tp-btn-primary" style="flex:1; justify-content:center;">
+                                        <i class="fas fa-rocket"></i> ยืนยัน Force Approve
                                     </button>
                                 </div>
                             </form>
@@ -236,15 +249,14 @@
                 </div>
 
                 {{-- 🗑️ (2026-05-04) Admin cancel — ลบบิลที่ขัดกัน (pending payment ค้าง) — ปลอดภัยถ้ายังไม่จ่าย --}}
-                @if((int) ($reading->celtic_questions_used ?? 0) === 0)
+                @if ((int) ($reading->celtic_questions_used ?? 0) === 0)
                     <form action="{{ route('admin.fortune.celtic-cross.cancel', $reading) }}" method="POST"
                           onsubmit="return confirm('ยืนยันยกเลิกบิล {{ $reading->bill_reference ?? '#' . $reading->id }}?\n\nจะปลด UPA + ปิด conversation (ปลอดภัยเพราะยังไม่จ่าย)');"
-                          class="inline">
+                          style="display:inline;">
                         @csrf
                         <input type="hidden" name="notify" value="1">
-                        <button type="submit"
-                                class="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg text-sm font-semibold">
-                            🗑️ ยกเลิกบิล + แจ้งลูกค้า
+                        <button type="submit" class="tp-btn tp-btn-sm" style="color:#d9534f;">
+                            <i class="fas fa-trash"></i> ยกเลิกบิล + แจ้งลูกค้า
                         </button>
                     </form>
                 @endif
@@ -252,247 +264,179 @@
         </div>
     </div>
 
-    {{-- Flash messages --}}
-    @if(session('success'))
-        <div class="bg-green-100 dark:bg-green-900/30 border-l-4 border-green-500 text-green-700 dark:text-green-300 p-4 mb-6 rounded-r-lg">
-            {{ session('success') }}
+    {{-- ===== KPI สถานะ reading ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
+        {{-- สถานะ --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="font-size:12px; color:var(--ink2);">สถานะ</div>
+            <div class="tp-num" style="font-size:18px; font-weight:800; margin-top:4px;">{{ $reading->conversation_status }}</div>
         </div>
-    @endif
-    @if(session('error'))
-        <div class="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 mb-6 rounded-r-lg">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    {{-- Status Card --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
-            <p class="text-xs text-gray-500 dark:text-gray-400">สถานะ</p>
-            <p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ $reading->conversation_status }}</p>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
-            <p class="text-xs text-gray-500 dark:text-gray-400">ค่าครู (รับจริง)</p>
+        {{-- ค่าครู --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="font-size:12px; color:var(--ink2);">ค่าครู (รับจริง)</div>
             @if ($reading->is_paid)
                 @php $recv = $reading->amount_received; $billed = $reading->amount_paid; @endphp
-                <p class="text-base font-bold text-green-600 mt-1">
+                <div class="tp-num" style="font-size:18px; font-weight:800; margin-top:4px; color:#5aa07e;">
                     ฿{{ number_format((float) ($recv ?? $billed), 2) }} ✓
-                </p>
+                </div>
                 @if ($recv !== null && abs((float) $recv - (float) $billed) >= 0.01)
-                    <p class="text-[10px] text-gray-400 mt-0.5">
+                    <div style="font-size:10px; color:var(--ink2); margin-top:2px;">
                         ตั้งบิล ฿{{ number_format((float) $billed, 2) }}
                         @if ((float) $recv > (float) $billed)
-                            <span class="text-amber-500">(เกิน ฿{{ number_format((float) $recv - (float) $billed, 2) }})</span>
+                            <span style="color:#e0a52e;">(เกิน ฿{{ number_format((float) $recv - (float) $billed, 2) }})</span>
                         @endif
-                    </p>
+                    </div>
                 @endif
             @else
-                <p class="text-base font-bold text-gray-400 mt-1">รอ</p>
+                <div class="tp-num" style="font-size:18px; font-weight:800; margin-top:4px; color:var(--ink2);">รอ</div>
             @endif
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
-            <p class="text-xs text-gray-500 dark:text-gray-400">คำถามใช้ไป</p>
-            <p class="text-base font-bold text-purple-600 mt-1">{{ $reading->celtic_questions_used }}/{{ $maxQuestions > 0 ? $maxQuestions : '∞' }}</p>
+        {{-- คำถามใช้ไป --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="font-size:12px; color:var(--ink2);">คำถามใช้ไป</div>
+            <div class="tp-num" style="font-size:18px; font-weight:800; margin-top:4px; color:var(--accent1);">{{ $reading->celtic_questions_used }}/{{ $maxQuestions > 0 ? $maxQuestions : '∞' }}</div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
-            <p class="text-xs text-gray-500 dark:text-gray-400">Q1 ตอบเมื่อ</p>
-            <p class="text-base font-bold text-gray-900 dark:text-white mt-1 text-xs">
+        {{-- Q1 ตอบเมื่อ --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="font-size:12px; color:var(--ink2);">Q1 ตอบเมื่อ</div>
+            <div class="tp-num" style="font-size:15px; font-weight:800; margin-top:4px;">
                 {{ $reading->celtic_first_answered_at?->format('d/m H:i') ?? '—' }}
-            </p>
+            </div>
         </div>
     </div>
 
-    {{-- 🤖 (2026-05-17 Phase 2) Admin Ask AI — AJAX sync (admin เห็นผลใน UI ทันที) --}}
-    @if($reading->is_paid && $reading->getCelticPickedCount() >= 10)
+    {{-- ===== 🤖 (2026-05-17 Phase 2) Admin Ask AI — AJAX sync (admin เห็นผลใน UI ทันที) ===== --}}
+    @if ($reading->is_paid && $reading->getCelticPickedCount() >= 10)
         @php
             $askAiUrl = route('admin.fortune.celtic-cross.ask-ai', $reading);
             $debugToolsUrl = route('admin.fortune.debug-tools.index');
             $totalQuestionsAsked = $reading->celticQuestions()->count();
             $customerCanStillAsk = $reading->canAskMoreCeltic();
         @endphp
-        <div x-data="adminAskAi()" class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl shadow-lg p-6 mb-6 border border-indigo-200 dark:border-indigo-800">
-            <div class="flex items-start justify-between mb-4 flex-wrap gap-2">
+        <div x-data="adminAskAi()" class="tp-card" style="padding:24px;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
                 <div>
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <h2 class="tp-section-h" style="font-size:18px; font-weight:800; display:flex; align-items:center; gap:9px; margin:0;">
                         🤖 Admin Ask AI
-                        <span class="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full font-normal">
+                        <span class="tp-pill tp-pill-soft" style="font-size:11px; font-weight:500;">
                             sync — เห็นผลใน UI ทันที
                         </span>
                     </h2>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <p class="tp-muted" style="font-size:13px; margin:6px 0 0;">
                         แอดมินพิมพ์คำถาม → AI ทำนาย (30-60s) → ส่งให้ลูกค้า + แสดงผลในหน้านี้
                     </p>
                 </div>
-                <div class="text-right text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                    <div>📝 ถามมาแล้ว <strong class="text-indigo-600 dark:text-indigo-400">{{ $totalQuestionsAsked }}</strong> ครั้ง</div>
-                    @if(! $customerCanStillAsk)
-                        <div class="text-amber-600 dark:text-amber-400 font-semibold">⚠️ ลูกค้าใช้ quota หมด/เลยเวลา (admin ใช้ได้)</div>
+                <div style="text-align:right; font-size:12px; color:var(--ink2); display:flex; flex-direction:column; gap:4px;">
+                    <div>📝 ถามมาแล้ว <strong style="color:var(--accent1);">{{ $totalQuestionsAsked }}</strong> ครั้ง</div>
+                    @if (! $customerCanStillAsk)
+                        <div style="color:#e0a52e; font-weight:700;">⚠️ ลูกค้าใช้ quota หมด/เลยเวลา (admin ใช้ได้)</div>
                     @endif
-                    <a href="{{ $debugToolsUrl }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">🐛 เปิด Debug Tools →</a>
+                    <a href="{{ $debugToolsUrl }}" target="_blank" style="color:var(--accent1); text-decoration:none;">🐛 เปิด Debug Tools →</a>
                 </div>
             </div>
 
-            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <label style="display:block; font-size:12px; font-weight:700; color:var(--ink2); margin-bottom:8px;">
                 📝 คำถามที่จะส่งให้ AI ทำนาย (สูงสุด 1000 ตัวอักษร)
             </label>
-            <textarea x-model="question"
-                      :disabled="running"
-                      rows="3"
-                      maxlength="1000"
-                      placeholder="เช่น: ความรักของฉันในเดือนนี้จะเป็นอย่างไร?"
-                      class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50 resize-none"></textarea>
+            <div class="tp-well tp-input" style="padding:0;">
+                <textarea x-model="question"
+                          :disabled="running"
+                          rows="3"
+                          maxlength="1000"
+                          placeholder="เช่น: ความรักของฉันในเดือนนี้จะเป็นอย่างไร?"
+                          style="width:100%; background:transparent; border:0; outline:0; padding:12px 14px; color:var(--ink); font-size:14px; resize:none; font-family:inherit;"></textarea>
+            </div>
 
-            <div class="flex items-center justify-between mt-2">
-                <span class="text-xs text-gray-500 dark:text-gray-400">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; flex-wrap:wrap; gap:10px;">
+                <span style="font-size:12px; color:var(--ink2);">
                     <span x-text="question.length">0</span>/1000 ตัวอักษร
                 </span>
                 <button @click="run()" type="button"
                         :disabled="running || question.trim().length < 3"
-                        class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transition-all">
+                        class="tp-btn tp-btn-primary">
                     <span x-show="!running">🚀 ส่งให้ AI ทำนาย + แจ้งลูกค้า</span>
                     <span x-show="running" x-cloak>⏳ AI กำลังทำนาย... <span x-text="elapsedDisplay"></span></span>
                 </button>
             </div>
 
-            <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-3 flex items-start gap-1">
+            <p style="font-size:12px; color:#5aa07e; margin:14px 0 0; display:flex; align-items:flex-start; gap:6px; line-height:1.5;">
                 <span>✨</span>
                 <span>Admin proxy — <strong>ไม่ตัดโควต้าลูกค้า</strong> + AI ใช้บริบทไพ่ 10 ใบ + sync call (admin รอ 30-60s แต่เห็นผลทันที)</span>
             </p>
 
             {{-- Result panel --}}
-            <div x-show="result" x-cloak class="mt-5">
-                <div :class="result?.success ? 'bg-green-50 dark:bg-green-900/20 border-green-300' : 'bg-red-50 dark:bg-red-900/20 border-red-300'"
-                     class="border-l-4 p-4 rounded-r-lg">
-                    <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
-                        <strong class="text-sm">
-                            <span x-show="result?.success">✅ AI ทำนายสำเร็จ</span>
-                            <span x-show="result?.success === false">❌ ล้มเหลว</span>
+            <div x-show="result" x-cloak style="margin-top:20px;">
+                <div class="tp-inset"
+                     :style="result?.success ? 'box-shadow:inset 0 0 0 1px #5aa07e, var(--inset);' : 'box-shadow:inset 0 0 0 1px #d9534f, var(--inset);'"
+                     style="padding:16px; border-radius:12px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+                        <strong style="font-size:13px;">
+                            <span x-show="result?.success" style="color:#5aa07e;">✅ AI ทำนายสำเร็จ</span>
+                            <span x-show="result?.success === false" style="color:#d9534f;">❌ ล้มเหลว</span>
                         </strong>
-                        <div class="text-xs text-gray-600 dark:text-gray-400 flex flex-wrap gap-3">
+                        <div style="font-size:11px; color:var(--ink2); display:flex; flex-wrap:wrap; gap:12px;">
                             <span x-show="result?.sequence">Q<span x-text="result?.sequence"></span></span>
                             <span x-show="result?.ai_provider"><span x-text="result?.ai_provider"></span> / <span x-text="result?.ai_model"></span></span>
                             <span x-show="result?.tokens_used"><span x-text="result?.tokens_used"></span> tokens</span>
                             <span x-show="result?.elapsed_ms"><span x-text="result?.elapsed_ms"></span>ms</span>
-                            <span :class="result?.pushed ? 'text-green-600' : 'text-red-600'">
+                            <span :style="result?.pushed ? 'color:#5aa07e;' : 'color:#d9534f;'">
                                 <span x-text="result?.pushed ? '📤 push ✓' : '📤 push ✗'"></span>
                             </span>
                         </div>
                     </div>
 
-                    <div x-show="result?.message" class="text-sm text-red-700 dark:text-red-300 mb-2">
+                    <div x-show="result?.message" style="font-size:13px; color:#d9534f; margin-bottom:8px;">
                         <strong>Error:</strong> <span x-text="result?.message"></span>
                     </div>
 
-                    <div x-show="result?.response_full" class="mt-2">
-                        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">💬 คำตอบที่ส่งให้ลูกค้า:</p>
-                        <pre class="text-xs bg-white dark:bg-gray-900 p-3 rounded whitespace-pre-wrap" x-text="result?.response_full"></pre>
+                    <div x-show="result?.response_full" style="margin-top:8px;">
+                        <p style="font-size:11px; font-weight:700; color:var(--ink2); margin:0 0 4px;">💬 คำตอบที่ส่งให้ลูกค้า:</p>
+                        <pre class="tp-well" style="font-size:12px; padding:12px; border-radius:10px; white-space:pre-wrap; color:var(--ink); margin:0; font-family:inherit;" x-text="result?.response_full"></pre>
                     </div>
                 </div>
             </div>
         </div>
-
-        <script>
-        function adminAskAi() {
-            return {
-                question: '',
-                running: false,
-                result: null,
-                startedAt: null,
-                elapsedDisplay: '0s',
-                timerInterval: null,
-
-                async run() {
-                    if (this.running || this.question.trim().length < 3) return;
-                    if (!confirm('ยืนยันส่งคำถามให้ AI ทำนาย?\n\nคำถาม: ' + this.question.substring(0, 200) +
-                                 '\n\n✓ ไม่ตัดโควต้าลูกค้า\n✓ AI สำเร็จ → ส่งให้ลูกค้าทาง LINE/FB อัตโนมัติ\n✓ รอ 30-60 วินาที')) {
-                        return;
-                    }
-
-                    this.running = true;
-                    this.result = null;
-                    this.startedAt = Date.now();
-                    this.elapsedDisplay = '0s';
-                    this.timerInterval = setInterval(() => {
-                        const s = Math.floor((Date.now() - this.startedAt) / 1000);
-                        this.elapsedDisplay = s + 's';
-                    }, 1000);
-
-                    try {
-                        const res = await fetch('{{ $askAiUrl }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json',
-                            },
-                            body: JSON.stringify({ question: this.question }),
-                        });
-
-                        if (!res.ok) {
-                            const errBody = await res.json().catch(() => ({ message: 'HTTP ' + res.status }));
-                            this.result = {
-                                success: false,
-                                message: errBody.message || ('HTTP ' + res.status),
-                            };
-                        } else {
-                            this.result = await res.json();
-                            if (this.result.success) {
-                                this.question = '';
-                            }
-                        }
-                    } catch (e) {
-                        this.result = {
-                            success: false,
-                            message: 'Network error: ' + e.message,
-                        };
-                    } finally {
-                        this.running = false;
-                        if (this.timerInterval) {
-                            clearInterval(this.timerInterval);
-                            this.timerInterval = null;
-                        }
-                    }
-                },
-            };
-        }
-        </script>
     @endif
 
-    {{-- Spread Image --}}
-    @if($reading->celtic_summary_image_path)
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">🖼️ Celtic Cross Spread</h2>
+    {{-- ===== Spread Image ===== --}}
+    @if ($reading->celtic_summary_image_path)
+        <div class="tp-card" style="padding:24px;">
+            <h2 class="tp-section-h" style="font-size:18px; font-weight:800; margin:0 0 16px;">🖼️ Celtic Cross Spread</h2>
             <img src="{{ asset('storage/' . $reading->celtic_summary_image_path) }}"
                  alt="Celtic Cross Spread"
-                 class="max-w-full mx-auto rounded-lg shadow">
+                 style="max-width:100%; margin:0 auto; display:block; border-radius:12px; box-shadow:var(--raise);">
         </div>
     @endif
 
-    {{-- 10 Cards --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">🃏 ไพ่ทั้ง 10 ใบ</h2>
+    {{-- ===== ไพ่ทั้ง 10 ใบ ===== --}}
+    <div class="tp-card" style="padding:24px;">
+        <h2 class="tp-section-h" style="font-size:18px; font-weight:800; margin:0 0 16px;">🃏 ไพ่ทั้ง 10 ใบ</h2>
 
-        @if(empty($cards))
-            <p class="text-center text-gray-500 py-4">ยังไม่ได้เลือกไพ่</p>
+        @if (empty($cards))
+            <div style="text-align:center; padding:36px 0; color:var(--ink2);">
+                <i class="fas fa-inbox" style="font-size:34px; opacity:.5;"></i>
+                <p style="margin:10px 0 0; font-size:14px;">ยังไม่ได้เลือกไพ่</p>
+            </div>
         @else
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                @for($pos = 1; $pos <= 10; $pos++)
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;">
+                @for ($pos = 1; $pos <= 10; $pos++)
                     @php $card = $cards[$pos] ?? null; @endphp
-                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-900/50">
-                        <p class="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-1">
+                    <div class="tp-inset" style="padding:12px; border-radius:12px;">
+                        <p style="font-size:11px; color:var(--accent1); font-weight:700; margin:0 0 6px;">
                             [{{ $pos }}] {{ $positions[$pos]['name'] ?? '?' }}
                         </p>
-                        @if($card)
-                            @if(!empty($card['image_url']))
+                        @if ($card)
+                            @if (! empty($card['image_url']))
                                 <img src="{{ $card['image_url'] }}" alt="{{ $card['card_name_th'] ?? '' }}"
-                                     class="w-full rounded mb-2 {{ !empty($card['is_reversed']) ? 'rotate-180' : '' }}">
+                                     style="width:100%; border-radius:8px; margin-bottom:8px; {{ ! empty($card['is_reversed']) ? 'transform:rotate(180deg);' : '' }}">
                             @endif
-                            <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $card['card_name_th'] ?? '?' }}</p>
-                            <p class="text-xs text-gray-500">{{ $card['card_name_en'] ?? '' }}</p>
-                            <p class="text-xs {{ !empty($card['is_reversed']) ? 'text-red-600' : 'text-green-600' }} mt-1">
-                                {{ !empty($card['is_reversed']) ? '⤵ กลับหัว' : '↑ ตั้งตรง' }}
+                            <p style="font-size:13px; font-weight:700; color:var(--ink); margin:0;">{{ $card['card_name_th'] ?? '?' }}</p>
+                            <p style="font-size:11px; color:var(--ink2); margin:2px 0 0;">{{ $card['card_name_en'] ?? '' }}</p>
+                            <p style="font-size:11px; margin:4px 0 0; color:{{ ! empty($card['is_reversed']) ? '#d9534f' : '#5aa07e' }};">
+                                {{ ! empty($card['is_reversed']) ? '⤵ กลับหัว' : '↑ ตั้งตรง' }}
                             </p>
                         @else
-                            <p class="text-xs text-gray-400 italic mt-2">ยังไม่เลือก</p>
+                            <p style="font-size:11px; color:var(--ink2); font-style:italic; margin:8px 0 0;">ยังไม่เลือก</p>
                         @endif
                     </div>
                 @endfor
@@ -500,40 +444,114 @@
         @endif
     </div>
 
-    {{-- Q&A History --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">💬 คำถาม & คำตอบ</h2>
+    {{-- ===== คำถาม & คำตอบ ===== --}}
+    <div class="tp-card" style="padding:24px;">
+        <h2 class="tp-section-h" style="font-size:18px; font-weight:800; margin:0 0 16px;">💬 คำถาม &amp; คำตอบ</h2>
 
-        @if($reading->celticQuestions->isEmpty())
-            <p class="text-center text-gray-500 py-4">ยังไม่มีคำถาม</p>
+        @if ($reading->celticQuestions->isEmpty())
+            <div style="text-align:center; padding:36px 0; color:var(--ink2);">
+                <i class="fas fa-inbox" style="font-size:34px; opacity:.5;"></i>
+                <p style="margin:10px 0 0; font-size:14px;">ยังไม่มีคำถาม</p>
+            </div>
         @else
-            @foreach($reading->celticQuestions as $q)
-                <div class="border-l-4 {{ $q->sequence === 1 ? 'border-purple-500' : 'border-blue-400' }} bg-gray-50 dark:bg-gray-900/50 p-4 mb-4 rounded-r-lg">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs font-semibold">
-                            Q{{ $q->sequence }} {{ $q->sequence === 1 ? '(Main)' : '(Follow-up)' }}
-                        </span>
-                        <span class="text-xs text-gray-500">
-                            {{ $q->answered_at?->format('d/m H:i:s') ?? 'รอ' }}
-                            @if($q->ai_response_time_ms) • {{ round($q->ai_response_time_ms / 1000, 1) }}s @endif
-                            @if($q->ai_tokens_used) • {{ number_format($q->ai_tokens_used) }} tokens @endif
-                        </span>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                @foreach ($reading->celticQuestions as $q)
+                    <div class="tp-inset" style="padding:16px; border-radius:12px; border-left:4px solid {{ $q->sequence === 1 ? 'var(--accent1)' : '#5689b8' }};">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+                            <span class="tp-pill {{ $q->sequence === 1 ? 'tp-pill-gold' : 'tp-pill-soft' }}" style="font-size:11px; font-weight:700;">
+                                Q{{ $q->sequence }} {{ $q->sequence === 1 ? '(Main)' : '(Follow-up)' }}
+                            </span>
+                            <span style="font-size:11px; color:var(--ink2);">
+                                {{ $q->answered_at?->format('d/m H:i:s') ?? 'รอ' }}
+                                @if ($q->ai_response_time_ms) • {{ round($q->ai_response_time_ms / 1000, 1) }}s @endif
+                                @if ($q->ai_tokens_used) • {{ number_format($q->ai_tokens_used) }} tokens @endif
+                            </span>
+                        </div>
+
+                        <p style="font-size:13px; font-weight:700; color:var(--ink); margin:0 0 8px;">❓ {{ $q->question }}</p>
+
+                        @if ($q->response)
+                            <pre class="tp-well" style="font-size:13px; color:var(--ink); white-space:pre-wrap; font-family:inherit; padding:12px; border-radius:10px; margin:8px 0 0;">{{ $q->response }}</pre>
+                        @else
+                            <p style="font-size:11px; color:#d9534f; font-style:italic; margin:0;">ยังไม่มีคำตอบ (อาจ AI ล้มเหลว)</p>
+                        @endif
+
+                        @if ($q->ai_provider)
+                            <p style="font-size:11px; color:var(--ink2); margin:8px 0 0;">via {{ $q->ai_provider }} • {{ $q->ai_model }}</p>
+                        @endif
                     </div>
-
-                    <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2">❓ {{ $q->question }}</p>
-
-                    @if($q->response)
-                        <pre class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans bg-white dark:bg-gray-800 p-3 rounded mt-2">{{ $q->response }}</pre>
-                    @else
-                        <p class="text-xs text-red-500 italic">ยังไม่มีคำตอบ (อาจ AI ล้มเหลว)</p>
-                    @endif
-
-                    @if($q->ai_provider)
-                        <p class="text-xs text-gray-500 mt-2">via {{ $q->ai_provider }} • {{ $q->ai_model }}</p>
-                    @endif
-                </div>
-            @endforeach
+                @endforeach
+            </div>
         @endif
     </div>
 </div>
 @endsection
+
+{{-- scripts stack: Alpine component สำหรับ Admin Ask AI (คง endpoint/payload/logic เดิม 100%) --}}
+@push('scripts')
+<script>
+function adminAskAi() {
+    return {
+        question: '',
+        running: false,
+        result: null,
+        startedAt: null,
+        elapsedDisplay: '0s',
+        timerInterval: null,
+
+        async run() {
+            if (this.running || this.question.trim().length < 3) return;
+            if (!confirm('ยืนยันส่งคำถามให้ AI ทำนาย?\n\nคำถาม: ' + this.question.substring(0, 200) +
+                         '\n\nไม่ตัดโควต้าลูกค้า\nAI สำเร็จ ส่งให้ลูกค้าทาง LINE/FB อัตโนมัติ\nรอ 30-60 วินาที')) {
+                return;
+            }
+
+            this.running = true;
+            this.result = null;
+            this.startedAt = Date.now();
+            this.elapsedDisplay = '0s';
+            this.timerInterval = setInterval(() => {
+                const s = Math.floor((Date.now() - this.startedAt) / 1000);
+                this.elapsedDisplay = s + 's';
+            }, 1000);
+
+            try {
+                const res = await fetch('{{ $askAiUrl ?? '' }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ question: this.question }),
+                });
+
+                if (!res.ok) {
+                    const errBody = await res.json().catch(() => ({ message: 'HTTP ' + res.status }));
+                    this.result = {
+                        success: false,
+                        message: errBody.message || ('HTTP ' + res.status),
+                    };
+                } else {
+                    this.result = await res.json();
+                    if (this.result.success) {
+                        this.question = '';
+                    }
+                }
+            } catch (e) {
+                this.result = {
+                    success: false,
+                    message: 'Network error: ' + e.message,
+                };
+            } finally {
+                this.running = false;
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+            }
+        },
+    };
+}
+</script>
+@endpush
