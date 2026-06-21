@@ -32,8 +32,8 @@
     <div x-show="$store.tp.studioOpen" x-cloak
          x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
          x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
-         class="tp-root"
-         style="position:fixed; right:0; top:0; bottom:0; z-index:80; width:min(360px,92vw); background:var(--bg); box-shadow:-12px 0 40px rgba(0,0,0,.25); padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:18px;">
+         class="tp-root tp-studio-panel"
+         style="position:fixed; right:0; top:0; bottom:0; z-index:80; width:min(360px,92vw); background:var(--bg); box-shadow:-12px 0 40px rgba(0,0,0,.25); padding:20px; overflow-y:auto;">
 
         <div style="display:flex; align-items:center; gap:10px;">
             <span class="tp-tile" style="width:40px; height:40px; border-radius:13px; font-size:18px;"><i class="fas fa-palette"></i></span>

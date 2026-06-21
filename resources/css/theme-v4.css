@@ -235,6 +235,9 @@
 .tp-sub-link:hover { box-shadow: var(--inset-sm); color: var(--ink); }
 
 /* Theme Studio */
+/* panel layout เป็นคลาส (ไม่ใช่ inline) เพื่อให้ x-show คืนค่า display ถูก —
+   ถ้าใส่ display:flex inline + x-cloak, Alpine x-show จะ cache เป็นว่าง แล้วคืนเป็น block (gap หาย) */
+.tp-studio-panel { display:flex; flex-direction:column; gap:18px; }
 .tp-studio-h { font-size:11.5px; font-weight:700; color:var(--ink2); letter-spacing:.3px; margin-bottom:8px; }
 .tp-seg { flex:1; cursor:pointer; border:0; background:transparent; color:var(--ink); font-family:inherit; font-size:12px; font-weight:600; padding:8px 6px; border-radius:10px; transition: all .18s ease; }
 .tp-range { width:100%; height:8px; -webkit-appearance:none; appearance:none; border-radius:20px; background: var(--surf); box-shadow: var(--inset-sm); outline:0; accent-color: var(--accent1); cursor:pointer; }
