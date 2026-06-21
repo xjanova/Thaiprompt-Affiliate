@@ -239,6 +239,8 @@
    ถ้าใส่ display:flex inline + x-cloak, Alpine x-show จะ cache เป็นว่าง แล้วคืนเป็น block (gap หาย) */
 .tp-studio-panel { display:flex; flex-direction:column; gap:18px; }
 .tp-studio-h { font-size:11.5px; font-weight:700; color:var(--ink2); letter-spacing:.3px; margin-bottom:8px; }
+.tp-sw { width:29px; height:29px; flex:none; border:0; border-radius:50%; cursor:pointer; padding:0; box-shadow:var(--raise); }
+.tp-toggle-btn { width:100%; border:0; cursor:pointer; font-family:inherit; font-weight:600; font-size:12.5px; padding:11px 14px; border-radius:13px; display:flex; align-items:center; justify-content:space-between; color:var(--ink2); background:var(--surf); transition:all .18s ease; }
 .tp-seg { flex:1; cursor:pointer; border:0; background:transparent; color:var(--ink); font-family:inherit; font-size:12px; font-weight:600; padding:8px 6px; border-radius:10px; transition: all .18s ease; }
 .tp-range { width:100%; height:8px; -webkit-appearance:none; appearance:none; border-radius:20px; background: var(--surf); box-shadow: var(--inset-sm); outline:0; accent-color: var(--accent1); cursor:pointer; }
 .tp-range::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:20px; height:20px; border-radius:50%; background: linear-gradient(135deg, var(--accent1), var(--accent2)); box-shadow: var(--raise); cursor:pointer; }

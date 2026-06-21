@@ -160,7 +160,15 @@
                 cyclePalette() { this.colorMode = 'preset'; const n = this.paletteNames; this.palette = n[(n.indexOf(this.palette) + 1) % n.length]; this.commit(); },
                 setPalette(p) { this.colorMode = 'preset'; this.palette = p; this.commit(); },
                 setVariant(v) { this.variant = v; if (v === 'กระจกใส Glass' && this.glassLevel < 2) this.glassLevel = 55; if (v !== 'กระจกใส Glass') this.glassLevel = 0; this.commit(); },
-                setSurface(name) { const h = window.TPTheme.surfaceTones[name]; if (h === null || h === undefined) { this.surfMode = 'preset'; } else { this.surfMode = 'custom'; this.surfHue = h; } this.commit(); },
+                // สีหลักแบบกำหนดเอง (custom oklch)
+                setHue(h) { this.colorMode = 'custom'; this.baseHue = h; this.commit(); },
+                setEndHue(h) { this.colorMode = 'custom'; this.gradientOn = true; this.endHue = h; this.commit(); },
+                toggleGradient() { this.colorMode = 'custom'; this.gradientOn = !this.gradientOn; this.commit(); },
+                // สีพื้นผิวแบบกำหนดเอง + ไล่เฉดพื้นหลัง
+                setSurfHue(h) { this.surfMode = 'custom'; this.surfHue = h; this.commit(); },
+                setSurfEnd(h) { this.surfMode = 'custom'; this.bgGradOn = true; this.surfHue2 = h; this.commit(); },
+                toggleBgGrad() { this.surfMode = 'custom'; this.bgGradOn = !this.bgGradOn; this.commit(); },
+                setSurfDefault() { this.surfMode = 'preset'; this.commit(); },
                 reset() { Object.assign(this, window.TPTheme.DEFAULTS); this.commit(); }
             }));
 
