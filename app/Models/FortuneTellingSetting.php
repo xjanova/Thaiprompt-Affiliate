@@ -313,6 +313,9 @@ class FortuneTellingSetting extends Model
         // 🎙️ (2026-05-08) Voice Summary (TTS) — Celtic 99฿ VIP perk
         'voice_summary_enabled',
         'voice_summary_tier_scope',
+        // 🎚️ (2026-06-21) โหมดเสียงสรุปต่อแพคเกจ: off | auto | on_demand
+        'voice_summary_celtic_mode',
+        'voice_summary_deep_mode',
         'voice_summary_primary_provider',
         'voice_summary_fallback_providers',
         'minimax_api_key',
@@ -691,6 +694,9 @@ class FortuneTellingSetting extends Model
         //   tier_scope='celtic_99_only' = เฉพาะลูกค้าจ่าย 99฿ ตามที่ user request
         'voice_summary_enabled' => false,
         'voice_summary_tier_scope' => 'celtic_99_only',
+        // 🎚️ (2026-06-21) โหมดต่อแพคเกจ: Celtic auto / Deep ปิด (ตรงพฤติกรรมเดิม celtic_99_only)
+        'voice_summary_celtic_mode' => 'auto',
+        'voice_summary_deep_mode' => 'off',
         'voice_summary_primary_provider' => 'minimax',
         'minimax_model' => 'speech-2.8-hd',  // 🆕 latest gen (2026-05-08)
         'minimax_voice_id' => 'Thai_warmFemaleHost',
@@ -2464,35 +2470,71 @@ PROMPT;
     // ===== 🎙️ (2026-05-08) Voice Summary (TTS) =====
 
     /**
-     * เปิดส่งเสียงสรุปสำหรับ reading นี้หรือไม่
+     * โหมดเสียงสรุปของ reading นี้ (ตามแพคเกจ): 'off' | 'auto' | 'on_demand'
      *
-     * Logic:
-     *   - ต้องเปิด voice_summary_enabled
-     *   - ต้องตรง tier_scope:
-     *     'celtic_99_only' → เฉพาะ Celtic 99฿ (ตามที่ user request)
-     *     'paid_all'       → ทุก paid reading (Deep 39 + Celtic 99)
-     *     'all'            → ทุก reading (รวมฟรี — ไม่แนะนำ)
+     * Celtic 99 → voice_summary_celtic_mode / Deep 39 → voice_summary_deep_mode
+     * แพคเกจอื่น (ฟรี/basic) → 'off' เสมอ (ไม่มีเสียงสรุป)
+     *
+     * @param  \App\Models\FortuneReading|null  $reading
+     */
+    public function voiceSummaryModeFor($reading): string
+    {
+        if (! $reading) {
+            return 'off';
+        }
+
+        // 🛡️ defensive: เสียงสรุป = เฉพาะ reading ที่จ่ายแล้ว — caller ทั้งหมดเป็น pay-first อยู่แล้ว
+        //    แต่กันไว้ที่ chokepoint เดียว เผื่อมี caller ใหม่ ไม่ให้รั่วเสียงฟรี (คืน is_paid gate เดิม)
+        if (! (bool) $reading->is_paid) {
+            return 'off';
+        }
+
+        $type = $reading->reading_type;
+        $mode = null;
+
+        if ($type === \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            $mode = $this->voice_summary_celtic_mode ?: 'auto';
+        } elseif ($type === \App\Models\FortuneReading::READING_TYPE_DEEP) {
+            $mode = $this->voice_summary_deep_mode ?: 'off';
+        }
+
+        return in_array($mode, ['off', 'auto', 'on_demand'], true) ? $mode : 'off';
+    }
+
+    /**
+     * เปิดส่งเสียงสรุปสำหรับ reading นี้หรือไม่ (availability — auto หรือ on_demand ก็ถือว่ามี)
+     *
+     * Logic (2026-06-21 per-tier mode):
+     *   - ต้องเปิด voice_summary_enabled (master)
+     *   - โหมดของแพคเกจนั้นต้องไม่ใช่ 'off' (auto/on_demand = มีเสียง)
+     *
+     * ใช้โดย: job สร้างเสียง / ปุ่ม on-demand / CTA snippet / auto-dispatch
      *
      * @param  \App\Models\FortuneReading|null  $reading
      */
     public function shouldGenerateVoiceSummary($reading): bool
     {
-        if (! $this->voice_summary_enabled) {
+        if (! $this->voice_summary_enabled || ! $reading) {
             return false;
         }
 
-        if (! $reading) {
+        return $this->voiceSummaryModeFor($reading) !== 'off';
+    }
+
+    /**
+     * ควร "ส่งเสียงอัตโนมัติ" (auto-dispatch หลังทำนายจบ) สำหรับ reading นี้หรือไม่
+     *
+     * โหมด = 'auto' เท่านั้น (on_demand = รอลูกค้ากดเอง / off = ไม่มีเสียง)
+     *
+     * @param  \App\Models\FortuneReading|null  $reading
+     */
+    public function shouldAutoDispatchVoiceSummary($reading): bool
+    {
+        if (! $this->voice_summary_enabled || ! $reading) {
             return false;
         }
 
-        $scope = $this->voice_summary_tier_scope ?: 'celtic_99_only';
-
-        return match ($scope) {
-            'celtic_99_only' => $reading->reading_type === \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS,
-            'paid_all' => (bool) $reading->is_paid,
-            'all' => true,
-            default => $reading->reading_type === \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS,
-        };
+        return $this->voiceSummaryModeFor($reading) === 'auto';
     }
 
     /**

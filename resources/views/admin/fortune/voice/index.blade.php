@@ -12,11 +12,6 @@
         'gtts' => '🆓 gTTS (ฟรี ไม่ต้องตั้ง key)',
     ];
     $openaiVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
-    $tierScopes = [
-        'celtic_99_only' => '🌙 เฉพาะ Celtic 99฿',
-        'paid_all' => '💎 ทุก reading ที่จ่ายเงิน',
-        'all' => '🌐 ทุก reading',
-    ];
     $fallbacks = is_array($settings->voice_summary_fallback_providers) ? $settings->voice_summary_fallback_providers : [];
 @endphp
 
@@ -76,8 +71,8 @@
                 <input type="checkbox" name="voice_summary_enabled" value="1" @checked($settings->voice_summary_enabled)
                        class="mt-1 rounded text-sky-600">
                 <span>
-                    <span class="block font-medium text-gray-900 dark:text-white">🔮 เปิดเสียงทำนาย/บทสรุป</span>
-                    <span class="block text-xs text-gray-500 dark:text-gray-400">เสียงสรุปคำทำนาย (สร้างสดต่อคน) — ส่ง auto หลังทำนายจบ</span>
+                    <span class="block font-medium text-gray-900 dark:text-white">🔮 เปิดเสียงทำนาย/บทสรุป (master)</span>
+                    <span class="block text-xs text-gray-500 dark:text-gray-400">เสียงสรุปคำทำนาย (สร้างสดต่อคน) — เลือกโหมด อัตโนมัติ/เฉพาะกดอ่าน/ปิด แยกแต่ละแพคเกจด้านล่าง (ปิด master = ปิดทั้งหมด)</span>
                 </span>
             </label>
         </div>
@@ -195,12 +190,26 @@
 
         {{-- reading-voice scope + intro --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+            @php
+                $voiceModes = ['auto' => '🔊 อัตโนมัติ (ส่งเสียงเลยหลังจบ)', 'on_demand' => '👆 เฉพาะกดอ่าน (ประหยัด)', 'off' => '🚫 ปิด'];
+                $celticMode = $settings->voice_summary_celtic_mode ?? 'auto';
+                $deepMode = $settings->voice_summary_deep_mode ?? 'off';
+            @endphp
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เสียงทำนาย — ขอบเขต (tier scope)</label>
-                <select name="voice_summary_tier_scope"
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">🔮 โหมดเสียงสรุป — Celtic 99฿</label>
+                <select name="voice_summary_celtic_mode"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                    @foreach($tierScopes as $val => $label)
-                        <option value="{{ $val }}" @selected(($settings->voice_summary_tier_scope ?? 'celtic_99_only') === $val)>{{ $label }}</option>
+                    @foreach($voiceModes as $val => $label)
+                        <option value="{{ $val }}" @selected($celticMode === $val)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">🌙 โหมดเสียงสรุป — Deep 39฿</label>
+                <select name="voice_summary_deep_mode"
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                    @foreach($voiceModes as $val => $label)
+                        <option value="{{ $val }}" @selected($deepMode === $val)>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>

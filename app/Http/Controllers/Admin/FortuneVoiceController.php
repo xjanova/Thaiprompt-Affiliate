@@ -232,6 +232,9 @@ class FortuneVoiceController extends Controller
             // เสียงทำนาย
             'voice_summary_enabled' => 'boolean',
             'voice_summary_tier_scope' => 'nullable|in:celtic_99_only,paid_all,all',
+            // 🎚️ โหมดต่อแพคเกจ: off | auto | on_demand
+            'voice_summary_celtic_mode' => 'nullable|in:off,auto,on_demand',
+            'voice_summary_deep_mode' => 'nullable|in:off,auto,on_demand',
             'voice_summary_max_chars' => 'nullable|integer|min:200|max:5000',
             'voice_summary_intro_message' => 'nullable|string|max:1000',
             // เครื่องเสียง (provider + โมเดล/เสียง + ปรับแต่ง)

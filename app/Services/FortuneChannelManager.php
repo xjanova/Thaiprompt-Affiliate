@@ -1938,10 +1938,8 @@ class FortuneChannelManager
     protected function autoDispatchSummaryVoice($reading, string $userId): void
     {
         try {
-            if (! $reading || empty($this->settings->voice_summary_enabled)) {
-                return;
-            }
-            if (! $this->settings->shouldGenerateVoiceSummary($reading)) {
+            // 🎚️ (2026-06-21) ส่งอัตโนมัติเฉพาะแพคเกจที่ตั้งโหมด = auto (on_demand = รอกดปุ่ม)
+            if (! $reading || ! $this->settings->shouldAutoDispatchVoiceSummary($reading)) {
                 return;
             }
 
