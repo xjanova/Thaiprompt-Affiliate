@@ -781,7 +781,11 @@ class FortuneChannelManager
                         }
                     }
 
-                    return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+                    $consentSent = $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+                    // 🎧 เสียงระบบ: อ่านกติกาให้ฟัง (FB only, ต่อท้ายกล่อง)
+                    $this->attachSystemVoiceFb($fbService, $userId, 'consent_rules', $extra);
+
+                    return $consentSent;
                 })(),
 
                 // 💰 (2026-05-08) Pricing menu — ส่งกล่องราคา + ปุ่มเริ่มดูดวงทันที
@@ -1056,6 +1060,9 @@ class FortuneChannelManager
                         } catch (\Throwable $e) {
                             \Log::debug('FB Celtic all_picked: markDelivered fail (non-blocking)', ['error' => $e->getMessage()]);
                         }
+
+                        // 🎧 เสียงระบบ: อธิบายวิธีกรอกวันเกิด (FB only, ต่อท้าย)
+                        $this->attachSystemVoiceFb($fbService, $userId, 'howto_birthdate', $extra);
                     }
 
                     return $ok;
@@ -1871,6 +1878,26 @@ class FortuneChannelManager
         return [
             ['title' => '🎧 อ่านให้ฟัง', 'payload' => 'อ่านให้ฟัง'],
         ];
+    }
+
+    /**
+     * 🎧 (2026-06-21) ส่ง "เสียงระบบ" (ข้อความกลาง) ต่อท้ายกล่องข้อความ — FB เท่านั้น
+     *
+     * best-effort: ถ้า master toggle ปิด / คลิปปิด / ยังไม่มีไฟล์ → urlFor คืน null → ไม่ส่ง (เงียบ)
+     * ส่งหลังข้อความหลัก (ลูกค้า active = อยู่ใน 24 ชม. = ฟรี)
+     *
+     * @param  array<string, mixed>  $extra
+     */
+    protected function attachSystemVoiceFb(FacebookWebhookService $fbService, string $userId, string $clipKey, array $extra = []): void
+    {
+        try {
+            $url = (new \App\Services\FortuneSystemVoiceService($this->settings))->urlFor($clipKey);
+            if (! empty($url)) {
+                $fbService->sendAudio($userId, $url, $extra);
+            }
+        } catch (\Throwable $e) {
+            \Log::debug('SystemVoice FB attach fail (non-blocking)', ['key' => $clipKey, 'error' => $e->getMessage()]);
+        }
     }
 
     /**

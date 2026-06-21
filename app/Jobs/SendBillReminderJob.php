@@ -406,6 +406,17 @@ EOT;
             $fbService = app(\App\Services\FacebookWebhookService::class);
             // ลูกค้าเพิ่งสร้างบิล < 30 นาที → ยังใน 24hr window — ไม่ต้องใช้ message_tag
             $fbService->sendMessage($userId, $message);
+
+            // 🎧 (2026-06-21) เสียงระบบ: กระตุ้นให้จ่ายให้ฟัง (FB only) — best-effort
+            try {
+                $voiceUrl = (new \App\Services\FortuneSystemVoiceService(\App\Models\FortuneTellingSetting::getSettings()))
+                    ->urlFor('payment_reminder');
+                if (! empty($voiceUrl)) {
+                    $fbService->sendAudio($userId, $voiceUrl);
+                }
+            } catch (\Throwable $e) {
+                // เสียงเป็นแค่ตัวช่วย ไม่ critical
+            }
         } elseif ($platform === 'line') {
             $lineService = app(\App\Services\LineFortuneService::class);
             $lineService->sendMessage($userId, $message);

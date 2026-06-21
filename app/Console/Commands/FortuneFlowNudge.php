@@ -221,6 +221,20 @@ class FortuneFlowNudge extends Command
                         Cache::put(self::CONSENT_PENDING_PREFIX.$userId, $tier, 600); // 600s = FortuneConsentGateTrait::CONSENT_TTL
                     }
 
+                    // 🎧 (2026-06-21) เสียงระบบ: อ่านกล่องกระตุ้นให้ฟัง (FB only) — best-effort
+                    //   instanceof guard: sendAudio ไม่อยู่ใน MessagingPlatformInterface (LINE signature ต่าง)
+                    if ($platform === 'facebook' && $service instanceof \App\Services\FacebookWebhookService) {
+                        try {
+                            $clipKey = $step === 'tier_choice' ? 'sales_nudge_tier' : 'sales_nudge_consent';
+                            $voiceUrl = (new \App\Services\FortuneSystemVoiceService($settings))->urlFor($clipKey);
+                            if (! empty($voiceUrl)) {
+                                $service->sendAudio($userId, $voiceUrl);
+                            }
+                        } catch (\Throwable $e) {
+                            // เสียงเป็นแค่ตัวช่วย ไม่ critical
+                        }
+                    }
+
                     Log::info('🔔 FortuneFlowNudge: nudge sent', [
                         'reading_id' => $reading->id,
                         'step' => $step,
