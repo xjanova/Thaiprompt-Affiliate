@@ -203,9 +203,15 @@ class FortuneVoiceController extends Controller
             return back()->withErrors(['audio_file' => $result['error']]);
         }
 
-        $warn = in_array($ext, ['mp3', 'm4a'], true) ? '' : ' ⚠️ ฟอร์แมต .'.$ext.' อาจส่งบน Facebook ไม่ได้ (แนะนำ mp3/m4a)';
+        // ข้อความตามผล: แปลงเป็น mp3 อัตโนมัติ (ffmpeg) / mp3 อยู่แล้ว / ไม่มี ffmpeg (เก็บตามเดิม)
+        $note = match ($result['provider_used'] ?? 'upload') {
+            'upload+mp3' => ' (แปลงเป็น mp3 อัตโนมัติ — พร้อมส่ง Facebook)',
+            default => in_array($ext, ['mp3', 'm4a'], true)
+                ? ''
+                : ' ⚠️ ระบบไม่มี ffmpeg แปลงไฟล์ — ฟอร์แมต .'.$ext.' อาจส่งบน Facebook ไม่ได้ (แนะนำ mp3)',
+        };
 
-        return back()->with('success', '✅ อัปโหลดเสียงคลิป "'.$clip->title.'" สำเร็จ'.$warn);
+        return back()->with('success', '✅ อัปโหลดเสียงคลิป "'.$clip->title.'" สำเร็จ'.$note);
     }
 
     /**

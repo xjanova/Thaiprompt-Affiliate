@@ -282,7 +282,7 @@
                                 <input type="file" name="audio_file" accept="audio/*,.m4a,.mp3,.wav,.ogg,.aac,.flac,.opus"
                                        required class="text-xs text-gray-700 dark:text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-violet-100 file:text-violet-700 hover:file:bg-violet-200">
                                 <button type="submit" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs rounded-lg transition">อัปโหลด</button>
-                                <span class="text-xs text-gray-400">(แนะนำ mp3/m4a สำหรับส่งบน FB)</span>
+                                <span class="text-xs text-gray-400">(รองรับทุกฟอร์แมต — ระบบแปลงเป็น mp3 ให้อัตโนมัติ)</span>
                             </form>
 
                             {{-- audio player (existing or freshly generated) --}}

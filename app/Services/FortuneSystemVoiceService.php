@@ -9,6 +9,7 @@ use App\Services\Tts\GttsProvider;
 use App\Services\Tts\MiniMaxTtsProvider;
 use App\Services\Tts\OpenAITtsProvider;
 use App\Services\Tts\TtsProviderInterface;
+use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -31,6 +32,13 @@ class FortuneSystemVoiceService
      * โฟลเดอร์เก็บเสียงระบบบน public disk (local server)
      */
     protected const STORAGE_DIR = 'fortune-voice/system';
+
+    /**
+     * cache การหา ffmpeg (ต่อ instance)
+     */
+    protected bool $ffmpegChecked = false;
+
+    protected ?string $ffmpegResolved = null;
 
     public function __construct(
         protected FortuneTellingSetting $settings,
@@ -121,35 +129,65 @@ class FortuneSystemVoiceService
     /**
      * เก็บไฟล์เสียงที่แอดมิน "อัปโหลดเอง" → ใช้แทน TTS (รองรับทุกฟอร์แมต)
      *
-     * ⚠️ prod ไม่มี ffmpeg → เก็บไฟล์ตามฟอร์แมตเดิม (ไม่แปลง). เล่นในแอดมินได้ทุกฟอร์แมต
-     *    แต่ส่งจริงบน FB ควรเป็น mp3/m4a (ฟอร์แมตอื่น FB อาจไม่รองรับ — แจ้งเตือนในหน้าแอดมิน)
+     * 🎯 ถ้ามี ffmpeg → แปลงทุกฟอร์แมตเป็น mp3 เสมอ (ส่ง FB ได้ชัวร์ทุกครั้ง)
+     *    ถ้าไม่มี ffmpeg → fallback เก็บตามฟอร์แมตเดิม (FB อาจไม่รองรับฟอร์แมตอื่น)
      *
      * @return array{success: bool, audio_url: ?string, provider_used: ?string, duration_ms: ?int, voice_used: ?string, error: ?string}
      */
     public function storeUploadedAudio(FortuneSystemVoiceClip $clip, UploadedFile $file): array
     {
         // นามสกุลจริง (sanitize) — fallback mp3
-        $ext = strtolower($file->getClientOriginalExtension() ?: ($file->extension() ?: 'mp3'));
-        $ext = preg_replace('/[^a-z0-9]/', '', $ext) ?: 'mp3';
-        $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'.'.$ext;
+        $origExt = strtolower($file->getClientOriginalExtension() ?: ($file->extension() ?: 'mp3'));
+        $origExt = preg_replace('/[^a-z0-9]/', '', $origExt) ?: 'mp3';
+        $origName = mb_substr($file->getClientOriginalName(), 0, 200);
+
+        $tmpMp3 = null;
 
         try {
-            // ลบไฟล์เดิม (ถ้ามี + path/นามสกุลต่าง) กันไฟล์ค้าง
-            $this->forgetOldFileIfDifferent($clip, $relativePath);
+            $ffmpeg = $this->ffmpegPath();
+            $converted = false;
 
-            // เก็บลง public disk (local) — path stable ตาม key
-            $stored = $file->storeAs(self::STORAGE_DIR, $clip->clip_key.'.'.$ext, 'public');
-            if (! $stored || ! Storage::disk('public')->exists($relativePath)) {
-                return $this->fail('บันทึกไฟล์อัปโหลดไม่สำเร็จ');
+            if ($origExt === 'mp3') {
+                // mp3 อยู่แล้ว — stream เก็บตรง (ไม่โหลดเข้า memory)
+                $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'.mp3';
+                $this->forgetOldFileIfDifferent($clip, $relativePath);
+                $file->storeAs(self::STORAGE_DIR, $clip->clip_key.'.mp3', 'public');
+            } elseif ($ffmpeg) {
+                // 🎯 แปลงทุกฟอร์แมต → mp3 (FB-safe)
+                $tempDir = storage_path('app/tmp-voice');
+                if (! is_dir($tempDir)) {
+                    @mkdir($tempDir, 0775, true);
+                }
+                $tmpMp3 = $tempDir.'/sys-up-'.Str::random(10).'.mp3';
+
+                if (! $this->transcodeToMp3($ffmpeg, (string) $file->getRealPath(), $tmpMp3)) {
+                    return $this->fail('แปลงไฟล์ .'.$origExt.' เป็น mp3 ไม่สำเร็จ (ffmpeg error)');
+                }
+
+                $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'.mp3';
+                $this->forgetOldFileIfDifferent($clip, $relativePath);
+                // stream temp → public (ไม่โหลดทั้งไฟล์เข้า memory)
+                Storage::disk('public')->putFileAs(self::STORAGE_DIR, new File($tmpMp3), $clip->clip_key.'.mp3');
+                $converted = true;
+            } else {
+                // ไม่มี ffmpeg → stream เก็บตามฟอร์แมตเดิม (FB อาจไม่รองรับ)
+                $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'.'.$origExt;
+                $this->forgetOldFileIfDifferent($clip, $relativePath);
+                $file->storeAs(self::STORAGE_DIR, $clip->clip_key.'.'.$origExt, 'public');
+            }
+
+            // ต้องมีไฟล์จริง + ไม่ใช่ไฟล์ว่าง
+            if (! Storage::disk('public')->exists($relativePath) || Storage::disk('public')->size($relativePath) < 100) {
+                return $this->fail('บันทึกไฟล์อัปโหลดไม่สำเร็จ (ไฟล์ว่าง)');
             }
 
             $clip->update([
                 'audio_path' => $relativePath,
                 'audio_url' => Storage::disk('public')->url($relativePath),
                 'audio_duration_ms' => $this->estimateDurationMs($relativePath, (string) $clip->script_text),
-                'audio_provider' => 'upload',
+                'audio_provider' => $converted ? 'upload+mp3' : 'upload',
                 'audio_source' => 'upload',
-                'audio_original_name' => mb_substr($file->getClientOriginalName(), 0, 200),
+                'audio_original_name' => $origName,
                 'audio_voice_id' => null,
                 'audio_chars' => null,
                 'generated_at' => now(),
@@ -157,20 +195,78 @@ class FortuneSystemVoiceService
 
             Log::info('🎧 SystemVoice: ⬆️ อัปโหลดไฟล์เสียงสำเร็จ', [
                 'clip_key' => $clip->clip_key,
-                'ext' => $ext,
+                'orig_ext' => $origExt,
+                'converted_to_mp3' => $converted,
                 'path' => $relativePath,
             ]);
 
             return [
                 'success' => true,
                 'audio_url' => $clip->audio_url,
-                'provider_used' => 'upload',
+                'provider_used' => $converted ? 'upload+mp3' : 'upload',
                 'duration_ms' => $clip->audio_duration_ms,
                 'voice_used' => null,
                 'error' => null,
             ];
         } catch (\Throwable $e) {
             return $this->fail('อัปโหลดไม่สำเร็จ: '.$e->getMessage());
+        } finally {
+            // เก็บกวาด temp mp3 เสมอ (กัน orphan ถ้า throw ระหว่างอ่าน)
+            if ($tmpMp3 && file_exists($tmpMp3)) {
+                @unlink($tmpMp3);
+            }
+        }
+    }
+
+    /**
+     * หา path ของ ffmpeg (cache ผลลัพธ์) — null ถ้าไม่มี
+     */
+    protected function ffmpegPath(): ?string
+    {
+        if ($this->ffmpegChecked) {
+            return $this->ffmpegResolved;
+        }
+        $this->ffmpegChecked = true;
+
+        $candidates = [
+            (string) config('app.ffmpeg_path'),
+            '/home/admin/bin/ffmpeg',
+            '/usr/local/bin/ffmpeg',
+            '/usr/bin/ffmpeg',
+        ];
+        foreach ($candidates as $c) {
+            if (! empty($c) && @is_executable($c)) {
+                return $this->ffmpegResolved = $c;
+            }
+        }
+
+        // หาใน PATH
+        try {
+            $which = trim((string) @shell_exec('command -v ffmpeg 2>/dev/null'));
+            if (! empty($which) && @is_executable($which)) {
+                return $this->ffmpegResolved = $which;
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return $this->ffmpegResolved = null;
+    }
+
+    /**
+     * แปลงไฟล์เสียงใดๆ → mp3 (44.1kHz stereo 128kbps) ด้วย ffmpeg
+     */
+    protected function transcodeToMp3(string $ffmpeg, string $src, string $dest): bool
+    {
+        try {
+            $cmd = escapeshellarg($ffmpeg).' -y -hide_banner -loglevel error'
+                .' -i '.escapeshellarg($src)
+                .' -vn -ar 44100 -ac 2 -b:a 128k '.escapeshellarg($dest).' 2>&1';
+            @exec($cmd, $out, $code);
+
+            return $code === 0 && file_exists($dest) && filesize($dest) > 1000;
+        } catch (\Throwable $e) {
+            return false;
         }
     }
 
