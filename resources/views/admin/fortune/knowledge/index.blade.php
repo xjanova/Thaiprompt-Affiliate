@@ -1,142 +1,215 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'คลังความรู้แม่หมอ (RAG)')
 
 @section('content')
-<div class="container mx-auto px-4 py-6 max-w-7xl">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+{{-- 🧠 คลังองค์ความรู้แม่หมอ (RAG) — ธีม V4 นวลทองคำ --}}
+<div style="display:flex;flex-direction:column;gap:18px;">
+
+    {{-- ===== Header ===== --}}
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px;">
         <div>
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">🧠 คลังความรู้แม่หมอ (RAG)</h1>
-            <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            <div class="tp-muted" style="font-size:12px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;">
+                หลังบ้าน · ระบบดูดวง · คลังความรู้แม่หมอ
+            </div>
+            <h1 class="tp-num" style="font-size:26px;font-weight:800;color:var(--ink);margin:0;">
+                <i class="fas fa-brain" style="color:var(--accent1);margin-right:8px;"></i>คลังความรู้แม่หมอ (RAG)
+            </h1>
+            <p class="tp-muted" style="font-size:13px;margin:8px 0 0;max-width:680px;line-height:1.6;">
                 องค์ความรู้ที่แม่หมอ (AI) ดึงไปทำนายตามหน้าไพ่ — สุขภาพ / ฮวงจุ้ย / เจ้าที่ / องค์เทพ / ไสยศาสตร์ ·
                 แก้ไขแล้วใช้ได้ทันที
             </p>
         </div>
-        <a href="{{ route('admin.fortune.knowledge.create') }}"
-           class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition shadow">
-            + เพิ่มองค์ความรู้
+        <a href="{{ route('admin.fortune.knowledge.create') }}" class="tp-btn tp-btn-primary">
+            <i class="fas fa-plus"></i> เพิ่มองค์ความรู้
         </a>
     </div>
 
-    {{-- Flash --}}
-    @if(session('success'))
-        <div class="mb-4 p-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl text-green-800 dark:text-green-200">
-            {{ session('success') }}
+    {{-- ===== KPI / สถิติ ===== --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+        {{-- ทั้งหมด --}}
+        <div class="tp-card tp-raise" style="padding:18px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="tp-tile" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--accent1);">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div>
+                    <div class="tp-muted" style="font-size:12px;">ทั้งหมด</div>
+                    <div class="tp-num" style="font-size:26px;font-weight:800;color:var(--ink);line-height:1.1;">
+                        {{ number_format($stats['total']) }}
+                    </div>
+                </div>
+            </div>
         </div>
-    @endif
 
-    {{-- Stats --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-            <div class="text-xs text-gray-500 dark:text-gray-400">ทั้งหมด</div>
-            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total']) }}</div>
+        {{-- เปิดใช้งาน --}}
+        <div class="tp-card tp-raise" style="padding:18px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="tp-tile" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#5aa07e;">
+                    <i class="fas fa-circle-check"></i>
+                </div>
+                <div>
+                    <div class="tp-muted" style="font-size:12px;">เปิดใช้งาน</div>
+                    <div class="tp-num" style="font-size:26px;font-weight:800;color:#5aa07e;line-height:1.1;">
+                        {{ number_format($stats['active']) }}
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-            <div class="text-xs text-gray-500 dark:text-gray-400">เปิดใช้งาน</div>
-            <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ number_format($stats['active']) }}</div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 col-span-2">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">แยกตามหมวด</div>
-            <div class="flex flex-wrap gap-1.5">
+
+        {{-- แยกตามหมวด --}}
+        <div class="tp-card tp-raise" style="padding:18px;grid-column:span 2;min-width:0;">
+            <div class="tp-muted" style="font-size:12px;margin-bottom:10px;">
+                <i class="fas fa-tags" style="margin-right:6px;"></i>แยกตามหมวด
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
                 @foreach($categoryLabels as $key => $label)
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-                        {{ $label }}: <b>{{ $stats['category_breakdown'][$key] ?? 0 }}</b>
+                    <span class="tp-pill tp-pill-soft" style="font-size:12px;">
+                        {{ $label }}
+                        <b class="tp-num" style="color:var(--accent1);margin-left:4px;">{{ $stats['category_breakdown'][$key] ?? 0 }}</b>
                     </span>
                 @endforeach
             </div>
         </div>
     </div>
 
-    {{-- Filter --}}
-    <form method="GET" class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-        <input type="text" name="search" value="{{ $search }}" placeholder="ค้นหา หัวข้อ/เนื้อหา/ไพ่..."
-               class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
-        <select name="category" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            <option value="">— ทุกหมวด —</option>
-            @foreach($categoryLabels as $key => $label)
-                <option value="{{ $key }}" @selected($category === $key)>{{ $label }}</option>
-            @endforeach
-        </select>
-        <select name="active" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            <option value="">— ทุกสถานะ —</option>
-            <option value="1" @selected($active === '1')>เปิดใช้งาน</option>
-            <option value="0" @selected($active === '0')>ปิด</option>
-        </select>
-        <button type="submit" class="px-4 py-2 bg-gray-700 hover:bg-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 text-white rounded-lg transition">
-            🔍 ค้นหา
-        </button>
+    {{-- ===== ตัวกรอง / ค้นหา ===== --}}
+    <form method="GET" class="tp-card" style="padding:18px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:stretch;">
+            {{-- ค้นหา --}}
+            <div class="tp-well tp-input" style="padding:0;display:flex;align-items:center;gap:8px;padding-left:14px;">
+                <i class="fas fa-magnifying-glass tp-muted" style="font-size:13px;"></i>
+                <input type="text" name="search" value="{{ $search }}" placeholder="ค้นหา หัวข้อ/เนื้อหา/ไพ่..."
+                       style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px 11px 0;color:var(--ink);font-size:14px;">
+            </div>
+
+            {{-- หมวด --}}
+            <div class="tp-well tp-input" style="padding:0;">
+                <select name="category" style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                    <option value="">— ทุกหมวด —</option>
+                    @foreach($categoryLabels as $key => $label)
+                        <option value="{{ $key }}" @selected($category === $key)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- สถานะ --}}
+            <div class="tp-well tp-input" style="padding:0;">
+                <select name="active" style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                    <option value="">— ทุกสถานะ —</option>
+                    <option value="1" @selected($active === '1')>เปิดใช้งาน</option>
+                    <option value="0" @selected($active === '0')>ปิด</option>
+                </select>
+            </div>
+
+            {{-- ปุ่มค้นหา --}}
+            <button type="submit" class="tp-btn tp-btn-primary" style="justify-content:center;">
+                <i class="fas fa-magnifying-glass"></i> ค้นหา
+            </button>
+        </div>
     </form>
 
-    {{-- Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700/50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">หมวด</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">หัวข้อ / เนื้อหา</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ไพ่/หัวเรื่อง</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สถานะ</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จัดการ</th>
+    {{-- ===== ตาราง ===== --}}
+    <div class="tp-card" style="padding:0;overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="min-width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="text-align:left;">
+                        <th style="padding:14px 16px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px;">หมวด</th>
+                        <th style="padding:14px 16px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px;">หัวข้อ / เนื้อหา</th>
+                        <th style="padding:14px 16px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px;">ไพ่/หัวเรื่อง</th>
+                        <th style="padding:14px 16px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px;text-align:center;">สถานะ</th>
+                        <th style="padding:14px 16px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px;text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($rows as $row)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition">
-                            <td class="px-4 py-3 align-top">
-                                <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200 whitespace-nowrap">
+                        <tr style="box-shadow:var(--inset-sm);">
+                            {{-- หมวด --}}
+                            <td style="padding:14px 16px;vertical-align:top;">
+                                <span class="tp-pill tp-pill-gold" style="font-size:12px;white-space:nowrap;">
                                     {{ $categoryLabels[$row->category] ?? $row->category }}
                                 </span>
                                 @if($row->severity)
-                                    <div class="mt-1 text-xs text-red-600 dark:text-red-400">⚠️ {{ $row->severity }}</div>
+                                    <div style="margin-top:6px;font-size:12px;color:#d9534f;">
+                                        <i class="fas fa-triangle-exclamation"></i> {{ $row->severity }}
+                                    </div>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 align-top max-w-md">
-                                <div class="font-medium text-gray-900 dark:text-gray-100">{{ $row->title }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{{ \Illuminate\Support\Str::limit($row->content, 160) }}</div>
+
+                            {{-- หัวข้อ / เนื้อหา --}}
+                            <td style="padding:14px 16px;vertical-align:top;max-width:420px;">
+                                <div style="font-weight:600;color:var(--ink);">{{ $row->title }}</div>
+                                <div class="tp-muted" style="font-size:12px;margin-top:4px;line-height:1.5;">
+                                    {{ \Illuminate\Support\Str::limit($row->content, 160) }}
+                                </div>
                             </td>
-                            <td class="px-4 py-3 align-top text-sm text-gray-700 dark:text-gray-300">
+
+                            {{-- ไพ่ / หัวเรื่อง --}}
+                            <td style="padding:14px 16px;vertical-align:top;font-size:13px;color:var(--ink);">
                                 @if($row->card_name)
                                     @php $c = $cardMap[$row->card_name] ?? null; @endphp
-                                    <div class="flex items-center gap-2">
+                                    <div style="display:flex;align-items:center;gap:10px;">
                                         @if($c && $c->image_url)
-                                            <img src="{{ $c->image_url }}" alt="{{ $row->card_name }}" class="w-9 h-auto rounded shadow-sm flex-shrink-0" loading="lazy">
+                                            <img src="{{ $c->image_url }}" alt="{{ $row->card_name }}"
+                                                 style="width:38px;height:auto;border-radius:6px;box-shadow:var(--raise);flex-shrink:0;" loading="lazy">
                                         @else
-                                            <span class="text-lg">🃏</span>
+                                            <span style="font-size:20px;">🃏</span>
                                         @endif
                                         <div>
-                                            <div class="font-medium text-gray-800 dark:text-gray-100">{{ $c->name_th ?? $row->card_name }}</div>
-                                            <div class="text-xs text-gray-400">{{ $row->card_name }}</div>
+                                            <div style="font-weight:600;color:var(--ink);">{{ $c->name_th ?? $row->card_name }}</div>
+                                            <div class="tp-muted" style="font-size:11px;">{{ $row->card_name }}</div>
                                         </div>
                                     </div>
                                 @elseif($row->subject)
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $row->subject }}</div>
+                                    <div class="tp-muted" style="font-size:12px;">{{ $row->subject }}</div>
+                                @else
+                                    <span class="tp-muted" style="font-size:12px;">—</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 align-top text-center">
-                                <form method="POST" action="{{ route('admin.fortune.knowledge.toggle', $row) }}">
+
+                            {{-- สถานะ (toggle) --}}
+                            <td style="padding:14px 16px;vertical-align:top;text-align:center;">
+                                <form method="POST" action="{{ route('admin.fortune.knowledge.toggle', $row) }}" style="margin:0;">
                                     @csrf
-                                    <button type="submit"
-                                            class="text-xs px-2.5 py-1 rounded-full {{ $row->is_active ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300' }}">
-                                        {{ $row->is_active ? '● เปิด' : '○ ปิด' }}
-                                    </button>
+                                    @if($row->is_active)
+                                        <button type="submit" class="tp-pill" style="border:0;cursor:pointer;font-size:12px;color:#5aa07e;background:var(--inset);">
+                                            <i class="fas fa-circle" style="font-size:8px;margin-right:4px;"></i> เปิด
+                                        </button>
+                                    @else
+                                        <button type="submit" class="tp-pill" style="border:0;cursor:pointer;font-size:12px;color:#9a8f7c;background:var(--inset);">
+                                            <i class="far fa-circle" style="font-size:9px;margin-right:4px;"></i> ปิด
+                                        </button>
+                                    @endif
                                 </form>
                             </td>
-                            <td class="px-4 py-3 align-top text-right whitespace-nowrap">
-                                <a href="{{ route('admin.fortune.knowledge.edit', $row) }}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">แก้ไข</a>
-                                <form method="POST" action="{{ route('admin.fortune.knowledge.destroy', $row) }}" class="inline"
-                                      onsubmit="return confirm('ยืนยันลบองค์ความรู้นี้?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 dark:text-red-400 hover:underline text-sm ml-2">ลบ</button>
-                                </form>
+
+                            {{-- จัดการ --}}
+                            <td style="padding:14px 16px;vertical-align:top;text-align:right;white-space:nowrap;">
+                                <div style="display:inline-flex;align-items:center;gap:8px;">
+                                    <a href="{{ route('admin.fortune.knowledge.edit', $row) }}" class="tp-icon-btn" title="แก้ไข">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                    <form method="POST" action="{{ route('admin.fortune.knowledge.destroy', $row) }}" style="margin:0;display:inline;"
+                                          onsubmit="return confirm('ยืนยันลบองค์ความรู้นี้?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="tp-icon-btn" title="ลบ" style="color:#d9534f;">
+                                            <i class="fas fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                                ยังไม่มีองค์ความรู้ — กด "เพิ่มองค์ความรู้" เพื่อเริ่ม หรือรัน seeder
+                            <td colspan="5" style="padding:48px 16px;text-align:center;">
+                                <div style="font-size:40px;color:var(--ink2);opacity:.5;margin-bottom:12px;">
+                                    <i class="fas fa-inbox"></i>
+                                </div>
+                                <div class="tp-muted" style="font-size:14px;">
+                                    ยังไม่มีองค์ความรู้ — กด "เพิ่มองค์ความรู้" เพื่อเริ่ม หรือรัน seeder
+                                </div>
                             </td>
                         </tr>
                     @endforelse
@@ -145,6 +218,8 @@
         </div>
     </div>
 
-    <div class="mt-4">{{ $rows->links() }}</div>
+    {{-- ===== Pagination ===== --}}
+    <div>{{ $rows->links() }}</div>
+
 </div>
 @endsection

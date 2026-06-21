@@ -1,24 +1,33 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div class="container mx-auto px-4 py-8 max-w-4xl">
-    {{-- Header --}}
-    <div class="mb-8">
-        <a href="{{ route('admin.fortune.response-templates.index') }}"
-           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 mb-4 inline-block">
-            ← กลับไปรายการ
+{{-- หน้าฟอร์มเทมเพลตตอบกลับ (ใช้ร่วมทั้งสร้างและแก้ไข) ธีม V4 นวลทองคำ --}}
+<div style="display:flex;flex-direction:column;gap:18px;" x-data="templateForm()">
+
+    {{-- ส่วนหัวหน้า --}}
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+        <div>
+            <div style="font-size:12px;letter-spacing:.08em;color:var(--ink2);text-transform:uppercase;margin-bottom:6px;">
+                หลังบ้าน · ระบบดูดวง · เทมเพลตตอบกลับ
+            </div>
+            <h1 class="tp-num" style="font-size:26px;font-weight:800;color:var(--ink);margin:0;">
+                {{ $pageTitle }}
+            </h1>
+        </div>
+        <a href="{{ route('admin.fortune.response-templates.index') }}" class="tp-btn">
+            <i class="fas fa-arrow-left"></i> กลับไปรายการ
         </a>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            {{ $pageTitle }}
-        </h1>
     </div>
 
-    {{-- Validation Errors --}}
+    {{-- แจ้งเตือนข้อผิดพลาดจากการตรวจสอบ --}}
     @if($errors->any())
-        <div class="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-6 py-4 rounded-lg mb-6">
-            <ul class="list-disc list-inside">
+        <div class="tp-card" style="border-left:4px solid #d9534f;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;color:#d9534f;font-weight:700;">
+                <i class="fas fa-circle-exclamation"></i> พบข้อผิดพลาด กรุณาตรวจสอบ
+            </div>
+            <ul style="margin:0;padding-left:20px;color:var(--ink2);font-size:14px;line-height:1.8;">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -27,84 +36,96 @@
     @endif
 
     <form method="POST"
-          action="{{ $template ? route('admin.fortune.response-templates.update', $template) : route('admin.fortune.response-templates.store') }}"
-          x-data="templateForm()">
+          action="{{ $template ? route('admin.fortune.response-templates.update', $template) : route('admin.fortune.response-templates.store') }}">
         @csrf
         @if($template)
             @method('PUT')
         @endif
 
-        <div class="space-y-6">
-            {{-- ข้อมูลพื้นฐาน --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">ข้อมูลพื้นฐาน</h2>
+        <div style="display:flex;flex-direction:column;gap:18px;">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {{-- ชื่อ --}}
+            {{-- ข้อมูลพื้นฐาน --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:16px;">
+                    <i class="fas fa-circle-info" style="color:var(--accent1);"></i> ข้อมูลพื้นฐาน
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+                    {{-- ชื่อเทมเพลต --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อเทมเพลต *</label>
-                        <input type="text" name="name" value="{{ old('name', $template->name ?? '') }}"
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                               required placeholder="เช่น คำทำนายพื้นฐาน - มาตรฐาน">
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px;">ชื่อเทมเพลต *</label>
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <input type="text" name="name" value="{{ old('name', $template->name ?? '') }}"
+                                   required placeholder="เช่น คำทำนายพื้นฐาน - มาตรฐาน"
+                                   style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                        </div>
                     </div>
 
                     {{-- Slug --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug (อัตโนมัติ)</label>
-                        <input type="text" name="slug" value="{{ old('slug', $template->slug ?? '') }}"
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                               placeholder="auto-generated-from-name">
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px;">Slug (อัตโนมัติ)</label>
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <input type="text" name="slug" value="{{ old('slug', $template->slug ?? '') }}"
+                                   placeholder="auto-generated-from-name"
+                                   style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                        </div>
                     </div>
 
                     {{-- ประเภท --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ประเภท *</label>
-                        <select name="type"
-                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                                required>
-                            <option value="basic" {{ old('type', $template->type ?? '') === 'basic' ? 'selected' : '' }}>🔮 คำทำนายพื้นฐาน</option>
-                            <option value="deep" {{ old('type', $template->type ?? '') === 'deep' ? 'selected' : '' }}>🌟 คำทำนายเชิงลึก</option>
-                            <option value="welcome" {{ old('type', $template->type ?? '') === 'welcome' ? 'selected' : '' }}>👋 ข้อความต้อนรับ</option>
-                            <option value="payment" {{ old('type', $template->type ?? '') === 'payment' ? 'selected' : '' }}>💰 แจ้งชำระเงิน</option>
-                            <option value="limit_exceeded" {{ old('type', $template->type ?? '') === 'limit_exceeded' ? 'selected' : '' }}>⏳ หมดโควต้าฟรี</option>
-                            <option value="error" {{ old('type', $template->type ?? '') === 'error' ? 'selected' : '' }}>❌ ข้อผิดพลาด</option>
-                        </select>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px;">ประเภท *</label>
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <select name="type" required
+                                    style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                                <option value="basic" {{ old('type', $template->type ?? '') === 'basic' ? 'selected' : '' }}>🔮 คำทำนายพื้นฐาน</option>
+                                <option value="deep" {{ old('type', $template->type ?? '') === 'deep' ? 'selected' : '' }}>🌟 คำทำนายเชิงลึก</option>
+                                <option value="welcome" {{ old('type', $template->type ?? '') === 'welcome' ? 'selected' : '' }}>👋 ข้อความต้อนรับ</option>
+                                <option value="payment" {{ old('type', $template->type ?? '') === 'payment' ? 'selected' : '' }}>💰 แจ้งชำระเงิน</option>
+                                <option value="limit_exceeded" {{ old('type', $template->type ?? '') === 'limit_exceeded' ? 'selected' : '' }}>⏳ หมดโควต้าฟรี</option>
+                                <option value="error" {{ old('type', $template->type ?? '') === 'error' ? 'selected' : '' }}>❌ ข้อผิดพลาด</option>
+                            </select>
+                        </div>
                     </div>
 
                     {{-- ลำดับ --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ลำดับ</label>
-                        <input type="number" name="sort_order" value="{{ old('sort_order', $template->sort_order ?? 0) }}"
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                               min="0">
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px;">ลำดับ</label>
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <input type="number" name="sort_order" value="{{ old('sort_order', $template->sort_order ?? 0) }}" min="0"
+                                   style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                        </div>
                     </div>
                 </div>
 
-                {{-- Checkboxes --}}
-                <div class="flex gap-6 mt-4">
-                    <label class="flex items-center gap-2 cursor-pointer">
+                {{-- ตัวเลือกเปิดใช้งาน --}}
+                <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:18px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-size:14px;">
                         <input type="checkbox" name="is_active" value="1"
                                {{ old('is_active', $template->is_active ?? true) ? 'checked' : '' }}
-                               class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                        <span class="text-gray-700 dark:text-gray-300">เปิดใช้งาน</span>
+                               style="width:18px;height:18px;accent-color:var(--accent1);cursor:pointer;">
+                        เปิดใช้งาน
                     </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-size:14px;">
                         <input type="checkbox" name="is_default" value="1"
                                {{ old('is_default', $template->is_default ?? false) ? 'checked' : '' }}
-                               class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                        <span class="text-gray-700 dark:text-gray-300">เป็นเทมเพลตเริ่มต้น</span>
+                               style="width:18px;height:18px;accent-color:var(--accent1);cursor:pointer;">
+                        เป็นเทมเพลตเริ่มต้น
                     </label>
                 </div>
             </div>
 
             {{-- เนื้อหาเทมเพลต --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">เนื้อหาเทมเพลต</h2>
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:16px;">
+                    <i class="fas fa-pen-nib" style="color:var(--accent1);"></i> เนื้อหาเทมเพลต
+                </div>
 
                 {{-- Placeholders ที่ใช้ได้ --}}
-                <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 mb-4">
-                    <p class="text-sm font-medium text-indigo-800 dark:text-indigo-200 mb-2">Placeholders ที่ใช้ได้ (คลิกเพื่อเพิ่ม):</p>
-                    <div class="flex flex-wrap gap-2">
+                <div class="tp-inset" style="padding:14px 16px;border-radius:14px;margin-bottom:18px;">
+                    <p style="font-size:13px;font-weight:600;color:var(--ink2);margin:0 0 10px;">
+                        <i class="fas fa-tags" style="color:var(--accent1);"></i> Placeholders ที่ใช้ได้ (คลิกเพื่อเพิ่ม)
+                    </p>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
                         @foreach([
                             '{response}' => 'คำทำนายจาก AI',
                             '{user_name}' => 'ชื่อผู้ใช้',
@@ -124,7 +145,8 @@
                         ] as $placeholder => $desc)
                             <button type="button"
                                     @click="insertPlaceholder('{{ $placeholder }}')"
-                                    class="text-xs bg-white dark:bg-gray-700 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-800 transition"
+                                    class="tp-pill tp-pill-soft"
+                                    style="cursor:pointer;border:0;font-family:monospace;font-size:12px;"
                                     title="{{ $desc }}">
                                 {{ $placeholder }}
                             </button>
@@ -133,66 +155,80 @@
                 </div>
 
                 {{-- ข้อความส่วนหัว --}}
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ข้อความส่วนหัว (ก่อนคำทำนาย)</label>
-                    <input type="text" name="header_text" value="{{ old('header_text', $template->header_text ?? '') }}"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                           placeholder="เว้นว่างถ้าไม่ต้องการ">
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px;">ข้อความส่วนหัว (ก่อนคำทำนาย)</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <input type="text" name="header_text" value="{{ old('header_text', $template->header_text ?? '') }}"
+                               placeholder="เว้นว่างถ้าไม่ต้องการ"
+                               style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                    </div>
                 </div>
 
                 {{-- เนื้อหาหลัก --}}
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เนื้อหาหลัก *</label>
-                    <textarea name="body" id="templateBody" rows="12"
-                              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
-                              required placeholder="ใส่เนื้อหาเทมเพลต รองรับ placeholders เช่น {response}, {user_name}">{{ old('body', $template->body ?? '') }}</textarea>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px;">เนื้อหาหลัก *</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <textarea name="body" id="templateBody" rows="12" required
+                                  placeholder="ใส่เนื้อหาเทมเพลต รองรับ placeholders เช่น {response}, {user_name}"
+                                  style="width:100%;background:transparent;border:0;outline:0;padding:12px 14px;color:var(--ink);font-size:13px;font-family:monospace;line-height:1.6;resize:vertical;">{{ old('body', $template->body ?? '') }}</textarea>
+                    </div>
                 </div>
 
                 {{-- ข้อความส่วนท้าย --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ข้อความส่วนท้าย (หลังคำทำนาย)</label>
-                    <input type="text" name="footer_text" value="{{ old('footer_text', $template->footer_text ?? '') }}"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                           placeholder="เว้นว่างถ้าไม่ต้องการ">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px;">ข้อความส่วนท้าย (หลังคำทำนาย)</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <input type="text" name="footer_text" value="{{ old('footer_text', $template->footer_text ?? '') }}"
+                               placeholder="เว้นว่างถ้าไม่ต้องการ"
+                               style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                    </div>
                 </div>
             </div>
 
             {{-- รูปภาพ --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">รูปภาพ (ส่งผ่าน Messenger)</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:8px;">
+                    <i class="fas fa-image" style="color:var(--accent1);"></i> รูปภาพ (ส่งผ่าน Messenger)
+                </div>
+                <p class="tp-muted" style="font-size:13px;margin:0 0 16px;">
                     ระบุ URL รูปภาพ (HTTPS) ที่จะส่งพร้อมข้อความ เช่น QR Code ชำระเงิน, รูปบัญชีธนาคาร
                 </p>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
                     {{-- รูปส่วนหัว --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px;">
                             🖼️ รูปส่วนหัว (ส่งก่อนข้อความ)
                         </label>
-                        <input type="url" name="header_image_url" value="{{ old('header_image_url', $template->header_image_url ?? '') }}"
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                               placeholder="https://example.com/header.jpg"
-                               x-model="headerImageUrl">
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <input type="url" name="header_image_url" value="{{ old('header_image_url', $template->header_image_url ?? '') }}"
+                                   placeholder="https://example.com/header.jpg"
+                                   x-model="headerImageUrl"
+                                   style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                        </div>
                         <template x-if="headerImageUrl">
                             <img :src="headerImageUrl" alt="ตัวอย่างรูปส่วนหัว"
-                                 class="mt-2 rounded-lg max-h-32 object-contain border border-gray-200 dark:border-gray-600"
+                                 class="tp-inset-sm"
+                                 style="margin-top:10px;border-radius:12px;max-height:128px;object-fit:contain;padding:6px;"
                                  x-on:error="$el.style.display='none'">
                         </template>
                     </div>
 
                     {{-- รูปส่วนท้าย (QR Code) --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px;">
                             💰 รูปส่วนท้าย (เช่น QR Code / บัญชีธนาคาร)
                         </label>
-                        <input type="url" name="footer_image_url" value="{{ old('footer_image_url', $template->footer_image_url ?? '') }}"
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                               placeholder="https://example.com/qr-code.jpg"
-                               x-model="footerImageUrl">
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <input type="url" name="footer_image_url" value="{{ old('footer_image_url', $template->footer_image_url ?? '') }}"
+                                   placeholder="https://example.com/qr-code.jpg"
+                                   x-model="footerImageUrl"
+                                   style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                        </div>
                         <template x-if="footerImageUrl">
                             <img :src="footerImageUrl" alt="ตัวอย่างรูปส่วนท้าย"
-                                 class="mt-2 rounded-lg max-h-32 object-contain border border-gray-200 dark:border-gray-600"
+                                 class="tp-inset-sm"
+                                 style="margin-top:10px;border-radius:12px;max-height:128px;object-fit:contain;padding:6px;"
                                  x-on:error="$el.style.display='none'">
                         </template>
                     </div>
@@ -200,30 +236,30 @@
             </div>
 
             {{-- ดูตัวอย่าง --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">ดูตัวอย่าง</h2>
-                    <button type="button" @click="loadPreview()"
-                            class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition text-sm">
-                        โหลดตัวอย่าง
+            <div class="tp-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+                    <div class="tp-section-h" style="margin:0;">
+                        <i class="fas fa-eye" style="color:var(--accent1);"></i> ดูตัวอย่าง
+                    </div>
+                    <button type="button" @click="loadPreview()" class="tp-btn tp-btn-sm">
+                        <i class="fas fa-rotate"></i> โหลดตัวอย่าง
                     </button>
                 </div>
-                <div x-show="previewText" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                    <pre class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono" x-text="previewText"></pre>
+                <div x-show="previewText" class="tp-inset" style="padding:16px;border-radius:14px;">
+                    <pre style="font-size:13px;color:var(--ink);white-space:pre-wrap;font-family:monospace;margin:0;line-height:1.7;" x-text="previewText"></pre>
                 </div>
-                <div x-show="!previewText" class="text-center text-gray-400 dark:text-gray-500 py-8">
+                <div x-show="!previewText" style="text-align:center;color:var(--ink2);padding:32px 0;">
+                    <i class="fas fa-inbox" style="font-size:32px;opacity:.5;display:block;margin-bottom:8px;"></i>
                     กดปุ่ม "โหลดตัวอย่าง" เพื่อดูผลลัพธ์
                 </div>
             </div>
 
-            {{-- Submit --}}
-            <div class="flex gap-4">
-                <button type="submit"
-                        class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg shadow-lg transition font-medium">
-                    {{ $template ? 'บันทึกการแก้ไข' : 'สร้างเทมเพลต' }}
+            {{-- ปุ่มดำเนินการ --}}
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-floppy-disk"></i> {{ $template ? 'บันทึกการแก้ไข' : 'สร้างเทมเพลต' }}
                 </button>
-                <a href="{{ route('admin.fortune.response-templates.index') }}"
-                   class="px-8 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition">
+                <a href="{{ route('admin.fortune.response-templates.index') }}" class="tp-btn">
                     ยกเลิก
                 </a>
             </div>
@@ -234,12 +270,14 @@
 
 @push('scripts')
 <script>
+// ฟังก์ชัน Alpine สำหรับฟอร์มเทมเพลต — แทรก placeholder, ตัวอย่างรูป, โหลดตัวอย่างผ่าน AJAX
 function templateForm() {
     return {
         headerImageUrl: '{{ old('header_image_url', $template->header_image_url ?? '') }}',
         footerImageUrl: '{{ old('footer_image_url', $template->footer_image_url ?? '') }}',
         previewText: '',
 
+        // แทรก placeholder ลงในตำแหน่ง cursor ของช่องเนื้อหาหลัก
         insertPlaceholder(placeholder) {
             const textarea = document.getElementById('templateBody');
             const start = textarea.selectionStart;
@@ -250,6 +288,7 @@ function templateForm() {
             textarea.focus();
         },
 
+        // โหลดตัวอย่างผลลัพธ์จากเซิร์ฟเวอร์ (AJAX)
         async loadPreview() {
             try {
                 const body = document.getElementById('templateBody').value;
