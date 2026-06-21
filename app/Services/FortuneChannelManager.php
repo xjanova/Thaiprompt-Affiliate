@@ -1038,11 +1038,27 @@ class FortuneChannelManager
                     //   user spec: "เอาปุ่ม พอแค่นี้ออกด้วย" หลังเปิดไพ่เสร็จ
                     //   → ส่ง plain message (AI ใน opening greeting ก็เชิญถามอยู่แล้ว)
                     //   ถ้า trait ส่ง quick_replies มาเฉพาะ → ก็ใช้ตามนั้น (custom case)
-                    if (! empty($result['quick_replies'])) {
-                        return $fbService->sendQuickReplies($userId, $message, $result['quick_replies'], $extra);
+                    $ok = ! empty($result['quick_replies'])
+                        ? $fbService->sendQuickReplies($userId, $message, $result['quick_replies'], $extra)
+                        : $fbService->sendMessage($userId, $message, $extra);
+
+                    // 🐛 (2026-06-21) mark พื้นดวง (seq=1) delivered เมื่อส่งสำเร็จ — กัน
+                    //   fortune:celtic-redeliver cron (ทุกนาที) จับ delivered_at=null แล้ว re-push ซ้ำ
+                    //   เคสจริง FTU-260621-E2159 (reading 7382): ลูกค้า idle 68s หลังพื้นดวง → cron ส่งซ้ำ 01:52
+                    //   fix delivery-confirm 2026-05-28/29 ใส่ให้ celtic_question_answered (Q2+) แต่ตก base-chart path นี้
+                    //   idempotent: ตอน all_picked มีแค่ seq=1 ที่ answered → mark seq=1; ส่ง fail = ไม่ mark (ปล่อย cron redeliver ตามเดิม)
+                    if ($ok) {
+                        try {
+                            ($result['reading'] ?? null)?->celticQuestions()
+                                ->whereNotNull('answered_at')
+                                ->whereNull('delivered_at')
+                                ->update(['delivered_at' => now()]);
+                        } catch (\Throwable $e) {
+                            \Log::debug('FB Celtic all_picked: markDelivered fail (non-blocking)', ['error' => $e->getMessage()]);
+                        }
                     }
 
-                    return $fbService->sendMessage($userId, $message, $extra);
+                    return $ok;
                 })(),
 
                 // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — user spec: ลูกค้าพิมพ์คำถามได้เลย
@@ -2541,7 +2557,23 @@ class FortuneChannelManager
                     }
 
                     // 🛑 (2026-05-14 v2) ลบ "พอแค่นี้" ออกจาก opening — AI ทักเองแล้ว
-                    return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                    $ok = $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+
+                    // 🐛 (2026-06-21) mark พื้นดวง (seq=1) delivered เมื่อส่งสำเร็จ — กัน fortune:celtic-redeliver
+                    //   cron จับ delivered_at=null แล้ว re-push ซ้ำ (base-chart path ตกหล่นจาก fix 2026-05-28/29
+                    //   ที่ใส่ให้ celtic_question_answered). idempotent: ตอน all_picked มีแค่ seq=1 answered → mark seq=1
+                    if ($ok) {
+                        try {
+                            ($result['reading'] ?? null)?->celticQuestions()
+                                ->whereNotNull('answered_at')
+                                ->whereNull('delivered_at')
+                                ->update(['delivered_at' => now()]);
+                        } catch (\Throwable $e) {
+                            \Log::debug('LINE Celtic all_picked: markDelivered fail (non-blocking)', ['error' => $e->getMessage()]);
+                        }
+                    }
+
+                    return $ok;
                 })(),
 
                 // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — เหลือแค่ "ยุติการทำนาย"
