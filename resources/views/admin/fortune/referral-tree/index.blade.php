@@ -1,259 +1,231 @@
 {{--
-    ผังสายงานดูดวง - Admin
+    ผังสายงานดูดวง - Admin (ธีม V4 "นวลทองคำ")
     แสดงโครงสร้างการแนะนำเพื่อนดูดวง (L1/L2) แบบ Interactive
-    ใช้ OrgChartViewer + Fortune commission data overlay
+    ใช้ OrgChartViewer (org-tree lib เดิม) + Fortune commission data overlay
+    โหลดข้อมูลผ่าน AJAX endpoint: admin.fortune.referral-tree.tree-data
 
     @author TP-Affiliate Team
-    @version 3.0.0
+    @version 4.0.0 (V4 นวลทองคำ)
 --}}
 
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'ผังสายงานดูดวง')
 
-@push('styles')
-<style>
-    /* กำหนดความสูงขั้นต่ำสำหรับ chart container */
-    .org-chart-container {
-        height: calc(100vh - 450px);
-        min-height: 500px;
-        max-height: 700px;
-    }
-
-    @media (max-width: 768px) {
-        .org-chart-container {
-            height: calc(100vh - 350px);
-            min-height: 400px;
-        }
-    }
-</style>
-@endpush
-
 @section('content')
-<div class="space-y-6">
-    {{-- Premium Hero Header - Purple/Indigo Gradient (ธีมดูดวง) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 dark:from-purple-800 dark:via-indigo-800 dark:to-violet-800 rounded-2xl shadow-2xl p-6 md:p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 left-0 w-72 h-72 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 right-0 w-72 h-72 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s;"></div>
+<div style="display:flex;flex-direction:column;gap:18px;">
+
+    {{-- ===== HEADER: eyebrow + h1 ซ้าย / ปุ่มขวา ===== --}}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div>
+            <div class="tp-muted" style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">
+                หลังบ้าน · ระบบดูดวง · ผังสายงาน
+            </div>
+            <h1 class="tp-num" style="font-size:26px;font-weight:800;margin:0;">ผังสายงานดูดวง</h1>
+            <p class="tp-muted" style="margin:6px 0 0;font-size:13px;">
+                แสดงโครงสร้างการแนะนำเพื่อนดูดวง L1/L2 แบบ Interactive
+            </p>
         </div>
 
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                <div class="flex items-center gap-4">
-                    <div class="bg-white/20 backdrop-blur-sm p-4 rounded-2xl">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">ผังสายงานดูดวง</h1>
-                        <p class="text-purple-100 text-base md:text-lg mt-1">แสดงโครงสร้างการแนะนำเพื่อนดูดวง L1/L2 แบบ Interactive</p>
-                    </div>
-                </div>
-
-                {{-- Quick Actions --}}
-                <div class="flex flex-wrap items-center gap-3">
-                    <a href="{{ route('admin.fortune.commissions.index') }}"
-                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg text-sm">
-                        <i class="fas fa-hand-holding-usd w-4"></i>
-                        ภาพรวมคอมมิชชั่น
-                    </a>
-                    <a href="{{ route('admin.fortune.commissions.manage') }}"
-                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg text-sm">
-                        <i class="fas fa-tasks w-4"></i>
-                        จัดการคอมมิชชั่น
-                    </a>
-                </div>
-            </div>
+        {{-- ปุ่มลัด --}}
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            @if(Route::has('admin.fortune.commissions.index'))
+                <a href="{{ route('admin.fortune.commissions.index') }}" class="tp-btn">
+                    <i class="fas fa-hand-holding-dollar"></i>
+                    <span>ภาพรวมคอมมิชชั่น</span>
+                </a>
+            @endif
+            @if(Route::has('admin.fortune.commissions.manage'))
+                <a href="{{ route('admin.fortune.commissions.manage') }}" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-list-check"></i>
+                    <span>จัดการคอมมิชชั่น</span>
+                </a>
+            @endif
         </div>
     </div>
 
-    {{-- Member Selector Card --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
-        <div class="flex items-center gap-3 mb-6">
-            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-            </div>
+    {{-- ===== การ์ดเลือกสมาชิก (CRUD-form pattern) ===== --}}
+    <div class="tp-card">
+        <div class="tp-section-h" style="display:flex;align-items:center;gap:12px;">
+            <span class="tp-icon-btn" aria-hidden="true"><i class="fas fa-user-magnifying-glass"></i></span>
             <div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">เลือกสมาชิกเพื่อดูผังสายงานดูดวง</h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400">เลือกสมาชิกที่ต้องการดูโครงสร้างสายงานการแนะนำดูดวง</p>
+                <div style="font-weight:700;color:var(--ink);">เลือกสมาชิกเพื่อดูผังสายงานดูดวง</div>
+                <div class="tp-muted" style="font-size:12px;">เลือกสมาชิกที่ต้องการดูโครงสร้างสายงานการแนะนำดูดวง</div>
             </div>
         </div>
 
-        <div class="flex flex-col md:flex-row gap-4">
-            <div class="flex-1">
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                    สมาชิก
+        <div class="tp-divider"></div>
+
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
+            {{-- ช่องเลือกสมาชิก --}}
+            <div style="flex:1 1 280px;min-width:240px;">
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">
+                    <i class="fas fa-magnifying-glass" style="margin-right:4px;"></i> สมาชิก
                 </label>
-                <select id="member-selector"
-                        class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm">
-                    <option value="">-- เลือกสมาชิก --</option>
-                    @foreach($members as $member)
-                        <option value="{{ $member->id }}" data-code="{{ $member->member_code }}">
-                            {{ $member->member_code }} - {{ $member->user->name ?? 'Unknown' }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select id="member-selector"
+                            style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                        <option value="">-- เลือกสมาชิก --</option>
+                        @foreach($members as $member)
+                            <option value="{{ $member->id }}" data-code="{{ $member->member_code }}">
+                                {{ $member->member_code }} - {{ $member->user->name ?? 'Unknown' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
-            <div class="flex flex-col sm:flex-row items-start sm:items-end gap-3">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ความลึก</label>
+
+            {{-- ความลึก --}}
+            <div style="flex:0 0 auto;min-width:150px;">
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">
+                    <i class="fas fa-layer-group" style="margin-right:4px;"></i> ความลึก
+                </label>
+                <div class="tp-well tp-input" style="padding:0;">
                     <select id="depth-selector"
-                            class="px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm min-w-[120px]">
+                            style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
                         <option value="3">3 ระดับ</option>
                         <option value="5" selected>5 ระดับ</option>
                         <option value="7">7 ระดับ</option>
                         <option value="10">10 ระดับ</option>
                     </select>
                 </div>
-                <button id="btn-view-tree"
-                        class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 min-w-[160px]">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                    </svg>
-                    แสดงผังสายงาน
+            </div>
+
+            {{-- ปุ่มแสดงผัง --}}
+            <div style="flex:0 0 auto;">
+                <button id="btn-view-tree" type="button" class="tp-btn tp-btn-primary" style="padding:12px 22px;">
+                    <i class="fas fa-eye"></i>
+                    <span>แสดงผังสายงาน</span>
                 </button>
             </div>
         </div>
     </div>
 
-    {{-- Tree Viewer Container --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">โครงสร้างสายงานดูดวง</h3>
-                </div>
-                <div id="current-member-info" class="text-sm text-gray-600 dark:text-gray-400 hidden">
-                    กำลังดู: <span id="current-member-name" class="font-semibold text-purple-600 dark:text-purple-400"></span>
-                </div>
+    {{-- ===== ตัวแสดงผัง (org-tree viz — เก็บ lib เดิม แค่ reskin container) ===== --}}
+    <div class="tp-card" style="padding:0;overflow:hidden;">
+        {{-- หัวการ์ดผัง --}}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--sd);background:var(--a1soft);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-sitemap" style="color:var(--accent1);"></i>
+                <span style="font-weight:700;color:var(--ink);">โครงสร้างสายงานดูดวง</span>
+            </div>
+            <div id="current-member-info" class="tp-muted" style="font-size:13px;display:none;">
+                กำลังดู: <span id="current-member-name" style="font-weight:700;color:var(--accent1);"></span>
             </div>
         </div>
-        <div class="org-chart-container">
-            <div id="fortune-tree-container" class="w-full h-full"></div>
+
+        {{-- container ของ org chart (lib เดิมวาดในนี้) --}}
+        <div class="tp-inset" style="margin:14px;border-radius:14px;overflow:hidden;">
+            <div id="org-chart-shell" style="height:calc(100vh - 460px);min-height:480px;max-height:700px;">
+                <div id="fortune-tree-container" style="width:100%;height:100%;"></div>
+            </div>
         </div>
     </div>
 
-    {{-- Legend + Info --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {{-- Legend --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-info-circle text-white"></i>
-                </div>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white">คำอธิบายสัญลักษณ์</h3>
+    {{-- ===== คำอธิบาย + วิธีใช้ (2 คอลัมน์) ===== --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;">
+
+        {{-- คำอธิบายสัญลักษณ์ --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex;align-items:center;gap:10px;">
+                <span class="tp-icon-btn" aria-hidden="true"><i class="fas fa-circle-info"></i></span>
+                <span style="font-weight:700;color:var(--ink);">คำอธิบายสัญลักษณ์</span>
             </div>
-            <div class="space-y-3">
-                <div class="flex items-center gap-3">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">L1</span>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">ชั้นที่ 1 (สายตรง) — คอมมิชชั่นจากผู้แนะนำโดยตรง</span>
+            <div class="tp-divider"></div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="tp-pill" style="background:rgba(86,137,184,.18);color:#5689b8;font-weight:700;">L1</span>
+                    <span class="tp-muted" style="font-size:13px;">ชั้นที่ 1 (สายตรง) — คอมมิชชั่นจากผู้แนะนำโดยตรง</span>
                 </div>
-                <div class="flex items-center gap-3">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">L2</span>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">ชั้นที่ 2 (ชั้นหลาน) — คอมมิชชั่นจากผู้แนะนำของผู้แนะนำ</span>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="tp-pill" style="background:rgba(183,154,232,.18);color:#b79ae8;font-weight:700;">L2</span>
+                    <span class="tp-muted" style="font-size:13px;">ชั้นที่ 2 (ชั้นหลาน) — คอมมิชชั่นจากผู้แนะนำของผู้แนะนำ</span>
                 </div>
-                <div class="flex items-center gap-3">
-                    <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                        <i class="fas fa-check-circle mr-1"></i> active
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="tp-pill" style="background:rgba(90,160,126,.18);color:#5aa07e;font-weight:700;">
+                        <i class="fas fa-circle-check" style="margin-right:4px;"></i> active
                     </span>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">สมาชิกที่ยังใช้งานอยู่</span>
+                    <span class="tp-muted" style="font-size:13px;">สมาชิกที่ยังใช้งานอยู่</span>
                 </div>
-                <div class="flex items-center gap-3">
-                    <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
-                        <i class="fas fa-times-circle mr-1"></i> inactive
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="tp-pill" style="background:rgba(217,83,79,.18);color:#d9534f;font-weight:700;">
+                        <i class="fas fa-circle-xmark" style="margin-right:4px;"></i> inactive
                     </span>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">สมาชิกที่ไม่ใช้งาน</span>
+                    <span class="tp-muted" style="font-size:13px;">สมาชิกที่ไม่ใช้งาน</span>
                 </div>
             </div>
         </div>
 
         {{-- วิธีใช้งาน --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-lightbulb text-white"></i>
-                </div>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white">วิธีใช้งาน</h3>
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex;align-items:center;gap:10px;">
+                <span class="tp-icon-btn" aria-hidden="true"><i class="fas fa-lightbulb"></i></span>
+                <span style="font-weight:700;color:var(--ink);">วิธีใช้งาน</span>
             </div>
-            <div class="space-y-3">
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span class="text-sm font-bold text-purple-600 dark:text-purple-400">1</span>
-                    </div>
-                    <p class="text-sm text-gray-700 dark:text-gray-300">เลือกสมาชิกที่ต้องการดูผังจาก dropdown ด้านบน</p>
+            <div class="tp-divider"></div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <span class="tp-num" style="flex:0 0 28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--a1soft);color:var(--accent1);font-weight:800;font-size:13px;">1</span>
+                    <span class="tp-muted" style="font-size:13px;">เลือกสมาชิกที่ต้องการดูผังจาก dropdown ด้านบน</span>
                 </div>
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span class="text-sm font-bold text-purple-600 dark:text-purple-400">2</span>
-                    </div>
-                    <p class="text-sm text-gray-700 dark:text-gray-300">กดปุ่ม "แสดงผังสายงาน" เพื่อแสดงโครงสร้าง</p>
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <span class="tp-num" style="flex:0 0 28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--a1soft);color:var(--accent1);font-weight:800;font-size:13px;">2</span>
+                    <span class="tp-muted" style="font-size:13px;">กดปุ่ม "แสดงผังสายงาน" เพื่อแสดงโครงสร้าง</span>
                 </div>
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span class="text-sm font-bold text-purple-600 dark:text-purple-400">3</span>
-                    </div>
-                    <p class="text-sm text-gray-700 dark:text-gray-300"><strong>เลื่อนดู:</strong> คลิกค้างลาก (Desktop) / ลากนิ้ว (Mobile)</p>
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <span class="tp-num" style="flex:0 0 28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--a1soft);color:var(--accent1);font-weight:800;font-size:13px;">3</span>
+                    <span class="tp-muted" style="font-size:13px;"><strong style="color:var(--ink);">เลื่อนดู:</strong> คลิกค้างลาก (Desktop) / ลากนิ้ว (Mobile)</span>
                 </div>
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span class="text-sm font-bold text-purple-600 dark:text-purple-400">4</span>
-                    </div>
-                    <p class="text-sm text-gray-700 dark:text-gray-300"><strong>ซูม:</strong> Scroll wheel (Desktop) / บีบนิ้ว (Mobile)</p>
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <span class="tp-num" style="flex:0 0 28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--a1soft);color:var(--accent1);font-weight:800;font-size:13px;">4</span>
+                    <span class="tp-muted" style="font-size:13px;"><strong style="color:var(--ink);">ซูม:</strong> Scroll wheel (Desktop) / บีบนิ้ว (Mobile)</span>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Feature Highlights --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-lg border-l-4 border-purple-500 dark:border-purple-400 hover:shadow-xl transition-all">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <i class="fas fa-sitemap text-white"></i>
-                </div>
-                <h3 class="text-base font-bold text-gray-900 dark:text-white">ระบบ L1/L2</h3>
+    {{-- ===== ไฮไลต์ฟีเจอร์ (3 ไทล์) ===== --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+        <div class="tp-card tp-card-hover">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <span class="tp-icon-btn" aria-hidden="true"><i class="fas fa-sitemap"></i></span>
+                <span style="font-weight:700;color:var(--ink);">ระบบ L1/L2</span>
             </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">โครงสร้าง 2 ชั้น — L1 สายตรง + L2 ชั้นหลาน สำหรับคอมมิชชั่นดูดวง</p>
+            <p class="tp-muted" style="font-size:13px;margin:0;">โครงสร้าง 2 ชั้น — L1 สายตรง + L2 ชั้นหลาน สำหรับคอมมิชชั่นดูดวง</p>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-lg border-l-4 border-indigo-500 dark:border-indigo-400 hover:shadow-xl transition-all">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <i class="fas fa-chart-bar text-white"></i>
-                </div>
-                <h3 class="text-base font-bold text-gray-900 dark:text-white">ข้อมูลรายได้</h3>
+        <div class="tp-card tp-card-hover">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <span class="tp-icon-btn" aria-hidden="true"><i class="fas fa-chart-column"></i></span>
+                <span style="font-weight:700;color:var(--ink);">ข้อมูลรายได้</span>
             </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">แสดงจำนวนคอมมิชชั่นและรายได้รวมในแต่ละ node ของสายงาน</p>
+            <p class="tp-muted" style="font-size:13px;margin:0;">แสดงจำนวนคอมมิชชั่นและรายได้รวมในแต่ละ node ของสายงาน</p>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-lg border-l-4 border-violet-500 dark:border-violet-400 hover:shadow-xl transition-all">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <i class="fas fa-mobile-alt text-white"></i>
-                </div>
-                <h3 class="text-base font-bold text-gray-900 dark:text-white">Touch-Friendly</h3>
+        <div class="tp-card tp-card-hover">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <span class="tp-icon-btn" aria-hidden="true"><i class="fas fa-mobile-screen"></i></span>
+                <span style="font-weight:700;color:var(--ink);">Touch-Friendly</span>
             </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">รองรับการใช้งานบนมือถือ ลากเลื่อนและซูมด้วยนิ้วได้</p>
+            <p class="tp-muted" style="font-size:13px;margin:0;">รองรับการใช้งานบนมือถือ ลากเลื่อนและซูมด้วยนิ้วได้</p>
         </div>
     </div>
+
 </div>
 @endsection
 
 @push('scripts')
+{{-- org-tree viz lib เดิม (เก็บ logic 100% — เป็น org tree ไม่ใช่ data chart) --}}
 <script src="{{ asset('assets/js/org-chart-viewer.js') }}"></script>
+<style>
+    /* ปรับความสูง container ผังให้ responsive (ย้ายมาจาก styles stack เดิม) */
+    @media (max-width: 768px) {
+        #org-chart-shell {
+            height: calc(100vh - 360px) !important;
+            min-height: 400px !important;
+        }
+    }
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let viewer = null;
@@ -266,20 +238,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * โหลดและแสดงผังสายงานดูดวง
+     * คง AJAX endpoint + payload เดิม 100%
      */
     async function loadFortuneTree() {
         const memberId = memberSelector.value;
         const depth = depthSelector.value;
 
         if (!memberId) {
-            alert('กรุณาเลือกสมาชิก');
+            // แจ้งเตือนผ่าน toast ของ layout V4 (fallback alert)
+            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'warning', message: 'กรุณาเลือกสมาชิก' } }));
             return;
         }
 
         // แสดงชื่อสมาชิกที่เลือก
         const selectedOption = memberSelector.options[memberSelector.selectedIndex];
         currentMemberName.textContent = selectedOption.text;
-        currentMemberInfo.classList.remove('hidden');
+        currentMemberInfo.style.display = '';
 
         // สร้าง viewer ถ้ายังไม่มี
         if (!viewer) {
@@ -296,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
             viewer.showLoading();
         }
 
-        // Fetch tree data จาก API
+        // Fetch tree data จาก API (endpoint + query เดิม)
         try {
             const response = await fetch(`/admin/fortune/referral-tree/${memberId}/tree-data?depth=${depth}`);
             const result = await response.json();
@@ -305,12 +279,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 viewer.setData(result.data);
             } else {
                 viewer.hideLoading();
-                alert('ไม่พบข้อมูลผังสายงาน');
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'ไม่พบข้อมูลผังสายงาน' } }));
             }
         } catch (error) {
             console.error('Error loading fortune tree:', error);
             if (viewer) viewer.hideLoading();
-            alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'เกิดข้อผิดพลาดในการโหลดข้อมูล' } }));
         }
     }
 
@@ -324,14 +298,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Auto-load first member if available
+    // Auto-load สมาชิกคนแรกถ้ามี
     const firstMember = memberSelector.querySelector('option:nth-child(2)');
     if (firstMember) {
         memberSelector.value = firstMember.value;
         loadFortuneTree();
     }
 
-    // Responsive handling
+    // จัดการ responsive resize ของผัง
     let resizeTimeout;
     window.addEventListener('resize', function() {
         clearTimeout(resizeTimeout);

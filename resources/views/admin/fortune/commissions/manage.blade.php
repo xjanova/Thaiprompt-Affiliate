@@ -1,328 +1,361 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'จัดการคอมมิชชั่นดูดวง')
 
 @section('content')
-<div class="container mx-auto px-4 py-8" x-data="commissionManager()">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+{{-- ธีม V4 "นวลทองคำ" — หน้าจัดการคอมมิชชั่นดูดวง (อนุมัติ/ปฏิเสธ/ปรับยอด/จ่าย/สร้างเอง + ตั้งค่า) --}}
+<div x-data="commissionManager()" style="display:flex;flex-direction:column;gap:18px;">
+
+    {{-- ===== HEADER ===== --}}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                ⚙️ จัดการคอมมิชชั่นดูดวง
+            <div class="tp-muted" style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">
+                หลังบ้าน · ระบบดูดวง · คอมมิชชั่น
+            </div>
+            <h1 class="tp-num" style="font-size:26px;font-weight:800;margin:0;color:var(--ink);">
+                <i class="fas fa-sliders-h" style="color:var(--accent1);margin-right:8px;"></i>จัดการคอมมิชชั่นดูดวง
             </h1>
-            <p class="text-gray-600 dark:text-gray-400">
+            <p class="tp-muted" style="margin:6px 0 0;font-size:13px;">
                 อนุมัติ จ่ายเงิน ปรับจำนวน และตั้งค่าคอมมิชชั่น
             </p>
         </div>
-        <div class="mt-4 md:mt-0 flex gap-3">
-            <a href="{{ route('admin.fortune.commissions.index') }}"
-               class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition flex items-center">
-                <span class="mr-2">📊</span>
-                ภาพรวม
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            @if(Route::has('admin.fortune.commissions.index'))
+            <a href="{{ route('admin.fortune.commissions.index') }}" class="tp-btn">
+                <i class="fas fa-chart-pie"></i> ภาพรวม
             </a>
-            <button @click="showCreateModal = true"
-                    class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition flex items-center">
-                <span class="mr-2">➕</span>
-                สร้างมือ
+            @endif
+            <button @click="showCreateModal = true" class="tp-btn tp-btn-primary">
+                <i class="fas fa-plus"></i> สร้างมือ
             </button>
         </div>
     </div>
 
-    {{-- Settings Panel (Collapsible) --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg mb-6 overflow-hidden">
+    {{-- ===== SETTINGS PANEL (Collapsible) ===== --}}
+    <div class="tp-card" style="padding:0;overflow:hidden;">
         <button @click="showSettings = !showSettings"
-                class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-            <div class="flex items-center gap-3">
-                <span class="text-xl">⚙️</span>
+                style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 20px;background:transparent;border:0;cursor:pointer;text-align:left;color:var(--ink);">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <span style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--inset-sm);color:var(--accent1);font-size:18px;">
+                    <i class="fas fa-cog"></i>
+                </span>
                 <div>
-                    <h3 class="font-bold text-gray-900 dark:text-white">ตั้งค่าคอมมิชชั่น</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <div style="font-weight:700;font-size:15px;color:var(--ink);">ตั้งค่าคอมมิชชั่น</div>
+                    <div class="tp-muted" style="font-size:12px;margin-top:2px;">
                         L1: {{ $settings?->fortune_level1_commission_type === 'percent' ? ($settings->fortune_level1_commission_amount ?? 10).'%' : '฿'.($settings->fortune_level1_commission_amount ?? 10) }}
-                        |
+                        &nbsp;|&nbsp;
                         L2: {{ $settings?->isFortuneLevel2Enabled() ? ($settings->fortune_level2_commission_type === 'percent' ? ($settings->fortune_level2_commission_amount ?? 5).'%' : '฿'.($settings->fortune_level2_commission_amount ?? 5)) : 'ปิด' }}
-                    </p>
+                    </div>
                 </div>
             </div>
-            <svg :class="showSettings ? 'rotate-180' : ''" class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
+            <i class="fas fa-chevron-down" :style="showSettings ? 'transform:rotate(180deg);transition:transform .25s;color:var(--accent1);' : 'transition:transform .25s;color:var(--ink2);'"></i>
         </button>
-        <div x-show="showSettings" x-collapse class="px-6 pb-6 border-t border-gray-200 dark:border-gray-700">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+
+        <div x-show="showSettings" x-collapse class="tp-divider" style="margin:0;">
+            <div style="padding:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+
                 {{-- Level 1 Settings --}}
-                <div class="p-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                    <h4 class="font-bold text-blue-800 dark:text-blue-300 mb-3">👤 Level 1 — สายตรง</h4>
-                    <div class="space-y-3">
+                <div class="tp-tile" style="padding:16px;">
+                    <h4 style="font-weight:700;font-size:14px;margin:0 0 12px;color:var(--ink);">
+                        <i class="fas fa-user" style="color:#5689b8;margin-right:6px;"></i>Level 1 — สายตรง
+                    </h4>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ประเภท</label>
-                            <select x-model="settingsForm.fortune_level1_commission_type"
-                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-                                <option value="fixed">คงที่ (บาท)</option>
-                                <option value="percent">เปอร์เซ็นต์ (%)</option>
-                            </select>
+                            <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">ประเภท</label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <select x-model="settingsForm.fortune_level1_commission_type"
+                                        style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                                    <option value="fixed">คงที่ (บาท)</option>
+                                    <option value="percent">เปอร์เซ็นต์ (%)</option>
+                                </select>
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                จำนวน <span x-text="settingsForm.fortune_level1_commission_type === 'percent' ? '(%)' : '(บาท)'" class="text-gray-500"></span>
+                            <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">
+                                จำนวน <span x-text="settingsForm.fortune_level1_commission_type === 'percent' ? '(%)' : '(บาท)'"></span>
                             </label>
-                            <input type="number" step="0.01" min="0"
-                                   x-model="settingsForm.fortune_level1_commission_amount"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                            <div class="tp-well tp-input">
+                                <input type="number" step="0.01" min="0"
+                                       x-model="settingsForm.fortune_level1_commission_amount"
+                                       style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;">
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {{-- Level 2 Settings --}}
-                <div class="p-4 border border-purple-200 dark:border-purple-800 rounded-lg bg-purple-50 dark:bg-purple-900/20">
-                    <div class="flex items-center justify-between mb-3">
-                        <h4 class="font-bold text-purple-800 dark:text-purple-300">👥 Level 2 — ชั้นหลาน</h4>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" x-model="settingsForm.fortune_level2_enabled" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-purple-600"></div>
+                <div class="tp-tile" style="padding:16px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <h4 style="font-weight:700;font-size:14px;margin:0;color:var(--ink);">
+                            <i class="fas fa-users" style="color:#b79ae8;margin-right:6px;"></i>Level 2 — ชั้นหลาน
+                        </h4>
+                        <label style="position:relative;display:inline-flex;align-items:center;cursor:pointer;">
+                            <input type="checkbox" x-model="settingsForm.fortune_level2_enabled" style="position:absolute;opacity:0;width:0;height:0;">
+                            <span :style="settingsForm.fortune_level2_enabled
+                                    ? 'width:42px;height:24px;border-radius:999px;background:var(--accent1);position:relative;transition:.25s;box-shadow:var(--inset-sm);'
+                                    : 'width:42px;height:24px;border-radius:999px;background:var(--sd);position:relative;transition:.25s;box-shadow:var(--inset-sm);'">
+                                <span :style="settingsForm.fortune_level2_enabled
+                                        ? 'position:absolute;top:2px;left:20px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.3);'
+                                        : 'position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.3);'"></span>
+                            </span>
                         </label>
                     </div>
-                    <div x-show="settingsForm.fortune_level2_enabled" class="space-y-3">
+                    <div x-show="settingsForm.fortune_level2_enabled" style="display:flex;flex-direction:column;gap:12px;">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ประเภท</label>
-                            <select x-model="settingsForm.fortune_level2_commission_type"
-                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-                                <option value="fixed">คงที่ (บาท)</option>
-                                <option value="percent">เปอร์เซ็นต์ (%)</option>
-                            </select>
+                            <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">ประเภท</label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <select x-model="settingsForm.fortune_level2_commission_type"
+                                        style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                                    <option value="fixed">คงที่ (บาท)</option>
+                                    <option value="percent">เปอร์เซ็นต์ (%)</option>
+                                </select>
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                จำนวน <span x-text="settingsForm.fortune_level2_commission_type === 'percent' ? '(%)' : '(บาท)'" class="text-gray-500"></span>
+                            <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">
+                                จำนวน <span x-text="settingsForm.fortune_level2_commission_type === 'percent' ? '(%)' : '(บาท)'"></span>
                             </label>
-                            <input type="number" step="0.01" min="0"
-                                   x-model="settingsForm.fortune_level2_commission_amount"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                            <div class="tp-well tp-input">
+                                <input type="number" step="0.01" min="0"
+                                       x-model="settingsForm.fortune_level2_commission_amount"
+                                       style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;">
+                            </div>
                         </div>
                     </div>
-                    <div x-show="!settingsForm.fortune_level2_enabled" class="text-sm text-gray-500 dark:text-gray-400 py-2">
+                    <div x-show="!settingsForm.fortune_level2_enabled" class="tp-muted" style="font-size:13px;padding:8px 0;">
                         Level 2 ปิดอยู่ — ไม่จ่ายคอมมิชชั่นชั้นหลาน
                     </div>
                 </div>
             </div>
-            <div class="mt-4 flex justify-end">
-                <button @click="saveSettings()"
-                        :disabled="savingSettings"
-                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg transition flex items-center gap-2">
-                    <span x-show="!savingSettings">💾 บันทึกการตั้งค่า</span>
-                    <span x-show="savingSettings">กำลังบันทึก...</span>
+            <div style="padding:0 20px 20px;display:flex;justify-content:flex-end;">
+                <button @click="saveSettings()" :disabled="savingSettings" class="tp-btn tp-btn-primary">
+                    <span x-show="!savingSettings"><i class="fas fa-save"></i> บันทึกการตั้งค่า</span>
+                    <span x-show="savingSettings"><i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...</span>
                 </button>
             </div>
         </div>
     </div>
 
-    {{-- Quick Stats --}}
-    <div class="grid grid-cols-3 gap-4 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 border-l-4 border-yellow-500">
-            <div class="text-gray-500 dark:text-gray-400 text-sm mb-1">รอดำเนินการ</div>
-            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['pending_count']) }}</div>
-            <div class="text-yellow-600 dark:text-yellow-400 text-sm">฿{{ number_format($stats['pending_amount'], 2) }}</div>
+    {{-- ===== KPI GRID ===== --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+        {{-- รอดำเนินการ --}}
+        <div class="tp-card">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--inset-sm);color:#e0a52e;font-size:18px;">
+                    <i class="fas fa-hourglass-half"></i>
+                </span>
+                <div style="flex:1;">
+                    <div class="tp-muted" style="font-size:12px;">รอดำเนินการ</div>
+                    <div class="tp-num" style="font-size:24px;font-weight:800;color:var(--ink);">{{ number_format($stats['pending_count']) }}</div>
+                </div>
+            </div>
+            <div style="margin-top:10px;font-size:14px;font-weight:700;color:#e0a52e;">฿{{ number_format($stats['pending_amount'], 2) }}</div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 border-l-4 border-green-500">
-            <div class="text-gray-500 dark:text-gray-400 text-sm mb-1">อนุมัติแล้ว (รอจ่าย)</div>
-            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['approved_count']) }}</div>
-            <div class="text-green-600 dark:text-green-400 text-sm">฿{{ number_format($stats['approved_amount'], 2) }}</div>
+
+        {{-- อนุมัติแล้ว (รอจ่าย) --}}
+        <div class="tp-card">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--inset-sm);color:#5aa07e;font-size:18px;">
+                    <i class="fas fa-check-circle"></i>
+                </span>
+                <div style="flex:1;">
+                    <div class="tp-muted" style="font-size:12px;">อนุมัติแล้ว (รอจ่าย)</div>
+                    <div class="tp-num" style="font-size:24px;font-weight:800;color:var(--ink);">{{ number_format($stats['approved_count']) }}</div>
+                </div>
+            </div>
+            <div style="margin-top:10px;font-size:14px;font-weight:700;color:#5aa07e;">฿{{ number_format($stats['approved_amount'], 2) }}</div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 border-l-4 border-blue-500">
-            <div class="text-gray-500 dark:text-gray-400 text-sm mb-1">จ่ายแล้ว</div>
-            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['paid_count']) }}</div>
-            <div class="text-blue-600 dark:text-blue-400 text-sm">฿{{ number_format($stats['paid_amount'], 2) }}</div>
+
+        {{-- จ่ายแล้ว --}}
+        <div class="tp-card">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--inset-sm);color:#5689b8;font-size:18px;">
+                    <i class="fas fa-money-bill-wave"></i>
+                </span>
+                <div style="flex:1;">
+                    <div class="tp-muted" style="font-size:12px;">จ่ายแล้ว</div>
+                    <div class="tp-num" style="font-size:24px;font-weight:800;color:var(--ink);">{{ number_format($stats['paid_count']) }}</div>
+                </div>
+            </div>
+            <div style="margin-top:10px;font-size:14px;font-weight:700;color:#5689b8;">฿{{ number_format($stats['paid_amount'], 2) }}</div>
         </div>
     </div>
 
-    {{-- Filters --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-        <form method="GET" action="{{ route('admin.fortune.commissions.manage') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    {{-- ===== FILTERS ===== --}}
+    <div class="tp-card">
+        <div class="tp-section-h" style="margin-bottom:14px;">
+            <i class="fas fa-filter" style="color:var(--accent1);margin-right:6px;"></i>กรองข้อมูล
+        </div>
+        <form method="GET" action="{{ route('admin.fortune.commissions.manage') }}"
+              style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;align-items:end;">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สถานะ</label>
-                <select name="status" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="all" {{ ($filters['status'] ?? 'all') === 'all' ? 'selected' : '' }}>ทั้งหมด</option>
-                    <option value="pending" {{ ($filters['status'] ?? '') === 'pending' ? 'selected' : '' }}>รอดำเนินการ</option>
-                    <option value="approved" {{ ($filters['status'] ?? '') === 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
-                    <option value="paid" {{ ($filters['status'] ?? '') === 'paid' ? 'selected' : '' }}>จ่ายแล้ว</option>
-                    <option value="rejected" {{ ($filters['status'] ?? '') === 'rejected' ? 'selected' : '' }}>ปฏิเสธ</option>
-                </select>
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">สถานะ</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="status" style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                        <option value="all" {{ ($filters['status'] ?? 'all') === 'all' ? 'selected' : '' }}>ทั้งหมด</option>
+                        <option value="pending" {{ ($filters['status'] ?? '') === 'pending' ? 'selected' : '' }}>รอดำเนินการ</option>
+                        <option value="approved" {{ ($filters['status'] ?? '') === 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
+                        <option value="paid" {{ ($filters['status'] ?? '') === 'paid' ? 'selected' : '' }}>จ่ายแล้ว</option>
+                        <option value="rejected" {{ ($filters['status'] ?? '') === 'rejected' ? 'selected' : '' }}>ปฏิเสธ</option>
+                    </select>
+                </div>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ชั้น</label>
-                <select name="level" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="all" {{ ($filters['level'] ?? 'all') === 'all' ? 'selected' : '' }}>ทั้งหมด</option>
-                    <option value="1" {{ ($filters['level'] ?? '') == '1' ? 'selected' : '' }}>L1 สายตรง</option>
-                    <option value="2" {{ ($filters['level'] ?? '') == '2' ? 'selected' : '' }}>L2 ชั้นหลาน</option>
-                </select>
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">ชั้น</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="level" style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                        <option value="all" {{ ($filters['level'] ?? 'all') === 'all' ? 'selected' : '' }}>ทั้งหมด</option>
+                        <option value="1" {{ ($filters['level'] ?? '') == '1' ? 'selected' : '' }}>L1 สายตรง</option>
+                        <option value="2" {{ ($filters['level'] ?? '') == '2' ? 'selected' : '' }}>L2 ชั้นหลาน</option>
+                    </select>
+                </div>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">วันที่เริ่มต้น</label>
-                <input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">วันที่เริ่มต้น</label>
+                <div class="tp-well tp-input">
+                    <input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
+                           style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;">
+                </div>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">วันที่สิ้นสุด</label>
-                <input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">วันที่สิ้นสุด</label>
+                <div class="tp-well tp-input">
+                    <input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
+                           style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;">
+                </div>
             </div>
-            <div class="flex items-end gap-3">
-                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                    🔍 กรอง
+            <div style="display:flex;gap:10px;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-search"></i> กรอง
                 </button>
-                <a href="{{ route('admin.fortune.commissions.manage') }}"
-                   class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition">
-                    ล้าง
+                <a href="{{ route('admin.fortune.commissions.manage') }}" class="tp-btn">
+                    <i class="fas fa-eraser"></i> ล้าง
                 </a>
             </div>
         </form>
     </div>
 
-    {{-- Bulk Action Bar --}}
-    <div x-show="selectedIds.length > 0" x-transition
-         class="bg-indigo-50 dark:bg-indigo-900/30 rounded-xl shadow p-4 mb-4 flex items-center justify-between">
-        <div class="text-indigo-700 dark:text-indigo-300 font-medium">
-            เลือก <span x-text="selectedIds.length" class="font-bold"></span> รายการ
+    {{-- ===== BULK ACTION BAR ===== --}}
+    <div x-show="selectedIds.length > 0" x-transition class="tp-card tp-raise"
+         style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border:1px solid var(--a1soft);">
+        <div style="font-weight:700;color:var(--ink);">
+            <i class="fas fa-check-square" style="color:var(--accent1);margin-right:6px;"></i>
+            เลือก <span class="tp-num" x-text="selectedIds.length"></span> รายการ
         </div>
-        <div class="flex gap-3">
-            <button @click="bulkAction('approve')"
-                    :disabled="processing"
-                    class="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg transition text-sm">
-                ✅ อนุมัติที่เลือก
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button @click="bulkAction('approve')" :disabled="processing" class="tp-btn tp-btn-sm" style="color:#5aa07e;">
+                <i class="fas fa-check"></i> อนุมัติที่เลือก
             </button>
-            <button @click="bulkAction('pay')"
-                    :disabled="processing"
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg transition text-sm">
-                💵 จ่ายที่เลือก
+            <button @click="bulkAction('pay')" :disabled="processing" class="tp-btn tp-btn-sm" style="color:#5689b8;">
+                <i class="fas fa-money-bill-wave"></i> จ่ายที่เลือก
             </button>
-            <button @click="selectedIds = []"
-                    class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition text-sm">
-                ยกเลิกเลือก
+            <button @click="selectedIds = []" class="tp-btn tp-btn-sm">
+                <i class="fas fa-times"></i> ยกเลิกเลือก
             </button>
         </div>
     </div>
 
-    {{-- Commission Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left">
-                            <input type="checkbox" @change="toggleAll($event)" class="rounded border-gray-300 dark:border-gray-600">
+    {{-- ===== COMMISSION TABLE ===== --}}
+    <div class="tp-card" style="padding:0;overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:separate;border-spacing:0 8px;padding:0 16px;">
+                <thead>
+                    <tr style="color:var(--ink2);font-size:12px;text-transform:uppercase;letter-spacing:.04em;">
+                        <th style="padding:12px 10px;text-align:left;">
+                            <input type="checkbox" @change="toggleAll($event)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent1);">
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ผู้รับ
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            จากผู้ใช้
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ชั้น
-                        </th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            จำนวน (฿)
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            สถานะ
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            วันที่
-                        </th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            จัดการ
-                        </th>
+                        <th style="padding:12px 10px;text-align:left;font-weight:600;">ผู้รับ</th>
+                        <th style="padding:12px 10px;text-align:left;font-weight:600;">จากผู้ใช้</th>
+                        <th style="padding:12px 10px;text-align:left;font-weight:600;">ชั้น</th>
+                        <th style="padding:12px 10px;text-align:right;font-weight:600;">จำนวน (฿)</th>
+                        <th style="padding:12px 10px;text-align:left;font-weight:600;">สถานะ</th>
+                        <th style="padding:12px 10px;text-align:left;font-weight:600;">วันที่</th>
+                        <th style="padding:12px 10px;text-align:right;font-weight:600;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($commissions as $c)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        <tr style="box-shadow:var(--inset-sm);border-radius:12px;">
                             {{-- Checkbox --}}
-                            <td class="px-4 py-4">
-                                <input type="checkbox" :value="{{ $c->id }}"
-                                       x-model="selectedIds"
-                                       class="rounded border-gray-300 dark:border-gray-600">
+                            <td style="padding:14px 10px;border-radius:12px 0 0 12px;">
+                                <input type="checkbox" :value="{{ $c->id }}" x-model="selectedIds"
+                                       style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent1);">
                             </td>
 
                             {{-- ผู้รับ --}}
-                            <td class="px-4 py-4 whitespace-nowrap text-sm">
-                                <div class="flex items-center">
-                                    <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mr-3">
-                                        <span class="text-purple-600 dark:text-purple-300 text-xs font-bold">
-                                            {{ mb_substr($c->user?->name ?? '?', 0, 1) }}
-                                        </span>
-                                    </div>
+                            <td style="padding:14px 10px;white-space:nowrap;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:var(--inset-sm);color:var(--accent1);font-weight:700;font-size:13px;">
+                                        {{ mb_substr($c->user?->name ?? '?', 0, 1) }}
+                                    </span>
                                     <div>
-                                        <div class="text-gray-900 dark:text-gray-100 font-medium">{{ Str::limit($c->user?->name ?? '-', 18) }}</div>
-                                        <div class="text-gray-500 dark:text-gray-400 text-xs">{{ Str::limit($c->user?->email ?? '', 22) }}</div>
+                                        <div style="font-weight:600;color:var(--ink);font-size:14px;">{{ Str::limit($c->user?->name ?? '-', 18) }}</div>
+                                        <div class="tp-muted" style="font-size:12px;">{{ Str::limit($c->user?->email ?? '', 22) }}</div>
                                     </div>
                                 </div>
                             </td>
 
                             {{-- จากผู้ใช้ --}}
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                            <td style="padding:14px 10px;white-space:nowrap;color:var(--ink);font-size:14px;">
                                 {{ Str::limit($c->fromUser?->name ?? '-', 18) }}
                             </td>
 
                             {{-- ชั้น --}}
-                            <td class="px-4 py-4 whitespace-nowrap text-sm">
+                            <td style="padding:14px 10px;white-space:nowrap;">
                                 @if($c->level === 1)
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">L1</span>
+                                    <span class="tp-pill" style="color:#5689b8;">L1</span>
                                 @else
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">L2</span>
+                                    <span class="tp-pill" style="color:#b79ae8;">L2</span>
                                 @endif
                             </td>
 
                             {{-- จำนวน --}}
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900 dark:text-gray-100">
+                            <td class="tp-num" style="padding:14px 10px;white-space:nowrap;text-align:right;font-weight:800;color:var(--ink);font-size:14px;">
                                 ฿{{ number_format($c->amount, 2) }}
                             </td>
 
                             {{-- สถานะ --}}
-                            <td class="px-4 py-4 whitespace-nowrap text-sm">
+                            <td style="padding:14px 10px;white-space:nowrap;">
                                 @switch($c->status)
                                     @case('pending')
-                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">⏳ รอ</span>
+                                        <span class="tp-pill" style="color:#e0a52e;"><i class="fas fa-hourglass-half" style="margin-right:4px;"></i>รอ</span>
                                         @break
                                     @case('approved')
-                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✅ อนุมัติ</span>
+                                        <span class="tp-pill" style="color:#5aa07e;"><i class="fas fa-check" style="margin-right:4px;"></i>อนุมัติ</span>
                                         @break
                                     @case('paid')
-                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">💵 จ่ายแล้ว</span>
+                                        <span class="tp-pill" style="color:#5689b8;"><i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>จ่ายแล้ว</span>
                                         @break
                                     @case('rejected')
-                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">❌ ปฏิเสธ</span>
+                                        <span class="tp-pill" style="color:#d9534f;"><i class="fas fa-times" style="margin-right:4px;"></i>ปฏิเสธ</span>
                                         @break
                                 @endswitch
                             </td>
 
                             {{-- วันที่ --}}
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                <div>{{ $c->created_at?->format('d/m/Y') }}</div>
-                                <div class="text-xs text-gray-500">{{ $c->created_at?->format('H:i') }}</div>
+                            <td style="padding:14px 10px;white-space:nowrap;color:var(--ink);font-size:14px;">
+                                <div class="tp-num">{{ $c->created_at?->format('d/m/Y') }}</div>
+                                <div class="tp-muted" style="font-size:12px;">{{ $c->created_at?->format('H:i') }}</div>
                             </td>
 
                             {{-- จัดการ --}}
-                            <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex justify-end gap-2">
+                            <td style="padding:14px 10px;white-space:nowrap;text-align:right;border-radius:0 12px 12px 0;">
+                                <div style="display:flex;justify-content:flex-end;gap:6px;">
                                     @if($c->status === 'pending')
-                                        <button @click="approveOne({{ $c->id }})"
-                                                class="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-800 transition">
+                                        <button @click="approveOne({{ $c->id }})" class="tp-btn tp-btn-sm" style="color:#5aa07e;">
                                             อนุมัติ
                                         </button>
-                                        <button @click="openRejectModal({{ $c->id }})"
-                                                class="px-2 py-1 text-xs bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 transition">
+                                        <button @click="openRejectModal({{ $c->id }})" class="tp-btn tp-btn-sm" style="color:#d9534f;">
                                             ปฏิเสธ
                                         </button>
                                     @endif
                                     @if(in_array($c->status, ['pending', 'approved']))
-                                        <button @click="openAdjustModal({{ $c->id }}, {{ $c->amount }})"
-                                                class="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800 transition">
+                                        <button @click="openAdjustModal({{ $c->id }}, {{ $c->amount }})" class="tp-btn tp-btn-sm" style="color:#e0a52e;">
                                             ปรับ
                                         </button>
                                     @endif
                                     @if($c->status === 'approved')
-                                        <button @click="payOne({{ $c->id }})"
-                                                class="px-2 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition">
+                                        <button @click="payOne({{ $c->id }})" class="tp-btn tp-btn-sm" style="color:#5689b8;">
                                             จ่าย
                                         </button>
                                     @endif
@@ -331,9 +364,9 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                <div class="text-4xl mb-3">📭</div>
-                                <p>ไม่พบข้อมูลคอมมิชชั่น</p>
+                            <td colspan="8" style="padding:48px 16px;text-align:center;">
+                                <div style="font-size:42px;color:var(--ink2);margin-bottom:10px;"><i class="fas fa-inbox"></i></div>
+                                <p class="tp-muted" style="margin:0;">ไม่พบข้อมูลคอมมิชชั่น</p>
                             </td>
                         </tr>
                     @endforelse
@@ -342,139 +375,141 @@
         </div>
     </div>
 
-    {{-- Pagination --}}
+    {{-- ===== PAGINATION ===== --}}
     @if($commissions->hasPages())
-        <div class="mt-6">
+        <div>
             {{ $commissions->appends(request()->query())->links() }}
         </div>
     @endif
 
-    {{-- Reject Modal --}}
-    <div x-show="showRejectModal" x-transition
-         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+    {{-- ===== REJECT MODAL ===== --}}
+    <div x-show="showRejectModal" x-transition.opacity
+         style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;"
          @keydown.escape.window="showRejectModal = false">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4" @click.outside="showRejectModal = false">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">❌ ปฏิเสธคอมมิชชั่น</h3>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เหตุผล (ไม่บังคับ)</label>
-                <textarea x-model="rejectReason" rows="3"
-                          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          placeholder="ระบุเหตุผลที่ปฏิเสธ..."></textarea>
+        <div class="tp-card tp-raise" style="width:100%;max-width:440px;" @click.outside="showRejectModal = false">
+            <h3 style="font-size:17px;font-weight:700;margin:0 0 16px;color:var(--ink);">
+                <i class="fas fa-times-circle" style="color:#d9534f;margin-right:6px;"></i>ปฏิเสธคอมมิชชั่น
+            </h3>
+            <div style="margin-bottom:16px;">
+                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">เหตุผล (ไม่บังคับ)</label>
+                <div class="tp-well tp-input">
+                    <textarea x-model="rejectReason" rows="3"
+                              style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;resize:vertical;"
+                              placeholder="ระบุเหตุผลที่ปฏิเสธ..."></textarea>
+                </div>
             </div>
-            <div class="flex justify-end gap-3">
-                <button @click="showRejectModal = false"
-                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-lg transition">
-                    ยกเลิก
-                </button>
-                <button @click="confirmReject()"
-                        :disabled="processing"
-                        class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg transition">
+            <div style="display:flex;justify-content:flex-end;gap:10px;">
+                <button @click="showRejectModal = false" class="tp-btn">ยกเลิก</button>
+                <button @click="confirmReject()" :disabled="processing" class="tp-btn tp-btn-primary" style="background:linear-gradient(135deg,#d9534f,#b8413d);">
                     ยืนยันปฏิเสธ
                 </button>
             </div>
         </div>
     </div>
 
-    {{-- Adjust Amount Modal --}}
-    <div x-show="showAdjustModal" x-transition
-         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+    {{-- ===== ADJUST AMOUNT MODAL ===== --}}
+    <div x-show="showAdjustModal" x-transition.opacity
+         style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;"
          @keydown.escape.window="showAdjustModal = false">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4" @click.outside="showAdjustModal = false">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">✏️ ปรับจำนวนเงิน</h3>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนเงินใหม่ (บาท)</label>
-                <input type="number" step="0.01" min="0" x-model="adjustAmount"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        <div class="tp-card tp-raise" style="width:100%;max-width:440px;" @click.outside="showAdjustModal = false">
+            <h3 style="font-size:17px;font-weight:700;margin:0 0 16px;color:var(--ink);">
+                <i class="fas fa-pen" style="color:#e0a52e;margin-right:6px;"></i>ปรับจำนวนเงิน
+            </h3>
+            <div style="margin-bottom:14px;">
+                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">จำนวนเงินใหม่ (บาท)</label>
+                <div class="tp-well tp-input">
+                    <input type="number" step="0.01" min="0" x-model="adjustAmount"
+                           style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;">
+                </div>
             </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เหตุผล (ไม่บังคับ)</label>
-                <input type="text" x-model="adjustReason"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                       placeholder="เหตุผลที่ปรับ...">
+            <div style="margin-bottom:16px;">
+                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">เหตุผล (ไม่บังคับ)</label>
+                <div class="tp-well tp-input">
+                    <input type="text" x-model="adjustReason"
+                           style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;"
+                           placeholder="เหตุผลที่ปรับ...">
+                </div>
             </div>
-            <div class="flex justify-end gap-3">
-                <button @click="showAdjustModal = false"
-                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-lg transition">
-                    ยกเลิก
-                </button>
-                <button @click="confirmAdjust()"
-                        :disabled="processing"
-                        class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-white rounded-lg transition">
+            <div style="display:flex;justify-content:flex-end;gap:10px;">
+                <button @click="showAdjustModal = false" class="tp-btn">ยกเลิก</button>
+                <button @click="confirmAdjust()" :disabled="processing" class="tp-btn tp-btn-primary">
                     ยืนยันปรับ
                 </button>
             </div>
         </div>
     </div>
 
-    {{-- Create Manual Modal --}}
-    <div x-show="showCreateModal" x-transition
-         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+    {{-- ===== CREATE MANUAL MODAL ===== --}}
+    <div x-show="showCreateModal" x-transition.opacity
+         style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;"
          @keydown.escape.window="showCreateModal = false">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4" @click.outside="showCreateModal = false">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">➕ สร้างคอมมิชชั่นด้วยมือ</h3>
-            <div class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
+        <div class="tp-card tp-raise" style="width:100%;max-width:560px;" @click.outside="showCreateModal = false">
+            <h3 style="font-size:17px;font-weight:700;margin:0 0 16px;color:var(--ink);">
+                <i class="fas fa-plus-circle" style="color:var(--accent1);margin-right:6px;"></i>สร้างคอมมิชชั่นด้วยมือ
+            </h3>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">User ID ผู้รับ</label>
-                        <input type="number" x-model="createForm.user_id"
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                               placeholder="ID ผู้รับคอมมิชชั่น">
+                        <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">User ID ผู้รับ</label>
+                        <div class="tp-well tp-input">
+                            <input type="number" x-model="createForm.user_id"
+                                   style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;"
+                                   placeholder="ID ผู้รับคอมมิชชั่น">
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">User ID ผู้จ่าย (คนดูดวง)</label>
-                        <input type="number" x-model="createForm.from_user_id"
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                               placeholder="ID คนดูดวง">
+                        <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">User ID ผู้จ่าย (คนดูดวง)</label>
+                        <div class="tp-well tp-input">
+                            <input type="number" x-model="createForm.from_user_id"
+                                   style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;"
+                                   placeholder="ID คนดูดวง">
+                        </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชั้น</label>
-                        <select x-model="createForm.level"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-                            <option value="1">L1 สายตรง</option>
-                            <option value="2">L2 ชั้นหลาน</option>
-                        </select>
+                        <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">ชั้น</label>
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <select x-model="createForm.level"
+                                    style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                                <option value="1">L1 สายตรง</option>
+                                <option value="2">L2 ชั้นหลาน</option>
+                            </select>
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำนวน (บาท)</label>
-                        <input type="number" step="0.01" min="0.01" x-model="createForm.amount"
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                               placeholder="0.00">
+                        <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">จำนวน (บาท)</label>
+                        <div class="tp-well tp-input">
+                            <input type="number" step="0.01" min="0.01" x-model="createForm.amount"
+                                   style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;"
+                                   placeholder="0.00">
+                        </div>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">บิลดูดวง # (ไม่บังคับ)</label>
-                    <input type="number" x-model="createForm.fortune_reading_id"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                           placeholder="ID บิลดูดวง (ถ้ามี)">
+                    <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">บิลดูดวง # (ไม่บังคับ)</label>
+                    <div class="tp-well tp-input">
+                        <input type="number" x-model="createForm.fortune_reading_id"
+                               style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;"
+                               placeholder="ID บิลดูดวง (ถ้ามี)">
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">หมายเหตุ</label>
-                    <textarea x-model="createForm.notes" rows="2"
-                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                              placeholder="หมายเหตุ..."></textarea>
+                    <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">หมายเหตุ</label>
+                    <div class="tp-well tp-input">
+                        <textarea x-model="createForm.notes" rows="2"
+                                  style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;resize:vertical;"
+                                  placeholder="หมายเหตุ..."></textarea>
+                    </div>
                 </div>
             </div>
-            <div class="mt-4 flex justify-end gap-3">
-                <button @click="showCreateModal = false"
-                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-lg transition">
-                    ยกเลิก
-                </button>
-                <button @click="confirmCreate()"
-                        :disabled="processing"
-                        class="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg transition">
+            <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:10px;">
+                <button @click="showCreateModal = false" class="tp-btn">ยกเลิก</button>
+                <button @click="confirmCreate()" :disabled="processing" class="tp-btn tp-btn-primary">
                     สร้างคอมมิชชั่น
                 </button>
             </div>
         </div>
-    </div>
-
-    {{-- Toast Notification --}}
-    <div x-show="toast.show" x-transition
-         :class="toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'"
-         class="fixed bottom-6 right-6 z-[100] text-white px-6 py-3 rounded-xl shadow-lg">
-        <span x-text="toast.message"></span>
     </div>
 </div>
 
@@ -482,6 +517,7 @@
 <script>
 /**
  * Alpine.js component สำหรับจัดการคอมมิชชั่น
+ * (logic เดิม 100% — แค่ปรับ toast ให้แจ้งเตือนผ่าน $dispatch('notify') ของ layout V4)
  */
 function commissionManager() {
     return {
@@ -522,15 +558,11 @@ function commissionManager() {
             fortune_level2_commission_amount: '{{ $settings->fortune_level2_commission_amount ?? 5 }}',
         },
 
-        // Toast notification
-        toast: { show: false, message: '', type: 'success' },
-
         /**
-         * แสดง toast notification
+         * แสดง toast notification ผ่านระบบ toast ของ layout V4
          */
         showToast(message, type = 'success') {
-            this.toast = { show: true, message, type };
-            setTimeout(() => { this.toast.show = false; }, 3000);
+            this.$dispatch('notify', { type: type, message: message });
         },
 
         /**

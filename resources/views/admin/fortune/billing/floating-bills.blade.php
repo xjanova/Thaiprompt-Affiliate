@@ -1,188 +1,292 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'จัดการบิลลอย')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+{{-- ══════════════════════════════════════════════════════════════
+     หน้าจัดการบิลลอย — ธีม V4 "นวลทองคำ"
+     บิลที่รับเงินแล้วแต่ระบบยังจับคู่กับผู้ใช้ไม่ได้ → แอดมิน assign เอง
+     ตัวแปรจาก controller: $stats, $floatingBills (paginate), $users
+     ══════════════════════════════════════════════════════════════ --}}
+<div style="display:flex;flex-direction:column;gap:18px;">
+
+    {{-- ───── Header ───── --}}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                📋 จัดการบิลลอย
+            <div class="tp-muted" style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">
+                หลังบ้าน · ระบบดูดวง · จัดการบิลลอย
+            </div>
+            <h1 class="tp-num" style="font-size:26px;font-weight:800;color:var(--ink);margin:0;">
+                จัดการบิลลอย
             </h1>
-            <p class="text-gray-600 dark:text-gray-400">
+            <div class="tp-muted" style="font-size:13px;margin-top:6px;">
                 บิลที่รับเงินแล้วแต่ยังไม่สามารถระบุตัวตนผู้ใช้ได้
-            </p>
-        </div>
-        <div class="mt-4 md:mt-0">
-            <a href="{{ route('admin.fortune.billing.index') }}"
-               class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition">
-                ← กลับหน้าจัดการบิล
-            </a>
-        </div>
-    </div>
-
-    {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="text-orange-100 text-sm mb-1">บิลลอยทั้งหมด</div>
-            <div class="text-2xl font-bold">{{ $stats['total_count'] }} รายการ</div>
-        </div>
-
-        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="text-red-100 text-sm mb-1">ยอดเงินรวม</div>
-            <div class="text-2xl font-bold">฿{{ number_format($stats['total_amount'], 2) }}</div>
-        </div>
-
-        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="text-yellow-100 text-sm mb-1">วันนี้</div>
-            <div class="text-2xl font-bold">{{ $stats['today_count'] }} รายการ</div>
-        </div>
-
-        <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="text-amber-100 text-sm mb-1">ยอดวันนี้</div>
-            <div class="text-2xl font-bold">฿{{ number_format($stats['today_amount'], 2) }}</div>
-        </div>
-    </div>
-
-    {{-- Info Box --}}
-    <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4 mb-6">
-        <div class="flex items-start">
-            <span class="text-2xl mr-3">💡</span>
-            <div>
-                <h4 class="font-semibold text-orange-800 dark:text-orange-200 mb-1">บิลลอยคืออะไร?</h4>
-                <p class="text-orange-700 dark:text-orange-300 text-sm">
-                    บิลลอยเกิดจากการที่ระบบได้รับแจ้งเตือนการโอนเงิน (SMS) แต่ไม่สามารถจับคู่กับผู้ใช้ที่รอชำระเงินได้
-                    อาจเกิดจาก: ผู้ใช้โอนเงินผิดจำนวน, โอนก่อนสร้างคำสั่งซื้อ, หรือ SMS มาช้ากว่าที่ผู้ใช้รอ
-                </p>
             </div>
         </div>
-    </div>
-
-    {{-- Search --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-        <form method="GET" class="flex gap-4">
-            <div class="flex-1">
-                <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="ค้นหาจากชื่อผู้โอน, ธนาคาร, หรือชื่อ Facebook..."
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            </div>
-            <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                🔍 ค้นหา
-            </button>
-            @if(request('search'))
-                <a href="{{ route('admin.fortune.billing.floating-bills') }}"
-                   class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition">
-                    ล้าง
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            @if(Route::has('admin.fortune.billing.index'))
+                <a href="{{ route('admin.fortune.billing.index') }}" class="tp-btn">
+                    <i class="fas fa-arrow-left"></i> กลับหน้าจัดการบิล
                 </a>
             @endif
-        </form>
-    </div>
-
-    {{-- Floating Bills Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            วันที่ชำระ
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ข้อมูลผู้โอน
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            จำนวนเงิน
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ธนาคาร
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ข้อมูล Facebook
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Assign ให้ผู้ใช้
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($floatingBills as $bill)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                <div>{{ $bill->paid_at?->format('d/m/Y') ?? '-' }}</div>
-                                <div class="text-xs text-gray-500">{{ $bill->paid_at?->format('H:i:s') ?? '' }}</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                                <div class="font-medium">{{ $bill->sender_info ?? 'ไม่ระบุ' }}</div>
-                                @if($bill->smsNotification)
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                                        SMS ID: {{ $bill->sms_notification_id }}
-                                    </div>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="font-bold text-green-600 dark:text-green-400">
-                                    ฿{{ number_format($bill->amount_paid, 2) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                {{ $bill->sender_bank ?? '-' }}
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                                @if($bill->facebook_user_name)
-                                    <div class="font-medium">{{ $bill->facebook_user_name }}</div>
-                                    <div class="text-xs text-gray-500">{{ $bill->facebook_user_id }}</div>
-                                @else
-                                    <span class="text-gray-400">ไม่มีข้อมูล</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right">
-                                <form action="{{ route('admin.fortune.billing.assign', $bill) }}" method="POST" class="flex items-center gap-2 justify-end">
-                                    @csrf
-                                    <select name="user_id" required
-                                            class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                        <option value="">เลือกผู้ใช้...</option>
-                                        @foreach($users as $user)
-                                            <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
-                                        @endforeach
-                                    </select>
-                                    <button type="submit" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition">
-                                        Assign
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
-                                <div class="text-5xl mb-4">🎉</div>
-                                <div class="text-gray-500 dark:text-gray-400">
-                                    ไม่มีบิลลอย - ระบบจับคู่การชำระเงินได้ครบทุกรายการ
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
         </div>
     </div>
 
-    {{-- Pagination --}}
+    {{-- ───── KPI Grid ───── --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+
+        {{-- บิลลอยทั้งหมด --}}
+        <div class="tp-card tp-card-hover">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:13px;">บิลลอยทั้งหมด</span>
+                    <span class="tp-pill tp-pill-soft" style="color:#d6824a;">
+                        <i class="fas fa-layer-group"></i>
+                    </span>
+                </div>
+                <div class="tp-num" style="font-size:28px;font-weight:800;color:var(--ink);">
+                    {{ number_format($stats['total_count']) }}
+                </div>
+                <div class="tp-muted" style="font-size:12px;">รายการ</div>
+            </div>
+        </div>
+
+        {{-- ยอดเงินรวม --}}
+        <div class="tp-card tp-card-hover">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:13px;">ยอดเงินรวม</span>
+                    <span class="tp-pill tp-pill-soft" style="color:#d9534f;">
+                        <i class="fas fa-coins"></i>
+                    </span>
+                </div>
+                <div class="tp-num" style="font-size:28px;font-weight:800;color:var(--ink);">
+                    ฿{{ number_format($stats['total_amount'], 2) }}
+                </div>
+                <div class="tp-muted" style="font-size:12px;">รอจับคู่</div>
+            </div>
+        </div>
+
+        {{-- วันนี้ --}}
+        <div class="tp-card tp-card-hover">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:13px;">วันนี้</span>
+                    <span class="tp-pill tp-pill-soft" style="color:#e0a52e;">
+                        <i class="fas fa-calendar-day"></i>
+                    </span>
+                </div>
+                <div class="tp-num" style="font-size:28px;font-weight:800;color:var(--ink);">
+                    {{ number_format($stats['today_count']) }}
+                </div>
+                <div class="tp-muted" style="font-size:12px;">รายการใหม่วันนี้</div>
+            </div>
+        </div>
+
+        {{-- ยอดวันนี้ --}}
+        <div class="tp-card tp-card-hover">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:13px;">ยอดวันนี้</span>
+                    <span class="tp-pill tp-pill-gold">
+                        <i class="fas fa-sack-dollar"></i>
+                    </span>
+                </div>
+                <div class="tp-num" style="font-size:28px;font-weight:800;color:var(--ink);">
+                    ฿{{ number_format($stats['today_amount'], 2) }}
+                </div>
+                <div class="tp-muted" style="font-size:12px;">เงินเข้าวันนี้</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ───── Info: บิลลอยคืออะไร ───── --}}
+    <div class="tp-card">
+        <div class="tp-tile" style="display:flex;gap:14px;align-items:flex-start;">
+            <span class="tp-pill tp-pill-soft" style="color:#d6824a;flex:0 0 auto;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:18px;border-radius:12px;">
+                <i class="fas fa-circle-question"></i>
+            </span>
+            <div>
+                <div style="font-weight:700;color:var(--ink);margin-bottom:4px;">บิลลอยคืออะไร?</div>
+                <div class="tp-muted" style="font-size:13px;line-height:1.7;">
+                    บิลลอยเกิดจากการที่ระบบได้รับแจ้งเตือนการโอนเงิน (SMS) แต่ไม่สามารถจับคู่กับผู้ใช้ที่รอชำระเงินได้
+                    อาจเกิดจาก: ผู้ใช้โอนเงินผิดจำนวน, โอนก่อนสร้างคำสั่งซื้อ, หรือ SMS มาช้ากว่าที่ผู้ใช้รอ
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ───── Search ───── --}}
+    <div class="tp-card">
+        <div class="tp-tile">
+            <div class="tp-section-h" style="margin-bottom:12px;">
+                <i class="fas fa-magnifying-glass"></i> ค้นหาบิลลอย
+            </div>
+            <form method="GET" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+                <div class="tp-well tp-input" style="flex:1;min-width:240px;padding:0;display:flex;align-items:center;">
+                    <i class="fas fa-magnifying-glass tp-muted" style="margin-left:14px;font-size:13px;"></i>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="ค้นหาจากชื่อผู้โอน, ธนาคาร, หรือชื่อ Facebook..."
+                           style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                </div>
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-magnifying-glass"></i> ค้นหา
+                </button>
+                @if(request('search') && Route::has('admin.fortune.billing.floating-bills'))
+                    <a href="{{ route('admin.fortune.billing.floating-bills') }}" class="tp-btn">
+                        <i class="fas fa-xmark"></i> ล้าง
+                    </a>
+                @endif
+            </form>
+        </div>
+    </div>
+
+    {{-- ───── ตารางบิลลอย ───── --}}
+    <div class="tp-card">
+        <div class="tp-tile" style="padding-bottom:6px;">
+            <div class="tp-section-h" style="margin-bottom:12px;">
+                <i class="fas fa-receipt"></i> รายการบิลลอย
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:separate;border-spacing:0 10px;min-width:920px;">
+                    <thead>
+                        <tr style="text-align:left;">
+                            <th style="padding:6px 14px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;">วันที่ชำระ</th>
+                            <th style="padding:6px 14px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;">ข้อมูลผู้โอน</th>
+                            <th style="padding:6px 14px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;">จำนวนเงิน</th>
+                            <th style="padding:6px 14px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;">ธนาคาร</th>
+                            <th style="padding:6px 14px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;">ข้อมูล Facebook</th>
+                            <th style="padding:6px 14px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;text-align:right;">Assign ให้ผู้ใช้</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($floatingBills as $bill)
+                            {{-- แต่ละแถวมี x-data เอง เพื่อให้ Alpine init subtree --}}
+                            <tr x-data="{}" style="box-shadow:var(--inset-sm);border-radius:14px;">
+                                {{-- วันที่ชำระ --}}
+                                <td style="padding:14px;border-radius:14px 0 0 14px;">
+                                    <div class="tp-num" style="font-size:14px;color:var(--ink);font-weight:600;">
+                                        {{ $bill->paid_at?->format('d/m/Y') ?? '-' }}
+                                    </div>
+                                    <div class="tp-muted tp-num" style="font-size:12px;">
+                                        {{ $bill->paid_at?->format('H:i:s') ?? '' }}
+                                    </div>
+                                </td>
+
+                                {{-- ข้อมูลผู้โอน --}}
+                                <td style="padding:14px;">
+                                    <div style="font-weight:600;color:var(--ink);font-size:14px;">
+                                        {{ $bill->sender_info ?? 'ไม่ระบุ' }}
+                                    </div>
+                                    @if($bill->smsNotification)
+                                        <div class="tp-muted tp-num" style="font-size:11px;margin-top:2px;">
+                                            SMS ID: {{ $bill->sms_notification_id }}
+                                        </div>
+                                    @endif
+                                </td>
+
+                                {{-- จำนวนเงิน --}}
+                                <td style="padding:14px;">
+                                    <span class="tp-pill tp-num" style="color:#5aa07e;font-weight:700;font-size:14px;">
+                                        ฿{{ number_format($bill->amount_paid, 2) }}
+                                    </span>
+                                </td>
+
+                                {{-- ธนาคาร --}}
+                                <td style="padding:14px;">
+                                    <span class="tp-muted" style="font-size:13px;">
+                                        {{ $bill->sender_bank ?? '-' }}
+                                    </span>
+                                </td>
+
+                                {{-- ข้อมูล Facebook --}}
+                                <td style="padding:14px;">
+                                    @if($bill->facebook_user_name)
+                                        <div style="font-weight:600;color:var(--ink);font-size:14px;">
+                                            {{ $bill->facebook_user_name }}
+                                        </div>
+                                        <div class="tp-muted tp-num" style="font-size:11px;">
+                                            {{ $bill->facebook_user_id }}
+                                        </div>
+                                    @else
+                                        <span class="tp-muted" style="font-size:13px;font-style:italic;">ไม่มีข้อมูล</span>
+                                    @endif
+                                </td>
+
+                                {{-- Assign ให้ผู้ใช้ (คงฟอร์มเดิม: action/method/csrf/field user_id) --}}
+                                <td style="padding:14px;border-radius:0 14px 14px 0;text-align:right;">
+                                    <form action="{{ route('admin.fortune.billing.assign', $bill) }}" method="POST"
+                                          style="display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+                                        @csrf
+                                        <div class="tp-well tp-input" style="padding:0;min-width:200px;">
+                                            <select name="user_id" required
+                                                    style="width:100%;background:transparent;border:0;outline:0;padding:9px 12px;color:var(--ink);font-size:13px;cursor:pointer;">
+                                                <option value="">เลือกผู้ใช้...</option>
+                                                @foreach($users as $user)
+                                                    <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="tp-btn tp-btn-primary tp-btn-sm">
+                                            <i class="fas fa-user-check"></i> Assign
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" style="padding:48px 14px;text-align:center;">
+                                    <div style="font-size:40px;color:var(--accent1);margin-bottom:12px;">
+                                        <i class="fas fa-inbox"></i>
+                                    </div>
+                                    <div class="tp-muted" style="font-size:14px;">
+                                        ไม่มีบิลลอย — ระบบจับคู่การชำระเงินได้ครบทุกรายการ
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- ───── Pagination ───── --}}
     @if($floatingBills->hasPages())
-        <div class="mt-6">
-            {{ $floatingBills->appends(request()->query())->links() }}
+        <div class="tp-card">
+            <div class="tp-tile">
+                {{ $floatingBills->appends(request()->query())->links() }}
+            </div>
         </div>
     @endif
 
-    {{-- Tips Section --}}
-    <div class="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-        <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-3">💡 เคล็ดลับการจัดการบิลลอย</h4>
-        <ul class="list-disc list-inside text-blue-700 dark:text-blue-300 text-sm space-y-2">
-            <li>ตรวจสอบชื่อผู้โอนเทียบกับชื่อ Facebook ของผู้ใช้ที่รอชำระเงิน</li>
-            <li>เช็คยอดเงินที่โอนเทียบกับราคาที่ตั้งไว้ (เช่น 49.xx บาท)</li>
-            <li>ติดต่อผู้ใช้ผ่าน Facebook Messenger เพื่อยืนยันการโอนเงิน</li>
-            <li>หากไม่พบเจ้าของ อาจเป็นการโอนผิด ควรเก็บข้อมูลไว้อย่างน้อย 30 วัน</li>
-        </ul>
+    {{-- ───── เคล็ดลับการจัดการบิลลอย ───── --}}
+    <div class="tp-card">
+        <div class="tp-tile">
+            <div class="tp-section-h" style="margin-bottom:12px;">
+                <i class="fas fa-lightbulb"></i> เคล็ดลับการจัดการบิลลอย
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+                <div class="tp-well" style="padding:14px;display:flex;gap:10px;align-items:flex-start;">
+                    <i class="fas fa-user-magnifying-glass" style="color:var(--accent1);margin-top:2px;"></i>
+                    <span class="tp-muted" style="font-size:13px;line-height:1.6;">ตรวจสอบชื่อผู้โอนเทียบกับชื่อ Facebook ของผู้ใช้ที่รอชำระเงิน</span>
+                </div>
+                <div class="tp-well" style="padding:14px;display:flex;gap:10px;align-items:flex-start;">
+                    <i class="fas fa-money-bill-wave" style="color:var(--accent1);margin-top:2px;"></i>
+                    <span class="tp-muted" style="font-size:13px;line-height:1.6;">เช็คยอดเงินที่โอนเทียบกับราคาที่ตั้งไว้ (เช่น 49.xx บาท)</span>
+                </div>
+                <div class="tp-well" style="padding:14px;display:flex;gap:10px;align-items:flex-start;">
+                    <i class="fab fa-facebook-messenger" style="color:var(--accent1);margin-top:2px;"></i>
+                    <span class="tp-muted" style="font-size:13px;line-height:1.6;">ติดต่อผู้ใช้ผ่าน Facebook Messenger เพื่อยืนยันการโอนเงิน</span>
+                </div>
+                <div class="tp-well" style="padding:14px;display:flex;gap:10px;align-items:flex-start;">
+                    <i class="fas fa-clock-rotate-left" style="color:var(--accent1);margin-top:2px;"></i>
+                    <span class="tp-muted" style="font-size:13px;line-height:1.6;">หากไม่พบเจ้าของ อาจเป็นการโอนผิด ควรเก็บข้อมูลไว้อย่างน้อย 30 วัน</span>
+                </div>
+            </div>
+        </div>
     </div>
+
 </div>
 @endsection

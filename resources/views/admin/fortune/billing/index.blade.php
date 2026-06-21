@@ -1,258 +1,307 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'จัดการบิลดูดวง')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+{{-- 💰 หน้าจัดการบิลดูดวง — ธีม V4 นวลทองคำ (financial dashboard) --}}
+<div style="display:flex;flex-direction:column;gap:18px;">
+
+    {{-- ╔═══ HEADER ═══╗ --}}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                💰 จัดการบิลดูดวง
+            <div class="tp-muted" style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">
+                หลังบ้าน · ระบบดูดวง · จัดการบิล
+            </div>
+            <h1 class="tp-num" style="font-size:26px;font-weight:800;margin:0;">
+                <i class="fas fa-sack-dollar" style="color:var(--accent1);margin-right:8px;"></i>จัดการบิลดูดวง
             </h1>
-            <p class="text-gray-600 dark:text-gray-400">
-                ดูรายได้ สถิติ และจัดการบิลทั้งหมด
-            </p>
+            <div class="tp-muted" style="font-size:13px;margin-top:4px;">ดูรายได้ สถิติ และจัดการบิลทั้งหมด</div>
         </div>
-        <div class="mt-4 md:mt-0 flex gap-3">
-            <a href="{{ route('admin.fortune.billing.floating-bills') }}"
-               class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition flex items-center">
-                <span class="mr-2">📋</span>
-                บิลลอย
-                @if($stats['floating']['count'] > 0)
-                    <span class="ml-2 px-2 py-0.5 bg-orange-800 text-orange-100 text-xs rounded-full">
-                        {{ $stats['floating']['count'] }}
-                    </span>
-                @endif
-            </a>
-            <a href="{{ route('admin.fortune.billing.export-revenue', ['date_from' => $dateFrom, 'date_to' => $dateTo]) }}"
-               class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                📥 Export รายได้
-            </a>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            @if(Route::has('admin.fortune.billing.floating-bills'))
+                <a href="{{ route('admin.fortune.billing.floating-bills') }}" class="tp-btn" style="position:relative;">
+                    <i class="fas fa-clipboard-list" style="color:#d6824a;"></i> บิลลอย
+                    @if($stats['floating']['count'] > 0)
+                        <span class="tp-pill" style="background:#d6824a;color:#fff;margin-left:6px;font-size:11px;padding:1px 8px;">
+                            {{ $stats['floating']['count'] }}
+                        </span>
+                    @endif
+                </a>
+            @endif
+            @if(Route::has('admin.fortune.billing.export-revenue'))
+                <a href="{{ route('admin.fortune.billing.export-revenue', ['date_from' => $dateFrom, 'date_to' => $dateTo]) }}"
+                   class="tp-btn tp-btn-primary">
+                    <i class="fas fa-file-arrow-down"></i> Export รายได้
+                </a>
+            @endif
         </div>
     </div>
 
-    {{-- Revenue Stats Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    {{-- ╔═══ KPI หลัก — รายได้ ═══╗ --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
         {{-- รายได้วันนี้ --}}
-        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-green-100">รายได้วันนี้</span>
-                <span class="text-2xl">💵</span>
+        <div class="tp-card tp-card-hover">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:13px;">รายได้วันนี้</span>
+                    <i class="fas fa-money-bill-wave" style="color:#5aa07e;font-size:18px;"></i>
+                </div>
+                <div class="tp-num" style="font-size:24px;font-weight:800;">฿{{ number_format($stats['today']['revenue'], 2) }}</div>
+                <div class="tp-muted" style="font-size:12px;">{{ $stats['today']['count'] }} รายการ</div>
             </div>
-            <div class="text-2xl font-bold mb-1">฿{{ number_format($stats['today']['revenue'], 2) }}</div>
-            <div class="text-green-100 text-sm">{{ $stats['today']['count'] }} รายการ</div>
         </div>
 
         {{-- รายได้เดือนนี้ --}}
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-blue-100">รายได้เดือนนี้</span>
-                <span class="text-2xl">📊</span>
+        <div class="tp-card tp-card-hover">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:13px;">รายได้เดือนนี้</span>
+                    <i class="fas fa-chart-column" style="color:#5689b8;font-size:18px;"></i>
+                </div>
+                <div class="tp-num" style="font-size:24px;font-weight:800;">฿{{ number_format($stats['month']['revenue'], 2) }}</div>
+                <div class="tp-muted" style="font-size:12px;">{{ $stats['month']['count'] }} รายการ</div>
             </div>
-            <div class="text-2xl font-bold mb-1">฿{{ number_format($stats['month']['revenue'], 2) }}</div>
-            <div class="text-blue-100 text-sm">{{ $stats['month']['count'] }} รายการ</div>
         </div>
 
         {{-- รายได้ทั้งหมด --}}
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-purple-100">รายได้ทั้งหมด</span>
-                <span class="text-2xl">💎</span>
+        <div class="tp-card tp-card-hover">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:13px;">รายได้ทั้งหมด</span>
+                    <i class="fas fa-gem" style="color:#b79ae8;font-size:18px;"></i>
+                </div>
+                <div class="tp-num" style="font-size:24px;font-weight:800;color:var(--accent1);">฿{{ number_format($stats['total']['revenue'], 2) }}</div>
+                <div class="tp-muted" style="font-size:12px;">{{ $stats['total']['count'] }} รายการ</div>
             </div>
-            <div class="text-2xl font-bold mb-1">฿{{ number_format($stats['total']['revenue'], 2) }}</div>
-            <div class="text-purple-100 text-sm">{{ $stats['total']['count'] }} รายการ</div>
         </div>
 
-        {{-- อัตราแปลง --}}
-        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-indigo-100">Conversion Rate</span>
-                <span class="text-2xl">📈</span>
+        {{-- อัตราแปลง (Conversion) --}}
+        <div class="tp-card tp-card-hover">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:13px;">Conversion Rate</span>
+                    <i class="fas fa-arrow-trend-up" style="color:#e0a52e;font-size:18px;"></i>
+                </div>
+                <div class="tp-num" style="font-size:24px;font-weight:800;">{{ $stats['conversion_rate'] }}%</div>
+                <div class="tp-muted" style="font-size:12px;">{{ $stats['period']['count'] }}/{{ $stats['total_readings_period'] }} รายการ</div>
             </div>
-            <div class="text-2xl font-bold mb-1">{{ $stats['conversion_rate'] }}%</div>
-            <div class="text-indigo-100 text-sm">{{ $stats['period']['count'] }}/{{ $stats['total_readings_period'] }} รายการ</div>
         </div>
     </div>
 
-    {{-- Secondary Stats --}}
-    <div class="grid grid-cols-3 gap-4 mb-8">
+    {{-- ╔═══ KPI รอง ═══╗ --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
         {{-- บิลลอย --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 border-l-4 border-orange-500">
-            <div class="text-gray-500 dark:text-gray-400 text-sm mb-1">บิลลอย (ยังไม่ระบุผู้ใช้)</div>
-            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['floating']['count'] }}</div>
-            <div class="text-orange-600 dark:text-orange-400 text-sm">฿{{ number_format($stats['floating']['amount'], 2) }}</div>
+        <div class="tp-card">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:6px;border-left:3px solid #d6824a;">
+                <span class="tp-muted" style="font-size:12px;">บิลลอย (ยังไม่ระบุผู้ใช้)</span>
+                <span class="tp-num" style="font-size:22px;font-weight:800;">{{ $stats['floating']['count'] }}</span>
+                <span style="color:#d6824a;font-size:13px;font-weight:600;">฿{{ number_format($stats['floating']['amount'], 2) }}</span>
+            </div>
         </div>
 
         {{-- รอชำระ --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 border-l-4 border-yellow-500">
-            <div class="text-gray-500 dark:text-gray-400 text-sm mb-1">รอชำระเงิน</div>
-            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['pending']['count'] }}</div>
-            <div class="text-yellow-600 dark:text-yellow-400 text-sm">รอการโอนเงิน</div>
+        <div class="tp-card">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:6px;border-left:3px solid #e0a52e;">
+                <span class="tp-muted" style="font-size:12px;">รอชำระเงิน</span>
+                <span class="tp-num" style="font-size:22px;font-weight:800;">{{ $stats['pending']['count'] }}</span>
+                <span style="color:#e0a52e;font-size:13px;font-weight:600;">รอการโอนเงิน</span>
+            </div>
         </div>
 
         {{-- เฉลี่ยต่อบิล --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 border-l-4 border-green-500">
-            <div class="text-gray-500 dark:text-gray-400 text-sm mb-1">เฉลี่ยต่อบิล</div>
-            <div class="text-2xl font-bold text-gray-900 dark:text-white">฿{{ number_format($stats['period']['avg_per_bill'], 2) }}</div>
-            <div class="text-green-600 dark:text-green-400 text-sm">ในช่วงที่เลือก</div>
+        <div class="tp-card">
+            <div class="tp-tile" style="display:flex;flex-direction:column;gap:6px;border-left:3px solid #5aa07e;">
+                <span class="tp-muted" style="font-size:12px;">เฉลี่ยต่อบิล</span>
+                <span class="tp-num" style="font-size:22px;font-weight:800;">฿{{ number_format($stats['period']['avg_per_bill'], 2) }}</span>
+                <span style="color:#5aa07e;font-size:13px;font-weight:600;">ในช่วงที่เลือก</span>
+            </div>
         </div>
     </div>
 
-    {{-- Revenue Chart --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📈 รายได้ 7 วันล่าสุด</h3>
-        <div class="h-64">
-            <canvas id="revenueChart"></canvas>
+    {{-- ╔═══ กราฟรายได้ 7 วัน — CSS .tp-bars (แทน Chart.js เดิม) ═══╗ --}}
+    @php
+        // 📊 หา max เพื่อ scale ความสูงแท่ง
+        $maxRevenue = collect($dailyRevenue)->max('revenue') ?: 1;
+    @endphp
+    <div class="tp-card">
+        <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <i class="fas fa-chart-line" style="color:var(--accent1);"></i>
+            <span style="font-weight:700;font-size:15px;">รายได้ 7 วันล่าสุด</span>
         </div>
+        <div class="tp-divider"></div>
+        @if($maxRevenue > 0)
+            <div class="tp-bars" style="--bars-h:200px;margin-top:8px;">
+                @foreach($dailyRevenue as $day)
+                    @php
+                        // 🔢 คำนวณ % ความสูงแท่ง (กันหาร 0)
+                        $pct = $maxRevenue > 0 ? round(($day['revenue'] / $maxRevenue) * 100, 1) : 0;
+                    @endphp
+                    <div class="col" title="฿{{ number_format($day['revenue'], 2) }} · {{ $day['count'] }} รายการ">
+                        <div class="bar a" style="height:{{ max($pct, 2) }}%;"></div>
+                        <div class="lbl">{{ $day['date_label'] }}</div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="tp-muted" style="text-align:center;padding:32px 0;">
+                <i class="fas fa-inbox" style="font-size:28px;display:block;margin-bottom:8px;opacity:.5;"></i>
+                ยังไม่มีรายได้ในช่วงนี้
+            </div>
+        @endif
     </div>
 
-    {{-- Filters --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    {{-- ╔═══ ตัวกรอง ═══╗ --}}
+    <div class="tp-card">
+        <form method="GET" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:end;">
+            {{-- วันที่เริ่มต้น --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    วันที่เริ่มต้น
-                </label>
-                <input type="date" name="date_from" value="{{ $dateFrom }}"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <label class="tp-muted" style="display:block;font-size:12px;margin-bottom:6px;font-weight:600;">วันที่เริ่มต้น</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="date" name="date_from" value="{{ $dateFrom }}"
+                           style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                </div>
             </div>
 
+            {{-- วันที่สิ้นสุด --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    วันที่สิ้นสุด
-                </label>
-                <input type="date" name="date_to" value="{{ $dateTo }}"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <label class="tp-muted" style="display:block;font-size:12px;margin-bottom:6px;font-weight:600;">วันที่สิ้นสุด</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="date" name="date_to" value="{{ $dateTo }}"
+                           style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                </div>
             </div>
 
+            {{-- สถานะ --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    สถานะ
-                </label>
-                <select name="status" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">ทั้งหมด</option>
-                    <option value="paid" {{ $status === 'paid' ? 'selected' : '' }}>ชำระแล้ว</option>
-                    <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>รอชำระ</option>
-                    <option value="floating" {{ $status === 'floating' ? 'selected' : '' }}>บิลลอย</option>
-                    <option value="free" {{ $status === 'free' ? 'selected' : '' }}>ฟรี</option>
-                </select>
+                <label class="tp-muted" style="display:block;font-size:12px;margin-bottom:6px;font-weight:600;">สถานะ</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="status" style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                        <option value="">ทั้งหมด</option>
+                        <option value="paid" {{ $status === 'paid' ? 'selected' : '' }}>ชำระแล้ว</option>
+                        <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>รอชำระ</option>
+                        <option value="floating" {{ $status === 'floating' ? 'selected' : '' }}>บิลลอย</option>
+                        <option value="free" {{ $status === 'free' ? 'selected' : '' }}>ฟรี</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="flex items-end gap-3">
-                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                    🔍 กรอง
+            {{-- ปุ่ม --}}
+            <div style="display:flex;gap:10px;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-magnifying-glass"></i> กรอง
                 </button>
-                <a href="{{ route('admin.fortune.billing.index') }}"
-                   class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition">
-                    ล้าง
+                <a href="{{ route('admin.fortune.billing.index') }}" class="tp-btn">
+                    <i class="fas fa-eraser"></i> ล้าง
                 </a>
             </div>
         </form>
     </div>
 
-    {{-- Bills Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            วันที่
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ผู้ใช้
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ประเภท
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            จำนวนเงิน
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            สถานะ
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ช่องทาง
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            จัดการ
-                        </th>
+    {{-- ╔═══ ตารางบิล ═══╗ --}}
+    <div class="tp-card">
+        <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <i class="fas fa-receipt" style="color:var(--accent1);"></i>
+            <span style="font-weight:700;font-size:15px;">รายการบิล</span>
+        </div>
+        <div class="tp-divider"></div>
+
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:separate;border-spacing:0 8px;min-width:880px;">
+                <thead>
+                    <tr style="text-align:left;">
+                        <th style="padding:8px 14px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:700;">วันที่</th>
+                        <th style="padding:8px 14px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:700;">ผู้ใช้</th>
+                        <th style="padding:8px 14px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:700;">ประเภท</th>
+                        <th style="padding:8px 14px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:700;">จำนวนเงิน</th>
+                        <th style="padding:8px 14px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:700;">สถานะ</th>
+                        <th style="padding:8px 14px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:700;">ช่องทาง</th>
+                        <th style="padding:8px 14px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:700;text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($bills as $bill)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                <div>{{ $bill->created_at->format('d/m/Y') }}</div>
-                                <div class="text-xs text-gray-500">{{ $bill->created_at->format('H:i') }}</div>
+                        {{-- 🔁 แต่ละแถวต้องมี x-data เอง (Alpine subtree init) --}}
+                        <tr x-data="{ submitting: false }" style="box-shadow:var(--inset-sm);border-radius:12px;">
+                            {{-- วันที่ --}}
+                            <td style="padding:12px 14px;font-size:13px;color:var(--ink);white-space:nowrap;border-radius:12px 0 0 12px;">
+                                <div class="tp-num" style="font-weight:600;">{{ $bill->created_at->format('d/m/Y') }}</div>
+                                <div class="tp-muted" style="font-size:11px;">{{ $bill->created_at->format('H:i') }}</div>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                                <div class="font-medium">{{ $bill->facebook_user_name ?? $bill->user?->name ?? 'ไม่ระบุ' }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">
+
+                            {{-- ผู้ใช้ --}}
+                            <td style="padding:12px 14px;font-size:13px;color:var(--ink);">
+                                <div style="font-weight:600;">{{ $bill->facebook_user_name ?? $bill->user?->name ?? 'ไม่ระบุ' }}</div>
+                                <div class="tp-muted" style="font-size:11px;">
                                     @if($bill->is_floating)
-                                        <span class="text-orange-500">บิลลอย</span>
+                                        <span style="color:#d6824a;">บิลลอย</span>
                                     @else
                                         {{ $bill->facebook_user_id }}
                                     @endif
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+
+                            {{-- ประเภท --}}
+                            <td style="padding:12px 14px;white-space:nowrap;">
                                 @if($bill->reading_type === 'deep')
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                                        🌟 เชิงลึก
+                                    <span class="tp-pill" style="background:var(--a2soft);color:#b79ae8;font-size:12px;">
+                                        <i class="fas fa-star"></i> เชิงลึก
                                     </span>
                                 @else
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">
-                                        🔮 พื้นฐาน
+                                    <span class="tp-pill" style="background:var(--a1soft);color:#5689b8;font-size:12px;">
+                                        <i class="fas fa-moon"></i> พื้นฐาน
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+
+                            {{-- จำนวนเงิน --}}
+                            <td style="padding:12px 14px;white-space:nowrap;font-weight:700;" class="tp-num">
                                 @if($bill->is_paid)
-                                    <span class="text-green-600 dark:text-green-400">฿{{ number_format($bill->amount_paid, 2) }}</span>
+                                    <span style="color:#5aa07e;">฿{{ number_format($bill->amount_paid, 2) }}</span>
                                 @elseif($bill->conversation_status === 'pending_payment')
-                                    <span class="text-yellow-600 dark:text-yellow-400">฿{{ number_format($bill->amount_paid, 2) }}</span>
+                                    <span style="color:#e0a52e;">฿{{ number_format($bill->amount_paid, 2) }}</span>
                                 @else
-                                    <span class="text-gray-400">-</span>
+                                    <span class="tp-muted">-</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+
+                            {{-- สถานะ --}}
+                            <td style="padding:12px 14px;white-space:nowrap;">
                                 @php
                                     // 🏷️ (2026-05-25) Cancellation detection — ดู conversation_state.cancellation_reason
                                     //    Cancelled bills ใช้ status=completed + is_paid=false (ไม่มี STATUS_CANCELLED แยก)
                                     $cancellationLabel = $bill->getCancellationReasonLabelOrNull();
                                 @endphp
                                 @if($bill->is_paid)
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                        ✅ ชำระแล้ว
+                                    <span class="tp-pill" style="background:rgba(90,160,126,.16);color:#5aa07e;font-size:12px;">
+                                        <i class="fas fa-circle-check"></i> ชำระแล้ว
                                     </span>
                                 @elseif($bill->conversation_status === 'pending_payment')
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                                        ⏳ รอชำระ
+                                    <span class="tp-pill" style="background:rgba(224,165,46,.16);color:#e0a52e;font-size:12px;">
+                                        <i class="fas fa-hourglass-half"></i> รอชำระ
                                     </span>
                                 @elseif($cancellationLabel)
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                    <span class="tp-pill" style="background:rgba(217,83,79,.16);color:#d9534f;font-size:12px;"
                                           title="{{ data_get($bill->conversation_state, 'cancellation_reason', 'unknown') }}">
-                                        ❌ {{ $cancellationLabel }}
+                                        <i class="fas fa-circle-xmark"></i> {{ $cancellationLabel }}
                                     </span>
                                 @elseif($bill->is_floating)
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-                                        📋 บิลลอย
+                                    <span class="tp-pill" style="background:rgba(214,130,74,.16);color:#d6824a;font-size:12px;">
+                                        <i class="fas fa-clipboard-list"></i> บิลลอย
                                     </span>
                                 @else
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                        ฟรี
-                                    </span>
+                                    <span class="tp-pill tp-pill-soft" style="font-size:12px;">ฟรี</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+
+                            {{-- ช่องทาง --}}
+                            <td style="padding:12px 14px;white-space:nowrap;font-size:13px;color:var(--ink2);">
                                 @if($bill->payment_method === 'stripe')
                                     {{-- 💳 Stripe payment --}}
-                                    <span class="text-purple-600 dark:text-purple-400 font-semibold">💳 Stripe</span>
+                                    <span style="color:#b79ae8;font-weight:700;"><i class="fas fa-credit-card"></i> Stripe</span>
                                     {{-- 🌍 Audit badge — country ที่ Stripe detect ตอนจ่ายจริง (เก็บไว้เพื่อ audit) --}}
                                     @if($bill->stripe_customer_region === 'th')
-                                        <span class="ml-1 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded" title="legacy TH tier — ไม่มี option แสดงให้ลูกค้าเลือกแล้ว">🇹🇭</span>
+                                        <span class="tp-pill" style="background:rgba(90,160,126,.16);color:#5aa07e;font-size:11px;margin-left:4px;"
+                                              title="legacy TH tier — ไม่มี option แสดงให้ลูกค้าเลือกแล้ว">🇹🇭</span>
                                     @endif
                                     @if($bill->stripe_payment_intent_id)
                                         @php
@@ -260,56 +309,64 @@
                                             $dashboardUrl = $stripeService->buildDashboardUrl($bill->stripe_payment_intent_id);
                                         @endphp
                                         <a href="{{ $dashboardUrl }}" target="_blank" rel="noopener"
-                                           class="block text-xs text-purple-500 hover:underline mt-1"
+                                           style="display:block;font-size:11px;color:#b79ae8;margin-top:4px;text-decoration:none;"
                                            title="ดูใน Stripe Dashboard">
-                                            🔗 {{ \Illuminate\Support\Str::limit($bill->stripe_payment_intent_id, 18) }}
+                                            <i class="fas fa-link"></i> {{ \Illuminate\Support\Str::limit($bill->stripe_payment_intent_id, 18) }}
                                         </a>
                                     @elseif($bill->stripe_session_id)
-                                        <div class="text-xs text-gray-500" title="{{ $bill->stripe_session_id }}">
+                                        <div class="tp-muted" style="font-size:11px;" title="{{ $bill->stripe_session_id }}">
                                             session: {{ \Illuminate\Support\Str::limit($bill->stripe_session_id, 14) }}
                                         </div>
                                     @endif
                                 @elseif($bill->sms_notification_id)
-                                    <span class="text-blue-600 dark:text-blue-400">📱 SMS</span>
+                                    <span style="color:#5689b8;font-weight:600;"><i class="fas fa-mobile-screen"></i> SMS</span>
                                     @if($bill->sender_bank)
-                                        <div class="text-xs">{{ $bill->sender_bank }}</div>
+                                        <div class="tp-muted" style="font-size:11px;">{{ $bill->sender_bank }}</div>
                                     @endif
                                 @elseif($bill->is_paid)
-                                    <span class="text-gray-500">Manual</span>
+                                    <span class="tp-muted">Manual</span>
                                 @else
-                                    -
+                                    <span class="tp-muted">-</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex justify-end gap-2" x-data="{ submitting: false }">
-                                    <a href="{{ route('admin.fortune.readings.show', $bill) }}"
-                                       class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                                        ดู
-                                    </a>
+
+                            {{-- จัดการ --}}
+                            <td style="padding:12px 14px;white-space:nowrap;text-align:right;border-radius:0 12px 12px 0;">
+                                <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;">
+                                    @if(Route::has('admin.fortune.readings.show'))
+                                        <a href="{{ route('admin.fortune.readings.show', $bill) }}"
+                                           style="color:#5689b8;text-decoration:none;font-size:13px;font-weight:600;" title="ดูรายละเอียด">
+                                            <i class="fas fa-eye"></i> ดู
+                                        </a>
+                                    @endif
+
                                     @if(!$bill->is_paid && $bill->conversation_status === 'pending_payment')
                                         <button onclick="showManualConfirm({{ $bill->id }}, {{ $bill->amount_paid }})"
-                                                class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                                            ยืนยัน
+                                                style="background:none;border:0;cursor:pointer;color:#5aa07e;font-size:13px;font-weight:600;">
+                                            <i class="fas fa-check"></i> ยืนยัน
                                         </button>
                                     @endif
+
                                     @if($bill->is_paid && !$bill->is_floating)
                                         @if($bill->is_paid && !empty($bill->getCollectedQuestions()) && empty($bill->deep_response))
-                                            <form action="{{ route('admin.fortune.billing.retry-fortune', $bill) }}" method="POST" class="inline"
+                                            <form action="{{ route('admin.fortune.billing.retry-fortune', $bill) }}" method="POST" style="display:inline;"
                                                   @submit="if(!confirm('ต้องการส่งคำทำนายให้ลูกค้าอีกครั้ง?')) { $event.preventDefault(); return; } submitting = true; showLoadingOverlay('กำลังส่งคำทำนาย...');">
                                                 @csrf
                                                 <button type="submit" :disabled="submitting"
-                                                        class="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 disabled:opacity-50">
-                                                    <template x-if="!submitting"><span>🔮 ส่งคำทำนาย</span></template>
-                                                    <template x-if="submitting"><span class="flex items-center gap-1"><span class="animate-spin h-3 w-3 border border-purple-600 border-t-transparent rounded-full inline-block"></span>กำลังส่ง...</span></template>
+                                                        style="background:none;border:0;cursor:pointer;color:#b79ae8;font-size:13px;font-weight:600;"
+                                                        :style="submitting ? 'opacity:.5;' : ''">
+                                                    <template x-if="!submitting"><span><i class="fas fa-wand-magic-sparkles"></i> ส่งคำทำนาย</span></template>
+                                                    <template x-if="submitting"><span style="display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-spinner fa-spin"></i> กำลังส่ง...</span></template>
                                                 </button>
                                             </form>
                                         @endif
-                                        <form action="{{ route('admin.fortune.billing.void', $bill) }}" method="POST" class="inline"
+                                        <form action="{{ route('admin.fortune.billing.void', $bill) }}" method="POST" style="display:inline;"
                                               @submit="if(!confirm('ยืนยันยกเลิกบิลนี้?')) { $event.preventDefault(); return; } submitting = true;">
                                             @csrf
                                             <button type="submit" :disabled="submitting"
-                                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50">
-                                                ยกเลิก
+                                                    style="background:none;border:0;cursor:pointer;color:#d9534f;font-size:13px;font-weight:600;"
+                                                    :style="submitting ? 'opacity:.5;' : ''">
+                                                <i class="fas fa-ban"></i> ยกเลิก
                                             </button>
                                         </form>
                                     @endif
@@ -319,31 +376,33 @@
                                         @if($bill->is_paid && $bill->stripe_payment_intent_id)
                                             {{-- Refund — confirm dialog + reason field --}}
                                             <button onclick="showStripeRefund({{ $bill->id }}, {{ $bill->amount_paid }})"
-                                                    class="text-pink-600 hover:text-pink-900 dark:text-pink-400 dark:hover:text-pink-300"
+                                                    style="background:none;border:0;cursor:pointer;color:#d6824a;font-size:13px;font-weight:600;"
                                                     title="คืนเงินผ่าน Stripe">
-                                                💸 Refund
+                                                <i class="fas fa-money-bill-transfer"></i> Refund
                                             </button>
                                         @endif
                                         @if(!$bill->is_paid && $bill->stripe_session_id)
                                             {{-- Expire pending session --}}
-                                            <form action="{{ route('admin.fortune.billing.stripe-expire', $bill) }}" method="POST" class="inline"
+                                            <form action="{{ route('admin.fortune.billing.stripe-expire', $bill) }}" method="POST" style="display:inline;"
                                                   @submit="if(!confirm('ยืนยัน expire session นี้? ลูกค้าจะจ่ายไม่ได้แล้ว')) { $event.preventDefault(); return; } submitting = true;">
                                                 @csrf
                                                 <button type="submit" :disabled="submitting"
-                                                        class="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300 disabled:opacity-50">
-                                                    ⏱️ Expire
+                                                        style="background:none;border:0;cursor:pointer;color:#d6824a;font-size:13px;font-weight:600;"
+                                                        :style="submitting ? 'opacity:.5;' : ''">
+                                                    <i class="fas fa-clock"></i> Expire
                                                 </button>
                                             </form>
                                         @endif
                                         @if($bill->stripe_session_id)
                                             {{-- Resync จาก Stripe API (กรณี webhook ตก) --}}
-                                            <form action="{{ route('admin.fortune.billing.stripe-resync', $bill) }}" method="POST" class="inline"
+                                            <form action="{{ route('admin.fortune.billing.stripe-resync', $bill) }}" method="POST" style="display:inline;"
                                                   @submit="submitting = true;">
                                                 @csrf
                                                 <button type="submit" :disabled="submitting"
-                                                        class="text-cyan-600 hover:text-cyan-900 dark:text-cyan-400 dark:hover:text-cyan-300 disabled:opacity-50"
+                                                        style="background:none;border:0;cursor:pointer;color:#5689b8;font-size:13px;font-weight:600;"
+                                                        :style="submitting ? 'opacity:.5;' : ''"
                                                         title="ดึง status จาก Stripe API ใหม่ (กรณี webhook ตก)">
-                                                    🔄 Resync
+                                                    <i class="fas fa-rotate"></i> Resync
                                                 </button>
                                             </form>
                                         @endif
@@ -353,7 +412,8 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="7" style="padding:48px 14px;text-align:center;color:var(--ink2);">
+                                <i class="fas fa-inbox" style="font-size:32px;display:block;margin-bottom:10px;opacity:.5;"></i>
                                 ไม่พบข้อมูลบิลในช่วงเวลาที่เลือก
                             </td>
                         </tr>
@@ -361,58 +421,55 @@
                 </tbody>
             </table>
         </div>
-    </div>
 
-    {{-- Pagination --}}
-    @if($bills->hasPages())
-        <div class="mt-6">
-            {{ $bills->appends(request()->query())->links() }}
-        </div>
-    @endif
-</div>
-
-{{-- Loading Overlay --}}
-<div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-60 z-[100] hidden items-center justify-center">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-xs mx-4 text-center">
-        <div class="flex justify-center mb-4">
-            <div class="animate-spin h-12 w-12 border-4 border-purple-600 border-t-transparent rounded-full"></div>
-        </div>
-        <p id="loadingMessage" class="text-gray-900 dark:text-white font-semibold text-lg">กำลังประมวลผล...</p>
-        <p class="text-gray-500 dark:text-gray-400 text-sm mt-2">กรุณารอสักครู่ อย่าปิดหน้านี้</p>
+        {{-- Pagination --}}
+        @if($bills->hasPages())
+            <div class="tp-divider"></div>
+            <div style="margin-top:12px;">
+                {{ $bills->appends(request()->query())->links() }}
+            </div>
+        @endif
     </div>
 </div>
 
-{{-- Manual Confirm Modal --}}
-<div id="manualConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4"
-         x-data="{ submitting: false }">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">ยืนยันการชำระเงินด้วยตนเอง</h3>
+{{-- ╔═══ Loading Overlay ═══╗ --}}
+<div id="loadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;">
+    <div class="tp-card tp-raise" style="max-width:320px;margin:0 16px;text-align:center;padding:32px;">
+        <i class="fas fa-spinner fa-spin" style="font-size:40px;color:var(--accent1);display:block;margin-bottom:16px;"></i>
+        <p id="loadingMessage" style="color:var(--ink);font-weight:700;font-size:17px;margin:0;">กำลังประมวลผล...</p>
+        <p class="tp-muted" style="font-size:13px;margin-top:8px;">กรุณารอสักครู่ อย่าปิดหน้านี้</p>
+    </div>
+</div>
+
+{{-- ╔═══ Manual Confirm Modal ═══╗ --}}
+<div id="manualConfirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;align-items:center;justify-content:center;">
+    <div class="tp-card tp-raise" x-data="{ submitting: false }" style="max-width:440px;width:100%;margin:0 16px;padding:24px;">
+        <h3 style="font-size:18px;font-weight:800;color:var(--ink);margin:0 0 16px;">
+            <i class="fas fa-check-circle" style="color:#5aa07e;"></i> ยืนยันการชำระเงินด้วยตนเอง
+        </h3>
         <form id="manualConfirmForm" method="POST"
               @submit="submitting = true; showLoadingOverlay('กำลังยืนยันบิลและส่งคำทำนาย...');">
             @csrf
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน</label>
-                <input type="number" name="amount" id="confirmAmount" step="0.01" required
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <div style="margin-bottom:14px;">
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">จำนวนเงิน</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="number" name="amount" id="confirmAmount" step="0.01" required
+                           style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                </div>
             </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">หมายเหตุ (ถ้ามี)</label>
-                <input type="text" name="note" placeholder="เช่น โอนผ่าน PromptPay"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <div style="margin-bottom:18px;">
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">หมายเหตุ (ถ้ามี)</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="text" name="note" placeholder="เช่น โอนผ่าน PromptPay"
+                           style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                </div>
             </div>
-            <div class="flex gap-3">
-                <button type="submit" :disabled="submitting"
-                        class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg transition flex items-center justify-center gap-2">
-                    <template x-if="!submitting"><span>✅ ยืนยันการชำระ</span></template>
-                    <template x-if="submitting">
-                        <span class="flex items-center gap-2">
-                            <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                            กำลังดำเนินการ...
-                        </span>
-                    </template>
+            <div style="display:flex;gap:12px;">
+                <button type="submit" :disabled="submitting" class="tp-btn tp-btn-primary" style="flex:1;justify-content:center;">
+                    <template x-if="!submitting"><span><i class="fas fa-check"></i> ยืนยันการชำระ</span></template>
+                    <template x-if="submitting"><span style="display:inline-flex;align-items:center;gap:6px;"><i class="fas fa-spinner fa-spin"></i> กำลังดำเนินการ...</span></template>
                 </button>
-                <button type="button" @click="if(!submitting) closeManualConfirm()" :disabled="submitting"
-                        class="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 disabled:opacity-50 text-white rounded-lg transition">
+                <button type="button" @click="if(!submitting) closeManualConfirm()" :disabled="submitting" class="tp-btn" style="flex:1;justify-content:center;">
                     ยกเลิก
                 </button>
             </div>
@@ -420,126 +477,82 @@
     </div>
 </div>
 
-{{-- 💳 (2026-05-09) Stripe Refund Modal --}}
-<div id="stripeRefundModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4"
-         x-data="{ submitting: false, fullRefund: true }">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">💸 Refund Stripe Payment</h3>
-        <p class="text-sm text-red-600 dark:text-red-400 mb-4">
-            ⚠️ การ refund ไม่สามารถยกเลิกได้ กรุณาตรวจสอบให้แน่ใจก่อนทำรายการ
+{{-- ╔═══ 💳 (2026-05-09) Stripe Refund Modal ═══╗ --}}
+<div id="stripeRefundModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;align-items:center;justify-content:center;">
+    <div class="tp-card tp-raise" x-data="{ submitting: false, fullRefund: true }" style="max-width:440px;width:100%;margin:0 16px;padding:24px;">
+        <h3 style="font-size:18px;font-weight:800;color:var(--ink);margin:0 0 8px;">
+            <i class="fas fa-money-bill-transfer" style="color:#d6824a;"></i> Refund Stripe Payment
+        </h3>
+        <p style="font-size:13px;color:#d9534f;margin:0 0 16px;">
+            <i class="fas fa-triangle-exclamation"></i> การ refund ไม่สามารถยกเลิกได้ กรุณาตรวจสอบให้แน่ใจก่อนทำรายการ
         </p>
         <form id="stripeRefundForm" method="POST"
               @submit="if(!confirm('ยืนยันการ refund? ไม่สามารถ undo ได้')) { $event.preventDefault(); return; } submitting = true;">
             @csrf
-            <div class="mb-4">
-                <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                    <input type="checkbox" x-model="fullRefund" class="rounded">
-                    Refund เต็มจำนวน
+            <div style="margin-bottom:14px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);cursor:pointer;">
+                    <input type="checkbox" x-model="fullRefund"> Refund เต็มจำนวน
                 </label>
             </div>
-            <div class="mb-4" x-show="!fullRefund">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน (บาท)</label>
-                <input type="number" name="amount" id="refundAmount" step="0.01" min="0.01"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                <p class="text-xs text-gray-500 mt-1">เว้นว่างไว้ = refund เต็ม</p>
+            <div style="margin-bottom:14px;" x-show="!fullRefund" x-cloak>
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">จำนวนเงิน (บาท)</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="number" name="amount" id="refundAmount" step="0.01" min="0.01"
+                           style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
+                </div>
+                <p class="tp-muted" style="font-size:11px;margin-top:4px;">เว้นว่างไว้ = refund เต็ม</p>
             </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เหตุผล <span class="text-red-500">*</span></label>
-                <textarea name="reason" required rows="3" maxlength="500"
-                          placeholder="เช่น ลูกค้าขอเงินคืน เนื่องจาก..."
-                          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+            <div style="margin-bottom:18px;">
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">เหตุผล <span style="color:#d9534f;">*</span></label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <textarea name="reason" required rows="3" maxlength="500" placeholder="เช่น ลูกค้าขอเงินคืน เนื่องจาก..."
+                              style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;resize:vertical;"></textarea>
+                </div>
             </div>
-            <div class="flex gap-3">
-                <button type="submit" :disabled="submitting"
-                        class="flex-1 px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:bg-pink-400 text-white rounded-lg transition">
-                    <template x-if="!submitting"><span>💸 Refund</span></template>
-                    <template x-if="submitting"><span>กำลังดำเนินการ...</span></template>
+            <div style="display:flex;gap:12px;">
+                <button type="submit" :disabled="submitting" class="tp-btn" style="flex:1;justify-content:center;background:#d6824a;color:#fff;">
+                    <template x-if="!submitting"><span><i class="fas fa-money-bill-transfer"></i> Refund</span></template>
+                    <template x-if="submitting"><span><i class="fas fa-spinner fa-spin"></i> กำลังดำเนินการ...</span></template>
                 </button>
-                <button type="button" @click="if(!submitting) closeStripeRefund()" :disabled="submitting"
-                        class="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 disabled:opacity-50 text-white rounded-lg transition">
+                <button type="button" @click="if(!submitting) closeStripeRefund()" :disabled="submitting" class="tp-btn" style="flex:1;justify-content:center;">
                     ยกเลิก
                 </button>
             </div>
         </form>
     </div>
 </div>
+@endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Revenue Chart
-    const ctx = document.getElementById('revenueChart').getContext('2d');
-    const dailyRevenue = @json($dailyRevenue);
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: dailyRevenue.map(d => d.date_label),
-            datasets: [{
-                label: 'รายได้ (บาท)',
-                data: dailyRevenue.map(d => d.revenue),
-                backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                borderColor: 'rgb(59, 130, 246)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '฿' + value.toLocaleString();
-                        }
-                    }
-                }
-            }
-        }
-    });
-
     // แสดง loading overlay ขณะรอระบบประมวลผล
     function showLoadingOverlay(message) {
         const overlay = document.getElementById('loadingOverlay');
         const msg = document.getElementById('loadingMessage');
         if (msg && message) msg.textContent = message;
-        overlay.classList.remove('hidden');
-        overlay.classList.add('flex');
+        overlay.style.display = 'flex';
     }
 
-    // Manual Confirm Modal
+    // Manual Confirm Modal — endpoint/payload เดิม (POST /admin/fortune/billing/{id}/manual-confirm)
     function showManualConfirm(billId, amount) {
         document.getElementById('manualConfirmForm').action = '/admin/fortune/billing/' + billId + '/manual-confirm';
         document.getElementById('confirmAmount').value = amount;
-        document.getElementById('manualConfirmModal').classList.remove('hidden');
-        document.getElementById('manualConfirmModal').classList.add('flex');
+        document.getElementById('manualConfirmModal').style.display = 'flex';
     }
 
     function closeManualConfirm() {
-        document.getElementById('manualConfirmModal').classList.add('hidden');
-        document.getElementById('manualConfirmModal').classList.remove('flex');
+        document.getElementById('manualConfirmModal').style.display = 'none';
     }
 
-    // 💳 (2026-05-09) Stripe Refund Modal
+    // 💳 (2026-05-09) Stripe Refund Modal — endpoint/payload เดิม (POST /admin/fortune/billing/{id}/stripe-refund)
     function showStripeRefund(billId, amount) {
         document.getElementById('stripeRefundForm').action = '/admin/fortune/billing/' + billId + '/stripe-refund';
         document.getElementById('refundAmount').value = amount;
-        const modal = document.getElementById('stripeRefundModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        document.getElementById('stripeRefundModal').style.display = 'flex';
     }
 
     function closeStripeRefund() {
-        const modal = document.getElementById('stripeRefundModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        document.getElementById('stripeRefundModal').style.display = 'none';
     }
 </script>
 @endpush
-@endsection

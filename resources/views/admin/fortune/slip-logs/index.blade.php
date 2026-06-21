@@ -1,242 +1,327 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'ประวัติการตรวจสลิป (SlipOK)')
 
 @php
-    // 🎨 สีป้ายตามผลการตรวจ
-    $badge = function ($decision) {
+    // 🎨 V4 — สี pill ตามผลการตรวจ (คืน [bg, color] อ้างจาก STATUS palette นวลทองคำ)
+    //   เขียว=ผ่าน / แดง=ซ้ำ / ส้ม=reject·error / เทา=ไม่ส่งตรวจ / ฟ้า=no_bill อื่นๆ
+    $decisionStyle = function ($decision) {
         return match (true) {
-            $decision === 'approve' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-            $decision === 'duplicate', $decision === 'no_bill_duplicate' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-            in_array($decision, ['reject_receiver', 'reject_amount', 'stale', 'error', 'no_bill_wrong_receiver']) => 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
-            in_array($decision, ['no_qr', 'not_slip', 'no_bill_unverified', 'no_slip_found']) => 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-            str_starts_with((string) $decision, 'no_bill') => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-            default => 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+            $decision === 'approve' => 'background:rgba(90,160,126,.18); color:#3f7a5c;',
+            in_array($decision, ['duplicate', 'no_bill_duplicate']) => 'background:rgba(217,83,79,.16); color:#d9534f;',
+            in_array($decision, ['reject_receiver', 'reject_amount', 'stale', 'error', 'no_bill_wrong_receiver']) => 'background:rgba(214,130,74,.18); color:#b06330;',
+            in_array($decision, ['no_qr', 'not_slip', 'no_bill_unverified', 'no_slip_found']) => 'background:rgba(154,143,124,.18); color:var(--ink2);',
+            str_starts_with((string) $decision, 'no_bill') => 'background:rgba(86,137,184,.18); color:#3f6a96;',
+            default => 'background:rgba(154,143,124,.18); color:var(--ink2);',
         };
     };
 @endphp
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
+{{-- 🧾 ประวัติการตรวจสลิป SlipOK (ธีม V4 นวลทองคำ) — คงทุก filter/field/route เดิม 100% --}}
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🧾 ประวัติการตรวจสลิป (SlipOK)</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ทุกการตรวจสลิป — ส่งไปเช็คจริงไหม / สลิปซ้ำไหม / บิลไหน</p>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ระบบดูดวง · ประวัติตรวจสลิป</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ประวัติการตรวจสลิป 🧾</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ทุกการตรวจสลิป — ส่งไปเช็คจริงไหม / สลิปซ้ำไหม / บิลไหน</div>
         </div>
-        <a href="{{ route('admin.fortune.celtic-cross.index') }}"
-           class="text-sm px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition text-center">
-            ← Celtic Cross
-        </a>
+        <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+            @if(Route::has('admin.fortune.celtic-cross.index'))
+                <a href="{{ route('admin.fortune.celtic-cross.index') }}" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-arrow-left"></i> Celtic Cross
+                </a>
+            @endif
+            @if(Route::has('admin.fortune.settings.index'))
+                <a href="{{ route('admin.fortune.settings.index') }}" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-gear"></i> ตั้งค่า SlipOK
+                </a>
+            @endif
+        </div>
     </div>
 
-    {{-- 📊 (2026-06-05) โควตา SlipOK คงเหลือ — เห็นชัดว่าเหลือยิงตรวจได้กี่ครั้ง (กันโดนสลิปปลอมดูดหมด) --}}
+    {{-- ===== 📊 โควตา SlipOK คงเหลือ (2026-06-05) — เห็นชัดว่าเหลือยิงตรวจได้กี่ครั้ง ===== --}}
     @php
         $q = $slipokQuota ?? [];
         $qOk = (bool) ($q['success'] ?? false);
         $qLeft = (int) ($q['quota'] ?? 0);
-        // โทนสีตามจำนวนคงเหลือ: < 50 = แดง (ใกล้หมด) / < 200 = เหลือง / ปกติ = เขียว / เช็คไม่ได้ = เทา
+        // โทนสีตามจำนวนคงเหลือ: < 50 = แดง (ใกล้หมด) / < 200 = เหลือง / ปกติ = เขียว / เช็คไม่ได้ = กลาง
         $qTone = ! $qOk ? 'gray' : ($qLeft < 50 ? 'red' : ($qLeft < 200 ? 'amber' : 'green'));
-        $qToneMap = [
-            'green' => 'border-green-200 dark:border-green-800 from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20',
-            'amber' => 'border-amber-200 dark:border-amber-800 from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20',
-            'red'   => 'border-red-200 dark:border-red-800 from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20',
-            'gray'  => 'border-gray-200 dark:border-gray-700 from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800',
-        ];
-        $qNumColor = [
-            'green' => 'text-green-600 dark:text-green-400',
-            'amber' => 'text-amber-600 dark:text-amber-400',
-            'red'   => 'text-red-600 dark:text-red-400',
-            'gray'  => 'text-gray-500 dark:text-gray-400',
-        ];
+        $qAccent = [
+            'green' => '#5aa07e',
+            'amber' => '#e0a52e',
+            'red'   => '#d9534f',
+            'gray'  => '#9a8f7c',
+        ][$qTone];
     @endphp
-    <div class="bg-gradient-to-r {{ $qToneMap[$qTone] }} border rounded-xl shadow-sm p-4 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div class="flex items-center gap-3">
-            <div class="text-3xl">📊</div>
-            <div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">โควตา SlipOK คงเหลือ (ตรวจสลิปได้อีก)</div>
-                @if ($qOk)
-                    <div class="flex items-baseline gap-1">
-                        <span class="text-3xl font-bold {{ $qNumColor[$qTone] }}">{{ number_format($qLeft) }}</span>
-                        <span class="text-sm text-gray-500 dark:text-gray-400">ครั้ง</span>
-                        @if ($qTone === 'red')
-                            <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">⚠️ ใกล้หมด</span>
-                        @endif
-                    </div>
-                @else
-                    <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
-                        เช็คโควตาไม่ได้ — {{ $q['message'] ?? 'เชื่อมต่อ SlipOK ไม่สำเร็จ' }}
-                    </div>
-                @endif
+    <div class="tp-card" style="padding:18px; border-left:4px solid {{ $qAccent }};">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div class="tp-tile" style="width:46px; height:46px; border-radius:13px; font-size:20px; display:flex; align-items:center; justify-content:center; background:{{ $qAccent }}; flex-shrink:0;">
+                    <i class="fas fa-gauge"></i>
+                </div>
+                <div>
+                    <div style="font-size:12px; color:var(--ink2);">โควตา SlipOK คงเหลือ (ตรวจสลิปได้อีก)</div>
+                    @if ($qOk)
+                        <div style="display:flex; align-items:baseline; gap:7px; margin-top:2px;">
+                            <span class="tp-num" style="font-size:30px; font-weight:800; line-height:1; color:{{ $qAccent }};">{{ number_format($qLeft) }}</span>
+                            <span style="font-size:13px; color:var(--ink2);">ครั้ง</span>
+                            @if ($qTone === 'red')
+                                <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f; margin-left:4px;">⚠️ ใกล้หมด</span>
+                            @endif
+                        </div>
+                    @else
+                        <div style="font-size:13.5px; font-weight:600; color:var(--ink); margin-top:3px;">
+                            เช็คโควตาไม่ได้ — {{ $q['message'] ?? 'เชื่อมต่อ SlipOK ไม่สำเร็จ' }}
+                        </div>
+                    @endif
+                </div>
             </div>
-        </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 text-left sm:text-right space-y-0.5">
-            @if ($qOk)
-                @if (! empty($q['overQuota']))
-                    <div>เกินโควตา (over): <span class="font-medium text-gray-700 dark:text-gray-300">{{ number_format((int) $q['overQuota']) }}</span></div>
+            <div style="font-size:11.5px; color:var(--ink2); text-align:right; display:flex; flex-direction:column; gap:2px; align-items:flex-end;">
+                @if ($qOk)
+                    @if (! empty($q['overQuota']))
+                        <div>เกินโควตา (over): <span style="font-weight:700; color:var(--ink);">{{ number_format((int) $q['overQuota']) }}</span></div>
+                    @endif
+                    @if (! empty($q['specialQuota']))
+                        <div>โควตาพิเศษ: <span style="font-weight:700; color:var(--ink);">{{ number_format((int) $q['specialQuota']) }}</span></div>
+                    @endif
+                    @if (! empty($q['endDate']))
+                        <div>หมดรอบ: <span style="font-weight:700; color:var(--ink);">{{ $q['endDate'] }}</span></div>
+                    @endif
+                @elseif (Route::has('admin.fortune.settings.index'))
+                    <a href="{{ route('admin.fortune.settings.index') }}" style="color:var(--deep1); font-weight:700; text-decoration:underline;">→ ตั้งค่า SlipOK</a>
                 @endif
-                @if (! empty($q['specialQuota']))
-                    <div>โควตาพิเศษ: <span class="font-medium text-gray-700 dark:text-gray-300">{{ number_format((int) $q['specialQuota']) }}</span></div>
-                @endif
-                @if (! empty($q['endDate']))
-                    <div>หมดรอบ: <span class="font-medium text-gray-700 dark:text-gray-300">{{ $q['endDate'] }}</span></div>
-                @endif
-            @else
-                <a href="{{ route('admin.fortune.settings.index') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">→ ตั้งค่า SlipOK</a>
-            @endif
-            <div class="text-[10px] text-gray-400 dark:text-gray-500">อัปเดตทุก 5 นาที</div>
+                <div style="font-size:10.5px; color:var(--ink2); opacity:.7;">อัปเดตทุก 5 นาที</div>
+            </div>
         </div>
     </div>
 
-    {{-- Stats --}}
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-        @foreach ([
-            ['ทั้งหมด', $stats['total'], 'text-gray-900 dark:text-white'],
-            ['วันนี้', $stats['today'], 'text-indigo-600 dark:text-indigo-400'],
-            ['ส่ง SlipOK จริง', $stats['sent_slipok'], 'text-purple-600 dark:text-purple-400'],
-            ['สลิปซ้ำ', $stats['duplicates'], 'text-red-600 dark:text-red-400'],
-            ['ผ่าน (approve)', $stats['approved'], 'text-green-600 dark:text-green-400'],
-        ] as [$label, $value, $color])
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $label }}</div>
-                <div class="text-2xl font-bold {{ $color }} mt-1">{{ number_format($value) }}</div>
+    {{-- ===== KPI grid ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px;">
+        @php
+            // [label, value, icon, สีไอคอน]
+            $kpis = [
+                ['ทั้งหมด', $stats['total'], 'fa-layer-group', null],
+                ['วันนี้', $stats['today'], 'fa-calendar-day', '#5689b8'],
+                ['ส่ง SlipOK จริง', $stats['sent_slipok'], 'fa-paper-plane', '#b79ae8'],
+                ['สลิปซ้ำ', $stats['duplicates'], 'fa-copy', '#d9534f'],
+                ['ผ่าน (approve)', $stats['approved'], 'fa-circle-check', '#5aa07e'],
+            ];
+        @endphp
+        @foreach ($kpis as [$label, $value, $icon, $iconBg])
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center;@if($iconBg) background:{{ $iconBg }};@endif">
+                        <i class="fas {{ $icon }}"></i>
+                    </div>
+                    <div>
+                        <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($value) }}</div>
+                        <div style="font-size:12px; color:var(--ink2); margin-top:3px;">{{ $label }}</div>
+                    </div>
+                </div>
             </div>
         @endforeach
     </div>
 
-    {{-- Filters --}}
-    <form method="GET" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <input type="text" name="search" value="{{ $filters['search'] }}" placeholder="ค้นหา user / transRef / ชื่อ / บิล"
-                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm">
+    {{-- ===== Filters ===== --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-filter"></i> ตัวกรองข้อมูล</div>
+        <form method="GET" style="display:flex; flex-direction:column; gap:16px;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px;">
+                {{-- ค้นหา --}}
+                <div>
+                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">🔍 ค้นหา (user / transRef / ชื่อ / บิล)</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <input type="text" name="search" value="{{ $filters['search'] }}"
+                               placeholder="ค้นหา user / transRef / ชื่อ / บิล"
+                               style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
+                    </div>
+                </div>
 
-            <select name="decision" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm">
-                <option value="">— ผลทั้งหมด —</option>
-                @foreach ($decisions as $d)
-                    <option value="{{ $d }}" @selected($filters['decision'] === $d)>{{ $d }}</option>
-                @endforeach
-            </select>
+                {{-- ผลการตรวจ (decision) --}}
+                <div>
+                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ผลการตรวจ</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <select name="decision" style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                            <option value="">— ผลทั้งหมด —</option>
+                            @foreach ($decisions as $d)
+                                <option value="{{ $d }}" @selected($filters['decision'] === $d)>{{ $d }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
 
-            <select name="platform" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm">
-                <option value="">— ทุก platform —</option>
-                <option value="line" @selected($filters['platform'] === 'line')>LINE</option>
-                <option value="facebook" @selected($filters['platform'] === 'facebook')>Facebook</option>
-            </select>
+                {{-- platform --}}
+                <div>
+                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">Platform</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <select name="platform" style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                            <option value="">— ทุก platform —</option>
+                            <option value="line" @selected($filters['platform'] === 'line')>LINE</option>
+                            <option value="facebook" @selected($filters['platform'] === 'facebook')>Facebook</option>
+                        </select>
+                    </div>
+                </div>
 
-            <div class="flex items-center gap-3">
-                <input type="date" name="date_from" value="{{ $filters['date_from'] }}"
-                       class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-xs">
-                <input type="date" name="date_to" value="{{ $filters['date_to'] }}"
-                       class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-xs">
+                {{-- วันที่เริ่มต้น --}}
+                <div>
+                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">วันที่เริ่มต้น</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <input type="date" name="date_from" value="{{ $filters['date_from'] }}"
+                               style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
+                    </div>
+                </div>
+
+                {{-- วันที่สิ้นสุด --}}
+                <div>
+                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">วันที่สิ้นสุด</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <input type="date" name="date_to" value="{{ $filters['date_to'] }}"
+                               style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-4 mt-3">
-            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input type="checkbox" name="dup_only" value="1" @checked($filters['dup_only']) class="rounded text-red-600">
-                เฉพาะสลิปซ้ำ
-            </label>
-            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input type="checkbox" name="sent_only" value="1" @checked($filters['sent_only']) class="rounded text-purple-600">
-                เฉพาะที่ส่ง SlipOK จริง
-            </label>
-            <button type="submit" class="ml-auto px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm transition">
-                🔍 ค้นหา
-            </button>
-            <a href="{{ route('admin.fortune.slip-logs.index') }}" class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:underline">ล้าง</a>
-        </div>
-    </form>
 
-    {{-- Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-900/50">
-                    <tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                        <th class="px-3 py-3">เวลา</th>
-                        <th class="px-3 py-3">บิล</th>
-                        <th class="px-3 py-3">ลูกค้า</th>
-                        <th class="px-3 py-3 text-center">ส่ง SlipOK</th>
-                        <th class="px-3 py-3">ผล</th>
-                        <th class="px-3 py-3 text-center">ซ้ำ</th>
-                        <th class="px-3 py-3 text-right">ยอด</th>
-                        <th class="px-3 py-3">transRef</th>
-                        <th class="px-3 py-3">บัญชีปลายทาง</th>
-                        <th class="px-3 py-3">ผู้โอน</th>
-                        <th class="px-3 py-3 text-center">รูปสลิป<br><span class="text-[9px] normal-case text-gray-400">ที่ส่งไปตรวจ</span></th>
+            {{-- checkbox filters --}}
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:18px;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink); cursor:pointer;">
+                    <input type="checkbox" name="dup_only" value="1" @checked($filters['dup_only']) style="width:16px; height:16px; accent-color:#d9534f; cursor:pointer;">
+                    เฉพาะสลิปซ้ำ
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink); cursor:pointer;">
+                    <input type="checkbox" name="sent_only" value="1" @checked($filters['sent_only']) style="width:16px; height:16px; accent-color:#b79ae8; cursor:pointer;">
+                    เฉพาะที่ส่ง SlipOK จริง
+                </label>
+            </div>
+
+            {{-- ปุ่ม action --}}
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-magnifying-glass"></i> ค้นหา
+                </button>
+                <a href="{{ route('admin.fortune.slip-logs.index') }}" class="tp-btn">
+                    <i class="fas fa-rotate-left"></i> ล้างตัวกรอง
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {{-- ===== Table ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="min-width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr>
+                        @php
+                            $thBase = 'padding:13px 14px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;';
+                        @endphp
+                        <th style="{{ $thBase }} text-align:left;">เวลา</th>
+                        <th style="{{ $thBase }} text-align:left;">บิล</th>
+                        <th style="{{ $thBase }} text-align:left;">ลูกค้า</th>
+                        <th style="{{ $thBase }} text-align:center;">ส่ง SlipOK</th>
+                        <th style="{{ $thBase }} text-align:left;">ผล</th>
+                        <th style="{{ $thBase }} text-align:center;">ซ้ำ</th>
+                        <th style="{{ $thBase }} text-align:right;">ยอด</th>
+                        <th style="{{ $thBase }} text-align:left;">transRef</th>
+                        <th style="{{ $thBase }} text-align:left;">บัญชีปลายทาง</th>
+                        <th style="{{ $thBase }} text-align:left;">ผู้โอน</th>
+                        <th style="{{ $thBase }} text-align:center;">รูปสลิป<br><span style="font-size:9px; text-transform:none; letter-spacing:0; opacity:.7;">ที่ส่งไปตรวจ</span></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse ($logs as $log)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition">
-                            <td class="px-3 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400 text-xs">
-                                {{ $log->created_at?->format('d/m H:i:s') }}
-                                <div class="text-[10px] text-gray-400">{{ $log->context }}</div>
+                        {{-- 🟡 แต่ละแถวมี x-data เอง (Alpine v3 init เฉพาะ subtree ที่มี root) — เผื่อ interaction --}}
+                        <tr style="box-shadow:var(--inset-sm); transition:background .15s;"
+                            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+                            {{-- เวลา --}}
+                            <td style="padding:13px 14px; white-space:nowrap; color:var(--ink2); font-size:12px;">
+                                <div style="color:var(--ink);">{{ $log->created_at?->format('d/m H:i:s') }}</div>
+                                <div style="font-size:10.5px; color:var(--ink2);">{{ $log->context }}</div>
                             </td>
-                            <td class="px-3 py-3 whitespace-nowrap">
+                            {{-- บิล --}}
+                            <td style="padding:13px 14px; white-space:nowrap;">
                                 @if ($log->fortune_reading_id)
-                                    <a href="{{ route('admin.fortune.celtic-cross.show', $log->fortune_reading_id) }}"
-                                       class="text-indigo-600 dark:text-indigo-400 hover:underline">#{{ $log->fortune_reading_id }}</a>
-                                    <div class="text-[10px] text-gray-400">{{ $log->reading?->bill_reference }}</div>
+                                    @if(Route::has('admin.fortune.celtic-cross.show'))
+                                        <a href="{{ route('admin.fortune.celtic-cross.show', $log->fortune_reading_id) }}"
+                                           style="color:var(--deep1); font-weight:700; text-decoration:none;">#{{ $log->fortune_reading_id }}</a>
+                                    @else
+                                        <span style="color:var(--ink); font-weight:700;">#{{ $log->fortune_reading_id }}</span>
+                                    @endif
+                                    <div style="font-size:10.5px; color:var(--ink2);">{{ $log->reading?->bill_reference }}</div>
                                 @else
-                                    <span class="text-gray-400 text-xs">ไม่มีบิล</span>
+                                    <span style="color:var(--ink2); font-size:12px;">ไม่มีบิล</span>
                                 @endif
                             </td>
-                            <td class="px-3 py-3">
-                                <div class="text-gray-700 dark:text-gray-300 text-xs">{{ $log->reading?->facebook_user_name ?? '—' }}</div>
-                                <div class="text-[10px] text-gray-400 uppercase">{{ $log->platform }}</div>
+                            {{-- ลูกค้า --}}
+                            <td style="padding:13px 14px;">
+                                <div style="color:var(--ink); font-size:12.5px;">{{ $log->reading?->facebook_user_name ?? '—' }}</div>
+                                <div style="font-size:10.5px; color:var(--ink2); text-transform:uppercase;">{{ $log->platform }}</div>
                             </td>
-                            <td class="px-3 py-3 text-center">
+                            {{-- ส่ง SlipOK --}}
+                            <td style="padding:13px 14px; text-align:center;">
                                 @if ($log->sent_to_slipok)
-                                    <span class="text-green-600 dark:text-green-400" title="ส่งไป SlipOK API จริง">✅</span>
+                                    <span style="color:#5aa07e; font-size:16px;" title="ส่งไป SlipOK API จริง"><i class="fas fa-circle-check"></i></span>
                                 @else
-                                    <span class="text-gray-300 dark:text-gray-600" title="ไม่ได้ส่ง (pre-check ตัด / ไม่มีสลิป)">—</span>
+                                    <span style="color:var(--ink2); opacity:.5;" title="ไม่ได้ส่ง (pre-check ตัด / ไม่มีสลิป)">—</span>
                                 @endif
                             </td>
-                            <td class="px-3 py-3 whitespace-nowrap">
-                                <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {{ $badge($log->decision) }}">
-                                    {{ $log->decision }}
-                                </span>
+                            {{-- ผล --}}
+                            <td style="padding:13px 14px; white-space:nowrap;">
+                                <span class="tp-pill" style="{{ $decisionStyle($log->decision) }}">{{ $log->decision }}</span>
                                 @if ($log->to_our_account === true)
-                                    <span class="text-[10px] text-green-600 dark:text-green-400 block">เข้าบัญชีร้าน</span>
+                                    <div style="font-size:10px; color:#5aa07e; margin-top:3px;">เข้าบัญชีร้าน</div>
                                 @elseif ($log->to_our_account === false)
-                                    <span class="text-[10px] text-orange-500 block">บัญชีอื่น</span>
+                                    <div style="font-size:10px; color:#d6824a; margin-top:3px;">บัญชีอื่น</div>
                                 @endif
                             </td>
-                            <td class="px-3 py-3 text-center">
+                            {{-- ซ้ำ --}}
+                            <td style="padding:13px 14px; text-align:center;">
                                 @if ($log->is_duplicate)
-                                    <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">ซ้ำ</span>
+                                    <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f; font-weight:800;">ซ้ำ</span>
                                 @else
-                                    <span class="text-gray-300 dark:text-gray-600">—</span>
+                                    <span style="color:var(--ink2); opacity:.5;">—</span>
                                 @endif
                             </td>
-                            <td class="px-3 py-3 text-right whitespace-nowrap text-gray-700 dark:text-gray-300">
+                            {{-- ยอด --}}
+                            <td class="tp-num" style="padding:13px 14px; text-align:right; white-space:nowrap; color:var(--ink); font-weight:600;">
                                 {{ $log->amount ? '฿'.number_format((float) $log->amount, 2) : '—' }}
                             </td>
-                            <td class="px-3 py-3 font-mono text-[10px] text-gray-500 dark:text-gray-400 break-all max-w-[140px]">
+                            {{-- transRef --}}
+                            <td style="padding:13px 14px; font-family:monospace; font-size:10.5px; color:var(--ink2); word-break:break-all; max-width:140px;">
                                 {{ $log->trans_ref ?? '—' }}
                             </td>
-                            <td class="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{{ $log->receiver_account ?? '—' }}</td>
-                            <td class="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{{ $log->sender_name ?? '—' }}</td>
-                            <td class="px-3 py-3 text-center">
+                            {{-- บัญชีปลายทาง --}}
+                            <td style="padding:13px 14px; font-size:12px; color:var(--ink2);">{{ $log->receiver_account ?? '—' }}</td>
+                            {{-- ผู้โอน --}}
+                            <td style="padding:13px 14px; font-size:12px; color:var(--ink2);">{{ $log->sender_name ?? '—' }}</td>
+                            {{-- รูปสลิปที่ส่งไปตรวจ --}}
+                            <td style="padding:13px 14px; text-align:center;">
                                 @if ($log->slip_image_path)
                                     {{-- ⚠️ (2026-06-05) onerror: ถ้าไฟล์ถูกลบ (404 — purge 30 วัน / โดน deploy เก่าลบ)
                                          แทนที่ลิงก์ด้วยป้าย "🚫 ลบแล้ว" แทนไอคอนรูปแตก ให้แอดมินเข้าใจว่าไฟล์หาย ไม่ใช่ระบบพัง --}}
                                     <a href="{{ route('admin.fortune.slip-logs.image', $log->id) }}" target="_blank" rel="noopener"
                                        title="เปิดรูปสลิปที่ส่งไปตรวจ (ดูว่า QR ชัดไหม)">
                                         <img src="{{ route('admin.fortune.slip-logs.image', $log->id) }}" loading="lazy" alt="slip"
-                                             onerror="this.onerror=null;var s=document.createElement('span');s.className='text-[10px] text-gray-300 dark:text-gray-600';s.title='ไฟล์รูปถูกลบแล้ว (เกิน 30 วัน หรือถูก deploy ลบก่อนแพตช์ 2026-06-05)';s.textContent='🚫 ลบแล้ว';this.closest('a').replaceWith(s);"
-                                             class="h-12 w-12 object-cover rounded border border-gray-200 dark:border-gray-600 inline-block hover:scale-[2.5] hover:shadow-xl transition origin-center relative z-10">
+                                             onerror="this.onerror=null;var s=document.createElement('span');s.style.cssText='font-size:10px;color:var(--ink2);opacity:.6;';s.title='ไฟล์รูปถูกลบแล้ว (เกิน 30 วัน หรือถูก deploy ลบก่อนแพตช์ 2026-06-05)';s.textContent='🚫 ลบแล้ว';this.closest('a').replaceWith(s);"
+                                             style="height:48px; width:48px; object-fit:cover; border-radius:9px; box-shadow:var(--inset-sm); display:inline-block; transition:transform .18s, box-shadow .18s; transform-origin:center; position:relative; z-index:1;"
+                                             onmouseover="this.style.transform='scale(2.5)'; this.style.boxShadow='var(--raise)'; this.style.zIndex='30'; this.style.position='relative';"
+                                             onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='var(--inset-sm)'; this.style.zIndex='1';">
                                     </a>
                                 @else
-                                    <span class="text-gray-300 dark:text-gray-600" title="ไม่มีรูป (ไม่ได้เก็บ / purge หลัง 30 วัน)">—</span>
+                                    <span style="color:var(--ink2); opacity:.5;" title="ไม่มีรูป (ไม่ได้เก็บ / purge หลัง 30 วัน)">—</span>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="px-3 py-12 text-center text-gray-400 dark:text-gray-500">
-                                ยังไม่มีประวัติการตรวจสลิป
+                            <td colspan="11" style="padding:0;">
+                                {{-- Empty state --}}
+                                <div style="text-align:center; color:var(--ink2); padding:48px 0;">
+                                    <i class="fas fa-inbox" style="font-size:32px; display:block; margin-bottom:10px; opacity:.5;"></i>
+                                    ยังไม่มีประวัติการตรวจสลิป
+                                </div>
                             </td>
                         </tr>
                     @endforelse
@@ -245,8 +330,12 @@
         </div>
     </div>
 
-    <div class="mt-6">
-        {{ $logs->links() }}
-    </div>
+    {{-- ===== Pagination ===== --}}
+    @if($logs->hasPages())
+        <div>
+            {{ $logs->links() }}
+        </div>
+    @endif
+
 </div>
 @endsection
