@@ -1,253 +1,316 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'ประวัติการทำนาย')
+@section('title', 'ประวัติการทำนาย — รายการ')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    {{-- Header --}}
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            📊 ประวัติการทำนาย
-        </h1>
-        <p class="text-gray-600 dark:text-gray-400">
-            ดูประวัติและสถิติการทำนายทั้งหมด
-        </p>
-    </div>
+{{-- 🔮 ประวัติการทำนาย (ธีม V4 นวลทองคำ) — คงทุก filter, ปุ่ม Export CSV, ลิงก์ดู ตามของเดิม 100% --}}
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="text-2xl font-bold mb-1">{{ number_format($stats['total']) }}</div>
-            <div class="text-blue-100 text-sm">ทั้งหมด</div>
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ระบบดูดวง · ประวัติการทำนาย</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ประวัติการทำนาย 🔮</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ดูประวัติและสถิติการทำนายทั้งหมด</div>
         </div>
-
-        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="text-2xl font-bold mb-1">{{ number_format($stats['today']) }}</div>
-            <div class="text-green-100 text-sm">วันนี้</div>
-        </div>
-
-        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="text-2xl font-bold mb-1">{{ number_format($stats['deep'] ?? 0) }}</div>
-            <div class="text-indigo-100 text-sm">🌟 เชิงลึก</div>
-        </div>
-
-        <div class="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="text-2xl font-bold mb-1">{{ number_format($stats['basic'] ?? 0) }}</div>
-            <div class="text-cyan-100 text-sm">🔮 พื้นฐาน</div>
-        </div>
-
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="text-2xl font-bold mb-1">{{ number_format($stats['paid']) }}</div>
-            <div class="text-purple-100 text-sm">ชำระเงินแล้ว</div>
-        </div>
-
-        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="text-2xl font-bold mb-1">{{ number_format($stats['free']) }}</div>
-            <div class="text-orange-100 text-sm">ฟรี</div>
+        <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+            @if(Route::has('admin.fortune.dashboard'))
+                <a href="{{ route('admin.fortune.dashboard') }}" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-gauge-high"></i> Dashboard
+                </a>
+            @endif
+            @if(Route::has('admin.fortune.settings.index'))
+                <a href="{{ route('admin.fortune.settings.index') }}" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-gear"></i> ตั้งค่า
+                </a>
+            @endif
+            @if(Route::has('admin.fortune.astrology.index'))
+                <a href="{{ route('admin.fortune.astrology.index') }}" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-star"></i> โหราศาสตร์
+                </a>
+            @endif
         </div>
     </div>
 
-    {{-- ⚠️ Warning: บิลที่ชำระแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ --}}
-    @if(($stats['stuck_paid'] ?? 0) > 0)
-        <div class="mb-6 px-5 py-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 shadow-sm">
-            <div class="flex items-start gap-3">
-                <span class="text-2xl">⚠️</span>
+    {{-- ===== KPI grid ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:16px;">
+        {{-- ทั้งหมด --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-layer-group"></i>
+                </div>
                 <div>
-                    <p class="text-red-800 dark:text-red-200 font-bold text-lg">
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['total']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">ทั้งหมด</div>
+                </div>
+            </div>
+        </div>
+        {{-- วันนี้ --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#5aa07e;">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['today']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">วันนี้</div>
+                </div>
+            </div>
+        </div>
+        {{-- เชิงลึก --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#b79ae8;">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['deep'] ?? 0) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">🌟 เชิงลึก</div>
+                </div>
+            </div>
+        </div>
+        {{-- พื้นฐาน --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#5689b8;">
+                    <i class="fas fa-hat-wizard"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['basic'] ?? 0) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">🔮 พื้นฐาน</div>
+                </div>
+            </div>
+        </div>
+        {{-- ชำระเงินแล้ว --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#d6824a;">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['paid']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">ชำระเงินแล้ว</div>
+                </div>
+            </div>
+        </div>
+        {{-- ฟรี --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#9a8f7c;">
+                    <i class="fas fa-gift"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['free']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">ฟรี</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== ⚠️ Warning: บิลที่ชำระแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ ===== --}}
+    @if(($stats['stuck_paid'] ?? 0) > 0)
+        <div class="tp-card" style="padding:18px; border-left:4px solid #d9534f;">
+            <div style="display:flex; align-items:flex-start; gap:14px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#d9534f; flex-shrink:0;">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <p style="font-weight:800; font-size:16px; margin:0; color:#d9534f;">
                         มี {{ $stats['stuck_paid'] }} บิลที่ชำระเงินแล้วแต่ยังไม่มีคำทำนาย!
                     </p>
-                    <p class="text-red-600 dark:text-red-400 text-sm mt-1">
+                    <p style="font-size:12.5px; color:var(--ink2); margin:5px 0 0;">
                         ลูกค้าจ่ายเงินแล้วแต่ยังไม่ได้รับคำทำนาย อาจเกิดจาก: AI quota หมด, API key หมดอายุ, เครือข่ายขัดข้อง
                     </p>
-                    <p class="text-red-500 dark:text-red-500 text-sm mt-1">
+                    <p style="font-size:12.5px; color:var(--ink2); margin:5px 0 0;">
                         กรุณาเข้าไปกดปุ่ม "สร้างคำทำนายเชิงลึก" ในแต่ละรายการ หรือตรวจสอบ AI API keys ใน
-                        <a href="{{ route('admin.fortune.settings.index') }}" class="underline font-medium">ตั้งค่าระบบดูดวง</a>
+                        @if(Route::has('admin.fortune.settings.index'))
+                            <a href="{{ route('admin.fortune.settings.index') }}" style="color:var(--deep1); font-weight:700; text-decoration:underline;">ตั้งค่าระบบดูดวง</a>
+                        @else
+                            ตั้งค่าระบบดูดวง
+                        @endif
                     </p>
                 </div>
             </div>
         </div>
     @endif
 
-    {{-- Quick Nav --}}
-    <div class="flex flex-wrap gap-2 mb-6">
-        <a href="{{ route('admin.fortune.dashboard') }}"
-           class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition text-sm">
-            <span>📊</span> Dashboard
-        </a>
-        <a href="{{ route('admin.fortune.settings.index') }}"
-           class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition text-sm">
-            <span>⚙️</span> ตั้งค่า
-        </a>
-        <a href="{{ route('admin.fortune.astrology.index') }}"
-           class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition text-sm">
-            <span>✨</span> โหราศาสตร์
-        </a>
-    </div>
-
-    {{-- Filters --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {{-- Search by name / bill reference / platform user id --}}
+    {{-- ===== Filters ===== --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-filter"></i> ตัวกรองข้อมูล</div>
+        <form method="GET" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px;">
+            {{-- ค้นหา (ชื่อ / รหัสบิล / platform user id) --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
                     🔍 ค้นหา (ชื่อ / รหัสบิล)
                 </label>
-                <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="ชื่อ หรือ FTU-260425-T4022..."
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="ชื่อ หรือ FTU-260425-T4022..."
+                           style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                </div>
             </div>
 
-            {{-- Category filter --}}
+            {{-- หมวดคำทำนาย --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
                     📂 หมวดคำทำนาย
                 </label>
-                <select name="category" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">ทั้งหมด</option>
-                    <option value="ความรัก" {{ request('category') === 'ความรัก' ? 'selected' : '' }}>💕 ความรัก</option>
-                    <option value="การงาน" {{ request('category') === 'การงาน' ? 'selected' : '' }}>💼 การงาน</option>
-                    <option value="การเงิน" {{ request('category') === 'การเงิน' ? 'selected' : '' }}>💰 การเงิน</option>
-                    <option value="สุขภาพ" {{ request('category') === 'สุขภาพ' ? 'selected' : '' }}>🏥 สุขภาพ</option>
-                    <option value="โชคลาภ" {{ request('category') === 'โชคลาภ' ? 'selected' : '' }}>🎰 โชคลาภ</option>
-                    <option value="การเรียน" {{ request('category') === 'การเรียน' ? 'selected' : '' }}>📚 การเรียน</option>
-                </select>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="category" style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                        <option value="">ทั้งหมด</option>
+                        <option value="ความรัก" {{ request('category') === 'ความรัก' ? 'selected' : '' }}>💕 ความรัก</option>
+                        <option value="การงาน" {{ request('category') === 'การงาน' ? 'selected' : '' }}>💼 การงาน</option>
+                        <option value="การเงิน" {{ request('category') === 'การเงิน' ? 'selected' : '' }}>💰 การเงิน</option>
+                        <option value="สุขภาพ" {{ request('category') === 'สุขภาพ' ? 'selected' : '' }}>🏥 สุขภาพ</option>
+                        <option value="โชคลาภ" {{ request('category') === 'โชคลาภ' ? 'selected' : '' }}>🎰 โชคลาภ</option>
+                        <option value="การเรียน" {{ request('category') === 'การเรียน' ? 'selected' : '' }}>📚 การเรียน</option>
+                    </select>
+                </div>
             </div>
 
+            {{-- AI Provider --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
                     AI Provider
                 </label>
-                <select name="ai_provider" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">ทั้งหมด</option>
-                    <option value="gemini" {{ request('ai_provider') === 'gemini' ? 'selected' : '' }}>Gemini</option>
-                    <option value="groq" {{ request('ai_provider') === 'groq' ? 'selected' : '' }}>Groq</option>
-                    <option value="qwen" {{ request('ai_provider') === 'qwen' ? 'selected' : '' }}>Qwen</option>
-                    <option value="grok" {{ request('ai_provider') === 'grok' ? 'selected' : '' }}>Grok</option>
-                    <option value="deepseek" {{ request('ai_provider') === 'deepseek' ? 'selected' : '' }}>DeepSeek</option>
-                    <option value="openrouter" {{ request('ai_provider') === 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
-                    <option value="typhoon" {{ request('ai_provider') === 'typhoon' ? 'selected' : '' }}>Typhoon</option>
-                </select>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="ai_provider" style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                        <option value="">ทั้งหมด</option>
+                        <option value="gemini" {{ request('ai_provider') === 'gemini' ? 'selected' : '' }}>Gemini</option>
+                        <option value="groq" {{ request('ai_provider') === 'groq' ? 'selected' : '' }}>Groq</option>
+                        <option value="qwen" {{ request('ai_provider') === 'qwen' ? 'selected' : '' }}>Qwen</option>
+                        <option value="grok" {{ request('ai_provider') === 'grok' ? 'selected' : '' }}>Grok</option>
+                        <option value="deepseek" {{ request('ai_provider') === 'deepseek' ? 'selected' : '' }}>DeepSeek</option>
+                        <option value="openrouter" {{ request('ai_provider') === 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
+                        <option value="typhoon" {{ request('ai_provider') === 'typhoon' ? 'selected' : '' }}>Typhoon</option>
+                    </select>
+                </div>
             </div>
 
+            {{-- สถานะ Conversation --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
                     สถานะ Conversation
                 </label>
-                <select name="conversation_status" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">ทั้งหมด</option>
-                    <option value="new" {{ request('conversation_status') === 'new' ? 'selected' : '' }}>🆕 New</option>
-                    <option value="basic_done" {{ request('conversation_status') === 'basic_done' ? 'selected' : '' }}>🔮 Basic Done</option>
-                    <option value="collecting_birthdate" {{ request('conversation_status') === 'collecting_birthdate' ? 'selected' : '' }}>📅 Collecting Birthdate</option>
-                    <option value="collecting_questions" {{ request('conversation_status') === 'collecting_questions' ? 'selected' : '' }}>❓ Collecting Questions</option>
-                    <option value="pending_payment" {{ request('conversation_status') === 'pending_payment' ? 'selected' : '' }}>💳 Pending Payment</option>
-                    <option value="paid" {{ request('conversation_status') === 'paid' ? 'selected' : '' }}>✅ Paid</option>
-                    <option value="completed" {{ request('conversation_status') === 'completed' ? 'selected' : '' }}>🏁 Completed</option>
-                </select>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="conversation_status" style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                        <option value="">ทั้งหมด</option>
+                        <option value="new" {{ request('conversation_status') === 'new' ? 'selected' : '' }}>🆕 New</option>
+                        <option value="basic_done" {{ request('conversation_status') === 'basic_done' ? 'selected' : '' }}>🔮 Basic Done</option>
+                        <option value="collecting_birthdate" {{ request('conversation_status') === 'collecting_birthdate' ? 'selected' : '' }}>📅 Collecting Birthdate</option>
+                        <option value="collecting_questions" {{ request('conversation_status') === 'collecting_questions' ? 'selected' : '' }}>❓ Collecting Questions</option>
+                        <option value="pending_payment" {{ request('conversation_status') === 'pending_payment' ? 'selected' : '' }}>💳 Pending Payment</option>
+                        <option value="paid" {{ request('conversation_status') === 'paid' ? 'selected' : '' }}>✅ Paid</option>
+                        <option value="completed" {{ request('conversation_status') === 'completed' ? 'selected' : '' }}>🏁 Completed</option>
+                    </select>
+                </div>
             </div>
 
+            {{-- สถานะชำระเงิน --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
                     สถานะชำระเงิน
                 </label>
-                <select name="is_paid" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">ทั้งหมด</option>
-                    <option value="1" {{ request('is_paid') === '1' ? 'selected' : '' }}>💰 ชำระเงินแล้ว</option>
-                    <option value="0" {{ request('is_paid') === '0' ? 'selected' : '' }}>🆓 ฟรี</option>
-                </select>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="is_paid" style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                        <option value="">ทั้งหมด</option>
+                        <option value="1" {{ request('is_paid') === '1' ? 'selected' : '' }}>💰 ชำระเงินแล้ว</option>
+                        <option value="0" {{ request('is_paid') === '0' ? 'selected' : '' }}>🆓 ฟรี</option>
+                    </select>
+                </div>
             </div>
 
+            {{-- ประเภทคำทำนาย --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
                     ประเภทคำทำนาย
                 </label>
-                <select name="reading_type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">ทั้งหมด</option>
-                    <option value="basic" {{ request('reading_type') === 'basic' ? 'selected' : '' }}>🔮 พื้นฐาน</option>
-                    <option value="deep" {{ request('reading_type') === 'deep' ? 'selected' : '' }}>🌟 เชิงลึก</option>
-                </select>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="reading_type" style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                        <option value="">ทั้งหมด</option>
+                        <option value="basic" {{ request('reading_type') === 'basic' ? 'selected' : '' }}>🔮 พื้นฐาน</option>
+                        <option value="deep" {{ request('reading_type') === 'deep' ? 'selected' : '' }}>🌟 เชิงลึก</option>
+                    </select>
+                </div>
             </div>
 
+            {{-- วันที่เริ่มต้น --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
                     วันที่เริ่มต้น
                 </label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="date" name="date_from" value="{{ request('date_from') }}"
+                           style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                </div>
             </div>
 
+            {{-- วันที่สิ้นสุด --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
                     วันที่สิ้นสุด
                 </label>
-                <input type="date" name="date_to" value="{{ request('date_to') }}"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="date" name="date_to" value="{{ request('date_to') }}"
+                           style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                </div>
             </div>
 
-            <div class="md:col-span-4 flex flex-wrap gap-3">
-                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                    🔍 กรองข้อมูล
+            {{-- ปุ่ม action --}}
+            <div style="grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:10px; padding-top:4px;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-magnifying-glass"></i> กรองข้อมูล
                 </button>
-                <a href="{{ route('admin.fortune.readings.index') }}"
-                   class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition">
-                    ล้างตัวกรอง
+                <a href="{{ route('admin.fortune.readings.index') }}" class="tp-btn">
+                    <i class="fas fa-rotate-left"></i> ล้างตัวกรอง
                 </a>
-                <a href="{{ route('admin.fortune.readings.export', request()->all()) }}"
-                   class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                    📥 Export CSV
+                <a href="{{ route('admin.fortune.readings.export', request()->all()) }}" class="tp-btn"
+                   style="color:#5aa07e;">
+                    <i class="fas fa-file-csv"></i> Export CSV
                 </a>
             </div>
         </form>
     </div>
 
-    {{-- Readings Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
+    {{-- ===== Readings Table ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="min-width:100%; border-collapse:collapse;">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            วันที่
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ผู้ใช้ / รหัสบิล
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            หมวด
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ประเภท
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            AI
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            สถานะ
-                        </th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            จัดการ
-                        </th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">วันที่</th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">ผู้ใช้ / รหัสบิล</th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">หมวด</th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">ประเภท</th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">AI</th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">สถานะ</th>
+                        <th style="padding:14px 16px; text-align:right; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($readings as $reading)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        <tr style="box-shadow:var(--inset-sm); transition:background .15s;"
+                            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+                            {{-- วันที่ --}}
+                            <td style="padding:14px 16px; font-size:13.5px; color:var(--ink); white-space:nowrap;">
                                 <div>{{ $reading->created_at->format('d/m/Y') }}</div>
-                                <div class="text-xs text-gray-500">{{ $reading->created_at->format('H:i') }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2);">{{ $reading->created_at->format('H:i') }}</div>
                             </td>
-                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                            {{-- ผู้ใช้ / รหัสบิล --}}
+                            <td style="padding:14px 16px; font-size:13.5px; color:var(--ink);">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span class="tp-tile" style="width:30px; height:30px; border-radius:50%; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                                         {{ mb_substr($reading->facebook_user_name ?? '?', 0, 1) }}
                                     </span>
-                                    <div class="min-w-0">
-                                        <div class="font-medium truncate">{{ $reading->facebook_user_name ?? 'ไม่ระบุชื่อ' }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ Str::limit($reading->facebook_user_id, 15) }}</div>
+                                    <div style="min-width:0;">
+                                        <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">{{ $reading->facebook_user_name ?? 'ไม่ระบุชื่อ' }}</div>
+                                        <div style="font-size:11.5px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">{{ Str::limit($reading->facebook_user_id, 15) }}</div>
                                         @if($reading->bill_reference)
-                                            {{-- 🧾 รหัสบิล — คลิก copy ได้ --}}
+                                            {{-- 🧾 รหัสบิล — คลิก copy ได้ (คง logic เดิม) --}}
                                             <button type="button"
                                                     onclick="navigator.clipboard.writeText('{{ $reading->bill_reference }}'); this.innerText='✅ คัดลอกแล้ว'; setTimeout(() => this.innerText='🧾 {{ $reading->bill_reference }}', 1500);"
-                                                    class="mt-0.5 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 truncate cursor-pointer text-left"
+                                                    style="margin-top:2px; font-size:11.5px; font-family:monospace; color:var(--deep1); background:none; border:none; padding:0; cursor:pointer; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;"
                                                     title="คลิกเพื่อคัดลอกรหัสบิล">
                                                 🧾 {{ $reading->bill_reference }}
                                             </button>
@@ -255,89 +318,84 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm">
+                            {{-- หมวด --}}
+                            <td style="padding:14px 16px; font-size:13.5px; white-space:nowrap;">
                                 @php $cats = $reading->categories ?? []; @endphp
                                 @if(!empty($cats))
                                     @foreach(array_slice($cats, 0, 2) as $cat)
-                                        <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300 mr-0.5">
-                                            {{ $cat }}
-                                        </span>
+                                        <span class="tp-pill tp-pill-soft" style="margin-right:3px;">{{ $cat }}</span>
                                     @endforeach
                                 @else
-                                    <span class="text-gray-400 text-xs">-</span>
+                                    <span style="color:var(--ink2); font-size:12px;">-</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm">
+                            {{-- ประเภท --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
                                 @if($reading->reading_type === 'deep')
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                                        🌟 เชิงลึก
-                                    </span>
+                                    <span class="tp-pill" style="background:rgba(183,154,232,.18); color:#7a5db8;">🌟 เชิงลึก</span>
                                 @else
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">
-                                        🔮 พื้นฐาน
-                                    </span>
+                                    <span class="tp-pill" style="background:rgba(86,137,184,.18); color:#3f6a96;">🔮 พื้นฐาน</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm">
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                    {{ strtoupper($reading->ai_provider) }}
-                                </span>
+                            {{-- AI --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                <span class="tp-pill tp-pill-gold">{{ strtoupper($reading->ai_provider) }}</span>
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm">
+                            {{-- สถานะ --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
                                 @if($reading->is_paid)
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                        💰 ฿{{ number_format($reading->amount_paid, 2) }}
-                                    </span>
+                                    <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c;">💰 ฿{{ number_format($reading->amount_paid, 2) }}</span>
                                 @else
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                        🆓 ฟรี
-                                    </span>
+                                    <span class="tp-pill" style="background:rgba(154,143,124,.18); color:var(--ink2);">🆓 ฟรี</span>
                                 @endif
                                 @php
-                                    // 🏷️ (2026-05-25) Cancellation badge — ก่อน badge อื่นๆ
+                                    // 🏷️ (2026-05-25) Cancellation badge — ก่อน badge อื่นๆ (คง logic เดิม)
                                     $readingCancellationLabel = $reading->getCancellationReasonLabelOrNull();
                                 @endphp
                                 @if($readingCancellationLabel)
-                                    <div class="mt-1">
-                                        <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+                                    <div style="margin-top:5px;">
+                                        <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f;"
                                               title="reason: {{ data_get($reading->conversation_state, 'cancellation_reason') }}">
                                             ❌ {{ $readingCancellationLabel }}
                                         </span>
                                     </div>
                                 {{-- 🛟 (2026-05-14) Pay-First incomplete — ลูกค้าจ่ายแล้วแต่ไม่กรอกข้อมูล --}}
                                 @elseif($reading->is_paid && $reading->reading_type === 'deep' && empty($reading->birth_date) && empty($reading->deep_response))
-                                    <div class="mt-1">
-                                        <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300" title="ลูกค้าจ่ายแล้วแต่ยังไม่กรอกวันเกิด">
+                                    <div style="margin-top:5px;">
+                                        <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e;" title="ลูกค้าจ่ายแล้วแต่ยังไม่กรอกวันเกิด">
                                             🛟 รอวันเกิด
                                         </span>
                                     </div>
                                 @elseif($reading->is_paid && empty($reading->deep_response) && $reading->reading_type === 'deep')
-                                    <div class="mt-1">
-                                        <span class="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300" title="จ่ายแล้ว — ยังไม่ส่งคำทำนาย">
+                                    <div style="margin-top:5px;">
+                                        <span class="tp-pill" style="background:rgba(214,130,74,.18); color:#b06330;" title="จ่ายแล้ว — ยังไม่ส่งคำทำนาย">
                                             ⏳ ยังไม่ส่งคำทำนาย
                                         </span>
                                     </div>
                                 @elseif($reading->conversation_status && $reading->conversation_status !== 'completed')
                                     {{-- Conversation status badge (เคสอื่นๆ) --}}
-                                    <div class="mt-1">
-                                        <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
+                                    <div style="margin-top:5px;">
+                                        <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e;">
                                             {{ $reading->conversation_status }}
                                         </span>
                                     </div>
                                 @endif
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="{{ route('admin.fortune.readings.show', $reading) }}"
-                                   class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition">
-                                    👁️ ดู
+                            {{-- จัดการ --}}
+                            <td style="padding:14px 16px; text-align:right; white-space:nowrap;">
+                                <a href="{{ route('admin.fortune.readings.show', $reading) }}" class="tp-btn tp-btn-sm tp-btn-primary">
+                                    <i class="fas fa-eye"></i> ดู
                                 </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                <div class="text-4xl mb-2">🔮</div>
-                                ไม่พบประวัติการทำนาย
+                            <td colspan="7" style="padding:0;">
+                                {{-- Empty state --}}
+                                <div style="text-align:center; color:var(--ink2); padding:40px 0;">
+                                    <i class="fas fa-inbox" style="font-size:32px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                                    ไม่พบประวัติการทำนาย
+                                </div>
                             </td>
                         </tr>
                     @endforelse
@@ -346,11 +404,12 @@
         </div>
     </div>
 
-    {{-- Pagination --}}
+    {{-- ===== Pagination ===== --}}
     @if($readings->hasPages())
-        <div class="mt-6">
+        <div>
             {{ $readings->links() }}
         </div>
     @endif
+
 </div>
 @endsection

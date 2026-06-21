@@ -1,128 +1,178 @@
-@extends('layouts.admin-v3')
+{{-- 🔮 ประวัติการทำนาย — รายละเอียด (ธีม V4 นวลทองคำ) --}}
+@extends('layouts.admin-v4')
 
 @section('title', 'รายละเอียดการทำนาย #' . $reading->id)
 
 @section('content')
-<div class="container mx-auto px-4 py-8 max-w-5xl">
-    {{-- Header --}}
-    <div class="mb-8">
-        <a href="{{ route('admin.fortune.readings.index') }}"
-           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 mb-4 inline-block">
-            ← กลับไปรายการ
-        </a>
-        <div class="flex items-start justify-between gap-4">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                รายละเอียดการทำนาย #{{ $reading->id }}
+@php
+    // 🏷️ (2026-05-25) Cancellation detection — ดึงเหตุผลยกเลิกจาก conversation_state
+    $cancellationLabel = $reading->getCancellationReasonLabelOrNull();
+    $cancellationReason = data_get($reading->conversation_state, 'cancellation_reason');
+
+    // 🎨 สีสถานะคงที่ที่เข้าธีมนวลทองคำ
+    $okColor   = '#5aa07e'; // เขียว/สำเร็จ
+    $warnColor = '#e0a52e'; // เหลือง/เตือน
+    $dangColor = '#d9534f'; // แดง/อันตราย
+    $infoColor = '#5689b8'; // ฟ้า/info
+
+    // 🔄 ลำดับสถานะ conversation (timeline)
+    $statuses = [
+        'new'                   => ['label' => 'ใหม่',        'icon' => 'fa-star'],
+        'awaiting_confirmation' => ['label' => 'รอยืนยัน',    'icon' => 'fa-hourglass-half'],
+        'basic_done'            => ['label' => 'Basic เสร็จ', 'icon' => 'fa-wand-magic-sparkles'],
+        'collecting_birthdate'  => ['label' => 'รับวันเกิด',  'icon' => 'fa-calendar-day'],
+        'collecting_questions'  => ['label' => 'รับคำถาม',    'icon' => 'fa-circle-question'],
+        'pending_payment'       => ['label' => 'รอชำระ',      'icon' => 'fa-credit-card'],
+        'paid'                  => ['label' => 'ชำระแล้ว',    'icon' => 'fa-circle-check'],
+        'completed'             => ['label' => 'เสร็จสิ้น',   'icon' => 'fa-flag-checkered'],
+    ];
+    $currentStatus = $reading->conversation_status ?? 'new';
+    $statusOrder   = array_keys($statuses);
+    $currentIndex  = array_search($currentStatus, $statusOrder);
+
+    // 💳 จัดการบล็อก manual action (deep reading)
+    $showDeepActions = $reading->reading_type === 'deep'
+        && ($reading->is_paid || ! empty($reading->deep_response) || $reading->conversation_status === 'paid');
+
+    // ⏳ ตอนนี้ AI กำลังสร้าง (paid แต่ยังไม่มี deep_response)
+    $aiProcessing = $reading->conversation_status === 'paid' && empty($reading->deep_response);
+    $paidElapsedSec  = $aiProcessing ? ($reading->updated_at?->diffInSeconds(now()) ?? 0) : 0;
+    $primaryProvider = $aiProcessing
+        ? strtoupper(\App\Models\FortuneTellingSetting::getSettings()->ai_provider ?? 'gemini')
+        : '';
+@endphp
+
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ════════ HEADER ════════ --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">
+                <a href="{{ route('admin.fortune.readings.index') }}" style="color:var(--ink2); text-decoration:none;">
+                    <i class="fas fa-arrow-left" style="margin-right:5px;"></i>หลังบ้าน · ระบบดูดวง · ประวัติการทำนาย
+                </a>
+            </div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">
+                รายละเอียดการทำนาย #{{ $reading->id }} 🔮
             </h1>
-            <a href="{{ route('admin.fortune.readings.edit', $reading) }}"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow transition">
-                ✏️ แก้ไข
+        </div>
+        <div style="display:flex; align-items:center; gap:9px;">
+            <a href="{{ route('admin.fortune.readings.edit', $reading) }}" class="tp-btn tp-btn-sm">
+                <i class="fas fa-pen"></i> แก้ไข
             </a>
+            {{-- 🗑️ ลบการทำนาย (DELETE) — ยืนยันก่อนลบ --}}
+            <form action="{{ route('admin.fortune.readings.destroy', $reading) }}" method="POST"
+                  onsubmit="return confirm('ยืนยันลบการทำนาย #{{ $reading->id }} หรือไม่? การลบไม่สามารถย้อนกลับได้');"
+                  style="margin:0;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="tp-btn tp-btn-sm" style="color:{{ $dangColor }};">
+                    <i class="fas fa-trash"></i> ลบ
+                </button>
+            </form>
         </div>
     </div>
 
-    {{-- User Info + Conversation Status --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {{-- User Info --}}
-        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">👤 ข้อมูลผู้ใช้</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {{-- ════════ ROW: ข้อมูลผู้ใช้ + timeline สถานะ ════════ --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px; align-items:start;">
+
+        {{-- 👤 ข้อมูลผู้ใช้ --}}
+        <div class="tp-card" style="padding:20px; grid-column:span 2; min-width:0;">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+                <span class="tp-tile" style="width:34px; height:34px; border-radius:11px; font-size:15px; display:inline-flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-user"></i>
+                </span>
+                <span class="tp-num" style="font-weight:800; font-size:16px;">ข้อมูลผู้ใช้</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
                 <div>
-                    <span class="text-gray-600 dark:text-gray-400 text-sm">ชื่อ:</span>
-                    <span class="ml-2 text-gray-900 dark:text-white font-medium">{{ $reading->facebook_user_name ?? 'ไม่ระบุ' }}</span>
+                    <div class="tp-muted" style="font-size:12px;">ชื่อ</div>
+                    <div style="font-weight:700; color:var(--ink); margin-top:2px;">{{ $reading->facebook_user_name ?? 'ไม่ระบุ' }}</div>
                 </div>
                 <div>
-                    <span class="text-gray-600 dark:text-gray-400 text-sm">Facebook ID:</span>
-                    <span class="ml-2 text-gray-900 dark:text-white font-mono text-sm">{{ $reading->facebook_user_id }}</span>
+                    <div class="tp-muted" style="font-size:12px;">Facebook ID</div>
+                    <div style="font-family:monospace; font-size:13px; color:var(--ink); margin-top:2px; word-break:break-all;">{{ $reading->facebook_user_id }}</div>
                 </div>
                 <div>
-                    <span class="text-gray-600 dark:text-gray-400 text-sm">วันที่:</span>
-                    <span class="ml-2 text-gray-900 dark:text-white">{{ $reading->created_at->format('d/m/Y H:i:s') }}</span>
+                    <div class="tp-muted" style="font-size:12px;">วันที่</div>
+                    <div style="color:var(--ink); margin-top:2px;">{{ $reading->created_at->format('d/m/Y H:i:s') }}</div>
                 </div>
                 <div>
-                    <span class="text-gray-600 dark:text-gray-400 text-sm">ช่องทาง:</span>
-                    <span class="ml-2">
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $reading->response_type === 'comment' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' }}">
-                            {{ $reading->response_type === 'comment' ? 'Comment' : 'Private Message' }}
-                        </span>
-                    </span>
-                </div>
-                <div>
-                    <span class="text-gray-600 dark:text-gray-400 text-sm">ประเภทคำทำนาย:</span>
-                    <span class="ml-2">
-                        @if($reading->reading_type === 'deep')
-                            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                                🌟 เชิงลึก
-                            </span>
+                    <div class="tp-muted" style="font-size:12px;">ช่องทาง</div>
+                    <div style="margin-top:4px;">
+                        @if($reading->response_type === 'comment')
+                            <span class="tp-pill" style="color:{{ $infoColor }};"><i class="fas fa-comment"></i> Comment</span>
                         @else
-                            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">
-                                🔮 พื้นฐาน
-                            </span>
+                            <span class="tp-pill" style="color:#b79ae8;"><i class="fas fa-envelope"></i> Private Message</span>
                         @endif
-                    </span>
+                    </div>
+                </div>
+                <div>
+                    <div class="tp-muted" style="font-size:12px;">ประเภทคำทำนาย</div>
+                    <div style="margin-top:4px;">
+                        @if($reading->reading_type === 'deep')
+                            <span class="tp-pill tp-pill-gold"><i class="fas fa-star"></i> เชิงลึก</span>
+                        @else
+                            <span class="tp-pill tp-pill-soft"><i class="fas fa-wand-magic-sparkles"></i> พื้นฐาน</span>
+                        @endif
+                    </div>
                 </div>
                 @if($reading->birth_date)
                     <div>
-                        <span class="text-gray-600 dark:text-gray-400 text-sm">วันเกิด:</span>
-                        <span class="ml-2 text-gray-900 dark:text-white font-medium">{{ $reading->birth_date->format('d/m/Y') }}</span>
+                        <div class="tp-muted" style="font-size:12px;">วันเกิด</div>
+                        <div style="font-weight:700; color:var(--ink); margin-top:2px;">{{ $reading->birth_date->format('d/m/Y') }}</div>
                     </div>
                 @endif
                 @if(!empty($reading->categories))
-                    <div>
-                        <span class="text-gray-600 dark:text-gray-400 text-sm">หมวดหมู่:</span>
-                        <span class="ml-2">
+                    <div style="grid-column:1 / -1;">
+                        <div class="tp-muted" style="font-size:12px; margin-bottom:5px;">หมวดหมู่</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
                             @foreach($reading->categories as $cat)
-                                <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">
-                                    {{ $cat }}
-                                </span>
+                                <span class="tp-pill tp-pill-soft">{{ $cat }}</span>
                             @endforeach
-                        </span>
+                        </div>
                     </div>
                 @endif
                 @if($reading->bill_reference)
                     <div>
-                        <span class="text-gray-600 dark:text-gray-400 text-sm">เลขที่บิล:</span>
-                        <span class="ml-2 font-mono text-sm text-gray-900 dark:text-white">{{ $reading->bill_reference }}</span>
+                        <div class="tp-muted" style="font-size:12px;">เลขที่บิล</div>
+                        <div style="font-family:monospace; font-size:13px; color:var(--ink); margin-top:2px;">{{ $reading->bill_reference }}</div>
                     </div>
                 @endif
             </div>
         </div>
 
-        {{-- Conversation Timeline --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">🔄 สถานะ Conversation</h3>
-            @php
-                $statuses = [
-                    'new' => ['label' => 'ใหม่', 'icon' => '🆕', 'color' => 'blue'],
-                    'awaiting_confirmation' => ['label' => 'รอยืนยัน', 'icon' => '⏳', 'color' => 'yellow'],
-                    'basic_done' => ['label' => 'Basic เสร็จ', 'icon' => '🔮', 'color' => 'cyan'],
-                    'collecting_birthdate' => ['label' => 'รับวันเกิด', 'icon' => '📅', 'color' => 'orange'],
-                    'collecting_questions' => ['label' => 'รับคำถาม', 'icon' => '❓', 'color' => 'purple'],
-                    'pending_payment' => ['label' => 'รอชำระ', 'icon' => '💳', 'color' => 'red'],
-                    'paid' => ['label' => 'ชำระแล้ว', 'icon' => '✅', 'color' => 'green'],
-                    'completed' => ['label' => 'เสร็จสิ้น', 'icon' => '🏁', 'color' => 'green'],
-                ];
-                $currentStatus = $reading->conversation_status ?? 'new';
-                $statusOrder = array_keys($statuses);
-                $currentIndex = array_search($currentStatus, $statusOrder);
-            @endphp
-            <div class="space-y-3">
+        {{-- 🔄 สถานะ Conversation (timeline แนวตั้ง) --}}
+        <div class="tp-card" style="padding:20px; min-width:0;">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+                <span class="tp-tile" style="width:34px; height:34px; border-radius:11px; font-size:14px; display:inline-flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-arrows-rotate"></i>
+                </span>
+                <span class="tp-num" style="font-weight:800; font-size:16px;">สถานะ Conversation</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
                 @foreach($statuses as $key => $status)
                     @php
-                        $index = array_search($key, $statusOrder);
-                        $isPast = $index < $currentIndex;
+                        $index     = array_search($key, $statusOrder);
+                        $isPast    = $index < $currentIndex;
                         $isCurrent = $key === $currentStatus;
+                        // 🎨 สีไอคอนวงกลม: ปัจจุบัน=ทอง / ผ่านแล้ว=เขียว / ยังไม่ถึง=จาง
+                        $circleStyle = $isCurrent
+                            ? 'background:linear-gradient(135deg,var(--accent1),var(--accent2)); color:#fff; box-shadow:var(--raise);'
+                            : ($isPast
+                                ? 'background:transparent; color:'.$okColor.'; box-shadow:var(--inset-sm);'
+                                : 'background:transparent; color:var(--ink2); box-shadow:var(--inset-sm); opacity:.6;');
+                        $textColor = $isCurrent ? 'var(--ink)' : ($isPast ? $okColor : 'var(--ink2)');
                     @endphp
-                    <div class="flex items-center gap-3 {{ $isCurrent ? 'font-bold' : '' }}">
-                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm
-                            {{ $isCurrent ? 'bg-'.$status['color'].'-500 text-white ring-2 ring-'.$status['color'].'-300 shadow' : ($isPast ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400') }}">
-                            {{ $isPast ? '✓' : $status['icon'] }}
+                    <div style="display:flex; align-items:center; gap:11px;">
+                        <span style="width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; {{ $circleStyle }}">
+                            <i class="fas {{ $isPast ? 'fa-check' : $status['icon'] }}"></i>
                         </span>
-                        <span class="{{ $isCurrent ? 'text-gray-900 dark:text-white' : ($isPast ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500') }} text-sm">
+                        <span style="font-size:13.5px; color:{{ $textColor }}; {{ $isCurrent ? 'font-weight:800;' : 'font-weight:500;' }}">
                             {{ $status['label'] }}
                         </span>
                         @if($isCurrent)
-                            <span class="ml-auto text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-full">ปัจจุบัน</span>
+                            <span class="tp-pill tp-pill-gold" style="margin-left:auto; font-size:10.5px;">ปัจจุบัน</span>
                         @endif
                     </div>
                 @endforeach
@@ -130,425 +180,416 @@
         </div>
     </div>
 
-    {{-- Questions --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">คำถาม</h3>
-        <ol class="list-decimal list-inside space-y-2">
-            @foreach($reading->questions as $question)
-                <li class="text-gray-900 dark:text-white">{{ $question }}</li>
-            @endforeach
-        </ol>
+    {{-- ════════ คำถาม ════════ --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+            <span class="tp-tile" style="width:34px; height:34px; border-radius:11px; font-size:14px; display:inline-flex; align-items:center; justify-content:center;">
+                <i class="fas fa-circle-question"></i>
+            </span>
+            <span class="tp-num" style="font-weight:800; font-size:16px;">คำถาม</span>
+        </div>
+        @if(is_iterable($reading->questions) && count($reading->questions) > 0)
+            <div style="display:flex; flex-direction:column; gap:9px;">
+                @foreach($reading->questions as $i => $question)
+                    <div class="tp-well" style="display:flex; align-items:flex-start; gap:11px; padding:12px 14px; border-radius:13px;">
+                        <span class="tp-num tp-pill-gold" style="width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0;">{{ $i + 1 }}</span>
+                        <span style="color:var(--ink); line-height:1.6;">{{ $question }}</span>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            {{-- empty state --}}
+            <div style="text-align:center; color:var(--ink2); padding:30px 0;">
+                <i class="fas fa-inbox" style="font-size:28px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                ไม่มีคำถาม
+            </div>
+        @endif
     </div>
 
-    {{-- รูปภาพจากผู้ใช้ --}}
+    {{-- ════════ รูปภาพจากผู้ใช้ ════════ --}}
     @if($reading->user_image_url)
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">รูปภาพจากผู้ใช้</h3>
-            <div class="max-w-md">
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                <span class="tp-tile" style="width:34px; height:34px; border-radius:11px; font-size:14px; display:inline-flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-image"></i>
+                </span>
+                <span class="tp-num" style="font-weight:800; font-size:16px;">รูปภาพจากผู้ใช้</span>
+            </div>
+            <div class="tp-inset" style="display:inline-block; padding:8px; border-radius:14px;">
                 <img src="{{ $reading->user_image_url }}" alt="รูปจากผู้ใช้"
-                     class="rounded-lg shadow-md max-h-96 object-contain"
+                     style="border-radius:10px; max-height:24rem; object-fit:contain; display:block; max-width:100%;"
                      loading="lazy">
             </div>
         </div>
     @endif
 
-    {{-- Birth Chart + AI Response --}}
-    <div class="grid grid-cols-1 {{ $reading->reading_image_url ? 'lg:grid-cols-3' : '' }} gap-6 mb-6">
-        {{-- Birth Chart Image --}}
+    {{-- ════════ Birth Chart + คำทำนาย ════════ --}}
+    <div style="display:grid; grid-template-columns:{{ $reading->reading_image_url ? 'minmax(260px,1fr) minmax(340px,2fr)' : '1fr' }}; gap:16px; align-items:start;">
+
+        {{-- 🎨 Birth Chart Image --}}
         @if($reading->reading_image_url)
-            <div class="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center">
-                <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">🎨 Birth Chart</h3>
-                <img src="{{ $reading->reading_image_url }}" alt="Birth Chart"
-                     class="rounded-xl shadow-lg max-w-full max-h-80 object-contain border border-purple-500/30"
-                     loading="lazy">
-                <p class="text-purple-300 text-xs mt-2">ภาพดวงดาวที่ส่งให้ผู้ใช้</p>
+            <div class="tp-card" style="padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; min-width:0;">
+                <div class="tp-num" style="font-weight:800; font-size:15px; color:var(--ink); display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-palette" style="color:var(--deep1);"></i> Birth Chart
+                </div>
+                <div class="tp-inset" style="padding:8px; border-radius:16px;">
+                    <img src="{{ $reading->reading_image_url }}" alt="Birth Chart"
+                         style="border-radius:12px; max-width:100%; max-height:20rem; object-fit:contain; display:block;"
+                         loading="lazy">
+                </div>
+                <p class="tp-muted" style="font-size:11.5px; margin:0;">ภาพดวงดาวที่ส่งให้ผู้ใช้</p>
             </div>
         @endif
 
-        {{-- AI Response --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 {{ $reading->reading_image_url ? 'lg:col-span-2' : '' }}">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">🔮 คำทำนาย</h3>
-                <div class="flex items-center gap-2">
-                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+        {{-- 🔮 คำทำนาย --}}
+        <div class="tp-card" style="padding:20px; min-width:0;">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;">
+                <div class="tp-section-h" style="display:flex; align-items:center; gap:10px;">
+                    <span class="tp-tile" style="width:34px; height:34px; border-radius:11px; font-size:14px; display:inline-flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                    </span>
+                    <span class="tp-num" style="font-weight:800; font-size:16px;">คำทำนาย</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="tp-pill tp-pill-soft" style="font-family:monospace;">
                         {{ strtoupper($reading->ai_provider) }} / {{ $reading->ai_model }}
                     </span>
                     @if($reading->tokens_used)
-                        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                            {{ number_format($reading->tokens_used) }} tokens
-                        </span>
+                        <span class="tp-pill" style="color:var(--ink2);">{{ number_format($reading->tokens_used) }} tokens</span>
                     @endif
                 </div>
             </div>
-            <div class="prose dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5">
-                <div class="whitespace-pre-wrap text-gray-900 dark:text-white leading-relaxed">{{ $reading->ai_response }}</div>
+
+            {{-- คำทำนายหลัก --}}
+            <div class="tp-well" style="padding:16px 18px; border-radius:14px;">
+                <div style="white-space:pre-wrap; color:var(--ink); line-height:1.75;">{{ $reading->ai_response }}</div>
             </div>
 
-            {{-- Basic Response --}}
+            {{-- 📝 คำทำนายพื้นฐาน --}}
             @if($reading->basic_response && $reading->basic_response !== $reading->ai_response)
-                <div class="mt-4">
-                    <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📝 คำทำนายพื้นฐาน</h4>
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-sm">
-                        <div class="whitespace-pre-wrap text-gray-800 dark:text-gray-200">{{ Str::limit($reading->basic_response, 500) }}</div>
+                <div style="margin-top:16px;">
+                    <h4 class="tp-num" style="font-weight:700; color:var(--ink); margin:0 0 8px; font-size:14px;">
+                        <i class="fas fa-pen-nib" style="color:var(--deep1); margin-right:6px;"></i>คำทำนายพื้นฐาน
+                    </h4>
+                    <div class="tp-inset" style="padding:14px; border-radius:13px; font-size:13.5px;">
+                        <div style="white-space:pre-wrap; color:var(--ink2);">{{ Str::limit($reading->basic_response, 500) }}</div>
                     </div>
                 </div>
             @endif
 
-            {{-- 🌟 Deep Response — (2026-05-02) แสดงเต็ม + ปุ่มคัดลอก + scrollable --}}
+            {{-- 🌟 คำทำนายเชิงลึก — แสดงเต็ม + ปุ่มคัดลอก + scrollable --}}
             @if($reading->deep_response)
-                <div class="mt-4" x-data="{ expanded: false }">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-semibold text-gray-700 dark:text-gray-300">🌟 คำทำนายเชิงลึก
-                            <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                <div style="margin-top:16px;" x-data="{ expanded: false }">
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;">
+                        <h4 class="tp-num" style="font-weight:700; color:var(--ink); margin:0; font-size:14px;">
+                            <i class="fas fa-star" style="color:var(--deep1); margin-right:6px;"></i>คำทำนายเชิงลึก
+                            <span class="tp-muted" style="font-size:11.5px; font-weight:400; margin-left:6px;">
                                 ({{ number_format(mb_strlen($reading->deep_response)) }} ตัวอักษร)
                             </span>
                         </h4>
-                        <div class="flex gap-2">
-                            <button @click="expanded = !expanded"
-                                    class="px-3 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition flex items-center gap-1.5">
-                                <span x-show="!expanded">📖 อ่านคำทำนายเต็ม</span>
-                                <span x-show="expanded">📕 ย่อกลับ</span>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" @click="expanded = !expanded" class="tp-btn tp-btn-sm">
+                                <span x-show="!expanded"><i class="fas fa-book-open"></i> อ่านเต็ม</span>
+                                <span x-show="expanded" x-cloak><i class="fas fa-book"></i> ย่อกลับ</span>
                             </button>
-                            <button @click="navigator.clipboard.writeText($refs.deepText.textContent); $el.textContent='✅ คัดลอกแล้ว'; setTimeout(() => $el.textContent='📋 คัดลอก', 2000)"
-                                    class="px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition">
-                                📋 คัดลอก
+                            <button type="button"
+                                    @click="navigator.clipboard.writeText($refs.deepText.textContent); $dispatch('notify', { type:'success', message:'คัดลอกคำทำนายแล้ว' })"
+                                    class="tp-btn tp-btn-sm">
+                                <i class="fas fa-copy"></i> คัดลอก
                             </button>
                         </div>
                     </div>
 
                     {{-- Preview (collapsed) --}}
-                    <div x-show="!expanded"
-                         class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-sm border-l-4 border-purple-400">
-                        <div class="whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">{{ Str::limit($reading->deep_response, 500) }}</div>
+                    <div x-show="!expanded" class="tp-inset" style="padding:16px; border-radius:13px; border-left:4px solid var(--accent1); font-size:13.5px;">
+                        <div style="white-space:pre-wrap; color:var(--ink2); line-height:1.7;">{{ Str::limit($reading->deep_response, 500) }}</div>
                         @if(mb_strlen($reading->deep_response) > 500)
-                            <button @click="expanded = true"
-                                    class="mt-2 text-purple-600 dark:text-purple-400 text-xs font-medium hover:underline">
-                                ▼ กดอ่านส่วนที่เหลือ ({{ number_format(mb_strlen($reading->deep_response) - 500) }} ตัวอักษร)
+                            <button type="button" @click="expanded = true"
+                                    style="margin-top:10px; background:none; border:none; padding:0; cursor:pointer; color:var(--deep1); font-size:12.5px; font-weight:700;">
+                                <i class="fas fa-chevron-down"></i> กดอ่านส่วนที่เหลือ ({{ number_format(mb_strlen($reading->deep_response) - 500) }} ตัวอักษร)
                             </button>
                         @endif
                     </div>
 
                     {{-- Full (expanded) --}}
-                    <div x-show="expanded" x-transition x-ref="deepFull"
-                         class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-5 text-sm border-2 border-purple-300 dark:border-purple-700 shadow-md">
-                        <div x-ref="deepText" class="whitespace-pre-wrap text-gray-900 dark:text-gray-100 leading-loose max-h-[600px] overflow-y-auto pr-2">{{ $reading->deep_response }}</div>
+                    <div x-show="expanded" x-cloak x-transition class="tp-well" style="padding:18px; border-radius:14px; font-size:13.5px;">
+                        <div x-ref="deepText" style="white-space:pre-wrap; color:var(--ink); line-height:1.9; max-height:600px; overflow-y:auto; padding-right:8px;">{{ $reading->deep_response }}</div>
                     </div>
                 </div>
             @endif
         </div>
     </div>
 
-    {{-- Payment Info --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">ข้อมูลการชำระเงิน</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {{-- ════════ ข้อมูลการชำระเงิน + Manual Actions ════════ --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+            <span class="tp-tile" style="width:34px; height:34px; border-radius:11px; font-size:14px; display:inline-flex; align-items:center; justify-content:center;">
+                <i class="fas fa-credit-card"></i>
+            </span>
+            <span class="tp-num" style="font-weight:800; font-size:16px;">ข้อมูลการชำระเงิน</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px;">
+            {{-- สถานะ --}}
             <div>
-                <span class="text-gray-600 dark:text-gray-400">สถานะ:</span>
-                <span class="ml-2">
-                    @php
-                        // 🏷️ (2026-05-25) Cancellation detection
-                        $cancellationLabel = $reading->getCancellationReasonLabelOrNull();
-                        $cancellationReason = data_get($reading->conversation_state, 'cancellation_reason');
-                    @endphp
+                <div class="tp-muted" style="font-size:12px; margin-bottom:5px;">สถานะ</div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
                     @if($reading->is_paid)
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">ชำระแล้ว</span>
+                        <span class="tp-pill" style="color:{{ $okColor }};"><i class="fas fa-circle-check"></i> ชำระแล้ว</span>
                     @elseif($reading->conversation_status === 'pending_payment')
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">💳 รอชำระ</span>
+                        <span class="tp-pill" style="color:{{ $warnColor }};"><i class="fas fa-credit-card"></i> รอชำระ</span>
                     @elseif($cancellationLabel)
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                              title="reason key: {{ $cancellationReason }}">
-                            ❌ {{ $cancellationLabel }}
+                        <span class="tp-pill" style="color:{{ $dangColor }};" title="reason key: {{ $cancellationReason }}">
+                            <i class="fas fa-circle-xmark"></i> {{ $cancellationLabel }}
                         </span>
                     @elseif($reading->reading_type === 'deep' && $reading->amount_paid > 0)
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">รอชำระ</span>
+                        <span class="tp-pill" style="color:{{ $warnColor }};"><i class="fas fa-clock"></i> รอชำระ</span>
                     @else
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">ฟรี</span>
+                        <span class="tp-pill" style="color:var(--ink2);"><i class="fas fa-gift"></i> ฟรี</span>
                     @endif
 
-                    {{-- 🛑 (2026-05-07) Pay-Later removed — เหลือเฉพาะ pay-first badge --}}
+                    {{-- 🛑 (2026-05-07) Pay-First badge --}}
                     @if($reading->reading_type === 'deep' && ! $reading->is_paid && $reading->amount_paid > 0)
-                        <span class="ml-1 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" title="ลูกค้าต้องจ่ายก่อนถึงจะได้รับคำทำนาย — UPA หมดอายุ 30 นาที">
-                            💳 จ่ายก่อนดู
+                        <span class="tp-pill" style="color:{{ $infoColor }};" title="ลูกค้าต้องจ่ายก่อนถึงจะได้รับคำทำนาย — UPA หมดอายุ 30 นาที">
+                            <i class="fas fa-credit-card"></i> จ่ายก่อนดู
                         </span>
                     @endif
-                </span>
+                </div>
             </div>
+            {{-- จำนวนเงิน --}}
             <div>
-                <span class="text-gray-600 dark:text-gray-400">จำนวนเงิน:</span>
-                <span class="ml-2 text-gray-900 dark:text-white font-bold">฿{{ number_format($reading->amount_paid, 2) }}</span>
+                <div class="tp-muted" style="font-size:12px; margin-bottom:5px;">จำนวนเงิน</div>
+                <div class="tp-num" style="font-weight:800; font-size:20px; color:var(--deep1);">฿{{ number_format($reading->amount_paid, 2) }}</div>
             </div>
+            {{-- วันที่ชำระ --}}
             <div>
-                <span class="text-gray-600 dark:text-gray-400">วันที่ชำระ:</span>
-                <span class="ml-2 text-gray-900 dark:text-white">{{ $reading->paid_at ? $reading->paid_at->format('d/m/Y H:i') : '-' }}</span>
+                <div class="tp-muted" style="font-size:12px; margin-bottom:5px;">วันที่ชำระ</div>
+                <div style="color:var(--ink); padding-top:3px;">{{ $reading->paid_at ? $reading->paid_at->format('d/m/Y H:i') : '-' }}</div>
             </div>
         </div>
 
-        {{-- ปุ่ม Manual Action สำหรับ Admin (deep reading) --}}
-        {{-- 🩹 (2026-05-04) เปิดให้กดได้รวม Pay-Later flow (is_paid=false แต่มี deep_response แล้ว)
-             เคสจริงที่ user รายงาน: ลูกค้าทำ Pay-Later 39฿ คำทำนายเสร็จแต่ระบบส่งไม่ถึง
-             (FB 24hr window expired / sendResponse fail) → admin ต้องส่งซ้ำได้ --}}
-        @if($reading->reading_type === 'deep' && ($reading->is_paid || ! empty($reading->deep_response) || $reading->conversation_status === 'paid'))
-            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                {{-- 🛟 (2026-05-14) Pay-First incomplete data — ลูกค้าจ่ายแต่ยังไม่กรอกข้อมูล --}}
-                @if($reading->is_paid && empty($reading->birth_date))
-                    <div class="mb-3 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">
-                        <div class="flex items-start gap-2">
-                            <span class="text-amber-500 text-lg">🛟</span>
-                            <div class="flex-1">
-                                <p class="text-amber-800 dark:text-amber-200 font-medium">รอข้อมูลจากลูกค้า — ยังสร้างคำทำนายไม่ได้</p>
-                                <p class="text-amber-600 dark:text-amber-400 text-sm mt-1">
-                                    ลูกค้า<strong>จ่าย{{ number_format($reading->amount_paid ?? 39, 0) }}฿แล้ว</strong> (Pay-First Deep) แต่ยังไม่กรอก
-                                    <strong>วันเดือนปีเกิด</strong> → AI ทำนายไม่ได้
-                                </p>
-                                <ul class="text-amber-600 dark:text-amber-400 text-xs mt-2 ml-4 list-disc">
-                                    <li>วันเกิด: {{ $reading->birth_date ? $reading->birth_date->format('d/m/Y') : '❌ ยังไม่กรอก' }}</li>
-                                    <li>คำถาม: {{ is_array($reading->questions) && count($reading->questions) > 0 ? count($reading->questions).' คำถาม' : '❌ ยังไม่ถาม' }}</li>
-                                </ul>
-                                <p class="text-amber-700 dark:text-amber-300 text-sm mt-2">
-                                    💡 ใช้ปุ่ม <strong>"🛟 ส่งขอวันเกิดใหม่"</strong> ด้านล่างเพื่อ push message ให้ลูกค้ากรอกข้อมูล
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                @endif
+        {{-- ════════ Manual Action สำหรับ Admin (deep reading) ════════ --}}
+        {{-- 🩹 (2026-05-04) เปิดให้กดได้รวม Pay-Later flow (is_paid=false แต่มี deep_response แล้ว) --}}
+        @if($showDeepActions)
+            <div class="tp-divider" style="margin:18px 0;"></div>
 
-                {{-- ⚠️ Warning: ชำระเงินแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ (มีวันเกิดแล้ว แต่ deep_response ว่าง) --}}
-                @if($reading->is_paid && $reading->conversation_status === 'completed' && empty($reading->deep_response) && ! empty($reading->birth_date))
-                    <div class="mb-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
-                        <div class="flex items-start gap-2">
-                            <span class="text-red-500 text-lg">⚠️</span>
-                            <div>
-                                <p class="text-red-800 dark:text-red-200 font-medium">ลูกค้าชำระเงินแล้วแต่ยังไม่มีคำทำนายเชิงลึก!</p>
-                                <p class="text-red-600 dark:text-red-400 text-sm mt-1">อาจเกิดจาก: AI API quota หมด, API key หมดอายุ, หรือ provider ล่ม กรุณากดปุ่ม "สร้างคำทำนายเชิงลึก" ด้านล่าง</p>
-                                <p class="text-red-500 dark:text-red-500 text-xs mt-1">ตรวจสอบ log: <code class="bg-red-100 dark:bg-red-900 px-1 rounded">storage/logs/fortune-deep-{{ $reading->id }}.log</code></p>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                {{-- Flash Messages --}}
-                @if(session('success'))
-                    <div class="mb-3 px-4 py-3 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-sm">
-                        {!! nl2br(e(session('success'))) !!}
-                    </div>
-                @endif
-                @if(session('error'))
-                    <div class="mb-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 text-sm">
-                        {!! nl2br(e(session('error'))) !!}
-                    </div>
-                @endif
-                @if(session('warning'))
-                    <div class="mb-3 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-sm">
-                        {!! nl2br(e(session('warning'))) !!}
-                    </div>
-                @endif
-                @if(session('info'))
-                    <div class="mb-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-sm">
-                        {!! nl2br(e(session('info'))) !!}
-                    </div>
-                @endif
-
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">จัดการคำทำนายเชิงลึก (Manual)</p>
-
-                {{-- สถานะ: กำลังสร้างคำทำนาย (conversation_status = paid แต่ยังไม่มี deep_response) --}}
-                @if($reading->conversation_status === 'paid' && empty($reading->deep_response))
-                    @php
-                        // 🎯 (2026-05-02) คำนวณเวลา + provider เพื่อให้ admin เห็นชัด
-                        $paidElapsedSec = $reading->updated_at?->diffInSeconds(now()) ?? 0;
-                        $primaryProvider = strtoupper(\App\Models\FortuneTellingSetting::getSettings()->ai_provider ?? 'gemini');
-                    @endphp
-                    <div id="ai-processing-banner" class="mb-4 px-5 py-4 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 border-2 border-purple-300 dark:border-purple-700 shadow-sm">
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0">
-                                <div class="animate-spin h-8 w-8 border-3 border-purple-600 border-t-transparent rounded-full"></div>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <p class="text-purple-900 dark:text-purple-100 font-bold text-lg">🔮 AI กำลังสร้างคำทำนาย</p>
-                                    <span class="px-2 py-0.5 bg-purple-600 text-white text-xs font-bold rounded-full">{{ $primaryProvider }}</span>
-                                </div>
-                                <p class="text-purple-700 dark:text-purple-300 text-sm">
-                                    ระบบกำลังประมวลผลคำทำนายเชิงลึก — <b>แอดมินไม่ต้องทำอะไร</b> หน้าจะรีเฟรชอัตโนมัติเมื่อเสร็จ
-                                </p>
-                                <p class="text-purple-600 dark:text-purple-400 text-xs mt-1">
-                                    ⏱️ รอมาแล้ว <span id="ai-elapsed">{{ $paidElapsedSec }}</span> วินาที (ปกติใช้ 30-60 วินาที)
-                                </p>
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <div class="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
-                                <div id="ai-progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-1000" style="width: 5%"></div>
-                            </div>
-                        </div>
-                    </div>
-                    {{-- Polling: เช็ค status endpoint ทุก 3 วิ — reload เฉพาะตอน deep_response มี --}}
-                    {{-- (เดิม reload ทุก 5 วิ — รบกวน scroll/copy ของ admin) --}}
-                    <script>
-                        (function() {
-                            const statusUrl = '{{ route('admin.fortune.readings.status', $reading) }}';
-                            const progressBar = document.getElementById('ai-progress-bar');
-                            const banner = document.getElementById('ai-processing-banner');
-                            const elapsedDisplay = document.getElementById('ai-elapsed');
-                            const initialElapsed = {{ $paidElapsedSec ?? 0 }};
-                            const startedAt = Date.now();
-                            const maxWaitMs = 180 * 1000; // 3 นาที
-
-                            const tick = setInterval(async () => {
-                                const elapsedSec = (Date.now() - startedAt) / 1000;
-                                const totalElapsed = Math.round(initialElapsed + elapsedSec);
-
-                                // อัพเดท elapsed counter ทุก 1 วินาที
-                                if (elapsedDisplay) {
-                                    elapsedDisplay.textContent = totalElapsed;
-                                }
-
-                                // อัพเดท progress bar (visual only)
-                                if (progressBar) {
-                                    const progress = Math.min(95, (totalElapsed / 60) * 100);
-                                    progressBar.style.width = progress + '%';
-                                }
-
-                                // ตรวจ timeout
-                                if (Date.now() - startedAt > maxWaitMs) {
-                                    clearInterval(tick);
-                                    if (banner) {
-                                        banner.innerHTML = '<p class="text-orange-600 dark:text-orange-400 font-medium">⚠️ AI ใช้เวลานานกว่าปกติ — กรุณารีเฟรชหน้าด้วยตัวเอง หรือกดปุ่มสร้างคำทำนายใหม่</p>';
-                                    }
-                                    return;
-                                }
-
-                                // เช็ค status (silent — ไม่รบกวน UI)
-                                try {
-                                    const res = await fetch(statusUrl, {
-                                        headers: { 'Accept': 'application/json' },
-                                        cache: 'no-store',
-                                    });
-                                    if (!res.ok) return;
-                                    const data = await res.json();
-                                    if (data.ready) {
-                                        clearInterval(tick);
-                                        if (progressBar) progressBar.style.width = '100%';
-                                        if (banner) {
-                                            banner.innerHTML = '<p class="text-green-700 dark:text-green-300 font-medium">✅ คำทำนายเสร็จแล้ว — กำลังโหลดผล...</p>';
-                                        }
-                                        // หน่วงสั้น ๆ ให้ user เห็น "เสร็จแล้ว" ก่อน reload
-                                        setTimeout(() => window.location.reload(), 600);
-                                    }
-                                } catch (e) {
-                                    // เงียบ — รอบหน้าจะลองใหม่
-                                }
-                            }, 3000);
-                        })();
-                    </script>
-                @endif
-
-                <div class="flex flex-wrap gap-3" x-data="{ submitting: false }">
-                    @if(empty($reading->deep_response))
-                        {{-- 🛟 (2026-05-14) ลูกค้าจ่ายแล้วแต่ยังไม่กรอกวันเกิด → ใช้ recover แทน retry --}}
-                        @if($reading->is_paid && empty($reading->birth_date))
-                            <form action="{{ route('admin.fortune.readings.recover-pay-first', $reading) }}"
-                                  method="POST"
-                                  @submit="if(!confirm('ส่งข้อความ \'ขอวันเกิด\' ให้ลูกค้าใหม่หรือไม่?\n\nระบบจะ push message ผ่าน POST_PURCHASE_UPDATE — ลูกค้าจะได้รับใน Messenger/LINE')) { $event.preventDefault(); return; } submitting = true;">
-                                @csrf
-                                <button type="submit"
-                                        :disabled="submitting"
-                                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white text-sm font-medium rounded-lg shadow transition">
-                                    <template x-if="!submitting">
-                                        <span>🛟 ส่งขอวันเกิดใหม่</span>
-                                    </template>
-                                    <template x-if="submitting">
-                                        <span class="flex items-center gap-2">
-                                            <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                            กำลังส่งคำสั่ง...
-                                        </span>
-                                    </template>
-                                </button>
-                            </form>
-                            <p class="text-amber-700 dark:text-amber-300 text-xs ml-2 self-center">
-                                💡 ยังสร้างคำทำนายไม่ได้ — รอลูกค้ากรอกวันเกิดก่อน
+            {{-- 🛟 (2026-05-14) Pay-First incomplete — ลูกค้าจ่ายแต่ยังไม่กรอกข้อมูล --}}
+            @if($reading->is_paid && empty($reading->birth_date))
+                <div class="tp-inset" style="padding:14px 16px; border-radius:13px; border-left:4px solid {{ $warnColor }}; margin-bottom:14px;">
+                    <div style="display:flex; align-items:flex-start; gap:10px;">
+                        <span style="color:{{ $warnColor }}; font-size:18px;"><i class="fas fa-life-ring"></i></span>
+                        <div style="flex:1; min-width:0;">
+                            <p style="color:var(--ink); font-weight:700; margin:0;">รอข้อมูลจากลูกค้า — ยังสร้างคำทำนายไม่ได้</p>
+                            <p style="color:var(--ink2); font-size:13px; margin:5px 0 0;">
+                                ลูกค้า<strong>จ่าย {{ number_format($reading->amount_paid ?? 39, 0) }}฿ แล้ว</strong> (Pay-First Deep) แต่ยังไม่กรอก
+                                <strong>วันเดือนปีเกิด</strong> → AI ทำนายไม่ได้
                             </p>
-                        @else
-                            {{-- มีข้อมูลครบ → ปุ่มสร้างใหม่ (เด่น) --}}
-                            <form action="{{ route('admin.fortune.readings.retry-deep', $reading) }}"
-                                  method="POST"
-                                  @submit="if(!confirm('ต้องการสร้างคำทำนายเชิงลึกและส่งให้ลูกค้าหรือไม่?\n\nระบบจะสร้างคำทำนายใหม่โดย AI และส่งให้ลูกค้าอัตโนมัติ (ใช้เวลา 30-60 วินาที)')) { $event.preventDefault(); return; } submitting = true;">
-                                @csrf
-                                <button type="submit"
-                                        :disabled="submitting"
-                                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-sm font-medium rounded-lg shadow transition">
-                                    <template x-if="!submitting">
-                                        <span>🔄 สร้างคำทำนายเชิงลึก + ส่งให้ลูกค้า</span>
-                                    </template>
-                                    <template x-if="submitting">
-                                        <span class="flex items-center gap-2">
-                                            <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                            กำลังส่งคำสั่ง...
-                                        </span>
-                                    </template>
-                                </button>
-                            </form>
-                        @endif
-                    @else
-                        {{-- มีคำทำนายแล้ว → ปุ่มส่งซ้ำ + ปุ่มสร้างใหม่ --}}
-                        <form action="{{ route('admin.fortune.readings.resend-deep', $reading) }}"
+                            <ul style="color:var(--ink2); font-size:12px; margin:8px 0 0; padding-left:18px; list-style:disc;">
+                                <li>วันเกิด: {{ $reading->birth_date ? $reading->birth_date->format('d/m/Y') : '❌ ยังไม่กรอก' }}</li>
+                                <li>คำถาม: {{ is_array($reading->questions) && count($reading->questions) > 0 ? count($reading->questions).' คำถาม' : '❌ ยังไม่ถาม' }}</li>
+                            </ul>
+                            <p style="color:var(--ink); font-size:13px; margin:8px 0 0;">
+                                💡 ใช้ปุ่ม <strong>"ส่งขอวันเกิดใหม่"</strong> ด้านล่างเพื่อ push message ให้ลูกค้ากรอกข้อมูล
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- ⚠️ ชำระแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ (มีวันเกิดแล้ว แต่ deep_response ว่าง) --}}
+            @if($reading->is_paid && $reading->conversation_status === 'completed' && empty($reading->deep_response) && ! empty($reading->birth_date))
+                <div class="tp-inset" style="padding:14px 16px; border-radius:13px; border-left:4px solid {{ $dangColor }}; margin-bottom:14px;">
+                    <div style="display:flex; align-items:flex-start; gap:10px;">
+                        <span style="color:{{ $dangColor }}; font-size:18px;"><i class="fas fa-triangle-exclamation"></i></span>
+                        <div style="min-width:0;">
+                            <p style="color:var(--ink); font-weight:700; margin:0;">ลูกค้าชำระเงินแล้วแต่ยังไม่มีคำทำนายเชิงลึก!</p>
+                            <p style="color:var(--ink2); font-size:13px; margin:5px 0 0;">อาจเกิดจาก: AI API quota หมด, API key หมดอายุ, หรือ provider ล่ม กรุณากดปุ่ม "สร้างคำทำนายเชิงลึก" ด้านล่าง</p>
+                            <p style="color:var(--ink2); font-size:11.5px; margin:5px 0 0;">ตรวจสอบ log: <code style="background:var(--bg); padding:1px 5px; border-radius:4px;">storage/logs/fortune-deep-{{ $reading->id }}.log</code></p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <p class="tp-muted" style="font-size:13px; margin:0 0 12px;">จัดการคำทำนายเชิงลึก (Manual)</p>
+
+            {{-- ⏳ AI กำลังสร้าง (paid แต่ยังไม่มี deep_response) --}}
+            @if($aiProcessing)
+                <div id="ai-processing-banner" class="tp-inset" style="padding:18px; border-radius:16px; border:2px solid var(--accent1); margin-bottom:16px;">
+                    <div style="display:flex; align-items:flex-start; gap:16px;">
+                        <div style="flex-shrink:0;">
+                            <div style="width:34px; height:34px; border:3px solid var(--accent1); border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div>
+                        </div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center; gap:9px; margin-bottom:5px; flex-wrap:wrap;">
+                                <p class="tp-num" style="color:var(--ink); font-weight:800; font-size:17px; margin:0;">🔮 AI กำลังสร้างคำทำนาย</p>
+                                <span class="tp-pill tp-pill-gold">{{ $primaryProvider }}</span>
+                            </div>
+                            <p style="color:var(--ink2); font-size:13px; margin:0;">
+                                ระบบกำลังประมวลผลคำทำนายเชิงลึก — <b>แอดมินไม่ต้องทำอะไร</b> หน้าจะรีเฟรชอัตโนมัติเมื่อเสร็จ
+                            </p>
+                            <p style="color:var(--ink2); font-size:11.5px; margin:5px 0 0;">
+                                ⏱️ รอมาแล้ว <span id="ai-elapsed">{{ $paidElapsedSec }}</span> วินาที (ปกติใช้ 30-60 วินาที)
+                            </p>
+                        </div>
+                    </div>
+                    <div style="margin-top:14px;">
+                        <div style="width:100%; background:var(--bg); border-radius:999px; height:8px; box-shadow:var(--inset-sm);">
+                            <div id="ai-progress-bar" style="background:linear-gradient(90deg,var(--accent1),var(--accent2)); height:8px; border-radius:999px; transition:all 1s; width:5%;"></div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- ปุ่ม Action (POST forms) --}}
+            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;" x-data="{ submitting: false }">
+                @if(empty($reading->deep_response))
+                    {{-- 🛟 (2026-05-14) ลูกค้าจ่ายแล้วแต่ยังไม่กรอกวันเกิด → recover แทน retry --}}
+                    @if($reading->is_paid && empty($reading->birth_date))
+                        <form action="{{ route('admin.fortune.readings.recover-pay-first', $reading) }}"
                               method="POST"
-                              @submit="if(!confirm('ส่งคำทำนายที่มีอยู่ให้ลูกค้าซ้ำหรือไม่?')) { $event.preventDefault(); return; } submitting = true;">
+                              @submit="if(!confirm('ส่งข้อความ \'ขอวันเกิด\' ให้ลูกค้าใหม่หรือไม่?\n\nระบบจะ push message ผ่าน POST_PURCHASE_UPDATE — ลูกค้าจะได้รับใน Messenger/LINE')) { $event.preventDefault(); return; } submitting = true;"
+                              style="margin:0;">
                             @csrf
-                            <button type="submit"
-                                    :disabled="submitting"
-                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg shadow transition">
-                                <template x-if="!submitting">
-                                    <span>📨 ส่งคำทำนายซ้ำให้ลูกค้า</span>
-                                </template>
-                                <template x-if="submitting">
-                                    <span class="flex items-center gap-2">
-                                        <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                        กำลังส่ง...
-                                    </span>
-                                </template>
+                            <button type="submit" :disabled="submitting" class="tp-btn" style="color:{{ $warnColor }};">
+                                <template x-if="!submitting"><span><i class="fas fa-life-ring"></i> ส่งขอวันเกิดใหม่</span></template>
+                                <template x-if="submitting"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:15px; height:15px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></span> กำลังส่งคำสั่ง...</span></template>
                             </button>
                         </form>
+                        <p class="tp-muted" style="font-size:12px; margin:0;">💡 ยังสร้างคำทำนายไม่ได้ — รอลูกค้ากรอกวันเกิดก่อน</p>
+                    @else
+                        {{-- มีข้อมูลครบ → ปุ่มสร้างใหม่ (เด่น) --}}
                         <form action="{{ route('admin.fortune.readings.retry-deep', $reading) }}"
                               method="POST"
-                              @submit="if(!confirm('ต้องการสร้างคำทำนายเชิงลึกใหม่ทั้งหมดหรือไม่?\n\n⚠️ คำทำนายเดิมจะถูกลบ และระบบจะสร้างคำทำนายใหม่โดย AI (ใช้เวลา 30-60 วินาที)')) { $event.preventDefault(); return; } submitting = true;">
+                              @submit="if(!confirm('ต้องการสร้างคำทำนายเชิงลึกและส่งให้ลูกค้าหรือไม่?\n\nระบบจะสร้างคำทำนายใหม่โดย AI และส่งให้ลูกค้าอัตโนมัติ (ใช้เวลา 30-60 วินาที)')) { $event.preventDefault(); return; } submitting = true;"
+                              style="margin:0;">
                             @csrf
-                            <button type="submit"
-                                    :disabled="submitting"
-                                    class="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-orange-500 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-50 text-sm font-medium rounded-lg transition">
-                                <template x-if="!submitting">
-                                    <span>🔄 สร้างคำทำนายใหม่</span>
-                                </template>
-                                <template x-if="submitting">
-                                    <span class="flex items-center gap-2">
-                                        <span class="animate-spin h-4 w-4 border-2 border-orange-500 border-t-transparent rounded-full"></span>
-                                        กำลังส่งคำสั่ง...
-                                    </span>
-                                </template>
+                            <button type="submit" :disabled="submitting" class="tp-btn tp-btn-primary">
+                                <template x-if="!submitting"><span><i class="fas fa-arrows-rotate"></i> สร้างคำทำนายเชิงลึก + ส่งให้ลูกค้า</span></template>
+                                <template x-if="submitting"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:15px; height:15px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></span> กำลังส่งคำสั่ง...</span></template>
                             </button>
                         </form>
                     @endif
-                </div>
+                @else
+                    {{-- มีคำทำนายแล้ว → ปุ่มส่งซ้ำ + ปุ่มสร้างใหม่ --}}
+                    <form action="{{ route('admin.fortune.readings.resend-deep', $reading) }}"
+                          method="POST"
+                          @submit="if(!confirm('ส่งคำทำนายที่มีอยู่ให้ลูกค้าซ้ำหรือไม่?')) { $event.preventDefault(); return; } submitting = true;"
+                          style="margin:0;">
+                        @csrf
+                        <button type="submit" :disabled="submitting" class="tp-btn" style="color:{{ $okColor }};">
+                            <template x-if="!submitting"><span><i class="fas fa-paper-plane"></i> ส่งคำทำนายซ้ำให้ลูกค้า</span></template>
+                            <template x-if="submitting"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:15px; height:15px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></span> กำลังส่ง...</span></template>
+                        </button>
+                    </form>
+                    <form action="{{ route('admin.fortune.readings.retry-deep', $reading) }}"
+                          method="POST"
+                          @submit="if(!confirm('ต้องการสร้างคำทำนายเชิงลึกใหม่ทั้งหมดหรือไม่?\n\n⚠️ คำทำนายเดิมจะถูกลบ และระบบจะสร้างคำทำนายใหม่โดย AI (ใช้เวลา 30-60 วินาที)')) { $event.preventDefault(); return; } submitting = true;"
+                          style="margin:0;">
+                        @csrf
+                        <button type="submit" :disabled="submitting" class="tp-btn" style="color:#d6824a;">
+                            <template x-if="!submitting"><span><i class="fas fa-arrows-rotate"></i> สร้างคำทำนายใหม่</span></template>
+                            <template x-if="submitting"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:15px; height:15px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></span> กำลังส่งคำสั่ง...</span></template>
+                        </button>
+                    </form>
+                @endif
             </div>
         @endif
     </div>
 
-    {{-- Stats --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">สถิติ</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {{-- ════════ สถิติ ════════ --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+            <span class="tp-tile" style="width:34px; height:34px; border-radius:11px; font-size:14px; display:inline-flex; align-items:center; justify-content:center;">
+                <i class="fas fa-chart-simple"></i>
+            </span>
+            <span class="tp-num" style="font-weight:800; font-size:16px;">สถิติ</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px;">
             <div>
-                <span class="text-gray-600 dark:text-gray-400">จำนวนการดู:</span>
-                <span class="ml-2 text-gray-900 dark:text-white font-bold">{{ number_format($reading->view_count) }}</span>
+                <div class="tp-muted" style="font-size:12px; margin-bottom:5px;">จำนวนการดู</div>
+                <div class="tp-num" style="font-weight:800; font-size:20px; color:var(--ink);">{{ number_format($reading->view_count) }}</div>
             </div>
             <div>
-                <span class="text-gray-600 dark:text-gray-400">คะแนน:</span>
-                <span class="ml-2 text-gray-900 dark:text-white">{{ $reading->rating ? $reading->getRatingStars() : '-' }}</span>
+                <div class="tp-muted" style="font-size:12px; margin-bottom:5px;">คะแนน</div>
+                <div style="color:var(--ink); padding-top:3px; font-size:15px;">{{ $reading->rating ? $reading->getRatingStars() : '-' }}</div>
             </div>
             <div>
-                <span class="text-gray-600 dark:text-gray-400">ตอบกลับเมื่อ:</span>
-                <span class="ml-2 text-gray-900 dark:text-white">{{ $reading->responded_at ? $reading->responded_at->format('d/m/Y H:i') : 'ยังไม่ตอบ' }}</span>
+                <div class="tp-muted" style="font-size:12px; margin-bottom:5px;">ตอบกลับเมื่อ</div>
+                <div style="color:var(--ink); padding-top:3px;">{{ $reading->responded_at ? $reading->responded_at->format('d/m/Y H:i') : 'ยังไม่ตอบ' }}</div>
             </div>
         </div>
     </div>
+
 </div>
 @endsection
+
+@push('scripts')
+{{-- 🎡 keyframe spin สำหรับ spinner (กันกรณี theme-v4.css ไม่มี) --}}
+<style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    [x-cloak] { display: none !important; }
+</style>
+
+{{-- ⏳ Polling: เช็ค status endpoint ทุก 3 วิ — reload เฉพาะตอน deep_response มี --}}
+{{-- (เดิม reload ทุก 5 วิ — รบกวน scroll/copy ของ admin) --}}
+@if($aiProcessing)
+<script>
+    (function () {
+        // 🔗 endpoint สถานะ + element references
+        const statusUrl       = '{{ route('admin.fortune.readings.status', $reading) }}';
+        const progressBar     = document.getElementById('ai-progress-bar');
+        const banner          = document.getElementById('ai-processing-banner');
+        const elapsedDisplay  = document.getElementById('ai-elapsed');
+        const initialElapsed  = {{ $paidElapsedSec ?? 0 }};
+        const startedAt       = Date.now();
+        const maxWaitMs       = 180 * 1000; // 3 นาที
+
+        const tick = setInterval(async () => {
+            const elapsedSec   = (Date.now() - startedAt) / 1000;
+            const totalElapsed = Math.round(initialElapsed + elapsedSec);
+
+            // อัพเดท elapsed counter ทุก 1 วินาที
+            if (elapsedDisplay) {
+                elapsedDisplay.textContent = totalElapsed;
+            }
+
+            // อัพเดท progress bar (visual only)
+            if (progressBar) {
+                const progress = Math.min(95, (totalElapsed / 60) * 100);
+                progressBar.style.width = progress + '%';
+            }
+
+            // ตรวจ timeout
+            if (Date.now() - startedAt > maxWaitMs) {
+                clearInterval(tick);
+                if (banner) {
+                    banner.innerHTML = '<p style="color:#d6824a; font-weight:600; margin:0;">⚠️ AI ใช้เวลานานกว่าปกติ — กรุณารีเฟรชหน้าด้วยตัวเอง หรือกดปุ่มสร้างคำทำนายใหม่</p>';
+                }
+                return;
+            }
+
+            // เช็ค status (silent — ไม่รบกวน UI)
+            try {
+                const res = await fetch(statusUrl, {
+                    headers: { 'Accept': 'application/json' },
+                    cache: 'no-store',
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.ready) {
+                    clearInterval(tick);
+                    if (progressBar) progressBar.style.width = '100%';
+                    if (banner) {
+                        banner.innerHTML = '<p style="color:#5aa07e; font-weight:600; margin:0;">✅ คำทำนายเสร็จแล้ว — กำลังโหลดผล...</p>';
+                    }
+                    // หน่วงสั้น ๆ ให้ user เห็น "เสร็จแล้ว" ก่อน reload
+                    setTimeout(() => window.location.reload(), 600);
+                }
+            } catch (e) {
+                // เงียบ — รอบหน้าจะลองใหม่
+            }
+        }, 3000);
+    })();
+</script>
+@endif
+@endpush
