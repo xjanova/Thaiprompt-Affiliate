@@ -6,6 +6,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/css/theme-v4.css', // ธีมนวลทองคำ V4 (หลังบ้านธีมเดียว)
                 'resources/js/app.js',
                 'resources/js/crypto/app.js',
                 'resources/js/wealth-guide-pro.js',

@@ -20,12 +20,17 @@
     "name": "threejs"
   },
   "resources/css/app.css": {
-    "file": "assets/app-DNPSKxEq.css",
+    "file": "assets/app-Dj4BJD9x.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
+  "resources/css/theme-v4.css": {
+    "file": "assets/theme-v4-C0oRKY3j.css",
+    "src": "resources/css/theme-v4.css",
+    "isEntry": true
+  },
   "resources/js/app.js": {
-    "file": "assets/app-DbQG1Lda.js",
+    "file": "assets/app-CQKupPTe.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -45,7 +50,7 @@
     ]
   },
   "resources/js/echo-setup.js": {
-    "file": "assets/echo-setup-D0pZTY9c.js",
+    "file": "assets/echo-setup-DvBw-Ab1.js",
     "name": "echo-setup",
     "src": "resources/js/echo-setup.js",
     "isEntry": true,
@@ -66,7 +71,7 @@
     "isEntry": true
   },
   "resources/js/pos/app.js": {
-    "file": "assets/app-pe5vh2FH.js",
+    "file": "assets/app-BrSLy6d4.js",
     "name": "app",
     "src": "resources/js/pos/app.js",
     "isEntry": true
@@ -90,7 +95,7 @@
     "isEntry": true
   },
   "resources/js/service-worker-register.js": {
-    "file": "assets/service-worker-register-D9vu4f_3.js",
+    "file": "assets/service-worker-register-BwGUv1ul.js",
     "name": "service-worker-register",
     "src": "resources/js/service-worker-register.js",
     "isEntry": true
@@ -105,7 +110,7 @@
     ]
   },
   "resources/js/wealth-guide-pro.js": {
-    "file": "assets/wealth-guide-pro-CUCQCyQO.js",
+    "file": "assets/wealth-guide-pro-DAgfehBD.js",
     "name": "wealth-guide-pro",
     "src": "resources/js/wealth-guide-pro.js",
     "isEntry": true,
@@ -114,7 +119,7 @@
     ]
   },
   "resources/js/workflow-diagram.js": {
-    "file": "assets/workflow-diagram-DDd7Z2mb.js",
+    "file": "assets/workflow-diagram-l0sNRNKZ.js",
     "name": "workflow-diagram",
     "src": "resources/js/workflow-diagram.js",
     "isEntry": true
