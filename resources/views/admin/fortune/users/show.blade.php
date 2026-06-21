@@ -1,220 +1,248 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div class="container mx-auto px-4 py-8" x-data="userDetail()">
-    {{-- Breadcrumb --}}
-    <div class="mb-4">
-        <a href="{{ route('admin.fortune.users.index') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">
-            &larr; กลับไปรายการผู้ใช้
-        </a>
+{{-- ───────────────────────────────────────────────────────────
+     ผู้ใช้ดูดวง — รายละเอียด (ธีม V4 "นวลทองคำ")
+     ประวัติผู้ใช้ + การทำนายที่ผ่านมา + ฟอร์มส่งข้อความ/เพิ่มเครดิต
+     คงฟังก์ชันเดิม 100%: send-message / quick-add-credits / Alpine toggle
+     route('admin.fortune.users.show', [$platform, $userId]) ส่ง 2 พารามิเตอร์
+─────────────────────────────────────────────────────────────── --}}
+<div x-data="userDetail()" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">
+                หลังบ้าน · ระบบดูดวง · รายละเอียดผู้ใช้
+            </div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                {{ $userInfo['facebook_user_name'] }}
+                @if($userInfo['platform'] === 'line')
+                    <span class="tp-pill" style="color:#fff; background:#5aa07e; font-size:11px;">🟢 LINE</span>
+                @else
+                    <span class="tp-pill" style="color:#fff; background:#5689b8; font-size:11px;">📘 Facebook</span>
+                @endif
+            </h1>
+            <div class="tp-num" style="margin-top:6px; font-size:12px; color:var(--ink2); word-break:break-all;">
+                <i class="fas fa-fingerprint" style="margin-right:5px;"></i>{{ $userInfo['facebook_user_id'] }}
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+            <a href="{{ route('admin.fortune.users.index') }}" class="tp-btn tp-btn-sm">
+                <i class="fas fa-arrow-left"></i> กลับรายการ
+            </a>
+            <button type="button" @click="showSendMessage = !showSendMessage" class="tp-btn tp-btn-sm tp-btn-primary">
+                <i class="fas fa-comment-dots"></i> ส่งข้อความ
+            </button>
+            {{-- ฟอร์มเพิ่ม 5 เครดิตฟรี — คง action/field เดิมเป๊ะ --}}
+            <form action="{{ route('admin.fortune.users.quick-add-credits') }}" method="POST" style="display:inline;">
+                @csrf
+                <input type="hidden" name="facebook_user_id" value="{{ $userInfo['facebook_user_id'] }}">
+                <input type="hidden" name="platform" value="{{ $userInfo['platform'] }}">
+                <input type="hidden" name="facebook_user_name" value="{{ $userInfo['facebook_user_name'] }}">
+                <input type="hidden" name="amount" value="5">
+                <button type="submit" class="tp-btn tp-btn-sm" style="color:#fff; background:#5aa07e; border:0;">
+                    <i class="fas fa-gift"></i> +5 เครดิต
+                </button>
+            </form>
+        </div>
     </div>
 
-    {{-- Header: User Info --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                    {{ $userInfo['facebook_user_name'] }}
-                </h1>
-                <div class="flex flex-wrap gap-3 text-sm text-gray-500 dark:text-gray-400">
-                    <span class="font-mono">{{ $userInfo['facebook_user_id'] }}</span>
-                    @if($userInfo['platform'] === 'line')
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">🟢 LINE</span>
-                    @else
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">📘 Facebook</span>
-                    @endif
+    {{-- ===== KPI grid: สถิติผู้ใช้ ===== --}}
+    @php
+        // การ์ด KPI 5 ใบ — ใช้ field จาก $userInfo (controller) เป๊ะ
+        $kpis = [
+            ['ดูดวงทั้งหมด', number_format($userInfo['total_readings']), 'fa-wand-magic-sparkles', 'var(--deep1)'],
+            ['ดูดวงละเอียด', number_format($userInfo['deep_readings']), 'fa-gem', '#b79ae8'],
+            ['จ่ายรวม', '฿' . number_format($userInfo['total_spent'], 0), 'fa-coins', '#5aa07e'],
+            ['ดูครั้งแรก', $userInfo['first_reading'] ? \Carbon\Carbon::parse($userInfo['first_reading'])->format('d/m/Y') : '—', 'fa-flag-checkered', '#5689b8'],
+            ['ดูล่าสุด', $userInfo['last_reading'] ? \Carbon\Carbon::parse($userInfo['last_reading'])->diffForHumans() : '—', 'fa-clock-rotate-left', '#d6824a'],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:14px;">
+        @foreach($kpis as [$label, $val, $icon, $color])
+            <div class="tp-card tp-card-hover">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div style="font-size:11.5px; color:var(--ink2); font-weight:600;">{{ $label }}</div>
+                    <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:15px;">
+                        <i class="fas {{ $icon }}"></i>
+                    </span>
+                </div>
+                <div class="tp-num" style="font-size:clamp(18px,2.4vw,26px); font-weight:800; margin-top:10px; color:{{ $color }};">
+                    {{ $val }}
                 </div>
             </div>
-            <div class="mt-4 md:mt-0 flex gap-3">
-                <button @click="showSendMessage = !showSendMessage"
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                    💬 ส่งข้อความ
-                </button>
-                <form action="{{ route('admin.fortune.users.quick-add-credits') }}" method="POST" class="inline">
-                    @csrf
-                    <input type="hidden" name="facebook_user_id" value="{{ $userInfo['facebook_user_id'] }}">
-                    <input type="hidden" name="platform" value="{{ $userInfo['platform'] }}">
-                    <input type="hidden" name="facebook_user_name" value="{{ $userInfo['facebook_user_name'] }}">
-                    <input type="hidden" name="amount" value="5">
-                    <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                        🎁 +5 เครดิต
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        {{-- User Stats --}}
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $userInfo['total_readings'] }}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">ดูดวงทั้งหมด</div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-                <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $userInfo['deep_readings'] }}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">ดูดวงละเอียด</div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-                <div class="text-2xl font-bold text-green-600 dark:text-green-400">฿{{ number_format($userInfo['total_spent'], 0) }}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">จ่ายรวม</div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ \Carbon\Carbon::parse($userInfo['first_reading'])->format('d/m/Y') }}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">ดูครั้งแรก</div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ \Carbon\Carbon::parse($userInfo['last_reading'])->diffForHumans() }}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">ดูล่าสุด</div>
-            </div>
-        </div>
-
-        {{-- Credit Info --}}
-        @if($credit)
-            <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center gap-4 text-sm">
-                <span class="font-medium text-blue-700 dark:text-blue-300">🎁 เครดิตพิเศษ:</span>
-                @if($credit->isCurrentlyUnlimited())
-                    <span class="text-purple-600 dark:text-purple-400 font-bold">🌟 ดูฟรีไม่จำกัด</span>
-                @else
-                    <span>เหลือ {{ $credit->getRemainingCredits() }} ครั้ง (ใช้ไป {{ $credit->credits_used }} / {{ $credit->bonus_credits }})</span>
-                @endif
-                <a href="{{ route('admin.fortune.credits.index', ['search' => $userInfo['facebook_user_id']]) }}"
-                   class="text-blue-600 dark:text-blue-400 hover:underline ml-auto">จัดการ &rarr;</a>
-            </div>
-        @endif
-
-        {{-- 🛑 (2026-05-06) Pay-Later Eligibility section ลบทิ้ง — Pay-Later removed --}}
+        @endforeach
     </div>
 
-    {{-- Flash Messages --}}
-    @if(session('success'))
-        <div class="mb-6 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
-            {{ session('error') }}
+    {{-- ===== Credit Info (ถ้ามี credit) ===== --}}
+    @if($credit)
+        <div class="tp-card" style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:17px;">
+                <i class="fas fa-gift"></i>
+            </span>
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:11px; color:var(--ink2); font-weight:600;">เครดิตพิเศษ</div>
+                @if($credit->isCurrentlyUnlimited())
+                    <div class="tp-num" style="font-size:15px; font-weight:800; color:#b79ae8; margin-top:3px;">
+                        🌟 ดูฟรีไม่จำกัด
+                    </div>
+                @else
+                    <div class="tp-num" style="font-size:15px; font-weight:800; color:var(--deep1); margin-top:3px;">
+                        เหลือ {{ $credit->getRemainingCredits() }} ครั้ง
+                    </div>
+                    <div class="tp-num" style="font-size:11.5px; color:var(--ink2); margin-top:2px;">
+                        ใช้ไป {{ $credit->credits_used }} / {{ $credit->bonus_credits }}
+                    </div>
+                @endif
+            </div>
+            <a href="{{ route('admin.fortune.credits.index', ['search' => $userInfo['facebook_user_id']]) }}"
+               class="tp-btn tp-btn-sm">
+                จัดการ <i class="fas fa-arrow-right"></i>
+            </a>
         </div>
     @endif
 
-    {{-- Send Message Form --}}
-    <div x-show="showSendMessage" x-cloak
-         class="mb-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-2 border-blue-200 dark:border-blue-800">
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            💬 ส่งข้อความถึง {{ $userInfo['facebook_user_name'] }}
-        </h2>
+    {{-- ===== Send Message Form (Alpine toggle เดิม) ===== --}}
+    <div x-show="showSendMessage" x-cloak class="tp-card" style="border:1.5px solid var(--a1soft);">
+        <div class="tp-section-h" style="margin-bottom:14px;">
+            <i class="fas fa-comment-dots" style="margin-right:6px; color:var(--deep1);"></i>
+            ส่งข้อความถึง {{ $userInfo['facebook_user_name'] }}
+        </div>
+        {{-- คง action/method/@csrf/field hidden เดิมทั้งหมด --}}
         <form action="{{ route('admin.fortune.users.send-message') }}" method="POST">
             @csrf
             <input type="hidden" name="platform" value="{{ $userInfo['platform'] }}">
             <input type="hidden" name="facebook_user_id" value="{{ $userInfo['facebook_user_id'] }}">
-            <div class="mb-4">
+            <div class="tp-well tp-input" style="padding:0; margin-bottom:14px;">
                 <textarea name="message" rows="4" required maxlength="2000"
                           placeholder="พิมพ์ข้อความที่ต้องการส่ง..."
-                          class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"></textarea>
+                          style="width:100%; background:transparent; border:0; outline:0; padding:12px 14px; color:var(--ink); font-size:14px; resize:vertical; font-family:inherit;"></textarea>
             </div>
-            <div class="flex gap-3">
-                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                    ส่งข้อความ
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-paper-plane"></i> ส่งข้อความ
                 </button>
-                <button type="button" @click="showSendMessage = false"
-                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition">
+                <button type="button" @click="showSendMessage = false" class="tp-btn">
                     ยกเลิก
                 </button>
             </div>
         </form>
     </div>
 
-    {{-- Readings History --}}
-    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-        📜 ประวัติการดูดวง
-    </h2>
+    {{-- ===== ประวัติการดูดวง ===== --}}
+    <div class="tp-divider"></div>
+    <div class="tp-section-h" style="display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-scroll" style="color:var(--deep1);"></i> ประวัติการดูดวง
+        <span class="tp-pill tp-pill-soft tp-num" style="font-size:11px;">{{ $readings->total() }} รายการ</span>
+    </div>
 
-    <div class="space-y-4">
+    <div style="display:flex; flex-direction:column; gap:14px;">
         @forelse($readings as $reading)
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
-                <div class="flex flex-col md:flex-row md:items-start md:justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <span class="text-2xl">
-                            @if($reading->reading_type === 'deep') 💎 @else 🔮 @endif
+            @php
+                // สีสถานะ conversation_status — map ตามค่าจริงในระบบ
+                $statusColor = match($reading->conversation_status) {
+                    'completed' => '#5aa07e',
+                    'paid' => '#5689b8',
+                    'pending_payment' => '#e0a52e',
+                    default => '#9a8f7c',
+                };
+            @endphp
+            <div class="tp-card tp-card-hover">
+                {{-- หัวการ์ด: ชนิด + สถานะ + ลิงก์ --}}
+                <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span class="tp-tile" style="width:44px; height:44px; border-radius:14px; font-size:20px;">
+                            {{ $reading->reading_type === 'deep' ? '💎' : '🔮' }}
                         </span>
                         <div>
-                            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                {{ $reading->reading_type === 'deep' ? 'ดูดวงละเอียด' : 'ดูดวงพื้นฐาน' }}
-                            </span>
-                            @if($reading->is_paid)
-                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                                    ฿{{ number_format($reading->amount_paid, 0) }}
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <span class="tp-num" style="font-size:14px; font-weight:700; color:var(--ink);">
+                                    {{ $reading->reading_type === 'deep' ? 'ดูดวงละเอียด' : 'ดูดวงพื้นฐาน' }}
                                 </span>
-                            @endif
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ $reading->created_at->format('d/m/Y H:i') }} ({{ $reading->created_at->diffForHumans() }})
+                                @if($reading->is_paid)
+                                    <span class="tp-pill" style="color:#fff; background:#5aa07e; font-size:10.5px;">
+                                        ฿{{ number_format($reading->amount_paid, 0) }}
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="tp-num" style="font-size:11.5px; color:var(--ink2); margin-top:3px;">
+                                {{ $reading->created_at->format('d/m/Y H:i') }}
+                                · {{ $reading->created_at->diffForHumans() }}
                                 @if($reading->ai_provider)
-                                    &middot; {{ $reading->ai_provider }}
+                                    · {{ $reading->ai_provider }}
                                 @endif
                             </div>
                         </div>
                     </div>
-                    <div class="mt-2 md:mt-0 flex items-center gap-2">
+                    <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
                         @if($reading->conversation_status)
-                            <span class="px-2 py-0.5 rounded-full text-xs font-medium
-                                @switch($reading->conversation_status)
-                                    @case('completed') bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 @break
-                                    @case('paid') bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 @break
-                                    @case('pending_payment') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300 @break
-                                    @default bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-300
-                                @endswitch">
+                            <span class="tp-pill" style="color:#fff; background:{{ $statusColor }}; font-size:10.5px;">
                                 {{ $reading->conversation_status }}
                             </span>
                         @endif
-                        <a href="{{ route('admin.fortune.readings.show', $reading) }}"
-                           class="text-blue-600 dark:text-blue-400 text-xs hover:underline">ดูเพิ่มเติม</a>
+                        <a href="{{ route('admin.fortune.readings.show', $reading) }}" class="tp-btn tp-btn-sm">
+                            ดูเพิ่มเติม <i class="fas fa-arrow-right"></i>
+                        </a>
                     </div>
                 </div>
 
                 {{-- คำถาม --}}
                 @if($reading->questions && is_array($reading->questions))
-                    <div class="mb-3">
-                        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">คำถาม:</div>
-                        @foreach($reading->questions as $q)
-                            <div class="text-sm text-gray-700 dark:text-gray-300 pl-3 border-l-2 border-purple-300 dark:border-purple-600 mb-1">
-                                {{ $q }}
-                            </div>
-                        @endforeach
+                    <div style="margin-top:14px;">
+                        <div style="font-size:11px; color:var(--ink2); font-weight:600; margin-bottom:6px;">คำถาม</div>
+                        <div style="display:flex; flex-direction:column; gap:6px;">
+                            @foreach($reading->questions as $q)
+                                <div style="font-size:13px; color:var(--ink); padding-left:12px; border-left:3px solid var(--a1soft);">
+                                    {{ $q }}
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
 
                 {{-- คำตอบ (แสดงบางส่วน) --}}
                 @if($reading->ai_response)
-                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">คำทำนาย:</div>
-                        <div class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+                    <div class="tp-inset" style="margin-top:14px; padding:13px 15px; border-radius:13px;">
+                        <div style="font-size:11px; color:var(--ink2); font-weight:600; margin-bottom:5px;">คำทำนาย</div>
+                        <div style="font-size:13px; color:var(--ink); line-height:1.65;">
                             {{ Str::limit(strip_tags($reading->ai_response), 300) }}
                         </div>
                     </div>
                 @endif
             </div>
         @empty
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-12 text-center text-gray-500 dark:text-gray-400">
-                <div class="text-4xl mb-3">📜</div>
-                <p>ยังไม่มีประวัติการดูดวง</p>
+            {{-- Empty state --}}
+            <div class="tp-card" style="text-align:center; padding:48px 20px;">
+                <i class="fas fa-inbox" style="font-size:42px; color:var(--ink2); opacity:.55;"></i>
+                <div class="tp-num" style="font-size:15px; font-weight:700; color:var(--ink); margin-top:14px;">
+                    ยังไม่มีประวัติการดูดวง
+                </div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">
+                    เมื่อผู้ใช้เริ่มดูดวง รายการจะแสดงที่นี่
+                </div>
             </div>
         @endforelse
     </div>
 
-    {{-- Pagination --}}
+    {{-- ===== Pagination ===== --}}
     @if($readings->hasPages())
-        <div class="mt-6">
+        <div style="margin-top:4px;">
             {{ $readings->links() }}
         </div>
     @endif
 </div>
-
-<script>
-function userDetail() {
-    return {
-        showSendMessage: false,
-    }
-}
-</script>
 @endsection
+
+@push('scripts')
+<script>
+    // Alpine component เดิม — ย้ายมา @push('scripts') ตาม layout contract V4
+    function userDetail() {
+        return {
+            showSendMessage: false,
+        };
+    }
+</script>
+@endpush

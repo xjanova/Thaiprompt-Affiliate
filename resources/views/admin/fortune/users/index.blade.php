@@ -1,360 +1,389 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'ผู้ใช้ดูดวง')
 
 @section('content')
-<div class="container mx-auto px-4 py-8" x-data="fortuneUsers()">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+{{-- ====================================================================
+     ผู้ใช้ดูดวง — รายการ (ธีม V4 นวลทองคำ)
+     - master-detail / data-table: ค้นหา/กรอง + ส่งข้อความ + เพิ่มเครดิตด่วน
+     - คงฟอร์มเดิม 100%: send-message / broadcast / quick-add-credits
+     - Alpine ย้ายไป @push('scripts')
+==================================================================== --}}
+<div x-data="fortuneUsers()" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ========================= HEADER ========================= --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                👥 ผู้ใช้ดูดวง
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400">
-                จัดการผู้ใช้ที่เคยดูดวง ส่งข้อความ เพิ่มเครดิต
-            </p>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ระบบดูดวง · ผู้ใช้</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ผู้ใช้ดูดวง 👥</h1>
         </div>
-        <div class="mt-4 md:mt-0 flex gap-3">
-            <button @click="showBroadcast = true"
-                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition flex items-center">
-                <span class="mr-2">📢</span>
-                ส่งข้อความถึงทุกคน
+        <div style="display:flex; align-items:center; gap:9px;">
+            {{-- เปิดฟอร์ม Broadcast --}}
+            <button type="button" @click="showBroadcast = !showBroadcast; showSendMessage = false"
+                    class="tp-btn">
+                <i class="fas fa-bullhorn"></i>
+                <span>ส่งถึงทุกคน</span>
             </button>
-            <button @click="showSendMessage = true"
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center">
-                <span class="mr-2">💬</span>
-                ส่งข้อความรายคน
+            {{-- เปิดฟอร์มส่งรายคน --}}
+            <button type="button" @click="showSendMessage = !showSendMessage; showBroadcast = false"
+                    class="tp-btn tp-btn-primary">
+                <i class="fas fa-comment-dots"></i>
+                <span>ส่งข้อความรายคน</span>
             </button>
         </div>
     </div>
 
-    {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-blue-100 text-sm">ผู้ใช้ทั้งหมด</span>
-                <span class="text-2xl">👥</span>
+    {{-- ========================= KPI GRID ========================= --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:14px;">
+        {{-- ผู้ใช้ทั้งหมด --}}
+        <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
+            <div class="tp-tile"><i class="fas fa-users"></i></div>
+            <div>
+                <div class="tp-muted" style="font-size:12px;">ผู้ใช้ทั้งหมด</div>
+                <div class="tp-num" style="font-size:24px; font-weight:800;">{{ number_format($stats['total_users']) }}</div>
             </div>
-            <div class="text-2xl font-bold">{{ number_format($stats['total_users']) }}</div>
         </div>
-        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-indigo-100 text-sm">Facebook</span>
-                <span class="text-2xl">📘</span>
+        {{-- Facebook --}}
+        <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
+            <div class="tp-tile" style="color:#5689b8;"><i class="fab fa-facebook-f"></i></div>
+            <div>
+                <div class="tp-muted" style="font-size:12px;">Facebook</div>
+                <div class="tp-num" style="font-size:24px; font-weight:800;">{{ number_format($stats['facebook_users']) }}</div>
             </div>
-            <div class="text-2xl font-bold">{{ number_format($stats['facebook_users']) }}</div>
         </div>
-        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-green-100 text-sm">LINE</span>
-                <span class="text-2xl">🟢</span>
+        {{-- LINE --}}
+        <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
+            <div class="tp-tile" style="color:#5aa07e;"><i class="fab fa-line"></i></div>
+            <div>
+                <div class="tp-muted" style="font-size:12px;">LINE</div>
+                <div class="tp-num" style="font-size:24px; font-weight:800;">{{ number_format($stats['line_users']) }}</div>
             </div>
-            <div class="text-2xl font-bold">{{ number_format($stats['line_users']) }}</div>
         </div>
-        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-orange-100 text-sm">ลูกค้าจ่ายเงิน</span>
-                <span class="text-2xl">💰</span>
+        {{-- ลูกค้าจ่ายเงิน --}}
+        <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
+            <div class="tp-tile" style="color:#d6824a;"><i class="fas fa-hand-holding-dollar"></i></div>
+            <div>
+                <div class="tp-muted" style="font-size:12px;">ลูกค้าจ่ายเงิน</div>
+                <div class="tp-num" style="font-size:24px; font-weight:800;">{{ number_format($stats['paying_users']) }}</div>
             </div>
-            <div class="text-2xl font-bold">{{ number_format($stats['paying_users']) }}</div>
         </div>
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-purple-100 text-sm">รายได้รวม</span>
-                <span class="text-2xl">💵</span>
+        {{-- รายได้รวม --}}
+        <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
+            <div class="tp-tile"><i class="fas fa-coins"></i></div>
+            <div>
+                <div class="tp-muted" style="font-size:12px;">รายได้รวม</div>
+                <div class="tp-num" style="font-size:24px; font-weight:800; color:#5aa07e;">฿{{ number_format($stats['total_revenue'], 0) }}</div>
             </div>
-            <div class="text-2xl font-bold">฿{{ number_format($stats['total_revenue'], 0) }}</div>
         </div>
     </div>
 
-    {{-- Flash Messages --}}
-    @if(session('success'))
-        <div class="mb-6 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg">
-            {{ session('success') }}
+    {{-- ========================= SEND MESSAGE FORM (รายคน) ========================= --}}
+    <div x-show="showSendMessage" x-cloak class="tp-card" style="border:1px solid var(--a1soft);">
+        <div class="tp-section-h" style="margin-bottom:14px;">
+            <i class="fas fa-comment-dots" style="color:var(--accent1);"></i>
+            <span>ส่งข้อความรายคน</span>
         </div>
-    @endif
-    @if(session('error'))
-        <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    {{-- Send Message Form (เฉพาะรายคน) --}}
-    <div x-show="showSendMessage" x-cloak
-         class="mb-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-2 border-blue-200 dark:border-blue-800">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            💬 ส่งข้อความรายคน
-        </h2>
         <form action="{{ route('admin.fortune.users.send-message') }}" method="POST">
             @csrf
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px; margin-bottom:14px;">
+                {{-- Platform --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Platform *</label>
-                    <select name="platform" x-model="sendPlatform"
-                            class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500">
-                        <option value="facebook">Facebook Messenger</option>
-                        <option value="line">LINE</option>
-                    </select>
+                    <label class="tp-muted" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">Platform *</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <select name="platform" x-model="sendPlatform"
+                                style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                            <option value="facebook">Facebook Messenger</option>
+                            <option value="line">LINE</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">User ID *</label>
-                    <input type="text" name="facebook_user_id" x-model="sendUserId" required
-                           placeholder="Facebook/LINE User ID"
-                           class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500">
+                {{-- User ID --}}
+                <div style="grid-column:span 2; min-width:0;">
+                    <label class="tp-muted" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">User ID *</label>
+                    <div class="tp-well tp-input">
+                        <input type="text" name="facebook_user_id" x-model="sendUserId" required
+                               placeholder="Facebook/LINE User ID"
+                               style="width:100%; background:transparent; border:0; outline:0; color:var(--ink); font-size:14px;">
+                    </div>
                 </div>
             </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ข้อความ *</label>
-                <textarea name="message" rows="4" required maxlength="2000"
-                          placeholder="พิมพ์ข้อความที่ต้องการส่ง..."
-                          class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"></textarea>
+            <div style="margin-bottom:14px;">
+                <label class="tp-muted" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">ข้อความ *</label>
+                <div class="tp-well tp-input">
+                    <textarea name="message" rows="4" required maxlength="2000"
+                              placeholder="พิมพ์ข้อความที่ต้องการส่ง..."
+                              style="width:100%; background:transparent; border:0; outline:0; color:var(--ink); font-size:14px; resize:vertical;"></textarea>
+                </div>
             </div>
-            <div class="flex gap-3">
-                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                    ส่งข้อความ
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-paper-plane"></i><span>ส่งข้อความ</span>
                 </button>
-                <button type="button" @click="showSendMessage = false"
-                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition">
-                    ยกเลิก
+                <button type="button" @click="showSendMessage = false" class="tp-btn">
+                    <i class="fas fa-xmark"></i><span>ยกเลิก</span>
                 </button>
             </div>
         </form>
     </div>
 
-    {{-- Broadcast Form --}}
-    <div x-show="showBroadcast" x-cloak
-         class="mb-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-2 border-purple-200 dark:border-purple-800">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            📢 ส่งข้อความถึงทุกคน (Broadcast)
-        </h2>
+    {{-- ========================= BROADCAST FORM ========================= --}}
+    <div x-show="showBroadcast" x-cloak class="tp-card" style="border:1px solid var(--a2soft);">
+        <div class="tp-section-h" style="margin-bottom:14px;">
+            <i class="fas fa-bullhorn" style="color:var(--accent2);"></i>
+            <span>ส่งข้อความถึงทุกคน (Broadcast)</span>
+        </div>
         <form action="{{ route('admin.fortune.users.broadcast') }}" method="POST"
               onsubmit="return confirm('ยืนยันส่งข้อความ Broadcast? จะส่งไปทุกคนตามเงื่อนไขที่เลือก')">
             @csrf
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px; margin-bottom:14px;">
+                {{-- ช่องทาง --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ช่องทาง</label>
-                    <select name="platform"
-                            class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500">
-                        <option value="all">ทุกช่องทาง</option>
-                        <option value="facebook">Facebook เท่านั้น</option>
-                        <option value="line">LINE เท่านั้น</option>
-                    </select>
+                    <label class="tp-muted" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">ช่องทาง</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <select name="platform"
+                                style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                            <option value="all">ทุกช่องทาง</option>
+                            <option value="facebook">Facebook เท่านั้น</option>
+                            <option value="line">LINE เท่านั้น</option>
+                        </select>
+                    </div>
                 </div>
+                {{-- กลุ่มเป้าหมาย --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">กลุ่มเป้าหมาย</label>
-                    <select name="target"
-                            class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500">
-                        <option value="all">ทุกคนที่เคยดูดวง</option>
-                        <option value="paid">เฉพาะลูกค้าจ่ายเงิน</option>
-                        <option value="recent">ดูดวงภายใน 7 วันล่าสุด</option>
-                    </select>
+                    <label class="tp-muted" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">กลุ่มเป้าหมาย</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <select name="target"
+                                style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                            <option value="all">ทุกคนที่เคยดูดวง</option>
+                            <option value="paid">เฉพาะลูกค้าจ่ายเงิน</option>
+                            <option value="recent">ดูดวงภายใน 7 วันล่าสุด</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ข้อความ *</label>
-                <textarea name="message" rows="4" required maxlength="2000"
-                          placeholder="พิมพ์ข้อความ Broadcast..."
-                          class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500"></textarea>
+            <div style="margin-bottom:14px;">
+                <label class="tp-muted" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">ข้อความ *</label>
+                <div class="tp-well tp-input">
+                    <textarea name="message" rows="4" required maxlength="2000"
+                              placeholder="พิมพ์ข้อความ Broadcast..."
+                              style="width:100%; background:transparent; border:0; outline:0; color:var(--ink); font-size:14px; resize:vertical;"></textarea>
+                </div>
             </div>
-            <div class="flex gap-3">
-                <button type="submit" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
-                    ส่ง Broadcast
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-paper-plane"></i><span>ส่ง Broadcast</span>
                 </button>
-                <button type="button" @click="showBroadcast = false"
-                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition">
-                    ยกเลิก
+                <button type="button" @click="showBroadcast = false" class="tp-btn">
+                    <i class="fas fa-xmark"></i><span>ยกเลิก</span>
                 </button>
             </div>
         </form>
     </div>
 
-    {{-- Search & Filter --}}
-    <div class="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-        <form method="GET" action="{{ route('admin.fortune.users.index') }}" class="flex flex-col md:flex-row gap-4">
-            <div class="flex-1">
-                <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="ค้นหา User ID หรือชื่อ..."
-                       class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500">
+    {{-- ========================= SEARCH & FILTER ========================= --}}
+    <div class="tp-card">
+        <form method="GET" action="{{ route('admin.fortune.users.index') }}"
+              style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+            {{-- ค้นหา --}}
+            <div style="flex:1; min-width:200px;">
+                <label class="tp-muted" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">ค้นหา</label>
+                <div class="tp-well tp-input" style="display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-magnifying-glass tp-muted" style="font-size:13px;"></i>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="User ID หรือชื่อ..."
+                           style="width:100%; background:transparent; border:0; outline:0; color:var(--ink); font-size:14px;">
+                </div>
             </div>
-            <div class="flex gap-3 items-center">
-                <select name="platform" class="px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm">
-                    <option value="">ทุก Platform</option>
-                    <option value="facebook" {{ request('platform') === 'facebook' ? 'selected' : '' }}>Facebook</option>
-                    <option value="line" {{ request('platform') === 'line' ? 'selected' : '' }}>LINE</option>
-                </select>
-                <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+            {{-- Platform --}}
+            <div style="min-width:150px;">
+                <label class="tp-muted" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">Platform</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="platform"
+                            style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                        <option value="">ทุก Platform</option>
+                        <option value="facebook" {{ request('platform') === 'facebook' ? 'selected' : '' }}>Facebook</option>
+                        <option value="line" {{ request('platform') === 'line' ? 'selected' : '' }}>LINE</option>
+                    </select>
+                </div>
+            </div>
+            {{-- เรียงลำดับ --}}
+            <div style="min-width:150px;">
+                <label class="tp-muted" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">เรียงลำดับ</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="sort"
+                            style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                        <option value="last_reading_at" {{ request('sort') === 'last_reading_at' ? 'selected' : '' }}>ล่าสุด</option>
+                        <option value="total_readings" {{ request('sort') === 'total_readings' ? 'selected' : '' }}>จำนวนดู</option>
+                        <option value="total_spent" {{ request('sort') === 'total_spent' ? 'selected' : '' }}>ยอดจ่าย</option>
+                    </select>
+                </div>
+            </div>
+            {{-- จ่ายเงินแล้ว + ปุ่ม --}}
+            <div style="display:flex; gap:10px; align-items:center;">
+                <label class="tp-pill tp-pill-soft" style="cursor:pointer; display:inline-flex; align-items:center; gap:7px; white-space:nowrap;">
                     <input type="checkbox" name="paid_only" value="1" {{ request('paid_only') ? 'checked' : '' }}
-                           class="rounded border-gray-300 dark:border-gray-600 text-orange-600 focus:ring-orange-500">
-                    จ่ายเงินแล้ว
+                           style="accent-color:var(--accent1); width:15px; height:15px;">
+                    <span>จ่ายเงินแล้ว</span>
                 </label>
-                <select name="sort" class="px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm">
-                    <option value="last_reading_at" {{ request('sort') === 'last_reading_at' ? 'selected' : '' }}>ล่าสุด</option>
-                    <option value="total_readings" {{ request('sort') === 'total_readings' ? 'selected' : '' }}>จำนวนดู</option>
-                    <option value="total_spent" {{ request('sort') === 'total_spent' ? 'selected' : '' }}>ยอดจ่าย</option>
-                </select>
-                <button type="submit" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition">
-                    ค้นหา
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-magnifying-glass"></i><span>ค้นหา</span>
                 </button>
                 @if(request()->hasAny(['search', 'platform', 'paid_only', 'sort']))
-                    <a href="{{ route('admin.fortune.users.index') }}"
-                       class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition text-sm">
-                        ล้าง
+                    <a href="{{ route('admin.fortune.users.index') }}" class="tp-btn">
+                        <i class="fas fa-eraser"></i><span>ล้าง</span>
                     </a>
                 @endif
             </div>
         </form>
     </div>
 
-    {{-- Users Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ผู้ใช้</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Platform</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ดูดวง</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จ่ายเงิน</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ยอดจ่ายรวม</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ดูล่าสุด</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($users as $user)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                            {{-- ผู้ใช้ --}}
-                            <td class="px-4 py-3">
-                                <a href="{{ route('admin.fortune.users.show', ['platform' => $user->platform ?? 'facebook', 'userId' => $user->facebook_user_id]) }}"
-                                   class="hover:underline">
-                                    <div class="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                        {{ $user->facebook_user_name ?? '-' }}
-                                    </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                                        {{ $user->facebook_user_id }}
-                                    </div>
-                                </a>
-                            </td>
-
-                            {{-- Platform --}}
-                            <td class="px-4 py-3 text-center">
-                                @if(($user->platform ?? 'facebook') === 'line')
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">🟢 LINE</span>
-                                @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">📘 Facebook</span>
-                                @endif
-                            </td>
-
-                            {{-- จำนวนดูดวง --}}
-                            <td class="px-4 py-3 text-center">
-                                <div class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ $user->total_readings }}</div>
-                                @if($user->deep_readings > 0)
-                                    <div class="text-xs text-purple-600 dark:text-purple-400">{{ $user->deep_readings }} ละเอียด</div>
-                                @endif
-                            </td>
-
-                            {{-- จ่ายเงิน --}}
-                            <td class="px-4 py-3 text-center">
-                                @if($user->paid_readings > 0)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                                        {{ $user->paid_readings }} ครั้ง
-                                    </span>
-                                @else
-                                    <span class="text-gray-400 text-xs">ฟรี</span>
-                                @endif
-                            </td>
-
-                            {{-- 🛑 (2026-05-06) Pay-Later column ลบทิ้ง — Pay-Later removed --}}
-
-                            {{-- ยอดจ่ายรวม --}}
-                            <td class="px-4 py-3 text-right">
-                                @if($user->total_spent > 0)
-                                    <span class="text-sm font-bold text-green-600 dark:text-green-400">฿{{ number_format($user->total_spent, 0) }}</span>
-                                @else
-                                    <span class="text-gray-400 text-xs">-</span>
-                                @endif
-                            </td>
-
-                            {{-- ดูล่าสุด --}}
-                            <td class="px-4 py-3">
-                                <div class="text-sm text-gray-600 dark:text-gray-400">
-                                    {{ \Carbon\Carbon::parse($user->last_reading_at)->diffForHumans() }}
+    {{-- ========================= USERS TABLE ========================= --}}
+    <div class="tp-card" style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:separate; border-spacing:0 8px; min-width:760px;">
+            <thead>
+                <tr style="text-align:left;">
+                    <th style="padding:6px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">ผู้ใช้</th>
+                    <th style="padding:6px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:center;">Platform</th>
+                    <th style="padding:6px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:center;">ดูดวง</th>
+                    <th style="padding:6px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:center;">จ่ายเงิน</th>
+                    <th style="padding:6px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">ยอดจ่ายรวม</th>
+                    <th style="padding:6px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">ดูล่าสุด</th>
+                    <th style="padding:6px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($users as $user)
+                    <tr style="box-shadow:var(--inset-sm); border-radius:12px;">
+                        {{-- ผู้ใช้ --}}
+                        <td style="padding:12px; border-radius:12px 0 0 12px;">
+                            <a href="{{ route('admin.fortune.users.show', ['platform' => $user->platform ?? 'facebook', 'userId' => $user->facebook_user_id]) }}"
+                               style="text-decoration:none; display:block;">
+                                <div class="tp-num" style="font-size:14px; font-weight:700; color:var(--accent1);">
+                                    {{ $user->facebook_user_name ?? '-' }}
                                 </div>
-                                <div class="text-xs text-gray-400 dark:text-gray-500">
-                                    {{ \Carbon\Carbon::parse($user->last_reading_at)->format('d/m/Y H:i') }}
+                                <div class="tp-muted" style="font-size:11px; font-family:monospace; word-break:break-all;">
+                                    {{ $user->facebook_user_id }}
                                 </div>
-                            </td>
+                            </a>
+                        </td>
 
-                            {{-- จัดการ --}}
-                            <td class="px-4 py-3 text-right">
-                                <div class="flex justify-end gap-1">
-                                    {{-- ส่งข้อความ --}}
-                                    <button @click="openSendTo('{{ $user->platform ?? 'facebook' }}', '{{ $user->facebook_user_id }}', '{{ addslashes($user->facebook_user_name ?? '') }}')"
-                                            class="px-2 py-1.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-700 dark:text-blue-300 rounded-lg text-xs transition"
-                                            title="ส่งข้อความ">
-                                        💬
+                        {{-- Platform --}}
+                        <td style="padding:12px; text-align:center;">
+                            @if(($user->platform ?? 'facebook') === 'line')
+                                <span class="tp-pill" style="color:#5aa07e;"><i class="fab fa-line"></i> LINE</span>
+                            @else
+                                <span class="tp-pill" style="color:#5689b8;"><i class="fab fa-facebook-f"></i> Facebook</span>
+                            @endif
+                        </td>
+
+                        {{-- จำนวนดูดวง --}}
+                        <td style="padding:12px; text-align:center;">
+                            <div class="tp-num" style="font-size:14px; font-weight:800;">{{ $user->total_readings }}</div>
+                            @if($user->deep_readings > 0)
+                                <div style="font-size:11px; color:#b79ae8; font-weight:600;">{{ $user->deep_readings }} ละเอียด</div>
+                            @endif
+                        </td>
+
+                        {{-- จ่ายเงิน --}}
+                        <td style="padding:12px; text-align:center;">
+                            @if($user->paid_readings > 0)
+                                <span class="tp-pill" style="color:#5aa07e;">{{ $user->paid_readings }} ครั้ง</span>
+                            @else
+                                <span class="tp-muted" style="font-size:11px;">ฟรี</span>
+                            @endif
+                        </td>
+
+                        {{-- ยอดจ่ายรวม --}}
+                        <td style="padding:12px; text-align:right;">
+                            @if($user->total_spent > 0)
+                                <span class="tp-num" style="font-size:14px; font-weight:800; color:#5aa07e;">฿{{ number_format($user->total_spent, 0) }}</span>
+                            @else
+                                <span class="tp-muted" style="font-size:11px;">-</span>
+                            @endif
+                        </td>
+
+                        {{-- ดูล่าสุด --}}
+                        <td style="padding:12px;">
+                            <div style="font-size:13px; color:var(--ink);">
+                                {{ \Carbon\Carbon::parse($user->last_reading_at)->diffForHumans() }}
+                            </div>
+                            <div class="tp-muted" style="font-size:11px;">
+                                {{ \Carbon\Carbon::parse($user->last_reading_at)->format('d/m/Y H:i') }}
+                            </div>
+                        </td>
+
+                        {{-- จัดการ --}}
+                        <td style="padding:12px; border-radius:0 12px 12px 0;">
+                            <div style="display:flex; justify-content:flex-end; gap:7px;">
+                                {{-- ส่งข้อความ --}}
+                                <button type="button"
+                                        @click="openSendTo('{{ $user->platform ?? 'facebook' }}', '{{ $user->facebook_user_id }}', '{{ addslashes($user->facebook_user_name ?? '') }}')"
+                                        class="tp-icon-btn" title="ส่งข้อความ">
+                                    <i class="fas fa-comment-dots" style="color:var(--accent1);"></i>
+                                </button>
+
+                                {{-- เพิ่มเครดิต --}}
+                                <form action="{{ route('admin.fortune.users.quick-add-credits') }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <input type="hidden" name="facebook_user_id" value="{{ $user->facebook_user_id }}">
+                                    <input type="hidden" name="platform" value="{{ $user->platform ?? 'facebook' }}">
+                                    <input type="hidden" name="facebook_user_name" value="{{ $user->facebook_user_name }}">
+                                    <input type="hidden" name="amount" value="3">
+                                    <button type="submit" class="tp-icon-btn" title="เพิ่ม 3 เครดิตฟรี"
+                                            style="color:#5aa07e; font-weight:700; font-size:12px; gap:2px;">
+                                        <i class="fas fa-gift"></i>+3
                                     </button>
+                                </form>
 
-                                    {{-- เพิ่มเครดิต --}}
-                                    <form action="{{ route('admin.fortune.users.quick-add-credits') }}" method="POST" class="inline">
-                                        @csrf
-                                        <input type="hidden" name="facebook_user_id" value="{{ $user->facebook_user_id }}">
-                                        <input type="hidden" name="platform" value="{{ $user->platform ?? 'facebook' }}">
-                                        <input type="hidden" name="facebook_user_name" value="{{ $user->facebook_user_name }}">
-                                        <input type="hidden" name="amount" value="3">
-                                        <button type="submit" title="เพิ่ม 3 เครดิตฟรี"
-                                                class="px-2 py-1.5 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-800/50 text-green-700 dark:text-green-300 rounded-lg text-xs transition">
-                                            🎁+3
-                                        </button>
-                                    </form>
-
-                                    {{-- ดูประวัติ --}}
-                                    <a href="{{ route('admin.fortune.users.show', ['platform' => $user->platform ?? 'facebook', 'userId' => $user->facebook_user_id]) }}"
-                                       class="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs transition"
-                                       title="ดูประวัติ">
-                                        📋
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                <div class="text-4xl mb-3">🔮</div>
-                                <p class="text-lg font-medium">ยังไม่มีผู้ใช้ดูดวง</p>
-                                <p class="text-sm mt-1">เมื่อมีคนเริ่มดูดวง ข้อมูลจะแสดงที่นี่</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                                {{-- ดูประวัติ --}}
+                                <a href="{{ route('admin.fortune.users.show', ['platform' => $user->platform ?? 'facebook', 'userId' => $user->facebook_user_id]) }}"
+                                   class="tp-icon-btn" title="ดูประวัติ">
+                                    <i class="fas fa-clipboard-list" style="color:var(--ink2);"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" style="padding:48px 12px; text-align:center;">
+                            <div style="font-size:42px; color:var(--ink2); margin-bottom:10px;"><i class="fas fa-inbox"></i></div>
+                            <p style="font-size:16px; font-weight:700; color:var(--ink); margin:0;">ยังไม่มีผู้ใช้ดูดวง</p>
+                            <p class="tp-muted" style="font-size:13px; margin:4px 0 0;">เมื่อมีคนเริ่มดูดวง ข้อมูลจะแสดงที่นี่</p>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
-    {{-- Pagination --}}
+    {{-- ========================= PAGINATION ========================= --}}
     @if($users->hasPages())
-        <div class="mt-6">
+        <div>
             {{ $users->links() }}
         </div>
     @endif
 </div>
+@endsection
 
+@push('scripts')
 <script>
-function fortuneUsers() {
-    return {
-        showSendMessage: false,
-        showBroadcast: false,
-        sendPlatform: 'facebook',
-        sendUserId: '',
+    // คอมโพเนนต์ Alpine จัดการฟอร์มส่งข้อความรายคน/Broadcast
+    function fortuneUsers() {
+        return {
+            showSendMessage: false,
+            showBroadcast: false,
+            sendPlatform: 'facebook',
+            sendUserId: '',
 
-        openSendTo(platform, userId, name) {
-            this.sendPlatform = platform;
-            this.sendUserId = userId;
-            this.showSendMessage = true;
-            this.showBroadcast = false;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // เปิดฟอร์มส่งข้อความ พร้อมเติม platform + userId ของผู้ใช้ที่เลือก
+            openSendTo(platform, userId, name) {
+                this.sendPlatform = platform;
+                this.sendUserId = userId;
+                this.showSendMessage = true;
+                this.showBroadcast = false;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
     }
-}
 </script>
-@endsection
+@endpush

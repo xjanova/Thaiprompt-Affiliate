@@ -1,208 +1,217 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
-@push('styles')
-<style>
-    /* 🎮 RPG card hover lift */
-    .rpg-card {
-        transition: transform 220ms cubic-bezier(.2,.9,.2,1), box-shadow 220ms ease;
-        will-change: transform;
-    }
-    .rpg-card:hover {
-        transform: translateY(-6px) scale(1.015);
-    }
-
-    /* ✨ Hero animated orbs */
-    .orb {
-        position: absolute;
-        border-radius: 9999px;
-        filter: blur(48px);
-        opacity: 0.55;
-        pointer-events: none;
-        animation: orb-float 9s ease-in-out infinite;
-    }
-    .orb-1 { top: -40px; right: -40px; width: 280px; height: 280px; background: #f472b6; }
-    .orb-2 { bottom: -60px; left: 10%; width: 240px; height: 240px; background: #818cf8; animation-delay: -3s; }
-    .orb-3 { top: 30%; left: 45%; width: 160px; height: 160px; background: #fbbf24; animation-delay: -6s; opacity: .4; }
-    @keyframes orb-float {
-        0%, 100% { transform: translate(0,0) scale(1); }
-        50%      { transform: translate(20px,-30px) scale(1.08); }
-    }
-
-    /* 💎 Rarity shimmer on legendary/epic */
-    @keyframes shimmer {
-        0%   { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
-    }
-    .shimmer-text {
-        background: linear-gradient(110deg, currentColor 0%, #fff 45%, currentColor 60%);
-        background-size: 200% 100%;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shimmer 3.2s linear infinite;
-    }
-
-    /* 🎯 XP bar stripes */
-    .xp-stripes {
-        background-image: linear-gradient(45deg,
-            rgba(255,255,255,.15) 25%, transparent 25%,
-            transparent 50%, rgba(255,255,255,.15) 50%,
-            rgba(255,255,255,.15) 75%, transparent 75%, transparent);
-        background-size: 14px 14px;
-        animation: xp-stripes-move 2s linear infinite;
-    }
-    @keyframes xp-stripes-move {
-        from { background-position: 0 0; }
-        to   { background-position: 28px 0; }
-    }
-</style>
-@endpush
-
 @section('content')
-<div class="container mx-auto px-4 py-6 lg:py-8 space-y-6">
+{{--
+    🎴 บุคลิกลูกค้า (Persona Memory) — RPG Card Grid (ธีม V4 นวลทองคำ)
+    คงตรรกะเดิม 100%: rarity / level / XP / radar logic, ฟอร์มกรอง GET, chips rarity+tag,
+    ลิงก์ personas.show({id}). ย้าย CSS จาก @push('styles') → <style> ใน @push('scripts')
+    ตัวแปร controller: $personas (paginator), $stats, $topTags, $filters, $pageTitle
+--}}
 
-    {{-- 🎨 PREMIUM HERO HEADER --}}
-    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-fuchsia-600 to-rose-500 text-white shadow-2xl">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
+@php
+    // 🎨 แมป rarity → สี/ป้ายในธีม V4 (อ้าง CSS var/STATUS COLORS — ไม่ใช้ Tailwind class จาก getRarityConfig)
+    // คงการคำนวณ rarity เดิม ($p->getRarity()) เพียงแต่ render ด้วยสีธีมทอง
+    $rarityV4 = [
+        'legendary' => ['label' => 'ตำนาน',   'icon' => '👑', 'color' => '#e0a52e', 'soft' => 'rgba(224,165,46,.16)'],
+        'epic'      => ['label' => 'มหากาฬ',  'icon' => '💜', 'color' => '#b79ae8', 'soft' => 'rgba(183,154,232,.16)'],
+        'rare'      => ['label' => 'หายาก',   'icon' => '💎', 'color' => '#5689b8', 'soft' => 'rgba(86,137,184,.16)'],
+        'common'    => ['label' => 'ทั่วไป',   'icon' => '🌿', 'color' => '#9a8f7c', 'soft' => 'rgba(154,143,124,.14)'],
+    ];
 
-        <div class="relative z-10 px-6 py-8 lg:px-10 lg:py-10">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+    // ลำดับ + ป้ายของ rarity distribution (hero) — ใช้สีธีมเดียวกัน
+    $rarTotal = max(1, array_sum($stats['rarity_dist']));
+    $rarOrder = [
+        'legendary' => ['👑 ตำนาน',  '#e0a52e'],
+        'epic'      => ['💜 มหากาฬ', '#b79ae8'],
+        'rare'      => ['💎 หายาก',  '#5689b8'],
+        'common'    => ['🌿 ทั่วไป',  '#9a8f7c'],
+    ];
+@endphp
+
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ระบบดูดวง · บุคลิกลูกค้า</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">Persona Codex 🎴</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px; max-width:560px;">
+                ระบบจดจำบุคลิก/นิสัยลูกค้าระยะยาว — แต่ละการ์ดคือ "ตัวละคร" ที่บอทเรียนรู้สะสมไว้ใช้ปรับ tone การคุย
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+            @if(Route::has('admin.fortune.dashboard'))
+                <a href="{{ route('admin.fortune.dashboard') }}" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-gauge-high"></i> Dashboard
+                </a>
+            @endif
+            @if(Route::has('admin.fortune.users.index'))
+                <a href="{{ route('admin.fortune.users.index') }}" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-users"></i> ผู้ใช้ดูดวง
+                </a>
+            @endif
+        </div>
+    </div>
+
+    {{-- ===== KPI grid ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
+        {{-- ตัวละครทั้งหมด --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:44px; height:44px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-id-badge"></i>
+                </div>
                 <div>
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm text-3xl shadow-lg">🎴</span>
-                        <h1 class="text-2xl lg:text-4xl font-extrabold tracking-tight drop-shadow">
-                            Persona Codex
-                        </h1>
-                    </div>
-                    <p class="text-white/90 text-sm lg:text-base max-w-2xl">
-                        ระบบจดจำบุคลิก/นิสัยลูกค้าระยะยาว — แต่ละการ์ดคือ "ตัวละคร" ที่บอทเรียนรู้สะสมไว้ใช้ปรับ tone การคุย
-                    </p>
-                </div>
-
-                <div class="flex flex-wrap gap-3">
-                    <a href="{{ route('admin.fortune.dashboard') }}"
-                       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-sm font-medium transition border border-white/20">
-                        <span>📊</span> Dashboard
-                    </a>
-                    <a href="{{ route('admin.fortune.users.index') }}"
-                       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-sm font-medium transition border border-white/20">
-                        <span>👥</span> ผู้ใช้ดูดวง
-                    </a>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['total']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">ตัวละครทั้งหมด</div>
                 </div>
             </div>
-
-            {{-- Hero Stats Row --}}
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mt-8">
-                <div class="rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 p-4 lg:p-5">
-                    <div class="text-3xl lg:text-4xl font-extrabold">{{ number_format($stats['total']) }}</div>
-                    <div class="text-white/80 text-xs lg:text-sm mt-1">ตัวละครทั้งหมด</div>
+        </div>
+        {{-- เกิดใหม่วันนี้ --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:44px; height:44px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#5aa07e;">
+                    <i class="fas fa-seedling"></i>
                 </div>
-                <div class="rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 p-4 lg:p-5">
-                    <div class="text-3xl lg:text-4xl font-extrabold">{{ number_format($stats['today']) }}</div>
-                    <div class="text-white/80 text-xs lg:text-sm mt-1">เกิดใหม่วันนี้</div>
-                </div>
-                <div class="rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 p-4 lg:p-5">
-                    <div class="text-3xl lg:text-4xl font-extrabold">{{ number_format($stats['active_week']) }}</div>
-                    <div class="text-white/80 text-xs lg:text-sm mt-1">Active ใน 7 วัน</div>
-                </div>
-                <div class="rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 p-4 lg:p-5">
-                    <div class="text-3xl lg:text-4xl font-extrabold">{{ number_format($stats['avg_observations']) }}</div>
-                    <div class="text-white/80 text-xs lg:text-sm mt-1">เฉลี่ย observations/คน</div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['today']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">เกิดใหม่วันนี้</div>
                 </div>
             </div>
-
-            {{-- Rarity Distribution Bar --}}
-            @php
-                $rarTotal = max(1, array_sum($stats['rarity_dist']));
-                $rarOrder = ['legendary' => ['👑 ตำนาน', 'from-amber-400 to-orange-500'],
-                             'epic'      => ['💜 มหากาฬ', 'from-purple-500 to-pink-500'],
-                             'rare'      => ['💎 หายาก', 'from-sky-500 to-blue-500'],
-                             'common'    => ['🌿 ทั่วไป', 'from-slate-400 to-zinc-500']];
-            @endphp
-            <div class="mt-6">
-                <div class="text-white/80 text-xs mb-2">การกระจาย Rarity (จาก {{ number_format(min($stats['total'], 500)) }} ตัวล่าสุด)</div>
-                <div class="flex h-3 rounded-full overflow-hidden bg-white/10">
-                    @foreach($rarOrder as $key => [$label, $grad])
-                        @php $pct = ($stats['rarity_dist'][$key] / $rarTotal) * 100; @endphp
-                        @if($pct > 0)
-                            <div class="h-full bg-gradient-to-r {{ $grad }}"
-                                 style="width: {{ $pct }}%"
-                                 title="{{ $label }}: {{ $stats['rarity_dist'][$key] }}"></div>
-                        @endif
-                    @endforeach
+        </div>
+        {{-- Active 7 วัน --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:44px; height:44px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#5689b8;">
+                    <i class="fas fa-bolt"></i>
                 </div>
-                <div class="flex flex-wrap gap-3 mt-2 text-xs">
-                    @foreach($rarOrder as $key => [$label, $grad])
-                        <span class="inline-flex items-center gap-1.5 text-white/85">
-                            <span class="inline-block w-2 h-2 rounded-full bg-gradient-to-r {{ $grad }}"></span>
-                            {{ $label }}: {{ $stats['rarity_dist'][$key] }}
-                        </span>
-                    @endforeach
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['active_week']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">Active ใน 7 วัน</div>
+                </div>
+            </div>
+        </div>
+        {{-- เฉลี่ย observations --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:44px; height:44px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#b79ae8;">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['avg_observations']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">เฉลี่ย observations/คน</div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- 🔍 FILTER CARD (Glassmorphism) --}}
-    <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/60 dark:border-gray-700/60 p-5 lg:p-6">
-        <form method="GET" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-                {{-- Search --}}
-                <div class="md:col-span-5">
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">🔍 ค้นหา</label>
-                    <input type="text" name="search" value="{{ $filters['search'] }}"
-                           placeholder="ชื่อ / User ID / topic tag..."
-                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900/60 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition">
+    {{-- ===== Rarity Distribution bar (CSS) ===== --}}
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <i class="fas fa-gem" style="color:var(--accent1);"></i>
+            การกระจาย Rarity
+            <span style="font-weight:400; color:var(--ink2); font-size:12px;">(จาก {{ number_format(min($stats['total'], 500)) }} ตัวล่าสุด)</span>
+        </div>
+
+        {{-- แท่งสัดส่วน Rarity --}}
+        <div style="display:flex; height:14px; border-radius:9999px; overflow:hidden; box-shadow:var(--inset-sm); background:var(--bg);">
+            @foreach($rarOrder as $key => [$label, $col])
+                @php $pct = ($stats['rarity_dist'][$key] / $rarTotal) * 100; @endphp
+                @if($pct > 0)
+                    <div style="height:100%; width:{{ $pct }}%; background:{{ $col }};"
+                         title="{{ $label }}: {{ $stats['rarity_dist'][$key] }}"></div>
+                @endif
+            @endforeach
+        </div>
+
+        {{-- legend --}}
+        <div style="display:flex; flex-wrap:wrap; gap:14px; margin-top:12px;">
+            @foreach($rarOrder as $key => [$label, $col])
+                <span style="display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink2);">
+                    <span style="display:inline-block; width:10px; height:10px; border-radius:9999px; background:{{ $col }};"></span>
+                    {{ $label }}
+                    <span class="tp-num" style="font-weight:700; color:var(--ink);">{{ number_format($stats['rarity_dist'][$key]) }}</span>
+                </span>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- ===== Filter card (ฟอร์ม GET — คง name/field ทุกตัว) ===== --}}
+    <div class="tp-card" style="padding:18px;">
+        <form method="GET" action="{{ route('admin.fortune.personas.index') }}" style="display:flex; flex-direction:column; gap:14px;">
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+                {{-- ค้นหา --}}
+                <div style="grid-column:1 / -1;">
+                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                        <i class="fas fa-magnifying-glass"></i> ค้นหา
+                    </label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <input type="text" name="search" value="{{ $filters['search'] }}"
+                               placeholder="ชื่อ / User ID / topic tag..."
+                               style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
+                    </div>
                 </div>
 
-                {{-- Platform --}}
-                <div class="md:col-span-3">
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">📱 ช่องทาง</label>
-                    <select name="platform" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900/60 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-violet-500">
-                        <option value="">ทั้งหมด</option>
-                        <option value="facebook" {{ $filters['platform'] === 'facebook' ? 'selected' : '' }}>📘 Facebook</option>
-                        <option value="line" {{ $filters['platform'] === 'line' ? 'selected' : '' }}>🟢 LINE</option>
-                    </select>
+                {{-- ช่องทาง --}}
+                <div>
+                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                        <i class="fas fa-mobile-screen"></i> ช่องทาง
+                    </label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <select name="platform" style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                            <option value="">ทั้งหมด</option>
+                            <option value="facebook" {{ $filters['platform'] === 'facebook' ? 'selected' : '' }}>📘 Facebook</option>
+                            <option value="line" {{ $filters['platform'] === 'line' ? 'selected' : '' }}>🟢 LINE</option>
+                        </select>
+                    </div>
                 </div>
 
-                {{-- Sort --}}
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">↕ เรียง</label>
-                    <select name="sort" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900/60 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-violet-500">
-                        <option value="recent" {{ $filters['sort'] === 'recent' ? 'selected' : '' }}>ล่าสุดก่อน</option>
-                        <option value="most_observed" {{ $filters['sort'] === 'most_observed' ? 'selected' : '' }}>คุยเยอะสุด</option>
-                        <option value="oldest" {{ $filters['sort'] === 'oldest' ? 'selected' : '' }}>เก่าก่อน</option>
-                    </select>
-                </div>
-
-                {{-- Submit + Reset --}}
-                <div class="md:col-span-2 flex items-end gap-2">
-                    <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white font-medium shadow-md hover:shadow-lg transition">
-                        ค้นหา
-                    </button>
-                    <a href="{{ route('admin.fortune.personas.index') }}"
-                       class="px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition text-sm">
-                        ↺
-                    </a>
+                {{-- เรียง --}}
+                <div>
+                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                        <i class="fas fa-arrow-down-wide-short"></i> เรียงลำดับ
+                    </label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <select name="sort" style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                            <option value="recent" {{ $filters['sort'] === 'recent' ? 'selected' : '' }}>ล่าสุดก่อน</option>
+                            <option value="most_observed" {{ $filters['sort'] === 'most_observed' ? 'selected' : '' }}>คุยเยอะสุด</option>
+                            <option value="oldest" {{ $filters['sort'] === 'oldest' ? 'selected' : '' }}>เก่าก่อน</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            {{-- Rarity chips --}}
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wide">Rarity:</span>
-                @php
-                    $rarChips = [
-                        ['key' => '', 'label' => 'ทั้งหมด', 'cls' => 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200'],
-                        ['key' => 'legendary', 'label' => '👑 ตำนาน', 'cls' => 'bg-gradient-to-r from-amber-100 to-orange-100 hover:from-amber-200 hover:to-orange-200 dark:from-amber-900/40 dark:to-orange-900/40 text-amber-700 dark:text-amber-300 border border-amber-300/50 dark:border-amber-700'],
-                        ['key' => 'epic', 'label' => '💜 มหากาฬ', 'cls' => 'bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 dark:from-purple-900/40 dark:to-pink-900/40 text-purple-700 dark:text-purple-300 border border-purple-300/50 dark:border-purple-700'],
-                        ['key' => 'rare', 'label' => '💎 หายาก', 'cls' => 'bg-gradient-to-r from-sky-100 to-blue-100 hover:from-sky-200 hover:to-blue-200 dark:from-sky-900/40 dark:to-blue-900/40 text-sky-700 dark:text-sky-300 border border-sky-300/50 dark:border-sky-700'],
-                        ['key' => 'common', 'label' => '🌿 ทั่วไป', 'cls' => 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600'],
-                    ];
-                @endphp
+            {{-- 🔒 hidden: คง rarity + tag ไว้ใน query เวลากดค้นหา/เรียง (ไม่ให้ chip ปัจจุบันหลุด) --}}
+            <input type="hidden" name="rarity" value="{{ $filters['rarity'] }}">
+            <input type="hidden" name="tag" value="{{ $filters['tag'] }}">
+
+            {{-- ปุ่ม action --}}
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-magnifying-glass"></i> ค้นหา
+                </button>
+                <a href="{{ route('admin.fortune.personas.index') }}" class="tp-btn">
+                    <i class="fas fa-rotate-left"></i> ล้างตัวกรอง
+                </a>
+            </div>
+
+            <div class="tp-divider"></div>
+
+            {{-- ===== Rarity chips ===== --}}
+            @php
+                $rarChips = [
+                    ['key' => '',          'label' => 'ทั้งหมด',  'icon' => '',   'color' => 'var(--ink2)'],
+                    ['key' => 'legendary', 'label' => 'ตำนาน',    'icon' => '👑', 'color' => '#e0a52e'],
+                    ['key' => 'epic',      'label' => 'มหากาฬ',   'icon' => '💜', 'color' => '#b79ae8'],
+                    ['key' => 'rare',      'label' => 'หายาก',    'icon' => '💎', 'color' => '#5689b8'],
+                    ['key' => 'common',    'label' => 'ทั่วไป',    'icon' => '🌿', 'color' => '#9a8f7c'],
+                ];
+            @endphp
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+                <span style="font-size:12px; color:var(--ink2); font-weight:600;">Rarity:</span>
                 @foreach($rarChips as $chip)
                     @php
                         $params = array_filter([
@@ -215,16 +224,20 @@
                         $isActive = $filters['rarity'] === $chip['key'] || (! $filters['rarity'] && ! $chip['key']);
                     @endphp
                     <a href="{{ route('admin.fortune.personas.index', $params) }}"
-                       class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition {{ $chip['cls'] }} {{ $isActive ? 'ring-2 ring-violet-500 ring-offset-2 dark:ring-offset-gray-800' : '' }}">
-                        {{ $chip['label'] }}
+                       class="tp-pill"
+                       style="text-decoration:none; cursor:pointer;
+                              {{ $isActive
+                                 ? 'background:' . $chip['color'] . '; color:#fff; box-shadow:var(--raise);'
+                                 : 'background:var(--surf); color:var(--ink2); box-shadow:var(--inset-sm);' }}">
+                        @if($chip['icon']) {{ $chip['icon'] }} @endif {{ $chip['label'] }}
                     </a>
                 @endforeach
             </div>
 
-            {{-- Top tag chips --}}
+            {{-- ===== Top tag chips ===== --}}
             @if(! empty($topTags))
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wide">🏷️ Tag ยอดฮิต:</span>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+                    <span style="font-size:12px; color:var(--ink2); font-weight:600;">🏷️ Tag ยอดฮิต:</span>
                     @foreach(array_slice($topTags, 0, 14, true) as $tag => $cnt)
                         @php
                             $tagParams = array_filter([
@@ -237,12 +250,13 @@
                             $isTagActive = $filters['tag'] === $tag;
                         @endphp
                         <a href="{{ route('admin.fortune.personas.index', $tagParams) }}"
-                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition
+                           class="tp-pill"
+                           style="text-decoration:none; cursor:pointer; gap:5px;
                                   {{ $isTagActive
-                                     ? 'bg-violet-600 text-white shadow-md'
-                                     : 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300' }}">
+                                     ? 'background:var(--accent1); color:#fff; box-shadow:var(--raise);'
+                                     : 'background:var(--a1soft); color:var(--deep1); box-shadow:var(--inset-sm);' }}">
                             #{{ $tag }}
-                            <span class="opacity-70">×{{ $cnt }}</span>
+                            <span class="tp-num" style="opacity:.75;">×{{ $cnt }}</span>
                         </a>
                     @endforeach
                 </div>
@@ -250,106 +264,107 @@
         </form>
     </div>
 
-    {{-- 🎴 RPG CARD GRID --}}
+    {{-- ===== RPG Card Grid ===== --}}
     @if($personas->isEmpty())
-        <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-12 text-center">
-            <div class="text-6xl mb-4 opacity-50">🎴</div>
-            <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มี Persona</h3>
-            <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+        {{-- Empty state --}}
+        <div class="tp-card" style="padding:48px 24px; text-align:center;">
+            <div style="font-size:46px; margin-bottom:10px;">
+                <i class="fas fa-inbox" style="color:var(--ink2);"></i>
+            </div>
+            <div style="font-size:18px; font-weight:800; color:var(--ink); margin-bottom:6px;">ยังไม่มี Persona</div>
+            <div style="font-size:13px; color:var(--ink2); max-width:420px; margin:0 auto;">
                 ระบบจะเริ่มสร้าง persona อัตโนมัติเมื่อมีลูกค้าคุยกับบอท — รอประมาณ 30 นาทีหลังคุย
-            </p>
+            </div>
         </div>
     @else
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;">
             @foreach($personas as $p)
                 @php
-                    $rarity = $p->getRarityConfig();
-                    $plat = $p->getPlatformConfig();
-                    $level = $p->getLevel();
-                    $xp = $p->getXpProgress();
+                    // 🎮 คงตรรกะเดิม: rarity / level / XP / traits
+                    $rkey   = $p->getRarity();                       // common|rare|epic|legendary
+                    $rcfg   = $rarityV4[$rkey] ?? $rarityV4['common'];
+                    $plat   = $p->getPlatformConfig();              // icon/label (ใช้แค่ icon)
+                    $level  = $p->getLevel();
+                    $xp     = $p->getXpProgress();
                     $traitsTop = array_slice($p->traits ?? [], -3);
+                    $isLegend  = $rkey === 'legendary';
                 @endphp
 
                 <a href="{{ route('admin.fortune.personas.show', $p->id) }}"
-                   class="rpg-card block relative rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border-2 {{ $rarity['border'] }} {{ $rarity['glow'] }}">
+                   class="tp-card tp-card-hover rpg-card"
+                   style="display:block; text-decoration:none; color:inherit; padding:0; overflow:hidden; position:relative; border-top:3px solid {{ $rcfg['color'] }};">
 
-                    {{-- Rarity gradient stripe (top) --}}
-                    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r {{ $rarity['gradient'] }}"></div>
-
-                    {{-- Rarity badge (top-right corner) --}}
-                    <div class="absolute top-3 right-3 z-10">
-                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r {{ $rarity['gradient'] }} text-white shadow-md">
-                            <span>{{ $rarity['icon'] }}</span>
-                            <span>{{ $rarity['label'] }}</span>
+                    {{-- ป้าย rarity มุมขวาบน --}}
+                    <div style="position:absolute; top:12px; right:12px; z-index:2;">
+                        <span class="tp-pill" style="background:{{ $rcfg['color'] }}; color:#fff; box-shadow:var(--raise); font-size:10.5px; letter-spacing:.3px;">
+                            {{ $rcfg['icon'] }} {{ $rcfg['label'] }}
                         </span>
                     </div>
 
-                    <div class="p-5 pt-7">
-                        {{-- Avatar + name --}}
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="relative">
-                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br {{ $rarity['gradient'] }} flex items-center justify-center text-white text-xl font-extrabold shadow-lg {{ $rarity['ring'] }}">
+                    <div style="padding:18px;">
+                        {{-- Avatar + ชื่อ --}}
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                            <div style="position:relative; flex-shrink:0;">
+                                <div class="tp-num"
+                                     style="width:54px; height:54px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+                                            font-size:19px; font-weight:800; color:#fff; background:{{ $rcfg['color'] }}; box-shadow:var(--raise);">
                                     {{ $p->initials }}
                                 </div>
-                                {{-- Platform mini badge --}}
-                                <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-xs shadow">
+                                {{-- platform mini badge --}}
+                                <div style="position:absolute; bottom:-4px; right:-4px; width:22px; height:22px; border-radius:9999px;
+                                            background:var(--surf); box-shadow:var(--raise); display:flex; align-items:center; justify-content:center; font-size:11px;">
                                     {{ $plat['icon'] }}
                                 </div>
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="font-bold text-gray-900 dark:text-white truncate {{ $p->getRarity() === 'legendary' ? 'shimmer-text ' . $rarity['text'] : '' }}">
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-weight:800; font-size:14.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+                                            {{ $isLegend ? 'text-shadow:0 0 12px rgba(224,165,46,.45);' : '' }}">
                                     {{ $p->display_name ?: 'ไม่ระบุชื่อ' }}
                                 </div>
-                                <div class="text-[11px] text-gray-500 dark:text-gray-400 font-mono truncate">
+                                <div class="tp-num" style="font-size:11px; color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                     {{ Str::limit($p->platform_user_id, 18) }}
                                 </div>
                             </div>
                         </div>
 
                         {{-- Level + XP bar --}}
-                        <div class="mb-4">
-                            <div class="flex items-center justify-between mb-1.5">
-                                <span class="inline-flex items-center gap-1 text-xs font-bold {{ $rarity['text'] }}">
-                                    <span class="text-base">⚡</span>
-                                    Lv.{{ $level }}
+                        <div style="margin-bottom:14px;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                                <span class="tp-num" style="display:inline-flex; align-items:center; gap:4px; font-size:12.5px; font-weight:800; color:{{ $rcfg['color'] }};">
+                                    ⚡ Lv.{{ $level }}
                                 </span>
-                                <span class="text-[10px] text-gray-500 dark:text-gray-400">
+                                <span class="tp-num" style="font-size:10.5px; color:var(--ink2);">
                                     {{ $p->observation_count ?? 0 }} obs · XP {{ $xp }}%
                                 </span>
                             </div>
-                            <div class="relative h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                <div class="absolute inset-y-0 left-0 bg-gradient-to-r {{ $rarity['gradient'] }} xp-stripes transition-all"
-                                     style="width: {{ $xp }}%"></div>
+                            <div style="position:relative; height:8px; border-radius:9999px; box-shadow:var(--inset-sm); background:var(--bg); overflow:hidden;">
+                                <div class="rpg-xp-fill"
+                                     style="position:absolute; inset:0 auto 0 0; width:{{ $xp }}%; border-radius:9999px; background:{{ $rcfg['color'] }};"></div>
                             </div>
                         </div>
 
                         {{-- Top traits --}}
                         @if(! empty($traitsTop))
-                            <div class="flex flex-wrap gap-1.5 mb-4 min-h-[28px]">
+                            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; min-height:26px;">
                                 @foreach($traitsTop as $trait)
-                                    <span class="inline-block px-2 py-0.5 rounded-md text-[11px] {{ $rarity['bg_soft'] }} {{ $rarity['text'] }} border border-current/10">
+                                    <span class="tp-pill" style="background:{{ $rcfg['soft'] }}; color:{{ $rcfg['color'] }}; font-size:11px;">
                                         {{ Str::limit($trait, 16) }}
                                     </span>
                                 @endforeach
                             </div>
                         @else
-                            <div class="text-[11px] text-gray-400 dark:text-gray-500 italic mb-4 min-h-[28px]">
+                            <div style="font-size:11px; color:var(--ink2); font-style:italic; margin-bottom:14px; min-height:26px;">
                                 ยังไม่มีข้อมูลบุคลิก
                             </div>
                         @endif
 
                         {{-- Footer stats --}}
-                        <div class="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 pt-3 border-t border-gray-100 dark:border-gray-700">
-                            <span class="inline-flex items-center gap-1" title="หัวข้อที่เคยคุย">
-                                💬 {{ count($p->conversation_themes ?? []) }}
-                            </span>
-                            <span class="inline-flex items-center gap-1" title="สิ่งที่ชอบ">
-                                ❤️ {{ count($p->likes ?? []) }}
-                            </span>
-                            <span class="inline-flex items-center gap-1" title="แท็ก">
-                                🏷️ {{ count($p->topic_tags_array) }}
-                            </span>
-                            <span class="text-right" title="คุยล่าสุด">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;
+                                    padding-top:12px; box-shadow:inset 0 1px 0 var(--sd); font-size:11px; color:var(--ink2);">
+                            <span class="tp-num" title="หัวข้อที่เคยคุย">💬 {{ count($p->conversation_themes ?? []) }}</span>
+                            <span class="tp-num" title="สิ่งที่ชอบ">❤️ {{ count($p->likes ?? []) }}</span>
+                            <span class="tp-num" title="แท็ก">🏷️ {{ count($p->topic_tags_array) }}</span>
+                            <span class="tp-num" title="คุยล่าสุด" style="text-align:right;">
                                 {{ $p->last_observed_at?->diffForHumans(short: true) ?? '-' }}
                             </span>
                         </div>
@@ -358,11 +373,46 @@
             @endforeach
         </div>
 
-        {{-- Pagination --}}
-        <div class="mt-2">
-            {{ $personas->links() }}
-        </div>
+        {{-- ===== Pagination ===== --}}
+        @if($personas->hasPages())
+            <div>
+                {{ $personas->links() }}
+            </div>
+        @endif
     @endif
 
 </div>
 @endsection
+
+@push('scripts')
+{{-- 🔴 CSS เฉพาะหน้า — ย้ายจาก @push('styles') มาไว้ที่ @push('scripts') (ท้าย body) ตามสัญญา V4 --}}
+<style>
+    /* 🎮 RPG card hover lift (เสริมจาก .tp-card-hover) */
+    .rpg-card {
+        transition: transform 220ms cubic-bezier(.2,.9,.2,1), box-shadow 220ms ease;
+        will-change: transform;
+    }
+    .rpg-card:hover {
+        transform: translateY(-5px) scale(1.012);
+    }
+
+    /* 🎯 XP bar — ลายเส้นวิ่ง */
+    .rpg-xp-fill {
+        background-image: linear-gradient(45deg,
+            rgba(255,255,255,.22) 25%, transparent 25%,
+            transparent 50%, rgba(255,255,255,.22) 50%,
+            rgba(255,255,255,.22) 75%, transparent 75%, transparent);
+        background-size: 14px 14px;
+        animation: rpg-xp-move 2s linear infinite;
+        transition: width 320ms ease;
+    }
+    @keyframes rpg-xp-move {
+        from { background-position: 0 0; }
+        to   { background-position: 28px 0; }
+    }
+
+    @media (max-width: 480px) {
+        .rpg-card:hover { transform: none; }
+    }
+</style>
+@endpush

@@ -1,268 +1,257 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
-@push('styles')
-<style>
-    /* ✨ Hero animated orbs */
-    .orb {
-        position: absolute;
-        border-radius: 9999px;
-        filter: blur(60px);
-        opacity: 0.5;
-        pointer-events: none;
-        animation: orb-float 10s ease-in-out infinite;
-    }
-    .orb-1 { top: -60px; right: -30px; width: 320px; height: 320px; }
-    .orb-2 { bottom: -80px; left: 5%; width: 280px; height: 280px; animation-delay: -3.5s; }
-    @keyframes orb-float {
-        0%, 100% { transform: translate(0,0) scale(1); }
-        50%      { transform: translate(20px,-25px) scale(1.05); }
-    }
-
-    /* 💎 Shimmer (legendary) */
-    @keyframes shimmer {
-        0%   { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
-    }
-    .shimmer-text {
-        background: linear-gradient(110deg, currentColor 0%, #fff 45%, currentColor 60%);
-        background-size: 200% 100%;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shimmer 3.5s linear infinite;
-    }
-
-    /* 🎯 XP bar stripes */
-    .xp-stripes {
-        background-image: linear-gradient(45deg,
-            rgba(255,255,255,.18) 25%, transparent 25%,
-            transparent 50%, rgba(255,255,255,.18) 50%,
-            rgba(255,255,255,.18) 75%, transparent 75%, transparent);
-        background-size: 16px 16px;
-        animation: xp-stripes-move 2.2s linear infinite;
-    }
-    @keyframes xp-stripes-move {
-        from { background-position: 0 0; }
-        to   { background-position: 32px 0; }
-    }
-
-    /* 📊 Stat bar fill anim */
-    .stat-fill {
-        animation: stat-fill-in 1.1s cubic-bezier(.2,.9,.2,1) both;
-    }
-    @keyframes stat-fill-in {
-        from { width: 0; }
-    }
-
-    /* 🎴 Section card hover */
-    .sheet-card {
-        transition: transform 200ms ease, box-shadow 200ms ease;
-    }
-    .sheet-card:hover {
-        transform: translateY(-2px);
-    }
-
-    /* 🔍 Markdown preview */
-    .md-preview {
-        font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
-        font-size: 12px;
-        line-height: 1.6;
-        white-space: pre-wrap;
-        word-break: break-word;
-    }
-
-    [x-cloak] { display: none !important; }
-</style>
-@endpush
-
 @section('content')
 @php
-    $isLegendary = $persona->getRarity() === 'legendary';
+    // 🎴 เตรียมตัวแปรช่วย (ใช้ทั้งหน้า) — คำนวณ rarity เพื่อเลือกสีไอคอน/พิลล์
+    $rarityKey = $persona->getRarity();
+    // 🎨 จับคู่ rarity → สีสถานะ V4 (ไม่ใช้สี tailwind จาก config เดิม เพื่อให้เข้าธีมนวลทองคำ)
+    $rarityColor = match ($rarityKey) {
+        'legendary' => 'var(--accent1)',  // ทอง
+        'epic'      => '#b79ae8',          // ม่วง
+        'rare'      => '#5689b8',          // ฟ้า
+        default     => '#9a8f7c',          // กลาง
+    };
+
+    // 📡 เตรียมจุดสำหรับ radar/spider chart แบบ SVG (แทน Chart.js เดิม)
+    // วาดเป็นรูปหลายเหลี่ยม (polygon) บนวงกลมรัศมี โดยกระจายแกนเท่า ๆ กัน
+    $radarCount = max(1, count($radarStats));
+    $radarCx = 160; $radarCy = 160; $radarR = 120;
+    // มุมเริ่มต้นชี้ขึ้นบน (-90°) แล้วไล่ตามเข็มนาฬิกา
+    $radarGridLevels = [0.25, 0.5, 0.75, 1.0];
+
+    // ฟังก์ชันช่วยคำนวณพิกัด (x,y) จากดัชนีแกน + อัตราส่วนรัศมี (0-1)
+    $radarPoint = function (int $i, float $ratio) use ($radarCount, $radarCx, $radarCy, $radarR) {
+        $angle = (-90 + ($i * (360 / $radarCount))) * M_PI / 180;
+        return [
+            'x' => $radarCx + cos($angle) * $radarR * $ratio,
+            'y' => $radarCy + sin($angle) * $radarR * $ratio,
+        ];
+    };
+
+    // สร้างชุดจุดของรูปข้อมูลจริง (ค่า value 0-100 → ratio)
+    $radarDataPoints = [];
+    foreach (array_values($radarStats) as $i => $axis) {
+        $ratio = max(0, min(100, (int) $axis['value'])) / 100;
+        $radarDataPoints[] = $radarPoint($i, $ratio);
+    }
+    $radarDataPolygon = implode(' ', array_map(fn ($p) => round($p['x'], 1) . ',' . round($p['y'], 1), $radarDataPoints));
 @endphp
-<div class="container mx-auto px-4 py-6 lg:py-8 space-y-6">
 
-    {{-- 🔙 Breadcrumb --}}
-    <div class="flex items-center gap-2 text-sm">
-        <a href="{{ route('admin.fortune.personas.index') }}"
-           class="inline-flex items-center gap-1.5 text-violet-600 dark:text-violet-400 hover:underline">
-            <span>←</span> กลับไปรายการ Persona
-        </a>
-    </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- 🎴 HERO CHARACTER HEADER --}}
-    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br {{ $rarity['gradient'] }} text-white shadow-2xl {{ $rarity['glow'] }}">
-        <div class="orb orb-1" style="background: rgba(255,255,255,0.35);"></div>
-        <div class="orb orb-2" style="background: rgba(0,0,0,0.25);"></div>
-
-        <div class="relative z-10 px-6 py-7 lg:px-10 lg:py-9">
-            <div class="flex flex-col lg:flex-row lg:items-center gap-6">
-                {{-- Avatar (large) --}}
-                <div class="relative flex-shrink-0 mx-auto lg:mx-0">
-                    <div class="w-28 h-28 lg:w-32 lg:h-32 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-5xl lg:text-6xl font-black shadow-2xl ring-4 ring-white/30">
-                        {{ $persona->initials }}
-                    </div>
-                    <div class="absolute -bottom-2 -right-2 w-12 h-12 rounded-2xl bg-white dark:bg-gray-900 flex items-center justify-center text-2xl shadow-lg ring-2 ring-white/50">
-                        {{ $platform['icon'] }}
-                    </div>
-                </div>
-
-                {{-- Name + meta --}}
-                <div class="flex-1 text-center lg:text-left">
-                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2 mb-2">
-                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-white/25 backdrop-blur-sm border border-white/30 shadow">
-                            {{ $rarity['icon'] }} {{ $rarity['label'] }} ({{ $rarity['label_en'] }})
-                        </span>
-                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-black/25 backdrop-blur-sm border border-white/20">
-                            ⚡ Lv. {{ $level }}
-                        </span>
-                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium {{ $platform['color'] }}">
-                            {{ $platform['icon'] }} {{ $platform['label'] }}
-                        </span>
-                    </div>
-                    <h1 class="text-3xl lg:text-5xl font-extrabold drop-shadow {{ $isLegendary ? 'shimmer-text text-white' : '' }}">
-                        {{ $persona->display_name ?: 'ตัวละครไม่ระบุชื่อ' }}
-                    </h1>
-                    <div class="mt-2 text-white/85 text-sm font-mono break-all">
-                        ID: {{ $persona->platform_user_id }}
-                    </div>
-
-                    {{-- XP bar --}}
-                    <div class="mt-5 max-w-xl mx-auto lg:mx-0">
-                        <div class="flex items-center justify-between text-xs text-white/90 mb-1.5">
-                            <span class="font-bold">EXP — Lv.{{ $level }} → Lv.{{ $level + 1 }}</span>
-                            <span>{{ $xpProgress }}% · {{ $persona->observation_count ?? 0 }} observations</span>
-                        </div>
-                        <div class="relative h-3 rounded-full bg-black/30 overflow-hidden ring-1 ring-white/20">
-                            <div class="absolute inset-y-0 left-0 bg-white xp-stripes transition-all"
-                                 style="width: {{ $xpProgress }}%; mix-blend-mode: overlay; opacity: 0.85;"></div>
-                            <div class="absolute inset-y-0 left-0 bg-white/60"
-                                 style="width: {{ $xpProgress }}%;"></div>
-                        </div>
-                    </div>
-                </div>
+    {{-- ╔═══ HEADER ═══╗ --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">
+                หลังบ้าน · ระบบดูดวง · บุคลิกลูกค้า (RPG)
             </div>
-
-            {{-- Quick stats bar --}}
-            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-7">
-                <div class="rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 px-4 py-3">
-                    <div class="text-2xl font-extrabold">{{ number_format($persona->observation_count ?? 0) }}</div>
-                    <div class="text-white/80 text-xs">Observations</div>
-                </div>
-                <div class="rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 px-4 py-3">
-                    <div class="text-2xl font-extrabold">{{ $completeness }}%</div>
-                    <div class="text-white/80 text-xs">ข้อมูลครบ</div>
-                </div>
-                <div class="rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 px-4 py-3">
-                    <div class="text-base font-bold">{{ $persona->created_at?->format('d/m/Y') ?? '-' }}</div>
-                    <div class="text-white/80 text-xs">เจอครั้งแรก</div>
-                </div>
-                <div class="rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 px-4 py-3">
-                    <div class="text-base font-bold">{{ $persona->last_observed_at?->diffForHumans() ?? '-' }}</div>
-                    <div class="text-white/80 text-xs">คุยล่าสุด</div>
-                </div>
-                <div class="rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 px-4 py-3">
-                    <div class="text-base font-bold">฿{{ number_format($readingStats['total_spent'], 0) }}</div>
-                    <div class="text-white/80 text-xs">จ่ายดูดวงรวม</div>
-                </div>
-            </div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">
+                {{ $persona->display_name ?: 'ตัวละครไม่ระบุชื่อ' }} 🔮
+            </h1>
+        </div>
+        <div style="display:flex; align-items:center; gap:9px;">
+            @if(Route::has('admin.fortune.personas.index'))
+                <a href="{{ route('admin.fortune.personas.index') }}" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-arrow-left"></i> กลับรายการ
+                </a>
+            @endif
+            <a href="{{ route('admin.fortune.personas.export', $persona->id) }}" class="tp-btn tp-btn-primary tp-btn-sm">
+                <i class="fas fa-download"></i> ดาวน์โหลด .md
+            </a>
         </div>
     </div>
 
-    {{-- ⚡ MAIN GRID — Radar Chart + Stat Bars + Right Column --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {{-- ╔═══ CHARACTER CARD (Hero) ═══╗ --}}
+    <div class="tp-card tp-raise" style="padding:22px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:22px;">
+            {{-- 🎴 Avatar + แพลตฟอร์ม --}}
+            <div style="position:relative; flex-shrink:0;">
+                <div class="tp-tile" style="width:96px; height:96px; border-radius:24px; display:flex; align-items:center; justify-content:center; font-size:34px; font-weight:800; color:var(--deep1);">
+                    {{ $persona->initials }}
+                </div>
+                <div class="tp-card" style="position:absolute; bottom:-8px; right:-8px; width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:var(--raise);">
+                    {{ $platform['icon'] }}
+                </div>
+            </div>
 
-        {{-- 📡 RADAR CHART (Communication Style) --}}
-        <div class="sheet-card lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2">
-                    <span>📡</span> สไตล์การสื่อสาร (Radar)
-                </h2>
-                <span class="text-xs text-gray-500 dark:text-gray-400">6 แกน · 0-100</span>
+            {{-- 📛 ชื่อ + พิลล์ rarity/level/platform --}}
+            <div style="flex:1; min-width:230px;">
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                    {{-- พิลล์ rarity — สีตาม rarityColor --}}
+                    <span class="tp-pill" style="background:{{ $rarityColor }}22; color:{{ $rarityColor }}; border-color:{{ $rarityColor }}55;">
+                        {{ $rarity['icon'] }} {{ $rarity['label'] }} · {{ $rarity['label_en'] }}
+                    </span>
+                    <span class="tp-pill tp-pill-gold">⚡ Lv. {{ $level }}</span>
+                    <span class="tp-pill tp-pill-soft">{{ $platform['icon'] }} {{ $platform['label'] }}</span>
+                </div>
+                <div class="tp-num" style="font-size:22px; font-weight:800; color:var(--ink);">
+                    {{ $persona->display_name ?: 'ตัวละครไม่ระบุชื่อ' }}
+                </div>
+                <div class="tp-muted" style="font-size:12px; margin-top:4px; word-break:break-all;">
+                    <i class="fas fa-fingerprint"></i> ID: {{ $persona->platform_user_id }}
+                </div>
+
+                {{-- 🎯 XP bar — Lv ปัจจุบัน → ถัดไป --}}
+                <div style="margin-top:14px; max-width:460px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--ink2); margin-bottom:6px;">
+                        <span style="font-weight:700;">EXP — Lv.{{ $level }} → Lv.{{ $level + 1 }}</span>
+                        <span class="tp-num">{{ $xpProgress }}% · {{ number_format($persona->observation_count ?? 0) }} ครั้ง</span>
+                    </div>
+                    <div class="tp-inset-sm" style="position:relative; height:12px; border-radius:999px; overflow:hidden;">
+                        <div class="tp-xp-fill" style="position:absolute; inset-block:0; left:0; width:{{ $xpProgress }}%; border-radius:999px; background:linear-gradient(90deg, var(--accent1), var(--accent2));"></div>
+                    </div>
+                </div>
             </div>
-            <div class="relative" style="height: 360px;">
-                <canvas id="radarChart"></canvas>
+        </div>
+
+        {{-- 📊 KPI mini grid --}}
+        <div class="tp-divider" style="margin:18px 0;"></div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;">
+            @php
+                $heroKpis = [
+                    ['icon' => 'fa-eye',          'val' => number_format($persona->observation_count ?? 0), 'lbl' => 'จำนวนสังเกต'],
+                    ['icon' => 'fa-database',     'val' => $completeness . '%',                              'lbl' => 'ข้อมูลครบ'],
+                    ['icon' => 'fa-calendar-plus','val' => $persona->created_at?->format('d/m/Y') ?? '-',   'lbl' => 'เจอครั้งแรก'],
+                    ['icon' => 'fa-clock',        'val' => $persona->last_observed_at?->diffForHumans() ?? '-', 'lbl' => 'คุยล่าสุด'],
+                    ['icon' => 'fa-coins',        'val' => '฿' . number_format($readingStats['total_spent'], 0), 'lbl' => 'จ่ายดูดวงรวม'],
+                ];
+            @endphp
+            @foreach($heroKpis as $kpi)
+                <div class="tp-inset" style="padding:12px 14px; border-radius:14px;">
+                    <div style="display:flex; align-items:center; gap:8px; color:var(--ink2); font-size:11px; margin-bottom:4px;">
+                        <i class="fas {{ $kpi['icon'] }}" style="color:var(--accent1);"></i> {{ $kpi['lbl'] }}
+                    </div>
+                    <div class="tp-num" style="font-size:18px; font-weight:800; color:var(--ink);">{{ $kpi['val'] }}</div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- ╔═══ RADAR (SVG) + STAT BARS ═══╗ --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:18px;">
+
+        {{-- 📡 RADAR / SPIDER CHART — SVG polygon (แทน Chart.js) --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h" style="display:flex; align-items:center; justify-content:space-between;">
+                <span><i class="fas fa-satellite-dish" style="color:var(--accent1);"></i> สไตล์การสื่อสาร (Radar)</span>
+                <span class="tp-muted" style="font-size:11px; font-weight:500;">{{ $radarCount }} แกน · 0–100</span>
             </div>
-            <div class="grid grid-cols-3 gap-2 mt-4 text-xs">
+
+            <div style="display:flex; justify-content:center; padding:8px 0 4px;">
+                <svg viewBox="0 0 320 320" width="100%" style="max-width:340px; height:auto;" role="img" aria-label="กราฟเรดาร์สไตล์การสื่อสาร">
+                    {{-- เส้นกริดวงหลายเหลี่ยมซ้อนชั้น --}}
+                    @foreach($radarGridLevels as $lvl)
+                        @php
+                            $gridPts = [];
+                            for ($gi = 0; $gi < $radarCount; $gi++) {
+                                $p = $radarPoint($gi, $lvl);
+                                $gridPts[] = round($p['x'], 1) . ',' . round($p['y'], 1);
+                            }
+                        @endphp
+                        <polygon points="{{ implode(' ', $gridPts) }}"
+                                 fill="none" stroke="var(--ink2)" stroke-opacity="0.18" stroke-width="1" />
+                    @endforeach
+
+                    {{-- เส้นแกนจากจุดศูนย์กลาง --}}
+                    @for($ai = 0; $ai < $radarCount; $ai++)
+                        @php $edge = $radarPoint($ai, 1.0); @endphp
+                        <line x1="{{ $radarCx }}" y1="{{ $radarCy }}"
+                              x2="{{ round($edge['x'], 1) }}" y2="{{ round($edge['y'], 1) }}"
+                              stroke="var(--ink2)" stroke-opacity="0.16" stroke-width="1" />
+                    @endfor
+
+                    {{-- รูปข้อมูลจริง (โปร่งแสงทอง) --}}
+                    <polygon class="tp-radar-shape" points="{{ $radarDataPolygon }}"
+                             fill="var(--accent1)" fill-opacity="0.22"
+                             stroke="var(--accent1)" stroke-width="2.5" stroke-linejoin="round" />
+
+                    {{-- จุดหัวมุมของข้อมูล + ป้ายชื่อแกน --}}
+                    @foreach(array_values($radarStats) as $li => $axis)
+                        @php
+                            $dp = $radarDataPoints[$li];
+                            $lp = $radarPoint($li, 1.16); // ป้ายชื่อนอกวงเล็กน้อย
+                            // จัด anchor ข้อความตามตำแหน่งแนวนอน
+                            $anchor = abs($lp['x'] - $radarCx) < 8 ? 'middle' : ($lp['x'] < $radarCx ? 'end' : 'start');
+                        @endphp
+                        <circle cx="{{ round($dp['x'], 1) }}" cy="{{ round($dp['y'], 1) }}" r="4"
+                                fill="var(--accent2)" stroke="var(--surf)" stroke-width="2" />
+                        <text x="{{ round($lp['x'], 1) }}" y="{{ round($lp['y'] + 3, 1) }}"
+                              text-anchor="{{ $anchor }}" font-size="11" font-weight="600" fill="var(--ink2)">{{ $axis['axis'] }}</text>
+                    @endforeach
+                </svg>
+            </div>
+
+            {{-- รายการค่าแต่ละแกน --}}
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px;">
                 @foreach($radarStats as $axis)
-                    <div class="text-center px-2 py-2 rounded-lg bg-gradient-to-br from-violet-50 to-fuchsia-50 dark:from-violet-900/20 dark:to-fuchsia-900/20 border border-violet-100 dark:border-violet-800/40">
-                        <div class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ $axis['axis'] }}</div>
-                        <div class="text-lg font-bold text-violet-700 dark:text-violet-300">{{ $axis['value'] }}</div>
+                    <div class="tp-inset-sm" style="text-align:center; padding:8px 6px; border-radius:12px;">
+                        <div class="tp-muted" style="font-size:10px;">{{ $axis['axis'] }}</div>
+                        <div class="tp-num" style="font-size:16px; font-weight:800; color:var(--accent1);">{{ $axis['value'] }}</div>
                     </div>
                 @endforeach
             </div>
         </div>
 
-        {{-- 📊 STAT BARS --}}
-        <div class="sheet-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2 mb-5">
-                <span>📊</span> สรุปข้อมูล
-            </h2>
-            <div class="space-y-4">
-                @foreach($statBars as $key => $bar)
+        {{-- 📊 STAT BARS + donut ความครบ --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h"><i class="fas fa-chart-simple" style="color:var(--accent1);"></i> สรุปข้อมูล</div>
+
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                @foreach($statBars as $bar)
                     <div>
-                        <div class="flex items-center justify-between text-sm mb-1.5">
-                            <span class="font-medium text-gray-700 dark:text-gray-200">{{ $bar['label'] }}</span>
-                            <span class="text-xs font-mono text-gray-500 dark:text-gray-400">{{ $bar['count'] }}/{{ $bar['cap'] }}</span>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:13px; margin-bottom:6px;">
+                            <span style="font-weight:600; color:var(--ink);">{{ $bar['label'] }}</span>
+                            <span class="tp-num tp-muted" style="font-size:11px;">{{ $bar['count'] }}/{{ $bar['cap'] }}</span>
                         </div>
-                        <div class="relative h-3 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                            <div class="stat-fill absolute inset-y-0 left-0 bg-gradient-to-r {{ $bar['color'] }} rounded-full"
-                                 style="width: {{ $bar['percent'] }}%"></div>
+                        <div class="tp-inset-sm" style="position:relative; height:12px; border-radius:999px; overflow:hidden;">
+                            <div class="tp-stat-fill" style="position:absolute; inset-block:0; left:0; width:{{ $bar['percent'] }}%; border-radius:999px; background:linear-gradient(90deg, var(--accent1), var(--accent2));"></div>
                         </div>
                     </div>
                 @endforeach
             </div>
 
-            {{-- Data Completeness donut --}}
-            <div class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700 text-center">
-                <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">ความครบของข้อมูล</div>
-                <div class="relative inline-flex items-center justify-center">
-                    <svg width="120" height="120" class="transform -rotate-90">
-                        <circle cx="60" cy="60" r="50" stroke="currentColor" stroke-width="10" fill="none" class="text-gray-200 dark:text-gray-700" />
-                        <circle cx="60" cy="60" r="50" stroke="url(#completeGrad)" stroke-width="10" fill="none"
-                                stroke-dasharray="{{ 2 * M_PI * 50 }}"
-                                stroke-dashoffset="{{ 2 * M_PI * 50 * (1 - $completeness / 100) }}"
-                                stroke-linecap="round" />
-                        <defs>
-                            <linearGradient id="completeGrad" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stop-color="#a855f7" />
-                                <stop offset="100%" stop-color="#ec4899" />
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <span class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ $completeness }}%</span>
-                    </div>
+            {{-- 🍩 Donut ความครบของข้อมูล (conic-gradient + mask) --}}
+            <div class="tp-divider" style="margin:18px 0 14px;"></div>
+            <div style="text-align:center;">
+                <div class="tp-muted" style="font-size:11px; margin-bottom:10px;">ความครบของข้อมูล</div>
+                <div style="position:relative; width:128px; height:128px; margin:0 auto; border-radius:50%;
+                            background:conic-gradient(var(--accent1) 0% {{ $completeness }}%, var(--ink2) {{ $completeness }}% 100%);
+                            -webkit-mask:radial-gradient(circle 64px at center, transparent 41px, #000 42px);
+                            mask:radial-gradient(circle 64px at center, transparent 41px, #000 42px);">
+                </div>
+                <div style="position:relative; margin-top:-86px; height:44px;">
+                    <span class="tp-num" style="font-size:26px; font-weight:800; color:var(--ink);">{{ $completeness }}%</span>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- 👥 DEMOGRAPHICS + COMMUNICATION STYLE --}}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {{-- ╔═══ DEMOGRAPHICS + COMMUNICATION STYLE ═══╗ --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:18px;">
 
-        {{-- Demographics --}}
-        <div class="sheet-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2 mb-4">
-                <span>👥</span> Demographics
-            </h2>
+        {{-- 👥 Demographics --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h"><i class="fas fa-users" style="color:var(--accent1);"></i> ข้อมูลประชากร</div>
             @php $demo = $persona->demographics ?? []; @endphp
-            @if(empty($demo))
-                <div class="text-sm text-gray-400 dark:text-gray-500 italic py-8 text-center">ยังไม่มีข้อมูล</div>
+            @php
+                $demoIcon  = ['age_range' => '🎂', 'gender_hint' => '⚧', 'job_hint' => '💼', 'location_hint' => '📍'];
+                $demoLabel = ['age_range' => 'อายุ', 'gender_hint' => 'เพศ', 'job_hint' => 'งาน', 'location_hint' => 'ที่อยู่'];
+                $demoHas   = ! empty(array_filter($demo, fn ($v) => $v && $v !== 'unknown'));
+            @endphp
+            @if(! $demoHas)
+                <div class="tp-muted" style="text-align:center; padding:26px 0; font-size:13px;">
+                    <i class="fas fa-inbox" style="font-size:22px; display:block; margin-bottom:8px; opacity:.6;"></i>
+                    ยังไม่มีข้อมูล
+                </div>
             @else
-                <div class="grid grid-cols-2 gap-3">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px;">
                     @foreach($demo as $k => $v)
                         @if($v && $v !== 'unknown')
-                            <div class="rounded-xl bg-gradient-to-br from-violet-50 to-fuchsia-50 dark:from-violet-900/20 dark:to-fuchsia-900/20 border border-violet-100 dark:border-violet-800/40 p-3">
-                                @php
-                                    $iconMap = ['age_range' => '🎂', 'gender_hint' => '⚧', 'job_hint' => '💼', 'location_hint' => '📍'];
-                                    $labelMap = ['age_range' => 'อายุ', 'gender_hint' => 'เพศ', 'job_hint' => 'งาน', 'location_hint' => 'ที่อยู่'];
-                                @endphp
-                                <div class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    {{ $iconMap[$k] ?? '•' }} {{ $labelMap[$k] ?? $k }}
-                                </div>
-                                <div class="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">{{ $v }}</div>
+                            <div class="tp-inset" style="padding:11px 13px; border-radius:14px;">
+                                <div class="tp-muted" style="font-size:10px;">{{ $demoIcon[$k] ?? '•' }} {{ $demoLabel[$k] ?? $k }}</div>
+                                <div style="font-size:14px; font-weight:700; color:var(--ink); margin-top:3px;">{{ $v }}</div>
                             </div>
                         @endif
                     @endforeach
@@ -270,20 +259,21 @@
             @endif
         </div>
 
-        {{-- Communication style --}}
-        <div class="sheet-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2 mb-4">
-                <span>🗣️</span> Communication Style
-            </h2>
+        {{-- 🗣️ Communication style --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h"><i class="fas fa-comment-dots" style="color:var(--accent1);"></i> สไตล์การสื่อสาร</div>
             @php $style = $persona->communication_style ?? []; @endphp
             @if(empty($style))
-                <div class="text-sm text-gray-400 dark:text-gray-500 italic py-8 text-center">ยังไม่มีข้อมูล</div>
+                <div class="tp-muted" style="text-align:center; padding:26px 0; font-size:13px;">
+                    <i class="fas fa-inbox" style="font-size:22px; display:block; margin-bottom:8px; opacity:.6;"></i>
+                    ยังไม่มีข้อมูล
+                </div>
             @else
-                <div class="space-y-2">
+                <div style="display:flex; flex-direction:column; gap:8px;">
                     @foreach($style as $k => $v)
-                        <div class="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                            <span class="text-sm text-gray-600 dark:text-gray-300 capitalize">{{ str_replace('_', ' ', $k) }}</span>
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">{{ $v }}</span>
+                        <div class="tp-inset-sm" style="display:flex; align-items:center; justify-content:space-between; padding:9px 13px; border-radius:12px;">
+                            <span style="font-size:13px; color:var(--ink2); text-transform:capitalize;">{{ str_replace('_', ' ', $k) }}</span>
+                            <span class="tp-pill tp-pill-soft" style="font-size:11px;">{{ $v }}</span>
                         </div>
                     @endforeach
                 </div>
@@ -291,82 +281,88 @@
         </div>
     </div>
 
-    {{-- 🎭 TRAITS + ❤️ LIKES + ❌ DISLIKES + 💬 THEMES --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {{-- ╔═══ TRAITS · THEMES · LIKES · DISLIKES ═══╗ --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:18px;">
 
-        {{-- Traits --}}
-        <div class="sheet-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2 mb-4">
-                <span>🎭</span> บุคลิก (Traits)
-                <span class="text-xs font-normal text-gray-500 dark:text-gray-400">{{ count($persona->traits ?? []) }} รายการ</span>
-            </h2>
+        {{-- 🎭 Traits --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h">
+                <i class="fas fa-masks-theater" style="color:var(--accent1);"></i> บุคลิก (Traits)
+                <span class="tp-muted" style="font-size:11px; font-weight:500;">{{ count($persona->traits ?? []) }} รายการ</span>
+            </div>
             @if(empty($persona->traits))
-                <div class="text-sm text-gray-400 dark:text-gray-500 italic py-6 text-center">ยังไม่มีข้อมูล</div>
+                <div class="tp-muted" style="text-align:center; padding:22px 0; font-size:13px;">
+                    <i class="fas fa-inbox" style="font-size:20px; display:block; margin-bottom:6px; opacity:.6;"></i> ยังไม่มีข้อมูล
+                </div>
             @else
-                <div class="flex flex-wrap gap-2">
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
                     @foreach($persona->traits as $t)
-                        <span class="inline-block px-3 py-1.5 rounded-lg text-sm bg-gradient-to-r from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40">
-                            {{ $t }}
-                        </span>
+                        <span class="tp-pill" style="background:#d6824a22; color:#d6824a; border-color:#d6824a44;">{{ $t }}</span>
                     @endforeach
                 </div>
             @endif
         </div>
 
-        {{-- Conversation Themes --}}
-        <div class="sheet-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2 mb-4">
-                <span>💬</span> หัวข้อที่คุย
-                <span class="text-xs font-normal text-gray-500 dark:text-gray-400">{{ count($persona->conversation_themes ?? []) }} รายการ</span>
-            </h2>
+        {{-- 💬 Conversation themes --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h">
+                <i class="fas fa-comments" style="color:var(--accent1);"></i> หัวข้อที่คุย
+                <span class="tp-muted" style="font-size:11px; font-weight:500;">{{ count($persona->conversation_themes ?? []) }} รายการ</span>
+            </div>
             @if(empty($persona->conversation_themes))
-                <div class="text-sm text-gray-400 dark:text-gray-500 italic py-6 text-center">ยังไม่มีข้อมูล</div>
+                <div class="tp-muted" style="text-align:center; padding:22px 0; font-size:13px;">
+                    <i class="fas fa-inbox" style="font-size:20px; display:block; margin-bottom:6px; opacity:.6;"></i> ยังไม่มีข้อมูล
+                </div>
             @else
-                <div class="space-y-2">
+                <div style="display:flex; flex-direction:column; gap:10px;">
                     @foreach(array_reverse($persona->conversation_themes) as $i => $theme)
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-sky-500 to-blue-500 text-white text-xs font-bold flex items-center justify-center">
+                        <div style="display:flex; align-items:flex-start; gap:11px;">
+                            <div class="tp-num" style="flex-shrink:0; width:24px; height:24px; border-radius:999px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:var(--deep1); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center;">
                                 {{ $i + 1 }}
                             </div>
-                            <div class="flex-1 text-sm text-gray-700 dark:text-gray-300 pt-0.5">{{ $theme }}</div>
+                            <div style="flex:1; font-size:13px; color:var(--ink2); padding-top:3px;">{{ $theme }}</div>
                         </div>
                     @endforeach
                 </div>
             @endif
         </div>
 
-        {{-- Likes --}}
-        <div class="sheet-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2 mb-4">
-                <span>❤️</span> ชอบ
-                <span class="text-xs font-normal text-gray-500 dark:text-gray-400">{{ count($persona->likes ?? []) }} รายการ</span>
-            </h2>
+        {{-- ❤️ Likes --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h">
+                <i class="fas fa-heart" style="color:#5aa07e;"></i> ชอบ
+                <span class="tp-muted" style="font-size:11px; font-weight:500;">{{ count($persona->likes ?? []) }} รายการ</span>
+            </div>
             @if(empty($persona->likes))
-                <div class="text-sm text-gray-400 dark:text-gray-500 italic py-6 text-center">ยังไม่มีข้อมูล</div>
+                <div class="tp-muted" style="text-align:center; padding:22px 0; font-size:13px;">
+                    <i class="fas fa-inbox" style="font-size:20px; display:block; margin-bottom:6px; opacity:.6;"></i> ยังไม่มีข้อมูล
+                </div>
             @else
-                <div class="flex flex-wrap gap-2">
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
                     @foreach($persona->likes as $like)
-                        <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
-                            <span class="text-emerald-500">+</span>{{ $like }}
+                        <span class="tp-pill" style="background:#5aa07e22; color:#5aa07e; border-color:#5aa07e44;">
+                            <i class="fas fa-plus" style="font-size:9px;"></i> {{ $like }}
                         </span>
                     @endforeach
                 </div>
             @endif
         </div>
 
-        {{-- Dislikes --}}
-        <div class="sheet-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2 mb-4">
-                <span>❌</span> ไม่ชอบ
-                <span class="text-xs font-normal text-gray-500 dark:text-gray-400">{{ count($persona->dislikes ?? []) }} รายการ</span>
-            </h2>
+        {{-- ❌ Dislikes --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h">
+                <i class="fas fa-heart-crack" style="color:#d9534f;"></i> ไม่ชอบ
+                <span class="tp-muted" style="font-size:11px; font-weight:500;">{{ count($persona->dislikes ?? []) }} รายการ</span>
+            </div>
             @if(empty($persona->dislikes))
-                <div class="text-sm text-gray-400 dark:text-gray-500 italic py-6 text-center">ยังไม่มีข้อมูล</div>
+                <div class="tp-muted" style="text-align:center; padding:22px 0; font-size:13px;">
+                    <i class="fas fa-inbox" style="font-size:20px; display:block; margin-bottom:6px; opacity:.6;"></i> ยังไม่มีข้อมูล
+                </div>
             @else
-                <div class="flex flex-wrap gap-2">
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
                     @foreach($persona->dislikes as $dl)
-                        <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40">
-                            <span class="text-red-500">−</span>{{ $dl }}
+                        <span class="tp-pill" style="background:#d9534f22; color:#d9534f; border-color:#d9534f44;">
+                            <i class="fas fa-minus" style="font-size:9px;"></i> {{ $dl }}
                         </span>
                     @endforeach
                 </div>
@@ -374,65 +370,68 @@
         </div>
     </div>
 
-    {{-- 🏷️ TOPIC TAGS --}}
+    {{-- ╔═══ TOPIC TAGS ═══╗ --}}
     @if(! empty($persona->topic_tags_array))
-        <div class="sheet-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2 mb-4">
-                <span>🏷️</span> Topic Tags (Obsidian-style)
-                <span class="text-xs font-normal text-gray-500 dark:text-gray-400">{{ count($persona->topic_tags_array) }} แท็ก</span>
-            </h2>
-            <div class="flex flex-wrap gap-2">
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h">
+                <i class="fas fa-tags" style="color:var(--accent1);"></i> Topic Tags (Obsidian-style)
+                <span class="tp-muted" style="font-size:11px; font-weight:500;">{{ count($persona->topic_tags_array) }} แท็ก</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
                 @foreach($persona->topic_tags_array as $tag)
-                    <a href="{{ route('admin.fortune.personas.index', ['tag' => $tag]) }}"
-                       class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/40 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition">
-                        #{{ $tag }}
-                    </a>
+                    @if(Route::has('admin.fortune.personas.index'))
+                        <a href="{{ route('admin.fortune.personas.index', ['tag' => $tag]) }}" class="tp-pill tp-pill-gold" style="text-decoration:none;">
+                            #{{ $tag }}
+                        </a>
+                    @else
+                        <span class="tp-pill tp-pill-gold">#{{ $tag }}</span>
+                    @endif
                 @endforeach
             </div>
         </div>
     @endif
 
-    {{-- 📜 LINKED READINGS --}}
+    {{-- ╔═══ LINKED READINGS ═══╗ --}}
     @if($readings->isNotEmpty())
-        <div class="sheet-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2 mb-4">
-                <span>📜</span> ประวัติการดูดวง (10 ล่าสุด)
-                <span class="text-xs font-normal text-gray-500 dark:text-gray-400">{{ $readingStats['paid'] }}/{{ $readingStats['total'] }} จ่ายแล้ว</span>
-            </h2>
-            <div class="overflow-x-auto -mx-2">
-                <table class="min-w-full text-sm">
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h">
+                <i class="fas fa-scroll" style="color:var(--accent1);"></i> ประวัติการดูดวง (10 ล่าสุด)
+                <span class="tp-muted" style="font-size:11px; font-weight:500;">{{ $readingStats['paid'] }}/{{ $readingStats['total'] }} จ่ายแล้ว</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:separate; border-spacing:0 6px; font-size:13px;">
                     <thead>
-                        <tr class="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
-                            <th class="px-3 py-2">#</th>
-                            <th class="px-3 py-2">ประเภท</th>
-                            <th class="px-3 py-2">สถานะ</th>
-                            <th class="px-3 py-2 text-right">ราคา</th>
-                            <th class="px-3 py-2">เมื่อ</th>
+                        <tr style="text-align:left; color:var(--ink2); font-size:11px; text-transform:uppercase; letter-spacing:.4px;">
+                            <th style="padding:6px 12px;">#</th>
+                            <th style="padding:6px 12px;">ประเภท</th>
+                            <th style="padding:6px 12px;">สถานะ</th>
+                            <th style="padding:6px 12px; text-align:right;">ราคา</th>
+                            <th style="padding:6px 12px;">เมื่อ</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tbody>
                         @foreach($readings as $r)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                <td class="px-3 py-2 font-mono text-xs text-gray-500">{{ $r->id }}</td>
-                                <td class="px-3 py-2">
-                                    @php
-                                        $typeBadge = match($r->reading_type) {
-                                            'deep' => ['🌟 เชิงลึก', 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'],
-                                            'celtic_cross' => ['🃏 Celtic', 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'],
-                                            default => ['🔮 พื้นฐาน', 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300'],
-                                        };
-                                    @endphp
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $typeBadge[1] }}">{{ $typeBadge[0] }}</span>
+                            @php
+                                $typeMap = match($r->reading_type) {
+                                    'deep'         => ['🌟 เชิงลึก', '#b79ae8'],
+                                    'celtic_cross' => ['🃏 Celtic', 'var(--accent1)'],
+                                    default        => ['🔮 พื้นฐาน', '#5689b8'],
+                                };
+                            @endphp
+                            <tr>
+                                <td class="tp-num" style="padding:10px 12px; box-shadow:var(--inset-sm); border-radius:10px 0 0 10px; color:var(--ink2); font-size:11px;">{{ $r->id }}</td>
+                                <td style="padding:10px 12px; box-shadow:var(--inset-sm);">
+                                    <span class="tp-pill" style="background:{{ $typeMap[1] }}22; color:{{ $typeMap[1] }}; border-color:{{ $typeMap[1] }}44; font-size:11px;">{{ $typeMap[0] }}</span>
                                 </td>
-                                <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{{ $r->conversation_status }}</td>
-                                <td class="px-3 py-2 text-right font-mono text-xs {{ $r->is_paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400' }}">
+                                <td style="padding:10px 12px; box-shadow:var(--inset-sm); color:var(--ink2); font-size:12px;">{{ $r->conversation_status }}</td>
+                                <td class="tp-num" style="padding:10px 12px; box-shadow:var(--inset-sm); text-align:right; font-size:12px; color:{{ $r->is_paid ? '#5aa07e' : 'var(--ink2)' }};">
                                     @if($r->is_paid)
                                         ฿{{ number_format($r->amount_paid, 0) }}
                                     @else
                                         -
                                     @endif
                                 </td>
-                                <td class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">{{ $r->created_at?->diffForHumans() }}</td>
+                                <td style="padding:10px 12px; box-shadow:var(--inset-sm); border-radius:0 10px 10px 0; color:var(--ink2); font-size:12px;">{{ $r->created_at?->diffForHumans() }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -441,35 +440,32 @@
         </div>
     @endif
 
-    {{-- 📝 MARKDOWN EXPORT --}}
-    <div class="sheet-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6"
-         x-data="{ open: false, copyOk: false }">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white inline-flex items-center gap-2">
-                <span>📝</span> ObsidianX Markdown Export
-            </h2>
-            <div class="flex items-center gap-2">
-                <button @click="navigator.clipboard.writeText(document.getElementById('mdContent').innerText); copyOk = true; setTimeout(()=>copyOk=false, 1800);"
-                        type="button"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300 transition border border-violet-200 dark:border-violet-800/40">
-                    <span x-show="!copyOk">📋 Copy</span>
-                    <span x-show="copyOk" x-cloak class="text-emerald-600 dark:text-emerald-400">✓ คัดลอกแล้ว</span>
+    {{-- ╔═══ MARKDOWN EXPORT ═══╗ --}}
+    <div class="tp-card" style="padding:20px;" x-data="{ open: false, copyOk: false }">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;">
+            <div class="tp-section-h" style="margin:0;">
+                <i class="fas fa-file-lines" style="color:var(--accent1);"></i> ObsidianX Markdown Export
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                {{-- 📋 ปุ่มคัดลอก — อ่าน innerText จาก #mdContent (logic เดิม) --}}
+                <button type="button" class="tp-btn tp-btn-sm"
+                        @click="navigator.clipboard.writeText(document.getElementById('mdContent').innerText); copyOk = true; $dispatch('notify', { type: 'success', message: 'คัดลอก Markdown แล้ว' }); setTimeout(() => copyOk = false, 1800);">
+                    <span x-show="!copyOk"><i class="fas fa-copy"></i> คัดลอก</span>
+                    <span x-show="copyOk" x-cloak style="color:#5aa07e;"><i class="fas fa-check"></i> คัดลอกแล้ว</span>
                 </button>
-                <a href="{{ route('admin.fortune.personas.export', $persona->id) }}"
-                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 transition border border-emerald-200 dark:border-emerald-800/40">
-                    📥 Download .md
+                <a href="{{ route('admin.fortune.personas.export', $persona->id) }}" class="tp-btn tp-btn-primary tp-btn-sm">
+                    <i class="fas fa-download"></i> .md
                 </a>
-                <button @click="open = !open" type="button"
-                        class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition">
-                    <span x-text="open ? '▲ ซ่อน' : '▼ แสดง'"></span>
+                <button type="button" class="tp-icon-btn" @click="open = !open">
+                    <i class="fas" :class="open ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                 </button>
             </div>
         </div>
 
         <div x-show="open" x-cloak x-transition>
-            <pre id="mdContent" class="md-preview p-4 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 max-h-[480px] overflow-auto">{{ $markdownExport }}</pre>
+            <pre id="mdContent" class="tp-inset tp-md-preview">{{ $markdownExport }}</pre>
         </div>
-        <div x-show="!open" class="text-sm text-gray-500 dark:text-gray-400">
+        <div x-show="!open" class="tp-muted" style="font-size:13px;">
             มี YAML frontmatter + tags พร้อม import เข้า ObsidianX vault
         </div>
     </div>
@@ -478,65 +474,31 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const radarLabels = @json(array_column($radarStats, 'axis'));
-    const radarValues = @json(array_column($radarStats, 'value'));
-    const isDark = document.documentElement.classList.contains('dark');
-    const gridColor = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)';
-    const tickColor = isDark ? '#94a3b8' : '#475569';
+{{-- 🎨 CSS เฉพาะหน้า — โหลดท้าย body ผ่าน scripts stack (styles stack จาก section content จะหลุด ใช้ไม่ได้) --}}
+<style>
+    /* 🎯 อนิเมชันแถบ XP/Stat ค่อย ๆ เติม */
+    @keyframes tp-fill-in { from { width: 0; } }
+    .tp-xp-fill, .tp-stat-fill { animation: tp-fill-in 1.05s cubic-bezier(.2,.9,.2,1) both; }
 
-    new Chart(document.getElementById('radarChart'), {
-        type: 'radar',
-        data: {
-            labels: radarLabels,
-            datasets: [{
-                label: 'คะแนน',
-                data: radarValues,
-                fill: true,
-                backgroundColor: 'rgba(168, 85, 247, 0.25)',
-                borderColor: '#a855f7',
-                borderWidth: 2.5,
-                pointBackgroundColor: '#ec4899',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                tension: 0.1,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                r: {
-                    suggestedMin: 0,
-                    suggestedMax: 100,
-                    grid: { color: gridColor },
-                    angleLines: { color: gridColor },
-                    pointLabels: {
-                        color: tickColor,
-                        font: { size: 13, weight: '600', family: 'system-ui, -apple-system, sans-serif' }
-                    },
-                    ticks: {
-                        color: tickColor,
-                        backdropColor: 'transparent',
-                        font: { size: 10 },
-                        stepSize: 25,
-                    }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => ` ${ctx.parsed.r}/100`
-                    }
-                }
-            }
-        }
-    });
-});
-</script>
+    /* 📡 รูปเรดาร์ค่อย ๆ ปรากฏ */
+    @keyframes tp-radar-in { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
+    .tp-radar-shape { transform-origin: 160px 160px; animation: tp-radar-in .7s cubic-bezier(.2,.9,.2,1) both; }
+
+    /* 🔍 พรีวิว markdown — ฟอนต์ monospace อ่านง่าย */
+    .tp-md-preview {
+        font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-word;
+        color: var(--ink);
+        padding: 16px;
+        border-radius: 14px;
+        max-height: 480px;
+        overflow: auto;
+        margin: 0;
+    }
+
+    [x-cloak] { display: none !important; }
+</style>
 @endpush

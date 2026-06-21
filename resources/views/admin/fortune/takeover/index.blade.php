@@ -1,284 +1,322 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'เทคโอเวอร์ — ระบบดูดวง')
 
 @section('content')
-<div class="container mx-auto px-4 py-6"
-     x-data="{
+{{--
+    หน้ารายการเทคโอเวอร์ (แม่หมอ/แอดมินคุยเอง) — ธีม V4 "นวลทองคำ"
+    คงฟังก์ชันเดิม 100%: ฟิลเตอร์ GET, ปุ่มเปิดคุย (show), modal แบน user (POST .../ban)
+    Alpine x-data root อยู่ที่ container เพื่อคุม modal แบน
+--}}
+<div x-data="{
         showBan: false,
         banForm: { id: null, name: '', platform: 'facebook', userId: '', duration: 'permanent' },
         openBan(id, name, platform, userId) {
+            // เปิด modal แบน — เตรียมข้อมูล user ที่จะแบน
             this.banForm = { id: id, name: name || '(ไม่ระบุชื่อ)', platform: platform, userId: userId, duration: 'permanent' };
             this.showBan = true;
         },
         closeBan() { this.showBan = false; }
-     }">
+     }"
+     style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- Flash messages --}}
-    @if (session('success'))
-        <div class="mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-800 dark:text-emerald-200 text-sm">
-            {{ session('success') }}
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">
+                หลังบ้าน · ระบบดูดวง · เทคโอเวอร์
+            </div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">
+                เทคโอเวอร์ — แม่หมอคุยแทน AI 🎯
+            </h1>
+            <p class="tp-muted" style="font-size:13px; margin:6px 0 0; max-width:560px;">
+                กดเทคโอเวอร์เพื่อให้ AI หยุด แล้วแอดมินคุยเองได้ทั้ง LINE และ Facebook
+            </p>
         </div>
-    @endif
-    @if (session('error'))
-        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-200 text-sm">
-            {{ session('error') }}
+        <div style="display:flex; align-items:center; gap:9px;">
+            <a href="{{ route('admin.fortune.settings.index') }}#takeover"
+               class="tp-btn tp-btn-primary">
+                <i class="fas fa-sliders-h"></i> ตั้งค่าระบบเทคโอเวอร์
+            </a>
         </div>
-    @endif
-    @if ($errors->any())
-        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-200">
-            <ul class="list-disc list-inside text-sm">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
+    </div>
+
+    {{-- ===== ข้อผิดพลาดจากการตรวจสอบฟอร์ม (เช่น แบน user) ===== --}}
+    {{-- layout admin-v4 auto-toast เฉพาะ session flash — ไม่ render $errors bag จึงต้องแสดงเอง --}}
+    @if($errors->any())
+        <div class="tp-card" style="padding:16px 18px; border-left:4px solid #d9534f;">
+            <div style="display:flex; align-items:center; gap:9px; font-weight:700; color:#d9534f; margin-bottom:8px;">
+                <i class="fas fa-circle-exclamation"></i> กรอกข้อมูลไม่ถูกต้อง
+            </div>
+            <ul style="margin:0; padding-left:20px; font-size:13px; color:var(--ink); list-style:disc;">
+                @foreach($errors->all() as $error)
+                    <li style="margin:2px 0;">{{ $error }}</li>
                 @endforeach
             </ul>
         </div>
     @endif
 
-    {{-- Page Header --}}
-    <div class="mb-6">
-        <div class="flex items-center justify-between flex-wrap gap-3">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    🎯 เทคโอเวอร์ <span class="text-base font-normal text-gray-500 dark:text-gray-400">— แม่หมอคุยแทน AI</span>
-                </h1>
-                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    จัดการบทสนทนา — กดเทคโอเวอร์เพื่อให้ AI หยุด และแอดมินคุยเองได้ทั้ง LINE และ Facebook
-                </p>
-            </div>
-            <a href="{{ route('admin.fortune.settings.index') }}#takeover"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white rounded-lg transition text-sm font-medium">
-                ⚙️ ตั้งค่าระบบเทคโอเวอร์
-            </a>
-        </div>
-    </div>
-
-    {{-- Stats Cards --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-purple-100">กำลังเทคโอเวอร์</p>
-                    <p class="text-3xl font-bold mt-1">{{ number_format($stats['total_taken_over']) }}</p>
-                </div>
-                <div class="text-4xl opacity-50">🎯</div>
-            </div>
-        </div>
-        <div class="bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-blue-100">บทสนทนา Active (7 วัน)</p>
-                    <p class="text-3xl font-bold mt-1">{{ number_format($stats['total_active']) }}</p>
-                </div>
-                <div class="text-4xl opacity-50">💬</div>
-            </div>
-        </div>
-        <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-emerald-100">เทคโอเวอร์วันนี้</p>
-                    <p class="text-3xl font-bold mt-1">{{ number_format($stats['takeovers_today']) }}</p>
-                </div>
-                <div class="text-4xl opacity-50">📈</div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Settings Summary --}}
+    {{-- ===== ระบบปิดอยู่ (แจ้งเตือน) ===== --}}
     @if(! $settings->isTakeoverEnabled())
-    <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-        <div class="flex items-start gap-3">
-            <div class="text-2xl">⚠️</div>
-            <div class="flex-1">
-                <p class="font-semibold text-amber-900 dark:text-amber-200">ระบบเทคโอเวอร์ถูกปิดอยู่</p>
-                <p class="text-sm text-amber-800 dark:text-amber-300 mt-1">
-                    เปิดใช้งานที่ <a href="{{ route('admin.fortune.settings.index') }}#takeover" class="underline font-medium">ตั้งค่าระบบดูดวง → ระบบเทคโอเวอร์</a>
-                </p>
+    <div class="tp-card" style="border-left:4px solid #e0a52e; display:flex; align-items:flex-start; gap:14px;">
+        <div class="tp-tile" style="background:linear-gradient(135deg, #e0a52e, #d6824a); flex:0 0 auto;">
+            <i class="fas fa-triangle-exclamation"></i>
+        </div>
+        <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; color:var(--ink); font-size:15px;">ระบบเทคโอเวอร์ถูกปิดอยู่</div>
+            <div class="tp-muted" style="font-size:13px; margin-top:4px;">
+                เปิดใช้งานที่
+                <a href="{{ route('admin.fortune.settings.index') }}#takeover"
+                   style="color:var(--accent1); font-weight:600; text-decoration:underline;">
+                    ตั้งค่าระบบดูดวง → ระบบเทคโอเวอร์
+                </a>
             </div>
         </div>
     </div>
     @endif
 
-    {{-- Filters --}}
-    <form method="GET" class="mb-4 bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">สถานะ</label>
-                <select name="filter" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                    <option value="active" @selected($filter === 'active')>กำลังสนทนา (7 วัน)</option>
-                    <option value="taken_over" @selected($filter === 'taken_over')>🎯 ถูกเทคโอเวอร์</option>
-                    <option value="all" @selected($filter === 'all')>ทั้งหมด</option>
-                </select>
+    {{-- ===== KPI ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:14px;">
+        {{-- กำลังเทคโอเวอร์ --}}
+        <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
+            <div class="tp-tile"><i class="fas fa-bullseye"></i></div>
+            <div style="min-width:0;">
+                <div class="tp-muted" style="font-size:12px; font-weight:600;">กำลังเทคโอเวอร์</div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; color:var(--ink); line-height:1.15;">
+                    {{ number_format($stats['total_taken_over']) }}
+                </div>
             </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Platform</label>
-                <select name="platform" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                    <option value="">ทุก Platform</option>
-                    <option value="line" @selected($platform === 'line')>💚 LINE</option>
-                    <option value="facebook" @selected($platform === 'facebook')>🔵 Facebook</option>
-                </select>
+        </div>
+        {{-- บทสนทนา active 7 วัน --}}
+        <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
+            <div class="tp-tile" style="background:linear-gradient(135deg, #5689b8, #5aa07e);">
+                <i class="fas fa-comments"></i>
             </div>
-            <div class="md:col-span-2">
-                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ค้นหา</label>
-                <div class="flex gap-2">
-                    <input type="text" name="search" value="{{ $search }}" placeholder="ชื่อ, user id, bill reference..."
-                           class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition">
-                        🔍
+            <div style="min-width:0;">
+                <div class="tp-muted" style="font-size:12px; font-weight:600;">บทสนทนา Active (7 วัน)</div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; color:var(--ink); line-height:1.15;">
+                    {{ number_format($stats['total_active']) }}
+                </div>
+            </div>
+        </div>
+        {{-- เทคโอเวอร์วันนี้ --}}
+        <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
+            <div class="tp-tile" style="background:linear-gradient(135deg, #5aa07e, #e0a52e);">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div style="min-width:0;">
+                <div class="tp-muted" style="font-size:12px; font-weight:600;">เทคโอเวอร์วันนี้</div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; color:var(--ink); line-height:1.15;">
+                    {{ number_format($stats['takeovers_today']) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== ฟิลเตอร์ (GET form — คง name/value เดิม) ===== --}}
+    <form method="GET" class="tp-card">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:12px; align-items:end;">
+            {{-- สถานะ --}}
+            <div>
+                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">สถานะ</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="filter"
+                            style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                        <option value="active" @selected($filter === 'active')>กำลังสนทนา (7 วัน)</option>
+                        <option value="taken_over" @selected($filter === 'taken_over')>🎯 ถูกเทคโอเวอร์</option>
+                        <option value="all" @selected($filter === 'all')>ทั้งหมด</option>
+                    </select>
+                </div>
+            </div>
+            {{-- Platform --}}
+            <div>
+                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">Platform</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="platform"
+                            style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                        <option value="">ทุก Platform</option>
+                        <option value="line" @selected($platform === 'line')>💚 LINE</option>
+                        <option value="facebook" @selected($platform === 'facebook')>🔵 Facebook</option>
+                    </select>
+                </div>
+            </div>
+            {{-- ค้นหา --}}
+            <div style="grid-column:1 / -1;">
+                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">ค้นหา</label>
+                <div style="display:flex; gap:10px;">
+                    <div class="tp-well tp-input" style="flex:1; padding:0;">
+                        <input type="text" name="search" value="{{ $search }}"
+                               placeholder="ชื่อ, user id, bill reference..."
+                               style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px;">
+                    </div>
+                    <button type="submit" class="tp-btn tp-btn-primary">
+                        <i class="fas fa-magnifying-glass"></i> ค้นหา
                     </button>
                 </div>
             </div>
         </div>
     </form>
 
-    {{-- Readings Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-900/50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ผู้ใช้</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Platform</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Takeover</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">อัพเดตล่าสุด</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">จัดการ</th>
+    {{-- ===== รายการบทสนทนา ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        @if($readings->count() > 0)
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:760px; border-collapse:separate; border-spacing:0 8px; padding:0 14px;">
+                <thead>
+                    <tr style="text-align:left;">
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">ผู้ใช้</th>
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">Platform</th>
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">สถานะ</th>
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">Takeover</th>
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">อัพเดตล่าสุด</th>
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($readings as $reading)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
-                            x-data="{ isActive: {{ $reading->isAdminTakenOver() ? 'true' : 'false' }} }">
-                            <td class="px-4 py-3">
-                                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                <tbody>
+                    @foreach($readings as $reading)
+                        {{-- แต่ละแถวมี x-data ของตัวเอง (isActive = ถูกเทคโอเวอร์อยู่หรือไม่) --}}
+                        <tr x-data="{ isActive: {{ $reading->isAdminTakenOver() ? 'true' : 'false' }} }"
+                            style="background:var(--surf); box-shadow:var(--inset-sm); border-radius:12px;">
+                            {{-- ผู้ใช้ --}}
+                            <td style="padding:14px 12px; border-radius:12px 0 0 12px;">
+                                <div style="font-size:14px; font-weight:600; color:var(--ink);">
                                     {{ $reading->facebook_user_name ?? 'ไม่ระบุชื่อ' }}
                                 </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                <div class="tp-num" style="font-size:11px; color:var(--ink2); margin-top:2px;">
                                     {{ Str::limit($reading->platform_user_id ?: $reading->facebook_user_id, 20) }}
                                 </div>
                             </td>
-                            <td class="px-4 py-3">
+                            {{-- Platform --}}
+                            <td style="padding:14px 12px;">
                                 @if($reading->platform === 'line')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
+                                    <span class="tp-pill" style="color:#5aa07e; background:rgba(90,160,126,.12);">
                                         💚 LINE
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                                    <span class="tp-pill" style="color:#5689b8; background:rgba(86,137,184,.12);">
                                         🔵 Facebook
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-xs">
+                            {{-- สถานะ conversation --}}
+                            <td style="padding:14px 12px;">
                                 @php
-                                    $statusLabel = match($reading->conversation_status) {
-                                        'new' => ['เริ่มต้น', 'gray'],
-                                        'awaiting_confirmation' => ['รอยืนยัน', 'yellow'],
-                                        'basic_done' => ['พื้นฐานเสร็จ', 'blue'],
-                                        'collecting_birthdate' => ['กำลังเก็บวันเกิด', 'yellow'],
-                                        'collecting_questions' => ['กำลังเก็บคำถาม', 'yellow'],
-                                        'collecting_tarot' => ['กำลังเก็บไพ่', 'yellow'],
-                                        'pending_payment' => ['รอชำระเงิน', 'orange'],
-                                        'paid' => ['จ่ายแล้ว', 'purple'],
-                                        'completed' => ['เสร็จสิ้น', 'green'],
-                                        default => [$reading->conversation_status, 'gray'],
+                                    // map สถานะ → ป้าย + สี (จาก palette V4)
+                                    $statusMap = match($reading->conversation_status) {
+                                        'new' => ['เริ่มต้น', '#9a8f7c'],
+                                        'awaiting_confirmation' => ['รอยืนยัน', '#e0a52e'],
+                                        'basic_done' => ['พื้นฐานเสร็จ', '#5689b8'],
+                                        'collecting_birthdate' => ['กำลังเก็บวันเกิด', '#e0a52e'],
+                                        'collecting_questions' => ['กำลังเก็บคำถาม', '#e0a52e'],
+                                        'collecting_tarot' => ['กำลังเก็บไพ่', '#e0a52e'],
+                                        'pending_payment' => ['รอชำระเงิน', '#d6824a'],
+                                        'paid' => ['จ่ายแล้ว', '#b79ae8'],
+                                        'completed' => ['เสร็จสิ้น', '#5aa07e'],
+                                        default => [$reading->conversation_status, '#9a8f7c'],
                                     };
-                                    $color = $statusLabel[1];
                                 @endphp
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                                    bg-{{ $color }}-100 text-{{ $color }}-800 dark:bg-{{ $color }}-900/50 dark:text-{{ $color }}-300">
-                                    {{ $statusLabel[0] }}
+                                <span class="tp-pill"
+                                      style="color:{{ $statusMap[1] }}; background:{{ $statusMap[1] }}1f;">
+                                    {{ $statusMap[0] }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3">
+                            {{-- Takeover state --}}
+                            <td style="padding:14px 12px;">
                                 <template x-if="isActive">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-900 dark:bg-purple-900/50 dark:text-purple-200">
+                                    <span class="tp-pill tp-pill-gold" style="font-weight:700;">
                                         🎯 เทคโอเวอร์อยู่
-                                        <span class="text-[10px] opacity-75">({{ $reading->takeoverRemainingMinutes() }}m)</span>
+                                        <span style="opacity:.7; font-size:10px;">({{ $reading->takeoverRemainingMinutes() }}m)</span>
                                     </span>
                                 </template>
                                 <template x-if="! isActive">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                    <span class="tp-pill tp-pill-soft">
                                         🤖 AI ทำงาน
                                     </span>
                                 </template>
                             </td>
-                            <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+                            {{-- อัพเดตล่าสุด --}}
+                            <td style="padding:14px 12px; font-size:12px; color:var(--ink2);">
                                 {{ $reading->updated_at->diffForHumans() }}
                             </td>
-                            <td class="px-4 py-3 text-right whitespace-nowrap">
-                                <div class="inline-flex items-center gap-1.5 justify-end">
+                            {{-- จัดการ --}}
+                            <td style="padding:14px 12px; text-align:right; white-space:nowrap; border-radius:0 12px 12px 0;">
+                                <div style="display:inline-flex; align-items:center; gap:8px; justify-content:flex-end;">
                                     <a href="{{ route('admin.fortune.takeover.show', $reading) }}"
-                                       class="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white rounded-lg text-xs font-medium transition">
-                                        เปิดคุย →
+                                       class="tp-btn tp-btn-primary tp-btn-sm">
+                                        เปิดคุย <i class="fas fa-arrow-right"></i>
                                     </a>
                                     {{-- 🚫 (2026-05-23) ปุ่มแบนด่วน — เปิด modal เลือก duration --}}
                                     <button type="button"
                                             @click="openBan({{ $reading->id }}, @js($reading->facebook_user_name), @js($reading->platform ?? 'facebook'), @js($reading->platform_user_id ?: $reading->facebook_user_id))"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg text-xs font-medium transition"
+                                            class="tp-icon-btn"
+                                            style="color:#d9534f;"
                                             title="แบน user คนนี้">
-                                        🚫
+                                        <i class="fas fa-ban"></i>
                                     </button>
                                 </div>
                             </td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                                <div class="text-5xl mb-2">🔍</div>
-                                <p>ไม่พบบทสนทนา</p>
-                            </td>
-                        </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
+        @else
+            {{-- empty state --}}
+            <div style="padding:56px 20px; text-align:center;">
+                <i class="fas fa-inbox" style="font-size:42px; color:var(--ink2); opacity:.6;"></i>
+                <p class="tp-muted" style="margin-top:12px; font-size:14px;">ไม่พบบทสนทนา</p>
+            </div>
+        @endif
     </div>
 
-    {{-- Pagination --}}
-    <div class="mt-4">
+    {{-- ===== Pagination ===== --}}
+    @if($readings->hasPages())
+    <div>
         {{ $readings->links() }}
     </div>
+    @endif
 
-    {{-- 🚫 (2026-05-23) Modal แบน user — เลือก preset duration --}}
+    {{-- ===== 🚫 (2026-05-23) Modal แบน user — เลือก preset duration ===== --}}
     <div x-show="showBan" x-cloak
          x-transition.opacity
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+         style="position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(0,0,0,.6);"
          @keydown.escape.window="closeBan()"
          @click.self="closeBan()">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+        <div class="tp-card tp-raise"
+             style="max-width:440px; width:100%; padding:0; overflow:hidden;"
              x-transition.scale.95.duration.150ms>
             {{-- Header --}}
-            <div class="bg-gradient-to-r from-red-600 to-red-700 px-5 py-4 text-white">
-                <h3 class="text-lg font-bold flex items-center gap-2">
-                    🚫 แบน user คนนี้
+            <div style="background:linear-gradient(135deg, #d9534f, #b8413d); padding:18px 20px; color:#fff;">
+                <h3 style="font-size:17px; font-weight:700; display:flex; align-items:center; gap:8px; margin:0;">
+                    <i class="fas fa-ban"></i> แบน user คนนี้
                 </h3>
-                <p class="text-xs text-red-100 mt-1">
+                <p style="font-size:12px; color:rgba(255,255,255,.85); margin:6px 0 0;">
                     บอทจะไม่ตอบ user คนนี้อีก (admin ยังคุยผ่าน Page Inbox / LINE OA ได้)
                 </p>
             </div>
 
-            {{-- Body --}}
+            {{-- Body — ฟอร์มแบน (action/method/@csrf/field คงเดิม 100%) --}}
             <form method="POST" :action="'{{ url('admin/fortune/takeover') }}/' + banForm.id + '/ban'">
                 @csrf
                 <input type="hidden" name="from" value="index">
 
-                <div class="p-5 space-y-4">
-                    {{-- User info --}}
-                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 text-sm">
-                        <div class="font-semibold text-gray-900 dark:text-white" x-text="banForm.name"></div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <div style="padding:20px; display:flex; flex-direction:column; gap:16px;">
+                    {{-- ข้อมูล user --}}
+                    <div class="tp-well" style="padding:14px;">
+                        <div style="font-weight:600; color:var(--ink); font-size:14px;" x-text="banForm.name"></div>
+                        <div class="tp-num" style="font-size:12px; color:var(--ink2); margin-top:3px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                             <span x-text="banForm.platform === 'line' ? '💚 LINE' : '🔵 Facebook'"></span>
-                            <span class="opacity-70">•</span>
+                            <span style="opacity:.6;">•</span>
                             <span x-text="banForm.userId"></span>
                         </div>
                     </div>
 
-                    {{-- Duration preset --}}
+                    {{-- preset ระยะเวลาแบน --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label style="display:block; font-size:13px; font-weight:600; color:var(--ink2); margin-bottom:8px;">
                             ระยะเวลาแบน
                         </label>
-                        <div class="grid grid-cols-1 gap-2">
+                        <div style="display:flex; flex-direction:column; gap:8px;">
                             <template x-for="opt in [
                                 {value: '10m', label: '⏱ 10 นาที — เตือนสั้นๆ', danger: false},
                                 {value: '1h', label: '⏰ 1 ชั่วโมง', danger: false},
@@ -286,14 +324,14 @@
                                 {value: '7d', label: '🗓️ 7 วัน', danger: false},
                                 {value: 'permanent', label: '🔒 ถาวร', danger: true}
                             ]" :key="opt.value">
-                                <label class="flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 cursor-pointer transition"
-                                       :class="banForm.duration === opt.value
-                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/30 dark:border-red-500'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700'">
+                                <label style="display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; border:2px solid; cursor:pointer; transition:all .15s;"
+                                       :style="banForm.duration === opt.value
+                                            ? 'border-color:#d9534f; background:rgba(217,83,79,.10);'
+                                            : 'border-color:var(--inset-sm-border, rgba(154,143,124,.25)); background:transparent;'">
                                     <input type="radio" name="duration" :value="opt.value" x-model="banForm.duration"
-                                           class="text-red-600 focus:ring-red-500">
-                                    <span class="text-sm"
-                                          :class="opt.danger ? 'font-semibold text-red-700 dark:text-red-300' : 'text-gray-900 dark:text-gray-100'"
+                                           style="accent-color:#d9534f; width:16px; height:16px;">
+                                    <span style="font-size:14px;"
+                                          :style="opt.danger ? 'font-weight:600; color:#d9534f;' : 'color:var(--ink);'"
                                           x-text="opt.label"></span>
                                 </label>
                             </template>
@@ -302,14 +340,13 @@
                 </div>
 
                 {{-- Footer --}}
-                <div class="bg-gray-50 dark:bg-gray-900/50 px-5 py-3 flex items-center justify-end gap-2">
-                    <button type="button" @click="closeBan()"
-                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium transition">
+                <div class="tp-inset" style="padding:14px 20px; display:flex; align-items:center; justify-content:flex-end; gap:10px;">
+                    <button type="button" @click="closeBan()" class="tp-btn">
                         ยกเลิก
                     </button>
-                    <button type="submit"
-                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition">
-                        🚫 ยืนยันแบน
+                    <button type="submit" class="tp-btn"
+                            style="background:#d9534f; color:#fff; box-shadow:var(--raise);">
+                        <i class="fas fa-ban"></i> ยืนยันแบน
                     </button>
                 </div>
             </form>

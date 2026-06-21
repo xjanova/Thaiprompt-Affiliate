@@ -1,9 +1,14 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'เทคโอเวอร์: ' . ($reading->facebook_user_name ?? 'ไม่ระบุชื่อ'))
 
 @section('content')
-<div class="container mx-auto px-4 py-6"
+{{--
+    หน้าเทคโอเวอร์ห้องแชท (ธีม V4 นวลทองคำ)
+    🔴 หน้านี้เป็น live-chat + polling — คง endpoint/payload/interval เดิมเป๊ะ
+    เปลี่ยนแค่ markup/สไตล์ ไม่แตะ JS logic การส่ง/รับข้อความ
+--}}
+<div style="display:flex; flex-direction:column; gap:18px;"
      x-data="takeoverPanel({
         readingId: {{ $reading->id }},
         isActive: {{ $reading->isAdminTakenOver() ? 'true' : 'false' }},
@@ -18,43 +23,48 @@
      })"
      x-init="init()">
 
-    {{-- Header --}}
-    <div class="mb-4 flex items-center justify-between flex-wrap gap-3">
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
         <div>
-            <a href="{{ route('admin.fortune.takeover.index') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:underline">
-                ← กลับไปรายการ
-            </a>
-            <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {{ $reading->facebook_user_name ?? 'ไม่ระบุชื่อ' }}
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">
+                หลังบ้าน · ระบบดูดวง · เทคโอเวอร์ห้องแชท
+            </div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">
+                {{ $reading->facebook_user_name ?? 'ไม่ระบุชื่อ' }} 💬
             </h1>
-            <div class="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:8px;">
                 @if($reading->platform === 'line')
-                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">💚 LINE</span>
+                    <span class="tp-pill" style="color:#5aa07e;">💚 LINE</span>
                 @else
-                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">🔵 Facebook</span>
+                    <span class="tp-pill" style="color:#5689b8;">🔵 Facebook</span>
                 @endif
-                <span class="font-mono">{{ $reading->platform_user_id ?: $reading->facebook_user_id }}</span>
+                <span class="tp-pill tp-pill-soft tp-num" style="font-size:12px;">{{ $reading->platform_user_id ?: $reading->facebook_user_id }}</span>
                 @if($reading->bill_reference)
-                    <span>• Bill: {{ $reading->bill_reference }}</span>
+                    <span class="tp-pill tp-pill-soft tp-num">Bill: {{ $reading->bill_reference }}</span>
                 @endif
             </div>
         </div>
+        <div style="display:flex; align-items:center; gap:9px;">
+            <a href="{{ route('admin.fortune.takeover.index') }}" class="tp-btn">
+                <i class="fas fa-arrow-left"></i> กลับไปรายการ
+            </a>
+        </div>
     </div>
 
-    {{-- Flash messages (session-based — สำหรับ ban redirect) --}}
+    {{-- ===== Flash messages (session-based — สำหรับ ban redirect) ===== --}}
     @if (session('success'))
-        <div class="mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-800 dark:text-emerald-200 text-sm">
-            {{ session('success') }}
+        <div class="tp-card" style="border-left:4px solid #5aa07e; padding:14px 18px; color:var(--ink); font-size:14px;">
+            <i class="fas fa-circle-check" style="color:#5aa07e; margin-right:8px;"></i>{{ session('success') }}
         </div>
     @endif
     @if (session('error'))
-        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-200 text-sm">
-            {{ session('error') }}
+        <div class="tp-card" style="border-left:4px solid #d9534f; padding:14px 18px; color:var(--ink); font-size:14px;">
+            <i class="fas fa-circle-exclamation" style="color:#d9534f; margin-right:8px;"></i>{{ session('error') }}
         </div>
     @endif
     @if ($errors->any())
-        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-200">
-            <ul class="list-disc list-inside text-sm">
+        <div class="tp-card" style="border-left:4px solid #d9534f; padding:14px 18px; color:var(--ink);">
+            <ul style="list-style:disc; padding-left:20px; font-size:14px; margin:0;">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -62,43 +72,56 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {{-- LEFT: Takeover Control Panel --}}
-        <div class="lg:col-span-1 space-y-4">
-            {{-- Status Card --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
-                <div class="p-5" :class="isActive ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white' : 'bg-gray-50 dark:bg-gray-900/50'">
+    {{-- ===== master-detail grid ===== --}}
+    <div class="tp-takeover-grid">
+        {{-- ================= LEFT: Control Panel ================= --}}
+        <div style="display:flex; flex-direction:column; gap:18px;">
+
+            {{-- ----- Status Card ----- --}}
+            <div class="tp-card" style="padding:0; overflow:hidden;">
+                {{-- ส่วนสถานะ (เปลี่ยนสีตาม active) --}}
+                <div style="padding:22px;"
+                     :style="isActive
+                        ? 'background:linear-gradient(135deg,var(--deep1),var(--deep2));'
+                        : ''">
+                    {{-- กำลังเทคโอเวอร์ --}}
                     <template x-if="isActive">
                         <div>
-                            <div class="text-sm opacity-80">สถานะ</div>
-                            <div class="text-2xl font-bold mt-1">🎯 กำลังเทคโอเวอร์</div>
-                            <div class="mt-3 flex items-baseline gap-2">
-                                <span class="text-4xl font-bold tabular-nums" x-text="formatRemaining()"></span>
-                                <span class="text-sm opacity-80">เหลือ</span>
+                            <div style="font-size:12px; color:#fff; opacity:.85; font-weight:600;">สถานะ</div>
+                            <div style="font-size:22px; font-weight:800; margin-top:4px; color:#fff;">🎯 กำลังเทคโอเวอร์</div>
+                            <div style="display:flex; align-items:baseline; gap:8px; margin-top:14px;">
+                                <span class="tp-num" style="font-size:40px; font-weight:800; color:#fff;" x-text="formatRemaining()"></span>
+                                <span style="font-size:13px; color:#fff; opacity:.85;">เหลือ</span>
                             </div>
                         </div>
                     </template>
+                    {{-- AI ทำงานปกติ --}}
                     <template x-if="! isActive">
                         <div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400">สถานะ</div>
-                            <div class="text-2xl font-bold mt-1 text-gray-900 dark:text-white">🤖 AI กำลังทำงาน</div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400 mt-3">
+                            <div style="font-size:12px; color:var(--ink2); font-weight:600;">สถานะ</div>
+                            <div style="font-size:22px; font-weight:800; margin-top:4px; color:var(--ink);">🤖 AI กำลังทำงาน</div>
+                            <div style="font-size:13px; color:var(--ink2); margin-top:14px; line-height:1.6;">
                                 กดปุ่มด้านล่างเพื่อเทคโอเวอร์ AI จะหยุดตอบให้แอดมินคุยเอง
                             </div>
                         </div>
                     </template>
                 </div>
 
-                <div class="p-5 space-y-3">
+                <div style="padding:18px; display:flex; flex-direction:column; gap:12px;">
                     {{-- Takeover (ถ้ายังไม่ active) --}}
                     <template x-if="! isActive">
-                        <div class="space-y-2">
-                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">ระยะเวลา (นาที)</label>
-                            <input type="number" x-model.number="minutesInput" min="1" max="1440"
-                                   class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <label style="font-size:12px; font-weight:600; color:var(--ink2);">ระยะเวลา (นาที)</label>
+                            <div class="tp-well tp-input">
+                                <input type="number" x-model.number="minutesInput" min="1" max="1440"
+                                       class="tp-num"
+                                       style="width:100%; background:transparent; border:0; outline:0; color:var(--ink); font-size:14px;">
+                            </div>
                             <button @click="doTakeover()"
                                     :disabled="busy"
-                                    class="w-full px-4 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-semibold transition">
+                                    class="tp-btn tp-btn-primary"
+                                    style="width:100%; justify-content:center;"
+                                    :style="busy ? 'opacity:.5; cursor:not-allowed;' : ''">
                                 🎯 เทคโอเวอร์ — หยุด AI
                             </button>
                         </div>
@@ -106,68 +129,80 @@
 
                     {{-- Extend + Resume (ถ้า active) --}}
                     <template x-if="isActive">
-                        <div class="space-y-2">
-                            <div class="flex gap-2">
-                                <input type="number" x-model.number="extendInput" min="1" max="1440" placeholder="นาที"
-                                       class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="display:flex; gap:8px;">
+                                <div class="tp-well tp-input" style="flex:1;">
+                                    <input type="number" x-model.number="extendInput" min="1" max="1440" placeholder="นาที"
+                                           class="tp-num"
+                                           style="width:100%; background:transparent; border:0; outline:0; color:var(--ink); font-size:14px;">
+                                </div>
                                 <button @click="doExtend()"
                                         :disabled="busy"
-                                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition whitespace-nowrap">
+                                        class="tp-btn"
+                                        style="white-space:nowrap; color:#5689b8;"
+                                        :style="busy ? 'opacity:.5;' : ''">
                                     ⏱ ต่อเวลา
                                 </button>
                             </div>
                             <button @click="doResume()"
                                     :disabled="busy"
-                                    class="w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition">
+                                    class="tp-btn"
+                                    style="width:100%; justify-content:center; color:#5aa07e;"
+                                    :style="busy ? 'opacity:.5;' : ''">
                                 ✨ ให้ AI กลับมาทำงาน
                             </button>
                         </div>
                     </template>
 
-                    {{-- Flash Message --}}
+                    {{-- Flash Message (in-panel จาก AJAX) --}}
                     <div x-show="flashMessage"
                          x-transition
-                         class="p-3 rounded-lg text-sm whitespace-pre-line"
-                         :class="flashType === 'success'
-                            ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200'
-                            : 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200'">
+                         x-cloak
+                         class="tp-inset-sm"
+                         style="padding:12px 14px; border-radius:12px; font-size:13px; white-space:pre-line;"
+                         :style="flashType === 'success'
+                            ? 'color:#5aa07e;'
+                            : 'color:#d9534f;'">
                         <span x-text="flashMessage"></span>
                     </div>
                 </div>
             </div>
 
-            {{-- Customer Info --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
-                <h3 class="font-semibold text-gray-900 dark:text-white mb-3">ข้อมูลลูกค้า</h3>
-                <dl class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">สถานะ Conversation</dt>
-                        <dd class="font-medium text-gray-900 dark:text-white">{{ $reading->conversation_status }}</dd>
+            {{-- ----- Customer Info ----- --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:14px;">
+                    <i class="fas fa-user-circle" style="color:var(--accent1);"></i> ข้อมูลลูกค้า
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px; font-size:14px;">
+                    <div style="display:flex; justify-content:space-between; gap:10px;">
+                        <span class="tp-muted">สถานะ Conversation</span>
+                        <span style="font-weight:600; color:var(--ink);">{{ $reading->conversation_status }}</span>
                     </div>
                     @if($reading->birth_date)
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">วันเกิด</dt>
-                        <dd class="font-medium text-gray-900 dark:text-white">{{ $reading->birth_date->format('d/m/Y') }}</dd>
+                    <div style="display:flex; justify-content:space-between; gap:10px;">
+                        <span class="tp-muted">วันเกิด</span>
+                        <span class="tp-num" style="font-weight:600; color:var(--ink);">{{ $reading->birth_date->format('d/m/Y') }}</span>
                     </div>
                     @endif
                     @if($reading->is_paid)
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">ชำระแล้ว</dt>
-                        <dd class="font-medium text-emerald-600 dark:text-emerald-400">{{ number_format($reading->amount_paid, 2) }} ฿</dd>
+                    <div style="display:flex; justify-content:space-between; gap:10px;">
+                        <span class="tp-muted">ชำระแล้ว</span>
+                        <span class="tp-num" style="font-weight:700; color:#5aa07e;">{{ number_format($reading->amount_paid, 2) }} ฿</span>
                     </div>
                     @endif
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">สร้างเมื่อ</dt>
-                        <dd class="font-medium text-gray-900 dark:text-white">{{ $reading->created_at->format('d/m/Y H:i') }}</dd>
+                    <div style="display:flex; justify-content:space-between; gap:10px;">
+                        <span class="tp-muted">สร้างเมื่อ</span>
+                        <span class="tp-num" style="font-weight:600; color:var(--ink);">{{ $reading->created_at->format('d/m/Y H:i') }}</span>
                     </div>
-                </dl>
+                </div>
 
                 @if($reading->takeoverAdmin)
-                <div class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <p class="text-xs text-gray-500 dark:text-gray-400">เทคโอเวอร์ล่าสุดโดย</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $reading->takeoverAdmin->name }}</p>
+                <div class="tp-divider" style="margin:14px 0;"></div>
+                <div>
+                    <p class="tp-muted" style="font-size:12px; margin:0;">เทคโอเวอร์ล่าสุดโดย</p>
+                    <p style="font-size:14px; font-weight:600; color:var(--ink); margin:2px 0 0;">{{ $reading->takeoverAdmin->name }}</p>
                     @if($reading->admin_takeover_reason)
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <p class="tp-muted" style="font-size:12px; margin:2px 0 0;">
                         เหตุผล: {{ match($reading->admin_takeover_reason) {
                             'manual' => 'กดเทคเอง',
                             'auto_reply' => 'แอดมินพิมพ์ตอบ',
@@ -180,14 +215,14 @@
                 @endif
             </div>
 
-            {{-- 🚫 (2026-05-23) Ban Danger Zone — แบน user คนนี้ (ไม่ต้องไปหน้า /admin/fortune/bans) --}}
+            {{-- ----- 🚫 (2026-05-23) Ban Danger Zone ----- --}}
             <div x-data="{ banDuration: 'permanent' }"
-                 class="bg-white dark:bg-gray-800 rounded-xl shadow border-2 border-red-200 dark:border-red-900 overflow-hidden">
-                <div class="bg-red-50 dark:bg-red-900/30 px-5 py-3 border-b border-red-200 dark:border-red-900">
-                    <h3 class="font-semibold text-red-900 dark:text-red-200 flex items-center gap-2">
+                 class="tp-card" style="padding:0; overflow:hidden; border:2px solid rgba(217,83,79,.35);">
+                <div style="background:rgba(217,83,79,.1); padding:14px 18px; border-bottom:1px solid rgba(217,83,79,.25);">
+                    <div style="font-weight:700; color:#d9534f; display:flex; align-items:center; gap:8px;">
                         🚫 ระบบคุก — แบน user คนนี้
-                    </h3>
-                    <p class="text-xs text-red-700 dark:text-red-300 mt-0.5">
+                    </div>
+                    <p style="font-size:12px; color:#d9534f; opacity:.85; margin:4px 0 0;">
                         บอทจะไม่ตอบ user คนนี้อีก (admin ยังคุยผ่าน Page Inbox / LINE OA ได้)
                     </p>
                 </div>
@@ -196,12 +231,12 @@
                     @csrf
                     <input type="hidden" name="from" value="show">
 
-                    <div class="p-5 space-y-3">
+                    <div style="padding:18px; display:flex; flex-direction:column; gap:12px;">
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:10px;">
                                 ระยะเวลาแบน
                             </label>
-                            <div class="grid grid-cols-1 gap-1.5">
+                            <div style="display:flex; flex-direction:column; gap:8px;">
                                 <template x-for="opt in [
                                     {value: '10m', label: '⏱ 10 นาที — เตือนสั้นๆ', danger: false},
                                     {value: '1h', label: '⏰ 1 ชั่วโมง', danger: false},
@@ -209,13 +244,13 @@
                                     {value: '7d', label: '🗓️ 7 วัน', danger: false},
                                     {value: 'permanent', label: '🔒 ถาวร', danger: true}
                                 ]" :key="opt.value">
-                                    <label class="flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 cursor-pointer transition text-sm"
-                                           :class="banDuration === opt.value
-                                                ? 'border-red-500 bg-red-50 dark:bg-red-900/30 dark:border-red-500'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700'">
+                                    <label style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; cursor:pointer; font-size:14px; transition:.15s; border:2px solid transparent;"
+                                           :style="banDuration === opt.value
+                                                ? 'border-color:#d9534f; background:rgba(217,83,79,.1);'
+                                                : 'box-shadow:var(--inset-sm);'">
                                         <input type="radio" name="duration" :value="opt.value" x-model="banDuration"
-                                               class="text-red-600 focus:ring-red-500">
-                                        <span :class="opt.danger ? 'font-semibold text-red-700 dark:text-red-300' : 'text-gray-900 dark:text-gray-100'"
+                                               style="accent-color:#d9534f;">
+                                        <span :style="opt.danger ? 'font-weight:700; color:#d9534f;' : 'color:var(--ink);'"
                                               x-text="opt.label"></span>
                                     </label>
                                 </template>
@@ -223,7 +258,8 @@
                         </div>
 
                         <button type="submit"
-                                class="w-full px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition">
+                                class="tp-btn"
+                                style="width:100%; justify-content:center; background:#d9534f; color:#fff; font-weight:700; border:0;">
                             🚫 ยืนยันแบน user คนนี้
                         </button>
                     </div>
@@ -231,13 +267,16 @@
             </div>
         </div>
 
-        {{-- RIGHT: Conversation + Reply Box --}}
-        <div class="lg:col-span-2 space-y-4">
-            {{-- Questions --}}
+        {{-- ================= RIGHT: Conversation + Reply Box ================= --}}
+        <div style="display:flex; flex-direction:column; gap:18px;">
+
+            {{-- ----- Questions ----- --}}
             @if(! empty($reading->questions))
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
-                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">💭 คำถามของลูกค้า</h3>
-                <ul class="space-y-1 text-sm text-gray-700 dark:text-gray-300 list-disc pl-5">
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;">
+                    💭 คำถามของลูกค้า
+                </div>
+                <ul style="list-style:disc; padding-left:20px; display:flex; flex-direction:column; gap:6px; font-size:14px; color:var(--ink); margin:0;">
                     @foreach($reading->questions as $question)
                         <li>{{ $question }}</li>
                     @endforeach
@@ -245,60 +284,65 @@
             </div>
             @endif
 
-            {{-- AI Responses --}}
+            {{-- ----- AI Responses ----- --}}
             @if($reading->basic_response)
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
-                <h3 class="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;">
                     🔮 คำทำนายพื้นฐาน
-                </h3>
-                <div class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ $reading->basic_response }}</div>
+                </div>
+                <div class="tp-inset" style="padding:16px; border-radius:14px; font-size:14px; line-height:1.7; color:var(--ink); white-space:pre-wrap;">{{ $reading->basic_response }}</div>
             </div>
             @endif
 
             @if($reading->deep_response)
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
-                <h3 class="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;">
                     ✨ คำทำนายเชิงลึก
-                </h3>
-                <div class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ $reading->deep_response }}</div>
+                </div>
+                <div class="tp-inset" style="padding:16px; border-radius:14px; font-size:14px; line-height:1.7; color:var(--ink); white-space:pre-wrap;">{{ $reading->deep_response }}</div>
             </div>
             @endif
 
-            {{-- Send Message Box --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
-                <h3 class="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            {{-- ----- Send Message Box ----- --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:10px;">
                     💬 ส่งข้อความถึงลูกค้า
-                </h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                </div>
+                <p class="tp-muted" style="font-size:12px; margin:0 0 12px; line-height:1.6;">
                     ข้อความจะส่งผ่าน {{ $reading->platform === 'line' ? 'LINE' : 'Facebook Messenger' }} —
                     ถ้ายังไม่ได้เทคโอเวอร์ ระบบจะเทคโอเวอร์ให้อัตโนมัติก่อนส่ง
                 </p>
-                <textarea x-model="messageText"
-                          rows="4"
-                          placeholder="พิมพ์ข้อความที่อยากส่ง..."
-                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"></textarea>
-                <div class="flex justify-between items-center mt-3">
-                    <p class="text-xs text-gray-400" x-text="`${messageText.length} / 2000`"></p>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <textarea x-model="messageText"
+                              rows="4"
+                              placeholder="พิมพ์ข้อความที่อยากส่ง..."
+                              style="width:100%; background:transparent; border:0; outline:0; padding:12px 14px; color:var(--ink); font-size:14px; resize:vertical; font-family:inherit;"></textarea>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+                    <p class="tp-muted tp-num" style="font-size:12px; margin:0;" x-text="`${messageText.length} / 2000`"></p>
                     <button @click="doSendMessage()"
                             :disabled="busy || messageText.trim().length === 0 || messageText.length > 2000"
-                            class="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-semibold transition">
-                        ส่งข้อความ →
+                            class="tp-btn tp-btn-primary"
+                            :style="(busy || messageText.trim().length === 0 || messageText.length > 2000) ? 'opacity:.5; cursor:not-allowed;' : ''">
+                        ส่งข้อความ <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
             </div>
 
-            {{-- Takeover History --}}
+            {{-- ----- Takeover History ----- --}}
             @if($reading->takeoverLogs->isNotEmpty())
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
-                <h3 class="font-semibold text-gray-900 dark:text-white mb-3">📜 ประวัติการเทคโอเวอร์</h3>
-                <div class="space-y-2 max-h-96 overflow-y-auto">
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:14px;">
+                    📜 ประวัติการเทคโอเวอร์
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto;">
                     @foreach($reading->takeoverLogs as $log)
-                    <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50 text-sm">
-                        <div class="flex items-center justify-between">
-                            <span class="font-medium text-gray-900 dark:text-white">{{ $log->getActionLabel() }}</span>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ $log->created_at->diffForHumans() }}</span>
+                    <div class="tp-inset-sm" style="padding:12px 14px; border-radius:12px; font-size:14px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                            <span style="font-weight:600; color:var(--ink);">{{ $log->getActionLabel() }}</span>
+                            <span class="tp-muted" style="font-size:12px;">{{ $log->created_at->diffForHumans() }}</span>
                         </div>
-                        <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
+                        <div class="tp-muted" style="font-size:12px; margin-top:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                             @if($log->user)
                                 <span>👤 {{ $log->user->name }}</span>
                             @else
@@ -308,11 +352,11 @@
                                 <span>• {{ $log->getReasonLabel() }}</span>
                             @endif
                             @if($log->duration_minutes)
-                                <span>• {{ $log->duration_minutes }} นาที</span>
+                                <span class="tp-num">• {{ $log->duration_minutes }} นาที</span>
                             @endif
                         </div>
                         @if($log->message)
-                            <div class="mt-1 text-xs text-gray-700 dark:text-gray-300 italic bg-white dark:bg-gray-800 p-2 rounded">
+                            <div class="tp-inset" style="margin-top:8px; font-size:12px; color:var(--ink); font-style:italic; padding:8px 10px; border-radius:10px;">
                                 "{{ Str::limit($log->message, 200) }}"
                             </div>
                         @endif
@@ -324,8 +368,29 @@
         </div>
     </div>
 </div>
+@endsection
 
-{{-- Alpine Component --}}
+@push('scripts')
+{{-- CSS เฉพาะหน้า (ใส่ใน @push('scripts') เพื่อให้ render ท้าย body ทำงานได้) --}}
+<style>
+    /* master-detail grid — mobile-first */
+    .tp-takeover-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+    @media (min-width: 1024px) {
+        .tp-takeover-grid {
+            grid-template-columns: minmax(330px, 1fr) minmax(330px, 1.6fr);
+        }
+    }
+    [x-cloak] { display: none !important; }
+</style>
+
+{{--
+    Alpine Component — ⚠️ ห้ามแตะ logic การส่ง/รับข้อความ
+    คง endpoint/payload/interval เดิมเป๊ะ (poll 15s, countdown 1s)
+--}}
 <script>
 function takeoverPanel(config) {
     return {
@@ -474,4 +539,4 @@ function takeoverPanel(config) {
     };
 }
 </script>
-@endsection
+@endpush
