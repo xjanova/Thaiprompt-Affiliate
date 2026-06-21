@@ -216,6 +216,23 @@
             </div>
         </div>
 
+        {{-- 🔊 ทดลองฟังเสียง "อ่านบทสรุปคำทำนาย" — ใช้โมเดล/เสียงที่เลือกด้านบน (ไม่ต้องบันทึกก่อน) --}}
+        <div class="mb-5 p-4 rounded-lg border border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/10">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                    <div class="text-sm font-medium text-gray-800 dark:text-gray-200">🔊 ทดลองฟังเสียงอ่านบทสรุปคำทำนาย</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">ใช้โมเดลหลัก + เสียงที่เลือกด้านบน (ยังไม่ต้องกดบันทึก) — ฟังว่าเสียงที่อ่านบทสรุปให้ลูกค้าจะเป็นแบบไหน</div>
+                </div>
+                <button type="button" @click="previewSummary()" :disabled="summaryPreviewLoading"
+                        class="px-4 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-sm rounded-lg transition shrink-0">
+                    <span x-show="!summaryPreviewLoading">🔊 ทดลองเสียงสรุป</span>
+                    <span x-show="summaryPreviewLoading">⏳ กำลังสร้าง...</span>
+                </button>
+            </div>
+            <audio x-show="summaryPreviewUrl" :src="summaryPreviewUrl" controls class="mt-2 w-full max-w-md"></audio>
+            <span x-show="summaryPreviewError" x-text="summaryPreviewError" class="text-xs text-red-600 dark:text-red-400 block mt-1"></span>
+        </div>
+
         <div class="flex items-center justify-between flex-wrap gap-2">
             <p class="text-xs text-gray-500 dark:text-gray-400">
                 💡 API key ตั้งที่ <a href="{{ route('admin.fortune.settings.index') }}#tts" class="underline">ตั้งค่า</a>
@@ -541,6 +558,10 @@ function voiceManager() {
         mmSampleLoading: false,
         mmSampleError: '',
         mmRefreshing: false,
+        // ทดลองเสียงอ่านบทสรุปคำทำนาย
+        summaryPreviewUrl: '',
+        summaryPreviewLoading: false,
+        summaryPreviewError: '',
 
         async generate(id) {
             this.clips[id].loading = true;
@@ -687,6 +708,35 @@ function voiceManager() {
                 if (data.success) this.mmSampleUrl = data.audio_url + '?t=' + Date.now();
                 else this.mmSampleError = data.error || 'สร้างเสียงไม่สำเร็จ';
             } catch (e) { this.mmSampleError = e.message; } finally { this.mmSampleLoading = false; }
+        },
+
+        // 🔊 ทดลองฟังเสียง "อ่านบทสรุปคำทำนาย" — อ่านค่า provider/voice ที่เลือกในฟอร์ม (ยังไม่บันทึก)
+        async previewSummary() {
+            const root = this.$root;
+            const provider = (root.querySelector('[name="voice_summary_primary_provider"]')?.value || '').trim();
+            // เลือก voice id ตาม provider ที่เลือก
+            let voice = '';
+            if (provider === 'minimax') voice = (root.querySelector('[name="minimax_voice_id"]')?.value || '').trim();
+            else if (provider === 'openai_tts') voice = (root.querySelector('[name="openai_tts_voice"]')?.value || '').trim();
+            else if (provider === 'google_tts') voice = (root.querySelector('[name="google_tts_voice"]')?.value || '').trim();
+            // ข้อความสรุปตัวอย่าง (เลียนแบบเสียงผู้ช่วย AI อ่านบทสรุป — มีวันที่/ตัวเลขให้ทดสอบ normalization)
+            const sample = 'ผู้ช่วย AI ขออ่านบทสรุปคำทำนายให้ฟังนะคะ ไพ่ของเจ้าชะตาบอกว่าช่วงนี้เป็นจังหวะของการเปลี่ยนแปลง การงานมีโอกาสก้าวหน้าถ้ากล้าตัดสินใจ ในช่วงวันที่ 15 ถึง 20 ของเดือนนี้จะมีข่าวดีเข้ามา ด้านความรักให้เปิดใจสื่อสารอย่างจริงใจ ส่วนการเงินระวังรายจ่ายที่ไม่จำเป็น โดยรวมแล้วดวงกำลังไปในทางที่ดีขึ้นค่ะ ขอให้โชคดีนะคะ';
+            this.summaryPreviewLoading = true;
+            this.summaryPreviewError = '';
+            this.summaryPreviewUrl = '';
+            try {
+                const payload = { text: sample };
+                if (provider) payload.voice_provider = provider;
+                if (voice) payload.voice_id = voice;
+                const res = await fetch(`{{ route('admin.fortune.voice.preview') }}`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                if (data.success) this.summaryPreviewUrl = data.audio_url + '?t=' + Date.now();
+                else this.summaryPreviewError = data.error || 'สร้างเสียงไม่สำเร็จ';
+            } catch (e) { this.summaryPreviewError = e.message; } finally { this.summaryPreviewLoading = false; }
         },
 
         // 🔄 รีเฟรชรายชื่อเสียง MiniMax — ล้าง cache ฝั่งเซิร์ฟเวอร์ แล้ว reload หน้าให้ dropdown ดึงใหม่
