@@ -1,9 +1,10 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'อัปโหลดรูปกติกาใหม่')
 
 @section('content')
 @php
+    // ขอบเขตการใช้งานรูป (ใช้ตอนไหนของขั้นตอน)
     $scopes = [
         'both' => '🔁 อ่านกติกา + ตอนยกเลิก',
         'all' => '🌐 ทุกจังหวะ (กติกา + ยกเลิก + หมดเวลา)',
@@ -12,70 +13,161 @@
         'expire' => '⏰ เฉพาะตอนหมดเวลาเอง (นุ่ม)',
     ];
 @endphp
-<div class="container mx-auto px-4 py-8 max-w-2xl">
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">➕ อัปโหลดรูปกติกาใหม่</h1>
-        <a href="{{ route('admin.fortune.consent.index') }}" class="text-sm text-blue-600 hover:underline">← กลับ</a>
+
+<div style="display:flex;flex-direction:column;gap:18px;">
+
+    {{-- ส่วนหัวหน้า: eyebrow + ชื่อหน้า + ปุ่มกลับ --}}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div>
+            <div class="tp-muted" style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">
+                หลังบ้าน · ระบบดูดวง · กติกา
+            </div>
+            <h1 class="tp-num" style="font-size:26px;margin:0;display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-cloud-arrow-up" style="color:var(--accent1);"></i>
+                อัปโหลดรูปกติกาใหม่
+            </h1>
+        </div>
+        <a href="{{ route('admin.fortune.consent.index') }}" class="tp-btn tp-btn-sm">
+            <i class="fas fa-arrow-left"></i> กลับ
+        </a>
     </div>
 
+    {{-- กล่องแสดงข้อผิดพลาดจาก validation --}}
     @if($errors->any())
-        <div class="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 text-sm">
-            <ul class="list-disc list-inside">
-                @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+        <div class="tp-card tp-inset" style="border-left:4px solid #d9534f;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#d9534f;font-weight:600;">
+                <i class="fas fa-triangle-exclamation"></i> พบข้อผิดพลาด
+            </div>
+            <ul style="margin:0;padding-left:20px;color:var(--ink2);font-size:14px;line-height:1.7;">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
             </ul>
         </div>
     @endif
 
+    {{-- ฟอร์มอัปโหลด: คง action/method/@csrf/multipart/field เดิม 100% --}}
     <form action="{{ route('admin.fortune.consent.store') }}" method="POST" enctype="multipart/form-data"
-          class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-4">
+          x-data="{ preview: null, fileName: '' }">
         @csrf
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อรูป (ภายใน) <span class="text-red-500">*</span></label>
-            <input type="text" name="name" value="{{ old('name') }}" required maxlength="100"
-                   class="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                   placeholder="เช่น รูปเตือนกติกา #1">
-        </div>
+        <div style="display:grid;grid-template-columns:1fr;gap:18px;align-items:start;">
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">คำอธิบาย</label>
-            <input type="text" name="description" value="{{ old('description') }}" maxlength="500"
-                   class="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-        </div>
+            {{-- การ์ดข้อมูลรูป --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:16px;">
+                    <i class="fas fa-circle-info" style="color:var(--accent2);"></i> ข้อมูลรูป
+                </div>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ใช้รูปนี้ตอนไหน <span class="text-red-500">*</span></label>
-            <select name="usage_scope" class="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                @foreach($scopes as $val => $label)
-                    <option value="{{ $val }}" @selected(old('usage_scope', 'both') === $val)>{{ $label }}</option>
-                @endforeach
-            </select>
-        </div>
+                {{-- ชื่อรูป (ภายใน) --}}
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">
+                        ชื่อรูป (ภายใน) <span style="color:#d9534f;">*</span>
+                    </label>
+                    <div class="tp-well tp-input">
+                        <input type="text" name="name" value="{{ old('name') }}" required maxlength="100"
+                               placeholder="เช่น รูปเตือนกติกา #1"
+                               style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;">
+                    </div>
+                </div>
 
-        <div x-data="{ preview: null }">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">รูปภาพ (PNG/JPG, สูงสุด 10MB) <span class="text-red-500">*</span></label>
-            <input type="file" name="image" accept="image/png,image/jpeg" required
-                   @change="preview = $event.target.files.length ? URL.createObjectURL($event.target.files[0]) : null"
-                   class="w-full text-sm text-gray-700 dark:text-gray-300">
-            <template x-if="preview"><img :src="preview" class="mt-3 max-h-56 rounded-lg border border-gray-200 dark:border-gray-700"></template>
-        </div>
+                {{-- คำอธิบาย --}}
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">
+                        คำอธิบาย
+                    </label>
+                    <div class="tp-well tp-input">
+                        <input type="text" name="description" value="{{ old('description') }}" maxlength="500"
+                               placeholder="คำอธิบายเพิ่มเติม (ไม่บังคับ)"
+                               style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;">
+                    </div>
+                </div>
 
-        <div class="grid grid-cols-2 gap-4">
-            <label class="flex items-center gap-2">
-                <input type="checkbox" name="is_active" value="1" @checked(old('is_active', true)) class="w-4 h-4 text-blue-600">
-                <span class="text-sm text-gray-700 dark:text-gray-300">เปิดใช้งานทันที</span>
-            </label>
-            <div>
-                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">ลำดับ (sort)</label>
-                <input type="number" name="sort_order" value="{{ old('sort_order') }}" min="0"
-                       class="w-full px-3 py-1.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">
+                {{-- ใช้รูปนี้ตอนไหน --}}
+                <div style="margin-bottom:4px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">
+                        ใช้รูปนี้ตอนไหน <span style="color:#d9534f;">*</span>
+                    </label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <select name="usage_scope"
+                                style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
+                            @foreach($scopes as $val => $label)
+                                <option value="{{ $val }}" @selected(old('usage_scope', 'both') === $val)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="flex gap-3 pt-2">
-            <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow">💾 อัปโหลด</button>
-            <a href="{{ route('admin.fortune.consent.index') }}" class="px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg">ยกเลิก</a>
+            {{-- การ์ดอัปโหลดรูปภาพ + พรีวิว --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:16px;">
+                    <i class="fas fa-image" style="color:var(--accent1);"></i> รูปภาพ
+                </div>
+
+                <label style="display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">
+                    เลือกรูป (PNG/JPG, สูงสุด 10MB) <span style="color:#d9534f;">*</span>
+                </label>
+
+                {{-- พื้นที่อัปโหลด: input file ของจริงซ่อน, แสดงปุ่มสวยแทน (คง name/accept/required เดิม) --}}
+                <label class="tp-well tp-inset" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:26px 16px;cursor:pointer;text-align:center;border:1.5px dashed var(--sd);">
+                    <i class="fas fa-cloud-arrow-up" style="font-size:30px;color:var(--accent2);"></i>
+                    <div style="font-size:14px;color:var(--ink);font-weight:600;" x-text="fileName || 'คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง'"></div>
+                    <div class="tp-muted" style="font-size:12px;">รองรับ PNG / JPG ขนาดไม่เกิน 10MB</div>
+                    <input type="file" name="image" accept="image/png,image/jpeg" required
+                           @change="fileName = $event.target.files.length ? $event.target.files[0].name : ''; preview = $event.target.files.length ? URL.createObjectURL($event.target.files[0]) : null"
+                           style="display:none;">
+                </label>
+
+                {{-- พรีวิวรูปที่เลือก --}}
+                <template x-if="preview">
+                    <div style="margin-top:14px;">
+                        <div class="tp-muted" style="font-size:12px;margin-bottom:6px;">ตัวอย่างรูป</div>
+                        <img :src="preview" class="tp-inset"
+                             style="max-height:280px;width:auto;max-width:100%;border-radius:12px;display:block;">
+                    </div>
+                </template>
+            </div>
+
+            {{-- การ์ดตั้งค่าการแสดงผล --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:16px;">
+                    <i class="fas fa-sliders" style="color:var(--accent2);"></i> ตั้งค่าการแสดงผล
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;align-items:start;">
+
+                    {{-- เปิดใช้งานทันที --}}
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;" class="tp-well tp-inset-sm">
+                        <input type="checkbox" name="is_active" value="1" @checked(old('is_active', true))
+                               style="width:18px;height:18px;accent-color:var(--accent1);cursor:pointer;">
+                        <span style="font-size:14px;color:var(--ink);font-weight:600;">เปิดใช้งานทันที</span>
+                    </label>
+
+                    {{-- ลำดับ (sort) --}}
+                    <div>
+                        <label style="display:block;font-size:12px;color:var(--ink2);margin-bottom:6px;">ลำดับ (sort)</label>
+                        <div class="tp-well tp-input">
+                            <input type="number" name="sort_order" value="{{ old('sort_order') }}" min="0"
+                                   placeholder="0"
+                                   style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ปุ่ม action --}}
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-floppy-disk"></i> อัปโหลด
+                </button>
+                <a href="{{ route('admin.fortune.consent.index') }}" class="tp-btn">
+                    <i class="fas fa-xmark"></i> ยกเลิก
+                </a>
+            </div>
+
         </div>
     </form>
+
 </div>
 @endsection
