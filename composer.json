@@ -17,6 +17,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.12",
         "laravel/tinker": "^2.8",
+        "league/flysystem-aws-s3-v3": "^3.25.1",
         "maatwebsite/excel": "^3.1",
         "phpmailer/phpmailer": "^6.9",
         "pragmarx/google2fa-laravel": "^2.3",
