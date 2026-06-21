@@ -1658,10 +1658,11 @@ Format 2 — JSON array:
              data-fortune-tab="tts"
              x-data="voiceStorage({{ json_encode([
                 'driver' => $voiceStorageDriver,
-                'r2' => $cfgR2,
-                's3' => $cfgS3,
-                'gcs' => $cfgGcs,
-                'firebase' => $cfgFirebase,
+                // cast เป็น object — json_encode([]) = [] (array) จะทำให้ x-model + JSON.stringify ทิ้งค่า
+                'r2' => (object) $cfgR2,
+                's3' => (object) $cfgS3,
+                'gcs' => (object) $cfgGcs,
+                'firebase' => (object) $cfgFirebase,
              ]) }})">
             <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -4634,12 +4635,17 @@ function voiceStorage(initial) {
         migrate: '{{ route("admin.fortune.voice-storage.migrate") }}',
     };
 
+    // 🛠️ (2026-06-22) coerce config → object เสมอ: PHP json_encode([]) = [] (array)
+    //   ถ้าปล่อยเป็น array → x-model เขียน prop ได้ แต่ JSON.stringify(array) ทิ้ง prop ทั้งหมด
+    //   → config ส่งไป server ว่าง = "กรอกแล้วไม่บันทึก". merge default + ค่าที่มี
+    const asCfg = (v, defaults) => (v && typeof v === 'object' && !Array.isArray(v)) ? { ...defaults, ...v } : { ...defaults };
+
     return {
         driver: initial.driver || 'local',
-        r2: initial.r2 || { account_id: '', access_key_id: '', secret_access_key: '', bucket: '', public_url: '' },
-        s3: initial.s3 || { access_key_id: '', secret_access_key: '', region: 'ap-southeast-1', bucket: '', endpoint: '', public_url: '' },
-        gcs: initial.gcs || { credentials_path: 'storage/app/firebase-credentials.json', bucket: '', public_url: '' },
-        firebase: initial.firebase || { credentials_path: 'storage/app/firebase-credentials.json', bucket: '' },
+        r2: asCfg(initial.r2, { account_id: '', access_key_id: '', secret_access_key: '', bucket: '', public_url: '' }),
+        s3: asCfg(initial.s3, { access_key_id: '', secret_access_key: '', region: 'ap-southeast-1', bucket: '', endpoint: '', public_url: '' }),
+        gcs: asCfg(initial.gcs, { credentials_path: 'storage/app/firebase-credentials.json', bucket: '', public_url: '' }),
+        firebase: asCfg(initial.firebase, { credentials_path: 'storage/app/firebase-credentials.json', bucket: '' }),
         busy: false,
         message: '',
         messageOk: false,
