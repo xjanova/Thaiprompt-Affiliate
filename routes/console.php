@@ -129,6 +129,17 @@ Schedule::command('fortune:flow-nudge --limit=50')
     ->name('fortune-flow-nudge')
     ->runInBackground();
 
+// 🎧 (2026-06-21) เสียง "เลือกไพ่ใบต่อไป" (Celtic 99) — เงียบเกิน celtic_pick_voice_delay_sec
+//   วินาทีหลังเปิดไพ่ใบที่แล้ว → ส่งเสียงกระตุ้น 1 ครั้ง/ใบ (กดก่อนครบเวลา=ไม่เล่น)
+//   self-gates: ปิดเองถ้า system_voice_enabled=false / delay=0 / คลิป card_pick_howto ปิด
+// ⚠️ ที่นี่ (ไม่ใช่ Kernel.php) เพราะ Laravel 11 ไม่ register Kernel schedule
+Schedule::command('fortune:celtic-pick-voice-nudge --limit=80')
+    ->everyMinute()
+    ->withoutOverlapping(2)
+    ->onOneServer()
+    ->name('fortune-celtic-pick-voice-nudge')
+    ->runInBackground();
+
 // 🛡️ (2026-05-10) Auto-scan คอมเม้นต์สแปม (link spam moderation)
 //   รันทุกชั่วโมง — incremental (เฉพาะคอมใหม่ตั้งแต่ scan ล่าสุด)
 //   ครอบคลุม: posts + Reels, per-post=unlimited (รองรับโพสไวรัลคอมหมื่นๆ)

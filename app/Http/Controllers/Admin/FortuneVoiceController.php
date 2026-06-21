@@ -143,6 +143,7 @@ class FortuneVoiceController extends Controller
         $validated = $request->validate([
             // master toggle เสียงระบบ
             'system_voice_enabled' => 'boolean',
+            'celtic_pick_voice_delay_sec' => 'nullable|integer|min:0|max:600',
             // เสียงทำนาย
             'voice_summary_enabled' => 'boolean',
             'voice_summary_tier_scope' => 'nullable|in:celtic_99_only,paid_all,all',
@@ -163,6 +164,11 @@ class FortuneVoiceController extends Controller
         // checkbox ที่ไม่ถูกส่ง = false
         $validated['system_voice_enabled'] = $request->boolean('system_voice_enabled');
         $validated['voice_summary_enabled'] = $request->boolean('voice_summary_enabled');
+
+        // delay เป็น NOT NULL column — coerce null/ว่าง → 0 (= ปิด) กันเขียน NULL
+        if (array_key_exists('celtic_pick_voice_delay_sec', $validated)) {
+            $validated['celtic_pick_voice_delay_sec'] = (int) ($validated['celtic_pick_voice_delay_sec'] ?? 0);
+        }
 
         // fallback: อ่านตรงจาก request เสมอ — ถ้า uncheck ทั้งหมด key จะหายจาก validated
         //   (checkbox array ไม่มี hidden sentinel) → ต้องเคลียร์เป็น null เองให้ chain กลับไปใช้ default
@@ -313,7 +319,8 @@ class FortuneVoiceController extends Controller
             'birthdate' => '🎂 ขั้นตอนกรอกวันเกิด',
             'payment' => '💰 การชำระเงิน',
             'welcome' => '👋 ทักทาย',
-            'celtic' => '🔮 Celtic / เลือกไพ่',
+            'celtic' => '🔮 Celtic 99 / เลือกไพ่',
+            'deep' => '🌙 ดูดวง 39 (Deep)',
             'other' => '🎧 อื่นๆ',
         ];
     }

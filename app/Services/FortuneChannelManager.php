@@ -688,10 +688,19 @@ class FortuneChannelManager
 
                 // 🧘 ตั้งจิตเลือกไพ่ → Quick Reply ปุ่ม "พร้อม" / "ยกเลิก"
                 //    title คือสิ่งที่ส่งกลับเป็น message text → ใช้คำสั้น (ไม่มี emoji ในคำหลัก) เพื่อให้ระบบเข้าใจง่าย
-                'awaiting_tarot_intention' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => 'พร้อม', 'payload' => 'TAROT_READY'],
-                    ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
-                ], $extra),
+                'awaiting_tarot_intention' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    $sent = $fbService->sendQuickReplies($userId, $message, [
+                        ['content_type' => 'text', 'title' => 'พร้อม', 'payload' => 'TAROT_READY'],
+                        ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                    ], $extra);
+
+                    // 🎧 (2026-06-21) 39 ตั้งจิตเปิดไพ่ (พื้นดวงรวม) → เสียง deep39_draw — เฉพาะ Deep (แยกจาก 99)
+                    if (($result['reading'] ?? null)?->reading_type === \App\Models\FortuneReading::READING_TYPE_DEEP) {
+                        $this->attachSystemVoiceFb($fbService, $userId, 'deep39_draw', $extra);
+                    }
+
+                    return $sent;
+                })(),
 
                 // 📅 (2026-05-01) ทวนวันเกิด — ปุ่ม ✅ ใช่ / ❌ ไม่ใช่ พิมพ์ใหม่
                 'awaiting_birthdate_confirmation' => $fbService->sendQuickReplies($userId, $message, [
@@ -990,7 +999,7 @@ class FortuneChannelManager
                 //   ไม่งั้นตกไป default = text ล้วน (รูปหาย) ลูกค้าไม่รู้ต้องพิมพ์ "พร้อม" → แอดมินต้อง reset เอง (เคส FTU-260607-P3861)
                 'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset',
                 'celtic_restart_hint', 'celtic_already_in_session', 'slipok_recovered_celtic',
-                'slipok_approved_celtic', 'fuzzy_auto_approved_celtic' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                'slipok_approved_celtic', 'fuzzy_auto_approved_celtic' => (function () use ($fbService, $userId, $message, $result, $extra, $action) {
                     // ส่งรูปไพ่ก่อน (ถ้ามี)
                     if (! empty($result['tarot_image_url'])) {
                         try {
@@ -1013,7 +1022,16 @@ class FortuneChannelManager
                     }
                     $quickReplies[] = ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'];
 
-                    return $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra);
+                    $sent = $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra);
+
+                    // 🎧 (2026-06-21) จ่ายแล้ว → เริ่มเปิดไพ่ใบแรก → เสียง "paid_intro"
+                    //   เฉพาะ action "ยืนยันจ่ายเงินแล้ว" (ไม่เล่นซ้ำตอน reset/shuffle/chitchat)
+                    //   เสียง "เลือกไพ่ใบต่อไป" (card_pick_howto) เล่นแบบ nudge ตามเวลา (cron) ไม่ inline
+                    if ($picked === 0 && in_array($action, ['celtic_pick_prompt', 'slipok_recovered_celtic', 'slipok_approved_celtic', 'fuzzy_auto_approved_celtic'], true)) {
+                        $this->attachSystemVoiceFb($fbService, $userId, 'paid_intro', $extra);
+                    }
+
+                    return $sent;
                 })(),
 
                 // celtic_all_picked → ส่งภาพ composite Celtic Cross + ข้อความขอ Q1

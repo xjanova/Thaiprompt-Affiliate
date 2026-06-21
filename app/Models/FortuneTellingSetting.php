@@ -331,6 +331,7 @@ class FortuneTellingSetting extends Model
         'voice_storage_config',
         // 🎧 (2026-06-21) System voice (เสียงระบบข้อความกลาง) master toggle
         'system_voice_enabled',
+        'celtic_pick_voice_delay_sec',
         // 🌟 (2026-05-08) Sensitive AI lock specific pool key
         'sensitive_ai_pool_key_id',
         // 💳 (2026-05-09) Stripe Checkout — บัตรต่างประเทศ
@@ -526,6 +527,7 @@ class FortuneTellingSetting extends Model
         'voice_storage_config' => 'array',
         // 🎧 (2026-06-21) System voice master toggle
         'system_voice_enabled' => 'boolean',
+        'celtic_pick_voice_delay_sec' => 'integer',
         'google_tts_speaking_rate' => 'decimal:2',
         // 💳 (2026-05-09) Stripe Checkout
         'enable_stripe_payment' => 'boolean',
@@ -703,6 +705,7 @@ class FortuneTellingSetting extends Model
         'voice_storage_config' => null,
         // 🎧 (2026-06-21) System voice — ปิดเป็น default (admin เปิด + สร้างไฟล์เสียงก่อน)
         'system_voice_enabled' => false,
+        'celtic_pick_voice_delay_sec' => 45,
         // 🌟 Group Invite + Monthly Free Claim — ปิดเป็น default (admin เปิด + ใส่ URL ก่อน)
         'fortune_group_invite_enabled' => false,
         'monthly_free_claim_enabled' => false,

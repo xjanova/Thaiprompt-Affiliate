@@ -77,9 +77,17 @@
                        class="mt-1 rounded text-sky-600">
                 <span>
                     <span class="block font-medium text-gray-900 dark:text-white">🔮 เปิดเสียงทำนาย/บทสรุป</span>
-                    <span class="block text-xs text-gray-500 dark:text-gray-400">เสียงสรุปคำทำนาย (สร้างสดต่อคน)</span>
+                    <span class="block text-xs text-gray-500 dark:text-gray-400">เสียงสรุปคำทำนาย (สร้างสดต่อคน) — ส่ง auto หลังทำนายจบ</span>
                 </span>
             </label>
+        </div>
+
+        {{-- 🎧 หน่วงเสียง "เลือกไพ่ใบต่อไป" (Celtic 99) --}}
+        <div class="mb-5 max-w-md">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">⏱️ หน่วงเสียง "เลือกไพ่ใบต่อไป" (วินาที)</label>
+            <input type="number" min="0" max="600" name="celtic_pick_voice_delay_sec" value="{{ $settings->celtic_pick_voice_delay_sec ?? 45 }}"
+                   class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Celtic 99: ถ้าลูกค้าเงียบไม่กดเปิดไพ่ใบต่อไปเกินกี่วินาที ค่อยเล่นเสียงกระตุ้น (กดก่อน=ไม่เล่น) · 0 = ปิด · ใช้คลิป "card_pick_howto"</p>
         </div>
 
         {{-- provider chain --}}
@@ -287,9 +295,11 @@
                                 <span class="text-xs text-gray-400">(รองรับทุกฟอร์แมต — ระบบแปลงเป็น mp3 ให้อัตโนมัติ)</span>
                             </form>
 
-                            {{-- audio player (existing or freshly generated) --}}
-                            <audio x-show="clipState.url || '{{ $clip->audio_url }}'"
-                                   :src="clipState.url || '{{ $clip->audio_url }}'" controls class="mt-3 w-full max-w-md"></audio>
+                            {{-- 🔊 เสียงจริงที่จะส่งลูกค้า (ไฟล์ที่เก็บไว้ — กดเล่นเพื่อฟังตัวจริง) --}}
+                            <div x-show="clipState.url || '{{ $clip->audio_url }}'" class="mt-3">
+                                <div class="text-xs font-medium text-emerald-700 dark:text-emerald-300 mb-1">🔊 เสียงจริงที่จะส่งลูกค้า (กดเล่นเพื่อฟัง):</div>
+                                <audio :src="clipState.url || '{{ $clip->audio_url }}'" controls preload="none" class="w-full max-w-md"></audio>
+                            </div>
                         </div>
                     @endforeach
                 </div>
