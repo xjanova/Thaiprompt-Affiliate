@@ -14,6 +14,15 @@
     $available = ($hasAdminAccess ? 1 : 0) + ($hasSellerAccess ? 1 : 0) + ($hasUserAccess ? 1 : 0);
     $profileRoute  = $isSeller ? 'seller.profile' : ($isUser ? 'user.profile' : 'admin.profile.index');
     $settingsRoute = $isSeller ? 'seller.settings' : ($isUser ? 'user.settings' : 'admin.settings.index');
+
+    // กระเป๋าเงิน THB / เหรียญ Video Coins / ตะกร้า (badge ใน topbar)
+    $tpWalletBalance = $user && $user->wallet ? (float) $user->wallet->balance : 0;
+    $tpCoinBalance   = $user && $user->videoCoin ? (float) $user->videoCoin->balance : 0;
+    $tpWalletUrl = \Illuminate\Support\Facades\Route::has('admin.wallet.index') ? route('admin.wallet.index')
+                 : (\Illuminate\Support\Facades\Route::has('user.wallet.index') ? route('user.wallet.index') : null);
+    $tpCoinUrl      = \Illuminate\Support\Facades\Route::has('user.video-coins.index') ? route('user.video-coins.index') : null;
+    $tpCartUrl      = \Illuminate\Support\Facades\Route::has('cart.index') ? route('cart.index') : null;
+    $tpCartCountUrl = \Illuminate\Support\Facades\Route::has('cart.count') ? route('cart.count') : null;
 @endphp
 
 <header style="display:flex; align-items:center; flex-wrap:wrap; gap:12px 16px; padding:14px clamp(12px,3vw,24px); position:sticky; top:0; z-index:40; background:var(--card-bg); -webkit-backdrop-filter:var(--card-blur); backdrop-filter:var(--card-blur); border-bottom:1px solid color-mix(in srgb, var(--ink2) 16%, transparent); transition:background .4s ease;">
@@ -40,6 +49,33 @@
 
     {{-- ปุ่มขวา --}}
     <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+        @auth
+        {{-- กระเป๋าเงิน THB --}}
+        @if($tpWalletUrl)
+            <a href="{{ $tpWalletUrl }}" class="tp-icon-btn hidden md:inline-flex" style="width:auto; padding:0 12px; gap:7px;" title="กระเป๋าเงิน THB">
+                <i class="fas fa-wallet" style="color:var(--deep2); font-size:14px;"></i>
+                <span class="tp-num" style="font-size:12px; font-weight:700;">฿{{ number_format($tpWalletBalance, 0) }}</span>
+            </a>
+        @endif
+        {{-- เหรียญ Video Coins --}}
+        @if($tpCoinUrl)
+            <a href="{{ $tpCoinUrl }}" class="tp-icon-btn hidden md:inline-flex" style="width:auto; padding:0 12px; gap:7px;" title="Video Coins">
+                <span style="width:20px; height:20px; flex:none; border-radius:50%; background:linear-gradient(135deg,#f0c64e,#dd9a2e); display:grid; place-items:center; color:#fff; font-size:11px; font-weight:800; text-shadow:0 1px 1px rgba(0,0,0,.2);">C</span>
+                <span class="tp-num" style="font-size:12px; font-weight:700;">{{ number_format($tpCoinBalance, 0) }}</span>
+            </a>
+        @endif
+        {{-- ตะกร้าสินค้า (จำนวนดึงสดจาก cart.count) --}}
+        @if($tpCartUrl)
+            <a href="{{ $tpCartUrl }}" class="tp-icon-btn" style="position:relative;" title="ตะกร้าสินค้า"
+               x-data="{ c: 0 }"
+               x-init="@if($tpCartCountUrl) fetch('{{ $tpCartCountUrl }}', { headers: { 'X-Requested-With':'XMLHttpRequest', 'Accept':'application/json' } }).then(r => r.ok ? r.json() : null).then(d => { if (d) c = d.count || 0 }).catch(() => {}) @endif">
+                <i class="fas fa-cart-shopping"></i>
+                <span x-show="c > 0" x-cloak x-text="c > 99 ? '99+' : c"
+                      class="tp-num"
+                      style="position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; padding:0 4px; display:grid; place-items:center; border-radius:9px; background:linear-gradient(135deg,#e0972e,#d9534f); color:#fff; font-size:10px; font-weight:700;"></span>
+            </a>
+        @endif
+        @endauth
         {{-- สลับโทนสี --}}
         <button @click="$store.tp.cyclePalette()" type="button" class="tp-icon-btn" title="สลับโทนสี (palette)">
             <span style="width:18px; height:18px; border-radius:50%; background:linear-gradient(135deg,var(--accent1) 50%,var(--accent2) 50%); box-shadow:inset 1px 1px 2px rgba(255,255,255,.5);"></span>

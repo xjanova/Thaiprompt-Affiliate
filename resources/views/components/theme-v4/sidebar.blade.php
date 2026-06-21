@@ -126,15 +126,15 @@
                 @endif
             </div>
         @endforeach
+    </div>
 
-        {{-- สถานะระบบ --}}
-        <div class="tp-card" style="margin-top:6px; padding:14px 16px; border-radius:18px;">
-            <div style="font-size:10.5px; color:var(--ink2); font-weight:700; letter-spacing:.3px;">สถานะระบบ · SYSTEM</div>
-            <div style="display:flex; align-items:center; gap:8px; margin-top:9px;">
-                <span style="width:9px; height:9px; border-radius:50%; background:#5aa07e; box-shadow:0 0 0 4px rgba(90,160,126,.18);"></span>
-                <span style="font-size:12px; color:var(--ink);">ออนไลน์ปกติ</span>
-                <span class="tp-num" style="margin-left:auto; font-size:11px; color:var(--ink2);">v{{ trim(@file_get_contents(base_path('VERSION')) ?: '4.0.0') }}</span>
-            </div>
+    {{-- สถานะระบบ — ปักอยู่ล่าง sidebar เสมอ (อยู่นอก scroll container จึงไม่เลื่อนหาย) --}}
+    <div class="tp-card" style="flex:none; padding:13px 16px; border-radius:18px; margin-top:2px;">
+        <div style="font-size:10.5px; color:var(--ink2); font-weight:700; letter-spacing:.3px;">สถานะระบบ · SYSTEM</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:9px;">
+            <span style="width:9px; height:9px; border-radius:50%; background:#5aa07e; box-shadow:0 0 0 4px rgba(90,160,126,.18);"></span>
+            <span style="font-size:12px; color:var(--ink);">ออนไลน์ปกติ</span>
+            <span class="tp-num" style="margin-left:auto; font-size:11px; color:var(--ink2);">v{{ trim(@file_get_contents(base_path('VERSION')) ?: '4.0.0') }}</span>
         </div>
     </div>
 </aside>
