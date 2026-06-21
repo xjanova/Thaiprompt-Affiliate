@@ -16,11 +16,15 @@ use Illuminate\Support\Facades\Log;
  * Auth:     Bearer {api_key}
  * GroupId:  v2 ไม่ต้องการใน URL — เก็บไว้รองรับ legacy endpoint (v1) เผื่อ admin ใช้ key เก่า
  *
- * Models (2026-05-08):
- *   speech-2.8-hd / 2.8-turbo (ใหม่สุด)
+ * Models (verified 2026-06-21 จาก docs):
+ *   speech-2.8-hd / 2.8-turbo (ใหม่สุด — default, hd คุณภาพสูงสุด)
  *   speech-2.6-hd / 2.6-turbo
  *   speech-02-hd / 02-turbo
  *   speech-01-hd / 01-turbo (legacy)
+ *
+ * 🆕 (speech-2.8) voice_setting รองรับ text_normalization (อ่านเลข/วันที่/เงินเป็นธรรมชาติ)
+ *    + emotion: happy/sad/angry/fearful/disgusted/surprised/calm/fluent/whisper
+ * Alt low-latency endpoint: https://api-uw.minimax.io/v1/t2a_v2
  *
  * Cost: $0.10-0.30 per 1k chars (depending on model)
  * Max text: 10,000 chars per request (เกิน 3,000 แนะนำ stream)
@@ -57,8 +61,10 @@ class MiniMaxTtsProvider implements TtsProviderInterface
             return $this->failResult($startTime, 'MiniMax API key missing', null);
         }
 
-        $voice = $options['voice'] ?? $this->settings->minimax_voice_id ?? 'Thai_warmFemaleHost';
-        $model = $this->settings->minimax_model ?? 'speech-2.8-hd';
+        // ⚠️ (2026-06-21) default voice 'Thai_warmFemaleHost' ไม่มีจริงในบัญชี (status 2054)
+        //   → ใช้ Thai_female_1_sample1 (verified มีจริงผ่าน get_voice). admin override ได้
+        $voice = $options['voice'] ?? $this->settings->minimax_voice_id ?? 'Thai_female_1_sample1';
+        $model = $this->settings->minimax_model ?: 'speech-2.8-hd';
         $outputPath = $options['output_path'] ?? null;
         $language = $options['language'] ?? 'th';
 
@@ -100,6 +106,9 @@ class MiniMaxTtsProvider implements TtsProviderInterface
                 'vol' => 1.0,
                 'pitch' => 0,
                 'emotion' => 'calm',  // อบอุ่น เหมาะกับแม่หมอ
+                // 🆕 (2026-06-21) speech-2.8 — อ่านตัวเลข/วันที่/จำนวนเงินให้เป็นธรรมชาติ
+                //   (เช่น "12/12/2500" → วันที่, "฿99" → เก้าสิบเก้าบาท) เหมาะกับเสียงดูดวง
+                'text_normalization' => true,
             ],
             'audio_setting' => [
                 'sample_rate' => 32000,

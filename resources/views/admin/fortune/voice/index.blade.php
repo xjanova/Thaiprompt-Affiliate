@@ -118,9 +118,15 @@
         {{-- voice tuning per provider --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">MiniMax — model</label>
-                <input type="text" name="minimax_model" value="{{ $settings->minimax_model }}" placeholder="speech-2.8-hd"
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">MiniMax — model <span class="text-xs text-emerald-600 dark:text-emerald-400">(ล่าสุด: speech-2.8-hd)</span></label>
+                <input type="text" name="minimax_model" value="{{ $settings->minimax_model }}" placeholder="speech-2.8-hd" list="minimax_models"
                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                <datalist id="minimax_models">
+                    <option value="speech-2.8-hd"><option value="speech-2.8-turbo">
+                    <option value="speech-2.6-hd"><option value="speech-2.6-turbo">
+                    <option value="speech-02-hd"><option value="speech-02-turbo">
+                    <option value="speech-01-hd"><option value="speech-01-turbo">
+                </datalist>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 mt-2">MiniMax — voice id</label>
                 <input type="text" name="minimax_voice_id" value="{{ $settings->minimax_voice_id }}" placeholder="Thai_female_1_sample1"
                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
