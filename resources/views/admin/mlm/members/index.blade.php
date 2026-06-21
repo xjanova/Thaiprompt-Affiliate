@@ -1,361 +1,253 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'จัดการสมาชิก MLM')
+@section('title', 'จัดการสมาชิก')
+
+@php
+    use Illuminate\Support\Str;
+
+    // สถิติ (อิงพฤติกรรมเดิม: รวมจากหน้าปัจจุบันสำหรับ PV/รายได้)
+    $stTotal    = $members->total();
+    $stActive   = $members->where('status', 'active')->count();
+    $stPv       = $members->sum('total_pv');
+    $stEarnings = $members->sum('total_earnings');
+
+    $curStatus = request('status', '');
+
+    // ข้อมูลสำหรับแผงรายละเอียด (client-side, ไม่ต้อง AJAX)
+    $memberData = $members->getCollection()->map(function ($m) {
+        $name = $m->user->name ?? '—';
+        return [
+            'id'        => $m->id,
+            'name'      => $name,
+            'code'      => $m->member_code,
+            'initial'   => mb_strtoupper(mb_substr($name, 0, 1)),
+            'plan'      => $m->plan?->display_name ?? 'ไม่มีแผน',
+            'pv'        => number_format($m->total_pv, 2),
+            'earnings'  => number_format($m->total_earnings, 2),
+            'refs'      => (int) $m->total_direct_referrals,
+            'status'    => $m->status,
+            'phone'     => $m->user->phone ?? '—',
+            'email'     => $m->user->email ?? '—',
+            'province'  => $m->user->city ?? ($m->user->state ?? '—'),
+            'joined'    => optional($m->joined_at ?? $m->created_at)->locale('th')->translatedFormat('M Y'),
+            'showUrl'   => route('admin.mlm.members.show', $m),
+            'treeUrl'   => route('admin.mlm.members.genealogy', $m),
+            'statusUrl' => route('admin.mlm.members.status', $m),
+        ];
+    })->values();
+
+    $statusMeta = [
+        'active'    => ['label' => 'ใช้งาน',   'color' => '#5aa07e'],
+        'inactive'  => ['label' => 'ไม่ใช้งาน', 'color' => '#9a8f7c'],
+        'suspended' => ['label' => 'ระงับ',     'color' => '#d9534f'],
+    ];
+@endphp
 
 @section('content')
-<div class="space-y-6">
-    {{-- Premium Hero Header with Gradient & Animations --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse delay-500"></div>
-            <div class="absolute top-1/2 left-1/3 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;"
+     x-data="tpMembers(@js($memberData))">
 
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                {{-- Title Section --}}
-                <div class="flex-1">
-                    <div class="flex items-center gap-4 mb-3">
-                        <div class="glass-fusion p-4 rounded-2xl">
-                            <i class="fas fa-users text-4xl text-white drop-shadow-lg"></i>
-                        </div>
-                        <div>
-                            <h1 class="text-4xl font-bold text-white drop-shadow-lg">จัดการสมาชิก MLM</h1>
-                            <p class="text-blue-100 text-lg mt-1">ดูและจัดการสมาชิก MLM ทั้งหมดในระบบ</p>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Add Member Button --}}
-                <div>
-                    <a href="{{ route('admin.mlm.members.create') }}"
-                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 shadow-lg border border-white/30 group">
-                        <i class="fas fa-user-plus group-hover:scale-110 transition-transform"></i>
-                        เพิ่มสมาชิกใหม่
-                    </a>
-                </div>
-            </div>
+    {{-- หัวข้อ --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ระบบ MLM · สมาชิก</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">จัดการสมาชิก</h1>
         </div>
+        <a href="{{ route('admin.mlm.members.create') }}" class="tp-btn tp-btn-primary">
+            <i class="fas fa-user-plus"></i> เพิ่มสมาชิก
+        </a>
     </div>
 
-    {{-- Statistics Cards --}}
-    <div>
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <i class="fas fa-chart-bar text-blue-600 dark:text-blue-400"></i>
-            สถิติภาพรวม
-        </h2>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {{-- Total Members --}}
-            <div class="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-900 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-users text-9xl"></i>
-                </div>
-
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">สมาชิกทั้งหมด</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-user-friends text-2xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-4xl font-bold mb-2">{{ number_format($members->total()) }}</h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-database text-blue-200"></i>
-                        <span class="opacity-90">Total Members</span>
-                    </div>
+    {{-- KPI --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
+        @php
+            $cards = [
+                ['สมาชิกทั้งหมด', 'Total Members', number_format($stTotal), 'fa-users'],
+                ['ใช้งาน', 'Active', number_format($stActive), 'fa-circle-check'],
+                ['PV (หน้านี้)', 'Page PV', number_format($stPv, 0), 'fa-gem'],
+                ['รายได้ (หน้านี้)', 'Page Earnings', '฿' . number_format($stEarnings, 0), 'fa-coins'],
+            ];
+        @endphp
+        @foreach($cards as [$label, $en, $val, $icon])
+            <div class="tp-card" style="padding:18px; display:flex; align-items:center; gap:14px;">
+                <span class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:18px;"><i class="fas {{ $icon }}"></i></span>
+                <div style="min-width:0;">
+                    <div style="font-size:12px; color:var(--ink2); font-weight:600;">{{ $label }}</div>
+                    <div class="tp-num" style="font-size:24px; font-weight:800; line-height:1.1;">{{ $val }}</div>
+                    <div style="font-size:10px; color:var(--ink2); opacity:.8;">{{ $en }}</div>
                 </div>
             </div>
-
-            {{-- Active Members --}}
-            <div class="group relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-900 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-check-circle text-9xl"></i>
-                </div>
-
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">สมาชิก Active</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-user-check text-2xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-4xl font-bold mb-2">{{ number_format($members->where('status', 'active')->count()) }}</h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-arrow-up text-green-200"></i>
-                        <span class="opacity-90">Active Status</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Total PV --}}
-            <div class="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-600 dark:to-pink-800 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-star text-9xl"></i>
-                </div>
-
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">PV รวม</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-gem text-2xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-4xl font-bold mb-2">{{ number_format($members->sum('total_pv')) }}</h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-chart-line text-purple-200"></i>
-                        <span class="opacity-90">Point Value</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Total Earnings --}}
-            <div class="group relative overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 dark:from-orange-600 dark:to-red-800 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-coins text-9xl"></i>
-                </div>
-
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">รายได้รวม</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-money-bill-wave text-2xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-4xl font-bold mb-2">฿{{ number_format($members->sum('total_earnings')) }}</h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-trophy text-orange-200"></i>
-                        <span class="opacity-90">Total Earnings</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
-    {{-- Filters Section --}}
-    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <i class="fas fa-filter text-purple-600 dark:text-purple-400"></i>
-            ตัวกรองข้อมูล
-        </h3>
+    {{-- master-detail --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px; align-items:start;">
 
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {{-- Plan Filter --}}
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-layer-group mr-1 text-purple-600 dark:text-purple-400"></i>
-                    แผน MLM
-                </label>
-                <select name="plan_id"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all">
-                    <option value="">ทั้งหมด</option>
-                    @foreach($plans as $plan)
-                        <option value="{{ $plan->id }}" {{ request('plan_id') == $plan->id ? 'selected' : '' }}>
-                            {{ $plan->display_name }}
-                        </option>
-                    @endforeach
-                </select>
+        {{-- ซ้าย: ค้นหา + กรอง + รายชื่อ --}}
+        <div class="tp-card" style="padding:16px; display:flex; flex-direction:column; gap:14px;">
+            {{-- ค้นหา + แผน (GET form, ตัด field ว่างก่อนส่ง) --}}
+            <form method="GET" action="{{ route('admin.mlm.members.index') }}"
+                  onsubmit="for (const el of this.elements) { if (el.name && !el.value) el.disabled = true; }">
+                <input type="hidden" name="status" value="{{ $curStatus }}">
+                <div class="tp-well" style="display:flex; align-items:center; gap:10px; padding:11px 15px;">
+                    <i class="fas fa-magnifying-glass" style="color:var(--ink2); font-size:13px;"></i>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="ค้นหาชื่อ · อีเมล · รหัสสมาชิก…" class="tp-input" style="box-shadow:none; background:transparent; padding:0;">
+                </div>
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                    <select name="plan_id" class="tp-well tp-input" style="flex:1; padding:9px 12px; font-size:12.5px;">
+                        <option value="">ทุกแผน</option>
+                        @foreach($plans as $plan)
+                            <option value="{{ $plan->id }}" @selected(request('plan_id') == $plan->id)>{{ $plan->display_name }}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="tp-btn tp-btn-primary tp-btn-sm" style="flex:none;">กรอง</button>
+                </div>
+            </form>
+
+            {{-- ชิปสถานะ (ลิงก์, คงค่าค้นหา/แผนเดิมไว้) --}}
+            <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                @php
+                    $chips = ['' => 'ทั้งหมด', 'active' => 'ใช้งาน', 'suspended' => 'ระงับ', 'inactive' => 'ไม่ใช้งาน'];
+                @endphp
+                @foreach($chips as $val => $label)
+                    @php $on = $curStatus === $val; @endphp
+                    <a href="{{ request()->fullUrlWithQuery(['status' => $val === '' ? null : $val, 'page' => null]) }}"
+                       class="tp-btn tp-btn-sm" style="{{ $on ? 'box-shadow:var(--inset); color:var(--deep1);' : '' }}">{{ $label }}</a>
+                @endforeach
             </div>
 
-            {{-- Status Filter --}}
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-toggle-on mr-1 text-green-600 dark:text-green-400"></i>
-                    สถานะ
-                </label>
-                <select name="status"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all">
-                    <option value="">ทั้งหมด</option>
-                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                    <option value="suspended" {{ request('status') == 'suspended' ? 'selected' : '' }}>Suspended</option>
-                </select>
+            {{-- รายชื่อ --}}
+            <div style="display:flex; flex-direction:column; gap:7px; max-height:560px; overflow-y:auto; padding-right:2px;">
+                @forelse($memberData as $i => $m)
+                    <button type="button" @click="select({{ $i }})"
+                            class="tp-card" :style="sel.id === {{ $m['id'] }} ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);'"
+                            style="cursor:pointer; text-align:left; display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:15px;">
+                        <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:15px;">{{ $m['initial'] }}</span>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $m['name'] }}</div>
+                            <div class="tp-num" style="font-size:11px; color:var(--ink2);">{{ $m['code'] }}</div>
+                        </div>
+                        <div style="text-align:right; flex:none;">
+                            <span class="tp-pill tp-pill-soft" style="font-size:9.5px;">{{ Str::limit($m['plan'], 10) }}</span>
+                            <div style="display:flex; align-items:center; gap:5px; justify-content:flex-end; margin-top:5px;">
+                                <span style="width:7px; height:7px; border-radius:50%; background:{{ $statusMeta[$m['status']]['color'] ?? '#9a8f7c' }};"></span>
+                                <span style="font-size:10px; color:var(--ink2);">{{ $statusMeta[$m['status']]['label'] ?? $m['status'] }}</span>
+                            </div>
+                        </div>
+                    </button>
+                @empty
+                    <div style="text-align:center; color:var(--ink2); padding:40px 0; font-size:13px;">
+                        <i class="fas fa-inbox" style="font-size:32px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                        ไม่พบข้อมูลสมาชิก
+                    </div>
+                @endforelse
             </div>
 
-            {{-- Search Input --}}
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-search mr-1 text-blue-600 dark:text-blue-400"></i>
-                    ค้นหา
-                </label>
-                <input type="text"
-                       name="search"
-                       value="{{ request('search') }}"
-                       placeholder="ชื่อ, อีเมล, Member Code"
-                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all">
+            {{-- pagination --}}
+            @if($members->hasPages())
+                <div class="tp-num" style="display:flex; justify-content:center;">{{ $members->withQueryString()->links() }}</div>
+            @endif
+        </div>
+
+        {{-- ขวา: รายละเอียด --}}
+        <div class="tp-card" style="padding:22px;" x-show="sel" x-cloak>
+            <div style="display:flex; align-items:center; gap:14px;">
+                <span class="tp-tile" style="width:64px; height:64px; border-radius:18px; font-size:26px;" x-text="sel.initial"></span>
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:19px; font-weight:800;" x-text="sel.name"></span>
+                        <span class="tp-pill tp-pill-gold" x-text="sel.plan"></span>
+                    </div>
+                    <div class="tp-num" style="font-size:12px; color:var(--ink2); margin-top:3px;">
+                        <span x-text="sel.code"></span> · เข้าร่วม <span x-text="sel.joined"></span>
+                    </div>
+                </div>
             </div>
 
-            {{-- Action Buttons --}}
-            <div class="flex items-end gap-2">
-                <button type="submit"
-                        class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-500 dark:to-pink-500 dark:hover:from-purple-600 dark:hover:to-pink-600 text-white px-4 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl font-medium">
-                    <i class="fas fa-filter mr-2"></i>กรองข้อมูล
+            <div style="display:flex; gap:9px; margin-top:16px; flex-wrap:wrap;">
+                <a :href="sel.showUrl" class="tp-btn tp-btn-primary tp-btn-sm"><i class="fas fa-id-card"></i> จัดการ</a>
+                <a :href="sel.treeUrl" class="tp-btn tp-btn-sm"><i class="fas fa-sitemap"></i> ผังสายงาน</a>
+                <button type="button" @click="toggleStatus()" class="tp-btn tp-btn-sm"
+                        :style="sel.status === 'active' ? 'color:#d9534f;' : 'color:#5aa07e;'">
+                    <i class="fas" :class="sel.status === 'active' ? 'fa-ban' : 'fa-circle-check'"></i>
+                    <span x-text="sel.status === 'active' ? 'ระงับ' : 'เปิดใช้งาน'"></span>
                 </button>
-                @if(request()->hasAny(['plan_id', 'status', 'search']))
-                    <a href="{{ route('admin.mlm.members.index') }}"
-                       class="px-4 py-3 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                       title="ล้างตัวกรอง">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
             </div>
-        </form>
-    </div>
 
-    {{-- Members Table --}}
-    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                {{-- Table Header --}}
-                <thead class="bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-700 dark:to-pink-700">
-                    <tr>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-user mr-2"></i>สมาชิก
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-layer-group mr-2"></i>แผน
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-chart-bar mr-2"></i>PV
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-money-bill-wave mr-2"></i>รายได้
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-user-friends mr-2"></i>ผู้แนะนำ
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-info-circle mr-2"></i>สถานะ
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-cog mr-2"></i>จัดการ
-                        </th>
-                    </tr>
-                </thead>
+            {{-- mini stats --}}
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px;">
+                <div class="tp-well" style="padding:12px; border-radius:14px; text-align:center;">
+                    <div class="tp-num" style="font-size:17px; font-weight:800; color:var(--deep1);" x-text="sel.pv"></div>
+                    <div style="font-size:10.5px; color:var(--ink2); margin-top:2px;">PV สะสม</div>
+                </div>
+                <div class="tp-well" style="padding:12px; border-radius:14px; text-align:center;">
+                    <div class="tp-num" style="font-size:17px; font-weight:800; color:var(--deep1);">฿<span x-text="sel.earnings"></span></div>
+                    <div style="font-size:10.5px; color:var(--ink2); margin-top:2px;">รายได้</div>
+                </div>
+                <div class="tp-well" style="padding:12px; border-radius:14px; text-align:center;">
+                    <div class="tp-num" style="font-size:17px; font-weight:800; color:var(--deep1);" x-text="sel.refs"></div>
+                    <div style="font-size:10.5px; color:var(--ink2); margin-top:2px;">ผู้แนะนำตรง</div>
+                </div>
+            </div>
 
-                {{-- Table Body --}}
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($members as $member)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
-                        {{-- Member Info --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-3">
-                                <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                                    {{ strtoupper(substr($member->user->name, 0, 1)) }}
-                                </div>
-                                <div>
-                                    <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                                        {{ $member->user->name }}
-                                    </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                                        {{ $member->member_code }}
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-
-                        {{-- Plan --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 shadow">
-                                <i class="fas fa-layer-group mr-1"></i>
-                                {{ $member->plan?->display_name ?? 'ไม่มีแผน' }}
-                            </span>
-                        </td>
-
-                        {{-- PV --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1">
-                                <i class="fas fa-gem text-purple-600 dark:text-purple-400 text-xs"></i>
-                                {{ number_format($member->total_pv, 2) }}
-                            </div>
-                        </td>
-
-                        {{-- Earnings --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                <i class="fas fa-baht-sign text-xs"></i>
-                                {{ number_format($member->total_earnings, 2) }}
-                            </div>
-                        </td>
-
-                        {{-- Direct Referrals --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-2">
-                                <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
-                                    <i class="fas fa-users text-blue-600 dark:text-blue-400 text-sm"></i>
-                                </div>
-                                <span class="text-sm font-bold text-gray-900 dark:text-white">
-                                    {{ $member->total_direct_referrals }}
-                                </span>
-                            </div>
-                        </td>
-
-                        {{-- Status --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if($member->status === 'active')
-                                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 shadow">
-                                    <i class="fas fa-check-circle mr-1"></i>
-                                    Active
-                                </span>
-                            @elseif($member->status === 'inactive')
-                                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400 shadow">
-                                    <i class="fas fa-minus-circle mr-1"></i>
-                                    Inactive
-                                </span>
-                            @elseif($member->status === 'suspended')
-                                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 shadow">
-                                    <i class="fas fa-ban mr-1"></i>
-                                    Suspended
-                                </span>
-                            @endif
-                        </td>
-
-                        {{-- Actions --}}
-                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                            <div class="flex items-center justify-end gap-2">
-                                <a href="{{ route('admin.mlm.members.show', $member) }}"
-                                   class="px-3 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl transition-all duration-300 shadow hover:shadow-lg transform hover:scale-105"
-                                   title="ดูรายละเอียด">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ route('admin.mlm.members.genealogy', $member) }}"
-                                   class="px-3 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white rounded-xl transition-all duration-300 shadow hover:shadow-lg transform hover:scale-105"
-                                   title="ดู Genealogy">
-                                    <i class="fas fa-sitemap"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="7" class="px-6 py-16 text-center">
-                            <div class="flex flex-col items-center justify-center gap-3">
-                                <div class="bg-gray-100 dark:bg-gray-700 p-6 rounded-full">
-                                    <i class="fas fa-inbox text-5xl text-gray-400 dark:text-gray-500"></i>
-                                </div>
-                                <div>
-                                    <p class="text-lg font-semibold text-gray-600 dark:text-gray-400">ไม่พบข้อมูลสมาชิก</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">ลองเปลี่ยนตัวกรองหรือเพิ่มสมาชิกใหม่</p>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    {{-- Pagination --}}
-    @if($members->hasPages())
-        <div class="flex justify-center">
-            <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-4">
-                {{ $members->links() }}
+            {{-- ข้อมูลติดต่อ --}}
+            <div class="tp-divider" style="margin:18px 0;"></div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;">
+                <div>
+                    <div style="font-size:10.5px; color:var(--ink2); font-weight:600;"><i class="fas fa-phone" style="margin-right:5px;"></i>โทรศัพท์</div>
+                    <div class="tp-num" style="font-size:13.5px; font-weight:600; margin-top:3px;" x-text="sel.phone"></div>
+                </div>
+                <div>
+                    <div style="font-size:10.5px; color:var(--ink2); font-weight:600;"><i class="fas fa-envelope" style="margin-right:5px;"></i>อีเมล</div>
+                    <div style="font-size:13px; font-weight:600; margin-top:3px; overflow:hidden; text-overflow:ellipsis;" x-text="sel.email"></div>
+                </div>
+                <div>
+                    <div style="font-size:10.5px; color:var(--ink2); font-weight:600;"><i class="fas fa-location-dot" style="margin-right:5px;"></i>จังหวัด</div>
+                    <div style="font-size:13.5px; font-weight:600; margin-top:3px;" x-text="sel.province"></div>
+                </div>
+                <div>
+                    <div style="font-size:10.5px; color:var(--ink2); font-weight:600;"><i class="fas fa-circle-info" style="margin-right:5px;"></i>สถานะ</div>
+                    <div style="font-size:13.5px; font-weight:700; margin-top:3px;"
+                         :style="'color:' + (sel.status === 'active' ? '#5aa07e' : sel.status === 'suspended' ? '#d9534f' : '#9a8f7c')"
+                         x-text="sel.status === 'active' ? 'ใช้งาน' : sel.status === 'suspended' ? 'ระงับ' : 'ไม่ใช้งาน'"></div>
+                </div>
             </div>
         </div>
-    @endif
+    </div>
 </div>
+
+@push('scripts')
+<script>
+    function tpMembers(list) {
+        return {
+            members: list,
+            sel: list.length ? list[0] : null,
+            select(i) { this.sel = this.members[i]; },
+            toggleStatus() {
+                if (!this.sel) return;
+                const next = this.sel.status === 'active' ? 'suspended' : 'active';
+                fetch(this.sel.statusUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ status: next }),
+                })
+                .then(r => r.json())
+                .then(d => {
+                    if (d && d.success) {
+                        this.$dispatch('notify', { type: 'success', message: 'อัปเดตสถานะเป็น ' + next + ' แล้ว' });
+                        setTimeout(() => window.location.reload(), 700);
+                    } else {
+                        this.$dispatch('notify', { type: 'error', message: 'อัปเดตสถานะไม่สำเร็จ' });
+                    }
+                })
+                .catch(() => this.$dispatch('notify', { type: 'error', message: 'เกิดข้อผิดพลาด' }));
+            },
+        };
+    }
+</script>
+@endpush
 @endsection
