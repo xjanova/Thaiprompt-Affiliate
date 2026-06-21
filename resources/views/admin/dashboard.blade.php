@@ -217,8 +217,8 @@
                 @forelse($recentCommissions->take(6) as $c)
                     <div style="display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:13px; box-shadow:var(--inset-sm);">
                         <div style="flex:1; min-width:0;">
-                            <div style="font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $c->affiliate->user->name ?? '—' }}</div>
-                            <div class="tp-num" style="font-size:12px; color:var(--deep1); font-weight:700;">฿{{ number_format($c->amount, 2) }}</div>
+                            <div style="font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $c->mlmMember->user->name ?? '—' }}</div>
+                            <div class="tp-num" style="font-size:12px; color:var(--deep1); font-weight:700;">฿{{ number_format($c->commission_amount, 2) }}</div>
                         </div>
                         @php
                             $stColor = $c->status === 'pending' ? '#e0a52e' : ($c->status === 'approved' ? '#5aa07e' : ($c->status === 'paid' ? 'var(--accent1)' : '#d9534f'));

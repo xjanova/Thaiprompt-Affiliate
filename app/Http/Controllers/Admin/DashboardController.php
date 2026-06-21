@@ -173,8 +173,8 @@ class DashboardController extends Controller
             ];
         }
 
-        // ใช้ dashboard-v3 view สำหรับ V3 theme
-        return view('admin.dashboard-v3', compact(
+        // ใช้ dashboard view (ธีม V4 นวลทองคำ) — เดิมชี้ dashboard-v3 (Arrow X)
+        return view('admin.dashboard', compact(
             'stats',
             'monthlyRevenue',
             'commissionTypes',
