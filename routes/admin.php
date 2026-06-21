@@ -89,6 +89,7 @@ use App\Http\Controllers\Admin\FortuneSlipLogController;
 use App\Http\Controllers\Admin\FortuneTakeoverController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
 use App\Http\Controllers\Admin\FortuneUsersController;
+use App\Http\Controllers\Admin\FortuneVoiceController;
 use App\Http\Controllers\Admin\FortuneVoiceDiagnosticController;
 use App\Http\Controllers\Admin\FortuneVoicePresetController;
 use App\Http\Controllers\Admin\FortuneVoiceStorageController;
@@ -4046,6 +4047,14 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/migrate', [FortuneVoiceStorageController::class, 'migrate'])->name('migrate');
         Route::get('/stats', [FortuneVoiceStorageController::class, 'stats'])->name('stats');
     });
+
+    // 🎧 (2026-06-21) Voice Management — หน้ารวมจัดการเสียงทั้งหมด (ตั้งค่า TTS + คลังเสียงระบบ)
+    Route::get('/voice', [FortuneVoiceController::class, 'index'])->name('voice.index');
+    Route::put('/voice/settings', [FortuneVoiceController::class, 'updateSettings'])->name('voice.settings.update');
+    Route::put('/voice/clips/{clip}', [FortuneVoiceController::class, 'updateClip'])->name('voice.clips.update');
+    Route::post('/voice/clips/{clip}/generate', [FortuneVoiceController::class, 'generateClip'])->name('voice.clips.generate');
+    Route::delete('/voice/clips/{clip}/audio', [FortuneVoiceController::class, 'deleteClipAudio'])->name('voice.clips.delete-audio');
+    Route::post('/voice/preview', [FortuneVoiceController::class, 'previewText'])->name('voice.preview');
 
     // 🩺 (2026-05-18) Voice Diagnostic — ตรวจระบบ TTS ทั้งหมด
     Route::get('/voice-diagnostic', [FortuneVoiceDiagnosticController::class, 'index'])->name('voice-diagnostic');
