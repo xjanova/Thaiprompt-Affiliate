@@ -3103,9 +3103,9 @@ trait CelticCrossConversationTrait
                     $q->where('platform_user_id', $userId)
                         ->orWhere('facebook_user_id', $userId);
                 })
-                // 🎧 (2026-06-20) 30 วัน — รองรับ "คนเก่า" ที่มีคำทำนายล่าสุดแล้วขอฟังเสียงทีหลัง (owner spec)
-                //   source (deep_response / celtic_grand_finale_summary) อยู่ใน DB ถาวร → regen เสียงได้
-                ->where('updated_at', '>=', now()->subDays(30))
+                // 🎧 (2026-06-21 owner spec) ลูกค้าเก่าเรียกฟัง "คำทำนายล่าสุด" ได้เสมอ — ไม่จำกัดเวลา
+                //   source (deep_response / celtic_grand_finale_summary) อยู่ใน DB ถาวร → reuse ไฟล์เดิม
+                //   ถ้ามี (generate() cache) ไม่มีก็ regen ใหม่. orderByDesc+first() = เอาอันล่าสุดอันเดียว
                 ->where(function ($q) {
                     // celtic = source ใน state (voice_summary_source_text ที่เก็บตอนจบ
                     //   หรือ celtic_grand_finale_summary — ครอบ reading เก่าก่อนมีฟีเจอร์ด้วย)

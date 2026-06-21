@@ -1232,6 +1232,12 @@ class FortuneChannelManager
                         ? $fbService->sendQuickReplies($userId, $message, $this->voiceReadQuickReplies(), $extra)
                         : $fbService->sendMessage($userId, $message, $extra);
 
+                    // 🎧 (2026-06-21 owner spec) บทสรุป = ส่งเสียงอัตโนมัติ ไม่ต้องกดเอง
+                    //   ปุ่มด้านบนยังอยู่เป็น replay. ลูกค้า active ตอนจบ = อยู่ใน 24 ชม. = ส่งฟรี
+                    if (! empty($result['voice_on_demand_ready'])) {
+                        $this->autoDispatchSummaryVoice($result['reading'] ?? null, $userId);
+                    }
+
                     // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — ส่ง bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
                     $this->sendReviewInviteFacebook($fbService, $userId, $result, $extra);
 
@@ -1846,6 +1852,9 @@ class FortuneChannelManager
             // มี CTA เสียง → แนบปุ่มกดแทนพิมพ์ (FB quick reply หายหลังกด = กันกดซ้ำ)
             if ($voiceCta !== '') {
                 $fbService->sendQuickReplies($userId, $followUp, $this->voiceReadQuickReplies(), $extra);
+                // 🎧 (2026-06-21 owner spec) บทสรุป Deep = ส่งเสียงอัตโนมัติด้วย (ปุ่ม = replay)
+                //   ลูกค้า active ตอนนี้ = อยู่ใน 24 ชม. = ส่งฟรี (ถ้า cron-delivered ตอน offline → best-effort)
+                $this->autoDispatchSummaryVoice($reading, $userId);
             } else {
                 $fbService->sendMessage($userId, $followUp, $extra);
             }
@@ -1897,6 +1906,49 @@ class FortuneChannelManager
             }
         } catch (\Throwable $e) {
             \Log::debug('SystemVoice FB attach fail (non-blocking)', ['key' => $clipKey, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 🎧 (2026-06-21) ส่ง "เสียงบทสรุปทำนาย" อัตโนมัติ (FB) — owner spec: ไม่ต้องกดเอง
+     *
+     * reuse on-demand pipeline (ProcessVoiceSummaryJob) + throttle key เดียวกัน
+     * → auto + การกดปุ่ม replay ไม่ double-fire. best-effort เงียบถ้าพลาด
+     *
+     * @param  \App\Models\FortuneReading|null  $reading
+     */
+    protected function autoDispatchSummaryVoice($reading, string $userId): void
+    {
+        try {
+            if (! $reading || empty($this->settings->voice_summary_enabled)) {
+                return;
+            }
+            if (! $this->settings->shouldGenerateVoiceSummary($reading)) {
+                return;
+            }
+
+            // throttle เดียวกับ on-demand (กัน auto + ปุ่มยิงซ้ำใน 60 วิ)
+            $key = "fortune:voice_ondemand:{$reading->id}";
+            if (\Illuminate\Support\Facades\Cache::has($key)) {
+                return;
+            }
+            \Illuminate\Support\Facades\Cache::put($key, true, 60);
+
+            try {
+                $reading->setConversationState('voice_summary_pushed', false);
+            } catch (\Throwable $e) {
+                // ignore
+            }
+
+            \App\Jobs\ProcessVoiceSummaryJob::dispatchSmart(
+                $reading->id,
+                'facebook',
+                $reading->facebook_user_id ?: ($reading->platform_user_id ?: $userId)
+            );
+
+            \Log::info('🎧 auto summary voice dispatched (FB)', ['reading_id' => $reading->id]);
+        } catch (\Throwable $e) {
+            \Log::debug('auto summary voice dispatch fail (non-blocking)', ['error' => $e->getMessage()]);
         }
     }
 
