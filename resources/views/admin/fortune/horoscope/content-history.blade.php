@@ -1,225 +1,162 @@
 {{-- resources/views/admin/fortune/horoscope/content-history.blade.php --}}
-{{-- ประวัติเนื้อหาที่ AI สร้าง (7 วันเกิด) --}}
+{{-- ประวัติเนื้อหาที่ AI สร้าง (7 วันเกิด) — ธีม V4 นวลทองคำ --}}
 
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'เนื้อหาดวง - ' . $campaign->name)
 
+@php
+    use Illuminate\Support\Str;
+
+    // สีประจำวันเกิด (โทนไทย) + อิโมจิ — index = birth_day (0=อาทิตย์)
+    $dayMeta = [
+        0 => ['#d9534f', '☀️'],
+        1 => ['#e0a52e', '🌙'],
+        2 => ['#cf6f9c', '🔴'],
+        3 => ['#5aa07e', '🟢'],
+        4 => ['#d6824a', '🟠'],
+        5 => ['#5689b8', '🔵'],
+        6 => ['#b79ae8', '🟣'],
+    ];
+    // สีสถานะการสร้างเนื้อหา
+    $genStatusMeta = [
+        'generated'  => ['#5aa07e', '✅ สำเร็จ'],
+        'generating' => ['#5689b8', '⏳ กำลังสร้าง'],
+        'pending'    => ['#e0a52e', '⏸ รอ'],
+        'failed'     => ['#d9534f', '❌ ล้มเหลว'],
+    ];
+@endphp
+
 @section('content')
-<div class="container mx-auto px-4 py-8">
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    {{-- หัวข้อ + เลือกวันที่ --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
         <div>
-            <div class="flex items-center gap-3 mb-2">
-                <a href="{{ route('admin.fortune.horoscope.index') }}"
-                   class="px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition text-sm">
-                    ← กลับ
-                </a>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                    🤖 เนื้อหาที่ AI สร้าง
-                </h1>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <a href="{{ route('admin.fortune.horoscope.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-arrow-left"></i> กลับ</a>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ระบบดูดวง · เนื้อหาดวง</div>
             </div>
-            <p class="text-gray-600 dark:text-gray-400">
-                แคมเปญ: <span class="font-semibold text-purple-600 dark:text-purple-400">{{ $campaign->name }}</span>
-            </p>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:6px 0 0;">🤖 เนื้อหาที่ AI สร้าง</h1>
+            <p class="tp-muted" style="margin:6px 0 0; font-size:13px;">แคมเปญ: <span style="color:var(--deep1); font-weight:600;">{{ $campaign->name }}</span></p>
         </div>
-
-        {{-- เลือกวันที่ --}}
-        <form method="GET" action="{{ route('admin.fortune.horoscope.content-history', $campaign) }}" class="flex items-center gap-2">
-            <label class="text-sm text-gray-600 dark:text-gray-400">วันที่:</label>
-            <input type="date" name="date"
-                   value="{{ $selectedDate->format('Y-m-d') }}"
-                   class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 text-sm"
-                   onchange="this.form.submit()">
+        <form method="GET" action="{{ route('admin.fortune.horoscope.content-history', $campaign) }}" style="display:flex; align-items:center; gap:9px;">
+            <label style="font-size:12.5px; color:var(--ink2); font-weight:600;">วันที่:</label>
+            <div class="tp-well" style="padding:2px 10px;">
+                <input type="date" name="date" value="{{ $selectedDate->format('Y-m-d') }}" onchange="this.form.submit()"
+                       class="tp-input" style="box-shadow:none; background:transparent; padding:8px 4px; color-scheme:var(--scheme, light);">
+            </div>
         </form>
     </div>
 
-    {{-- วันที่แสดง --}}
-    <div class="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-xl">
-        <div class="flex items-center gap-3">
-            <span class="text-2xl">📅</span>
-            <div>
-                <p class="font-bold text-purple-800 dark:text-purple-200 text-lg">
-                    วันที่ {{ $selectedDate->format('d/m/') }}{{ $selectedDate->year + 543 }}
-                </p>
-                <p class="text-sm text-purple-600 dark:text-purple-400">
-                    พบเนื้อหา {{ $contents->count() }} รายการ จาก 7 วันเกิด
-                </p>
-            </div>
+    {{-- แถบวันที่ --}}
+    <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:13px;">
+        <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:18px;">📅</span>
+        <div>
+            <div class="tp-num" style="font-size:16px; font-weight:800;">วันที่ {{ $selectedDate->format('d/m/') }}{{ $selectedDate->year + 543 }}</div>
+            <div style="font-size:12px; color:var(--ink2);">พบเนื้อหา {{ $contents->count() }} รายการ จาก 7 วันเกิด</div>
         </div>
     </div>
 
-    {{-- สร้างเนื้อหาทันที --}}
+    {{-- empty: ปุ่มสร้างเนื้อหา --}}
     @if($contents->isEmpty())
-        <div class="mb-6 p-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl text-center">
-            <div class="text-4xl mb-3">🔮</div>
-            <p class="text-lg font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-                ยังไม่มีเนื้อหาสำหรับวันนี้
-            </p>
-            <p class="text-sm text-yellow-600 dark:text-yellow-400 mb-4">
-                กดปุ่มด้านล่างเพื่อให้ AI สร้างคำทำนายทันที
-            </p>
-            <form action="{{ route('admin.fortune.horoscope.generate-now', $campaign) }}" method="POST" class="inline"
+        <div class="tp-card" style="padding:36px 20px; text-align:center;">
+            <i class="fas fa-wand-magic-sparkles" style="font-size:34px; color:var(--accent1); display:block; margin-bottom:12px;"></i>
+            <div class="tp-num" style="font-size:16px; font-weight:800;">ยังไม่มีเนื้อหาสำหรับวันนี้</div>
+            <div style="font-size:13px; color:var(--ink2); margin:6px 0 16px;">กดปุ่มด้านล่างเพื่อให้ AI สร้างคำทำนายทันที</div>
+            <form action="{{ route('admin.fortune.horoscope.generate-now', $campaign) }}" method="POST" style="display:inline;"
                   onsubmit="return confirm('ต้องการสร้างเนื้อหา AI ทันทีหรือไม่? อาจใช้เวลา 2-5 นาที')">
                 @csrf
                 <input type="hidden" name="date" value="{{ $selectedDate->format('Y-m-d') }}">
-                <button type="submit"
-                        class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition shadow-lg">
-                    ⚡ สร้างเนื้อหา AI ทันที
-                </button>
+                <button type="submit" class="tp-btn tp-btn-primary" style="display:inline-flex;"><i class="fas fa-bolt"></i> สร้างเนื้อหา AI ทันที</button>
             </form>
         </div>
     @endif
 
-    {{-- เนื้อหา 7 วันเกิด --}}
+    {{-- การ์ดเนื้อหา 7 วันเกิด --}}
     @if($contents->isNotEmpty())
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            @php
-                $dayEmojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
-                $dayColors = [
-                    'from-red-500 to-orange-500',
-                    'from-yellow-500 to-amber-500',
-                    'from-pink-500 to-rose-500',
-                    'from-green-500 to-emerald-500',
-                    'from-orange-500 to-amber-500',
-                    'from-blue-500 to-cyan-500',
-                    'from-purple-500 to-violet-500',
-                ];
-            @endphp
-
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;">
             @foreach($contents as $content)
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
-                    {{-- Header --}}
-                    <div class="p-4 bg-gradient-to-r {{ $dayColors[$content->birth_day] ?? 'from-gray-500 to-gray-600' }} text-white">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <span class="text-2xl">{{ $dayEmojis[$content->birth_day] ?? '⭐' }}</span>
-                                <span class="text-lg font-bold ml-2">วัน{{ $content->birth_day_name }}</span>
-                            </div>
-                            {{-- สถานะ --}}
-                            @switch($content->status)
-                                @case('generated')
-                                    <span class="px-2 py-0.5 bg-white/20 rounded-full text-xs">✅ สำเร็จ</span>
-                                    @break
-                                @case('generating')
-                                    <span class="px-2 py-0.5 bg-white/20 rounded-full text-xs animate-pulse">⏳ กำลังสร้าง</span>
-                                    @break
-                                @case('pending')
-                                    <span class="px-2 py-0.5 bg-white/20 rounded-full text-xs">⏸ รอ</span>
-                                    @break
-                                @case('failed')
-                                    <span class="px-2 py-0.5 bg-red-400/50 rounded-full text-xs">❌ ล้มเหลว</span>
-                                    @break
-                            @endswitch
+                @php
+                    $dm = $dayMeta[$content->birth_day] ?? ['#9a8f7c', '⭐'];
+                    $gs = $genStatusMeta[$content->status] ?? ['#9a8f7c', $content->status];
+                @endphp
+                <div class="tp-card tp-card-hover" style="padding:0; overflow:hidden;">
+                    {{-- หัวการ์ด (สีวันเกิด) --}}
+                    <div style="padding:14px 16px; color:#fff; background:linear-gradient(135deg, {{ $dm[0] }}, color-mix(in srgb, {{ $dm[0] }} 65%, #000)); display:flex; align-items:center; justify-content:space-between;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:20px;">{{ $dm[1] }}</span>
+                            <span class="tp-num" style="font-size:15px; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.2);">วัน{{ $content->birth_day_name }}</span>
                         </div>
+                        <span style="padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:700; background:rgba(255,255,255,.22);">{{ $gs[1] }}</span>
                     </div>
 
                     {{-- รูปภาพ --}}
                     @if($content->image_url)
-                        <div class="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
-                            <img src="{{ $content->image_url }}"
-                                 alt="ดวงวัน{{ $content->birth_day_name }}"
-                                 class="w-full h-full object-cover"
-                                 loading="lazy"
-                                 onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-gray-400\'><span class=\'text-4xl\'>🖼</span></div>'">
+                        <div style="aspect-ratio:1/1; overflow:hidden; box-shadow:var(--inset-sm);">
+                            <img src="{{ $content->image_url }}" alt="ดวงวัน{{ $content->birth_day_name }}" loading="lazy"
+                                 style="width:100%; height:100%; object-fit:cover;"
+                                 onerror="this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink2);font-size:34px;\'>🖼</div>'">
                         </div>
                     @endif
 
-                    {{-- เนื้อหาคำทำนาย --}}
-                    <div class="p-4">
+                    {{-- คำทำนาย --}}
+                    <div style="padding:14px 16px;">
                         @if($content->ai_prediction)
-                            <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-4">
-                                {{ $content->ai_prediction }}
-                            </p>
+                            <p style="font-size:13px; color:var(--ink); line-height:1.6; margin:0; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;">{{ $content->ai_prediction }}</p>
                         @else
-                            <p class="text-sm text-gray-400 italic">ยังไม่มีคำทำนาย</p>
+                            <p style="font-size:13px; color:var(--ink2); font-style:italic; margin:0;">ยังไม่มีคำทำนาย</p>
                         @endif
 
-                        {{-- Lucky info --}}
                         @if($content->lucky_color || $content->lucky_number || $content->lucky_direction)
-                            <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-2">
+                            <div style="margin-top:12px; padding-top:12px; box-shadow:inset 0 1px 0 color-mix(in srgb, var(--ink2) 18%, transparent); display:flex; flex-wrap:wrap; gap:6px;">
                                 @if($content->lucky_color)
-                                    <span class="inline-flex items-center px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-600 dark:text-gray-400">
-                                        🎨 {{ $content->lucky_color }}
-                                    </span>
+                                    <span class="tp-pill tp-pill-soft" style="font-size:11px;">🎨 {{ $content->lucky_color }}</span>
                                 @endif
                                 @if($content->lucky_number)
-                                    <span class="inline-flex items-center px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-600 dark:text-gray-400">
-                                        🔢 {{ $content->lucky_number }}
-                                    </span>
+                                    <span class="tp-pill tp-pill-soft" style="font-size:11px;">🔢 {{ $content->lucky_number }}</span>
                                 @endif
                                 @if($content->lucky_direction)
-                                    <span class="inline-flex items-center px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-600 dark:text-gray-400">
-                                        🧭 {{ $content->lucky_direction }}
-                                    </span>
+                                    <span class="tp-pill tp-pill-soft" style="font-size:11px;">🧭 {{ $content->lucky_direction }}</span>
                                 @endif
                             </div>
                         @endif
 
-                        {{-- Error --}}
                         @if($content->error_message)
-                            <div class="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs text-red-600 dark:text-red-400">
-                                ⚠️ {{ Str::limit($content->error_message, 100) }}
-                            </div>
+                            <div style="margin-top:12px; padding:8px 10px; border-radius:9px; box-shadow:var(--inset-sm); font-size:11.5px; color:#d9534f;">⚠️ {{ Str::limit($content->error_message, 100) }}</div>
                         @endif
                     </div>
 
-                    {{-- Footer: Astrology info --}}
+                    {{-- โหราศาสตร์ --}}
                     @if($content->chaochana_data)
-                        <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-600">
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                @php $chaochana = $content->chaochana_data; @endphp
-                                @if(isset($chaochana['main_planet']))
-                                    ดาว: <span class="font-semibold">{{ $chaochana['main_planet'] }}</span>
-                                @endif
-                                @if(isset($chaochana['element']))
-                                    | ธาตุ: <span class="font-semibold">{{ $chaochana['element'] }}</span>
-                                @endif
-                            </p>
+                        @php $chaochana = $content->chaochana_data; @endphp
+                        <div style="padding:11px 16px; box-shadow:var(--inset-sm); font-size:11.5px; color:var(--ink2);">
+                            @if(isset($chaochana['main_planet']))
+                                ดาว: <span style="font-weight:700; color:var(--ink);">{{ $chaochana['main_planet'] }}</span>
+                            @endif
+                            @if(isset($chaochana['element']))
+                                · ธาตุ: <span style="font-weight:700; color:var(--ink);">{{ $chaochana['element'] }}</span>
+                            @endif
                         </div>
                     @endif
                 </div>
             @endforeach
         </div>
 
-        {{-- Quick Actions --}}
-        <div class="mt-8 flex flex-wrap gap-4">
-            <form action="{{ route('admin.fortune.horoscope.generate-now', $campaign) }}" method="POST" class="inline"
+        {{-- ปุ่มลัด --}}
+        <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            <form action="{{ route('admin.fortune.horoscope.generate-now', $campaign) }}" method="POST" style="display:inline;"
                   onsubmit="return confirm('สร้างเนื้อหาใหม่จะเขียนทับเนื้อหาที่มีอยู่ ต้องการดำเนินการ?')">
                 @csrf
                 <input type="hidden" name="date" value="{{ $selectedDate->format('Y-m-d') }}">
-                <button type="submit"
-                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-sm">
-                    🔄 สร้างเนื้อหาใหม่
-                </button>
+                <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-arrows-rotate"></i> สร้างเนื้อหาใหม่</button>
             </form>
-
-            <form action="{{ route('admin.fortune.horoscope.publish-now', $campaign) }}" method="POST" class="inline"
+            <form action="{{ route('admin.fortune.horoscope.publish-now', $campaign) }}" method="POST" style="display:inline;"
                   onsubmit="return confirm('ต้องการโพสเนื้อหาทันทีหรือไม่?')">
                 @csrf
-                <button type="submit"
-                        class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition text-sm">
-                    🚀 โพสทันที
-                </button>
+                <button type="submit" class="tp-btn"><i class="fas fa-rocket" style="color:#d6824a;"></i> โพสทันที</button>
             </form>
-
-            <a href="{{ route('admin.fortune.horoscope.post-history', $campaign) }}"
-               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm">
-                📤 ดูประวัติโพส
-            </a>
-        </div>
-    @endif
-
-    {{-- Flash Messages --}}
-    @if(session('success'))
-        <div class="mt-6 p-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl text-green-800 dark:text-green-200">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('warning'))
-        <div class="mt-6 p-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-xl text-yellow-800 dark:text-yellow-200">
-            {{ session('warning') }}
+            <a href="{{ route('admin.fortune.horoscope.post-history', $campaign) }}" class="tp-btn"><i class="fas fa-paper-plane" style="color:#5689b8;"></i> ดูประวัติโพส</a>
         </div>
     @endif
 </div>

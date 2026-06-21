@@ -1,315 +1,200 @@
 {{-- resources/views/admin/fortune/horoscope/index.blade.php --}}
-{{-- รายการแคมเปญโพสดวงรายวันอัตโนมัติ --}}
+{{-- รายการแคมเปญโพสดวงรายวันอัตโนมัติ — ธีม V4 นวลทองคำ --}}
 
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'ดวงรายวันอัตโนมัติ')
 
+@php
+    use Illuminate\Support\Str;
+
+    // สีสถานะแคมเปญ (semantic palette V4)
+    $statusMeta = [
+        'draft'     => ['color' => '#9a8f7c', 'icon' => '📝', 'label' => 'แบบร่าง'],
+        'active'    => ['color' => '#5aa07e', 'icon' => '✅', 'label' => 'กำลังทำงาน'],
+        'paused'    => ['color' => '#e0a52e', 'icon' => '⏸', 'label' => 'หยุดชั่วคราว'],
+        'cancelled' => ['color' => '#d9534f', 'icon' => '❌', 'label' => 'ยกเลิก'],
+    ];
+    $curStatus = request('status', '');
+@endphp
+
 @section('content')
-<div class="container mx-auto px-4 py-8">
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- Flash Messages --}}
-    @if(session('success'))
-        <div class="mb-6 p-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl text-green-800 dark:text-green-200">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('warning'))
-        <div class="mb-6 p-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-xl text-yellow-800 dark:text-yellow-200">
-            {{ session('warning') }}
-        </div>
-    @endif
-
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    {{-- หัวข้อ --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                🔮 ดวงรายวันอัตโนมัติ
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400">
-                จัดการแคมเปญ AI สร้างดวงรายวัน + โพสอัตโนมัติลง Facebook / LINE
-            </p>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ระบบดูดวง · ดวงรายวันอัตโนมัติ</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ดวงรายวันอัตโนมัติ 🔮</h1>
+            <p class="tp-muted" style="margin:6px 0 0; font-size:13px;">AI สร้างดวงรายวัน + โพสอัตโนมัติลง Facebook / LINE</p>
         </div>
-        <a href="{{ route('admin.fortune.horoscope.create') }}"
-           class="px-6 py-3 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white rounded-lg transition inline-flex items-center gap-2 shadow-lg">
-            <span>+</span>
-            <span>สร้างแคมเปญใหม่</span>
+        <a href="{{ route('admin.fortune.horoscope.create') }}" class="tp-btn tp-btn-primary">
+            <i class="fas fa-plus"></i> สร้างแคมเปญใหม่
         </a>
     </div>
 
-    {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {{-- แคมเปญทั้งหมด --}}
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-blue-100 text-sm">แคมเปญทั้งหมด</span>
-                <span class="text-2xl">📋</span>
+    {{-- KPI --}}
+    @php
+        $kpis = [
+            ['แคมเปญทั้งหมด', 'Total', number_format($stats['total']), 'fa-list-check', 'var(--deep1)'],
+            ['กำลังทำงาน', 'Active', number_format($stats['active']), 'fa-circle-check', '#5aa07e'],
+            ['เนื้อหาวันนี้', 'Contents today', number_format($stats['contents_today']), 'fa-robot', '#b79ae8'],
+            ['โพสวันนี้', 'Posts today', number_format($stats['posts_today']), 'fa-paper-plane', '#d6824a'],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
+        @foreach($kpis as [$label, $en, $val, $icon, $col])
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+                    <div>
+                        <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $label }}</div>
+                        <div style="font-size:10px; color:var(--ink2); opacity:.8;">{{ $en }}</div>
+                    </div>
+                    <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:15px; background:linear-gradient(135deg, {{ $col }}, color-mix(in srgb, {{ $col }} 60%, #fff));">
+                        <i class="fas {{ $icon }}"></i>
+                    </span>
+                </div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; margin:10px 0 2px; color:{{ $col }};">{{ $val }}</div>
             </div>
-            <div class="text-2xl font-bold">{{ number_format($stats['total']) }}</div>
-        </div>
-
-        {{-- กำลังทำงาน --}}
-        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-green-100 text-sm">กำลังทำงาน</span>
-                <span class="text-2xl">✅</span>
-            </div>
-            <div class="text-2xl font-bold">{{ number_format($stats['active']) }}</div>
-        </div>
-
-        {{-- เนื้อหาวันนี้ --}}
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-purple-100 text-sm">เนื้อหาวันนี้</span>
-                <span class="text-2xl">🤖</span>
-            </div>
-            <div class="text-2xl font-bold">{{ number_format($stats['contents_today']) }}</div>
-        </div>
-
-        {{-- โพสวันนี้ --}}
-        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-orange-100 text-sm">โพสวันนี้</span>
-                <span class="text-2xl">📤</span>
-            </div>
-            <div class="text-2xl font-bold">{{ number_format($stats['posts_today']) }}</div>
-        </div>
+        @endforeach
     </div>
 
-    {{-- Filter / Search --}}
-    <div class="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-        <form method="GET" action="{{ route('admin.fortune.horoscope.index') }}" class="flex flex-col md:flex-row gap-4">
-            <div class="flex-1">
-                <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="ค้นหาแคมเปญ..."
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+    {{-- ค้นหา / กรอง (GET form — คงชื่อ field เดิม) --}}
+    <div class="tp-card" style="padding:16px;">
+        <form method="GET" action="{{ route('admin.fortune.horoscope.index') }}" style="display:flex; flex-wrap:wrap; align-items:center; gap:12px;">
+            <div class="tp-well" style="flex:1; min-width:220px;">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="ค้นหาแคมเปญ..." class="tp-input">
             </div>
-            <div>
-                <select name="status"
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                    <option value="">-- สถานะทั้งหมด --</option>
-                    <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>📝 แบบร่าง</option>
-                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>✅ กำลังทำงาน</option>
-                    <option value="paused" {{ request('status') === 'paused' ? 'selected' : '' }}>⏸ หยุดชั่วคราว</option>
-                    <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>❌ ยกเลิก</option>
+            <div class="tp-well tp-input" style="padding:0; min-width:180px;">
+                <select name="status" style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
+                    <option value="">— สถานะทั้งหมด —</option>
+                    <option value="draft" @selected($curStatus === 'draft')>📝 แบบร่าง</option>
+                    <option value="active" @selected($curStatus === 'active')>✅ กำลังทำงาน</option>
+                    <option value="paused" @selected($curStatus === 'paused')>⏸ หยุดชั่วคราว</option>
+                    <option value="cancelled" @selected($curStatus === 'cancelled')>❌ ยกเลิก</option>
                 </select>
             </div>
-            <div class="flex gap-2">
-                <button type="submit"
-                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
-                    🔍 ค้นหา
-                </button>
-                <a href="{{ route('admin.fortune.horoscope.index') }}"
-                   class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition">
-                    ล้าง
-                </a>
-            </div>
+            <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> ค้นหา</button>
+            @if(request()->hasAny(['search', 'status']))
+                <a href="{{ route('admin.fortune.horoscope.index') }}" class="tp-btn"><i class="fas fa-eraser"></i> ล้าง</a>
+            @endif
         </form>
     </div>
 
-    {{-- Campaign Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            แคมเปญ
-                        </th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            แพลตฟอร์ม
-                        </th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            เวลาโพส
-                        </th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            สถานะ
-                        </th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            เนื้อหา / โพส
-                        </th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            โพสล่าสุด
-                        </th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            จัดการ
-                        </th>
+    {{-- ตารางแคมเปญ --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; min-width:900px;">
+                <thead>
+                    <tr style="box-shadow:var(--inset-sm);">
+                        @foreach(['แคมเปญ' => 'left', 'แพลตฟอร์ม' => 'center', 'เวลาโพส' => 'center', 'สถานะ' => 'center', 'เนื้อหา/โพส' => 'center', 'โพสล่าสุด' => 'center', 'จัดการ' => 'right'] as $th => $align)
+                            <th style="padding:13px 16px; text-align:{{ $align }}; font-size:11px; color:var(--ink2); font-weight:700; letter-spacing:.4px; text-transform:uppercase; white-space:nowrap;">{{ $th }}</th>
+                        @endforeach
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($campaigns as $campaign)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                        @php $sm = $statusMeta[$campaign->status] ?? ['color' => '#9a8f7c', 'icon' => '•', 'label' => $campaign->status_label]; @endphp
+                        <tr style="box-shadow:var(--inset-sm);">
                             {{-- ชื่อแคมเปญ --}}
-                            <td class="px-4 py-4">
-                                <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                                    {{ $campaign->name }}
-                                </div>
+                            <td style="padding:14px 16px; vertical-align:top;">
+                                <div class="tp-num" style="font-size:13.5px; font-weight:700;">{{ $campaign->name }}</div>
                                 @if($campaign->description)
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        {{ Str::limit($campaign->description, 60) }}
-                                    </div>
+                                    <div style="font-size:11.5px; color:var(--ink2); margin-top:3px;">{{ Str::limit($campaign->description, 60) }}</div>
                                 @endif
                                 @if($campaign->last_error)
-                                    <div class="text-xs text-red-600 dark:text-red-400 mt-1">
-                                        ⚠️ {{ Str::limit($campaign->last_error, 40) }}
-                                    </div>
+                                    <div style="font-size:11px; color:#d9534f; margin-top:3px;">⚠️ {{ Str::limit($campaign->last_error, 40) }}</div>
                                 @endif
                             </td>
 
                             {{-- แพลตฟอร์ม --}}
-                            <td class="px-4 py-4 text-center">
-                                <div class="flex justify-center gap-1">
+                            <td style="padding:14px 16px; text-align:center;">
+                                <div style="display:flex; justify-content:center; gap:5px; flex-wrap:wrap;">
                                     @if($campaign->post_to_facebook)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300" title="Facebook">
-                                            📘 FB
-                                        </span>
+                                        <span class="tp-pill" style="background:rgba(86,137,184,.16); color:#5689b8;">📘 FB</span>
                                     @endif
                                     @if($campaign->post_to_line)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300" title="LINE">
-                                            💚 LINE
-                                        </span>
+                                        <span class="tp-pill" style="background:rgba(90,160,126,.16); color:#5aa07e;">💚 LINE</span>
                                     @endif
                                     @if(!$campaign->post_to_facebook && !$campaign->post_to_line)
-                                        <span class="text-xs text-gray-400">ยังไม่ตั้ง</span>
+                                        <span style="font-size:11px; color:var(--ink2); opacity:.7;">ยังไม่ตั้ง</span>
                                     @endif
                                 </div>
                             </td>
 
                             {{-- เวลาโพส --}}
-                            <td class="px-4 py-4 text-center">
-                                <span class="text-sm font-mono text-gray-900 dark:text-white">
-                                    {{ $campaign->schedule_time ?? '06:00' }}
-                                </span>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">
-                                    {{ $campaign->timezone ?? 'Asia/Bangkok' }}
-                                </div>
+                            <td style="padding:14px 16px; text-align:center;">
+                                <span class="tp-num" style="font-size:13.5px; font-weight:600;">{{ $campaign->schedule_time ?? '06:00' }}</span>
+                                <div style="font-size:10.5px; color:var(--ink2);">{{ $campaign->timezone ?? 'Asia/Bangkok' }}</div>
                             </td>
 
                             {{-- สถานะ --}}
-                            <td class="px-4 py-4 text-center">
-                                @php $color = $campaign->status_color; @endphp
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    bg-{{ $color }}-100 text-{{ $color }}-800
-                                    dark:bg-{{ $color }}-900/50 dark:text-{{ $color }}-300">
-                                    @switch($campaign->status)
-                                        @case('draft') 📝 @break
-                                        @case('active') ✅ @break
-                                        @case('paused') ⏸ @break
-                                        @case('cancelled') ❌ @break
-                                    @endswitch
-                                    {{ $campaign->status_label }}
-                                </span>
+                            <td style="padding:14px 16px; text-align:center;">
+                                <span class="tp-pill" style="background:color-mix(in srgb, {{ $sm['color'] }} 16%, transparent); color:{{ $sm['color'] }}; font-weight:700;">{{ $sm['icon'] }} {{ $campaign->status_label }}</span>
                             </td>
 
                             {{-- เนื้อหา / โพส --}}
-                            <td class="px-4 py-4 text-center">
-                                <span class="text-sm text-gray-900 dark:text-white">
-                                    {{ number_format($campaign->contents_count) }} / {{ number_format($campaign->posts_count) }}
-                                </span>
+                            <td style="padding:14px 16px; text-align:center;">
+                                <span class="tp-num" style="font-size:13.5px; font-weight:600;">{{ number_format($campaign->contents_count) }} / {{ number_format($campaign->posts_count) }}</span>
                             </td>
 
                             {{-- โพสล่าสุด --}}
-                            <td class="px-4 py-4 text-center text-sm">
+                            <td style="padding:14px 16px; text-align:center;">
                                 @if($campaign->last_posted_at)
-                                    <span class="text-gray-900 dark:text-white">
-                                        {{ $campaign->last_posted_at->format('d/m/Y') }}
-                                    </span>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                                        {{ $campaign->last_posted_at->format('H:i') }}
-                                    </div>
+                                    <span class="tp-num" style="font-size:13px; font-weight:600;">{{ $campaign->last_posted_at->format('d/m/Y') }}</span>
+                                    <div style="font-size:10.5px; color:var(--ink2);">{{ $campaign->last_posted_at->format('H:i') }}</div>
                                 @else
-                                    <span class="text-gray-400">ยังไม่เคยโพส</span>
+                                    <span style="font-size:12px; color:var(--ink2); opacity:.7;">ยังไม่เคยโพส</span>
                                 @endif
                             </td>
 
                             {{-- จัดการ --}}
-                            <td class="px-4 py-4 text-right">
-                                <div class="flex justify-end gap-1 flex-wrap">
-                                    {{-- แก้ไข --}}
-                                    <a href="{{ route('admin.fortune.horoscope.edit', $campaign) }}"
-                                       class="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs transition"
-                                       title="แก้ไข">
-                                        ✏️
-                                    </a>
+                            <td style="padding:14px 16px; text-align:right;">
+                                <div style="display:flex; justify-content:flex-end; gap:5px; flex-wrap:wrap;">
+                                    <a href="{{ route('admin.fortune.horoscope.edit', $campaign) }}" class="tp-icon-btn tp-btn-sm" title="แก้ไข" style="width:32px; height:32px;"><i class="fas fa-pen" style="color:#5689b8;"></i></a>
+                                    <a href="{{ route('admin.fortune.horoscope.content-history', $campaign) }}" class="tp-icon-btn tp-btn-sm" title="ดูเนื้อหา" style="width:32px; height:32px;"><i class="fas fa-robot" style="color:#b79ae8;"></i></a>
+                                    <a href="{{ route('admin.fortune.horoscope.post-history', $campaign) }}" class="tp-icon-btn tp-btn-sm" title="ประวัติโพส" style="width:32px; height:32px;"><i class="fas fa-paper-plane" style="color:#5689b8;"></i></a>
 
-                                    {{-- ดูเนื้อหา --}}
-                                    <a href="{{ route('admin.fortune.horoscope.content-history', $campaign) }}"
-                                       class="px-2 py-1.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-300 rounded-lg text-xs transition"
-                                       title="ดูเนื้อหา">
-                                        🤖
-                                    </a>
-
-                                    {{-- ดูประวัติโพส --}}
-                                    <a href="{{ route('admin.fortune.horoscope.post-history', $campaign) }}"
-                                       class="px-2 py-1.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-700 dark:text-blue-300 rounded-lg text-xs transition"
-                                       title="ประวัติโพส">
-                                        📤
-                                    </a>
-
-                                    {{-- เปิด/หยุด --}}
                                     @if($campaign->status === 'active')
-                                        <form action="{{ route('admin.fortune.horoscope.pause', $campaign) }}" method="POST" class="inline">
+                                        <form action="{{ route('admin.fortune.horoscope.pause', $campaign) }}" method="POST" style="display:inline;">
                                             @csrf
-                                            <button type="submit" title="หยุดชั่วคราว"
-                                                    class="px-2 py-1.5 bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-800/50 text-yellow-700 dark:text-yellow-300 rounded-lg text-xs transition">
-                                                ⏸
-                                            </button>
+                                            <button type="submit" class="tp-icon-btn tp-btn-sm" title="หยุดชั่วคราว" style="width:32px; height:32px;"><i class="fas fa-pause" style="color:#e0a52e;"></i></button>
                                         </form>
                                     @else
-                                        <form action="{{ route('admin.fortune.horoscope.activate', $campaign) }}" method="POST" class="inline">
+                                        <form action="{{ route('admin.fortune.horoscope.activate', $campaign) }}" method="POST" style="display:inline;">
                                             @csrf
-                                            <button type="submit" title="เปิดใช้งาน"
-                                                    class="px-2 py-1.5 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-800/50 text-green-700 dark:text-green-300 rounded-lg text-xs transition">
-                                                ▶️
-                                            </button>
+                                            <button type="submit" class="tp-icon-btn tp-btn-sm" title="เปิดใช้งาน" style="width:32px; height:32px;"><i class="fas fa-play" style="color:#5aa07e;"></i></button>
                                         </form>
                                     @endif
 
-                                    {{-- สร้างเนื้อหาทันที --}}
-                                    <form action="{{ route('admin.fortune.horoscope.generate-now', $campaign) }}" method="POST" class="inline"
+                                    <form action="{{ route('admin.fortune.horoscope.generate-now', $campaign) }}" method="POST" style="display:inline;"
                                           onsubmit="return confirm('ต้องการสร้างเนื้อหา AI ทันทีหรือไม่? อาจใช้เวลา 2-5 นาที')">
                                         @csrf
-                                        <button type="submit" title="สร้างเนื้อหา AI ทันที"
-                                                class="px-2 py-1.5 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/50 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs transition">
-                                            ⚡
-                                        </button>
+                                        <button type="submit" class="tp-icon-btn tp-btn-sm" title="สร้างเนื้อหา AI ทันที" style="width:32px; height:32px;"><i class="fas fa-bolt" style="color:#d6824a;"></i></button>
                                     </form>
 
-                                    {{-- โพสทันที --}}
-                                    <form action="{{ route('admin.fortune.horoscope.publish-now', $campaign) }}" method="POST" class="inline"
+                                    <form action="{{ route('admin.fortune.horoscope.publish-now', $campaign) }}" method="POST" style="display:inline;"
                                           onsubmit="return confirm('ต้องการโพสเนื้อหาทันทีหรือไม่?')">
                                         @csrf
-                                        <button type="submit" title="โพสทันที"
-                                                class="px-2 py-1.5 bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/30 dark:hover:bg-orange-800/50 text-orange-700 dark:text-orange-300 rounded-lg text-xs transition">
-                                            🚀
-                                        </button>
+                                        <button type="submit" class="tp-icon-btn tp-btn-sm" title="โพสทันที" style="width:32px; height:32px;"><i class="fas fa-rocket" style="color:#d6824a;"></i></button>
                                     </form>
 
-                                    {{-- ลบ --}}
-                                    <form action="{{ route('admin.fortune.horoscope.destroy', $campaign) }}" method="POST" class="inline"
+                                    <form action="{{ route('admin.fortune.horoscope.destroy', $campaign) }}" method="POST" style="display:inline;"
                                           onsubmit="return confirm('ยืนยันลบแคมเปญ {{ $campaign->name }}?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" title="ลบ"
-                                                class="px-2 py-1.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/50 text-red-700 dark:text-red-300 rounded-lg text-xs transition">
-                                            🗑
-                                        </button>
+                                        <button type="submit" class="tp-icon-btn tp-btn-sm" title="ลบ" style="width:32px; height:32px;"><i class="fas fa-trash" style="color:#d9534f;"></i></button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
-                                <div class="text-gray-400 dark:text-gray-500">
-                                    <div class="text-4xl mb-3">🔮</div>
-                                    <p class="text-lg font-medium">ยังไม่มีแคมเปญ</p>
-                                    <p class="text-sm mt-1">สร้างแคมเปญใหม่เพื่อเริ่มโพสดวงรายวันอัตโนมัติ</p>
-                                    <a href="{{ route('admin.fortune.horoscope.create') }}"
-                                       class="inline-block mt-4 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
-                                        + สร้างแคมเปญแรก
-                                    </a>
-                                </div>
+                            <td colspan="7" style="padding:48px 20px; text-align:center; color:var(--ink2);">
+                                <i class="fas fa-inbox" style="font-size:34px; display:block; margin-bottom:10px; opacity:.5;"></i>
+                                <div class="tp-num" style="font-size:15px; font-weight:700;">ยังไม่มีแคมเปญ</div>
+                                <div style="font-size:12.5px; margin:3px 0 14px;">สร้างแคมเปญใหม่เพื่อเริ่มโพสดวงรายวันอัตโนมัติ</div>
+                                <a href="{{ route('admin.fortune.horoscope.create') }}" class="tp-btn tp-btn-primary" style="display:inline-flex;"><i class="fas fa-plus"></i> สร้างแคมเปญแรก</a>
                             </td>
                         </tr>
                     @endforelse
@@ -318,11 +203,9 @@
         </div>
     </div>
 
-    {{-- Pagination --}}
+    {{-- แบ่งหน้า --}}
     @if($campaigns->hasPages())
-        <div class="mt-6">
-            {{ $campaigns->withQueryString()->links() }}
-        </div>
+        <div class="tp-num" style="display:flex; justify-content:center;">{{ $campaigns->withQueryString()->links() }}</div>
     @endif
 </div>
 @endsection
