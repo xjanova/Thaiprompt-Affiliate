@@ -66,12 +66,19 @@ class FortuneSystemVoiceService
                 return null;
             }
 
-            // เช็คไฟล์ยังอยู่จริงบน public disk (กันไฟล์ถูกลบ/ย้าย)
-            if (! Storage::disk('public')->exists($clip->audio_path)) {
+            // ใช้ไฟล์ของ "สล็อตที่เลือก" (tts หรือ upload)
+            $path = $clip->activeAudioPath();
+            $url = $clip->activeAudioUrl();
+            if (empty($path) || empty($url)) {
                 return null;
             }
 
-            return $clip->audio_url;
+            // เช็คไฟล์ยังอยู่จริงบน public disk (กันไฟล์ถูกลบ/ย้าย)
+            if (! Storage::disk('public')->exists($path)) {
+                return null;
+            }
+
+            return $url;
         } catch (\Throwable $e) {
             // fail-open ฝั่งเสียง: เงียบ ไม่ทำให้ flow ส่งข้อความพัง
             return null;
@@ -97,28 +104,40 @@ class FortuneSystemVoiceService
         }
 
         try {
-            // path ปลายทาง (stable ตาม key — สร้างใหม่ทับไฟล์เดิมได้)
+            // path ปลายทางสล็อต TTS (stable ตาม key — สร้างใหม่ทับไฟล์ TTS เดิมได้)
             $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'.mp3';
 
-            // ถ้าเดิมเป็นไฟล์อัปโหลด (นามสกุลอื่น) → ลบไฟล์เก่าก่อน กันไฟล์ค้าง
-            $this->forgetOldFileIfDifferent($clip, $relativePath);
+            // 🛡️ กันชนสล็อต (defense-in-depth): ถ้าสล็อตอัปโหลดบังเอิญอ้างไฟล์ path เดียวกับ TTS
+            //    (เช่น legacy row จาก migration เก่าที่ย้ายไฟล์ไม่สำเร็จ) — ห้ามเขียน TTS ทับไฟล์อัปโหลด
+            if (! empty($clip->upload_audio_path) && $clip->upload_audio_path === $relativePath) {
+                return $this->fail('สล็อตอัปโหลดชี้ไฟล์เดียวกับเสียง AI — ลบไฟล์อัปโหลด หรืออัปโหลดใหม่ก่อนกดสร้างเสียง');
+            }
+
+            // ลบไฟล์ TTS เดิมถ้า path ต่าง (ไม่แตะไฟล์อัปโหลด ซึ่งอยู่คนละ path)
+            $this->forgetOldFile($clip->audio_path, $relativePath);
 
             $synth = $this->synthesizeToPublic($text, $clip->clip_key, $clip->voice_config ?? null, $relativePath);
             if (! $synth['success']) {
                 return $synth;
             }
 
-            $clip->update([
+            $update = [
                 'audio_path' => $relativePath,
                 'audio_url' => $synth['audio_url'],
                 'audio_duration_ms' => $synth['duration_ms'],
                 'audio_provider' => $synth['provider_used'],
                 'audio_source' => 'tts',
-                'audio_original_name' => null,
                 'audio_voice_id' => $synth['voice_used'],
                 'audio_chars' => mb_strlen($text),
                 'generated_at' => now(),
-            ]);
+            ];
+
+            // ตั้ง active = tts เฉพาะเมื่อยังไม่มีไฟล์อัปโหลดให้เลือก (ไม่แย่ง choice ของแอดมิน)
+            if (! $clip->hasUploadAudio()) {
+                $update['active_audio_source'] = 'tts';
+            }
+
+            $clip->update($update);
 
             return $synth;
         } finally {
@@ -147,11 +166,14 @@ class FortuneSystemVoiceService
             $ffmpeg = $this->ffmpegPath();
             $converted = false;
 
+            // 📂 สล็อตอัปโหลดใช้ path แยกจาก TTS (`-upload`) → เก็บได้ทั้ง 2 สล็อตพร้อมกัน
+            $oldUploadPath = $clip->upload_audio_path;
+
             if ($origExt === 'mp3') {
                 // mp3 อยู่แล้ว — stream เก็บตรง (ไม่โหลดเข้า memory)
-                $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'.mp3';
-                $this->forgetOldFileIfDifferent($clip, $relativePath);
-                $file->storeAs(self::STORAGE_DIR, $clip->clip_key.'.mp3', 'public');
+                $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'-upload.mp3';
+                $this->forgetOldFile($oldUploadPath, $relativePath);
+                $file->storeAs(self::STORAGE_DIR, $clip->clip_key.'-upload.mp3', 'public');
             } elseif ($ffmpeg) {
                 // 🎯 แปลงทุกฟอร์แมต → mp3 (FB-safe)
                 $tempDir = storage_path('app/tmp-voice');
@@ -164,16 +186,16 @@ class FortuneSystemVoiceService
                     return $this->fail('แปลงไฟล์ .'.$origExt.' เป็น mp3 ไม่สำเร็จ (ffmpeg error)');
                 }
 
-                $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'.mp3';
-                $this->forgetOldFileIfDifferent($clip, $relativePath);
+                $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'-upload.mp3';
+                $this->forgetOldFile($oldUploadPath, $relativePath);
                 // stream temp → public (ไม่โหลดทั้งไฟล์เข้า memory)
-                Storage::disk('public')->putFileAs(self::STORAGE_DIR, new File($tmpMp3), $clip->clip_key.'.mp3');
+                Storage::disk('public')->putFileAs(self::STORAGE_DIR, new File($tmpMp3), $clip->clip_key.'-upload.mp3');
                 $converted = true;
             } else {
                 // ไม่มี ffmpeg → stream เก็บตามฟอร์แมตเดิม (FB อาจไม่รองรับ)
-                $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'.'.$origExt;
-                $this->forgetOldFileIfDifferent($clip, $relativePath);
-                $file->storeAs(self::STORAGE_DIR, $clip->clip_key.'.'.$origExt, 'public');
+                $relativePath = self::STORAGE_DIR.'/'.$clip->clip_key.'-upload.'.$origExt;
+                $this->forgetOldFile($oldUploadPath, $relativePath);
+                $file->storeAs(self::STORAGE_DIR, $clip->clip_key.'-upload.'.$origExt, 'public');
             }
 
             // ต้องมีไฟล์จริง + ไม่ใช่ไฟล์ว่าง
@@ -181,30 +203,36 @@ class FortuneSystemVoiceService
                 return $this->fail('บันทึกไฟล์อัปโหลดไม่สำเร็จ (ไฟล์ว่าง)');
             }
 
-            $clip->update([
-                'audio_path' => $relativePath,
-                'audio_url' => Storage::disk('public')->url($relativePath),
-                'audio_duration_ms' => $this->estimateDurationMs($relativePath, (string) $clip->script_text),
-                'audio_provider' => $converted ? 'upload+mp3' : 'upload',
-                'audio_source' => 'upload',
-                'audio_original_name' => $origName,
-                'audio_voice_id' => null,
-                'audio_chars' => null,
-                'generated_at' => now(),
-            ]);
+            $uploadUrl = Storage::disk('public')->url($relativePath);
+
+            $update = [
+                'upload_audio_path' => $relativePath,
+                'upload_audio_url' => $uploadUrl,
+                'upload_audio_duration_ms' => $this->estimateDurationMs($relativePath, (string) $clip->script_text),
+                'upload_original_name' => $origName,
+                'upload_audio_at' => now(),
+            ];
+
+            // ตั้ง active = upload เฉพาะเมื่อยังไม่มีเสียง TTS ให้เลือก (ไม่แย่ง choice ของแอดมิน)
+            if (! $clip->hasTtsAudio()) {
+                $update['active_audio_source'] = 'upload';
+            }
+
+            $clip->update($update);
 
             Log::info('🎧 SystemVoice: ⬆️ อัปโหลดไฟล์เสียงสำเร็จ', [
                 'clip_key' => $clip->clip_key,
                 'orig_ext' => $origExt,
                 'converted_to_mp3' => $converted,
                 'path' => $relativePath,
+                'active_source' => $clip->fresh()->activeSource(),
             ]);
 
             return [
                 'success' => true,
-                'audio_url' => $clip->audio_url,
+                'audio_url' => $uploadUrl,
                 'provider_used' => $converted ? 'upload+mp3' : 'upload',
-                'duration_ms' => $clip->audio_duration_ms,
+                'duration_ms' => $update['upload_audio_duration_ms'],
                 'voice_used' => null,
                 'error' => null,
             ];
@@ -271,12 +299,11 @@ class FortuneSystemVoiceService
     }
 
     /**
-     * ลบไฟล์เสียงเดิมถ้า path ใหม่ต่างจากเดิม (เช่น เปลี่ยนนามสกุล tts.mp3 → upload.wav)
+     * ลบไฟล์เก่าถ้า path ใหม่ต่างจากเดิม (เช่น เปลี่ยนนามสกุล .mp3 → .wav ในสล็อตเดียวกัน)
      */
-    protected function forgetOldFileIfDifferent(FortuneSystemVoiceClip $clip, string $newPath): void
+    protected function forgetOldFile(?string $old, string $newPath): void
     {
         try {
-            $old = $clip->audio_path;
             if (! empty($old) && $old !== $newPath && Storage::disk('public')->exists($old)) {
                 Storage::disk('public')->delete($old);
             }
@@ -404,30 +431,97 @@ class FortuneSystemVoiceService
     }
 
     /**
-     * ลบไฟล์เสียงของคลิป (สร้างใหม่/ปิดใช้)
+     * ลบไฟล์เสียงของคลิป — เลือกสล็อตได้ (tts | upload | all)
+     *
+     * ลบสล็อต active → ระบบจะสลับ active ไปสล็อตที่เหลือให้อัตโนมัติ (ถ้ามี)
+     *
+     * @param  string  $which  สล็อตที่จะลบ: 'tts' | 'upload' | 'all'
      */
-    public function deleteClipAudio(FortuneSystemVoiceClip $clip): void
+    public function deleteClipAudio(FortuneSystemVoiceClip $clip, string $which = 'all'): void
+    {
+        $which = in_array($which, ['tts', 'upload', 'all'], true) ? $which : 'all';
+        $update = [];
+
+        // ── ลบสล็อต TTS ──
+        if ($which === 'tts' || $which === 'all') {
+            $this->deleteFile($clip->audio_path);
+            $update += [
+                'audio_path' => null,
+                'audio_url' => null,
+                'audio_duration_ms' => null,
+                'audio_provider' => null,
+                'audio_source' => 'tts',
+                'audio_original_name' => null,
+                'audio_voice_id' => null,
+                'audio_chars' => null,
+                'generated_at' => null,
+            ];
+        }
+
+        // ── ลบสล็อตอัปโหลด ──
+        if ($which === 'upload' || $which === 'all') {
+            $this->deleteFile($clip->upload_audio_path);
+            $update += [
+                'upload_audio_path' => null,
+                'upload_audio_url' => null,
+                'upload_audio_duration_ms' => null,
+                'upload_original_name' => null,
+                'upload_audio_at' => null,
+            ];
+        }
+
+        // ── สลับ active ไปสล็อตที่ยังเหลือไฟล์ (กัน active ชี้สล็อตว่าง) ──
+        $ttsLeft = ($which === 'tts' || $which === 'all') ? false : $clip->hasTtsAudio();
+        $uploadLeft = ($which === 'upload' || $which === 'all') ? false : $clip->hasUploadAudio();
+
+        if ($clip->activeSource() === 'tts' && ! $ttsLeft && $uploadLeft) {
+            $update['active_audio_source'] = 'upload';
+        } elseif ($clip->activeSource() === 'upload' && ! $uploadLeft && $ttsLeft) {
+            $update['active_audio_source'] = 'tts';
+        } elseif (! $ttsLeft && ! $uploadLeft) {
+            // ไม่เหลือไฟล์เลย → reset เป็น tts (กัน isUploaded() ค้าง true → CLI ข้ามถาวร)
+            $update['active_audio_source'] = 'tts';
+        }
+
+        $clip->update($update);
+    }
+
+    /**
+     * เลือกว่าจะใช้เสียงสล็อตไหนส่งให้ลูกค้า (tts | upload)
+     *
+     * @return array{success: bool, active_source: ?string, error: ?string}
+     */
+    public function setActiveSource(FortuneSystemVoiceClip $clip, string $source): array
+    {
+        if (! in_array($source, ['tts', 'upload'], true)) {
+            return ['success' => false, 'active_source' => $clip->activeSource(), 'error' => 'สล็อตไม่ถูกต้อง'];
+        }
+
+        // เลือกสล็อตที่ "มีไฟล์" เท่านั้น
+        if ($source === 'tts' && ! $clip->hasTtsAudio()) {
+            return ['success' => false, 'active_source' => $clip->activeSource(), 'error' => 'ยังไม่มีเสียง AI ในคลิปนี้ — กดสร้างเสียงก่อน'];
+        }
+        if ($source === 'upload' && ! $clip->hasUploadAudio()) {
+            return ['success' => false, 'active_source' => $clip->activeSource(), 'error' => 'ยังไม่มีไฟล์อัปโหลดในคลิปนี้ — อัปโหลดก่อน'];
+        }
+
+        $clip->update(['active_audio_source' => $source]);
+
+        return ['success' => true, 'active_source' => $source, 'error' => null];
+    }
+
+    /**
+     * ลบไฟล์บน public disk แบบเงียบ (ไม่ throw)
+     */
+    protected function deleteFile(?string $path): void
     {
         try {
-            if (! empty($clip->audio_path) && Storage::disk('public')->exists($clip->audio_path)) {
-                Storage::disk('public')->delete($clip->audio_path);
+            if (! empty($path) && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
             }
         } catch (\Throwable $e) {
             // ignore
         }
-
-        $clip->update([
-            'audio_path' => null,
-            'audio_url' => null,
-            'audio_duration_ms' => null,
-            'audio_provider' => null,
-            // 🔁 reset กลับเป็น tts — กัน isUploaded() ค้าง true → CLI ข้ามคลิปถาวร
-            'audio_source' => 'tts',
-            'audio_original_name' => null,
-            'audio_voice_id' => null,
-            'audio_chars' => null,
-            'generated_at' => null,
-        ]);
     }
 
     /**

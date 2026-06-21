@@ -309,6 +309,27 @@ class FortuneVoiceController extends Controller
         $service = new FortuneSystemVoiceService(FortuneTellingSetting::getSettings());
         $result = $service->generateClip($clip);
 
+        // ส่งสถานะสล็อตล่าสุดกลับให้ UI sync (active + url แต่ละสล็อต)
+        $fresh = $clip->fresh();
+        $result['active_source'] = $fresh->activeSource();
+        $result['tts_url'] = $fresh->hasTtsAudio() ? $fresh->audio_url : '';
+        $result['upload_url'] = $fresh->hasUploadAudio() ? $fresh->upload_audio_url : '';
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    /**
+     * AJAX — เลือกว่าจะใช้เสียงสล็อตไหน (tts | upload)
+     */
+    public function setActiveClipSource(Request $request, FortuneSystemVoiceClip $clip): JsonResponse
+    {
+        $validated = $request->validate([
+            'source' => 'required|in:tts,upload',
+        ]);
+
+        $service = new FortuneSystemVoiceService(FortuneTellingSetting::getSettings());
+        $result = $service->setActiveSource($clip, $validated['source']);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -338,14 +359,25 @@ class FortuneVoiceController extends Controller
     }
 
     /**
-     * AJAX — ลบไฟล์เสียงของคลิป (สร้างใหม่)
+     * AJAX — ลบไฟล์เสียงของคลิป (เลือกสล็อต tts | upload | all)
      */
-    public function deleteClipAudio(FortuneSystemVoiceClip $clip): JsonResponse
+    public function deleteClipAudio(Request $request, FortuneSystemVoiceClip $clip): JsonResponse
     {
-        $service = new FortuneSystemVoiceService(FortuneTellingSetting::getSettings());
-        $service->deleteClipAudio($clip);
+        $which = $request->input('which', 'all');
+        $which = in_array($which, ['tts', 'upload', 'all'], true) ? $which : 'all';
 
-        return response()->json(['success' => true, 'message' => 'ลบไฟล์เสียงแล้ว']);
+        $service = new FortuneSystemVoiceService(FortuneTellingSetting::getSettings());
+        $service->deleteClipAudio($clip, $which);
+
+        $fresh = $clip->fresh();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ลบไฟล์เสียงแล้ว',
+            'active_source' => $fresh->activeSource(),
+            'tts_url' => $fresh->hasTtsAudio() ? $fresh->audio_url : '',
+            'upload_url' => $fresh->hasUploadAudio() ? $fresh->upload_audio_url : '',
+        ]);
     }
 
     /**

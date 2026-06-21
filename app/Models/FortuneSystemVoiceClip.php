@@ -25,6 +25,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $audio_voice_id
  * @property int|null $audio_chars
  * @property \Carbon\Carbon|null $generated_at
+ * @property string|null $upload_audio_path
+ * @property string|null $upload_audio_url
+ * @property int|null $upload_audio_duration_ms
+ * @property string|null $upload_original_name
+ * @property \Carbon\Carbon|null $upload_audio_at
+ * @property string $active_audio_source tts|upload — เลือกว่าจะส่งสล็อตไหนให้ลูกค้า
  * @property array|null $voice_config
  */
 class FortuneSystemVoiceClip extends Model
@@ -54,6 +60,14 @@ class FortuneSystemVoiceClip extends Model
         'audio_voice_id',
         'audio_chars',
         'generated_at',
+        // สล็อตอัปโหลด (แยกจาก TTS)
+        'upload_audio_path',
+        'upload_audio_url',
+        'upload_audio_duration_ms',
+        'upload_original_name',
+        'upload_audio_at',
+        // ตัวเลือก: tts | upload
+        'active_audio_source',
         'voice_config',
     ];
 
@@ -66,19 +80,81 @@ class FortuneSystemVoiceClip extends Model
         'audio_duration_ms' => 'integer',
         'audio_chars' => 'integer',
         'generated_at' => 'datetime',
+        'upload_audio_duration_ms' => 'integer',
+        'upload_audio_at' => 'datetime',
         'voice_config' => 'array',
     ];
 
     /**
-     * คลิปนี้มีไฟล์เสียงที่สร้างไว้แล้วหรือยัง
+     * สล็อตที่เลือกใช้จริง (tts | upload) — fallback 'tts'
      */
-    public function hasAudio(): bool
+    public function activeSource(): string
+    {
+        return in_array($this->active_audio_source, ['tts', 'upload'], true)
+            ? $this->active_audio_source
+            : 'tts';
+    }
+
+    /**
+     * มีไฟล์เสียง TTS (สร้างจากระบบ) ในสล็อตหรือยัง
+     */
+    public function hasTtsAudio(): bool
     {
         return ! empty($this->audio_path) && ! empty($this->audio_url);
     }
 
     /**
-     * คลิปพร้อมส่งจริงไหม (เปิดอยู่ + มีไฟล์เสียง)
+     * มีไฟล์เสียงที่อัปโหลดเองในสล็อตหรือยัง
+     */
+    public function hasUploadAudio(): bool
+    {
+        return ! empty($this->upload_audio_path) && ! empty($this->upload_audio_url);
+    }
+
+    /**
+     * มีไฟล์เสียงในสล็อตใดสล็อตหนึ่งไหม
+     */
+    public function hasAnyAudio(): bool
+    {
+        return $this->hasTtsAudio() || $this->hasUploadAudio();
+    }
+
+    /**
+     * path ของไฟล์เสียงที่ "ใช้จริง" (ตาม active source)
+     */
+    public function activeAudioPath(): ?string
+    {
+        return $this->activeSource() === 'upload' ? $this->upload_audio_path : $this->audio_path;
+    }
+
+    /**
+     * URL ของไฟล์เสียงที่ "ใช้จริง" (ตาม active source)
+     */
+    public function activeAudioUrl(): ?string
+    {
+        return $this->activeSource() === 'upload' ? $this->upload_audio_url : $this->audio_url;
+    }
+
+    /**
+     * ความยาวเสียง ms ของไฟล์ที่ "ใช้จริง"
+     */
+    public function activeAudioDurationMs(): ?int
+    {
+        return $this->activeSource() === 'upload' ? $this->upload_audio_duration_ms : $this->audio_duration_ms;
+    }
+
+    /**
+     * คลิปนี้มีไฟล์เสียง "ในสล็อตที่เลือกใช้" แล้วหรือยัง
+     *
+     * ⚠️ หมายถึงสล็อต active เท่านั้น (ใช้ตัดสินใจส่งจริง) — ไม่ใช่ "มีไฟล์ใดๆ"
+     */
+    public function hasAudio(): bool
+    {
+        return $this->activeSource() === 'upload' ? $this->hasUploadAudio() : $this->hasTtsAudio();
+    }
+
+    /**
+     * คลิปพร้อมส่งจริงไหม (เปิดอยู่ + มีไฟล์เสียงในสล็อตที่เลือก)
      */
     public function isDeliverable(): bool
     {
@@ -86,10 +162,10 @@ class FortuneSystemVoiceClip extends Model
     }
 
     /**
-     * ไฟล์เสียงนี้มาจากการอัปโหลดเองหรือไม่ (ไม่ใช่ TTS)
+     * ตอนนี้คลิปตั้งให้ใช้ไฟล์ "อัปโหลดเอง" หรือไม่ (ไม่ใช่ TTS)
      */
     public function isUploaded(): bool
     {
-        return $this->audio_source === 'upload';
+        return $this->activeSource() === 'upload';
     }
 }

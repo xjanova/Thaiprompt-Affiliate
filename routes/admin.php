@@ -4055,6 +4055,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/voice/clips/{clip}/generate', [FortuneVoiceController::class, 'generateClip'])->name('voice.clips.generate');
     Route::post('/voice/clips/{clip}/upload', [FortuneVoiceController::class, 'uploadClipAudio'])->name('voice.clips.upload');
     Route::delete('/voice/clips/{clip}/audio', [FortuneVoiceController::class, 'deleteClipAudio'])->name('voice.clips.delete-audio');
+    // 🎚️ เลือกว่าจะใช้เสียงสล็อตไหน (tts | upload)
+    Route::post('/voice/clips/{clip}/active-source', [FortuneVoiceController::class, 'setActiveClipSource'])->name('voice.clips.active-source');
     Route::post('/voice/preview', [FortuneVoiceController::class, 'previewText'])->name('voice.preview');
     // 🔄 รีเฟรชรายชื่อเสียง MiniMax (ล้าง cache ดึงใหม่ — ใช้หลังสร้างเสียงใหม่ที่เว็บ MiniMax)
     Route::post('/voice/refresh-minimax-voices', [FortuneVoiceController::class, 'refreshMinimaxVoices'])->name('voice.refresh-minimax-voices');

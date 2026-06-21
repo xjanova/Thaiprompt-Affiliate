@@ -276,19 +276,10 @@
                                 <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
                                     <div class="flex items-center gap-2">
                                         <span class="text-xs font-mono px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{{ $clip->clip_key }}</span>
-                                        @if($clip->hasAudio())
-                                            @if($clip->isUploaded())
-                                                <span class="text-xs px-2 py-0.5 rounded bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
-                                                    ⬆️ ไฟล์อัปโหลด{{ $clip->audio_original_name ? ': '.\Illuminate\Support\Str::limit($clip->audio_original_name, 24) : '' }}
-                                                </span>
-                                            @else
-                                                <span class="text-xs px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                                                    🎙️ เสียง AI ({{ $clip->audio_provider }})
-                                                </span>
-                                            @endif
-                                        @else
-                                            <span class="text-xs px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">⚠️ ยังไม่มีไฟล์เสียง</span>
-                                        @endif
+                                        {{-- ป้ายบอกว่าตอนนี้ส่งเสียงสล็อตไหน (อัปเดตสดตาม selector) --}}
+                                        <span class="text-xs px-2 py-0.5 rounded"
+                                              :class="clipState.activeSource === 'upload' ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' : (clipState.ttsUrl ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300')"
+                                              x-text="clipState.activeSource === 'upload' ? '⬆️ ใช้: ไฟล์อัปโหลด' : (clipState.ttsUrl ? '🎙️ ใช้: เสียง AI' : '⚠️ ยังไม่มีเสียง')"></span>
                                     </div>
                                     <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                         <input type="checkbox" name="enabled" value="1" @checked($clip->enabled) class="rounded text-emerald-600">
@@ -319,31 +310,70 @@
                                     <button type="submit" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs rounded-lg transition">💾 บันทึกข้อความ</button>
                                     <button type="button" @click="generate({{ $clip->id }})" :disabled="clipState.loading"
                                             class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs rounded-lg transition">
-                                        <span x-show="!clipState.loading">🎙️ สร้างเสียง (เก็บไว้)</span>
+                                        <span x-show="!clipState.loading">🎙️ สร้างเสียง AI (เก็บไว้)</span>
                                         <span x-show="clipState.loading">⏳ กำลังสร้าง...</span>
                                     </button>
-                                    @if($clip->hasAudio())
-                                        <button type="button" @click="deleteAudio({{ $clip->id }})" class="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 text-red-700 dark:text-red-300 text-xs rounded-lg transition">🗑️ ลบเสียง</button>
-                                    @endif
                                     <span x-show="clipState.msg" x-text="clipState.msg" :class="clipState.ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'" class="text-xs"></span>
                                 </div>
                             </form>
 
-                            {{-- ⬆️ อัปโหลดไฟล์เสียงเอง (แทน TTS) — รองรับทุกฟอร์แมต (ฟอร์มแยก ห้าม nest) --}}
-                            <form method="POST" action="{{ route('admin.fortune.voice.clips.upload', $clip) }}"
-                                  enctype="multipart/form-data" class="mt-2 flex items-center gap-2 flex-wrap border-t border-dashed border-gray-200 dark:border-gray-700 pt-2">
-                                @csrf
-                                <span class="text-xs text-gray-500 dark:text-gray-400">⬆️ ใช้ไฟล์เสียงเอง:</span>
-                                <input type="file" name="audio_file" accept="audio/*,.m4a,.mp3,.wav,.ogg,.aac,.flac,.opus"
-                                       required class="text-xs text-gray-700 dark:text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-violet-100 file:text-violet-700 hover:file:bg-violet-200">
-                                <button type="submit" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs rounded-lg transition">อัปโหลด</button>
-                                <span class="text-xs text-gray-400">(รองรับทุกฟอร์แมต — ระบบแปลงเป็น mp3 ให้อัตโนมัติ)</span>
-                            </form>
+                            {{-- ════ 🎚️ เลือกเสียงที่จะส่งลูกค้า — เก็บได้ทั้ง "เสียง AI" และ "ไฟล์อัปโหลด" พร้อมกัน ════ --}}
+                            <div class="mt-3 border-t border-dashed border-gray-200 dark:border-gray-700 pt-3">
+                                <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">🎚️ เลือกเสียงที่จะใช้ส่งลูกค้า (เลือกได้ว่าจะใช้เสียงที่สร้าง หรือที่อัปโหลด):</div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-                            {{-- 🔊 เสียงจริงที่จะส่งลูกค้า (ไฟล์ที่เก็บไว้ — กดเล่นเพื่อฟังตัวจริง) --}}
-                            <div x-show="clipState.url || '{{ $clip->audio_url }}'" class="mt-3">
-                                <div class="text-xs font-medium text-emerald-700 dark:text-emerald-300 mb-1">🔊 เสียงจริงที่จะส่งลูกค้า (กดเล่นเพื่อฟัง):</div>
-                                <audio :src="clipState.url || '{{ $clip->audio_url }}'" controls preload="none" class="w-full max-w-md"></audio>
+                                    {{-- สล็อต A: เสียง AI (TTS) --}}
+                                    <div class="rounded-lg border p-3 transition"
+                                         :class="clipState.activeSource === 'tts' ? 'border-emerald-400 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10' : 'border-gray-200 dark:border-gray-700'">
+                                        <label class="flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-200 cursor-pointer">
+                                            <input type="radio" name="active_{{ $clip->id }}" value="tts"
+                                                   :checked="clipState.activeSource === 'tts'" :disabled="!clipState.ttsUrl || clipState.settingActive"
+                                                   @change="setActive({{ $clip->id }}, 'tts')" class="text-emerald-600">
+                                            🎙️ เสียง AI (สร้างจากระบบ)
+                                        </label>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-show="clipState.ttsUrl">
+                                            โมเดล: <span x-text="clipState.ttsProvider || '-'"></span>
+                                        </div>
+                                        <div class="text-xs text-amber-600 dark:text-amber-400 mt-1" x-show="!clipState.ttsUrl">ยังไม่มี — กด “🎙️ สร้างเสียง AI” ด้านบน</div>
+                                        <audio x-show="clipState.ttsUrl" :src="clipState.ttsUrl" controls preload="none" class="w-full mt-2"></audio>
+                                        <button type="button" x-show="clipState.ttsUrl" @click="deleteAudio({{ $clip->id }}, 'tts')"
+                                                class="mt-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 text-red-700 dark:text-red-300 text-xs rounded transition">🗑️ ลบเสียง AI</button>
+                                    </div>
+
+                                    {{-- สล็อต B: ไฟล์อัปโหลดเอง --}}
+                                    <div class="rounded-lg border p-3 transition"
+                                         :class="clipState.activeSource === 'upload' ? 'border-violet-400 dark:border-violet-500 bg-violet-50/50 dark:bg-violet-900/10' : 'border-gray-200 dark:border-gray-700'">
+                                        <label class="flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-200 cursor-pointer">
+                                            <input type="radio" name="active_{{ $clip->id }}" value="upload"
+                                                   :checked="clipState.activeSource === 'upload'" :disabled="!clipState.uploadUrl || clipState.settingActive"
+                                                   @change="setActive({{ $clip->id }}, 'upload')" class="text-violet-600">
+                                            ⬆️ ไฟล์อัปโหลดเอง
+                                        </label>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate" x-show="clipState.uploadUrl">
+                                            ไฟล์: <span x-text="clipState.uploadName || 'เสียงที่อัปโหลด'"></span>
+                                        </div>
+                                        <div class="text-xs text-amber-600 dark:text-amber-400 mt-1" x-show="!clipState.uploadUrl">ยังไม่มี — อัปโหลดไฟล์ด้านล่าง</div>
+                                        <audio x-show="clipState.uploadUrl" :src="clipState.uploadUrl" controls preload="none" class="w-full mt-2"></audio>
+                                        <button type="button" x-show="clipState.uploadUrl" @click="deleteAudio({{ $clip->id }}, 'upload')"
+                                                class="mt-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 text-red-700 dark:text-red-300 text-xs rounded transition">🗑️ ลบไฟล์อัปโหลด</button>
+
+                                        {{-- ฟอร์มอัปโหลด (multipart — แยกฟอร์ม ห้าม nest) --}}
+                                        <form method="POST" action="{{ route('admin.fortune.voice.clips.upload', $clip) }}"
+                                              enctype="multipart/form-data" class="mt-2 flex items-center gap-2 flex-wrap">
+                                            @csrf
+                                            <input type="file" name="audio_file" accept="audio/*,.m4a,.mp3,.wav,.ogg,.aac,.flac,.opus"
+                                                   required class="text-xs text-gray-700 dark:text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-violet-100 file:text-violet-700 hover:file:bg-violet-200">
+                                            <button type="submit" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs rounded-lg transition">อัปโหลด</button>
+                                        </form>
+                                        <div class="text-xs text-gray-400 mt-1">รองรับทุกฟอร์แมต — ระบบแปลงเป็น mp3 ให้อัตโนมัติ</div>
+                                    </div>
+                                </div>
+
+                                {{-- 🔊 เสียงจริงที่จะส่งลูกค้า (สล็อตที่เลือกอยู่) --}}
+                                <div class="mt-3" x-show="(clipState.activeSource === 'upload' ? clipState.uploadUrl : clipState.ttsUrl)">
+                                    <div class="text-xs font-medium text-emerald-700 dark:text-emerald-300 mb-1">🔊 เสียงจริงที่จะส่งลูกค้า (สล็อตที่เลือก — กดเล่นเพื่อฟัง):</div>
+                                    <audio :src="(clipState.activeSource === 'upload' ? clipState.uploadUrl : clipState.ttsUrl)" controls preload="none" class="w-full max-w-md"></audio>
+                                </div>
                             </div>
                         </div>
                     @endforeach
@@ -485,7 +515,15 @@ function voiceManager() {
         // per-clip state
         clips: {
             @foreach($clipsByGroup->flatten() as $clip)
-                {{ $clip->id }}: { loading: false, msg: '', ok: false, url: '' },
+                {{ $clip->id }}: {
+                    loading: false, msg: '', ok: false,
+                    ttsUrl: @json($clip->hasTtsAudio() ? $clip->audio_url : ''),
+                    ttsProvider: @json($clip->audio_provider ?? ''),
+                    uploadUrl: @json($clip->hasUploadAudio() ? $clip->upload_audio_url : ''),
+                    uploadName: @json($clip->upload_original_name ?? ''),
+                    activeSource: @json($clip->activeSource()),
+                    settingActive: false,
+                },
             @endforeach
         },
         // preview
@@ -514,9 +552,11 @@ function voiceManager() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    this.clips[id].url = data.audio_url + '?t=' + Date.now();
+                    this.clips[id].ttsUrl = (data.tts_url || data.audio_url || '') + '?t=' + Date.now();
+                    this.clips[id].ttsProvider = data.provider_used || '';
+                    if (data.active_source) this.clips[id].activeSource = data.active_source;
                     this.clips[id].ok = true;
-                    this.clips[id].msg = '✅ สร้างเสียงสำเร็จ (' + (data.provider_used || '') + ')';
+                    this.clips[id].msg = '✅ สร้างเสียง AI สำเร็จ (' + (data.provider_used || '') + ')';
                 } else {
                     this.clips[id].ok = false;
                     this.clips[id].msg = '❌ ' + (data.error || 'สร้างไม่สำเร็จ');
@@ -529,21 +569,59 @@ function voiceManager() {
             }
         },
 
-        async deleteAudio(id) {
-            if (!confirm('ลบไฟล์เสียงของคลิปนี้?')) return;
+        async deleteAudio(id, which) {
+            const labels = { tts: 'เสียง AI', upload: 'ไฟล์อัปโหลด', all: 'ไฟล์เสียงทั้งหมด' };
+            if (!confirm('ลบ' + (labels[which] || 'ไฟล์เสียง') + 'ของคลิปนี้?')) return;
             try {
                 const res = await fetch(`{{ url('/admin/fortune/voice/clips') }}/${id}/audio`, {
                     method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': this.CSRF, 'Accept': 'application/json' },
+                    headers: { 'X-CSRF-TOKEN': this.CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ which: which }),
                 });
                 const data = await res.json();
                 if (data.success) {
-                    this.clips[id].url = '';
+                    if (which === 'tts' || which === 'all') { this.clips[id].ttsUrl = ''; this.clips[id].ttsProvider = ''; }
+                    if (which === 'upload' || which === 'all') { this.clips[id].uploadUrl = ''; this.clips[id].uploadName = ''; }
+                    if (data.active_source) this.clips[id].activeSource = data.active_source;
                     this.clips[id].ok = true;
-                    this.clips[id].msg = '🗑️ ลบแล้ว — รีโหลดหน้าเพื่อดูสถานะ';
+                    this.clips[id].msg = '🗑️ ลบแล้ว';
+                } else {
+                    this.clips[id].ok = false;
+                    this.clips[id].msg = '❌ ' + (data.message || 'ลบไม่สำเร็จ');
                 }
             } catch (e) {
                 this.clips[id].msg = '❌ ' + e.message;
+            }
+        },
+
+        async setActive(id, source) {
+            // มีไฟล์ในสล็อตนั้นไหม (กันเลือกสล็อตว่าง)
+            if (source === 'tts' && !this.clips[id].ttsUrl) { this.clips[id].ok = false; this.clips[id].msg = '⚠️ ยังไม่มีเสียง AI — กดสร้างก่อน'; return; }
+            if (source === 'upload' && !this.clips[id].uploadUrl) { this.clips[id].ok = false; this.clips[id].msg = '⚠️ ยังไม่มีไฟล์อัปโหลด'; return; }
+            const prev = this.clips[id].activeSource;
+            this.clips[id].activeSource = source; // optimistic
+            this.clips[id].settingActive = true;
+            try {
+                const res = await fetch(`{{ url('/admin/fortune/voice/clips') }}/${id}/active-source`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source: source }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.clips[id].activeSource = data.active_source;
+                    this.clips[id].ok = true;
+                    this.clips[id].msg = source === 'upload' ? '🎚️ ใช้ไฟล์อัปโหลดแล้ว' : '🎚️ ใช้เสียง AI แล้ว';
+                } else {
+                    this.clips[id].activeSource = prev; // rollback
+                    this.clips[id].ok = false;
+                    this.clips[id].msg = '❌ ' + (data.error || 'เลือกไม่สำเร็จ');
+                }
+            } catch (e) {
+                this.clips[id].activeSource = prev;
+                this.clips[id].msg = '❌ ' + e.message;
+            } finally {
+                this.clips[id].settingActive = false;
             }
         },
 
