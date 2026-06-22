@@ -223,17 +223,15 @@
 
         {{-- 🔊 ทดลองฟังเสียง "อ่านบทสรุปคำทำนาย" — ใช้โมเดล/เสียงที่เลือกด้านบน (ไม่ต้องบันทึกก่อน) --}}
         <div class="mb-5 p-4 rounded-lg border border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/10">
-            <div class="flex items-center justify-between gap-2 flex-wrap">
-                <div>
-                    <div class="text-sm font-medium text-gray-800 dark:text-gray-200">🔊 ทดลองฟังเสียงอ่านบทสรุปคำทำนาย</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">ใช้โมเดลหลัก + เสียงที่เลือกด้านบน (ยังไม่ต้องกดบันทึก) — ฟังว่าเสียงที่อ่านบทสรุปให้ลูกค้าจะเป็นแบบไหน</div>
-                </div>
-                <button type="button" @click="previewSummary()" :disabled="summaryPreviewLoading"
-                        class="px-4 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-sm rounded-lg transition shrink-0">
-                    <span x-show="!summaryPreviewLoading">🔊 ทดลองเสียงสรุป</span>
-                    <span x-show="summaryPreviewLoading">⏳ กำลังสร้าง...</span>
-                </button>
-            </div>
+            <div class="text-sm font-medium text-gray-800 dark:text-gray-200">🔊 ทดลองฟังเสียงอ่านบทสรุปคำทำนาย</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">ใช้โมเดลหลัก + เสียงที่เลือกด้านบน (ยังไม่ต้องกดบันทึก) — พิมพ์ข้อความที่อยากให้ระบบอ่านทดสอบได้เลย (เว้นว่าง = ใช้ข้อความตัวอย่าง)</div>
+            <textarea x-model="summaryPreviewText" rows="3" placeholder="พิมพ์ข้อความบทสรุปที่อยากให้ระบบอ่านออกเสียงทดสอบ..."
+                      class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm mb-2"></textarea>
+            <button type="button" @click="previewSummary()" :disabled="summaryPreviewLoading"
+                    class="px-4 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-sm rounded-lg transition">
+                <span x-show="!summaryPreviewLoading">🔊 ทดลองเสียงสรุป</span>
+                <span x-show="summaryPreviewLoading">⏳ กำลังสร้าง...</span>
+            </button>
             <div x-show="summaryPreviewUrl" class="mt-2">
                 <audio :src="summaryPreviewUrl" x-effect="summaryPreviewUrl; $nextTick(() => $el.load())" controls class="w-full max-w-md"></audio>
                 <a :href="summaryPreviewUrl" download="fortune-summary-test.mp3"
@@ -578,7 +576,8 @@ function voiceManager() {
         mmSampleLoading: false,
         mmSampleError: '',
         mmRefreshing: false,
-        // ทดลองเสียงอ่านบทสรุปคำทำนาย
+        // ทดลองเสียงอ่านบทสรุปคำทำนาย (pre-fill ตัวอย่าง — แอดมินแก้ข้อความเองได้)
+        summaryPreviewText: @json('ผู้ช่วย AI ขออ่านบทสรุปคำทำนายให้ฟังนะคะ ไพ่ของเจ้าชะตาบอกว่าช่วงนี้เป็นจังหวะของการเปลี่ยนแปลง การงานมีโอกาสก้าวหน้าถ้ากล้าตัดสินใจ ในช่วงวันที่ 15 ถึง 20 ของเดือนนี้จะมีข่าวดีเข้ามา ด้านความรักให้เปิดใจสื่อสารอย่างจริงใจ ส่วนการเงินระวังรายจ่ายที่ไม่จำเป็น โดยรวมแล้วดวงกำลังไปในทางที่ดีขึ้นค่ะ ขอให้โชคดีนะคะ'),
         summaryPreviewUrl: '',
         summaryPreviewLoading: false,
         summaryPreviewError: '',
@@ -742,13 +741,15 @@ function voiceManager() {
             if (provider === 'minimax') voice = (root.querySelector('[name="minimax_voice_id"]')?.value || '').trim();
             else if (provider === 'openai_tts') voice = (root.querySelector('[name="openai_tts_voice"]')?.value || '').trim();
             else if (provider === 'google_tts') voice = (root.querySelector('[name="google_tts_voice"]')?.value || '').trim();
-            // ข้อความสรุปตัวอย่าง (เลียนแบบเสียงผู้ช่วย AI อ่านบทสรุป — มีวันที่/ตัวเลขให้ทดสอบ normalization)
+            // ใช้ข้อความที่แอดมินพิมพ์ในกล่อง ถ้าเว้นว่าง → ใช้ตัวอย่าง default (มีวันที่/ตัวเลขทดสอบ normalization)
             const sample = 'ผู้ช่วย AI ขออ่านบทสรุปคำทำนายให้ฟังนะคะ ไพ่ของเจ้าชะตาบอกว่าช่วงนี้เป็นจังหวะของการเปลี่ยนแปลง การงานมีโอกาสก้าวหน้าถ้ากล้าตัดสินใจ ในช่วงวันที่ 15 ถึง 20 ของเดือนนี้จะมีข่าวดีเข้ามา ด้านความรักให้เปิดใจสื่อสารอย่างจริงใจ ส่วนการเงินระวังรายจ่ายที่ไม่จำเป็น โดยรวมแล้วดวงกำลังไปในทางที่ดีขึ้นค่ะ ขอให้โชคดีนะคะ';
+            const text = (this.summaryPreviewText || '').trim() || sample;
+            if (text.length < 5) { this.summaryPreviewError = 'พิมพ์ข้อความอย่างน้อย 5 ตัวอักษร'; return; }
             this.summaryPreviewLoading = true;
             this.summaryPreviewError = '';
             this.summaryPreviewUrl = '';
             try {
-                const payload = { text: sample };
+                const payload = { text: text };
                 if (provider) payload.voice_provider = provider;
                 if (voice) payload.voice_id = voice;
                 const res = await fetch(`{{ route('admin.fortune.voice.preview') }}`, {
