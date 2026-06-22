@@ -1793,7 +1793,16 @@ class FortuneChannelManager
         // ส่ง QR code (ถ้ามี)
         $paymentQrUrl = $result['payment_qr_url'] ?? null;
         if ($paymentQrUrl) {
-            $fbService->sendMessage($userId, $message, $extra);
+            // 🩹 (2026-06-22) เดิมไม่เช็ค return ของ sendMessage แล้ว return true เสมอ
+            //   → ถ้า text บิล/ยอดโอนส่งไม่สำเร็จ (เช่น user เกิน 24 ชม.) จะเงียบ มองไม่เห็นใน log
+            //   เก็บค่าไว้ log เตือน (ยังคง return true เพราะตัว QR image คือชิ้นสำคัญ + กันเปลี่ยน flow caller)
+            $qrTextSent = $fbService->sendMessage($userId, $message, $extra);
+            if (! $qrTextSent) {
+                Log::warning('Facebook: ส่งข้อความ QR/ยอดโอน (text) ไม่สำเร็จ', [
+                    'user_id' => $userId,
+                    'action' => $action,
+                ]);
+            }
             usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             try {
                 $fbService->sendImage($userId, $paymentQrUrl);

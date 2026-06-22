@@ -120,6 +120,25 @@ class FacebookWebhookService implements MessagingPlatformInterface
         return $items;
     }
 
+    /**
+     * (2026-06-22) ข้อความนี้เป็นกลุ่ม "ทักทาย/ต้อนรับ/เปิดเมนูแพคเกจ" หรือไม่
+     *
+     * ใช้คัดเฉพาะข้อความที่ "ส่งซ้ำ = สแปม" และไม่ผูกกับ delivery tracking ให้เข้า dedup
+     * จงใจไม่ครอบคำทำนาย / QR / เลขบัญชี / ยอดเงิน / redeliver (เนื้อหาเหล่านั้นไม่ซ้ำกัน + เป็น
+     * path จ่ายเงิน/ส่งคำทำนายที่ห้ามถูกบล็อก) เพื่อความปลอดภัยสูงสุด
+     *
+     * @param  string  $message  ข้อความที่กำลังจะส่ง
+     */
+    protected function isThrottleableGreeting(string $message): bool
+    {
+        $m = ltrim($message);
+
+        return str_starts_with($m, '🔮 สวัสดี')        // ทักทายเปิดบท / fallback greeting
+            || str_contains($m, 'ยินดีต้อนรับ')          // ต้อนรับ + หัวเมนูแพคเกจ (presentTierChoice)
+            || str_contains($m, 'เลือกแพคเกจอีกครั้ง')   // re-show เมนูตอนเลือกผิด (tier_choice_invalid)
+            || str_contains($m, 'รอเจ้าชะตาเลือกแพคเกจ'); // step hint ตอนรอเลือกแพคเกจ
+    }
+
     public function sendMessage(string $recipientId, string $message, array $options = []): bool
     {
         // ตรวจสอบ Page Access Token ก่อนส่ง
@@ -129,6 +148,25 @@ class FacebookWebhookService implements MessagingPlatformInterface
             ]);
 
             return false;
+        }
+
+        // 🔇 (2026-06-22) กันสแปม "ทักทาย/ต้อนรับ/เมนูแพคเกจ" ส่งซ้ำ — เคส FTU-260622-R6853 (จุไร พิกุลแย้ม):
+        //   บอทส่ง "🔮 สวัสดี คุณ... ✨" ซ้ำ 4 ครั้งใน 6 วิ (inbound รัวๆ / FB echo-retry / re-greet หลาย path)
+        //   กันที่ choke point เดียวของข้อความ FB ทุก path — แต่ "จำกัดเฉพาะข้อความทักทาย/เมนู" (isThrottleableGreeting)
+        //   ⚠️ จงใจไม่แตะ path คำทำนาย/จ่ายเงิน/QR/redeliver — paid-active ห้ามถูกบล็อกเด็ดขาด + retry 0.8s
+        //      ของ Celtic Q&A ส่ง "คำทำนาย" (ไม่ใช่ทักทาย) จึงไม่โดน dedup (จับผีรีวิว 2026-06-22 ชี้จุดนี้)
+        //   ข้อความทักทายเดียวกันเป๊ะ (sha1) ภายใน 15 วิ ตัวที่ 2+ ถูกระงับ / Cache::add atomic แบบ lock อื่นในระบบ
+        //   opt-out: ส่ง $options['allow_duplicate'] = true หากจำเป็นต้องส่งซ้ำจริงๆ
+        if (empty($options['allow_duplicate']) && $this->isThrottleableGreeting($message)) {
+            $dedupKey = 'fortune:fb_greeting_dedup:'.$recipientId.':'.sha1($message);
+            if (! Cache::add($dedupKey, true, 15)) {
+                Log::info('🔇 FB: ระงับทักทาย/เมนูซ้ำ (เนื้อหาเดียวกันภายใน 15 วิ)', [
+                    'recipient' => $recipientId,
+                    'message_preview' => mb_substr($message, 0, 50),
+                ]);
+
+                return true; // ถือว่าสำเร็จ — ผู้ใช้เพิ่งได้รับข้อความทักทายนี้เมื่อครู่ (ไม่ผูก delivery tracking)
+            }
         }
 
         $chunks = $this->splitLongMessage($message);
@@ -1453,7 +1491,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'error' => $e->getMessage(),
                 'token_first_8' => mb_substr($this->pageAccessToken ?? '', 0, 8),
                 'token_len' => strlen($this->pageAccessToken ?? ''),
-                'hint' => 'ถ้าทุก request 400 → page token หมดอายุ — ตรวจ admin/fortune/channels',
+                'hint' => 'HTTP 400 ที่ User Profile API = Facebook จำกัด (ต้อง Advanced Access / App Review) — ไม่ใช่ token หมดอายุ และไม่บล็อกการส่ง DM (Messenger Send ทำงานปกติ). ตรวจ token จริงเฉพาะเมื่อ /me ก็ fail ด้วย',
             ]);
 
             return null;

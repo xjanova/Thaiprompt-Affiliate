@@ -579,11 +579,25 @@ trait CelticCrossConversationTrait
         }
         $stepHintCompact .= '❌ *"ยกเลิก"* — หากไม่ต้องการตอนนี้';
 
+        // 🧭 (2026-06-22) ลูกค้าสับสน "ขั้นตอน" ตอนเลือกแพคเกจ → ต้องได้คำแนะนำ ไม่ใช่เด้งเมนูซ้ำดื้อๆ
+        //   เคส FTU-260622-R6853 (จุไร พิกุลแย้ม): พิมพ์ "จะไปทางไหนค่ะ" → หลุดทุก keyword → "เลือกแพคเกจอีกครั้ง"
+        //   ⚠️ จงใจเช็คเฉพาะ state tier_choice นี้ (ยังไม่ได้ถามดวง) — ไม่เติมใน looksLikeMetaOrChitchat
+        //      ที่ใช้ร่วมหลาย state เพราะ substring เช่น "ไปยังไง"/"ไม่เข้าใจ" จะไปชนคำถามทำนายจริงตอนเก็บคำถาม
+        $tierHelpPatterns = ['ไปทางไหน', 'ไปยังไง', 'เริ่มยังไง', 'เริ่มไง', 'เริ่มตรงไหน', 'ต่อยังไง', 'ทำไงต่อ', 'ยังไงต่อ', 'เอาไง', 'ไม่เข้าใจ', 'งง', 'ทำไง'];
+        $looksLikeTierHelp = false;
+        foreach ($tierHelpPatterns as $hp) {
+            if (mb_strpos($textLower, $hp) !== false) {
+                $looksLikeTierHelp = true;
+                break;
+            }
+        }
+
         // 🛡️ Safe guard — ถ้า looksLikeMetaOrChitchat/buildAIAssistedStepReminder ไม่มี (trait isolation)
         //   หรือ throw exception → fallback re-show menu ปกติ ไม่ทำให้ flow crash
         try {
-            if (method_exists($this, 'looksLikeMetaOrChitchat')
-                && $this->looksLikeMetaOrChitchat($messageText)) {
+            if ($looksLikeTierHelp
+                || (method_exists($this, 'looksLikeMetaOrChitchat')
+                    && $this->looksLikeMetaOrChitchat($messageText))) {
                 $aiMessage = $this->buildAIAssistedStepReminder(
                     $messageText,
                     $stepHintCompact,
