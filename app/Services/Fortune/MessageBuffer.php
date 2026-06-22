@@ -69,16 +69,34 @@ class MessageBuffer
     /**
      * Flush buffer → return combined messages + clear cache
      *
+     * 🔒 (2026-06-22) Atomic flush — กัน double-flush race
+     *   เดิม `Cache::get` + `Cache::forget` แยกกัน = ไม่ atomic. ถ้า 2 job (ProcessBufferedChatMessageJob)
+     *   ของ user เดียวกัน fire พร้อมกันใน sub-second เดียว → ทั้งคู่ผ่าน isReadyToFlush + ทั้งคู่ get
+     *   buffer ก้อนเดียวกัน "ก่อน" ตัวใด forget → flush ซ้ำ → ตอบ AI 2 ครั้ง (เปลือง token + ส่งซ้ำหาลูกค้า).
+     *   Fix: ครอบ get+forget ด้วย `Cache::lock` (prod cache=redis → SET NX atomic). job ที่ "ไม่ได้ lock"
+     *   (มีตัวอื่นกำลัง flush) → `$lock->get(Closure)` คืน false → คืน empty → caller เห็น combined ว่าง → skip.
+     *   หมายเหตุ: lock แก้เฉพาะ "ตอบซ้ำ" — กรณี flush สำเร็จแต่ส่ง AI ล้มทีหลัง (tries=1) ข้อความยังหายได้
+     *   = ปัญหาคนละจุด (flush-before-confirm) ยังเปิดอยู่.
+     *
      * @return array{messages: array, count: int, combined: string, first_at: ?float, last_at: ?float}
      */
     public function flush(string $scope, string $userId): array
     {
         $key = $this->key($scope, $userId);
-        $buf = Cache::get($key, []);
 
-        Cache::forget($key);
+        // 🔒 ครอบ get+forget ด้วย lock — ให้มี job เดียวที่ดึง buffer ก้อนนี้ออกไปได้
+        //    non-blocking: ไม่ได้ lock = false → ไม่รอ, ถือว่า job อื่นจัดการแล้ว
+        $lock = Cache::lock(self::KEY_PREFIX.'-flush:'.$scope.':'.$userId, 10);
 
-        if (empty($buf)) {
+        $buf = $lock->get(function () use ($key) {
+            $b = Cache::get($key, []);
+            Cache::forget($key);
+
+            return $b;
+        });
+
+        // $buf === false → ไม่ได้ lock (job อื่นกำลัง flush) | empty($buf) → buffer ว่างจริง
+        if ($buf === false || empty($buf)) {
             return [
                 'messages' => [],
                 'count' => 0,
