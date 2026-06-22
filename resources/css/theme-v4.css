@@ -123,8 +123,9 @@
  * 5) คอมโพเนนต์มาตรฐาน
  * ------------------------------------------------------------------------- */
 
-/* การ์ด */
+/* การ์ด — padding default 18px (การ์ดที่ใส่ padding/0 inline เอง จะ override) */
 .tp-card {
+  padding: 18px;
   background: var(--card-bg);
   box-shadow: var(--card-shadow);
   border: var(--card-border);

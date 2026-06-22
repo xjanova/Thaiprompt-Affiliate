@@ -56,7 +56,7 @@
         <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
             <div class="tp-tile"><i class="fas fa-comment-dots"></i></div>
             <div>
-                <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ $messages->count() }}</div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($totalMessages) }}</div>
                 <div class="tp-muted" style="font-size:12px; margin-top:4px;">ข้อความทั้งหมด</div>
             </div>
         </div>
@@ -292,30 +292,23 @@
         </form>
     </div>
 
-    {{-- datalist หมวด (สำหรับ autocomplete ในฟอร์มเพิ่ม/แก้ไข) --}}
-    @php $categories = $messages->pluck('category')->unique()->filter()->sort()->values(); @endphp
+    {{-- datalist หมวด (สำหรับ autocomplete ในฟอร์มเพิ่ม/แก้ไข) — $categories มาจาก controller (ทุกหมวด) --}}
     <datalist id="categoryList">
         @foreach($categories as $cat)
             <option value="{{ $cat }}"></option>
         @endforeach
     </datalist>
 
-    {{-- ===== 🔎 ตัวกรองหมวด (pill) ===== --}}
+    {{-- ===== 🔎 ตัวกรองหมวด (pill — server-side, กรองครบทุกหน้า) ===== --}}
     @if($categories->count() > 1)
         <div style="display:flex; flex-wrap:wrap; gap:8px;">
-            <button type="button" @click="filter = ''"
-                    class="tp-pill"
-                    :class="filter === '' ? 'tp-pill-gold' : 'tp-pill-soft'"
-                    style="cursor:pointer; border:0; font-size:12px;">
-                ทั้งหมด
-            </button>
+            <a href="{{ route('admin.fortune.invite-messages.index') }}"
+               class="tp-pill {{ $curCategory === '' ? 'tp-pill-gold' : 'tp-pill-soft' }}"
+               style="text-decoration:none; font-size:12px;">ทั้งหมด</a>
             @foreach($categories as $cat)
-                <button type="button" @click="filter = @js($cat)"
-                        class="tp-pill"
-                        :class="filter === @js($cat) ? 'tp-pill-gold' : 'tp-pill-soft'"
-                        style="cursor:pointer; border:0; font-size:12px;">
-                    {{ $cat }}
-                </button>
+                <a href="{{ route('admin.fortune.invite-messages.index', ['category' => $cat]) }}"
+                   class="tp-pill {{ $curCategory === $cat ? 'tp-pill-gold' : 'tp-pill-soft' }}"
+                   style="text-decoration:none; font-size:12px;">{{ $cat }}</a>
             @endforeach
         </div>
     @endif
@@ -332,11 +325,10 @@
         @else
             <div style="display:flex; flex-direction:column;">
                 @foreach($messages as $msg)
-                    <div style="display:flex; align-items:flex-start; gap:13px; padding:16px 18px; box-shadow:var(--inset-sm);"
-                         x-show="filter === '' || filter === @js($msg->category)">
-                        {{-- ลำดับ --}}
+                    <div style="display:flex; align-items:flex-start; gap:13px; padding:16px 18px; box-shadow:var(--inset-sm);">
+                        {{-- ลำดับ (เลขต่อเนื่องข้ามหน้า) --}}
                         <div class="tp-num" style="flex-shrink:0; width:32px; height:32px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--ink2);">
-                            {{ $loop->iteration }}
+                            {{ $messages->firstItem() + $loop->index }}
                         </div>
 
                         {{-- เนื้อหา --}}
@@ -384,6 +376,11 @@
             </div>
         @endif
     </div>
+
+    {{-- ===== 📄 แบ่งหน้า ===== --}}
+    @if($messages->hasPages())
+        <div class="tp-num" style="display:flex; justify-content:center;">{{ $messages->withQueryString()->links() }}</div>
+    @endif
 
     {{-- ===== ✏️ Modal แก้ไขข้อความ ===== --}}
     <div x-show="editing.show" x-cloak

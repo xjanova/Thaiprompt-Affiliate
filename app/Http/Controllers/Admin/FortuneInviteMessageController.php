@@ -26,14 +26,17 @@ class FortuneInviteMessageController extends Controller
     /**
      * แสดงรายการข้อความทั้งหมด + ฟอร์มเพิ่ม + ตั้งค่า
      */
-    public function index()
+    public function index(Request $request)
     {
-        $messages = FortuneInviteMessage::ordered()->get();
         $settings = FortuneTellingSetting::getSettings();
+        $disabledCategories = $settings->getDisabledInviteCategories();
+
+        // คอลเลกชันเต็ม (เบา — เฉพาะคอลัมน์ที่ใช้สถิติ/หมวด) สำหรับ KPI + ชิปกรอง + categoryStats
+        // (ดึงทั้งหมดเพื่อให้สถิติ/หมวดถูกต้อง ไม่ใช่แค่หน้าปัจจุบัน)
+        $all = FortuneInviteMessage::ordered()->get(['id', 'category', 'is_active', 'send_count']);
 
         // 🗂️ (2026-06-07) สรุปจำนวนข้อความต่อหมวด (ทั้งหมด/เปิด) + สถานะเปิด-ปิดหมวด
-        $disabledCategories = $settings->getDisabledInviteCategories();
-        $categoryStats = $messages
+        $categoryStats = $all
             ->groupBy(fn ($m) => $m->category ?: 'general')
             ->map(fn ($group, $cat) => [
                 'category' => $cat,
@@ -44,12 +47,30 @@ class FortuneInviteMessageController extends Controller
             ->sortKeys()
             ->values();
 
+        // หมวดทั้งหมด (สำหรับชิปกรอง + datalist autocomplete)
+        $categories = $all->pluck('category')->map(fn ($c) => $c ?: 'general')->unique()->filter()->sort()->values();
+
+        // 📄 รายการแบบแบ่งหน้า + กรองหมวด (server-side — กรองได้ครบทุกหน้า ไม่ใช่แค่หน้าปัจจุบัน)
+        $curCategory = trim((string) $request->query('category', ''));
+        $query = FortuneInviteMessage::ordered();
+        if ($curCategory !== '') {
+            if ($curCategory === 'general') {
+                $query->where(fn ($q) => $q->whereNull('category')->orWhere('category', '')->orWhere('category', 'general'));
+            } else {
+                $query->where('category', $curCategory);
+            }
+        }
+        $messages = $query->paginate(20)->withQueryString();
+
         return view('admin.fortune.invite-messages.index', [
-            'messages' => $messages,
+            'messages' => $messages,                          // แบ่งหน้า (สำหรับ list)
             'settings' => $settings,
-            'totalSent' => (int) $messages->sum('send_count'),
-            'activeCount' => $messages->where('is_active', true)->count(),
+            'totalMessages' => $all->count(),
+            'totalSent' => (int) $all->sum('send_count'),
+            'activeCount' => $all->where('is_active', true)->count(),
             'categoryStats' => $categoryStats,
+            'categories' => $categories,
+            'curCategory' => $curCategory,
             'disabledCategories' => $disabledCategories,
             'pageTitle' => 'ข้อความชวนดูดวง (สุ่ม)',
         ]);
