@@ -1,177 +1,200 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'Rich Menu Editor - แม่หมอจันทรา')
 
 @section('content')
-<div class="container mx-auto px-4 py-8" x-data="richMenuEditor()" x-init="loadConfig()">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+{{-- คอนเทนเนอร์หลัก — Alpine root (คง x-data/x-init เดิม 100%) --}}
+<div x-data="richMenuEditor()" x-init="loadConfig()" style="display:flex;flex-direction:column;gap:18px;">
+
+    {{-- ===== Header นวลทองคำ ===== --}}
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                🎨 Rich Menu Editor
+            <div class="tp-muted" style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;">
+                หลังบ้าน · ระบบดูดวง · Rich Menu
+            </div>
+            <h1 class="tp-num" style="font-size:28px;margin:6px 0 4px;">
+                <i class="fas fa-palette" style="color:var(--accent2);margin-right:8px;"></i>Rich Menu Editor
             </h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">แก้ไขปุ่ม สี ข้อความ Rich Menu แม่หมอจันทรา</p>
+            <div class="tp-muted" style="font-size:14px;">แก้ไขปุ่ม สี ข้อความ Rich Menu แม่หมอจันทรา</div>
         </div>
-        <div class="flex gap-3 mt-4 md:mt-0">
-            <a href="{{ route('admin.fortune.rich-menu.index') }}"
-               class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition text-sm">
-                <span>📤</span> Deploy
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            @if(Route::has('admin.fortune.rich-menu.index'))
+            <a href="{{ route('admin.fortune.rich-menu.index') }}" class="tp-btn">
+                <i class="fas fa-paper-plane"></i> Deploy
             </a>
-            <a href="{{ route('admin.fortune.dashboard') }}"
-               class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition text-sm">
-                <span>📊</span> Dashboard
+            @endif
+            @if(Route::has('admin.fortune.dashboard'))
+            <a href="{{ route('admin.fortune.dashboard') }}" class="tp-btn">
+                <i class="fas fa-chart-line"></i> แดชบอร์ด
             </a>
+            @endif
         </div>
     </div>
 
-    {{-- Tab Navigation --}}
-    <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-        <button @click="activeTab = 'config'"
-                :class="activeTab === 'config'
-                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                class="px-6 py-3 text-sm font-semibold border-b-2 transition">
-            ✏️ Config Editor
-        </button>
-        <button @click="activeTab = 'custom'"
-                :class="activeTab === 'custom'
-                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                class="px-6 py-3 text-sm font-semibold border-b-2 transition">
-            🖼️ Custom Upload
-        </button>
+    {{-- ===== Tab Navigation ===== --}}
+    <div class="tp-card" style="padding:8px;">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <button @click="activeTab = 'config'"
+                    :class="activeTab === 'config' ? 'tp-btn tp-btn-primary' : 'tp-btn'"
+                    style="flex:1;min-width:160px;justify-content:center;">
+                <i class="fas fa-pen-ruler"></i> Config Editor
+            </button>
+            <button @click="activeTab = 'custom'"
+                    :class="activeTab === 'custom' ? 'tp-btn tp-btn-primary' : 'tp-btn'"
+                    style="flex:1;min-width:160px;justify-content:center;">
+                <i class="fas fa-image"></i> Custom Upload
+            </button>
+        </div>
     </div>
 
     {{-- ========== Tab 1: Config Editor ========== --}}
+    {{-- หมายเหตุ: x-show+x-cloak ครอบ wrapper เปล่า (default block) — กริดอยู่ชั้นใน
+         เพื่อกัน gotcha theme-v4: inline display:grid + x-show จะถูก Alpine cache แล้วคืนเป็น block (กริดหาย) --}}
     <div x-show="activeTab === 'config'" x-cloak>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {{-- Editor Panel (ซ้าย) --}}
-            <div class="space-y-6">
-                {{-- Theme Settings --}}
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        🎨 ตั้งค่า Theme
-                    </h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px;">
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {{-- Gradient Start --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สีพื้นหลัง (บน)</label>
-                            <div class="flex items-center gap-2">
-                                <input type="color" x-model="config.theme.bg_gradient_start"
-                                       class="w-10 h-10 rounded cursor-pointer border border-gray-300 dark:border-gray-600">
+        {{-- Editor Panel (ซ้าย) --}}
+        <div style="display:flex;flex-direction:column;gap:18px;">
+
+            {{-- Theme Settings --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                    <i class="fas fa-palette" style="color:var(--accent2);"></i> ตั้งค่า Theme
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
+                    {{-- Gradient Start --}}
+                    <div>
+                        <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">สีพื้นหลัง (บน)</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="color" x-model="config.theme.bg_gradient_start"
+                                   style="width:40px;height:40px;border-radius:10px;cursor:pointer;border:1px solid var(--sd);background:transparent;">
+                            <div class="tp-well tp-input" style="padding:0;flex:1;">
                                 <input type="text" x-model="config.theme.bg_gradient_start"
-                                       class="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono">
+                                       style="width:100%;background:transparent;border:0;outline:0;padding:10px 12px;color:var(--ink);font-size:13px;font-family:monospace;">
                             </div>
                         </div>
+                    </div>
 
-                        {{-- Gradient End --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สีพื้นหลัง (ล่าง)</label>
-                            <div class="flex items-center gap-2">
-                                <input type="color" x-model="config.theme.bg_gradient_end"
-                                       class="w-10 h-10 rounded cursor-pointer border border-gray-300 dark:border-gray-600">
+                    {{-- Gradient End --}}
+                    <div>
+                        <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">สีพื้นหลัง (ล่าง)</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="color" x-model="config.theme.bg_gradient_end"
+                                   style="width:40px;height:40px;border-radius:10px;cursor:pointer;border:1px solid var(--sd);background:transparent;">
+                            <div class="tp-well tp-input" style="padding:0;flex:1;">
                                 <input type="text" x-model="config.theme.bg_gradient_end"
-                                       class="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono">
+                                       style="width:100%;background:transparent;border:0;outline:0;padding:10px 12px;color:var(--ink);font-size:13px;font-family:monospace;">
                             </div>
                         </div>
+                    </div>
 
-                        {{-- Grid Line Color --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สีเส้นแบ่ง</label>
-                            <div class="flex items-center gap-2">
-                                <input type="color" x-model="config.theme.grid_line_color"
-                                       class="w-10 h-10 rounded cursor-pointer border border-gray-300 dark:border-gray-600">
+                    {{-- Grid Line Color --}}
+                    <div>
+                        <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">สีเส้นแบ่ง</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="color" x-model="config.theme.grid_line_color"
+                                   style="width:40px;height:40px;border-radius:10px;cursor:pointer;border:1px solid var(--sd);background:transparent;">
+                            <div class="tp-well tp-input" style="padding:0;flex:1;">
                                 <input type="text" x-model="config.theme.grid_line_color"
-                                       class="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono">
+                                       style="width:100%;background:transparent;border:0;outline:0;padding:10px 12px;color:var(--ink);font-size:13px;font-family:monospace;">
                             </div>
                         </div>
+                    </div>
 
-                        {{-- Branding Color --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สี Branding</label>
-                            <div class="flex items-center gap-2">
-                                <input type="color" x-model="config.theme.branding_color"
-                                       class="w-10 h-10 rounded cursor-pointer border border-gray-300 dark:border-gray-600">
+                    {{-- Branding Color --}}
+                    <div>
+                        <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">สี Branding</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="color" x-model="config.theme.branding_color"
+                                   style="width:40px;height:40px;border-radius:10px;cursor:pointer;border:1px solid var(--sd);background:transparent;">
+                            <div class="tp-well tp-input" style="padding:0;flex:1;">
                                 <input type="text" x-model="config.theme.branding_color"
-                                       class="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono">
+                                       style="width:100%;background:transparent;border:0;outline:0;padding:10px 12px;color:var(--ink);font-size:13px;font-family:monospace;">
                             </div>
                         </div>
-                    </div>
-
-                    {{-- Branding Text --}}
-                    <div class="mt-4">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ข้อความ Branding</label>
-                        <input type="text" x-model="config.theme.branding_text"
-                               class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                    </div>
-
-                    {{-- Toggles --}}
-                    <div class="mt-4 flex gap-6">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" x-model="config.theme.show_stars"
-                                   class="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500">
-                            <span class="text-sm text-gray-700 dark:text-gray-300">แสดงดาว</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" x-model="config.theme.show_moon"
-                                   class="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500">
-                            <span class="text-sm text-gray-700 dark:text-gray-300">แสดงพระจันทร์</span>
-                        </label>
                     </div>
                 </div>
 
-                {{-- Button Editor --}}
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        🔘 แก้ไขปุ่ม (<span x-text="config.buttons.length"></span> ปุ่ม)
-                    </h3>
-
-                    {{-- Button Tabs --}}
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        <template x-for="(btn, idx) in config.buttons" :key="idx">
-                            <button @click="activeButton = idx"
-                                    :class="activeButton === idx
-                                        ? 'bg-purple-600 text-white shadow-lg'
-                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
-                                    class="px-4 py-2 rounded-lg text-sm font-semibold transition">
-                                <span x-text="'ปุ่ม ' + (idx + 1)"></span>
-                                <span class="text-xs opacity-75" x-text="': ' + (btn.label || '-')"></span>
-                            </button>
-                        </template>
+                {{-- Branding Text --}}
+                <div style="margin-top:14px;">
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">ข้อความ Branding</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <input type="text" x-model="config.theme.branding_text"
+                               style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;">
                     </div>
+                </div>
 
-                    {{-- Active Button Editor --}}
-                    <template x-if="config.buttons[activeButton]">
-                        <div class="space-y-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                            {{-- Label + Subtitle --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ข้อความหลัก</label>
-                                    <input type="text" x-model="config.buttons[activeButton].label"
-                                           class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ข้อความรอง</label>
-                                    <input type="text" x-model="config.buttons[activeButton].subtitle"
-                                           class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                                </div>
-                            </div>
+                {{-- Toggles --}}
+                <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:22px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" x-model="config.theme.show_stars"
+                               style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent2);">
+                        <span class="tp-muted" style="font-size:14px;">แสดงดาว</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" x-model="config.theme.show_moon"
+                               style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent2);">
+                        <span class="tp-muted" style="font-size:14px;">แสดงพระจันทร์</span>
+                    </label>
+                </div>
+            </div>
 
-                            {{-- Extra Text --}}
+            {{-- Button Editor --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                    <i class="fas fa-toggle-on" style="color:var(--accent2);"></i>
+                    แก้ไขปุ่ม (<span x-text="config.buttons.length"></span> ปุ่ม)
+                </div>
+
+                {{-- Button Tabs --}}
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+                    <template x-for="(btn, idx) in config.buttons" :key="idx">
+                        <button @click="activeButton = idx"
+                                :class="activeButton === idx ? 'tp-btn tp-btn-primary tp-btn-sm' : 'tp-btn tp-btn-sm'">
+                            <span x-text="'ปุ่ม ' + (idx + 1)"></span>
+                            <span style="opacity:.75;" x-text="': ' + (btn.label || '-')"></span>
+                        </button>
+                    </template>
+                </div>
+
+                {{-- Active Button Editor --}}
+                <template x-if="config.buttons[activeButton]">
+                    <div class="tp-inset" style="display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:14px;">
+                        {{-- Label + Subtitle --}}
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ข้อความเพิ่มเติม (บรรทัด 3)</label>
-                                <input type="text" x-model="config.buttons[activeButton].extra_text"
-                                       placeholder="(ไม่บังคับ)"
-                                       class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">ข้อความหลัก</label>
+                                <div class="tp-well tp-input" style="padding:0;">
+                                    <input type="text" x-model="config.buttons[activeButton].label"
+                                           style="width:100%;background:transparent;border:0;outline:0;padding:10px 12px;color:var(--ink);font-size:14px;">
+                                </div>
                             </div>
+                            <div>
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">ข้อความรอง</label>
+                                <div class="tp-well tp-input" style="padding:0;">
+                                    <input type="text" x-model="config.buttons[activeButton].subtitle"
+                                           style="width:100%;background:transparent;border:0;outline:0;padding:10px 12px;color:var(--ink);font-size:14px;">
+                                </div>
+                            </div>
+                        </div>
 
-                            {{-- Icon + Glow --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ไอคอน</label>
+                        {{-- Extra Text --}}
+                        <div>
+                            <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">ข้อความเพิ่มเติม (บรรทัด 3)</label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <input type="text" x-model="config.buttons[activeButton].extra_text" placeholder="(ไม่บังคับ)"
+                                       style="width:100%;background:transparent;border:0;outline:0;padding:10px 12px;color:var(--ink);font-size:14px;">
+                            </div>
+                        </div>
+
+                        {{-- Icon + Glow --}}
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
+                            <div>
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">ไอคอน</label>
+                                <div class="tp-well tp-input" style="padding:0;">
                                     <select x-model="config.buttons[activeButton].icon"
-                                            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                                            style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
                                         <option value="crystal_ball">🔮 ลูกแก้ว (Crystal Ball)</option>
                                         <option value="star">⭐ ดาว (Star)</option>
                                         <option value="scroll">📜 ม้วนกระดาษ (Scroll)</option>
@@ -181,342 +204,333 @@
                                         <option value="info">ℹ️ ข้อมูล (Info)</option>
                                     </select>
                                 </div>
-                                <div class="flex items-end">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" x-model="config.buttons[activeButton].glow"
-                                               class="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500">
-                                        <span class="text-sm text-gray-700 dark:text-gray-300">เอฟเฟกต์เรืองแสง (Glow)</span>
-                                    </label>
+                            </div>
+                            <div style="display:flex;align-items:flex-end;">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                    <input type="checkbox" x-model="config.buttons[activeButton].glow"
+                                           style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent2);">
+                                    <span class="tp-muted" style="font-size:14px;">เอฟเฟกต์เรืองแสง (Glow)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {{-- Colors --}}
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;">
+                            <div>
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">สีข้อความ</label>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <input type="color" x-model="config.buttons[activeButton].text_color"
+                                           style="width:34px;height:34px;border-radius:9px;cursor:pointer;border:1px solid var(--sd);background:transparent;">
+                                    <div class="tp-well tp-input" style="padding:0;flex:1;">
+                                        <input type="text" x-model="config.buttons[activeButton].text_color"
+                                               style="width:100%;background:transparent;border:0;outline:0;padding:8px 10px;color:var(--ink);font-size:12px;font-family:monospace;">
+                                    </div>
                                 </div>
                             </div>
-
-                            {{-- Colors --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สีข้อความ</label>
-                                    <div class="flex items-center gap-2">
-                                        <input type="color" x-model="config.buttons[activeButton].text_color"
-                                               class="w-8 h-8 rounded cursor-pointer border border-gray-300 dark:border-gray-600">
-                                        <input type="text" x-model="config.buttons[activeButton].text_color"
-                                               class="flex-1 px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs font-mono">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สี Subtitle</label>
-                                    <div class="flex items-center gap-2">
-                                        <input type="color" x-model="config.buttons[activeButton].subtitle_color"
-                                               class="w-8 h-8 rounded cursor-pointer border border-gray-300 dark:border-gray-600">
+                            <div>
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">สี Subtitle</label>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <input type="color" x-model="config.buttons[activeButton].subtitle_color"
+                                           style="width:34px;height:34px;border-radius:9px;cursor:pointer;border:1px solid var(--sd);background:transparent;">
+                                    <div class="tp-well tp-input" style="padding:0;flex:1;">
                                         <input type="text" x-model="config.buttons[activeButton].subtitle_color"
-                                               class="flex-1 px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs font-mono">
+                                               style="width:100%;background:transparent;border:0;outline:0;padding:8px 10px;color:var(--ink);font-size:12px;font-family:monospace;">
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สีพื้นปุ่ม</label>
-                                    <div class="flex items-center gap-2">
-                                        <input type="color"
-                                               :value="config.buttons[activeButton].bg_color || '#000000'"
-                                               @input="config.buttons[activeButton].bg_color = $event.target.value"
-                                               class="w-8 h-8 rounded cursor-pointer border border-gray-300 dark:border-gray-600">
+                            </div>
+                            <div>
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">สีพื้นปุ่ม</label>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <input type="color"
+                                           :value="config.buttons[activeButton].bg_color || '#000000'"
+                                           @input="config.buttons[activeButton].bg_color = $event.target.value"
+                                           style="width:34px;height:34px;border-radius:9px;cursor:pointer;border:1px solid var(--sd);background:transparent;">
+                                    <div class="tp-well tp-input" style="padding:0;flex:1;">
                                         <input type="text"
                                                :value="config.buttons[activeButton].bg_color || ''"
                                                @input="config.buttons[activeButton].bg_color = $event.target.value || null"
                                                placeholder="ไม่มี"
-                                               class="flex-1 px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs font-mono">
+                                               style="width:100%;background:transparent;border:0;outline:0;padding:8px 10px;color:var(--ink);font-size:12px;font-family:monospace;">
                                     </div>
-                                    <button @click="config.buttons[activeButton].bg_color = null"
-                                            class="mt-1 text-xs text-red-500 hover:text-red-700">ล้างสีพื้น</button>
                                 </div>
+                                <button @click="config.buttons[activeButton].bg_color = null"
+                                        style="margin-top:5px;font-size:12px;color:#d9534f;background:transparent;border:0;cursor:pointer;">ล้างสีพื้น</button>
                             </div>
+                        </div>
 
-                            {{-- Font Sizes --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        ขนาดตัวอักษร: <span class="font-mono text-purple-600 dark:text-purple-400" x-text="config.buttons[activeButton].font_size + 'px'"></span>
-                                    </label>
-                                    <input type="range" x-model.number="config.buttons[activeButton].font_size"
-                                           min="24" max="96" step="2"
-                                           class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg cursor-pointer accent-purple-600">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        ขนาด Subtitle: <span class="font-mono text-purple-600 dark:text-purple-400" x-text="config.buttons[activeButton].subtitle_size + 'px'"></span>
-                                    </label>
-                                    <input type="range" x-model.number="config.buttons[activeButton].subtitle_size"
-                                           min="16" max="64" step="2"
-                                           class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg cursor-pointer accent-purple-600">
-                                </div>
+                        {{-- Font Sizes --}}
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
+                            <div>
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                                    ขนาดตัวอักษร: <span style="font-family:monospace;color:var(--accent2);" x-text="config.buttons[activeButton].font_size + 'px'"></span>
+                                </label>
+                                <input type="range" x-model.number="config.buttons[activeButton].font_size"
+                                       min="24" max="96" step="2"
+                                       style="width:100%;height:8px;border-radius:8px;cursor:pointer;accent-color:var(--accent2);">
                             </div>
+                            <div>
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                                    ขนาด Subtitle: <span style="font-family:monospace;color:var(--accent2);" x-text="config.buttons[activeButton].subtitle_size + 'px'"></span>
+                                </label>
+                                <input type="range" x-model.number="config.buttons[activeButton].subtitle_size"
+                                       min="16" max="64" step="2"
+                                       style="width:100%;height:8px;border-radius:8px;cursor:pointer;accent-color:var(--accent2);">
+                            </div>
+                        </div>
 
-                            {{-- Action --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action Type</label>
+                        {{-- Action --}}
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;">
+                            <div>
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Action Type</label>
+                                <div class="tp-well tp-input" style="padding:0;">
                                     <select x-model="config.buttons[activeButton].action_type"
-                                            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                                            style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
                                         <option value="message">Message (ส่งข้อความ)</option>
                                         <option value="postback">Postback (ส่ง data)</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action Data</label>
+                            </div>
+                            <div>
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Action Data</label>
+                                <div class="tp-well tp-input" style="padding:0;">
                                     <input type="text" x-model="config.buttons[activeButton].action_data"
-                                           class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono">
+                                           style="width:100%;background:transparent;border:0;outline:0;padding:10px 12px;color:var(--ink);font-size:14px;font-family:monospace;">
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Text</label>
-                                    <input type="text" x-model="config.buttons[activeButton].display_text"
-                                           placeholder="(postback เท่านั้น)"
-                                           class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                            </div>
+                            <div>
+                                <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Display Text</label>
+                                <div class="tp-well tp-input" style="padding:0;">
+                                    <input type="text" x-model="config.buttons[activeButton].display_text" placeholder="(postback เท่านั้น)"
+                                           style="width:100%;background:transparent;border:0;outline:0;padding:10px 12px;color:var(--ink);font-size:14px;">
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        {{-- Preview Panel (ขวา) --}}
+        <div style="display:flex;flex-direction:column;gap:18px;">
+            <div class="tp-card tp-raise" style="position:sticky;top:16px;">
+                <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                    <i class="fas fa-eye" style="color:var(--accent2);"></i> Live Preview
+                </div>
+
+                {{-- Preview Image --}}
+                <div class="tp-inset" style="border-radius:14px;overflow:hidden;min-height:200px;display:flex;align-items:center;justify-content:center;padding:0;">
+                    <template x-if="previewUrl">
+                        <img :src="previewUrl + '?t=' + Date.now()" alt="Preview Rich Menu"
+                             style="width:100%;border-radius:14px;display:block;">
+                    </template>
+                    <template x-if="!previewUrl && !previewLoading">
+                        <div style="text-align:center;padding:48px 12px;" class="tp-muted">
+                            <div style="font-size:34px;margin-bottom:8px;"><i class="fas fa-image"></i></div>
+                            <p>กด "Preview" เพื่อดูตัวอย่าง</p>
+                        </div>
+                    </template>
+                    <template x-if="previewLoading">
+                        <div style="text-align:center;padding:48px 12px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size:28px;color:var(--accent2);margin-bottom:10px;"></i>
+                            <p class="tp-muted" style="font-size:14px;">กำลังสร้าง preview...</p>
+                        </div>
                     </template>
                 </div>
-            </div>
 
-            {{-- Preview Panel (ขวา) --}}
-            <div class="space-y-6">
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 sticky top-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        👁️ Live Preview
-                    </h3>
-
-                    {{-- Preview Image --}}
-                    <div class="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden min-h-[200px] flex items-center justify-center">
-                        <template x-if="previewUrl">
-                            <img :src="previewUrl + '?t=' + Date.now()" alt="Preview Rich Menu"
-                                 class="w-full rounded-lg">
-                        </template>
-                        <template x-if="!previewUrl && !previewLoading">
-                            <div class="text-center py-12 text-gray-400 dark:text-gray-500">
-                                <div class="text-4xl mb-2">🖼️</div>
-                                <p>กด "Preview" เพื่อดูตัวอย่าง</p>
-                            </div>
-                        </template>
-                        <template x-if="previewLoading">
-                            <div class="text-center py-12">
-                                <svg class="animate-spin h-8 w-8 text-purple-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <p class="text-gray-500 dark:text-gray-400 text-sm">กำลังสร้าง preview...</p>
-                            </div>
-                        </template>
-                    </div>
-
-                    {{-- Action Buttons --}}
-                    <div class="mt-4 flex flex-col sm:flex-row gap-3">
-                        <button @click="generatePreview()"
-                                :disabled="loading"
-                                class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white rounded-xl font-semibold transition shadow-lg hover:shadow-xl text-sm">
-                            <template x-if="previewLoading">
-                                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </template>
-                            🖼️ Preview
-                        </button>
-                        <button @click="saveConfigDraft()"
-                                :disabled="loading"
-                                class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl font-semibold transition shadow-lg hover:shadow-xl text-sm">
-                            💾 Save Draft
-                        </button>
-                        <button @click="deployFromEditor('config')"
-                                :disabled="loading"
-                                class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-xl font-semibold transition shadow-lg hover:shadow-xl text-sm">
-                            <template x-if="deployLoading">
-                                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </template>
-                            🚀 Deploy to LINE
-                        </button>
-                    </div>
+                {{-- Action Buttons --}}
+                <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;">
+                    <button @click="generatePreview()" :disabled="loading"
+                            class="tp-btn" style="flex:1;min-width:130px;justify-content:center;">
+                        <template x-if="previewLoading"><i class="fas fa-spinner fa-spin"></i></template>
+                        <i class="fas fa-image"></i> Preview
+                    </button>
+                    <button @click="saveConfigDraft()" :disabled="loading"
+                            class="tp-btn" style="flex:1;min-width:130px;justify-content:center;">
+                        <i class="fas fa-floppy-disk"></i> Save Draft
+                    </button>
+                    <button @click="deployFromEditor('config')" :disabled="loading"
+                            class="tp-btn tp-btn-primary" style="flex:1;min-width:150px;justify-content:center;">
+                        <template x-if="deployLoading"><i class="fas fa-spinner fa-spin"></i></template>
+                        <i class="fas fa-rocket"></i> Deploy to LINE
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+    </div>
 
     {{-- ========== Tab 2: Custom Upload ========== --}}
+    {{-- กัน gotcha เดียวกัน: x-show ครอบ wrapper เปล่า, กริดอยู่ชั้นใน --}}
     <div x-show="activeTab === 'custom'" x-cloak>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {{-- Upload Panel (ซ้าย) --}}
-            <div class="space-y-6">
-                {{-- Upload Zone --}}
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        📁 อัปโหลดภาพ Rich Menu
-                    </h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px;">
 
-                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-purple-400 dark:hover:border-purple-500 transition cursor-pointer"
-                         @click="$refs.fileInput.click()"
-                         @dragover.prevent="dragOver = true"
-                         @dragleave.prevent="dragOver = false"
-                         @drop.prevent="handleFileDrop($event)"
-                         :class="dragOver ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : ''">
-                        <input type="file" x-ref="fileInput" @change="handleFileSelect($event)"
-                               accept="image/png,image/jpeg" class="hidden">
-                        <div class="text-4xl mb-3">📤</div>
-                        <p class="text-gray-600 dark:text-gray-400 font-semibold">คลิกหรือลากไฟล์มาวาง</p>
-                        <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">PNG/JPG ขนาด 2500x1686 หรือ 2500x843</p>
-                    </div>
+        {{-- Upload Panel (ซ้าย) --}}
+        <div style="display:flex;flex-direction:column;gap:18px;">
 
-                    <template x-if="uploadLoading">
-                        <div class="mt-4 flex items-center gap-3 text-purple-600 dark:text-purple-400">
-                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="text-sm font-semibold">กำลังอัปโหลด...</span>
-                        </div>
-                    </template>
+            {{-- Upload Zone --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                    <i class="fas fa-folder-open" style="color:var(--accent2);"></i> อัปโหลดภาพ Rich Menu
                 </div>
 
-                {{-- Areas Editor --}}
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            📐 พื้นที่คลิก (Areas)
-                        </h3>
-                        <button @click="useDefaultAreas()"
-                                class="text-sm px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition">
-                            ใช้ Default 6 ปุ่ม
-                        </button>
-                    </div>
+                <div class="tp-inset"
+                     style="border:2px dashed var(--sd);border-radius:14px;padding:32px;text-align:center;cursor:pointer;transition:border-color .2s;"
+                     @click="$refs.fileInput.click()"
+                     @dragover.prevent="dragOver = true"
+                     @dragleave.prevent="dragOver = false"
+                     @drop.prevent="handleFileDrop($event)"
+                     :style="dragOver ? 'border-color:var(--accent2);' : ''">
+                    <input type="file" x-ref="fileInput" @change="handleFileSelect($event)"
+                           accept="image/png,image/jpeg" style="display:none;">
+                    <div style="font-size:34px;margin-bottom:12px;color:var(--accent2);"><i class="fas fa-upload"></i></div>
+                    <p style="color:var(--ink);font-weight:600;">คลิกหรือลากไฟล์มาวาง</p>
+                    <p class="tp-muted" style="font-size:13px;margin-top:4px;">PNG/JPG ขนาด 2500x1686 หรือ 2500x843</p>
+                </div>
 
-                    {{-- Areas List --}}
-                    <div class="space-y-3 max-h-96 overflow-y-auto">
-                        <template x-for="(area, idx) in customAreas" :key="idx">
-                            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 flex items-start gap-3">
-                                <div class="flex-1 space-y-2">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded"
-                                              x-text="'Area ' + (idx + 1)"></span>
-                                        <span class="text-xs text-gray-500 dark:text-gray-400 font-mono"
-                                              x-text="area.bounds.x + ',' + area.bounds.y + ' ' + area.bounds.width + 'x' + area.bounds.height"></span>
-                                    </div>
-                                    <div class="grid grid-cols-3 gap-2">
-                                        <select x-model="area.action.type" class="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                <template x-if="uploadLoading">
+                    <div style="margin-top:14px;display:flex;align-items:center;gap:10px;color:var(--accent2);">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span style="font-size:14px;font-weight:600;">กำลังอัปโหลด...</span>
+                    </div>
+                </template>
+            </div>
+
+            {{-- Areas Editor --}}
+            <div class="tp-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+                    <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-vector-square" style="color:var(--accent2);"></i> พื้นที่คลิก (Areas)
+                    </div>
+                    <button @click="useDefaultAreas()" class="tp-btn tp-btn-sm">
+                        ใช้ Default 6 ปุ่ม
+                    </button>
+                </div>
+
+                {{-- Areas List --}}
+                <div style="display:flex;flex-direction:column;gap:12px;max-height:384px;overflow-y:auto;">
+                    <template x-for="(area, idx) in customAreas" :key="idx">
+                        <div class="tp-inset" style="border-radius:12px;padding:12px;display:flex;align-items:flex-start;gap:12px;">
+                            <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <span class="tp-pill tp-pill-gold" style="font-size:11px;" x-text="'Area ' + (idx + 1)"></span>
+                                    <span class="tp-muted" style="font-size:11px;font-family:monospace;"
+                                          x-text="area.bounds.x + ',' + area.bounds.y + ' ' + area.bounds.width + 'x' + area.bounds.height"></span>
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
+                                    <div class="tp-well tp-input" style="padding:0;">
+                                        <select x-model="area.action.type"
+                                                style="width:100%;background:transparent;border:0;outline:0;padding:7px 9px;color:var(--ink);font-size:12px;cursor:pointer;">
                                             <option value="message">Message</option>
                                             <option value="postback">Postback</option>
                                         </select>
+                                    </div>
+                                    <div class="tp-well tp-input" style="padding:0;">
                                         <input type="text"
                                                :value="area.action.type === 'message' ? area.action.text : area.action.data"
                                                @input="area.action.type === 'message' ? (area.action.text = $event.target.value) : (area.action.data = $event.target.value)"
                                                placeholder="Action data"
-                                               class="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white font-mono col-span-2">
+                                               style="width:100%;background:transparent;border:0;outline:0;padding:7px 9px;color:var(--ink);font-size:12px;font-family:monospace;">
                                     </div>
                                 </div>
-                                <button @click="customAreas.splice(idx, 1)"
-                                        class="text-red-400 hover:text-red-600 mt-1 shrink-0">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                </button>
                             </div>
-                        </template>
-                    </div>
-
-                    <template x-if="customAreas.length === 0">
-                        <p class="text-sm text-gray-400 dark:text-gray-500 text-center py-4">ยังไม่มี area — กด "ใช้ Default 6 ปุ่ม" หรือวาดบนภาพ</p>
+                            <button @click="customAreas.splice(idx, 1)"
+                                    class="tp-icon-btn" style="color:#d9534f;flex-shrink:0;">
+                                <i class="fas fa-xmark"></i>
+                            </button>
+                        </div>
                     </template>
                 </div>
+
+                <template x-if="customAreas.length === 0">
+                    <p class="tp-muted" style="font-size:13px;text-align:center;padding:16px 0;">ยังไม่มี area — กด "ใช้ Default 6 ปุ่ม" หรือวาดบนภาพ</p>
+                </template>
             </div>
+        </div>
 
-            {{-- Preview + Canvas Panel (ขวา) --}}
-            <div class="space-y-6">
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 sticky top-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        🖼️ ภาพที่อัปโหลด
-                    </h3>
+        {{-- Preview + Canvas Panel (ขวา) --}}
+        <div style="display:flex;flex-direction:column;gap:18px;">
+            <div class="tp-card tp-raise" style="position:sticky;top:16px;">
+                <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                    <i class="fas fa-image" style="color:var(--accent2);"></i> ภาพที่อัปโหลด
+                </div>
 
-                    {{-- Canvas Area --}}
-                    <div class="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden min-h-[200px]">
-                        <template x-if="customImageUrl">
-                            <div class="relative">
-                                <img :src="customImageUrl" alt="Custom Rich Menu" class="w-full rounded-lg"
-                                     x-ref="customImage"
-                                     @load="canvasReady = true">
+                {{-- Canvas Area --}}
+                <div class="tp-inset" style="position:relative;border-radius:14px;overflow:hidden;min-height:200px;padding:0;">
+                    <template x-if="customImageUrl">
+                        <div style="position:relative;">
+                            <img :src="customImageUrl" alt="Custom Rich Menu" style="width:100%;border-radius:14px;display:block;"
+                                 x-ref="customImage"
+                                 @load="canvasReady = true">
 
-                                {{-- Area Overlays --}}
-                                <template x-for="(area, idx) in customAreas" :key="'overlay-' + idx">
-                                    <div class="absolute border-2 border-red-400 bg-red-400/10 flex items-center justify-center cursor-pointer hover:bg-red-400/20 transition"
-                                         :style="getAreaOverlayStyle(area.bounds)"
-                                         :title="'Area ' + (idx + 1) + ': ' + (area.action.text || area.action.data || '')">
-                                        <span class="text-red-500 font-bold text-xs bg-white/80 dark:bg-gray-900/80 px-1 rounded"
-                                              x-text="idx + 1"></span>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                        <template x-if="!customImageUrl">
-                            <div class="text-center py-12 text-gray-400 dark:text-gray-500">
-                                <div class="text-4xl mb-2">🖼️</div>
-                                <p>อัปโหลดภาพเพื่อดูตัวอย่าง</p>
-                            </div>
-                        </template>
-                    </div>
-
-                    {{-- Deploy Custom --}}
-                    <div class="mt-4 flex flex-col sm:flex-row gap-3">
-                        <button @click="deployFromEditor('custom')"
-                                :disabled="loading || !customImagePath || customAreas.length === 0"
-                                class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-xl font-semibold transition shadow-lg hover:shadow-xl text-sm">
-                            <template x-if="deployLoading">
-                                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
+                            {{-- Area Overlays --}}
+                            <template x-for="(area, idx) in customAreas" :key="'overlay-' + idx">
+                                <div style="position:absolute;border:2px solid #d9534f;background:rgba(217,83,79,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;"
+                                     :style="getAreaOverlayStyle(area.bounds)"
+                                     :title="'Area ' + (idx + 1) + ': ' + (area.action.text || area.action.data || '')">
+                                    <span style="color:#d9534f;font-weight:700;font-size:12px;background:rgba(255,255,255,.85);padding:0 4px;border-radius:4px;"
+                                          x-text="idx + 1"></span>
+                                </div>
                             </template>
-                            🚀 Deploy Custom Image
-                        </button>
-                    </div>
-
-                    <template x-if="!customImagePath || customAreas.length === 0">
-                        <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                            <template x-if="!customImagePath">
-                                <span>กรุณาอัปโหลดภาพก่อน</span>
-                            </template>
-                            <template x-if="customImagePath && customAreas.length === 0">
-                                <span>กรุณากำหนด areas ก่อน deploy</span>
-                            </template>
-                        </p>
+                        </div>
+                    </template>
+                    <template x-if="!customImageUrl">
+                        <div style="text-align:center;padding:48px 12px;" class="tp-muted">
+                            <div style="font-size:34px;margin-bottom:8px;"><i class="fas fa-image"></i></div>
+                            <p>อัปโหลดภาพเพื่อดูตัวอย่าง</p>
+                        </div>
                     </template>
                 </div>
+
+                {{-- Deploy Custom --}}
+                <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;">
+                    <button @click="deployFromEditor('custom')"
+                            :disabled="loading || !customImagePath || customAreas.length === 0"
+                            class="tp-btn tp-btn-primary" style="flex:1;min-width:200px;justify-content:center;">
+                        <template x-if="deployLoading"><i class="fas fa-spinner fa-spin"></i></template>
+                        <i class="fas fa-rocket"></i> Deploy Custom Image
+                    </button>
+                </div>
+
+                <template x-if="!customImagePath || customAreas.length === 0">
+                    <p class="tp-muted" style="margin-top:8px;font-size:12px;">
+                        <template x-if="!customImagePath">
+                            <span>กรุณาอัปโหลดภาพก่อน</span>
+                        </template>
+                        <template x-if="customImagePath && customAreas.length === 0">
+                            <span>กรุณากำหนด areas ก่อน deploy</span>
+                        </template>
+                    </p>
+                </template>
             </div>
         </div>
     </div>
+    </div>
 
-    {{-- ========== Messages ========== --}}
+    {{-- ========== Messages (toast — คง logic เดิม) ========== --}}
     <div x-show="successMessage" x-cloak x-transition
-         class="fixed bottom-6 right-6 z-50 max-w-md bg-green-50 dark:bg-green-900/90 border border-green-200 dark:border-green-800 rounded-xl p-4 shadow-2xl">
-        <div class="flex items-start gap-3">
-            <span class="text-green-500 text-xl">✅</span>
-            <div class="flex-1">
-                <p class="text-green-700 dark:text-green-300 font-semibold text-sm" x-text="successMessage"></p>
+         class="tp-card tp-raise"
+         style="position:fixed;bottom:24px;right:24px;z-index:50;max-width:380px;border-left:4px solid #5aa07e;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+            <span style="color:#5aa07e;font-size:20px;"><i class="fas fa-circle-check"></i></span>
+            <div style="flex:1;">
+                <p style="color:var(--ink);font-weight:600;font-size:14px;" x-text="successMessage"></p>
             </div>
-            <button @click="successMessage = null" class="text-green-400 hover:text-green-600">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
+            <button @click="successMessage = null" class="tp-icon-btn" style="color:var(--ink2);">
+                <i class="fas fa-xmark"></i>
             </button>
         </div>
     </div>
 
     <div x-show="errorMessage" x-cloak x-transition
-         class="fixed bottom-6 right-6 z-50 max-w-md bg-red-50 dark:bg-red-900/90 border border-red-200 dark:border-red-800 rounded-xl p-4 shadow-2xl">
-        <div class="flex items-start gap-3">
-            <span class="text-red-500 text-xl">❌</span>
-            <div class="flex-1">
-                <p class="text-red-700 dark:text-red-300 font-semibold text-sm" x-text="errorMessage"></p>
+         class="tp-card tp-raise"
+         style="position:fixed;bottom:24px;right:24px;z-index:50;max-width:380px;border-left:4px solid #d9534f;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+            <span style="color:#d9534f;font-size:20px;"><i class="fas fa-circle-xmark"></i></span>
+            <div style="flex:1;">
+                <p style="color:var(--ink);font-weight:600;font-size:14px;" x-text="errorMessage"></p>
             </div>
-            <button @click="errorMessage = null" class="text-red-400 hover:text-red-600">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
+            <button @click="errorMessage = null" class="tp-icon-btn" style="color:var(--ink2);">
+                <i class="fas fa-xmark"></i>
             </button>
         </div>
     </div>
