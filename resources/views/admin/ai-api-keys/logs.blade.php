@@ -1,55 +1,53 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div x-data="logsView()" class="space-y-6">
+{{-- ════════════════════════════════════════════════════════════
+     หน้า: Usage Logs ของ AI API Keys (ธีม V4 "นวลทองคำ")
+     ── filter bar + ตารางประวัติแบ่งหน้า + modal ดู error เต็ม
+     ── คงฟังก์ชัน/field/route/Alpine เดิม 100%
+     ════════════════════════════════════════════════════════════ --}}
+@php
+    // หา key ปัจจุบัน (กรณีดูเฉพาะ key เดียว) — แปลงจาก inline @php เดิม
+    $currentKey = $keyId ? \App\Models\AiApiKey::find($keyId) : null;
+@endphp
+<div x-data="logsView()" style="display:flex;flex-direction:column;gap:18px;">
 
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="flex items-center gap-4">
-            @if($keyId)
-                @php($currentKey = \App\Models\AiApiKey::find($keyId))
-                <a href="{{ $currentKey ? route('admin.ai-api-keys.provider', $currentKey->provider) : route('admin.ai-api-keys.index') }}"
-                   class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </a>
-            @else
-                <a href="{{ route('admin.ai-api-keys.index') }}"
-                   class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </a>
-            @endif
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                    Usage Logs
-                    @if($keyId && isset($currentKey))
-                        <span class="text-base font-normal text-gray-500 dark:text-gray-400">— {{ $currentKey->name }}</span>
-                    @endif
-                </h1>
-                <p class="text-gray-500 dark:text-gray-400 mt-1">
-                    ประวัติการใช้งาน API Keys
-                    @if($logs->total() > 0)
-                        ({{ number_format($logs->total()) }} รายการ)
-                    @endif
-                </p>
+    {{-- ── Header: ปุ่มย้อนกลับ + eyebrow + h1 + สรุปจำนวน ── --}}
+    <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+        {{-- ปุ่มย้อนกลับ → provider ของ key (ถ้ามี) หรือ index --}}
+        <a href="{{ ($keyId && $currentKey) ? route('admin.ai-api-keys.provider', $currentKey->provider) : route('admin.ai-api-keys.index') }}"
+           class="tp-icon-btn" title="ย้อนกลับ" style="margin-top:4px;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <div class="tp-muted" style="font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">
+                หลังบ้าน · AI · Usage Logs
             </div>
+            <h1 class="tp-num" style="font-size:1.6rem;font-weight:800;color:var(--ink);margin:0;">
+                Usage Logs
+                @if($keyId && $currentKey)
+                    <span class="tp-muted" style="font-size:1rem;font-weight:500;">— {{ $currentKey->name }}</span>
+                @endif
+            </h1>
+            <p class="tp-muted" style="margin:4px 0 0;font-size:.9rem;">
+                ประวัติการใช้งาน API Keys
+                @if($logs->total() > 0)
+                    ({{ number_format($logs->total()) }} รายการ)
+                @endif
+            </p>
         </div>
     </div>
 
-    {{-- Filter Bar --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    {{-- ── Filter Bar ── --}}
+    <div class="tp-card">
         <form method="GET" action="{{ $keyId ? route('admin.ai-api-keys.key.logs', $keyId) : route('admin.ai-api-keys.logs') }}"
-              class="grid grid-cols-1 md:grid-cols-4 gap-3">
+              style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end;">
             @unless($keyId)
             <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Provider</label>
-                <select name="provider"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <label class="tp-muted" style="display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Provider</label>
+                <select name="provider" class="tp-input">
                     <option value="">ทุก Provider</option>
                     @foreach($providers as $key => $name)
                         <option value="{{ $key }}" {{ request('provider') === $key ? 'selected' : '' }}>{{ $name }}</option>
@@ -58,99 +56,109 @@
             </div>
             @endunless
             <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">สถานะ</label>
-                <select name="success"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <label class="tp-muted" style="display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">สถานะ</label>
+                <select name="success" class="tp-input">
                     <option value="">ทุกสถานะ</option>
-                    <option value="false" {{ request('success') === 'false' ? 'selected' : '' }}>❌ ล้มเหลว เท่านั้น</option>
-                    <option value="true" {{ request('success') === 'true' ? 'selected' : '' }}>✅ สำเร็จ เท่านั้น</option>
+                    <option value="false" {{ request('success') === 'false' ? 'selected' : '' }}>ล้มเหลว เท่านั้น</option>
+                    <option value="true" {{ request('success') === 'true' ? 'selected' : '' }}>สำเร็จ เท่านั้น</option>
                 </select>
             </div>
-            <div class="flex items-end gap-2">
-                <button type="submit"
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
-                    กรอง
+            <div style="display:flex;gap:8px;">
+                <button type="submit" class="tp-btn tp-btn-primary tp-btn-sm">
+                    <i class="fas fa-filter"></i>
+                    <span>กรอง</span>
                 </button>
                 <a href="{{ $keyId ? route('admin.ai-api-keys.key.logs', $keyId) : route('admin.ai-api-keys.logs') }}"
-                   class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-                    ล้าง
+                   class="tp-btn tp-btn-sm">
+                    <i class="fas fa-xmark"></i>
+                    <span>ล้าง</span>
                 </a>
             </div>
         </form>
     </div>
 
-    {{-- Logs Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
+    {{-- ── Logs Table ── --}}
+    <div class="tp-card" style="padding:0;overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">เวลา</th>
+                        <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);white-space:nowrap;">เวลา</th>
                         @unless($keyId)
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Key</th>
+                        <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);white-space:nowrap;">Key</th>
                         @endunless
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Type</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Model</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สถานะ</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tokens</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">เวลาตอบ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Error</th>
+                        <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);white-space:nowrap;">Type</th>
+                        <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);white-space:nowrap;">Model</th>
+                        <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);white-space:nowrap;">สถานะ</th>
+                        <th style="text-align:right;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);white-space:nowrap;">Tokens</th>
+                        <th style="text-align:right;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);white-space:nowrap;">เวลาตอบ</th>
+                        <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);white-space:nowrap;">Error</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($logs as $log)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition {{ ! $log->is_success ? 'bg-red-50/30 dark:bg-red-900/10' : '' }}">
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <div class="text-sm text-gray-900 dark:text-white">{{ $log->created_at->format('Y-m-d H:i:s') }}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $log->created_at->diffForHumans() }}</div>
+                    <tr style="{{ ! $log->is_success ? 'background:var(--a1soft);' : '' }}"
+                        onmouseover="this.style.background='var(--surf)'"
+                        onmouseout="this.style.background='{{ ! $log->is_success ? 'var(--a1soft)' : 'transparent' }}'">
+                        {{-- เวลา --}}
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--sd);white-space:nowrap;">
+                            <div class="tp-num" style="font-size:.85rem;color:var(--ink);">{{ $log->created_at->format('Y-m-d H:i:s') }}</div>
+                            <div class="tp-muted" style="font-size:.72rem;">{{ $log->created_at->diffForHumans() }}</div>
                         </td>
+                        {{-- Key (เฉพาะหน้ารวม) --}}
                         @unless($keyId)
-                        <td class="px-4 py-3">
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--sd);">
                             @if($log->apiKey)
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $log->apiKey->name }}</span>
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                                <div style="display:flex;flex-direction:column;">
+                                    <span style="font-size:.85rem;font-weight:600;color:var(--ink);">{{ $log->apiKey->name }}</span>
+                                    <span class="tp-muted" style="font-size:.72rem;">
                                         {{ \App\Models\AiApiKey::PROVIDERS[$log->apiKey->provider] ?? $log->apiKey->provider }}
                                     </span>
                                 </div>
                             @else
-                                <span class="text-xs text-gray-400 italic">— ลบแล้ว —</span>
+                                <span class="tp-muted" style="font-size:.72rem;font-style:italic;">— ลบแล้ว —</span>
                             @endif
                         </td>
                         @endunless
-                        <td class="px-4 py-3">
-                            <span class="text-xs font-mono text-gray-600 dark:text-gray-400">{{ $log->request_type ?? '-' }}</span>
+                        {{-- Type --}}
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--sd);">
+                            <span style="font-size:.72rem;font-family:monospace;color:var(--ink2);">{{ $log->request_type ?? '-' }}</span>
                         </td>
-                        <td class="px-4 py-3">
-                            <span class="text-xs text-gray-700 dark:text-gray-300">{{ $log->model ?? '-' }}</span>
+                        {{-- Model --}}
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--sd);">
+                            <span style="font-size:.78rem;color:var(--ink);">{{ $log->model ?? '-' }}</span>
                         </td>
-                        <td class="px-4 py-3">
+                        {{-- สถานะ --}}
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--sd);">
                             @if($log->is_success)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                                    ✅ สำเร็จ
+                                <span class="tp-pill" style="color:#5aa07e;background:color-mix(in srgb,#5aa07e 16%,transparent);">
+                                    <i class="fas fa-circle-check"></i> สำเร็จ
                                 </span>
                             @else
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
-                                    ❌ ล้มเหลว
+                                <span class="tp-pill" style="color:#d46a6a;background:color-mix(in srgb,#d46a6a 16%,transparent);">
+                                    <i class="fas fa-circle-xmark"></i> ล้มเหลว
                                 </span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-right">
-                            <div class="text-sm text-gray-900 dark:text-white font-mono">{{ number_format($log->total_tokens) }}</div>
+                        {{-- Tokens --}}
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--sd);text-align:right;">
+                            <div class="tp-num" style="font-size:.85rem;color:var(--ink);font-weight:600;">{{ number_format($log->total_tokens) }}</div>
                             @if($log->input_tokens || $log->output_tokens)
-                                <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                <div class="tp-muted" style="font-size:.72rem;font-family:monospace;">
                                     in {{ number_format($log->input_tokens) }} / out {{ number_format($log->output_tokens) }}
                                 </div>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-right">
+                        {{-- เวลาตอบ --}}
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--sd);text-align:right;">
                             @if($log->response_time_ms !== null)
-                                <span class="text-sm text-gray-700 dark:text-gray-300 font-mono">{{ number_format($log->response_time_ms) }} ms</span>
+                                <span class="tp-num" style="font-size:.85rem;color:var(--ink2);">{{ number_format($log->response_time_ms) }} ms</span>
                             @else
-                                <span class="text-xs text-gray-400">-</span>
+                                <span class="tp-muted" style="font-size:.72rem;">-</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 max-w-md">
+                        {{-- Error (คลิกเพื่อ expand เต็ม) --}}
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--sd);max-width:24rem;">
                             @if(! empty($log->error_message))
                                 {{-- คลิกเพื่อ expand เต็ม (long messages) --}}
                                 <button type="button"
@@ -159,23 +167,23 @@
                                             key: @js($log->apiKey?->name ?? '— ลบแล้ว —'),
                                             error: @js($log->error_message),
                                         })"
-                                        class="text-left text-xs text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100 font-mono truncate max-w-xs block underline-offset-2 hover:underline cursor-pointer"
+                                        style="text-align:left;font-size:.72rem;font-family:monospace;color:#d46a6a;
+                                               max-width:20rem;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+                                               cursor:pointer;background:none;border:none;padding:0;text-decoration:underline;text-underline-offset:2px;"
                                         title="คลิกเพื่อดูเต็ม">
                                     {{ \Illuminate\Support\Str::limit($log->error_message, 80) }}
                                 </button>
                             @else
-                                <span class="text-xs text-gray-400">-</span>
+                                <span class="tp-muted" style="font-size:.72rem;">-</span>
                             @endif
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ $keyId ? 7 : 8 }}" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                            <div class="flex flex-col items-center">
-                                <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                </svg>
-                                <p>ยังไม่มี usage logs</p>
+                        <td colspan="{{ $keyId ? 7 : 8 }}" style="padding:48px 24px;text-align:center;">
+                            <div style="display:flex;flex-direction:column;align-items:center;">
+                                <i class="fas fa-file-lines" style="font-size:2.4rem;color:var(--ink2);opacity:.4;margin-bottom:12px;"></i>
+                                <p class="tp-muted" style="margin:0;">ยังไม่มี usage logs</p>
                             </div>
                         </td>
                     </tr>
@@ -185,56 +193,58 @@
         </div>
 
         @if($logs->hasPages())
-        <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+        <div style="padding:12px 16px;border-top:1px solid var(--sd);">
             {{ $logs->withQueryString()->links() }}
         </div>
         @endif
     </div>
 
-    {{-- 🔍 Log Detail Modal — ดูเต็ม error message --}}
+    {{-- ── 🔍 Log Detail Modal — ดูเต็ม error message ── --}}
     <div x-show="logModal.open"
          x-cloak
          x-transition.opacity
          @keydown.escape.window="logModal.open = false"
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+         style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.5);"
          @click.self="logModal.open = false">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+        <div class="tp-card"
+             style="max-width:48rem;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;padding:0;"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">รายละเอียด Error</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            {{-- หัว modal --}}
+            <div style="padding:16px 20px;border-bottom:1px solid var(--sd);display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <div style="min-width:0;">
+                    <h3 class="tp-section-h" style="margin:0;font-size:1.05rem;">รายละเอียด Error</h3>
+                    <p class="tp-muted" style="font-size:.72rem;margin:2px 0 0;">
                         <span x-text="logModal.key"></span> · <span x-text="logModal.time"></span>
                     </p>
                 </div>
-                <button type="button" @click="logModal.open = false"
-                        class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+                <button type="button" @click="logModal.open = false" class="tp-icon-btn" title="ปิด">
+                    <i class="fas fa-xmark"></i>
                 </button>
             </div>
-            <div class="flex-1 overflow-y-auto px-6 py-5">
-                <pre class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-sm text-red-700 dark:text-red-300 whitespace-pre-wrap break-words font-mono"
+            {{-- เนื้อหา error --}}
+            <div style="flex:1;overflow-y:auto;padding:20px;">
+                <pre class="tp-inset" style="border-radius:12px;padding:16px;font-size:.85rem;color:#d46a6a;white-space:pre-wrap;word-break:break-word;font-family:monospace;margin:0;"
                      x-text="logModal.error"></pre>
             </div>
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-2">
-                <button type="button"
-                        @click="copyError()"
-                        class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition">
-                    📋 คัดลอก
+            {{-- ปุ่ม footer --}}
+            <div style="padding:16px 20px;border-top:1px solid var(--sd);display:flex;align-items:center;justify-content:flex-end;gap:8px;">
+                <button type="button" @click="copyError()" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-copy"></i>
+                    <span>คัดลอก</span>
                 </button>
-                <button type="button" @click="logModal.open = false"
-                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition">
-                    ปิด
+                <button type="button" @click="logModal.open = false" class="tp-btn tp-btn-primary tp-btn-sm">
+                    <i class="fas fa-check"></i>
+                    <span>ปิด</span>
                 </button>
             </div>
         </div>
     </div>
 </div>
+@endsection
 
+{{-- scripts stack: Alpine logsView (คง state/method เดิม 100%) --}}
 @push('scripts')
 <script>
 function logsView() {
@@ -267,4 +277,3 @@ function logsView() {
 }
 </script>
 @endpush
-@endsection

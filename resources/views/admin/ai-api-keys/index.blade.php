@@ -47,7 +47,7 @@
         {{-- Keys ทั้งหมด --}}
         <div class="tp-card tp-card-hover">
             <div style="display:flex;align-items:center;gap:14px;">
-                <div class="tp-tile" style="--tile-c:var(--accent2);">
+                <div class="tp-tile" style="width:46px;height:46px;border-radius:13px;font-size:18px;background:var(--accent2);">
                     <i class="fas fa-key"></i>
                 </div>
                 <div>
@@ -61,7 +61,7 @@
         {{-- Active --}}
         <div class="tp-card tp-card-hover">
             <div style="display:flex;align-items:center;gap:14px;">
-                <div class="tp-tile" style="--tile-c:#5aa07e;">
+                <div class="tp-tile" style="width:46px;height:46px;border-radius:13px;font-size:18px;background:#5aa07e;">
                     <i class="fas fa-circle-check"></i>
                 </div>
                 <div>
@@ -75,7 +75,7 @@
         {{-- พร้อมใช้ --}}
         <div class="tp-card tp-card-hover">
             <div style="display:flex;align-items:center;gap:14px;">
-                <div class="tp-tile" style="--tile-c:#b79ae8;">
+                <div class="tp-tile" style="width:46px;height:46px;border-radius:13px;font-size:18px;background:#b79ae8;">
                     <i class="fas fa-bolt"></i>
                 </div>
                 <div>
@@ -89,7 +89,7 @@
         {{-- Tokens วันนี้ --}}
         <div class="tp-card tp-card-hover">
             <div style="display:flex;align-items:center;gap:14px;">
-                <div class="tp-tile" style="--tile-c:#e0a52e;">
+                <div class="tp-tile" style="width:46px;height:46px;border-radius:13px;font-size:18px;background:#e0a52e;">
                     <i class="fas fa-coins"></i>
                 </div>
                 <div>
@@ -103,7 +103,7 @@
         {{-- Tokens เดือนนี้ --}}
         <div class="tp-card tp-card-hover">
             <div style="display:flex;align-items:center;gap:14px;">
-                <div class="tp-tile" style="--tile-c:#5689b8;">
+                <div class="tp-tile" style="width:46px;height:46px;border-radius:13px;font-size:18px;background:#5689b8;">
                     <i class="fas fa-calendar-days"></i>
                 </div>
                 <div>
@@ -117,7 +117,7 @@
         {{-- Requests วันนี้ --}}
         <div class="tp-card tp-card-hover">
             <div style="display:flex;align-items:center;gap:14px;">
-                <div class="tp-tile" style="--tile-c:#d6824a;">
+                <div class="tp-tile" style="width:46px;height:46px;border-radius:13px;font-size:18px;background:#d6824a;">
                     <i class="fas fa-arrow-trend-up"></i>
                 </div>
                 <div>
@@ -163,8 +163,8 @@
 
                 {{-- badge สถานะ --}}
                 <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                    <span class="tp-pill" style="--pill-c:#5aa07e;">{{ $stats['active_keys'] }} active</span>
-                    <span class="tp-pill" style="--pill-c:#b79ae8;">{{ $stats['available_keys'] }} พร้อมใช้</span>
+                    <span class="tp-pill" style="color:#5aa07e;background:color-mix(in srgb,#5aa07e 16%,transparent);">{{ $stats['active_keys'] }} active</span>
+                    <span class="tp-pill" style="color:#b79ae8;background:color-mix(in srgb,#b79ae8 16%,transparent);">{{ $stats['available_keys'] }} พร้อมใช้</span>
                 </div>
 
                 {{-- การใช้งาน token / request --}}
