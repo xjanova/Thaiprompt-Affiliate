@@ -1523,7 +1523,20 @@ class FortuneConversationService
                     $proReading = $this->findActiveProSessionReading($facebookUserId);
                     if ($proReading !== null) {
                         $deliveredToUser = (bool) $proReading->getConversationState('reading_sent_directly', false);
-                        if ($deliveredToUser) {
+
+                        // 🛡️ (2026-06-22 FTU-260622-R1626) Celtic ส่งพื้นดวง inline (celtic_question_answered)
+                        //   ไม่เคยตั้ง flag reading_sent_directly (flag นี้เป็นของ Deep/LINE flow เท่านั้น)
+                        //   → เดิม Celtic Pro Session ทุกเคส $deliveredToUser=false → bypass guard
+                        //   → ตกไป early-gate → ปิดดวงเก่า + สร้างบิลใหม่ระหว่างทำนาย = double-charge.
+                        //   ถ้าเป็น Celtic ที่ส่งคำทำนายให้ลูกค้าแล้ว (เริ่มตอบคำถาม/มี first_answered)
+                        //   = ส่งให้ลูกค้าแล้วจริง → ต้อง route เข้า handleProSession เสมอ ห้าม bypass
+                        $celticDelivered = $proReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                            && (
+                                (int) ($proReading->celtic_questions_used ?? 0) > 0
+                                || $proReading->celtic_first_answered_at !== null
+                            );
+
+                        if ($deliveredToUser || $celticDelivered) {
                             return $this->handleProSession($proReading, $messageText, $userProfile);
                         }
 
@@ -10854,13 +10867,23 @@ class FortuneConversationService
                     ->orWhere('platform_user_id', $userId);
             })
                 ->where('is_paid', true)
-                ->whereNotIn('conversation_status', [
-                    FortuneReading::STATUS_COMPLETED,
-                    'cancelled',
-                    'expired',
-                    'celtic_qa_window_expired',
-                ])
                 ->where('updated_at', '>=', now()->subHours(2))
+                ->where(function ($s) {
+                    // ปกติ: ยังไม่จบ session
+                    $s->whereNotIn('conversation_status', [
+                        FortuneReading::STATUS_COMPLETED,
+                        'cancelled',
+                        'expired',
+                        'celtic_qa_window_expired',
+                    ])
+                        // 🛡️ (2026-06-22 FTU-260622-R1626) หรือ: จบ main flow แล้ว (completed)
+                        //   แต่ Pro Session ยังเปิด (Celtic Q&A 15 นาที) → ยังถือว่า "ทำนายอยู่"
+                        //   กัน early-gate สร้างบิลใหม่ระหว่าง linger window (double-charge)
+                        ->orWhere(function ($s2) {
+                            $s2->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                                ->whereRaw("JSON_EXTRACT(conversation_state, '$.pro_session_active') = true");
+                        });
+                })
                 ->exists();
         });
     }
@@ -10931,7 +10954,16 @@ class FortuneConversationService
                     ->orWhere('platform_user_id', $userId);
             })
                 ->where('is_paid', true)
-                ->whereIn('conversation_status', FortuneReading::IN_PREDICTION_STATUSES)
+                ->where(function ($s) {
+                    $s->whereIn('conversation_status', FortuneReading::IN_PREDICTION_STATUSES)
+                        // 🛡️ (2026-06-22 FTU-260622-R1626) Pro Session ยังเปิด แม้ status=completed
+                        //   (Celtic Q&A linger 15 นาที) → ยังถือว่าทำนายอยู่ → guard ที่ startDeepReadingFlow
+                        //   silent_skip ทุก call site กันสร้างบิลใหม่ระหว่าง window
+                        ->orWhere(function ($s2) {
+                            $s2->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                                ->whereRaw("JSON_EXTRACT(conversation_state, '$.pro_session_active') = true");
+                        });
+                })
                 ->where(function ($flag) {
                     // 🛡️ admin_review_alerted=true → out of scope (admin handles)
                     $flag->whereNull('conversation_state')
