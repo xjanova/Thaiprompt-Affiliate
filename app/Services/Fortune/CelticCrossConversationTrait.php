@@ -2183,7 +2183,7 @@ trait CelticCrossConversationTrait
                 //   ⏳ ghost-bug guard: ถ้าหมดเวลา QA แล้ว → ปิด session ตามปกติ (อย่า re-invite ลอยๆ
                 //   ข้ามด่าน canAskMoreCeltic ด้านล่างเพราะ return ก่อน) — ลูกค้าต้องได้ Grand Finale
                 if (! $reading->canAskMoreCeltic()) {
-                    return $this->endCelticSession($reading, 'time_expired');
+                    return $this->celticLastCallOrEnd($reading);
                 }
 
                 \Log::info('Celtic: bare suggestion-number without cached suggestions → re-invite (no burn)', [
@@ -2240,7 +2240,7 @@ trait CelticCrossConversationTrait
 
         // เช็ค time window (นับจาก first message)
         if (! $reading->canAskMoreCeltic()) {
-            return $this->endCelticSession($reading, 'time_expired');
+            return $this->celticLastCallOrEnd($reading);
         }
 
         // 🆕 (2026-05-31) ด่านกันคำทักทาย/ตอบรับ ก่อนคำถามแรก — ไม่ยิงทำนาย ไม่กินโควต้า
@@ -2295,6 +2295,45 @@ trait CelticCrossConversationTrait
         //   ใหม่: ทุกคำถามไป immediate path เดียวด้านล่าง (askQuestion sync) — หมอคนเดียวตอบสด
         //     สม่ำเสมอ + ChannelManager mark delivered ครบทุกข้อ
         //   หมายเหตุ: ProcessBufferedCelticMessageJob ยังคงไฟล์ไว้ (เผื่อ job ค้างใน queue) แต่ไม่ dispatch ใหม่
+
+        // 🆕 FIX D (2026-06-22) Settle window — นิ่งรอลูกค้า "รัวคำ" ให้จบก่อนตอบทีเดียว
+        //   owner spec: "ระหว่างทำนายก็ต้องคุมสถานการณ์ได้ — ถ้ารอ N วิแล้วลูกค้าพิมพ์อีกก็รอต่อ
+        //   จนกว่าจะหยุดค่อยตอบ ไม่ตอบทุกข้อความ". กันเคส R1626 (ข้อความสับสนรัวๆ ถูกนับเป็นคำถามทีละข้อ)
+        //   กลไก: trailing debounce — append เข้า buffer + dispatch ProcessBufferedCelticMessageJob
+        //     (delay window+1; job default isReadyToFlush นับจาก "ข้อความล่าสุด" → flush เมื่อเงียบครบ window)
+        //     → job flush + askQuestion(combined) + ส่งทีเดียว. ระหว่างรอ return silent_skip (ไม่ตอบ)
+        //   Scope: เฉพาะ Q&A (handleCelticAwaitingQuestion) — การเปิดไพ่ไม่ผ่านนี่ → กดทีละใบยังไว
+        //   ปิดได้ด้วย setting celtic_qa_settle_seconds=0 (fallback 10 วิ)
+        $settleSec = (int) ($this->settings->celtic_qa_settle_seconds ?? 10);
+        if ($settleSec > 0) {
+            $dPlatform = $reading->platform;
+            if (! $dPlatform || ! in_array($dPlatform, ['facebook', 'line'], true)) {
+                $cand = $reading->platform_user_id ?: $reading->facebook_user_id ?: '';
+                $dPlatform = preg_match('/^U[a-f0-9]{32}$/i', $cand) ? 'line' : 'facebook';
+            }
+            $dUserId = $dPlatform === 'line'
+                ? ($reading->platform_user_id ?: $reading->facebook_user_id)
+                : ($reading->facebook_user_id ?: $reading->platform_user_id);
+
+            if ($dUserId) {
+                app(\App\Services\Fortune\MessageBuffer::class)->append('celtic_q', $dUserId, $question);
+                \App\Jobs\ProcessBufferedCelticMessageJob::dispatch($reading->id, $dPlatform, $dUserId, $settleSec)
+                    ->delay(now()->addSeconds($settleSec + 1));
+
+                \Log::info('Celtic FIX D: settle-buffer คำถาม (นิ่งรอรัว)', [
+                    'reading_id' => $reading->id,
+                    'settle_sec' => $settleSec,
+                    'q_preview' => mb_substr($question, 0, 40),
+                ]);
+
+                // นิ่ง — ไม่ตอบทันที (job จะรวมตอบทีเดียวเมื่อลูกค้าหยุดพิมพ์ครบ window)
+                return [
+                    'action' => 'silent_skip',
+                    'message' => null,
+                    'reading' => $reading,
+                ];
+            }
+        }
 
         // ส่งให้ AI Pool — ทุก message ส่งเข้า askQuestion (chat-style follow-up)
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
@@ -2776,6 +2815,45 @@ trait CelticCrossConversationTrait
     //   "เอาระบบ q1 2 3 ออก, เอาปุ่มทำนายเดี๋ยวนี้ออก, เมื่อเปิดไพ่ครบให้ AI ถามเลย"
     //   AI initiates หลังเปิดไพ่ครบ ผ่าน generateOpeningGreeting()
     //   ทุกข้อความถัดไป → buildFollowupPrompt (prompt เดียวกัน ไม่สน sequence)
+
+    /**
+     * 🆕 FIX E (2026-06-22) Last-call ก่อนตัดจบ — owner spec: "ก่อนหมดเวลา/จะตัด เปิดให้ถาม
+     *   คำถามสุดท้าย 1 ข้อ; ถามก็ตอบแล้วสรุป; เงียบก็สรุป" → ห้ามตัดจบดื้อๆ
+     *
+     * รอบแรกที่หมดเวลา → ตั้ง celtic_grace_until (canAskMoreCeltic คืน true ชั่วคราว)
+     *   + ส่งข้อความเชิญถามคำถามสุดท้าย (action celtic_last_call → ChannelManager default ส่งให้)
+     *   → คำถามที่ตามมาในช่วง grace ตอบผ่าน path ปกติ/buffer (ไม่ double-send)
+     * รอบถัดไป (grace หมด หรือเคยเสนอแล้ว) → endCelticSession จริง (Grand Finale)
+     *   cron fortune:celtic-auto-finalize ผ่าน canAskMoreCeltic เดียวกัน → ไม่ตัดระหว่าง grace
+     */
+    protected function celticLastCallOrEnd(FortuneReading $reading): array
+    {
+        if (! $reading->getConversationState('celtic_last_call_done', false)) {
+            $graceMin = (int) ($this->settings->celtic_last_call_grace_minutes ?? 3);
+            if ($graceMin < 1) {
+                $graceMin = 3;
+            }
+
+            $reading->setConversationState('celtic_last_call_done', true);
+            $reading->setConversationState('celtic_grace_until', now()->addMinutes($graceMin)->toIso8601String());
+
+            \Log::info('Celtic FIX E: เสนอคำถามสุดท้าย (last-call grace)', [
+                'reading_id' => $reading->id,
+                'grace_min' => $graceMin,
+            ]);
+
+            return [
+                'action' => 'celtic_last_call',
+                'message' => "⏳ ครบช่วงเวลาถาม-ตอบของรอบนี้แล้วนะคะ 🙏\n\n"
+                    ."แต่แม่หมอเปิดให้ถาม *คำถามสุดท้าย* ได้อีกสักข้อค่ะ — ถ้ามีเรื่องไหนค้างคาใจ พิมพ์มาได้เลย\n"
+                    ."ถ้าไม่มีแล้ว เดี๋ยวแม่หมอจะสรุปปิดท้ายให้นะคะ ✨",
+                'reading' => $reading,
+            ];
+        }
+
+        // เคยเสนอ last-call ไปแล้ว (grace หมด) → จบจริงพร้อมบทสรุป Grand Finale
+        return $this->endCelticSession($reading, 'time_expired');
+    }
 
     /**
      * จบ Celtic session อย่างสุขุม → reset state ให้กลับเข้า normal loop ของระบบ

@@ -3005,6 +3005,20 @@ class FortuneReading extends Model
             return false;
         }
 
+        // 🆕 FIX E (2026-06-22) Last-call grace — ต่อ window สั้นๆ หลังเสนอ "คำถามสุดท้าย"
+        //   ตั้งโดย celticLastCallOrEnd() ตอนหมดเวลา → ให้ลูกค้าถามปิดท้ายได้ 1 ข้อ
+        //   แม้หมดเวลาหลัก แล้วค่อยสรุป (owner spec: ไม่ตัดจบทันที ต้องเปิดโอกาสถามก่อน)
+        $graceUntil = $this->getConversationState('celtic_grace_until');
+        if (! empty($graceUntil)) {
+            try {
+                if (now()->lessThanOrEqualTo(\Carbon\Carbon::parse($graceUntil))) {
+                    return true;
+                }
+            } catch (\Throwable $e) {
+                // parse error → ตกไปเช็ค window ปกติ
+            }
+        }
+
         // หลัง Q1 → เช็ค window (default 15 นาที)
         $deadline = $this->celtic_first_answered_at->copy()->addMinutes($windowMin);
 

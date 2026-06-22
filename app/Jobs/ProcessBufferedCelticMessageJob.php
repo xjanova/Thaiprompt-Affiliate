@@ -16,11 +16,13 @@ use Illuminate\Support\Facades\Log;
 /**
  * 📦 (2026-05-20 Phase 4a) Process buffered Celtic Q2+ messages
  *
- * ⚠️ DEPRECATED (2026-05-29): เลิก dispatch job นี้แล้ว — Celtic รวมเป็น immediate path เดียว
- *   (Single-bot spec: "ใช้ตัวเดียวคุยเลย เหมือนพูดคุยกับหมอ"). handleCelticAwaitingQuestion
- *   เอา debounce buffer ออกแล้ว → ทุกคำถามตอบสด (askQuestion sync). เก็บ class ไว้เผื่อ job
- *   ที่ค้างใน queue ตอน deploy — handle() ยัง drain ได้ปลอดภัย (buffer ว่าง/state mismatch → skip).
- *   ลบ class ได้เมื่อมั่นใจว่า queue ไม่มี job ค้าง.
+ * ♻️ REVIVED (2026-06-22 FIX D): กลับมา dispatch อีกครั้งเป็น "settle window" (trailing debounce)
+ *   owner spec: ระหว่าง Q&A ถ้าลูกค้า "รัวคำ" → บอทนิ่งรอจนเงียบครบ window แล้วตอบรวดเดียว
+ *   (ไม่ตอบทีละข้อความ). handleCelticAwaitingQuestion append เข้า buffer 'celtic_q' + dispatch job นี้
+ *   (delay window+1). isReadyToFlush default (fromFirstMessage=false) = นับจากข้อความล่าสุด →
+ *   reset ทุกครั้งที่ลูกค้าพิมพ์ → flush เมื่อเงียบครบ window. ปิดด้วย setting celtic_qa_settle_seconds=0.
+ *
+ *   (เดิม 2026-05-29 DEPRECATED ช่วง single-bot immediate — ตอนนี้กลับมาใช้แบบ trailing-debounce)
  *
  * Flow (legacy):
  *   1. handleCelticAwaitingQuestion append message ลง buffer + dispatch job (delayed N sec)
