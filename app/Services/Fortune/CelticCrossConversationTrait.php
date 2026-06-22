@@ -2183,7 +2183,7 @@ trait CelticCrossConversationTrait
                 //   ⏳ ghost-bug guard: ถ้าหมดเวลา QA แล้ว → ปิด session ตามปกติ (อย่า re-invite ลอยๆ
                 //   ข้ามด่าน canAskMoreCeltic ด้านล่างเพราะ return ก่อน) — ลูกค้าต้องได้ Grand Finale
                 if (! $reading->canAskMoreCeltic()) {
-                    return $this->celticLastCallOrEnd($reading);
+                    return $this->endCelticSession($reading, 'time_expired');
                 }
 
                 \Log::info('Celtic: bare suggestion-number without cached suggestions → re-invite (no burn)', [
@@ -2240,7 +2240,7 @@ trait CelticCrossConversationTrait
 
         // เช็ค time window (นับจาก first message)
         if (! $reading->canAskMoreCeltic()) {
-            return $this->celticLastCallOrEnd($reading);
+            return $this->endCelticSession($reading, 'time_expired');
         }
 
         // 🆕 (2026-05-31) ด่านกันคำทักทาย/ตอบรับ ก่อนคำถามแรก — ไม่ยิงทำนาย ไม่กินโควต้า
@@ -2815,45 +2815,6 @@ trait CelticCrossConversationTrait
     //   "เอาระบบ q1 2 3 ออก, เอาปุ่มทำนายเดี๋ยวนี้ออก, เมื่อเปิดไพ่ครบให้ AI ถามเลย"
     //   AI initiates หลังเปิดไพ่ครบ ผ่าน generateOpeningGreeting()
     //   ทุกข้อความถัดไป → buildFollowupPrompt (prompt เดียวกัน ไม่สน sequence)
-
-    /**
-     * 🆕 FIX E (2026-06-22) Last-call ก่อนตัดจบ — owner spec: "ก่อนหมดเวลา/จะตัด เปิดให้ถาม
-     *   คำถามสุดท้าย 1 ข้อ; ถามก็ตอบแล้วสรุป; เงียบก็สรุป" → ห้ามตัดจบดื้อๆ
-     *
-     * รอบแรกที่หมดเวลา → ตั้ง celtic_grace_until (canAskMoreCeltic คืน true ชั่วคราว)
-     *   + ส่งข้อความเชิญถามคำถามสุดท้าย (action celtic_last_call → ChannelManager default ส่งให้)
-     *   → คำถามที่ตามมาในช่วง grace ตอบผ่าน path ปกติ/buffer (ไม่ double-send)
-     * รอบถัดไป (grace หมด หรือเคยเสนอแล้ว) → endCelticSession จริง (Grand Finale)
-     *   cron fortune:celtic-auto-finalize ผ่าน canAskMoreCeltic เดียวกัน → ไม่ตัดระหว่าง grace
-     */
-    protected function celticLastCallOrEnd(FortuneReading $reading): array
-    {
-        if (! $reading->getConversationState('celtic_last_call_done', false)) {
-            $graceMin = (int) ($this->settings->celtic_last_call_grace_minutes ?? 3);
-            if ($graceMin < 1) {
-                $graceMin = 3;
-            }
-
-            $reading->setConversationState('celtic_last_call_done', true);
-            $reading->setConversationState('celtic_grace_until', now()->addMinutes($graceMin)->toIso8601String());
-
-            \Log::info('Celtic FIX E: เสนอคำถามสุดท้าย (last-call grace)', [
-                'reading_id' => $reading->id,
-                'grace_min' => $graceMin,
-            ]);
-
-            return [
-                'action' => 'celtic_last_call',
-                'message' => "⏳ ครบช่วงเวลาถาม-ตอบของรอบนี้แล้วนะคะ 🙏\n\n"
-                    ."แต่แม่หมอเปิดให้ถาม *คำถามสุดท้าย* ได้อีกสักข้อค่ะ — ถ้ามีเรื่องไหนค้างคาใจ พิมพ์มาได้เลย\n"
-                    ."ถ้าไม่มีแล้ว เดี๋ยวแม่หมอจะสรุปปิดท้ายให้นะคะ ✨",
-                'reading' => $reading,
-            ];
-        }
-
-        // เคยเสนอ last-call ไปแล้ว (grace หมด) → จบจริงพร้อมบทสรุป Grand Finale
-        return $this->endCelticSession($reading, 'time_expired');
-    }
 
     /**
      * จบ Celtic session อย่างสุขุม → reset state ให้กลับเข้า normal loop ของระบบ

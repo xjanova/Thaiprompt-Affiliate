@@ -215,18 +215,6 @@ class FortuneCelticAutoFinalize extends Command
                         $q2->whereRaw("JSON_EXTRACT(conversation_state, '$.celtic_grand_finale_at') IS NULL");
                     });
             });
-
-            // 🆕 FIX E (2026-06-22) ข้าม session ที่ยังอยู่ใน last-call grace — เปิดให้ถามคำถามสุดท้ายอยู่
-            //   celticLastCallOrEnd ตั้ง celtic_grace_until = now+N นาที ตอนหมดเวลา (ก่อนตัดจบ)
-            //   cron ใช้ raw window (ไม่ผ่าน canAskMoreCeltic) → ถ้าไม่กันตรงนี้ จะ finalize ตัด grace ทิ้ง
-            //   ก่อนลูกค้าได้ถาม. grace หมด (grace_until < now) → กลับมา finalize ปกติ → "เงียบก็สรุป"
-            //   ISO8601 timezone เดียวกัน → string compare = chronological
-            $query->where(function ($q) {
-                $q->whereNull('conversation_state')
-                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.celtic_grace_until') IS NULL")
-                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(conversation_state, '$.celtic_grace_until')) < ?", [now()->toIso8601String()]);
-            });
-
             $query->limit($limit);
         }
 
