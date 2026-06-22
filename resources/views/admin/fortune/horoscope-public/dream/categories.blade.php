@@ -1,105 +1,176 @@
-{{-- หมวดหมู่ทำนายฝัน --}}
-@extends('layouts.admin-v3')
+{{-- หมวดหมู่ทำนายฝัน — ธีม V4 "นวลทองคำ" --}}
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
+@php
+    // คำนวณสรุปตัวเลข (KPI) จากหน้าปัจจุบัน
+    $catCollection = $categories->getCollection();
+    $totalCats = $categories->total();
+    $activeCats = $catCollection->where('is_active', true)->count();
+    $inactiveCats = $catCollection->where('is_active', false)->count();
+    $sumSymbols = $catCollection->sum('dream_symbols_count');
+    $sumActiveSymbols = $catCollection->sum('active_symbols_count');
 
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    // เตรียมข้อมูลกราฟ CSS — สัญลักษณ์ต่อหมวด (สูงสุด 8 หมวดบนหน้านี้)
+    $chartRows = $catCollection->sortByDesc('dream_symbols_count')->take(8);
+    $chartMax = max(1, (int) $chartRows->max('dream_symbols_count'));
+@endphp
+
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header (ธีม V4) ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-1">📂 หมวดหมู่ทำนายฝัน</h1>
-            <p class="text-gray-500 dark:text-gray-400 text-sm">จัดการหมวดหมู่สำหรับจัดกลุ่มสัญลักษณ์ฝัน</p>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">
+                หลังบ้าน · ระบบดูดวง · หมวดหมู่ทำนายฝัน
+            </div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">
+                📂 หมวดหมู่ทำนายฝัน
+            </h1>
+            <p class="tp-muted" style="margin:4px 0 0; font-size:13px;">จัดการหมวดหมู่สำหรับจัดกลุ่มสัญลักษณ์ฝัน</p>
         </div>
-        <div class="flex gap-2">
-            <a href="{{ route('admin.fortune.horoscope-public.dream.index') }}"
-               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                ← พจนานุกรม
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="{{ route('admin.fortune.horoscope-public.dream.index') }}" class="tp-btn tp-btn-sm">
+                <i class="fas fa-book"></i> พจนานุกรม
             </a>
-            <a href="{{ route('admin.fortune.horoscope-public.dream.categories.create') }}"
-               class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition shadow-lg">
-                ➕ เพิ่มหมวดหมู่
+            <a href="{{ route('admin.fortune.horoscope-public.dream.categories.create') }}" class="tp-btn tp-btn-primary">
+                <i class="fas fa-plus"></i> เพิ่มหมวดหมู่
             </a>
         </div>
     </div>
 
-    {{-- Flash Messages --}}
-    @if(session('success'))
-        <div class="mb-6 p-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl text-green-800 dark:text-green-200">
-            {{ session('success') }}
+    {{-- ===== KPI Grid ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+        <div class="tp-card tp-raise">
+            <div class="tp-muted" style="font-size:12px; font-weight:600;">หมวดหมู่ทั้งหมด</div>
+            <div class="tp-num" style="font-size:26px; font-weight:800; margin-top:6px;">{{ number_format($totalCats) }}</div>
+            <div style="margin-top:8px;"><span class="tp-pill tp-pill-gold"><i class="fas fa-folder"></i> หมวดฝัน</span></div>
         </div>
-    @endif
-    @if(session('error'))
-        <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl text-red-800 dark:text-red-200">
-            {{ session('error') }}
+        <div class="tp-card tp-raise">
+            <div class="tp-muted" style="font-size:12px; font-weight:600;">เปิดใช้งาน</div>
+            <div class="tp-num" style="font-size:26px; font-weight:800; margin-top:6px; color:#5aa07e;">{{ number_format($activeCats) }}</div>
+            <div style="margin-top:8px;"><span class="tp-pill tp-pill-soft" style="color:#5aa07e;"><i class="fas fa-circle-check"></i> ในหน้านี้</span></div>
+        </div>
+        <div class="tp-card tp-raise">
+            <div class="tp-muted" style="font-size:12px; font-weight:600;">ปิดใช้งาน</div>
+            <div class="tp-num" style="font-size:26px; font-weight:800; margin-top:6px; color:#9a8f7c;">{{ number_format($inactiveCats) }}</div>
+            <div style="margin-top:8px;"><span class="tp-pill tp-pill-soft" style="color:#9a8f7c;"><i class="fas fa-circle-pause"></i> ในหน้านี้</span></div>
+        </div>
+        <div class="tp-card tp-raise">
+            <div class="tp-muted" style="font-size:12px; font-weight:600;">สัญลักษณ์ (ในหน้านี้)</div>
+            <div class="tp-num" style="font-size:26px; font-weight:800; margin-top:6px;">{{ number_format($sumActiveSymbols) }}<span class="tp-muted" style="font-size:15px; font-weight:600;"> / {{ number_format($sumSymbols) }}</span></div>
+            <div style="margin-top:8px;"><span class="tp-pill tp-pill-soft" style="color:#5689b8;"><i class="fas fa-star"></i> เปิด / ทั้งหมด</span></div>
+        </div>
+    </div>
+
+    {{-- ===== กราฟ CSS: สัญลักษณ์ต่อหมวด ===== --}}
+    @if($chartRows->count() > 0)
+        <div class="tp-card">
+            <div class="tp-section-h" style="margin-bottom:14px;">
+                <i class="fas fa-chart-simple"></i> จำนวนสัญลักษณ์ต่อหมวด (Top {{ $chartRows->count() }})
+            </div>
+            <div class="tp-bars">
+                @foreach($chartRows as $row)
+                    @php
+                        // ความสูงสัมพัทธ์ของแท่งกราฟ (เทียบกับค่าสูงสุด)
+                        $totalPct = (int) round(($row->dream_symbols_count / $chartMax) * 100);
+                        $activePct = $row->dream_symbols_count > 0
+                            ? (int) round(($row->active_symbols_count / $chartMax) * 100)
+                            : 0;
+                        $catColor = $row->color_hex ?: 'var(--accent1)';
+                    @endphp
+                    <div class="col">
+                        <div class="stack" style="height:140px;">
+                            <div class="bar b" style="height:{{ $totalPct }}%;" title="ทั้งหมด {{ $row->dream_symbols_count }}"></div>
+                            <div class="bar a" style="height:{{ $activePct }}%; background:{{ $catColor }};" title="เปิดใช้งาน {{ $row->active_symbols_count }}"></div>
+                        </div>
+                        <div class="lbl" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                            <span style="font-size:15px;">{{ $row->icon }}</span>
+                            <span class="tp-num" style="font-weight:700;">{{ $row->dream_symbols_count }}</span>
+                            <span class="tp-muted" style="font-size:10px; max-width:64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $row->name_th }}</span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            <div class="tp-muted" style="margin-top:10px; font-size:11px; display:flex; gap:14px; flex-wrap:wrap;">
+                <span><i class="fas fa-square" style="color:var(--accent1);"></i> เปิดใช้งาน (ตามสีหมวด)</span>
+                <span><i class="fas fa-square" style="opacity:.35;"></i> ทั้งหมด</span>
+            </div>
         </div>
     @endif
 
-    {{-- ตาราง --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ลำดับ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">หมวดหมู่</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สี</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สัญลักษณ์</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">เปิดใช้งาน</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สถานะ</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จัดการ</th>
+    {{-- ===== ตารางหมวดหมู่ ===== --}}
+    <div class="tp-card" style="padding:0;">
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:separate; border-spacing:0 8px; padding:0 14px;">
+                <thead>
+                    <tr style="text-align:left;">
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">ลำดับ</th>
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">หมวดหมู่</th>
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">สี</th>
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:center;">สัญลักษณ์</th>
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:center;">สถานะ</th>
+                        <th style="padding:10px 12px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($categories as $category)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
-                                {{ $category->sort_order }}
+                        <tr style="background:var(--surf); box-shadow:var(--inset-sm); border-radius:12px;">
+                            {{-- ลำดับ --}}
+                            <td style="padding:14px 12px; border-radius:12px 0 0 12px;">
+                                <span class="tp-num" style="font-weight:700; color:var(--ink2);">{{ $category->sort_order }}</span>
                             </td>
-                            <td class="px-4 py-4">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-xl">{{ $category->icon }}</span>
+
+                            {{-- หมวดหมู่ (ไอคอน + ชื่อ + slug) --}}
+                            <td style="padding:14px 12px;">
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <span style="font-size:22px;">{{ $category->icon }}</span>
                                     <div>
-                                        <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $category->name_th }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $category->slug }}</div>
+                                        <div style="font-size:14px; font-weight:700; color:var(--ink);">{{ $category->name_th }}</div>
+                                        <div class="tp-muted" style="font-size:11px;">{{ $category->slug }}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-4 text-center">
-                                <div class="inline-flex items-center gap-2">
-                                    <div class="w-6 h-6 rounded-lg border border-gray-200 dark:border-gray-600"
-                                         style="background-color: {{ $category->color_hex }};"></div>
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ $category->color_hex }}</span>
+
+                            {{-- สี --}}
+                            <td style="padding:14px 12px;">
+                                <div style="display:inline-flex; align-items:center; gap:8px;">
+                                    <span style="display:inline-block; width:24px; height:24px; border-radius:8px; box-shadow:var(--inset-sm); background-color:{{ $category->color_hex }};"></span>
+                                    <span class="tp-num tp-muted" style="font-size:11px;">{{ $category->color_hex }}</span>
                                 </div>
                             </td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $category->active_symbols_count }}</span>
-                                <span class="text-xs text-gray-400"> / {{ $category->dream_symbols_count }}</span>
+
+                            {{-- สัญลักษณ์ เปิด / ทั้งหมด --}}
+                            <td style="padding:14px 12px; text-align:center;">
+                                <span class="tp-num" style="font-size:14px; font-weight:700; color:var(--ink);">{{ $category->active_symbols_count }}</span>
+                                <span class="tp-num tp-muted" style="font-size:12px;"> / {{ $category->dream_symbols_count }}</span>
                             </td>
-                            <td class="px-4 py-4 text-center text-sm text-gray-600 dark:text-gray-400">
-                                {{ $category->active_symbols_count }}
-                            </td>
-                            <td class="px-4 py-4 text-center">
+
+                            {{-- สถานะ --}}
+                            <td style="padding:14px 12px; text-align:center;">
                                 @if($category->is_active)
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">✅ เปิด</span>
+                                    <span class="tp-pill tp-pill-soft" style="color:#5aa07e;"><i class="fas fa-circle-check"></i> เปิด</span>
                                 @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400">⏸️ ปิด</span>
+                                    <span class="tp-pill tp-pill-soft" style="color:#9a8f7c;"><i class="fas fa-circle-pause"></i> ปิด</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-4 text-right">
-                                <div class="flex justify-end gap-1">
+
+                            {{-- จัดการ (แก้ไข / ลบ) --}}
+                            <td style="padding:14px 12px; text-align:right; border-radius:0 12px 12px 0;">
+                                <div style="display:inline-flex; justify-content:flex-end; gap:8px;" x-data="{}">
                                     <a href="{{ route('admin.fortune.horoscope-public.dream.categories.edit', $category) }}"
-                                       class="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs transition">
-                                        ✏️
+                                       class="tp-icon-btn" title="แก้ไข">
+                                        <i class="fas fa-pen"></i>
                                     </a>
-                                    <form action="{{ route('admin.fortune.horoscope-public.dream.categories.destroy', $category) }}" method="POST" class="inline"
-                                          onsubmit="return confirm('ลบหมวดหมู่ «{{ $category->name_th }}»?')">
+                                    <form action="{{ route('admin.fortune.horoscope-public.dream.categories.destroy', $category) }}"
+                                          method="POST" style="display:inline;"
+                                          @submit="if (!confirm('ลบหมวดหมู่ «{{ $category->name_th }}»?')) $event.preventDefault();">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit"
-                                                class="px-2 py-1.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/50 dark:hover:bg-red-900 text-red-700 dark:text-red-300 rounded-lg text-xs transition">
-                                            🗑️
+                                        <button type="submit" class="tp-icon-btn" title="ลบ" style="color:#d9534f;">
+                                            <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
                                 </div>
@@ -107,8 +178,14 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                ไม่พบหมวดหมู่
+                            <td colspan="6" style="padding:48px 12px; text-align:center;">
+                                <div class="tp-muted" style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+                                    <i class="fas fa-inbox" style="font-size:34px; opacity:.5;"></i>
+                                    <span>ไม่พบหมวดหมู่</span>
+                                    <a href="{{ route('admin.fortune.horoscope-public.dream.categories.create') }}" class="tp-btn tp-btn-sm tp-btn-primary" style="margin-top:6px;">
+                                        <i class="fas fa-plus"></i> เพิ่มหมวดหมู่แรก
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     @endforelse
@@ -117,8 +194,12 @@
         </div>
     </div>
 
+    {{-- ===== Pagination ===== --}}
     @if($categories->hasPages())
-        <div class="mt-6">{{ $categories->links() }}</div>
+        <div class="tp-card" style="padding:12px 18px;">
+            {{ $categories->links() }}
+        </div>
     @endif
+
 </div>
 @endsection

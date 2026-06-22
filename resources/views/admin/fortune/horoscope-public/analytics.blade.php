@@ -1,194 +1,290 @@
-{{-- สถิติระบบดูดวงสาธารณะ --}}
-@extends('layouts.admin-v3')
+{{-- สถิติระบบดูดวงสาธารณะ — ธีม V4 "นวลทองคำ" --}}
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div class="container mx-auto px-4 py-8" x-data="horoscopeAnalytics()">
+@php
+    // ป้ายชื่อประเภทเลขศาสตร์ (ใช้ในลิสต์ประเภทเลขศาสตร์)
+    $typeLabels = [
+        'name' => '📝 วิเคราะห์ชื่อ',
+        'phone' => '📱 วิเคราะห์เบอร์โทร',
+        'license_plate' => '🚗 ทะเบียนรถ',
+        'id_card' => '🪪 เลขบัตรประชาชน',
+        'birthday' => '🎂 วันเกิด',
+    ];
+    // หาค่าสูงสุดของลิสต์ราศี/สัญลักษณ์ฝัน เพื่อทำแถบสัดส่วน
+    $maxZodiacViews = $topZodiacs->max('total_views') ?: 1;
+    $maxSymbolCount = $topDreamSymbols->max('search_count') ?: 1;
+@endphp
 
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+<div class="tp-page" x-data="horoscopeAnalytics()"
+     style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ==================== Header ==================== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-1">📊 สถิติระบบดูดวงสาธารณะ</h1>
-            <p class="text-gray-500 dark:text-gray-400 text-sm">ภาพรวมการใช้งานระบบดูดวง Frontend</p>
+            <div class="tp-muted" style="font-size:12.5px; letter-spacing:.04em; margin-bottom:4px;">
+                หลังบ้าน · ระบบดูดวง · สถิติสาธารณะ
+            </div>
+            <h1 class="tp-num" style="font-size:26px; font-weight:800; color:var(--ink); display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-chart-line" style="color:var(--accent1);"></i>
+                สถิติระบบดูดวงสาธารณะ
+            </h1>
+            <div class="tp-muted" style="font-size:13px; margin-top:2px;">
+                ภาพรวมการใช้งานระบบดูดวง Frontend
+            </div>
         </div>
-        <div class="flex gap-2">
-            <a href="{{ route('admin.fortune.horoscope-public.settings') }}"
-               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                ⚙️ ตั้งค่า
-            </a>
+        <div style="display:flex; gap:8px;">
+            @if(Route::has('admin.fortune.horoscope-public.settings'))
+                <a href="{{ route('admin.fortune.horoscope-public.settings') }}" class="tp-btn">
+                    <i class="fas fa-gear"></i> ตั้งค่า
+                </a>
+            @endif
         </div>
     </div>
 
-    {{-- ==================== Stats Cards — ดวงรายวัน ==================== --}}
-    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-        ⭐ ดวงรายวัน
-    </h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-indigo-100 text-sm">Predictions ทั้งหมด</span>
-                <span class="text-2xl">📝</span>
-            </div>
-            <div class="text-2xl font-bold">{{ number_format($dailyStats['total_predictions']) }}</div>
+    {{-- ==================== KPI — ดวงรายวัน ==================== --}}
+    <div>
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+            <i class="fas fa-sun" style="color:#e0a52e;"></i> ดวงรายวัน
         </div>
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-blue-100 text-sm">วันนี้</span>
-                <span class="text-2xl">📅</span>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:14px;">
+            {{-- Predictions ทั้งหมด --}}
+            <div class="tp-card tp-raise">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:12.5px;">Predictions ทั้งหมด</span>
+                    <i class="fas fa-scroll" style="color:var(--accent1); font-size:18px;"></i>
+                </div>
+                <div class="tp-num" style="font-size:28px; font-weight:800; color:var(--ink); margin-top:8px;">
+                    {{ number_format($dailyStats['total_predictions']) }}
+                </div>
             </div>
-            <div class="text-2xl font-bold">{{ number_format($dailyStats['generated_today']) }}</div>
-        </div>
-        <div class="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-cyan-100 text-sm">Views รวม</span>
-                <span class="text-2xl">👁️</span>
+            {{-- วันนี้ --}}
+            <div class="tp-card tp-raise">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:12.5px;">สร้างวันนี้</span>
+                    <i class="fas fa-calendar-day" style="color:#5689b8; font-size:18px;"></i>
+                </div>
+                <div class="tp-num" style="font-size:28px; font-weight:800; color:var(--ink); margin-top:8px;">
+                    {{ number_format($dailyStats['generated_today']) }}
+                </div>
             </div>
-            <div class="text-2xl font-bold">{{ number_format($dailyStats['total_views']) }}</div>
-        </div>
-        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-emerald-100 text-sm">ราศีเปิดใช้</span>
-                <span class="text-2xl">✅</span>
+            {{-- Views รวม --}}
+            <div class="tp-card tp-raise">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:12.5px;">Views รวม</span>
+                    <i class="fas fa-eye" style="color:#5aa07e; font-size:18px;"></i>
+                </div>
+                <div class="tp-num" style="font-size:28px; font-weight:800; color:var(--ink); margin-top:8px;">
+                    {{ number_format($dailyStats['total_views']) }}
+                </div>
             </div>
-            <div class="text-2xl font-bold">{{ $dailyStats['zodiacs_active'] }}/12</div>
+            {{-- ราศีเปิดใช้ --}}
+            <div class="tp-card tp-raise">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span class="tp-muted" style="font-size:12.5px;">ราศีเปิดใช้</span>
+                    <i class="fas fa-circle-check" style="color:#5aa07e; font-size:18px;"></i>
+                </div>
+                <div class="tp-num" style="font-size:28px; font-weight:800; color:var(--ink); margin-top:8px;">
+                    {{ $dailyStats['zodiacs_active'] }}<span class="tp-muted" style="font-size:16px; font-weight:600;">/12</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    {{-- ==================== Stats Cards — ทำนายฝัน ==================== --}}
-    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-        💭 ทำนายฝัน
-    </h2>
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white">
-            <span class="text-purple-100 text-xs">ทั้งหมด</span>
-            <div class="text-xl font-bold mt-1">{{ number_format($dreamStats['total_readings']) }}</div>
+    {{-- ==================== KPI — ทำนายฝัน ==================== --}}
+    <div>
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+            <i class="fas fa-moon" style="color:#b79ae8;"></i> ทำนายฝัน
         </div>
-        <div class="bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl shadow-lg p-5 text-white">
-            <span class="text-violet-100 text-xs">วันนี้</span>
-            <div class="text-xl font-bold mt-1">{{ number_format($dreamStats['today_readings']) }}</div>
-        </div>
-        <div class="bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 rounded-xl shadow-lg p-5 text-white">
-            <span class="text-fuchsia-100 text-xs">สัปดาห์นี้</span>
-            <div class="text-xl font-bold mt-1">{{ number_format($dreamStats['week_readings']) }}</div>
-        </div>
-        <div class="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl shadow-lg p-5 text-white">
-            <span class="text-pink-100 text-xs">Views รวม</span>
-            <div class="text-xl font-bold mt-1">{{ number_format($dreamStats['total_views']) }}</div>
-        </div>
-        <div class="bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl shadow-lg p-5 text-white">
-            <span class="text-rose-100 text-xs">สัญลักษณ์</span>
-            <div class="text-xl font-bold mt-1">{{ number_format($dreamStats['total_symbols']) }}</div>
-        </div>
-    </div>
-
-    {{-- ==================== Stats Cards — เลขศาสตร์ ==================== --}}
-    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-        🔢 เลขศาสตร์
-    </h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-5 text-white">
-            <span class="text-amber-100 text-xs">ทั้งหมด</span>
-            <div class="text-xl font-bold mt-1">{{ number_format($numerologyStats['total_readings']) }}</div>
-        </div>
-        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-5 text-white">
-            <span class="text-orange-100 text-xs">วันนี้</span>
-            <div class="text-xl font-bold mt-1">{{ number_format($numerologyStats['today_readings']) }}</div>
-        </div>
-        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-5 text-white">
-            <span class="text-yellow-100 text-xs">สัปดาห์นี้</span>
-            <div class="text-xl font-bold mt-1">{{ number_format($numerologyStats['week_readings']) }}</div>
-        </div>
-        <div class="bg-gradient-to-br from-lime-500 to-lime-600 rounded-xl shadow-lg p-5 text-white">
-            <span class="text-lime-100 text-xs">Views รวม</span>
-            <div class="text-xl font-bold mt-1">{{ number_format($numerologyStats['total_views']) }}</div>
-        </div>
-    </div>
-
-    {{-- ==================== กราฟ 7 วัน ==================== --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white">📈 กราฟการใช้งาน 7 วัน</h2>
-            <div class="flex gap-2">
-                <button @click="loadChart(7)" :class="chartDays === 7 ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
-                        class="px-3 py-1 rounded-lg text-xs font-medium transition">7 วัน</button>
-                <button @click="loadChart(30)" :class="chartDays === 30 ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
-                        class="px-3 py-1 rounded-lg text-xs font-medium transition">30 วัน</button>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:14px;">
+            <div class="tp-card">
+                <span class="tp-muted" style="font-size:12px;">ทั้งหมด</span>
+                <div class="tp-num" style="font-size:23px; font-weight:800; color:var(--ink); margin-top:6px;">{{ number_format($dreamStats['total_readings']) }}</div>
+            </div>
+            <div class="tp-card">
+                <span class="tp-muted" style="font-size:12px;">วันนี้</span>
+                <div class="tp-num" style="font-size:23px; font-weight:800; color:var(--ink); margin-top:6px;">{{ number_format($dreamStats['today_readings']) }}</div>
+            </div>
+            <div class="tp-card">
+                <span class="tp-muted" style="font-size:12px;">สัปดาห์นี้</span>
+                <div class="tp-num" style="font-size:23px; font-weight:800; color:var(--ink); margin-top:6px;">{{ number_format($dreamStats['week_readings']) }}</div>
+            </div>
+            <div class="tp-card">
+                <span class="tp-muted" style="font-size:12px;">Views รวม</span>
+                <div class="tp-num" style="font-size:23px; font-weight:800; color:var(--ink); margin-top:6px;">{{ number_format($dreamStats['total_views']) }}</div>
+            </div>
+            <div class="tp-card">
+                <span class="tp-muted" style="font-size:12px;">สัญลักษณ์</span>
+                <div class="tp-num" style="font-size:23px; font-weight:800; color:var(--ink); margin-top:6px;">{{ number_format($dreamStats['total_symbols']) }}</div>
             </div>
         </div>
-        <div class="h-64">
-            <canvas id="usageChart"></canvas>
+    </div>
+
+    {{-- ==================== KPI — เลขศาสตร์ ==================== --}}
+    <div>
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+            <i class="fas fa-hashtag" style="color:#d6824a;"></i> เลขศาสตร์
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:14px;">
+            <div class="tp-card">
+                <span class="tp-muted" style="font-size:12px;">ทั้งหมด</span>
+                <div class="tp-num" style="font-size:23px; font-weight:800; color:var(--ink); margin-top:6px;">{{ number_format($numerologyStats['total_readings']) }}</div>
+            </div>
+            <div class="tp-card">
+                <span class="tp-muted" style="font-size:12px;">วันนี้</span>
+                <div class="tp-num" style="font-size:23px; font-weight:800; color:var(--ink); margin-top:6px;">{{ number_format($numerologyStats['today_readings']) }}</div>
+            </div>
+            <div class="tp-card">
+                <span class="tp-muted" style="font-size:12px;">สัปดาห์นี้</span>
+                <div class="tp-num" style="font-size:23px; font-weight:800; color:var(--ink); margin-top:6px;">{{ number_format($numerologyStats['week_readings']) }}</div>
+            </div>
+            <div class="tp-card">
+                <span class="tp-muted" style="font-size:12px;">Views รวม</span>
+                <div class="tp-num" style="font-size:23px; font-weight:800; color:var(--ink); margin-top:6px;">{{ number_format($numerologyStats['total_views']) }}</div>
+            </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {{-- ==================== กราฟการใช้งาน (CSS bars) ==================== --}}
+    <div class="tp-card">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-chart-column" style="color:var(--accent1);"></i>
+                กราฟการใช้งาน <span x-text="chartDays"></span> วัน
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button type="button" class="tp-btn tp-btn-sm" @click="loadChart(7)"
+                        :class="chartDays === 7 ? 'tp-btn-primary' : ''">7 วัน</button>
+                <button type="button" class="tp-btn tp-btn-sm" @click="loadChart(30)"
+                        :class="chartDays === 30 ? 'tp-btn-primary' : ''">30 วัน</button>
+            </div>
+        </div>
 
-        {{-- ==================== ราศียอดนิยม ==================== --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">⭐ ราศียอดนิยม (7 วัน)</h2>
+        {{-- Legend --}}
+        <div style="display:flex; flex-wrap:wrap; gap:14px; margin-bottom:12px;">
+            <span style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink2);">
+                <i style="width:11px; height:11px; border-radius:3px; background:#b79ae8;"></i> 💭 ทำนายฝัน
+            </span>
+            <span style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink2);">
+                <i style="width:11px; height:11px; border-radius:3px; background:#d6824a;"></i> 🔢 เลขศาสตร์
+            </span>
+            <span style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink2);">
+                <i style="width:11px; height:11px; border-radius:3px; background:#5689b8;"></i> ⭐ ดวงรายวัน (views)
+            </span>
+        </div>
+
+        {{-- แท่งกราฟ CSS — Alpine render --}}
+        <div class="tp-inset" style="padding:16px 12px; border-radius:14px; overflow-x:auto;">
+            <div class="tp-bars" style="min-width:520px;">
+                <template x-for="(col, i) in columns" :key="i">
+                    <div class="col">
+                        <div class="stack" style="align-items:flex-end;">
+                            <div class="bar" :style="`height:${col.h0}%; background:linear-gradient(180deg,#b79ae8,#7d5fb5);`"
+                                 :title="`💭 ทำนายฝัน: ${col.v0}`"></div>
+                            <div class="bar" :style="`height:${col.h1}%; background:linear-gradient(180deg,#d6824a,#a85b2c);`"
+                                 :title="`🔢 เลขศาสตร์: ${col.v1}`"></div>
+                            <div class="bar" :style="`height:${col.h2}%; background:linear-gradient(180deg,#5689b8,#3a6488);`"
+                                 :title="`⭐ ดวงรายวัน (views): ${col.v2}`"></div>
+                        </div>
+                        <span class="lbl" x-text="col.label"></span>
+                    </div>
+                </template>
+            </div>
+            <div x-show="columns.length === 0" class="tp-muted" style="text-align:center; padding:30px 0;">
+                <i class="fas fa-inbox" style="font-size:26px; opacity:.5;"></i>
+                <div style="margin-top:8px;">ยังไม่มีข้อมูลกราฟ</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ==================== Top lists ==================== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); gap:18px;">
+
+        {{-- ราศียอดนิยม --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                <i class="fas fa-star" style="color:#e0a52e;"></i> ราศียอดนิยม (7 วัน)
+            </div>
             @if($topZodiacs->isNotEmpty())
-                <div class="space-y-3">
+                <div style="display:flex; flex-direction:column; gap:12px;">
                     @foreach($topZodiacs as $idx => $item)
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm font-bold text-gray-400 w-6">{{ $idx + 1 }}</span>
-                            <span class="text-lg">{{ $item->zodiacSign?->symbol_emoji ?? '⭐' }}</span>
-                            <div class="flex-1">
-                                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $item->zodiacSign?->name_th ?? 'ไม่ระบุ' }}</span>
+                        @php $zpct = ($item->total_views / $maxZodiacViews) * 100; @endphp
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-num" style="font-size:13px; font-weight:800; color:var(--accent1); width:20px; text-align:center;">{{ $idx + 1 }}</span>
+                            <span style="font-size:19px;">{{ $item->zodiacSign?->symbol_emoji ?? '⭐' }}</span>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:13.5px; font-weight:600; color:var(--ink); margin-bottom:5px;">
+                                    {{ $item->zodiacSign?->name_th ?? 'ไม่ระบุ' }}
+                                </div>
+                                <div class="tp-inset-sm" style="height:7px; border-radius:99px; overflow:hidden;">
+                                    <div style="height:100%; width:{{ $zpct }}%; border-radius:99px; background:linear-gradient(90deg,var(--accent1),var(--accent2));"></div>
+                                </div>
                             </div>
-                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ number_format($item->total_views) }} views</span>
+                            <span class="tp-num tp-muted" style="font-size:12.5px; white-space:nowrap;">{{ number_format($item->total_views) }} views</span>
                         </div>
                     @endforeach
                 </div>
             @else
-                <p class="text-gray-500 dark:text-gray-400 text-sm text-center py-4">ยังไม่มีข้อมูล</p>
+                <div class="tp-muted" style="text-align:center; padding:30px 0;">
+                    <i class="fas fa-inbox" style="font-size:26px; opacity:.5;"></i>
+                    <div style="margin-top:8px;">ยังไม่มีข้อมูล</div>
+                </div>
             @endif
         </div>
 
-        {{-- ==================== สัญลักษณ์ฝันยอดนิยม ==================== --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">💭 สัญลักษณ์ฝันยอดนิยม</h2>
+        {{-- สัญลักษณ์ฝันยอดนิยม --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                <i class="fas fa-moon" style="color:#b79ae8;"></i> สัญลักษณ์ฝันยอดนิยม
+            </div>
             @if($topDreamSymbols->isNotEmpty())
-                <div class="space-y-3">
+                <div style="display:flex; flex-direction:column; gap:12px;">
                     @foreach($topDreamSymbols as $idx => $symbol)
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm font-bold text-gray-400 w-6">{{ $idx + 1 }}</span>
-                            <span class="text-lg">{{ $symbol->category?->icon ?? '💭' }}</span>
-                            <div class="flex-1">
-                                <span class="text-sm font-medium text-gray-900 dark:text-white">ฝันเห็น{{ $symbol->keyword_th }}</span>
+                        @php $spct = ($symbol->search_count / $maxSymbolCount) * 100; @endphp
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-num" style="font-size:13px; font-weight:800; color:#b79ae8; width:20px; text-align:center;">{{ $idx + 1 }}</span>
+                            <span style="font-size:19px;">{{ $symbol->category?->icon ?? '💭' }}</span>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:13.5px; font-weight:600; color:var(--ink); margin-bottom:5px;">
+                                    ฝันเห็น{{ $symbol->keyword_th }}
+                                </div>
+                                <div class="tp-inset-sm" style="height:7px; border-radius:99px; overflow:hidden;">
+                                    <div style="height:100%; width:{{ $spct }}%; border-radius:99px; background:linear-gradient(90deg,#b79ae8,#7d5fb5);"></div>
+                                </div>
                             </div>
-                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ number_format($symbol->search_count) }} ครั้ง</span>
+                            <span class="tp-num tp-muted" style="font-size:12.5px; white-space:nowrap;">{{ number_format($symbol->search_count) }} ครั้ง</span>
                         </div>
                     @endforeach
                 </div>
             @else
-                <p class="text-gray-500 dark:text-gray-400 text-sm text-center py-4">ยังไม่มีข้อมูล</p>
+                <div class="tp-muted" style="text-align:center; padding:30px 0;">
+                    <i class="fas fa-inbox" style="font-size:26px; opacity:.5;"></i>
+                    <div style="margin-top:8px;">ยังไม่มีข้อมูล</div>
+                </div>
             @endif
         </div>
 
-        {{-- ==================== ประเภทเลขศาสตร์ ==================== --}}
+        {{-- ประเภทเลขศาสตร์ --}}
         @if($numerologyTypes->isNotEmpty())
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">🔢 ประเภทเลขศาสตร์</h2>
-            @php
-                $typeLabels = [
-                    'name' => '📝 วิเคราะห์ชื่อ',
-                    'phone' => '📱 วิเคราะห์เบอร์โทร',
-                    'license_plate' => '🚗 ทะเบียนรถ',
-                    'id_card' => '🪪 เลขบัตรประชาชน',
-                    'birthday' => '🎂 วันเกิด',
-                ];
-            @endphp
-            <div class="space-y-3">
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                <i class="fas fa-hashtag" style="color:#d6824a;"></i> ประเภทเลขศาสตร์
+            </div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
                 @foreach($numerologyTypes as $type)
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-900 dark:text-white">{{ $typeLabels[$type->reading_type] ?? $type->reading_type }}</span>
-                        <div class="flex items-center gap-2">
-                            <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                @php $pct = $numerologyStats['total_readings'] > 0 ? ($type->count / $numerologyStats['total_readings']) * 100 : 0; @endphp
-                                <div class="bg-amber-500 h-2 rounded-full" style="width: {{ $pct }}%"></div>
+                    @php $tpct = $numerologyStats['total_readings'] > 0 ? ($type->count / $numerologyStats['total_readings']) * 100 : 0; @endphp
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="flex:1; min-width:0; font-size:13.5px; font-weight:600; color:var(--ink);">
+                            {{ $typeLabels[$type->reading_type] ?? $type->reading_type }}
+                        </span>
+                        <div style="width:130px; flex-shrink:0;">
+                            <div class="tp-inset-sm" style="height:7px; border-radius:99px; overflow:hidden;">
+                                <div style="height:100%; width:{{ $tpct }}%; border-radius:99px; background:linear-gradient(90deg,#d6824a,#a85b2c);"></div>
                             </div>
-                            <span class="text-sm text-gray-500 dark:text-gray-400 w-12 text-right">{{ number_format($type->count) }}</span>
                         </div>
+                        <span class="tp-num tp-muted" style="font-size:12.5px; width:44px; text-align:right;">{{ number_format($type->count) }}</span>
                     </div>
                 @endforeach
             </div>
@@ -196,20 +292,23 @@
         @endif
     </div>
 </div>
+@endsection
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+@push('scripts')
+{{-- scripts stack: Alpine component สำหรับกราฟ CSS + AJAX โหลดข้อมูล --}}
 <script>
 function horoscopeAnalytics() {
     return {
-        chart: null,
         chartDays: 7,
+        columns: [],
 
         init() {
-            this.renderChart(@json($chartData));
+            // วาดกราฟครั้งแรกจากข้อมูลที่ controller ส่งมา
+            this.buildColumns(@json($chartData));
         },
 
         /**
-         * โหลดข้อมูลกราฟจาก API
+         * โหลดข้อมูลกราฟจาก API (endpoint + payload เดิม)
          */
         async loadChart(days) {
             this.chartDays = days;
@@ -217,62 +316,48 @@ function horoscopeAnalytics() {
                 const res = await fetch(`{{ route('admin.fortune.horoscope-public.analytics.data') }}?days=${days}`);
                 const json = await res.json();
                 if (json.success) {
-                    this.renderChart(json.data);
+                    this.buildColumns(json.data);
                 }
             } catch (e) {
                 console.error('โหลดข้อมูลกราฟผิดพลาด:', e);
+                this.$dispatch('notify', { type: 'error', message: 'โหลดข้อมูลกราฟผิดพลาด' });
             }
         },
 
         /**
-         * วาดกราฟ Chart.js
+         * แปลงข้อมูล datasets → คอลัมน์แท่งกราฟ CSS (สเกลตามค่าสูงสุดทั้งกราฟ)
          */
-        renderChart(data) {
-            const ctx = document.getElementById('usageChart');
-            if (!ctx) return;
+        buildColumns(data) {
+            const labels = (data && data.labels) ? data.labels : [];
+            const ds = (data && data.datasets) ? data.datasets : [];
+            const d0 = (ds[0] && ds[0].data) ? ds[0].data : []; // ทำนายฝัน
+            const d1 = (ds[1] && ds[1].data) ? ds[1].data : []; // เลขศาสตร์
+            const d2 = (ds[2] && ds[2].data) ? ds[2].data : []; // ดวงรายวัน (views)
 
-            if (this.chart) {
-                this.chart.destroy();
+            // หาค่าสูงสุดเพื่อ normalize ความสูงเป็นเปอร์เซ็นต์
+            let max = 0;
+            for (let i = 0; i < labels.length; i++) {
+                max = Math.max(max, d0[i] || 0, d1[i] || 0, d2[i] || 0);
             }
+            if (max <= 0) max = 1;
 
-            const isDark = document.documentElement.classList.contains('dark');
-
-            this.chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels,
-                    datasets: data.datasets.map(ds => ({
-                        ...ds,
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 3,
-                        pointHoverRadius: 6,
-                        borderWidth: 2,
-                    })),
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: { color: isDark ? '#d1d5db' : '#374151' }
-                        },
-                    },
-                    scales: {
-                        x: {
-                            ticks: { color: isDark ? '#9ca3af' : '#6b7280' },
-                            grid: { color: isDark ? '#374151' : '#e5e7eb' },
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { color: isDark ? '#9ca3af' : '#6b7280' },
-                            grid: { color: isDark ? '#374151' : '#e5e7eb' },
-                        },
-                    },
-                },
-            });
+            const cols = [];
+            for (let i = 0; i < labels.length; i++) {
+                const v0 = d0[i] || 0;
+                const v1 = d1[i] || 0;
+                const v2 = d2[i] || 0;
+                cols.push({
+                    label: labels[i],
+                    v0: v0, v1: v1, v2: v2,
+                    // ขั้นต่ำ 2% ให้เห็นแท่งแม้ค่าเป็น 0
+                    h0: Math.max(v0 / max * 100, v0 > 0 ? 4 : 1),
+                    h1: Math.max(v1 / max * 100, v1 > 0 ? 4 : 1),
+                    h2: Math.max(v2 / max * 100, v2 > 0 ? 4 : 1),
+                });
+            }
+            this.columns = cols;
         },
     };
 }
 </script>
-@endsection
+@endpush

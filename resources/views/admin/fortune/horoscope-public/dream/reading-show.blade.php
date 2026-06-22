@@ -1,56 +1,85 @@
-{{-- รายละเอียดผลทำนายฝัน --}}
-@extends('layouts.admin-v3')
+{{-- รายละเอียดผลทำนายฝัน — ธีม V4 "นวลทองคำ" --}}
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
+{{-- คอนเทนเนอร์หลัก จัดเรียงแนวตั้งเว้นระยะ --}}
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- Header --}}
-    <div class="flex items-center gap-4 mb-6">
-        <a href="{{ route('admin.fortune.horoscope-public.dream.readings') }}"
-           class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            ← กลับ
-        </a>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🔍 ผลทำนายฝัน #{{ $reading->id }}</h1>
+    {{-- ส่วนหัว: eyebrow + ชื่อเรื่อง ด้านซ้าย / ปุ่มกลับ ด้านขวา --}}
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div>
+            <div class="tp-muted" style="font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px;">
+                หลังบ้าน · ระบบดูดวง · ทำนายฝัน
+            </div>
+            <h1 class="tp-num" style="font-size:1.5rem; font-weight:800; margin:0; color:var(--ink); display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-moon" style="color:var(--accent1);"></i>
+                ผลทำนายฝัน #{{ $reading->id }}
+            </h1>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            {{-- ปุ่มกลับไปรายการผลทำนาย (ลิงก์เดิม) --}}
+            <a href="{{ route('admin.fortune.horoscope-public.dream.readings') }}" class="tp-btn">
+                <i class="fas fa-arrow-left"></i>
+                <span>กลับ</span>
+            </a>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {{-- เลย์เอาต์ 2 คอลัมน์: เนื้อหาหลัก (กว้าง) + เมตาดาต้า (แคบ) --}}
+    <div class="tp-dream-grid">
 
-        {{-- คอลัมน์ซ้าย: ข้อมูลหลัก --}}
-        <div class="lg:col-span-2 space-y-6">
+        {{-- ============ คอลัมน์ซ้าย: ข้อมูลหลัก ============ --}}
+        <div style="display:flex; flex-direction:column; gap:18px;">
 
-            {{-- เรื่องฝัน --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3">💭 เรื่องฝันที่เล่า</h2>
-                <div class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-line bg-gray-50 dark:bg-gray-700 rounded-lg p-4">{{ $reading->dream_description }}</div>
+            {{-- เรื่องฝันที่เล่า --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                    <i class="fas fa-comment-dots" style="color:var(--accent1);"></i>
+                    <span>เรื่องฝันที่เล่า</span>
+                </div>
+                <div class="tp-inset" style="padding:16px; white-space:pre-line; line-height:1.7; font-size:.9rem; color:var(--ink);">{{ $reading->dream_description }}</div>
             </div>
 
-            {{-- ผล AI --}}
+            {{-- ผลทำนาย AI (แสดงเฉพาะเมื่อมีข้อมูล) --}}
             @if($reading->ai_interpretation)
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3">🤖 ผลทำนาย AI</h2>
-                <div class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-line bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">{{ $reading->ai_interpretation }}</div>
+            <div class="tp-card">
+                <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                    <i class="fas fa-robot" style="color:#b79ae8;"></i>
+                    <span>ผลทำนาย AI</span>
+                </div>
+                {{-- กล่องผล AI ใช้โทนม่วงอ่อนล้อม border --}}
+                <div class="tp-inset" style="padding:16px; white-space:pre-line; line-height:1.75; font-size:.9rem; color:var(--ink); border-left:3px solid #b79ae8;">{{ $reading->ai_interpretation }}</div>
             </div>
             @endif
 
-            {{-- สัญลักษณ์ที่ตรงกัน --}}
+            {{-- สัญลักษณ์ที่ตรงกัน (แสดงเฉพาะเมื่อมีอย่างน้อย 1 รายการ) --}}
             @if($matchedSymbols->isNotEmpty())
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3">🔑 สัญลักษณ์ที่ตรงกัน ({{ $matchedSymbols->count() }})</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="tp-card">
+                <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                    <i class="fas fa-key" style="color:var(--accent2);"></i>
+                    <span>สัญลักษณ์ที่ตรงกัน</span>
+                    <span class="tp-pill tp-pill-soft" style="margin-left:auto;">{{ $matchedSymbols->count() }} รายการ</span>
+                </div>
+                <div class="tp-symbol-grid">
                     @foreach($matchedSymbols as $symbol)
-                        <div class="p-3 rounded-lg border {{ $symbol->is_good_omen ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' }}">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span>{{ $symbol->category?->icon ?? '💭' }}</span>
-                                <span class="font-bold text-sm text-gray-900 dark:text-white">{{ $symbol->keyword_th }}</span>
-                                <span class="text-xs">{{ $symbol->is_good_omen ? '✅' : '⚠️' }}</span>
+                        {{-- การ์ดสัญลักษณ์ — สีขอบซ้ายบอกฤกษ์ดี (เขียว) / เตือน (เหลือง) --}}
+                        <div class="tp-tile" style="padding:14px; border-left:4px solid {{ $symbol->is_good_omen ? '#5aa07e' : '#e0a52e' }};">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                                <span style="font-size:1.05rem;">{{ $symbol->category?->icon ?? '💭' }}</span>
+                                <span style="font-weight:700; font-size:.9rem; color:var(--ink);">{{ $symbol->keyword_th }}</span>
+                                @if($symbol->is_good_omen)
+                                    <i class="fas fa-circle-check" style="color:#5aa07e; font-size:.8rem; margin-left:auto;"></i>
+                                @else
+                                    <i class="fas fa-triangle-exclamation" style="color:#e0a52e; font-size:.8rem; margin-left:auto;"></i>
+                                @endif
                             </div>
-                            <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{{ $symbol->meaning_th }}</p>
+                            <p class="tp-muted" style="font-size:.78rem; line-height:1.5; margin:0 0 6px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">{{ $symbol->meaning_th }}</p>
                             @if(!empty($symbol->lucky_numbers))
-                                <div class="flex gap-1 mt-1">
+                                <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:4px;">
                                     @foreach($symbol->lucky_numbers as $num)
-                                        <span class="px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 rounded text-[10px] font-mono font-bold">{{ $num }}</span>
+                                        <span class="tp-pill tp-pill-gold" style="font-family:monospace; font-weight:700; font-size:.72rem; padding:2px 8px;">{{ $num }}</span>
                                     @endforeach
                                 </div>
                             @endif
@@ -61,71 +90,97 @@
             @endif
         </div>
 
-        {{-- คอลัมน์ขวา: เมตาดาต้า --}}
-        <div class="space-y-6">
+        {{-- ============ คอลัมน์ขวา: เมตาดาต้า ============ --}}
+        <div style="display:flex; flex-direction:column; gap:18px;">
 
-            {{-- เลขเด็ด --}}
+            {{-- เลขเด็ด (แสดงเฉพาะเมื่อมีข้อมูล) --}}
             @if(!empty($reading->lucky_numbers))
-            <div class="bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl p-6 border border-amber-200 dark:border-amber-800">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3 text-center">🎯 เลขเด็ด</h3>
-                <div class="flex flex-wrap justify-center gap-3">
+            <div class="tp-card" style="text-align:center; background:linear-gradient(135deg, var(--a2soft), var(--a1soft));">
+                <div class="tp-section-h" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
+                    <i class="fas fa-bullseye" style="color:var(--accent2);"></i>
+                    <span>เลขเด็ด</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px;">
                     @foreach($reading->lucky_numbers as $num)
-                        <span class="w-12 h-12 flex items-center justify-center bg-amber-500 text-white rounded-xl font-mono font-black text-xl shadow-lg">{{ $num }}</span>
+                        {{-- ลูกเล่นเลขเด็ดแบบลูกบอลทอง --}}
+                        <span class="tp-num" style="width:52px; height:52px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; border-radius:14px; font-family:monospace; font-weight:900; font-size:1.4rem; box-shadow:var(--raise);">{{ $num }}</span>
                     @endforeach
                 </div>
             </div>
             @endif
 
-            {{-- ข้อมูลเพิ่มเติม --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">📊 ข้อมูล</h3>
-                <dl class="space-y-3 text-sm">
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">ID</dt>
-                        <dd class="text-gray-900 dark:text-white font-mono">#{{ $reading->id }}</dd>
+            {{-- ข้อมูลรายละเอียด --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                    <i class="fas fa-circle-info" style="color:var(--accent1);"></i>
+                    <span>ข้อมูล</span>
+                </div>
+                <dl style="margin:0; display:flex; flex-direction:column; gap:0;">
+
+                    {{-- ID --}}
+                    <div class="tp-meta-row">
+                        <dt class="tp-muted">ID</dt>
+                        <dd class="tp-num" style="font-family:monospace; color:var(--ink); margin:0;">#{{ $reading->id }}</dd>
                     </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">Session</dt>
-                        <dd class="text-gray-900 dark:text-white font-mono text-xs">{{ Str::limit($reading->session_id, 15) }}</dd>
+
+                    {{-- Session --}}
+                    <div class="tp-meta-row">
+                        <dt class="tp-muted">Session</dt>
+                        <dd style="font-family:monospace; font-size:.78rem; color:var(--ink); margin:0;">{{ Str::limit($reading->session_id, 15) }}</dd>
                     </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">ผู้ใช้</dt>
-                        <dd class="text-gray-900 dark:text-white">{{ $reading->user?->name ?? 'Guest' }}</dd>
+
+                    {{-- ผู้ใช้ --}}
+                    <div class="tp-meta-row">
+                        <dt class="tp-muted">ผู้ใช้</dt>
+                        <dd style="color:var(--ink); margin:0;">{{ $reading->user?->name ?? 'Guest' }}</dd>
                     </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">AI Provider</dt>
-                        <dd class="text-gray-900 dark:text-white">{{ $reading->ai_provider_used ?? '—' }}</dd>
+
+                    {{-- AI Provider --}}
+                    <div class="tp-meta-row">
+                        <dt class="tp-muted">AI Provider</dt>
+                        <dd style="color:var(--ink); margin:0;">{{ $reading->ai_provider_used ?? '—' }}</dd>
                     </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">ฟรี/เครดิต</dt>
-                        <dd>
+
+                    {{-- ฟรี/เครดิต --}}
+                    <div class="tp-meta-row">
+                        <dt class="tp-muted">ฟรี/เครดิต</dt>
+                        <dd style="margin:0;">
                             @if($reading->is_free)
-                                <span class="px-2 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded text-xs font-medium">🎁 ฟรี</span>
+                                <span class="tp-pill" style="color:#5aa07e;"><i class="fas fa-gift"></i> ฟรี</span>
                             @else
-                                <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">💎 เครดิต</span>
+                                <span class="tp-pill" style="color:#5689b8;"><i class="fas fa-gem"></i> เครดิต</span>
                             @endif
                         </dd>
                     </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">Views</dt>
-                        <dd class="text-gray-900 dark:text-white">{{ number_format($reading->view_count) }}</dd>
+
+                    {{-- Views --}}
+                    <div class="tp-meta-row">
+                        <dt class="tp-muted">Views</dt>
+                        <dd class="tp-num" style="color:var(--ink); margin:0;">{{ number_format($reading->view_count) }}</dd>
                     </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">IP</dt>
-                        <dd class="text-gray-900 dark:text-white font-mono text-xs">{{ $reading->ip_address ?? '—' }}</dd>
+
+                    {{-- IP --}}
+                    <div class="tp-meta-row">
+                        <dt class="tp-muted">IP</dt>
+                        <dd style="font-family:monospace; font-size:.78rem; color:var(--ink); margin:0;">{{ $reading->ip_address ?? '—' }}</dd>
                     </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500 dark:text-gray-400">สร้างเมื่อ</dt>
-                        <dd class="text-gray-900 dark:text-white">{{ $reading->created_at->locale('th')->translatedFormat('j M Y H:i') }}</dd>
+
+                    {{-- สร้างเมื่อ --}}
+                    <div class="tp-meta-row" style="border-bottom:none;">
+                        <dt class="tp-muted">สร้างเมื่อ</dt>
+                        <dd style="color:var(--ink); margin:0;">{{ $reading->created_at->locale('th')->translatedFormat('j M Y H:i') }}</dd>
                     </div>
                 </dl>
             </div>
 
-            {{-- ลิงก์ Frontend --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-2">🔗 ลิงก์ Frontend</h3>
+            {{-- ลิงก์ Frontend (ลิงก์เดิม เปิดแท็บใหม่) --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <i class="fas fa-link" style="color:var(--accent1);"></i>
+                    <span>ลิงก์ Frontend</span>
+                </div>
                 <a href="{{ route('horoscope.dream.result', $reading->id) }}" target="_blank"
-                   class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline break-all">
+                   class="tp-well" style="display:block; padding:12px; font-size:.82rem; color:var(--accent1); word-break:break-all; text-decoration:none;">
                     {{ route('horoscope.dream.result', $reading->id) }}
                 </a>
             </div>
@@ -133,3 +188,37 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+{{-- สไตล์เฉพาะหน้านี้ ฝังใน scripts stack เพื่อเลี่ยงปัญหา styles stack หลุด head --}}
+<style>
+    /* เลย์เอาต์ 2 คอลัมน์: เนื้อหาหลัก 2 ส่วน + เมตาดาต้า 1 ส่วน */
+    .tp-dream-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 18px;
+        align-items: start;
+    }
+    /* กริดการ์ดสัญลักษณ์ — ปรับขนาดอัตโนมัติ */
+    .tp-symbol-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+    }
+    /* แถวข้อมูลเมตา — เส้นคั่นบางด้วย inset เงา */
+    .tp-meta-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 2px;
+        font-size: .85rem;
+        border-bottom: 1px solid var(--sd);
+    }
+    .tp-meta-row dt { margin: 0; }
+    /* จอแคบ: ยุบเป็นคอลัมน์เดียว */
+    @media (max-width: 900px) {
+        .tp-dream-grid { grid-template-columns: 1fr; }
+    }
+</style>
+@endpush

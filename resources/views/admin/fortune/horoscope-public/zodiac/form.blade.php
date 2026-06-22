@@ -1,29 +1,40 @@
-{{-- ฟอร์มแก้ไขราศี --}}
-@extends('layouts.admin-v3')
+{{-- ฟอร์มแก้ไขราศี — ธีม V4 "นวลทองคำ" --}}
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
+{{-- คอนเทนเนอร์หลัก จัดวางแนวตั้ง เว้นช่อง 18px --}}
+<div style="display:flex;flex-direction:column;gap:18px;">
 
-    {{-- Header --}}
-    <div class="flex items-center gap-4 mb-6">
-        <a href="{{ route('admin.fortune.horoscope-public.zodiac.index') }}"
-           class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            ← กลับ
-        </a>
+    {{-- ส่วนหัว: ซ้าย eyebrow + ชื่อราศี / ขวา ปุ่มกลับ --}}
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                {{ $zodiac->symbol_emoji }} แก้ไขราศี{{ $zodiac->name_th }}
+            <div class="tp-muted" style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">
+                หลังบ้าน · ระบบดูดวง · จัดการ 12 ราศี
+            </div>
+            <h1 class="tp-num" style="font-size:24px;font-weight:800;margin:0;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:28px;">{{ $zodiac->symbol_emoji }}</span>
+                แก้ไขราศี{{ $zodiac->name_th }}
             </h1>
+            <div class="tp-muted" style="font-size:13px;margin-top:4px;">
+                {{ $zodiac->name_en }}@if($zodiac->date_range_display_th) · {{ $zodiac->date_range_display_th }}@endif
+            </div>
+        </div>
+        <div>
+            <a href="{{ route('admin.fortune.horoscope-public.zodiac.index') }}" class="tp-btn tp-btn-sm">
+                <i class="fas fa-arrow-left"></i> กลับ
+            </a>
         </div>
     </div>
 
-    {{-- Flash Messages --}}
+    {{-- กล่องแจ้งข้อผิดพลาดการ validate --}}
     @if($errors->any())
-        <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl">
-            <p class="text-red-800 dark:text-red-200 font-semibold mb-2">❌ พบข้อผิดพลาด:</p>
-            <ul class="list-disc list-inside text-sm text-red-700 dark:text-red-300">
+        <div class="tp-card" style="border-left:4px solid #d9534f;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#d9534f;font-weight:700;">
+                <i class="fas fa-circle-exclamation"></i> พบข้อผิดพลาด
+            </div>
+            <ul style="margin:0;padding-left:20px;color:var(--ink2);font-size:13px;line-height:1.8;">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -31,176 +42,238 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.fortune.horoscope-public.zodiac.update', $zodiac) }}" method="POST">
+    {{-- ฟอร์มแก้ไขราศี (PUT) --}}
+    <form action="{{ route('admin.fortune.horoscope-public.zodiac.update', $zodiac) }}" method="POST"
+          style="display:flex;flex-direction:column;gap:18px;">
         @csrf
         @method('PUT')
 
-        {{-- ข้อมูลหลัก --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">📝 ข้อมูลหลัก</h2>
+        {{-- ===== ข้อมูลหลัก ===== --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                <i class="fas fa-id-card" style="color:var(--accent1);"></i> ข้อมูลหลัก
+            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+                {{-- ชื่อราศี (ไทย) --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        ชื่อราศี (ไทย) <span class="text-red-500">*</span>
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        ชื่อราศี (ไทย) <span style="color:#d9534f;">*</span>
                     </label>
-                    <input type="text" name="name_th" value="{{ old('name_th', $zodiac->name_th) }}"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" required>
+                    <div class="tp-well">
+                        <input type="text" name="name_th" value="{{ old('name_th', $zodiac->name_th) }}"
+                               class="tp-input" required>
+                    </div>
                 </div>
 
+                {{-- ชื่อราศี (อังกฤษ) --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        ชื่อราศี (อังกฤษ) <span class="text-red-500">*</span>
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        ชื่อราศี (อังกฤษ) <span style="color:#d9534f;">*</span>
                     </label>
-                    <input type="text" name="name_en" value="{{ old('name_en', $zodiac->name_en) }}"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" required>
+                    <div class="tp-well">
+                        <input type="text" name="name_en" value="{{ old('name_en', $zodiac->name_en) }}"
+                               class="tp-input" required>
+                    </div>
                 </div>
 
+                {{-- Symbol Emoji --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Symbol Emoji <span class="text-red-500">*</span>
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        สัญลักษณ์ (Emoji) <span style="color:#d9534f;">*</span>
                     </label>
-                    <input type="text" name="symbol_emoji" value="{{ old('symbol_emoji', $zodiac->symbol_emoji) }}"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" required>
+                    <div class="tp-well">
+                        <input type="text" name="symbol_emoji" value="{{ old('symbol_emoji', $zodiac->symbol_emoji) }}"
+                               class="tp-input" required>
+                    </div>
                 </div>
 
+                {{-- ช่วงวันเกิดแสดงผล (ไทย) --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
                         ช่วงวันเกิดแสดงผล (ไทย)
                     </label>
-                    <input type="text" name="date_range_display_th" value="{{ old('date_range_display_th', $zodiac->date_range_display_th) }}"
-                           placeholder="เช่น 21 มี.ค. — 19 เม.ย."
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <div class="tp-well">
+                        <input type="text" name="date_range_display_th"
+                               value="{{ old('date_range_display_th', $zodiac->date_range_display_th) }}"
+                               placeholder="เช่น 21 มี.ค. — 19 เม.ย." class="tp-input">
+                    </div>
                 </div>
 
+                {{-- ธาตุ --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        ธาตุ <span class="text-red-500">*</span>
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        ธาตุ <span style="color:#d9534f;">*</span>
                     </label>
-                    <select name="element"
-                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
-                        @foreach(['ไฟ', 'ดิน', 'ลม', 'น้ำ'] as $el)
-                            <option value="{{ $el }}" {{ old('element', $zodiac->element) === $el ? 'selected' : '' }}>{{ $el }}</option>
-                        @endforeach
-                    </select>
+                    <div class="tp-well" style="padding:0;">
+                        <select name="element" class="tp-input"
+                                style="padding:10px 12px;background:transparent;border:none;width:100%;">
+                            @foreach(['ไฟ', 'ดิน', 'ลม', 'น้ำ'] as $el)
+                                <option value="{{ $el }}" {{ old('element', $zodiac->element) === $el ? 'selected' : '' }}>{{ $el }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
+                {{-- ดาวประจำราศี --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        ดาวประจำราศี <span class="text-red-500">*</span>
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        ดาวประจำราศี <span style="color:#d9534f;">*</span>
                     </label>
-                    <input type="text" name="ruling_planet" value="{{ old('ruling_planet', $zodiac->ruling_planet) }}"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" required>
+                    <div class="tp-well">
+                        <input type="text" name="ruling_planet" value="{{ old('ruling_planet', $zodiac->ruling_planet) }}"
+                               class="tp-input" required>
+                    </div>
                 </div>
 
+                {{-- คุณภาพ (Quality) --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
                         คุณภาพ (Quality)
                     </label>
-                    <select name="quality"
-                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
-                        <option value="">-- ไม่ระบุ --</option>
-                        @foreach(['Cardinal', 'Fixed', 'Mutable'] as $q)
-                            <option value="{{ $q }}" {{ old('quality', $zodiac->quality) === $q ? 'selected' : '' }}>{{ $q }}</option>
-                        @endforeach
-                    </select>
+                    <div class="tp-well" style="padding:0;">
+                        <select name="quality" class="tp-input"
+                                style="padding:10px 12px;background:transparent;border:none;width:100%;">
+                            <option value="">-- ไม่ระบุ --</option>
+                            @foreach(['Cardinal', 'Fixed', 'Mutable'] as $q)
+                                <option value="{{ $q }}" {{ old('quality', $zodiac->quality) === $q ? 'selected' : '' }}>{{ $q }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
+                {{-- ลำดับ --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        ลำดับ <span class="text-red-500">*</span>
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        ลำดับ <span style="color:#d9534f;">*</span>
                     </label>
-                    <input type="number" name="sort_order" value="{{ old('sort_order', $zodiac->sort_order) }}"
-                           min="0"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" required>
+                    <div class="tp-well">
+                        <input type="number" name="sort_order" value="{{ old('sort_order', $zodiac->sort_order) }}"
+                               min="0" class="tp-input" required>
+                    </div>
                 </div>
             </div>
         </div>
 
-        {{-- สี --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">🎨 สีและ Gradient</h2>
+        {{-- ===== สีและ Gradient ===== --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                <i class="fas fa-palette" style="color:var(--accent1);"></i> สีและ Gradient
+            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        สีหลัก (hex) <span class="text-red-500">*</span>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+                {{-- สีหลัก (hex) — color picker + ช่องแสดงค่า (disabled, sync ด้วย JS) --}}
+                <div x-data="{ hex: '{{ old('color_hex', $zodiac->color_hex) }}' }">
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        สีหลัก (hex) <span style="color:#d9534f;">*</span>
                     </label>
-                    <div class="flex gap-2">
-                        <input type="color" name="color_hex" value="{{ old('color_hex', $zodiac->color_hex) }}"
-                               class="w-12 h-10 rounded border border-gray-300 dark:border-gray-600 cursor-pointer">
-                        <input type="text" value="{{ old('color_hex', $zodiac->color_hex) }}" disabled
-                               class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                    <div style="display:flex;gap:8px;align-items:stretch;">
+                        <input type="color" name="color_hex" x-model="hex"
+                               style="width:46px;height:42px;border-radius:10px;border:none;box-shadow:var(--inset-sm);cursor:pointer;padding:3px;background:var(--surf);">
+                        <div class="tp-well" style="flex:1;">
+                            <input type="text" class="tp-input" x-model="hex" disabled>
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gradient From</label>
-                    <input type="text" name="gradient_from" value="{{ old('gradient_from', $zodiac->gradient_from) }}"
-                           placeholder="#818cf8"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gradient To</label>
-                    <input type="text" name="gradient_to" value="{{ old('gradient_to', $zodiac->gradient_to) }}"
-                           placeholder="#6366f1"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                </div>
-            </div>
-        </div>
 
-        {{-- คำอธิบาย --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">📄 คำอธิบาย</h2>
-
-            <div class="space-y-4">
+                {{-- Gradient From --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">คำอธิบายราศี</label>
-                    <textarea name="description_th" rows="3"
-                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">{{ old('description_th', $zodiac->description_th) }}</textarea>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">บุคลิกภาพ</label>
-                    <textarea name="personality_th" rows="3"
-                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">{{ old('personality_th', $zodiac->personality_th) }}</textarea>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จุดแข็ง</label>
-                        <textarea name="strengths_th" rows="2"
-                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">{{ old('strengths_th', $zodiac->strengths_th) }}</textarea>
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        Gradient From
+                    </label>
+                    <div class="tp-well">
+                        <input type="text" name="gradient_from" value="{{ old('gradient_from', $zodiac->gradient_from) }}"
+                               placeholder="#818cf8" class="tp-input">
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จุดอ่อน</label>
-                        <textarea name="weaknesses_th" rows="2"
-                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">{{ old('weaknesses_th', $zodiac->weaknesses_th) }}</textarea>
+                </div>
+
+                {{-- Gradient To --}}
+                <div>
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        Gradient To
+                    </label>
+                    <div class="tp-well">
+                        <input type="text" name="gradient_to" value="{{ old('gradient_to', $zodiac->gradient_to) }}"
+                               placeholder="#6366f1" class="tp-input">
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- สถานะ --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-            <label class="flex items-center gap-3 cursor-pointer">
-                <input type="hidden" name="is_active" value="0">
+        {{-- ===== คำอธิบาย ===== --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                <i class="fas fa-file-lines" style="color:var(--accent1);"></i> คำอธิบาย
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:16px;">
+                {{-- คำอธิบายราศี --}}
+                <div>
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        คำอธิบายราศี
+                    </label>
+                    <div class="tp-well">
+                        <textarea name="description_th" rows="3" class="tp-input" style="resize:vertical;">{{ old('description_th', $zodiac->description_th) }}</textarea>
+                    </div>
+                </div>
+
+                {{-- บุคลิกภาพ --}}
+                <div>
+                    <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                        บุคลิกภาพ
+                    </label>
+                    <div class="tp-well">
+                        <textarea name="personality_th" rows="3" class="tp-input" style="resize:vertical;">{{ old('personality_th', $zodiac->personality_th) }}</textarea>
+                    </div>
+                </div>
+
+                {{-- จุดแข็ง / จุดอ่อน --}}
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+                    <div>
+                        <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                            จุดแข็ง
+                        </label>
+                        <div class="tp-well">
+                            <textarea name="strengths_th" rows="2" class="tp-input" style="resize:vertical;">{{ old('strengths_th', $zodiac->strengths_th) }}</textarea>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="tp-muted" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">
+                            จุดอ่อน
+                        </label>
+                        <div class="tp-well">
+                            <textarea name="weaknesses_th" rows="2" class="tp-input" style="resize:vertical;">{{ old('weaknesses_th', $zodiac->weaknesses_th) }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ===== สถานะ ===== --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fas fa-toggle-on" style="color:var(--accent1);"></i> สถานะการแสดงผล
+            </div>
+            {{-- hidden กัน is_active ไม่ถูกส่งเมื่อไม่ติ๊ก --}}
+            <input type="hidden" name="is_active" value="0">
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
                 <input type="checkbox" name="is_active" value="1"
-                       class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                       style="width:20px;height:20px;cursor:pointer;accent-color:var(--accent1);"
                        {{ old('is_active', $zodiac->is_active) ? 'checked' : '' }}>
                 <div>
-                    <span class="font-semibold text-gray-900 dark:text-white">เปิดใช้งาน</span>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">แสดงราศีนี้ในหน้า frontend</p>
+                    <div style="font-weight:700;color:var(--ink);">เปิดใช้งาน</div>
+                    <div class="tp-muted" style="font-size:12px;">แสดงราศีนี้ในหน้า frontend</div>
                 </div>
             </label>
         </div>
 
-        {{-- ปุ่มบันทึก --}}
-        <div class="flex justify-end gap-3">
-            <a href="{{ route('admin.fortune.horoscope-public.zodiac.index') }}"
-               class="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition">
-                ← ยกเลิก
+        {{-- ===== ปุ่ม action ===== --}}
+        <div style="display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;">
+            <a href="{{ route('admin.fortune.horoscope-public.zodiac.index') }}" class="tp-btn">
+                <i class="fas fa-xmark"></i> ยกเลิก
             </a>
-            <button type="submit"
-                    class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition font-semibold shadow-lg">
-                💾 บันทึก
+            <button type="submit" class="tp-btn tp-btn-primary">
+                <i class="fas fa-floppy-disk"></i> บันทึก
             </button>
         </div>
     </form>
