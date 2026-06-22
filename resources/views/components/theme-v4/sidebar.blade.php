@@ -54,7 +54,7 @@
 
     {{-- รายการเมนู (เลื่อนได้) --}}
     <div x-data="{ openId: @js($activeGroupId), pinActive(u) { if (!u) return false; const c = location.origin + location.pathname; const x = String(u).replace(/\/+$/, ''); return c === x || c.startsWith(x + '/'); } }"
-         x-init="$nextTick(() => { const a = $el.querySelector('[data-tpactive]'); if (a) { const cr = $el.getBoundingClientRect(), ar = a.getBoundingClientRect(); const off = (ar.top - cr.top) - $el.clientHeight / 2 + ar.height / 2; if (Math.abs(off) > 8) $el.scrollTop += off; } })"
+         x-init="const tpScroll = () => { const a = $el.querySelector('[data-tpactive]'); if (!a) return; const cr = $el.getBoundingClientRect(), ar = a.getBoundingClientRect(); $el.scrollTop += (ar.top - cr.top) - $el.clientHeight / 2 + ar.height / 2; }; $nextTick(tpScroll); setTimeout(tpScroll, 400); setTimeout(tpScroll, 900)"
          style="position:relative; flex:1; min-height:0; overflow-y:auto; overflow-x:visible; display:flex; flex-direction:column; gap:7px; padding:2px;">
 
         {{-- ===== 📌 เมนูที่ปักหมุด (ดึงจาก $store.pinnedMenus — localStorage) ===== --}}
