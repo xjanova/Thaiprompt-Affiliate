@@ -54,6 +54,7 @@
 
     {{-- รายการเมนู (เลื่อนได้) --}}
     <div x-data="{ openId: @js($activeGroupId), pinActive(u) { if (!u) return false; const c = location.origin + location.pathname; const x = String(u).replace(/\/+$/, ''); return c === x || c.startsWith(x + '/'); } }"
+         x-init="$nextTick(() => { const a = $el.querySelector('[data-tpactive]'); if (a) { const cr = $el.getBoundingClientRect(), ar = a.getBoundingClientRect(); const off = (ar.top - cr.top) - $el.clientHeight / 2 + ar.height / 2; if (Math.abs(off) > 8) $el.scrollTop += off; } })"
          style="position:relative; flex:1; min-height:0; overflow-y:auto; overflow-x:visible; display:flex; flex-direction:column; gap:7px; padding:2px;">
 
         {{-- ===== 📌 เมนูที่ปักหมุด (ดึงจาก $store.pinnedMenus — localStorage) ===== --}}
@@ -148,7 +149,7 @@
                                 <div class="tp-mrow" style="position:relative;">
                                     <a href="{{ $surl }}"
                                        @click="if (isMobile) closeDrawer()"
-                                       class="tp-sub-link"
+                                       class="tp-sub-link" @if($sActive) data-tpactive @endif
                                        style="padding-right:28px; {{ $sActive ? 'box-shadow:var(--inset-sm); color:var(--ink);' : 'color:var(--ink2);' }}">
                                         <span style="width:6px; height:6px; flex:none; border-radius:50%; background:{{ $sActive ? 'linear-gradient(135deg,var(--accent1),var(--accent2))' : 'var(--ink2)' }};"></span>
                                         <span style="font-weight:{{ $sActive ? 700 : 500 }}; font-size:12.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $slabel }}</span>
@@ -170,7 +171,7 @@
                     <div class="tp-mrow" style="position:relative;">
                         <a href="{{ $gurl ?? '#' }}"
                            @click="if (isMobile) closeDrawer()"
-                           class="tp-card"
+                           class="tp-card" @if($gActive) data-tpactive @endif
                            style="display:flex; align-items:center; gap:12px; padding:10px 34px 10px 12px; border-radius:15px; text-decoration:none; color:var(--ink); {{ $gActive ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);' }}">
                             <span class="tp-tile" style="width:33px; height:33px; border-radius:11px; font-size:15px;">
                                 @if(str_contains($gicon,'fa-'))<i class="{{ $gicon }}"></i>@else{!! $gicon !!}@endif
