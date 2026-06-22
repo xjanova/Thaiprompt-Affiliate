@@ -128,7 +128,7 @@
                 </div>
                 @php $mmHasVoices = ! empty($minimaxVoices['thai']) || ! empty($minimaxVoices['cloned']) || ! empty($minimaxVoices['system']); @endphp
                 @if($mmHasVoices)
-                    <select @change="$refs.mmVoiceInput.value = $event.target.value"
+                    <select x-model="mmVoiceId"
                             class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm mb-1">
                         <option value="">— เลือกเสียงจากบัญชี MiniMax —</option>
                         @if(! empty($minimaxVoices['thai']))
@@ -149,10 +149,10 @@
                     </select>
                 @endif
                 <div class="flex gap-1">
-                    <input type="text" name="minimax_voice_id" x-ref="mmVoiceInput" value="{{ $settings->minimax_voice_id }}" placeholder="Thai_female_1_sample1"
+                    <input type="text" name="minimax_voice_id" x-model="mmVoiceId" placeholder="Thai_female_1_sample1"
                            class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
                     @if($mmHasVoices)
-                        <button type="button" @click="previewVoiceSample($refs.mmVoiceInput.value)" :disabled="mmSampleLoading"
+                        <button type="button" @click="previewVoiceSample(mmVoiceId)" :disabled="mmSampleLoading"
                                 class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs rounded-lg transition shrink-0">
                             <span x-show="!mmSampleLoading">🔊 ฟัง</span><span x-show="mmSampleLoading">⏳</span>
                         </button>
@@ -234,7 +234,13 @@
                     <span x-show="summaryPreviewLoading">⏳ กำลังสร้าง...</span>
                 </button>
             </div>
-            <audio x-show="summaryPreviewUrl" :src="summaryPreviewUrl" x-effect="summaryPreviewUrl; $nextTick(() => $el.load())" controls class="mt-2 w-full max-w-md"></audio>
+            <div x-show="summaryPreviewUrl" class="mt-2">
+                <audio :src="summaryPreviewUrl" x-effect="summaryPreviewUrl; $nextTick(() => $el.load())" controls class="w-full max-w-md"></audio>
+                <a :href="summaryPreviewUrl" download="fortune-summary-test.mp3"
+                   class="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-lg transition">
+                    ⬇️ ดาวน์โหลดไฟล์เสียง (.mp3)
+                </a>
+            </div>
             <span x-show="summaryPreviewError" x-text="summaryPreviewError" class="text-xs text-red-600 dark:text-red-400 block mt-1"></span>
         </div>
 
@@ -270,7 +276,13 @@
             </button>
             <span x-show="previewError" x-text="previewError" class="text-sm text-red-600 dark:text-red-400"></span>
         </div>
-        <audio x-show="previewUrl" :src="previewUrl" x-effect="previewUrl; $nextTick(() => $el.load())" controls class="mt-3 w-full max-w-md"></audio>
+        <div x-show="previewUrl" class="mt-3">
+            <audio :src="previewUrl" x-effect="previewUrl; $nextTick(() => $el.load())" controls class="w-full max-w-md"></audio>
+            <a :href="previewUrl" download="fortune-voice-test.mp3"
+               class="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-lg transition">
+                ⬇️ ดาวน์โหลดไฟล์เสียง (.mp3)
+            </a>
+        </div>
     </div>
 
     {{-- ════════════════ คลังเสียงระบบ ════════════════ --}}
@@ -559,6 +571,8 @@ function voiceManager() {
         // diagnostic (provider test / regenerate)
         busy: {},
         results: {},
+        // MiniMax voice id (dropdown + ช่องพิมพ์ bind ตัวเดียวกัน — เลือกจาก dropdown ได้จริง)
+        mmVoiceId: @json($settings->minimax_voice_id ?? ''),
         // MiniMax voice sample (ฟังตัวอย่างเสียงที่เลือก)
         mmSampleUrl: '',
         mmSampleLoading: false,
