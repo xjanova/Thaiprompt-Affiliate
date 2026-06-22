@@ -204,8 +204,8 @@
         <div x-show="drawer" x-cloak @click="closeDrawer()"
              style="position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.42); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);"></div>
 
-        {{-- เนื้อหา: sidebar + main --}}
-        <div style="display:flex; gap:22px; padding:4px clamp(12px,3vw,24px) 30px; flex:1; align-items:flex-start;">
+        {{-- เนื้อหา: sidebar + main (gutter แนวนอนกว้างขึ้นบนจอใหญ่ — กันเนื้อหาชิดขอบ) --}}
+        <div style="display:flex; gap:22px; padding:8px clamp(16px,3vw,40px) 34px; flex:1; align-items:flex-start;">
             <x-theme-v4.sidebar />
             <main style="flex:1; min-width:0;">
                 @yield('content')
