@@ -207,7 +207,7 @@
         {{-- เนื้อหา: sidebar + main — เนื้อหาเต็มกว้าง (ไม่ cap/ไม่ลอย) + gutter ชัด กันชิดขอบ --}}
         <div style="display:flex; gap:24px; padding:8px clamp(18px,3vw,56px) 36px; flex:1; align-items:flex-start;">
             <x-theme-v4.sidebar />
-            <main style="flex:1; min-width:0;">
+            <main style="flex:1; min-width:0; max-width:1800px; margin-inline:auto;">
                 @yield('content')
             </main>
         </div>
