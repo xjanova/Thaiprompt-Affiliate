@@ -145,7 +145,7 @@
                                 <div style="font-size:10.5px; font-weight:700; color:var(--ink2); padding:7px 11px 3px; letter-spacing:.2px;">{{ $slabel }}</div>
                             @else
                                 {{-- ลิงก์ย่อย + ปุ่มปักหมุด (ปุ่มเป็น sibling ของ <a> เพราะห้าม button ซ้อนใน a) --}}
-                                <div style="position:relative;">
+                                <div class="tp-mrow" style="position:relative;">
                                     <a href="{{ $surl }}"
                                        @click="if (isMobile) closeDrawer()"
                                        class="tp-sub-link"
@@ -154,9 +154,9 @@
                                         <span style="font-weight:{{ $sActive ? 700 : 500 }}; font-size:12.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $slabel }}</span>
                                         @if(!empty($sub['badge']))<span class="tp-pill tp-pill-soft" style="font-size:8.5px; padding:2px 6px;">{{ $sub['badge'] }}</span>@endif
                                     </a>
-                                    <button type="button" title="ปักหมุด"
+                                    <button type="button" title="ปักหมุด" class="tp-pin-btn"
                                             @click.prevent.stop="$store.pinnedMenus.toggle('admin', @js($surl), @js($sPinData))"
-                                            :style="$store.pinnedMenus.isPinned('admin', @js($surl)) ? 'color:var(--accent1); opacity:1;' : 'color:var(--ink2); opacity:.32;'"
+                                            :class="$store.pinnedMenus.isPinned('admin', @js($surl)) ? 'on' : ''"
                                             style="position:absolute; right:6px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; padding:4px; font-size:9.5px; line-height:1;">
                                         <i class="fas fa-thumbtack"></i>
                                     </button>
@@ -167,7 +167,7 @@
                 @else
                     {{-- เมนูเดี่ยว (ลิงก์ตรง) + ปุ่มปักหมุด --}}
                     @php $gPinData = ['label' => $glabel, 'url' => $gurl, 'icon' => $gicon]; @endphp
-                    <div style="position:relative;">
+                    <div class="tp-mrow" style="position:relative;">
                         <a href="{{ $gurl ?? '#' }}"
                            @click="if (isMobile) closeDrawer()"
                            class="tp-card"
@@ -182,9 +182,9 @@
                             @if($gbadge)<span class="tp-pill tp-pill-gold" style="font-size:9px; padding:2px 7px;">{{ $gbadge }}</span>@endif
                         </a>
                         @if($gurl && $gurl !== '#')
-                            <button type="button" title="ปักหมุด"
+                            <button type="button" title="ปักหมุด" class="tp-pin-btn"
                                     @click.prevent.stop="$store.pinnedMenus.toggle('admin', @js($gurl), @js($gPinData))"
-                                    :style="$store.pinnedMenus.isPinned('admin', @js($gurl)) ? 'color:var(--accent1); opacity:1;' : 'color:var(--ink2); opacity:.32;'"
+                                    :class="$store.pinnedMenus.isPinned('admin', @js($gurl)) ? 'on' : ''"
                                     style="position:absolute; right:9px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; padding:4px; font-size:10px; line-height:1;">
                                 <i class="fas fa-thumbtack"></i>
                             </button>

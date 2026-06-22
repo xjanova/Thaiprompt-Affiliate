@@ -234,6 +234,13 @@
 .tp-sub-link { display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:11px; background: var(--card-bg); text-decoration:none; transition: box-shadow .16s ease, color .16s ease; animation: tpSubItem .3s ease both; }
 .tp-sub-link:hover { box-shadow: var(--inset-sm); color: var(--ink); }
 
+/* ปุ่มปักหมุด — ซ่อนไว้ เผยตอน hover แถวเมนู (ไม่รก sidebar); อันที่ปักไว้ = ทองค้าง */
+.tp-mrow { position: relative; }
+.tp-pin-btn { opacity: 0; color: var(--ink2); transition: opacity .14s ease, color .14s ease; }
+.tp-mrow:hover .tp-pin-btn { opacity: .5; }
+.tp-pin-btn:hover { opacity: 1; color: var(--accent1); }
+.tp-pin-btn.on { opacity: 1; color: var(--accent1); }
+
 /* Theme Studio */
 /* panel layout เป็นคลาส (ไม่ใช่ inline) เพื่อให้ x-show คืนค่า display ถูก —
    ถ้าใส่ display:flex inline + x-cloak, Alpine x-show จะ cache เป็นว่าง แล้วคืนเป็น block (gap หาย) */

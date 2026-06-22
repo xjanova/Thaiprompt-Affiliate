@@ -207,7 +207,7 @@
         {{-- เนื้อหา: sidebar + main (gutter แนวนอนกว้าง + จำกัดความกว้างเนื้อหา กันยืดเต็มจอ/ชิดขอบ) --}}
         <div style="display:flex; gap:24px; padding:8px clamp(18px,4vw,72px) 36px; flex:1; align-items:flex-start;">
             <x-theme-v4.sidebar />
-            <main style="flex:1; min-width:0; max-width:1680px; margin-inline:auto;">
+            <main style="flex:1; min-width:0; max-width:1440px; margin-inline:auto;">
                 @yield('content')
             </main>
         </div>
