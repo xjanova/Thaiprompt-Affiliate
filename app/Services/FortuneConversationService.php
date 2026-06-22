@@ -17105,6 +17105,15 @@ PROMPT;
             }
         }
 
+        // 🚨 (2026-06-22) คำถามราคา/ค่าดูดวง — buying signal สูงสุด ต้องตอบทันที ห้ามรอ buffer
+        //   owner spec: "ลูกค้าถาม ค่าดูเท่าไหร่ ... ต้องรีบตอบ ไม่ต้องรอ"
+        //   ใช้ looksLikePricingQuestion (2-tier กัน false positive: "ลงทุนเท่าไหร่ดี" ไม่ match)
+        //   หมายเหตุ: เจตนา "ดูดวง" อื่น ๆ (ทำนาย/ไพ่/เปิดไพ่/ดูไพ่/celtic/99/39/deep/ละเอียด/พร้อม)
+        //   ถูก command keywords + shouldBypassSilence ครอบให้ตอบทันทีอยู่แล้ว — ช่องโหว่จริงคือ "ราคา"
+        if ($this->looksLikePricingQuestion($msg)) {
+            return false;
+        }
+
         // 🚨 ลูกค้าพร้อมซื้อ (bypass silence) — ห้ามตัดราย
         if (\App\Models\FortuneCustomerPersona::shouldBypassSilence($msg)) {
             return false;

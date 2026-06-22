@@ -17,11 +17,13 @@ use Illuminate\Support\Facades\Log;
  * 📦 (2026-05-20 Phase 4b) Process buffered chat messages — chat path
  *
  * Flow:
- *   1. tryAIChatResponse append message ลง buffer + dispatch job (delayed N sec)
+ *   1. tryAIChatResponse append message ลง buffer + dispatch job (delayed N+1 sec)
  *   2. ถ้าลูกค้าพิมพ์อีก → append + dispatch อีก job
- *   3. Job ตัวสุดท้าย fire → buffer.isReadyToFlush(N) → flush + tryAIChatResponse (bypass buffer)
+ *   3. Job แรกที่ fire หลังครบ N วิ "นับจากข้อความแรก" → flush + tryAIChatResponse (bypass buffer)
  *
- * Idempotent: ตัวก่อนหน้า peek เห็น last_at ยังใหม่ → skip
+ * 🌙 (2026-06-22) Fixed-window: isReadyToFlush(..., fromFirstMessage=true) → เก็บครบ N วิ
+ *    จากข้อความแรกแล้วตอบทีเดียว (เพดานตายตัว ไม่ reset เมื่อลูกค้าพิมพ์ใหม่) — owner spec "เก็บแค่ N วิ"
+ * Idempotent: job ตัวถัด ๆ มา peek เห็น buffer ว่าง (ถูก flush ไปแล้ว) → skip
  */
 class ProcessBufferedChatMessageJob implements ShouldQueue
 {
@@ -44,7 +46,8 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
         $buffer = app(MessageBuffer::class);
         $scope = 'chat';
 
-        if (! $buffer->isReadyToFlush($scope, $this->userId, $this->windowSeconds)) {
+        // 🌙 (2026-06-22) fromFirstMessage=true → fixed window จากข้อความแรก (ไม่ reset / กันเกิน N วิ)
+        if (! $buffer->isReadyToFlush($scope, $this->userId, $this->windowSeconds, true)) {
             Log::debug('ProcessBufferedChatMessageJob: buffer ยังใหม่ → skip', [
                 'user_id' => $this->userId,
                 'window' => $this->windowSeconds,

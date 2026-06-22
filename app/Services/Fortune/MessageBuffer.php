@@ -113,19 +113,36 @@ class MessageBuffer
      * เช็คว่า buffer "พร้อม flush" หรือยัง — ใช้ใน Job เพื่อตัดสินใจ
      *
      * @param  int  $windowSeconds  ระยะเวลา debounce
-     * @return bool  true ถ้า last message มาก่อน windowSeconds (พร้อม flush)
+     * @param  bool  $fromFirstMessage  โหมดการนับเวลา:
+     *                                   • true  = นับจาก "ข้อความแรก" (fixed window / เพดาน) —
+     *                                             เก็บได้สูงสุด windowSeconds นับจากข้อความแรกแล้ว
+     *                                             ตอบเสมอ. การพิมพ์ใหม่ "ไม่ reset" นาฬิกา → กันไม่ให้
+     *                                             รวมเลยเกินค่าที่ตั้ง (owner spec 2026-06-22 "เก็บแค่ N วิ")
+     *                                   • false = นับจาก "ข้อความล่าสุด" (silence-based debounce, legacy)
+     * @return bool  true ถ้าพร้อม flush
      */
-    public function isReadyToFlush(string $scope, string $userId, int $windowSeconds): bool
+    public function isReadyToFlush(string $scope, string $userId, int $windowSeconds, bool $fromFirstMessage = false): bool
     {
         $buf = $this->peek($scope, $userId);
         if (empty($buf)) {
             return false;
         }
 
-        $lastAt = end($buf)['at'] ?? 0;
-        $elapsed = microtime(true) - $lastAt;
+        $now = microtime(true);
 
-        return $elapsed >= $windowSeconds;
+        // ✅ (2026-06-22) Fixed-window mode — วัดจาก "ข้อความแรก"
+        //   เดิม (silence-based) วัดจากข้อความล่าสุด → ลูกค้าพิมพ์เรื่อย ๆ ห่าง < window
+        //   = นาฬิกา reset ทุกครั้ง → รอรวมนานเกิน window จริง (เคส 60s บานเป็น 2-3 นาที)
+        //   ใหม่: เก็บครบ window จากข้อความแรกแล้วตอบทีเดียว — เพดานตายตัว ไม่ reset
+        if ($fromFirstMessage) {
+            $firstAt = $buf[0]['at'] ?? $now;
+
+            return ($now - $firstAt) >= $windowSeconds;
+        }
+
+        $lastAt = end($buf)['at'] ?? 0;
+
+        return ($now - $lastAt) >= $windowSeconds;
     }
 
     protected function key(string $scope, string $userId): string

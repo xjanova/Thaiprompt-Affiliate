@@ -595,8 +595,9 @@
                     <div class="text-xs text-gray-600 dark:text-gray-400 mt-2 space-y-1">
                         <p>💡 <strong>0 = ปิด feature</strong> (บอทตอบทันทีทุกข้อความ — behavior เดิม)</p>
                         <p>💡 <strong>3-5 วินาที</strong> — รวมข้อความที่ลูกค้าพิมพ์ติด ๆ ก่อนตอบ</p>
-                        <p>💡 <strong>60 วินาที = โหมด "รอ 1 นาทีแล้วตอบทีเดียว"</strong> — รอรวมข้อความทั้งหมดใน 1 นาที แล้วตอบครั้งเดียว (ประหยัด token + เป็นธรรมชาติ)</p>
-                        <p class="text-green-600 dark:text-green-400">⚡ ข้อความที่แสดงเจตนาดูดวง (ดูดวง/ทำนาย/เปิดไพ่/ไพ่/deep/ละเอียด/พร้อม) + payment/command → <strong>bypass ตอบทันที</strong> ไม่ต้องรอ</p>
+                        <p>💡 <strong>60 วินาที = โหมด "รอ 1 นาทีแล้วตอบทีเดียว"</strong> — เก็บข้อความ <strong>นับจากข้อความแรก</strong> จนครบเวลาที่ตั้ง แล้วตอบครั้งเดียว (ประหยัด token + เป็นธรรมชาติ)</p>
+                        <p class="text-green-600 dark:text-green-400">⏱️ <strong>เพดานตายตัว</strong> — นับจากข้อความแรก ไม่ reset เมื่อลูกค้าพิมพ์ใหม่ → รวมไม่เกินเวลาที่ตั้ง (+ ไม่กี่วิสำหรับ AI gen)</p>
+                        <p class="text-green-600 dark:text-green-400">⚡ ถามราคา/ค่าดูดวง (ค่าดู/ราคา/กี่บาท) + เจตนาดูดวง (ดูดวง/ทำนาย/เปิดไพ่/ไพ่/deep/ละเอียด/พร้อม) + payment/command → <strong>bypass ตอบทันที</strong> ไม่ต้องรอ buffer</p>
                         <p class="text-amber-600 dark:text-amber-400">⚠️ ต้องมี queue worker (redis) ทำงาน — ถ้า worker ล่ม ข้อความจะค้างไม่ตอบ</p>
                     </div>
                 </div>
