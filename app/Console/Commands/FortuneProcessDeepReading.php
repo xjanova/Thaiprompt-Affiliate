@@ -270,6 +270,20 @@ class FortuneProcessDeepReading extends Command
                                 $reading->setConversationState('reading_ready_sent', true);
                                 $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
                                 $reading->setConversationState('delivered_by_push', true);
+
+                                // 🆕 (2026-06-22 FTU-260622-K3440) เปิด Deep Pro Session หลังส่งคำทำนาย FB
+                                //   command path เดิมไม่เคย enterProSession → pro_session_active=null
+                                //   → follow-up ตกไป chat path (upsell + heavy/OOM) แทน Q&A เฉพาะทาง
+                                //   non-blocking: fail = คำทำนายส่งไปแล้ว ไม่ revert
+                                try {
+                                    (new \App\Services\FortuneConversationService($settings))
+                                        ->enterDeepProSessionFor($reading);
+                                } catch (\Throwable $proErr) {
+                                    Log::warning('fortune:process-deep: enterDeepProSession ล้มเหลว (non-blocking)', [
+                                        'reading_id' => $readingId,
+                                        'error' => $proErr->getMessage(),
+                                    ]);
+                                }
                             }
                         } else {
                             $notifySent = $channelManager->sendResponse($platform, $userId, [

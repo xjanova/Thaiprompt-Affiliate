@@ -5218,6 +5218,28 @@ class FortuneConversationService
     }
 
     /**
+     * 🆕 (2026-06-22) Public wrapper — เปิด Deep Pro Session หลังส่งคำทำนาย
+     *
+     * ใช้โดย delivery path ที่อยู่นอกคลาส (fortune:process-deep command / Job) ซึ่งส่งคำทำนาย
+     * เต็มเองแล้ว แต่ enterProSession เป็น protected → เรียกตรงไม่ได้
+     *
+     * เคส FTU-260622-K3440: Deep 39 ส่งผ่าน command path → pro_session_active=null
+     *   → follow-up ตกไป chat path (upsell + heavy/OOM) แทน Pro Session Q&A เฉพาะทาง
+     *   Fix: command เรียก method นี้หลัง deliver สำเร็จ → follow-up เข้า handleProSession ถูกทาง
+     *
+     * @param  FortuneReading  $reading  reading ที่ส่งคำทำนายแล้ว
+     */
+    public function enterDeepProSessionFor(FortuneReading $reading): void
+    {
+        // กันเปิดซ้ำ — ถ้า session active อยู่แล้วไม่ต้องทำใหม่ (idempotent)
+        if ($reading->getConversationState('pro_session_active', false)) {
+            return;
+        }
+
+        $this->enterProSession($reading, 'deep');
+    }
+
+    /**
      * 🆕 (2026-05-08) ลูกค้ากดปุ่ม "39 บาท" / "99 บาท" → ข้าม tier menu
      *
      * เดิม: ลูกค้ากดปุ่ม TIER_DEEP_39 → "ดูดวง 39 บาท" → tier menu (ต้องกด 2 ครั้ง)
@@ -12986,6 +13008,46 @@ class FortuneConversationService
                 ]);
 
                 return $this->askForSlipMessage(null);
+            }
+
+            // 🆕 FIX C (2026-06-22 FTU-260622-R1626) กันโอนซ้ำเปิดดวงใหม่อัตโนมัติ
+            //   owner spec: ลูกค้าโอนซ้ำ (มักยอดเก่าเพราะเข้าใจผิด แต่สลิป/QR ใหม่) หลังเพิ่งได้ดวงไป
+            //   → ห้าม auto สร้างดวงใหม่ (กัน double-charge) → ส่งให้แอดมินตัดสินก่อน
+            //   narrow: ยิงเฉพาะมี paid reading จ่ายเงินภายใน N นาทีล่าสุด (เพิ่งจบ = น่าจะซ้ำ)
+            //   หลัง N นาที = เปิดดวงใหม่ได้ปกติ. guard เดิม (active/recoverable/activeConversation)
+            //   ไม่จับ "completed เพิ่งจบ" → ด่านนี้ปิดช่องว่างนั้น
+            $dupGuardMin = (int) ($this->settings->celtic_duplicate_guard_minutes ?? 30);
+            if ($dupGuardMin > 0) {
+                $recentPaid = FortuneReading::where(function ($q) use ($userId) {
+                    $q->where('facebook_user_id', $userId)->orWhere('platform_user_id', $userId);
+                })
+                    ->where('is_paid', true)
+                    ->whereNotNull('paid_at')
+                    ->where('paid_at', '>=', now()->subMinutes($dupGuardMin))
+                    ->orderByDesc('paid_at')
+                    ->first();
+
+                if ($recentPaid) {
+                    Log::warning('💎 FIX C: โอนซ้ำหลังเพิ่งจ่าย → ไม่ auto เปิดดวงใหม่ ส่งแอดมินเช็ค', [
+                        'platform' => $platform, 'user_id' => $userId,
+                        'recent_reading_id' => $recentPaid->id,
+                        'recent_paid_at' => (string) $recentPaid->paid_at,
+                        'guard_min' => $dupGuardMin,
+                    ]);
+
+                    try {
+                        $recentPaid->setConversationState('duplicate_transfer_flagged_at', now()->toIso8601String());
+                    } catch (\Throwable $e) {
+                        // non-blocking
+                    }
+
+                    return [
+                        'action' => 'slipok_duplicate_transfer_admin',
+                        'message' => '🙏 แม่หมอได้รับสลิปแล้วนะคะ — แต่เห็นว่าเจ้าชะตาเพิ่งโอนค่าครูไปก่อนหน้านี้ '
+                            .'เดี๋ยวแม่หมอให้แอดมินตรวจสอบให้นะคะ ว่าเป็นการโอนซ้ำหรืออยากดูเพิ่ม จะรีบติดต่อกลับค่ะ ✨',
+                        'reading' => $recentPaid,
+                    ];
+                }
             }
 
             // ดาวน์โหลด bytes (mirror handleReturningSlipImage)
