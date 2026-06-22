@@ -158,7 +158,7 @@
                         </button>
                     @endif
                 </div>
-                <audio x-show="mmSampleUrl" :src="mmSampleUrl" controls class="mt-1 w-full max-w-xs"></audio>
+                <audio x-show="mmSampleUrl" :src="mmSampleUrl" x-effect="mmSampleUrl; $nextTick(() => $el.load())" controls class="mt-1 w-full max-w-xs"></audio>
                 <span x-show="mmSampleError" x-text="mmSampleError" class="text-xs text-red-600 dark:text-red-400"></span>
             </div>
             <div>
@@ -234,7 +234,7 @@
                     <span x-show="summaryPreviewLoading">⏳ กำลังสร้าง...</span>
                 </button>
             </div>
-            <audio x-show="summaryPreviewUrl" :src="summaryPreviewUrl" controls class="mt-2 w-full max-w-md"></audio>
+            <audio x-show="summaryPreviewUrl" :src="summaryPreviewUrl" x-effect="summaryPreviewUrl; $nextTick(() => $el.load())" controls class="mt-2 w-full max-w-md"></audio>
             <span x-show="summaryPreviewError" x-text="summaryPreviewError" class="text-xs text-red-600 dark:text-red-400 block mt-1"></span>
         </div>
 
@@ -270,7 +270,7 @@
             </button>
             <span x-show="previewError" x-text="previewError" class="text-sm text-red-600 dark:text-red-400"></span>
         </div>
-        <audio x-show="previewUrl" :src="previewUrl" controls class="mt-3 w-full max-w-md"></audio>
+        <audio x-show="previewUrl" :src="previewUrl" x-effect="previewUrl; $nextTick(() => $el.load())" controls class="mt-3 w-full max-w-md"></audio>
     </div>
 
     {{-- ════════════════ คลังเสียงระบบ ════════════════ --}}
@@ -357,7 +357,7 @@
                                             โมเดล: <span x-text="clipState.ttsProvider || '-'"></span>
                                         </div>
                                         <div class="text-xs text-amber-600 dark:text-amber-400 mt-1" x-show="!clipState.ttsUrl">ยังไม่มี — กด “🎙️ สร้างเสียง AI” ด้านบน</div>
-                                        <audio x-show="clipState.ttsUrl" :src="clipState.ttsUrl" controls preload="none" class="w-full mt-2"></audio>
+                                        <audio x-show="clipState.ttsUrl" :src="clipState.ttsUrl" x-effect="clipState.ttsUrl; $nextTick(() => $el.load())" controls preload="none" class="w-full mt-2"></audio>
                                         <button type="button" x-show="clipState.ttsUrl" @click="deleteAudio({{ $clip->id }}, 'tts')"
                                                 class="mt-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 text-red-700 dark:text-red-300 text-xs rounded transition">🗑️ ลบเสียง AI</button>
                                     </div>
@@ -375,7 +375,7 @@
                                             ไฟล์: <span x-text="clipState.uploadName || 'เสียงที่อัปโหลด'"></span>
                                         </div>
                                         <div class="text-xs text-amber-600 dark:text-amber-400 mt-1" x-show="!clipState.uploadUrl">ยังไม่มี — อัปโหลดไฟล์ด้านล่าง</div>
-                                        <audio x-show="clipState.uploadUrl" :src="clipState.uploadUrl" controls preload="none" class="w-full mt-2"></audio>
+                                        <audio x-show="clipState.uploadUrl" :src="clipState.uploadUrl" x-effect="clipState.uploadUrl; $nextTick(() => $el.load())" controls preload="none" class="w-full mt-2"></audio>
                                         <button type="button" x-show="clipState.uploadUrl" @click="deleteAudio({{ $clip->id }}, 'upload')"
                                                 class="mt-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 text-red-700 dark:text-red-300 text-xs rounded transition">🗑️ ลบไฟล์อัปโหลด</button>
 
@@ -394,7 +394,7 @@
                                 {{-- 🔊 เสียงจริงที่จะส่งลูกค้า (สล็อตที่เลือกอยู่) --}}
                                 <div class="mt-3" x-show="(clipState.activeSource === 'upload' ? clipState.uploadUrl : clipState.ttsUrl)">
                                     <div class="text-xs font-medium text-emerald-700 dark:text-emerald-300 mb-1">🔊 เสียงจริงที่จะส่งลูกค้า (สล็อตที่เลือก — กดเล่นเพื่อฟัง):</div>
-                                    <audio :src="(clipState.activeSource === 'upload' ? clipState.uploadUrl : clipState.ttsUrl)" controls preload="none" class="w-full max-w-md"></audio>
+                                    <audio :src="(clipState.activeSource === 'upload' ? clipState.uploadUrl : clipState.ttsUrl)" x-effect="clipState.activeSource; clipState.ttsUrl; clipState.uploadUrl; $nextTick(() => $el.load())" controls preload="none" class="w-full max-w-md"></audio>
                                 </div>
                             </div>
                         </div>
@@ -539,9 +539,10 @@ function voiceManager() {
             @foreach($clipsByGroup->flatten() as $clip)
                 {{ $clip->id }}: {
                     loading: false, msg: '', ok: false,
-                    ttsUrl: @json($clip->hasTtsAudio() ? $clip->audio_url : ''),
+                    {{-- cache-bust ตอนโหลดหน้า (?t=time) — กันเบราว์เซอร์เล่นเสียงเก่าจาก cache หลังเจน/อัปโหลดใหม่ --}}
+                    ttsUrl: @json($clip->hasTtsAudio() ? $clip->audio_url . (str_contains($clip->audio_url, '?') ? '&' : '?') . 't=' . time() : ''),
                     ttsProvider: @json($clip->audio_provider ?? ''),
-                    uploadUrl: @json($clip->hasUploadAudio() ? $clip->upload_audio_url : ''),
+                    uploadUrl: @json($clip->hasUploadAudio() ? $clip->upload_audio_url . (str_contains($clip->upload_audio_url, '?') ? '&' : '?') . 't=' . time() : ''),
                     uploadName: @json($clip->upload_original_name ?? ''),
                     activeSource: @json($clip->activeSource()),
                     settingActive: false,
@@ -691,7 +692,10 @@ function voiceManager() {
                     headers: { 'X-CSRF-TOKEN': this.CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify({ text: 'สวัสดีค่ะ ดิฉันแม่หมอจันทรา ทดสอบเสียงนะคะ' }),
                 });
-                this.results[name] = await res.json();
+                const r = await res.json();
+                // cache-bust เสียงทดสอบ — กดทดสอบใหม่ต้องได้เสียงสดเสมอ
+                if (r && r.audio_url) r.audio_url += (r.audio_url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                this.results[name] = r;
             } catch (e) {
                 this.results[name] = { success: false, error: 'Fetch error: ' + e.message };
             } finally {
