@@ -110,14 +110,14 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">MiniMax — model <span class="text-xs text-emerald-600 dark:text-emerald-400">(ล่าสุด: speech-2.8-hd)</span></label>
-                <input type="text" name="minimax_model" value="{{ $settings->minimax_model }}" placeholder="speech-2.8-hd" list="minimax_models"
+                {{-- dropdown เลือกโมเดล (datalist เดิมกดแล้วบางเบราว์เซอร์ไม่โชว์) + ช่องพิมพ์เองได้ (bind ตัวเดียวกัน) --}}
+                <select x-model="mmModel" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm mb-1">
+                    @foreach(['speech-2.8-hd','speech-2.8-turbo','speech-2.6-hd','speech-2.6-turbo','speech-02-hd','speech-02-turbo','speech-01-hd','speech-01-turbo'] as $m)
+                        <option value="{{ $m }}">{{ $m }}</option>
+                    @endforeach
+                </select>
+                <input type="text" name="minimax_model" x-model="mmModel" placeholder="speech-2.8-hd (หรือพิมพ์ชื่อโมเดลเอง)"
                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                <datalist id="minimax_models">
-                    <option value="speech-2.8-hd"><option value="speech-2.8-turbo">
-                    <option value="speech-2.6-hd"><option value="speech-2.6-turbo">
-                    <option value="speech-02-hd"><option value="speech-02-turbo">
-                    <option value="speech-01-hd"><option value="speech-01-turbo">
-                </datalist>
                 <div class="flex items-center justify-between mb-1 mt-2">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">MiniMax — voice id</label>
                     {{-- 🔄 รีเฟรชรายชื่อเสียง — กดหลังไปสร้าง/โคลนเสียงใหม่ที่เว็บ MiniMax --}}
@@ -569,7 +569,8 @@ function voiceManager() {
         // diagnostic (provider test / regenerate)
         busy: {},
         results: {},
-        // MiniMax voice id (dropdown + ช่องพิมพ์ bind ตัวเดียวกัน — เลือกจาก dropdown ได้จริง)
+        // MiniMax model + voice id (dropdown + ช่องพิมพ์ bind ตัวเดียวกัน — เลือกจาก dropdown ได้จริง)
+        mmModel: @json($settings->minimax_model ?: 'speech-2.8-hd'),
         mmVoiceId: @json($settings->minimax_voice_id ?? ''),
         // MiniMax voice sample (ฟังตัวอย่างเสียงที่เลือก)
         mmSampleUrl: '',
