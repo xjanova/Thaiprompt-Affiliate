@@ -2,6 +2,7 @@
  | Sidebar — ธีมนวลทองคำ V4
  | เมนูมาจาก config/menus.php → MenuService::getMenuForRole('admin') (single source of truth)
  | อยู่ใน x-data="tpShell" จึงใช้ isMobile / drawer / sidebarHidden / closeDrawer ได้
+ | + ระบบปักหมุด (Alpine $store.pinnedMenus, localStorage) + active หน้าย่อยแบบ URL-prefix
  --}}
 @php
     $menuService = app(\App\Services\MenuService::class);
@@ -10,11 +11,20 @@
     $curRoute = request()->route() ? request()->route()->getName() : null;
     $curUrl   = rtrim(url()->current(), '/');
 
+    /**
+     * เมนูนี้ "active" ไหม — รองรับหน้าย่อย (sub-page) ด้วย URL-prefix
+     * เช่น อยู่ /admin/fortune/users/facebook/123 → เมนู /admin/fortune/users ติด active ด้วย
+     */
     $itemActive = function (array $it) use ($curRoute, $curUrl) {
         $r = $it['route'] ?? null;
         $u = $it['url'] ?? null;
         if ($r && $curRoute === $r) return true;
-        if ($u && $u !== '#' && rtrim($u, '/') === $curUrl) return true;
+        if ($u && $u !== '#') {
+            $iu = rtrim($u, '/');
+            if ($iu !== '' && $iu === $curUrl) return true;
+            // หน้าปัจจุบันอยู่ "ใต้" URL ของเมนูนี้ (sub-page) → active
+            if ($iu !== '' && str_starts_with($curUrl . '/', $iu . '/')) return true;
+        }
         return false;
     };
     $groupActive = function (array $g) use ($itemActive) {
@@ -45,6 +55,42 @@
     {{-- รายการเมนู (เลื่อนได้) --}}
     <div x-data="{ openId: @js($activeGroupId) }"
          style="position:relative; flex:1; min-height:0; overflow-y:auto; overflow-x:visible; display:flex; flex-direction:column; gap:7px; padding:2px;">
+
+        {{-- ===== 📌 เมนูที่ปักหมุด (ดึงจาก $store.pinnedMenus — localStorage) ===== --}}
+        <div x-show="$store.pinnedMenus.getPinnedMenus('admin').length > 0" x-cloak
+             style="display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; align-items:center; gap:7px; padding:2px 6px 2px;">
+                <i class="fas fa-thumbtack" style="color:var(--accent1); font-size:11px;"></i>
+                <span style="font-size:10.5px; font-weight:700; color:var(--ink2); letter-spacing:.3px;">ปักหมุด</span>
+                <span class="tp-num" style="font-size:10px; color:var(--ink2);"
+                      x-text="'(' + $store.pinnedMenus.getPinnedMenus('admin').length + ')'"></span>
+                <button @click="if (confirm('ยกเลิกปักหมุดทั้งหมด?')) $store.pinnedMenus.clearAll('admin')" type="button"
+                        title="ยกเลิกปักหมุดทั้งหมด"
+                        style="margin-left:auto; border:0; background:transparent; cursor:pointer; color:var(--ink2); opacity:.55; font-size:11px; padding:2px 4px;">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+
+            <template x-for="p in $store.pinnedMenus.getPinnedMenus('admin')" :key="p.key">
+                <div style="position:relative;">
+                    <a :href="p.url" @click="if (isMobile) closeDrawer()" class="tp-card"
+                       :style="(location.pathname === p.url || (p.url && location.pathname.startsWith(p.url.replace(/\/+$/,'') + '/'))) ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);'"
+                       style="display:flex; align-items:center; gap:10px; padding:8px 30px 8px 10px; border-radius:13px; text-decoration:none; color:var(--ink);">
+                        <span class="tp-tile" style="width:28px; height:28px; border-radius:9px; font-size:12px;">
+                            <template x-if="p.icon && p.icon.includes('fa-')"><i :class="p.icon"></i></template>
+                            <template x-if="!(p.icon && p.icon.includes('fa-'))"><span x-text="p.icon || '📌'"></span></template>
+                        </span>
+                        <span style="font-size:12.5px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" x-text="p.label"></span>
+                    </a>
+                    <button type="button" @click.prevent.stop="$store.pinnedMenus.unpin('admin', p.key)" title="ยกเลิกปักหมุด"
+                            style="position:absolute; right:7px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; color:#d9534f; opacity:.55; font-size:11px; padding:4px;">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+            </template>
+
+            <hr class="tp-divider" style="margin:6px 4px 2px;">
+        </div>
 
         @foreach($menus as $group)
             @php
@@ -90,6 +136,7 @@
                                 $sActive = $itemActive($sub);
                                 $isDivider = ($slabel === '---' || $slabel === '');
                                 $isHeader  = !$isDivider && empty($surl);
+                                $sPinData  = ['label' => $slabel, 'url' => $surl, 'icon' => $gicon];
                             @endphp
 
                             @if($isDivider)
@@ -97,32 +144,52 @@
                             @elseif($isHeader)
                                 <div style="font-size:10.5px; font-weight:700; color:var(--ink2); padding:7px 11px 3px; letter-spacing:.2px;">{{ $slabel }}</div>
                             @else
-                                <a href="{{ $surl }}"
-                                   @click="if (isMobile) closeDrawer()"
-                                   class="tp-sub-link"
-                                   style="{{ $sActive ? 'box-shadow:var(--inset-sm); color:var(--ink);' : 'color:var(--ink2);' }}">
-                                    <span style="width:6px; height:6px; flex:none; border-radius:50%; background:{{ $sActive ? 'linear-gradient(135deg,var(--accent1),var(--accent2))' : 'var(--ink2)' }};"></span>
-                                    <span style="font-weight:{{ $sActive ? 700 : 500 }}; font-size:12.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $slabel }}</span>
-                                    @if(!empty($sub['badge']))<span class="tp-pill tp-pill-soft" style="font-size:8.5px; padding:2px 6px;">{{ $sub['badge'] }}</span>@endif
-                                </a>
+                                {{-- ลิงก์ย่อย + ปุ่มปักหมุด (ปุ่มเป็น sibling ของ <a> เพราะห้าม button ซ้อนใน a) --}}
+                                <div style="position:relative;">
+                                    <a href="{{ $surl }}"
+                                       @click="if (isMobile) closeDrawer()"
+                                       class="tp-sub-link"
+                                       style="padding-right:28px; {{ $sActive ? 'box-shadow:var(--inset-sm); color:var(--ink);' : 'color:var(--ink2);' }}">
+                                        <span style="width:6px; height:6px; flex:none; border-radius:50%; background:{{ $sActive ? 'linear-gradient(135deg,var(--accent1),var(--accent2))' : 'var(--ink2)' }};"></span>
+                                        <span style="font-weight:{{ $sActive ? 700 : 500 }}; font-size:12.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $slabel }}</span>
+                                        @if(!empty($sub['badge']))<span class="tp-pill tp-pill-soft" style="font-size:8.5px; padding:2px 6px;">{{ $sub['badge'] }}</span>@endif
+                                    </a>
+                                    <button type="button" title="ปักหมุด"
+                                            @click.prevent.stop="$store.pinnedMenus.toggle('admin', @js($surl), @js($sPinData))"
+                                            :style="$store.pinnedMenus.isPinned('admin', @js($surl)) ? 'color:var(--accent1); opacity:1;' : 'color:var(--ink2); opacity:.32;'"
+                                            style="position:absolute; right:6px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; padding:4px; font-size:9.5px; line-height:1;">
+                                        <i class="fas fa-thumbtack"></i>
+                                    </button>
+                                </div>
                             @endif
                         @endforeach
                     </div>
                 @else
-                    {{-- เมนูเดี่ยว (ลิงก์ตรง) --}}
-                    <a href="{{ $gurl ?? '#' }}"
-                       @click="if (isMobile) closeDrawer()"
-                       class="tp-card"
-                       style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:15px; text-decoration:none; color:var(--ink); {{ $gActive ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);' }}">
-                        <span class="tp-tile" style="width:33px; height:33px; border-radius:11px; font-size:15px;">
-                            @if(str_contains($gicon,'fa-'))<i class="{{ $gicon }}"></i>@else{!! $gicon !!}@endif
-                        </span>
-                        <span style="line-height:1.15; flex:1; min-width:0;">
-                            <span style="display:block; font-weight:600; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $glabel }}</span>
-                            <span style="display:block; font-size:10px; color:var(--ink2); font-weight:500; letter-spacing:.2px;">{{ $gen }}</span>
-                        </span>
-                        @if($gbadge)<span class="tp-pill tp-pill-gold" style="font-size:9px; padding:2px 7px;">{{ $gbadge }}</span>@endif
-                    </a>
+                    {{-- เมนูเดี่ยว (ลิงก์ตรง) + ปุ่มปักหมุด --}}
+                    @php $gPinData = ['label' => $glabel, 'url' => $gurl, 'icon' => $gicon]; @endphp
+                    <div style="position:relative;">
+                        <a href="{{ $gurl ?? '#' }}"
+                           @click="if (isMobile) closeDrawer()"
+                           class="tp-card"
+                           style="display:flex; align-items:center; gap:12px; padding:10px 34px 10px 12px; border-radius:15px; text-decoration:none; color:var(--ink); {{ $gActive ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);' }}">
+                            <span class="tp-tile" style="width:33px; height:33px; border-radius:11px; font-size:15px;">
+                                @if(str_contains($gicon,'fa-'))<i class="{{ $gicon }}"></i>@else{!! $gicon !!}@endif
+                            </span>
+                            <span style="line-height:1.15; flex:1; min-width:0;">
+                                <span style="display:block; font-weight:600; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $glabel }}</span>
+                                <span style="display:block; font-size:10px; color:var(--ink2); font-weight:500; letter-spacing:.2px;">{{ $gen }}</span>
+                            </span>
+                            @if($gbadge)<span class="tp-pill tp-pill-gold" style="font-size:9px; padding:2px 7px;">{{ $gbadge }}</span>@endif
+                        </a>
+                        @if($gurl && $gurl !== '#')
+                            <button type="button" title="ปักหมุด"
+                                    @click.prevent.stop="$store.pinnedMenus.toggle('admin', @js($gurl), @js($gPinData))"
+                                    :style="$store.pinnedMenus.isPinned('admin', @js($gurl)) ? 'color:var(--accent1); opacity:1;' : 'color:var(--ink2); opacity:.32;'"
+                                    style="position:absolute; right:9px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; padding:4px; font-size:10px; line-height:1;">
+                                <i class="fas fa-thumbtack"></i>
+                            </button>
+                        @endif
+                    </div>
                 @endif
             </div>
         @endforeach
