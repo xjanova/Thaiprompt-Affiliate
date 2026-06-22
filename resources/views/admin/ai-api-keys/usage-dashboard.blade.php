@@ -1,44 +1,59 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div x-data="aiUsageDashboard()" x-init="init()" class="space-y-6">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+{{-- ===== หน้า "สถิติการใช้งาน AI API" ธีม V4 นวลทองคำ (re-skin — เก็บ Chart.js) ===== --}}
+{{-- container หลัก: เว้นระยะแนวตั้งสม่ำเสมอ + Alpine root เดิม --}}
+<div x-data="aiUsageDashboard()" x-init="init()" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header: eyebrow + ชื่อหน้า + ปุ่มกลับ ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">📊 {{ $pageTitle }}</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-1">การใช้ AI ของระบบดูดวง — token / requests / failed ตามจริงต่อคีย์</p>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">
+                หลังบ้าน · AI · สถิติการใช้งาน API
+            </div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0; display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-chart-line" style="color:var(--accent1);"></i> {{ $pageTitle }}
+            </h1>
+            <p class="tp-muted" style="margin:6px 0 0; font-size:13px; max-width:680px; line-height:1.55;">
+                การใช้ AI ของระบบดูดวง — token / requests / failed ตามจริงต่อคีย์
+            </p>
         </div>
-        <a href="{{ route('admin.ai-api-keys.index') }}"
-           class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-2 w-fit">
-            ← กลับไปจัดการคีย์
+        <a href="{{ route('admin.ai-api-keys.index') }}" class="tp-btn">
+            <i class="fas fa-arrow-left"></i> กลับไปจัดการคีย์
         </a>
     </div>
 
-    {{-- Filters --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">🔧 ตัวกรอง</h2>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    {{-- ===== ตัวกรอง ===== --}}
+    <div class="tp-card">
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700; margin-bottom:14px;">
+            <i class="fas fa-sliders" style="color:var(--accent1);"></i> ตัวกรอง
+        </div>
+
+        {{-- วันที่ + quick range --}}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">วันที่เริ่ม</label>
-                <input type="date" x-model="start"
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">วันที่เริ่ม</label>
+                <div class="tp-well" style="padding:0;">
+                    <input type="date" x-model="start" class="tp-input"
+                           style="width:100%; background:transparent; border:0; padding:9px 12px;">
+                </div>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">วันที่สิ้นสุด</label>
-                <input type="date" x-model="end"
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">วันที่สิ้นสุด</label>
+                <div class="tp-well" style="padding:0;">
+                    <input type="date" x-model="end" class="tp-input"
+                           style="width:100%; background:transparent; border:0; padding:9px 12px;">
+                </div>
             </div>
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Quick range
-                </label>
-                <div class="flex flex-wrap gap-2">
-                    <button @click="setRange(1)" class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg">วันนี้</button>
-                    <button @click="setRange(7)" class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg">7 วัน</button>
-                    <button @click="setRange(30)" class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg">30 วัน</button>
-                    <button @click="setRange(90)" class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg">90 วัน</button>
+            <div style="grid-column:span 2 / span 2; min-width:240px;">
+                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">ช่วงเวลาด่วน</label>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                    <button @click="setRange(1)" class="tp-btn tp-btn-sm">วันนี้</button>
+                    <button @click="setRange(7)" class="tp-btn tp-btn-sm">7 วัน</button>
+                    <button @click="setRange(30)" class="tp-btn tp-btn-sm">30 วัน</button>
+                    <button @click="setRange(90)" class="tp-btn tp-btn-sm">90 วัน</button>
                 </div>
             </div>
         </div>
@@ -48,180 +63,205 @@
             $uniqueProviders = collect($allKeys)->pluck('provider')->unique()->filter()->sort()->values();
             $uniquePurposes = collect($allKeys)->pluck('purpose')->map(fn ($p) => $p ?: 'null')->unique()->sort()->values();
         @endphp
-        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div style="margin-top:14px; display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px;">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">
                     🌐 Provider
                 </label>
-                <select x-model="filterProvider" @change="applyKeyFilters()"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">— ทุก provider —</option>
-                    @foreach ($uniqueProviders as $p)
-                        <option value="{{ $p }}">{{ $p }}</option>
-                    @endforeach
-                </select>
+                <div class="tp-well" style="padding:0;">
+                    <select x-model="filterProvider" @change="applyKeyFilters()"
+                            style="width:100%; background:transparent; border:0; padding:9px 12px; color:var(--ink);">
+                        <option value="">— ทุก provider —</option>
+                        @foreach ($uniqueProviders as $p)
+                            <option value="{{ $p }}">{{ $p }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">
                     🎯 Purpose (จุดประสงค์การใช้)
                 </label>
-                <select x-model="filterPurpose" @change="applyKeyFilters()"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">— ทุก purpose —</option>
-                    @foreach ($uniquePurposes as $p)
-                        <option value="{{ $p }}">{{ $p === 'null' ? '(ไม่กำหนด)' : $p }}</option>
-                    @endforeach
-                </select>
+                <div class="tp-well" style="padding:0;">
+                    <select x-model="filterPurpose" @change="applyKeyFilters()"
+                            style="width:100%; background:transparent; border:0; padding:9px 12px; color:var(--ink);">
+                        <option value="">— ทุก purpose —</option>
+                        @foreach ($uniquePurposes as $p)
+                            <option value="{{ $p }}">{{ $p === 'null' ? '(ไม่กำหนด)' : $p }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
         </div>
 
         {{-- Keys filter --}}
-        <div class="mt-4">
-            <div class="flex items-center justify-between mb-2">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div style="margin-top:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;">
+                <label style="font-size:12px; font-weight:600; color:var(--ink2);">
                     เลือกคีย์ที่จะแสดง (ไม่เลือก = ทั้งหมดที่ผ่านฟิลเตอร์)
                 </label>
-                <div class="flex gap-2">
-                    <button @click="selectAllVisibleKeys()" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">เลือกทั้งหมดที่เห็น</button>
-                    <span class="text-gray-300">|</span>
-                    <button @click="clearKeys()" class="text-xs text-red-600 dark:text-red-400 hover:underline">ล้าง</button>
+                <div style="display:flex; gap:8px;">
+                    <button @click="selectAllVisibleKeys()" class="tp-btn tp-btn-sm">เลือกทั้งหมดที่เห็น</button>
+                    <button @click="clearKeys()" class="tp-btn tp-btn-sm">ล้าง</button>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div class="tp-inset" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; max-height:264px; overflow-y:auto; padding:12px; border-radius:14px;">
                 @foreach ($allKeys as $key)
                     <label
                         x-show="keyMatchesFilter('{{ $key->provider }}', '{{ $key->purpose ?: 'null' }}')"
                         data-key-id="{{ $key->id }}"
                         data-provider="{{ $key->provider }}"
                         data-purpose="{{ $key->purpose ?: 'null' }}"
-                        class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        class="tp-well tp-card-hover"
+                        style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; cursor:pointer; box-shadow:var(--inset-sm);">
                         <input type="checkbox" :value="{{ $key->id }}" x-model="selectedKeyIds"
-                               class="rounded text-blue-600 focus:ring-2 focus:ring-blue-500">
-                        <span class="text-sm text-gray-700 dark:text-gray-200 truncate">
-                            <span class="font-medium">{{ $key->provider }}</span>/{{ $key->name }}
+                               style="accent-color:var(--accent1); width:16px; height:16px; flex:0 0 auto;">
+                        <span style="font-size:13px; color:var(--ink); min-width:0;">
+                            <span style="font-weight:700;">{{ $key->provider }}</span>/{{ $key->name }}
                             @if ($key->model)
-                                <span class="text-xs text-gray-500 dark:text-gray-400 block">{{ $key->model }}</span>
+                                <span style="font-size:11px; color:var(--ink2); display:block;">{{ $key->model }}</span>
                             @endif
                             @if ($key->purpose && $key->purpose !== 'any')
-                                <span class="text-xs px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">{{ $key->purpose }}</span>
+                                <span class="tp-pill tp-pill-soft" style="font-size:11px; padding:1px 7px;">{{ $key->purpose }}</span>
                             @elseif ($key->purpose === 'any')
-                                {{-- 🚫 (2026-05-23) purpose='any' ถูก deprecate — Pool จะไม่ pick key นี้ --}}
-                                <span class="text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded" title="purpose='any' ถูกห้ามใช้แล้ว — เปลี่ยนเป็น specific purpose">⚠️ any (deprecated)</span>
+                                {{-- (2026-05-23) purpose='any' ถูก deprecate — Pool จะไม่ pick key นี้ --}}
+                                <span class="tp-pill" style="font-size:11px; padding:1px 7px; background:rgba(217,83,79,.14); color:#d9534f;" title="purpose='any' ถูกห้ามใช้แล้ว — เปลี่ยนเป็น specific purpose">⚠️ any (deprecated)</span>
                             @endif
                         </span>
                     </label>
                 @endforeach
             </div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <div style="font-size:11.5px; color:var(--ink2); margin-top:8px;">
                 แสดง: <span x-text="visibleKeyCount()"></span> คีย์ / ทั้งหมด {{ count($allKeys) }}
                 — เลือก: <span x-text="selectedKeyIds.length"></span> คีย์
             </div>
         </div>
 
-        <div class="mt-4 flex items-center gap-3">
-            <button @click="fetchData()"
-                    :disabled="loading"
-                    class="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition flex items-center gap-2">
-                <svg class="w-4 h-4" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
+        {{-- ปุ่มโหลด + ช่วงวันที่ที่ดึงจริง --}}
+        <div style="margin-top:16px; display:flex; flex-wrap:wrap; align-items:center; gap:12px;">
+            <button @click="fetchData()" :disabled="loading" class="tp-btn tp-btn-primary"
+                    style="display:inline-flex; align-items:center; gap:8px;">
+                <i class="fas fa-rotate" :class="{ 'fa-spin': loading }"></i>
                 <span x-text="loading ? 'กำลังโหลด...' : 'โหลดข้อมูล'"></span>
             </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400" x-show="summary">
+            <span style="font-size:12.5px; color:var(--ink2);" x-show="summary">
                 ช่วง: <span x-text="summary?.date_range?.start"></span> ถึง <span x-text="summary?.date_range?.end"></span>
                 (<span x-text="summary?.date_range?.days"></span> วัน)
             </span>
         </div>
     </div>
 
-    {{-- Summary cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" x-show="summary">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl p-5 text-white shadow">
-            <div class="text-blue-100 text-sm font-medium">Total Tokens</div>
-            <div class="text-3xl font-bold mt-2" x-text="formatNumber(summary?.total_tokens || 0)"></div>
-            <div class="text-blue-100 text-xs mt-1">รวม input + output</div>
+    {{-- ===== KPI สรุป ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;" x-show="summary">
+        {{-- Total Tokens --}}
+        <div class="tp-card" style="display:flex; align-items:center; gap:14px;">
+            <div class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:20px; flex:0 0 auto;">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;" x-text="formatNumber(summary?.total_tokens || 0)"></div>
+                <div style="font-size:12px; color:var(--ink2); margin-top:3px;">Total Tokens (input + output)</div>
+            </div>
         </div>
-        <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl p-5 text-white shadow">
-            <div class="text-emerald-100 text-sm font-medium">Total Requests</div>
-            <div class="text-3xl font-bold mt-2" x-text="formatNumber(summary?.total_requests || 0)"></div>
-            <div class="text-emerald-100 text-xs mt-1">ทุก AI call</div>
+        {{-- Total Requests --}}
+        <div class="tp-card" style="display:flex; align-items:center; gap:14px;">
+            <div style="width:46px; height:46px; border-radius:14px; font-size:20px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; color:#fff; background:#5689b8; box-shadow:var(--raise);">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+            <div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;" x-text="formatNumber(summary?.total_requests || 0)"></div>
+                <div style="font-size:12px; color:var(--ink2); margin-top:3px;">Total Requests (ทุก AI call)</div>
+            </div>
         </div>
-        <div class="bg-gradient-to-br from-amber-500 to-amber-700 rounded-xl p-5 text-white shadow">
-            <div class="text-amber-100 text-sm font-medium">Success Rate</div>
-            <div class="text-3xl font-bold mt-2"><span x-text="summary?.success_rate || 100"></span>%</div>
-            <div class="text-amber-100 text-xs mt-1">requests สำเร็จ</div>
+        {{-- Success Rate --}}
+        <div class="tp-card" style="display:flex; align-items:center; gap:14px;">
+            <div style="width:46px; height:46px; border-radius:14px; font-size:20px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; color:#fff; background:#5aa07e; box-shadow:var(--raise);">
+                <i class="fas fa-circle-check"></i>
+            </div>
+            <div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;"><span x-text="summary?.success_rate || 100"></span>%</div>
+                <div style="font-size:12px; color:var(--ink2); margin-top:3px;">Success Rate (requests สำเร็จ)</div>
+            </div>
         </div>
-        <div class="bg-gradient-to-br from-rose-500 to-rose-700 rounded-xl p-5 text-white shadow">
-            <div class="text-rose-100 text-sm font-medium">Failed Requests</div>
-            <div class="text-3xl font-bold mt-2" x-text="formatNumber(summary?.failed_count || 0)"></div>
-            <div class="text-rose-100 text-xs mt-1">ล้มเหลว / error</div>
+        {{-- Failed Requests --}}
+        <div class="tp-card" style="display:flex; align-items:center; gap:14px;">
+            <div style="width:46px; height:46px; border-radius:14px; font-size:20px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; color:#fff; background:#d9534f; box-shadow:var(--raise);">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;" x-text="formatNumber(summary?.failed_count || 0)"></div>
+                <div style="font-size:12px; color:var(--ink2); margin-top:3px;">Failed Requests (ล้มเหลว / error)</div>
+            </div>
         </div>
     </div>
 
-    {{-- Line chart --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">📈 Token Usage รายวัน</h2>
-            {{-- 🆕 (2026-05-19) Refresh button visible เสมอ — กัน "กราฟเห็นบ้างไม่เห็นบ้าง" --}}
-            <button @click="fetchData()" :disabled="loading"
-                    class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 disabled:opacity-50 flex items-center gap-1">
-                <svg class="w-3 h-3" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
+    {{-- ===== กราฟเส้น Token Usage รายวัน (เก็บ Chart.js + canvas เดิม) ===== --}}
+    <div class="tp-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700;">
+                <i class="fas fa-chart-area" style="color:var(--accent1);"></i> Token Usage รายวัน
+            </div>
+            {{-- (2026-05-19) Refresh button visible เสมอ — กัน "กราฟเห็นบ้างไม่เห็นบ้าง" --}}
+            <button @click="fetchData()" :disabled="loading" class="tp-btn tp-btn-sm"
+                    style="display:inline-flex; align-items:center; gap:6px;">
+                <i class="fas fa-rotate" :class="{ 'fa-spin': loading }"></i>
                 <span x-text="loading ? 'กำลังโหลด...' : 'รีเฟรชกราฟ'"></span>
             </button>
         </div>
-        <div class="relative" style="height: 400px;">
+        {{-- กรอบ canvas: inset พื้นเรียบ, canvas เต็มกว้าง --}}
+        <div class="tp-inset" style="position:relative; height:400px; padding:12px; border-radius:14px;">
             <canvas id="usageChart"></canvas>
-            <div x-show="!chartReady" class="absolute inset-0 flex items-center justify-center text-gray-400 text-center px-4 pointer-events-none">
-                <div class="pointer-events-auto">
+            <div x-show="!chartReady" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 16px; color:var(--ink2); pointer-events:none;">
+                <div style="pointer-events:auto;">
                     <span x-show="loading">⏳ กำลังโหลด...</span>
                     <span x-show="!loading && !chartReady && !chartError">กดปุ่ม "โหลดข้อมูล" เพื่อแสดงกราฟ</span>
-                    <span x-show="!loading && !chartReady && chartError" class="text-red-500" x-text="chartError"></span>
-                    <div x-show="!loading && !chartReady && chartError" class="mt-2">
-                        <button @click="fetchData()" class="px-4 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">🔄 ลองใหม่</button>
+                    <span x-show="!loading && !chartReady && chartError" style="color:#d9534f;" x-text="chartError"></span>
+                    <div x-show="!loading && !chartReady && chartError" style="margin-top:10px;">
+                        <button @click="fetchData()" class="tp-btn tp-btn-sm tp-btn-primary">🔄 ลองใหม่</button>
                     </div>
                 </div>
             </div>
         </div>
-        {{-- 🆕 (2026-05-19) Diagnostic strip — แสดง state ของ render เพื่อ debug --}}
-        <div class="mt-2 text-xs text-gray-400 dark:text-gray-500 font-mono" x-show="renderDiag">
+        {{-- (2026-05-19) Diagnostic strip — แสดง state ของ render เพื่อ debug --}}
+        <div style="margin-top:8px; font-size:11px; color:var(--ink2); font-family:ui-monospace,monospace;" x-show="renderDiag">
             <span x-text="renderDiag"></span>
         </div>
     </div>
 
-    {{-- Breakdown table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden" x-show="breakdown && breakdown.length > 0">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">📋 Breakdown ตามคีย์ (เรียงจากใช้มากสุด)</h2>
+    {{-- ===== Breakdown ตามคีย์ ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;" x-show="breakdown && breakdown.length > 0">
+        <div style="padding:16px 18px; box-shadow:var(--inset-sm);">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700;">
+                <i class="fas fa-table-list" style="color:var(--accent1);"></i> Breakdown ตามคีย์ (เรียงจากใช้มากสุด)
+            </div>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">คีย์</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Model</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Purpose</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Total Tokens</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Input</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Output</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Requests</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Failed</th>
+        <div style="overflow-x:auto;">
+            <table style="min-width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="text-align:left;">
+                        <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">คีย์</th>
+                        <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">Model</th>
+                        <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">Purpose</th>
+                        <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">Total Tokens</th>
+                        <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">Input</th>
+                        <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">Output</th>
+                        <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">Requests</th>
+                        <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">Failed</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     <template x-for="row in breakdown" :key="row.key_id">
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white" x-text="row.name"></td>
-                            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400" x-text="row.model"></td>
-                            <td class="px-4 py-3 text-sm">
-                                <span class="px-2 py-1 text-xs rounded bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300" x-text="row.purpose"></span>
+                        <tr style="box-shadow:var(--inset-sm);">
+                            <td style="padding:11px 16px; font-size:13px; font-weight:600; color:var(--ink);" x-text="row.name"></td>
+                            <td style="padding:11px 16px; font-size:13px; color:var(--ink2);" x-text="row.model"></td>
+                            <td style="padding:11px 16px; font-size:13px;">
+                                <span class="tp-pill tp-pill-soft" style="font-size:11px; padding:2px 8px;" x-text="row.purpose"></span>
                             </td>
-                            <td class="px-4 py-3 text-sm text-right font-mono font-medium text-blue-700 dark:text-blue-300" x-text="formatNumber(row.total_tokens)"></td>
-                            <td class="px-4 py-3 text-sm text-right font-mono text-gray-600 dark:text-gray-400" x-text="formatNumber(row.input_tokens)"></td>
-                            <td class="px-4 py-3 text-sm text-right font-mono text-gray-600 dark:text-gray-400" x-text="formatNumber(row.output_tokens)"></td>
-                            <td class="px-4 py-3 text-sm text-right font-mono text-gray-700 dark:text-gray-300" x-text="formatNumber(row.requests)"></td>
-                            <td class="px-4 py-3 text-sm text-right font-mono" :class="row.failed > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'" x-text="formatNumber(row.failed)"></td>
+                            <td style="padding:11px 16px; font-size:13px; text-align:right; font-family:ui-monospace,monospace; font-weight:700; color:var(--deep1);" x-text="formatNumber(row.total_tokens)"></td>
+                            <td style="padding:11px 16px; font-size:13px; text-align:right; font-family:ui-monospace,monospace; color:var(--ink2);" x-text="formatNumber(row.input_tokens)"></td>
+                            <td style="padding:11px 16px; font-size:13px; text-align:right; font-family:ui-monospace,monospace; color:var(--ink2);" x-text="formatNumber(row.output_tokens)"></td>
+                            <td style="padding:11px 16px; font-size:13px; text-align:right; font-family:ui-monospace,monospace; color:var(--ink);" x-text="formatNumber(row.requests)"></td>
+                            <td style="padding:11px 16px; font-size:13px; text-align:right; font-family:ui-monospace,monospace;" :style="row.failed > 0 ? 'color:#d9534f;' : 'color:var(--ink2);'" x-text="formatNumber(row.failed)"></td>
                         </tr>
                     </template>
                 </tbody>
@@ -235,6 +275,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 function aiUsageDashboard() {
+    // จานสีทอง/นวลทองคำ V4 — ใช้วนสีให้ dataset ของ Chart.js (re-skin เฉพาะสี ไม่แตะ payload)
+    const TP_GOLD_PALETTE = ['#e6b347', '#d98e3f', '#d6824a', '#b79ae8', '#5689b8', '#5aa07e', '#e0a52e', '#9a8f7c'];
+
     return {
         loading: false,
         chartReady: false,
@@ -305,7 +348,7 @@ function aiUsageDashboard() {
             return this.getVisibleKeyIds().length;
         },
 
-        // 🆕 เลือกทั้งหมด *เฉพาะที่ visible* (รองรับ filter)
+        // 🆕 เลือกทั้งหมด เฉพาะที่ visible (รองรับ filter)
         selectAllVisibleKeys() {
             this.selectedKeyIds = this.getVisibleKeyIds();
         },
@@ -385,6 +428,19 @@ function aiUsageDashboard() {
             return false;
         },
 
+        // 🆕 (V4) ทาสีทองนวลให้ dataset ทุกเส้น — re-skin เฉพาะสี ไม่แตะ label/data จาก server
+        applyGoldPalette(datasets) {
+            if (!Array.isArray(datasets)) return datasets;
+            datasets.forEach((ds, i) => {
+                const color = TP_GOLD_PALETTE[i % TP_GOLD_PALETTE.length];
+                ds.borderColor = color;
+                ds.backgroundColor = color + '22'; // โปร่งใสเล็กน้อยสำหรับ fill/จุด
+                ds.pointBackgroundColor = color;
+                ds.tension = ds.tension ?? 0.3;
+            });
+            return datasets;
+        },
+
         async renderChart(chartData) {
             // 🆕 (2026-05-19) Re-entrance guard
             if (this._rendering) {
@@ -430,6 +486,9 @@ function aiUsageDashboard() {
                     return;
                 }
 
+                // 🆕 (V4) ทาสีทองนวลให้ทุกเส้นก่อนวาด
+                this.applyGoldPalette(chartData.datasets);
+
                 // 4) Destroy chart เก่า — รวม "stale instance" ที่ Chart.js attach กับ canvas
                 //    เคสที่ทำให้ "เห็นบ้างไม่เห็นบ้าง": new Chart() throws ถ้า canvas ถูกใช้แล้ว
                 this.renderDiag = '[step 3/4] cleanup chart เก่า...';
@@ -437,9 +496,10 @@ function aiUsageDashboard() {
                 const stale = window.Chart.getChart?.(ctx);
                 if (stale) { try { stale.destroy(); } catch (e) {} }
 
+                // สีเส้น grid + ตัวอักษร — อิงธีมนวลทองคำ (อ่าน dark จาก root)
                 const isDark = document.documentElement.classList.contains('dark');
-                const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-                const textColor = isDark ? '#e5e7eb' : '#374151';
+                const gridColor = isDark ? 'rgba(230,179,71,0.14)' : 'rgba(154,143,124,0.18)';
+                const textColor = isDark ? '#e8ddc8' : '#5b5142';
 
                 this.renderDiag = '[step 4/4] วาดกราฟ...';
 

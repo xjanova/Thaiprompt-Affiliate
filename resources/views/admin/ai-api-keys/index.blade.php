@@ -1,228 +1,247 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
-<div x-data="aiApiKeysDashboard()" x-init="init()" class="space-y-6">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+{{-- ════════════════════════════════════════════════════════════
+     หน้า: จัดการ AI API Keys (ธีม V4 "นวลทองคำ")
+     ── KPI สรุป + การ์ด provider + โหมดการวนใช้ key
+     ── คงฟังก์ชัน/AJAX/Alpine/ปุ่ม action เดิม 100%
+     ════════════════════════════════════════════════════════════ --}}
+<div x-data="aiApiKeysDashboard()" x-init="init()" style="display:flex;flex-direction:column;gap:18px;">
+
+    {{-- ── Header: eyebrow + h1 + ปุ่ม action ── --}}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $pageTitle }}</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-1">จัดการ API Keys สำหรับ AI Providers ทั้งหมด</p>
+            <div class="tp-muted" style="font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">
+                หลังบ้าน · AI · API Keys
+            </div>
+            <h1 class="tp-num" style="font-size:1.6rem;font-weight:800;color:var(--ink);margin:0;">{{ $pageTitle }}</h1>
+            <p class="tp-muted" style="margin:4px 0 0;font-size:.9rem;">จัดการ API Keys สำหรับ AI Providers ทั้งหมด</p>
         </div>
-        <div class="flex items-center gap-3">
-            <button @click="refreshStats()"
-                    class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-2">
-                <svg class="w-4 h-4" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                รีเฟรช
+
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            {{-- รีเฟรชสถิติ (AJAX → stats) --}}
+            <button @click="refreshStats()" class="tp-btn tp-btn-sm" type="button">
+                <i class="fas fa-rotate" :class="{ 'fa-spin': loading }"></i>
+                <span>รีเฟรช</span>
             </button>
-            <a href="{{ route('admin.ai-api-keys.usage-dashboard') }}"
-               class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
-                </svg>
-                📊 Usage Dashboard
+
+            {{-- Usage Dashboard --}}
+            <a href="{{ route('admin.ai-api-keys.usage-dashboard') }}" class="tp-btn tp-btn-sm">
+                <i class="fas fa-chart-line" style="color:var(--accent2);"></i>
+                <span>Usage Dashboard</span>
             </a>
-            <a href="{{ route('admin.ai-api-keys.create') }}"
-               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                เพิ่ม API Key
+
+            {{-- เพิ่ม API Key --}}
+            <a href="{{ route('admin.ai-api-keys.create') }}" class="tp-btn tp-btn-primary tp-btn-sm">
+                <i class="fas fa-plus"></i>
+                <span>เพิ่ม API Key</span>
             </a>
         </div>
     </div>
 
-    {{-- Summary Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {{-- Total Keys --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-                    </svg>
+    {{-- ── KPI Grid: สรุปรวมทุก provider ── --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+
+        {{-- Keys ทั้งหมด --}}
+        <div class="tp-card tp-card-hover">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="tp-tile" style="--tile-c:var(--accent2);">
+                    <i class="fas fa-key"></i>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="summary.total_keys">{{ $summary['total_keys'] }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Keys ทั้งหมด</p>
+                    <div class="tp-num" style="font-size:1.7rem;font-weight:800;color:var(--ink);line-height:1;"
+                         x-text="formatNumber(summary.total_keys)">{{ number_format($summary['total_keys']) }}</div>
+                    <div class="tp-muted" style="font-size:.78rem;margin-top:3px;">Keys ทั้งหมด</div>
                 </div>
             </div>
         </div>
 
-        {{-- Active Keys --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
+        {{-- Active --}}
+        <div class="tp-card tp-card-hover">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="tp-tile" style="--tile-c:#5aa07e;">
+                    <i class="fas fa-circle-check"></i>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-green-600 dark:text-green-400" x-text="summary.active_keys">{{ $summary['active_keys'] }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Active</p>
+                    <div class="tp-num" style="font-size:1.7rem;font-weight:800;color:#5aa07e;line-height:1;"
+                         x-text="formatNumber(summary.active_keys)">{{ number_format($summary['active_keys']) }}</div>
+                    <div class="tp-muted" style="font-size:.78rem;margin-top:3px;">Active</div>
                 </div>
             </div>
         </div>
 
-        {{-- Available Keys --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
+        {{-- พร้อมใช้ --}}
+        <div class="tp-card tp-card-hover">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="tp-tile" style="--tile-c:#b79ae8;">
+                    <i class="fas fa-bolt"></i>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400" x-text="summary.available_keys">{{ $summary['available_keys'] }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">พร้อมใช้</p>
+                    <div class="tp-num" style="font-size:1.7rem;font-weight:800;color:#b79ae8;line-height:1;"
+                         x-text="formatNumber(summary.available_keys)">{{ number_format($summary['available_keys']) }}</div>
+                    <div class="tp-muted" style="font-size:.78rem;margin-top:3px;">พร้อมใช้</div>
                 </div>
             </div>
         </div>
 
-        {{-- Tokens Today --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                    <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
+        {{-- Tokens วันนี้ --}}
+        <div class="tp-card tp-card-hover">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="tp-tile" style="--tile-c:#e0a52e;">
+                    <i class="fas fa-coins"></i>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400" x-text="formatNumber(summary.tokens_used_today)">{{ number_format($summary['tokens_used_today']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Tokens วันนี้</p>
+                    <div class="tp-num" style="font-size:1.7rem;font-weight:800;color:var(--ink);line-height:1;"
+                         x-text="formatNumber(summary.tokens_used_today)">{{ number_format($summary['tokens_used_today']) }}</div>
+                    <div class="tp-muted" style="font-size:.78rem;margin-top:3px;">Tokens วันนี้</div>
                 </div>
             </div>
         </div>
 
-        {{-- Tokens Month --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg">
-                    <svg class="w-6 h-6 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
+        {{-- Tokens เดือนนี้ --}}
+        <div class="tp-card tp-card-hover">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="tp-tile" style="--tile-c:#5689b8;">
+                    <i class="fas fa-calendar-days"></i>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-cyan-600 dark:text-cyan-400" x-text="formatNumber(summary.tokens_used_month)">{{ number_format($summary['tokens_used_month']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Tokens เดือนนี้</p>
+                    <div class="tp-num" style="font-size:1.7rem;font-weight:800;color:var(--ink);line-height:1;"
+                         x-text="formatNumber(summary.tokens_used_month)">{{ number_format($summary['tokens_used_month']) }}</div>
+                    <div class="tp-muted" style="font-size:.78rem;margin-top:3px;">Tokens เดือนนี้</div>
                 </div>
             </div>
         </div>
 
-        {{-- Requests Today --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
-                    <svg class="w-6 h-6 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                    </svg>
+        {{-- Requests วันนี้ --}}
+        <div class="tp-card tp-card-hover">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="tp-tile" style="--tile-c:#d6824a;">
+                    <i class="fas fa-arrow-trend-up"></i>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-rose-600 dark:text-rose-400" x-text="formatNumber(summary.requests_today)">{{ number_format($summary['requests_today']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Requests วันนี้</p>
+                    <div class="tp-num" style="font-size:1.7rem;font-weight:800;color:var(--ink);line-height:1;"
+                         x-text="formatNumber(summary.requests_today)">{{ number_format($summary['requests_today']) }}</div>
+                    <div class="tp-muted" style="font-size:.78rem;margin-top:3px;">Requests วันนี้</div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Providers Grid --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @foreach($providers as $provider => $stats)
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
-            {{-- Header --}}
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                        {{ strtoupper(substr($provider, 0, 2)) }}
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ $stats['name'] }}</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $stats['total_keys'] }} keys</p>
-                    </div>
-                </div>
-                <a href="{{ route('admin.ai-api-keys.provider', $provider) }}"
-                   class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </a>
-            </div>
+    {{-- ── Providers ── --}}
+    <div>
+        <div class="tp-section-h" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-server" style="color:var(--accent1);"></i>
+            <span>Providers</span>
+        </div>
 
-            {{-- Stats --}}
-            <div class="p-6 space-y-4">
-                {{-- Status Badges --}}
-                <div class="flex flex-wrap gap-2">
-                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-                        {{ $stats['active_keys'] }} active
-                    </span>
-                    <span class="px-2 py-1 text-xs rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-                        {{ $stats['available_keys'] }} พร้อมใช้
-                    </span>
-                </div>
-
-                {{-- Token Usage --}}
-                <div class="space-y-2">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">Tokens วันนี้</span>
-                        <span class="font-medium text-gray-900 dark:text-white">{{ number_format($stats['tokens_used_today']) }}</span>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+            {{-- provider ที่มี key อยู่แล้ว --}}
+            @foreach($providers as $provider => $stats)
+            <div class="tp-card tp-card-hover" style="display:flex;flex-direction:column;gap:14px;">
+                {{-- หัวการ์ด --}}
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+                        <div class="tp-num" style="width:44px;height:44px;border-radius:12px;flex:none;
+                                    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.95rem;
+                                    background:linear-gradient(135deg,var(--deep1),var(--deep2));color:#fff;
+                                    box-shadow:var(--raise);">
+                            {{ strtoupper(substr($provider, 0, 2)) }}
+                        </div>
+                        <div style="min-width:0;">
+                            <h3 style="margin:0;font-weight:700;color:var(--ink);font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                {{ $stats['name'] }}
+                            </h3>
+                            <div class="tp-muted" style="font-size:.78rem;">{{ $stats['total_keys'] }} keys</div>
+                        </div>
                     </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">Tokens เดือนนี้</span>
-                        <span class="font-medium text-gray-900 dark:text-white">{{ number_format($stats['tokens_used_month']) }}</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">Requests วันนี้</span>
-                        <span class="font-medium text-gray-900 dark:text-white">{{ number_format($stats['requests_today']) }}</span>
-                    </div>
-                </div>
-
-                {{-- Quick Actions --}}
-                <div class="flex gap-2 pt-2">
-                    <a href="{{ route('admin.ai-api-keys.create', $provider) }}"
-                       class="flex-1 px-3 py-2 text-sm text-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-                        + เพิ่ม Key
-                    </a>
-                    <a href="{{ route('admin.ai-api-keys.provider', $provider) }}"
-                       class="flex-1 px-3 py-2 text-sm text-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                        จัดการ
+                    <a href="{{ route('admin.ai-api-keys.provider', $provider) }}" class="tp-icon-btn" title="จัดการ {{ $stats['name'] }}">
+                        <i class="fas fa-chevron-right"></i>
                     </a>
                 </div>
-            </div>
-        </div>
-        @endforeach
 
-        {{-- Add New Provider Card --}}
-        @foreach(array_diff_key($allProviders, $providers) as $provider => $name)
-        <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 flex flex-col items-center justify-center text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer"
-             onclick="window.location.href='{{ route('admin.ai-api-keys.create', $provider) }}'">
-            <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mb-3">
-                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
+                {{-- badge สถานะ --}}
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <span class="tp-pill" style="--pill-c:#5aa07e;">{{ $stats['active_keys'] }} active</span>
+                    <span class="tp-pill" style="--pill-c:#b79ae8;">{{ $stats['available_keys'] }} พร้อมใช้</span>
+                </div>
+
+                {{-- การใช้งาน token / request --}}
+                <div class="tp-inset-sm" style="border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;">
+                    <div style="display:flex;justify-content:space-between;font-size:.85rem;">
+                        <span class="tp-muted">Tokens วันนี้</span>
+                        <span class="tp-num" style="font-weight:700;color:var(--ink);">{{ number_format($stats['tokens_used_today']) }}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:.85rem;">
+                        <span class="tp-muted">Tokens เดือนนี้</span>
+                        <span class="tp-num" style="font-weight:700;color:var(--ink);">{{ number_format($stats['tokens_used_month']) }}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:.85rem;">
+                        <span class="tp-muted">Requests วันนี้</span>
+                        <span class="tp-num" style="font-weight:700;color:var(--ink);">{{ number_format($stats['requests_today']) }}</span>
+                    </div>
+                </div>
+
+                {{-- ปุ่ม action --}}
+                <div style="display:flex;gap:8px;margin-top:auto;">
+                    <a href="{{ route('admin.ai-api-keys.create', $provider) }}" class="tp-btn tp-btn-sm" style="flex:1;justify-content:center;">
+                        <i class="fas fa-plus"></i>
+                        <span>เพิ่ม Key</span>
+                    </a>
+                    <a href="{{ route('admin.ai-api-keys.provider', $provider) }}" class="tp-btn tp-btn-primary tp-btn-sm" style="flex:1;justify-content:center;">
+                        <i class="fas fa-sliders"></i>
+                        <span>จัดการ</span>
+                    </a>
+                </div>
             </div>
-            <h3 class="font-medium text-gray-600 dark:text-gray-300">{{ $name }}</h3>
-            <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">เพิ่ม API Key</p>
+            @endforeach
+
+            {{-- provider ที่ยังไม่มี key (เพิ่มใหม่) --}}
+            @foreach(array_diff_key($allProviders, $providers) as $provider => $name)
+            <a href="{{ route('admin.ai-api-keys.create', $provider) }}"
+               class="tp-card tp-card-hover"
+               style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+                      gap:10px;border:2px dashed var(--sd);text-decoration:none;min-height:180px;">
+                <div class="tp-inset" style="width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-plus" style="color:var(--accent1);font-size:1.1rem;"></i>
+                </div>
+                <h3 style="margin:0;font-weight:600;color:var(--ink2);font-size:.95rem;">{{ $name }}</h3>
+                <p class="tp-muted" style="margin:0;font-size:.82rem;">เพิ่ม API Key</p>
+            </a>
+            @endforeach
         </div>
-        @endforeach
     </div>
 
-    {{-- Rotation Modes Info --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">โหมดการวนใช้ API Keys</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    {{-- ── โหมดการวนใช้ API Keys ── --}}
+    <div class="tp-card">
+        <div class="tp-section-h" style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-arrows-rotate" style="color:var(--accent1);"></i>
+            <span>โหมดการวนใช้ API Keys</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
             @foreach($rotationModes as $mode => $description)
-            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <h4 class="font-medium text-gray-900 dark:text-white mb-1">{{ ucfirst(str_replace('_', ' ', $mode)) }}</h4>
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $description }}</p>
+            <div class="tp-inset-sm" style="border-radius:12px;padding:14px;">
+                <h4 style="margin:0 0 4px;font-weight:700;color:var(--ink);font-size:.92rem;">
+                    {{ ucfirst(str_replace('_', ' ', $mode)) }}
+                </h4>
+                <p class="tp-muted" style="margin:0;font-size:.82rem;line-height:1.45;">{{ $description }}</p>
             </div>
             @endforeach
         </div>
     </div>
-</div>
 
+    {{-- empty state: ไม่มี provider ที่มี key เลย --}}
+    @if(count($providers) === 0)
+    <div class="tp-card" style="text-align:center;padding:48px 18px;">
+        <i class="fas fa-inbox" style="font-size:2.4rem;color:var(--ink2);opacity:.5;"></i>
+        <p class="tp-muted" style="margin:14px 0 0;">ยังไม่มี API Key — เริ่มต้นโดยกด "เพิ่ม API Key"</p>
+    </div>
+    @endif
+</div>
+@endsection
+
+{{-- scripts stack: Alpine dashboard logic (คง endpoint/payload เดิม) --}}
 @push('scripts')
 <script>
 function aiApiKeysDashboard() {
@@ -231,7 +250,7 @@ function aiApiKeysDashboard() {
         summary: @json($summary),
 
         init() {
-            // Auto refresh every 30 seconds
+            // รีเฟรชสถิติอัตโนมัติทุก 30 วินาที
             setInterval(() => this.refreshStats(), 30000);
         },
 
@@ -257,4 +276,3 @@ function aiApiKeysDashboard() {
 }
 </script>
 @endpush
-@endsection
