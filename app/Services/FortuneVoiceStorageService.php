@@ -411,9 +411,14 @@ class FortuneVoiceStorageService
             'secret' => $cfg['secret_access_key'] ?? null,
             'region' => $cfg['region'] ?? 'auto',
             'bucket' => $cfg['bucket'] ?? null,
-            'visibility' => 'public',
             'throw' => true,
         ];
+
+        // ⚠️ R2 ไม่รองรับ object ACL — ส่ง visibility=public จะถูก reject (public access มาจาก
+        //    bucket public_url/r2.dev). S3 ใช้ ACL ปกติได้
+        if ($driver !== 'r2') {
+            $diskCfg['visibility'] = 'public';
+        }
 
         if ($driver === 'r2') {
             $accountId = $cfg['account_id'] ?? '';
@@ -440,11 +445,15 @@ class FortuneVoiceStorageService
         $disk = $this->buildS3Disk($driver);
 
         $stream = fopen($tempPath, 'rb');
-        $disk->put($relativePath, $stream, [
-            'visibility' => 'public',
+        $options = [
             'ContentType' => 'audio/mpeg',
             'CacheControl' => 'public, max-age=2592000',  // 30 วัน
-        ]);
+        ];
+        // R2 ไม่รองรับ ACL → ไม่ส่ง visibility (กัน upload ถูก reject). S3 ส่งได้
+        if ($driver !== 'r2') {
+            $options['visibility'] = 'public';
+        }
+        $disk->put($relativePath, $stream, $options);
         if (is_resource($stream)) {
             fclose($stream);
         }
