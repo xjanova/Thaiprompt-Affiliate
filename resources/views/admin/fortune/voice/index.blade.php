@@ -1,4 +1,4 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', '🎧 จัดการเสียง')
 
@@ -16,23 +16,19 @@
 @endphp
 
 @section('content')
-<div class="container mx-auto px-4 py-6" x-data="voiceManager()">
+<div x-data="voiceManager()">
 
-    {{-- Header --}}
-    <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+    {{-- Header (ธีม V4) --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px; margin-bottom:18px;">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🎧 จัดการเสียง</h1>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ระบบดูดวง · จัดการเสียง</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">🎧 จัดการเสียง</h1>
+            <p class="tp-muted" style="margin:6px 0 0; font-size:13px;">
                 ตั้งค่าโมเดลเสียง · คลังเสียงระบบ (สร้างไฟล์เก็บไว้ล่วงหน้า) · เสียงทำนาย —
-                <span class="text-amber-600 dark:text-amber-400 font-medium">เสียงระบบส่งเฉพาะ Facebook</span>
+                <span style="color:var(--deep1); font-weight:600;">เสียงระบบส่งเฉพาะ Facebook</span>
             </p>
         </div>
-        <div class="flex gap-2">
-            <a href="#diagnostic"
-               class="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg transition">
-                🩺 ตรวจระบบ ↓
-            </a>
-        </div>
+        <a href="#diagnostic" class="tp-btn">🩺 ตรวจระบบ ↓</a>
     </div>
 
     {{-- Flash --}}
@@ -51,7 +47,7 @@
 
     {{-- ════════════════ ตั้งค่าเครื่องเสียง + เสียงทำนาย ════════════════ --}}
     <form method="POST" action="{{ route('admin.fortune.voice.settings.update') }}"
-          class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
+          class="tp-card p-6 mb-6">
         @csrf
         @method('PUT')
 
@@ -247,14 +243,14 @@
                 💡 API key ตั้งที่ <a href="{{ route('admin.fortune.settings.index') }}#tts" class="underline">ตั้งค่า</a>
                 หรือ <a href="{{ url('/admin/ai-api-keys') }}" class="underline">AI API Keys</a>
             </p>
-            <button type="submit" class="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition">
+            <button type="submit" class="tp-btn tp-btn-primary">
                 💾 บันทึกการตั้งค่า
             </button>
         </div>
     </form>
 
     {{-- ════════════════ พรีวิวเสียง ════════════════ --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
+    <div class="tp-card p-6 mb-6">
         <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3">▶️ ทดลองฟังเสียง (ก่อนบันทึก)</h2>
         <textarea x-model="previewTextValue" rows="2" placeholder="พิมพ์ข้อความที่อยากฟัง..."
                   class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm mb-2"></textarea>
@@ -278,7 +274,7 @@
     </div>
 
     {{-- ════════════════ คลังเสียงระบบ ════════════════ --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <div class="tp-card p-6">
         <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-1">🗂️ คลังเสียงระบบ (ข้อความกลาง)</h2>
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-5">
             แก้ข้อความ → กด <b>🎙️ สร้างเสียง</b> เพื่อสร้างไฟล์เก็บไว้ (ใช้ซ้ำทุกคน ไม่สร้างใหม่) ·
@@ -413,7 +409,7 @@
     </div>
 
     {{-- ════════════════ 🩺 ตรวจระบบ (รวมจาก Voice Diagnostic) ════════════════ --}}
-    <div id="diagnostic" class="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <div id="diagnostic" class="mt-6 tp-card p-6">
         <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">🩺 ตรวจระบบเสียง (Diagnostic)</h2>
 
         {{-- stats + storage --}}
