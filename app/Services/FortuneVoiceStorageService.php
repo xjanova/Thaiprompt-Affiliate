@@ -106,7 +106,7 @@ class FortuneVoiceStorageService
      * เซฟไฟล์ audio ไปยัง storage ที่กำหนด
      *
      * @param  string  $tempAbsolutePath  full path ของไฟล์ temp (จะถูกลบหลัง upload)
-     * @param  string  $relativePath      path ที่ต้องการเก็บ เช่น 'fortune-voice/abc.mp3'
+     * @param  string  $relativePath  path ที่ต้องการเก็บ เช่น 'fortune-voice/abc.mp3'
      * @return array{success: bool, url: ?string, disk: string, error: ?string}
      */
     public function putAudio(string $tempAbsolutePath, string $relativePath): array
@@ -237,8 +237,9 @@ class FortuneVoiceStorageService
                 ];
             }
 
-            // สร้าง temp file
-            $testContent = 'fortune-voice-test-'.now()->timestamp;
+            // สร้าง temp file — ต้อง >= 100 bytes เพราะ putAudio() มี floor กัน mp3 เสีย
+            //   (เดิม ~28 bytes → putAudio ตีเป็น "ไฟล์ว่าง" เสมอ ไม่ว่า creds ถูกผิด)
+            $testContent = 'fortune-voice-storage-connection-test '.now()->timestamp.' '.str_repeat('x', 128);
             $tempPath = storage_path('app/tmp-voice-test-'.Str::random(8).'.txt');
             @file_put_contents($tempPath, $testContent);
 
@@ -399,7 +400,7 @@ class FortuneVoiceStorageService
     protected function buildS3Disk(string $driver): Filesystem
     {
         if (! class_exists(\League\Flysystem\AwsS3V3\AwsS3V3Adapter::class)) {
-            throw new \RuntimeException("ยังไม่ได้ติดตั้ง league/flysystem-aws-s3-v3 — รัน: composer require league/flysystem-aws-s3-v3 \"^3.0\"");
+            throw new \RuntimeException('ยังไม่ได้ติดตั้ง league/flysystem-aws-s3-v3 — รัน: composer require league/flysystem-aws-s3-v3 "^3.0"');
         }
 
         $cfg = $this->getConfig($driver);
