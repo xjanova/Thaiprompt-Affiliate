@@ -74,7 +74,7 @@
             <template x-for="p in $store.pinnedMenus.getPinnedMenus('admin')" :key="p.key">
                 <div style="position:relative;">
                     <a :href="p.url" @click="if (isMobile) closeDrawer()" class="tp-card"
-                       :style="pinActive(p.url) ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);'"
+                       :style="{ boxShadow: pinActive(p.url) ? 'var(--inset)' : 'var(--raise)' }"
                        style="display:flex; align-items:center; gap:10px; padding:8px 30px 8px 10px; border-radius:13px; text-decoration:none; color:var(--ink);">
                         <span class="tp-tile" style="width:28px; height:28px; border-radius:9px; font-size:12px;">
                             <template x-if="p.icon && p.icon.includes('fa-')"><i :class="p.icon"></i></template>
@@ -120,7 +120,7 @@
                             <span style="display:block; font-size:10px; color:var(--ink2); font-weight:500; letter-spacing:.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $gen }}</span>
                         </span>
                         @if($gbadge)<span class="tp-pill tp-pill-gold" style="font-size:9px; padding:2px 7px;">{{ $gbadge }}</span>@endif
-                        <span style="font-size:10px; color:var(--ink2); width:12px; text-align:center; flex:none; transition:transform .2s ease;" :style="openId === '{{ $gid }}' && 'transform:rotate(90deg)'">▸</span>
+                        <span style="font-size:10px; color:var(--ink2); width:12px; text-align:center; flex:none; transition:transform .2s ease;" :style="{ transform: openId === '{{ $gid }}' ? 'rotate(90deg)' : 'none' }">▸</span>
                     </button>
 
                     <div x-show="openId === '{{ $gid }}'" x-cloak
