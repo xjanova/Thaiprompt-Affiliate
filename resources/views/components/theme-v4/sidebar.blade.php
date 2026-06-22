@@ -53,7 +53,7 @@
     </div>
 
     {{-- รายการเมนู (เลื่อนได้) --}}
-    <div x-data="{ openId: @js($activeGroupId) }"
+    <div x-data="{ openId: @js($activeGroupId), pinActive(u) { if (!u) return false; const c = location.origin + location.pathname; const x = String(u).replace(/\/+$/, ''); return c === x || c.startsWith(x + '/'); } }"
          style="position:relative; flex:1; min-height:0; overflow-y:auto; overflow-x:visible; display:flex; flex-direction:column; gap:7px; padding:2px;">
 
         {{-- ===== 📌 เมนูที่ปักหมุด (ดึงจาก $store.pinnedMenus — localStorage) ===== --}}
@@ -74,7 +74,7 @@
             <template x-for="p in $store.pinnedMenus.getPinnedMenus('admin')" :key="p.key">
                 <div style="position:relative;">
                     <a :href="p.url" @click="if (isMobile) closeDrawer()" class="tp-card"
-                       :style="(location.pathname === p.url || (p.url && location.pathname.startsWith(p.url.replace(/\/+$/,'') + '/'))) ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);'"
+                       :style="pinActive(p.url) ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);'"
                        style="display:flex; align-items:center; gap:10px; padding:8px 30px 8px 10px; border-radius:13px; text-decoration:none; color:var(--ink);">
                         <span class="tp-tile" style="width:28px; height:28px; border-radius:9px; font-size:12px;">
                             <template x-if="p.icon && p.icon.includes('fa-')"><i :class="p.icon"></i></template>
