@@ -6,6 +6,7 @@ use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\FortuneChannelManager;
+use App\Services\FortuneConversationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -389,6 +390,16 @@ class FortuneCheckPendingReadings extends Command
                                 $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
                                 $reading->setConversationState('reading_notification_sent', true);
                                 $reading->setConversationState('delivered_by_push', true);
+                                // 🔔 (2026-06-23 bug-hunt) เข้า Deep Pro Session — ให้ follow-up Q&A เข้า Pro path
+                                //   (ไม่ตกไป chat upsell/OOM = อาการ K3440) + nudge/auto-finalize ทำงานกับ path นี้
+                                //   K3440 fix เดิมใส่เฉพาะ command path — check-pending P2 ตกหล่น. idempotent.
+                                try {
+                                    (new FortuneConversationService($settings))->enterDeepProSessionFor($reading->fresh());
+                                } catch (\Throwable $psErr) {
+                                    \Illuminate\Support\Facades\Log::warning('check-pending P2: enter Deep Pro Session fail (non-blocking)', [
+                                        'reading_id' => $reading->id, 'error' => $psErr->getMessage(),
+                                    ]);
+                                }
                                 $this->info("  📨 {$billRef} — push คำทำนายเต็มสำเร็จ (FB)");
                             } else {
                                 // 🔓 push ล้ม → ปล่อย delivery lock ให้รอบหน้า/ทักกลับ deliver ได้

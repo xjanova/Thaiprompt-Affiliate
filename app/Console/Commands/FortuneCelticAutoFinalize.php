@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
-use App\Services\CelticCrossService;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use App\Services\FortuneLocaleService;
@@ -55,6 +54,7 @@ class FortuneCelticAutoFinalize extends Command
 
         if ($candidates->isEmpty()) {
             $this->info('✅ ไม่มี Celtic session ที่ต้อง auto-finalize');
+
             return 0;
         }
 
@@ -79,6 +79,7 @@ class FortuneCelticAutoFinalize extends Command
 
         if ($dry) {
             $this->warn('Dry run — ไม่ได้ finalize จริง');
+
             return 0;
         }
 
@@ -99,6 +100,7 @@ class FortuneCelticAutoFinalize extends Command
                 if (empty($userId)) {
                     $this->warn("  #{$reading->id} skip — ไม่มี user_id");
                     $skipped++;
+
                     continue;
                 }
 
@@ -107,6 +109,7 @@ class FortuneCelticAutoFinalize extends Command
                 if ($freshReading->getConversationState('celtic_grand_finale_at')) {
                     $this->warn("  #{$reading->id} skip — finalize ไปแล้ว");
                     $skipped++;
+
                     continue;
                 }
 
@@ -117,6 +120,7 @@ class FortuneCelticAutoFinalize extends Command
                 if ($finaleFailCount >= 3) {
                     $this->warn("  #{$reading->id} skip — finalize fail >= 3 ครั้ง (admin ตรวจ + reset flag)");
                     $skipped++;
+
                     continue;
                 }
 
@@ -197,13 +201,18 @@ class FortuneCelticAutoFinalize extends Command
                 FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
                 FortuneReading::STATUS_CELTIC_QA_PROMPT,
             ])
-            // ลูกค้าได้ถามอย่างน้อย 1 ข้อ (ไม่ใช่หายไปทันทีหลังเปิดไพ่)
+            // ลูกค้าได้ถามอย่างน้อย 1 ข้อ (รวมพื้นดวง Q1 auto ที่นับ used=1)
             ->where('celtic_questions_used', '>=', 1)
-            // celtic_first_answered_at + qa_window < now → QA window หมดอายุ
-            //   ใช้ celtic_first_answered_at (มี value แน่นอนเมื่อ celtic_questions_used >= 1)
-            //   แทน updated_at — แม่นยำกว่า เพราะ updated_at อาจเปลี่ยนจาก setConversationState
-            ->whereNotNull('celtic_first_answered_at')
-            ->where('celtic_first_answered_at', '<=', $qaCutoff);
+            // 🆕 (2026-06-23 bug-hunt) ครอบ 2 เคส (กัน regression Part B: timer ย้ายไป Q2):
+            //   A) ลูกค้าถาม Q จริงแล้ว → celtic_first_answered_at + qa_window หมดอายุ (เดิม)
+            //   B) ได้พื้นดวง (Q1 auto) แล้วเงียบ ไม่เคยถาม Q2 → first_answered=NULL → กรองเวลาใน PHP (ready_at)
+            //      ⚠️ ถ้าไม่ครอบเคส B ลูกค้าจ่าย 99 จะไม่ได้ Grand Finale (ผิดกฎ "99 ต้องได้ summary ทุกครั้ง")
+            ->where(function ($q) use ($qaCutoff) {
+                $q->where(function ($a) use ($qaCutoff) {
+                    $a->whereNotNull('celtic_first_answered_at')
+                        ->where('celtic_first_answered_at', '<=', $qaCutoff);
+                })->orWhereNull('celtic_first_answered_at');
+            });
 
         if ($specificId) {
             $query->where('id', (int) $specificId);
@@ -215,14 +224,33 @@ class FortuneCelticAutoFinalize extends Command
                         $q2->whereRaw("JSON_EXTRACT(conversation_state, '$.celtic_grand_finale_at') IS NULL");
                     });
             });
-            $query->limit($limit);
+            // เผื่อเคส B ถูกกรองออกใน PHP → ดึงมากกว่า limit เล็กน้อยแล้ว take ทีหลัง
+            $query->limit(max($limit * 2, 40));
         }
 
         $readings = $query->orderBy('updated_at', 'asc')->get();
 
-        // 🩹 (2026-05-24) ลบ block "$r->settings_max_q = ..." — ทำให้ Eloquent save SQL ERROR
-        //   max_q สำหรับ display อยู่ใน handle() แล้ว (local var $maxQDisplay)
+        // 🆕 (2026-06-23) เคส B (first_answered=NULL): finalize เมื่อ "พื้นดวงส่งแล้วเงียบ" เกิน qa_window
+        //   อ้างอิง pro_session_ready_at (ISO8601 — parse ใน PHP เลี่ยง STR_TO_DATE เปราะ)
+        $readings = $readings->filter(function ($r) use ($qaCutoff) {
+            if (! empty($r->celtic_first_answered_at)) {
+                return true; // เคส A ผ่าน SQL แล้ว
+            }
+            $readyAt = $r->getConversationState('pro_session_ready_at');
+            if (empty($readyAt)) {
+                return false; // ยังไม่ได้ส่งพื้นดวง (เช่น เพิ่งเปิดไพ่/รอวันเกิด) → ยังไม่ปิด
+            }
+            try {
+                return \Carbon\Carbon::parse($readyAt)->lessThanOrEqualTo($qaCutoff);
+            } catch (\Throwable $e) {
+                return false;
+            }
+        });
 
-        return $readings;
+        if (! $specificId) {
+            $readings = $readings->take($limit);
+        }
+
+        return $readings->values();
     }
 }

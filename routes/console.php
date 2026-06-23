@@ -333,6 +333,16 @@ Schedule::command('fortune:celtic-redeliver --limit=30')
     ->name('fortune-celtic-redeliver')
     ->runInBackground();
 
+// 3c) Fortune Pro Session Nudge — 🔔 (2026-06-23, owner) ตามให้ลูกค้าเริ่มถามคำถาม
+//     owner spec: ถึงขั้นพร้อมให้ถามแล้วแต่เงียบเกิน 1 นาที → ส่งกล่องตามให้เริ่มถาม (ตามครั้งเดียว)
+//     ทั้ง Deep 39 (หลังส่งคำทำนาย) + Celtic 99 (หลังพื้นดวง Q1) — เวลาเริ่มจับหลังถามจริง
+Schedule::command('fortune:pro-session-nudge --limit=30')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('fortune-pro-session-nudge')
+    ->runInBackground();
+
 // 4) Fortune Expire Conversations — ปิด orphan conversations + ล้าง takeover หมดเวลา
 //    ทุก 5 นาที — กัน conversation ค้างไม่ปิด
 Schedule::command('fortune:expire-conversations')

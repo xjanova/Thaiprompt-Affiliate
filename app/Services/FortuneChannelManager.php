@@ -1303,6 +1303,12 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '🙏 ไว้คราวหน้า', 'payload' => 'CANCEL_FORTUNE'],
                 ], $extra),
 
+                // 💎 (2026-06-23) โอนก่อนบิล + ยอดกำกวม — ถามแพคเกจ 39/99 (Quick Reply ส่ง title เป็น text ให้ gate จับ)
+                'prepay_package_choice' => $fbService->sendQuickReplies($userId, $message, $result['quick_replies'] ?? [
+                    ['content_type' => 'text', 'title' => '🔹 ดูเชิงลึก 39฿', 'payload' => 'PREPAY_DEEP'],
+                    ['content_type' => 'text', 'title' => '💎 ดู Celtic 99฿', 'payload' => 'PREPAY_CELTIC'],
+                ], $extra),
+
                 default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏', $extra),
             };
 
@@ -2906,6 +2912,23 @@ class FortuneChannelManager
                     ['label' => '✅ แน่ใจ จ่ายเงินไทยได้', 'text' => 'ยืนยันจ่ายเงินไทยได้'],
                     ['label' => '🙏 ไว้คราวหน้า', 'text' => 'ยกเลิก'],
                 ]),
+
+                // 💎 (2026-06-23) โอนก่อนบิล + ยอดกำกวม — ถามแพคเกจ 39/99 (text=39/99 ให้ gate จับ)
+                'prepay_package_choice' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $lineReplies = array_map(function ($r) {
+                        $isCeltic = ($r['payload'] ?? '') === 'PREPAY_CELTIC';
+
+                        return ['label' => mb_substr($r['title'] ?? '', 0, 20), 'text' => $isCeltic ? '99' : '39'];
+                    }, $result['quick_replies'] ?? []);
+                    if (empty($lineReplies)) {
+                        $lineReplies = [
+                            ['label' => '🔹 ดูเชิงลึก 39฿', 'text' => '39'],
+                            ['label' => '💎 ดู Celtic 99฿', 'text' => '99'],
+                        ];
+                    }
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineReplies);
+                })(),
 
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };

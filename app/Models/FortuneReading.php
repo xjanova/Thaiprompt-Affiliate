@@ -3032,17 +3032,29 @@ class FortuneReading extends Model
      * บันทึกว่าตอบ Celtic question ไปแล้ว
      * ถ้าเป็น Q1 → set celtic_first_answered_at (start QA window)
      */
-    public function markCelticAnswered(int $sequence): void
+    public function markCelticAnswered(int $sequence, bool $startQaWindow = true): void
     {
+        // 🆕 (2026-06-23, owner) เริ่มจับเวลา QA window ที่ "คำถามจริงข้อแรกของลูกค้า" (Q2)
+        //   ไม่ใช่ตอนพื้นดวงเปิดตัว (Q1 auto) — base chart ส่ง $startQaWindow=false (นับ used แต่ไม่เริ่มเวลา)
+        //   เงื่อนไขเปลี่ยนจาก sequence===1 → empty() เพราะคำถามจริงข้อแรกอาจเป็น sequence 2 (หลังพื้นดวง)
+        $justStarted = $startQaWindow && empty($this->celtic_first_answered_at);
+
         $update = [
             'celtic_questions_used' => max($this->celtic_questions_used, $sequence),
         ];
 
-        if ($sequence === 1 && empty($this->celtic_first_answered_at)) {
+        if ($justStarted) {
             $update['celtic_first_answered_at'] = now();
         }
 
         $this->update($update);
+
+        // 🆕 (2026-06-23) sync Pro Session avatar timer ให้เริ่มพร้อม QA window (เริ่มที่คำถามจริงข้อแรก)
+        //   enterProSession เปิด session ค้างไว้ (awaiting) — ตั้ง started_at ตรงนี้เมื่อ window เริ่มจริง
+        if ($justStarted && $this->getConversationState('pro_session_active')) {
+            $this->setConversationState('pro_session_started_at', now()->toIso8601String());
+            $this->setConversationState('pro_session_awaiting_first_question', false);
+        }
     }
 
     /**

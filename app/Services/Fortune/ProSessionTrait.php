@@ -66,15 +66,32 @@ trait ProSessionTrait
 
         $reading->setConversationState('pro_session_active', true);
         $reading->setConversationState('pro_session_type', $type);
-        $reading->setConversationState('pro_session_started_at', now()->toIso8601String());
         $reading->setConversationState('pro_session_window_minutes', $window);
         $reading->setConversationState('pro_session_pending_exit', false);
         $reading->setConversationState('pro_session_history', []);
+        // 🆕 (2026-06-23) เวลาที่เปิด session (สำหรับ nudge ตามถาม 1 นาที — Part C)
+        $reading->setConversationState('pro_session_opened_at', now()->toIso8601String());
+        $reading->setConversationState('pro_session_nudge_sent', false);
+
+        // 🆕 (2026-06-23, owner) "เริ่มจับเวลาหลังคำถามแรก" ทั้ง Deep และ Celtic
+        //   เปิด session ค้างไว้ (awaiting) — ตั้ง pro_session_started_at ตอนคำถามจริงข้อแรก:
+        //     Deep   → handleProSession (คำถามแรกใน Pro Session)
+        //     Celtic → markCelticAnswered (คำถามจริงข้อแรก = Q2 หลังพื้นดวง Q1 auto)
+        //   isInProSession รองรับ awaiting (timer ยังไม่นับ จนกว่าจะถามจริง)
+        $reading->setConversationState('pro_session_awaiting_first_question', true);
+
+        // 🆕 (2026-06-23) pro_session_ready_at = เวลาที่ "ลูกค้าพร้อมพิมพ์คำถามได้แล้ว" (อ้างอิงสำหรับ nudge 1 นาที)
+        //   Deep — ส่งคำทำนายเสร็จ = พร้อมถามทันที → ตั้งที่นี่
+        //   Celtic — พร้อมหลังพื้นดวง/opening ส่งจริง → ตั้งใน onCelticAllCardsPicked / base chart (ไม่ใช่ที่ card-10)
+        if ($type === 'deep') {
+            $reading->setConversationState('pro_session_ready_at', now()->toIso8601String());
+        }
 
         Log::info('Fortune ProSession: เปิด session', [
             'reading_id' => $reading->id,
             'type' => $type,
             'window_minutes' => $window,
+            'deferred_timer' => $type === 'deep',
         ]);
     }
 
@@ -93,7 +110,9 @@ trait ProSessionTrait
         $windowMin = (int) $reading->getConversationState('pro_session_window_minutes', self::PRO_SESSION_DEEP_MINUTES);
 
         if (empty($startedAt)) {
-            return false;
+            // 🆕 (2026-06-23) deferred timer — session เปิดแล้วแต่ยังไม่เริ่มนับ (รอคำถามแรก)
+            //   awaiting = ยังอยู่ใน session (ให้ router จับคำถามแรกได้) ; ไม่ awaiting = malformed → ไม่อยู่
+            return (bool) $reading->getConversationState('pro_session_awaiting_first_question', false);
         }
 
         try {
@@ -128,7 +147,8 @@ trait ProSessionTrait
         $windowMin = (int) $reading->getConversationState('pro_session_window_minutes', self::PRO_SESSION_DEEP_MINUTES);
 
         if (empty($startedAt)) {
-            return 0;
+            // 🆕 (2026-06-23) ยังไม่เริ่มนับ (รอคำถามแรก) → คืนเต็ม window ; malformed → 0
+            return $reading->getConversationState('pro_session_awaiting_first_question', false) ? $windowMin : 0;
         }
 
         try {
@@ -166,13 +186,32 @@ trait ProSessionTrait
         if ($reading->getConversationState('pro_session_timeout_notified', false)) {
             return false;
         }
-        $startedAt = $reading->getConversationState('pro_session_started_at');
-        if (empty($startedAt)) {
-            return false; // ไม่เคยเข้า Pro Session → ไม่ต้องแจ้ง
-        }
         $windowMin = (int) $reading->getConversationState('pro_session_window_minutes', self::PRO_SESSION_DEEP_MINUTES);
         if ($windowMin < 1) {
             $windowMin = self::PRO_SESSION_DEEP_MINUTES;
+        }
+
+        $startedAt = $reading->getConversationState('pro_session_started_at');
+        if (empty($startedAt)) {
+            // 🆕 (2026-06-23 bug-hunt) ลูกค้าไม่เคยถาม (timer ยังไม่เริ่ม — defer ตาม Part B) →
+            //   ปิดด้วย "abandon window" อ้างอิง pro_session_ready_at เพื่อยังส่งข้อความปิด/ชวนรีวิว
+            //   (กัน regression: ลูกค้าจ่ายแล้วเงียบ จะไม่ได้รับข้อความปิดเลยถ้าไม่มี safety net นี้)
+            if (! $reading->getConversationState('pro_session_active', false)) {
+                return false; // session ปิดไปแล้ว
+            }
+            $readyAt = $reading->getConversationState('pro_session_ready_at');
+            if (empty($readyAt)) {
+                return false; // ยังไม่พร้อมให้ถาม (เช่น ยังไม่ส่งคำทำนาย)
+            }
+            // ให้เวลาถาม = window เต็ม + เผื่อ nudge (ลูกค้าไม่ถามเลยจริงๆ ถึงปิด)
+            $abandonMin = $windowMin + (int) ceil($this->proSessionNudgeAfterSeconds() / 60) + 1;
+            try {
+                $elapsedReady = (int) Carbon::parse($readyAt)->diffInMinutes(now(), true);
+            } catch (\Throwable $e) {
+                return false;
+            }
+
+            return $elapsedReady >= $abandonMin;
         }
         try {
             $elapsed = (int) Carbon::parse($startedAt)->diffInMinutes(now(), true);
@@ -853,6 +892,18 @@ trait ProSessionTrait
             ];
         }
 
+        // 🆕 (2026-06-23, owner) Deep 39 — เริ่มจับเวลา "หลังคำถามแรก" (ข้อความนี้ผ่าน exit-check แล้ว = คำถามจริง)
+        //   เปิด session ค้างไว้ตั้งแต่ส่งคำทำนาย → ตอนนี้ลูกค้าถามจริง → เริ่มนับ 7 นาที
+        if ((string) $reading->getConversationState('pro_session_type', 'deep') === 'deep'
+            && $reading->getConversationState('pro_session_awaiting_first_question', false)) {
+            $reading->setConversationState('pro_session_started_at', now()->toIso8601String());
+            $reading->setConversationState('pro_session_awaiting_first_question', false);
+            $reading->setConversationState('pro_session_nudge_sent', true); // ถามแล้ว = ไม่ต้อง nudge
+            Log::info('Fortune ProSession: เริ่มจับเวลา Deep หลังคำถามแรก', [
+                'reading_id' => $reading->id,
+            ]);
+        }
+
         // 3. Smart route — เคารพ Celtic 3Q flow ที่มีอยู่
         $status = (string) $reading->conversation_status;
 
@@ -924,5 +975,116 @@ trait ProSessionTrait
         }
 
         return null;
+    }
+
+    /**
+     * 🔔 (2026-06-23, owner) จำนวนวินาทีที่รอ "ลูกค้าถามคำถามแรก" ก่อนส่งกล่องตามถาม
+     *   default 60 (1 นาที) — owner: "ไม่มาถามภายใน 1 นาทีหลังระบบพร้อมให้ถาม ก็ส่งกล่องตาม"
+     */
+    protected function proSessionNudgeAfterSeconds(): int
+    {
+        $s = (int) ($this->settings->pro_session_nudge_after_seconds ?? 60);
+
+        return $s > 0 ? $s : 60;
+    }
+
+    /**
+     * 🔔 (2026-06-23) reading นี้ "พร้อมให้ถาม + ลูกค้ายังไม่ถาม + เกิน 1 นาที + ยังไม่ตาม" ไหม
+     *   ใช้ pro_session_ready_at (ตั้งตอนพร้อมให้ถามจริง — Deep: ส่งคำทำนาย / Celtic: ส่งพื้นดวง)
+     *   idempotent ผ่าน pro_session_nudge_sent (ตามครั้งเดียว ตาม owner: "ตาม 1 ครั้ง แล้วค้างไว้")
+     */
+    protected function isProSessionAwaitingNudge(FortuneReading $reading): bool
+    {
+        if (! $reading->getConversationState('pro_session_active', false)) {
+            return false;
+        }
+        if (! $reading->getConversationState('pro_session_awaiting_first_question', false)) {
+            return false; // ลูกค้าถามแล้ว (timer เริ่มแล้ว) → ไม่ต้องตาม
+        }
+        if ($reading->getConversationState('pro_session_nudge_sent', false)) {
+            return false; // ตามไปแล้ว 1 ครั้ง
+        }
+        // 🛡️ (2026-06-23 bug-hunt) ลูกค้ากำลังถูกถามยืนยันออกจาก session (พิมพ์ขอบคุณ/พอแล้ว) → ห้ามตาม (ขัดเจตนา)
+        if ($reading->getConversationState('pro_session_pending_exit', false)) {
+            return false;
+        }
+        // Celtic ยังรอวันเกิดอยู่ = ยังไม่ถึงขั้น "ถามคำถาม" → ไม่ตาม
+        if ($reading->getConversationState('celtic_birthdate_pending', false)) {
+            return false;
+        }
+        $readyAt = $reading->getConversationState('pro_session_ready_at');
+        if (empty($readyAt)) {
+            return false; // ยังไม่พร้อมให้ถาม (เช่น Celtic ยังไม่ส่งพื้นดวง)
+        }
+        try {
+            $elapsed = (int) Carbon::parse($readyAt)->diffInSeconds(now(), true);
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return $elapsed >= $this->proSessionNudgeAfterSeconds();
+    }
+
+    /**
+     * 🔔 (2026-06-23) ดึง reading ที่พร้อมให้ถามแต่ลูกค้ายังเงียบ (สำหรับ cron nudge)
+     *   public — ให้ FortuneProSessionNudge command เรียก
+     */
+    public function getProSessionsAwaitingNudge(int $limit = 30, ?int $specificId = null): \Illuminate\Support\Collection
+    {
+        $query = FortuneReading::query()
+            ->whereIn('reading_type', [
+                FortuneReading::READING_TYPE_DEEP,
+                FortuneReading::READING_TYPE_CELTIC_CROSS,
+            ])
+            ->where('is_paid', true)
+            ->where('paid_at', '>=', now()->subHours(2)); // ready ภายใน ~2 ชม. หลังจ่าย
+
+        if ($specificId) {
+            $query->where('id', (int) $specificId);
+        } else {
+            $query->limit(120); // pre-filter cap กัน load หนัก
+        }
+
+        return $query->orderBy('paid_at', 'desc')->get()
+            ->filter(fn ($r) => $this->isProSessionAwaitingNudge($r))
+            ->take(max(1, $limit))
+            ->values();
+    }
+
+    /**
+     * 🔔 (2026-06-23) สร้างกล่องข้อความ "ตามให้เริ่มถามคำถาม" (per type)
+     *   ย้ำว่าเวลาเริ่มนับหลังถามคำถามแรก (ไม่กดดันลูกค้า)
+     */
+    public function buildProSessionNudgeMessage(FortuneReading $reading): array
+    {
+        $name = $reading->resolveCustomerName();
+        $type = (string) $reading->getConversationState('pro_session_type', 'deep');
+
+        if ($type === 'celtic') {
+            $msg = "🌙 คุณ{$name}คะ — แม่หมอเปิดไพ่ทั้ง 10 ใบรออยู่แล้วนะคะ ✨\n\n"
+                ."💬 *อยากให้แม่หมอดูเรื่องไหนก่อนดีคะ?* พิมพ์คำถามมาได้เลย\n"
+                ."🌟 ความรัก / การงาน / การเงิน / สุขภาพ / ครอบครัว — แม่หมอทำนายจากไพ่ให้\n\n"
+                .'⏳ ไม่ต้องรีบนะคะ — เวลาคุยจะเริ่มนับ *หลังจากเจ้าชะตาถามคำถามแรก* ค่ะ';
+        } else {
+            $msg = "🌙 คุณ{$name}คะ — แม่หมอยังรอเจ้าชะตาอยู่นะคะ ✨\n\n"
+                ."💬 *มีเรื่องไหนอยากให้แม่หมอช่วยดูต่อไหมคะ?* พิมพ์ถามได้เลย\n"
+                ."🪐 แม่หมอจะอ่านจากดวงเดิม + ไพ่ที่เปิดให้ — ตอบให้ละเอียดขึ้น\n\n"
+                .'⏳ ไม่ต้องรีบนะคะ — เวลาคุยจะเริ่มนับ *หลังจากเจ้าชะตาถามคำถามแรก* ค่ะ';
+        }
+
+        return [
+            'action' => 'pro_session_nudge',
+            'message' => $msg,
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 🔔 (2026-06-23) mark ว่าตามให้ถามไปแล้ว (idempotent — ตามครั้งเดียว)
+     */
+    public function markProSessionNudgeSent(FortuneReading $reading): void
+    {
+        $reading->setConversationState('pro_session_nudge_sent', true);
+        $reading->setConversationState('pro_session_nudge_sent_at', now()->toIso8601String());
     }
 }

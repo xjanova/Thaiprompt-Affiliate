@@ -143,18 +143,15 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
                 return;
             }
 
-            // ส่ง response ผ่าน FortuneChannelManager
-            $channelManager = app(FortuneChannelManager::class);
-            $channelManager->sendResponse($this->platform, $this->userId, [
-                'action' => 'celtic_question_answered',
-                'message' => $result['response'] ?? '',
-                'reading' => $reading,
-                'sequence' => $result['sequence'] ?? null,
-                'is_prediction' => $result['is_prediction'] ?? true,
-            ]);
+            // 🔧 (2026-06-23 FIX D fix) ใช้ decoration เดียวกับ inline path —
+            //   footer กติกา (เหลือเวลา X นาที) + กล่องคำถามแนะนำ (ปุ่มเลข) + carry-forward + off-topic/max-cap
+            //   เดิม job ส่ง bare response → คำตอบที่ผ่าน buffer ไม่มี footer/ปุ่ม + คำถาม both-pick หาย
+            //   finalizeCelticAnswer จัดการ state เอง (AWAITING_QUESTION / COMPLETED ถ้า session จบ)
+            $payload = (new \App\Services\FortuneConversationService(\App\Models\FortuneTellingSetting::getSettings()))
+                ->finalizeCelticAnswerPublic($reading->fresh(), $result);
 
-            // กลับ state AWAITING_QUESTION ให้พร้อมถามต่อ
-            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+            $channelManager = app(FortuneChannelManager::class);
+            $channelManager->sendResponse($this->platform, $this->userId, $payload);
         } catch (\Throwable $e) {
             Log::error('ProcessBufferedCelticMessageJob: exception', [
                 'reading_id' => $this->readingId,

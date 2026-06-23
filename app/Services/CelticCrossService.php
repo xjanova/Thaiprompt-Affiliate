@@ -113,9 +113,11 @@ class CelticCrossService
      * ส่งคำถามให้ AI Pool ทำนาย
      *
      * @param  string  $userQuestion  คำถามที่ลูกค้าพิมพ์
+     * @param  bool  $isAutoBaseChart  true = พื้นดวงเปิดตัว (Q1 auto) — นับ used แต่ "ไม่เริ่มจับเวลา 15 นาที"
+     *                                 (owner 2026-06-23: เริ่มจับเวลาที่คำถามจริงข้อแรกของลูกค้า = Q2)
      * @return array ['success' => bool, 'response' => str, 'question_record' => FortuneCelticQuestion, 'message' => str]
      */
-    public function askQuestion(FortuneReading $reading, string $userQuestion): array
+    public function askQuestion(FortuneReading $reading, string $userQuestion, bool $isAutoBaseChart = false): array
     {
         $userQuestion = trim($userQuestion);
         if ($userQuestion === '') {
@@ -389,8 +391,9 @@ class CelticCrossService
             ]);
 
             // อัพเดต counter ใน reading
+            //   🆕 (2026-06-23) พื้นดวงเปิดตัว (isAutoBaseChart) → นับ used แต่ไม่เริ่มจับเวลา QA window
             $reading->refresh();
-            $reading->markCelticAnswered($sequence);
+            $reading->markCelticAnswered($sequence, ! $isAutoBaseChart);
 
             // 🃏 Celtic บันทึกแยกจาก 39฿ deep:
             //   • Q1 + Q2 + Q3+... → เก็บแยก row ใน fortune_celtic_questions table (มีแล้วด้านบน)

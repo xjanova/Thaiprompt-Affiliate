@@ -1678,10 +1678,10 @@ trait CelticCrossConversationTrait
                     $reading->setConversationState('celtic_birthdate_from_prior', true);
                     // 🌟 (2026-06-19 FTU-260619-C9002) ลูกค้าซื้อซ้ำ (วันเกิดอยู่ในฐาน) ต้องได้ "พื้นดวงเปิดตัว + เรื่องเด่น"
                     //   เหมือน path พิมพ์วันเกิดเอง — เดิม path นี้ "ไหลต่อทักทายเฉยๆ" ไม่ตั้ง celtic_base_chart
-                    //   → reading 7238 (C9002) ข้ามพื้นดวง = เรื่องเด่นหาย. ตั้ง flag ที่นี่ + เริ่ม window แล้วยิงพื้นดวง
+                    //   → reading 7238 (C9002) ข้ามพื้นดวง = เรื่องเด่นหาย. ตั้ง flag ที่นี่ แล้วยิงพื้นดวง
                     //   proactive ตอนสร้าง opening ด้านล่าง (ไม่กินสิทธิ์คำถามแรกของลูกค้า — base chart = seq 1 เหมือน manual)
+                    //   🆕 (2026-06-23) ไม่ start QA window ที่นี่ — เริ่มจับเวลาที่คำถามจริงข้อแรกของลูกค้า (Q2)
                     $reading->setConversationState('celtic_base_chart', true);
-                    $this->startCelticQaWindowIfNeeded($reading);
                     // ไหลต่อไปสร้าง opening ด้านล่าง — จะยิงพื้นดวงเปิดตัวแทนทักทายเฉยๆ
                 } else {
                     // ไม่เคยมีในฐาน → ถามวันเกิดก่อน (ยังไม่ตั้ง celtic_first_answered_at = ยังไม่ start window)
@@ -1754,7 +1754,8 @@ trait CelticCrossConversationTrait
                         $reading,
                         'ช่วยอ่านพื้นดวงรวมของเจ้าชะตาให้หน่อยค่ะ โดยดูจากดาวเจ้าชนะ (วันเดือนปีเกิด) '
                         .'ผสมกับภาพรวมไพ่ทั้ง 10 ใบที่เปิด — ทั้งนิสัยพื้นฐาน จุดเด่นจุดอ่อน และภาพรวม '
-                        .'ความรัก การงาน การเงิน สุขภาพ ในช่วงนี้'
+                        .'ความรัก การงาน การเงิน สุขภาพ ในช่วงนี้',
+                        true // 🆕 (2026-06-23) พื้นดวงเปิดตัว = ไม่เริ่มจับเวลา (เริ่มที่คำถามจริงข้อแรก)
                     );
                     // ถ้าพื้นดวง fail → fallback ทักทายปกติ (กัน opening แตก + เคลียร์ flag กันค้าง)
                     if (empty($openingResult['success']) || trim((string) ($openingResult['response'] ?? '')) === '') {
@@ -1809,20 +1810,10 @@ trait CelticCrossConversationTrait
                 .$openingText;
         }
 
-        // 🌙 (2026-05-23 v3) Start QA window only — เก็บแค่ timestamp ไม่ bump counter
-        //    เดิม: markCelticAnswered(1) → celtic_questions_used = 1 (offset 1 คำถามผิด)
-        //    ใหม่: set celtic_first_answered_at ตรงๆ — ปล่อยให้ counter เริ่ม 0
-        //          → คำถามแรกจริงของลูกค้า markCelticAnswered(1) → used = 1 ✅
-        try {
-            if (empty($reading->celtic_first_answered_at)) {
-                $reading->update(['celtic_first_answered_at' => now()]);
-            }
-        } catch (\Throwable $e) {
-            \Log::warning('Celtic: set celtic_first_answered_at after opening greeting fail', [
-                'reading_id' => $reading->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // 🆕 (2026-06-23, owner) ไม่ start QA window ที่ opening/พื้นดวงอีกต่อไป
+        //   เดิม: set celtic_first_answered_at ตรงนี้ (window เริ่มที่ Q1/พื้นดวง)
+        //   ใหม่: เริ่มจับเวลาที่ "คำถามจริงข้อแรกของลูกค้า" (Q2) ผ่าน markCelticAnswered(startQaWindow=true)
+        //        → พื้นดวงเปิดตัว (Q1 auto) ฟรี ไม่กินเวลา 15 นาที
 
         // 🌙 (2026-05-23 v3) Footer — ประกาศกติกาให้ชัด (5 คำถาม / 15 นาที)
         //    user spec: "ต้องบอกกติการให้ชัดทุกที่"
@@ -1836,6 +1827,14 @@ trait CelticCrossConversationTrait
             .$qLimitLine
             ."⚡ ตอบทันที ไม่มีรอ — พิมพ์ปุ๊บแม่หมอตอบปั๊บ\n"
             .'🖼️ ภาพไพ่จัดเรียง — แม่หมอจะส่งตอนจบเป็นที่ระลึก';
+
+        // 🔔 (2026-06-23) ลูกค้าพร้อมพิมพ์คำถามแล้ว (พื้นดวง/ทักทายส่งแล้ว) → จุดอ้างอิง nudge 1 นาที
+        //   (เฉพาะ path นี้ = prior-birthdate/ทักทาย ; path ถามวันเกิดยัง return ก่อนหน้า ยังไม่ ready)
+        try {
+            $reading->setConversationState('pro_session_ready_at', now()->toIso8601String());
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
 
         return [
             'action' => 'celtic_all_picked',
@@ -2002,7 +2001,7 @@ trait CelticCrossConversationTrait
             // 🌟 (2026-06-08) flag คำทำนายพื้นดวงเปิดตัว — รอบแรกใช้โครงสร้างแบบ 39 (ดวงดาวเต็ม)
             //   ผสานไพ่ 10 ใบ + ยาว 1500-3000 (buildFollowupPrompt อ่าน flag นี้ + เคลียร์ทิ้งหลังใช้)
             $reading->setConversationState('celtic_base_chart', true);
-            $this->startCelticQaWindowIfNeeded($reading);
+            // 🆕 (2026-06-23) ไม่ start window ที่นี่ — เริ่มจับเวลาที่คำถามจริงข้อแรกของลูกค้า (Q2)
 
             \Log::info('Celtic: birthdate captured → generate พื้นดวง (39-style base chart)', [
                 'reading_id' => $reading->id,
@@ -2034,7 +2033,13 @@ trait CelticCrossConversationTrait
         if ($this->looksLikeBirthdateSkip($text)) {
             $reading->setConversationState('celtic_birthdate_pending', false);
             $reading->setConversationState('celtic_birthdate_skipped', true);
-            $this->startCelticQaWindowIfNeeded($reading);
+            // 🆕 (2026-06-23) ไม่ start window ที่นี่ — เริ่มจับเวลาที่คำถามจริงข้อแรกของลูกค้า
+            // 🔔 (2026-06-23 bug-hunt) ข้ามวันเกิด = พร้อมพิมพ์คำถามแล้ว → ตั้งจุดอ้างอิง nudge 1 นาที (ไม่มีพื้นดวง)
+            try {
+                $reading->setConversationState('pro_session_ready_at', now()->toIso8601String());
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
 
             return [
                 'action' => 'celtic_ask_birthdate',
@@ -2054,7 +2059,7 @@ trait CelticCrossConversationTrait
             //   askQuestion ตอบจากไพ่ทันที (ไม่ทิ้งให้พิมพ์ใหม่) — ไหลต่อเป็น card-first
             $reading->setConversationState('celtic_birthdate_pending', false);
             $reading->setConversationState('celtic_birthdate_skipped', true);
-            $this->startCelticQaWindowIfNeeded($reading);
+            // 🆕 (2026-06-23) ไม่ start window ที่นี่ — เริ่มจับเวลาที่คำถามจริงข้อแรกของลูกค้า
 
             $carry = trim($text);
             if ($carry !== '') {
@@ -2064,6 +2069,13 @@ trait CelticCrossConversationTrait
                 ]);
 
                 return $carry; // ไหลเข้า askQuestion ปกติ — ตอบจากไพ่ (ยังไม่มี astrology)
+            }
+
+            // 🔔 (2026-06-23 bug-hunt) ครบ 2 ครั้ง ไม่มีคำถามแนบ = พร้อมพิมพ์คำถาม → ตั้งจุดอ้างอิง nudge
+            try {
+                $reading->setConversationState('pro_session_ready_at', now()->toIso8601String());
+            } catch (\Throwable $e) {
+                // non-blocking
             }
 
             return [
@@ -2130,6 +2142,10 @@ trait CelticCrossConversationTrait
     {
         $question = trim($messageText);
 
+        // 🆕 (2026-06-23) flag: คำถามนี้เป็น "พื้นดวงเปิดตัว auto" (จาก birthdate step) หรือไม่
+        //   → ถ้าใช่ ส่ง isAutoBaseChart=true ให้ askQuestion (นับ used แต่ไม่เริ่มจับเวลา 15 นาที)
+        $isCelticBaseChart = false;
+
         // 🎂 (2026-06-08) ขั้นถามวันเกิด (คำถามแรกบังคับใน Celtic 99) — ต้องอยู่บนสุด ก่อน Q&A ปกติ
         //   handleCelticBirthdateStep คืน:
         //     • array  = จัดการจบแล้ว (ถามวันเกิดซ้ำ / ข้าม) → ส่งกลับลูกค้าเลย
@@ -2143,6 +2159,10 @@ trait CelticCrossConversationTrait
             // ได้วันเกิดแล้ว → แทนข้อความลูกค้าด้วยคำถามพื้นดวง แล้วไหลต่อเข้า askQuestion ปกติ
             $question = $bdStep;
             $messageText = $bdStep;
+            // 🛡️ (2026-06-23 bug-hunt) แยก "คำถามพื้นดวงสังเคราะห์" (parse วันเกิดสำเร็จ → ตั้ง celtic_base_chart)
+            //   ออกจาก "คำถามจริงของลูกค้าที่ carry มา" (พิมพ์คำถามแทนวันเกิดครบ 2 ครั้ง → คืนสตริงคำถามจริง
+            //   โดยไม่ตั้ง celtic_base_chart). เคส carry ต้องเริ่มจับเวลา + ไม่ flag เป็นพื้นดวง
+            $isCelticBaseChart = (bool) $reading->getConversationState('celtic_base_chart', false);
         }
 
         // 🔢 (2026-06-06 R5125) ลูกค้าเลือก "ทั้งสองข้อ" จากกล่องคำถามแนะนำ (1และ2 / เอาสองข้อ / ทั้งคู่)
@@ -2304,8 +2324,11 @@ trait CelticCrossConversationTrait
         //     → job flush + askQuestion(combined) + ส่งทีเดียว. ระหว่างรอ return silent_skip (ไม่ตอบ)
         //   Scope: เฉพาะ Q&A (handleCelticAwaitingQuestion) — การเปิดไพ่ไม่ผ่านนี่ → กดทีละใบยังไว
         //   ปิดได้ด้วย setting celtic_qa_settle_seconds=0 (fallback 10 วิ)
+        //   🛡️ (2026-06-23 bug-hunt) ข้าม settle-buffer สำหรับ "พื้นดวงเปิดตัว" (isCelticBaseChart) —
+        //     เป็นข้อความสังเคราะห์เดี่ยวจากระบบ (ไม่ใช่ลูกค้ารัวคำ) → ไม่ต้อง debounce
+        //     ถ้า buffer จะทำ flag isAutoBaseChart หาย (job เรียก askQuestion ไม่มี flag) → timer เริ่มที่ Q1 ผิด
         $settleSec = (int) ($this->settings->celtic_qa_settle_seconds ?? 10);
-        if ($settleSec > 0) {
+        if ($settleSec > 0 && ! $isCelticBaseChart) {
             $dPlatform = $reading->platform;
             if (! $dPlatform || ! in_array($dPlatform, ['facebook', 'line'], true)) {
                 $cand = $reading->platform_user_id ?: $reading->facebook_user_id ?: '';
@@ -2316,6 +2339,14 @@ trait CelticCrossConversationTrait
                 : ($reading->facebook_user_id ?: $reading->platform_user_id);
 
             if ($dUserId) {
+                // 🔢 (2026-06-23 FIX D fix) carry (both-pick ข้อ 2) → Cache TTL 3 นาที (local var หายเมื่อ silent_skip)
+                //   job อ่านกลับใน finalizeCelticAnswer ด้วย cache()->pull (atomic read+delete) + TTL กัน stale leak ถ้า job หาย
+                if ($carryForwardQuestion !== null && trim((string) $carryForwardQuestion) !== '') {
+                    cache()->put('celtic:pending_carry:'.$reading->id, $carryForwardQuestion, now()->addMinutes(3));
+                }
+                // 🔔 (2026-06-23) ลูกค้าพิมพ์คำถาม (กำลัง buffer) = engaged → กัน nudge ตามถามยิงระหว่างรอ settle window
+                $reading->setConversationState('pro_session_nudge_sent', true);
+
                 app(\App\Services\Fortune\MessageBuffer::class)->append('celtic_q', $dUserId, $question);
                 \App\Jobs\ProcessBufferedCelticMessageJob::dispatch($reading->id, $dPlatform, $dUserId, $settleSec)
                     ->delay(now()->addSeconds($settleSec + 1));
@@ -2374,7 +2405,7 @@ trait CelticCrossConversationTrait
         $result = ['success' => false, 'message' => 'แม่หมอขอตั้งสมาธิที่ไพ่อีกครู่นะคะ'];
         $exceptionThrown = null;
         try {
-            $result = $service->askQuestion($reading, $question);
+            $result = $service->askQuestion($reading, $question, $isCelticBaseChart);
         } catch (\Throwable $askErr) {
             // เก็บไว้ log/return หลัง finally — ห้าม throw ต่อ (จะทำให้ state stuck)
             $exceptionThrown = $askErr;
@@ -2423,6 +2454,41 @@ trait CelticCrossConversationTrait
                 'message' => $softRetryMessage,
                 'reading' => $reading,
             ];
+        }
+
+        // 🔔 (2026-06-23) พื้นดวงเปิดตัว (auto Q1) เพิ่งส่งสำเร็จ → ลูกค้าพร้อมถาม Q2
+        //   ตั้งจุดอ้างอิง nudge 1 นาที (manual-birthdate path ; prior-birthdate ตั้งใน onCelticAllCardsPicked)
+        if ($isCelticBaseChart) {
+            try {
+                $reading->setConversationState('pro_session_ready_at', now()->toIso8601String());
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+        }
+
+        // 🔧 (2026-06-23 FIX D fix) decoration (footer กติกา / กล่องคำถามแนะนำ / carry / off-topic-max-cap)
+        //   แยกเป็น finalizeCelticAnswer ให้ ProcessBufferedCelticMessageJob (settle-buffer path) เรียกได้เหมือนกัน
+        //   ไม่งั้นคำตอบที่ผ่าน buffer จะไม่มี footer/ปุ่มแนะนำ + คำถาม both-pick หาย
+        return $this->finalizeCelticAnswer($reading, $result, $carryForwardQuestion);
+    }
+
+    /**
+     * 🔧 (2026-06-23) Decoration หลัง askQuestion สำเร็จ — off-topic/max-cap + footer กติกา +
+     *   กล่องคำถามแนะนำ (ปุ่มเลข) + carry-forward. ใช้ร่วม inline path (handleCelticAwaitingQuestion)
+     *   + ProcessBufferedCelticMessageJob (กัน drift). public wrapper = finalizeCelticAnswerPublic
+     *
+     * @param  array  $result  ผลจาก CelticCrossService::askQuestion (ต้อง success แล้ว)
+     * @param  string|null  $carryForwardQuestion  คำถามข้อ 2 ที่ค้างจาก both-pick (null = อ่านจาก state — เคส buffer)
+     */
+    protected function finalizeCelticAnswer(FortuneReading $reading, array $result, ?string $carryForwardQuestion = null): array
+    {
+        // 🔢 (2026-06-23 FIX D fix) เคส buffer: carry หายตอน silent_skip → อ่านจาก Cache (pull = read+delete atomic)
+        //   TTL 3 นาที กัน stale leak ถ้า job หาย ; inline both-pick ส่ง param มาตรงๆ (ข้าม Cache)
+        if ($carryForwardQuestion === null) {
+            $cachedCarry = cache()->pull('celtic:pending_carry:'.$reading->id);
+            if (is_string($cachedCarry) && trim($cachedCarry) !== '') {
+                $carryForwardQuestion = $cachedCarry;
+            }
         }
 
         $reading->refresh();
@@ -2630,6 +2696,16 @@ trait CelticCrossConversationTrait
             'suggestion_box' => $suggestionBox,
             'quick_replies' => $suggestionButtons,
         ];
+    }
+
+    /**
+     * 🔧 (2026-06-23) public wrapper — ให้ ProcessBufferedCelticMessageJob เรียก decoration เดียวกับ inline path
+     *   (carry อ่านจาก state ใน finalizeCelticAnswer เอง — buffer path ไม่มี local carry)
+     */
+    public function finalizeCelticAnswerPublic(FortuneReading $reading, array $result): array
+    {
+        // carry (both-pick ข้อ 2) อ่านจาก Cache ภายใน finalizeCelticAnswer เอง (buffer path ไม่มี local carry)
+        return $this->finalizeCelticAnswer($reading, $result, null);
     }
 
     /**
