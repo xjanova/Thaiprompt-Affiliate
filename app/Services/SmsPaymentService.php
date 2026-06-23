@@ -1228,6 +1228,10 @@ class SmsPaymentService
                 $priorBirth = $fcsForReuse->findReusableBirthDateForUser($reading);
                 if ($priorBirth !== null) {
                     $reuseResult = $fcsForReuse->beginDeepGeneralReading($reading, $priorBirth->format('Y-m-d'));
+                    // 🆕 (2026-06-23, owner) ตั้ง flag ให้ตรงกับ path processPaymentConfirmed —
+                    //   เปิดให้ลูกค้า "พิมพ์วันเกิดใหม่ทับ" ได้ที่ขั้นตั้งจิต (handleTarotCardDraw)
+                    $reading->setConversationState('birthdate_auto_filled', true);
+                    $reading->setConversationState('birthdate_reused_from_history', $priorBirth->format('Y-m-d'));
                     Log::info('SMS Payment (Pay-First Deep 39): reuse วันเกิดเดิม → ข้ามขั้นถามวันเกิด', [
                         'reading_id' => $reading->id,
                         'birth_date' => $priorBirth->format('Y-m-d'),
@@ -1247,7 +1251,8 @@ class SmsPaymentService
                 $thanksMessage = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
                     ."🔖 เลขที่บิล: {$billRef}\n"
                     ."💰 ค่าครู: ฿{$payAmountStr}\n\n"
-                    ."🎂 แม่หมอจำวันเกิดของเจ้าชะตาได้แล้ว ไม่ต้องบอกใหม่นะคะ ✨\n\n"
+                    ."🎂 แม่หมอจำวันเกิดของเจ้าชะตาได้แล้ว ไม่ต้องบอกใหม่นะคะ ✨\n"
+                    ."_(ถ้าไม่ใช่ — พิมพ์วันเกิดใหม่ได้เลยค่ะ)_\n\n"
                     .($reuseResult['message'] ?? '');
             } else {
                 // ไม่เคยมีวันเกิด → ขอวันเกิด (ตามเดิม)

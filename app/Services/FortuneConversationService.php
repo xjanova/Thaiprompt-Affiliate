@@ -6057,6 +6057,49 @@ class FortuneConversationService
     }
 
     /**
+     * 🆕 (2026-06-23) สร้างบรรทัดบอกลูกค้าว่า "ใช้วันเกิดเดิม" + เปลี่ยนได้
+     *
+     * คืน '' ถ้าไม่ได้เติมวันเกิดอัตโนมัติ (ไม่รบกวนข้อความ flow ปกติ)
+     */
+    protected function buildReusedBirthdateNote(FortuneReading $reading): string
+    {
+        if (! $reading->getConversationState('birthdate_auto_filled', false)) {
+            return '';
+        }
+
+        $reused = $reading->getConversationState('birthdate_reused_from_history');
+        if (empty($reused)) {
+            return '';
+        }
+
+        return '🎂 แม่หมอใช้ *วันเกิดเดิม* ที่เจ้าชะตาเคยให้ไว้: *'.$this->formatThaiDate($reused)."*\n"
+            ."_(ถ้าไม่ใช่ — พิมพ์วันเกิดใหม่ได้เลยค่ะ)_\n\n";
+    }
+
+    /**
+     * 🆕 (2026-06-23) เช็คว่าข้อความ "หน้าตาเป็นวันเกิดล้วนๆ" หรือไม่ (ก่อนเรียก parseBirthDate)
+     *
+     * ใช้ที่ขั้นตั้งจิต (handleTarotCardDraw) — ก่อนถือว่าเป็นการ "แก้วันเกิด"
+     * เพื่อ: (1) ไม่ให้ parseBirthDate ตก AI fallback กับข้อความมีเลขแต่ไม่ใช่วันเกิด
+     *        (2) ไม่ให้เลขวันเกิดของคนอื่นที่ฝังในประโยคยาวมาทับ birth_date ของบิล
+     *
+     * เงื่อนไข: ข้อความสั้น (≤ 25 ตัวอักษร) + มีรูปทรงวันเกิด
+     *   - ตัวเลข/ตัวเลข/ตัวเลข (15/3/2538, 15-3-2538) หรือ
+     *   - ตัวเลข + ชื่อเดือนไทย + ปี (15 มีนาคม 2538, 15 สค 38)
+     *   (รองรับเลขไทย ๐-๙ ด้วย เพราะ \d กับ /u จับ Unicode digit บน PCRE2/PHP 8.x)
+     */
+    protected function messageLooksLikeBirthdate(string $messageText): bool
+    {
+        $text = trim($messageText);
+        if ($text === '' || mb_strlen($text) > 25) {
+            return false;
+        }
+
+        return (bool) (preg_match('/\d{1,2}\s*[\/\-.]\s*\d{1,2}\s*[\/\-.]\s*\d{2,4}/u', $text)
+            || preg_match('/\d{1,2}\s*[ก-ฮ]{2,12}\s*\d{2,4}/u', $text));
+    }
+
+    /**
      * 🔁 (2026-06-08) หาวันเกิดที่ลูกค้าเคยให้มาก่อน (39 หรือ Celtic) — "ดึง 2 ทาง"
      *
      * พื้นชะตา (birth_date) เก็บที่ column เดียวกันทั้ง 39 และ Celtic → ดึงข้ามระบบได้
@@ -6866,6 +6909,47 @@ class FortuneConversationService
             ];
         }
 
+        // 🆕 (2026-06-23, owner) ดูดวง 39 — ระบบเติมวันเกิดเดิมให้อัตโนมัติ (ลูกค้าเคยดูมาแล้ว)
+        //   ถ้าลูกค้าพิมพ์ "วันเกิดใหม่" แทนการกด "พร้อม" → ถือเป็นการแก้ไขวันเกิด
+        //   → อัปเดต + ขอตั้งจิตใหม่ด้วยวันเกิดที่แก้ (ยังเปิดให้แก้ซ้ำได้จนกว่าจะเปิดไพ่จริง)
+        //   gate ด้วย flag birthdate_auto_filled → ไม่กระทบ flow ปกติ (ลูกค้าพิมพ์วันเกิดเอง)
+        //   ⚠️ ต้อง "รูปทรงเป็นวันเกิด + สั้น" ก่อน parse (messageLooksLikeBirthdate) — กัน 2 เรื่อง:
+        //      (1) parseBirthDate ตก AI fallback กับข้อความมีเลขแต่ไม่ใช่วันเกิด เช่น "ดู 1 ใบ"/"รอ 5 นาที"
+        //          (เปลือง token + หน่วง path เปิดไพ่ — เคสนี้เดิมเปิดไพ่ได้เลยไม่ต้องเรียก AI)
+        //      (2) เลขวันเกิด "คนอื่น" ฝังในประโยคคำถาม ("แฟนเกิด 12/3/2535 จะไปกันรอดไหม")
+        //          → ทับ birth_date ของบิลเป็นของคนอื่น (ทำนายผิดคนทั้งดวง)
+        if ($reading->getConversationState('birthdate_auto_filled', false)
+            && $this->messageLooksLikeBirthdate($messageText)) {
+            $overrideBirthdate = $this->parseBirthDate($messageText);
+            if (! empty($overrideBirthdate)
+                && $overrideBirthdate !== $reading->birth_date?->format('Y-m-d')) {
+                $reading->update(['birth_date' => $overrideBirthdate]);
+                $reading->setConversationState('birthdate_reused_from_history', null);
+                // รีเซ็ตการตั้งจิต — ให้ตั้งจิตใหม่กับวันเกิดที่เพิ่งแก้
+                $reading->setConversationState('tarot_intention_confirmed', false);
+                $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
+
+                $formattedOverride = $this->formatThaiDate($overrideBirthdate);
+
+                Log::info('Fortune Deep39: ลูกค้าแก้วันเกิด (override วันเกิดเดิมที่ระบบเติมให้)', [
+                    'reading_id' => $reading->id,
+                    'birth_date' => $overrideBirthdate,
+                ]);
+
+                return [
+                    'action' => 'awaiting_tarot_intention',
+                    'message' => "📅 *เปลี่ยนวันเกิดเป็น {$formattedOverride} แล้วค่ะ* ✨\n\n"
+                        ."🧘 *ตั้งจิตอีกครั้ง* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
+                        .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ค่ะ',
+                    'reading' => $reading,
+                    'show_quick_replies' => true,
+                    'quick_replies' => [
+                        ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
+                    ],
+                ];
+            }
+        }
+
         // 🧘 ขั้นตั้งจิตก่อนเปิดไพ่ — ส่งข้อความเตือนสติ แล้วผู้ใช้ตอบอะไรก็ถือว่า "ตั้งจิตเสร็จ"
         //    เพราะการอ่านข้อความ + ตอบกลับ = ผู้ใช้รับรู้แล้วว่าต้องตั้งจิต
         //    ❌ ไม่บังคับ wait 5 วินาที (UX แย่ — ผู้ใช้กดปุ่มเร็วก็ติดอยู่)
@@ -6974,6 +7058,11 @@ class FortuneConversationService
             // เก็บไพ่ใน conversation state (รวม image_url สำหรับส่งรูป)
             $cardImageUrl = $card->image_url;
             $reading->addTarotCard($currentIndex, $card->id, $cardNameTh, $cardNameEn, $isReversed, $meaning, $cardImageUrl);
+
+            // 🆕 (2026-06-23) เปิดไพ่จริงแล้ว → ปิดโหมดแก้วันเกิดอัตโนมัติ (กัน flag ค้าง)
+            if ($reading->getConversationState('birthdate_auto_filled', false)) {
+                $reading->setConversationState('birthdate_auto_filled', false);
+            }
 
             Log::info('Fortune: สุ่มไพ่ยิปซีได้', [
                 'reading_id' => $reading->id,
@@ -8446,6 +8535,30 @@ class FortuneConversationService
             //      recover command (push "ขอวันเกิด" ผ่าน POST_PURCHASE_UPDATE message tag)
             //      ป้องกัน gen เปล่า + ป้องกัน save deep_response=''
             $payFirstMode = (bool) $reading->getConversationState('pay_first_mode', false);
+
+            // 🆕 (2026-06-23, owner) ดูดวง 39 — ลูกค้าที่ "เคยดูมาแล้ว" มีวันเกิดในระบบ →
+            //   เติมวันเกิดเดิมให้อัตโนมัติ "ข้ามการถามวันเกิด" แล้วไปขั้นตั้งจิต/เปิดไพ่ได้เลย
+            //   (เฉพาะ Deep — Celtic 99 มี birthdate gate ของตัวเอง ห้ามแตะ)
+            //   ตั้ง flag birthdate_auto_filled เพื่อ: (1) บอกลูกค้าว่าใช้วันเกิดเดิม
+            //   (2) เปิดทางให้พิมพ์วันเกิดใหม่ทับได้ที่ขั้นตั้งจิต (handleTarotCardDraw)
+            if (empty($birthDate)
+                && $payFirstMode
+                && $reading->reading_type === FortuneReading::READING_TYPE_DEEP) {
+                $priorBirth = $this->findReusableBirthDateForUser($reading);
+                $rememberedBirthdate = $priorBirth?->format('Y-m-d');
+                if (! empty($rememberedBirthdate)) {
+                    $reading->update(['birth_date' => $rememberedBirthdate]);
+                    $reading->setConversationState('birthdate_auto_filled', true);
+                    $reading->setConversationState('birthdate_reused_from_history', $rememberedBirthdate);
+                    $birthDate = $rememberedBirthdate;
+
+                    Log::info('Fortune Deep39: เติมวันเกิดเดิมอัตโนมัติ (ลูกค้าเคยดูมาแล้ว) → ข้ามถามวันเกิด', [
+                        'reading_id' => $reading->id,
+                        'birth_date' => $rememberedBirthdate,
+                    ]);
+                }
+            }
+
             $hasBirthdate = ! empty($birthDate);
             $hasQuestions = ! empty($questions);
 
@@ -8484,6 +8597,8 @@ class FortuneConversationService
                 if ($streaming && $channelManager) {
                     $billRef = $reading->bill_reference ?? '-';
                     $amountStr = number_format((float) ($reading->amount_paid ?? 39), 2);
+                    // 🆕 (2026-06-23) ถ้าระบบเติมวันเกิดเดิมให้ → แทรกบรรทัดบอกลูกค้า + เปิดทางเปลี่ยน
+                    $reusedNote = $this->buildReusedBirthdateNote($reading);
                     $prompt = ! $hasBirthdate
                         ? "🙏 รับชำระเงิน ฿{$amountStr} สำเร็จค่ะ คุณ{$name} ✨\n\n"
                             ."🌙 *แม่หมอจันทราเปิดประตูดวงให้แล้ว*\n"
@@ -8491,6 +8606,7 @@ class FortuneConversationService
                             ."🪄 ขอ*วันเดือนปีเกิด*ก่อนนะคะ ✨\n"
                             .'📝 *ตัวอย่าง:* 15 มีนาคม 2538 / 15/3/2538'
                         : "🙏 รับชำระเงิน ฿{$amountStr} สำเร็จค่ะ ✨\n\n"
+                            .$reusedNote
                             ."🧘 *ตั้งจิตก่อนเปิดไพ่* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
                             .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ทันทีค่ะ';
 
@@ -8529,6 +8645,7 @@ class FortuneConversationService
                         $tarotManager->sendResponse($platform, $userId, [
                             'action' => 'awaiting_tarot_intention',
                             'message' => "🙏 รับชำระเงินเรียบร้อยแล้วค่ะ ✨\n\n"
+                                .$this->buildReusedBirthdateNote($reading)
                                 ."🧘 *ตั้งจิตก่อนเปิดไพ่* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
                                 .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ทันทีค่ะ',
                             'reading' => $reading,
