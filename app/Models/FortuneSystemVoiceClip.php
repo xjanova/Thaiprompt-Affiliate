@@ -144,6 +144,43 @@ class FortuneSystemVoiceClip extends Model
     }
 
     /**
+     * เวอร์ชันไฟล์เสียงสล็อตที่ใช้จริง (epoch วินาที) — สำหรับ cache-bust URL
+     *
+     * อิงเวลาสร้าง/อัปโหลดล่าสุด → เปลี่ยนทุกครั้งที่ "เจนเสียงใหม่"
+     * (tts = generated_at / upload = upload_audio_at)
+     */
+    public function activeAudioVersion(): ?int
+    {
+        $ts = $this->activeSource() === 'upload' ? $this->upload_audio_at : $this->generated_at;
+
+        return $ts?->getTimestamp();
+    }
+
+    /**
+     * 🔊 URL เสียงสล็อตที่ใช้จริง + cache-bust (?v=version) — "URL ที่ใช้ส่งลูกค้า"
+     *
+     * ⚠️ ทำไมต้องมี: ไฟล์เสียงเก็บที่ path คงที่ ({key}.mp3) → URL เดิมทุกครั้งที่เจนใหม่
+     *   Facebook cache สื่อตาม URL (is_reusable=true) + เซิร์ฟเวอร์ตั้ง Cache-Control:max-age
+     *   → เจนเสียงใหม่แล้ว แต่ FB ยังส่ง "เสียงเก่า" ให้ลูกค้า เพราะ URL ไม่เปลี่ยน
+     *   เติม ?v={timestamp การเจน} → เจนใหม่ = URL ใหม่ → FB โหลดไฟล์ใหม่
+     *   (ใช้ timestamp ไม่ใช่ random → ส่งเวอร์ชันเดิมซ้ำ FB ยัง reuse cache ได้ ไม่เปลืองโหลด)
+     */
+    public function deliveryAudioUrl(): ?string
+    {
+        $url = $this->activeAudioUrl();
+        if (empty($url)) {
+            return null;
+        }
+
+        $version = $this->activeAudioVersion();
+        if (! $version) {
+            return $url;
+        }
+
+        return $url.(str_contains($url, '?') ? '&' : '?').'v='.$version;
+    }
+
+    /**
      * คลิปนี้มีไฟล์เสียง "ในสล็อตที่เลือกใช้" แล้วหรือยัง
      *
      * ⚠️ หมายถึงสล็อต active เท่านั้น (ใช้ตัดสินใจส่งจริง) — ไม่ใช่ "มีไฟล์ใดๆ"

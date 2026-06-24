@@ -78,7 +78,9 @@ class FortuneSystemVoiceService
                 return null;
             }
 
-            return $url;
+            // 🔊 คืน URL พร้อม cache-bust (?v=version) — กัน FB ส่งเสียงเก่าที่ cache ไว้
+            //   (path ไฟล์คงที่ทุกครั้งที่เจนใหม่ → ถ้าไม่ติดเวอร์ชัน FB จะ reuse เสียงเดิม)
+            return $clip->deliveryAudioUrl();
         } catch (\Throwable $e) {
             // fail-open ฝั่งเสียง: เงียบ ไม่ทำให้ flow ส่งข้อความพัง
             return null;
