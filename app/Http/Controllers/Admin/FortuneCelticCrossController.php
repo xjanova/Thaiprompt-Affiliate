@@ -115,6 +115,8 @@ class FortuneCelticCrossController extends Controller
         $validated = $request->validate([
             'enable_celtic_cross' => 'sometimes|boolean',
             'celtic_cross_proactive_enabled' => 'sometimes|boolean',
+            // 🪬 (2026-06-24) โหมดดูคุณไสย์ / มนต์ดำ — gate ปุ่มลูกค้า + toggle แอดมิน
+            'enable_celtic_black_magic_mode' => 'sometimes|boolean',
             'celtic_cross_price' => 'numeric|min:1|max:9999',
             // 🌙 (2026-05-23 v3) Hard cap 5 คำถาม / 15 นาที — บังคับให้ min 1 (ไม่ใช่ 0)
             //    user spec: "ถาม 5 คำถาม ภายใน 15 นาที และต้องบอกกติการให้ชัดทุกที่"
@@ -128,6 +130,8 @@ class FortuneCelticCrossController extends Controller
 
         $settings->enable_celtic_cross = $request->boolean('enable_celtic_cross');
         $settings->celtic_cross_proactive_enabled = $request->boolean('celtic_cross_proactive_enabled');
+        // 🪬 (2026-06-24) โหมดดูคุณไสย์ / มนต์ดำ
+        $settings->enable_celtic_black_magic_mode = $request->boolean('enable_celtic_black_magic_mode');
         $settings->celtic_cross_price = $validated['celtic_cross_price'] ?? 99.00;
         $settings->celtic_cross_max_questions = $validated['celtic_cross_max_questions'] ?? 5;
         $settings->celtic_cross_qa_window_minutes = $validated['celtic_cross_qa_window_minutes'] ?? 15;
@@ -800,6 +804,8 @@ class FortuneCelticCrossController extends Controller
 
         $validated = $request->validate([
             'question' => 'required|string|min:3|max:1000',
+            // 🪬 (2026-06-24) โหมดคุณไสย์ — toggle จากหน้า Admin Ask AI
+            'black_magic_mode' => 'sometimes|boolean',
         ]);
 
         if (! $reading->is_paid) {
@@ -850,6 +856,32 @@ class FortuneCelticCrossController extends Controller
 
         // 🤖 เรียก service sync
         $settings = FortuneTellingSetting::getSettings();
+
+        // 🪬 (2026-06-24) โหมดคุณไสย์ — แอดมิน toggle หน้านี้ → ตั้ง/ปลดธงบน reading (gate ด้วย master setting)
+        //   buildBlackMagicDirective (ผ่าน isBlackMagicModeForced) อ่านธงนี้ → เทเรื่องคุณไสย์ 100%
+        //   ใช้ทั้งคำตอบของแอดมิน + คำถามที่ลูกค้าถามเองต่อ (ติดถาวรจนแอดมินปิด)
+        if ($request->has('black_magic_mode')) {
+            $bmOn = $request->boolean('black_magic_mode')
+                && (bool) ($settings->enable_celtic_black_magic_mode ?? true);
+            $reading->setConversationState('black_magic_mode', $bmOn);
+
+            // sync carrier cache ให้ตรงกัน (กัน carrier เก่าค้างย้อนเปิด/ปิดโหมดสวนกับธง)
+            $bmUid = $reading->platform_user_id ?? $reading->facebook_user_id;
+            if (! empty($bmUid)) {
+                if ($bmOn) {
+                    \Illuminate\Support\Facades\Cache::put('fortune:force_black_magic:'.$bmUid, true, now()->addHours(2));
+                } else {
+                    \Illuminate\Support\Facades\Cache::forget('fortune:force_black_magic:'.$bmUid);
+                }
+            }
+
+            Log::info('Celtic admin ask AI: ตั้งค่าโหมดคุณไสย์', [
+                'reading_id' => $reading->id,
+                'black_magic_mode' => $bmOn,
+                'admin_id' => auth()->id(),
+            ]);
+        }
+
         $service = new CelticCrossService($settings);
         $result = $service->askQuestionAsAdmin($reading, $validated['question']);
 

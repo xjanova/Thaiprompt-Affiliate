@@ -4125,6 +4125,12 @@ class FacebookWebhookController extends Controller
                 Cache::put("fortune:force_tier:{$senderId}", 'celtic', 30);
                 $this->processConversationalMessage($senderId, 'ดูดวง');
             })(),
+            // 🪬 (2026-06-24) ปุ่มโหมดดูคุณไสย์ 99฿ — force_tier='celtic_blackmagic'
+            //   (FCS single-click bypass ตั้ง carrier fortune:force_black_magic แล้ว normalize เป็น celtic)
+            'TIER_CELTIC_BLACKMAGIC' => (function () use ($senderId) {
+                Cache::put("fortune:force_tier:{$senderId}", 'celtic_blackmagic', 30);
+                $this->processConversationalMessage($senderId, 'ดูดวง');
+            })(),
             // 🆓 (2026-05-01) ปุ่ม "ดูดวงฟรี" จาก welcome — ส่ง category picker (ไม่ผ่าน tier menu)
             //   ⚠️ legacy — ระบบฟรีแบบเก่า, ค่อยๆ หายไป
             'FORTUNE_FREE' => $this->handleFortuneFreePicker($senderId),

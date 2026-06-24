@@ -745,6 +745,12 @@ class FortuneChannelManager
                         $buttons[] = ['content_type' => 'text',
                             'title' => FortuneLocaleService::lo("👑 VIP ดูไพ่เต็ม {$celticPriceLabel}฿", "💎 ໂອນຄ່າບູຊາຄູ {$celticPriceLabel}฿"),
                             'payload' => 'TIER_CELTIC_99'];
+                        // 🪬 (2026-06-24) ปุ่มโหมดดูคุณไสย์ (Celtic-only intro)
+                        if ((bool) ($result['black_magic_enabled'] ?? false)) {
+                            $buttons[] = ['content_type' => 'text',
+                                'title' => FortuneLocaleService::lo("🪬 ดูคุณไสย {$celticPriceLabel}฿", "🪬 ເບິ່ງຄຸນໄສ {$celticPriceLabel}฿"),
+                                'payload' => 'TIER_CELTIC_BLACKMAGIC'];
+                        }
                         $buttons[] = ['content_type' => 'text',
                             'title' => FortuneLocaleService::lo('🙏 ไว้คราวหน้า', '🙏 ໄວ້ຄາວໜ້າ'),
                             'payload' => 'CANCEL_FORTUNE'];
@@ -769,6 +775,12 @@ class FortuneChannelManager
                         $buttons[] = ['content_type' => 'text',
                             'title' => FortuneLocaleService::lo('👑 VIP ดูไพ่เต็ม 99฿', '💎 ໂອນຄ່າບູຊາຄູ 99฿'),
                             'payload' => 'TIER_CELTIC_99'];
+                    }
+                    // 🪬 (2026-06-24) ปุ่มโหมดดูคุณไสย์ 99฿ (gate enable_celtic_black_magic_mode)
+                    if ((bool) ($result['black_magic_enabled'] ?? false)) {
+                        $buttons[] = ['content_type' => 'text',
+                            'title' => FortuneLocaleService::lo('🪬 ดูคุณไสย 99฿', '🪬 ເບິ່ງຄຸນໄສ 99฿'),
+                            'payload' => 'TIER_CELTIC_BLACKMAGIC'];
                     }
                     $buttons[] = ['content_type' => 'text',
                         'title' => FortuneLocaleService::lo('❌ ยกเลิก', '❌ ຍົກເລີກ'),
@@ -2358,6 +2370,13 @@ class FortuneChannelManager
                             'label' => FortuneLocaleService::lo("✨ เริ่มเลย {$celticPriceLabel}฿", "✨ ເລີ່ມເລີຍ {$celticPriceLabel}฿"),
                             'text' => 'เริ่มเลย',
                         ];
+                        // 🪬 (2026-06-24) ปุ่มโหมดดูคุณไสย์ (Celtic-only intro)
+                        if ((bool) ($result['black_magic_enabled'] ?? false)) {
+                            $quickReplies[] = [
+                                'label' => FortuneLocaleService::lo("🪬 ดูคุณไสย {$celticPriceLabel}฿", "🪬 ເບິ່ງຄຸນໄສ {$celticPriceLabel}฿"),
+                                'text' => 'ดูคุณไสย',
+                            ];
+                        }
                         $quickReplies[] = [
                             'label' => FortuneLocaleService::lo('🙏 ไว้คราวหน้า', '🙏 ໄວ້ຄາວໜ້າ'),
                             'text' => FortuneLocaleService::lo('ไว้คราวหน้า', 'ໄວ້ຄາວໜ້າ'),
@@ -2384,6 +2403,13 @@ class FortuneChannelManager
                         $quickReplies[] = [
                             'label' => FortuneLocaleService::lo('👑 VIP 99฿', '👑 VIP 99฿'),
                             'text' => '99',
+                        ];
+                    }
+                    // 🪬 (2026-06-24) ปุ่มโหมดดูคุณไสย์ — ส่ง text "ดูคุณไสย" → handleTierChoice จับ keyword
+                    if ((bool) ($result['black_magic_enabled'] ?? false)) {
+                        $quickReplies[] = [
+                            'label' => FortuneLocaleService::lo('🪬 ดูคุณไสย 99฿', '🪬 ເບິ່ງຄຸນໄສ 99฿'),
+                            'text' => 'ดูคุณไสย',
                         ];
                     }
                     $quickReplies[] = [

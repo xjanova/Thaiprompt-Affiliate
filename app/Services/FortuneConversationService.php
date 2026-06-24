@@ -1111,6 +1111,19 @@ class FortuneConversationService
                 }
             }
 
+            // 🪬 (2026-06-24) โหมดคุณไสย์ — FB postback ตั้ง force_tier='celtic_blackmagic'
+            //   → ตั้ง carrier flag (buildBlackMagicDirective/doStartCelticCrossFlow อ่าน) แล้ว normalize เป็น 'celtic'
+            //     ให้ flow สร้างบิล Celtic 99 ตามปกติ (ราคา/engine เดียวกัน ต่างที่ prompt ล็อกเรื่องคุณไสย์)
+            if ($forceTier === 'celtic_blackmagic') {
+                if (! empty($facebookUserId) && (bool) ($this->settings->enable_celtic_black_magic_mode ?? true)) {
+                    Cache::put('fortune:force_black_magic:'.$facebookUserId, true, now()->addHours(2));
+                }
+                $forceTier = 'celtic';
+            } elseif (in_array($forceTier, ['celtic', 'deep'], true) && ! empty($facebookUserId)) {
+                // เลือกแพคเกจปกติ (ไม่ใช่คุณไสย์) → ล้าง carrier เก่า กัน bleed เข้าโหมดคุณไสย์ครั้งถัดไป
+                Cache::forget('fortune:force_black_magic:'.$facebookUserId);
+            }
+
             if (in_array($forceTier, ['deep', 'celtic'], true)) {
                 Log::info('Fortune: Single-click tier bypass', [
                     'facebook_user_id' => $facebookUserId,
@@ -13400,11 +13413,25 @@ class FortuneConversationService
                 return $this->respondReturningSlip($existing, $platform, $userId);
             }
 
-            // 🛡️ (2026-06-07) มี flow อื่นค้างอยู่ (Deep 39 / basic / Celtic ที่ดูไปแล้ว) → ห้ามสร้าง Celtic ใหม่
-            //   กันเคส handleSlipImageOnly fallback (มี active reading) เรียกมา → สลิป Deep 39 ถูกมองเป็น Celtic โอนขาด
-            //   no-flow path ปกติจะไม่มี active → ผ่านด่านนี้ไปสร้างบิลได้
-            if (FortuneReading::activeConversation($userId)->exists()) {
-                Log::info('💎 SlipOK auto-provision: มี flow อื่นค้างอยู่ → ไม่สร้างบิลใหม่ ปล่อย handler เดิม', [
+            // 🛡️ (2026-06-07, แคบลง 2026-06-24) bail เฉพาะเมื่อมี "บิลรอจ่าย/Stripe" ค้างอยู่จริงเท่านั้น
+            //   เหตุผล: สถานะรอจ่าย (Deep 39 / Celtic / Stripe) มี handler เดิม (handleSlipImageOnly / bill-path)
+            //     ที่เอาสลิปไปจับกับบิลนั้นได้เอง → ห้ามสร้าง Celtic ใหม่ทับ (กันสลิป Deep ถูกมองเป็น Celtic โอนขาด)
+            //   ⚠️ เดิมใช้ activeConversation()->exists() กว้างเกินไป → จับ "pre-bill states" ติดมาด้วย
+            //     (tier_choice / discovery / awaiting_payment_method / collecting_* / consent / free_predicted)
+            //     ซึ่งยัง "ไม่มีบิล" → ไม่มี handler ตัวไหนเอาสลิปไปตรวจ → สลิปหล่นเงียบ แอดมินต้องตัดมือ
+            //   🐛 เคสจริง Noona Pantawan (FB 27282227524743358, 2026-06-24): stash สลิปไว้ + พิมพ์ "จ่ายแล้วค่ะ"
+            //     ระหว่างนั่งหน้าเมนู tier_choice (reading 7681) → activeConversation=true → bail → ขอสลิปซ้ำ
+            //     → ลูกค้าส่งรูปอีก handleSlipImageOnly เงียบ → auto-provision ไม่เคยทำงาน → แอดมินตัดบิลมือ
+            //   หมายเหตุ: paid / celtic-active ถูกกันด้วย hasPaidActiveReading + findRecoverableCelticReading ข้างบนแล้ว
+            //     และชุดนี้ตรงกับ guard $hasActive ใน tryReturningPaidSlipCheck ที่ปล่อย tier_choice ผ่านมาตั้งแต่ต้น
+            $hasBillAwaitingPayment = FortuneReading::activeConversation($userId)
+                ->whereIn('conversation_status', array_merge(
+                    FortuneReading::PENDING_PAYMENT_STATUSES,
+                    [FortuneReading::STATUS_PENDING_STRIPE_PAYMENT]
+                ))
+                ->exists();
+            if ($hasBillAwaitingPayment) {
+                Log::info('💎 SlipOK auto-provision: มีบิลรอจ่ายค้างอยู่ → ไม่สร้างบิลใหม่ ปล่อย handler เดิม', [
                     'platform' => $platform, 'user_id' => $userId,
                 ]);
 

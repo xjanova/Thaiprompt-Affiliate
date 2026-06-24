@@ -312,6 +312,9 @@
             $debugToolsUrl = route('admin.fortune.debug-tools.index');
             $totalQuestionsAsked = $reading->celticQuestions()->count();
             $customerCanStillAsk = $reading->canAskMoreCeltic();
+            // 🪬 (2026-06-24) โหมดคุณไสย์ — gate (master setting) + สถานะปัจจุบันของ reading นี้
+            $bmGateOn = (bool) (\App\Models\FortuneTellingSetting::getSettings()->enable_celtic_black_magic_mode ?? true);
+            $bmCurrent = (bool) $reading->getConversationState('black_magic_mode', false);
         @endphp
         <div x-data="adminAskAi()" class="tp-card" style="padding:24px;">
             <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
@@ -346,6 +349,20 @@
                           placeholder="เช่น: ความรักของฉันในเดือนนี้จะเป็นอย่างไร?"
                           style="width:100%; background:transparent; border:0; outline:0; padding:12px 14px; color:var(--ink); font-size:14px; resize:none; font-family:inherit;"></textarea>
             </div>
+
+            @if ($bmGateOn)
+                {{-- 🪬 (2026-06-24) โหมดดูคุณไสย์ — เปิด = AI ตอบเทเรื่องของ/มนต์ดำ 100% ทั้งรอบ (ติดถาวรจนปิด) --}}
+                <label class="tp-inset" style="display:flex; align-items:flex-start; gap:11px; padding:13px 15px; border-radius:12px; cursor:pointer; margin-top:14px; border-left:4px solid #9b59b6;">
+                    <input type="checkbox" x-model="blackMagicMode"
+                           style="width:18px; height:18px; margin-top:2px; accent-color:#9b59b6; cursor:pointer;">
+                    <div style="flex:1;">
+                        <div style="font-weight:700; color:var(--ink); font-size:14px;">🪬 โหมดดูคุณไสย์ / มนต์ดำ</div>
+                        <div style="font-size:12px; color:var(--ink2); margin-top:3px;">
+                            เปิด = AI ล็อกคำตอบเทเรื่องของ/คุณไสย์ 100% ทั้งรอบ (โดนอะไร/ใครทำ/วิธีแก้ ตรงตามไพ่ ไม่มั่ว ไม่ตอบหมวดอื่น) — ติดถาวรกับบิลนี้จนปิด ใช้กับคำถามที่ลูกค้าถามเองด้วย
+                        </div>
+                    </div>
+                </label>
+            @endif
 
             <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; flex-wrap:wrap; gap:10px;">
                 <span style="font-size:12px; color:var(--ink2);">
@@ -493,6 +510,7 @@
 function adminAskAi() {
     return {
         question: '',
+        blackMagicMode: {{ $bmCurrent ? 'true' : 'false' }}, // 🪬 (2026-06-24) โหมดคุณไสย์ — sync จากสถานะ reading
         running: false,
         result: null,
         startedAt: null,
@@ -523,7 +541,7 @@ function adminAskAi() {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Accept': 'application/json',
                     },
-                    body: JSON.stringify({ question: this.question }),
+                    body: JSON.stringify({ question: this.question, black_magic_mode: this.blackMagicMode }),
                 });
 
                 if (!res.ok) {

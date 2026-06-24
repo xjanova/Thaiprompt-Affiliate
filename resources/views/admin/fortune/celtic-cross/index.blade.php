@@ -104,6 +104,21 @@
                     </div>
                 </div>
             </label>
+
+            {{-- 🪬 (2026-06-24) โหมดดูคุณไสย์ / มนต์ดำ — gate ทั้งปุ่มฝั่งลูกค้า + toggle ฝั่งแอดมิน --}}
+            <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:16px; border-radius:14px; cursor:pointer; margin-top:12px; border-left:4px solid #9b59b6;">
+                <input type="hidden" name="enable_celtic_black_magic_mode" value="0">
+                <input type="checkbox" name="enable_celtic_black_magic_mode" value="1"
+                       {{ ($settings->enable_celtic_black_magic_mode ?? true) ? 'checked' : '' }}
+                       style="width:18px; height:18px; margin-top:2px; accent-color:#9b59b6; cursor:pointer;">
+                <div style="flex:1;">
+                    <div style="font-weight:700; color:var(--ink); font-size:14.5px;">🪬 เปิดโหมดดูคุณไสย์ / มนต์ดำ (99฿)</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">
+                        เปิด — ลูกค้าเห็นปุ่ม "ดูคุณไสย 99฿" ตอนเลือกแพคเกจ + แอดมินสลับโหมดได้ที่หน้า Admin Ask AI ของแต่ละบิล
+                        (AI ล็อกคำตอบเทเรื่องของ/มนต์ดำ ตรงตามไพ่ ไม่มั่ว ไม่ตอบหมวดอื่น). ปิด — ซ่อนปุ่ม + ปิดโหมดทุกที่
+                    </div>
+                </div>
+            </label>
         </div>
 
         {{-- ── ราคา & เงื่อนไข ── --}}

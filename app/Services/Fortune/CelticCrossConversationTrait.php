@@ -335,6 +335,23 @@ trait CelticCrossConversationTrait
             $message .= $celticBlock;
         }
 
+        // ━━━━━━━━━━━━━━━━━━━━━━━━
+        // 🪬 (2026-06-24) ดูคุณไสย์ / มนต์ดำ 99฿ — โหมดเจาะเรื่องของโดยเฉพาะ (gate enable_celtic_black_magic_mode)
+        //   ราคาเท่า Celtic 99 (ใช้ engine เดียวกัน 10 ใบ) แต่ prompt ล็อกเทเรื่องคุณไสย์ 100% ทั้งรอบ
+        // ━━━━━━━━━━━━━━━━━━━━━━━━
+        $blackMagicEnabled = $celticEnabled && (bool) ($this->settings->enable_celtic_black_magic_mode ?? true);
+        if ($blackMagicEnabled) {
+            $message .= FortuneLocaleService::lo(
+                "━━━━━━━━━━━━━━━━━\n"
+                    ."🪬 ดูคุณไสย์ / มนต์ดำ / โดนของ — ค่าครู {$celticPrice} บาท\n"
+                    ."เปิดไพ่ 10 ใบ ล็อกพลังทั้งสำรับเจาะเรื่องของ/คุณไสย์โดยเฉพาะ\n"
+                    ."ดูว่าโดนจริงไหม ชนิดของ ใครทำ และวิธีแก้ที่ทำได้จริง\n\n",
+                "━━━━━━━━━━━━━━━━━\n"
+                    ."🪬 ເບິ່ງຄຸນໄສ / ມົນດຳ / ໂດນຂອງ — ຄ່າຄູ {$celticPrice} ບາດ\n"
+                    ."ເປີດໄພ່ 10 ໃບ ລັອກພະລັງທັງສຳຮັບເຈາະເລື່ອງຂອງ/ຄຸນໄສໂດຍສະເພາະ\n\n"
+            );
+        }
+
         // 👇 CTA — รวมตัวเลือกตามที่มี
         // 🆕 (2026-05-27) Celtic-only intro = CTA tone "พร้อม/ไว้คราวหน้า" (ไม่ใช่ "เลือกแพคเกจ")
         if ($isCelticOnlyIntro) {
@@ -379,6 +396,7 @@ trait CelticCrossConversationTrait
             'celtic_price' => $celticPrice,
             'offer_free' => $offerFree, // 🎁 (2026-05-03) flag ให้ ChannelManager เพิ่มปุ่ม "🎁 ทำนายฟรี"
             'celtic_only_intro' => $isCelticOnlyIntro, // 🆕 (2026-05-27) flag ให้ ChannelManager เปลี่ยน label ปุ่ม
+            'black_magic_enabled' => $blackMagicEnabled, // 🪬 (2026-06-24) flag ให้ ChannelManager เพิ่มปุ่ม "ดูคุณไสย"
         ];
     }
 
@@ -474,6 +492,34 @@ trait CelticCrossConversationTrait
                     return $this->startCelticCrossFlow($reading);
                 }
             }
+        }
+
+        // 🪬 (2026-06-24) ดูคุณไสย์ / มนต์ดำ — โหมดบังคับ (ลูกค้ากดปุ่ม "ดูคุณไสย" หรือพิมพ์เอง)
+        //   ⚠️ ตรวจก่อน generic Celtic — ปุ่มส่ง text "ดูคุณไสย" ไม่มี "99"/"celtic" ; gate ด้วย setting
+        //   ตั้งธง black_magic_mode บน reading (persist) + carrier cache → buildBlackMagicDirective เทเรื่องนี้ 100%
+        if ((bool) ($this->settings->enable_celtic_black_magic_mode ?? true)) {
+            $bmKeywords = ['คุณไสย', 'มนต์ดำ', 'มนตร์ดำ', 'ดูคุณไสย', 'tier_celtic_blackmagic', 'blackmagic', 'black_magic'];
+            foreach ($bmKeywords as $kw) {
+                if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                    $bmUserId = $reading->facebook_user_id ?? $reading->platform_user_id;
+                    $reading->setConversationState('black_magic_mode', true);
+                    if (! empty($bmUserId)) {
+                        \Illuminate\Support\Facades\Cache::put('fortune:force_black_magic:'.$bmUserId, true, now()->addHours(2));
+                    }
+                    \Illuminate\Support\Facades\Log::info('Fortune: ลูกค้าเลือกโหมดดูคุณไสย์ (tier_choice)', [
+                        'reading_id' => $reading->id,
+                        'keyword' => $kw,
+                    ]);
+
+                    return $this->startCelticCrossFlow($reading);
+                }
+            }
+        }
+
+        // 🪬 (2026-06-24) ผ่านด่านคุณไสย์มาแล้ว = ลูกค้าเลือกแพคเกจปกติ → ล้าง carrier เก่า กัน bleed เข้าโหมดคุณไสย์
+        $bmClearUid = $reading->facebook_user_id ?? $reading->platform_user_id;
+        if (! empty($bmClearUid)) {
+            \Illuminate\Support\Facades\Cache::forget('fortune:force_black_magic:'.$bmClearUid);
         }
 
         // 🔮 99฿ Celtic Cross — keyword: "99", "celtic", "เต็ม", "เต็มสำรับ", "ไพ่ยิปซีเต็ม", "พรีเมียม"
@@ -723,6 +769,15 @@ trait CelticCrossConversationTrait
         // 🌍 (2026-06-03) Foreign-customer gate (defense ที่ chokepoint สร้างบิล Celtic)
         //   ครอบ path ที่ไม่ผ่าน startDeepReadingFlow (เช่น พิมพ์ "99" ตอน TIER_CHOICE)
         $fcUserId = $reading->facebook_user_id ?: $reading->platform_user_id;
+
+        // 🪬 (2026-06-24) โหมดคุณไสย์ — carrier flag จากปุ่ม FB (force_tier=celtic_blackmagic) / single-click bypass
+        //   → ติดธงบน reading ที่จะกลายเป็นบิล Celtic ให้ถาวร (กันธงหายถ้า reading object เปลี่ยนระหว่าง start flow)
+        if ($fcUserId && (bool) ($this->settings->enable_celtic_black_magic_mode ?? true)
+            && \Illuminate\Support\Facades\Cache::get('fortune:force_black_magic:'.$fcUserId)
+            && ! $reading->getConversationState('black_magic_mode', false)) {
+            $reading->setConversationState('black_magic_mode', true);
+        }
+
         if ($fcUserId) {
             $fcPlat = $reading->platform ?: $this->detectPlatformFromUserId((string) $fcUserId);
             if ($this->isForeignCustomerBlocked($fcPlat, (string) $fcUserId, null, $reading->facebook_user_name)) {
