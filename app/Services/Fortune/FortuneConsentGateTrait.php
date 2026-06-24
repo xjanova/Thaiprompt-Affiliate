@@ -193,13 +193,35 @@ trait FortuneConsentGateTrait
                 ];
             }
 
-            Log::info('Fortune: consent gate ค้าง + ข้อความไม่ชัด → เด้งกล่องกติกาซ้ำ (กัน leak ไปขอวันเกิด)', [
+            // 🆕 (2026-06-24) ลูกค้าเห็นกติกาแล้ว + เลือกแพ็กเกจแล้ว แต่พิมพ์ข้อความที่
+            //   "ไม่ใช่ยอมรับชัด และไม่ใช่ปฏิเสธ" — ส่วนใหญ่ = สับสน/ทำไม่เป็น/ถามวิธี (ลูกค้าสูงอายุ)
+            //   เคสจริง PSID 26341241742179291 (ชายเกิด 2498): "ทำไม่ถูกครับ ยังไม่เข้าใจ"
+            //   → เดิมเด้งกล่องกติกาเดิมซ้ำ = สิ่งเดียวที่เขาไม่เข้าใจอยู่แล้ว → ลูปจนเลิก (เสียลูกค้า)
+            //   owner decision (2026-06-24): ไม่ใช่ปฏิเสธ → ตัดเข้าสร้างบิล+QR เลย
+            //   (QR + เลขบัญชี = คำตอบของ "ทำไม่เป็น" + เห็นกติกา 1 รอบแล้ว = ยินยอมโดยปริยาย)
+            //
+            //   🛡️ Safety: กรอง "ลังเล/ยังไม่พร้อม" ที่ isCancelRequest/softDecline จับไม่ติด
+            //      (เช่น "ยังไม่พร้อม" หลุด 'ยัง'-exclusion ใน looksLikeSoftDeclineDuringPayment)
+            //      + ข้อความว่าง/แนบรูป → คงพฤติกรรมเดิม (เด้งกล่องซ้ำ) ไม่ตัดบิลให้คนยังไม่พร้อม
+            //      (เคารพกฎ "ลูกค้าปฏิเสธ ห้ามตื้อ"). hesitation จับเฉพาะคำกริยา "ความพร้อม/จ่าย"
+            //      — ไม่ชน "ยังไม่เข้าใจ/ยังไม่รู้" (= สับสน ต้องช่วย = ตัดบิล)
+            if (mb_strlen(trim($messageText)) === 0 || $this->looksLikeConsentHesitation($messageText)) {
+                Log::info('Fortune: consent gate ค้าง + ลังเล/ยังไม่พร้อม/ว่าง → เด้งกล่องกติกาซ้ำ (ไม่ตัดบิล)', [
+                    'user_id' => $uid,
+                    'tier' => $pendingTier,
+                    'text_preview' => mb_substr($messageText, 0, 40),
+                ]);
+
+                return $this->buildConsentGateResponse($pendingTier, null, true);
+            }
+
+            Log::info('Fortune: consent gate ค้าง + ไม่ปฏิเสธ (สับสน/ถามวิธี) → ตัดเข้าสร้างบิล (auto-consent)', [
                 'user_id' => $uid,
                 'tier' => $pendingTier,
                 'text_preview' => mb_substr($messageText, 0, 40),
             ]);
 
-            return $this->buildConsentGateResponse($pendingTier, null, true);
+            // fall-through ↓ → สร้างบิล (เส้นทางเดียวกับ accept ชัด)
         }
 
         // ตั้ง flag one-shot + เคลียร์ pending
@@ -265,6 +287,33 @@ trait FortuneConsentGateTrait
         }
 
         return false;
+    }
+
+    /**
+     * 🕊️ (2026-06-24) ตรวจ "ลังเล/ยังไม่พร้อม" ที่กล่องกติกา — กันตัดบิลให้คนที่ยังไม่พร้อม
+     *
+     * ใช้คู่กับ handleConsentAcceptIfPending (auto-consent flow): เมื่อข้อความ "ไม่ใช่ยอมรับ
+     * และไม่ใช่ปฏิเสธชัด" เราเลือกตัดเข้าสร้างบิล (owner decision 2026-06-24) — แต่ต้องอุด
+     * รอยรั่ว refusal ที่ isCancelRequest/looksLikeSoftDeclineDuringPayment จับไม่ติด
+     * (เช่น "ยังไม่พร้อม" โดน 'ยัง'-exclusion ใน softDecline → หลุด → ถ้าไม่กรองจะตัดบิลผิด)
+     *
+     * 🎯 จับเฉพาะคำกริยา "ความพร้อม/การจ่าย/ขอเลื่อน" เท่านั้น — ต้อง *ไม่* ชนคำสับสน
+     *    ("ยังไม่เข้าใจ/ยังไม่รู้/ทำไม่เป็น") ที่ลูกค้าต้องการความช่วยเหลือ = ควรตัดบิล+QR
+     */
+    protected function looksLikeConsentHesitation(string $messageText): bool
+    {
+        $t = mb_strtolower(trim($messageText));
+        if ($t === '') {
+            return false;
+        }
+
+        // คำที่สื่อ "ยังไม่พร้อมจ่าย / ขอเลื่อน / ปฏิเสธจ่าย" แบบไม่กำกวม
+        //   (ไม่รวมคำกว้าง "รอ/เดี๋ยว" เดี่ยวๆ เพราะมักแปลว่า "รอแป๊บกำลังจะโอน" = เดินหน้า)
+        return (bool) preg_match(
+            '/(ยังไม่พร้อม|ไม่พร้อม|ยังไม่สะดวก|ไม่สะดวก|ยังไม่โอน|ยังไม่จ่าย|ยังไม่อยากจ่าย|'
+            .'ไม่ตกลง|ไม่ยอมรับ|เดี๋ยวค่อย|ขอคิดก่อน|ขอคิดดู|ไว้ค่อย|ไว้ทีหลัง|เอาไว้ก่อน)/u',
+            $t
+        );
     }
 
     /**
