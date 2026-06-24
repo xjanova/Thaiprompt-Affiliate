@@ -29,6 +29,7 @@ class FortuneKnowledgeService
         FortuneKnowledge::CATEGORY_FENG_SHUI,
         FortuneKnowledge::CATEGORY_GUARDIAN_SPIRITS,
         FortuneKnowledge::CATEGORY_DEITIES,
+        FortuneKnowledge::CATEGORY_PATRON_DEITY,
     ];
 
     /** หมวด "ชีวิต" ที่ detect ได้ (per-card ใน config/fortune_card_life.php) */

@@ -92,6 +92,8 @@ class FortuneKnowledge extends Model
 
     public const CATEGORY_PERSON_ROLE = 'person_role';
 
+    public const CATEGORY_PATRON_DEITY = 'patron_deity';
+
     public const CATEGORY_GENERAL = 'general';
 
     /**
@@ -121,6 +123,7 @@ class FortuneKnowledge extends Model
         self::CATEGORY_LEGAL_DISPUTES,
         self::CATEGORY_REMEDY_BOOST,
         self::CATEGORY_PERSON_ROLE,
+        self::CATEGORY_PATRON_DEITY,
         self::CATEGORY_GENERAL,
     ];
 
@@ -148,6 +151,7 @@ class FortuneKnowledge extends Model
         self::CATEGORY_LEGAL_DISPUTES => '⚖️ คดีความ/ข้อพิพาท/สัญญา',
         self::CATEGORY_REMEDY_BOOST => '🪷 แก้กรรม/สะเดาะเคราะห์/เสริมดวง',
         self::CATEGORY_PERSON_ROLE => '🧑‍🤝‍🧑 ตำแหน่งบุคคล (ใครในชีวิต)',
+        self::CATEGORY_PATRON_DEITY => '🕉️ องค์เทพประจำตัว (มี/องค์ไหน/บูชาเปิดดวง)',
         self::CATEGORY_GENERAL => '📚 ทั่วไป',
     ];
 
