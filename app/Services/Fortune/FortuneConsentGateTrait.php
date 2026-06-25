@@ -79,6 +79,11 @@ trait FortuneConsentGateTrait
             $reading->setConversationState('flow_nudge_sent_at', null);
         }
 
+        // 🪧 (2026-06-25) อยู่หน้ากล่องกติกา = pay-intent ชัด (กำลังจะกดบูชาครู+โอน) → ถ้าลูกค้า
+        //   โอนแล้วส่งสลิปมา "ก่อนกดปุ่ม/ไม่พิมพ์โอนแล้ว" → ตรวจ+เปิดให้เอง ไม่ตกร่อง
+        //   (ช่วงระหว่าง consent gate → กดพร้อมบูชาครู ยังไม่มีบิล → handler อื่นจับสลิปไม่ได้)
+        $this->markAwaitingPaymentSlip($uid, 'consent_gate');
+
         Log::info('Fortune: แสดงกล่องกติกาก่อนสร้างบิล', [
             'user_id' => $uid,
             'tier' => $tier,

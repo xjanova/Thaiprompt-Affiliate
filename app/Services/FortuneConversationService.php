@@ -12861,6 +12861,42 @@ class FortuneConversationService
     }
 
     /**
+     * 🪧 (2026-06-25) ตั้งธง "กำลังรอสลิป" เมื่อระบบเพิ่งบอกลูกค้าว่าจะจ่ายยังไง/ที่ไหน
+     *   (ส่งเลขบัญชี handleBankAccountRequest / แสดงกล่องกติกาก่อนสร้างบิล consent gate) = สัญญาณ pay-intent ชัด
+     *
+     *   เคส FTU-260625 (PSID 36573298968984111): ลูกค้า "โอนแล้วส่งสลิปเลย ไม่พิมพ์โอนแล้ว" + ส่ง*ก่อน*มีบิล
+     *   → สลิปตกร่อง (เก็บ pending เงียบ ไม่มี handler เอาไปตรวจ) → แอดมินต้องตัดมือ.
+     *   owner decision (2026-06-25): "สลิป = เคลมจ่ายเลย" — slip image ระหว่าง pay-intent = paid-claim
+     *
+     *   วิธี: ตั้ง flag เดียวกับตอนลูกค้าพิมพ์ "โอนแล้ว" (returning_slip_ask) → pipeline เดิมทำงานทันที
+     *     (webhook image gate → handleReturningSlipImage → autoProvisionCelticFromSlip) โดย *ไม่ต้องแก้ webhook*
+     *   guard ที่คุมอยู่แล้ว: classifier (returningImageLooksLikeSlip) กันรูปไม่ใช่สลิป + dedup กันสลิปซ้ำ
+     *     → ไม่เผาโควต้า SlipOK กับรูปสุ่ม + เคารพ enable_image_vision=false (ไม่วิเคราะห์รูปแชทฟรี)
+     *   พฤติกรรม downstream = เหมือน path "พิมพ์โอนแล้ว" เป๊ะ (ไม่เพิ่ม behavior ใหม่ แค่ trigger กว้างขึ้น)
+     *
+     *   TTL 45 นาที (สั้นกว่า explicit-claim 1 ชม.) + ไม่ทับธงเดิมที่ TTL ยาวกว่า (กัน reset explicit-claim)
+     */
+    public function markAwaitingPaymentSlip(string $userId, string $reason = ''): void
+    {
+        if (empty($userId)) {
+            return;
+        }
+        try {
+            $key = 'fortune:returning_slip_ask:'.$userId;
+            // ไม่ตั้งทับธงที่มีอยู่ (เช่น explicit "โอนแล้ว" 1 ชม.) เพื่อไม่ตัด TTL ให้สั้นลง
+            if (! \Illuminate\Support\Facades\Cache::has($key)) {
+                \Illuminate\Support\Facades\Cache::put($key, true, now()->addMinutes(45));
+                Log::debug('🪧 ตั้งธงรอสลิป (pay-intent) — รูปสลิปใบถัดไปจะถูกตรวจ+เปิดบิลให้เอง', [
+                    'user_id' => $userId,
+                    'reason' => $reason,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // non-blocking — ตั้งธงไม่ได้ก็แค่กลับไปพฤติกรรมเดิม (เก็บ pending เงียบ)
+        }
+    }
+
+    /**
      * 🧾 (2026-05-31) Returning customer — ทิ้งไปแล้วกลับมาบอก "โอนแล้ว/ยังไม่ได้ดู" (ไม่มีบิล active)
      *   เดิม: บอทเปิด flow ขายใหม่ (แย่). ใหม่: ตรวจสลิปที่เคยส่ง (look-back) → ตัดบิล+เปิดไพ่ ; ไม่มีสลิป → ขอสลิป
      *
@@ -18861,6 +18897,10 @@ PROMPT;
                 ? "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงเชิงลึกค่ะ 🔮"
                 : "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงค่ะ 🔮";
 
+            // 🪧 (2026-06-25) เพิ่งส่งเลขบัญชี = pay-intent → ถ้าลูกค้าโอนแล้วส่งสลิปมา (ไม่พิมพ์โอนแล้ว)
+            //   ก่อนมีบิล → ตรวจ+เปิดบิลให้เอง ไม่ตกร่อง (เคส PSID 36573298968984111)
+            $this->markAwaitingPaymentSlip($facebookUserId, 'bank_account_info');
+
             return [
                 'action' => 'bank_account_info',
                 'message' => $message,
@@ -18873,6 +18913,9 @@ PROMPT;
             ]);
 
             // Fallback: แสดงบัญชีธนาคารพื้นฐาน
+            // 🪧 (2026-06-25) ส่งเลขบัญชี = pay-intent → รอสลิป (ดู markAwaitingPaymentSlip)
+            $this->markAwaitingPaymentSlip($facebookUserId, 'bank_account_info_fallback');
+
             return [
                 'action' => 'bank_account_info',
                 'message' => "🏦 บัญชีธนาคาร\n\n".$this->getBankAccountsListMessage(),
