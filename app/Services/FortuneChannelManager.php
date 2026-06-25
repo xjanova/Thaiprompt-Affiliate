@@ -2825,7 +2825,20 @@ class FortuneChannelManager
                         }
                     }
 
-                    $sent = $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                    // 🎧 (2026-06-25) มีบทสรุปพร้อมอ่านเสียง → แนบปุ่ม "🎧 อ่านให้ฟัง" (กดแทนพิมพ์)
+                    //   เดิม LINE branch ส่ง text เปล่า ทั้งที่ข้อความปิดบอก "กดปุ่มด้านล่าง" → ปุ่มไม่เคยโผล่
+                    //   (FB มีปุ่มอยู่แล้วที่ celtic_session_ended:1261 — branch LINE ตกหล่นตอน wire voice 20-21 มิ.ย.)
+                    //   owner 2026-06-25: เพิ่ม "ปุ่มอย่างเดียว" — ไม่ auto-push เสียง (กัน LINE OA push quota)
+                    //   กดปุ่ม → ส่ง text "อ่านให้ฟัง" → looksLikeVoiceReadRequest → handleCelticVoiceReadRequest (throttle 60s)
+                    $sent = ! empty($result['voice_on_demand_ready'])
+                        ? $this->sendLineMessageWithQuickReply(
+                            $lineService,
+                            $userId,
+                            $message,
+                            $replyToken,
+                            [['label' => '🎧 อ่านให้ฟัง', 'text' => 'อ่านให้ฟัง']]
+                        )
+                        : $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
 
                     // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — push bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
                     $this->sendReviewInviteLine($lineService, $userId, $result);

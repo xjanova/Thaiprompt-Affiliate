@@ -281,7 +281,14 @@
                         @foreach($recentReadings as $reading)
                             <tr style="border-top:1px solid var(--sd);">
                                 {{-- Bill --}}
-                                <td style="padding:11px 12px; font-family:monospace; font-size:12px; color:var(--ink);">{{ $reading->bill_reference ?? '#'.$reading->id }}</td>
+                                <td style="padding:11px 12px; font-family:monospace; font-size:12px; color:var(--ink);">
+                                    {{ $reading->bill_reference ?? '#'.$reading->id }}
+                                    {{-- 🪬 (2026-06-25) ป้ายบอกว่าลูกค้าใช้ "โหมดดูคุณไสย์" รอบนี้ (ล็อกทำนายเรื่องของ/มนต์ดำ 100%) --}}
+                                    @if(data_get($reading->conversation_state, 'black_magic_mode'))
+                                        <span class="tp-pill" title="ลูกค้าเลือกโหมดดูคุณไสย์ / มนต์ดำ — ทำนายล็อกเรื่องของ/คุณไสย์ทั้งรอบ"
+                                              style="display:inline-block; margin-top:4px; background:rgba(123,80,168,.16); color:#7b50a8; font-size:10px; font-weight:700;">🪬 คุณไสย</span>
+                                    @endif
+                                </td>
 
                                 {{-- ลูกค้า --}}
                                 <td style="padding:11px 12px; color:var(--ink);">{{ $reading->facebook_user_name ?? '-' }}</td>
