@@ -510,7 +510,7 @@
 function adminAskAi() {
     return {
         question: '',
-        blackMagicMode: {{ $bmCurrent ? 'true' : 'false' }}, // 🪬 (2026-06-24) โหมดคุณไสย์ — sync จากสถานะ reading
+        blackMagicMode: {{ ($bmCurrent ?? false) ? 'true' : 'false' }}, // 🪬 (2026-06-24) โหมดคุณไสย์ — sync จากสถานะ reading (?? false: @push อยู่นอก @if ที่นิยาม $bmCurrent → กัน undefined เมื่อ reading ยังไม่จ่าย/ไพ่<10)
         running: false,
         result: null,
         startedAt: null,
