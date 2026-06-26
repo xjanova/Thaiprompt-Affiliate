@@ -1,196 +1,99 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'สร้างลิงก์เชิญ')
 
 @section('content')
-{{-- แสดงข้อความแนะนำถ้าไม่ได้เป็น MLM Member --}}
-@if(isset($notMlmMember) && $notMlmMember)
-<div class="max-w-4xl mx-auto">
-    <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl shadow-xl p-8 text-white">
-        <div class="flex flex-col md:flex-row items-center gap-6">
-            <div class="flex-shrink-0">
-                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                </div>
-            </div>
-            <div class="flex-1 text-center md:text-left">
-                <h2 class="text-2xl font-bold mb-2">คุณยังไม่ได้เป็นสมาชิก MLM</h2>
-                <p class="text-amber-100 mb-4">เพื่อสร้างลิงก์เชิญและเริ่มสร้างทีมงาน กรุณาสมัครเป็นสมาชิก MLM ก่อน</p>
-                <div class="flex flex-wrap gap-3 justify-center md:justify-start">
-                    <a href="{{ route('user.mlm.dashboard') }}"
-                       class="inline-flex items-center px-6 py-3 bg-white text-amber-600 font-bold rounded-xl hover:bg-amber-50 transition-all shadow-lg hover:shadow-xl">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                        ไปหน้า MLM Dashboard
-                    </a>
-                    <a href="{{ route('user.prospects.index') }}"
-                       class="inline-flex items-center px-6 py-3 bg-white/20 text-white font-bold rounded-xl hover:bg-white/30 transition-all">
-                        ← กลับ
-                    </a>
-                </div>
-            </div>
+<div style="display:flex; flex-direction:column; gap:18px; max-width:920px; margin-inline:auto;">
+
+    @if(isset($notMlmMember) && $notMlmMember)
+    {{-- ไม่ได้เป็นสมาชิก MLM --}}
+    <div class="tp-card" style="padding:18px 20px; display:flex; flex-wrap:wrap; align-items:center; gap:14px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+        <span class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:20px; background:#e0a52e;"><i class="fas fa-triangle-exclamation" style="color:#fff;"></i></span>
+        <div style="flex:1; min-width:200px;">
+            <div style="font-weight:700;">คุณยังไม่ได้เป็นสมาชิก MLM</div>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">สมัครเป็นสมาชิก MLM ก่อนเพื่อสร้างลิงก์เชิญและเริ่มสร้างทีม</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <a href="{{ route('user.mlm.dashboard') }}" class="tp-btn tp-btn-primary">ไปหน้า MLM Dashboard</a>
+            <a href="{{ route('user.prospects.index') }}" class="tp-btn">← กลับ</a>
         </div>
     </div>
+    @else
+
+    {{-- หัวข้อ --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-link" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:180px;">
+                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">สร้างลิงก์เชิญสมาชิก</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">สร้างลิงก์เพื่อเชิญเพื่อนของคุณสมัครผ่าน LINE</div>
+            </div>
+            <a href="{{ route('user.prospects.index') }}" class="tp-btn">← กลับ</a>
+        </div>
+    </div>
+
+    {{-- วิธีใช้งาน --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">ℹ️ วิธีการใช้งาน</div>
+        <div style="display:flex; flex-direction:column; gap:11px;">
+            @php
+                $steps = [
+                    'กดปุ่ม "สร้างลิงก์เชิญ" ด้านล่างเพื่อสร้างลิงก์พิเศษสำหรับเชิญเพื่อน',
+                    'แชร์ลิงก์หรือ QR Code ให้เพื่อนผ่าน LINE, Facebook หรือช่องทางอื่นๆ',
+                    'เมื่อเพื่อนคลิกลิงก์ ระบบจะนำไปเพิ่มเพื่อน LINE OA เพื่อเริ่มสมัครสมาชิก',
+                    'ติดตามสถานะการสมัครได้ที่หน้า "ผู้มุ่งหวังของฉัน"',
+                ];
+            @endphp
+            @foreach($steps as $i => $step)
+                <div style="display:flex; gap:11px; align-items:flex-start;">
+                    <span class="tp-tile" style="width:28px; height:28px; border-radius:9px; font-size:12px; font-weight:800;">{{ $i + 1 }}</span>
+                    <div style="font-size:13.5px; padding-top:3px;">{{ $step }}</div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- จุดเด่น --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
+        @php
+            $features = [
+                ['💰', 'รายได้จากการแนะนำ', 'รับค่าคอมมิชชั่นเมื่อเพื่อนที่แนะนำสมัครสำเร็จ'],
+                ['📊', 'ติดตามสถานะ', 'ติดตามความคืบหน้าของผู้มุ่งหวังแต่ละคนแบบ Real-time'],
+                ['🤝', 'สร้างทีมของคุณ', 'สร้างเครือข่ายและทีมของคุณเองผ่านระบบ MLM'],
+            ];
+        @endphp
+        @foreach($features as [$emoji, $head, $desc])
+            <div class="tp-card" style="padding:18px; text-align:center;">
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px; margin:0 auto;">{{ $emoji }}</span>
+                <div style="font-weight:700; font-size:14px; margin-top:10px;">{{ $head }}</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">{{ $desc }}</div>
+            </div>
+        @endforeach
+    </div>
+
+    {{-- ปุ่มสร้าง --}}
+    <div class="tp-card" style="padding:28px 20px; text-align:center;">
+        <span class="tp-tile" style="width:64px; height:64px; border-radius:20px; font-size:30px; margin:0 auto;"><i class="fas fa-link" style="color:#fff;"></i></span>
+        <div style="font-size:20px; font-weight:800; margin-top:14px;">พร้อมเริ่มต้นแล้วใช่ไหม?</div>
+        <div style="font-size:13px; color:var(--ink2); margin-top:4px;">คลิกปุ่มด้านล่างเพื่อสร้างลิงก์เชิญพิเศษของคุณ</div>
+        <form method="POST" action="{{ route('user.prospects.store') }}" style="margin-top:18px;">
+            @csrf
+            <button type="submit" class="tp-btn tp-btn-primary" style="height:48px; padding:0 26px; font-size:15px;"><i class="fas fa-plus"></i> สร้างลิงก์เชิญเลย</button>
+        </form>
+        <div style="font-size:11px; color:var(--ink2); margin-top:12px;">* ลิงก์เชิญมีอายุ 7 วัน หลังจากนั้นจะหมดอายุอัตโนมัติ</div>
+    </div>
+
+    {{-- หมายเหตุ --}}
+    <div class="tp-card" style="padding:18px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+        <div style="font-weight:700; font-size:13.5px; margin-bottom:8px;">⚠️ หมายเหตุสำคัญ</div>
+        <ul style="margin:0; padding-left:18px; font-size:12.5px; color:var(--ink2); display:flex; flex-direction:column; gap:5px;">
+            <li>แต่ละลิงก์เชิญใช้ได้กับบุคคลหนึ่งคนเท่านั้น</li>
+            <li>สร้างลิงก์เชิญได้ไม่จำกัดจำนวน</li>
+            <li>ลิงก์หมดอายุหลัง 7 วัน หรือเมื่อมีการสมัครสำเร็จ</li>
+            <li>ผู้คลิกลิงก์ต้องเพิ่มเพื่อน LINE OA ของเราเพื่อเริ่มสมัคร</li>
+        </ul>
+    </div>
+    @endif
 </div>
-@else
-<div class="max-w-4xl mx-auto space-y-6">
-    {{-- Premium Hero Header (Indigo-Purple for Create Prospect Link) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8 mb-6">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-link"></i>
-            </div>
-        </div>
-
-        <div class="relative z-10">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-user-plus text-4xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">🔗 สร้างลิงก์เชิญสมาชิก</h1>
-                        <p class="text-indigo-100 mt-1">สร้างลิงก์เพื่อเชิญเพื่อนของคุณสมัครผ่าน LINE</p>
-                    </div>
-                </div>
-
-                <a href="{{ route('user.prospects.index') }}"
-                   class="glass-fusion px-6 py-3 hover:bg-white/30 text-white rounded-xl transition font-semibold">
-                    ← กลับ
-                </a>
-            </div>
-        </div>
-    </div>
-
-    {{-- Instructions --}}
-    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg shadow-md p-8 border border-indigo-200 dark:border-indigo-800">
-        <div class="flex items-start">
-            <div class="flex-shrink-0">
-                <svg class="w-12 h-12 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-            <div class="ml-6 flex-1">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">วิธีการใช้งาน</h2>
-                <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-                    <div class="flex items-start">
-                        <span class="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white text-xs font-bold mr-3">1</span>
-                        <p>กดปุ่ม <strong>"สร้างลิงก์เชิญ"</strong> ด้านล่างเพื่อสร้างลิงก์พิเศษสำหรับเชิญเพื่อนของคุณ</p>
-                    </div>
-                    <div class="flex items-start">
-                        <span class="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white text-xs font-bold mr-3">2</span>
-                        <p>แชร์ลิงก์หรือ QR Code ที่ได้ให้เพื่อนของคุณผ่าน LINE, Facebook หรือช่องทางอื่นๆ</p>
-                    </div>
-                    <div class="flex items-start">
-                        <span class="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white text-xs font-bold mr-3">3</span>
-                        <p>เมื่อเพื่อนคุณคลิกลิงก์ ระบบจะนำไปสู่ LINE Bot เพื่อเริ่มกระบวนการสมัครสมาชิก</p>
-                    </div>
-                    <div class="flex items-start">
-                        <span class="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white text-xs font-bold mr-3">4</span>
-                        <p>ติดตามสถานะการสมัครของเพื่อนคุณได้ที่หน้า <strong>"ผู้มุ่งหวังของฉัน"</strong></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Features --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
-                <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">รายได้จากการแนะนำ</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">รับค่าคอมมิชชั่นเมื่อเพื่อนที่คุณแนะนำสมัครสมาชิกสำเร็จ</p>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
-                <svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">ติดตามสถานะ</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">ติดตามความคืบหน้าของผู้มุ่งหวังแต่ละคนได้แบบ Real-time</p>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
-                <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">สร้างทีมของคุณ</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">สร้างเครือข่ายและทีมของคุณเองผ่านระบบ MLM</p>
-        </div>
-    </div>
-
-    {{-- Create Button --}}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-        <div class="text-center">
-            <svg class="mx-auto w-20 h-20 text-indigo-600 dark:text-indigo-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-            </svg>
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">พร้อมเริ่มต้นแล้วใช่ไหม?</h2>
-            <p class="text-gray-600 dark:text-gray-400 mb-6">คลิกปุ่มด้านล่างเพื่อสร้างลิงก์เชิญพิเศษของคุณ</p>
-
-            <form method="POST" action="{{ route('user.prospects.store') }}" class="inline-block">
-                @csrf
-                <button type="submit"
-                        class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white text-lg font-bold rounded-lg transition shadow-lg hover:shadow-xl flex items-center">
-                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    สร้างลิงก์เชิญเลย
-                </button>
-            </form>
-
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                * ลิงก์เชิญจะมีอายุ 7 วัน หลังจากนั้นจะหมดอายุอัตโนมัติ
-            </p>
-        </div>
-    </div>
-
-    {{-- Info Box --}}
-    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
-        <div class="flex items-start">
-            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div>
-                <h3 class="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-1">หมายเหตุสำคัญ</h3>
-                <ul class="text-sm text-yellow-800 dark:text-yellow-200 space-y-1 list-disc list-inside">
-                    <li>แต่ละลิงก์เชิญสามารถใช้ได้กับบุคคลหนึ่งคนเท่านั้น</li>
-                    <li>คุณสามารถสร้างลิงก์เชิญได้ไม่จำกัดจำนวน</li>
-                    <li>ลิงก์จะหมดอายุหลังจาก 7 วัน หรือเมื่อมีการสมัครสำเร็จ</li>
-                    <li>ผู้ที่คลิกลิงก์จะต้องเพิ่มเพื่อน LINE Bot ของเราเพื่อเริ่มสมัคร</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
-@endif
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush

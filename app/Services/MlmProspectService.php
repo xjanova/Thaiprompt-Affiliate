@@ -17,7 +17,9 @@ class MlmProspectService
     public function createInvitationLink(MlmMember $member): MlmProspect
     {
         $token = MlmProspect::generateReferralToken();
-        $url = route('line.signup.invitation', ['token' => $token]);
+        // ระบบ LINE Membership Signup เดิมถูกลบไปแล้ว → ใช้หน้าสมัครแบบบังคับเพิ่มเพื่อน LINE OA
+        // ส่ง ref=member_code (ผูกผู้แนะนำ) + prospect=token (คงโทเค็นไว้ใน URL เผื่อ tracking)
+        $url = route('line.registration.register', ['ref' => $member->member_code, 'prospect' => $token]);
 
         $prospect = MlmProspect::create([
             'sponsor_mlm_member_id' => $member->id,

@@ -106,7 +106,13 @@ class MlmProspectController extends Controller
             ->with(['registeredUser', 'sponsorUser'])
             ->firstOrFail();
 
-        return view('user.prospects.show', compact('prospect'));
+        // สร้าง URL เชิญแบบสดจากข้อมูลปัจจุบัน (รองรับทั้ง prospect เก่า/ใหม่ — เลี่ยง invitation_url เดิมที่อาจชี้ route ที่ถูกลบ)
+        $invitationUrl = route('line.registration.register', [
+            'ref' => $mlmMember->member_code,
+            'prospect' => $prospect->referral_token,
+        ]);
+
+        return view('user.prospects.show', compact('prospect', 'invitationUrl'));
     }
 
     /**
