@@ -120,6 +120,21 @@
                 </div>
             </label>
 
+            {{-- ⚡ (2026-06-26) Bypass — ข้ามกล่องกติกา/รหัสเสียงทั้งหมด → สร้างบิลทันที --}}
+            <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:16px; border-radius:14px; cursor:pointer; margin-top:12px; border-left:4px solid #d9534f;">
+                <input type="hidden" name="consent_gate_bypass" value="0">
+                <input type="checkbox" name="consent_gate_bypass" value="1"
+                       {{ ($settings->consent_gate_bypass ?? false) ? 'checked' : '' }}
+                       style="width:18px; height:18px; margin-top:2px; accent-color:#d9534f; cursor:pointer;">
+                <div style="flex:1;">
+                    <div style="font-weight:700; color:var(--ink); font-size:14.5px;">⚡ ข้ามกล่องกติกาทั้งหมด → สร้างบิลทันที</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">
+                        เปิด — เลือกแพคเกจแล้ว<b>ข้ามกล่องกติกา + รหัสเสียงทั้งหมด</b> ออก QR/บิลทันที (flow ลื่นสุด).
+                        <b>มีศักดิ์เหนือทุกตัวเลือกด้านล่าง</b> (เปิดอันนี้ = การตั้งค่าเสียง/รหัสด้านล่างไม่ทำงาน). ปิด — กล่องกติกาทำงานปกติ
+                    </div>
+                </div>
+            </label>
+
             {{-- 🔊 (2026-06-26) บังคับฟังเสียงกติกา + กรอกรหัสท้ายคลิป ก่อนสร้างบิล --}}
             <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:16px; border-radius:14px; cursor:pointer; margin-top:12px; border-left:4px solid #e0a52e;">
                 <input type="hidden" name="enable_consent_audio_code" value="0">

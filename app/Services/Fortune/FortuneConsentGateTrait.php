@@ -59,6 +59,12 @@ trait FortuneConsentGateTrait
      */
     protected function consentGateOrNull(string $uid, string $tier, ?FortuneReading $reading = null): ?array
     {
+        // ⚡ (2026-06-26) Bypass สวิตช์ — ข้ามกล่องกติกา/รหัสเสียงทั้งหมด → สร้างบิลทันที (ตาม tier ที่เลือก)
+        //   มีศักดิ์เหนือทุก setting (เช็คก่อนสุด). owner เปิดเมื่ออยากให้ flow ลื่นไม่มีด่านกติกาเลย
+        if ((bool) ($this->settings->consent_gate_bypass ?? false)) {
+            return null;
+        }
+
         // ปิดทั้งระบบ → ไม่ขวาง flow เดิม
         if (! $this->settings->isConsentEnabled()) {
             return null;

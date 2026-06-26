@@ -121,6 +121,8 @@ class FortuneCelticCrossController extends Controller
             'enable_consent_audio_code' => 'sometimes|boolean',
             'consent_audio_code_voice_provider' => 'nullable|string|in:minimax,openai_tts,google_tts,gtts',
             'consent_audio_code_min_unpaid_bills' => 'nullable|integer|min:0|max:99',
+            // ⚡ ข้ามกล่องกติกาทั้งหมด → สร้างบิลทันที
+            'consent_gate_bypass' => 'sometimes|boolean',
             'celtic_cross_price' => 'numeric|min:1|max:9999',
             // 🌙 (2026-05-23 v3) Hard cap 5 คำถาม / 15 นาที — บังคับให้ min 1 (ไม่ใช่ 0)
             //    user spec: "ถาม 5 คำถาม ภายใน 15 นาที และต้องบอกกติการให้ชัดทุกที่"
@@ -140,6 +142,8 @@ class FortuneCelticCrossController extends Controller
         $settings->enable_consent_audio_code = $request->boolean('enable_consent_audio_code');
         $settings->consent_audio_code_voice_provider = $validated['consent_audio_code_voice_provider'] ?? 'minimax';
         $settings->consent_audio_code_min_unpaid_bills = (int) ($validated['consent_audio_code_min_unpaid_bills'] ?? 0);
+        // ⚡ ข้ามกล่องกติกาทั้งหมด → สร้างบิลทันที
+        $settings->consent_gate_bypass = $request->boolean('consent_gate_bypass');
         $settings->celtic_cross_price = $validated['celtic_cross_price'] ?? 99.00;
         $settings->celtic_cross_max_questions = $validated['celtic_cross_max_questions'] ?? 5;
         $settings->celtic_cross_qa_window_minutes = $validated['celtic_cross_qa_window_minutes'] ?? 15;
