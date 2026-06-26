@@ -793,7 +793,11 @@ class FortuneChannelManager
                 'consent_gate' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     $imageUrl = $result['consent_image_url'] ?? null;
                     $buttons = $result['quick_replies'] ?? [];
-                    if (! empty($imageUrl)) {
+                    // 🔊 (2026-06-26) โหมดรหัสเสียง: ไฟล์เสียงรวม (กติกา+รหัสท้ายคลิป) — ถ้ามี ใช้แทนคลิป static
+                    $codeAudioUrl = $result['consent_audio_url'] ?? null;
+
+                    // โหมดรหัสเสียงเน้นเสียง+พิมพ์รหัส → ไม่ต้องส่งรูปกติกา (กล่องปกติยังส่งรูปเหมือนเดิม)
+                    if (! empty($imageUrl) && empty($codeAudioUrl)) {
                         try {
                             $fbService->sendImage($userId, $imageUrl);
                             usleep(400000); // ให้รูปมาก่อน text
@@ -802,9 +806,20 @@ class FortuneChannelManager
                         }
                     }
 
-                    $consentSent = $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
-                    // 🎧 เสียงระบบ: อ่านกติกาให้ฟัง (FB only, ต่อท้ายกล่อง)
-                    $this->attachSystemVoiceFb($fbService, $userId, 'consent_rules', $extra);
+                    $consentSent = ! empty($buttons)
+                        ? $fbService->sendQuickReplies($userId, $message, $buttons, $extra)
+                        : $fbService->sendMessage($userId, $message, $extra);
+
+                    // 🎧 เสียง: โหมดรหัส → ไฟล์รวม (กติกา+รหัส) ; ปกติ → คลิปกติกา static เดิม
+                    if (! empty($codeAudioUrl)) {
+                        try {
+                            $fbService->sendAudio($userId, $codeAudioUrl, $extra);
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::debug('🔊 ConsentCode: ส่งเสียงรวม FB ไม่สำเร็จ', ['error' => $e->getMessage()]);
+                        }
+                    } else {
+                        $this->attachSystemVoiceFb($fbService, $userId, 'consent_rules', $extra);
+                    }
 
                     return $consentSent;
                 })(),
@@ -2232,6 +2247,8 @@ class FortuneChannelManager
                 // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมบูชาครู/ยกเลิก)
                 'consent_gate' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
                     $imageUrl = $result['consent_image_url'] ?? null;
+                    // 🔊 (2026-06-26) ไฟล์เสียงรวม (กติกา+รหัสท้ายคลิป) — โหมดบังคับรหัสเสียง
+                    $codeAudioUrl = $result['consent_audio_url'] ?? null;
                     // แปลง quick_replies (FB format: title/text) → LINE format (label/text)
                     $lineQr = [];
                     foreach (($result['quick_replies'] ?? []) as $b) {
@@ -2239,6 +2256,18 @@ class FortuneChannelManager
                             'label' => mb_substr($b['title'] ?? '', 0, 20),
                             'text' => $b['text'] ?? ($b['title'] ?? ''),
                         ];
+                    }
+
+                    // 🔊 โหมดรหัสเสียง → ข้อความ + ไฟล์เสียงรวม (ไม่ส่งรูป) ; กติกาปกติ → เหมือนเดิม
+                    if (! empty($codeAudioUrl)) {
+                        $sent = $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
+                        try {
+                            $lineService->sendAudio($userId, $codeAudioUrl, (int) ($result['consent_audio_duration_ms'] ?? 180000));
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::debug('🔊 ConsentCode: ส่งเสียงรวม LINE ไม่สำเร็จ', ['error' => $e->getMessage()]);
+                        }
+
+                        return $sent;
                     }
 
                     if (! empty($imageUrl)) {

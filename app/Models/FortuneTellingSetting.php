@@ -266,6 +266,9 @@ class FortuneTellingSetting extends Model
         'enable_celtic_enrichment',
         // 🪬 (2026-05-29) โหมดคุณไสย์/มนต์ดำ — หัวข้อพิเศษล็อกทั้งรอบ (เปิดได้เฉพาะคำถามแรก)
         'enable_celtic_black_magic_mode',
+        // 🔊 (2026-06-26) บังคับฟังเสียงกติกา + กรอกรหัสท้ายคลิปก่อนสร้างบิล + เลือกโมเดล TTS เจนรหัส
+        'enable_consent_audio_code',
+        'consent_audio_code_voice_provider',
         // 🩺 (2026-06-01) ตำราสุขภาพประจำไพ่ — เทียบอวัยวะ/โรค/อาการ/ความรุนแรงตามหน้าไพ่
         'enable_celtic_health_tome',
         // 🧠 (2026-06-01) คลังความรู้สายมู (ฮวงจุ้ย/เจ้าที่/องค์เทพ/ไสยศาสตร์) จาก RAG
@@ -494,6 +497,7 @@ class FortuneTellingSetting extends Model
         'celtic_cross_proactive_enabled' => 'boolean',
         'enable_celtic_enrichment' => 'boolean',
         'enable_celtic_black_magic_mode' => 'boolean',
+        'enable_consent_audio_code' => 'boolean',
         'enable_celtic_health_tome' => 'boolean',
         'enable_celtic_mu_knowledge' => 'boolean',
         'enable_celtic_physiognomy' => 'boolean',
@@ -668,6 +672,9 @@ class FortuneTellingSetting extends Model
         'enable_celtic_enrichment' => true,
         // 🪬 (2026-05-29) โหมดคุณไสย์ — default true (admin ปิดได้ผ่าน DB UPDATE)
         'enable_celtic_black_magic_mode' => true,
+        // 🔊 (2026-06-26) บังคับฟังเสียงกติกา+รหัส — default false (opt-in) / provider เจนรหัส default minimax (32kHz)
+        'enable_consent_audio_code' => false,
+        'consent_audio_code_voice_provider' => 'minimax',
         // 🩺 (2026-06-01) ตำราสุขภาพประจำไพ่ — default true (admin ปิดได้ผ่าน DB UPDATE)
         'enable_celtic_health_tome' => true,
         // 🧠 (2026-06-01) คลังความรู้สายมู — default true (admin ปิดได้ผ่าน DB UPDATE)

@@ -52,6 +52,9 @@ class FortuneFlowNudge extends Command
     /** Cache key prefix ของ consent gate (sync กับ FortuneConsentGateTrait) */
     private const CONSENT_PENDING_PREFIX = 'fortune:consent_pending:';
 
+    /** 🔊 (2026-06-26) Cache key — รหัสยืนยันเสียงกติกา (ต้องตรงกับ FortuneConsentGateTrait::CONSENT_CODE_PREFIX) */
+    private const CONSENT_CODE_PREFIX = 'fortune:consent_code:';
+
     public function handle(): int
     {
         $dry = (bool) $this->option('dry');
@@ -283,6 +286,20 @@ class FortuneFlowNudge extends Command
 
             $message = "🌙 เลือกได้เลยนะคะ คุณ{$name} — แม่หมอจันทรารออยู่ค่ะ ✨\n\n"
                 .'กดปุ่มด้านล่างเพื่อเริ่มดูดวงได้เลย 👇';
+
+            return [$message, $buttons];
+        }
+
+        // 🔊 (2026-06-26) โหมดบังคับรหัสเสียง — มีรหัสค้าง → กระตุ้นให้ "พิมพ์รหัสท้ายคลิป" ไม่ใช่ "กดพร้อมบูชาครู"
+        //   กันคำสั่งขัดกัน (ปุ่มยอมรับ vs ต้องพิมพ์รหัส) ที่ทำลูกค้าสูงอายุงง/ติดลูป (บทเรียน 2026-06-24 lost customer)
+        if ((bool) ($settings->enable_consent_audio_code ?? false)
+            && Cache::get(self::CONSENT_CODE_PREFIX.$userId) !== null) {
+            $message = "🔊 รบกวนกด ▶️ ฟังเสียงกติกา *ท้ายคลิป* แล้วพิมพ์ *รหัส 4 หลัก* ที่ได้ยินกลับมาในแชทนะคะ\n\n"
+                .'ฟังไม่ได้/ไม่ชัด กดปุ่ม "ขอรหัส" ได้เลยค่ะ 🙏';
+            $buttons = [
+                ['content_type' => 'text', 'title' => '🔑 ขอรหัส (ฟังไม่ได้)', 'text' => 'ขอรหัส', 'payload' => 'ขอรหัส'],
+                ['content_type' => 'text', 'title' => '🙏 ยกเลิก', 'text' => 'ยกเลิก', 'payload' => 'ยกเลิก'],
+            ];
 
             return [$message, $buttons];
         }

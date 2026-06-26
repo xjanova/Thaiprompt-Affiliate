@@ -433,6 +433,184 @@ class FortuneSystemVoiceService
     }
 
     /**
+     * 🔊 (2026-06-26) สร้างไฟล์เสียง "กติกา (เดิม) + คลิปรหัสยืนยัน (สุ่ม) ต่อท้าย" เป็นไฟล์เดียว
+     *
+     * ใช้กับฟีเจอร์ "บังคับฟังเสียงกติกาก่อนสร้างบิล": ลูกค้าต้องฟังให้จบเพื่อได้รหัสท้ายคลิป
+     * แล้วพิมพ์รหัสยืนยัน → ระบบจึงออก QR. รหัสอยู่ท้ายคลิป = บังคับฟังโดยปริยาย.
+     *
+     * - reuse consent_rules.mp3 (เสียงกติกาที่เจนไว้แล้ว — 32kHz mono)
+     * - เจน "คลิปรหัส" ด้วย provider ที่แอดมินเลือก (default minimax 32kHz = format ตรงกับกติกา)
+     * - รวมไฟล์ด้วย ffmpeg (re-encode uniform = เนียน) ; ไม่มี ffmpeg → raw mp3 concat (strip ID3)
+     * - 1 ไฟล์ต่อ user (overwrite ทุกครั้ง) + cache-bust ?v= กัน FB/LINE cache เสียงเก่า
+     *
+     * @return string|null public URL ของไฟล์รวม หรือ null ถ้าสร้างไม่สำเร็จ (caller → degrade เป็นกล่องกติกาปกติ)
+     */
+    public function buildConsentAudioWithCode(string $code, string $userKey, ?string $provider = null): ?string
+    {
+        try {
+            $code = preg_replace('/\D/', '', $code);
+            if ($code === '') {
+                return null;
+            }
+
+            // 1) เสียงกติกาเดิม (active slot ของ clip 'consent_rules' หรือไฟล์ static)
+            $rulesPath = $this->resolveConsentRulesPath();
+            if (! $rulesPath) {
+                Log::warning('🔊 ConsentCode: ไม่พบไฟล์เสียงกติกา (consent_rules) → ข้ามเสียง');
+
+                return null;
+            }
+
+            // 2) เจนคลิปรหัส (provider เลือกได้) — temp path บน public disk
+            $provider = $provider ?: ($this->settings->consent_audio_code_voice_provider ?? 'minimax');
+            $codeRel = self::STORAGE_DIR.'/consent_code/_code_'.md5($userKey).'.mp3';
+            $synth = $this->synthesizeToPublic(
+                $this->buildCodeSpokenText($code),
+                'consent-code',
+                ['provider' => $provider],
+                $codeRel,
+            );
+            if (! ($synth['success'] ?? false)) {
+                Log::warning('🔊 ConsentCode: เจนคลิปรหัสไม่สำเร็จ', ['provider' => $provider, 'error' => $synth['error'] ?? null]);
+
+                return null;
+            }
+
+            // 3) รวมไฟล์ (กติกา + รหัส) → 1 ไฟล์ต่อ user
+            $outRel = self::STORAGE_DIR.'/consent_code/combined_'.md5($userKey).'.mp3';
+            $rulesAbs = Storage::disk('public')->path($rulesPath);
+            $codeAbs = Storage::disk('public')->path($codeRel);
+            $outAbs = Storage::disk('public')->path($outRel);
+            @mkdir(dirname($outAbs), 0775, true);
+
+            $merged = $this->concatMp3($rulesAbs, $codeAbs, $outAbs);
+
+            // เก็บกวาดคลิปรหัส (ไม่ต้องเก็บแยก)
+            $this->deleteFile($codeRel);
+
+            if (! $merged || ! Storage::disk('public')->exists($outRel)) {
+                Log::warning('🔊 ConsentCode: รวมไฟล์เสียงไม่สำเร็จ');
+
+                return null;
+            }
+
+            // เก็บความยาวเสียง (ประมาณจากขนาดไฟล์) ให้ LINE แสดง metadata — key ต้องตรงกับ trait CONSENT_AUDIO_DUR_PREFIX
+            try {
+                Cache::put('fortune:consent_audio_dur:'.$userKey, $this->estimateDurationMs($outRel, ''), 600);
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+
+            return Storage::disk('public')->url($outRel).'?v='.now()->timestamp;
+        } catch (\Throwable $e) {
+            Log::warning('🔊 ConsentCode: buildConsentAudioWithCode exception', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * หา path (public disk) ของไฟล์เสียงกติกา consent_rules — slot ที่ active หรือไฟล์ static
+     */
+    protected function resolveConsentRulesPath(): ?string
+    {
+        try {
+            $clip = FortuneSystemVoiceClip::where('clip_key', 'consent_rules')->first();
+            if ($clip) {
+                $p = $clip->activeAudioPath();
+                if (! empty($p) && Storage::disk('public')->exists($p)) {
+                    return $p;
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore → ลอง static
+        }
+
+        $static = self::STORAGE_DIR.'/consent_rules.mp3';
+
+        return Storage::disk('public')->exists($static) ? $static : null;
+    }
+
+    /**
+     * ข้อความพูด "รหัสยืนยัน" ต่อท้ายเสียงกติกา — เว้นวรรคเลขให้ TTS อ่านชัด + ย้ำ 2 รอบ
+     */
+    protected function buildCodeSpokenText(string $code): string
+    {
+        $spaced = trim(implode('   ', mb_str_split($code)));
+
+        return 'และนี่คือรหัสยืนยันสำหรับเจ้าชะตานะคะ ... '
+            ."รหัสคือ {$spaced} ... "
+            ."ขอย้ำอีกครั้ง รหัสคือ {$spaced} ... "
+            ."กรุณาพิมพ์รหัสนี้ในแชท เพื่อยืนยันว่าฟังกติกาแล้ว แล้วแม่หมอจะส่งคิวอาร์โค้ดให้นะคะ";
+    }
+
+    /**
+     * รวมไฟล์ mp3 สองไฟล์ → ไฟล์เดียว : ffmpeg (re-encode uniform 32kHz mono) ก่อน, ไม่มี → raw concat
+     */
+    protected function concatMp3(string $a, string $b, string $out): bool
+    {
+        $ffmpeg = $this->ffmpegPath();
+        if ($ffmpeg) {
+            try {
+                $cmd = escapeshellarg($ffmpeg).' -y -hide_banner -loglevel error'
+                    .' -i '.escapeshellarg($a)
+                    .' -i '.escapeshellarg($b)
+                    .' -filter_complex '.escapeshellarg('[0:a][1:a]concat=n=2:v=0:a=1[out]')
+                    .' -map '.escapeshellarg('[out]')
+                    .' -ar 32000 -ac 1 -b:a 128k '.escapeshellarg($out).' 2>&1';
+                @exec($cmd, $o, $code);
+                if ($code === 0 && file_exists($out) && filesize($out) > 1000) {
+                    return true;
+                }
+            } catch (\Throwable $e) {
+                // fall through → raw concat
+            }
+        }
+
+        return $this->rawConcatMp3($a, $b, $out);
+    }
+
+    /**
+     * Raw MP3 byte concat (fallback ไม่มี ffmpeg) — strip ID3v2 ของไฟล์ที่ 2 กันหัว tag โผล่กลางสตรีม
+     */
+    protected function rawConcatMp3(string $a, string $b, string $out): bool
+    {
+        try {
+            $ba = @file_get_contents($a);
+            $bb = @file_get_contents($b);
+            if ($ba === false || $bb === false) {
+                return false;
+            }
+            $bb = $this->stripId3v2($bb);
+            $r = @file_put_contents($out, $ba.$bb);
+
+            return $r !== false && file_exists($out) && filesize($out) > 1000;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * ตัด ID3v2 header (ต้นไฟล์) ออก — ใช้ตอน raw concat ไฟล์ที่ 2
+     */
+    protected function stripId3v2(string $bytes): string
+    {
+        if (strlen($bytes) > 10 && strncmp($bytes, 'ID3', 3) === 0) {
+            // ขนาด tag = syncsafe int (byte 6-9, ใช้ 7 บิตล่างของแต่ละ byte)
+            $size = ((ord($bytes[6]) & 0x7f) << 21)
+                | ((ord($bytes[7]) & 0x7f) << 14)
+                | ((ord($bytes[8]) & 0x7f) << 7)
+                | (ord($bytes[9]) & 0x7f);
+            $headerSize = 10 + $size;
+            if ($headerSize > 0 && $headerSize < strlen($bytes)) {
+                return substr($bytes, $headerSize);
+            }
+        }
+
+        return $bytes;
+    }
+
+    /**
      * ลบไฟล์เสียงของคลิป — เลือกสล็อตได้ (tts | upload | all)
      *
      * ลบสล็อต active → ระบบจะสลับ active ไปสล็อตที่เหลือให้อัตโนมัติ (ถ้ามี)

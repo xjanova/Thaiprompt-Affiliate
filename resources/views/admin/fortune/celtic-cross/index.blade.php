@@ -119,6 +119,34 @@
                     </div>
                 </div>
             </label>
+
+            {{-- 🔊 (2026-06-26) บังคับฟังเสียงกติกา + กรอกรหัสท้ายคลิป ก่อนสร้างบิล --}}
+            <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:16px; border-radius:14px; cursor:pointer; margin-top:12px; border-left:4px solid #e0a52e;">
+                <input type="hidden" name="enable_consent_audio_code" value="0">
+                <input type="checkbox" name="enable_consent_audio_code" value="1"
+                       {{ ($settings->enable_consent_audio_code ?? false) ? 'checked' : '' }}
+                       style="width:18px; height:18px; margin-top:2px; accent-color:#e0a52e; cursor:pointer;">
+                <div style="flex:1;">
+                    <div style="font-weight:700; color:var(--ink); font-size:14.5px;">🔊 บังคับฟังเสียงกติกา + กรอกรหัสยืนยัน (ก่อนสร้างบิล)</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">
+                        เปิด — ตอนกล่องกติกา ระบบส่ง "เสียงกติกา + รหัส 4 หลักท้ายคลิป" (สุ่มต่อครั้ง) ลูกค้าต้องฟังให้จบแล้วพิมพ์รหัสจึงจะออก QR.
+                        มี fallback กันลูกค้าติด (พิมพ์ผิด 3 ครั้ง / "ไม่ได้ยิน-ทำไม่เป็น" → เฉลยรหัสให้). ปิด — กล่องกติกาปกติ (ไม่ต้องกรอกรหัส)
+                    </div>
+                    <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:12px; color:var(--ink2); font-weight:600;">โมเดลเสียงที่ใช้เจน "รหัส":</span>
+                        <select name="consent_audio_code_voice_provider"
+                                onclick="event.preventDefault();" onmousedown="event.stopPropagation();"
+                                style="padding:6px 10px; border-radius:8px; font-size:12.5px; border:1px solid var(--sd); background:var(--bg);">
+                            @php $bmVp = $settings->consent_audio_code_voice_provider ?? 'minimax'; @endphp
+                            <option value="minimax" {{ $bmVp === 'minimax' ? 'selected' : '' }}>MiniMax (32kHz — แนะนำ ตรงกับเสียงกติกา)</option>
+                            <option value="openai_tts" {{ $bmVp === 'openai_tts' ? 'selected' : '' }}>OpenAI TTS</option>
+                            <option value="google_tts" {{ $bmVp === 'google_tts' ? 'selected' : '' }}>Google Cloud TTS</option>
+                            <option value="gtts" {{ $bmVp === 'gtts' ? 'selected' : '' }}>gTTS (ฟรี 24kHz)</option>
+                        </select>
+                        <span style="font-size:11px; color:var(--ink2);">(ffmpeg รวมไฟล์ให้เนียน — เลือก provider ไหนก็ได้)</span>
+                    </div>
+                </div>
+            </label>
         </div>
 
         {{-- ── ราคา & เงื่อนไข ── --}}

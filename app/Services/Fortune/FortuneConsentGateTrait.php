@@ -36,6 +36,21 @@ trait FortuneConsentGateTrait
     /** TTL (วินาที) ของ flag consent */
     protected const CONSENT_TTL = 600;
 
+    /** 🔊 (2026-06-26) Cache key — รหัสยืนยันจากเสียงกติกา (audio-code gate) */
+    protected const CONSENT_CODE_PREFIX = 'fortune:consent_code:';
+
+    /** 🔊 (2026-06-26) Cache key — URL ไฟล์เสียงรวม (กติกา+รหัส) ของรอบนี้ */
+    protected const CONSENT_AUDIO_URL_PREFIX = 'fortune:consent_audio_url:';
+
+    /** 🔊 (2026-06-26) Cache key — ความยาวเสียงรวม (ms) สำหรับ LINE audio metadata (ต้องตรงกับ FortuneSystemVoiceService) */
+    protected const CONSENT_AUDIO_DUR_PREFIX = 'fortune:consent_audio_dur:';
+
+    /** 🔊 (2026-06-26) Cache key — จำนวนครั้งที่พิมพ์รหัสผิด */
+    protected const CONSENT_CODE_ATTEMPTS_PREFIX = 'fortune:consent_code_attempts:';
+
+    /** 🔊 (2026-06-26) พิมพ์รหัสผิดกี่ครั้งแล้วเฉลยรหัสให้ (กันลูกค้าติด) */
+    protected const CONSENT_CODE_MAX_ATTEMPTS = 3;
+
     /**
      * 🔔 ตรวจ consent gate — เรียกจากจุดสร้างบิล (Celtic/Deep) ก่อน UPA generate
      *
@@ -89,6 +104,15 @@ trait FortuneConsentGateTrait
             'tier' => $tier,
             'reading_id' => $reading?->id,
         ]);
+
+        // 🔊 (2026-06-26) โหมดบังคับฟังเสียงกติกา + กรอกรหัสท้ายคลิป (ถ้าเปิด)
+        //   สร้างเสียง/รหัสไม่สำเร็จ → degrade เป็นกล่องกติกาปกติ (ห้ามบล็อกลูกค้า)
+        if ($this->consentAudioCodeEnabled()) {
+            $codeGate = $this->buildConsentAudioCodeGate($uid, $tier, $reading);
+            if ($codeGate !== null) {
+                return $codeGate;
+            }
+        }
 
         return $this->buildConsentGateResponse($tier, $reading);
     }
@@ -157,6 +181,12 @@ trait FortuneConsentGateTrait
         $pendingTier = Cache::get(self::CONSENT_PENDING_PREFIX.$uid);
         if (empty($pendingTier)) {
             return null; // ไม่มีกล่องกติกาค้าง → ไม่เกี่ยว
+        }
+
+        // 🔊 (2026-06-26) ถ้ากล่องกติกานี้เป็นโหมด "บังคับรหัสเสียง" → ต้องพิมพ์รหัสตรงก่อนจึงสร้างบิล
+        //   (มี fallback กันลูกค้าติด: ผิด 3 ครั้ง / "ขอรหัส-ฟังไม่ได้" → เฉลยรหัส ; ยกเลิก/ปฏิเสธ → ปิด)
+        if ($this->consentAudioCodeActiveFor($uid)) {
+            return $this->handleConsentAudioCodeReply($uid, $messageText, $pendingTier, $userProfile);
         }
 
         if (! $this->matchesConsentAccept($messageText)) {
@@ -241,6 +271,251 @@ trait FortuneConsentGateTrait
         // re-dispatch — startDeepReadingFlow route ตาม tier (celtic/deep)
         //   รอบนี้ consentGateOrNull จะ Cache::pull(consent_ok) เจอ → ผ่าน → ออก QR
         return $this->startDeepReadingFlow($uid, $userProfile, $pendingTier, null);
+    }
+
+    /**
+     * 🔊 (2026-06-26) เปิดโหมดบังคับฟังเสียงกติกา + รหัสยืนยันหรือไม่ (toggle + consent ต้องเปิด)
+     */
+    protected function consentAudioCodeEnabled(): bool
+    {
+        return (bool) ($this->settings->enable_consent_audio_code ?? false)
+            && $this->settings->isConsentEnabled();
+    }
+
+    /**
+     * 🔊 มีรหัสค้างอยู่สำหรับ uid นี้ไหม (= กล่องกติกาถูกแสดงในโหมดรหัสเสียง ไม่ใช่ degrade)
+     */
+    protected function consentAudioCodeActiveFor(string $uid): bool
+    {
+        return $this->consentAudioCodeEnabled()
+            && ! empty($uid)
+            && Cache::get(self::CONSENT_CODE_PREFIX.$uid) !== null;
+    }
+
+    /**
+     * 🔊 สร้างกล่องกติกาแบบ "เสียงกติกา + รหัสท้ายคลิป"
+     *
+     * - มีรหัส+เสียงค้างอยู่แล้ว (re-entry/nudge) → reuse (ไม่สุ่มรหัสใหม่ กันรหัสที่ลูกค้าได้ยินเพี้ยน)
+     * - ยังไม่มี → สุ่มรหัส 4 หลัก + เจนเสียงรวม (provider เลือกได้) + เก็บรหัส
+     *
+     * @return array|null response / null (เสียงสร้างไม่สำเร็จ → caller degrade เป็นกล่องปกติ)
+     */
+    protected function buildConsentAudioCodeGate(string $uid, string $tier, ?FortuneReading $reading = null): ?array
+    {
+        try {
+            // reuse ถ้ามีอยู่แล้ว — กันรหัสเปลี่ยนตอน consentGateOrNull ถูกเรียกซ้ำ (nudge/re-entry)
+            $existingCode = Cache::get(self::CONSENT_CODE_PREFIX.$uid);
+            $existingUrl = Cache::get(self::CONSENT_AUDIO_URL_PREFIX.$uid);
+            if (! empty($existingCode) && ! empty($existingUrl)) {
+                return $this->consentAudioCodeGateResponse((string) $existingUrl, $reading,
+                    (int) Cache::get(self::CONSENT_AUDIO_DUR_PREFIX.$uid, 0));
+            }
+
+            // 🔒 กันสร้างซ้อน (double-tap ปุ่มแพคเกจก่อนเสียงเจนเสร็จ → 2 รหัสแข่งกัน)
+            $lock = Cache::lock('fortune:consent_code_gen:'.$uid, 30);
+            if (! $lock->get()) {
+                usleep(500000);
+                $code2 = Cache::get(self::CONSENT_CODE_PREFIX.$uid);
+                $url2 = Cache::get(self::CONSENT_AUDIO_URL_PREFIX.$uid);
+                if (! empty($code2) && ! empty($url2)) {
+                    return $this->consentAudioCodeGateResponse((string) $url2, $reading,
+                        (int) Cache::get(self::CONSENT_AUDIO_DUR_PREFIX.$uid, 0));
+                }
+
+                return null; // อีก request กำลังเจนอยู่ + ยังไม่เสร็จ → degrade เป็นกล่องปกติ (ไม่ค้าง)
+            }
+
+            try {
+                $code = (string) random_int(1000, 9999);
+                $provider = $this->settings->consent_audio_code_voice_provider ?: 'minimax';
+
+                $audioUrl = (new \App\Services\FortuneSystemVoiceService($this->settings))
+                    ->buildConsentAudioWithCode($code, $uid, $provider);
+
+                if (empty($audioUrl)) {
+                    Log::warning('🔊 ConsentCode: สร้างเสียง+รหัสไม่สำเร็จ → ใช้กล่องกติกาปกติแทน', ['user_id' => $uid]);
+
+                    return null;
+                }
+
+                $durMs = (int) Cache::get(self::CONSENT_AUDIO_DUR_PREFIX.$uid, 0);
+
+                // เก็บรหัส + url + reset attempts (Cache + reading state เพื่อความทน)
+                Cache::put(self::CONSENT_CODE_PREFIX.$uid, $code, self::CONSENT_TTL);
+                Cache::put(self::CONSENT_AUDIO_URL_PREFIX.$uid, $audioUrl, self::CONSENT_TTL);
+                Cache::put(self::CONSENT_CODE_ATTEMPTS_PREFIX.$uid, 0, self::CONSENT_TTL);
+                if ($reading) {
+                    $reading->setConversationState('consent_audio_code', $code);
+                    $reading->setConversationState('consent_audio_url', $audioUrl);
+                }
+
+                Log::info('🔊 ConsentCode: แสดงกล่องกติกา+รหัสเสียง', ['user_id' => $uid, 'tier' => $tier]);
+
+                return $this->consentAudioCodeGateResponse($audioUrl, $reading, $durMs);
+            } finally {
+                $lock->release();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('🔊 ConsentCode: buildConsentAudioCodeGate exception', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🔊 response กล่องกติกาโหมดรหัสเสียง (ข้อความ + URL เสียงรวม) — ส่งผ่าน ChannelManager
+     */
+    protected function consentAudioCodeGateResponse(string $audioUrl, ?FortuneReading $reading = null, int $durationMs = 0): array
+    {
+        return [
+            'action' => 'consent_gate',
+            'message' => "🔊 ก่อนเริ่มดูดวง รบกวนกด ▶️ ฟังเสียงกติกาให้จบนะคะ\n\n"
+                ."📌 ท้ายคลิปจะมี *รหัสยืนยัน 4 หลัก* — พิมพ์รหัสนั้นกลับมาในแชท แม่หมอจะส่ง QR ให้ทันทีค่ะ\n"
+                .'🙏 ฟังไม่ชัด/ฟังไม่ได้ กดปุ่ม "ขอรหัส" — หรือ "ยกเลิก" ได้เลยนะคะ',
+            'consent_audio_url' => $audioUrl,
+            // ความยาวเสียง (LINE ใช้โชว์ metadata) — เผื่อสูง กันแสดงสั้นกว่าจริง (รหัสอยู่ท้ายคลิป)
+            'consent_audio_duration_ms' => $durationMs > 0 ? $durationMs : 180000,
+            // 🛡️ (anti-trap) ปุ่มกดหนีได้เสมอ — "ขอรหัส" (เฉลยรหัส) / "ยกเลิก" (ปิด)
+            //   กันลูกค้าสูงอายุ/พิมพ์ไทยไม่ถนัดติดลูป (บทเรียน 2026-06-24 lost customer)
+            'quick_replies' => [
+                ['content_type' => 'text', 'title' => '🔑 ขอรหัส (ฟังไม่ได้)', 'text' => 'ขอรหัส', 'payload' => 'ขอรหัส'],
+                ['content_type' => 'text', 'title' => '🙏 ยกเลิก', 'text' => 'ยกเลิก', 'payload' => 'ยกเลิก'],
+            ],
+            'show_quick_replies' => true,
+            'block_followups' => true,
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 🔊 จัดการคำตอบลูกค้าตอนอยู่หน้ากล่อง "รหัสเสียง"
+     *
+     * - รหัสตรง → ผ่าน → สร้างบิล (เส้นทางเดียวกับ accept)
+     * - ยกเลิก/ปฏิเสธนุ่ม → ปิด ไม่ตื้อ (เคารพกฎห้ามตื้อ)
+     * - "ขอรหัส"/ฟังไม่ได้/ทำไม่เป็น หรือผิดครบ N ครั้ง → เฉลยรหัสเป็นข้อความ (กันลูกค้าติด — บทเรียน lost customer สูงอายุ)
+     * - ผิด (ยังไม่ครบ N) → ย้ำให้ฟังท้ายคลิป
+     */
+    protected function handleConsentAudioCodeReply(string $uid, string $messageText, string $pendingTier, ?array $userProfile = null): ?array
+    {
+        $stored = (string) Cache::get(self::CONSENT_CODE_PREFIX.$uid, '');
+        $digits = preg_replace('/\D/', '', $messageText);
+
+        // 1) ยกเลิกชัดเจน ("ยกเลิก") → ปิดให้สุด (clear + forget pending) แล้วปล่อย cancel flow เดิม (upstream)
+        if ($this->isCancelRequest($messageText)) {
+            $this->clearConsentAudioCode($uid);
+            Cache::forget(self::CONSENT_PENDING_PREFIX.$uid);
+
+            return null;
+        }
+
+        // 2) ✅ รหัสตรง → ผ่าน → สร้างบิล (เหมือน accept tail)
+        if ($stored !== '' && $digits === $stored) {
+            $this->clearConsentAudioCode($uid);
+            Cache::put(self::CONSENT_OK_PREFIX.$uid, true, self::CONSENT_TTL);
+            Cache::forget(self::CONSENT_PENDING_PREFIX.$uid);
+
+            Log::info('🔊 ConsentCode: รหัสถูกต้อง → สร้างบิล', ['user_id' => $uid, 'tier' => $pendingTier]);
+
+            return $this->startDeepReadingFlow($uid, $userProfile, $pendingTier, null);
+        }
+
+        // 3) ขอเฉลย/ฟังไม่ได้/ทำไม่เป็น *หรือ* กดปุ่ม "พร้อมบูชาครู" (เก่า/จาก flow-nudge) → เฉลยรหัส (กันติด)
+        //   🛡️ ลูกค้ากดปุ่มยอมรับ = ตั้งใจไปต่อแต่ยังไม่รู้รหัส → เฉลยให้ ไม่นับว่าพิมพ์ผิด (กันลูปคำสั่งขัดกัน)
+        //   ตรวจ help/accept *ก่อน* soft-decline — ข้อความกำกวม "ฟังไม่ได้ ขอผ่าน" ต้องได้รหัส ไม่ใช่ปิดเงียบ
+        if ($this->looksLikeConsentCodeHelp($messageText) || $this->matchesConsentAccept($messageText)) {
+            Log::info('🔊 ConsentCode: ขอเฉลย/ฟังไม่ได้/กดปุ่มยอมรับ → เฉลยรหัส', ['user_id' => $uid]);
+
+            return $this->revealConsentCodeResponse($stored);
+        }
+
+        // 4) ปฏิเสธนุ่ม (ไม่เอา/ไว้ก่อน/ยังไม่พร้อม) → ปิด ไม่ตื้อ
+        if (method_exists($this, 'looksLikeSoftDeclineDuringPayment')
+            && $this->looksLikeSoftDeclineDuringPayment($messageText)) {
+            $this->clearConsentAudioCode($uid);
+            Cache::forget(self::CONSENT_PENDING_PREFIX.$uid);
+            if (method_exists($this, 'closeAllActiveConversations')) {
+                $this->closeAllActiveConversations($uid);
+            }
+
+            return [
+                'action' => 'cancelled',
+                'message' => "🙏 รับทราบค่ะ ไม่เป็นไรเลยนะคะ\n\nไว้พร้อมเมื่อไหร่ พิมพ์ \"ดูดวง\" ทักมาได้เสมอค่ะ ✨",
+                'reading' => null,
+            ];
+        }
+
+        // 5) ผิด → นับครั้ง ; ครบ N → เฉลย (กันติด) ; ไม่ครบ → ย้ำ
+        $attempts = (int) Cache::get(self::CONSENT_CODE_ATTEMPTS_PREFIX.$uid, 0) + 1;
+        Cache::put(self::CONSENT_CODE_ATTEMPTS_PREFIX.$uid, $attempts, self::CONSENT_TTL);
+
+        if ($attempts >= self::CONSENT_CODE_MAX_ATTEMPTS && $stored !== '') {
+            Log::info('🔊 ConsentCode: ผิดครบ '.$attempts.' ครั้ง → เฉลยรหัส (กันติด)', ['user_id' => $uid]);
+
+            return $this->revealConsentCodeResponse($stored);
+        }
+
+        return [
+            'action' => 'consent_gate',
+            'message' => "🙏 รหัสยังไม่ถูกนะคะ — ลองกด ▶️ ฟังเสียงกติกา *ท้ายคลิป* อีกครั้ง แล้วพิมพ์รหัส 4 หลักค่ะ\n"
+                .'(ฟังไม่ได้จริง ๆ พิมพ์ "ขอรหัส" แม่หมอจะบอกให้ค่ะ)',
+            'show_quick_replies' => false,
+            'block_followups' => true,
+            'reading' => null,
+        ];
+    }
+
+    /**
+     * 🔊 เฉลยรหัสเป็นข้อความ (anti-trap) — คงสถานะ pending ให้ลูกค้าพิมพ์รหัสต่อ
+     */
+    protected function revealConsentCodeResponse(string $code): array
+    {
+        $code = preg_replace('/\D/', '', (string) $code);
+        if ($code === '') {
+            return [
+                'action' => 'consent_gate',
+                'message' => '🙏 ขอโทษค่ะ ระบบเสียงมีปัญหาชั่วคราว — พิมพ์ "ดูดวง" อีกครั้งเพื่อเริ่มใหม่นะคะ',
+                'show_quick_replies' => false,
+                'reading' => null,
+            ];
+        }
+
+        return [
+            'action' => 'consent_gate',
+            'message' => "🔑 รหัสยืนยันของเจ้าชะตาคือ *{$code}* ค่ะ\n"
+                .'พิมพ์เลข 4 หลักนี้กลับมาในแชท แม่หมอจะส่ง QR ให้ทันทีนะคะ 🙏',
+            'show_quick_replies' => false,
+            'block_followups' => true,
+            'reading' => null,
+        ];
+    }
+
+    /**
+     * 🔊 keyword: ลูกค้าขอเฉลยรหัส / ฟังเสียงไม่ได้ / ทำไม่เป็น
+     */
+    protected function looksLikeConsentCodeHelp(string $text): bool
+    {
+        $t = mb_strtolower(trim($text));
+        if ($t === '') {
+            return false;
+        }
+        foreach (['ขอรหัส', 'ขอเลข', 'ไม่ได้ยิน', 'ฟังไม่ได้', 'ฟังไม่ออก', 'ไม่มีเสียง', 'เปิดเสียงไม่ได้',
+            'หูไม่ดี', 'ทำไม่เป็น', 'ทำไม่ถูก', 'ไม่เข้าใจ', 'รหัสอะไร', 'ไม่เห็นรหัส', 'เสียงไม่ดัง'] as $kw) {
+            if (mb_strpos($t, $kw) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🔊 ล้างรหัส + url + attempts
+     */
+    protected function clearConsentAudioCode(string $uid): void
+    {
+        Cache::forget(self::CONSENT_CODE_PREFIX.$uid);
+        Cache::forget(self::CONSENT_AUDIO_URL_PREFIX.$uid);
+        Cache::forget(self::CONSENT_CODE_ATTEMPTS_PREFIX.$uid);
     }
 
     /**
