@@ -175,7 +175,7 @@
                             @endif
 
                             {{-- Review (if completed and not reviewed) --}}
-                            @if($booking->status === 'completed' && !$booking->review)
+                            @if($booking->status === 'completed' && !$booking->review && \Illuminate\Support\Facades\Route::has('user.service-reviews.create'))
                                 <a href="{{ route('user.service-reviews.create', $booking) }}"
                                    class="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-all duration-200 text-sm font-semibold">
                                     <i class="fas fa-star mr-1"></i>รีวิว

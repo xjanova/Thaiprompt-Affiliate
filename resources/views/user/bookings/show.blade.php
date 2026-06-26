@@ -121,7 +121,7 @@
                     </a>
                 @endif
 
-                @if($booking->status === 'pending')
+                @if($booking->status === 'pending' && \Illuminate\Support\Facades\Route::has('user.bookings.pay'))
                     <a href="{{ route('user.bookings.pay', $booking) }}"
                        class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl font-semibold shadow-lg transition-all duration-200">
                         <i class="fas fa-credit-card"></i>
@@ -137,7 +137,7 @@
                     </button>
                 @endif
 
-                @if($booking->status === 'completed' && !$booking->review)
+                @if($booking->status === 'completed' && !$booking->review && \Illuminate\Support\Facades\Route::has('user.service-reviews.create'))
                     <a href="{{ route('user.service-reviews.create', $booking) }}"
                        class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-xl font-semibold shadow-lg transition-all duration-200">
                         <i class="fas fa-star"></i>
