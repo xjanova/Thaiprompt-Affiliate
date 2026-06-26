@@ -1,331 +1,276 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'จัดการโปรไฟล์')
+
+@php
+    use Illuminate\Support\Facades\Route as RouteFacade;
+
+    // ── สถานะ KYC → ป้ายสี (hex แทน dynamic tailwind) ──────────
+    $kycVerified = $user->isKycVerified();
+    $kycPending  = $user->isKycPending();
+@endphp
 
 @section('content')
 {{--
 /**
- * User Profile Management - Arrow X Theme V3
+ * จัดการโปรไฟล์ผู้ใช้ — Theme V4 "นวลทองคำ"
  *
- * หน้าจัดการโปรไฟล์ผู้ใช้แบบ Arrow X Theme พร้อม:
- * - Avatar Upload with Live Preview (WebP)
- * - Profile Information Edit
- * - Contact Information
- * - Address Management
- * - Shipping Address (NEW)
- * - Password Change
- * - Floating Save Button (NEW)
- * - Dark Mode Support
+ * หน้าจัดการโปรไฟล์ผู้ใช้พร้อม:
+ * - อัปโหลด Avatar พร้อมพรีวิวสด (WebP)
+ * - แก้ไขข้อมูลส่วนตัว / ติดต่อ / ที่อยู่ / ที่อยู่จัดส่ง
+ * - เปลี่ยนรหัสผ่าน
+ * - ปุ่มบันทึกลอย (Floating Save)
  *
- * @version 3.1.0
- * @theme Arrow X
+ * @version 4.0.0
+ * @theme Theme V4 (นวลทองคำ)
  */
 --}}
 
-<div class="space-y-6 pb-24" x-data="profileManager()" x-init="init()">
-    {{-- Premium Hero Header (Purple-Pink-Red for Profile Management) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px; padding-bottom:96px;" x-data="profileManager()" x-init="init()">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-user-edit"></i>
+    {{-- ── การ์ดหัวเรื่อง (Hero) ─────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:18px; padding:22px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:58px; height:58px; border-radius:18px; font-size:26px;"><i class="fas fa-user-circle" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">บัญชีของฉัน · MY PROFILE</div>
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:4px 0 0;">จัดการโปรไฟล์</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">แก้ไขข้อมูลส่วนตัวและการตั้งค่าของคุณ</div>
             </div>
         </div>
 
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4 mb-6">
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-user-circle text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">จัดการโปรไฟล์</h1>
-                    <p class="text-purple-100 text-lg mt-1">แก้ไขข้อมูลส่วนตัวและการตั้งค่าของคุณ</p>
-                </div>
+        {{-- สถานะย่อย 3 ใบ: KYC / LINE / รหัสสมาชิก --}}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; padding:16px 24px 20px;">
+            {{-- สถานะ KYC --}}
+            <div style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                @if($kycVerified)
+                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#5aa07e;"><i class="fas fa-shield-halved" style="color:#fff;"></i></span>
+                    <div><div style="font-size:11px; color:var(--ink2);">สถานะ KYC</div><div style="font-size:14px; font-weight:700; color:#5aa07e;">ยืนยันแล้ว ✓</div></div>
+                @elseif($kycPending)
+                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#e0a52e;"><i class="fas fa-hourglass-half" style="color:#fff;"></i></span>
+                    <div><div style="font-size:11px; color:var(--ink2);">สถานะ KYC</div><div style="font-size:14px; font-weight:700; color:#e0a52e;">รอตรวจสอบ</div></div>
+                @else
+                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#d9534f;"><i class="fas fa-triangle-exclamation" style="color:#fff;"></i></span>
+                    <div><div style="font-size:11px; color:var(--ink2);">สถานะ KYC</div><div style="font-size:14px; font-weight:700; color:#d9534f;">ยังไม่ยืนยัน</div></div>
+                @endif
             </div>
 
-            {{-- Quick Stats --}}
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                {{-- KYC Status --}}
-                <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-4">
-                    <div class="flex items-center gap-3">
-                        @if($user->isKycVerified())
-                            <div class="p-3 bg-green-500/30 rounded-lg">
-                                <i class="fas fa-shield-check text-2xl text-white"></i>
-                            </div>
-                            <div>
-                                <p class="text-xs text-purple-100">สถานะ KYC</p>
-                                <p class="text-lg font-bold text-white">ยืนยันแล้ว ✓</p>
-                            </div>
-                        @elseif($user->isKycPending())
-                            <div class="p-3 bg-yellow-500/30 rounded-lg animate-pulse">
-                                <i class="fas fa-hourglass-half text-2xl text-white"></i>
-                            </div>
-                            <div>
-                                <p class="text-xs text-purple-100">สถานะ KYC</p>
-                                <p class="text-lg font-bold text-white">รอตรวจสอบ</p>
-                            </div>
-                        @else
-                            <div class="p-3 bg-red-500/30 rounded-lg">
-                                <i class="fas fa-exclamation-triangle text-2xl text-white"></i>
-                            </div>
-                            <div>
-                                <p class="text-xs text-purple-100">สถานะ KYC</p>
-                                <p class="text-lg font-bold text-white">ยังไม่ยืนยัน</p>
-                            </div>
-                        @endif
-                    </div>
-                </div>
+            {{-- สถานะการเชื่อมต่อ LINE --}}
+            <div style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                @if($user->line_user_id)
+                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#5aa07e;">
+                        <svg style="width:20px; height:20px; color:#fff;" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/></svg>
+                    </span>
+                    <div><div style="font-size:11px; color:var(--ink2);">LINE</div><div style="font-size:14px; font-weight:700; color:#5aa07e;">เชื่อมต่อแล้ว ✓</div></div>
+                @else
+                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:var(--ink2);">
+                        <svg style="width:20px; height:20px; color:#fff;" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/></svg>
+                    </span>
+                    <div><div style="font-size:11px; color:var(--ink2);">LINE</div><div style="font-size:14px; font-weight:700;">ยังไม่เชื่อมต่อ</div></div>
+                @endif
+            </div>
 
-                {{-- LINE Connection Status --}}
-                <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-4">
-                    <div class="flex items-center gap-3">
-                        @if($user->line_user_id)
-                            <div class="p-3 bg-green-500/30 rounded-lg">
-                                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-xs text-purple-100">LINE</p>
-                                <p class="text-lg font-bold text-white">เชื่อมต่อแล้ว ✓</p>
-                            </div>
-                        @else
-                            <div class="p-3 bg-gray-500/30 rounded-lg">
-                                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-xs text-purple-100">LINE</p>
-                                <p class="text-lg font-bold text-white">ยังไม่เชื่อมต่อ</p>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Member Info --}}
-                <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="p-3 bg-blue-500/30 rounded-lg">
-                            <i class="fas fa-id-card text-2xl text-white"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs text-purple-100">รหัสสมาชิก</p>
-                            <p class="text-lg font-bold text-white font-mono">{{ $user->member_number ?? 'N/A' }}</p>
-                        </div>
-                    </div>
-                </div>
+            {{-- รหัสสมาชิก --}}
+            <div style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#5689b8;"><i class="fas fa-id-card" style="color:#fff;"></i></span>
+                <div><div style="font-size:11px; color:var(--ink2);">รหัสสมาชิก</div><div class="tp-num" style="font-size:14px; font-weight:700;">{{ $user->member_number ?? 'N/A' }}</div></div>
             </div>
         </div>
     </div>
 
-    {{-- Success/Error Messages - ใช้ Arrow X Alert --}}
+    {{-- ── ข้อความแจ้งเตือน สำเร็จ/ผิดพลาด ───────────────────── --}}
     @if(session('success'))
-        <x-arrow-x.alert-v3 type="success" :dismissible="true">
-            {{ session('success') }}
-        </x-arrow-x.alert-v3>
+        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #5aa07e;">
+            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:15px; background:#5aa07e;"><i class="fas fa-circle-check" style="color:#fff;"></i></span>
+            <div style="flex:1; font-size:13px; font-weight:600;">{{ session('success') }}</div>
+        </div>
     @endif
 
     @if(session('error'))
-        <x-arrow-x.alert-v3 type="danger" :dismissible="true">
-            {{ session('error') }}
-        </x-arrow-x.alert-v3>
+        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f;">
+            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:15px; background:#d9534f;"><i class="fas fa-circle-exclamation" style="color:#fff;"></i></span>
+            <div style="flex:1; font-size:13px; font-weight:600;">{{ session('error') }}</div>
+        </div>
     @endif
 
-    {{-- Main Profile Form --}}
+    {{-- ── ฟอร์มโปรไฟล์หลัก ──────────────────────────────────── --}}
     <form action="{{ route('user.profile.update') }}" method="POST" enctype="multipart/form-data" x-ref="profileForm" @submit="formChanged = false">
         @csrf
         @method('PUT')
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {{-- Left Sidebar - Avatar Card - ใช้ Arrow X Card --}}
-            <div class="lg:col-span-1">
-                <x-arrow-x.card-v3 class="p-6 sticky top-6">
-                    {{-- Avatar Section --}}
-                    <div class="text-center mb-6">
-                        <div class="relative inline-block group">
-                            {{-- Avatar Preview with Glow --}}
-                            <div class="relative w-40 h-40 mx-auto mb-4">
-                                <div class="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-full blur-lg opacity-60 group-hover:opacity-80 transition"></div>
-                                <div class="relative w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-full p-1 shadow-2xl">
-                                    <div class="w-full h-full bg-white dark:bg-gray-800 rounded-full p-1">
-                                        {{-- รองรับ Alpine.js preview + fallback สำหรับ error --}}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; align-items:start;">
+            {{-- ── คอลัมน์ซ้าย: การ์ด Avatar ──────────────────── --}}
+            <div style="grid-column:span 1; position:sticky; top:18px;">
+                <div class="tp-card" style="padding:22px;">
+                    {{-- พรีวิว Avatar --}}
+                    <div style="text-align:center;">
+                        <div style="position:relative; display:inline-block;">
+                            <div style="position:relative; width:150px; height:150px; margin:0 auto 16px;">
+                                <div style="position:absolute; inset:0; border-radius:50%; box-shadow:var(--inset);"></div>
+                                <div style="position:relative; width:100%; height:100%; border-radius:50%; padding:4px; background:linear-gradient(135deg, var(--accent1), var(--accent2));">
+                                    <div style="width:100%; height:100%; border-radius:50%; padding:4px; background:var(--surf);">
+                                        {{-- รองรับ Alpine.js preview + fallback เมื่อรูปโหลดไม่ได้ --}}
                                         <img :src="avatarPreview || '{{ $user->profile_picture_url }}'"
                                              alt="{{ $user->name }}"
-                                             class="w-full h-full object-cover rounded-full ring-4 ring-white dark:ring-gray-700"
-                                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=6366f1&color=fff&size=200';">
+                                             style="width:100%; height:100%; object-fit:cover; border-radius:50%;"
+                                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=c8a24a&color=fff&size=200';">
                                     </div>
                                 </div>
                             </div>
 
-                            {{-- Upload Button --}}
-                            <label for="avatar-upload"
-                                   class="block w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform  transition-all duration-300 cursor-pointer text-center">
-                                <i class="fas fa-camera mr-2"></i>เปลี่ยนรูปโปรไฟล์
+                            {{-- ปุ่มอัปโหลด --}}
+                            <label for="avatar-upload" class="tp-btn tp-btn-primary" style="display:flex; width:100%; justify-content:center; cursor:pointer;">
+                                <i class="fas fa-camera"></i> เปลี่ยนรูปโปรไฟล์
                             </label>
 
                             <input type="file"
                                    id="avatar-upload"
                                    name="profile_picture"
                                    accept="image/jpeg,image/png,image/gif,image/webp"
-                                   class="hidden"
+                                   style="display:none;"
                                    @change="handleAvatarChange($event)">
 
-                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            <p style="margin-top:10px; font-size:11px; color:var(--ink2); line-height:1.6;">
                                 JPG, PNG, GIF หรือ WebP<br>
                                 ขนาดไม่เกิน 5MB<br>
-                                <span class="text-purple-600 dark:text-purple-400 font-semibold">จะแปลงเป็น WebP อัตโนมัติ</span>
+                                <span style="color:var(--deep1); font-weight:700;">จะแปลงเป็น WebP อัตโนมัติ</span>
                             </p>
                         </div>
 
-                        {{-- User Info --}}
-                        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $user->name }}</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
+                        {{-- ข้อมูลผู้ใช้ --}}
+                        <div style="margin-top:18px; padding-top:18px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                            <h3 style="font-size:16px; font-weight:700; margin:0;">{{ $user->name }}</h3>
+                            <p style="font-size:12.5px; color:var(--ink2); margin:4px 0 0;">{{ $user->email }}</p>
 
-                            {{-- KYC Status Badge --}}
-                            <div class="mt-4 space-y-2">
-                                @if($user->isKycVerified())
-                                    <a href="{{ route('user.kyc.index') }}"
-                                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all group">
-                                        <i class="fas fa-shield-check mr-2 group-hover:scale-110 transition-transform"></i>
-                                        <span>ยืนยันตัวตนแล้ว</span>
-                                        <i class="fas fa-check-circle ml-2 text-green-200"></i>
+                            {{-- ป้ายสถานะ KYC + LINE --}}
+                            <div style="display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:14px;">
+                                @if($kycVerified)
+                                    <a href="{{ route('user.kyc.index') }}" class="tp-pill" style="text-decoration:none; color:#fff; background:#5aa07e; padding:7px 14px;">
+                                        <i class="fas fa-shield-halved"></i> ยืนยันตัวตนแล้ว <i class="fas fa-circle-check"></i>
                                     </a>
-                                @elseif($user->isKycPending())
-                                    <a href="{{ route('user.kyc.index') }}"
-                                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all animate-pulse group">
-                                        <i class="fas fa-hourglass-half mr-2 group-hover:scale-110 transition-transform"></i>
-                                        <span>รอตรวจสอบ KYC</span>
+                                @elseif($kycPending)
+                                    <a href="{{ route('user.kyc.index') }}" class="tp-pill" style="text-decoration:none; color:#fff; background:#e0a52e; padding:7px 14px;">
+                                        <i class="fas fa-hourglass-half"></i> รอตรวจสอบ KYC
                                     </a>
                                 @else
-                                    <a href="{{ route('user.kyc.index') }}"
-                                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all group">
-                                        <i class="fas fa-exclamation-triangle mr-2 group-hover:scale-110 transition-transform"></i>
-                                        <span>ยังไม่ได้ยืนยันตัวตน</span>
+                                    <a href="{{ route('user.kyc.index') }}" class="tp-pill" style="text-decoration:none; color:#fff; background:#d9534f; padding:7px 14px;">
+                                        <i class="fas fa-triangle-exclamation"></i> ยังไม่ได้ยืนยันตัวตน
                                     </a>
                                 @endif
 
-                                {{-- LINE Connection Status Badge --}}
+                                {{-- ป้ายสถานะการเชื่อมต่อ LINE --}}
                                 @if($user->line_user_id)
-                                    <div class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-sm font-bold shadow-lg group">
-                                        <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
-                                        </svg>
-                                        <span>LINE: {{ $user->line_display_name ?? 'เชื่อมต่อแล้ว' }}</span>
-                                        <i class="fas fa-check-circle ml-2 text-green-200"></i>
-                                    </div>
+                                    <span class="tp-pill" style="color:#fff; background:#5aa07e; padding:7px 14px;">
+                                        <svg style="width:14px; height:14px; color:#fff;" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/></svg>
+                                        LINE: {{ $user->line_display_name ?? 'เชื่อมต่อแล้ว' }} <i class="fas fa-circle-check"></i>
+                                    </span>
                                 @else
-                                    <a href="{{ route('line.link') }}"
-                                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#00B900] to-[#00C300] hover:from-[#00A000] hover:to-[#00B000] text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all group">
-                                        <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
-                                        </svg>
-                                        <span>เชื่อมต่อ LINE</span>
-                                        <i class="fas fa-external-link-alt ml-2 text-white/70"></i>
+                                    @if(RouteFacade::has('line.link'))
+                                    <a href="{{ route('line.link') }}" class="tp-pill" style="text-decoration:none; color:#fff; background:#00B900; padding:7px 14px;">
+                                        <svg style="width:14px; height:14px; color:#fff;" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/></svg>
+                                        เชื่อมต่อ LINE <i class="fas fa-up-right-from-square"></i>
                                     </a>
+                                    @endif
                                 @endif
                             </div>
 
                             @if($user->member_number)
-                                <div class="mt-3 inline-flex items-center px-3 py-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg text-xs font-bold shadow-lg">
-                                    <i class="fas fa-id-card mr-2"></i>{{ $user->member_number }}
+                                <div style="margin-top:12px;">
+                                    <span class="tp-pill tp-pill-soft"><i class="fas fa-id-card"></i> {{ $user->member_number }}</span>
                                 </div>
                             @endif
                         </div>
                     </div>
-                </x-arrow-x.card-v3>
+                </div>
             </div>
 
-            {{-- Right Content - Profile Forms --}}
-            <div class="lg:col-span-2 space-y-6">
-                {{-- Personal Information - ใช้ Arrow X Card --}}
-                <x-arrow-x.card-v3 class="p-6">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
-                            <i class="fas fa-user text-white"></i>
-                        </div>
-                        ข้อมูลส่วนตัว
-                    </h2>
+            {{-- ── คอลัมน์ขวา: ฟอร์มข้อมูลโปรไฟล์ ─────────────── --}}
+            <div style="grid-column:span 1; display:flex; flex-direction:column; gap:18px;">
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {{-- Name --}}
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-signature mr-1 text-purple-600"></i>ชื่อ-นามสกุล <span class="text-red-500">*</span>
+                {{-- ข้อมูลส่วนตัว --}}
+                <div class="tp-card" style="padding:20px;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                        <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:16px; background:#5689b8;"><i class="fas fa-user" style="color:#fff;"></i></span>
+                        <h2 style="font-size:17px; font-weight:700; margin:0;">ข้อมูลส่วนตัว</h2>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
+                        {{-- ชื่อ-นามสกุล --}}
+                        <div style="grid-column:1 / -1;">
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-signature" style="color:var(--deep1);"></i> ชื่อ-นามสกุล <span style="color:#d9534f;">*</span>
                             </label>
                             <input type="text"
                                    name="name"
                                    value="{{ old('name', $user->name) }}"
                                    required
-                                   class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition"
+                                   class="tp-input"
+                                   style="width:100%;"
                                    @input="formChanged = true">
                             @error('name')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p style="margin-top:5px; font-size:12px; color:#d9534f;">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        {{-- Email --}}
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-envelope mr-1 text-purple-600"></i>อีเมล <span class="text-red-500">*</span>
+                        {{-- อีเมล --}}
+                        <div style="grid-column:1 / -1;">
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-envelope" style="color:var(--deep1);"></i> อีเมล <span style="color:#d9534f;">*</span>
                             </label>
                             <input type="email"
                                    name="email"
                                    value="{{ old('email', $user->email) }}"
                                    required
-                                   class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition"
+                                   class="tp-input"
+                                   style="width:100%;"
                                    @input="formChanged = true">
                             @error('email')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p style="margin-top:5px; font-size:12px; color:#d9534f;">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        {{-- Phone --}}
+                        {{-- เบอร์โทรศัพท์ --}}
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-phone mr-1 text-purple-600"></i>เบอร์โทรศัพท์
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-phone" style="color:var(--deep1);"></i> เบอร์โทรศัพท์
                             </label>
                             <input type="tel"
                                    name="phone"
                                    value="{{ old('phone', $user->phone) }}"
                                    placeholder="0812345678"
-                                   class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition"
+                                   class="tp-input"
+                                   style="width:100%;"
                                    @input="formChanged = true">
                             @error('phone')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p style="margin-top:5px; font-size:12px; color:#d9534f;">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        {{-- Birth Date --}}
+                        {{-- วันเกิด --}}
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-birthday-cake mr-1 text-purple-600"></i>วันเกิด
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-cake-candles" style="color:var(--deep1);"></i> วันเกิด
                             </label>
                             <input type="date"
                                    name="date_of_birth"
                                    value="{{ old('date_of_birth', $user->date_of_birth) }}"
-                                   class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition"
+                                   class="tp-input"
+                                   style="width:100%;"
                                    @input="formChanged = true">
                             @error('date_of_birth')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p style="margin-top:5px; font-size:12px; color:#d9534f;">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        {{-- Gender --}}
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-venus-mars mr-1 text-purple-600"></i>เพศ
+                        {{-- เพศ --}}
+                        <div style="grid-column:1 / -1;">
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-venus-mars" style="color:var(--deep1);"></i> เพศ
                             </label>
                             <select name="gender"
-                                    class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition"
+                                    class="tp-input"
+                                    style="width:100%;"
                                     @change="formChanged = true">
                                 <option value="">เลือกเพศ</option>
                                 <option value="male" {{ old('gender', $user->gender) === 'male' ? 'selected' : '' }}>ชาย</option>
@@ -335,27 +280,26 @@
                             </select>
                         </div>
                     </div>
-                </x-arrow-x.card-v3>
+                </div>
 
-                {{-- Billing Address --}}
-                <x-arrow-x.card-v3 class="p-6">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
-                            <i class="fas fa-map-marker-alt text-white"></i>
-                        </div>
-                        ที่อยู่ (สำหรับออกใบเสร็จ)
-                    </h2>
+                {{-- ที่อยู่ (สำหรับออกใบเสร็จ) --}}
+                <div class="tp-card" style="padding:20px;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                        <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:16px; background:#5aa07e;"><i class="fas fa-map-marker-alt" style="color:#fff;"></i></span>
+                        <h2 style="font-size:17px; font-weight:700; margin:0;">ที่อยู่ (สำหรับออกใบเสร็จ)</h2>
+                    </div>
 
-                    <div class="grid grid-cols-1 gap-4">
-                        {{-- Address --}}
+                    <div style="display:flex; flex-direction:column; gap:14px;">
+                        {{-- ที่อยู่ --}}
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-home mr-1 text-green-600"></i>ที่อยู่
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-home" style="color:#5aa07e;"></i> ที่อยู่
                             </label>
                             <textarea name="address"
                                       rows="2"
                                       placeholder="บ้านเลขที่ ถนน"
-                                      class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition resize-none"
+                                      class="tp-input"
+                                      style="width:100%; resize:none;"
                                       @input="formChanged = true">{{ old('address', $user->address) }}</textarea>
                         </div>
 
@@ -374,79 +318,65 @@
                             :show-sub-district="false"
                         />
                     </div>
-                </x-arrow-x.card-v3>
+                </div>
 
-                {{-- Shipping Address - ลิ้งค์ไปหน้าจัดการที่อยู่จัดส่ง --}}
-                <x-arrow-x.card-v3 class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
-                            <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
-                                <i class="fas fa-shipping-fast text-white"></i>
-                            </div>
-                            ที่อยู่จัดส่ง
-                        </h2>
+                {{-- ที่อยู่จัดส่ง — ลิงก์ไปหน้าจัดการที่อยู่จัดส่ง --}}
+                <div class="tp-card" style="padding:20px;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                        <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:16px; background:#e0a52e;"><i class="fas fa-shipping-fast" style="color:#fff;"></i></span>
+                        <h2 style="font-size:17px; font-weight:700; margin:0;">ที่อยู่จัดส่ง</h2>
                     </div>
 
-                    <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-5">
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center shadow-md">
-                                <i class="fas fa-map-marker-alt text-white text-lg"></i>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-gray-700 dark:text-gray-300 mb-3">
-                                    จัดการที่อยู่จัดส่งทั้งหมดได้ที่หน้าที่อยู่จัดส่ง เพิ่ม แก้ไข ลบ และตั้งค่าที่อยู่เริ่มต้นได้ในที่เดียว
-                                </p>
-                                <a href="{{ route('shipping-addresses.index') }}"
-                                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-sm font-bold rounded-lg shadow-lg hover:shadow-xl transition-all">
-                                    <i class="fas fa-external-link-alt"></i>
-                                    จัดการที่อยู่จัดส่ง
-                                </a>
-                            </div>
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; padding:16px 18px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+                        <span class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:19px; background:#e0a52e;"><i class="fas fa-map-marker-alt" style="color:#fff;"></i></span>
+                        <div style="flex:1; min-width:200px;">
+                            <p style="font-size:13px; color:var(--ink2); margin:0 0 10px;">
+                                จัดการที่อยู่จัดส่งทั้งหมดได้ที่หน้าที่อยู่จัดส่ง เพิ่ม แก้ไข ลบ และตั้งค่าที่อยู่เริ่มต้นได้ในที่เดียว
+                            </p>
+                            @if(RouteFacade::has('shipping-addresses.index'))
+                            <a href="{{ route('shipping-addresses.index') }}" class="tp-btn tp-btn-primary tp-btn-sm">
+                                <i class="fas fa-up-right-from-square"></i> จัดการที่อยู่จัดส่ง
+                            </a>
+                            @endif
                         </div>
                     </div>
-                </x-arrow-x.card-v3>
+                </div>
 
-                {{-- ID Card Information (Read-Only) - แสดงเมื่อ KYC ผ่านแล้ว --}}
-                @if($user->isKycVerified() && $user->id_card_number)
-                <x-arrow-x.card-v3 class="p-6 border-2 border-green-500/30 dark:border-green-500/20 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
-                            <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
-                                <i class="fas fa-id-card text-white"></i>
-                            </div>
-                            ข้อมูลบัตรประชาชน
-                        </h2>
-                        <span class="inline-flex items-center px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 rounded-full text-sm font-semibold">
-                            <i class="fas fa-shield-check mr-2"></i>ยืนยันตัวตนแล้ว
-                        </span>
+                {{-- ข้อมูลบัตรประชาชน (อ่านอย่างเดียว) — แสดงเมื่อ KYC ผ่านแล้ว --}}
+                @if($kycVerified && $user->id_card_number)
+                <div class="tp-card" style="padding:20px; border:1px solid color-mix(in srgb, #5aa07e 35%, transparent);">
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:16px; background:#5aa07e;"><i class="fas fa-id-card" style="color:#fff;"></i></span>
+                            <h2 style="font-size:17px; font-weight:700; margin:0;">ข้อมูลบัตรประชาชน</h2>
+                        </div>
+                        <span class="tp-pill" style="color:#fff; background:#5aa07e;"><i class="fas fa-shield-halved"></i> ยืนยันตัวตนแล้ว</span>
                     </div>
 
                     {{-- คำเตือน: ไม่สามารถแก้ไขได้ --}}
-                    <div class="mb-4 p-4 bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-500 rounded-r-lg">
-                        <p class="text-sm text-amber-800 dark:text-amber-200">
-                            <i class="fas fa-lock mr-2"></i>
-                            ข้อมูลบัตรประชาชนไม่สามารถแก้ไขได้ หากต้องการแก้ไขกรุณาติดต่อทีมงานผ่านระบบ Support Ticket
-                        </p>
+                    <div style="margin-bottom:16px; padding:12px 14px; border-radius:12px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e; font-size:12.5px; color:#e0a52e;">
+                        <i class="fas fa-lock"></i>
+                        ข้อมูลบัตรประชาชนไม่สามารถแก้ไขได้ หากต้องการแก้ไขกรุณาติดต่อทีมงานผ่านระบบ Support Ticket
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
                         {{-- เลขบัตรประชาชน --}}
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-fingerprint mr-1 text-green-600"></i>เลขบัตรประชาชน
+                        <div style="grid-column:1 / -1;">
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-fingerprint" style="color:#5aa07e;"></i> เลขบัตรประชาชน
                             </label>
-                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 font-mono">
+                            <div class="tp-num" style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
                                 {{ substr($user->id_card_number, 0, 1) }}-{{ substr($user->id_card_number, 1, 4) }}-{{ substr($user->id_card_number, 5, 5) }}-{{ substr($user->id_card_number, 10, 2) }}-{{ substr($user->id_card_number, 12, 1) }}
                             </div>
                         </div>
 
                         {{-- ชื่อภาษาไทย --}}
                         @if($user->thai_first_name || $user->thai_last_name)
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-user mr-1 text-green-600"></i>ชื่อ-นามสกุล (ภาษาไทย)
+                        <div style="grid-column:1 / -1;">
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-user" style="color:#5aa07e;"></i> ชื่อ-นามสกุล (ภาษาไทย)
                             </label>
-                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
                                 {{ $user->thai_first_name }} {{ $user->thai_last_name }}
                             </div>
                         </div>
@@ -454,23 +384,23 @@
 
                         {{-- ชื่อภาษาอังกฤษ --}}
                         @if($user->english_first_name || $user->english_last_name)
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-globe mr-1 text-green-600"></i>ชื่อ-นามสกุล (ภาษาอังกฤษ)
+                        <div style="grid-column:1 / -1;">
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-globe" style="color:#5aa07e;"></i> ชื่อ-นามสกุล (ภาษาอังกฤษ)
                             </label>
-                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
                                 {{ $user->english_first_name }} {{ $user->english_last_name }}
                             </div>
                         </div>
                         @endif
 
-                        {{-- วันเกิด --}}
+                        {{-- วันเกิด (จากบัตร) --}}
                         @if($user->id_card_birth_date)
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-birthday-cake mr-1 text-green-600"></i>วันเกิด (จากบัตร)
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-cake-candles" style="color:#5aa07e;"></i> วันเกิด (จากบัตร)
                             </label>
-                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
                                 {{ \Carbon\Carbon::parse($user->id_card_birth_date)->locale('th')->translatedFormat('j F Y') }}
                             </div>
                         </div>
@@ -479,10 +409,10 @@
                         {{-- ศาสนา --}}
                         @if($user->id_card_religion)
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-pray mr-1 text-green-600"></i>ศาสนา
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-pray" style="color:#5aa07e;"></i> ศาสนา
                             </label>
-                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
                                 {{ $user->id_card_religion }}
                             </div>
                         </div>
@@ -491,10 +421,10 @@
                         {{-- วันออกบัตร --}}
                         @if($user->id_card_issue_date)
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-calendar-plus mr-1 text-green-600"></i>วันออกบัตร
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-calendar-plus" style="color:#5aa07e;"></i> วันออกบัตร
                             </label>
-                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
                                 {{ \Carbon\Carbon::parse($user->id_card_issue_date)->locale('th')->translatedFormat('j F Y') }}
                             </div>
                         </div>
@@ -502,14 +432,15 @@
 
                         {{-- วันหมดอายุ --}}
                         @if($user->id_card_expiry_date)
+                        @php $idExpired = \Carbon\Carbon::parse($user->id_card_expiry_date)->isPast(); @endphp
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-calendar-times mr-1 text-green-600"></i>วันหมดอายุ
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-calendar-times" style="color:#5aa07e;"></i> วันหมดอายุ
                             </label>
-                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 {{ \Carbon\Carbon::parse($user->id_card_expiry_date)->isPast() ? 'text-red-600 dark:text-red-400' : '' }}">
+                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:{{ $idExpired ? '#d9534f' : 'var(--ink2)' }};">
                                 {{ \Carbon\Carbon::parse($user->id_card_expiry_date)->locale('th')->translatedFormat('j F Y') }}
-                                @if(\Carbon\Carbon::parse($user->id_card_expiry_date)->isPast())
-                                    <span class="ml-2 text-red-600 dark:text-red-400 text-sm">(หมดอายุแล้ว)</span>
+                                @if($idExpired)
+                                    <span style="margin-left:8px; color:#d9534f; font-size:12px;">(หมดอายุแล้ว)</span>
                                 @endif
                             </div>
                         </div>
@@ -517,96 +448,98 @@
 
                         {{-- ที่อยู่ตามบัตร --}}
                         @if($user->id_card_address)
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-map-marker-alt mr-1 text-green-600"></i>ที่อยู่ตามบัตร
+                        <div style="grid-column:1 / -1;">
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-map-marker-alt" style="color:#5aa07e;"></i> ที่อยู่ตามบัตร
                             </label>
-                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
                                 {{ $user->id_card_address }}
                             </div>
                         </div>
                         @endif
                     </div>
-                </x-arrow-x.card-v3>
+                </div>
                 @endif
 
-                {{-- Password Change --}}
-                <x-arrow-x.card-v3 class="p-6">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
-                            <i class="fas fa-key text-white"></i>
-                        </div>
-                        เปลี่ยนรหัสผ่าน
-                    </h2>
+                {{-- เปลี่ยนรหัสผ่าน --}}
+                <div class="tp-card" style="padding:20px;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                        <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:16px; background:#d9534f;"><i class="fas fa-key" style="color:#fff;"></i></span>
+                        <h2 style="font-size:17px; font-weight:700; margin:0;">เปลี่ยนรหัสผ่าน</h2>
+                    </div>
 
-                    <div class="grid grid-cols-1 gap-4">
-                        {{-- Current Password --}}
+                    <div style="display:flex; flex-direction:column; gap:14px;">
+                        {{-- รหัสผ่านปัจจุบัน --}}
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-lock mr-1 text-red-600"></i>รหัสผ่านปัจจุบัน
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-lock" style="color:#d9534f;"></i> รหัสผ่านปัจจุบัน
                             </label>
-                            <div class="relative" x-data="{ showPassword: false }">
+                            <div style="position:relative;" x-data="{ showPassword: false }">
                                 <input :type="showPassword ? 'text' : 'password'"
                                        name="current_password"
                                        placeholder="ใส่รหัสผ่านปัจจุบัน (ถ้าต้องการเปลี่ยน)"
-                                       class="input-3d w-full px-4 py-3 pr-12 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-500/20 transition">
+                                       class="tp-input"
+                                       style="width:100%; padding-right:44px;">
                                 <button type="button"
                                         @click="showPassword = !showPassword"
-                                        class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                        class="tp-icon-btn"
+                                        style="position:absolute; right:6px; top:50%; transform:translateY(-50%);">
                                     <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
                                 </button>
                             </div>
                         </div>
 
-                        {{-- New Password --}}
+                        {{-- รหัสผ่านใหม่ --}}
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-key mr-1 text-red-600"></i>รหัสผ่านใหม่
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-key" style="color:#d9534f;"></i> รหัสผ่านใหม่
                             </label>
-                            <div class="relative" x-data="{ showPassword: false }">
+                            <div style="position:relative;" x-data="{ showPassword: false }">
                                 <input :type="showPassword ? 'text' : 'password'"
                                        name="new_password"
                                        placeholder="ใส่รหัสผ่านใหม่"
-                                       class="input-3d w-full px-4 py-3 pr-12 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-500/20 transition">
+                                       class="tp-input"
+                                       style="width:100%; padding-right:44px;">
                                 <button type="button"
                                         @click="showPassword = !showPassword"
-                                        class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                        class="tp-icon-btn"
+                                        style="position:absolute; right:6px; top:50%; transform:translateY(-50%);">
                                     <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
                                 </button>
                             </div>
                         </div>
 
-                        {{-- Confirm Password --}}
+                        {{-- ยืนยันรหัสผ่านใหม่ --}}
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-check-circle mr-1 text-red-600"></i>ยืนยันรหัสผ่านใหม่
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                <i class="fas fa-circle-check" style="color:#d9534f;"></i> ยืนยันรหัสผ่านใหม่
                             </label>
-                            <div class="relative" x-data="{ showPassword: false }">
+                            <div style="position:relative;" x-data="{ showPassword: false }">
                                 <input :type="showPassword ? 'text' : 'password'"
                                        name="new_password_confirmation"
                                        placeholder="ยืนยันรหัสผ่านใหม่อีกครั้ง"
-                                       class="input-3d w-full px-4 py-3 pr-12 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-500/20 transition">
+                                       class="tp-input"
+                                       style="width:100%; padding-right:44px;">
                                 <button type="button"
                                         @click="showPassword = !showPassword"
-                                        class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                        class="tp-icon-btn"
+                                        style="position:absolute; right:6px; top:50%; transform:translateY(-50%);">
                                     <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded-lg">
-                            <p class="text-sm text-blue-800 dark:text-blue-200">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข
-                            </p>
+                        <div style="padding:12px 14px; border-radius:12px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8; font-size:12.5px; color:#5689b8;">
+                            <i class="fas fa-circle-info"></i>
+                            รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข
                         </div>
                     </div>
-                </x-arrow-x.card-v3>
+                </div>
             </div>
         </div>
     </form>
 
-    {{-- Floating Save Button --}}
+    {{-- ── ปุ่มบันทึกลอย (Floating Save) ──────────────────────── --}}
     <div x-show="formChanged"
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 translate-y-4"
@@ -614,90 +547,23 @@
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="opacity-100 translate-y-0"
          x-transition:leave-end="opacity-0 translate-y-4"
-         class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50"
-         style="display: none;">
-        <div class="glass-fusion-card rounded-full shadow-2xl p-2 flex items-center gap-4 border-2 border-purple-500/50">
+         style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:50; display:none;">
+        <div class="tp-card" style="display:flex; align-items:center; gap:10px; padding:10px; border-radius:999px;">
             <button type="button"
                     @click="$refs.profileForm.submit()"
-                    class="px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 hover:from-purple-700 hover:via-pink-700 hover:to-orange-700 text-white font-bold text-lg rounded-full shadow-2xl hover:shadow-3xl transition-transform hover:scale-[1.02] transition-all duration-300 flex items-center gap-3">
-                <i class="fas fa-save text-2xl"></i>
-                <span>บันทึกการเปลี่ยนแปลง</span>
+                    class="tp-btn tp-btn-primary"
+                    style="border-radius:999px; padding:12px 24px; font-size:15px;">
+                <i class="fas fa-save"></i> บันทึกการเปลี่ยนแปลง
             </button>
             <button type="button"
                     @click="formChanged = false; window.location.reload()"
-                    class="px-6 py-4 bg-white/20 hover:bg-white/30 dark:bg-gray-800/50 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300 font-semibold rounded-full transition-all">
-                <i class="fas fa-times mr-2"></i>ยกเลิก
+                    class="tp-btn"
+                    style="border-radius:999px; padding:12px 18px;">
+                <i class="fas fa-times"></i> ยกเลิก
             </button>
         </div>
     </div>
 </div>
-
-@push('styles')
-<style>
-/* Glass Fusion Card */
-.glass-fusion-card {
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.25) 0%,
-        rgba(255, 255, 255, 0.15) 100%
-    );
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.dark .glass-fusion-card {
-    background: linear-gradient(
-        135deg,
-        rgba(31, 41, 55, 0.8) 0%,
-        rgba(17, 24, 39, 0.7) 100%
-    );
-    border-color: rgba(75, 85, 99, 0.5);
-}
-
-/* Glass Fusion Effect for Hero Header */
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Input 3D Effect */
-.input-3d {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-}
-
-.input-3d:focus {
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2), 0 0 0 3px rgba(139, 92, 246, 0.1);
-    transform: translateY(-1px);
-}
-
-/* Float Animation */
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
-}
-
-/* Spin Slow Animation */
-@keyframes spin-slow {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.animate-spin-slow {
-    animation: spin-slow 8s linear infinite;
-}
-</style>
-@endpush
 
 @push('scripts')
 <script>

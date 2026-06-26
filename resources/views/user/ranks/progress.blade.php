@@ -1,151 +1,135 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ความคืบหน้ายศ')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Yellow-Amber-Orange for Rank Progress) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-600 dark:from-yellow-800 dark:via-amber-800 dark:to-orange-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-trophy"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <a href="{{ route('user.ranks.dashboard') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-chart-line text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">ความคืบหน้ายศ</h1>
-                    <p class="text-yellow-100 text-lg mt-1">ติดตามความคืบหน้าสู่ยศที่สูงขึ้น</p>
-                </div>
+    {{-- ── Hero: ความคืบหน้ายศ ──────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            @if(\Illuminate\Support\Facades\Route::has('user.ranks.dashboard'))
+                <a href="{{ route('user.ranks.dashboard') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+            @endif
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-chart-line" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ความคืบหน้ายศ</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ติดตามความคืบหน้าสู่ยศที่สูงขึ้น</div>
             </div>
         </div>
     </div>
 
-    <!-- Current Rank Card -->
-    <x-arrow-x.card-v3 class="p-8">
-        <div class="text-center mb-8">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">ยศปัจจุบันของคุณ</h2>
+    {{-- ── ยศปัจจุบัน ────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+        <div style="text-align:center; margin-bottom:22px;">
+            <div class="tp-section-h" style="justify-content:center; margin-bottom:16px;">🏅 ยศปัจจุบันของคุณ</div>
             @if($user->currentRank)
-                <div class="inline-block">
-                    <div class="flex justify-center mb-4">
+                <div style="display:inline-block;">
+                    <div style="display:flex; justify-content:center; margin-bottom:14px;">
                         <x-rank-icon :rank="$user->currentRank" size="2xl" />
                     </div>
-                    <h3 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">{{ $user->currentRank->name }}</h3>
-                    <p class="text-gray-600 dark:text-gray-400">{{ $user->currentRank->description ?? '' }}</p>
-                    <div class="mt-4">
-                        <span class="px-6 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-full font-bold text-lg">
-                            ระดับ {{ $user->currentRank->level }}
-                        </span>
+                    <h3 class="tp-num" style="font-size:26px; font-weight:800; margin:0 0 6px;">{{ $user->currentRank->name }}</h3>
+                    <p style="font-size:13px; color:var(--ink2); margin:0;">{{ $user->currentRank->description ?? '' }}</p>
+                    <div style="margin-top:14px;">
+                        <span class="tp-pill tp-pill-gold" style="font-size:14px; padding:7px 18px;">ระดับ {{ $user->currentRank->level }}</span>
                     </div>
                 </div>
             @else
-                <div class="text-center py-8">
-                    <span class="text-6xl mb-4 block">🎯</span>
-                    <p class="text-gray-600 dark:text-gray-400 text-lg">ยังไม่มียศ</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">เริ่มต้นสร้างทีมและสะสมคะแนนเพื่อรับยศแรกของคุณ</p>
+                <div style="text-align:center; padding:24px 0;">
+                    <div style="font-size:54px;">🎯</div>
+                    <div style="font-weight:700; font-size:16px; margin-top:8px;">ยังไม่มียศ</div>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">เริ่มต้นสร้างทีมและสะสมคะแนนเพื่อรับยศแรกของคุณ</div>
                 </div>
             @endif
         </div>
 
-        <!-- Current Stats -->
-        <div class="grid md:grid-cols-3 gap-4">
-            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-                <div class="text-center">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">คะแนนปัจจุบัน</div>
-                    <div class="text-3xl font-bold text-blue-600">{{ number_format($user->rank_points ?? 0, 0) }}</div>
-                </div>
+        {{-- สถิติปัจจุบัน 3 ใบ --}}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
+            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm); text-align:center;">
+                <div style="font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:8px;">คะแนนปัจจุบัน</div>
+                <div class="tp-num" style="font-size:28px; font-weight:800; color:#5689b8;">{{ number_format($user->rank_points ?? 0, 0) }}</div>
             </div>
-
-            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
-                <div class="text-center">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">จำนวนทีม</div>
-                    <div class="text-3xl font-bold text-purple-600">{{ $user->team_count ?? 0 }}</div>
-                </div>
+            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm); text-align:center;">
+                <div style="font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:8px;">จำนวนทีม</div>
+                <div class="tp-num" style="font-size:28px; font-weight:800; color:var(--deep1);">{{ $user->team_count ?? 0 }}</div>
             </div>
-
-            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
-                <div class="text-center">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">รายได้รวม</div>
-                    <div class="text-3xl font-bold text-green-600">฿{{ number_format($user->total_commissions ?? 0, 2) }}</div>
-                </div>
+            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm); text-align:center;">
+                <div style="font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:8px;">รายได้รวม</div>
+                <div class="tp-num" style="font-size:28px; font-weight:800; color:#5aa07e;">฿{{ number_format($user->total_commissions ?? 0, 2) }}</div>
             </div>
         </div>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Rank Progression -->
-    <x-arrow-x.card-v3 class="p-8">
-        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-            <span>📊</span> เส้นทางความก้าวหน้า
-        </h2>
+    {{-- ── เส้นทางความก้าวหน้า ───────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+        <div class="tp-section-h" style="margin-bottom:18px;">📊 เส้นทางความก้าวหน้า</div>
 
-        <div class="space-y-6">
+        <div style="display:flex; flex-direction:column; gap:18px;">
             @foreach($allRanks as $index => $rank)
                 @php
                     $isCurrentRank = $user->currentRank && $user->currentRank->id === $rank->id;
                     $isAchieved = $user->currentRank && $user->currentRank->level >= $rank->level;
                     $progress = $userProgress->firstWhere('target_rank_id', $rank->id);
                     $progressPercentage = $progress->progress_percentage ?? 0;
+
+                    // สีกรอบตามสถานะยศ (ปัจจุบัน / ผ่านแล้ว / ยังไม่ถึง)
+                    if ($isCurrentRank) {
+                        $borderColor = 'var(--accent1)';
+                        $borderWidth = '2px';
+                    } elseif ($isAchieved) {
+                        $borderColor = '#5aa07e';
+                        $borderWidth = '1px';
+                    } else {
+                        $borderColor = 'color-mix(in srgb, var(--ink2) 22%, transparent)';
+                        $borderWidth = '1px';
+                    }
                 @endphp
 
-                <div class="relative">
-                    <!-- Connecting Line -->
+                <div style="position:relative;">
+                    {{-- เส้นเชื่อมไทม์ไลน์ --}}
                     @if(!$loop->last)
-                        <div class="absolute left-8 top-20 w-1 h-full {{ $isAchieved ? 'bg-green-500' : 'bg-gray-300' }}"></div>
+                        <div style="position:absolute; left:30px; top:78px; width:3px; height:100%;
+                                    background:{{ $isAchieved ? '#5aa07e' : 'color-mix(in srgb, var(--ink2) 22%, transparent)' }}; border-radius:3px;"></div>
                     @endif
 
-                    <!-- Rank Item -->
-                    <div class="relative bg-gradient-to-br {{ $isCurrentRank ? 'from-yellow-50 to-amber-50 border-2 border-yellow-400' : ($isAchieved ? 'from-green-50 to-emerald-50 border border-green-300' : 'from-gray-50 to-slate-50 border border-gray-300 dark:border-gray-600') }} rounded-xl p-6">
-                        <div class="flex items-start gap-6">
-                            <!-- Icon -->
-                            <div class="flex-shrink-0 relative z-10">
+                    {{-- การ์ดยศ --}}
+                    <div style="position:relative; padding:18px; border-radius:16px; box-shadow:var(--inset-sm);
+                                border:{{ $borderWidth }} solid {{ $borderColor }};">
+                        <div style="display:flex; align-items:flex-start; gap:18px;">
+                            {{-- ไอคอนยศ --}}
+                            <div style="flex-shrink:0; position:relative; z-index:1;">
                                 <x-rank-icon :rank="$rank" size="lg" />
                             </div>
 
-                            <!-- Content -->
-                            <div class="flex-1">
-                                <div class="flex items-start justify-between mb-3">
-                                    <div>
-                                        <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                            {{-- เนื้อหา --}}
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px;">
+                                    <div style="min-width:0;">
+                                        <h3 style="font-size:17px; font-weight:700; margin:0; display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
                                             {{ $rank->name }}
                                             @if($isCurrentRank)
-                                                <span class="px-3 py-1 bg-yellow-500 text-white text-xs rounded-full">ยศปัจจุบัน</span>
+                                                <span class="tp-pill tp-pill-gold" style="font-size:10.5px;">ยศปัจจุบัน</span>
                                             @elseif($isAchieved)
-                                                <span class="px-3 py-1 bg-green-500 text-white text-xs rounded-full">✓ ผ่านแล้ว</span>
+                                                <span class="tp-pill" style="font-size:10.5px; color:#fff; background:#5aa07e;">✓ ผ่านแล้ว</span>
                                             @endif
                                         </h3>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ $rank->description ?? '' }}</p>
+                                        <p style="font-size:12.5px; color:var(--ink2); margin:4px 0 0;">{{ $rank->description ?? '' }}</p>
                                     </div>
-                                    <div class="text-right">
-                                        <div class="text-sm text-gray-600 dark:text-gray-400">ระดับ</div>
-                                        <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ $rank->level }}</div>
+                                    <div style="text-align:right; flex-shrink:0;">
+                                        <div style="font-size:11px; color:var(--ink2);">ระดับ</div>
+                                        <div class="tp-num" style="font-size:22px; font-weight:800;">{{ $rank->level }}</div>
                                     </div>
                                 </div>
 
-                                <!-- Requirements -->
+                                {{-- เงื่อนไข --}}
                                 @if($rank->requirements)
-                                    <div class="bg-white/80 rounded-lg p-4 mb-3">
-                                        <div class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">เงื่อนไข:</div>
-                                        <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <div style="padding:12px 14px; border-radius:13px; box-shadow:var(--inset-sm); margin-bottom:10px;">
+                                        <div style="font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:8px;">เงื่อนไข:</div>
+                                        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:5px;">
                                             @foreach($rank->requirements as $requirement)
-                                                <li class="flex items-center gap-2">
-                                                    <span class="{{ $isAchieved ? 'text-green-600' : 'text-gray-400' }}">
-                                                        {{ $isAchieved ? '✅' : '○' }}
-                                                    </span>
+                                                <li style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink2);">
+                                                    <span style="color:{{ $isAchieved ? '#5aa07e' : 'var(--ink2)' }};">{{ $isAchieved ? '✅' : '○' }}</span>
                                                     <span>{{ $requirement }}</span>
                                                 </li>
                                             @endforeach
@@ -153,29 +137,29 @@
                                     </div>
                                 @endif
 
-                                <!-- Progress Bar (only for next ranks) -->
+                                {{-- แถบความคืบหน้า (เฉพาะยศที่ยังไม่ผ่าน) --}}
                                 @if(!$isAchieved && $progress)
                                     <div>
-                                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:12.5px; color:var(--ink2); margin-bottom:6px;">
                                             <span>ความคืบหน้า</span>
-                                            <span>{{ number_format($progressPercentage, 1) }}%</span>
+                                            <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ number_format($progressPercentage, 1) }}%</span>
                                         </div>
-                                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                            <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-full transition-all duration-500"
-                                                 style="width: {{ min($progressPercentage, 100) }}%"></div>
+                                        <div style="height:12px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
+                                            <div style="height:100%; width:{{ min($progressPercentage, 100) }}%; border-radius:20px;
+                                                        background:linear-gradient(90deg, var(--accent1), var(--accent2)); transition:width .5s ease;"></div>
                                         </div>
-                                        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            <span>{{ number_format($progress->current_points ?? 0, 0) }} คะแนน</span>
-                                            <span>{{ number_format($progress->target_points ?? 0, 0) }} คะแนน</span>
+                                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--ink2); margin-top:6px;">
+                                            <span class="tp-num">{{ number_format($progress->current_points ?? 0, 0) }} คะแนน</span>
+                                            <span class="tp-num">{{ number_format($progress->target_points ?? 0, 0) }} คะแนน</span>
                                         </div>
                                     </div>
                                 @endif
 
-                                <!-- Benefits -->
+                                {{-- สิทธิพิเศษ --}}
                                 @if($rank->benefits)
-                                    <div class="mt-3 bg-blue-50 rounded-lg p-3">
-                                        <div class="text-sm font-semibold text-blue-800 mb-1">สิทธิพิเศษ:</div>
-                                        <div class="text-sm text-blue-700">{{ implode(', ', $rank->benefits) }}</div>
+                                    <div style="margin-top:10px; padding:11px 14px; border-radius:13px; box-shadow:var(--inset-sm);">
+                                        <div style="font-size:12.5px; font-weight:700; color:#5689b8; margin-bottom:4px;">สิทธิพิเศษ:</div>
+                                        <div style="font-size:12.5px; color:var(--ink2);">{{ implode(', ', $rank->benefits) }}</div>
                                     </div>
                                 @endif
                             </div>
@@ -184,45 +168,29 @@
                 </div>
             @endforeach
         </div>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Tips -->
-    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-xl p-6 border border-indigo-200">
-        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <span>💡</span> เคล็ดลับเพื่อเลื่อนยศ
-        </h3>
-        <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <li class="flex gap-2">
+    {{-- ── เคล็ดลับเพื่อเลื่อนยศ ──────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">💡 เคล็ดลับเพื่อเลื่อนยศ</div>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; font-size:13px; color:var(--ink2);">
+            <li style="display:flex; gap:10px; align-items:flex-start;">
                 <span>✅</span>
-                <span><strong>สร้างทีมใหม่:</strong> เชิญสมาชิกใหม่เพื่อเพิ่มทีมและสร้างรายได้</span>
+                <span><strong style="color:var(--ink);">สร้างทีมใหม่:</strong> เชิญสมาชิกใหม่เพื่อเพิ่มทีมและสร้างรายได้</span>
             </li>
-            <li class="flex gap-2">
+            <li style="display:flex; gap:10px; align-items:flex-start;">
                 <span>✅</span>
-                <span><strong>รักษาทีมที่มีอยู่:</strong> ช่วยเหลือทีมให้ประสบความสำเร็จ</span>
+                <span><strong style="color:var(--ink);">รักษาทีมที่มีอยู่:</strong> ช่วยเหลือทีมให้ประสบความสำเร็จ</span>
             </li>
-            <li class="flex gap-2">
+            <li style="display:flex; gap:10px; align-items:flex-start;">
                 <span>✅</span>
-                <span><strong>สะสม PV:</strong> ซื้อสินค้าและบริการเพื่อสะสมคะแนน</span>
+                <span><strong style="color:var(--ink);">สะสม PV:</strong> ซื้อสินค้าและบริการเพื่อสะสมคะแนน</span>
             </li>
-            <li class="flex gap-2">
+            <li style="display:flex; gap:10px; align-items:flex-start;">
                 <span>✅</span>
-                <span><strong>เรียนรู้ตลอดเวลา:</strong> พัฒนาทักษะการขายและการสร้างทีม</span>
+                <span><strong style="color:var(--ink);">เรียนรู้ตลอดเวลา:</strong> พัฒนาทักษะการขายและการสร้างทีม</span>
             </li>
         </ul>
     </div>
 </div>
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush

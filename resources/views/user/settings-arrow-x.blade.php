@@ -1,544 +1,463 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'การตั้งค่า')
 
+@php
+    use Illuminate\Support\Facades\Route as RouteFacade;
+
+    // ── ค่าปัจจุบันจาก controller (compact('user','settings')) ──────────
+    // เก็บไว้เป็นตัวแปรกลาง กันค่า null + ใช้ซ้ำในแต่ละแท็บ
+    $prefLang   = $settings['preferences']['language']   ?? ($user->preferred_language ?? 'th');
+    $prefTz     = $settings['preferences']['timezone']   ?? ($user->timezone ?? 'Asia/Bangkok');
+    $prefCur    = $settings['preferences']['currency']   ?? ($user->preferred_currency ?? 'THB');
+
+    $nEmail     = $settings['notifications']['email_enabled']    ?? ($user->email_notifications ?? true);
+    $nCommission= $settings['notifications']['email_commission'] ?? ($user->email_commission_notifications ?? true);
+    $nTeam      = $settings['notifications']['email_team']       ?? ($user->email_team_notifications ?? true);
+    $nMarketing = $settings['notifications']['email_marketing']  ?? ($user->email_marketing_notifications ?? false);
+    $nLine      = $settings['notifications']['line_enabled']     ?? ($user->line_notifications ?? false);
+    $nPush      = $settings['notifications']['push_enabled']     ?? ($user->push_notifications ?? true);
+
+    $pVisible   = ($settings['privacy']['profile_visibility'] ?? ($user->profile_visibility ?? 'public')) !== 'private';
+    $pStats     = $settings['privacy']['show_stats'] ?? ($user->show_stats ?? true);
+    $pTeam      = $settings['privacy']['show_team']  ?? ($user->show_team ?? true);
+
+    $aTheme     = $settings['appearance']['theme']          ?? ($user->theme_preference ?? 'auto');
+    $aMotion    = $settings['appearance']['reduced_motion'] ?? ($user->reduced_motion ?? false);
+
+    $twoFa      = $settings['security']['two_factor_enabled'] ?? ($user->two_factor_enabled ?? false);
+    $sessCount  = $settings['security']['active_sessions_count'] ?? 1;
+@endphp
+
 @section('content')
-{{--
-/**
- * User Settings - Arrow X Theme
- *
- * หน้าการตั้งค่าผู้ใช้แบบ Arrow X Theme พร้อม:
- * - Preferences (ภาษา, เขตเวลา)
- * - Notifications (Email, LINE, Push)
- * - Privacy (แสดงข้อมูล)
- * - UI Settings (Dark Mode, Theme)
- * - Security (Two-Factor)
- *
- * @version 3.0.0
- * @theme Arrow X
- */
---}}
+<div style="display:flex; flex-direction:column; gap:18px;"
+     x-data="settingsManager()" x-init="init()">
 
-<div class="space-y-6 pb-20 lg:pb-6" x-data="settingsManager()" x-init="init()">
-    {{-- Premium Hero Header (Blue-Purple-Pink for Settings) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-cogs"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-sliders-h text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">การตั้งค่า</h1>
-                    <p class="text-blue-100 text-lg mt-1">ปรับแต่งประสบการณ์การใช้งานของคุณ</p>
-                </div>
+    {{-- ── Hero header ──────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-sliders-h" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">การตั้งค่า</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ปรับแต่งประสบการณ์การใช้งานของคุณ</div>
             </div>
         </div>
     </div>
 
-    {{-- Success Message --}}
+    {{-- ── ข้อความแจ้งผลลัพธ์ ───────────────────────────────── --}}
     @if(session('success'))
-        <div class="glass-fusion-card rounded-xl p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-l-4 border-green-500" x-data="{ show: true }" x-show="show" x-transition>
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-xl mr-3"></i>
-                    <span class="font-semibold text-green-800 dark:text-green-200">{{ session('success') }}</span>
-                </div>
-                <button @click="show = false" class="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px;
+                    box-shadow:var(--inset-sm); border-left:4px solid #5aa07e;"
+             x-data="{ show: true }" x-show="show" x-transition>
+            <span class="tp-tile" style="width:36px; height:36px; border-radius:11px; font-size:15px; background:#5aa07e;"><i class="fas fa-circle-check" style="color:#fff;"></i></span>
+            <span style="flex:1; font-weight:600; font-size:13.5px;">{{ session('success') }}</span>
+            <button type="button" @click="show = false" class="tp-icon-btn" aria-label="ปิด"><i class="fas fa-times"></i></button>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px;
+                    box-shadow:var(--inset-sm); border-left:4px solid #d9534f;"
+             x-data="{ show: true }" x-show="show" x-transition>
+            <span class="tp-tile" style="width:36px; height:36px; border-radius:11px; font-size:15px; background:#d9534f;"><i class="fas fa-circle-exclamation" style="color:#fff;"></i></span>
+            <span style="flex:1; font-weight:600; font-size:13.5px;">{{ session('error') }}</span>
+            <button type="button" @click="show = false" class="tp-icon-btn" aria-label="ปิด"><i class="fas fa-times"></i></button>
         </div>
     @endif
 
-    {{-- Settings Tabs --}}
-    <div class="glass-fusion-card rounded-2xl overflow-hidden shadow-lg">
-        {{-- Tabs Header --}}
-        <div class="flex overflow-x-auto border-b border-gray-200 dark:border-gray-700">
-            <button @click="activeTab = 'preferences'"
-                    :class="activeTab === 'preferences' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                    class="px-6 py-4 border-b-2 font-semibold text-sm whitespace-nowrap transition-colors">
-                <i class="fas fa-sliders-h mr-2"></i>
-                ตั้งค่าทั่วไป
-            </button>
-            <button @click="activeTab = 'notifications'"
-                    :class="activeTab === 'notifications' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                    class="px-6 py-4 border-b-2 font-semibold text-sm whitespace-nowrap transition-colors">
-                <i class="fas fa-bell mr-2"></i>
-                การแจ้งเตือน
-            </button>
-            <button @click="activeTab = 'privacy'"
-                    :class="activeTab === 'privacy' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                    class="px-6 py-4 border-b-2 font-semibold text-sm whitespace-nowrap transition-colors">
-                <i class="fas fa-shield-alt mr-2"></i>
-                ความเป็นส่วนตัว
-            </button>
-            <button @click="activeTab = 'appearance'"
-                    :class="activeTab === 'appearance' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                    class="px-6 py-4 border-b-2 font-semibold text-sm whitespace-nowrap transition-colors">
-                <i class="fas fa-palette mr-2"></i>
-                รูปแบบ
-            </button>
-            <button @click="activeTab = 'security'"
-                    :class="activeTab === 'security' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                    class="px-6 py-4 border-b-2 font-semibold text-sm whitespace-nowrap transition-colors">
-                <i class="fas fa-lock mr-2"></i>
-                ความปลอดภัย
-            </button>
+    {{-- ── แท็บ + เนื้อหา ────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+
+        {{-- Tabs header --}}
+        <div style="display:flex; overflow-x:auto; box-shadow:var(--inset-sm);">
+            @php
+                $tabs = [
+                    ['preferences',   'fa-sliders-h',  'ตั้งค่าทั่วไป'],
+                    ['notifications', 'fa-bell',       'การแจ้งเตือน'],
+                    ['privacy',       'fa-shield-halved', 'ความเป็นส่วนตัว'],
+                    ['appearance',    'fa-palette',    'รูปแบบ'],
+                    ['security',      'fa-lock',       'ความปลอดภัย'],
+                ];
+            @endphp
+            @foreach($tabs as [$tabKey, $tabIcon, $tabLabel])
+                <button type="button" @click="activeTab = '{{ $tabKey }}'"
+                        :style="activeTab === '{{ $tabKey }}'
+                            ? 'color:var(--deep1); border-bottom-color:var(--accent1); font-weight:700;'
+                            : 'color:var(--ink2); border-bottom-color:transparent; font-weight:600;'"
+                        style="padding:14px 20px; border:none; border-bottom:3px solid transparent; background:transparent;
+                               font-size:13px; white-space:nowrap; cursor:pointer; transition:color .2s;">
+                    <i class="fas {{ $tabIcon }}" style="margin-right:7px;"></i>{{ $tabLabel }}
+                </button>
+            @endforeach
         </div>
 
-        {{-- Tabs Content --}}
-        <div class="p-6">
-            <form action="{{ route('user.settings.update') }}" method="POST">
-                @csrf
-                @method('PUT')
+        {{-- Form หลัก (preferences / notifications / privacy / appearance) --}}
+        <form action="{{ route('user.settings.update') }}" method="POST" style="padding:22px 24px;">
+            @csrf
+            @method('PUT')
 
-                {{-- Preferences Tab --}}
-                <div x-show="activeTab === 'preferences'" x-transition>
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                        ตั้งค่าทั่วไป
-                    </h3>
+            {{-- ════ แท็บ: ตั้งค่าทั่วไป ════ --}}
+            <div x-show="activeTab === 'preferences'" x-transition>
+                <div class="tp-section-h" style="margin-bottom:18px;">⚙️ ตั้งค่าทั่วไป</div>
+                <div style="display:flex; flex-direction:column; gap:14px;">
 
-                    <div class="space-y-6">
-                        {{-- Language --}}
-                        <div class="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex-1">
-                                <label class="block font-semibold text-gray-900 dark:text-white mb-1">
-                                    <i class="fas fa-language text-blue-500 mr-2"></i>
-                                    ภาษา
-                                </label>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">เลือกภาษาที่ใช้แสดงผลในระบบ</p>
-                            </div>
-                            <select name="preferred_language"
-                                    class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg
-                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500
-                                           dark:bg-gray-800 dark:text-white">
-                                <option value="th" {{ ($user->preferred_language ?? 'th') === 'th' ? 'selected' : '' }}>ไทย</option>
-                                <option value="en" {{ ($user->preferred_language ?? 'th') === 'en' ? 'selected' : '' }}>English</option>
-                            </select>
+                    {{-- ภาษา --}}
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="flex:1; min-width:200px;">
+                            <div style="font-weight:700; font-size:13.5px;"><i class="fas fa-language" style="color:var(--accent1); margin-right:8px;"></i>ภาษา</div>
+                            <div style="font-size:12px; color:var(--ink2); margin-top:3px;">เลือกภาษาที่ใช้แสดงผลในระบบ</div>
                         </div>
+                        <select name="preferred_language" class="tp-input" style="width:auto; min-width:160px;">
+                            <option value="th" {{ $prefLang === 'th' ? 'selected' : '' }}>ไทย</option>
+                            <option value="en" {{ $prefLang === 'en' ? 'selected' : '' }}>English</option>
+                        </select>
+                    </div>
 
-                        {{-- Timezone --}}
-                        <div class="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex-1">
-                                <label class="block font-semibold text-gray-900 dark:text-white mb-1">
-                                    <i class="fas fa-clock text-blue-500 mr-2"></i>
-                                    เขตเวลา
-                                </label>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">เลือกเขตเวลาสำหรับแสดงผล</p>
-                            </div>
-                            <select name="timezone"
-                                    class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg
-                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500
-                                           dark:bg-gray-800 dark:text-white">
-                                <option value="Asia/Bangkok" selected>Bangkok (GMT+7)</option>
-                                <option value="Asia/Singapore">Singapore (GMT+8)</option>
-                                <option value="Asia/Tokyo">Tokyo (GMT+9)</option>
-                            </select>
+                    {{-- เขตเวลา --}}
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="flex:1; min-width:200px;">
+                            <div style="font-weight:700; font-size:13.5px;"><i class="fas fa-clock" style="color:var(--accent1); margin-right:8px;"></i>เขตเวลา</div>
+                            <div style="font-size:12px; color:var(--ink2); margin-top:3px;">เลือกเขตเวลาสำหรับแสดงผล</div>
                         </div>
+                        <select name="timezone" class="tp-input" style="width:auto; min-width:160px;">
+                            <option value="Asia/Bangkok"   {{ $prefTz === 'Asia/Bangkok' ? 'selected' : '' }}>Bangkok (GMT+7)</option>
+                            <option value="Asia/Singapore" {{ $prefTz === 'Asia/Singapore' ? 'selected' : '' }}>Singapore (GMT+8)</option>
+                            <option value="Asia/Tokyo"     {{ $prefTz === 'Asia/Tokyo' ? 'selected' : '' }}>Tokyo (GMT+9)</option>
+                        </select>
+                    </div>
 
-                        {{-- Currency --}}
-                        <div class="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex-1">
-                                <label class="block font-semibold text-gray-900 dark:text-white mb-1">
-                                    <i class="fas fa-money-bill text-blue-500 mr-2"></i>
-                                    สกุลเงิน
-                                </label>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">สกุลเงินที่ใช้แสดงผล</p>
-                            </div>
-                            <select name="currency"
-                                    class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg
-                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500
-                                           dark:bg-gray-800 dark:text-white">
-                                <option value="THB" selected>บาท (THB)</option>
-                                <option value="USD">ดอลลาร์ (USD)</option>
-                            </select>
+                    {{-- สกุลเงิน --}}
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="flex:1; min-width:200px;">
+                            <div style="font-weight:700; font-size:13.5px;"><i class="fas fa-money-bill" style="color:var(--accent1); margin-right:8px;"></i>สกุลเงิน</div>
+                            <div style="font-size:12px; color:var(--ink2); margin-top:3px;">สกุลเงินที่ใช้แสดงผล</div>
                         </div>
+                        <select name="preferred_currency" class="tp-input" style="width:auto; min-width:160px;">
+                            <option value="THB" {{ $prefCur === 'THB' ? 'selected' : '' }}>บาท (THB)</option>
+                            <option value="USD" {{ $prefCur === 'USD' ? 'selected' : '' }}>ดอลลาร์ (USD)</option>
+                            <option value="EUR" {{ $prefCur === 'EUR' ? 'selected' : '' }}>ยูโร (EUR)</option>
+                        </select>
                     </div>
                 </div>
+            </div>
 
-                {{-- Notifications Tab --}}
-                <div x-show="activeTab === 'notifications'" x-transition>
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                        การแจ้งเตือน
-                    </h3>
+            {{-- ════ แท็บ: การแจ้งเตือน ════ --}}
+            <div x-show="activeTab === 'notifications'" x-transition style="display:none;">
+                <div class="tp-section-h" style="margin-bottom:18px;">🔔 การแจ้งเตือน</div>
+                <div style="display:flex; flex-direction:column; gap:14px;">
 
-                    <div class="space-y-4">
-                        {{-- Email Notifications --}}
-                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center">
-                                    <i class="fas fa-envelope text-purple-500 text-xl mr-3"></i>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white">การแจ้งเตือนทางอีเมล</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">รับการแจ้งเตือนผ่านอีเมล</p>
-                                    </div>
+                    {{-- อีเมล --}}
+                    <div style="padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:14px;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:16px; background:color-mix(in srgb, var(--accent1) 16%, transparent);"><i class="fas fa-envelope" style="color:var(--deep1);"></i></span>
+                                <div>
+                                    <div style="font-weight:700; font-size:13.5px;">การแจ้งเตือนทางอีเมล</div>
+                                    <div style="font-size:12px; color:var(--ink2);">รับการแจ้งเตือนผ่านอีเมล</div>
                                 </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="notifications[email_enabled]" value="1"
-                                           {{ ($user->email_notifications ?? true) ? 'checked' : '' }}
-                                           class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
-                                </label>
                             </div>
-
-                            <div class="ml-11 space-y-2">
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="notifications[commission]" value="1"
-                                           {{ ($user->notify_commission ?? true) ? 'checked' : '' }}
-                                           class="w-4 h-4 text-purple-600 border-gray-300 dark:border-gray-600 rounded focus:ring-purple-500">
-                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">คอมมิชชั่นใหม่</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="notifications[referral]" value="1"
-                                           {{ ($user->notify_referral ?? true) ? 'checked' : '' }}
-                                           class="w-4 h-4 text-purple-600 border-gray-300 dark:border-gray-600 rounded focus:ring-purple-500">
-                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ลูกทีมใหม่</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="notifications[rank_upgrade]" value="1"
-                                           {{ ($user->notify_rank ?? true) ? 'checked' : '' }}
-                                           class="w-4 h-4 text-purple-600 border-gray-300 dark:border-gray-600 rounded focus:ring-purple-500">
-                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เลื่อนระดับ Rank</span>
-                                </label>
-                            </div>
+                            {{-- Toggle: email_notifications --}}
+                            <label style="position:relative; display:inline-flex; align-items:center; cursor:pointer;">
+                                <input type="checkbox" name="email_notifications" value="1" {{ $nEmail ? 'checked' : '' }} class="peer" style="position:absolute; opacity:0; width:0; height:0;">
+                                <span style="width:44px; height:24px; border-radius:20px; box-shadow:var(--inset-sm); position:relative; transition:background .25s;"
+                                      :style="$el.previousElementSibling.checked ? 'background:linear-gradient(90deg,var(--accent1),var(--accent2));' : 'background:color-mix(in srgb,var(--ink2) 22%,transparent);'">
+                                    <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .25s;"
+                                          :style="$el.parentElement.previousElementSibling.checked ? 'transform:translateX(20px);' : ''"></span>
+                                </span>
+                            </label>
                         </div>
-
-                        {{-- LINE Notifications --}}
-                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fab fa-line text-green-500 text-xl mr-3"></i>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white">การแจ้งเตือนทาง LINE</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">รับการแจ้งเตือนผ่าน LINE</p>
-                                    </div>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="notifications[line_enabled]" value="1"
-                                           {{ ($user->line_notifications ?? false) ? 'checked' : '' }}
-                                           class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
-                                </label>
-                            </div>
-                        </div>
-
-                        {{-- Push Notifications --}}
-                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-mobile-alt text-orange-500 text-xl mr-3"></i>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white">Push Notifications</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">รับการแจ้งเตือนบนอุปกรณ์</p>
-                                    </div>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="notifications[push_enabled]" value="1"
-                                           {{ ($user->push_notifications ?? false) ? 'checked' : '' }}
-                                           class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-600"></div>
-                                </label>
-                            </div>
+                        <div style="display:flex; flex-direction:column; gap:10px; padding-left:50px;">
+                            <label style="display:flex; align-items:center; gap:9px; font-size:13px; cursor:pointer;">
+                                <input type="checkbox" name="email_commission_notifications" value="1" {{ $nCommission ? 'checked' : '' }} style="width:16px; height:16px; accent-color:var(--accent1);">
+                                <span>คอมมิชชั่นใหม่</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:9px; font-size:13px; cursor:pointer;">
+                                <input type="checkbox" name="email_team_notifications" value="1" {{ $nTeam ? 'checked' : '' }} style="width:16px; height:16px; accent-color:var(--accent1);">
+                                <span>ลูกทีม / สมาชิกใหม่</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:9px; font-size:13px; cursor:pointer;">
+                                <input type="checkbox" name="email_marketing_notifications" value="1" {{ $nMarketing ? 'checked' : '' }} style="width:16px; height:16px; accent-color:var(--accent1);">
+                                <span>ข่าวสารและโปรโมชั่น</span>
+                            </label>
                         </div>
                     </div>
-                </div>
 
-                {{-- Privacy Tab --}}
-                <div x-show="activeTab === 'privacy'" x-transition>
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                        ความเป็นส่วนตัว
-                    </h3>
-
-                    <div class="space-y-4">
-                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-user-shield text-blue-500 text-xl mr-3"></i>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white">แสดงโปรไฟล์สาธารณะ</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">ให้ผู้อื่นเห็นโปรไฟล์ของคุณ</p>
-                                    </div>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="privacy[public_profile]" value="1"
-                                           {{ ($user->public_profile ?? true) ? 'checked' : '' }}
-                                           class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                                </label>
+                    {{-- LINE --}}
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:16px; background:#5aa07e;"><i class="fab fa-line" style="color:#fff;"></i></span>
+                            <div>
+                                <div style="font-weight:700; font-size:13.5px;">การแจ้งเตือนทาง LINE</div>
+                                <div style="font-size:12px; color:var(--ink2);">รับการแจ้งเตือนผ่าน LINE</div>
                             </div>
                         </div>
+                        <label style="position:relative; display:inline-flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" name="line_notifications" value="1" {{ $nLine ? 'checked' : '' }} style="position:absolute; opacity:0; width:0; height:0;">
+                            <span style="width:44px; height:24px; border-radius:20px; box-shadow:var(--inset-sm); position:relative; transition:background .25s;"
+                                  :style="$el.previousElementSibling.checked ? 'background:linear-gradient(90deg,var(--accent1),var(--accent2));' : 'background:color-mix(in srgb,var(--ink2) 22%,transparent);'">
+                                <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .25s;"
+                                      :style="$el.parentElement.previousElementSibling.checked ? 'transform:translateX(20px);' : ''"></span>
+                            </span>
+                        </label>
+                    </div>
 
-                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-chart-line text-blue-500 text-xl mr-3"></i>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white">แสดงสถิติ</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">แสดงสถิติรายได้และลูกทีม</p>
-                                    </div>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="privacy[show_stats]" value="1"
-                                           {{ ($user->show_stats ?? true) ? 'checked' : '' }}
-                                           class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                                </label>
+                    {{-- Push --}}
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:16px; background:#e0a52e;"><i class="fas fa-mobile-alt" style="color:#fff;"></i></span>
+                            <div>
+                                <div style="font-weight:700; font-size:13.5px;">Push Notifications</div>
+                                <div style="font-size:12px; color:var(--ink2);">รับการแจ้งเตือนบนอุปกรณ์</div>
                             </div>
                         </div>
-
-                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-users text-blue-500 text-xl mr-3"></i>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white">แสดงลูกทีม</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">แสดงรายชื่อลูกทีมของคุณ</p>
-                                    </div>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="privacy[show_team]" value="1"
-                                           {{ ($user->show_team ?? false) ? 'checked' : '' }}
-                                           class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                                </label>
-                            </div>
-                        </div>
+                        <label style="position:relative; display:inline-flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" name="push_notifications" value="1" {{ $nPush ? 'checked' : '' }} style="position:absolute; opacity:0; width:0; height:0;">
+                            <span style="width:44px; height:24px; border-radius:20px; box-shadow:var(--inset-sm); position:relative; transition:background .25s;"
+                                  :style="$el.previousElementSibling.checked ? 'background:linear-gradient(90deg,var(--accent1),var(--accent2));' : 'background:color-mix(in srgb,var(--ink2) 22%,transparent);'">
+                                <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .25s;"
+                                      :style="$el.parentElement.previousElementSibling.checked ? 'transform:translateX(20px);' : ''"></span>
+                            </span>
+                        </label>
                     </div>
                 </div>
+            </div>
 
-                {{-- Appearance Tab --}}
-                <div x-show="activeTab === 'appearance'" x-transition>
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                        รูปแบบการแสดงผล
-                    </h3>
+            {{-- ════ แท็บ: ความเป็นส่วนตัว ════ --}}
+            <div x-show="activeTab === 'privacy'" x-transition style="display:none;">
+                <div class="tp-section-h" style="margin-bottom:18px;">🛡️ ความเป็นส่วนตัว</div>
+                <div style="display:flex; flex-direction:column; gap:14px;">
 
-                    <div class="space-y-4">
-                        {{-- Dark Mode --}}
-                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-moon text-indigo-500 text-xl mr-3"></i>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white">โหมดมืด (Dark Mode)</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">เปลี่ยนเป็นธีมสีเข้ม</p>
-                                    </div>
-                                </div>
-                                <button type="button"
-                                        @click="toggleDarkMode()"
-                                        class="relative inline-flex items-center cursor-pointer">
-                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700"
-                                         :class="isDark ? 'bg-indigo-600' : 'bg-gray-200'">
-                                        <div class="absolute top-[2px] left-[2px] bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 border rounded-full h-5 w-5 transition-all"
-                                             :class="isDark ? 'translate-x-full border-white' : ''"></div>
-                                    </div>
-                                </button>
+                    {{-- โปรไฟล์สาธารณะ (map → profile_visibility) --}}
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:16px; background:color-mix(in srgb, var(--accent1) 16%, transparent);"><i class="fas fa-user-shield" style="color:var(--deep1);"></i></span>
+                            <div>
+                                <div style="font-weight:700; font-size:13.5px;">แสดงโปรไฟล์สาธารณะ</div>
+                                <div style="font-size:12px; color:var(--ink2);">ให้ผู้อื่นเห็นโปรไฟล์ของคุณ</div>
                             </div>
                         </div>
+                        {{-- ส่ง public/private ผ่าน hidden + checkbox คุมค่า --}}
+                        <label style="position:relative; display:inline-flex; align-items:center; cursor:pointer;"
+                               x-data="{ pub: {{ $pVisible ? 'true' : 'false' }} }">
+                            <input type="hidden" name="profile_visibility" :value="pub ? 'public' : 'private'">
+                            <input type="checkbox" x-model="pub" style="position:absolute; opacity:0; width:0; height:0;">
+                            <span style="width:44px; height:24px; border-radius:20px; box-shadow:var(--inset-sm); position:relative; transition:background .25s;"
+                                  :style="pub ? 'background:linear-gradient(90deg,var(--accent1),var(--accent2));' : 'background:color-mix(in srgb,var(--ink2) 22%,transparent);'">
+                                <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .25s;"
+                                      :style="pub ? 'transform:translateX(20px);' : ''"></span>
+                            </span>
+                        </label>
+                    </div>
 
-                        {{-- Animations --}}
-                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-magic text-indigo-500 text-xl mr-3"></i>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white">เปิดใช้ Animation</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">แสดง Animation และ Transition</p>
-                                    </div>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="appearance[animations]" value="1" checked
-                                           class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                                </label>
+                    {{-- แสดงสถิติ --}}
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:16px; background:color-mix(in srgb, var(--accent1) 16%, transparent);"><i class="fas fa-chart-line" style="color:var(--deep1);"></i></span>
+                            <div>
+                                <div style="font-weight:700; font-size:13.5px;">แสดงสถิติ</div>
+                                <div style="font-size:12px; color:var(--ink2);">แสดงสถิติรายได้และลูกทีม</div>
                             </div>
                         </div>
+                        <label style="position:relative; display:inline-flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" name="show_stats" value="1" {{ $pStats ? 'checked' : '' }} style="position:absolute; opacity:0; width:0; height:0;">
+                            <span style="width:44px; height:24px; border-radius:20px; box-shadow:var(--inset-sm); position:relative; transition:background .25s;"
+                                  :style="$el.previousElementSibling.checked ? 'background:linear-gradient(90deg,var(--accent1),var(--accent2));' : 'background:color-mix(in srgb,var(--ink2) 22%,transparent);'">
+                                <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .25s;"
+                                      :style="$el.parentElement.previousElementSibling.checked ? 'transform:translateX(20px);' : ''"></span>
+                            </span>
+                        </label>
+                    </div>
+
+                    {{-- แสดงลูกทีม --}}
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:16px; background:color-mix(in srgb, var(--accent1) 16%, transparent);"><i class="fas fa-users" style="color:var(--deep1);"></i></span>
+                            <div>
+                                <div style="font-weight:700; font-size:13.5px;">แสดงลูกทีม</div>
+                                <div style="font-size:12px; color:var(--ink2);">แสดงรายชื่อลูกทีมของคุณ</div>
+                            </div>
+                        </div>
+                        <label style="position:relative; display:inline-flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" name="show_team" value="1" {{ $pTeam ? 'checked' : '' }} style="position:absolute; opacity:0; width:0; height:0;">
+                            <span style="width:44px; height:24px; border-radius:20px; box-shadow:var(--inset-sm); position:relative; transition:background .25s;"
+                                  :style="$el.previousElementSibling.checked ? 'background:linear-gradient(90deg,var(--accent1),var(--accent2));' : 'background:color-mix(in srgb,var(--ink2) 22%,transparent);'">
+                                <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .25s;"
+                                      :style="$el.parentElement.previousElementSibling.checked ? 'transform:translateX(20px);' : ''"></span>
+                            </span>
+                        </label>
                     </div>
                 </div>
+            </div>
 
-                {{-- Security Tab --}}
-                <div x-show="activeTab === 'security'" x-transition>
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                        ความปลอดภัย
-                    </h3>
+            {{-- ════ แท็บ: รูปแบบ ════ --}}
+            <div x-show="activeTab === 'appearance'" x-transition style="display:none;">
+                <div class="tp-section-h" style="margin-bottom:18px;">🎨 รูปแบบการแสดงผล</div>
+                <div style="display:flex; flex-direction:column; gap:14px;">
 
-                    <div class="space-y-4">
-                        {{-- Two-Factor Authentication --}}
-                        <div class="p-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                            <div class="flex items-start justify-between">
-                                <div class="flex items-start">
-                                    <i class="fas fa-shield-alt text-red-500 text-xl mr-3 mt-1"></i>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white">การยืนยันตัวตนแบบ 2 ชั้น (2FA)</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">เพิ่มความปลอดภัยให้บัญชีของคุณ</p>
-                                        @if($user->two_factor_enabled ?? false)
-                                            <span class="inline-flex items-center px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded">
-                                                <i class="fas fa-check-circle mr-1"></i> เปิดใช้งานแล้ว
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-semibold rounded">
-                                                <i class="fas fa-times-circle mr-1"></i> ยังไม่ได้เปิดใช้งาน
-                                            </span>
-                                        @endif
-                                    </div>
-                                </div>
-                                <a href="{{ route('user.two-factor.setup') }}"
-                                   class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition">
-                                    ตั้งค่า
-                                </a>
+                    {{-- ธีม (theme_preference) --}}
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:16px; background:color-mix(in srgb, var(--accent1) 16%, transparent);"><i class="fas fa-circle-half-stroke" style="color:var(--deep1);"></i></span>
+                            <div>
+                                <div style="font-weight:700; font-size:13.5px;">ธีมการแสดงผล</div>
+                                <div style="font-size:12px; color:var(--ink2);">เลือกโหมดสว่าง / มืด / อัตโนมัติ</div>
                             </div>
                         </div>
+                        <select name="theme_preference" class="tp-input" style="width:auto; min-width:160px;"
+                                @change="syncTheme($event.target.value)">
+                            <option value="auto"  {{ $aTheme === 'auto'  ? 'selected' : '' }}>อัตโนมัติ</option>
+                            <option value="light" {{ $aTheme === 'light' ? 'selected' : '' }}>โหมดสว่าง</option>
+                            <option value="dark"  {{ $aTheme === 'dark'  ? 'selected' : '' }}>โหมดมืด</option>
+                        </select>
+                    </div>
 
-                        {{-- Active Sessions --}}
-                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-desktop text-blue-500 text-xl mr-3"></i>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white">อุปกรณ์ที่เข้าสู่ระบบ</h4>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">จัดการอุปกรณ์ที่เข้าสู่ระบบ</p>
-                                    </div>
-                                </div>
-                                <a href="{{ route('user.settings') }}"
-                                   class="text-purple-600 dark:text-purple-400 hover:underline font-semibold">
-                                    ดูทั้งหมด
-                                </a>
+                    {{-- ลด Animation (reduced_motion) --}}
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:16px; background:color-mix(in srgb, var(--accent1) 16%, transparent);"><i class="fas fa-wand-magic-sparkles" style="color:var(--deep1);"></i></span>
+                            <div>
+                                <div style="font-weight:700; font-size:13.5px;">ลดการเคลื่อนไหว (Reduced Motion)</div>
+                                <div style="font-size:12px; color:var(--ink2);">ลด Animation และ Transition เพื่อการใช้งานที่นิ่งขึ้น</div>
                             </div>
                         </div>
+                        <label style="position:relative; display:inline-flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" name="reduced_motion" value="1" {{ $aMotion ? 'checked' : '' }} style="position:absolute; opacity:0; width:0; height:0;">
+                            <span style="width:44px; height:24px; border-radius:20px; box-shadow:var(--inset-sm); position:relative; transition:background .25s;"
+                                  :style="$el.previousElementSibling.checked ? 'background:linear-gradient(90deg,var(--accent1),var(--accent2));' : 'background:color-mix(in srgb,var(--ink2) 22%,transparent);'">
+                                <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .25s;"
+                                      :style="$el.parentElement.previousElementSibling.checked ? 'transform:translateX(20px);' : ''"></span>
+                            </span>
+                        </label>
                     </div>
                 </div>
+            </div>
 
-                {{-- Submit Button --}}
-                <div class="mt-8 flex justify-end">
-                    <button type="submit"
-                            class="btn-shimmer px-8 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600
-                                   hover:from-purple-700 hover:via-pink-700 hover:to-orange-700
-                                   text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl
-                                   transform  transition-all duration-300">
-                        <i class="fas fa-save mr-2"></i>
-                        บันทึกการตั้งค่า
-                    </button>
+            {{-- ════ แท็บ: ความปลอดภัย (ส่วนแสดงผล/ลิงก์ — อยู่ในฟอร์มเพื่อให้สลับแท็บได้) ════ --}}
+            <div x-show="activeTab === 'security'" x-transition style="display:none;">
+                <div class="tp-section-h" style="margin-bottom:18px;">🔒 ความปลอดภัย</div>
+                <div style="display:flex; flex-direction:column; gap:14px;">
+
+                    {{-- 2FA --}}
+                    <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid {{ $twoFa ? '#5aa07e' : '#d9534f' }};">
+                        <div style="display:flex; align-items:flex-start; gap:12px; flex:1; min-width:220px;">
+                            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:16px; background:{{ $twoFa ? '#5aa07e' : '#d9534f' }};"><i class="fas fa-shield-halved" style="color:#fff;"></i></span>
+                            <div>
+                                <div style="font-weight:700; font-size:13.5px;">การยืนยันตัวตนแบบ 2 ชั้น (2FA)</div>
+                                <div style="font-size:12px; color:var(--ink2); margin:3px 0 8px;">เพิ่มความปลอดภัยให้บัญชีของคุณ</div>
+                                @if($twoFa)
+                                    <span class="tp-pill" style="color:#fff; background:#5aa07e;"><i class="fas fa-circle-check" style="font-size:10px;"></i> เปิดใช้งานแล้ว</span>
+                                @else
+                                    <span class="tp-pill" style="color:#fff; background:#d9534f;"><i class="fas fa-circle-xmark" style="font-size:10px;"></i> ยังไม่ได้เปิดใช้งาน</span>
+                                @endif
+                            </div>
+                        </div>
+                        @if(RouteFacade::has('user.two-factor.setup'))
+                            <a href="{{ route('user.two-factor.setup') }}" class="tp-btn tp-btn-primary" style="align-self:center;"><i class="fas fa-cog"></i> ตั้งค่า</a>
+                        @endif
+                    </div>
+
+                    {{-- จำนวนอุปกรณ์ที่เข้าสู่ระบบ --}}
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;
+                                padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:16px; background:color-mix(in srgb, var(--accent1) 16%, transparent);"><i class="fas fa-desktop" style="color:var(--deep1);"></i></span>
+                            <div>
+                                <div style="font-weight:700; font-size:13.5px;">อุปกรณ์ที่เข้าสู่ระบบ</div>
+                                <div style="font-size:12px; color:var(--ink2);">
+                                    มีอุปกรณ์ที่ใช้งานอยู่ <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ number_format($sessCount) }}</span> เครื่อง
+                                </div>
+                            </div>
+                        </div>
+                        @if(RouteFacade::has('user.settings.sessions.delete-others'))
+                            <button type="button" class="tp-btn tp-btn-sm" @click="$refs.signoutForm.requestSubmit()">
+                                <i class="fas fa-right-from-bracket"></i> ออกจากระบบอุปกรณ์อื่น
+                            </button>
+                        @endif
+                    </div>
+
+                    {{-- ข้อความเตือนความปลอดภัย --}}
+                    <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); font-size:12.5px; color:var(--ink2); border-left:4px solid #e0a52e;">
+                        <i class="fas fa-circle-info" style="color:#e0a52e; margin-right:6px;"></i>
+                        หากพบกิจกรรมที่ไม่คุ้นเคย แนะนำให้ออกจากระบบอุปกรณ์อื่นทั้งหมด แล้วเปลี่ยนรหัสผ่านทันที
+                    </div>
                 </div>
-            </form>
-        </div>
+            </div>
+
+            {{-- ปุ่มบันทึก (แสดงเฉพาะแท็บที่บันทึกค่าได้) --}}
+            <div x-show="activeTab !== 'security'" style="margin-top:22px; display:flex; justify-content:flex-end;">
+                <button type="submit" class="tp-btn tp-btn-primary" style="padding:11px 26px; font-weight:700;">
+                    <i class="fas fa-save"></i> บันทึกการตั้งค่า
+                </button>
+            </div>
+        </form>
     </div>
+
+    {{-- ── ฟอร์มลบ session อื่นทั้งหมด (แยกออกนอกฟอร์มหลัก กัน nested form) ── --}}
+    @if(RouteFacade::has('user.settings.sessions.delete-others'))
+        <form x-ref="signoutForm" action="{{ route('user.settings.sessions.delete-others') }}" method="POST" style="display:none;"
+              @submit="return confirm('ยืนยันออกจากระบบอุปกรณ์อื่นทั้งหมด?')">
+            @csrf
+            @method('DELETE')
+        </form>
+    @endif
 </div>
+@endsection
 
 @push('scripts')
 <script>
-/**
- * Settings Manager Alpine.js Component
- */
-function settingsManager() {
-    return {
-        activeTab: 'preferences',
-        isDark: document.documentElement.classList.contains('dark'),
+    /**
+     * Settings Manager — Alpine.js component
+     * จัดการสลับแท็บ + ซิงก์ธีม light/dark/auto ให้ดูผลทันที
+     */
+    function settingsManager() {
+        return {
+            activeTab: 'preferences',
 
-        init() {
-            // Listen to dark mode changes
-            window.addEventListener('dark-mode-changed', (e) => {
-                this.isDark = e.detail.isDark;
-            });
-        },
+            init() {
+                // ไม่ต้องทำอะไรเพิ่มตอนเริ่ม — แท็บ default = preferences
+            },
 
-        toggleDarkMode() {
-            this.isDark = !this.isDark;
-            if (this.isDark) {
-                document.documentElement.classList.add('dark');
-                localStorage.setItem('darkMode', 'true');
-            } else {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('darkMode', 'false');
+            /**
+             * ซิงก์ธีมทันทีที่เลือก (light/dark/auto)
+             * ค่าจริงถูกบันทึกผ่านฟอร์มเมื่อกด "บันทึกการตั้งค่า"
+             */
+            syncTheme(value) {
+                try {
+                    const root = document.documentElement;
+                    if (value === 'dark') {
+                        root.classList.add('dark');
+                        localStorage.setItem('darkMode', 'true');
+                    } else if (value === 'light') {
+                        root.classList.remove('dark');
+                        localStorage.setItem('darkMode', 'false');
+                    } else {
+                        // auto — ตามระบบปฏิบัติการ
+                        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                        root.classList.toggle('dark', prefersDark);
+                        localStorage.removeItem('darkMode');
+                    }
+                    window.dispatchEvent(new CustomEvent('dark-mode-changed', {
+                        detail: { isDark: root.classList.contains('dark') }
+                    }));
+                    if (typeof window.showNotification === 'function') {
+                        window.showNotification('ปรับธีมแล้ว — อย่าลืมกดบันทึกเพื่อจดจำการตั้งค่า', 'info');
+                    }
+                } catch (e) {
+                    // เงียบไว้ — ธีมเป็น enhancement ไม่ใช่ฟังก์ชันหลัก
+                }
             }
-
-            // Dispatch event
-            window.dispatchEvent(new CustomEvent('dark-mode-changed', {
-                detail: { isDark: this.isDark }
-            }));
-        }
-    };
-}
+        };
+    }
 </script>
 @endpush
-
-@push('styles')
-<style>
-/* Button Shimmer Effect */
-.btn-shimmer {
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-shimmer::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.4),
-        transparent
-    );
-    transition: left 0.5s ease;
-}
-
-.btn-shimmer:hover::before {
-    left: 100%;
-}
-
-/* Glass Fusion Card */
-.glass-fusion-card {
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.25) 0%,
-        rgba(255, 255, 255, 0.15) 100%
-    );
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.dark .glass-fusion-card {
-    background: linear-gradient(
-        135deg,
-        rgba(31, 41, 55, 0.8) 0%,
-        rgba(17, 24, 39, 0.7) 100%
-    );
-    border-color: rgba(75, 85, 99, 0.5);
-}
-
-/* Glass Fusion Effect for Hero Header */
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Float Animation */
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
-}
-</style>
-@endpush
-@endsection

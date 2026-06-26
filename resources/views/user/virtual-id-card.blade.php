@@ -1,107 +1,73 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'บัตรประจำตัวสมาชิก')
 
 @section('content')
 {{--
 /**
- * Virtual ID Card - บัตรประจำตัวเสมือนสำหรับสมาชิก
+ * Virtual ID Card - บัตรประจำตัวเสมือนสำหรับสมาชิก (Theme V4 "นวลทองคำ")
+ *
+ * โครงหน้า = V4 (tp-card / tp-tile / tp-pill / inline + CSS variables)
+ * ตัวบัตรประจำตัว (#virtual-id-card) เป็น "ภาพบัตร" ที่ผูกกับพื้นหลังจาก partial
+ * id-card-background / id-card-decorations โดยตรง → คงโครง markup ของบัตรไว้
+ * และคง @include ของ partial ทั้งสองตามเดิม (ห้ามแก้ partial)
  *
  * ออกแบบให้สวยงามแตกต่างกันตาม Rank:
- * - Bronze: เรียบง่าย สีทองแดง
- * - Silver: shimmer สีเงิน
- * - Gold: gradient สีทอง เงางาม
- * - Platinum: holographic effect
- * - Diamond: sparkle และ glassmorphism
- * - Crown: มงกุฎทอง animation พิเศษ
- * - Royal: สีม่วงหรู gradient หลากสี
- * - Legend: สุดอลังการ particles, gradient, 3D effects
+ * Bronze / Silver / Gold / Platinum / Diamond / Crown / Royal / Legend
  *
- * @version 1.0.0
- * @date 2025-11-26
+ * @version 2.0.0 (V4)
+ * @date 2026-06-26
  */
 --}}
 
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
-
 @php
+    use Illuminate\Support\Str;
+
     // กำหนด rank level (1-8)
-    $rankLevel = $currentRank?->level ?? 1;
-    $rankName = $currentRank?->name ?? 'Bronze';
+    $rankLevel  = $currentRank?->level ?? 1;
+    $rankName   = $currentRank?->name ?? 'Bronze';
     $rankNameTh = $currentRank?->name_th ?? 'สำริด';
-    $rankColor = $currentRank?->color ?? '#CD7F32';
-    $rankBadge = $currentRank?->badge_icon ?? '🥉';
-    $rankStars = $currentRank?->stars ?? 1;
+    $rankColor  = $currentRank?->color ?? '#CD7F32';
+    $rankBadge  = $currentRank?->badge_icon ?? '🥉';
+    $rankStars  = $currentRank?->stars ?? 1;
 @endphp
 
-<div class="space-y-6" x-data="virtualIdCard()">
-    {{-- Premium Hero Header (Purple-Indigo-Blue for Virtual ID Card) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-800 dark:via-indigo-800 dark:to-blue-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;" x-data="virtualIdCard()">
 
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+    {{-- ── HERO ──────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:18px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:58px; height:58px; border-radius:18px; font-size:26px;">
                 <i class="fas fa-address-card"></i>
+            </span>
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">MEMBER ID CARD · บัตรประจำตัวสมาชิก</div>
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:4px 0 0;">บัตรประจำตัวสมาชิก</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:6px;">
+                    บัตรประจำตัวเสมือนของคุณ สามารถพิมพ์หรือดาวน์โหลดเก็บไว้ได้
+                </div>
             </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-id-card text-3xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            บัตรประจำตัวสมาชิก
-                        </h1>
-                        <p class="text-purple-100 mt-1">
-                            บัตรประจำตัวเสมือนของคุณ สามารถพิมพ์หรือดาวน์โหลดเก็บไว้ได้
-                        </p>
-                    </div>
-                </div>
-                <div class="flex gap-3 flex-wrap justify-center md:justify-end">
-                    <button @click="downloadCard()"
-                            class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2">
-                        <i class="fas fa-download"></i>
-                        <span>ดาวน์โหลด</span>
-                    </button>
-                    <button @click="printCard()"
-                            class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2">
-                        <i class="fas fa-print"></i>
-                        <span>พิมพ์</span>
-                    </button>
-                </div>
+            <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+                <button type="button" @click="downloadCard()" class="tp-btn">
+                    <i class="fas fa-download"></i> ดาวน์โหลด
+                </button>
+                <button type="button" @click="printCard()" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-print"></i> พิมพ์
+                </button>
             </div>
         </div>
     </div>
 
-    {{-- ID Card Container --}}
-    <div class="flex justify-center">
-        <div class="relative" id="id-card-container">
-            {{-- ID Card --}}
+    {{-- ── บัตรประจำตัว (ด้านหน้า) ───────────────────────────────
+         หมายเหตุ: โครง markup ของตัวบัตรคงเดิม เพราะผูกกับพื้นหลังจาก
+         partial id-card-background / id-card-decorations โดยตรง --}}
+    <div style="display:flex; justify-content:center;">
+        <div style="position:relative;" id="id-card-container">
             <div id="virtual-id-card" class="relative w-[450px] h-[280px] rounded-2xl overflow-hidden shadow-2xl transform transition-all duration-500 hover:scale-[1.02]
                 {{ $rankLevel >= 8 ? 'animate-glow-legend' : '' }}
                 {{ $rankLevel >= 6 ? 'ring-4 ring-yellow-400/50' : '' }}"
-                 style="perspective: 1000px;">
+                 style="perspective: 1000px; max-width:100%;">
 
                 {{-- Background ตามระดับ Rank --}}
                 @include('user.partials.id-card-background', ['rankLevel' => $rankLevel, 'rankColor' => $rankColor])
@@ -218,10 +184,10 @@
         </div>
     </div>
 
-    {{-- Card Back (ด้านหลัง) --}}
-    <div class="flex justify-center mt-8">
-        <div class="relative">
-            <div class="relative w-[450px] h-[280px] rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-gray-800 to-gray-900">
+    {{-- ── บัตรด้านหลัง ──────────────────────────────────────── --}}
+    <div style="display:flex; justify-content:center; margin-top:14px;">
+        <div style="position:relative;">
+            <div class="relative w-[450px] h-[280px] rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-gray-800 to-gray-900" style="max-width:100%;">
                 {{-- Magnetic Stripe --}}
                 <div class="absolute top-10 left-0 right-0 h-12 bg-gray-950"></div>
 
@@ -249,75 +215,64 @@
         </div>
     </div>
 
-    {{-- Rank Info Cards --}}
-    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {{-- Current Rank Card --}}
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="text-center">
-                <div class="text-5xl mb-3">{{ $rankBadge }}</div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ $rankNameTh }}</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ระดับปัจจุบันของคุณ</p>
-                <div class="flex justify-center mt-3">
-                    @for($i = 0; $i < $rankStars; $i++)
-                        <i class="fas fa-star text-yellow-400"></i>
-                    @endfor
-                </div>
-            </div>
-        </x-arrow-x.card-v3>
+    {{-- ── การ์ดข้อมูล Rank (3 ใบ) ──────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:6px;">
 
-        {{-- Points Card --}}
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="text-center">
-                <div class="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">
-                    {{ number_format($user->rank_points ?? 0) }}
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">คะแนนสะสม</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Rank Points</p>
+        {{-- Rank ปัจจุบัน --}}
+        <div class="tp-card" style="padding:20px; text-align:center;">
+            <div style="font-size:46px; margin-bottom:8px;">{{ $rankBadge }}</div>
+            <div style="font-size:18px; font-weight:800;" class="tp-num">{{ $rankNameTh }}</div>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ระดับปัจจุบันของคุณ</div>
+            <div style="display:flex; justify-content:center; gap:2px; margin-top:10px; color:#e0a52e;">
+                @for($i = 0; $i < $rankStars; $i++)
+                    <i class="fas fa-star"></i>
+                @endfor
             </div>
-        </x-arrow-x.card-v3>
+        </div>
 
-        {{-- Member Since Card --}}
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="text-center">
-                <div class="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">
-                    {{ $user->created_at->diffInDays(now()) }}
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">วันที่เป็นสมาชิก</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ตั้งแต่ {{ $user->created_at->locale('th')->translatedFormat('d M Y') }}</p>
+        {{-- คะแนนสะสม --}}
+        <div class="tp-card" style="padding:20px; text-align:center;">
+            <div class="tp-num" style="font-size:34px; font-weight:800; color:var(--deep1);">
+                {{ number_format($user->rank_points ?? 0) }}
             </div>
-        </x-arrow-x.card-v3>
+            <div style="font-size:15px; font-weight:700; margin-top:6px;">คะแนนสะสม</div>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">Rank Points</div>
+        </div>
+
+        {{-- จำนวนวันที่เป็นสมาชิก --}}
+        <div class="tp-card" style="padding:20px; text-align:center;">
+            <div class="tp-num" style="font-size:34px; font-weight:800; color:#5aa07e;">
+                {{ $user->created_at->diffInDays(now()) }}
+            </div>
+            <div style="font-size:15px; font-weight:700; margin-top:6px;">วันที่เป็นสมาชิก</div>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">ตั้งแต่ {{ $user->created_at->locale('th')->translatedFormat('d M Y') }}</div>
+        </div>
     </div>
 
-    {{-- Privileges Section (ถ้ามี) --}}
+    {{-- ── สิทธิพิเศษของคุณ (ถ้ามี) ──────────────────────────── --}}
     @if($currentRank && $currentRank->privileges && count($currentRank->privileges) > 0)
-    <x-arrow-x.card-v3 class="p-6">
-        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <i class="fas fa-gem text-purple-500"></i>
-            สิทธิพิเศษของคุณ
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-gem" style="color:var(--deep1);"></i> สิทธิพิเศษของคุณ</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px;">
             @foreach($currentRank->getPrivilegesWithDescriptions() as $key => $privilege)
-            <div class="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
-                <span class="text-2xl">{{ $privilege['icon'] }}</span>
-                <div>
-                    <div class="font-semibold text-gray-900 dark:text-white text-sm">{{ $privilege['name_th'] }}</div>
+                <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                    <span style="font-size:24px;">{{ $privilege['icon'] }}</span>
+                    <div style="min-width:0;">
+                        <div style="font-weight:700; font-size:13px;">{{ $privilege['name_th'] }}</div>
+                    </div>
                 </div>
-            </div>
             @endforeach
         </div>
-    </x-arrow-x.card-v3>
+    </div>
     @endif
+
 </div>
 
-{{-- Print Styles --}}
+{{-- Print Styles + Card Animations (เฉพาะตัวบัตร — จำเป็นต่อภาพบัตร ไม่ใช่ chrome หน้า) --}}
 <style>
     @media print {
-        body * {
-            visibility: hidden;
-        }
-        #id-card-container, #id-card-container * {
-            visibility: visible;
-        }
+        body * { visibility: hidden; }
+        #id-card-container, #id-card-container * { visibility: visible; }
         #id-card-container {
             position: absolute;
             left: 50%;
@@ -326,7 +281,6 @@
         }
     }
 
-    /* Custom Animations */
     @keyframes shimmer {
         0% { transform: translateX(-100%); }
         100% { transform: translateX(100%); }
@@ -352,35 +306,17 @@
         50% { opacity: 1; transform: scale(1); }
     }
 
-    .animate-shimmer {
-        animation: shimmer 3s infinite;
-    }
-
-    .animate-shimmer-slow {
-        animation: shimmer 5s infinite;
-    }
-
+    .animate-shimmer { animation: shimmer 3s infinite; }
+    .animate-shimmer-slow { animation: shimmer 5s infinite; }
     .animate-holographic {
         animation: holographic 4s ease-in-out infinite;
         background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
         background-size: 200% 200%;
     }
-
-    .animate-glow-legend {
-        animation: glow-legend 3s ease-in-out infinite;
-    }
-
-    .animate-bounce-slow {
-        animation: float 3s ease-in-out infinite;
-    }
-
-    .animate-pulse-slow {
-        animation: pulse 3s ease-in-out infinite;
-    }
-
-    .animate-sparkle {
-        animation: sparkle 2s ease-in-out infinite;
-    }
+    .animate-glow-legend { animation: glow-legend 3s ease-in-out infinite; }
+    .animate-bounce-slow { animation: float 3s ease-in-out infinite; }
+    .animate-pulse-slow { animation: pulse 3s ease-in-out infinite; }
+    .animate-sparkle { animation: sparkle 2s ease-in-out infinite; }
 </style>
 @endsection
 
@@ -434,9 +370,6 @@ function virtualIdCard() {
             const card = document.getElementById('virtual-id-card');
 
             try {
-                // แสดง loading
-                const originalContent = card.innerHTML;
-
                 const canvas = await html2canvas(card, {
                     scale: 2,
                     useCORS: true,
@@ -451,13 +384,18 @@ function virtualIdCard() {
                 link.click();
 
                 // แสดง success message
-                this.$dispatch('notify', {
-                    type: 'success',
-                    message: 'ดาวน์โหลดบัตรสำเร็จ!'
-                });
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification('ดาวน์โหลดบัตรสำเร็จ!', 'success');
+                } else {
+                    this.$dispatch('notify', { type: 'success', message: 'ดาวน์โหลดบัตรสำเร็จ!' });
+                }
             } catch (error) {
                 console.error('Download error:', error);
-                alert('เกิดข้อผิดพลาดในการดาวน์โหลด กรุณาลองใหม่');
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification('เกิดข้อผิดพลาดในการดาวน์โหลด กรุณาลองใหม่', 'error');
+                } else {
+                    alert('เกิดข้อผิดพลาดในการดาวน์โหลด กรุณาลองใหม่');
+                }
             }
         },
 

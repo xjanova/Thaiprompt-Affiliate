@@ -1,85 +1,69 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ระดับของฉัน')
 
-@section('content')
 {{--
 /**
- * User Rank Dashboard
+ * User Rank Dashboard — Theme V4 "นวลทองคำ"
  *
  * แสดงข้อมูล Rank ของผู้ใช้พร้อมเงื่อนไขและรางวัลอย่างครบถ้วน
  * - Rank ปัจจุบันและ Rank ถัดไป
  * - เงื่อนไขในการเลื่อนระดับ (Requirements)
  * - รางวัลและสิทธิพิเศษ (Bonuses & Privileges)
- * - ความคืบหน้า
+ * - ความคืบหน้า + เส้นทาง Roadmap
  *
- * @version 2.0.0
- * @date 2025-11-26
+ * ตัวแปรจาก RankController::dashboard():
+ *   $user, $currentRank, $nextRank, $nextRankProgress, $leaderboardPosition,
+ *   $currentRankRequirements, $currentRankBonuses, $currentRankPrivileges,
+ *   $nextRankRequirements, $nextRankRequirementsProgress, $nextRankBonuses,
+ *   $nextRankPrivileges, $allRanks
+ *
+ * @version 4.0.0
+ * @date 2026-06-26
  */
 --}}
 
-<div class="space-y-6 pb-20 lg:pb-6">
-    @php
-        $rankBadges = [
-            1 => '🥉', 2 => '🥈', 3 => '🥇', 4 => '💎',
-            5 => '💠', 6 => '👑', 7 => '🏆', 8 => '⭐',
-        ];
-        $currentLevel = $currentRank?->level ?? 1;
-        $currentBadge = $rankBadges[$currentLevel] ?? '🏅';
-        $nextLevel = $nextRank?->level ?? null;
-        $nextBadge = $nextLevel ? ($rankBadges[$nextLevel] ?? '🏅') : null;
-    @endphp
+@php
+    use Illuminate\Support\Facades\Route as RouteFacade;
 
-    {{-- Premium Hero Header with Dynamic Rank-Based Gradients --}}
-    <div class="relative overflow-hidden rounded-3xl shadow-2xl">
-        {{-- Dynamic Background based on Rank with Premium Gradients --}}
-        <div class="absolute inset-0 bg-gradient-to-br
-            @if($currentLevel >= 7) from-purple-600 via-pink-600 to-rose-600 dark:from-purple-800 dark:via-pink-800 dark:to-rose-800
-            @elseif($currentLevel >= 5) from-cyan-500 via-blue-600 to-indigo-600 dark:from-cyan-800 dark:via-blue-800 dark:to-indigo-800
-            @elseif($currentLevel >= 3) from-yellow-400 via-amber-500 to-orange-500 dark:from-yellow-700 dark:via-amber-700 dark:to-orange-700
-            @else from-gray-500 via-slate-600 to-gray-700 dark:from-gray-700 dark:via-slate-800 dark:to-gray-900
-            @endif"></div>
+    // ── ป้ายเหรียญตาม level ────────────────────────────────────
+    $rankBadges = [
+        1 => '🥉', 2 => '🥈', 3 => '🥇', 4 => '💎',
+        5 => '💠', 6 => '👑', 7 => '🏆', 8 => '⭐',
+    ];
+    $currentLevel = $currentRank?->level ?? 1;
+    $currentBadge = $rankBadges[$currentLevel] ?? '🏅';
+    $nextLevel    = $nextRank?->level ?? null;
+    $nextBadge    = $nextLevel ? ($rankBadges[$nextLevel] ?? '🏅') : null;
 
-        {{-- Premium Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+    // ── ลิงก์บัตร VIP (เผื่อชื่อ route ต่างกันระหว่างเวอร์ชัน) ──
+    $idCardUrl = RouteFacade::has('user.ranks.id-card') ? route('user.ranks.id-card')
+               : (RouteFacade::has('user.virtual-id-card') ? route('user.virtual-id-card') : null);
 
-        {{-- Floating Icon --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                @if($currentLevel >= 6)
-                    <i class="fas fa-crown"></i>
-                @elseif($currentLevel >= 4)
-                    <i class="fas fa-gem"></i>
-                @else
-                    <i class="fas fa-trophy"></i>
-                @endif
-            </div>
-        </div>
+    // ── สีไอคอนสถานะ (hex semantic) ────────────────────────────
+    $bonusTypeIcons = [
+        'one_time'   => '💰',
+        'monthly'    => '📆',
+        'commission' => '📈',
+        'multiplier' => '✖️',
+    ];
+@endphp
 
-        {{-- Animated Particles for High Ranks --}}
-        @if($currentLevel >= 5)
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            @for($i = 0; $i < 15; $i++)
-            <div class="absolute w-2 h-2 bg-white rounded-full opacity-60 animate-float"
-                 style="left: {{ rand(5, 95) }}%; top: {{ rand(5, 95) }}%; animation-delay: {{ $i * 0.3 }}s;"></div>
-            @endfor
-        </div>
-        @endif
+@section('content')
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        <div class="relative z-10 p-8 md:p-12 text-white">
-            {{-- Back Button --}}
-            <div class="flex items-center gap-3 mb-6">
-                <a href="{{ route('user.dashboard') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
+    {{-- ── Hero: Rank ปัจจุบัน ─────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            {{-- ปุ่มย้อนกลับ --}}
+            <div style="margin-bottom:14px;">
+                <a href="{{ route('user.dashboard') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
             </div>
 
-            <div class="flex flex-col lg:flex-row items-center gap-8">
-                {{-- Avatar with Rank Frame --}}
-                <div class="flex-shrink-0">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:20px;">
+                {{-- Avatar พร้อมกรอบ Rank (KEEP partial component) --}}
+                <div style="flex-shrink:0;">
                     <x-rank-avatar
                         :user="$user"
                         :rank="$currentRank"
@@ -88,37 +72,37 @@
                     />
                 </div>
 
-                {{-- Rank Info --}}
-                <div class="flex-1 text-center lg:text-left">
-                    <div class="mb-2 text-sm font-semibold text-white/80 uppercase tracking-wider">
-                        {{ __('ระดับปัจจุบันของคุณ') }}
+                {{-- ข้อมูล Rank --}}
+                <div style="flex:1; min-width:220px;">
+                    <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px; text-transform:uppercase;">
+                        ระดับปัจจุบันของคุณ · MY RANK
                     </div>
-                    <h1 class="text-4xl md:text-5xl font-bold mb-3 flex items-center justify-center lg:justify-start gap-4">
-                        <span class="text-6xl">{{ $currentBadge }}</span>
+                    <h1 class="tp-num" style="font-size:clamp(22px,4vw,30px); font-weight:800; margin:6px 0 0; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <span style="font-size:1.4em;">{{ $currentBadge }}</span>
                         <span>{{ $currentRank?->name_th ?? $currentRank?->name ?? 'ไม่มีระดับ' }}</span>
                     </h1>
-                    <p class="text-xl text-white/80 mb-4">Level {{ $currentLevel }}</p>
+                    <div style="font-size:14px; color:var(--ink2); margin-top:4px;">Level {{ $currentLevel }}</div>
 
                     @if($currentRank?->description_th ?? $currentRank?->description)
-                    <p class="text-white/70 max-w-2xl">
-                        {{ $currentRank?->description_th ?? $currentRank?->description }}
-                    </p>
+                        <p style="font-size:13px; color:var(--ink2); margin:8px 0 0; max-width:640px;">
+                            {{ $currentRank?->description_th ?? $currentRank?->description }}
+                        </p>
                     @endif
 
-                    {{-- Stats Row with Glass Fusion --}}
-                    <div class="flex flex-wrap justify-center lg:justify-start gap-4 mt-6">
-                        <div class="glass-fusion px-6 py-3 rounded-xl">
-                            <div class="text-2xl font-bold">{{ number_format($user->rank_points ?? 0) }}</div>
-                            <div class="text-sm text-white/80">คะแนนสะสม</div>
+                    {{-- สถิติย่อ --}}
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:16px;">
+                        <div style="padding:8px 14px; border-radius:13px; box-shadow:var(--inset-sm);">
+                            <div class="tp-num" style="font-size:18px; font-weight:800;">{{ number_format($user->rank_points ?? 0) }}</div>
+                            <div style="font-size:11px; color:var(--ink2);">คะแนนสะสม</div>
                         </div>
-                        <div class="glass-fusion px-6 py-3 rounded-xl">
-                            <div class="text-2xl font-bold">#{{ $leaderboardPosition }}</div>
-                            <div class="text-sm text-white/80">อันดับในกระดาน</div>
+                        <div style="padding:8px 14px; border-radius:13px; box-shadow:var(--inset-sm);">
+                            <div class="tp-num" style="font-size:18px; font-weight:800;">#{{ $leaderboardPosition }}</div>
+                            <div style="font-size:11px; color:var(--ink2);">อันดับในกระดาน</div>
                         </div>
                         @if($currentRank?->commission_rate)
-                        <div class="glass-fusion px-6 py-3 rounded-xl">
-                            <div class="text-2xl font-bold">{{ $currentRank->commission_rate }}%</div>
-                            <div class="text-sm text-white/80">ค่าคอมมิชชั่น</div>
+                        <div style="padding:8px 14px; border-radius:13px; box-shadow:var(--inset-sm);">
+                            <div class="tp-num" style="font-size:18px; font-weight:800; color:var(--deep1);">{{ $currentRank->commission_rate }}%</div>
+                            <div style="font-size:11px; color:var(--ink2);">ค่าคอมมิชชั่น</div>
                         </div>
                         @endif
                     </div>
@@ -127,200 +111,147 @@
         </div>
     </div>
 
-    {{-- Current Rank Benefits --}}
+    {{-- ── สิทธิพิเศษของ Rank ปัจจุบัน ─────────────────────── --}}
     @if($currentRankBonuses->count() > 0 || count($currentRankPrivileges) > 0)
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-        <div class="px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-            <h2 class="text-xl font-bold flex items-center gap-2">
-                <span>🎁</span>
-                <span>สิทธิพิเศษของคุณในระดับปัจจุบัน</span>
-            </h2>
-        </div>
-        <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {{-- Bonuses --}}
-                @foreach($currentRankBonuses as $bonus)
-                <div class="flex items-start gap-4 p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                    <div class="flex-shrink-0 w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white text-xl">
-                        @if($bonus->bonus_type === 'one_time')
-                            💰
-                        @elseif($bonus->bonus_type === 'monthly')
-                            📆
-                        @elseif($bonus->bonus_type === 'commission')
-                            📈
-                        @elseif($bonus->bonus_type === 'multiplier')
-                            ✖️
-                        @else
-                            🎁
-                        @endif
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-gray-900 dark:text-white">
-                            {{ $bonus->name_th ?? $bonus->name }}
-                        </h3>
-                        @if($bonus->amount > 0)
-                            <p class="text-sm text-green-600 font-semibold">฿{{ number_format($bonus->amount, 2) }}</p>
-                        @elseif($bonus->percentage > 0)
-                            <p class="text-sm text-green-600 font-semibold">{{ $bonus->percentage }}%</p>
-                        @endif
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                            {{ $bonus->description_th ?? $bonus->description }}
-                        </p>
-                    </div>
+    <div>
+        <div class="tp-section-h" style="margin-bottom:12px;">🎁 สิทธิพิเศษของคุณในระดับปัจจุบัน</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;">
+            {{-- โบนัส --}}
+            @foreach($currentRankBonuses as $bonus)
+            <div class="tp-card" style="padding:16px; display:flex; align-items:flex-start; gap:13px;">
+                <span class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:20px; flex-shrink:0; background:#5aa07e;">
+                    {{ $bonusTypeIcons[$bonus->bonus_type] ?? '🎁' }}
+                </span>
+                <div style="min-width:0;">
+                    <div style="font-weight:700; font-size:14px;">{{ $bonus->name_th ?? $bonus->name }}</div>
+                    @if($bonus->amount > 0)
+                        <div class="tp-num" style="font-size:13px; font-weight:700; color:#5aa07e;">฿{{ number_format($bonus->amount, 2) }}</div>
+                    @elseif($bonus->percentage > 0)
+                        <div class="tp-num" style="font-size:13px; font-weight:700; color:#5aa07e;">{{ $bonus->percentage }}%</div>
+                    @endif
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">{{ $bonus->description_th ?? $bonus->description }}</div>
                 </div>
-                @endforeach
-
-                {{-- Privileges --}}
-                @foreach($currentRankPrivileges as $key => $privilege)
-                <div class="flex items-start gap-4 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                    <div class="flex-shrink-0 w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white text-2xl">
-                        {{ $privilege['icon'] ?? '⭐' }}
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-gray-900 dark:text-white">
-                            {{ $privilege['name_th'] ?? $privilege['name'] }}
-                        </h3>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                            {{ $privilege['description_th'] ?? $privilege['description'] }}
-                        </p>
-                    </div>
-                </div>
-                @endforeach
-
-                @if($currentRankBonuses->count() === 0 && count($currentRankPrivileges) === 0)
-                <div class="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
-                    ยังไม่มีสิทธิพิเศษที่กำหนดไว้สำหรับระดับนี้
-                </div>
-                @endif
             </div>
+            @endforeach
+
+            {{-- สิทธิพิเศษ --}}
+            @foreach($currentRankPrivileges as $key => $privilege)
+            <div class="tp-card" style="padding:16px; display:flex; align-items:flex-start; gap:13px;">
+                <span class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:22px; flex-shrink:0; background:color-mix(in srgb, var(--accent1) 18%, transparent);">
+                    {{ $privilege['icon'] ?? '⭐' }}
+                </span>
+                <div style="min-width:0;">
+                    <div style="font-weight:700; font-size:14px;">{{ $privilege['name_th'] ?? $privilege['name'] }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">{{ $privilege['description_th'] ?? $privilege['description'] }}</div>
+                </div>
+            </div>
+            @endforeach
         </div>
     </div>
     @endif
 
-    {{-- Progress to Next Rank --}}
+    {{-- ── ความคืบหน้าสู่ระดับถัดไป ──────────────────────── --}}
     @if($nextRank)
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-        <div class="px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-bold flex items-center gap-2">
-                    <span>🎯</span>
-                    <span>ความคืบหน้าสู่ระดับถัดไป</span>
-                </h2>
-                <div class="flex items-center gap-2">
-                    <span class="text-3xl">{{ $nextBadge }}</span>
-                    <span class="font-semibold">{{ $nextRank->name_th ?? $nextRank->name }}</span>
-                </div>
-            </div>
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:18px 22px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div class="tp-section-h" style="margin:0;">🎯 ความคืบหน้าสู่ระดับถัดไป</div>
+            <span class="tp-pill tp-pill-gold" style="font-size:13px;">{{ $nextBadge }} {{ $nextRank->name_th ?? $nextRank->name }}</span>
         </div>
 
-        <div class="p-6">
-            {{-- Overall Progress Bar --}}
+        <div style="padding:22px;">
+            {{-- แถบความคืบหน้ารวม --}}
             @if($nextRankProgress)
-            <div class="mb-8">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">ความคืบหน้ารวม</span>
-                    <span class="text-lg font-bold text-blue-600">
+            <div style="margin-bottom:26px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                    <span style="font-size:13px; font-weight:600; color:var(--ink2);">ความคืบหน้ารวม</span>
+                    <span class="tp-num" style="font-size:18px; font-weight:800; color:var(--deep1);">
                         {{ number_format($nextRankProgress->progress_percentage ?? 0, 1) }}%
                     </span>
                 </div>
-                <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 relative"
-                         style="width: {{ min(100, $nextRankProgress->progress_percentage ?? 0) }}%">
-                        <div class="absolute inset-0 bg-white/30 animate-pulse"></div>
-                    </div>
+                <div style="height:18px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
+                    <div style="height:100%; width:{{ min(100, $nextRankProgress->progress_percentage ?? 0) }}%; border-radius:20px; background:linear-gradient(90deg, var(--accent1), var(--accent2)); transition:width .5s ease;"></div>
                 </div>
-                <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">
+                <div style="text-align:center; font-size:12.5px; color:var(--ink2); margin-top:9px;">
                     อีก
-                    <span class="font-semibold text-blue-600">{{ number_format(max(0, ($nextRankProgress->target_points ?? 0) - ($user->rank_points ?? 0))) }}</span>
+                    <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ number_format(max(0, ($nextRankProgress->target_points ?? 0) - ($user->rank_points ?? 0))) }}</span>
                     คะแนนจะถึงระดับ
-                    <span class="font-semibold">{{ $nextRank->name_th ?? $nextRank->name }}</span>
-                </p>
+                    <strong>{{ $nextRank->name_th ?? $nextRank->name }}</strong>
+                </div>
             </div>
             @endif
 
-            {{-- Requirements Checklist --}}
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <span>📋</span>
-                <span>เงื่อนไขที่ต้องทำให้ครบ</span>
-            </h3>
+            {{-- เงื่อนไขที่ต้องทำให้ครบ --}}
+            <div class="tp-section-h" style="margin-bottom:14px;">📋 เงื่อนไขที่ต้องทำให้ครบ</div>
 
             @if($nextRankRequirements->count() > 0)
-            <div class="space-y-4">
+            <div style="display:flex; flex-direction:column; gap:12px;">
                 @foreach($nextRankRequirements as $requirement)
                     @php
-                        $progress = $nextRankRequirementsProgress[$requirement->id] ?? null;
-                        $isMet = $progress['met'] ?? false;
+                        $progress   = $nextRankRequirementsProgress[$requirement->id] ?? null;
+                        $isMet      = $progress['met'] ?? false;
                         $percentage = $progress['percentage'] ?? 0;
-                        $current = $progress['current'] ?? 0;
-                        $target = $progress['target'] ?? $requirement->target_value;
+                        $current    = $progress['current'] ?? 0;
+                        $target     = $progress['target'] ?? $requirement->target_value;
 
-                        // Icons ตาม requirement type
+                        // ไอคอนตามประเภทเงื่อนไข
                         $typeIcons = [
-                            'points' => '🎯',
-                            'referrals' => '👥',
-                            'sales' => '💰',
-                            'active_referrals' => '✅',
-                            'team_sales' => '📊',
-                            'consecutive_months' => '📅',
-                            'diamond_legs' => '💎',
-                            'crown_legs' => '👑',
-                            'royal_legs' => '🏆',
+                            'points'              => '🎯',
+                            'referrals'           => '👥',
+                            'sales'               => '💰',
+                            'active_referrals'    => '✅',
+                            'team_sales'          => '📊',
+                            'consecutive_months'  => '📅',
+                            'diamond_legs'        => '💎',
+                            'crown_legs'          => '👑',
+                            'royal_legs'          => '🏆',
                         ];
-                        $icon = $typeIcons[$requirement->requirement_type] ?? '📌';
+                        $reqIcon = $typeIcons[$requirement->requirement_type] ?? '📌';
                     @endphp
 
-                    <div class="relative p-4 rounded-xl border-2 transition-all
-                        {{ $isMet
-                            ? 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-600'
-                            : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
-                        }}">
-                        <div class="flex items-start gap-4">
-                            {{-- Status Icon --}}
-                            <div class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl
-                                {{ $isMet ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-600' }}">
+                    <div class="tp-card" style="padding:16px; {{ $isMet ? 'border-left:4px solid #5aa07e;' : 'box-shadow:var(--inset-sm);' }}">
+                        <div style="display:flex; align-items:flex-start; gap:13px;">
+                            {{-- ไอคอนสถานะ --}}
+                            <span class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:20px; flex-shrink:0; background:{{ $isMet ? '#5aa07e' : 'color-mix(in srgb, var(--ink2) 18%, transparent)' }};">
                                 @if($isMet)
-                                    ✓
+                                    <span style="color:#fff;">✓</span>
                                 @else
-                                    {{ $icon }}
+                                    {{ $reqIcon }}
                                 @endif
-                            </div>
+                            </span>
 
-                            {{-- Content --}}
-                            <div class="flex-1">
-                                <div class="flex items-center justify-between mb-2">
-                                    <h4 class="font-bold text-gray-900 dark:text-white">
+                            {{-- เนื้อหา --}}
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
+                                    <div style="font-weight:700; font-size:14px;">
                                         {{ $requirement->name_th ?? $requirement->name }}
                                         @if($requirement->is_required)
-                                            <span class="text-red-500">*</span>
+                                            <span style="color:#d9534f;">*</span>
                                         @endif
-                                    </h4>
+                                    </div>
                                     @if($isMet)
-                                        <span class="px-3 py-1 bg-green-500 text-white text-xs rounded-full font-semibold">
-                                            ✓ ผ่านแล้ว
-                                        </span>
+                                        <span class="tp-pill" style="color:#fff; background:#5aa07e;">✓ ผ่านแล้ว</span>
                                     @else
-                                        <span class="text-sm text-gray-600 dark:text-gray-400">
-                                            {{ number_format($current, 0) }} / {{ number_format($target, 0) }}
-                                            {{ $requirement->unit }}
+                                        <span class="tp-num" style="font-size:12.5px; color:var(--ink2);">
+                                            {{ number_format($current, 0) }} / {{ number_format($target, 0) }} {{ $requirement->unit }}
                                         </span>
                                     @endif
                                 </div>
 
                                 @if($requirement->description_th ?? $requirement->description)
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <div style="font-size:12.5px; color:var(--ink2); margin-bottom:8px;">
                                     {{ $requirement->description_th ?? $requirement->description }}
-                                </p>
+                                </div>
                                 @endif
 
-                                {{-- Progress Bar --}}
+                                {{-- แถบความคืบหน้า --}}
                                 @if(!$isMet)
-                                <div class="h-3 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                                    <div class="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500"
-                                         style="width: {{ min(100, $percentage) }}%"></div>
+                                <div style="height:10px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
+                                    <div style="height:100%; width:{{ min(100, $percentage) }}%; border-radius:20px; background:linear-gradient(90deg, var(--accent1), var(--accent2)); transition:width .5s ease;"></div>
                                 </div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+                                <div class="tp-num" style="font-size:11px; color:var(--ink2); margin-top:5px; text-align:right;">
                                     {{ number_format($percentage, 1) }}%
-                                </p>
+                                </div>
                                 @endif
                             </div>
                         </div>
@@ -328,59 +259,39 @@
                 @endforeach
             </div>
             @else
-            <div class="text-center py-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div class="text-4xl mb-2">📋</div>
-                <p>ยังไม่มีเงื่อนไขที่กำหนดไว้สำหรับระดับนี้</p>
+            <div style="text-align:center; padding:40px 20px; border-radius:14px; box-shadow:var(--inset-sm);">
+                <div style="font-size:40px; opacity:.6;">📋</div>
+                <div style="font-size:13px; color:var(--ink2); margin-top:8px;">ยังไม่มีเงื่อนไขที่กำหนดไว้สำหรับระดับนี้</div>
             </div>
             @endif
 
-            {{-- What You'll Get --}}
+            {{-- สิ่งที่จะได้รับเมื่อเลื่อนระดับ --}}
             @if($nextRankBonuses->count() > 0 || count($nextRankPrivileges) > 0)
-            <div class="mt-8">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <span>🎁</span>
-                    <span>สิ่งที่คุณจะได้รับเมื่อเลื่อนระดับ</span>
-                </h3>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {{-- Next Rank Bonuses --}}
+            <div style="margin-top:26px;">
+                <div class="tp-section-h" style="margin-bottom:14px;">🎁 สิ่งที่คุณจะได้รับเมื่อเลื่อนระดับ</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px;">
+                    {{-- โบนัสของ Rank ถัดไป --}}
                     @foreach($nextRankBonuses as $bonus)
-                    <div class="flex items-center gap-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
-                        <div class="text-3xl">
-                            @if($bonus->bonus_type === 'one_time')
-                                💰
-                            @elseif($bonus->bonus_type === 'monthly')
-                                📆
-                            @elseif($bonus->bonus_type === 'commission')
-                                📈
-                            @else
-                                🎁
-                            @endif
-                        </div>
-                        <div>
-                            <div class="font-bold text-gray-900 dark:text-white">
-                                {{ $bonus->name_th ?? $bonus->name }}
-                            </div>
+                    <div style="display:flex; align-items:center; gap:12px; padding:14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <span style="font-size:26px;">{{ $bonusTypeIcons[$bonus->bonus_type] ?? '🎁' }}</span>
+                        <div style="min-width:0;">
+                            <div style="font-weight:700; font-size:13.5px;">{{ $bonus->name_th ?? $bonus->name }}</div>
                             @if($bonus->amount > 0)
-                                <div class="text-amber-600 font-semibold">฿{{ number_format($bonus->amount, 2) }}</div>
+                                <div class="tp-num" style="font-size:13px; font-weight:700; color:#e0a52e;">฿{{ number_format($bonus->amount, 2) }}</div>
                             @elseif($bonus->percentage > 0)
-                                <div class="text-amber-600 font-semibold">{{ $bonus->percentage }}%</div>
+                                <div class="tp-num" style="font-size:13px; font-weight:700; color:#e0a52e;">{{ $bonus->percentage }}%</div>
                             @endif
                         </div>
                     </div>
                     @endforeach
 
-                    {{-- Next Rank Privileges --}}
+                    {{-- สิทธิพิเศษของ Rank ถัดไป --}}
                     @foreach($nextRankPrivileges as $key => $privilege)
-                    <div class="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                        <div class="text-3xl">{{ $privilege['icon'] ?? '⭐' }}</div>
-                        <div>
-                            <div class="font-bold text-gray-900 dark:text-white">
-                                {{ $privilege['name_th'] ?? $privilege['name'] }}
-                            </div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400">
-                                {{ $privilege['description_th'] ?? $privilege['description'] }}
-                            </div>
+                    <div style="display:flex; align-items:center; gap:12px; padding:14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <span style="font-size:26px;">{{ $privilege['icon'] ?? '⭐' }}</span>
+                        <div style="min-width:0;">
+                            <div style="font-weight:700; font-size:13.5px;">{{ $privilege['name_th'] ?? $privilege['name'] }}</div>
+                            <div style="font-size:12px; color:var(--ink2); margin-top:2px;">{{ $privilege['description_th'] ?? $privilege['description'] }}</div>
                         </div>
                     </div>
                     @endforeach
@@ -390,99 +301,81 @@
         </div>
     </div>
     @else
-    {{-- At Max Rank --}}
-    <div class="bg-gradient-to-br from-purple-600 via-pink-600 to-rose-600 rounded-2xl shadow-xl p-8 text-white text-center">
-        <div class="text-6xl mb-4">🏆</div>
-        <h2 class="text-3xl font-bold mb-2">ยินดีด้วย!</h2>
-        <p class="text-xl text-white/80">คุณอยู่ในระดับสูงสุดแล้ว</p>
-        <div class="mt-6">
-            <div class="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl">
-                <span class="text-4xl">{{ $currentBadge }}</span>
-                <span class="text-2xl font-bold">{{ $currentRank?->name_th ?? $currentRank?->name ?? 'ไม่มีระดับ' }}</span>
+    {{-- ── Rank สูงสุดแล้ว ─────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="text-align:center; padding:36px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 22%, transparent), transparent 75%);">
+            <div style="font-size:56px;">🏆</div>
+            <h2 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:10px 0 4px;">ยินดีด้วย!</h2>
+            <div style="font-size:15px; color:var(--ink2);">คุณอยู่ในระดับสูงสุดแล้ว</div>
+            <div style="display:inline-flex; align-items:center; gap:10px; margin-top:18px; padding:10px 20px; border-radius:16px; box-shadow:var(--inset-sm);">
+                <span style="font-size:34px;">{{ $currentBadge }}</span>
+                <span class="tp-num" style="font-size:20px; font-weight:800;">{{ $currentRank?->name_th ?? $currentRank?->name ?? 'ไม่มีระดับ' }}</span>
             </div>
         </div>
     </div>
     @endif
 
-    {{-- Rank Roadmap --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-        <div class="px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-            <h2 class="text-xl font-bold flex items-center gap-2">
-                <span>🗺️</span>
-                <span>เส้นทางสู่ความสำเร็จ</span>
-            </h2>
+    {{-- ── เส้นทางสู่ความสำเร็จ (Roadmap) ─────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:18px 22px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div class="tp-section-h" style="margin:0;">🗺️ เส้นทางสู่ความสำเร็จ</div>
         </div>
 
-        <div class="p-6">
-            <div class="relative">
-                {{-- Vertical Line --}}
-                <div class="absolute left-8 top-0 bottom-0 w-1 bg-gray-200 dark:bg-gray-700"></div>
+        <div style="padding:22px;">
+            <div style="position:relative;">
+                {{-- เส้นแนวตั้ง --}}
+                <div style="position:absolute; left:31px; top:0; bottom:0; width:2px; background:color-mix(in srgb, var(--ink2) 18%, transparent);"></div>
 
-                <div class="space-y-6">
+                <div style="display:flex; flex-direction:column; gap:18px;">
                     @foreach($allRanks as $rank)
                         @php
                             $isCurrentRank = $currentRank && $currentRank->id === $rank->id;
-                            $isAchieved = $currentRank && $currentRank->level >= $rank->level;
-                            $badge = $rankBadges[$rank->level] ?? '🏅';
+                            $isAchieved    = $currentRank && $currentRank->level >= $rank->level;
+                            $badge         = $rankBadges[$rank->level] ?? '🏅';
+                            $nodeBg = $isCurrentRank
+                                ? 'linear-gradient(135deg, var(--accent1), var(--accent2))'
+                                : ($isAchieved ? '#5aa07e' : 'color-mix(in srgb, var(--ink2) 18%, transparent)');
                         @endphp
 
-                        <div class="relative flex items-start gap-6">
-                            {{-- Icon Circle --}}
-                            <div class="flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center z-10 shadow-lg
-                                @if($isCurrentRank)
-                                    bg-gradient-to-br from-yellow-400 to-orange-500 ring-4 ring-yellow-300 animate-pulse
-                                @elseif($isAchieved)
-                                    bg-gradient-to-br from-green-400 to-emerald-600
-                                @else
-                                    bg-gray-300 dark:bg-gray-600
-                                @endif">
-                                <span class="text-2xl">{{ $badge }}</span>
-                            </div>
+                        <div style="position:relative; display:flex; align-items:flex-start; gap:18px;">
+                            {{-- วงไอคอน --}}
+                            <span style="position:relative; z-index:1; flex-shrink:0; width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:var(--inset-sm); background:{{ $nodeBg }}; {{ $isCurrentRank ? 'outline:3px solid color-mix(in srgb, var(--accent1) 45%, transparent); outline-offset:2px;' : '' }}">
+                                {{ $badge }}
+                            </span>
 
-                            {{-- Content Card --}}
-                            <div class="flex-1 p-4 rounded-xl border-2 transition-all
-                                @if($isCurrentRank)
-                                    bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400
-                                @elseif($isAchieved)
-                                    bg-green-50 dark:bg-green-900/20 border-green-300
-                                @else
-                                    bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600
-                                @endif">
-                                <div class="flex items-start justify-between">
-                                    <div>
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <h3 class="font-bold text-gray-900 dark:text-white text-lg">
-                                                {{ $rank->name_th ?? $rank->name }}
-                                            </h3>
+                            {{-- การ์ดเนื้อหา --}}
+                            <div style="flex:1; min-width:0; padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); {{ $isCurrentRank ? 'border-left:4px solid var(--accent1);' : ($isAchieved ? 'border-left:4px solid #5aa07e;' : '') }}">
+                                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                                    <div style="min-width:0;">
+                                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                            <div style="font-weight:700; font-size:15px;">{{ $rank->name_th ?? $rank->name }}</div>
                                             @if($isCurrentRank)
-                                                <span class="px-2 py-1 bg-yellow-500 text-white text-xs rounded-full">คุณอยู่ที่นี่</span>
+                                                <span class="tp-pill" style="color:#fff; background:var(--accent1);">คุณอยู่ที่นี่</span>
                                             @elseif($isAchieved)
-                                                <span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full">✓ ผ่านแล้ว</span>
+                                                <span class="tp-pill" style="color:#fff; background:#5aa07e;">✓ ผ่านแล้ว</span>
                                             @endif
                                         </div>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">Level {{ $rank->level }}</p>
+                                        <div style="font-size:12px; color:var(--ink2); margin-top:2px;">Level {{ $rank->level }}</div>
                                     </div>
 
                                     @if($rank->commission_rate)
-                                    <div class="text-right">
-                                        <div class="text-lg font-bold text-blue-600">{{ $rank->commission_rate }}%</div>
-                                        <div class="text-xs text-gray-500">ค่าคอมมิชชั่น</div>
+                                    <div style="text-align:right;">
+                                        <div class="tp-num" style="font-size:15px; font-weight:800; color:var(--deep1);">{{ $rank->commission_rate }}%</div>
+                                        <div style="font-size:11px; color:var(--ink2);">ค่าคอมมิชชั่น</div>
                                     </div>
                                     @endif
                                 </div>
 
-                                {{-- Preview of rewards --}}
+                                {{-- ตัวอย่างรางวัล --}}
                                 @if($rank->activeBonuses->count() > 0)
-                                <div class="mt-3 flex flex-wrap gap-2">
+                                <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:7px;">
                                     @foreach($rank->activeBonuses->take(3) as $bonus)
-                                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-800 rounded-lg text-xs">
-                                            🎁 {{ $bonus->name_th ?? $bonus->name }}
-                                        </span>
+                                        <span class="tp-pill tp-pill-soft" style="font-size:11px;">🎁 {{ $bonus->name_th ?? $bonus->name }}</span>
                                     @endforeach
                                     @if($rank->activeBonuses->count() > 3)
-                                        <span class="px-2 py-1 text-xs text-gray-500">
-                                            +{{ $rank->activeBonuses->count() - 3 }} อื่นๆ
-                                        </span>
+                                        <span style="font-size:11px; color:var(--ink2); align-self:center;">+{{ $rank->activeBonuses->count() - 3 }} อื่นๆ</span>
                                     @endif
                                 </div>
                                 @endif
@@ -494,107 +387,68 @@
         </div>
     </div>
 
-    {{-- Quick Actions --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <a href="{{ route('user.ranks.progress') }}"
-           class="group bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white hover:shadow-2xl transition block">
-            <div class="flex items-center gap-4 mb-3">
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
-                    <span class="text-3xl">📊</span>
-                </div>
-                <div>
-                    <h3 class="text-xl font-bold">ดูความคืบหน้า</h3>
-                    <p class="text-blue-100 text-sm">ติดตามความก้าวหน้าทุกระดับ</p>
-                </div>
+    {{-- ── เมนูด่วน ──────────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;">
+        @if(RouteFacade::has('user.ranks.progress'))
+        <a href="{{ route('user.ranks.progress') }}" class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px; padding:18px; text-decoration:none; color:inherit;">
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px; flex-shrink:0;">📊</span>
+            <div>
+                <div style="font-weight:700; font-size:15px;">ดูความคืบหน้า</div>
+                <div style="font-size:12px; color:var(--ink2); margin-top:2px;">ติดตามความก้าวหน้าทุกระดับ</div>
             </div>
         </a>
+        @endif
 
-        <a href="{{ route('user.ranks.leaderboard') }}"
-           class="group bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white hover:shadow-2xl transition block">
-            <div class="flex items-center gap-4 mb-3">
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
-                    <span class="text-3xl">🏆</span>
-                </div>
-                <div>
-                    <h3 class="text-xl font-bold">กระดานผู้นำ</h3>
-                    <p class="text-purple-100 text-sm">เปรียบเทียบกับสมาชิกอื่น</p>
-                </div>
+        @if(RouteFacade::has('user.ranks.leaderboard'))
+        <a href="{{ route('user.ranks.leaderboard') }}" class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px; padding:18px; text-decoration:none; color:inherit;">
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px; flex-shrink:0; background:color-mix(in srgb, var(--accent1) 18%, transparent);">🏆</span>
+            <div>
+                <div style="font-weight:700; font-size:15px;">กระดานผู้นำ</div>
+                <div style="font-size:12px; color:var(--ink2); margin-top:2px;">เปรียบเทียบกับสมาชิกอื่น</div>
             </div>
         </a>
+        @endif
 
-        <a href="{{ route('user.virtual-id-card') }}"
-           class="group bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-xl p-6 text-white hover:shadow-2xl transition block">
-            <div class="flex items-center gap-4 mb-3">
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
-                    <span class="text-3xl">🪪</span>
-                </div>
-                <div>
-                    <h3 class="text-xl font-bold">บัตรสมาชิก</h3>
-                    <p class="text-orange-100 text-sm">ดูบัตรประจำตัวเสมือนของคุณ</p>
-                </div>
+        @if($idCardUrl)
+        <a href="{{ $idCardUrl }}" class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px; padding:18px; text-decoration:none; color:inherit;">
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px; flex-shrink:0; background:#e0a52e;">🪪</span>
+            <div>
+                <div style="font-weight:700; font-size:15px;">บัตรสมาชิก</div>
+                <div style="font-size:12px; color:var(--ink2); margin-top:2px;">ดูบัตรประจำตัวเสมือนของคุณ</div>
             </div>
         </a>
+        @endif
     </div>
 
-    {{-- How to Earn Points --}}
-    <div class="bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-xl p-8">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <span>💡</span>
-            <span>วิธีสะสมคะแนนและเลื่อนระดับ</span>
-        </h2>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition">
-                <div class="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">
-                    👥
-                </div>
-                <h3 class="font-bold text-gray-900 dark:text-white mb-2">แนะนำสมาชิกใหม่</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">เชิญเพื่อนมาสมัครสมาชิกเพื่อรับคะแนนโบนัส</p>
+    {{-- ── วิธีสะสมคะแนนและเลื่อนระดับ ─────────────────────── --}}
+    <div>
+        <div class="tp-section-h" style="margin-bottom:12px;">💡 วิธีสะสมคะแนนและเลื่อนระดับ</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
+            <div class="tp-card" style="padding:18px;">
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px; background:#5aa07e;">👥</span>
+                <div style="font-weight:700; font-size:14px; margin-top:12px;">แนะนำสมาชิกใหม่</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">เชิญเพื่อนมาสมัครสมาชิกเพื่อรับคะแนนโบนัส</div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition">
-                <div class="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">
-                    💰
-                </div>
-                <h3 class="font-bold text-gray-900 dark:text-white mb-2">สร้างยอดขาย</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">ทำยอดขายเพื่อสะสม PV และคะแนน</p>
+            <div class="tp-card" style="padding:18px;">
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px; background:#5689b8;">💰</span>
+                <div style="font-weight:700; font-size:14px; margin-top:12px;">สร้างยอดขาย</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ทำยอดขายเพื่อสะสม PV และคะแนน</div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition">
-                <div class="w-14 h-14 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">
-                    📈
-                </div>
-                <h3 class="font-bold text-gray-900 dark:text-white mb-2">พัฒนาทีม</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">ช่วยทีมให้เติบโตเพื่อรับโบนัสทีม</p>
+            <div class="tp-card" style="padding:18px;">
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px; background:color-mix(in srgb, var(--accent1) 22%, transparent);">📈</span>
+                <div style="font-weight:700; font-size:14px; margin-top:12px;">พัฒนาทีม</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ช่วยทีมให้เติบโตเพื่อรับโบนัสทีม</div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition">
-                <div class="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">
-                    🎯
-                </div>
-                <h3 class="font-bold text-gray-900 dark:text-white mb-2">รักษาความต่อเนื่อง</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">ทำยอดอย่างสม่ำเสมอทุกเดือน</p>
+            <div class="tp-card" style="padding:18px;">
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px; background:#e0a52e;">🎯</span>
+                <div style="font-weight:700; font-size:14px; margin-top:12px;">รักษาความต่อเนื่อง</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ทำยอดอย่างสม่ำเสมอทุกเดือน</div>
             </div>
         </div>
     </div>
+
 </div>
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0px); opacity: 0.6; }
-    50% { transform: translateY(-20px); opacity: 0.3; }
-}
-
-.animate-float {
-    animation: float 4s ease-in-out infinite;
-}
-</style>
-@endpush
 @endsection

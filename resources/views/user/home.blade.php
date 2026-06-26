@@ -1,390 +1,204 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'หน้าหลัก')
 
+@php
+    use Illuminate\Support\Facades\Route as RouteFacade;
+
+    /**
+     * User Home - Hub Navigation (App-Like Interface) — Theme V4 "นวลทองคำ"
+     *
+     * หน้าหลักหลังล็อกอินแบบ mobile app
+     * - การ์ดต้อนรับ (Hero) + Avatar + แจ้งเตือน
+     * - การ์ดยอดเงินคงเหลือ + ปุ่มเติมเงิน
+     * - Hub Navigation Cards (8 รายการ)
+     * - เมนูด่วน (Quick Actions)
+     * - การ์ดสรุปสถิติ + ลิงก์แนะนำ
+     * - คอมมิชชั่นล่าสุด
+     */
+
+    // ── เมนูด่วน (กรองเฉพาะ route ที่มีจริง) ─────────────────────
+    // [emoji, label, route-or-null, comingSoonFeature]
+    $quickRaw = [
+        ['📊', 'แดชบอร์ด', 'user.dashboard',           null],
+        ['💸', 'โอนเงิน',   'user.wallet.transfer',     null],
+        ['➕', 'เติมเงิน',  'user.wallet.deposit',      null],
+        ['📋', 'ประวัติ',   'user.wallet.transactions', null],
+        ['📷', 'สแกน QR',   null,                       'สแกน QR'],
+        ['💵', 'ถอนเงิน',   'user.wallet.withdraw',     null],
+        ['👥', 'เชิญเพื่อน','user.mlm.referral',        null],
+        ['👤', 'โปรไฟล์',   'user.profile',             null],
+    ];
+    $quick = [];
+    foreach ($quickRaw as $q) {
+        if ($q[2] === null) {
+            // ฟีเจอร์ที่กำลังพัฒนา (ไม่มี route)
+            $quick[] = [$q[0], $q[1], null, $q[3]];
+        } elseif (RouteFacade::has($q[2])) {
+            $quick[] = [$q[0], $q[1], route($q[2]), null];
+        }
+    }
+@endphp
+
 @section('content')
-{{--
-/**
- * User Home - Hub Navigation (App-Like Interface)
- *
- * หน้าหลักหลังล็อกอินแบบ mobile app
- * - 8 Hub Navigation Cards
- * - Quick Actions
- * - Balance Display
- * - Welcome Section
- *
- * @version 1.0.0
- * @date 2025-11-26
- */
---}}
+<div x-data="hubNavigation()" style="display:flex; flex-direction:column; gap:18px;">
 
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
-
-<div x-data="hubNavigation()" class="min-h-screen pb-24 lg:pb-8">
-
-    {{-- ======================================
-        Background Effects
-    ====================================== --}}
-    <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        {{-- Aurora Glow 1 --}}
-        <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-500/20 to-pink-500/10 rounded-full filter blur-3xl animate-pulse"></div>
-        {{-- Aurora Glow 2 --}}
-        <div class="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-500/20 to-cyan-500/10 rounded-full filter blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
-        {{-- Floating Particles --}}
-        <div class="absolute top-1/4 left-1/4 w-2 h-2 bg-purple-400 rounded-full opacity-30 animate-bounce" style="animation-delay: 0.5s;"></div>
-        <div class="absolute top-1/3 right-1/3 w-3 h-3 bg-pink-400 rounded-full opacity-20 animate-bounce" style="animation-delay: 1s;"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-2 h-2 bg-blue-400 rounded-full opacity-30 animate-bounce" style="animation-delay: 1.5s;"></div>
-    </div>
-
-    {{-- ======================================
-        Premium Hero Header (Compact for Home Hub)
-    ====================================== --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 dark:from-purple-800 dark:via-pink-800 dark:to-blue-800 rounded-2xl shadow-2xl p-6 mb-6">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-6xl top-5 right-10" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-rocket"></i>
-            </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center justify-between">
-                {{-- Welcome Section --}}
-                <div class="flex-1">
-                    {{-- Greeting Badge --}}
-                    <div class="inline-flex items-center px-3 py-1 mb-2 glass-fusion rounded-full">
-                        <span class="text-sm text-white" x-text="greeting"></span>
-                    </div>
-
-                    {{-- User Name --}}
-                    <h1 class="text-2xl md:text-3xl font-bold text-white drop-shadow-lg mb-1">
-                        {{ $user->name }}
-                    </h1>
-
-                    {{-- Subtitle --}}
-                    <p class="text-purple-100 text-sm">
-                        เลือกบริการที่คุณต้องการ ✨
-                    </p>
-                </div>
-
-                {{-- Avatar with Glow --}}
-                <a href="{{ route('user.profile') }}"
-                   class="relative flex-shrink-0 group">
-                    {{-- Avatar Container with glass-fusion --}}
-                    <div class="relative w-16 h-16 p-0.5 glass-fusion rounded-full">
-                        <div class="w-full h-full bg-white/20 dark:bg-gray-900/50 rounded-full flex items-center justify-center overflow-hidden">
-                            {{-- ใช้ profile_picture_url accessor ที่รองรับ fallback อัตโนมัติ --}}
-                            <img src="{{ $user->profile_picture_url }}"
-                                 alt="{{ $user->name }}"
-                                 class="w-full h-full object-cover"
-                                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=6366f1&color=fff&size=200';">
-                        </div>
-                    </div>
-
-                    {{-- Notification Badge --}}
-                    @if($unreadNotifications > 0)
-                    <div class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white">
-                        <span class="text-xs font-bold text-white">{{ $unreadNotifications > 9 ? '9+' : $unreadNotifications }}</span>
-                    </div>
-                    @endif
-                </a>
-            </div>
-        </div>
-    </div>
-
-    {{-- ======================================
-        2. Balance Card (Glassmorphism)
-    ====================================== --}}
-    <div class="mb-6">
-        <div class="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-xl">
-            {{-- Background Pattern --}}
-            <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-            <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-12 -mb-12"></div>
-
-            <div class="relative z-10 flex items-center justify-between">
-                {{-- Balance Info --}}
-                <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-white/80 text-sm">💳 ยอดเงินคงเหลือ</span>
-                    </div>
-                    <div class="text-3xl md:text-4xl font-bold text-white">
-                        ฿{{ number_format($walletBalance, 2) }}
-                    </div>
-                    @if($walletGrowth != 0)
-                    <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full {{ $walletGrowth > 0 ? 'bg-white/20 text-white' : 'bg-red-500/30 text-red-100' }}">
-                        <i class="fas {{ $walletGrowth > 0 ? 'fa-arrow-up' : 'fa-arrow-down' }} text-xs"></i>
-                        <span class="text-xs font-semibold">{{ abs($walletGrowth) }}%</span>
-                    </div>
-                    @endif
-                </div>
-
-                {{-- Top Up Button --}}
-                <a href="{{ route('user.wallet.deposit') }}"
-                   class="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-lg rounded-xl text-white font-semibold transition-all duration-200 hover:scale-105">
-                    <i class="fas fa-plus"></i>
-                    <span>เติมเงิน</span>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    {{-- ======================================
-        3. Hub Navigation Cards (8 Hubs - 2 columns)
-    ====================================== --}}
-    <div class="mb-6">
-        <div class="grid grid-cols-2 gap-4">
-            @foreach($hubs as $hub)
-            <a href="{{ $hub['route'] }}"
-               class="group relative overflow-hidden p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
-               style="background: linear-gradient(135deg, {{ $hub['gradient_start'] }}15, {{ $hub['gradient_end'] }}10); border: 1px solid {{ $hub['gradient_start'] }}30;">
-
-                {{-- Shine Effect --}}
-                <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-white/10 to-transparent rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500"></div>
-
-                {{-- Icon Container with Glow --}}
-                <div class="relative mb-3">
-                    {{-- Glow Behind Icon --}}
-                    <div class="absolute inset-0 rounded-2xl blur-xl opacity-50"
-                         style="background: linear-gradient(135deg, {{ $hub['gradient_start'] }}, {{ $hub['gradient_end'] }});"></div>
-
-                    {{-- Icon Box --}}
-                    <div class="relative w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg"
-                         style="background: linear-gradient(135deg, {{ $hub['gradient_start'] }}, {{ $hub['gradient_end'] }});">
-                        <span class="text-2xl">{{ $hub['icon'] }}</span>
-                    </div>
-                </div>
-
-                {{-- Badge (if any) --}}
-                @if($hub['badge'])
-                <div class="absolute top-3 right-3 px-2 py-0.5 rounded-full text-white text-xs font-bold"
-                     style="background: linear-gradient(135deg, #EF4444, #EC4899);">
-                    {{ $hub['badge'] }}
-                </div>
+    {{-- ── การ์ดต้อนรับ (Hero) ─────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:18px; padding:22px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            {{-- Avatar + Notification badge --}}
+            <a href="{{ route('user.profile') }}" style="position:relative; flex-shrink:0; text-decoration:none;">
+                <span class="tp-tile" style="width:58px; height:58px; border-radius:18px; padding:0; overflow:hidden;">
+                    {{-- ใช้ profile_picture_url accessor ที่รองรับ fallback อัตโนมัติ --}}
+                    <img src="{{ $user->profile_picture_url }}"
+                         alt="{{ $user->name }}"
+                         style="width:100%; height:100%; object-fit:cover;"
+                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=6366f1&color=fff&size=200';">
+                </span>
+                @if($unreadNotifications > 0)
+                    <span class="tp-num" style="position:absolute; top:-5px; right:-5px; min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:#d9534f; color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center;">{{ $unreadNotifications > 9 ? '9+' : $unreadNotifications }}</span>
                 @endif
-
-                {{-- Title --}}
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1 line-clamp-1">
-                    {{ $hub['title'] }}
-                </h3>
-
-                {{-- Subtitle --}}
-                <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                    {{ $hub['subtitle'] }}
-                </p>
             </a>
+
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;" x-text="greeting"></div>
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:4px 0 0;">{{ $user->name }} <span style="color:var(--deep1);">✳</span></h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">เลือกบริการที่คุณต้องการ ✨</div>
+            </div>
+
+            <a href="{{ route('user.wallet.deposit') }}" class="tp-btn tp-btn-primary"><i class="fas fa-plus"></i> เติมเงิน</a>
+        </div>
+    </div>
+
+    {{-- ── ยอดเงินคงเหลือ ────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, #5aa07e 18%, transparent), transparent 70%);">
+            <div style="min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:12.5px; color:var(--ink2); font-weight:600;">💳 ยอดเงินคงเหลือ</span>
+                    @if($walletGrowth != 0)
+                        <span class="tp-pill" style="white-space:nowrap; {{ $walletGrowth > 0 ? 'color:#4f9e7e; background:rgba(79,158,126,.14);' : 'color:#d9534f; background:rgba(217,83,79,.14);' }}">
+                            <i class="fas {{ $walletGrowth > 0 ? 'fa-arrow-up' : 'fa-arrow-down' }}" style="font-size:9px;"></i> {{ number_format(abs($walletGrowth), 0) }}%
+                        </span>
+                    @endif
+                </div>
+                <div class="tp-num" style="font-size:clamp(26px,5vw,36px); font-weight:800; margin-top:6px; color:#5aa07e;">฿{{ number_format($walletBalance, 2) }}</div>
+            </div>
+            <a href="{{ route('user.wallet.deposit') }}" class="tp-btn tp-btn-primary"><i class="fas fa-plus"></i> เติมเงิน</a>
+        </div>
+    </div>
+
+    {{-- ── Hub Navigation Cards (8 รายการ) ──────────────────── --}}
+    <div>
+        <div class="tp-section-h" style="margin-bottom:12px;">🧭 บริการทั้งหมด</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;">
+            @foreach($hubs as $hub)
+                <a href="{{ $hub['route'] }}" class="tp-card tp-card-hover" style="position:relative; display:block; padding:16px; text-decoration:none; color:inherit; overflow:hidden;">
+                    {{-- ป้าย (ถ้ามี) --}}
+                    @if(!empty($hub['badge']))
+                        <span class="tp-pill" style="position:absolute; top:12px; right:12px; color:#fff; background:#d9534f; font-size:10px; padding:2px 8px;">{{ $hub['badge'] }}</span>
+                    @endif
+
+                    {{-- ไอคอน (ใช้สี gradient ของ hub เป็นพื้นกระเบื้อง) --}}
+                    <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px; margin-bottom:12px; background:linear-gradient(135deg, {{ $hub['gradient_start'] }}, {{ $hub['gradient_end'] }});">{{ $hub['icon'] }}</span>
+
+                    <div style="font-size:14px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $hub['title'] }}</div>
+                    <div style="font-size:11.5px; color:var(--ink2); margin-top:3px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">{{ $hub['subtitle'] }}</div>
+                </a>
             @endforeach
         </div>
     </div>
 
-    {{-- ======================================
-        4. Quick Actions
-    ====================================== --}}
-    <div class="mb-6">
-        <div class="p-4 rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50">
-            {{-- Section Header --}}
-            <div class="flex items-center gap-2 mb-4">
-                <span class="text-lg">⚡</span>
-                <span class="text-sm font-semibold text-gray-600 dark:text-gray-300">การดำเนินการด่วน</span>
-            </div>
-
-            {{-- Quick Actions Grid - แถวแรก --}}
-            <div class="grid grid-cols-4 gap-3 mb-3">
-                {{-- Dashboard (Stats & Charts) --}}
-                <a href="{{ route('user.dashboard') }}"
-                   class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg">
-                        <span class="text-xl">📊</span>
-                    </div>
-                    <span class="text-xs text-gray-600 dark:text-gray-400 text-center">แดชบอร์ด</span>
-                </a>
-
-                {{-- Transfer --}}
-                <a href="{{ route('user.wallet.transfer') }}"
-                   class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 dark:from-gray-600 dark:to-gray-800 shadow-lg">
-                        <span class="text-xl">💸</span>
-                    </div>
-                    <span class="text-xs text-gray-600 dark:text-gray-400 text-center">โอนเงิน</span>
-                </a>
-
-                {{-- Top Up --}}
-                <a href="{{ route('user.wallet.deposit') }}"
-                   class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 dark:from-gray-600 dark:to-gray-800 shadow-lg">
-                        <span class="text-xl">➕</span>
-                    </div>
-                    <span class="text-xs text-gray-600 dark:text-gray-400 text-center">เติมเงิน</span>
-                </a>
-
-                {{-- History --}}
-                <a href="{{ route('user.wallet.transactions') }}"
-                   class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 dark:from-gray-600 dark:to-gray-800 shadow-lg">
-                        <span class="text-xl">📋</span>
-                    </div>
-                    <span class="text-xs text-gray-600 dark:text-gray-400 text-center">ประวัติ</span>
-                </a>
-            </div>
-
-            {{-- Quick Actions Grid - แถวที่สอง --}}
-            <div class="grid grid-cols-4 gap-3">
-                {{-- QR Scan --}}
-                <a href="#" @click.prevent="showComingSoon('สแกน QR')"
-                   class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 dark:from-gray-600 dark:to-gray-800 shadow-lg">
-                        <span class="text-xl">📷</span>
-                    </div>
-                    <span class="text-xs text-gray-600 dark:text-gray-400 text-center">สแกน QR</span>
-                </a>
-
-                {{-- Withdraw --}}
-                <a href="{{ route('user.wallet.withdraw') }}"
-                   class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 dark:from-gray-600 dark:to-gray-800 shadow-lg">
-                        <span class="text-xl">💵</span>
-                    </div>
-                    <span class="text-xs text-gray-600 dark:text-gray-400 text-center">ถอนเงิน</span>
-                </a>
-
-                {{-- Invite Friends --}}
-                <a href="{{ route('user.mlm.referral') }}"
-                   class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 dark:from-gray-600 dark:to-gray-800 shadow-lg">
-                        <span class="text-xl">👥</span>
-                    </div>
-                    <span class="text-xs text-gray-600 dark:text-gray-400 text-center">เชิญเพื่อน</span>
-                </a>
-
-                {{-- Profile --}}
-                <a href="{{ route('user.profile') }}"
-                   class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 dark:from-gray-600 dark:to-gray-800 shadow-lg">
-                        <span class="text-xl">👤</span>
-                    </div>
-                    <span class="text-xs text-gray-600 dark:text-gray-400 text-center">โปรไฟล์</span>
-                </a>
-            </div>
+    {{-- ── เมนูด่วน ──────────────────────────────────────────── --}}
+    @if(count($quick) > 0)
+    <div>
+        <div class="tp-section-h" style="margin-bottom:12px;">⚡ การดำเนินการด่วน</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:12px;">
+            @foreach($quick as [$emoji, $label, $href, $comingSoon])
+                @if($href)
+                    <a href="{{ $href }}" class="tp-card tp-card-hover" style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 10px; text-decoration:none; color:inherit;">
+                        <span class="tp-tile" style="width:44px; height:44px; border-radius:14px; font-size:20px;">{{ $emoji }}</span>
+                        <span style="font-size:12.5px; font-weight:600; text-align:center;">{{ $label }}</span>
+                    </a>
+                @else
+                    <a href="#" @click.prevent="showComingSoon('{{ $comingSoon }}')" class="tp-card tp-card-hover" style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 10px; text-decoration:none; color:inherit; cursor:pointer;">
+                        <span class="tp-tile" style="width:44px; height:44px; border-radius:14px; font-size:20px;">{{ $emoji }}</span>
+                        <span style="font-size:12.5px; font-weight:600; text-align:center;">{{ $label }}</span>
+                    </a>
+                @endif
+            @endforeach
         </div>
     </div>
+    @endif
 
-    {{-- ======================================
-        5. Stats Summary Cards
-    ====================================== --}}
-    <div class="mb-6">
-        <div class="grid grid-cols-2 gap-4">
-            {{-- Pending Commission --}}
-            <a href="{{ route('user.commissions') }}"
-               class="p-4 rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-money-bill-wave text-blue-500"></i>
-                    </div>
+    {{-- ── การ์ดสรุปสถิติ ───────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
+        {{-- คอมมิชชั่นรอดำเนินการ --}}
+        <a href="{{ route('user.commissions') }}" class="tp-card tp-card-hover" style="display:block; padding:18px; text-decoration:none; color:inherit;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <div style="min-width:0;">
+                    <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">รอดำเนินการ</div>
+                    <div style="font-size:10px; color:var(--ink2); opacity:.8;">Pending Commission</div>
                 </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">รอดำเนินการ</div>
-                <div class="text-xl font-bold text-gray-900 dark:text-white">฿{{ number_format($pendingCommission, 2) }}</div>
-            </a>
+                <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:18px; background:rgba(86,137,184,.16);"><i class="fas fa-money-bill-wave" style="color:#5689b8;"></i></span>
+            </div>
+            <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:10px; color:var(--deep1);">฿{{ number_format($pendingCommission, 2) }}</div>
+        </a>
 
-            {{-- Total Referrals --}}
-            <a href="{{ route('user.mlm.team') }}"
-               class="p-4 rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-users text-purple-500"></i>
-                    </div>
+        {{-- ผู้ใช้ที่แนะนำ --}}
+        <a href="{{ route('user.mlm.team') }}" class="tp-card tp-card-hover" style="display:block; padding:18px; text-decoration:none; color:inherit;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <div style="min-width:0;">
+                    <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">ผู้ใช้ที่แนะนำ</div>
+                    <div style="font-size:10px; color:var(--ink2); opacity:.8;">Total Referrals</div>
                 </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">ผู้ใช้ที่แนะนำ</div>
-                <div class="text-xl font-bold text-gray-900 dark:text-white">{{ number_format($totalReferrals) }} คน</div>
-            </a>
-        </div>
-    </div>
-
-    {{-- ======================================
-        6. Share Referral Link Button
-    ====================================== --}}
-    <div class="mb-6">
-        <a href="{{ route('user.mlm.referral') }}"
-           class="flex items-center justify-center gap-3 w-full p-4 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01]">
-            <i class="fas fa-share-alt"></i>
-            <span>แชร์ลิงก์แนะนำ</span>
+                <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:18px; background:color-mix(in srgb, var(--accent1) 16%, transparent);"><i class="fas fa-users" style="color:var(--deep1);"></i></span>
+            </div>
+            <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:10px;">{{ number_format($totalReferrals) }} คน</div>
         </a>
     </div>
 
-    {{-- ======================================
-        7. Recent Activities
-    ====================================== --}}
-    @if(count($recentActivities) > 0)
-    <div>
-        <div class="p-4 rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50">
-            {{-- Section Header --}}
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                    <span class="text-lg">📊</span>
-                    <span class="text-sm font-semibold text-gray-600 dark:text-gray-300">คอมมิชชั่นล่าสุด</span>
-                </div>
-                <a href="{{ route('user.commissions') }}"
-                   class="text-xs text-purple-600 dark:text-purple-400 hover:underline">
-                    ดูทั้งหมด
-                </a>
-            </div>
+    {{-- ── แชร์ลิงก์แนะนำ ───────────────────────────────────── --}}
+    <a href="{{ route('user.mlm.referral') }}" class="tp-btn tp-btn-primary" style="width:100%; justify-content:center; padding:14px;">
+        <i class="fas fa-share-alt"></i> แชร์ลิงก์แนะนำ
+    </a>
 
-            {{-- Activities List --}}
-            <div class="space-y-3">
-                @foreach($recentActivities as $activity)
+    {{-- ── คอมมิชชั่นล่าสุด ─────────────────────────────────── --}}
+    @if(count($recentActivities) > 0)
+    <div class="tp-card" style="padding:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;">
+            <div class="tp-section-h">📊 คอมมิชชั่นล่าสุด</div>
+            <a href="{{ route('user.commissions') }}" class="tp-btn tp-btn-sm">ดูทั้งหมด</a>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            @foreach($recentActivities as $activity)
                 @php
-                    $statusColors = [
-                        'pending' => ['bg' => 'bg-yellow-500/20', 'text' => 'text-yellow-600 dark:text-yellow-400', 'label' => 'รอดำเนินการ'],
-                        'approved' => ['bg' => 'bg-green-500/20', 'text' => 'text-green-600 dark:text-green-400', 'label' => 'อนุมัติแล้ว'],
-                        'paid' => ['bg' => 'bg-blue-500/20', 'text' => 'text-blue-600 dark:text-blue-400', 'label' => 'จ่ายแล้ว'],
-                        'rejected' => ['bg' => 'bg-red-500/20', 'text' => 'text-red-600 dark:text-red-400', 'label' => 'ปฏิเสธ'],
-                    ];
-                    $status = $statusColors[$activity['status']] ?? $statusColors['pending'];
+                    $st = $activity['status'] ?? 'pending';
+                    $stColor = $st === 'approved' ? '#5aa07e' : ($st === 'paid' ? 'var(--accent1)' : ($st === 'rejected' ? '#d9534f' : '#e0a52e'));
+                    $stIcon  = $st === 'approved' ? 'fa-circle-check' : ($st === 'paid' ? 'fa-money-bill-wave' : ($st === 'rejected' ? 'fa-circle-xmark' : 'fa-clock'));
+                    $stLabel = match($st) { 'approved' => 'อนุมัติแล้ว', 'paid' => 'จ่ายแล้ว', 'rejected' => 'ปฏิเสธ', default => 'รอดำเนินการ' };
+                    $amt     = $activity['amount'] ?? 0;
                 @endphp
-                <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
-                    <div class="flex-1 min-w-0">
-                        <div class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            {{ $activity['description'] ?? 'คอมมิชชั่น' }}
-                        </div>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="text-xs {{ $status['bg'] }} {{ $status['text'] }} px-2 py-0.5 rounded-full">
-                                {{ $status['label'] }}
-                            </span>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ $activity['created_at']->diffForHumans() }}
-                            </span>
+                <div style="display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:13px; box-shadow:var(--inset-sm);">
+                    <span class="tp-tile" style="width:34px; height:34px; border-radius:10px; font-size:14px; background:{{ $stColor }};"><i class="fas {{ $stIcon }}" style="color:#fff;"></i></span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $activity['description'] ?? 'คอมมิชชั่น' }}</div>
+                        <div style="display:flex; align-items:center; gap:8px; margin-top:2px;">
+                            <span class="tp-pill" style="color:#fff; background:{{ $stColor }}; font-size:10px; padding:1px 7px;">{{ $stLabel }}</span>
+                            <span style="font-size:10.5px; color:var(--ink2); white-space:nowrap;">{{ optional($activity['created_at'])->diffForHumans() }}</span>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <div class="text-sm font-bold {{ $activity['amount'] >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
-                            {{ $activity['amount'] >= 0 ? '+' : '' }}฿{{ number_format(abs($activity['amount']), 2) }}
-                        </div>
-                    </div>
+                    <span class="tp-num" style="font-size:13px; font-weight:800; white-space:nowrap; color:{{ $amt >= 0 ? '#5aa07e' : '#d9534f' }};">{{ $amt >= 0 ? '+' : '' }}฿{{ number_format(abs($amt), 2) }}</span>
                 </div>
-                @endforeach
-            </div>
+            @endforeach
         </div>
     </div>
     @endif
 
 </div>
+@endsection
 
 @push('scripts')
 <script>
@@ -401,9 +215,7 @@ function hubNavigation() {
             this.setGreeting();
         },
 
-        /**
-         * ตั้งค่าข้อความทักทายตามเวลา
-         */
+        // ตั้งค่าข้อความทักทายตามเวลา
         setGreeting() {
             const hour = new Date().getHours();
 
@@ -418,46 +230,17 @@ function hubNavigation() {
             }
         },
 
-        /**
-         * แสดง toast สำหรับฟีเจอร์ที่กำลังพัฒนา
-         */
+        // แสดง toast สำหรับฟีเจอร์ที่กำลังพัฒนา
         showComingSoon(feature) {
-            // ใช้ Alpine toast หรือ alert
-            if (window.toast) {
-                window.toast.show('info', `${feature} กำลังพัฒนา`);
+            if (window.showNotification) {
+                window.showNotification(feature + ' กำลังพัฒนา', 'info');
+            } else if (window.toast) {
+                window.toast.show('info', feature + ' กำลังพัฒนา');
             } else {
-                alert(`${feature} กำลังพัฒนา`);
+                alert(feature + ' กำลังพัฒนา');
             }
         }
     }
 }
 </script>
 @endpush
-
-@push('styles')
-<style>
-/* Slow spin animation for avatar glow */
-@keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-.animate-spin-slow {
-    animation: spin-slow 8s linear infinite;
-}
-
-/* Line clamp utilities */
-.line-clamp-1 {
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-</style>
-@endpush
-@endsection
