@@ -1,7 +1,9 @@
 {{--
  | แถบบน (Topbar) — ธีมนวลทองคำ V4
  | อยู่ภายใน x-data="tpShell" จึงใช้ toggleSidebar()/isMobile ได้ และใช้ $store.tp สำหรับธีม
+ | $type = ประเภทแดชบอร์ด (admin/user/seller) — เลือกปลายทางโลโก้/กระเป๋าเงิน/ป้ายแบรนด์
  --}}
+@props(['type' => 'admin'])
 @php
     $user = auth()->user();
     $currentRoute = request()->route() ? request()->route()->getName() : '';
@@ -18,8 +20,15 @@
     // กระเป๋าเงิน THB / เหรียญ Video Coins / ตะกร้า (badge ใน topbar)
     $tpWalletBalance = $user && $user->wallet ? (float) $user->wallet->balance : 0;
     $tpCoinBalance   = $user && $user->videoCoin ? (float) $user->videoCoin->balance : 0;
-    $tpWalletUrl = \Illuminate\Support\Facades\Route::has('admin.wallet.index') ? route('admin.wallet.index')
-                 : (\Illuminate\Support\Facades\Route::has('user.wallet.index') ? route('user.wallet.index') : null);
+    // ปลายทาง/ป้ายตามประเภทแดชบอร์ด
+    $tpDashRoute = $type === 'seller' ? 'seller.dashboard' : ($type === 'user' ? 'user.dashboard' : 'admin.dashboard');
+    $tpBrandSub  = $type === 'seller' ? 'TP-AFFILIATE · ร้านค้า' : ($type === 'user' ? 'TP-AFFILIATE · บัญชีของฉัน' : 'TP-AFFILIATE · หลังบ้าน');
+    $tpSearchPh  = $type === 'admin' ? 'ค้นหาสมาชิก · รหัส · ออเดอร์…' : 'ค้นหาเมนู · บริการ…';
+
+    // กระเป๋าเงิน: แอดมินชี้ห้องแอดมินก่อน, ผู้ใช้/ร้านค้าชี้ห้องผู้ใช้ (กัน user เด้งไปห้องแอดมิน → 403)
+    $tpWalletUrl = $type === 'admin'
+        ? (\Illuminate\Support\Facades\Route::has('admin.wallet.index') ? route('admin.wallet.index') : (\Illuminate\Support\Facades\Route::has('user.wallet.index') ? route('user.wallet.index') : null))
+        : (\Illuminate\Support\Facades\Route::has('user.wallet.index') ? route('user.wallet.index') : null);
     $tpCoinUrl      = \Illuminate\Support\Facades\Route::has('user.video-coins.index') ? route('user.video-coins.index') : null;
     $tpCartUrl      = \Illuminate\Support\Facades\Route::has('cart.index') ? route('cart.index') : null;
     $tpCartCountUrl = \Illuminate\Support\Facades\Route::has('cart.count') ? route('cart.count') : null;
@@ -33,18 +42,18 @@
     </button>
 
     {{-- โลโก้ --}}
-    <a href="{{ route('admin.dashboard') }}" style="display:flex; align-items:center; gap:12px; flex:none; text-decoration:none; color:inherit;">
+    <a href="{{ route($tpDashRoute) }}" style="display:flex; align-items:center; gap:12px; flex:none; text-decoration:none; color:inherit;">
         <span class="tp-tile" style="width:42px; height:42px; border-radius:14px; font-family:var(--tp-font-num); font-weight:800; font-size:15px;">TP</span>
         <span style="line-height:1.2;" class="hidden sm:block">
             <span style="display:block; font-weight:700; font-size:15px; letter-spacing:.2px;">ไทยพรอมต์ แอฟฟิลิเอต</span>
-            <span style="display:block; font-size:10px; color:var(--ink2); font-weight:600; letter-spacing:.3px;">TP-AFFILIATE · หลังบ้าน</span>
+            <span style="display:block; font-size:10px; color:var(--ink2); font-weight:600; letter-spacing:.3px;">{{ $tpBrandSub }}</span>
         </span>
     </a>
 
     {{-- ค้นหา --}}
     <div class="tp-well" style="flex:1; min-width:140px; max-width:420px; display:flex; align-items:center; gap:10px; padding:10px 15px;">
         <i class="fas fa-magnifying-glass" style="color:var(--ink2); font-size:13px;"></i>
-        <input type="text" placeholder="ค้นหาสมาชิก · รหัส · ออเดอร์…" class="tp-input" style="box-shadow:none; background:transparent; padding:0;">
+        <input type="text" placeholder="{{ $tpSearchPh }}" class="tp-input" style="box-shadow:none; background:transparent; padding:0;">
     </div>
 
     {{-- ปุ่มขวา --}}

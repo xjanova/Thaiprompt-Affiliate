@@ -1,12 +1,17 @@
 {{--
  | Sidebar — ธีมนวลทองคำ V4
- | เมนูมาจาก config/menus.php → MenuService::getMenuForRole('admin') (single source of truth)
+ | เมนูมาจาก config/menus.php → MenuService::getMenuForRole($type) (single source of truth)
+ | $type = ประเภทแดชบอร์ด (admin/user/seller) — เลือกชุดเมนู + namespace ปักหมุด
  | อยู่ใน x-data="tpShell" จึงใช้ isMobile / drawer / sidebarHidden / closeDrawer ได้
  | + ระบบปักหมุด (Alpine $store.pinnedMenus, localStorage) + active หน้าย่อยแบบ URL-prefix
  --}}
+@props(['type' => 'admin'])
 @php
     $menuService = app(\App\Services\MenuService::class);
-    $menus = $menuService->getMenuForRole('admin', auth()->user());
+    $menus = $menuService->getMenuForRole($type, auth()->user());
+
+    // ป้ายหัว drawer (มือถือ) ตามประเภทแดชบอร์ด
+    $tpSideTitle = $type === 'seller' ? 'เมนูร้านค้า' : ($type === 'user' ? 'เมนูของฉัน' : 'เมนูหลังบ้าน');
 
     $curRoute = request()->route() ? request()->route()->getName() : null;
     $curUrl   = rtrim(url()->current(), '/');
@@ -48,7 +53,7 @@
 
     {{-- หัว drawer (มือถือ) --}}
     <div x-show="isMobile" x-cloak style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
-        <span style="font-weight:700; font-size:15px;">เมนูหลังบ้าน</span>
+        <span style="font-weight:700; font-size:15px;">{{ $tpSideTitle }}</span>
         <button @click="closeDrawer()" type="button" class="tp-icon-btn" style="width:34px; height:34px; border-radius:11px; color:var(--ink2);"><i class="fas fa-xmark"></i></button>
     </div>
 
@@ -58,21 +63,21 @@
          style="position:relative; flex:1; min-height:0; overflow-y:auto; overflow-x:visible; display:flex; flex-direction:column; gap:7px; padding:2px;">
 
         {{-- ===== 📌 เมนูที่ปักหมุด (ดึงจาก $store.pinnedMenus — localStorage) ===== --}}
-        <div x-show="$store.pinnedMenus.getPinnedMenus('admin').length > 0" x-cloak
+        <div x-show="$store.pinnedMenus.getPinnedMenus(@js($type)).length > 0" x-cloak
              style="display:flex; flex-direction:column; gap:6px;">
             <div style="display:flex; align-items:center; gap:7px; padding:2px 6px 2px;">
                 <i class="fas fa-thumbtack" style="color:var(--accent1); font-size:11px;"></i>
                 <span style="font-size:10.5px; font-weight:700; color:var(--ink2); letter-spacing:.3px;">ปักหมุด</span>
                 <span class="tp-num" style="font-size:10px; color:var(--ink2);"
-                      x-text="'(' + $store.pinnedMenus.getPinnedMenus('admin').length + ')'"></span>
-                <button @click="if (confirm('ยกเลิกปักหมุดทั้งหมด?')) $store.pinnedMenus.clearAll('admin')" type="button"
+                      x-text="'(' + $store.pinnedMenus.getPinnedMenus(@js($type)).length + ')'"></span>
+                <button @click="if (confirm('ยกเลิกปักหมุดทั้งหมด?')) $store.pinnedMenus.clearAll(@js($type))" type="button"
                         title="ยกเลิกปักหมุดทั้งหมด"
                         style="margin-left:auto; border:0; background:transparent; cursor:pointer; color:var(--ink2); opacity:.55; font-size:11px; padding:2px 4px;">
                     <i class="fas fa-xmark"></i>
                 </button>
             </div>
 
-            <template x-for="p in $store.pinnedMenus.getPinnedMenus('admin')" :key="p.key">
+            <template x-for="p in $store.pinnedMenus.getPinnedMenus(@js($type))" :key="p.key">
                 <div style="position:relative;">
                     <a :href="p.url" @click="if (isMobile) closeDrawer()" class="tp-card"
                        :style="{ boxShadow: pinActive(p.url) ? 'var(--inset)' : 'var(--raise)' }"
@@ -83,7 +88,7 @@
                         </span>
                         <span style="font-size:12.5px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" x-text="p.label"></span>
                     </a>
-                    <button type="button" @click.prevent.stop="$store.pinnedMenus.unpin('admin', p.key)" title="ยกเลิกปักหมุด"
+                    <button type="button" @click.prevent.stop="$store.pinnedMenus.unpin(@js($type), p.key)" title="ยกเลิกปักหมุด"
                             style="position:absolute; right:7px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; color:#d9534f; opacity:.55; font-size:11px; padding:4px;">
                         <i class="fas fa-xmark"></i>
                     </button>
@@ -156,8 +161,8 @@
                                         @if(!empty($sub['badge']))<span class="tp-pill tp-pill-soft" style="font-size:8.5px; padding:2px 6px;">{{ $sub['badge'] }}</span>@endif
                                     </a>
                                     <button type="button" title="ปักหมุด" class="tp-pin-btn"
-                                            @click.prevent.stop="$store.pinnedMenus.toggle('admin', @js($surl), @js($sPinData))"
-                                            :class="$store.pinnedMenus.isPinned('admin', @js($surl)) ? 'on' : ''"
+                                            @click.prevent.stop="$store.pinnedMenus.toggle(@js($type),@js($surl), @js($sPinData))"
+                                            :class="$store.pinnedMenus.isPinned(@js($type),@js($surl)) ? 'on' : ''"
                                             style="position:absolute; right:6px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; padding:4px; font-size:9.5px; line-height:1;">
                                         <i class="fas fa-thumbtack"></i>
                                     </button>
@@ -184,8 +189,8 @@
                         </a>
                         @if($gurl && $gurl !== '#')
                             <button type="button" title="ปักหมุด" class="tp-pin-btn"
-                                    @click.prevent.stop="$store.pinnedMenus.toggle('admin', @js($gurl), @js($gPinData))"
-                                    :class="$store.pinnedMenus.isPinned('admin', @js($gurl)) ? 'on' : ''"
+                                    @click.prevent.stop="$store.pinnedMenus.toggle(@js($type),@js($gurl), @js($gPinData))"
+                                    :class="$store.pinnedMenus.isPinned(@js($type),@js($gurl)) ? 'on' : ''"
                                     style="position:absolute; right:9px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; padding:4px; font-size:10px; line-height:1;">
                                 <i class="fas fa-thumbtack"></i>
                             </button>

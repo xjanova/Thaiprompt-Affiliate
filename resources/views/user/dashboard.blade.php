@@ -1,562 +1,304 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'แดชบอร์ด')
 
-@section('content')
-{{--
-/**
- * User Dashboard - Version 3.3 (Arrow X Theme - ลดความฟุ้ง)
- *
- * อัพเกรดใช้ Arrow X Theme Components:
- * - <x-arrow-x.alert-v3> สำหรับ alerts
- * - <x-arrow-x.card-v3> สำหรับ cards
- * - <x-arrow-x.stats.card-3d> สำหรับ stat cards
- * - Glassmorphism effects
- * - Gradient effects (ลด animations ที่รบกวนสายตา)
- * - Full dark mode support
- * - Rank-based styling แบบ subtle
- *
- * @version 3.3.0
- * @date 2025-11-26
- */
---}}
-
 @php
-    $rankLevel = $currentRank?->level ?? 1;
+    use Illuminate\Support\Str;
+    use Illuminate\Support\Facades\Route as RouteFacade;
+
+    // ── ระดับ Rank + ป้ายเหรียญ ────────────────────────────────
+    $rankLevel  = $currentRank?->level ?? 1;
+    $rankBadges = [1 => '🥉', 2 => '🥈', 3 => '🥇', 4 => '💎', 5 => '💠', 6 => '👑', 7 => '🏆', 8 => '⭐'];
+    $rankBadge  = $rankBadges[$rankLevel] ?? '🥉';
+
+    $thMonth = now()->locale('th')->translatedFormat('F');
+    $thYear  = now()->year + 543;
+
+    // ── ลิงก์บัตร VIP (เผื่อชื่อ route ต่างกันระหว่างเวอร์ชัน) ──
+    $idCardUrl = RouteFacade::has('user.id-card') ? route('user.id-card')
+               : (RouteFacade::has('user.ranks.id-card') ? route('user.ranks.id-card') : null);
+
+    // ── สถิติหลัก 4 ใบ (ตรงกับ DashboardController::index) ──────
+    $kpis = [
+        [
+            'label' => 'ยอดเงินในกระเป๋า', 'en' => 'Wallet Balance',
+            'value' => '฿' . number_format($stats['wallet_balance'] ?? 0, 2),
+            'delta' => $stats['wallet_change'] ?? 0,
+            'href'  => route('user.wallet.index'),
+            'spark' => [28, 40, 34, 52, 46, 64, 58, 80, 100],
+        ],
+        [
+            'label' => 'คอมมิชชั่นรอรับ', 'en' => 'Pending Commission',
+            'value' => '฿' . number_format($stats['pending_commission'] ?? 0, 2),
+            'delta' => $stats['commission_change'] ?? 0,
+            'href'  => route('user.commissions'),
+            'spark' => [22, 30, 44, 40, 58, 52, 70, 76, 92],
+        ],
+        [
+            'label' => 'ทีมทั้งหมด', 'en' => 'Total Referrals',
+            'value' => number_format($stats['total_referrals'] ?? 0),
+            'badge' => number_format($stats['active_referrals'] ?? 0) . ' ใช้งาน',
+            'href'  => route('user.mlm.team'),
+            'spark' => [40, 32, 46, 38, 52, 44, 58, 50, 64],
+        ],
+        [
+            'label' => 'คะแนน Rank', 'en' => 'Rank Points',
+            'value' => number_format($stats['rank_points'] ?? 0),
+            'href'  => route('user.ranks.progress'),
+            'spark' => [18, 26, 30, 42, 48, 60, 72, 84, 100],
+        ],
+    ];
+
+    // ── กราฟแท่งรายได้ 12 เดือน (CSS — ไม่ใช้ Chart.js) ────────
+    $chartLabels = $chartData['labels'] ?? [];
+    $chartValues = $chartData['values'] ?? [];
+    $chartMax    = max(1, (float) (count($chartValues) ? max($chartValues) : 1));
+    $chartSum    = array_sum($chartValues);
+
+    // ── เมนูด่วน (กรองเฉพาะ route ที่มีจริง) ────────────────────
+    $quickRaw = [
+        ['💰', 'เติมเงิน',   'user.wallet.deposit'],
+        ['🏧', 'ถอนเงิน',    'user.wallet.withdraw'],
+        ['🤝', 'เชิญเพื่อน', 'user.mlm.referral'],
+        ['📊', 'คอมมิชชั่น', 'user.commissions'],
+        ['🌳', 'ผังทีม',     'user.mlm.genealogy'],
+        ['👤', 'โปรไฟล์',    'user.profile'],
+    ];
+    $quick = [];
+    foreach ($quickRaw as $q) {
+        if (RouteFacade::has($q[2])) {
+            $quick[] = [$q[0], $q[1], route($q[2])];
+        }
+    }
 @endphp
 
-{{-- Rank-based Background Effects --}}
-@include('user.partials.dashboard-rank-effects', ['rankLevel' => $rankLevel])
+@section('content')
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-<div class="space-y-6 relative z-10">
-
-    {{-- ======================================
-        1. KYC Alert (ถ้ายังไม่ทำ KYC) - ใช้ Arrow X Alert
-    ====================================== --}}
-    @if($showKycAlert)
-    <x-arrow-x.alert-v3
-        type="warning"
-        title="ยืนยันตัวตนเพื่อปลดล็อกฟีเจอร์ทั้งหมด"
-        dismissible>
-        <div class="space-y-4">
-            <p class="text-gray-700 dark:text-gray-300">
-                ทำการยืนยันตัวตน (KYC) เพื่อถอนเงิน และใช้งานฟีเจอร์เต็มรูปแบบ
-            </p>
-            <a href="{{ route('user.kyc.index') }}"
-               class="inline-flex items-center gap-2 px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02]">
-                <i class="fas fa-id-card"></i>
-                <span>ยืนยันตัวตนตอนนี้</span>
-            </a>
+    {{-- ── การ์ดต้อนรับ (Hero) ─────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:18px; padding:22px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:58px; height:58px; border-radius:18px; font-size:28px;">{{ $rankBadge }}</span>
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">บัญชีของฉัน · MY ACCOUNT · {{ $thMonth }} {{ $thYear }}</div>
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:4px 0 0;">สวัสดี, {{ $user->name }} <span style="color:var(--deep1);">✳</span></h1>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:9px;">
+                    @if($currentRank)
+                        <span class="tp-pill tp-pill-gold">{{ $rankBadge }} {{ $currentRank->name_th ?? $currentRank->name }}</span>
+                    @else
+                        <span class="tp-pill tp-pill-soft">สมาชิกใหม่</span>
+                    @endif
+                    @if(($kycStatus ?? null) === 'approved')
+                        <span class="tp-pill" style="color:#fff; background:#5aa07e;"><i class="fas fa-circle-check" style="font-size:10px;"></i> ยืนยันตัวตนแล้ว</span>
+                    @elseif(($kycStatus ?? null) === 'pending')
+                        <span class="tp-pill" style="color:#fff; background:#e0a52e;"><i class="fas fa-hourglass-half" style="font-size:10px;"></i> รอตรวจ KYC</span>
+                    @else
+                        <span class="tp-pill" style="color:#fff; background:#d9534f;"><i class="fas fa-id-card" style="font-size:10px;"></i> ยังไม่ยืนยันตัวตน</span>
+                    @endif
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:9px;">
+                @if($idCardUrl && $rankLevel >= 2)
+                    <a href="{{ $idCardUrl }}" class="tp-btn"><i class="fas fa-id-card"></i> บัตร VIP</a>
+                @endif
+                <a href="{{ route('user.wallet.index') }}" class="tp-btn tp-btn-primary"><i class="fas fa-wallet"></i> กระเป๋าเงิน</a>
+            </div>
         </div>
-    </x-arrow-x.alert-v3>
-    @endif
-
-    {{-- ======================================
-        2. Welcome Section - Rank-based Header 🆕
-    ====================================== --}}
-    @include('user.partials.dashboard-rank-header', [
-        'rankLevel' => $rankLevel,
-        'user' => $user,
-        'currentRank' => $currentRank,
-        'kycStatus' => $kycStatus ?? null,
-    ])
-
-    {{-- ======================================
-        3. Stats Cards (4 การ์ดหลัก) - ใช้ Arrow X 3D Stats Cards
-    ====================================== --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {{-- Wallet Balance (ปิด glow ลดความฟุ้ง) --}}
-        <x-arrow-x.stats.card-3d
-            :value="'฿' . number_format($stats['wallet_balance'], 2)"
-            label="ยอดคงเหลือ"
-            icon="fas fa-wallet"
-            gradient="from-green-500 to-emerald-600"
-            :change="$stats['wallet_change'] != 0 ? $stats['wallet_change'] : null"
-            href="{{ route('user.wallet.index') }}"
-            :glow="false"
-        />
-
-        {{-- Pending Commission --}}
-        <x-arrow-x.stats.card-3d
-            :value="'฿' . number_format($stats['pending_commission'], 2)"
-            label="คอมมิชชั่นรอรับ"
-            icon="fas fa-money-bill-wave"
-            gradient="from-blue-500 to-cyan-600"
-            :change="$stats['commission_change'] != 0 ? $stats['commission_change'] : null"
-            href="{{ route('user.commissions') }}"
-            :glow="false"
-        />
-
-        {{-- Total Referrals --}}
-        <x-arrow-x.stats.card-3d
-            :value="number_format($stats['total_referrals'])"
-            label="ทีมทั้งหมด"
-            icon="fas fa-users"
-            gradient="from-purple-500 to-pink-600"
-            :change="$stats['referrals_change'] != 0 ? $stats['referrals_change'] : null"
-            href="{{ route('user.mlm.team') }}"
-            :glow="false"
-        />
-
-        {{-- Rank Points --}}
-        @php
-            $rankCardGradients = [
-                1 => 'from-amber-600 to-orange-600',
-                2 => 'from-gray-400 to-slate-500',
-                3 => 'from-yellow-400 to-amber-500',
-                4 => 'from-slate-300 to-gray-400',
-                5 => 'from-cyan-400 to-blue-500',
-                6 => 'from-yellow-400 to-orange-500',
-                7 => 'from-purple-500 to-violet-600',
-                8 => 'from-pink-500 to-purple-600',
-            ];
-            $rankCardGradient = $rankCardGradients[$rankLevel] ?? 'from-yellow-500 to-orange-600';
-        @endphp
-        <x-arrow-x.stats.card-3d
-            :value="number_format($stats['rank_points'])"
-            label="คะแนน Rank"
-            icon="fas fa-star"
-            :gradient="$rankCardGradient"
-            href="{{ route('user.ranks.progress') }}"
-            :glow="false"
-        />
     </div>
 
-    {{-- ======================================
-        4. Main Content Grid
-    ====================================== --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {{-- Left Column (2 cols) - Chart & Quick Actions --}}
-        <div class="lg:col-span-2 space-y-6">
-
-            {{-- Revenue Chart - ใช้ Arrow X Card (ปิด glow ลดความฟุ้ง) --}}
-            <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <i class="fas fa-chart-line text-blue-600 dark:text-blue-400"></i>
-                    <span>รายได้ 12 เดือนย้อนหลัง</span>
-                </h2>
-                <div class="h-80">
-                    <canvas id="revenueChart"></canvas>
-                </div>
-            </x-arrow-x.card-v3>
-
-            {{-- Quick Actions - ใช้ Arrow X Card (ลด animations) --}}
-            <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <i class="fas fa-bolt text-yellow-500"></i>
-                    <span>เมนูด่วน</span>
-                </h2>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {{-- Deposit --}}
-                    <a href="{{ route('user.wallet.deposit') }}"
-                       class="group flex flex-col items-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white/70 dark:hover:bg-gray-700/70 transition-colors duration-150">
-                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mb-3 shadow-md">
-                            <i class="fas fa-plus text-white text-lg"></i>
-                        </div>
-                        <span class="text-sm font-semibold text-gray-900 dark:text-white text-center">เติมเงิน</span>
-                    </a>
-
-                    {{-- Withdraw --}}
-                    <a href="{{ route('user.wallet.withdraw') }}"
-                       class="group flex flex-col items-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white/70 dark:hover:bg-gray-700/70 transition-colors duration-150">
-                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mb-3 shadow-md">
-                            <i class="fas fa-hand-holding-usd text-white text-lg"></i>
-                        </div>
-                        <span class="text-sm font-semibold text-gray-900 dark:text-white text-center">ถอนเงิน</span>
-                    </a>
-
-                    {{-- Invite --}}
-                    <a href="{{ route('user.mlm.referral') }}"
-                       class="group flex flex-col items-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white/70 dark:hover:bg-gray-700/70 transition-colors duration-150">
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center mb-3 shadow-md">
-                            <i class="fas fa-user-plus text-white text-lg"></i>
-                        </div>
-                        <span class="text-sm font-semibold text-gray-900 dark:text-white text-center">เชิญเพื่อน</span>
-                    </a>
-
-                    {{-- Profile --}}
-                    <a href="{{ route('user.profile') }}"
-                       class="group flex flex-col items-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white/70 dark:hover:bg-gray-700/70 transition-colors duration-150">
-                        <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mb-3 shadow-md">
-                            <i class="fas fa-user-edit text-white text-lg"></i>
-                        </div>
-                        <span class="text-sm font-semibold text-gray-900 dark:text-white text-center">โปรไฟล์</span>
-                    </a>
-                </div>
-            </x-arrow-x.card-v3>
+    {{-- ── แจ้งเตือน KYC (ถ้ายังไม่ยืนยัน/ถูกปฏิเสธ) ─────────── --}}
+    @if($showKycAlert)
+    <div class="tp-card" style="padding:16px 18px; display:flex; flex-wrap:wrap; align-items:center; gap:14px;
+                box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+        <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:18px; background:#e0a52e;"><i class="fas fa-id-card" style="color:#fff;"></i></span>
+        <div style="flex:1; min-width:200px;">
+            <div style="font-weight:700; font-size:14px;">ยืนยันตัวตนเพื่อปลดล็อกฟีเจอร์ทั้งหมด</div>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">ทำ KYC เพื่อถอนเงินและใช้งานได้เต็มรูปแบบ</div>
         </div>
+        <a href="{{ route('user.kyc.index') }}" class="tp-btn tp-btn-primary">ยืนยันตัวตนตอนนี้</a>
+    </div>
+    @endif
 
-        {{-- Right Column (1 col) - Retention, Rank Progress & Activities --}}
-        <div class="space-y-6">
-
-            {{-- สถานะรักษายอด (Volume Retention) --}}
-            @if($retentionStatus && $mlmMember)
-            <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <span class="text-2xl">💓</span>
-                    <span>สถานะรักษายอด</span>
-                </h2>
-
-                @if(!($retentionStatus['retention_enabled'] ?? true))
-                    {{-- ระบบรักษายอดปิดอยู่ --}}
-                    <div class="p-4 glass-neu rounded-xl text-center">
-                        <div class="text-gray-400 dark:text-gray-500 text-sm">ระบบรักษายอดปิดอยู่</div>
-                        <div class="text-green-600 dark:text-green-400 font-bold mt-1">Active ทุกคน</div>
+    {{-- ── KPI 4 ใบ ─────────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px;">
+        @foreach($kpis as $k)
+            <a href="{{ $k['href'] }}" class="tp-card tp-card-hover" style="display:block; padding:18px; text-decoration:none; color:inherit;">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+                    <div style="min-width:0;">
+                        <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $k['label'] }}</div>
+                        <div style="font-size:10px; color:var(--ink2); opacity:.8;">{{ $k['en'] }}</div>
                     </div>
-                @else
-                    @php
-                        $statusColor = $retentionStatus['color'] ?? 'gray';
-                        $statusText = match($retentionStatus['status'] ?? 'inactive') {
-                            'active' => 'รักษายอดสำเร็จ',
-                            'grace_period' => 'อยู่ในช่วงผ่อนผัน',
-                            default => 'ยังไม่ถึงเกณฑ์',
-                        };
-                        $statusEmoji = match($retentionStatus['status'] ?? 'inactive') {
-                            'active' => '✅',
-                            'grace_period' => '⏳',
-                            default => '⚠️',
-                        };
-                        $pvPercentage = $retentionStatus['pv_percentage'] ?? 0;
-                    @endphp
-
-                    {{-- สถานะ Badge --}}
-                    <div class="text-center mb-4">
-                        <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold
-                            {{ $statusColor === 'green' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : '' }}
-                            {{ $statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : '' }}
-                            {{ $statusColor === 'red' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : '' }}
-                        ">
-                            {{ $statusEmoji }} {{ $statusText }}
-                        </span>
-                    </div>
-
-                    {{-- PV Progress --}}
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="text-gray-600 dark:text-gray-400">PV เดือนนี้</span>
-                            <span class="font-bold {{ $pvPercentage >= 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white' }}">
-                                {{ number_format($retentionStatus['monthly_pv'] ?? 0, 0) }} / {{ number_format($retentionStatus['required_pv'] ?? 100, 0) }}
-                            </span>
-                        </div>
-                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden shadow-inner">
-                            <div class="h-full rounded-full transition-all duration-500
-                                {{ $pvPercentage >= 100 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : ($pvPercentage >= 50 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' : 'bg-gradient-to-r from-red-400 to-rose-500') }}"
-                                style="width: {{ min($pvPercentage, 100) }}%">
-                            </div>
-                        </div>
-
-                        @if(($retentionStatus['remaining_pv'] ?? 0) > 0)
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="text-gray-600 dark:text-gray-400">ต้องการเพิ่ม</span>
-                            <span class="font-bold text-orange-600 dark:text-orange-400">{{ number_format($retentionStatus['remaining_pv'], 0) }} PV</span>
-                        </div>
-                        @endif
-                    </div>
-
-                    {{-- Grace Period Warning --}}
-                    @if($retentionStatus['in_grace_period'] ?? false)
-                    <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl">
-                        <div class="flex items-center text-yellow-700 dark:text-yellow-400 text-xs">
-                            <i class="fas fa-clock mr-2"></i>
-                            <span>ช่วงผ่อนผัน: เหลืออีก {{ max(0, ($retentionStatus['grace_days'] ?? 7) - ($retentionStatus['days_since_last_purchase'] ?? 0)) }} วัน</span>
-                        </div>
-                    </div>
-                    @endif
-
-                    {{-- Inactive Warning --}}
-                    @if(($retentionStatus['status'] ?? '') === 'inactive')
-                    <div class="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl">
-                        <div class="text-red-700 dark:text-red-400 text-xs">
-                            <i class="fas fa-exclamation-triangle mr-1"></i>
-                            <strong>PV ไม่ถึงเกณฑ์!</strong> คอมมิชชันจะถูกระงับจนกว่าจะซื้อสินค้าเพิ่ม
-                        </div>
-                    </div>
-                    @endif
-                @endif
-            </x-arrow-x.card-v3>
-            @endif
-
-            {{-- Rank Progress - ใช้ Arrow X Card --}}
-            @if($currentRank || $nextRank)
-            @php
-                $rankBadges = [
-                    1 => '🥉', 2 => '🥈', 3 => '🥇', 4 => '💎',
-                    5 => '💠', 6 => '👑', 7 => '🏆', 8 => '⭐',
-                ];
-                $rankBadge = $rankBadges[$rankLevel] ?? '🥉';
-
-                $progressGradients = [
-                    1 => 'from-amber-500 to-orange-500',
-                    2 => 'from-gray-400 to-slate-500',
-                    3 => 'from-yellow-400 to-amber-500',
-                    4 => 'from-slate-300 via-purple-300 to-pink-300',
-                    5 => 'from-cyan-400 via-blue-400 to-sky-500',
-                    6 => 'from-yellow-400 via-amber-400 to-orange-400',
-                    7 => 'from-purple-500 via-violet-500 to-indigo-500',
-                    8 => 'from-pink-500 via-purple-500 to-cyan-500',
-                ];
-                $progressGradient = $progressGradients[$rankLevel] ?? 'from-purple-500 to-pink-500';
-            @endphp
-            <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <span class="text-2xl">{{ $rankBadge }}</span>
-                    <span>ความคืบหน้า Rank</span>
-                    @if($rankLevel >= 5)
-                        <span class="ml-auto text-xs px-2 py-1 bg-gradient-to-r {{ $progressGradient }} text-white rounded-full shadow">
-                            Level {{ $rankLevel }}
+                    @if(!empty($k['badge']))
+                        <span class="tp-pill tp-pill-soft" style="white-space:nowrap;">{{ $k['badge'] }}</span>
+                    @elseif(isset($k['delta']) && $k['delta'] != 0)
+                        <span class="tp-pill" style="white-space:nowrap; {{ $k['delta'] > 0 ? 'color:#4f9e7e; background:rgba(79,158,126,.14);' : 'color:#d9534f; background:rgba(217,83,79,.14);' }}">
+                            {{ $k['delta'] > 0 ? '↑' : '↓' }} {{ number_format(abs($k['delta']), 1) }}%
                         </span>
                     @endif
-                </h2>
-
-                {{-- Current Rank --}}
-                @if($currentRank)
-                <div class="mb-6 p-4 glass-neu rounded-xl">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Rank ปัจจุบัน</div>
-                    <div class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <span class="text-2xl">{{ $rankBadge }}</span>
-                        <span>{{ $currentRank->name_th ?? $currentRank->name }}</span>
-                        @if($rankLevel >= 8)
-                            <span class="text-xs bg-pink-500/20 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded-full">
-                                ตำนาน
-                            </span>
-                        @endif
-                    </div>
                 </div>
-                @endif
-
-                {{-- Next Rank Progress --}}
-                @if($nextRank)
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <i class="fas fa-arrow-up text-green-500"></i>
-                            ถัดไป: {{ $nextRank->name_th ?? $nextRank->name }}
-                        </span>
-                        <span class="text-sm font-bold text-purple-600 dark:text-purple-400">
-                            {{ number_format($rankProgress, 1) }}%
-                        </span>
-                    </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden mb-2 shadow-inner">
-                        <div class="h-full bg-gradient-to-r {{ $progressGradient }} rounded-full transition-all duration-500 shadow-lg"
-                             style="width: {{ $rankProgress }}%">
-                        </div>
-                    </div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                        <i class="fas fa-info-circle"></i>
-                        ต้องการอีก <span class="font-bold">{{ number_format($pointsNeeded) }}</span> คะแนน
-                    </p>
+                <div class="tp-num" style="font-size:28px; font-weight:800; margin:10px 0 12px; letter-spacing:.4px;">{{ $k['value'] }}</div>
+                <div class="tp-spark">
+                    @foreach($k['spark'] as $i => $h)
+                        <i style="height:{{ $h }}%; animation-delay:{{ $i * 0.05 }}s;"></i>
+                    @endforeach
                 </div>
-                @else
-                <div class="text-center py-8 glass-neu rounded-xl">
-                    <div class="text-6xl mb-3">👑</div>
-                    <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                        คุณอยู่ที่ Rank สูงสุดแล้ว!
-                    </p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        ยินดีด้วย! คุณคือสุดยอดสมาชิก
-                    </p>
-                </div>
-                @endif
+            </a>
+        @endforeach
+    </div>
 
-                {{-- Virtual ID Card Link --}}
-                @if($rankLevel >= 2)
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <a href="{{ route('user.id-card') }}"
-                       class="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r {{ $progressGradient }} text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg hover:shadow-xl">
-                        <i class="fas fa-id-card"></i>
-                        <span>ดูบัตรประจำตัว VIP</span>
-                    </a>
-                </div>
-                @endif
-            </x-arrow-x.card-v3>
-            @endif
-
-            {{-- ======================================
-                Video Rewards Section - สรุปยอดคะแนนชัดเจน
-            ====================================== --}}
-            @if($user->videoLevel || $user->videoCoin)
-            <div class="space-y-4">
-                {{-- Header --}}
-                <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <span class="text-2xl">🎬</span>
-                        <span>ภารกิจดูคลิป</span>
-                    </h2>
-                    <a href="{{ route('user.video-missions.index') }}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-                        <span>ดูทั้งหมด</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </a>
-                </div>
-
-                {{-- Stats Summary Component - แสดงสรุปยอดชัดเจน --}}
-                <x-video-reward.stats-summary :user="$user" compact />
+    {{-- ── กราฟรายได้ 12 เดือน (CSS bars) ───────────────────── --}}
+    <div class="tp-card" style="padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;">
+            <div>
+                <div style="font-weight:700; font-size:15px;">รายได้ · รายเดือน</div>
+                <div style="font-size:11px; color:var(--ink2);">Earnings — 12 เดือนล่าสุด</div>
             </div>
-            @endif
-
-            {{-- Recent Activities - ใช้ Arrow X Card (ปิด glow ลดความฟุ้ง) --}}
-            <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <i class="fas fa-history text-blue-600 dark:text-blue-400"></i>
-                    <span>กิจกรรมล่าสุด</span>
-                </h2>
-
-                <div class="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
-                    @forelse($recentActivities as $activity)
-                    @php
-                        $iconMap = [
-                            'pending' => ['icon' => 'fas fa-clock', 'color' => 'text-yellow-500', 'bg' => 'bg-yellow-100 dark:bg-yellow-900/30'],
-                            'approved' => ['icon' => 'fas fa-check-circle', 'color' => 'text-green-500', 'bg' => 'bg-green-100 dark:bg-green-900/30'],
-                            'paid' => ['icon' => 'fas fa-money-bill-wave', 'color' => 'text-blue-500', 'bg' => 'bg-blue-100 dark:bg-blue-900/30'],
-                            'rejected' => ['icon' => 'fas fa-times-circle', 'color' => 'text-red-500', 'bg' => 'bg-red-100 dark:bg-red-900/30'],
-                        ];
-                        $statusInfo = $iconMap[$activity['status']] ?? $iconMap['pending'];
-
-                        $titleMap = [
-                            'pending' => 'คอมมิชชั่นรอดำเนินการ',
-                            'approved' => 'คอมมิชชั่นได้รับการอนุมัติ',
-                            'paid' => 'คอมมิชชั่นจ่ายแล้ว',
-                            'rejected' => 'คอมมิชชั่นถูกปฏิเสธ',
-                        ];
-                        $title = $titleMap[$activity['status']] ?? 'กิจกรรม';
-                    @endphp
-
-                    <div class="flex items-start gap-3 p-3 glass-neu rounded-xl hover:shadow-md transition-shadow duration-200">
-                        <div class="flex-shrink-0 w-10 h-10 {{ $statusInfo['bg'] }} rounded-full flex items-center justify-center shadow-md">
-                            <i class="{{ $statusInfo['icon'] }} {{ $statusInfo['color'] }}"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $title }}</div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400 font-mono">฿{{ number_format($activity['amount'], 2) }}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-500 flex items-center gap-1">
-                                <i class="far fa-clock"></i>
-                                {{ $activity['created_at']->diffForHumans() }}
-                            </div>
-                        </div>
+            <span class="tp-pill tp-pill-gold tp-num">฿{{ number_format($chartSum, 0) }}</span>
+        </div>
+        @if(count($chartValues) > 0 && $chartSum > 0)
+        <div class="tp-bars">
+            @foreach($chartValues as $i => $val)
+                <div class="col" title="{{ $chartLabels[$i] ?? '' }}: ฿{{ number_format($val, 2) }}">
+                    <div class="stack" style="height:100%;">
+                        <span class="bar a" style="height:{{ max(3, round(($val / $chartMax) * 100)) }}%;"></span>
                     </div>
-                    @empty
-                    <div class="text-center py-12 glass-neu rounded-xl">
-                        <i class="fas fa-inbox text-5xl text-gray-300 dark:text-gray-600 mb-3"></i>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">ยังไม่มีกิจกรรม</p>
-                    </div>
-                    @endforelse
+                    <span class="lbl">{{ Str::limit($chartLabels[$i] ?? '', 6, '') }}</span>
                 </div>
-            </x-arrow-x.card-v3>
+            @endforeach
+        </div>
+        @else
+            <div style="text-align:center; color:var(--ink2); padding:46px 0; font-size:13px;">ยังไม่มีรายได้ในช่วง 12 เดือนที่ผ่านมา</div>
+        @endif
+    </div>
+
+    {{-- ── เมนูด่วน ──────────────────────────────────────────── --}}
+    @if(count($quick) > 0)
+    <div>
+        <div class="tp-section-h" style="margin-bottom:12px;">⚡ เมนูด่วน</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px;">
+            @foreach($quick as [$emoji, $label, $href])
+                <a href="{{ $href }}" class="tp-card tp-card-hover" style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 10px; text-decoration:none; color:inherit;">
+                    <span class="tp-tile" style="width:44px; height:44px; border-radius:14px; font-size:20px;">{{ $emoji }}</span>
+                    <span style="font-size:12.5px; font-weight:600; text-align:center;">{{ $label }}</span>
+                </a>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    {{-- ── 3 คอลัมน์: รักษายอด / ความคืบหน้า Rank / กิจกรรม ─── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px;">
+
+        {{-- สถานะรักษายอด (Volume Retention) --}}
+        @if($retentionStatus && $mlmMember)
+        <div class="tp-card" style="padding:18px;">
+            <div class="tp-section-h" style="margin-bottom:14px;">💓 สถานะรักษายอด</div>
+            @if(!($retentionStatus['retention_enabled'] ?? true))
+                <div style="text-align:center; padding:18px; border-radius:14px; box-shadow:var(--inset-sm);">
+                    <div style="font-size:13px; color:var(--ink2);">ระบบรักษายอดปิดอยู่</div>
+                    <div style="color:#4f9e7e; font-weight:700; margin-top:4px;">Active ทุกคน</div>
+                </div>
+            @else
+                @php
+                    $rtStatus = $retentionStatus['status'] ?? 'inactive';
+                    $rtText   = match($rtStatus) { 'active' => 'รักษายอดสำเร็จ', 'grace_period' => 'อยู่ในช่วงผ่อนผัน', default => 'ยังไม่ถึงเกณฑ์' };
+                    $rtEmoji  = match($rtStatus) { 'active' => '✅', 'grace_period' => '⏳', default => '⚠️' };
+                    $rtColor  = match($retentionStatus['color'] ?? 'gray') { 'green' => '#5aa07e', 'yellow' => '#e0a52e', 'red' => '#d9534f', default => 'var(--ink2)' };
+                    $pvPct    = min(100, (float) ($retentionStatus['pv_percentage'] ?? 0));
+                @endphp
+                <div style="text-align:center; margin-bottom:14px;">
+                    <span class="tp-pill" style="color:#fff; background:{{ $rtColor }}; font-size:12px; padding:5px 12px;">{{ $rtEmoji }} {{ $rtText }}</span>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; font-size:12.5px; margin-bottom:7px;">
+                    <span style="color:var(--ink2);">PV เดือนนี้</span>
+                    <span class="tp-num" style="font-weight:700;">{{ number_format($retentionStatus['monthly_pv'] ?? 0, 0) }} / {{ number_format($retentionStatus['required_pv'] ?? 100, 0) }}</span>
+                </div>
+                <div style="height:12px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
+                    <div style="height:100%; width:{{ $pvPct }}%; border-radius:20px; background:linear-gradient(90deg, {{ $rtColor }}, color-mix(in srgb, {{ $rtColor }} 60%, #fff)); transition:width .5s ease;"></div>
+                </div>
+                @if(($retentionStatus['remaining_pv'] ?? 0) > 0)
+                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:12.5px; margin-top:9px;">
+                        <span style="color:var(--ink2);">ต้องการเพิ่ม</span>
+                        <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ number_format($retentionStatus['remaining_pv'], 0) }} PV</span>
+                    </div>
+                @endif
+                @if($retentionStatus['in_grace_period'] ?? false)
+                    <div style="margin-top:12px; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm); font-size:12px; color:#e0a52e;">
+                        <i class="fas fa-clock"></i> ช่วงผ่อนผัน: เหลืออีก {{ max(0, ($retentionStatus['grace_days'] ?? 7) - ($retentionStatus['days_since_last_purchase'] ?? 0)) }} วัน
+                    </div>
+                @elseif($rtStatus === 'inactive')
+                    <div style="margin-top:12px; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm); font-size:12px; color:#d9534f;">
+                        <i class="fas fa-triangle-exclamation"></i> <strong>PV ไม่ถึงเกณฑ์!</strong> คอมมิชชันจะถูกระงับจนกว่าจะซื้อสินค้าเพิ่ม
+                    </div>
+                @endif
+            @endif
+        </div>
+        @endif
+
+        {{-- ความคืบหน้า Rank --}}
+        @if($currentRank || $nextRank)
+        <div class="tp-card" style="padding:18px;">
+            <div class="tp-section-h" style="margin-bottom:14px;">{{ $rankBadge }} ความคืบหน้า Rank</div>
+            @if($currentRank)
+                <div style="padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm); margin-bottom:14px;">
+                    <div style="font-size:11.5px; color:var(--ink2);">Rank ปัจจุบัน</div>
+                    <div style="font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; margin-top:3px;">
+                        <span style="font-size:20px;">{{ $rankBadge }}</span> {{ $currentRank->name_th ?? $currentRank->name }}
+                        @if($rankLevel >= 8)<span class="tp-pill tp-pill-soft" style="font-size:9px;">ตำนาน</span>@endif
+                    </div>
+                </div>
+            @endif
+            @if($nextRank)
+                <div style="display:flex; align-items:center; justify-content:space-between; font-size:12.5px; margin-bottom:7px;">
+                    <span style="color:var(--ink2);"><i class="fas fa-arrow-up" style="color:#4f9e7e;"></i> ถัดไป: {{ $nextRank->name_th ?? $nextRank->name }}</span>
+                    <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ number_format($rankProgress, 1) }}%</span>
+                </div>
+                <div style="height:14px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
+                    <div style="height:100%; width:{{ min(100, $rankProgress) }}%; border-radius:20px; background:linear-gradient(90deg, var(--accent1), var(--accent2)); transition:width .5s ease;"></div>
+                </div>
+                <div style="font-size:11.5px; color:var(--ink2); margin-top:8px;"><i class="fas fa-circle-info"></i> ต้องการอีก <span class="tp-num" style="font-weight:700;">{{ number_format($pointsNeeded) }}</span> คะแนน</div>
+            @else
+                <div style="text-align:center; padding:24px 0;">
+                    <div style="font-size:46px;">👑</div>
+                    <div style="font-weight:700; margin-top:6px;">คุณอยู่ที่ Rank สูงสุดแล้ว!</div>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">ยินดีด้วย คุณคือสุดยอดสมาชิก</div>
+                </div>
+            @endif
+            @if($idCardUrl && $rankLevel >= 2)
+                <a href="{{ $idCardUrl }}" class="tp-btn tp-btn-primary" style="width:100%; justify-content:center; margin-top:14px;"><i class="fas fa-id-card"></i> ดูบัตรประจำตัว VIP</a>
+            @endif
+        </div>
+        @endif
+
+        {{-- กิจกรรมล่าสุด --}}
+        <div class="tp-card" style="padding:18px;">
+            <div class="tp-section-h" style="margin-bottom:14px;">🔔 กิจกรรมล่าสุด</div>
+            <div style="display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto;">
+                @forelse($recentActivities as $activity)
+                    @php
+                        $st = $activity['status'] ?? 'pending';
+                        $stColor = $st === 'approved' ? '#5aa07e' : ($st === 'paid' ? 'var(--accent1)' : ($st === 'rejected' ? '#d9534f' : '#e0a52e'));
+                        $stIcon  = $st === 'approved' ? 'fa-circle-check' : ($st === 'paid' ? 'fa-money-bill-wave' : ($st === 'rejected' ? 'fa-circle-xmark' : 'fa-clock'));
+                        $stTitle = match($st) { 'approved' => 'คอมมิชชั่นได้รับอนุมัติ', 'paid' => 'คอมมิชชั่นจ่ายแล้ว', 'rejected' => 'คอมมิชชั่นถูกปฏิเสธ', default => 'คอมมิชชั่นรอดำเนินการ' };
+                    @endphp
+                    <div style="display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:13px; box-shadow:var(--inset-sm);">
+                        <span class="tp-tile" style="width:34px; height:34px; border-radius:10px; font-size:14px; background:{{ $stColor }};"><i class="fas {{ $stIcon }}" style="color:#fff;"></i></span>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $stTitle }}</div>
+                            <div class="tp-num" style="font-size:12px; color:var(--deep1); font-weight:700;">฿{{ number_format($activity['amount'] ?? 0, 2) }}</div>
+                        </div>
+                        <span style="font-size:10.5px; color:var(--ink2); white-space:nowrap;">{{ optional($activity['created_at'])->diffForHumans() }}</span>
+                    </div>
+                @empty
+                    <div style="text-align:center; color:var(--ink2); padding:30px 0; font-size:13px;">
+                        <div style="font-size:38px; opacity:.5;">📭</div>
+                        ยังไม่มีกิจกรรม
+                    </div>
+                @endforelse
+            </div>
         </div>
     </div>
 
 </div>
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
-<script>
-/**
- * Dashboard Chart.js Initialization
- *
- * แสดงกราฟรายได้ 12 เดือนย้อนหลัง พร้อม dark mode support
- */
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('revenueChart');
-    if (!ctx) return;
-
-    const chartData = @json($chartData);
-    const isDark = document.documentElement.classList.contains('dark');
-
-    // Chart instance
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartData.labels,
-            datasets: [{
-                label: 'รายได้ (บาท)',
-                data: chartData.values,
-                borderColor: isDark ? 'rgb(147, 51, 234)' : 'rgb(139, 92, 246)',
-                backgroundColor: isDark
-                    ? 'rgba(147, 51, 234, 0.1)'
-                    : 'rgba(139, 92, 246, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: isDark ? 'rgb(147, 51, 234)' : 'rgb(139, 92, 246)',
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                    titleColor: isDark ? '#fff' : '#111827',
-                    bodyColor: isDark ? '#d1d5db' : '#6b7280',
-                    borderColor: isDark ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)',
-                    borderWidth: 1,
-                    padding: 12,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return '฿' + context.parsed.y.toLocaleString('th-TH', {minimumFractionDigits: 2});
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: isDark ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 1)',
-                        drawBorder: false,
-                    },
-                    ticks: {
-                        color: isDark ? '#9ca3af' : '#6b7280',
-                        callback: function(value) {
-                            return '฿' + value.toLocaleString('th-TH');
-                        }
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false,
-                    },
-                    ticks: {
-                        color: isDark ? '#9ca3af' : '#6b7280',
-                    }
-                }
-            }
-        }
-    });
-
-    // อัพเดท chart เมื่อเปลี่ยน theme
-    window.addEventListener('user-theme-changed', (event) => {
-        const newIsDark = event.detail.isDark;
-
-        // อัพเดทสี
-        chart.data.datasets[0].borderColor = newIsDark ? 'rgb(147, 51, 234)' : 'rgb(139, 92, 246)';
-        chart.data.datasets[0].backgroundColor = newIsDark ? 'rgba(147, 51, 234, 0.1)' : 'rgba(139, 92, 246, 0.1)';
-        chart.data.datasets[0].pointBackgroundColor = newIsDark ? 'rgb(147, 51, 234)' : 'rgb(139, 92, 246)';
-
-        // อัพเดท grid และ ticks
-        chart.options.scales.y.grid.color = newIsDark ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 1)';
-        chart.options.scales.y.ticks.color = newIsDark ? '#9ca3af' : '#6b7280';
-        chart.options.scales.x.ticks.color = newIsDark ? '#9ca3af' : '#6b7280';
-
-        // อัพเดท tooltip
-        chart.options.plugins.tooltip.backgroundColor = newIsDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-        chart.options.plugins.tooltip.titleColor = newIsDark ? '#fff' : '#111827';
-        chart.options.plugins.tooltip.bodyColor = newIsDark ? '#d1d5db' : '#6b7280';
-        chart.options.plugins.tooltip.borderColor = newIsDark ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)';
-
-        // Redraw chart
-        chart.update();
-    });
-});
-</script>
-@endpush
-
 @endsection
