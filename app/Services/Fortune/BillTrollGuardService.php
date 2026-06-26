@@ -97,6 +97,35 @@ class BillTrollGuardService
     }
 
     /**
+     * 🔊 (2026-06-26) นับ "บิลค้างไม่จ่าย" ตลอดประวัติ (all-time) — ใช้กับ consent audio-code gate
+     *
+     * ต่างจาก strikeCount(): ไม่จำกัดหน้าต่าง 3 วัน + ไม่ reset หลังการจ่าย = "ประวัติ" รวมทั้งหมด
+     * นิยาม "บิลจริงที่ไม่จ่าย" เหมือน strikeCount: is_paid=false + มี unique_payment_amount_id (ออกบิล/QR จริง)
+     *   + conversation_status=COMPLETED (จบรอบแล้ว) + ไม่ใช่ package_switch (เปลี่ยนแพคเกจ ไม่นับ)
+     *
+     * @param  string  $userId  PSID / LINE userId (match ทั้ง facebook_user_id + platform_user_id)
+     */
+    public function unpaidBillCountAllTime(string $userId): int
+    {
+        if ($userId === '') {
+            return 0;
+        }
+
+        return FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->where('is_paid', false)
+            ->whereNotNull('unique_payment_amount_id')
+            ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+            ->where(function ($q) {
+                $q->whereNull('conversation_state->cancellation_reason')
+                    ->orWhere('conversation_state->cancellation_reason', '!=', 'package_switch');
+            })
+            ->count();
+    }
+
+    /**
      * 📢 คำเตือนแนบบิลใหม่ — คืน null ถ้ายังไม่เข้าเกณฑ์ (strike < 2)
      *
      * เรียกตอนสร้างบิล (Deep createPaymentBill / Celtic doStartCelticCrossFlow)

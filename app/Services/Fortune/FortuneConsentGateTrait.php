@@ -105,9 +105,10 @@ trait FortuneConsentGateTrait
             'reading_id' => $reading?->id,
         ]);
 
-        // 🔊 (2026-06-26) โหมดบังคับฟังเสียงกติกา + กรอกรหัสท้ายคลิป (ถ้าเปิด)
+        // 🔊 (2026-06-26) โหมดบังคับฟังเสียงกติกา + กรอกรหัสท้ายคลิป
+        //   เปิดเฉพาะเมื่อเข้าเกณฑ์บิลค้างไม่จ่าย (shouldUseAudioCode) — 0 = ทุกคน / N = เฉพาะคนค้างบิล >= N
         //   สร้างเสียง/รหัสไม่สำเร็จ → degrade เป็นกล่องกติกาปกติ (ห้ามบล็อกลูกค้า)
-        if ($this->consentAudioCodeEnabled()) {
+        if ($this->shouldUseAudioCode($uid)) {
             $codeGate = $this->buildConsentAudioCodeGate($uid, $tier, $reading);
             if ($codeGate !== null) {
                 return $codeGate;
@@ -280,6 +281,40 @@ trait FortuneConsentGateTrait
     {
         return (bool) ($this->settings->enable_consent_audio_code ?? false)
             && $this->settings->isConsentEnabled();
+    }
+
+    /**
+     * 🔊 (2026-06-26) ควร "บังคับรหัสเสียง" กับ uid นี้ไหม — ตามเกณฑ์บิลค้างไม่จ่าย
+     *
+     * - toggle ปิด → false
+     * - consent_audio_code_min_unpaid_bills = 0 → true (บังคับทุกบิลทุกคน)
+     * - N > 0 → true เฉพาะลูกค้าที่มีประวัติบิลค้างไม่จ่าย >= N (ลูกค้าใหม่/ดี = ไม่บังคับ)
+     * - นับไม่ได้/ไม่มี uid → false (degrade ปลอดภัย ไม่เพิ่ม friction ให้คนที่ระบุตัวไม่ได้)
+     */
+    protected function shouldUseAudioCode(string $uid): bool
+    {
+        if (! $this->consentAudioCodeEnabled()) {
+            return false;
+        }
+
+        $threshold = (int) ($this->settings->consent_audio_code_min_unpaid_bills ?? 0);
+        if ($threshold <= 0) {
+            return true; // 0 = ทุกบิลทุกคน
+        }
+
+        if (empty($uid)) {
+            return false;
+        }
+
+        try {
+            $unpaid = app(\App\Services\Fortune\BillTrollGuardService::class)->unpaidBillCountAllTime($uid);
+
+            return $unpaid >= $threshold;
+        } catch (\Throwable $e) {
+            Log::warning('🔊 ConsentCode: นับบิลค้างไม่สำเร็จ → ไม่บังคับรหัส (degrade)', ['user_id' => $uid, 'error' => $e->getMessage()]);
+
+            return false;
+        }
     }
 
     /**

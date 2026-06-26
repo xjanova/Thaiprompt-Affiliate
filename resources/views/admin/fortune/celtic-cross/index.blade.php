@@ -145,6 +145,15 @@
                         </select>
                         <span style="font-size:11px; color:var(--ink2);">(ffmpeg รวมไฟล์ให้เนียน — เลือก provider ไหนก็ได้)</span>
                     </div>
+                    <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:12px; color:var(--ink2); font-weight:600;">บังคับเฉพาะคนที่มีบิลค้างไม่จ่าย ≥</span>
+                        <input type="number" name="consent_audio_code_min_unpaid_bills" min="0" max="99" step="1"
+                               value="{{ (int) ($settings->consent_audio_code_min_unpaid_bills ?? 0) }}"
+                               onclick="event.preventDefault();" onmousedown="event.stopPropagation();"
+                               style="width:70px; padding:6px 10px; border-radius:8px; font-size:12.5px; border:1px solid var(--sd); background:var(--bg);">
+                        <span style="font-size:12px; color:var(--ink2); font-weight:600;">บิล</span>
+                        <span style="font-size:11px; color:var(--ink2);">(0 = บังคับ <b>ทุกบิลทุกคน</b> / เช่น 2 = เฉพาะคนเคยสร้างบิลแล้วไม่จ่าย ≥ 2 บิล — ลูกค้าใหม่/ดีไม่ต้องกรอก)</span>
+                    </div>
                 </div>
             </label>
         </div>
