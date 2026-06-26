@@ -1,209 +1,158 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'โอนเงิน')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Blue-Cyan-Teal for Transfer) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 dark:from-blue-800 dark:via-cyan-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-exchange-alt"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-paper-plane text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">โอนเงิน</h1>
-                    <p class="text-blue-100 text-lg mt-1">โอนเงินให้ผู้ใช้อื่นในระบบ</p>
+    {{-- ── Hero: หัวข้อโอนเงิน + ยอดที่โอนได้ ──────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px;">
+                <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:23px;"><i class="fas fa-paper-plane" style="color:#fff;"></i></span>
+                <div style="flex:1; min-width:200px;">
+                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">โอนเงิน</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">โอนเงินให้ผู้ใช้อื่นในระบบ</div>
                 </div>
             </div>
 
-            {{-- Available Balance --}}
-            <div class="mt-6 glass-fusion rounded-xl p-6">
-                <p class="text-blue-100 text-sm mb-1">ยอดเงินที่สามารถโอนได้</p>
-                <p class="text-5xl font-bold text-white drop-shadow-lg">฿{{ number_format($wallet->balance, 2) }}</p>
+            {{-- ยอดเงินที่สามารถโอนได้ --}}
+            <div style="margin-top:18px; padding:18px 22px; border-radius:18px; box-shadow:var(--inset);">
+                <div style="font-size:12.5px; color:var(--ink2);">ยอดเงินที่สามารถโอนได้</div>
+                <div class="tp-num" style="font-size:clamp(30px,6vw,46px); font-weight:800; line-height:1.1; margin-top:4px; color:var(--deep1);">฿{{ number_format($wallet->balance, 2) }}</div>
             </div>
         </div>
     </div>
 
-    <!-- Transfer Form -->
-    <x-arrow-x.card-v3 class="p-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">แบบฟอร์มโอนเงิน</h2>
+    {{-- ── แบบฟอร์มโอนเงิน ──────────────────────────────────── --}}
+    <div class="tp-card" style="padding:22px;">
+        <div class="tp-section-h" style="margin-bottom:18px;">📤 แบบฟอร์มโอนเงิน</div>
 
-        <form method="POST" action="{{ route('user.wallet.transfer.submit') }}" class="space-y-6">
+        <form method="POST" action="{{ route('user.wallet.transfer.submit') }}" style="display:flex; flex-direction:column; gap:18px;">
             @csrf
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Wallet Address ผู้รับ</label>
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">Wallet Address ผู้รับ</label>
                 <input type="text"
                        name="wallet_address"
                        required
-                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="tp-input"
                        placeholder="ระบุ Wallet Address ของผู้รับ (เช่น TPW...)">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Wallet Address เริ่มต้นด้วย TPW ตามด้วยอักขระ 16 ตัว</p>
+                <p style="font-size:11px; color:var(--ink2); margin-top:6px;">Wallet Address เริ่มต้นด้วย TPW ตามด้วยอักขระ 16 ตัว</p>
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน (บาท)</label>
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">จำนวนเงิน (บาท)</label>
                 <input type="number"
                        name="amount"
                        step="0.01"
                        min="1"
                        max="{{ $wallet->balance }}"
                        required
-                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="tp-input"
                        placeholder="ระบุจำนวนเงินที่ต้องการโอน">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ยอดเงินสูงสุดที่โอนได้: ฿{{ number_format($wallet->balance, 2) }}</p>
+                <p style="font-size:11px; color:var(--ink2); margin-top:6px;">ยอดเงินสูงสุดที่โอนได้: ฿{{ number_format($wallet->balance, 2) }}</p>
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">PIN กระเป๋าเงิน (6 หลัก)</label>
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">PIN กระเป๋าเงิน (6 หลัก)</label>
                 <input type="password"
                        name="pin"
                        maxlength="6"
                        pattern="[0-9]{6}"
                        required
-                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="tp-input"
                        placeholder="ระบุ PIN 6 หลัก">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">กรอก PIN เพื่อยืนยันการโอนเงิน</p>
+                <p style="font-size:11px; color:var(--ink2); margin-top:6px;">กรอก PIN เพื่อยืนยันการโอนเงิน</p>
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">รายละเอียด (ถ้ามี)</label>
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">รายละเอียด (ถ้ามี)</label>
                 <textarea name="description"
                           rows="3"
                           maxlength="255"
-                          class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          class="tp-input"
                           placeholder="รายละเอียดการโอนเงิน (ไม่เกิน 255 ตัวอักษร)"></textarea>
             </div>
 
-            <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
-                <h4 class="font-semibold text-blue-900 mb-2">⚠️ ข้อควรระวัง</h4>
-                <ul class="space-y-1 text-sm text-blue-900 dark:text-blue-100">
-                    <li>• ตรวจสอบ Wallet Address ของผู้รับให้ถูกต้อง</li>
-                    <li>• การโอนเงินจะเกิดขึ้นทันทีและไม่สามารถยกเลิกได้</li>
-                    <li>• ไม่สามารถโอนเงินให้ตัวเองได้</li>
-                    <li>• เก็บรักษา PIN ของคุณเป็นความลับ</li>
+            {{-- ข้อควรระวัง --}}
+            <div style="padding:16px 18px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+                <div style="font-weight:700; font-size:13.5px; color:#e0a52e; margin-bottom:8px;">⚠️ ข้อควรระวัง</div>
+                <ul style="margin:0; padding-left:18px; display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--ink);">
+                    <li>ตรวจสอบ Wallet Address ของผู้รับให้ถูกต้อง</li>
+                    <li>การโอนเงินจะเกิดขึ้นทันทีและไม่สามารถยกเลิกได้</li>
+                    <li>ไม่สามารถโอนเงินให้ตัวเองได้</li>
+                    <li>เก็บรักษา PIN ของคุณเป็นความลับ</li>
                 </ul>
             </div>
 
-            <div class="flex gap-3">
-                <a href="{{ route('user.wallet.index') }}"
-                   class="flex-1 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-300 transition text-center">
+            <div style="display:flex; flex-wrap:wrap; gap:12px;">
+                <a href="{{ route('user.wallet.index') }}" class="tp-btn" style="flex:1; min-width:140px; text-align:center; justify-content:center;">
                     ยกเลิก
                 </a>
-                <button type="submit"
-                        class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
+                <button type="submit" class="tp-btn tp-btn-primary" style="flex:1; min-width:140px; justify-content:center;">
                     ยืนยันการโอนเงิน
                 </button>
             </div>
         </form>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- How to Find Wallet Address -->
-    <x-arrow-x.card-v3 class="p-6">
-        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">❓ จะหา Wallet Address ของผู้รับได้อย่างไร?</h3>
+    {{-- ── วิธีหา Wallet Address ผู้รับ ─────────────────────────── --}}
+    <div class="tp-card" style="padding:22px;">
+        <div class="tp-section-h" style="margin-bottom:16px;">❓ จะหา Wallet Address ของผู้รับได้อย่างไร?</div>
 
-        <div class="space-y-4 text-sm text-gray-700 dark:text-gray-300">
-            <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                    1
-                </div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; align-items:flex-start; gap:12px;">
+                <span class="tp-tile" style="width:32px; height:32px; border-radius:10px; font-size:14px; flex-shrink:0;"><span style="color:#fff; font-weight:800;">1</span></span>
                 <div>
-                    <p class="font-semibold mb-1">ขอจากผู้รับโดยตรง</p>
-                    <p class="text-gray-600 dark:text-gray-400">ผู้รับสามารถดู Wallet Address ได้ที่หน้ากระเป๋าเงินของตน</p>
+                    <div style="font-weight:700; font-size:13.5px; margin-bottom:2px;">ขอจากผู้รับโดยตรง</div>
+                    <div style="font-size:12.5px; color:var(--ink2);">ผู้รับสามารถดู Wallet Address ได้ที่หน้ากระเป๋าเงินของตน</div>
                 </div>
             </div>
 
-            <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                    2
-                </div>
+            <div style="display:flex; align-items:flex-start; gap:12px;">
+                <span class="tp-tile" style="width:32px; height:32px; border-radius:10px; font-size:14px; flex-shrink:0;"><span style="color:#fff; font-weight:800;">2</span></span>
                 <div>
-                    <p class="font-semibold mb-1">ตรวจสอบความถูกต้อง</p>
-                    <p class="text-gray-600 dark:text-gray-400">Wallet Address จะเริ่มต้นด้วย "TPW" และมีความยาวทั้งหมด 19 ตัวอักษร</p>
+                    <div style="font-weight:700; font-size:13.5px; margin-bottom:2px;">ตรวจสอบความถูกต้อง</div>
+                    <div style="font-size:12.5px; color:var(--ink2);">Wallet Address จะเริ่มต้นด้วย "TPW" และมีความยาวทั้งหมด 19 ตัวอักษร</div>
                 </div>
             </div>
 
-            <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                    3
-                </div>
-                <div>
-                    <p class="font-semibold mb-1">ตัวอย่าง</p>
-                    <code class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded text-indigo-600">{{ $wallet->wallet_address }}</code>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1">นี่คือ Wallet Address ของคุณ</p>
+            <div style="display:flex; align-items:flex-start; gap:12px;">
+                <span class="tp-tile" style="width:32px; height:32px; border-radius:10px; font-size:14px; flex-shrink:0;"><span style="color:#fff; font-weight:800;">3</span></span>
+                <div style="min-width:0;">
+                    <div style="font-weight:700; font-size:13.5px; margin-bottom:6px;">ตัวอย่าง</div>
+                    <code class="tp-num" style="display:inline-block; padding:7px 12px; border-radius:10px; box-shadow:var(--inset-sm); font-size:12px; color:var(--deep1); word-break:break-all;">{{ $wallet->wallet_address }}</code>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:6px;">นี่คือ Wallet Address ของคุณ</div>
                 </div>
             </div>
         </div>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Recent Transfers -->
-    <x-arrow-x.card-v3 class="p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">📊 การโอนเงินล่าสุด</h3>
-            <a href="{{ route('user.wallet.transactions') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
-                ดูทั้งหมด →
-            </a>
+    {{-- ── การโอนเงินล่าสุด ─────────────────────────────────── --}}
+    <div class="tp-card" style="padding:22px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;">
+            <div class="tp-section-h">📊 การโอนเงินล่าสุด</div>
+            <a href="{{ route('user.wallet.transactions') }}" class="tp-btn tp-btn-sm">ดูทั้งหมด →</a>
         </div>
-
-        <div class="text-center text-gray-500 dark:text-gray-400 py-8">
-            <span class="text-4xl block mb-2">💸</span>
-            <p class="text-sm">คลิก "ดูทั้งหมด" เพื่อดูประวัติการโอนเงิน</p>
+        <div style="text-align:center; padding:32px 20px; color:var(--ink2);">
+            <div style="font-size:46px; opacity:.5;">💸</div>
+            <div style="font-size:12.5px; margin-top:8px;">คลิก "ดูทั้งหมด" เพื่อดูประวัติการโอนเงิน</div>
         </div>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Instructions -->
-    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
-        <h3 class="text-xl font-bold mb-4">💡 คำแนะนำ</h3>
-        <ul class="space-y-2 text-sm">
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>ตรวจสอบ Wallet Address ของผู้รับให้ถูกต้องทุกครั้ง</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>การโอนเงินจะเกิดขึ้นทันทีหลังยืนยัน</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>ตรวจสอบยอดเงินคงเหลือก่อนทำรายการ</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>รักษา PIN ของคุณไว้เป็นความลับ</span>
-            </li>
-        </ul>
+    {{-- ── คำแนะนำ ──────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div class="tp-section-h" style="margin-bottom:14px;">💡 คำแนะนำ</div>
+            <ul style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; font-size:12.5px; color:var(--ink);">
+                <li style="display:flex; align-items:flex-start; gap:8px;"><span style="color:#5aa07e;">✅</span><span>ตรวจสอบ Wallet Address ของผู้รับให้ถูกต้องทุกครั้ง</span></li>
+                <li style="display:flex; align-items:flex-start; gap:8px;"><span style="color:#5aa07e;">✅</span><span>การโอนเงินจะเกิดขึ้นทันทีหลังยืนยัน</span></li>
+                <li style="display:flex; align-items:flex-start; gap:8px;"><span style="color:#5aa07e;">✅</span><span>ตรวจสอบยอดเงินคงเหลือก่อนทำรายการ</span></li>
+                <li style="display:flex; align-items:flex-start; gap:8px;"><span style="color:#5aa07e;">✅</span><span>รักษา PIN ของคุณไว้เป็นความลับ</span></li>
+            </ul>
+        </div>
     </div>
 </div>
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
 @endsection

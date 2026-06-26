@@ -1,182 +1,158 @@
 {{--
-    QR Code สำหรับรับเงิน - Wallet QR Code Display
+    QR Code สำหรับรับเงิน - Wallet QR Code Display (Theme V4 นวลทองคำ)
     แสดง QR Code เพื่อให้ผู้อื่นสแกนโอนเงินมาได้
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'QR Code รับเงิน')
 
+@php
+    // ── ขั้นตอนการใช้งาน (สีตามลำดับ semantic hex) ──────────────
+    $qrSteps = [
+        ['1', '#5689b8', 'แสดง QR Code', 'ให้ผู้โอนเงินสแกน QR Code นี้'],
+        ['2', '#e0a52e', 'ผู้โอนกรอกจำนวนเงิน', 'หรือระบุจำนวนเงินไว้ใน QR'],
+        ['3', '#5aa07e', 'รับเงินทันที', 'เงินจะเข้ากระเป๋าเมื่อยืนยัน'],
+    ];
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6" x-data="qrCodeManager()">
-    {{-- Premium Hero Header (Indigo-Purple-Pink for QR Code) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;" x-data="qrCodeManager()">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-qrcode"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-qrcode text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">QR Code รับเงิน</h1>
-                    <p class="text-indigo-100 text-lg mt-1">แสดง QR Code ให้คนอื่นสแกนเพื่อโอนเงินให้คุณ</p>
+    {{-- ── หัวข้อ (Hero) ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px;">
+                @if(\Illuminate\Support\Facades\Route::has('user.wallet.index'))
+                    <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+                @endif
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-qrcode" style="color:#fff;"></i></span>
+                <div style="flex:1; min-width:200px;">
+                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">QR Code รับเงิน</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">แสดง QR Code ให้คนอื่นสแกนเพื่อโอนเงินให้คุณ</div>
                 </div>
             </div>
 
-            {{-- Balance Display --}}
-            <div class="mt-6 glass-fusion rounded-xl p-6">
-                <p class="text-indigo-100 text-sm mb-1">ยอดเงินคงเหลือ</p>
-                <p class="text-5xl font-bold text-white drop-shadow-lg">฿{{ number_format($wallet->balance, 2) }}</p>
+            {{-- ยอดเงินคงเหลือ --}}
+            <div style="margin-top:16px; padding:18px 20px; border-radius:18px; box-shadow:var(--inset);">
+                <div style="font-size:12.5px; color:var(--ink2);">ยอดเงินคงเหลือ</div>
+                <div class="tp-num" style="font-size:clamp(30px,6vw,46px); font-weight:800; line-height:1.1; margin-top:4px; color:var(--deep1);">฿{{ number_format($wallet->balance, 2) }}</div>
             </div>
         </div>
     </div>
 
-    <!-- QR Code Display -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-        <div class="text-center">
-            <!-- User Info -->
-            <div class="mb-6">
-                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mb-4">
+    {{-- ── QR Code Display ───────────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+        <div style="text-align:center;">
+            {{-- ข้อมูลผู้ใช้ --}}
+            <div style="margin-bottom:20px;">
+                <div class="tp-tile" style="width:74px; height:74px; border-radius:50%; font-size:30px; font-weight:800; margin:0 auto 12px; color:#fff;">
                     {{ mb_substr(auth()->user()->name, 0, 1) }}
                 </div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ auth()->user()->name }}</h2>
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-mono">{{ $wallet->wallet_address }}</p>
+                <h2 style="font-size:18px; font-weight:800; margin:0;">{{ auth()->user()->name }}</h2>
+                <div class="tp-num" style="font-size:12px; color:var(--ink2); margin-top:4px; word-break:break-all;">{{ $wallet->wallet_address }}</div>
             </div>
 
-            <!-- QR Code Container -->
-            <div class="inline-block bg-white p-6 rounded-2xl shadow-lg border-4 border-indigo-100 dark:border-indigo-900">
-                <div id="qrcode" class="mx-auto"></div>
+            {{-- กล่อง QR Code (พื้นขาวคงที่เพื่อให้สแกนได้เสมอ) --}}
+            <div style="display:inline-block; background:#fff; padding:20px; border-radius:18px; box-shadow:var(--inset); border:4px solid color-mix(in srgb, var(--accent1) 30%, transparent);">
+                <div id="qrcode" style="margin:0 auto;"></div>
             </div>
 
-            <!-- Amount Input (Optional) -->
-            <div class="mt-6 max-w-xs mx-auto">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{-- ระบุจำนวนเงิน (ไม่บังคับ) --}}
+            <div style="margin-top:20px; max-width:280px; margin-left:auto; margin-right:auto; text-align:left;">
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">
                     ระบุจำนวนเงินที่ต้องการรับ (ไม่บังคับ)
                 </label>
-                <div class="relative">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">฿</span>
+                <div style="position:relative;">
+                    <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--ink2); font-weight:600;">฿</span>
                     <input type="number"
                            x-model="requestedAmount"
                            @input="updateQrCode()"
                            min="0"
                            step="0.01"
-                           class="w-full pl-10 pr-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           class="tp-input"
+                           style="padding-left:30px;"
                            placeholder="0.00">
                 </div>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                <button @click="downloadQr()"
-                        class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition flex items-center justify-center gap-2">
-                    <i class="fas fa-download"></i>
-                    ดาวน์โหลด QR
+            {{-- ปุ่มดำเนินการ --}}
+            <div style="margin-top:20px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+                <button type="button" @click="downloadQr()" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-download" style="margin-right:6px;"></i>ดาวน์โหลด QR
                 </button>
-                <button @click="shareQr()"
-                        class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition flex items-center justify-center gap-2">
-                    <i class="fas fa-share-alt"></i>
-                    แชร์ QR Code
+                <button type="button" @click="shareQr()" class="tp-btn">
+                    <i class="fas fa-share-alt" style="margin-right:6px;"></i>แชร์ QR Code
                 </button>
-                <button @click="copyWalletAddress()"
-                        class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-medium transition flex items-center justify-center gap-2">
-                    <i class="fas fa-copy"></i>
-                    คัดลอก Address
+                <button type="button" @click="copyWalletAddress()" class="tp-btn">
+                    <i class="fas fa-copy" style="margin-right:6px;"></i>คัดลอก Address
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Fee Information -->
-    <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border border-amber-200 dark:border-amber-700 rounded-xl p-6">
-        <h3 class="font-bold text-amber-800 dark:text-amber-200 mb-3 flex items-center gap-2">
-            <i class="fas fa-info-circle"></i>
-            ข้อมูลค่าธรรมเนียม
-        </h3>
-        <div class="space-y-2 text-sm text-amber-700 dark:text-amber-300">
+    {{-- ── ข้อมูลค่าธรรมเนียม ─────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+        <div class="tp-section-h" style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-info-circle" style="color:#e0a52e;"></i>ข้อมูลค่าธรรมเนียม
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--ink);">
             @if($transferFee > 0)
-                <p>
-                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                    ค่าธรรมเนียมการโอน:
-                    @if($transferFeeType === 'percentage')
-                        {{ number_format($transferFee, 2) }}% ต่อรายการ
-                    @else
-                        ฿{{ number_format($transferFee, 2) }} ต่อรายการ
-                    @endif
-                </p>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-check-circle" style="color:#5aa07e;"></i>
+                    <span>ค่าธรรมเนียมการโอน:
+                        @if($transferFeeType === 'percentage')
+                            <span class="tp-num">{{ number_format($transferFee, 2) }}%</span> ต่อรายการ
+                        @else
+                            <span class="tp-num">฿{{ number_format($transferFee, 2) }}</span> ต่อรายการ
+                        @endif
+                    </span>
+                </div>
             @else
-                <p>
-                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                    ไม่มีค่าธรรมเนียมการโอน (ฟรี!)
-                </p>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-check-circle" style="color:#5aa07e;"></i>
+                    <span>ไม่มีค่าธรรมเนียมการโอน (ฟรี!)</span>
+                </div>
             @endif
-            <p>
-                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                ยอดโอนขั้นต่ำ: ฿{{ number_format($minTransferAmount, 2) }}
-            </p>
-            <p>
-                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                รับเงินทันทีหลังผู้โอนยืนยันรายการ
-            </p>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-check-circle" style="color:#5aa07e;"></i>
+                <span>ยอดโอนขั้นต่ำ: <span class="tp-num">฿{{ number_format($minTransferAmount, 2) }}</span></span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-check-circle" style="color:#5aa07e;"></i>
+                <span>รับเงินทันทีหลังผู้โอนยืนยันรายการ</span>
+            </div>
         </div>
     </div>
 
-    <!-- How to Use -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-        <h3 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <i class="fas fa-lightbulb text-yellow-500"></i>
-            วิธีใช้งาน
-        </h3>
-        <div class="grid gap-4 md:grid-cols-3">
-            <div class="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <div class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold shrink-0">1</div>
-                <div>
-                    <p class="font-medium text-gray-900 dark:text-white">แสดง QR Code</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">ให้ผู้โอนเงินสแกน QR Code นี้</p>
+    {{-- ── วิธีใช้งาน ─────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-lightbulb" style="color:#e0a52e;"></i>วิธีใช้งาน
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;">
+            @foreach($qrSteps as [$no, $color, $title, $desc])
+                <div style="display:flex; align-items:flex-start; gap:11px; padding:14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                    <span class="tp-tile" style="width:32px; height:32px; border-radius:50%; font-size:15px; font-weight:800; flex-shrink:0; color:#fff; background:{{ $color }};">{{ $no }}</span>
+                    <div style="min-width:0;">
+                        <div style="font-size:13px; font-weight:700;">{{ $title }}</div>
+                        <div style="font-size:12px; color:var(--ink2); margin-top:2px;">{{ $desc }}</div>
+                    </div>
                 </div>
-            </div>
-            <div class="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <div class="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold shrink-0">2</div>
-                <div>
-                    <p class="font-medium text-gray-900 dark:text-white">ผู้โอนกรอกจำนวนเงิน</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">หรือระบุจำนวนเงินไว้ใน QR</p>
-                </div>
-            </div>
-            <div class="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <div class="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold shrink-0">3</div>
-                <div>
-                    <p class="font-medium text-gray-900 dark:text-white">รับเงินทันที</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">เงินจะเข้ากระเป๋าเมื่อยืนยัน</p>
-                </div>
-            </div>
+            @endforeach
         </div>
     </div>
 </div>
 
 @push('scripts')
-<!-- QRCode.js Library (qrcodejs - เหมือนกับหน้า recruit ที่ใช้งานได้) -->
+{{-- QRCode.js Library (qrcodejs - เหมือนกับหน้า recruit ที่ใช้งานได้) --}}
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
     function qrCodeManager() {
         return {
             requestedAmount: {{ $requestedAmount ?? 'null' }},
-            walletAddress: '{{ $wallet->wallet_address }}',
-            userName: '{{ auth()->user()->name }}',
+            walletAddress: @json($wallet->wallet_address),
+            userName: @json(auth()->user()->name),
             qrInstance: null,
 
             init() {
@@ -219,7 +195,7 @@
             downloadQr() {
                 const qrElement = this.getQrCanvas();
                 if (!qrElement) {
-                    this.showNotification('ไม่พบ QR Code', 'error');
+                    this.notify('ไม่พบ QR Code', 'error');
                     return;
                 }
 
@@ -233,13 +209,13 @@
                     link.href = qrElement.src;
                 }
                 link.click();
-                this.showNotification('ดาวน์โหลด QR Code สำเร็จ!', 'success');
+                this.notify('ดาวน์โหลด QR Code สำเร็จ!', 'success');
             },
 
             async shareQr() {
                 const qrElement = this.getQrCanvas();
                 if (!qrElement) {
-                    this.showNotification('ไม่พบ QR Code', 'error');
+                    this.notify('ไม่พบ QR Code', 'error');
                     return;
                 }
 
@@ -280,7 +256,7 @@
             async copyWalletAddress() {
                 try {
                     await navigator.clipboard.writeText(this.walletAddress);
-                    this.showNotification('คัดลอก Wallet Address สำเร็จ!', 'success');
+                    this.notify('คัดลอก Wallet Address สำเร็จ!', 'success');
                 } catch (err) {
                     // Fallback for older browsers
                     const textArea = document.createElement('textarea');
@@ -289,40 +265,20 @@
                     textArea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
-                    this.showNotification('คัดลอก Wallet Address สำเร็จ!', 'success');
+                    this.notify('คัดลอก Wallet Address สำเร็จ!', 'success');
                 }
             },
 
-            showNotification(message, type = 'info') {
-                // Simple toast notification
-                const toast = document.createElement('div');
-                toast.className = `fixed bottom-20 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg text-white z-50 ${
-                    type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-indigo-600'
-                }`;
-                toast.textContent = message;
-                document.body.appendChild(toast);
-
-                setTimeout(() => {
-                    toast.classList.add('opacity-0', 'transition-opacity');
-                    setTimeout(() => toast.remove(), 300);
-                }, 2000);
+            notify(message, type = 'info') {
+                // ใช้ระบบ toast กลางของ Theme V4
+                if (window.showNotification) {
+                    window.showNotification(message, type);
+                } else {
+                    console.log('[' + type + '] ' + message);
+                }
             }
         }
     }
 </script>
-@endpush
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
 @endpush
 @endsection

@@ -1,168 +1,144 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ชำระเงินเติมเงิน')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Green-Emerald-Teal for Payment Selection) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-credit-card"></i>
+    {{-- ── Hero: เลือกวิธีชำระเงิน ─────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <a href="{{ route('user.wallet.topup') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-hand-holding-usd" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">เลือกวิธีชำระเงิน</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">เลือกช่องทางการชำระเงินที่สะดวกสำหรับคุณ</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── ข้อมูลรายการ ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;">
+            <div style="min-width:0;">
+                <div style="font-size:11.5px; font-weight:600; color:var(--ink2);">รหัสรายการ</div>
+                <div class="tp-num" style="font-size:17px; font-weight:800; margin-top:2px;">{{ $transaction->transaction_id }}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:11.5px; font-weight:600; color:var(--ink2);">จำนวนเงินที่ต้องชำระ</div>
+                <div class="tp-num" style="font-size:clamp(26px,5vw,34px); font-weight:800; line-height:1.1; margin-top:2px; color:var(--deep1);">฿{{ number_format($transaction->amount, 2) }}</div>
             </div>
         </div>
 
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <a href="{{ route('user.wallet.topup') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-hand-holding-usd text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">เลือกวิธีชำระเงิน</h1>
-                    <p class="text-green-100 text-lg mt-1">เลือกช่องทางการชำระเงินที่สะดวกสำหรับคุณ</p>
+        {{-- นับเวลาถอยหลัง --}}
+        <div style="margin-top:16px; padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e; display:flex; align-items:center; gap:12px;">
+            <span style="font-size:24px;">⏰</span>
+            <div>
+                <div style="font-size:12px; color:var(--ink2);">กรุณาชำระเงินภายใน</div>
+                <div class="tp-num" id="countdown" style="font-size:17px; font-weight:800; color:#e0a52e;">
+                    {{ $transaction->expired_at ? $transaction->expired_at->diffForHumans() : '30 นาที' }}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Transaction Info -->
-    <x-arrow-x.card-v3 class="p-6">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">รหัสรายการ</p>
-                <p class="text-lg font-mono font-bold text-gray-900 dark:text-gray-100">{{ $transaction->transaction_id }}</p>
-            </div>
-            <div class="text-right">
-                <p class="text-sm text-gray-500 dark:text-gray-400">จำนวนเงินที่ต้องชำระ</p>
-                <p class="text-3xl font-bold text-green-600 dark:text-green-400">฿{{ number_format($transaction->amount, 2) }}</p>
-            </div>
-        </div>
-
-        <!-- Countdown Timer -->
-        <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-            <div class="flex items-center gap-3">
-                <span class="text-2xl">⏰</span>
-                <div>
-                    <p class="text-sm text-yellow-800 dark:text-yellow-300">กรุณาชำระเงินภายใน</p>
-                    <p class="text-lg font-bold text-yellow-900 dark:text-yellow-200" id="countdown">
-                        {{ $transaction->expired_at ? $transaction->expired_at->diffForHumans() : '30 นาที' }}
-                    </p>
-                </div>
-            </div>
-        </div>
-    </x-arrow-x.card-v3>
-
-    <!-- Payment Methods -->
-    <x-arrow-x.card-v3 class="p-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">เลือกช่องทางชำระเงิน</h2>
+    {{-- ── เลือกช่องทางชำระเงิน ──────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:16px;">เลือกช่องทางชำระเงิน</div>
 
         <form action="{{ route('user.wallet.topup.payment.process', $transaction->transaction_id) }}" method="POST" id="payment-form">
             @csrf
 
-            <div class="space-y-4">
+            <div style="display:flex; flex-direction:column; gap:12px;">
                 @forelse($paymentGateways as $gateway)
-                    <label class="payment-option block cursor-pointer">
+                    <label class="payment-option" style="display:block; cursor:pointer;">
                         <input type="radio"
                                name="payment_method"
                                value="{{ $gateway->code }}"
-                               class="hidden peer"
+                               class="peer"
+                               style="position:absolute; opacity:0; pointer-events:none;"
                                required>
-                        <div class="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-green-400 dark:hover:border-green-500 peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="text-3xl" style="color: {{ $gateway->color ?? '#10B981' }}">
-                                    {{ $gateway->icon ?? '💳' }}
-                                </div>
-                                <div class="flex-1">
-                                    <p class="font-bold text-gray-900 dark:text-gray-100">{{ $gateway->name }}</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $gateway->description }}</p>
+                        <div class="po-box" style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); transition:all .15s;">
+                            <div style="display:flex; align-items:center; gap:14px;">
+                                <div style="font-size:28px; line-height:1;" >{{ $gateway->icon ?? '💳' }}</div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-weight:700; font-size:14px;">{{ $gateway->name }}</div>
+                                    <div style="font-size:12px; color:var(--ink2); margin-top:1px;">{{ $gateway->description }}</div>
                                     @if($gateway->fees && isset($gateway->fees['deposit_fee_amount']) && $gateway->fees['deposit_fee_amount'] > 0)
-                                        <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                                        <div style="font-size:11px; color:#e0a52e; margin-top:3px;">
                                             ค่าธรรมเนียม: {{ $gateway->fees['deposit_fee_type'] === 'percentage' ? $gateway->fees['deposit_fee_amount'] . '%' : '฿' . number_format($gateway->fees['deposit_fee_amount'], 2) }}
-                                        </p>
+                                        </div>
                                     @else
-                                        <p class="text-xs text-green-600 dark:text-green-400 mt-1">ไม่มีค่าธรรมเนียม</p>
+                                        <div style="font-size:11px; color:#5aa07e; margin-top:3px;">ไม่มีค่าธรรมเนียม</div>
                                     @endif
                                 </div>
-                                <div class="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-600 peer-checked:border-green-500 peer-checked:bg-green-500 flex items-center justify-center">
-                                    <svg class="w-4 h-4 text-white hidden peer-checked:block" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
+                                <span class="po-check" style="width:24px; height:24px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i class="fas fa-check" style="font-size:11px; color:#fff; opacity:0;"></i>
+                                </span>
                             </div>
                         </div>
                     </label>
                 @empty
-                    <!-- Fallback Payment Methods -->
-                    <label class="payment-option block cursor-pointer">
-                        <input type="radio" name="payment_method" value="promptpay" class="hidden peer" required>
-                        <div class="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-green-400 dark:hover:border-green-500 peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="text-3xl">💳</div>
-                                <div class="flex-1">
-                                    <p class="font-bold text-gray-900 dark:text-gray-100">พร้อมเพย์ (PromptPay)</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">ชำระเงินผ่าน QR Code พร้อมเพย์</p>
-                                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">ไม่มีค่าธรรมเนียม</p>
+                    {{-- ── ช่องทางสำรอง ── --}}
+                    <label class="payment-option" style="display:block; cursor:pointer;">
+                        <input type="radio" name="payment_method" value="promptpay" class="peer" style="position:absolute; opacity:0; pointer-events:none;" required>
+                        <div class="po-box" style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); transition:all .15s;">
+                            <div style="display:flex; align-items:center; gap:14px;">
+                                <div style="font-size:28px; line-height:1;">💳</div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-weight:700; font-size:14px;">พร้อมเพย์ (PromptPay)</div>
+                                    <div style="font-size:12px; color:var(--ink2); margin-top:1px;">ชำระเงินผ่าน QR Code พร้อมเพย์</div>
+                                    <div style="font-size:11px; color:#5aa07e; margin-top:3px;">ไม่มีค่าธรรมเนียม</div>
                                 </div>
+                                <span class="po-check" style="width:24px; height:24px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i class="fas fa-check" style="font-size:11px; color:#fff; opacity:0;"></i>
+                                </span>
                             </div>
                         </div>
                     </label>
 
-                    <label class="payment-option block cursor-pointer">
-                        <input type="radio" name="payment_method" value="bank_transfer" class="hidden peer">
-                        <div class="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-green-400 dark:hover:border-green-500 peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="text-3xl">🏦</div>
-                                <div class="flex-1">
-                                    <p class="font-bold text-gray-900 dark:text-gray-100">โอนผ่านธนาคาร</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">โอนเงินผ่านธนาคารและอัพโหลดสลิป</p>
-                                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">ไม่มีค่าธรรมเนียม</p>
+                    <label class="payment-option" style="display:block; cursor:pointer;">
+                        <input type="radio" name="payment_method" value="bank_transfer" class="peer" style="position:absolute; opacity:0; pointer-events:none;">
+                        <div class="po-box" style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); transition:all .15s;">
+                            <div style="display:flex; align-items:center; gap:14px;">
+                                <div style="font-size:28px; line-height:1;">🏦</div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-weight:700; font-size:14px;">โอนผ่านธนาคาร</div>
+                                    <div style="font-size:12px; color:var(--ink2); margin-top:1px;">โอนเงินผ่านธนาคารและอัพโหลดสลิป</div>
+                                    <div style="font-size:11px; color:#5aa07e; margin-top:3px;">ไม่มีค่าธรรมเนียม</div>
                                 </div>
+                                <span class="po-check" style="width:24px; height:24px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i class="fas fa-check" style="font-size:11px; color:#fff; opacity:0;"></i>
+                                </span>
                             </div>
                         </div>
                     </label>
                 @endforelse
             </div>
 
-            <!-- Submit Button -->
-            <button type="submit"
-                    id="submit-btn"
-                    disabled
-                    class="w-full mt-6 px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition shadow-lg">
+            {{-- ปุ่มยืนยัน --}}
+            <button type="submit" id="submit-btn" disabled
+                    class="tp-btn tp-btn-primary"
+                    style="width:100%; margin-top:18px; padding:14px 20px; font-size:15px; font-weight:800;">
                 <span id="btn-text">กรุณาเลือกวิธีชำระเงิน</span>
-                <span id="btn-loading" class="hidden">
-                    <svg class="animate-spin inline-block w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    กำลังดำเนินการ...
+                <span id="btn-loading" style="display:none;">
+                    <i class="fas fa-circle-notch fa-spin" style="margin-right:6px;"></i>กำลังดำเนินการ...
                 </span>
             </button>
         </form>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Security Info -->
-    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-2xl p-6">
-        <div class="flex items-start gap-4">
-            <div class="text-3xl">🔒</div>
-            <div>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">ความปลอดภัย</h3>
-                <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1 list-disc list-inside">
-                    <li>ข้อมูลการชำระเงินของคุณถูกเข้ารหัสและปลอดภัย</li>
-                    <li>เงินจะเข้า Wallet ทันทีหลังชำระเงินสำเร็จ</li>
-                    <li>หากมีปัญหา สามารถติดต่อทีมงานได้ตลอด 24 ชั่วโมง</li>
-                </ul>
-            </div>
+    {{-- ── ความปลอดภัย ──────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px; display:flex; align-items:flex-start; gap:14px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
+        <span class="tp-tile" style="width:44px; height:44px; border-radius:13px; font-size:20px; background:color-mix(in srgb, #5689b8 18%, transparent);"><i class="fas fa-lock" style="color:#5689b8;"></i></span>
+        <div>
+            <div style="font-weight:700; font-size:15px; margin-bottom:6px;">ความปลอดภัย</div>
+            <ul style="margin:0; padding-left:18px; font-size:12.5px; color:var(--ink2); display:flex; flex-direction:column; gap:4px; list-style:disc;">
+                <li>ข้อมูลการชำระเงินของคุณถูกเข้ารหัสและปลอดภัย</li>
+                <li>เงินจะเข้า Wallet ทันทีหลังชำระเงินสำเร็จ</li>
+                <li>หากมีปัญหา สามารถติดต่อทีมงานได้ตลอด 24 ชั่วโมง</li>
+            </ul>
         </div>
     </div>
 </div>
@@ -175,25 +151,55 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnText = document.getElementById('btn-text');
     const btnLoading = document.getElementById('btn-loading');
     const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
+    const amountText = @json('฿' . number_format($transaction->amount, 2));
+
+    // อัพเดทสไตล์การ์ดที่ถูกเลือก (แทน peer-checked ของ tailwind)
+    function refreshSelection() {
+        paymentOptions.forEach(function(opt) {
+            const label = opt.closest('.payment-option');
+            if (!label) return;
+            const box = label.querySelector('.po-box');
+            const check = label.querySelector('.po-check');
+            const checkIcon = check ? check.querySelector('i') : null;
+            if (opt.checked) {
+                if (box) {
+                    box.style.boxShadow = 'none';
+                    box.style.background = 'color-mix(in srgb, var(--accent1) 16%, transparent)';
+                    box.style.outline = '2px solid var(--accent1)';
+                }
+                if (check) check.style.background = 'var(--accent2)';
+                if (checkIcon) checkIcon.style.opacity = '1';
+            } else {
+                if (box) {
+                    box.style.boxShadow = 'var(--inset-sm)';
+                    box.style.background = 'transparent';
+                    box.style.outline = 'none';
+                }
+                if (check) check.style.background = 'transparent';
+                if (checkIcon) checkIcon.style.opacity = '0';
+            }
+        });
+    }
 
     // เปิดปุ่มเมื่อเลือกวิธีชำระเงิน
-    paymentOptions.forEach(option => {
+    paymentOptions.forEach(function(option) {
         option.addEventListener('change', function() {
             submitBtn.disabled = false;
-            btnText.textContent = 'ดำเนินการชำระเงิน ฿{{ number_format($transaction->amount, 2) }}';
+            btnText.textContent = 'ดำเนินการชำระเงิน ' + amountText;
+            refreshSelection();
         });
     });
 
     // แสดง loading เมื่อ submit
     form.addEventListener('submit', function() {
         submitBtn.disabled = true;
-        btnText.classList.add('hidden');
-        btnLoading.classList.remove('hidden');
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline';
     });
 
-    // Countdown Timer
+    // นับเวลาถอยหลัง
     @if($transaction->expired_at)
-    const expiredAt = new Date('{{ $transaction->expired_at->toIso8601String() }}');
+    const expiredAt = new Date(@json($transaction->expired_at->toIso8601String()));
     const countdownEl = document.getElementById('countdown');
 
     function updateCountdown() {
@@ -202,14 +208,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (diff <= 0) {
             countdownEl.textContent = 'หมดเวลาแล้ว';
-            countdownEl.classList.add('text-red-600');
+            countdownEl.style.color = '#d9534f';
             submitBtn.disabled = true;
             return;
         }
 
         const minutes = Math.floor(diff / 60000);
         const seconds = Math.floor((diff % 60000) / 1000);
-        countdownEl.textContent = `${minutes} นาที ${seconds} วินาที`;
+        countdownEl.textContent = minutes + ' นาที ' + seconds + ' วินาที';
     }
 
     updateCountdown();
@@ -217,19 +223,5 @@ document.addEventListener('DOMContentLoaded', function() {
     @endif
 });
 </script>
-@endpush
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
 @endpush
 @endsection

@@ -1,80 +1,66 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'เติมเงิน Wallet')
 
+@php
+    // จำนวนเงินด่วน (preset) สำหรับปุ่มเลือกเร็ว
+    $quickAmounts = [100, 300, 500, 1000, 2000, 5000, 10000];
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Purple-Pink-Red for Top-Up) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-coins"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-wallet text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">เติมเงิน Wallet</h1>
-                    <p class="text-purple-100 text-lg mt-1">เลือกจำนวนเงินที่ต้องการเติม</p>
+    {{-- ── หัวข้อ (Hero) + ยอดเงินปัจจุบัน ───────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px;">
+                @if(\Illuminate\Support\Facades\Route::has('user.wallet.index'))
+                    <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+                @endif
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-wallet" style="color:#fff;"></i></span>
+                <div style="flex:1; min-width:200px;">
+                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">เติมเงิน Wallet</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">เลือกจำนวนเงินที่ต้องการเติม</div>
                 </div>
             </div>
 
-            {{-- Current Balance --}}
-            <div class="mt-6 glass-fusion rounded-xl p-6">
-                <p class="text-purple-100 text-sm mb-1">ยอดเงินปัจจุบัน</p>
-                <p class="text-5xl font-bold text-white drop-shadow-lg">฿{{ number_format($wallet->balance, 2) }}</p>
+            {{-- ยอดเงินปัจจุบัน --}}
+            <div style="margin-top:18px; padding:18px 22px; border-radius:18px; box-shadow:var(--inset);">
+                <div style="font-size:12.5px; color:var(--ink2);">ยอดเงินปัจจุบัน</div>
+                <div class="tp-num" style="font-size:clamp(30px,6vw,46px); font-weight:800; line-height:1.1; margin-top:4px; color:var(--deep1);">฿{{ number_format($wallet->balance, 2) }}</div>
             </div>
         </div>
     </div>
 
-    <!-- Topup Amount Selection -->
-    <x-arrow-x.card-v3 class="p-6">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">เลือกจำนวนเงินที่ต้องการเติม</h2>
+    {{-- ── ฟอร์มเลือกจำนวนเงินที่ต้องการเติม ─────────────────── --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:16px;">💰 เลือกจำนวนเงินที่ต้องการเติม</div>
 
         <form id="topup-form" action="{{ route('user.wallet.topup.process') }}" method="POST">
             @csrf
             <input type="hidden" id="topup-amount" name="amount" value="">
 
-            <!-- Quick Amount Buttons -->
-            <div class="mb-6">
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">เลือกจำนวนเงินด่วน</label>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    @php
-                        $quickAmounts = [100, 300, 500, 1000, 2000, 5000, 10000];
-                    @endphp
+            {{-- ปุ่มจำนวนเงินด่วน --}}
+            <div style="margin-bottom:20px;">
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:10px;">เลือกจำนวนเงินด่วน</label>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px;">
                     @foreach($quickAmounts as $amount)
                         <button type="button"
                                 onclick="selectAmount({{ $amount }})"
-                                class="quick-amount-btn px-4 py-3 border-2 border-gray-300 dark:border-gray-600 hover:border-purple-500 dark:hover:border-purple-400 bg-white dark:bg-gray-700 rounded-lg transition hover:shadow-lg font-semibold text-gray-900 dark:text-gray-100"
-                                data-amount="{{ $amount }}">
+                                class="quick-amount-btn tp-num"
+                                data-amount="{{ $amount }}"
+                                style="padding:13px 8px; border-radius:14px; font-size:15px; font-weight:800; cursor:pointer; box-shadow:var(--inset-sm); background:transparent; color:var(--ink); border:2px solid transparent; transition:all .15s ease;">
                             ฿{{ number_format($amount) }}
                         </button>
                     @endforeach
                 </div>
             </div>
 
-            <!-- Custom Amount Input -->
-            <div class="mb-6">
-                <label for="custom-amount" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    หรือระบุจำนวนเงินเอง
-                </label>
-                <div class="relative">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-bold text-lg">฿</span>
+            {{-- ระบุจำนวนเงินเอง --}}
+            <div style="margin-bottom:20px;">
+                <label for="custom-amount" style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:8px;">หรือระบุจำนวนเงินเอง</label>
+                <div style="position:relative;">
+                    <span class="tp-num" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--ink2); font-weight:800; font-size:16px; pointer-events:none;">฿</span>
                     <input type="number"
                            id="custom-amount"
                            name="custom_amount"
@@ -82,37 +68,39 @@
                            max="100000"
                            step="1"
                            placeholder="ระบุจำนวนเงิน (ขั้นต่ำ 100 บาท)"
-                           class="w-full pl-10 pr-4 py-4 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-lg font-semibold"
+                           class="tp-input tp-num"
+                           style="padding-left:32px; font-size:16px; font-weight:700;"
                            oninput="updateCustomAmount(this.value)">
                 </div>
-                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                <div style="margin-top:8px; font-size:11.5px; color:var(--ink2);">
                     ⚠️ จำนวนเงินขั้นต่ำ 100 บาท, สูงสุด 100,000 บาท
-                </p>
+                </div>
             </div>
 
-            <!-- Selected Amount Display -->
-            <div id="selected-amount-display" class="hidden mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-300 dark:border-purple-600 rounded-xl">
-                <p class="text-sm text-gray-700 dark:text-gray-300 mb-1">จำนวนเงินที่เลือก</p>
-                <p class="text-3xl font-bold text-purple-600 dark:text-purple-400" id="selected-amount-text">฿0</p>
+            {{-- แสดงจำนวนเงินที่เลือก --}}
+            <div id="selected-amount-display" style="display:none; margin-bottom:20px; padding:16px 18px; border-radius:16px; box-shadow:var(--inset); background:color-mix(in srgb, var(--accent1) 12%, transparent);">
+                <div style="font-size:12px; color:var(--ink2); margin-bottom:2px;">จำนวนเงินที่เลือก</div>
+                <div class="tp-num" id="selected-amount-text" style="font-size:30px; font-weight:800; color:var(--deep1);">฿0</div>
             </div>
 
-            <!-- Submit Button -->
+            {{-- ปุ่มยืนยัน --}}
             <button type="submit"
                     id="submit-btn"
                     disabled
-                    class="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white font-bold text-lg rounded-lg transition transition-transform hover:scale-[1.02] shadow-lg disabled:transform-none">
+                    class="tp-btn tp-btn-primary"
+                    style="width:100%; padding:15px; font-size:16px; font-weight:800; opacity:.55; cursor:not-allowed;">
                 🛒 ดำเนินการเติมเงิน
             </button>
         </form>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Info Box -->
-    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-2xl p-6">
-        <div class="flex items-start gap-4">
-            <div class="text-3xl">ℹ️</div>
-            <div>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">วิธีการเติมเงิน</h3>
-                <ol class="text-sm text-gray-700 dark:text-gray-300 space-y-1 list-decimal list-inside">
+    {{-- ── วิธีการเติมเงิน ───────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
+        <div style="display:flex; align-items:flex-start; gap:14px;">
+            <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:19px; background:rgba(86,137,184,.18);">ℹ️</span>
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:15px; font-weight:800; margin-bottom:8px;">วิธีการเติมเงิน</div>
+                <ol style="margin:0; padding-left:18px; font-size:12.5px; color:var(--ink2); line-height:1.9;">
                     <li>เลือกจำนวนเงินที่ต้องการเติม (คลิกปุ่มด่วนหรือกรอกเอง)</li>
                     <li>กดปุ่ม "ดำเนินการเติมเงิน"</li>
                     <li>เลือกช่องทางการชำระเงิน (พร้อมเพย์, โอนธนาคาร, บัตรเครดิต, ฯลฯ)</li>
@@ -123,13 +111,13 @@
         </div>
     </div>
 
-    <!-- Benefits Box -->
-    <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-700 rounded-2xl p-6">
-        <div class="flex items-start gap-4">
-            <div class="text-3xl">✅</div>
-            <div>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">ใช้เงินใน Wallet ทำอะไรได้บ้าง?</h3>
-                <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1 list-disc list-inside">
+    {{-- ── ใช้เงินใน Wallet ทำอะไรได้บ้าง ─────────────────────── --}}
+    <div class="tp-card" style="padding:18px; box-shadow:var(--inset-sm); border-left:4px solid #5aa07e;">
+        <div style="display:flex; align-items:flex-start; gap:14px;">
+            <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:19px; background:rgba(90,160,126,.18);">✅</span>
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:15px; font-weight:800; margin-bottom:8px;">ใช้เงินใน Wallet ทำอะไรได้บ้าง?</div>
+                <ul style="margin:0; padding-left:18px; font-size:12.5px; color:var(--ink2); line-height:1.9;">
                     <li>🎮 บันทึกคะแนนเกม Snake.io (1 แต้ม/ครั้ง)</li>
                     <li>🛍️ ซื้อสินค้าและบริการในระบบ</li>
                     <li>🤖 เช่าบอท AI และบริการ Automation</li>
@@ -161,14 +149,16 @@ function selectAmount(amount) {
     // ตั้งค่าจำนวนเงินใน hidden field
     document.getElementById('topup-amount').value = amount;
 
-    // Highlight ปุ่มที่เลือก
+    // Highlight ปุ่มที่เลือก (ใช้ inline style ตามธีม V4)
     document.querySelectorAll('.quick-amount-btn').forEach(btn => {
         if (parseInt(btn.dataset.amount) === amount) {
-            btn.classList.add('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/30');
-            btn.classList.remove('border-gray-300', 'dark:border-gray-600');
+            btn.style.borderColor = 'var(--accent1)';
+            btn.style.background = 'color-mix(in srgb, var(--accent1) 14%, transparent)';
+            btn.style.color = 'var(--deep1)';
         } else {
-            btn.classList.remove('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/30');
-            btn.classList.add('border-gray-300', 'dark:border-gray-600');
+            btn.style.borderColor = 'transparent';
+            btn.style.background = 'transparent';
+            btn.style.color = 'var(--ink)';
         }
     });
 }
@@ -187,8 +177,9 @@ function updateCustomAmount(value) {
 
     // ล้าง highlight ปุ่มด่วน
     document.querySelectorAll('.quick-amount-btn').forEach(btn => {
-        btn.classList.remove('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/30');
-        btn.classList.add('border-gray-300', 'dark:border-gray-600');
+        btn.style.borderColor = 'transparent';
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--ink)';
     });
 
     // อัพเดต UI
@@ -207,12 +198,16 @@ function updateUI(amount) {
     const submitBtn = document.getElementById('submit-btn');
 
     if (amount >= 100) {
-        displayEl.classList.remove('hidden');
+        displayEl.style.display = 'block';
         amountTextEl.textContent = '฿' + amount.toLocaleString();
         submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
     } else {
-        displayEl.classList.add('hidden');
+        displayEl.style.display = 'none';
         submitBtn.disabled = true;
+        submitBtn.style.opacity = '.55';
+        submitBtn.style.cursor = 'not-allowed';
     }
 }
 
@@ -220,13 +215,21 @@ function updateUI(amount) {
 document.getElementById('topup-form').addEventListener('submit', function(e) {
     if (selectedAmount < 100) {
         e.preventDefault();
-        alert('กรุณาเลือกจำนวนเงินขั้นต่ำ 100 บาท');
+        if (window.showNotification) {
+            window.showNotification('กรุณาเลือกจำนวนเงินขั้นต่ำ 100 บาท', 'error');
+        } else {
+            alert('กรุณาเลือกจำนวนเงินขั้นต่ำ 100 บาท');
+        }
         return false;
     }
 
     if (selectedAmount > 100000) {
         e.preventDefault();
-        alert('จำนวนเงินสูงสุด 100,000 บาท');
+        if (window.showNotification) {
+            window.showNotification('จำนวนเงินสูงสุด 100,000 บาท', 'error');
+        } else {
+            alert('จำนวนเงินสูงสุด 100,000 บาท');
+        }
         return false;
     }
 
@@ -234,19 +237,5 @@ document.getElementById('topup-form').addEventListener('submit', function(e) {
     return true;
 });
 </script>
-@endpush
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
 @endpush
 @endsection

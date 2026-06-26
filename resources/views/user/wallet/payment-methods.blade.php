@@ -1,69 +1,42 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ช่องทางรับเงิน')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Orange-Amber-Yellow for Payment Methods) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 dark:from-orange-800 dark:via-amber-800 dark:to-yellow-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-university"></i>
+    {{-- ── หัวข้อ (Hero) ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            @if(\Illuminate\Support\Facades\Route::has('user.wallet.index'))
+                <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+            @endif
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-credit-card" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ช่องทางรับเงิน</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">จัดการบัญชีสำหรับรับเงินจากการถอน</div>
             </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <a href="{{ route('user.wallet.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-credit-card text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">ช่องทางรับเงิน</h1>
-                    <p class="text-orange-100 text-lg mt-1">จัดการบัญชีสำหรับรับเงินจากการถอน</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Payment Method Button -->
-    <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg p-4">
-        <div class="flex items-center justify-between">
-            <div class="text-white">
-                <h3 class="font-bold text-lg mb-1">เพิ่มช่องทางรับเงินใหม่</h3>
-                <p class="text-sm text-green-100">เพิ่มบัญชีธนาคารหรือช่องทางรับเงินอื่นๆ</p>
-            </div>
-            <button onclick="showAddForm()"
-                    class="px-6 py-3 bg-white dark:bg-gray-800 text-green-600 font-semibold rounded-lg hover:bg-green-50 transition whitespace-nowrap">
-                ➕ เพิ่มช่องทาง
+            <button type="button" onclick="showAddForm()" class="tp-btn tp-btn-primary" style="white-space:nowrap;">
+                <i class="fas fa-plus"></i> เพิ่มช่องทาง
             </button>
         </div>
     </div>
 
-    <!-- Add Payment Method Form -->
-    <div id="add-form" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 hidden">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">เพิ่มช่องทางรับเงินใหม่</h2>
+    {{-- ── ฟอร์มเพิ่มช่องทางรับเงินใหม่ ───────────────────────── --}}
+    <div id="add-form" class="tp-card hidden" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:18px;">เพิ่มช่องทางรับเงินใหม่</div>
 
-        <form method="POST" action="{{ route('user.wallet.payment-method.store') }}" class="space-y-6">
+        <form method="POST" action="{{ route('user.wallet.payment-method.store') }}" style="display:flex; flex-direction:column; gap:16px;">
             @csrf
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ประเภทช่องทางรับเงิน</label>
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">ประเภทช่องทางรับเงิน</label>
                 <select name="type"
                         id="payment-type"
                         required
                         onchange="togglePaymentFields()"
-                        class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        class="tp-input">
                     <option value="">-- เลือกประเภท --</option>
                     <option value="promptpay">💳 พร้อมเพย์ (PromptPay)</option>
                     <option value="bank_transfer">🏦 โอนผ่านธนาคาร</option>
@@ -72,39 +45,38 @@
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ชื่อช่องทาง</label>
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">ชื่อช่องทาง</label>
                 <input type="text"
                        name="name"
                        required
-                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="tp-input"
                        placeholder="เช่น บัญชีหลัก, บัญชีสำรอง">
             </div>
 
-            <!-- PromptPay & Bank Transfer Fields -->
-            <div id="promptpay-fields" class="space-y-4 hidden">
+            {{-- PromptPay & Bank Transfer Fields --}}
+            <div id="promptpay-fields" class="hidden" style="display:flex; flex-direction:column; gap:16px;">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ชื่อบัญชี</label>
+                    <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">ชื่อบัญชี</label>
                     <input type="text"
                            name="account_name"
-                           class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           class="tp-input"
                            placeholder="ชื่อเจ้าของบัญชี">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">หมายเลขบัญชี / เบอร์โทรศัพท์</label>
+                    <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">หมายเลขบัญชี / เบอร์โทรศัพท์</label>
                     <input type="text"
                            name="account_number"
-                           class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           class="tp-input"
                            placeholder="หมายเลขบัญชี หรือ เบอร์โทรศัพท์">
                 </div>
             </div>
 
-            <!-- Bank Transfer Additional Fields -->
+            {{-- Bank Transfer Additional Fields --}}
             <div id="bank-fields" class="hidden">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ชื่อธนาคาร</label>
-                    <select name="bank_name"
-                            class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">ชื่อธนาคาร</label>
+                    <select name="bank_name" class="tp-input">
                         <option value="">-- เลือกธนาคาร --</option>
                         <option value="ธนาคารกรุงเทพ">ธนาคารกรุงเทพ</option>
                         <option value="ธนาคารกสิกรไทย">ธนาคารกสิกรไทย</option>
@@ -125,118 +97,121 @@
                 </div>
             </div>
 
-            <!-- PayPal Fields -->
+            {{-- PayPal Fields --}}
             <div id="paypal-fields" class="hidden">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">อีเมล PayPal</label>
+                    <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">อีเมล PayPal</label>
                     <input type="email"
                            name="paypal_email"
-                           class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           class="tp-input"
                            placeholder="your-email@example.com">
                 </div>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div style="display:flex; align-items:center; gap:8px;">
                 <input type="checkbox"
                        name="is_default"
                        value="1"
                        id="is_default"
-                       class="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500">
-                <label for="is_default" class="text-sm font-medium text-gray-700 dark:text-gray-300">ตั้งเป็นช่องทางเริ่มต้น</label>
+                       style="width:16px; height:16px; accent-color:var(--deep1); cursor:pointer;">
+                <label for="is_default" style="font-size:13px; font-weight:600; color:var(--ink); cursor:pointer;">ตั้งเป็นช่องทางเริ่มต้น</label>
             </div>
 
-            <div class="flex gap-3">
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
                 <button type="button"
                         onclick="hideAddForm()"
-                        class="flex-1 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-300 transition">
+                        class="tp-btn"
+                        style="flex:1; min-width:120px; justify-content:center;">
                     ยกเลิก
                 </button>
                 <button type="submit"
-                        class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
+                        class="tp-btn tp-btn-primary"
+                        style="flex:1; min-width:120px; justify-content:center;">
                     เพิ่มช่องทาง
                 </button>
             </div>
         </form>
     </div>
 
-    <!-- Payment Methods List -->
-    <x-arrow-x.card-v3 class="p-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">ช่องทางรับเงินทั้งหมด</h2>
+    {{-- ── รายการช่องทางรับเงินทั้งหมด ────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:16px;">ช่องทางรับเงินทั้งหมด</div>
 
         @if($paymentMethods->isEmpty())
-            <div class="text-center py-12">
-                <span class="text-6xl block mb-4">🏦</span>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">ยังไม่มีช่องทางรับเงิน</h3>
-                <p class="text-gray-600 dark:text-gray-400 mb-4">เพิ่มช่องทางรับเงินเพื่อสามารถถอนเงินได้</p>
-                <button onclick="showAddForm()"
-                        class="inline-block px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
-                    ➕ เพิ่มช่องทางรับเงิน
+            <div style="text-align:center; padding:48px 20px;">
+                <div style="font-size:52px; opacity:.5;">🏦</div>
+                <div style="font-weight:700; font-size:17px; margin-top:10px;">ยังไม่มีช่องทางรับเงิน</div>
+                <div style="font-size:13px; color:var(--ink2); margin-top:4px;">เพิ่มช่องทางรับเงินเพื่อสามารถถอนเงินได้</div>
+                <button type="button" onclick="showAddForm()" class="tp-btn tp-btn-primary" style="margin-top:16px;">
+                    <i class="fas fa-plus"></i> เพิ่มช่องทางรับเงิน
                 </button>
             </div>
         @else
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;">
                 @foreach($paymentMethods as $method)
-                    <div class="border-2 {{ $method->is_default ? 'border-green-500' : 'border-gray-200 dark:border-gray-700' }} rounded-xl p-6 relative">
+                    <div style="position:relative; padding:18px; border-radius:16px; box-shadow:var(--inset-sm); {{ $method->is_default ? 'border:1px solid #5aa07e;' : '' }}">
                         @if($method->is_default)
-                            <div class="absolute top-3 right-3">
-                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                                    ⭐ ค่าเริ่มต้น
-                                </span>
+                            <div style="position:absolute; top:12px; right:12px;">
+                                <span class="tp-pill" style="color:#fff; background:#5aa07e;">⭐ ค่าเริ่มต้น</span>
                             </div>
                         @endif
 
-                        <div class="flex items-start gap-4 mb-4">
-                            <div class="text-4xl">
+                        <div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:14px;">
+                            <div style="font-size:32px; line-height:1;">
                                 @if($method->type === 'promptpay') 💳
                                 @elseif($method->type === 'bank_transfer') 🏦
                                 @elseif($method->type === 'paypal') 💰
                                 @else 💵
                                 @endif
                             </div>
-                            <div class="flex-1">
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{{ $method->name }}</h3>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:15px; font-weight:700; margin-bottom:4px;">{{ $method->name }}</div>
 
                                 @if($method->type === 'bank_transfer')
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $method->bank_name }}</p>
-                                    <p class="text-sm font-medium text-gray-800 dark:text-white mt-2">{{ $method->account_name }}</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $method->account_number }}</p>
+                                    <div style="font-size:12.5px; color:var(--ink2);">{{ $method->bank_name }}</div>
+                                    <div style="font-size:13px; font-weight:600; margin-top:6px;">{{ $method->account_name }}</div>
+                                    <div class="tp-num" style="font-size:12.5px; color:var(--ink2);">{{ $method->account_number }}</div>
                                 @elseif($method->type === 'promptpay')
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">พร้อมเพย์</p>
-                                    <p class="text-sm font-medium text-gray-800 dark:text-white mt-2">{{ $method->account_name }}</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $method->account_number }}</p>
+                                    <div style="font-size:12.5px; color:var(--ink2);">พร้อมเพย์</div>
+                                    <div style="font-size:13px; font-weight:600; margin-top:6px;">{{ $method->account_name }}</div>
+                                    <div class="tp-num" style="font-size:12.5px; color:var(--ink2);">{{ $method->account_number }}</div>
                                 @elseif($method->type === 'paypal')
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">PayPal</p>
-                                    <p class="text-sm font-medium text-gray-800 dark:text-white mt-2">{{ $method->paypal_email }}</p>
+                                    <div style="font-size:12.5px; color:var(--ink2);">PayPal</div>
+                                    <div style="font-size:13px; font-weight:600; margin-top:6px;">{{ $method->paypal_email }}</div>
                                 @endif
 
-                                <div class="flex items-center gap-2 mt-3">
-                                    <span class="px-2 py-1 rounded text-xs font-semibold {{ $method->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white' }}">
-                                        {{ $method->status === 'active' ? '✓ ใช้งาน' : '✗ ปิดใช้งาน' }}
-                                    </span>
-                                    <span class="text-xs text-gray-600 dark:text-gray-400">
+                                <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:12px;">
+                                    @if($method->status === 'active')
+                                        <span class="tp-pill" style="color:#5aa07e; background:rgba(90,160,126,.16);">✓ ใช้งาน</span>
+                                    @else
+                                        <span class="tp-pill" style="color:var(--ink2); background:color-mix(in srgb, var(--ink2) 16%, transparent);">✗ ปิดใช้งาน</span>
+                                    @endif
+                                    <span class="tp-num" style="font-size:11px; color:var(--ink2);">
                                         เพิ่มเมื่อ: {{ $method->created_at->format('d/m/Y') }}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex gap-2 pt-4 border-t">
+                        <div style="display:flex; gap:10px; padding-top:14px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
                             @if(!$method->is_default)
-                                <form method="POST" action="{{ route('user.wallet.payment-method.set-default', $method->id) }}" class="flex-1">
+                                <form method="POST" action="{{ route('user.wallet.payment-method.set-default', $method->id) }}" style="flex:1;">
                                     @csrf
                                     <button type="submit"
-                                            class="w-full px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-semibold hover:bg-blue-200 transition">
+                                            class="tp-btn tp-btn-sm"
+                                            style="width:100%; justify-content:center; color:#5689b8; background:rgba(86,137,184,.14);">
                                         ตั้งเป็นค่าเริ่มต้น
                                     </button>
                                 </form>
                             @endif
 
-                            <form method="POST" action="{{ route('user.wallet.payment-method.delete', $method->id) }}" class="flex-1">
+                            <form method="POST" action="{{ route('user.wallet.payment-method.delete', $method->id) }}" style="flex:1;">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit"
                                         onclick="return confirm('คุณแน่ใจหรือไม่ที่จะลบช่องทางนี้?')"
-                                        class="w-full px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200 transition">
+                                        class="tp-btn tp-btn-sm"
+                                        style="width:100%; justify-content:center; color:#d9534f; background:rgba(217,83,79,.14);">
                                     🗑️ ลบ
                                 </button>
                             </form>
@@ -245,33 +220,27 @@
                 @endforeach
             </div>
         @endif
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Information -->
-    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
-        <h3 class="text-xl font-bold mb-4">📋 ข้อมูลสำคัญ</h3>
-        <ul class="space-y-2 text-sm">
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>ช่องทางรับเงินจะถูกใช้สำหรับการถอนเงินเท่านั้น</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>ตรวจสอบข้อมูลบัญชีให้ถูกต้องก่อนบันทึก</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>คุณสามารถมีช่องทางรับเงินได้หลายช่องทาง</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>ช่องทางที่ตั้งเป็นค่าเริ่มต้นจะถูกเลือกอัตโนมัติเมื่อถอนเงิน</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>สามารถแก้ไขหรือลบช่องทางได้ตลอดเวลา</span>
-            </li>
-        </ul>
+    {{-- ── ข้อมูลสำคัญ ───────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 22px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 14%, transparent), transparent 70%);">
+            <div class="tp-section-h" style="margin-bottom:14px;">📋 ข้อมูลสำคัญ</div>
+            <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;">
+                @foreach([
+                    'ช่องทางรับเงินจะถูกใช้สำหรับการถอนเงินเท่านั้น',
+                    'ตรวจสอบข้อมูลบัญชีให้ถูกต้องก่อนบันทึก',
+                    'คุณสามารถมีช่องทางรับเงินได้หลายช่องทาง',
+                    'ช่องทางที่ตั้งเป็นค่าเริ่มต้นจะถูกเลือกอัตโนมัติเมื่อถอนเงิน',
+                    'สามารถแก้ไขหรือลบช่องทางได้ตลอดเวลา',
+                ] as $info)
+                    <li style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--ink);">
+                        <span style="color:#5aa07e; flex-shrink:0;">✅</span>
+                        <span>{{ $info }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
     </div>
 </div>
 
@@ -291,17 +260,17 @@ function hideAddForm() {
 function togglePaymentFields() {
     const type = document.getElementById('payment-type').value;
 
-    // Hide all fields first
+    // ซ่อนทุก field ก่อน
     document.getElementById('promptpay-fields').classList.add('hidden');
     document.getElementById('bank-fields').classList.add('hidden');
     document.getElementById('paypal-fields').classList.add('hidden');
 
-    // Remove required from all fields
+    // เอา required ออกจากทุก field
     document.querySelectorAll('#promptpay-fields input, #bank-fields select, #paypal-fields input').forEach(input => {
         input.removeAttribute('required');
     });
 
-    // Show relevant fields
+    // แสดง field ที่เกี่ยวข้อง
     if (type === 'promptpay') {
         document.getElementById('promptpay-fields').classList.remove('hidden');
         document.querySelectorAll('#promptpay-fields input').forEach(input => {
@@ -322,19 +291,5 @@ function togglePaymentFields() {
     }
 }
 </script>
-@endpush
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
 @endpush
 @endsection

@@ -1,117 +1,89 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ฝากเงิน')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Flash Messages --}}
+<div style="display:flex; flex-direction:column; gap:18px; padding-bottom:24px;">
+
+    {{-- ── ข้อความแจ้งเตือน Flash ──────────────────────────────── --}}
     @if(session('error'))
-        <div class="p-4 bg-red-100 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-600 rounded-xl">
-            <div class="flex items-center gap-3">
-                <span class="text-2xl">❌</span>
-                <p class="text-sm font-medium text-red-800 dark:text-red-200">{{ session('error') }}</p>
-            </div>
+        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f;">
+            <span style="font-size:22px;">❌</span>
+            <p style="margin:0; font-size:13px; font-weight:600; color:#d9534f;">{{ session('error') }}</p>
         </div>
     @endif
     @if(session('success'))
-        <div class="p-4 bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-600 rounded-xl">
-            <div class="flex items-center gap-3">
-                <span class="text-2xl">✅</span>
-                <p class="text-sm font-medium text-green-800 dark:text-green-200">{{ session('success') }}</p>
-            </div>
+        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #5aa07e;">
+            <span style="font-size:22px;">✅</span>
+            <p style="margin:0; font-size:13px; font-weight:600; color:#5aa07e;">{{ session('success') }}</p>
         </div>
     @endif
     @if($errors->any())
-        <div class="p-4 bg-red-100 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-600 rounded-xl">
-            <div class="flex items-start gap-3">
-                <span class="text-2xl">⚠️</span>
-                <ul class="text-sm text-red-800 dark:text-red-200 list-disc list-inside">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
+        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:flex-start; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f;">
+            <span style="font-size:22px;">⚠️</span>
+            <ul style="margin:0; padding-left:18px; font-size:13px; color:#d9534f; list-style:disc;">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
     @endif
 
-    {{-- Premium Hero Header (Green-Emerald-Teal for Deposit) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-money-bill-wave"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-plus-circle text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">ฝากเงิน</h1>
-                    <p class="text-green-100 text-lg mt-1">เติมเงินเข้ากระเป๋าของคุณ</p>
+    {{-- ── Hero: หัวข้อ + ยอดเงินปัจจุบัน ──────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px;">
+                @if(\Illuminate\Support\Facades\Route::has('user.wallet.index'))
+                    <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+                @endif
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:23px;"><i class="fas fa-plus-circle" style="color:#fff;"></i></span>
+                <div style="flex:1; min-width:180px;">
+                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ฝากเงิน</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">เติมเงินเข้ากระเป๋าของคุณ</div>
                 </div>
             </div>
 
-            {{-- Current Balance --}}
-            <div class="mt-6 glass-fusion rounded-xl p-6">
-                <p class="text-green-100 text-sm mb-1">ยอดเงินปัจจุบัน</p>
-                <p class="text-5xl font-bold text-white drop-shadow-lg">฿{{ number_format($wallet->balance, 2) }}</p>
+            {{-- ยอดเงินปัจจุบัน --}}
+            <div style="margin-top:18px; padding:20px 22px; border-radius:18px; box-shadow:var(--inset);">
+                <div style="font-size:12.5px; color:var(--ink2);">ยอดเงินปัจจุบัน</div>
+                <div class="tp-num" style="font-size:clamp(32px,7vw,48px); font-weight:800; line-height:1.1; margin-top:4px; color:var(--deep1);">฿{{ number_format($wallet->balance, 2) }}</div>
             </div>
         </div>
     </div>
 
-    <!-- Payment Methods -->
-    <x-arrow-x.card-v3 class="p-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">เลือกช่องทางการชำระเงิน</h2>
+    {{-- ── เลือกช่องทางการชำระเงิน ───────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:16px;">เลือกช่องทางการชำระเงิน</div>
 
         {{-- ⚠️ แจ้งเตือน: ยอดต่ำกว่า 100 บาท ต้องใช้ PromptPay เท่านั้น --}}
-        <div id="low-amount-notice" class="hidden mb-4 p-4 bg-amber-50 dark:bg-amber-900/30 border-2 border-amber-300 dark:border-amber-600 rounded-lg">
-            <p class="text-sm text-amber-800 dark:text-amber-200 font-medium">
+        <div id="low-amount-notice" style="display:none; margin-bottom:16px; padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+            <p style="margin:0; font-size:13px; color:#e0a52e; font-weight:500;">
                 ⚠️ <strong>ยอดเงินต่ำกว่า 100 บาท</strong> — กรุณาใช้ช่องทาง <strong>พร้อมเพย์</strong> เท่านั้น (โอนผ่านธนาคารไม่รองรับยอดต่ำกว่า 100 บาท เนื่องจากระบบ SMS แจ้งเตือนไม่ทำงาน)
             </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;">
             @foreach($availableGateways as $key => $gateway)
                 @if($gateway['enabled'])
                     <div id="gateway-card-{{ $key }}"
-                         class="border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 cursor-pointer transition group"
+                         class="tp-card tp-card-hover"
+                         style="padding:16px; cursor:pointer; box-shadow:var(--inset-sm);"
                          onclick="selectPaymentMethod('{{ $key }}')">
-                        <div class="flex items-start gap-4">
-                            <div class="text-5xl">{{ $gateway['icon'] }}</div>
-                            <div class="flex-1">
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
-                                    {{ $gateway['name'] }}
-                                </h3>
-                                <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ $gateway['description'] }}</p>
+                        <div style="display:flex; align-items:flex-start; gap:14px;">
+                            <span class="tp-tile" style="width:48px; height:48px; border-radius:15px; font-size:24px; flex-shrink:0;">{{ $gateway['icon'] }}</span>
+                            <div style="flex:1; min-width:0;">
+                                <h3 style="margin:0; font-size:15px; font-weight:700; color:var(--ink);">{{ $gateway['name'] }}</h3>
+                                <p style="margin:4px 0 0; font-size:12.5px; color:var(--ink2);">{{ $gateway['description'] }}</p>
 
                                 @if($key === 'promptpay')
-                                    <div class="mt-3">
-                                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">
-                                            ⚡ ทันที
-                                        </span>
+                                    <div style="margin-top:10px;">
+                                        <span class="tp-pill" style="color:#5aa07e; background:color-mix(in srgb, #5aa07e 16%, transparent);">⚡ ทันที</span>
                                     </div>
                                 @elseif($key === 'bank_transfer')
-                                    <div class="mt-3">
-                                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">
-                                            ⏰ รออนุมัติ
-                                        </span>
+                                    <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
+                                        <span class="tp-pill" style="color:#e0a52e; background:color-mix(in srgb, #e0a52e 16%, transparent);">⏰ รออนุมัติ</span>
                                         {{-- แจ้งเตือนขั้นต่ำ 100 บาท --}}
-                                        <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-semibold ml-1">
-                                            ขั้นต่ำ ฿100
-                                        </span>
+                                        <span class="tp-pill" style="color:#d9534f; background:color-mix(in srgb, #d9534f 16%, transparent);">ขั้นต่ำ ฿100</span>
                                     </div>
                                 @endif
                             </div>
@@ -120,161 +92,169 @@
                 @endif
             @endforeach
         </div>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- PromptPay Payment Form -->
-    <x-arrow-x.card-v3 id="promptpay-form" class="p-6 hidden">
-        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">💳 ชำระเงินผ่าน พร้อมเพย์</h3>
+    {{-- ── ฟอร์มชำระเงินผ่าน พร้อมเพย์ ───────────────────────── --}}
+    <div id="promptpay-form" class="tp-card" style="padding:18px; display:none;">
+        <div class="tp-section-h" style="margin-bottom:16px;">💳 ชำระเงินผ่าน พร้อมเพย์</div>
 
-        <form method="POST" action="{{ route('user.wallet.deposit.promptpay') }}" class="space-y-4">
+        <form method="POST" action="{{ route('user.wallet.deposit.promptpay') }}" style="display:flex; flex-direction:column; gap:16px;">
             @csrf
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน (บาท)</label>
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">จำนวนเงิน (บาท)</label>
                 <input type="number"
                        name="amount"
                        step="0.01"
                        min="1"
                        required
-                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="tp-input"
                        placeholder="ระบุจำนวนเงิน">
             </div>
 
-            <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
-                <p class="text-sm text-blue-900 dark:text-blue-100 font-medium">
+            <div style="padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
+                <p style="margin:0; font-size:13px; color:var(--ink); font-weight:500;">
                     <strong>หมายเหตุ:</strong> หลังจากกดยืนยัน คุณจะได้รับ QR Code สำหรับชำระเงิน
                 </p>
             </div>
 
-            <div class="flex gap-3">
+            <div style="display:flex; gap:12px;">
                 <button type="button"
                         onclick="hideAllForms()"
-                        class="flex-1 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
+                        class="tp-btn"
+                        style="flex:1;">
                     ยกเลิก
                 </button>
                 <button type="submit"
-                        class="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
+                        class="tp-btn tp-btn-primary"
+                        style="flex:1;">
                     สร้าง QR Code
                 </button>
             </div>
         </form>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Bank Transfer Form -->
-    <x-arrow-x.card-v3 id="bank_transfer-form" class="p-6 hidden">
-        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">🏦 โอนผ่านธนาคาร</h3>
+    {{-- ── ฟอร์มโอนผ่านธนาคาร ────────────────────────────────── --}}
+    <div id="bank_transfer-form" class="tp-card" style="padding:18px; display:none;">
+        <div class="tp-section-h" style="margin-bottom:16px;">🏦 โอนผ่านธนาคาร</div>
 
         {{-- ⚠️ แจ้งขั้นต่ำ 100 บาท --}}
-        <div class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-600 rounded-lg">
-            <p class="text-sm text-amber-800 dark:text-amber-200">
-                ⚠️ ขั้นต่ำ <strong>100 บาท</strong> — ยอดต่ำกว่า 100 บาท กรุณาใช้ <a href="javascript:selectPaymentMethod('promptpay')" class="text-indigo-600 dark:text-indigo-400 underline font-semibold">พร้อมเพย์</a> แทน
+        <div style="margin-bottom:16px; padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+            <p style="margin:0; font-size:13px; color:#e0a52e;">
+                ⚠️ ขั้นต่ำ <strong>100 บาท</strong> — ยอดต่ำกว่า 100 บาท กรุณาใช้ <a href="javascript:selectPaymentMethod('promptpay')" style="color:var(--deep1); text-decoration:underline; font-weight:600;">พร้อมเพย์</a> แทน
             </p>
         </div>
 
-        <form method="POST" action="{{ route('user.wallet.deposit.bank-transfer') }}" enctype="multipart/form-data" class="space-y-4">
+        <form method="POST" action="{{ route('user.wallet.deposit.bank-transfer') }}" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:16px;">
             @csrf
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน (บาท)</label>
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">จำนวนเงิน (บาท)</label>
                 <input type="number"
                        name="amount"
                        step="0.01"
                        min="100"
                        required
-                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="tp-input"
                        placeholder="ขั้นต่ำ 100 บาท">
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">อัพโหลดสลิปการโอนเงิน</label>
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">อัพโหลดสลิปการโอนเงิน</label>
                 <input type="file"
                        name="slip"
                        accept="image/*"
                        required
-                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                       class="tp-input">
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">หมายเหตุ (ถ้ามี)</label>
+                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">หมายเหตุ (ถ้ามี)</label>
                 <textarea name="note"
                           rows="3"
-                          class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          class="tp-input"
                           placeholder="หมายเหตุเพิ่มเติม"></textarea>
             </div>
 
-            <div class="bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg p-4">
-                <p class="text-sm text-yellow-900 dark:text-yellow-100 font-medium">
+            <div style="padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+                <p style="margin:0; font-size:13px; color:var(--ink); font-weight:500;">
                     <strong>หมายเหตุ:</strong> หลังจากส่งคำขอ แอดมินจะตรวจสอบและอนุมัติภายใน 24 ชั่วโมง
                 </p>
             </div>
 
-            <div class="flex gap-3">
+            <div style="display:flex; gap:12px;">
                 <button type="button"
                         onclick="hideAllForms()"
-                        class="flex-1 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
+                        class="tp-btn"
+                        style="flex:1;">
                     ยกเลิก
                 </button>
                 <button type="submit"
-                        class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
+                        class="tp-btn tp-btn-primary"
+                        style="flex:1;">
                     ส่งคำขอ
                 </button>
             </div>
         </form>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Stripe Form -->
-    <x-arrow-x.card-v3 id="stripe-form" class="p-6 hidden">
-        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">💰 ชำระเงินด้วย Stripe</h3>
+    {{-- ── ฟอร์ม Stripe ──────────────────────────────────────── --}}
+    <div id="stripe-form" class="tp-card" style="padding:18px; display:none;">
+        <div class="tp-section-h" style="margin-bottom:16px;">💰 ชำระเงินด้วย Stripe</div>
 
-        <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
-            <p class="text-sm text-blue-900 dark:text-blue-100 font-medium">
+        <div style="padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
+            <p style="margin:0; font-size:13px; color:var(--ink); font-weight:500;">
                 <strong>ข้อมูล:</strong> ระบบ Stripe กำลังอยู่ในระหว่างการพัฒนา กรุณาเลือกช่องทางอื่น
             </p>
         </div>
 
         <button type="button"
                 onclick="hideAllForms()"
-                class="w-full mt-4 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
+                class="tp-btn"
+                style="width:100%; margin-top:16px;">
             กลับ
         </button>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- PayPal Form -->
-    <x-arrow-x.card-v3 id="paypal-form" class="p-6 hidden">
-        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">💵 ชำระเงินด้วย PayPal</h3>
+    {{-- ── ฟอร์ม PayPal ──────────────────────────────────────── --}}
+    <div id="paypal-form" class="tp-card" style="padding:18px; display:none;">
+        <div class="tp-section-h" style="margin-bottom:16px;">💵 ชำระเงินด้วย PayPal</div>
 
-        <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
-            <p class="text-sm text-blue-900 dark:text-blue-100 font-medium">
+        <div style="padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
+            <p style="margin:0; font-size:13px; color:var(--ink); font-weight:500;">
                 <strong>ข้อมูล:</strong> ระบบ PayPal กำลังอยู่ในระหว่างการพัฒนา กรุณาเลือกช่องทางอื่น
             </p>
         </div>
 
         <button type="button"
                 onclick="hideAllForms()"
-                class="w-full mt-4 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
+                class="tp-btn"
+                style="width:100%; margin-top:16px;">
             กลับ
         </button>
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Instructions -->
-    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
-        <h3 class="text-xl font-bold mb-4">📋 คำแนะนำ</h3>
-        <ul class="space-y-2 text-sm">
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>ตรวจสอบจำนวนเงินให้ถูกต้องก่อนทำรายการ</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>สำหรับการโอนธนาคาร กรุณาอัพโหลดสลิปที่ชัดเจน</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>ระบบจะบันทึกรายการธุรกรรมทั้งหมดอัตโนมัติ</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span>✅</span>
-                <span>หากมีปัญหา กรุณาติดต่อฝ่ายสนับสนุน</span>
-            </li>
-        </ul>
+    {{-- ── คำแนะนำ ──────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div class="tp-section-h" style="margin-bottom:14px;">📋 คำแนะนำ</div>
+            <ul style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px;">
+                <li style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--ink);">
+                    <span style="color:#5aa07e;">✅</span>
+                    <span>ตรวจสอบจำนวนเงินให้ถูกต้องก่อนทำรายการ</span>
+                </li>
+                <li style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--ink);">
+                    <span style="color:#5aa07e;">✅</span>
+                    <span>สำหรับการโอนธนาคาร กรุณาอัพโหลดสลิปที่ชัดเจน</span>
+                </li>
+                <li style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--ink);">
+                    <span style="color:#5aa07e;">✅</span>
+                    <span>ระบบจะบันทึกรายการธุรกรรมทั้งหมดอัตโนมัติ</span>
+                </li>
+                <li style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--ink);">
+                    <span style="color:#5aa07e;">✅</span>
+                    <span>หากมีปัญหา กรุณาติดต่อฝ่ายสนับสนุน</span>
+                </li>
+            </ul>
+        </div>
     </div>
 </div>
 
@@ -292,14 +272,14 @@ function selectPaymentMethod(method) {
     const formElement = document.getElementById(formId);
 
     if (formElement) {
-        formElement.classList.remove('hidden');
+        formElement.style.display = '';
         formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
 
 function hideAllForms() {
     document.querySelectorAll('[id$="-form"]').forEach(form => {
-        form.classList.add('hidden');
+        form.style.display = 'none';
     });
 }
 
@@ -316,14 +296,16 @@ function checkAmountForBankTransfer(amount) {
 
     if (amount > 0 && amount < BANK_TRANSFER_MIN_AMOUNT) {
         // ยอดต่ำกว่า 100 → ซ่อน bank transfer + แจ้งเตือน
-        bankCard.classList.add('opacity-50', 'pointer-events-none');
+        bankCard.style.opacity = '0.5';
+        bankCard.style.pointerEvents = 'none';
         bankCard.title = 'ยอดต่ำกว่า 100 บาท กรุณาใช้พร้อมเพย์';
-        notice.classList.remove('hidden');
+        notice.style.display = '';
     } else {
         // ยอดปกติ → แสดง bank transfer
-        bankCard.classList.remove('opacity-50', 'pointer-events-none');
+        bankCard.style.opacity = '';
+        bankCard.style.pointerEvents = '';
         bankCard.title = '';
-        notice.classList.add('hidden');
+        notice.style.display = 'none';
     }
 }
 
@@ -350,19 +332,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-@endpush
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
 @endpush
 @endsection

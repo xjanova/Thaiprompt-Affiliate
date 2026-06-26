@@ -1,176 +1,148 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ชำระเงินผ่านพร้อมเพย์')
 
+@php
+    // ── ถอดรหัส QR payload กรณีเป็น Base64 JSON (mock QR / warning) ──────────
+    $qrIsImage = !empty($qrCode) && (str_starts_with($qrCode, 'data:image/') || str_starts_with($qrCode, 'https://'));
+    $qrData = null;
+    if (!empty($qrCode) && !$qrIsImage) {
+        $qrData = json_decode(base64_decode($qrCode), true);
+    }
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Green-Emerald-Teal for PromptPay Top-Up) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-qrcode"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <a href="{{ route('user.wallet.topup') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-mobile-alt text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">สแกน QR Code พร้อมเพย์</h1>
-                    <p class="text-green-100 text-lg mt-1">สแกน QR Code ด้วยแอปธนาคารเพื่อชำระเงิน</p>
-                </div>
+    {{-- ── หัวข้อ (Hero) ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <a href="{{ route('user.wallet.topup') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-mobile-alt" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">สแกน QR Code พร้อมเพย์</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">สแกน QR Code ด้วยแอปธนาคารเพื่อชำระเงิน</div>
             </div>
         </div>
     </div>
 
-    <!-- QR Code Section -->
-    <x-arrow-x.card-v3 class="p-6">
-        <div class="text-center">
-            <!-- Transaction Info -->
-            <div class="mb-6">
-                <p class="text-sm text-gray-500 dark:text-gray-400">รหัสรายการ</p>
-                <p class="text-lg font-mono font-bold text-gray-900 dark:text-gray-100">{{ $transaction->transaction_id }}</p>
+    {{-- ── การ์ด QR Code ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:26px;">
+        <div style="text-align:center;">
+
+            {{-- รหัสรายการ --}}
+            <div style="margin-bottom:18px;">
+                <div style="font-size:12px; color:var(--ink2);">รหัสรายการ</div>
+                <div class="tp-num" style="font-size:17px; font-weight:800; margin-top:2px;">{{ $transaction->transaction_id }}</div>
             </div>
 
-            <!-- Amount -->
-            <div class="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-300 dark:border-green-600 rounded-xl inline-block">
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">จำนวนเงินที่ต้องชำระ</p>
-                <p class="text-4xl font-bold text-green-600 dark:text-green-400">฿{{ number_format($transaction->amount, 2) }}</p>
+            {{-- จำนวนเงิน --}}
+            <div style="display:inline-block; margin-bottom:22px; padding:16px 28px; border-radius:18px; box-shadow:var(--inset);">
+                <div style="font-size:12.5px; color:var(--ink2); margin-bottom:4px;">จำนวนเงินที่ต้องชำระ</div>
+                <div class="tp-num" style="font-size:clamp(30px,6vw,42px); font-weight:800; line-height:1.1; color:var(--deep1);">฿{{ number_format($transaction->amount, 2) }}</div>
             </div>
 
-            <!-- QR Code -->
-            <div class="my-8">
-                <div class="bg-white p-6 rounded-2xl shadow-lg inline-block">
+            {{-- QR Code --}}
+            <div style="margin:14px 0 22px;">
+                <div style="display:inline-block; background:#ffffff; padding:24px; border-radius:20px; box-shadow:var(--inset);">
                     @if(!empty($qrCode))
-                        @if(str_starts_with($qrCode, 'data:image/') || str_starts_with($qrCode, 'https://'))
+                        @if($qrIsImage)
                             {{-- QR Code เป็น data URI (BaconQrCode SVG) หรือ URL (Google Charts) → ใช้เป็น src โดยตรง --}}
                             <img src="{{ $qrCode }}"
                                  alt="PromptPay QR Code"
-                                 class="w-64 h-64"
-                                 onerror="this.parentElement.innerHTML='<div class=\'w-64 h-64 flex items-center justify-center bg-gray-100 rounded-lg\'><p class=\'text-gray-500 text-center p-4\'>ไม่สามารถโหลด QR Code ได้</p></div>'">
-                        @else
-                            {{-- ลองถอดรหัส Base64 JSON เพื่อเช็ค warning message --}}
-                            @php
-                                $qrData = json_decode(base64_decode($qrCode), true);
-                            @endphp
-                            @if($qrData && isset($qrData['warning']))
-                                {{-- Mock QR Code - แสดงข้อความแจ้งเตือน --}}
-                                <div class="w-64 h-64 bg-gray-100 dark:bg-gray-800 flex items-center justify-center rounded-lg">
-                                    <div class="text-center p-4">
-                                        <p class="text-4xl mb-3">📱</p>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $qrData['warning'] ?? 'กรุณาตั้งค่า PromptPay' }}</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                                            Ref: {{ $qrData['ref_no'] ?? $refNo ?? 'N/A' }}
-                                        </p>
-                                    </div>
+                                 style="width:256px; height:256px; display:block;"
+                                 onerror="this.parentElement.innerHTML='<div style=\'width:256px;height:256px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-radius:12px;color:#6b7280;text-align:center;padding:16px;\'>ไม่สามารถโหลด QR Code ได้</div>'">
+                        @elseif($qrData && isset($qrData['warning']))
+                            {{-- Mock QR Code - แสดงข้อความแจ้งเตือน --}}
+                            <div style="width:256px; height:256px; display:flex; align-items:center; justify-content:center; background:#f3f4f6; border-radius:12px;">
+                                <div style="text-align:center; padding:16px;">
+                                    <div style="font-size:38px; margin-bottom:10px;">📱</div>
+                                    <div style="font-size:13px; color:#4b5563;">{{ $qrData['warning'] ?? 'กรุณาตั้งค่า PromptPay' }}</div>
+                                    <div style="font-size:11px; color:#6b7280; margin-top:8px;">Ref: {{ $qrData['ref_no'] ?? $refNo ?? 'N/A' }}</div>
                                 </div>
-                            @else
-                                {{-- Raw QR payload text → สร้าง QR ผ่าน api.qrserver.com --}}
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ urlencode($qrCode) }}"
-                                     alt="PromptPay QR Code"
-                                     class="w-64 h-64"
-                                     onerror="this.parentElement.innerHTML='<div class=\'w-64 h-64 flex items-center justify-center bg-gray-100 rounded-lg\'><p class=\'text-gray-500 text-center p-4\'>ไม่สามารถโหลด QR Code ได้</p></div>'">
-                            @endif
+                            </div>
+                        @else
+                            {{-- Raw QR payload text → สร้าง QR ผ่าน api.qrserver.com --}}
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ urlencode($qrCode) }}"
+                                 alt="PromptPay QR Code"
+                                 style="width:256px; height:256px; display:block;"
+                                 onerror="this.parentElement.innerHTML='<div style=\'width:256px;height:256px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-radius:12px;color:#6b7280;text-align:center;padding:16px;\'>ไม่สามารถโหลด QR Code ได้</div>'">
                         @endif
                     @else
-                        <div class="w-64 h-64 bg-gray-100 dark:bg-gray-800 flex items-center justify-center rounded-lg">
-                            <div class="text-center p-4">
-                                <p class="text-5xl mb-3">⚠️</p>
-                                <p class="text-gray-600 dark:text-gray-400 font-semibold">ไม่สามารถสร้าง QR Code ได้</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">กรุณาตรวจสอบการตั้งค่า PromptPay</p>
+                        <div style="width:256px; height:256px; display:flex; align-items:center; justify-content:center; background:#f3f4f6; border-radius:12px;">
+                            <div style="text-align:center; padding:16px;">
+                                <div style="font-size:46px; margin-bottom:10px;">⚠️</div>
+                                <div style="color:#4b5563; font-weight:700;">ไม่สามารถสร้าง QR Code ได้</div>
+                                <div style="font-size:13px; color:#6b7280; margin-top:8px;">กรุณาตรวจสอบการตั้งค่า PromptPay</div>
                             </div>
                         </div>
                     @endif
                 </div>
             </div>
 
-            <!-- Reference Number -->
+            {{-- หมายเลขอ้างอิง --}}
             @if($refNo)
-            <div class="mb-6">
-                <p class="text-sm text-gray-500 dark:text-gray-400">หมายเลขอ้างอิง</p>
-                <p class="text-xl font-mono font-bold text-blue-600 dark:text-blue-400">{{ $refNo }}</p>
+            <div style="margin-bottom:20px;">
+                <div style="font-size:12px; color:var(--ink2);">หมายเลขอ้างอิง</div>
+                <div class="tp-num" style="font-size:19px; font-weight:800; color:#5689b8; margin-top:2px;">{{ $refNo }}</div>
             </div>
             @endif
 
-            <!-- Countdown Timer -->
-            <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg inline-block">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">⏰</span>
-                    <div class="text-left">
-                        <p class="text-sm text-yellow-800 dark:text-yellow-300">กรุณาชำระเงินภายใน</p>
-                        <p class="text-lg font-bold text-yellow-900 dark:text-yellow-200" id="countdown">30:00</p>
-                    </div>
+            {{-- ตัวนับเวลาถอยหลัง --}}
+            <div style="display:inline-flex; align-items:center; gap:12px; margin-bottom:20px; padding:14px 20px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+                <span style="font-size:24px;">⏰</span>
+                <div style="text-align:left;">
+                    <div style="font-size:12px; color:var(--ink2);">กรุณาชำระเงินภายใน</div>
+                    <div class="tp-num" style="font-size:18px; font-weight:800; color:#e0a52e;" id="countdown">30:00</div>
                 </div>
             </div>
 
-            <!-- Status Check -->
-            <div id="status-section" class="mb-6">
-                <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">
-                    <svg class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>กำลังรอการชำระเงิน...</span>
-                </div>
+            {{-- สถานะการชำระเงิน --}}
+            <div id="status-section" style="margin-bottom:4px;">
+                <span class="tp-pill" style="color:#5689b8; background:color-mix(in srgb, #5689b8 16%, transparent); font-size:13px;">
+                    <i class="fas fa-circle-notch fa-spin" style="margin-right:6px;"></i>กำลังรอการชำระเงิน...
+                </span>
             </div>
         </div>
-    </x-arrow-x.card-v3>
+    </div>
 
-    {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
-    <x-arrow-x.card-v3 class="p-0 overflow-hidden">
+    {{-- ── คำชี้แจงทำไมยอดโอนมีจุดทศนิยม ─────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
         @include('components.sms-payment-explanation')
-    </x-arrow-x.card-v3>
+    </div>
 
-    <!-- Instructions -->
-    <x-arrow-x.card-v3 class="p-6">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">📋 วิธีการชำระเงิน</h3>
-        <ol class="space-y-3 text-gray-700 dark:text-gray-300">
-            <li class="flex items-start gap-3">
-                <span class="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
-                <span>เปิดแอปธนาคารบนมือถือของคุณ (กสิกร, กรุงไทย, ไทยพาณิชย์, ฯลฯ)</span>
-            </li>
-            <li class="flex items-start gap-3">
-                <span class="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-                <span>เลือกเมนู "สแกน QR" หรือ "จ่ายบิล"</span>
-            </li>
-            <li class="flex items-start gap-3">
-                <span class="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-                <span>สแกน QR Code ด้านบน</span>
-            </li>
-            <li class="flex items-start gap-3">
-                <span class="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
-                <span>ตรวจสอบจำนวนเงิน และยืนยันการโอน</span>
-            </li>
-            <li class="flex items-start gap-3">
-                <span class="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
-                <span>หลังโอนเงินสำเร็จ ยอดเงินจะเข้า Wallet อัตโนมัติ</span>
-            </li>
-        </ol>
-    </x-arrow-x.card-v3>
+    {{-- ── วิธีการชำระเงิน ────────────────────────────────────── --}}
+    @php
+        $steps = [
+            ['1', 'เปิดแอปธนาคารบนมือถือของคุณ (กสิกร, กรุงไทย, ไทยพาณิชย์, ฯลฯ)', '#5689b8'],
+            ['2', 'เลือกเมนู "สแกน QR" หรือ "จ่ายบิล"', '#5689b8'],
+            ['3', 'สแกน QR Code ด้านบน', '#5689b8'],
+            ['4', 'ตรวจสอบจำนวนเงิน และยืนยันการโอน', '#5689b8'],
+            ['✓', 'หลังโอนเงินสำเร็จ ยอดเงินจะเข้า Wallet อัตโนมัติ', '#5aa07e'],
+        ];
+    @endphp
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">📋 วิธีการชำระเงิน</div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            @foreach($steps as [$num, $text, $color])
+                <div style="display:flex; align-items:flex-start; gap:12px;">
+                    <span class="tp-num" style="flex-shrink:0; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#fff; background:{{ $color }};">{{ $num }}</span>
+                    <span style="font-size:13.5px; color:var(--ink); line-height:1.5;">{{ $text }}</span>
+                </div>
+            @endforeach
+        </div>
+    </div>
 
-    <!-- Help Section -->
-    <div class="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200 dark:border-orange-700 rounded-2xl p-6">
-        <div class="flex items-start gap-4">
-            <div class="text-3xl">❓</div>
-            <div>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">มีปัญหา?</h3>
-                <p class="text-sm text-gray-700 dark:text-gray-300">
-                    หากชำระเงินแล้วแต่ยอดเงินยังไม่เข้า กรุณารอสักครู่ ระบบจะตรวจสอบอัตโนมัติ
-                    หรือติดต่อทีมงานพร้อมหมายเลขอ้างอิง: <strong class="font-mono">{{ $refNo ?? $transaction->transaction_id }}</strong>
-                </p>
+    {{-- ── มีปัญหา? ──────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px 20px; display:flex; align-items:flex-start; gap:14px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+        <span class="tp-tile" style="width:44px; height:44px; border-radius:13px; font-size:20px; background:color-mix(in srgb, #e0a52e 18%, transparent);">❓</span>
+        <div>
+            <div style="font-weight:800; margin-bottom:4px;">มีปัญหา?</div>
+            <div style="font-size:13px; color:var(--ink2); line-height:1.6;">
+                หากชำระเงินแล้วแต่ยอดเงินยังไม่เข้า กรุณารอสักครู่ ระบบจะตรวจสอบอัตโนมัติ
+                หรือติดต่อทีมงานพร้อมหมายเลขอ้างอิง:
+                <strong class="tp-num" style="color:var(--ink);">{{ $refNo ?? $transaction->transaction_id }}</strong>
             </div>
         </div>
     </div>
@@ -183,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const countdownEl = document.getElementById('countdown');
     const statusSection = document.getElementById('status-section');
 
-    // Countdown Timer
+    // ── ตัวนับเวลาถอยหลัง ─────────────────────────────────
     @if($transaction->expired_at)
     const expiredAt = new Date('{{ $transaction->expired_at->toIso8601String() }}');
 
@@ -193,12 +165,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (diff <= 0) {
             countdownEl.textContent = 'หมดเวลาแล้ว';
-            countdownEl.classList.add('text-red-600');
+            countdownEl.style.color = '#d9534f';
             statusSection.innerHTML = `
-                <div class="inline-flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full">
-                    <span>❌</span>
-                    <span>รายการหมดอายุแล้ว</span>
-                </div>
+                <span class="tp-pill" style="color:#d9534f; background:color-mix(in srgb, #d9534f 16%, transparent); font-size:13px;">
+                    <span style="margin-right:6px;">❌</span>รายการหมดอายุแล้ว
+                </span>
             `;
             return;
         }
@@ -212,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateCountdown, 1000);
     @endif
 
-    // Poll for payment status
+    // ── ตรวจสอบสถานะการชำระเงิน (polling) ──────────────────
     function checkPaymentStatus() {
         fetch('{{ route("user.wallet.topup.check", $transaction->transaction_id) }}')
             .then(response => response.json())
@@ -220,10 +191,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success && data.data.is_completed) {
                     // ชำระเงินสำเร็จ!
                     statusSection.innerHTML = `
-                        <div class="inline-flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full">
-                            <span>✅</span>
-                            <span>ชำระเงินสำเร็จ! กำลังนำท่านไปหน้า Wallet...</span>
-                        </div>
+                        <span class="tp-pill" style="color:#5aa07e; background:color-mix(in srgb, #5aa07e 16%, transparent); font-size:13px;">
+                            <span style="margin-right:6px;">✅</span>ชำระเงินสำเร็จ! กำลังนำท่านไปหน้า Wallet...
+                        </span>
                     `;
 
                     // Redirect หลังจาก 2 วินาที
@@ -233,10 +203,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (data.data && data.data.is_expired) {
                     // หมดอายุ
                     statusSection.innerHTML = `
-                        <div class="inline-flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full">
-                            <span>❌</span>
-                            <span>รายการหมดอายุแล้ว</span>
-                        </div>
+                        <span class="tp-pill" style="color:#d9534f; background:color-mix(in srgb, #d9534f 16%, transparent); font-size:13px;">
+                            <span style="margin-right:6px;">❌</span>รายการหมดอายุแล้ว
+                        </span>
                     `;
                 }
             })
@@ -245,23 +214,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Check status every 5 seconds
+    // ตรวจสอบสถานะทุก 5 วินาที
     setInterval(checkPaymentStatus, 5000);
 });
 </script>
-@endpush
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
 @endpush
 @endsection
