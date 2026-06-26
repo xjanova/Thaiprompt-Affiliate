@@ -39,6 +39,13 @@ class FortuneSendBillReminder extends Command
 
     public function handle(): int
     {
+        // 💸 (2026-06-26) toggle กระตุ้นจ่ายบิล ปิด → ไม่ทวงบิล (เตือนบิลค้าง)
+        if (! (bool) (\App\Models\FortuneTellingSetting::getSettings()->enable_bill_payment_nudge ?? true)) {
+            $this->info('ℹ️ กระตุ้นจ่ายบิลถูกปิด (enable_bill_payment_nudge=off) — ข้าม bill-reminder');
+
+            return 0;
+        }
+
         $minMinutes = (int) $this->option('min');
         $maxMinutes = (int) $this->option('max');
         $methodMinMinutes = (int) $this->option('method-min');

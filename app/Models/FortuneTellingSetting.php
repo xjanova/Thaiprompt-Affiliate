@@ -273,6 +273,9 @@ class FortuneTellingSetting extends Model
         'consent_audio_code_min_unpaid_bills',
         // ⚡ (2026-06-26) ข้ามกล่องกติกา/รหัสเสียงทั้งหมด → สร้างบิลทันที
         'consent_gate_bypass',
+        // 🎚️ (2026-06-26) สวิตช์พฤติกรรมเชิงรุก — กระตุ้นการขาย / กระตุ้นจ่ายบิล
+        'enable_sales_pitch',
+        'enable_bill_payment_nudge',
         // 🩺 (2026-06-01) ตำราสุขภาพประจำไพ่ — เทียบอวัยวะ/โรค/อาการ/ความรุนแรงตามหน้าไพ่
         'enable_celtic_health_tome',
         // 🧠 (2026-06-01) คลังความรู้สายมู (ฮวงจุ้ย/เจ้าที่/องค์เทพ/ไสยศาสตร์) จาก RAG
@@ -504,6 +507,8 @@ class FortuneTellingSetting extends Model
         'enable_consent_audio_code' => 'boolean',
         'consent_audio_code_min_unpaid_bills' => 'integer',
         'consent_gate_bypass' => 'boolean',
+        'enable_sales_pitch' => 'boolean',
+        'enable_bill_payment_nudge' => 'boolean',
         'enable_celtic_health_tome' => 'boolean',
         'enable_celtic_mu_knowledge' => 'boolean',
         'enable_celtic_physiognomy' => 'boolean',
@@ -683,6 +688,9 @@ class FortuneTellingSetting extends Model
         'consent_audio_code_voice_provider' => 'minimax',
         'consent_audio_code_min_unpaid_bills' => 0,
         'consent_gate_bypass' => false,
+        // 🎚️ พฤติกรรมเชิงรุก default เปิด (ค่าเดิม — แอดมินปิดได้)
+        'enable_sales_pitch' => true,
+        'enable_bill_payment_nudge' => true,
         // 🩺 (2026-06-01) ตำราสุขภาพประจำไพ่ — default true (admin ปิดได้ผ่าน DB UPDATE)
         'enable_celtic_health_tome' => true,
         // 🧠 (2026-06-01) คลังความรู้สายมู — default true (admin ปิดได้ผ่าน DB UPDATE)

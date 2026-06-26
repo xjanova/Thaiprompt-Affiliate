@@ -123,6 +123,10 @@ class FortuneCelticCrossController extends Controller
             'consent_audio_code_min_unpaid_bills' => 'nullable|integer|min:0|max:99',
             // ⚡ ข้ามกล่องกติกาทั้งหมด → สร้างบิลทันที
             'consent_gate_bypass' => 'sometimes|boolean',
+            // 🎚️ สวิตช์พฤติกรรมเชิงรุก (กระตุ้นการขาย / กระตุ้นจ่ายบิล / ถามก่อนยกเลิก — รวมไว้หน้านี้)
+            'enable_sales_pitch' => 'sometimes|boolean',
+            'enable_bill_payment_nudge' => 'sometimes|boolean',
+            'fortune_consent_cancel_enabled' => 'sometimes|boolean',
             'celtic_cross_price' => 'numeric|min:1|max:9999',
             // 🌙 (2026-05-23 v3) Hard cap 5 คำถาม / 15 นาที — บังคับให้ min 1 (ไม่ใช่ 0)
             //    user spec: "ถาม 5 คำถาม ภายใน 15 นาที และต้องบอกกติการให้ชัดทุกที่"
@@ -144,6 +148,11 @@ class FortuneCelticCrossController extends Controller
         $settings->consent_audio_code_min_unpaid_bills = (int) ($validated['consent_audio_code_min_unpaid_bills'] ?? 0);
         // ⚡ ข้ามกล่องกติกาทั้งหมด → สร้างบิลทันที
         $settings->consent_gate_bypass = $request->boolean('consent_gate_bypass');
+        // 🎚️ สวิตช์พฤติกรรมเชิงรุก
+        $settings->enable_sales_pitch = $request->boolean('enable_sales_pitch');
+        $settings->enable_bill_payment_nudge = $request->boolean('enable_bill_payment_nudge');
+        // ถามก่อนยกเลิกบิล (ของเดิม fortune_consent_cancel_enabled — ย้ายมาคุมที่หน้านี้ด้วย)
+        $settings->fortune_consent_cancel_enabled = $request->boolean('fortune_consent_cancel_enabled');
         $settings->celtic_cross_price = $validated['celtic_cross_price'] ?? 99.00;
         $settings->celtic_cross_max_questions = $validated['celtic_cross_max_questions'] ?? 5;
         $settings->celtic_cross_qa_window_minutes = $validated['celtic_cross_qa_window_minutes'] ?? 15;

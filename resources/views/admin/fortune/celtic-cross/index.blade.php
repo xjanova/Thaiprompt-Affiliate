@@ -173,6 +173,48 @@
             </label>
         </div>
 
+        {{-- 🎚️ (2026-06-26) สวิตช์พฤติกรรมเชิงรุกของบอท — รวมไว้หน้าเดียว ตั้งค่าง่าย --}}
+        <div class="tp-card" style="padding:22px;">
+            <div class="tp-section-h" style="margin-bottom:8px;"><i class="fas fa-sliders-h"></i> สวิตช์พฤติกรรมบอท (เปิด/ปิด)</div>
+            <div style="font-size:12px; color:var(--ink2); margin-bottom:12px;">ปิดสวิตช์ = บอทหยุดทำพฤติกรรมนั้น (default เปิดทั้งหมด = เหมือนเดิม)</div>
+
+            {{-- 🛒 กระตุ้นการขาย --}}
+            <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:16px; border-radius:14px; cursor:pointer; border-left:4px solid #5aa07e;">
+                <input type="hidden" name="enable_sales_pitch" value="0">
+                <input type="checkbox" name="enable_sales_pitch" value="1"
+                       {{ ($settings->enable_sales_pitch ?? true) ? 'checked' : '' }}
+                       style="width:18px; height:18px; margin-top:2px; accent-color:#5aa07e; cursor:pointer;">
+                <div style="flex:1;">
+                    <div style="font-weight:700; color:var(--ink); font-size:14.5px;">🛒 กระตุ้นการขาย (AI เสนอเริ่มดูดวงเอง)</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">เปิด — AI ชวนลูกค้าเริ่มดูดวงเองหลังคุยสร้างความสนิท. ปิด — AI ตอบตามที่ลูกค้าถาม ไม่ชวนขาย</div>
+                </div>
+            </label>
+
+            {{-- 💸 กระตุ้นจ่ายบิล --}}
+            <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:16px; border-radius:14px; cursor:pointer; margin-top:12px; border-left:4px solid #e0a52e;">
+                <input type="hidden" name="enable_bill_payment_nudge" value="0">
+                <input type="checkbox" name="enable_bill_payment_nudge" value="1"
+                       {{ ($settings->enable_bill_payment_nudge ?? true) ? 'checked' : '' }}
+                       style="width:18px; height:18px; margin-top:2px; accent-color:#e0a52e; cursor:pointer;">
+                <div style="flex:1;">
+                    <div style="font-weight:700; color:var(--ink); font-size:14.5px;">💸 กระตุ้นจ่ายบิล (เตือนบิลค้าง + nudge "กดพร้อมบูชาครู")</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">เปิด — เตือนลูกค้าที่มีบิลค้างเป็นระยะ + กระตุ้นให้กดยืนยันตอนเงียบ. ปิด — ไม่ทวง/ไม่กระตุ้น (บิลยังหมดอายุเองตามปกติ)</div>
+                </div>
+            </label>
+
+            {{-- 💭 ถามก่อนยกเลิกบิล (ของเดิม fortune_consent_cancel_enabled — ย้ายมาคุมที่นี่ด้วย) --}}
+            <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:16px; border-radius:14px; cursor:pointer; margin-top:12px; border-left:4px solid #9b59b6;">
+                <input type="hidden" name="fortune_consent_cancel_enabled" value="0">
+                <input type="checkbox" name="fortune_consent_cancel_enabled" value="1"
+                       {{ ($settings->fortune_consent_cancel_enabled ?? true) ? 'checked' : '' }}
+                       style="width:18px; height:18px; margin-top:2px; accent-color:#9b59b6; cursor:pointer;">
+                <div style="flex:1;">
+                    <div style="font-weight:700; color:var(--ink); font-size:14.5px;">💭 ถามก่อนยกเลิกบิล (เตือนสติตอนลูกค้ายกเลิก)</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">เปิด — ตอนลูกค้ากดยกเลิก ส่งรูป+ข้อความเตือนสติ (แยกเจตนาเบี้ยว vs ติดขัดจริง). ปิด — ยกเลิกได้เลย ไม่เตือน. <i>(สวิตช์เดียวกับหน้า "กล่องกติกา")</i></div>
+                </div>
+            </label>
+        </div>
+
         {{-- ── ราคา & เงื่อนไข ── --}}
         <div class="tp-card" style="padding:22px;">
             <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-coins"></i> ราคา &amp; เงื่อนไข</div>

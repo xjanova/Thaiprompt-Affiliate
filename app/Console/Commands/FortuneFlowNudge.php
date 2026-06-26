@@ -183,6 +183,13 @@ class FortuneFlowNudge extends Command
             return;
         }
 
+        // 💸 (2026-06-26) toggle กระตุ้นจ่ายบิล ปิด → ไม่ส่ง nudge (กดพร้อมบูชาครู) — แต่ exit-cleanup ด้านบนยังทำงาน
+        if (! (bool) ($settings->enable_bill_payment_nudge ?? true)) {
+            $stats['skip']++;
+
+            return;
+        }
+
         // ── NUDGE: เงียบ ≥ 1 นาที + ยังไม่เคยเตือน → ส่งกล่อง 1 ครั้ง ──
         if ($silenceSec >= self::NUDGE_AFTER_SEC && empty($reading->getConversationState('flow_nudge_sent_at'))) {
             $service = app(FortuneChannelManager::class)->getPlatform($platform);

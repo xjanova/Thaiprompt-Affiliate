@@ -18371,12 +18371,15 @@ PROMPT;
             $offerFortune = false;
             if (str_contains($responseText, '[OFFER_FORTUNE]')) {
                 $responseText = trim(str_replace('[OFFER_FORTUNE]', '', $responseText));
-                $offerFortune = true;
+                // 🛒 (2026-06-26) toggle กระตุ้นการขาย — ปิด = strip token แต่ไม่ติดธง (ไม่โชว์ปุ่มเสนอเริ่มดูดวง)
+                $offerFortune = (bool) ($this->settings->enable_sales_pitch ?? true);
 
-                Log::info('Fortune: AI เสนอเริ่มดูดวง (rapport built)', [
-                    'user_id' => $userId,
-                    'turn_count' => $userTurnCount,
-                ]);
+                if ($offerFortune) {
+                    Log::info('Fortune: AI เสนอเริ่มดูดวง (rapport built)', [
+                        'user_id' => $userId,
+                        'turn_count' => $userTurnCount,
+                    ]);
+                }
             }
 
             // ✅ ตรวจจับ [DEEP_READING] — AI เข้าใจว่าผู้ใช้ต้องการดูดวงเชิงลึก → redirect เข้า deep reading flow
