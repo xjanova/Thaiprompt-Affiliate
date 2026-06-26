@@ -1,232 +1,215 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ตำแหน่งในระบบ Binary')
 
+@php
+    // ── ดึงค่าตำแหน่งจาก controller (genealogyService->getMemberPosition) ──
+    $leftCount  = $position['left_count'] ?? 0;
+    $rightCount = $position['right_count'] ?? 0;
+    $leftPv     = $position['left_pv'] ?? 0;
+    $rightPv    = $position['right_pv'] ?? 0;
+    $leftCom    = $position['left_commission'] ?? 0;
+    $rightCom   = $position['right_commission'] ?? 0;
+
+    // ── คำนวณความสมดุลของทีม ───────────────────────────────────
+    $totalPv        = $leftPv + $rightPv;
+    $leftPercentage = $totalPv > 0 ? ($leftPv / $totalPv) * 100 : 50;
+    $rightPercentage = $totalPv > 0 ? ($rightPv / $totalPv) * 100 : 50;
+    $isBalanced     = abs($leftPv - $rightPv) / max($leftPv, $rightPv, 1) <= 0.3;
+
+    // ── โบนัส Binary Matching ───────────────────────────────────
+    $smallerPv     = min($leftPv, $rightPv) > 0 ? min($leftPv, $rightPv) : 0;
+    $matchingRate  = $position['matching_rate'] ?? 10;
+    $matchingBonus = $position['matching_bonus'] ?? 0;
+
+    // ── สีฝั่งซ้าย/ขวา (hex คงที่ — ไม่ใช้ dynamic tailwind) ──────
+    $cLeft    = '#5689b8';  // ซ้าย (info)
+    $cRight   = '#8e6fb8';  // ขวา (ม่วงนวล)
+    $cSuccess = '#5aa07e';
+    $cWarn    = '#e0a52e';
+
+    // ── ลิงก์วางตำแหน่ง (route guard) ───────────────────────────
+    $leftLink  = \Illuminate\Support\Facades\Route::has('register')
+        ? route('register', ['ref' => $member->member_code, 'position' => 'left'])
+        : '';
+    $rightLink = \Illuminate\Support\Facades\Route::has('register')
+        ? route('register', ['ref' => $member->member_code, 'position' => 'right'])
+        : '';
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Violet-Purple-Fuchsia for Binary Position) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 dark:from-violet-800 dark:via-purple-800 dark:to-fuchsia-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-project-diagram"></i>
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            @if(\Illuminate\Support\Facades\Route::has('user.mlm.dashboard'))
+                <a href="{{ route('user.mlm.dashboard') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+            @endif
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-sitemap" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ตำแหน่งในระบบ Binary</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">โครงสร้างทีมแบบ Binary Tree</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── ข้อมูลตำแหน่งของคุณ (ซ้าย/ขวา) ─────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">📍 ข้อมูลตำแหน่งของคุณ</div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;">
+            {{-- ฝั่งซ้าย --}}
+            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm); border-left:4px solid {{ $cLeft }};">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:14px;">
+                    <div style="font-size:15px; font-weight:700;">👈 ทีมซ้าย (Left)</div>
+                    <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:18px; font-weight:800; color:#fff; background:{{ $cLeft }};">L</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                        <span style="font-size:12.5px; color:var(--ink2);">จำนวนสมาชิก:</span>
+                        <span class="tp-num" style="font-weight:700;">{{ $leftCount }}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                        <span style="font-size:12.5px; color:var(--ink2);">PV รวม:</span>
+                        <span class="tp-num" style="font-weight:700; color:{{ $cLeft }};">{{ number_format($leftPv, 0) }}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0;">
+                        <span style="font-size:12.5px; color:var(--ink2);">รายได้สะสม:</span>
+                        <span class="tp-num" style="font-weight:700; color:{{ $cSuccess }};">฿{{ number_format($leftCom, 2) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ฝั่งขวา --}}
+            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm); border-left:4px solid {{ $cRight }};">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:14px;">
+                    <div style="font-size:15px; font-weight:700;">👉 ทีมขวา (Right)</div>
+                    <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:18px; font-weight:800; color:#fff; background:{{ $cRight }};">R</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                        <span style="font-size:12.5px; color:var(--ink2);">จำนวนสมาชิก:</span>
+                        <span class="tp-num" style="font-weight:700;">{{ $rightCount }}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                        <span style="font-size:12.5px; color:var(--ink2);">PV รวม:</span>
+                        <span class="tp-num" style="font-weight:700; color:{{ $cRight }};">{{ number_format($rightPv, 0) }}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0;">
+                        <span style="font-size:12.5px; color:var(--ink2);">รายได้สะสม:</span>
+                        <span class="tp-num" style="font-weight:700; color:{{ $cSuccess }};">฿{{ number_format($rightCom, 2) }}</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-sitemap text-4xl text-white drop-shadow-lg"></i>
+        {{-- Binary Matching Bonus --}}
+        <div style="margin-top:16px; padding:18px; border-radius:16px; box-shadow:var(--inset-sm); border-left:4px solid {{ $cSuccess }};">
+            <div style="font-size:15px; font-weight:700; margin-bottom:14px;">⚖️ Binary Matching Bonus</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px;">
+                <div style="text-align:center;">
+                    <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">ทีมเล็กกว่า</div>
+                    <div class="tp-num" style="font-size:24px; font-weight:800; color:{{ $cWarn }};">{{ number_format($smallerPv, 0) }} PV</div>
                 </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">ตำแหน่งในระบบ Binary</h1>
-                    <p class="text-violet-100 text-lg mt-1">โครงสร้างทีมแบบ Binary Tree</p>
+                <div style="text-align:center;">
+                    <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">อัตราจับคู่</div>
+                    <div class="tp-num" style="font-size:24px; font-weight:800; color:{{ $cLeft }};">{{ $matchingRate }}%</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">โบนัสที่ได้</div>
+                    <div class="tp-num" style="font-size:24px; font-weight:800; color:{{ $cSuccess }};">฿{{ number_format($matchingBonus, 2) }}</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Position Info -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-            <span>📍</span> ข้อมูลตำแหน่งของคุณ
-        </h2>
+    {{-- ── สถานะความสมดุล ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">📊 สถานะความสมดุล</div>
 
-        <div class="grid md:grid-cols-2 gap-6">
-            <!-- Left Side -->
-            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <span>👈</span> ทีมซ้าย (Left)
-                    </h3>
-                    <span class="text-blue-600 text-2xl font-bold">L</span>
-                </div>
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center py-2 border-b border-blue-200">
-                        <span class="text-gray-600 dark:text-gray-400">จำนวนสมาชิก:</span>
-                        <span class="font-bold text-gray-800 dark:text-white">{{ $position['left_count'] ?? 0 }}</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-b border-blue-200">
-                        <span class="text-gray-600 dark:text-gray-400">PV รวม:</span>
-                        <span class="font-bold text-blue-600">{{ number_format($position['left_pv'] ?? 0, 0) }}</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2">
-                        <span class="text-gray-600 dark:text-gray-400">รายได้สะสม:</span>
-                        <span class="font-bold text-green-600">฿{{ number_format($position['left_commission'] ?? 0, 2) }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Side -->
-            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <span>👉</span> ทีมขวา (Right)
-                    </h3>
-                    <span class="text-purple-600 text-2xl font-bold">R</span>
-                </div>
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center py-2 border-b border-purple-200">
-                        <span class="text-gray-600 dark:text-gray-400">จำนวนสมาชิก:</span>
-                        <span class="font-bold text-gray-800 dark:text-white">{{ $position['right_count'] ?? 0 }}</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-b border-purple-200">
-                        <span class="text-gray-600 dark:text-gray-400">PV รวม:</span>
-                        <span class="font-bold text-purple-600">{{ number_format($position['right_pv'] ?? 0, 0) }}</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2">
-                        <span class="text-gray-600 dark:text-gray-400">รายได้สะสม:</span>
-                        <span class="font-bold text-green-600">฿{{ number_format($position['right_commission'] ?? 0, 2) }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Binary Matching Summary -->
-        <div class="mt-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200">
-            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <span>⚖️</span> Binary Matching Bonus
-            </h3>
-            <div class="grid md:grid-cols-3 gap-4">
-                <div class="text-center">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">ทีมเล็กกว่า</div>
-                    <div class="text-2xl font-bold text-orange-600">
-                        {{ min($position['left_pv'] ?? 0, $position['right_pv'] ?? 0) > 0 ? number_format(min($position['left_pv'] ?? 0, $position['right_pv'] ?? 0), 0) : 0 }} PV
-                    </div>
-                </div>
-                <div class="text-center">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">อัตราจับคู่</div>
-                    <div class="text-2xl font-bold text-blue-600">
-                        {{ $position['matching_rate'] ?? 10 }}%
-                    </div>
-                </div>
-                <div class="text-center">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">โบนัสที่ได้</div>
-                    <div class="text-2xl font-bold text-green-600">
-                        ฿{{ number_format($position['matching_bonus'] ?? 0, 2) }}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Balance Status -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <span>📊</span> สถานะความสมดุล
-        </h2>
-
-        @php
-            $leftPv = $position['left_pv'] ?? 0;
-            $rightPv = $position['right_pv'] ?? 0;
-            $total = $leftPv + $rightPv;
-            $leftPercentage = $total > 0 ? ($leftPv / $total) * 100 : 50;
-            $rightPercentage = $total > 0 ? ($rightPv / $total) * 100 : 50;
-            $isBalanced = abs($leftPv - $rightPv) / max($leftPv, $rightPv, 1) <= 0.3;
-        @endphp
-
-        <div class="mb-4">
-            <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+        <div style="margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; gap:8px; font-size:12.5px; color:var(--ink2); margin-bottom:8px;">
                 <span>👈 ซ้าย: {{ number_format($leftPv, 0) }} PV ({{ number_format($leftPercentage, 1) }}%)</span>
                 <span>👉 ขวา: {{ number_format($rightPv, 0) }} PV ({{ number_format($rightPercentage, 1) }}%)</span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-8 flex overflow-hidden">
-                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold"
-                     style="width: {{ $leftPercentage }}%">
-                    @if($leftPercentage > 15)
-                        {{ number_format($leftPercentage, 0) }}%
-                    @endif
+            {{-- แถบสมดุล ซ้าย/ขวา --}}
+            <div style="display:flex; height:30px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
+                <div style="width:{{ $leftPercentage }}%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700;
+                            background:linear-gradient(90deg, color-mix(in srgb, {{ $cLeft }} 80%, #000 0%), {{ $cLeft }});">
+                    @if($leftPercentage > 15){{ number_format($leftPercentage, 0) }}%@endif
                 </div>
-                <div class="bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center text-white text-xs font-bold"
-                     style="width: {{ $rightPercentage }}%">
-                    @if($rightPercentage > 15)
-                        {{ number_format($rightPercentage, 0) }}%
-                    @endif
+                <div style="width:{{ $rightPercentage }}%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700;
+                            background:linear-gradient(90deg, {{ $cRight }}, color-mix(in srgb, {{ $cRight }} 80%, #000 0%));">
+                    @if($rightPercentage > 15){{ number_format($rightPercentage, 0) }}%@endif
                 </div>
             </div>
         </div>
 
-        <div class="@if($isBalanced) bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-700 @else bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-700 @endif border rounded-xl p-4">
-            <div class="flex items-center gap-3">
-                <span class="text-3xl">{{ $isBalanced ? '✅' : '⚠️' }}</span>
-                <div>
-                    <div class="font-bold text-gray-800 dark:text-white">
-                        {{ $isBalanced ? 'ทีมสมดุล!' : 'ทีมไม่สมดุล' }}
-                    </div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400">
-                        @if($isBalanced)
-                            ทีมของคุณมีความสมดุลดี เหมาะสำหรับรับ Binary Matching Bonus สูงสุด
-                        @else
-                            ควรเพิ่มสมาชิกในทีมที่มี PV น้อยกว่า เพื่อเพิ่ม Binary Matching Bonus
-                        @endif
-                    </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);
+                    border-left:4px solid {{ $isBalanced ? $cSuccess : $cWarn }};">
+            <span style="font-size:30px;">{{ $isBalanced ? '✅' : '⚠️' }}</span>
+            <div>
+                <div style="font-weight:700;">{{ $isBalanced ? 'ทีมสมดุล!' : 'ทีมไม่สมดุล' }}</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">
+                    @if($isBalanced)
+                        ทีมของคุณมีความสมดุลดี เหมาะสำหรับรับ Binary Matching Bonus สูงสุด
+                    @else
+                        ควรเพิ่มสมาชิกในทีมที่มี PV น้อยกว่า เพื่อเพิ่ม Binary Matching Bonus
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Placement Links -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <span>🔗</span> ลิงก์วางตำแหน่ง
-        </h2>
-        <div class="grid md:grid-cols-2 gap-4">
-            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                <div class="font-bold text-gray-800 dark:text-white mb-2">วางซ้าย (Left)</div>
-                <div class="flex gap-2">
-                    <input type="text"
-                           id="leftLink"
-                           value="{{ route('register', ['ref' => $member->member_code, 'position' => 'left']) }}"
-                           readonly
-                           class="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-blue-300 rounded text-xs font-mono">
-                    <button onclick="copyLink('leftLink')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold transition-colors">
-                        📋
-                    </button>
+    {{-- ── ลิงก์วางตำแหน่ง ─────────────────────────────────────── --}}
+    @if($leftLink || $rightLink)
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">🔗 ลิงก์วางตำแหน่ง</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;">
+            @if($leftLink)
+            <div style="padding:14px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid {{ $cLeft }};">
+                <div style="font-weight:700; margin-bottom:8px;">วางซ้าย (Left)</div>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="leftLink" value="{{ $leftLink }}" readonly
+                           class="tp-input tp-num" style="flex:1; min-width:0; font-size:12px;">
+                    <button type="button" onclick="copyLink('leftLink')" class="tp-icon-btn" title="คัดลอกลิงก์ซ้าย"><i class="fas fa-copy"></i></button>
                 </div>
             </div>
+            @endif
 
-            <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                <div class="font-bold text-gray-800 dark:text-white mb-2">วางขวา (Right)</div>
-                <div class="flex gap-2">
-                    <input type="text"
-                           id="rightLink"
-                           value="{{ route('register', ['ref' => $member->member_code, 'position' => 'right']) }}"
-                           readonly
-                           class="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-purple-300 rounded text-xs font-mono">
-                    <button onclick="copyLink('rightLink')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-semibold transition-colors">
-                        📋
-                    </button>
+            @if($rightLink)
+            <div style="padding:14px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid {{ $cRight }};">
+                <div style="font-weight:700; margin-bottom:8px;">วางขวา (Right)</div>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="rightLink" value="{{ $rightLink }}" readonly
+                           class="tp-input tp-num" style="flex:1; min-width:0; font-size:12px;">
+                    <button type="button" onclick="copyLink('rightLink')" class="tp-icon-btn" title="คัดลอกลิงก์ขวา"><i class="fas fa-copy"></i></button>
                 </div>
             </div>
+            @endif
         </div>
     </div>
+    @endif
 
-    <!-- Tips -->
-    <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl shadow-xl p-6 border border-amber-200">
-        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <span>💡</span> เคล็ดลับ Binary System
-        </h3>
-        <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <li class="flex gap-2">
+    {{-- ── เคล็ดลับ Binary System ───────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px; border-left:4px solid {{ $cWarn }};">
+        <div class="tp-section-h" style="margin-bottom:14px;">💡 เคล็ดลับ Binary System</div>
+        <ul style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;">
+            <li style="display:flex; gap:8px; font-size:13px; color:var(--ink);">
                 <span>✅</span>
                 <span><strong>รักษาความสมดุล:</strong> พยายามเพิ่มสมาชิกทั้งสองฝั่งให้สมดุล</span>
             </li>
-            <li class="flex gap-2">
+            <li style="display:flex; gap:8px; font-size:13px; color:var(--ink);">
                 <span>✅</span>
                 <span><strong>Binary Matching:</strong> โบนัสคำนวณจากทีมที่เล็กกว่า</span>
             </li>
-            <li class="flex gap-2">
+            <li style="display:flex; gap:8px; font-size:13px; color:var(--ink);">
                 <span>✅</span>
                 <span><strong>Spillover:</strong> สมาชิกใหม่อาจถูกวางในตำแหน่งที่เหมาะสม</span>
             </li>
-            <li class="flex gap-2">
+            <li style="display:flex; gap:8px; font-size:13px; color:var(--ink);">
                 <span>✅</span>
                 <span><strong>PV สำคัญ:</strong> ไม่ใช่แค่จำนวนคน แต่ PV ก็สำคัญเช่นกัน</span>
             </li>
@@ -234,55 +217,18 @@
     </div>
 </div>
 
-<div id="toast" class="hidden fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-    <span id="toastMessage"></span>
-</div>
-
 @push('scripts')
 <script>
 function copyLink(inputId) {
-    const input = document.getElementById(inputId);
+    var input = document.getElementById(inputId);
+    if (!input) return;
     input.select();
-    navigator.clipboard.writeText(input.value).then(() => {
-        showToast('✅ คัดลอกลิงก์แล้ว');
+    navigator.clipboard.writeText(input.value).then(function () {
+        if (window.showNotification) window.showNotification('คัดลอกลิงก์แล้ว', 'success');
+    }).catch(function () {
+        if (window.showNotification) window.showNotification('คัดลอกไม่สำเร็จ', 'error');
     });
-}
-
-function showToast(message) {
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toastMessage');
-    toastMessage.textContent = message;
-    toast.classList.remove('hidden');
-    setTimeout(() => {
-        toast.style.transition = 'opacity 0.5s';
-        toast.style.opacity = '0';
-        setTimeout(() => {
-            toast.classList.add('hidden');
-            toast.style.opacity = '1';
-        }, 500);
-    }, 3000);
 }
 </script>
 @endpush
 @endsection
-
-@push('styles')
-<style>
-/* Glass Fusion Effect for Hero Header */
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Float Animation */
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
-}
-</style>
-@endpush

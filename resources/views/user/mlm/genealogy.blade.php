@@ -1,430 +1,291 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ศูนย์กลาง MLM - สายงานและทีม')
 
-@push('styles')
-<style>
-    /* Glassmorphism Action Cards */
-    .mlm-action-card {
-        background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.5);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .mlm-action-card:hover {
-        transform: translateY(-4px) scale(1.02);
-        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
-    }
-    .dark .mlm-action-card {
-        background: linear-gradient(135deg, rgba(31,41,55,0.9) 0%, rgba(31,41,55,0.7) 100%);
-        border: 1px solid rgba(255,255,255,0.1);
-    }
+@php
+    use Illuminate\Support\Facades\Route as RouteFacade;
 
-    /* Gradient Buttons */
-    .btn-gradient-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .btn-gradient-success {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    }
-    .btn-gradient-warning {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-    .btn-gradient-info {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
+    // ── ปุ่ม MLM หลัก (กรองเฉพาะ route ที่มีจริง) ─────────────────
+    // [emoji, ชื่อ, คำอธิบายย่อย, route, สีพื้นไทล์]
+    $primaryActions = [
+        ['👥', 'ทีมงาน',        ($member->total_direct_referrals ?? 0) . ' คน', 'user.mlm.team',                    '#5689b8'],
+        ['🔗', 'ลิ้งค์เชิญ',     'แชร์รับเงิน',                                  'user.mlm.referral',                '#5aa07e'],
+        ['💰', 'คอมมิชชั่น',     'ดูรายได้',                                     'user.mlm.commissions',             '#e0a52e'],
+        ['🔮', 'บิลดูดวง',       'ค่าแนะนำ',                                     'user.fortune-referral.commissions', '#8a6fb0'],
+        ['🔀', 'Binary',         'ตำแหน่งขา',                                    'user.mlm.binary-position',         '#5e7cc4'],
+        ['📊', 'จำลองรายได้',    'คำนวณ',                                        'user.mlm.income-simulator',        '#c46a8e'],
+    ];
 
-    /* Animated Icon */
-    .icon-bounce {
-        animation: bounce 2s infinite;
-    }
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
-    }
+    // ── ปุ่มรอง ───────────────────────────────────────────────────
+    $secondaryActions = [
+        ['📋', 'แดชบอร์ด',          'ภาพรวม MLM', 'user.mlm.dashboard'],
+        ['🎯', 'จำลองสถานการณ์',    'วางแผนทีม',  'user.mlm.scenario-simulator'],
+        ['⚖️', 'เปรียบเทียบรายได้', 'วิเคราะห์',   'user.mlm.income-comparison'],
+        ['🔮', 'ชวนเพื่อนดูดวง',    'รับค่าแนะนำ', 'user.fortune-referral.recruit'],
+    ];
 
-    /* Glass Fusion Effect for Hero Header */
-    .glass-fusion {
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    /* Float Animation */
-    @keyframes float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-20px); }
-    }
-
-    /* Node Detail Panel - slide animation */
-    .detail-panel-enter {
-        animation: slideInRight 0.3s ease-out forwards;
-    }
-    @keyframes slideInRight {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-</style>
-@endpush
+    // ── ค่าประเภท tree ส่งให้ JS viewer ───────────────────────────
+    $jsTreeType = ($member->plan?->type === 'binary' || $member->plan?->type === 'hybrid') ? 'binary' : 'unilevel';
+@endphp
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-6"
-     x-data="genealogyPage()" x-init="init()">
-    <div class="max-w-7xl mx-auto px-4">
+<div style="display:flex; flex-direction:column; gap:18px;" x-data="genealogyPage()" x-init="init()">
 
-        {{-- ========== Premium Hero Header ========== --}}
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 dark:from-purple-800 dark:via-pink-800 dark:to-blue-800 p-8 mb-6 shadow-2xl">
-            {{-- Animated Background Orbs --}}
-            <div class="absolute inset-0 opacity-10">
-                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-            </div>
-
-            {{-- Floating Icons --}}
-            <div class="absolute inset-0 overflow-hidden pointer-events-none">
-                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                    <i class="fas fa-sitemap"></i>
-                </div>
-            </div>
-
-            <div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
-                {{-- Member Info พร้อม Avatar --}}
-                <div class="flex items-center gap-6">
-                    <div class="glass-fusion p-2 rounded-2xl">
+    {{-- ── การ์ดต้อนรับ (Hero) ─────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:18px;">
+                {{-- ข้อมูลสมาชิก + Avatar --}}
+                <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+                    <span class="tp-tile" style="width:58px; height:58px; border-radius:18px; font-size:0; overflow:hidden; padding:0;">
                         <img src="{{ auth()->user()->profile_picture_url ?? 'https://ui-avatars.com/api/?name=' . urlencode(auth()->user()->name) . '&background=6366f1&color=fff&size=80' }}"
-                             alt="avatar"
-                             class="w-16 h-16 rounded-xl object-cover">
-                    </div>
-                    <div class="text-white">
-                        <h1 class="text-3xl lg:text-4xl font-bold drop-shadow-lg">ศูนย์กลาง MLM</h1>
-                        <p class="text-white/90 text-lg mt-1">{{ auth()->user()->name }}</p>
-                        <div class="flex flex-wrap items-center gap-3 mt-2">
-                            <span class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-sm font-semibold border border-white/30">
-                                รหัส: {{ $member->member_code }}
-                            </span>
-                            <span class="px-3 py-1 rounded-full bg-green-400/30 backdrop-blur-sm text-sm font-semibold border border-green-400/50">
-                                ✓ {{ $member->plan?->name ?? 'Active' }}
-                            </span>
+                             alt="avatar" style="width:100%; height:100%; object-fit:cover;">
+                    </span>
+                    <div style="min-width:0;">
+                        <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">ศูนย์กลาง MLM · MLM CENTER</div>
+                        <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:3px 0 0;">{{ auth()->user()->name }}</h1>
+                        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:9px;">
+                            <span class="tp-pill tp-pill-soft tp-num">รหัส: {{ $member->member_code }}</span>
+                            <span class="tp-pill" style="color:#fff; background:#5aa07e;"><i class="fas fa-circle-check" style="font-size:10px;"></i> {{ $member->plan?->name ?? 'Active' }}</span>
                             @if($member->rank)
-                            <span class="px-3 py-1 rounded-full backdrop-blur-sm text-sm font-semibold border border-white/30"
-                                  style="background: {{ $member->rank->color ?? '#6366F1' }}40;">
-                                {{ $member->rank->name }}
-                            </span>
+                                <span class="tp-pill" style="color:#fff; background:{{ $member->rank->color ?? 'var(--deep1)' }};">{{ $member->rank->name }}</span>
                             @endif
                         </div>
                     </div>
                 </div>
-
-                {{-- Quick Stats --}}
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-4 text-center min-w-[100px]">
-                        <div class="text-3xl font-black text-white drop-shadow-lg">{{ number_format($member->total_team_members ?? 0) }}</div>
-                        <div class="text-white/80 text-xs mt-1">สมาชิกทั้งหมด</div>
-                    </div>
-                    <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-4 text-center min-w-[100px]">
-                        <div class="text-3xl font-black text-white drop-shadow-lg">{{ number_format($member->total_direct_referrals ?? 0) }}</div>
-                        <div class="text-white/80 text-xs mt-1">แนะนำตรง</div>
-                    </div>
-                    <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-4 text-center min-w-[100px]">
-                        <div class="text-3xl font-black text-green-300 drop-shadow-lg">{{ $member->left_leg_members ?? 0 }}</div>
-                        <div class="text-white/80 text-xs mt-1">ขาซ้าย</div>
-                    </div>
-                    <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-4 text-center min-w-[100px]">
-                        <div class="text-3xl font-black text-red-300 drop-shadow-lg">{{ $member->right_leg_members ?? 0 }}</div>
-                        <div class="text-white/80 text-xs mt-1">ขาขวา</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- ========== MLM ACTION BUTTONS ========== --}}
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6">
-            {{-- ผังสายงาน (Active) --}}
-            <div class="mlm-action-card rounded-2xl p-4 text-center ring-2 ring-purple-500 ring-offset-2">
-                <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl text-white shadow-lg mb-3 icon-bounce">
-                    🌳
-                </div>
-                <div class="font-bold text-gray-800 dark:text-white text-sm">ผังสายงาน</div>
-                <div class="text-xs text-purple-600 dark:text-purple-400 mt-1">กำลังดู</div>
             </div>
 
-            {{-- ทีมงาน --}}
-            <a href="{{ route('user.mlm.team') }}" class="mlm-action-card rounded-2xl p-4 text-center hover:ring-2 hover:ring-blue-500 hover:ring-offset-2">
-                <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-2xl text-white shadow-lg mb-3">
-                    👥
-                </div>
-                <div class="font-bold text-gray-800 dark:text-white text-sm">ทีมงาน</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $member->total_direct_referrals ?? 0 }} คน</div>
-            </a>
+            {{-- สถิติ 4 ใบ --}}
+            @php
+                $heroStats = [
+                    ['สมาชิกทั้งหมด', number_format($member->total_team_members ?? 0),    'var(--deep1)'],
+                    ['แนะนำตรง',      number_format($member->total_direct_referrals ?? 0), 'var(--deep1)'],
+                    ['ขาซ้าย',        number_format($member->left_leg_members ?? 0),       '#5aa07e'],
+                    ['ขาขวา',         number_format($member->right_leg_members ?? 0),      '#d9534f'],
+                ];
+            @endphp
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-top:18px;">
+                @foreach($heroStats as [$label, $val, $color])
+                    <div style="padding:14px 16px; border-radius:16px; box-shadow:var(--inset-sm); text-align:center;">
+                        <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1.1; color:{{ $color }};">{{ $val }}</div>
+                        <div style="font-size:11px; color:var(--ink2); margin-top:3px;">{{ $label }}</div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
 
-            {{-- ลิ้งค์เชิญ --}}
-            <a href="{{ route('user.mlm.referral') }}" class="mlm-action-card rounded-2xl p-4 text-center hover:ring-2 hover:ring-green-500 hover:ring-offset-2">
-                <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-2xl text-white shadow-lg mb-3">
-                    🔗
-                </div>
-                <div class="font-bold text-gray-800 dark:text-white text-sm">ลิ้งค์เชิญ</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">แชร์รับเงิน</div>
-            </a>
-
-            {{-- คอมมิชชั่น --}}
-            <a href="{{ route('user.mlm.commissions') }}" class="mlm-action-card rounded-2xl p-4 text-center hover:ring-2 hover:ring-yellow-500 hover:ring-offset-2">
-                <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-2xl text-white shadow-lg mb-3">
-                    💰
-                </div>
-                <div class="font-bold text-gray-800 dark:text-white text-sm">คอมมิชชั่น</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">ดูรายได้</div>
-            </a>
-
-            {{-- บิลดูดวง --}}
-            <a href="{{ route('user.fortune-referral.commissions') }}" class="mlm-action-card rounded-2xl p-4 text-center hover:ring-2 hover:ring-violet-500 hover:ring-offset-2">
-                <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-2xl text-white shadow-lg mb-3">
-                    🔮
-                </div>
-                <div class="font-bold text-gray-800 dark:text-white text-sm">บิลดูดวง</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">ค่าแนะนำ</div>
-            </a>
-
-            {{-- ตำแหน่ง Binary --}}
-            <a href="{{ route('user.mlm.binary-position') }}" class="mlm-action-card rounded-2xl p-4 text-center hover:ring-2 hover:ring-indigo-500 hover:ring-offset-2">
-                <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-2xl text-white shadow-lg mb-3">
-                    🔀
-                </div>
-                <div class="font-bold text-gray-800 dark:text-white text-sm">Binary</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">ตำแหน่งขา</div>
-            </a>
-
-            {{-- จำลองรายได้ --}}
-            <a href="{{ route('user.mlm.income-simulator') }}" class="mlm-action-card rounded-2xl p-4 text-center hover:ring-2 hover:ring-pink-500 hover:ring-offset-2">
-                <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-2xl text-white shadow-lg mb-3">
-                    📊
-                </div>
-                <div class="font-bold text-gray-800 dark:text-white text-sm">จำลองรายได้</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">คำนวณ</div>
-            </a>
+    {{-- ── ปุ่มเมนู MLM หลัก ─────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px;">
+        {{-- ผังสายงาน (กำลังดูอยู่) --}}
+        <div class="tp-card" style="display:flex; flex-direction:column; align-items:center; gap:7px; padding:16px 10px; box-shadow:var(--inset); border:1px solid color-mix(in srgb, var(--accent1) 40%, transparent);">
+            <span class="tp-tile" style="width:46px; height:46px; border-radius:15px; font-size:21px;">🌳</span>
+            <span style="font-size:13px; font-weight:700; text-align:center;">ผังสายงาน</span>
+            <span class="tp-pill tp-pill-gold" style="font-size:10px;">กำลังดู</span>
         </div>
 
-        {{-- ========== SECONDARY ACTIONS ========== --}}
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <a href="{{ route('user.mlm.dashboard') }}" class="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-800 shadow hover:shadow-lg transition-all">
-                <span class="text-2xl">📋</span>
-                <div>
-                    <div class="font-semibold text-gray-800 dark:text-white text-sm">แดชบอร์ด</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">ภาพรวม MLM</div>
-                </div>
-            </a>
+        @foreach($primaryActions as [$emoji, $label, $sub, $route, $color])
+            @if(RouteFacade::has($route))
+                <a href="{{ route($route) }}" class="tp-card tp-card-hover" style="display:flex; flex-direction:column; align-items:center; gap:7px; padding:16px 10px; text-decoration:none; color:inherit;">
+                    <span class="tp-tile" style="width:46px; height:46px; border-radius:15px; font-size:21px; background:color-mix(in srgb, {{ $color }} 88%, #000 0%);">{{ $emoji }}</span>
+                    <span style="font-size:13px; font-weight:700; text-align:center;">{{ $label }}</span>
+                    <span style="font-size:10px; color:var(--ink2);">{{ $sub }}</span>
+                </a>
+            @endif
+        @endforeach
+    </div>
 
-            <a href="{{ route('user.mlm.scenario-simulator') }}" class="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-800 shadow hover:shadow-lg transition-all">
-                <span class="text-2xl">🎯</span>
-                <div>
-                    <div class="font-semibold text-gray-800 dark:text-white text-sm">จำลองสถานการณ์</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">วางแผนทีม</div>
-                </div>
-            </a>
+    {{-- ── ปุ่มรอง ─────────────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
+        @foreach($secondaryActions as [$emoji, $label, $sub, $route])
+            @if(RouteFacade::has($route))
+                <a href="{{ route($route) }}" class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:12px; padding:14px 16px; text-decoration:none; color:inherit;">
+                    <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:19px;">{{ $emoji }}</span>
+                    <div style="min-width:0;">
+                        <div style="font-size:13px; font-weight:700;">{{ $label }}</div>
+                        <div style="font-size:11px; color:var(--ink2);">{{ $sub }}</div>
+                    </div>
+                </a>
+            @endif
+        @endforeach
+    </div>
 
-            <a href="{{ route('user.mlm.income-comparison') }}" class="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-800 shadow hover:shadow-lg transition-all">
-                <span class="text-2xl">⚖️</span>
-                <div>
-                    <div class="font-semibold text-gray-800 dark:text-white text-sm">เปรียบเทียบรายได้</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">วิเคราะห์</div>
-                </div>
-            </a>
-
-            <a href="{{ route('user.fortune-referral.recruit') }}" class="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-800 shadow hover:shadow-lg transition-all">
-                <span class="text-2xl">🔮</span>
-                <div>
-                    <div class="font-semibold text-gray-800 dark:text-white text-sm">ชวนเพื่อนดูดวง</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">รับค่าแนะนำ</div>
-                </div>
-            </a>
-        </div>
-
-        {{-- ========== COPY REFERRAL LINK ========== --}}
-        <div class="bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl p-6 mb-6 shadow-xl">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-4 text-white">
-                    <span class="text-4xl">🎁</span>
-                    <div>
-                        <h3 class="text-xl font-bold">แชร์ลิ้งค์รับรายได้ทันที!</h3>
-                        <p class="text-white/80 text-sm">แนะนำเพื่อนมาสมัคร รับค่าคอมมิชชั่นตลอดชีพ</p>
+    {{-- ── แชร์ลิ้งค์รับรายได้ ──────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 22px; background:linear-gradient(120deg, color-mix(in srgb, #5aa07e 22%, transparent), transparent 72%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;">
+                <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+                    <span class="tp-tile" style="width:48px; height:48px; border-radius:15px; font-size:22px; background:#5aa07e;">🎁</span>
+                    <div style="min-width:0;">
+                        <div style="font-size:16px; font-weight:800;">แชร์ลิ้งค์รับรายได้ทันที!</div>
+                        <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">แนะนำเพื่อนมาสมัคร รับค่าคอมมิชชั่นตลอดชีพ</div>
                     </div>
                 </div>
-                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <div class="flex-1 md:flex-none">
-                        <input type="text" id="referral-link" readonly
-                               value="{{ route('register', ['ref' => $member->member_code]) }}"
-                               class="w-full md:w-80 px-4 py-3 rounded-xl border-0 bg-white/20 text-white placeholder-white/60 focus:ring-2 focus:ring-white text-sm font-mono">
-                    </div>
-                    <button @click="copyReferralLink()" class="px-6 py-3 bg-white text-green-600 rounded-xl font-bold hover:bg-green-50 transition-all shadow-lg flex items-center justify-center gap-2">
+                <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                    <input type="text" id="referral-link" readonly
+                           value="{{ route('register', ['ref' => $member->member_code]) }}"
+                           class="tp-input tp-num"
+                           style="width:min(320px, 70vw); font-size:12.5px;">
+                    <button type="button" @click="copyReferralLink()" class="tp-btn tp-btn-primary" style="white-space:nowrap;">
                         <span x-text="copyIcon">📋</span>
                         <span x-text="copyText">คัดลอกลิ้งค์</span>
                     </button>
                 </div>
             </div>
         </div>
-
-        {{-- ========== GENEALOGY TOOLBAR ========== --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden mb-6">
-            {{-- Toolbar --}}
-            <div class="p-4 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-gray-700 dark:to-gray-600">
-                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-2xl">🌳</span>
-                        <h2 class="text-xl font-bold text-gray-800 dark:text-white">ผังสายงาน MLM</h2>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-3">
-                        {{-- ค้นหา --}}
-                        <div class="relative">
-                            <input type="text"
-                                   x-model="searchQuery"
-                                   @input.debounce.300ms="doSearch()"
-                                   @keydown.enter.prevent="searchNext()"
-                                   placeholder="ค้นหาชื่อ/รหัส..."
-                                   class="w-48 pl-8 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500">
-                            <span class="absolute left-2.5 top-2.5 text-gray-400 text-sm">🔎</span>
-                            <span x-show="searchResultCount > 0" class="absolute right-2 top-2 text-xs text-purple-600 dark:text-purple-400 font-semibold"
-                                  x-text="(searchCurrentIndex + 1) + '/' + searchResultCount"></span>
-                        </div>
-
-                        {{-- Filter สถานะ --}}
-                        <select x-model="statusFilter" @change="applyFilter()"
-                                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-white">
-                            <option value="all">ทั้งหมด</option>
-                            <option value="active">Active เท่านั้น</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-
-                        {{-- ปุ่ม Fit --}}
-                        <button @click="fitToScreen()"
-                                class="px-4 py-2 bg-white dark:bg-gray-700 rounded-lg text-sm font-semibold hover:shadow transition-all border border-gray-200 dark:border-gray-600">
-                            🔄 พอดีจอ
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Genealogy Container --}}
-            <div class="relative">
-                <div id="genealogy-container" class="min-h-[500px] md:min-h-[650px]"></div>
-
-                {{-- Node Detail Panel (Sidebar Desktop / Bottom Sheet Mobile) --}}
-                <div x-show="selectedNode" x-transition
-                     class="absolute top-0 right-0 w-full md:w-80 h-full bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border-l border-gray-200 dark:border-gray-700 shadow-2xl overflow-y-auto detail-panel-enter z-30">
-                    <div class="p-5">
-                        {{-- ปิด --}}
-                        <button @click="selectedNode = null" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl">
-                            &times;
-                        </button>
-
-                        {{-- Avatar + ชื่อ --}}
-                        <div class="text-center mb-4">
-                            <img :src="selectedNode?.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent((selectedNode?.name || 'U').charAt(0)) + '&background=6366f1&color=fff&size=80'"
-                                 class="w-16 h-16 rounded-full mx-auto border-4 shadow-lg"
-                                 :class="{
-                                     'border-green-400': selectedNode?.retention_status === 'active',
-                                     'border-yellow-400': selectedNode?.retention_status === 'grace_period',
-                                     'border-red-400': selectedNode?.retention_status === 'inactive',
-                                     'border-gray-300': !selectedNode?.retention_status
-                                 }">
-                            <h3 class="mt-2 text-lg font-bold text-gray-800 dark:text-white" x-text="selectedNode?.name || '-'"></h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="selectedNode?.member_code || ''"></p>
-                        </div>
-
-                        {{-- Rank Badge --}}
-                        <div x-show="selectedNode?.rank_name" class="flex justify-center mb-4">
-                            <span class="px-4 py-1 rounded-full text-white text-sm font-semibold"
-                                  :style="'background:' + (selectedNode?.rank_color || '#6366F1')"
-                                  x-text="selectedNode?.rank_name"></span>
-                        </div>
-
-                        {{-- สถานะ --}}
-                        <div class="space-y-3 text-sm">
-                            <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <span class="text-gray-600 dark:text-gray-400">สถานะ</span>
-                                <span class="font-semibold"
-                                      :class="{
-                                          'text-green-600': selectedNode?.retention_status === 'active',
-                                          'text-yellow-600': selectedNode?.retention_status === 'grace_period',
-                                          'text-red-600': selectedNode?.retention_status === 'inactive'
-                                      }"
-                                      x-text="selectedNode?.retention_status === 'active' ? 'Active' : (selectedNode?.retention_status === 'grace_period' ? 'ใกล้หมดอายุ' : 'Inactive')">
-                                </span>
-                            </div>
-                            <div x-show="selectedNode?.retention_days_left != null" class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <span class="text-gray-600 dark:text-gray-400">หมดอายุใน</span>
-                                <span class="font-semibold text-gray-800 dark:text-white" x-text="(selectedNode?.retention_days_left || 0) + ' วัน'"></span>
-                            </div>
-                            <div x-show="selectedNode?.email" class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <span class="text-gray-600 dark:text-gray-400">อีเมล</span>
-                                <span class="font-semibold text-gray-800 dark:text-white text-xs" x-text="selectedNode?.email || '-'"></span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <span class="text-gray-600 dark:text-gray-400">PV ส่วนตัว</span>
-                                <span class="font-semibold text-gray-800 dark:text-white" x-text="(selectedNode?.monthly_pv || 0).toLocaleString()"></span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <span class="text-gray-600 dark:text-gray-400">ทีมทั้งหมด</span>
-                                <span class="font-semibold text-gray-800 dark:text-white" x-text="(selectedNode?.total_team_members || 0).toLocaleString()"></span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <span class="text-gray-600 dark:text-gray-400">แนะนำตรง</span>
-                                <span class="font-semibold text-gray-800 dark:text-white" x-text="(selectedNode?.direct_referrals || 0).toLocaleString()"></span>
-                            </div>
-                            <div x-show="selectedNode?.joined_at" class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <span class="text-gray-600 dark:text-gray-400">เข้าร่วมเมื่อ</span>
-                                <span class="font-semibold text-gray-800 dark:text-white text-xs" x-text="selectedNode?.joined_at || '-'"></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Status Legend --}}
-                <div class="absolute bottom-4 left-4 flex flex-wrap gap-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-2 shadow text-xs z-10">
-                    <div class="flex items-center gap-1">
-                        <span class="w-3 h-3 rounded-full bg-green-500"></span>
-                        <span class="text-gray-600 dark:text-gray-400">Active</span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
-                        <span class="text-gray-600 dark:text-gray-400">ใกล้หมดอายุ</span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
-                        <span class="text-gray-600 dark:text-gray-400">Inactive</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- ========== QUICK TIPS ========== --}}
-        <div class="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6">
-            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                💡 วิธีใช้งานผังสายงาน
-            </h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                    <span class="text-lg">🖱️</span>
-                    <span>ลากเมาส์เลื่อนดู</span>
-                </div>
-                <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                    <span class="text-lg">🔍</span>
-                    <span>Scroll เพื่อซูม</span>
-                </div>
-                <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                    <span class="text-lg">👆</span>
-                    <span>คลิกดูรายละเอียด</span>
-                </div>
-                <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                    <span class="text-lg">🔎</span>
-                    <span>ค้นหาสมาชิก</span>
-                </div>
-            </div>
-        </div>
-
     </div>
+
+    {{-- ── ผังสายงาน (Genealogy Viewer) ─────────────────────────── --}}
+    {{-- ⚠️ ใช้ไลบรารี MlmGenealogyV3 (tree visualization) — เก็บ container + JS เดิมทั้งหมด --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        {{-- Toolbar --}}
+        <div style="padding:16px 18px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
+                <div class="tp-section-h">🌳 ผังสายงาน MLM</div>
+
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
+                    {{-- ค้นหา --}}
+                    <div style="position:relative;">
+                        <input type="text"
+                               x-model="searchQuery"
+                               @input.debounce.300ms="doSearch()"
+                               @keydown.enter.prevent="searchNext()"
+                               placeholder="ค้นหาชื่อ/รหัส..."
+                               class="tp-input"
+                               style="width:190px; padding-left:30px; font-size:13px;">
+                        <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink2); font-size:13px; pointer-events:none;">🔎</span>
+                        <span x-show="searchResultCount > 0"
+                              x-text="(searchCurrentIndex + 1) + '/' + searchResultCount"
+                              class="tp-num"
+                              style="position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:11px; color:var(--deep1); font-weight:700;"></span>
+                    </div>
+
+                    {{-- Filter สถานะ --}}
+                    <select x-model="statusFilter" @change="applyFilter()" class="tp-input" style="font-size:13px; width:auto;">
+                        <option value="all">ทั้งหมด</option>
+                        <option value="active">Active เท่านั้น</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+
+                    {{-- ปุ่ม Fit --}}
+                    <button type="button" @click="fitToScreen()" class="tp-btn tp-btn-sm">🔄 พอดีจอ</button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Genealogy Container --}}
+        <div style="position:relative;">
+            <div id="genealogy-container" style="min-height:500px;"></div>
+
+            {{-- Node Detail Panel (Sidebar) --}}
+            <div x-show="selectedNode" x-transition
+                 style="position:absolute; top:0; right:0; width:min(320px, 100%); height:100%; overflow-y:auto; z-index:30;
+                        background:color-mix(in srgb, var(--surf) 96%, transparent); backdrop-filter:blur(8px);
+                        border-left:1px solid color-mix(in srgb, var(--ink2) 14%, transparent); box-shadow:var(--inset);">
+                <div style="padding:20px; position:relative;">
+                    {{-- ปิด --}}
+                    <button type="button" @click="selectedNode = null" class="tp-icon-btn" style="position:absolute; top:12px; right:12px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+
+                    {{-- Avatar + ชื่อ --}}
+                    <div style="text-align:center; margin-bottom:16px;">
+                        <img :src="selectedNode?.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent((selectedNode?.name || 'U').charAt(0)) + '&background=6366f1&color=fff&size=80'"
+                             style="width:64px; height:64px; border-radius:50%; margin:0 auto; border:4px solid; box-shadow:var(--inset-sm); object-fit:cover;"
+                             :style="'border-color:' + (selectedNode?.retention_status === 'active' ? '#5aa07e' : (selectedNode?.retention_status === 'grace_period' ? '#e0a52e' : (selectedNode?.retention_status === 'inactive' ? '#d9534f' : 'var(--ink2)')))">
+                        <h3 style="margin:8px 0 0; font-size:17px; font-weight:800;" x-text="selectedNode?.name || '-'"></h3>
+                        <p class="tp-num" style="margin:2px 0 0; font-size:13px; color:var(--ink2);" x-text="selectedNode?.member_code || ''"></p>
+                    </div>
+
+                    {{-- Rank Badge --}}
+                    <div x-show="selectedNode?.rank_name" style="display:flex; justify-content:center; margin-bottom:16px;">
+                        <span class="tp-pill" style="color:#fff;"
+                              :style="'background:' + (selectedNode?.rank_color || 'var(--deep1)')"
+                              x-text="selectedNode?.rank_name"></span>
+                    </div>
+
+                    {{-- รายละเอียด --}}
+                    <div style="display:flex; flex-direction:column; gap:9px; font-size:13px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm);">
+                            <span style="color:var(--ink2);">สถานะ</span>
+                            <span style="font-weight:700;"
+                                  :style="'color:' + (selectedNode?.retention_status === 'active' ? '#5aa07e' : (selectedNode?.retention_status === 'grace_period' ? '#e0a52e' : (selectedNode?.retention_status === 'inactive' ? '#d9534f' : 'var(--ink)')))"
+                                  x-text="selectedNode?.retention_status === 'active' ? 'Active' : (selectedNode?.retention_status === 'grace_period' ? 'ใกล้หมดอายุ' : 'Inactive')"></span>
+                        </div>
+                        <div x-show="selectedNode?.retention_days_left != null" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm);">
+                            <span style="color:var(--ink2);">หมดอายุใน</span>
+                            <span class="tp-num" style="font-weight:700;" x-text="(selectedNode?.retention_days_left || 0) + ' วัน'"></span>
+                        </div>
+                        <div x-show="selectedNode?.email" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm);">
+                            <span style="color:var(--ink2);">อีเมล</span>
+                            <span style="font-weight:700; font-size:12px;" x-text="selectedNode?.email || '-'"></span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm);">
+                            <span style="color:var(--ink2);">PV ส่วนตัว</span>
+                            <span class="tp-num" style="font-weight:700;" x-text="(selectedNode?.monthly_pv || 0).toLocaleString()"></span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm);">
+                            <span style="color:var(--ink2);">ทีมทั้งหมด</span>
+                            <span class="tp-num" style="font-weight:700;" x-text="(selectedNode?.total_team_members || 0).toLocaleString()"></span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm);">
+                            <span style="color:var(--ink2);">แนะนำตรง</span>
+                            <span class="tp-num" style="font-weight:700;" x-text="(selectedNode?.direct_referrals || 0).toLocaleString()"></span>
+                        </div>
+                        <div x-show="selectedNode?.joined_at" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm);">
+                            <span style="color:var(--ink2);">เข้าร่วมเมื่อ</span>
+                            <span class="tp-num" style="font-weight:700; font-size:12px;" x-text="selectedNode?.joined_at || '-'"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Status Legend --}}
+            <div style="position:absolute; bottom:14px; left:14px; display:flex; flex-wrap:wrap; gap:12px; z-index:10;
+                        padding:8px 12px; border-radius:12px; font-size:11px;
+                        background:color-mix(in srgb, var(--surf) 92%, transparent); backdrop-filter:blur(6px); box-shadow:var(--inset-sm);">
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <span style="width:10px; height:10px; border-radius:50%; background:#5aa07e;"></span>
+                    <span style="color:var(--ink2);">Active</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <span style="width:10px; height:10px; border-radius:50%; background:#e0a52e;"></span>
+                    <span style="color:var(--ink2);">ใกล้หมดอายุ</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <span style="width:10px; height:10px; border-radius:50%; background:#d9534f;"></span>
+                    <span style="color:var(--ink2);">Inactive</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── วิธีใช้งาน ───────────────────────────────────────────── --}}
+    @php
+        $tips = [
+            ['🖱️', 'ลากเมาส์เลื่อนดู'],
+            ['🔍', 'Scroll เพื่อซูม'],
+            ['👆', 'คลิกดูรายละเอียด'],
+            ['🔎', 'ค้นหาสมาชิก'],
+        ];
+    @endphp
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">💡 วิธีใช้งานผังสายงาน</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;">
+            @foreach($tips as [$emoji, $text])
+                <div style="display:flex; align-items:center; gap:10px; padding:11px 13px; border-radius:13px; box-shadow:var(--inset-sm);">
+                    <span style="font-size:18px;">{{ $emoji }}</span>
+                    <span style="font-size:12.5px; color:var(--ink);">{{ $text }}</span>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
 </div>
 
 @vite('resources/js/mlm-genealogy-v3.js')
+
+@push('scripts')
 <script>
 function genealogyPage() {
     return {
@@ -444,7 +305,7 @@ function genealogyPage() {
 
                 this.viewer = new MlmGenealogyV3(container, {
                     apiUrl: '{{ route("user.mlm.genealogy-data") }}',
-                    treeType: '{{ ($member->plan?->type === "binary" || $member->plan?->type === "hybrid") ? "binary" : "unilevel" }}',
+                    treeType: @json($jsTreeType),
                     maxDepth: 5,
                     onNodeClick: (node) => {
                         this.selectedNode = node;
@@ -474,8 +335,7 @@ function genealogyPage() {
         },
 
         applyFilter() {
-            // Filter จะถูกใช้ในครั้งถัดไปที่ render
-            // สำหรับตอนนี้ reload tree
+            // Filter จะถูกใช้ในครั้งถัดไปที่ render — ตอนนี้ reload tree
             if (this.viewer) this.viewer.loadTree();
         },
 
@@ -486,13 +346,17 @@ function genealogyPage() {
             navigator.clipboard.writeText(input.value).then(() => {
                 this.copyIcon = '✅';
                 this.copyText = 'คัดลอกแล้ว!';
+                if (window.showNotification) window.showNotification('คัดลอกลิ้งค์เชิญสำเร็จ!', 'success');
                 setTimeout(() => {
                     this.copyIcon = '📋';
                     this.copyText = 'คัดลอกลิ้งค์';
                 }, 2000);
+            }).catch(() => {
+                if (window.showNotification) window.showNotification('คัดลอกไม่สำเร็จ', 'error');
             });
         }
     };
 }
 </script>
+@endpush
 @endsection

@@ -1,21 +1,17 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'เครื่องคำนวณ TPIX Staking')
 
 @section('content')
 {{--
-    TPIX Staking Calculator
-    ======================
+    TPIX Staking Calculator (Theme V4 "นวลทองคำ")
+    ============================================
     หน้าคำนวณผลตอบแทนจากการ Staking เหรียญ TPIX
-    รองรับ V3 Design System, Alpine.js, Dark Mode 100%
-
-    Features:
     - คำนวณ staking rewards ตามเวลา
     - Lock period options (30, 90, 180, 365 วัน)
     - APY แตกต่างกันตาม lock period (30% - 120%)
-    - Auto-compound option
-    - Real-time animation
-    - Mobile responsive
+    - Auto-compound option + Real-time animation
+    - กราฟใช้ Chart.js (กราฟจริงเพื่อ core functionality — คงไว้ตามกฎ V4)
 
     APY Structure (ตามเอกสาร TPIX):
     - 30 วัน → 30% APY
@@ -24,636 +20,305 @@
     - 365 วัน → 120% APY (Max)
 --}}
 
-<div class="container-fluid px-4 py-6"
+<div style="display:flex; flex-direction:column; gap:18px;"
      x-data="tpixStakingCalculator()"
      x-init="init()">
 
-    {{-- Premium Hero Header (Purple-Pink-Orange for TPIX Staking Calculator) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 dark:from-purple-800 dark:via-pink-800 dark:to-orange-800 rounded-2xl shadow-2xl p-8 mb-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-chart-pie"></i>
-            </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-coins text-3xl text-white drop-shadow-lg"></i>
-                    </div>
+    {{-- ── Hero ───────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; font-size:26px;"><i class="fas fa-coins" style="color:#fff;"></i></span>
                     <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            🪙 เครื่องคำนวณ TPIX Staking
-                        </h1>
-                        <p class="text-purple-100 mt-1">
-                            คำนวณผลตอบแทนจากการ Staking เหรียญ TPIX ของคุณ
-                        </p>
+                        <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">🪙 เครื่องคำนวณ TPIX Staking</h1>
+                        <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">คำนวณผลตอบแทนจากการ Staking เหรียญ TPIX ของคุณ</div>
                     </div>
                 </div>
-                <a href="{{ route('user.dashboard') }}"
-                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2 justify-center md:justify-start">
+                <a href="{{ route('user.dashboard') }}" class="tp-icon-btn" title="กลับหน้าหลัก" style="text-decoration:none;">
                     <i class="fas fa-arrow-left"></i>
-                    <span class="hidden md:inline">กลับหน้าหลัก</span>
                 </a>
             </div>
         </div>
     </div>
 
-    {{-- Control Panel --}}
-    <div class="glass-fusion-card rounded-3xl shadow-2xl p-8 mb-8
-                backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                border border-white/20 dark:border-gray-700/30">
+    {{-- ── แผงตั้งค่าการคำนวณ ─────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px 22px;">
+        <div class="tp-section-h" style="margin-bottom:16px;">
+            <i class="fas fa-sliders-h" style="color:var(--deep1); margin-right:6px;"></i> ตั้งค่าการคำนวณ
+        </div>
 
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-            <i class="fas fa-sliders-h text-purple-600"></i>
-            <span>ตั้งค่าการคำนวณ</span>
-        </h2>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px;">
 
             {{-- จำนวน TPIX ที่ Stake --}}
             <div>
-                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    <i class="fas fa-coins text-purple-600 mr-2"></i>
-                    จำนวน TPIX ที่ Stake
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;">
+                    <i class="fas fa-coins" style="color:var(--deep1); margin-right:6px;"></i> จำนวน TPIX ที่ Stake
                 </label>
-                <div class="relative">
+                <div style="position:relative;">
                     <input type="number"
                            x-model.number="config.stakingAmount"
                            @input="calculateRewards()"
                            step="100"
                            min="0"
-                           class="w-full pl-4 pr-16 py-4 text-lg font-bold
-                                  bg-white dark:bg-gray-700
-                                  border-2 border-purple-300 dark:border-purple-600
-                                  rounded-xl
-                                  focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500
-                                  text-gray-900 dark:text-white
-                                  transition-all">
-                    <div class="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 dark:text-purple-400 font-bold">
-                        TPIX
-                    </div>
+                           class="tp-input tp-num"
+                           style="width:100%; padding-right:56px; font-size:16px; font-weight:700;">
+                    <span style="position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:12px; font-weight:700; color:var(--deep1);">TPIX</span>
                 </div>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    ขั้นต่ำ: 100 TPIX
-                </p>
+                <div style="margin-top:6px; font-size:11px; color:var(--ink2);">ขั้นต่ำ: 100 TPIX</div>
             </div>
 
             {{-- Lock Period --}}
             <div>
-                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    <i class="fas fa-lock text-blue-600 mr-2"></i>
-                    ระยะเวลา Lock
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;">
+                    <i class="fas fa-lock" style="color:#5689b8; margin-right:6px;"></i> ระยะเวลา Lock
                 </label>
                 <select x-model="config.lockPeriod"
                         @change="updateAPY(); calculateRewards()"
-                        class="w-full px-4 py-4 text-lg font-bold
-                               bg-white dark:bg-gray-700
-                               border-2 border-blue-300 dark:border-blue-600
-                               rounded-xl
-                               focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500
-                               text-gray-900 dark:text-white
-                               transition-all">
+                        class="tp-input"
+                        style="width:100%; font-size:15px; font-weight:700;">
                     <option value="30">30 วัน (APY 30%)</option>
                     <option value="90">90 วัน (APY 60%)</option>
                     <option value="180">180 วัน (APY 90%)</option>
                     <option value="365">365 วัน (APY 120%)</option>
                 </select>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    ระยะเวลาที่ล็อค TPIX
-                </p>
+                <div style="margin-top:6px; font-size:11px; color:var(--ink2);">ระยะเวลาที่ล็อค TPIX</div>
             </div>
 
             {{-- APY (Auto-calculated) --}}
             <div>
-                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    <i class="fas fa-chart-line text-green-600 mr-2"></i>
-                    อัตราผลตอบแทน (APY)
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;">
+                    <i class="fas fa-chart-line" style="color:#5aa07e; margin-right:6px;"></i> อัตราผลตอบแทน (APY)
                 </label>
-                <div class="relative">
-                    <div class="w-full px-4 py-4 text-lg font-bold
-                                bg-gradient-to-r from-green-50 to-emerald-50
-                                dark:from-green-900/20 dark:to-emerald-900/20
-                                border-2 border-green-300 dark:border-green-600
-                                rounded-xl
-                                text-green-700 dark:text-green-400
-                                flex items-center justify-between">
-                        <span x-text="config.apy"></span>
-                        <span class="text-sm">%</span>
-                    </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 14px; border-radius:13px; box-shadow:var(--inset-sm); font-size:16px; font-weight:800; color:#5aa07e;">
+                    <span class="tp-num" x-text="config.apy"></span>
+                    <span style="font-size:13px;">%</span>
                 </div>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    คำนวณอัตโนมัติตาม Lock Period
-                </p>
+                <div style="margin-top:6px; font-size:11px; color:var(--ink2);">คำนวณอัตโนมัติตาม Lock Period</div>
             </div>
 
             {{-- Auto Compound --}}
             <div>
-                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    <i class="fas fa-sync-alt text-pink-600 mr-2"></i>
-                    Auto-Compound
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;">
+                    <i class="fas fa-sync-alt" style="color:var(--accent2); margin-right:6px;"></i> Auto-Compound
                 </label>
-                <div class="relative">
-                    <label class="relative inline-flex items-center cursor-pointer w-full">
-                        <input type="checkbox"
-                               x-model="config.autoCompound"
-                               @change="calculateRewards()"
-                               class="sr-only peer">
-                        <div class="w-full h-14
-                                    bg-gray-300 dark:bg-gray-600
-                                    rounded-xl
-                                    peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-500/20
-                                    peer-checked:bg-gradient-to-r peer-checked:from-pink-500 peer-checked:to-purple-600
-                                    transition-all
-                                    relative
-                                    shadow-inner">
-                            <div class="absolute top-2 left-2
-                                        bg-white
-                                        w-10 h-10
-                                        rounded-lg
-                                        shadow-lg
-                                        peer-checked:translate-x-[calc(100%-2.5rem)]
-                                        transition-transform
-                                        flex items-center justify-center">
-                                <i class="fas"
-                                   :class="config.autoCompound ? 'fa-check text-pink-600' : 'fa-times text-gray-400'"></i>
-                            </div>
-                            <div class="absolute inset-0 flex items-center justify-center text-white font-bold">
-                                <span x-show="config.autoCompound">เปิดใช้งาน</span>
-                                <span x-show="!config.autoCompound" class="text-gray-600">ปิดใช้งาน</span>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    นำรางวัลกลับไป stake อัตโนมัติ
-                </p>
+                <label style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:11px 14px; border-radius:13px; box-shadow:var(--inset-sm);">
+                    <input type="checkbox"
+                           x-model="config.autoCompound"
+                           @change="calculateRewards()"
+                           style="position:absolute; opacity:0; width:0; height:0;">
+                    <span style="position:relative; flex-shrink:0; width:48px; height:26px; border-radius:20px; transition:background .25s; box-shadow:var(--inset-sm);"
+                          :style="config.autoCompound ? 'background:linear-gradient(90deg,var(--accent1),var(--accent2));' : 'background:color-mix(in srgb,var(--ink2) 28%,transparent);'">
+                        <span style="position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .25s; display:flex; align-items:center; justify-content:center; font-size:10px;"
+                              :style="config.autoCompound ? 'transform:translateX(22px);' : ''">
+                            <i class="fas" :class="config.autoCompound ? 'fa-check' : 'fa-times'" :style="config.autoCompound ? 'color:var(--deep1);' : 'color:var(--ink2);'"></i>
+                        </span>
+                    </span>
+                    <span style="font-size:13px; font-weight:700;" x-text="config.autoCompound ? 'เปิดใช้งาน' : 'ปิดใช้งาน'"></span>
+                </label>
+                <div style="margin-top:6px; font-size:11px; color:var(--ink2);">นำรางวัลกลับไป stake อัตโนมัติ</div>
             </div>
         </div>
 
-        {{-- Action Buttons --}}
-        <div class="mt-8 flex gap-4">
+        {{-- ปุ่มดำเนินการ --}}
+        <div style="margin-top:18px; display:flex; flex-wrap:wrap; gap:12px;">
             <button @click="startSimulation()"
                     :disabled="isSimulating"
-                    class="flex-1 group relative overflow-hidden
-                           px-8 py-4
-                           bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600
-                           hover:from-purple-700 hover:via-pink-700 hover:to-orange-700
-                           text-white font-bold text-lg
-                           rounded-xl shadow-lg
-                           hover:shadow-2xl hover:scale-[1.02]
-                           disabled:opacity-50 disabled:cursor-not-allowed
-                           transition-all duration-300">
-
-                {{-- Shine Effect --}}
-                <div class="absolute inset-0
-                            bg-gradient-to-r from-transparent via-white/20 to-transparent
-                            -translate-x-full group-hover:translate-x-full
-                            transition-transform duration-1000"></div>
-
-                {{-- Button Content --}}
-                <span class="relative z-10 flex items-center justify-center gap-2">
-                    <i class="fas" :class="isSimulating ? 'fa-spinner fa-spin' : 'fa-play'"></i>
-                    <span x-text="isSimulating ? 'กำลังคำนวณ...' : '▶️ เริ่มคำนวณ'"></span>
-                </span>
+                    class="tp-btn tp-btn-primary"
+                    style="flex:1; min-width:200px; justify-content:center; font-size:15px; padding:13px 24px;"
+                    :style="isSimulating ? 'opacity:.6; cursor:not-allowed;' : ''">
+                <i class="fas" :class="isSimulating ? 'fa-spinner fa-spin' : 'fa-play'"></i>
+                <span x-text="isSimulating ? 'กำลังคำนวณ...' : '▶️ เริ่มคำนวณ'"></span>
             </button>
 
             <button @click="resetSimulation()"
-                    class="px-8 py-4
-                           bg-gray-600 hover:bg-gray-700
-                           dark:bg-gray-700 dark:hover:bg-gray-600
-                           text-white font-bold text-lg
-                           rounded-xl shadow-lg
-                           hover:shadow-xl
-                           transition-all duration-300">
-                <i class="fas fa-redo mr-2"></i>
-                รีเซ็ต
+                    class="tp-btn"
+                    style="justify-content:center; font-size:15px; padding:13px 24px;">
+                <i class="fas fa-redo"></i> รีเซ็ต
             </button>
         </div>
     </div>
 
-    {{-- Animation Container --}}
+    {{-- ── ระหว่างจำลอง (Animation) ───────────────────────────── --}}
     <div x-show="isSimulating"
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 scale-95"
          x-transition:enter-end="opacity-100 scale-100"
          x-cloak
-         class="mb-8">
+         style="display:flex; flex-direction:column; gap:16px;">
 
-        {{-- Current Progress Card --}}
-        <div class="relative overflow-hidden rounded-3xl mb-6">
-            <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 p-8">
-                <div class="text-center text-white">
-                    <h2 class="text-2xl font-bold mb-4">กำลังคำนวณ...</h2>
-                    <div class="text-7xl font-black mb-3">
-                        วันที่ <span x-text="simulation.currentDay"></span>
-                    </div>
-                    <div class="text-xl opacity-90">
-                        จาก <span x-text="config.lockPeriod"></span> วัน
-                    </div>
+        {{-- การ์ดความคืบหน้า --}}
+        <div class="tp-card" style="padding:0; overflow:hidden;">
+            <div style="padding:28px 24px; text-align:center; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 18%, transparent), transparent 72%);">
+                <div style="font-size:16px; font-weight:700; margin-bottom:10px;">กำลังคำนวณ...</div>
+                <div class="tp-num" style="font-size:clamp(38px,8vw,60px); font-weight:800; line-height:1.1; color:var(--deep1);">
+                    วันที่ <span x-text="simulation.currentDay"></span>
+                </div>
+                <div style="font-size:14px; color:var(--ink2); margin-top:4px;">
+                    จาก <span x-text="config.lockPeriod"></span> วัน
+                </div>
 
-                    {{-- Progress Bar --}}
-                    <div class="mt-6 w-full bg-white/20 rounded-full h-4 overflow-hidden">
-                        <div class="h-full bg-white rounded-full transition-all duration-500"
-                             :style="`width: ${(simulation.currentDay / config.lockPeriod) * 100}%`"></div>
-                    </div>
-                    <div class="mt-2 text-sm opacity-75">
-                        ความคืบหน้า: <span x-text="Math.floor((simulation.currentDay / config.lockPeriod) * 100)"></span>%
-                    </div>
+                {{-- Progress Bar --}}
+                <div style="margin-top:18px; height:14px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
+                    <div style="height:100%; border-radius:20px; background:linear-gradient(90deg,var(--accent1),var(--accent2)); transition:width .5s ease;"
+                         :style="`width:${(simulation.currentDay / config.lockPeriod) * 100}%`"></div>
+                </div>
+                <div style="margin-top:8px; font-size:12px; color:var(--ink2);">
+                    ความคืบหน้า: <span x-text="Math.floor((simulation.currentDay / config.lockPeriod) * 100)"></span>%
                 </div>
             </div>
         </div>
 
-        {{-- Real-time Stats Grid --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {{-- สถิติ Real-time 4 ใบ --}}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
 
             {{-- TPIX ที่ Stake --}}
-            <div class="group perspective-1000">
-                <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
-                    {{-- Glow Effect --}}
-                    <div class="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-600
-                                rounded-2xl blur-xl opacity-50 group-hover:opacity-75
-                                transition-opacity"></div>
-
-                    {{-- Card --}}
-                    <div class="relative glass-fusion-card rounded-2xl p-6
-                                backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                                border border-white/20 dark:border-gray-700/30
-                                shadow-2xl">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600
-                                        rounded-xl flex items-center justify-center shadow-lg">
-                                <i class="fas fa-coins text-white text-xl"></i>
-                            </div>
-                        </div>
-                        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                            <span x-text="formatNumber(simulation.currentStake)"></span>
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            TPIX ที่ Stake
-                        </div>
-                    </div>
-                </div>
+            <div class="tp-card" style="padding:18px;">
+                <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:17px;"><i class="fas fa-coins" style="color:#fff;"></i></span>
+                <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:12px;"><span x-text="formatNumber(simulation.currentStake)"></span></div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">TPIX ที่ Stake</div>
             </div>
 
             {{-- รางวัลวันนี้ --}}
-            <div class="group perspective-1000">
-                <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
-                    <div class="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-600
-                                rounded-2xl blur-xl opacity-50 group-hover:opacity-75
-                                transition-opacity"></div>
-
-                    <div class="relative glass-fusion-card rounded-2xl p-6
-                                backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                                border border-white/20 dark:border-gray-700/30
-                                shadow-2xl">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600
-                                        rounded-xl flex items-center justify-center shadow-lg">
-                                <i class="fas fa-gift text-white text-xl"></i>
-                            </div>
-                        </div>
-                        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                            <span x-text="formatNumber(simulation.dailyReward)"></span>
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            รางวัลวันนี้
-                        </div>
-                    </div>
-                </div>
+            <div class="tp-card" style="padding:18px;">
+                <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:17px; background:color-mix(in srgb, #5aa07e 18%, transparent);"><i class="fas fa-gift" style="color:#5aa07e;"></i></span>
+                <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:12px;"><span x-text="formatNumber(simulation.dailyReward)"></span></div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">รางวัลวันนี้</div>
             </div>
 
             {{-- รางวัลสะสม --}}
-            <div class="group perspective-1000">
-                <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
-                    <div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-600
-                                rounded-2xl blur-xl opacity-50 group-hover:opacity-75
-                                transition-opacity"></div>
-
-                    <div class="relative glass-fusion-card rounded-2xl p-6
-                                backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                                border border-white/20 dark:border-gray-700/30
-                                shadow-2xl">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600
-                                        rounded-xl flex items-center justify-center shadow-lg">
-                                <i class="fas fa-chart-line text-white text-xl"></i>
-                            </div>
-                        </div>
-                        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                            <span x-text="formatNumber(simulation.totalRewards)"></span>
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            รางวัลสะสมทั้งหมด
-                        </div>
-                    </div>
-                </div>
+            <div class="tp-card" style="padding:18px;">
+                <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:17px; background:color-mix(in srgb, #5689b8 18%, transparent);"><i class="fas fa-chart-line" style="color:#5689b8;"></i></span>
+                <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:12px;"><span x-text="formatNumber(simulation.totalRewards)"></span></div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">รางวัลสะสมทั้งหมด</div>
             </div>
 
             {{-- TPIX รวม --}}
-            <div class="group perspective-1000">
-                <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
-                    <div class="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-600
-                                rounded-2xl blur-xl opacity-50 group-hover:opacity-75
-                                transition-opacity animate-pulse"></div>
-
-                    <div class="relative glass-fusion-card rounded-2xl p-6
-                                backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                                border border-white/20 dark:border-gray-700/30
-                                shadow-2xl">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600
-                                        rounded-xl flex items-center justify-center shadow-lg">
-                                <i class="fas fa-wallet text-white text-xl"></i>
-                            </div>
-                        </div>
-                        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                            <span x-text="formatNumber(simulation.totalTPIX)"></span>
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            TPIX รวมทั้งหมด
-                        </div>
-                    </div>
-                </div>
+            <div class="tp-card" style="padding:18px;">
+                <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:17px; background:color-mix(in srgb, #e0a52e 18%, transparent);"><i class="fas fa-wallet" style="color:#e0a52e;"></i></span>
+                <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:12px; color:var(--deep1);"><span x-text="formatNumber(simulation.totalTPIX)"></span></div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">TPIX รวมทั้งหมด</div>
             </div>
         </div>
     </div>
 
-    {{-- Results Container --}}
+    {{-- ── ผลลัพธ์ ─────────────────────────────────────────────── --}}
     <div x-show="showResults"
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 scale-95"
          x-transition:enter-end="opacity-100 scale-100"
          x-cloak
-         class="space-y-8">
+         style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Summary Stats --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {{-- สรุปผล 4 ใบ --}}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
 
-            {{-- เงินลงทุนเริ่มต้น --}}
-            <div class="text-center">
-                <div class="glass-fusion-card rounded-2xl p-6
-                            backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                            border border-white/20 dark:border-gray-700/30
-                            shadow-2xl">
-                    <div class="text-5xl mb-3">💰</div>
-                    <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
-                        <span x-text="formatNumber(config.stakingAmount)"></span>
-                    </div>
-                    <div class="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        TPIX ที่ Stake
-                    </div>
-                </div>
+            {{-- TPIX ที่ Stake --}}
+            <div class="tp-card" style="padding:20px; text-align:center;">
+                <div style="font-size:40px;">💰</div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; color:var(--deep1); margin-top:8px;"><span x-text="formatNumber(config.stakingAmount)"></span></div>
+                <div style="font-size:12.5px; font-weight:600; color:var(--ink2); margin-top:2px;">TPIX ที่ Stake</div>
             </div>
 
             {{-- รางวัลทั้งหมด --}}
-            <div class="text-center">
-                <div class="glass-fusion-card rounded-2xl p-6
-                            backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                            border border-white/20 dark:border-gray-700/30
-                            shadow-2xl">
-                    <div class="text-5xl mb-3">🎁</div>
-                    <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
-                        <span x-text="formatNumber(results.totalRewards)"></span>
-                    </div>
-                    <div class="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        รางวัลทั้งหมด
-                    </div>
-                </div>
+            <div class="tp-card" style="padding:20px; text-align:center;">
+                <div style="font-size:40px;">🎁</div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; color:#5aa07e; margin-top:8px;"><span x-text="formatNumber(results.totalRewards)"></span></div>
+                <div style="font-size:12.5px; font-weight:600; color:var(--ink2); margin-top:2px;">รางวัลทั้งหมด</div>
             </div>
 
             {{-- ROI --}}
-            <div class="text-center">
-                <div class="glass-fusion-card rounded-2xl p-6
-                            backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                            border border-white/20 dark:border-gray-700/30
-                            shadow-2xl">
-                    <div class="text-5xl mb-3">📈</div>
-                    <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
-                        <span x-text="formatNumber(results.roi)"></span>%
-                    </div>
-                    <div class="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        ผลตอบแทน (ROI)
-                    </div>
-                </div>
+            <div class="tp-card" style="padding:20px; text-align:center;">
+                <div style="font-size:40px;">📈</div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; color:#5689b8; margin-top:8px;"><span x-text="formatNumber(results.roi)"></span>%</div>
+                <div style="font-size:12.5px; font-weight:600; color:var(--ink2); margin-top:2px;">ผลตอบแทน (ROI)</div>
             </div>
 
             {{-- TPIX ที่ได้รับ --}}
-            <div class="text-center">
-                <div class="glass-fusion-card rounded-2xl p-6
-                            backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                            border border-white/20 dark:border-gray-700/30
-                            shadow-2xl">
-                    <div class="text-5xl mb-3">🚀</div>
-                    <div class="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">
-                        <span x-text="formatNumber(results.finalTPIX)"></span>
-                    </div>
-                    <div class="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        TPIX ทั้งหมดที่ได้
-                    </div>
-                </div>
+            <div class="tp-card" style="padding:20px; text-align:center;">
+                <div style="font-size:40px;">🚀</div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; color:#e0a52e; margin-top:8px;"><span x-text="formatNumber(results.finalTPIX)"></span></div>
+                <div style="font-size:12.5px; font-weight:600; color:var(--ink2); margin-top:2px;">TPIX ทั้งหมดที่ได้</div>
             </div>
         </div>
 
-        {{-- Detailed Breakdown Table --}}
-        <div class="glass-fusion-card rounded-3xl shadow-2xl overflow-hidden
-                    backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                    border border-white/20 dark:border-gray-700/30">
-
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h3 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                    <i class="fas fa-table text-purple-600"></i>
-                    <span>รายละเอียดรางวัลแต่ละวัน</span>
-                </h3>
+        {{-- ตารางรายละเอียดรายวัน --}}
+        <div class="tp-card" style="padding:0; overflow:hidden;">
+            <div style="padding:18px 20px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                <div class="tp-section-h"><i class="fas fa-table" style="color:var(--deep1); margin-right:6px;"></i> รายละเอียดรางวัลแต่ละวัน</div>
             </div>
-
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                                วันที่
-                            </th>
-                            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
-                                TPIX ที่ Stake
-                            </th>
-                            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
-                                รางวัลวันนี้
-                            </th>
-                            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
-                                รางวัลสะสม
-                            </th>
-                            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
-                                TPIX รวม
-                            </th>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
+                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;">วันที่</th>
+                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">TPIX ที่ Stake</th>
+                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">รางวัลวันนี้</th>
+                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">รางวัลสะสม</th>
+                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">TPIX รวม</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody>
                         <template x-for="(day, index) in results.dailyBreakdown" :key="index">
-                            <tr class="hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
-                                    วันที่ <span x-text="day.day"></span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-purple-600 dark:text-purple-400 font-semibold">
-                                    <span x-text="formatNumber(day.stake)"></span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 dark:text-green-400 font-semibold">
-                                    <span x-text="formatNumber(day.dailyReward)"></span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-blue-600 dark:text-blue-400 font-semibold">
-                                    <span x-text="formatNumber(day.totalRewards)"></span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-orange-600 dark:text-orange-400 font-bold">
-                                    <span x-text="formatNumber(day.totalTPIX)"></span>
-                                </td>
+                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                                <td style="padding:12px 16px; white-space:nowrap; font-weight:600;">วันที่ <span class="tp-num" x-text="day.day"></span></td>
+                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; color:var(--deep1);"><span x-text="formatNumber(day.stake)"></span></td>
+                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; color:#5aa07e;"><span x-text="formatNumber(day.dailyReward)"></span></td>
+                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; color:#5689b8;"><span x-text="formatNumber(day.totalRewards)"></span></td>
+                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; color:#e0a52e;"><span x-text="formatNumber(day.totalTPIX)"></span></td>
                             </tr>
                         </template>
                     </tbody>
-                    <tfoot class="bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20">
-                        <tr>
-                            <td colspan="3" class="px-6 py-4 text-right text-sm font-bold text-gray-900 dark:text-white">
-                                รวมทั้งหมด:
-                            </td>
-                            <td class="px-6 py-4 text-right text-lg font-bold text-green-600 dark:text-green-400">
-                                <span x-text="formatNumber(results.totalRewards)"></span>
-                            </td>
-                            <td class="px-6 py-4 text-right text-lg font-bold text-orange-600 dark:text-orange-400">
-                                <span x-text="formatNumber(results.finalTPIX)"></span>
-                            </td>
+                    <tfoot>
+                        <tr style="border-top:2px solid color-mix(in srgb, var(--ink2) 20%, transparent); box-shadow:var(--inset-sm);">
+                            <td colspan="3" style="padding:14px 16px; text-align:right; font-size:13px; font-weight:700;">รวมทั้งหมด:</td>
+                            <td class="tp-num" style="padding:14px 16px; text-align:right; font-size:15px; font-weight:800; color:#5aa07e;"><span x-text="formatNumber(results.totalRewards)"></span></td>
+                            <td class="tp-num" style="padding:14px 16px; text-align:right; font-size:15px; font-weight:800; color:#e0a52e;"><span x-text="formatNumber(results.finalTPIX)"></span></td>
                         </tr>
                     </tfoot>
                 </table>
             </div>
         </div>
 
-        {{-- Charts --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {{-- กราฟ (Chart.js — กราฟจริงเพื่อ core functionality) --}}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px;">
 
             {{-- Growth Chart --}}
-            <div class="glass-fusion-card rounded-2xl p-6 shadow-2xl
-                        backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                        border border-white/20 dark:border-gray-700/30">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-                    <i class="fas fa-chart-area text-purple-600"></i>
-                    <span>กราฟการเติบโตของ TPIX</span>
-                </h3>
-                <div style="position: relative; height: 300px;">
+            <div class="tp-card" style="padding:20px;">
+                <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-chart-area" style="color:var(--deep1); margin-right:6px;"></i> กราฟการเติบโตของ TPIX</div>
+                <div style="position:relative; height:300px;">
                     <canvas id="growth-chart"></canvas>
                 </div>
             </div>
 
             {{-- Rewards Distribution --}}
-            <div class="glass-fusion-card rounded-2xl p-6 shadow-2xl
-                        backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
-                        border border-white/20 dark:border-gray-700/30">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-                    <i class="fas fa-chart-pie text-pink-600"></i>
-                    <span>สัดส่วนผลตอบแทน</span>
-                </h3>
-                <div style="position: relative; height: 300px;">
+            <div class="tp-card" style="padding:20px;">
+                <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-chart-pie" style="color:var(--accent2); margin-right:6px;"></i> สัดส่วนผลตอบแทน</div>
+                <div style="position:relative; height:300px;">
                     <canvas id="distribution-chart"></canvas>
                 </div>
             </div>
         </div>
 
         {{-- Call to Action --}}
-        <div class="relative overflow-hidden rounded-3xl">
-            <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 p-8 text-center">
-                <div class="relative z-10">
-                    <h3 class="text-4xl font-black text-white mb-4">
-                        🎉 เริ่ม Stake TPIX วันนี้!
-                    </h3>
-                    <p class="text-xl text-white/90 mb-6">
-                        รับผลตอบแทนสูงสุด 120% ต่อปี ด้วยระบบ TPIX Staking
-                    </p>
-                    <div class="flex gap-4 justify-center flex-wrap">
-                        <button @click="window.location.href='{{ route('user.dashboard') }}'"
-                                class="px-8 py-4
-                                       bg-white text-purple-600
-                                       font-bold text-lg
-                                       rounded-xl shadow-lg
-                                       hover:bg-gray-100 hover:scale-105
-                                       transition-all duration-300">
-                            <i class="fas fa-rocket mr-2"></i>
-                            เริ่มต้น Stake!
-                        </button>
-                        <button @click="resetSimulation(); startSimulation()"
-                                class="px-8 py-4
-                                       bg-purple-800 hover:bg-purple-900
-                                       text-white font-bold text-lg
-                                       rounded-xl shadow-lg
-                                       hover:scale-105
-                                       transition-all duration-300">
-                            <i class="fas fa-redo mr-2"></i>
-                            คำนวณอีกครั้ง
-                        </button>
-                    </div>
+        <div class="tp-card" style="padding:0; overflow:hidden;">
+            <div style="padding:28px 24px; text-align:center; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 20%, transparent), transparent 74%);">
+                <h3 style="font-size:clamp(22px,5vw,30px); font-weight:800; margin:0;">🎉 เริ่ม Stake TPIX วันนี้!</h3>
+                <p style="font-size:14px; color:var(--ink2); margin:10px 0 18px;">รับผลตอบแทนสูงสุด 120% ต่อปี ด้วยระบบ TPIX Staking</p>
+                <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+                    <button @click="window.location.href='{{ route('user.dashboard') }}'" class="tp-btn tp-btn-primary" style="font-size:15px; padding:13px 24px;">
+                        <i class="fas fa-rocket"></i> เริ่มต้น Stake!
+                    </button>
+                    <button @click="resetSimulation(); startSimulation()" class="tp-btn" style="font-size:15px; padding:13px 24px;">
+                        <i class="fas fa-redo"></i> คำนวณอีกครั้ง
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-{{-- Custom Styles --}}
-<style>
-/**
- * Custom Styles สำหรับ TPIX Staking Calculator
- * รองรับ Dark Mode และ Animations
- */
-
-/* Perspective สำหรับ 3D effects */
-.perspective-1000 {
-    perspective: 1000px;
-}
-
-/* Glass Fusion Card Effect */
-.glass-fusion-card {
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-}
-
-.dark .glass-fusion-card {
-    background: rgba(31, 41, 55, 0.8);
-}
-
-/* Hide elements with x-cloak until Alpine.js loads */
-[x-cloak] {
-    display: none !important;
-}
-
-/* Smooth number transitions */
-.number-transition {
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Print styles */
-@media print {
-    .no-print {
-        display: none !important;
-    }
-
-    body {
-        background: white !important;
-    }
-
-    .glass-fusion-card {
-        background: white !important;
-        border: 1px solid #e5e7eb !important;
-    }
-}
-</style>
-
-{{-- JavaScript with Alpine.js --}}
+{{-- JavaScript with Alpine.js + Chart.js --}}
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -667,17 +332,15 @@
  * - APY แตกต่างกันตาม Lock Period (30% - 120%)
  * - Auto-compound option
  * - Real-time animation
- * - Charts visualization
+ * - Charts visualization (Chart.js)
  *
- * @returns {object} Alpine.js component
+ * @returns object Alpine.js component
  */
 function tpixStakingCalculator() {
     return {
         // ===== State Management =====
 
-        /**
-         * การตั้งค่าการคำนวณ
-         */
+        // การตั้งค่าการคำนวณ
         config: {
             stakingAmount: 10000,    // จำนวน TPIX ที่ stake
             lockPeriod: 365,         // ระยะเวลา lock (วัน)
@@ -685,9 +348,7 @@ function tpixStakingCalculator() {
             autoCompound: true,      // auto-compound รางวัลหรือไม่
         },
 
-        /**
-         * ข้อมูลการจำลอง (ระหว่างคำนวณ)
-         */
+        // ข้อมูลการจำลอง (ระหว่างคำนวณ)
         simulation: {
             currentDay: 0,           // วันที่กำลังคำนวณ
             currentStake: 0,         // TPIX ที่ stake ปัจจุบัน
@@ -696,9 +357,7 @@ function tpixStakingCalculator() {
             totalTPIX: 0,            // TPIX รวมทั้งหมด
         },
 
-        /**
-         * ผลลัพธ์การคำนวณ
-         */
+        // ผลลัพธ์การคำนวณ
         results: {
             totalRewards: 0,         // รางวัลทั้งหมด
             roi: 0,                  // ผลตอบแทน (%)
@@ -706,23 +365,17 @@ function tpixStakingCalculator() {
             dailyBreakdown: [],      // รายละเอียดแต่ละวัน
         },
 
-        /**
-         * สถานะของ UI
-         */
+        // สถานะของ UI
         isSimulating: false,         // กำลังจำลองหรือไม่
         showResults: false,          // แสดงผลลัพธ์หรือไม่
 
-        /**
-         * Chart instances
-         */
+        // Chart instances
         growthChart: null,
         distributionChart: null,
 
         // ===== Lifecycle Methods =====
 
-        /**
-         * เริ่มต้น component
-         */
+        // เริ่มต้น component
         init() {
             // อัพเดท APY ตาม lock period เริ่มต้น
             this.updateAPY();
@@ -752,25 +405,25 @@ function tpixStakingCalculator() {
             this.config.apy = apyMap[this.config.lockPeriod] || 120;
         },
 
-        /**
-         * คำนวณรางวัลรายวัน
-         */
+        // คำนวณรางวัลรายวัน
         calculateDailyReward(currentStake) {
             // Daily APY = APY / 365
             const dailyAPY = this.config.apy / 365 / 100;
             return currentStake * dailyAPY;
         },
 
-        /**
-         * เริ่มการจำลอง
-         */
+        // เริ่มการจำลอง
         async startSimulation() {
             // ป้องกันการกดซ้ำ
             if (this.isSimulating) return;
 
             // Validation
             if (this.config.stakingAmount < 100) {
-                alert('กรุณากรอกจำนวน TPIX ขั้นต่ำ 100 TPIX');
+                if (window.showNotification) {
+                    window.showNotification('กรุณากรอกจำนวน TPIX ขั้นต่ำ 100 TPIX', 'error');
+                } else {
+                    alert('กรุณากรอกจำนวน TPIX ขั้นต่ำ 100 TPIX');
+                }
                 return;
             }
 
@@ -846,9 +499,7 @@ function tpixStakingCalculator() {
             this.createCharts();
         },
 
-        /**
-         * สร้าง Charts
-         */
+        // สร้าง Charts (Chart.js)
         createCharts() {
             // Growth Chart
             const ctx1 = document.getElementById('growth-chart');
@@ -940,9 +591,7 @@ function tpixStakingCalculator() {
             });
         },
 
-        /**
-         * รีเซ็ตการจำลอง
-         */
+        // รีเซ็ตการจำลอง
         resetSimulation() {
             this.isSimulating = false;
             this.showResults = false;
@@ -969,9 +618,7 @@ function tpixStakingCalculator() {
             }
         },
 
-        /**
-         * คำนวณรางวัล (ไม่แสดง animation)
-         */
+        // คำนวณรางวัล (ไม่แสดง animation)
         calculateRewards() {
             // คำนวณแบบง่ายเพื่อแสดงตัวอย่าง
             const dailyAPY = this.config.apy / 365 / 100;
@@ -994,18 +641,14 @@ function tpixStakingCalculator() {
 
         // ===== Utility Methods =====
 
-        /**
-         * จัดรูปแบบตัวเลข (เพิ่ม comma)
-         */
+        // จัดรูปแบบตัวเลข (เพิ่ม comma)
         formatNumber(num) {
             return Math.floor(num).toLocaleString('en-US', {
                 maximumFractionDigits: 2
             });
         },
 
-        /**
-         * หน่วงเวลา (สำหรับ animation)
-         */
+        // หน่วงเวลา (สำหรับ animation)
         sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         },

@@ -1,95 +1,73 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ค่าคอมมิชชั่น MLM')
 
+@php
+    use Illuminate\Support\Str;
+
+    // ── การ์ดสถิติ 4 ใบ (ยอดเงิน) ──────────────────────────────
+    $statCards = [
+        ['label' => 'รอดำเนินการ', 'en' => 'Pending',   'val' => $stats['pending'] ?? 0,    'color' => '#e0a52e', 'soft' => 'rgba(224,165,46,.16)', 'icon' => '⏳'],
+        ['label' => 'อนุมัติแล้ว', 'en' => 'Approved',  'val' => $stats['approved'] ?? 0,   'color' => '#5aa07e', 'soft' => 'rgba(90,160,126,.16)', 'icon' => '✅'],
+        ['label' => 'จ่ายแล้ว',    'en' => 'Paid',      'val' => $stats['paid'] ?? 0,       'color' => '#5689b8', 'soft' => 'rgba(86,137,184,.16)', 'icon' => '💸'],
+        ['label' => 'เดือนนี้',    'en' => 'This Month','val' => $stats['this_month'] ?? 0, 'color' => 'var(--deep1)', 'soft' => 'color-mix(in srgb, var(--accent1) 16%, transparent)', 'icon' => '📅'],
+    ];
+
+    // ── ป้ายประเภทคอมมิชชั่น MLM ───────────────────────────────
+    $typeLabels = [
+        'direct_referral' => 'Direct Referral',
+        'binary_matching' => 'Binary Matching',
+        'unilevel'        => 'Unilevel',
+        'generation'      => 'Generation',
+        'bonus'           => 'Bonus',
+    ];
+
+    // ── สีของป้ายประเภท ──────────────────────────────────────
+    $typeColors = [
+        'direct_referral' => '#5689b8',
+        'binary_matching' => 'var(--deep1)',
+        'unilevel'        => '#5aa07e',
+        'generation'      => '#e0a52e',
+    ];
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Green-Emerald-Teal for MLM Commissions) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-hand-holding-usd"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-money-bill-wave text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">ค่าคอมมิชชั่น MLM</h1>
-                    <p class="text-green-100 text-lg mt-1">รายละเอียดรายได้จากระบบ MLM</p>
-                </div>
+    {{-- ── หัวข้อ (Hero) ────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-money-bill-wave" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ค่าคอมมิชชั่น MLM</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">รายละเอียดรายได้จากระบบ MLM</div>
             </div>
         </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="grid md:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">⏳</span>
+    {{-- ── สถิติ 4 ใบ ───────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
+        @foreach($statCards as $c)
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <div style="min-width:0;">
+                        <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $c['label'] }}</div>
+                        <div style="font-size:10px; color:var(--ink2); opacity:.8;">{{ $c['en'] }}</div>
+                    </div>
+                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:18px; background:{{ $c['soft'] }};">{{ $c['icon'] }}</span>
                 </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">รอดำเนินการ</div>
-                    <div class="text-2xl font-bold text-yellow-600">฿{{ number_format($stats['pending'], 2) }}</div>
-                </div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; margin-top:10px; color:{{ $c['color'] }};">฿{{ number_format($c['val'], 2) }}</div>
             </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">✅</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">อนุมัติแล้ว</div>
-                    <div class="text-2xl font-bold text-blue-600">฿{{ number_format($stats['approved'], 2) }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">💸</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">จ่ายแล้ว</div>
-                    <div class="text-2xl font-bold text-green-600">฿{{ number_format($stats['paid'], 2) }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">📅</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">เดือนนี้</div>
-                    <div class="text-2xl font-bold text-purple-600">฿{{ number_format($stats['this_month'], 2) }}</div>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-        <form method="GET" class="grid md:grid-cols-4 gap-4">
+    {{-- ── ตัวกรอง ──────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <form method="GET" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; align-items:end;">
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ประเภท</label>
-                <select name="type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink2); margin-bottom:7px;">ประเภท</label>
+                <select name="type" class="tp-input" style="width:100%;">
                     <option value="">ทั้งหมด</option>
                     <option value="direct_referral" {{ request('type') === 'direct_referral' ? 'selected' : '' }}>Direct Referral</option>
                     <option value="binary_matching" {{ request('type') === 'binary_matching' ? 'selected' : '' }}>Binary Matching</option>
@@ -100,8 +78,8 @@
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">สถานะ</label>
-                <select name="status" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink2); margin-bottom:7px;">สถานะ</label>
+                <select name="status" class="tp-input" style="width:100%;">
                     <option value="">ทั้งหมด</option>
                     <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>รอดำเนินการ</option>
                     <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
@@ -110,114 +88,84 @@
                 </select>
             </div>
 
-            <div class="md:col-span-2 flex items-end gap-2">
-                <button type="submit" class="flex-1 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
-                    🔍 ค้นหา
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="tp-btn tp-btn-primary" style="flex:1;">
+                    <i class="fas fa-search"></i> ค้นหา
                 </button>
-                <a href="{{ route('user.mlm.commissions') }}" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition-colors">
-                    ล้าง
-                </a>
+                <a href="{{ route('user.mlm.commissions') }}" class="tp-btn">ล้าง</a>
             </div>
         </form>
     </div>
 
-    <!-- Commissions Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200 dark:border-gray-700">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">วันที่</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">ประเภท</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">จาก</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">จำนวนเงิน</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">หมายเหตุ</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($commissions as $commission)
-                        <tr class="hover:bg-gray-50 dark:bg-gray-900/50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $commission->created_at->format('d/m/Y') }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $commission->created_at->format('H:i') }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-3 py-1 text-xs font-semibold rounded-full
-                                    @if($commission->type === 'direct_referral') bg-blue-100 text-blue-800
-                                    @elseif($commission->type === 'binary_matching') bg-purple-100 text-purple-800
-                                    @elseif($commission->type === 'unilevel') bg-green-100 text-green-800
-                                    @elseif($commission->type === 'generation') bg-orange-100 text-orange-800
-                                    @else bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white
-                                    @endif">
-                                    {{ ucfirst(str_replace('_', ' ', $commission->type)) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                @if($commission->fromMember && $commission->fromMember->user)
-                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $commission->fromMember->user->name }}</div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $commission->fromMember->member_code }}</div>
-                                @else
-                                    <span class="text-gray-400">-</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-lg font-bold text-green-600">฿{{ number_format($commission->commission_amount, 2) }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if($commission->status === 'pending')
-                                    <span class="px-3 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">⏳ รอดำเนินการ</span>
-                                @elseif($commission->status === 'approved')
-                                    <span class="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">✅ อนุมัติแล้ว</span>
-                                @elseif($commission->status === 'paid')
-                                    <span class="px-3 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">💸 จ่ายแล้ว</span>
-                                @elseif($commission->status === 'cancelled')
-                                    <span class="px-3 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">❌ ยกเลิก</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                                {{ $commission->notes ?? '-' }}
-                            </td>
+    {{-- ── ตารางค่าคอมมิชชั่น ───────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        @if($commissions->count() > 0)
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
+                            @foreach(['วันที่','ประเภท','จาก','จำนวนเงิน','สถานะ','หมายเหตุ'] as $h)
+                                <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">{{ $h }}</th>
+                            @endforeach
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
-                                <span class="text-4xl mb-4 block">💰</span>
-                                <p class="text-gray-600 dark:text-gray-400">ยังไม่มีค่าคอมมิชชั่น</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @foreach($commissions as $commission)
+                            @php
+                                $st = $commission->status;
+                                $stMap = [
+                                    'pending'   => ['รอดำเนินการ', '#e0a52e', 'fa-clock'],
+                                    'approved'  => ['อนุมัติแล้ว', '#5aa07e', 'fa-check'],
+                                    'paid'      => ['จ่ายแล้ว',     '#5689b8', 'fa-check-double'],
+                                    'cancelled' => ['ยกเลิก',       'var(--ink2)', 'fa-ban'],
+                                ];
+                                $stInfo = $stMap[$st] ?? null;
+                                $typeColor = $typeColors[$commission->type] ?? 'var(--ink2)';
+                            @endphp
+                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                                <td class="tp-num" style="padding:12px 16px; white-space:nowrap; color:var(--ink);">
+                                    <div style="font-weight:600;">{{ $commission->created_at->format('d/m/Y') }}</div>
+                                    <div style="font-size:11px; color:var(--ink2);">{{ $commission->created_at->format('H:i') }}</div>
+                                </td>
+                                <td style="padding:12px 16px; white-space:nowrap;">
+                                    <span class="tp-pill" style="font-size:10.5px; color:{{ $typeColor }}; background:color-mix(in srgb, {{ $typeColor }} 14%, transparent);">
+                                        {{ $typeLabels[$commission->type] ?? ucfirst(str_replace('_', ' ', (string) $commission->type)) }}
+                                    </span>
+                                </td>
+                                <td style="padding:12px 16px;">
+                                    @if($commission->fromMember && $commission->fromMember->user)
+                                        <div style="font-weight:600; color:var(--ink);">{{ $commission->fromMember->user->name }}</div>
+                                        <div class="tp-num" style="font-size:11px; color:var(--ink2);">{{ $commission->fromMember->member_code }}</div>
+                                    @else
+                                        <span style="color:var(--ink2);">-</span>
+                                    @endif
+                                </td>
+                                <td class="tp-num" style="padding:12px 16px; white-space:nowrap; font-weight:700; color:#5aa07e;">฿{{ number_format($commission->commission_amount, 2) }}</td>
+                                <td style="padding:12px 16px; white-space:nowrap;">
+                                    @if($stInfo)
+                                        <span class="tp-pill" style="color:#fff; background:{{ $stInfo[1] }};"><i class="fas {{ $stInfo[2] }}" style="font-size:10px;"></i> {{ $stInfo[0] }}</span>
+                                    @endif
+                                </td>
+                                <td style="padding:12px 16px; color:var(--ink2); max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $commission->notes ?? '-' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-        <!-- Pagination -->
-        @if($commissions->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                {{ $commissions->links() }}
+            {{-- ── แบ่งหน้า ──────────────────────────────────────── --}}
+            @if($commissions->hasPages())
+                <div style="padding:14px 16px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                    {{ $commissions->links() }}
+                </div>
+            @endif
+        @else
+            <div style="text-align:center; padding:56px 20px;">
+                <div style="font-size:52px; opacity:.5;">💰</div>
+                <div style="font-weight:700; font-size:17px; margin-top:10px;">ยังไม่มีค่าคอมมิชชั่น</div>
+                <div style="font-size:13px; color:var(--ink2); margin-top:4px;">เมื่อมีค่าคอมมิชชั่นเข้ามาจะแสดงที่นี่</div>
             </div>
         @endif
     </div>
 </div>
-
-@push('styles')
-<style>
-/* Glass Fusion Effect for Hero Header */
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Float Animation */
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
-}
-</style>
-@endpush
 @endsection

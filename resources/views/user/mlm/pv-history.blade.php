@@ -1,237 +1,163 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ประวัติ PV (Point Value)')
 
+@php
+    // ── สรุป PV 4 ใบ (คำนวณจาก collection หน้าปัจจุบัน เหมือนเดิม) ─────────
+    $pvReceived = $transactions->where('transaction_type', 'credit')->sum('pv_amount');
+    $pvUsed     = $transactions->where('transaction_type', 'debit')->sum('pv_amount');
+    $pvThisMonth = $transactions->filter(fn($t) => $t->created_at->isCurrentMonth())->sum('pv_amount');
+
+    $pvCards = [
+        ['label' => 'PV รวม',     'en' => 'Total PV',  'val' => $member->total_pv ?? 0, 'sign' => '',  'color' => 'var(--deep1)', 'soft' => 'color-mix(in srgb, var(--accent1) 16%, transparent)', 'icon' => '💎'],
+        ['label' => 'PV ได้รับ',  'en' => 'Credited',  'val' => $pvReceived,            'sign' => '+', 'color' => '#5aa07e',      'soft' => 'rgba(90,160,126,.16)', 'icon' => '➕'],
+        ['label' => 'PV ใช้ไป',   'en' => 'Debited',   'val' => $pvUsed,                'sign' => '-', 'color' => '#d9534f',      'soft' => 'rgba(217,83,79,.16)',  'icon' => '➖'],
+        ['label' => 'PV เดือนนี้', 'en' => 'This Month','val' => $pvThisMonth,           'sign' => '',  'color' => '#5689b8',      'soft' => 'rgba(86,137,184,.16)', 'icon' => '📅'],
+    ];
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Amber-Orange-Red for PV History) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 dark:from-amber-800 dark:via-orange-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-star"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-history text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">ประวัติ PV (Point Value)</h1>
-                    <p class="text-amber-100 text-lg mt-1">ประวัติการสะสมและใช้คะแนน</p>
-                </div>
+    {{-- ── หัวข้อ (Hero) ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            @if(\Illuminate\Support\Facades\Route::has('user.mlm.dashboard'))
+                <a href="{{ route('user.mlm.dashboard') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+            @endif
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-history" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ประวัติ PV (Point Value)</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ประวัติการสะสมและใช้คะแนน</div>
             </div>
         </div>
     </div>
 
-    <!-- PV Summary -->
-    <div class="grid md:grid-cols-4 gap-4">
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">💎</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">PV รวม</div>
-                    <div class="text-2xl font-bold text-gray-800 dark:text-white">
-                        {{ number_format($member->total_pv ?? 0, 0) }}
+    {{-- ── สรุป PV 4 ใบ ─────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
+        @foreach($pvCards as $c)
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <div style="min-width:0;">
+                        <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $c['label'] }}</div>
+                        <div style="font-size:10px; color:var(--ink2); opacity:.8;">{{ $c['en'] }}</div>
                     </div>
+                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:18px; background:{{ $c['soft'] }};">{{ $c['icon'] }}</span>
                 </div>
+                <div class="tp-num" style="font-size:30px; font-weight:800; margin-top:10px; color:{{ $c['color'] }};">{{ $c['sign'] }}{{ number_format($c['val'], 0) }}</div>
             </div>
-        </div>
-
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">➕</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">PV ได้รับ</div>
-                    <div class="text-2xl font-bold text-green-600">
-                        +{{ number_format($transactions->where('transaction_type', 'credit')->sum('pv_amount'), 0) }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">➖</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">PV ใช้ไป</div>
-                    <div class="text-2xl font-bold text-red-600">
-                        -{{ number_format($transactions->where('transaction_type', 'debit')->sum('pv_amount'), 0) }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">📅</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">PV เดือนนี้</div>
-                    <div class="text-2xl font-bold text-purple-600">
-                        {{ number_format($transactions->filter(fn($t) => $t->created_at->isCurrentMonth())->sum('pv_amount'), 0) }}
-                    </div>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-        <form method="GET" class="grid md:grid-cols-3 gap-4">
+    {{-- ── ตัวกรอง ──────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <form method="GET" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:end;">
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ประเภท</label>
-                <select name="type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">ประเภท</label>
+                <select name="type" class="tp-input" style="width:100%;">
                     <option value="">ทั้งหมด</option>
                     <option value="credit" {{ request('type') === 'credit' ? 'selected' : '' }}>รับ PV</option>
                     <option value="debit" {{ request('type') === 'debit' ? 'selected' : '' }}>ใช้ PV</option>
                 </select>
             </div>
-
-            <div class="md:col-span-2 flex items-end gap-2">
-                <button type="submit" class="flex-1 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
-                    🔍 ค้นหา
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="tp-btn tp-btn-primary" style="flex:1;">
+                    <i class="fas fa-search" style="font-size:12px;"></i> ค้นหา
                 </button>
-                <a href="{{ url()->current() }}" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition-colors">
-                    ล้าง
-                </a>
+                <a href="{{ url()->current() }}" class="tp-btn">ล้าง</a>
             </div>
         </form>
     </div>
 
-    <!-- Transactions Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <span>📋</span> ประวัติการทำรายการ
-            </h2>
+    {{-- ── ตารางประวัติการทำรายการ ──────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; padding:16px 20px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+            <span>📋</span> ประวัติการทำรายการ
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200 dark:border-gray-700">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">วันที่</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">ประเภท</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">รายละเอียด</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">PV</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">หมายเหตุ</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($transactions as $transaction)
-                        <tr class="hover:bg-gray-50 dark:bg-gray-900/50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $transaction->created_at->format('d/m/Y') }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $transaction->created_at->format('H:i') }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if($transaction->transaction_type === 'credit')
-                                    <span class="px-3 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
-                                        ➕ รับ PV
-                                    </span>
-                                @else
-                                    <span class="px-3 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">
-                                        ➖ ใช้ PV
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4">
-                                @if($transaction->order)
-                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                        คำสั่งซื้อ #{{ $transaction->order->id }}
-                                    </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                                        {{ $transaction->order->total_amount ? '฿' . number_format($transaction->order->total_amount, 2) : '' }}
-                                    </div>
-                                @elseif($transaction->product)
-                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                        {{ $transaction->product->name ?? 'สินค้า' }}
-                                    </div>
-                                @else
-                                    <span class="text-gray-500 dark:text-gray-400 text-sm">{{ $transaction->description ?? '-' }}</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-lg font-bold
-                                    @if($transaction->transaction_type === 'credit') text-green-600
-                                    @else text-red-600
-                                    @endif">
-                                    {{ $transaction->transaction_type === 'credit' ? '+' : '-' }}{{ number_format($transaction->pv_amount, 0) }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                                {{ $transaction->notes ?? '-' }}
-                            </td>
+        @if($transactions->count() > 0)
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
+                            @foreach(['วันที่','ประเภท','รายละเอียด','PV','หมายเหตุ'] as $h)
+                                <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">{{ $h }}</th>
+                            @endforeach
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-6 py-12 text-center">
-                                <span class="text-4xl mb-4 block">⭐</span>
-                                <p class="text-gray-600 dark:text-gray-400">ยังไม่มีประวัติการทำรายการ</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @foreach($transactions as $transaction)
+                            @php $isCredit = $transaction->transaction_type === 'credit'; @endphp
+                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                                {{-- วันที่ --}}
+                                <td style="padding:12px 16px; white-space:nowrap;">
+                                    <div class="tp-num" style="font-weight:600; color:var(--ink);">{{ $transaction->created_at->format('d/m/Y') }}</div>
+                                    <div class="tp-num" style="font-size:11px; color:var(--ink2);">{{ $transaction->created_at->format('H:i') }}</div>
+                                </td>
+                                {{-- ประเภท --}}
+                                <td style="padding:12px 16px; white-space:nowrap;">
+                                    @if($isCredit)
+                                        <span class="tp-pill" style="color:#fff; background:#5aa07e;">➕ รับ PV</span>
+                                    @else
+                                        <span class="tp-pill" style="color:#fff; background:#d9534f;">➖ ใช้ PV</span>
+                                    @endif
+                                </td>
+                                {{-- รายละเอียด --}}
+                                <td style="padding:12px 16px;">
+                                    @if($transaction->order)
+                                        <div style="font-weight:600; color:var(--ink);">คำสั่งซื้อ #{{ $transaction->order->id }}</div>
+                                        <div class="tp-num" style="font-size:11px; color:var(--ink2);">
+                                            {{ $transaction->order->total_amount ? '฿' . number_format($transaction->order->total_amount, 2) : '' }}
+                                        </div>
+                                    @elseif($transaction->product)
+                                        <div style="font-weight:600; color:var(--ink);">{{ $transaction->product->name ?? 'สินค้า' }}</div>
+                                    @else
+                                        <span style="color:var(--ink2);">{{ $transaction->description ?? '-' }}</span>
+                                    @endif
+                                </td>
+                                {{-- PV --}}
+                                <td style="padding:12px 16px; white-space:nowrap;">
+                                    <div class="tp-num" style="font-size:17px; font-weight:800; color:{{ $isCredit ? '#5aa07e' : '#d9534f' }};">
+                                        {{ $isCredit ? '+' : '-' }}{{ number_format($transaction->pv_amount, 0) }}
+                                    </div>
+                                </td>
+                                {{-- หมายเหตุ --}}
+                                <td style="padding:12px 16px; color:var(--ink2); max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                    {{ $transaction->notes ?? '-' }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-        <!-- Pagination -->
-        @if($transactions->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                {{ $transactions->links() }}
+            {{-- Pagination --}}
+            @if($transactions->hasPages())
+                <div style="padding:14px 16px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                    {{ $transactions->links() }}
+                </div>
+            @endif
+        @else
+            <div style="text-align:center; padding:56px 20px;">
+                <div style="font-size:52px; opacity:.5;">⭐</div>
+                <div style="font-weight:700; font-size:17px; margin-top:10px;">ยังไม่มีประวัติการทำรายการ</div>
+                <div style="font-size:13px; color:var(--ink2); margin-top:4px;">เมื่อมีการสะสมหรือใช้ PV จะแสดงที่นี่</div>
             </div>
         @endif
     </div>
 
-    <!-- PV Info -->
-    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 border border-blue-100">
-        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+    {{-- ── เกี่ยวกับ PV ──────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 12%, transparent), transparent 70%);">
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
             <span>💡</span> เกี่ยวกับ PV (Point Value)
-        </h3>
-        <div class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <p>• <strong>PV</strong> คือคะแนนที่ได้จากการซื้อสินค้าหรือบริการ</p>
-            <p>• PV ใช้สำหรับคำนวณค่าคอมมิชชั่นและการจัดอันดับ</p>
-            <p>• PV สะสมจะช่วยให้คุณมีสิทธิ์รับโบนัสและสิทธิพิเศษต่างๆ</p>
-            <p>• ตรวจสอบเงื่อนไขการใช้ PV กับทีมงานของเรา</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--ink2);">
+            <p style="margin:0;">• <strong style="color:var(--ink);">PV</strong> คือคะแนนที่ได้จากการซื้อสินค้าหรือบริการ</p>
+            <p style="margin:0;">• PV ใช้สำหรับคำนวณค่าคอมมิชชั่นและการจัดอันดับ</p>
+            <p style="margin:0;">• PV สะสมจะช่วยให้คุณมีสิทธิ์รับโบนัสและสิทธิพิเศษต่างๆ</p>
+            <p style="margin:0;">• ตรวจสอบเงื่อนไขการใช้ PV กับทีมงานของเรา</p>
         </div>
     </div>
 </div>
-
-@push('styles')
-<style>
-/* Glass Fusion Effect for Hero Header */
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Float Animation */
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
-}
-</style>
-@endpush
 @endsection

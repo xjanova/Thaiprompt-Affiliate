@@ -1,322 +1,252 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'จำลองสถานการณ์ MLM')
 
-@section('content')
-<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950 py-8">
-    <div class="container mx-auto px-4">
-        {{-- Premium Hero Header (Indigo-Purple-Pink for MLM Scenario Simulator) --}}
-        <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8 mb-6">
-            {{-- Animated Background Orbs --}}
-            <div class="absolute inset-0 opacity-10">
-                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-            </div>
+@php
+    // ── หา route สำหรับโหลดตั้งค่า MLM (ป้องกัน route หาย → หน้าไม่พัง) ──
+    // ของเดิมเรียก admin.mlm.settings.get-settings ที่ไม่มีอยู่จริง + เป็น route ฝั่ง admin
+    // หน้านี้เป็นของลูกค้า → ใช้ user.mlm.settings (read-only, คืน JSON เดียวกัน { settings })
+    // fallback: admin.mlm.settings.get ถ้ามีสิทธิ์เข้าถึง
+    $mlmSettingsUrl = \Illuminate\Support\Facades\Route::has('user.mlm.settings')
+        ? route('user.mlm.settings')
+        : (\Illuminate\Support\Facades\Route::has('admin.mlm.settings.get')
+            ? route('admin.mlm.settings.get')
+            : '');
+@endphp
 
-            {{-- Floating Icons --}}
-            <div class="absolute inset-0 overflow-hidden pointer-events-none">
-                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                    <i class="fas fa-project-diagram"></i>
+@section('content')
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ── หัวข้อ (Hero) ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:54px; height:54px; border-radius:17px; font-size:24px;"><i class="fas fa-dice" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">🎯 จำลองสถานการณ์ MLM</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ทดสอบสถานการณ์ต่างๆ และดูการไหลของรายได้แบบเรียลไทม์</div>
+            </div>
+            @if(\Illuminate\Support\Facades\Route::has('user.mlm.genealogy'))
+                <a href="{{ route('user.mlm.genealogy') }}" class="tp-icon-btn no-print" title="กลับไปผังทีม"><i class="fas fa-arrow-left"></i></a>
+            @endif
+        </div>
+    </div>
+
+    {{-- ── เลย์เอาต์ 3 คอลัมน์ (ควบคุม / ผังทีม / สรุป) ────────── --}}
+    <div style="display:grid; grid-template-columns:1fr; gap:18px;" class="tp-sim-grid">
+
+        {{-- ════ ซ้าย: แผงควบคุม ════ --}}
+        <div style="display:flex; flex-direction:column; gap:18px;" class="no-print">
+
+            {{-- สถานการณ์ตัวอย่าง --}}
+            <div class="tp-card" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:14px;">📋 สถานการณ์ตัวอย่าง</div>
+                <div style="display:flex; flex-direction:column; gap:9px;">
+                    <button type="button" onclick="loadPreset('perfect')" class="tp-btn" style="width:100%; justify-content:flex-start; gap:8px; color:#5aa07e; background:color-mix(in srgb, #5aa07e 14%, transparent);">✨ ทุกคนแอคทีฟ (100%)</button>
+                    <button type="button" onclick="loadPreset('realistic')" class="tp-btn" style="width:100%; justify-content:flex-start; gap:8px; color:#5689b8; background:color-mix(in srgb, #5689b8 14%, transparent);">📊 สมจริง (70% แอคทีฟ)</button>
+                    <button type="button" onclick="loadPreset('rollup')" class="tp-btn" style="width:100%; justify-content:flex-start; gap:8px; color:var(--deep1); background:color-mix(in srgb, var(--accent1) 16%, transparent);">🔄 โรลอัพ Demo</button>
+                    <button type="button" onclick="loadPreset('custom')" class="tp-btn" style="width:100%; justify-content:flex-start; gap:8px; color:var(--ink2); background:color-mix(in srgb, var(--ink2) 13%, transparent);">⚙️ กำหนดเอง</button>
                 </div>
             </div>
 
-            {{-- Header Content --}}
-            <div class="relative z-10">
-                <div class="flex items-center justify-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-dice text-4xl text-white drop-shadow-lg"></i>
+            {{-- ตั้งค่า --}}
+            <div class="tp-card" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:14px;">⚙️ ตั้งค่า</div>
+
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                    <div>
+                        <label for="perPersonSales" style="display:block; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px;">💰 ยอดขายต่อคน (บาท)</label>
+                        <input type="number" id="perPersonSales" value="5000" step="1000" min="0"
+                               onchange="recalculate()" class="tp-input" style="width:100%;">
                     </div>
-                    <div class="text-center">
-                        <h1 class="text-4xl md:text-5xl font-bold text-white drop-shadow-lg">🎯 จำลองสถานการณ์ MLM</h1>
-                        <p class="text-purple-100 text-lg mt-2">ทดสอบสถานการณ์ต่างๆ และดูการไหลของรายได้แบบเรียลไทม์</p>
+
+                    <div>
+                        <label for="treeDepth" style="display:block; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px;">📊 จำนวนชั้น</label>
+                        <select id="treeDepth" onchange="generateTree()" class="tp-input" style="width:100%;">
+                            <option value="2">2 ชั้น (7 คน)</option>
+                            <option value="3" selected>3 ชั้น (15 คน)</option>
+                            <option value="4">4 ชั้น (31 คน)</option>
+                            <option value="5">5 ชั้น (63 คน)</option>
+                        </select>
+                    </div>
+
+                    <label style="display:flex; align-items:center; gap:9px; cursor:pointer;">
+                        <input type="checkbox" id="showRollup" onchange="toggleRollupView()" checked style="width:18px; height:18px; accent-color:var(--accent1);">
+                        <span style="font-size:12.5px; font-weight:700; color:var(--ink);">แสดงเส้น Rollup</span>
+                    </label>
+
+                    <label style="display:flex; align-items:center; gap:9px; cursor:pointer;">
+                        <input type="checkbox" id="animateFlow" onchange="toggleAnimation()" checked style="width:18px; height:18px; accent-color:var(--accent1);">
+                        <span style="font-size:12.5px; font-weight:700; color:var(--ink);">แอนิเมชั่น</span>
+                    </label>
+                </div>
+
+                <div style="margin-top:16px; padding-top:16px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                    <button type="button" onclick="playAnimation()" class="tp-btn tp-btn-primary" style="width:100%;">▶️ เล่นแอนิเมชั่น</button>
+                </div>
+            </div>
+
+            {{-- คำอธิบาย (Legend) --}}
+            <div class="tp-card" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:14px;">📌 คำอธิบาย</div>
+                <div style="display:flex; flex-direction:column; gap:11px; font-size:13px;">
+                    <div style="display:flex; align-items:center; gap:9px;">
+                        <span style="width:22px; height:22px; border-radius:50%; background:#5aa07e; box-shadow:0 0 0 2px color-mix(in srgb, #5aa07e 55%, #000); flex:none;"></span>
+                        <span>แอคทีฟ (ได้รับรายได้)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:9px;">
+                        <span style="width:22px; height:22px; border-radius:50%; background:#d9534f; box-shadow:0 0 0 2px color-mix(in srgb, #d9534f 55%, #000); flex:none;"></span>
+                        <span>ไม่แอคทีฟ (รายได้โรลอัพ)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:9px;">
+                        <span style="width:44px; height:3px; border-radius:2px; background:var(--accent1); flex:none;"></span>
+                        <span>เส้นทางปกติ</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:9px;">
+                        <span style="width:44px; height:0; border-top:3px dashed #e0a52e; flex:none;"></span>
+                        <span>เส้นทาง Rollup</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Control Panel -->
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-            <!-- Left Panel: Controls -->
-            <div class="lg:col-span-1 space-y-6">
-                <!-- Preset Scenarios -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">📋 สถานการณ์ตัวอย่าง</h3>
-                    <div class="space-y-2">
-                        <button onclick="loadPreset('perfect')" class="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:from-green-600 hover:to-emerald-600 transition-all">
-                            ✨ ทุกคนแอคทีฟ (100%)
-                        </button>
-                        <button onclick="loadPreset('realistic')" class="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-600 transition-all">
-                            📊 สมจริง (70% แอคทีฟ)
-                        </button>
-                        <button onclick="loadPreset('rollup')" class="w-full px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all">
-                            🔄 โรลอัพ Demo
-                        </button>
-                        <button onclick="loadPreset('custom')" class="w-full px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-semibold hover:from-gray-600 hover:to-gray-700 transition-all">
-                            ⚙️ กำหนดเอง
-                        </button>
-                    </div>
+        {{-- ════ กลาง: ผังโครงสร้างทีม (D3 viz — เก็บไลบรารีไว้) ════ --}}
+        <div>
+            <div class="tp-card" style="padding:18px; position:relative;">
+                <div class="tp-section-h" style="margin-bottom:14px; text-align:center;">🌳 ผังโครงสร้างทีม (คลิกเพื่อเปลี่ยนสถานะ)</div>
+
+                {{-- Tree Canvas (เรนเดอร์โดย D3.js) --}}
+                <div id="tree-container" style="position:relative; border-radius:16px; box-shadow:var(--inset-sm); padding:16px; overflow:auto; min-height:600px; background:color-mix(in srgb, var(--accent1) 6%, transparent);">
+                    {{-- Tree จะถูกเรนเดอร์ที่นี่ด้วย JavaScript --}}
                 </div>
 
-                <!-- Settings -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">⚙️ ตั้งค่า</h3>
+                {{-- Commission Flow Overlay --}}
+                <svg id="commission-flow" style="position:absolute; inset:0; pointer-events:none; z-index:10;">
+                    <defs>
+                        <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#e8c468;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#c79a3a;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+        </div>
 
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                💰 ยอดขายต่อคน (บาท)
-                            </label>
-                            <input type="number" id="perPersonSales" value="5000" step="1000" min="0"
-                                   onchange="recalculate()"
-                                   class="w-full px-3 py-2 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-400">
-                        </div>
+        {{-- ════ ขวา: สรุปผล ════ --}}
+        <div style="display:flex; flex-direction:column; gap:18px;">
 
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                📊 จำนวนชั้น
-                            </label>
-                            <select id="treeDepth" onchange="generateTree()"
-                                    class="w-full px-3 py-2 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-400">
-                                <option value="2">2 ชั้น (7 คน)</option>
-                                <option value="3" selected>3 ชั้น (15 คน)</option>
-                                <option value="4">4 ชั้น (31 คน)</option>
-                                <option value="5">5 ชั้น (63 คน)</option>
-                            </select>
+            {{-- สรุปรายได้รวม --}}
+            <div class="tp-card" style="padding:0; overflow:hidden;">
+                <div style="padding:20px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 18%, transparent), transparent 72%);">
+                    <div class="tp-section-h" style="margin-bottom:14px;">💰 สรุปรายได้</div>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div style="padding:13px 15px; border-radius:14px; box-shadow:var(--inset-sm);">
+                            <div style="font-size:12px; color:var(--ink2); margin-bottom:3px;">รายได้รวมทั้งหมด</div>
+                            <div class="tp-num" style="font-size:30px; font-weight:800; color:var(--deep1); line-height:1.1;">฿<span id="total-commission">0</span></div>
                         </div>
-
-                        <div>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" id="showRollup" onchange="toggleRollupView()" checked
-                                       class="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-400">
-                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">แสดงเส้น Rollup</span>
-                            </label>
+                        <div style="padding:13px 15px; border-radius:14px; box-shadow:var(--inset-sm);">
+                            <div style="font-size:12px; color:var(--ink2); margin-bottom:3px;">จำนวนคนแอคทีฟ</div>
+                            <div class="tp-num" style="font-size:22px; font-weight:800;"><span id="active-count">0</span>/<span id="total-count">0</span></div>
                         </div>
-
-                        <div>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" id="animateFlow" onchange="toggleAnimation()" checked
-                                       class="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-400">
-                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">แอนิเมชั่น</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <button onclick="playAnimation()"
-                                class="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg">
-                            ▶️ เล่นแอนิเมชั่น
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Legend -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">📌 คำอธิบาย</h3>
-                    <div class="space-y-3 text-sm">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-6 h-6 bg-green-500 rounded-full border-2 border-green-700"></div>
-                            <span>แอคทีฟ (ได้รับรายได้)</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <div class="w-6 h-6 bg-red-500 rounded-full border-2 border-red-700"></div>
-                            <span>ไม่แอคทีฟ (รายได้โรลอัพ)</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <div class="w-12 h-1 bg-blue-500"></div>
-                            <span>เส้นทางปกติ</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <div class="w-12 h-1 bg-orange-500 border-dashed border-2 border-orange-600"></div>
-                            <span>เส้นทาง Rollup</span>
+                        <div style="padding:13px 15px; border-radius:14px; box-shadow:var(--inset-sm);">
+                            <div style="font-size:12px; color:var(--ink2); margin-bottom:3px;">อัตราแอคทีฟ</div>
+                            <div class="tp-num" style="font-size:22px; font-weight:800;"><span id="active-rate">0</span>%</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Center Panel: Tree Visualization -->
-            <div class="lg:col-span-2">
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 relative">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 text-center">
-                        🌳 ผังโครงสร้างทีม (คลิกเพื่อเปลี่ยนสถานะ)
-                    </h3>
-
-                    <!-- Tree Canvas -->
-                    <div id="tree-container" class="relative bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 overflow-auto" style="min-height: 600px;">
-                        <!-- Tree will be rendered here by JavaScript -->
-                    </div>
-
-                    <!-- Commission Flow Overlay -->
-                    <svg id="commission-flow" class="absolute inset-0 pointer-events-none" style="z-index: 10;">
-                        <defs>
-                            <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
-                            </linearGradient>
-                        </defs>
-                    </svg>
+            {{-- แยกตามชั้น --}}
+            <div class="tp-card" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:14px;">📊 แยกตามชั้น</div>
+                <div id="level-breakdown" style="display:flex; flex-direction:column; gap:11px;">
+                    {{-- เติมโดย JavaScript --}}
                 </div>
             </div>
 
-            <!-- Right Panel: Summary -->
-            <div class="lg:col-span-1 space-y-6">
-                <!-- Total Summary -->
-                <div class="bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-xl p-6 text-white">
-                    <h3 class="text-lg font-bold mb-4">💰 สรุปรายได้</h3>
-                    <div class="space-y-3">
-                        <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg p-3">
-                            <div class="text-sm opacity-90 mb-1">รายได้รวมทั้งหมด</div>
-                            <div class="text-3xl font-bold">฿<span id="total-commission">0</span></div>
-                        </div>
-                        <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg p-3">
-                            <div class="text-sm opacity-90 mb-1">จำนวนคนแอคทีฟ</div>
-                            <div class="text-2xl font-bold"><span id="active-count">0</span>/<span id="total-count">0</span></div>
-                        </div>
-                        <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg p-3">
-                            <div class="text-sm opacity-90 mb-1">อัตราแอคทีฟ</div>
-                            <div class="text-2xl font-bold"><span id="active-rate">0</span>%</div>
-                        </div>
-                    </div>
+            {{-- รายละเอียด Rollup --}}
+            <div id="rollup-details" class="tp-card" style="padding:18px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+                <div class="tp-section-h" style="margin-bottom:14px; color:#e0a52e;">🔄 รายละเอียด Rollup</div>
+                <div id="rollup-list" style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+                    <p style="color:var(--ink2); margin:0;">คลิก member ที่ไม่แอคทีฟเพื่อดู rollup path</p>
                 </div>
+            </div>
 
-                <!-- Level Breakdown -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">📊 แยกตามชั้น</h3>
-                    <div id="level-breakdown" class="space-y-3">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-                </div>
-
-                <!-- Rollup Details -->
-                <div id="rollup-details" class="bg-gradient-to-br from-orange-100 to-yellow-100 rounded-2xl shadow-xl p-6 border-2 border-orange-300">
-                    <h3 class="text-lg font-bold text-orange-800 mb-4">🔄 Rollup Details</h3>
-                    <div id="rollup-list" class="space-y-2 text-sm">
-                        <p class="text-gray-600 dark:text-gray-400">คลิก member ที่ไม่แอคทีฟเพื่อดู rollup path</p>
-                    </div>
-                </div>
-
-                <!-- Export/Share -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">📤 แชร์/บันทึก</h3>
-                    <div class="space-y-2">
-                        <button onclick="captureScenario()"
-                                class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all">
-                            📸 บันทึกรูปภาพ
-                        </button>
-                        <button onclick="shareScenario()"
-                                class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-all">
-                            🔗 คัดลอกลิงก์
-                        </button>
-                        <button onclick="printScenario()"
-                                class="w-full px-4 py-2 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-all">
-                            🖨️ พิมพ์
-                        </button>
-                    </div>
+            {{-- แชร์/บันทึก --}}
+            <div class="tp-card no-print" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:14px;">📤 แชร์/บันทึก</div>
+                <div style="display:flex; flex-direction:column; gap:9px;">
+                    <button type="button" onclick="captureScenario()" class="tp-btn" style="width:100%; color:#5689b8; background:color-mix(in srgb, #5689b8 14%, transparent);">📸 บันทึกรูปภาพ</button>
+                    <button type="button" onclick="shareScenario()" class="tp-btn" style="width:100%; color:#5aa07e; background:color-mix(in srgb, #5aa07e 14%, transparent);">🔗 คัดลอกลิงก์</button>
+                    <button type="button" onclick="printScenario()" class="tp-btn" style="width:100%; color:var(--ink2); background:color-mix(in srgb, var(--ink2) 13%, transparent);">🖨️ พิมพ์</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@push('styles')
+{{-- สไตล์เฉพาะ D3 tree viz (ไลบรารีกราฟจริง) + เลย์เอาต์ 3 คอลัมน์ + print --}}
 <style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-.member-node {
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.member-node:hover {
-    transform: scale(1.1);
-    filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
-}
-
-.member-node.active {
-    fill: #10b981;
-    stroke: #059669;
-}
-
-.member-node.inactive {
-    fill: #ef4444;
-    stroke: #dc2626;
-}
-
-.connection-line {
-    stroke: #6366f1;
-    stroke-width: 2;
-    fill: none;
-}
-
-.rollup-line {
-    stroke: #f97316;
-    stroke-width: 3;
-    stroke-dasharray: 5, 5;
-    fill: none;
-    animation: dash 1s linear infinite;
-}
-
-@keyframes dash {
-    to {
-        stroke-dashoffset: -10;
+    @media (min-width: 1024px) {
+        .tp-sim-grid { grid-template-columns: 1fr 2fr 1fr; }
     }
-}
+    @media print {
+        .no-print { display: none !important; }
+    }
 
-.commission-particle {
-    animation: flow 2s ease-in-out forwards;
-}
+    /* โหนดสมาชิกใน D3 tree */
+    .member-node {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .member-node:hover {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent1) 55%, transparent));
+    }
+    .member-node.active {
+        fill: #5aa07e;
+        stroke: #3f7a5d;
+    }
+    .member-node.inactive {
+        fill: #d9534f;
+        stroke: #b13c36;
+    }
 
-@keyframes flow {
-    0% {
-        opacity: 0;
-        transform: scale(0);
+    /* เส้นเชื่อมปกติ + เส้น Rollup */
+    .connection-line {
+        stroke: var(--accent1);
+        stroke-width: 2;
+        fill: none;
     }
-    50% {
-        opacity: 1;
-        transform: scale(1);
+    .rollup-line {
+        stroke: #e0a52e;
+        stroke-width: 3;
+        stroke-dasharray: 5, 5;
+        fill: none;
+        animation: dash 1s linear infinite;
     }
-    100% {
-        opacity: 0;
-        transform: scale(0);
+    @keyframes dash {
+        to { stroke-dashoffset: -10; }
     }
-}
 
-.pulse-ring {
-    animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-}
-
-@keyframes pulse-ring {
-    0% {
-        transform: scale(0.95);
-        opacity: 1;
+    /* อนุภาคแสดงการไหลของคอมมิชชั่น */
+    .commission-particle {
+        animation: flow 2s ease-in-out forwards;
     }
-    50% {
-        transform: scale(1.05);
-        opacity: 0.7;
+    @keyframes flow {
+        0%   { opacity: 0; transform: scale(0); }
+        50%  { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0); }
     }
-    100% {
-        transform: scale(0.95);
-        opacity: 1;
-    }
-}
-
-@media print {
-    .no-print {
-        display: none !important;
-    }
-}
 </style>
-@endpush
 
+@push('scripts')
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script>
+// ── URL โหลดตั้งค่า MLM (ส่งจาก PHP — ว่างถ้า route ไม่มี → ใช้ค่า default) ──
+const MLM_SETTINGS_URL = @json($mlmSettingsUrl);
+
 let treeData = {
     settings: {},
     members: [],
@@ -327,10 +257,14 @@ let treeData = {
 let selectedMember = null;
 let animationRunning = false;
 
-// Load MLM settings
+// โหลดตั้งค่า MLM
 async function loadSettings() {
+    if (!MLM_SETTINGS_URL) {
+        generateTree(); // ไม่มี route → ใช้ค่า default
+        return;
+    }
     try {
-        const response = await fetch('{{ route("admin.mlm.settings.get-settings") }}');
+        const response = await fetch(MLM_SETTINGS_URL);
         const data = await response.json();
         treeData.settings = data.settings;
         generateTree();
@@ -340,7 +274,7 @@ async function loadSettings() {
     }
 }
 
-// Generate tree structure
+// สร้างโครงสร้าง tree
 function generateTree() {
     const depth = parseInt(document.getElementById('treeDepth').value);
     treeData.members = [];
@@ -360,7 +294,7 @@ function generateTree() {
 
     let memberId = 1;
 
-    // Generate members for each level
+    // สร้าง member สำหรับแต่ละชั้น
     for (let level = 1; level <= depth; level++) {
         const membersInLevel = Math.pow(2, level);
 
@@ -379,7 +313,7 @@ function generateTree() {
                 y: 0
             });
 
-            // Create connection
+            // สร้างเส้นเชื่อม
             treeData.connections.push({
                 from: parentId,
                 to: memberId,
@@ -394,22 +328,22 @@ function generateTree() {
     recalculate();
 }
 
-// Render tree visualization
+// เรนเดอร์ tree visualization
 function renderTree() {
     const container = document.getElementById('tree-container');
     const width = container.clientWidth;
     const height = 600;
 
-    // Clear existing
+    // ล้างของเดิม
     container.innerHTML = '';
 
-    // Create SVG
+    // สร้าง SVG
     const svg = d3.select('#tree-container')
         .append('svg')
         .attr('width', width)
         .attr('height', height);
 
-    // Calculate positions
+    // คำนวณตำแหน่ง
     const depth = parseInt(document.getElementById('treeDepth').value);
     const levelHeight = height / (depth + 2);
 
@@ -422,7 +356,7 @@ function renderTree() {
         member.y = levelHeight * (member.level + 1);
     });
 
-    // Draw connections
+    // วาดเส้นเชื่อม
     svg.selectAll('.connection')
         .data(treeData.connections)
         .enter()
@@ -433,7 +367,7 @@ function renderTree() {
         .attr('x2', d => treeData.members[d.to].x)
         .attr('y2', d => treeData.members[d.to].y);
 
-    // Draw members
+    // วาด member
     const nodes = svg.selectAll('.member-group')
         .data(treeData.members)
         .enter()
@@ -441,7 +375,7 @@ function renderTree() {
         .attr('class', 'member-group')
         .attr('transform', d => `translate(${d.x},${d.y})`);
 
-    // Circle
+    // วงกลม
     nodes.append('circle')
         .attr('class', d => `member-node ${d.active ? 'active' : 'inactive'}`)
         .attr('r', d => d.level === 0 ? 30 : 20)
@@ -453,21 +387,23 @@ function renderTree() {
             }
         });
 
-    // Label
+    // ป้ายชื่อ
     nodes.append('text')
         .attr('text-anchor', 'middle')
         .attr('dy', '.35em')
-        .attr('class', 'text-xs font-bold')
+        .style('font-size', '11px')
+        .style('font-weight', '700')
         .style('fill', 'white')
         .style('pointer-events', 'none')
         .text(d => d.name);
 
-    // Commission badge
+    // ป้ายคอมมิชชั่น
     nodes.append('circle')
         .attr('cx', 25)
         .attr('cy', -15)
         .attr('r', 15)
-        .attr('class', 'fill-yellow-400 stroke-yellow-600')
+        .style('fill', '#e0a52e')
+        .style('stroke', '#a87a1d')
         .attr('stroke-width', 2)
         .style('display', d => d.commission > 0 ? 'block' : 'none');
 
@@ -476,38 +412,39 @@ function renderTree() {
         .attr('y', -15)
         .attr('text-anchor', 'middle')
         .attr('dy', '.35em')
-        .attr('class', 'text-xs font-bold')
-        .style('fill', '#92400e')
+        .style('font-size', '11px')
+        .style('font-weight', '700')
+        .style('fill', '#5a3e0c')
         .style('pointer-events', 'none')
         .style('display', d => d.commission > 0 ? 'block' : 'none')
         .text(d => Math.floor(d.commission / 1000) + 'K');
 }
 
-// Calculate commissions and rollup
+// คำนวณคอมมิชชั่นและ rollup
 function recalculate() {
     const settings = treeData.settings;
     const unilevelLevels = settings.unilevel_levels || [];
     const unilevelMaxDepth = parseInt(settings.unilevel_max_depth || 10);
 
-    // Reset commissions
+    // รีเซ็ตคอมมิชชั่น
     treeData.members.forEach(m => m.commission = 0);
     treeData.rollupPaths = [];
 
-    // Calculate for each member (bottom-up)
+    // คำนวณแต่ละ member (จากล่างขึ้นบน)
     for (let level = treeData.members[treeData.members.length - 1].level; level >= 0; level--) {
         const membersInLevel = treeData.members.filter(m => m.level === level);
 
         membersInLevel.forEach(member => {
-            if (member.level === 0) return; // Skip YOU
+            if (member.level === 0) return; // ข้าม YOU
 
-            // Find who receives this commission
+            // หาว่าใครได้รับคอมมิชชั่นนี้
             let sponsor = treeData.members[member.parentId];
             let currentLevel = 1;
             let originalSponsor = sponsor;
 
-            // Rollup logic: find next active sponsor
+            // Rollup logic: หา sponsor ที่แอคทีฟถัดไป
             while (sponsor && !sponsor.active && currentLevel < unilevelMaxDepth) {
-                // Record rollup path
+                // บันทึก rollup path
                 const nextSponsor = sponsor.parentId >= 0 ? treeData.members[sponsor.parentId] : null;
                 if (nextSponsor) {
                     treeData.rollupPaths.push({
@@ -522,7 +459,7 @@ function recalculate() {
                 }
             }
 
-            // Calculate commission
+            // คำนวณคอมมิชชั่น
             if (sponsor && sponsor.active && currentLevel <= unilevelMaxDepth) {
                 const levelConfig = unilevelLevels[currentLevel - 1];
                 if (levelConfig) {
@@ -539,7 +476,7 @@ function recalculate() {
     renderTree();
 }
 
-// Update summary panel
+// อัพเดทแผงสรุป
 function updateSummary() {
     const activeMembers = treeData.members.filter(m => m.active).length;
     const totalMembers = treeData.members.length;
@@ -551,7 +488,7 @@ function updateSummary() {
     document.getElementById('total-count').textContent = totalMembers;
     document.getElementById('active-rate').textContent = activeRate;
 
-    // Level breakdown
+    // แยกตามชั้น
     const maxLevel = Math.max(...treeData.members.map(m => m.level));
     let levelHtml = '';
 
@@ -561,43 +498,43 @@ function updateSummary() {
         const commissionInLevel = membersInLevel.reduce((sum, m) => sum + m.commission, 0);
 
         levelHtml += `
-            <div class="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-3">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="font-semibold text-gray-800 dark:text-white">ชั้น ${level}</span>
-                    <span class="text-xs text-gray-600 dark:text-gray-400">${activeInLevel}/${membersInLevel.length} คน</span>
+            <div style="padding:12px 14px; border-radius:13px; box-shadow:var(--inset-sm);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span style="font-weight:700; color:var(--ink);">ชั้น ${level}</span>
+                    <span style="font-size:11px; color:var(--ink2);">${activeInLevel}/${membersInLevel.length} คน</span>
                 </div>
-                <div class="text-lg font-bold text-purple-600">฿${Math.floor(commissionInLevel).toLocaleString()}</div>
+                <div class="tp-num" style="font-size:18px; font-weight:800; color:var(--deep1);">฿${Math.floor(commissionInLevel).toLocaleString()}</div>
             </div>
         `;
     }
 
     document.getElementById('level-breakdown').innerHTML = levelHtml;
 
-    // Rollup details
+    // รายละเอียด Rollup
     if (treeData.rollupPaths.length > 0) {
-        let rollupHtml = '<div class="space-y-2">';
+        let rollupHtml = '<div style="display:flex; flex-direction:column; gap:8px;">';
         treeData.rollupPaths.forEach(path => {
             const fromMember = treeData.members[path.from];
             const skippedMember = treeData.members[path.skipped];
             const toMember = treeData.members[path.to];
             rollupHtml += `
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 text-xs">
-                    <span class="font-semibold text-green-600">${fromMember.name}</span>
+                <div style="padding:9px 11px; border-radius:11px; box-shadow:var(--inset-sm); font-size:12px;">
+                    <span style="font-weight:700; color:#5aa07e;">${fromMember.name}</span>
                     →
-                    <span class="font-semibold text-red-600 line-through">${skippedMember.name}</span>
+                    <span style="font-weight:700; color:#d9534f; text-decoration:line-through;">${skippedMember.name}</span>
                     →
-                    <span class="font-semibold text-orange-600">${toMember.name}</span>
+                    <span style="font-weight:700; color:#e0a52e;">${toMember.name}</span>
                 </div>
             `;
         });
         rollupHtml += '</div>';
         document.getElementById('rollup-list').innerHTML = rollupHtml;
     } else {
-        document.getElementById('rollup-list').innerHTML = '<p class="text-gray-600 dark:text-gray-400 text-sm">ไม่มี rollup (ทุกคนแอคทีฟ)</p>';
+        document.getElementById('rollup-list').innerHTML = '<p style="color:var(--ink2); font-size:13px; margin:0;">ไม่มี rollup (ทุกคนแอคทีฟ)</p>';
     }
 }
 
-// Preset scenarios
+// สถานการณ์ตัวอย่าง
 function loadPreset(type) {
     switch(type) {
         case 'perfect':
@@ -608,7 +545,7 @@ function loadPreset(type) {
                 if (m.level === 0) {
                     m.active = true;
                 } else {
-                    m.active = Math.random() > 0.3; // 70% active
+                    m.active = Math.random() > 0.3; // แอคทีฟ 70%
                 }
             });
             break;
@@ -617,21 +554,21 @@ function loadPreset(type) {
                 if (m.level === 0) {
                     m.active = true;
                 } else if (m.level === 1) {
-                    m.active = m.id % 2 === 1; // Every other one inactive
+                    m.active = m.id % 2 === 1; // สลับไม่แอคทีฟ
                 } else {
                     m.active = true;
                 }
             });
             break;
         case 'custom':
-            // Let user customize
+            // ให้ผู้ใช้กำหนดเอง
             break;
     }
     recalculate();
     renderTree();
 }
 
-// Animation
+// แอนิเมชั่น
 function playAnimation() {
     if (animationRunning) return;
     animationRunning = true;
@@ -641,7 +578,7 @@ function playAnimation() {
 
     let delay = 0;
 
-    // Animate commission flow for each active path
+    // แอนิเมชั่นการไหลของคอมมิชชั่นแต่ละเส้นที่แอคทีฟ
     treeData.members.forEach(member => {
         if (member.level > 0 && member.commission > 0) {
             setTimeout(() => {
@@ -652,7 +589,7 @@ function playAnimation() {
                     .attr('fill', 'url(#flowGradient)')
                     .attr('class', 'commission-particle');
 
-                // Animate to parent
+                // เคลื่อนไปหา parent
                 const parent = treeData.members[member.parentId];
                 circle.transition()
                     .duration(1000)
@@ -677,7 +614,7 @@ function toggleRollupView() {
 }
 
 function toggleAnimation() {
-    // Animation toggle
+    // สลับแอนิเมชั่น
 }
 
 function captureScenario() {
@@ -692,7 +629,11 @@ function captureScenario() {
 function shareScenario() {
     const url = window.location.href;
     navigator.clipboard.writeText(url).then(() => {
-        alert('คัดลอกลิงก์แล้ว!');
+        if (window.showNotification) {
+            window.showNotification('คัดลอกลิงก์แล้ว!', 'success');
+        } else {
+            alert('คัดลอกลิงก์แล้ว!');
+        }
     });
 }
 
@@ -700,7 +641,8 @@ function printScenario() {
     window.print();
 }
 
-// Initialize
+// เริ่มต้น
 loadSettings();
 </script>
+@endpush
 @endsection

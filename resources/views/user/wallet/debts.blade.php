@@ -1,312 +1,179 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'หนี้ค้างชำระ')
 
+@php
+    $debtMeta = [
+        'active'    => ['ค้างชำระ', '#d9534f', 'fa-triangle-exclamation'],
+        'paid'      => ['ชำระแล้ว', '#5aa07e', 'fa-circle-check'],
+        'waived'    => ['ยกเว้น',   '#e0a52e', 'fa-hand-holding-heart'],
+        'cancelled' => ['ยกเลิก',   'var(--ink2)', 'fa-circle-xmark'],
+    ];
+    $totalOriginal = ($debtSummary['total_debt'] ?? 0) + ($debtSummary['total_paid'] ?? 0);
+    $paidPercent = $totalOriginal > 0 ? round((($debtSummary['total_paid'] ?? 0) / $totalOriginal) * 100, 1) : 100;
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Hero Header (Red-Orange gradient for Debt) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-red-600 via-orange-600 to-amber-600 dark:from-red-800 dark:via-orange-800 dark:to-amber-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-file-invoice-dollar"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4 mb-6">
-                <a href="{{ route('user.wallet.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all text-white">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-file-invoice-dollar text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">หนี้ค้างชำระ</h1>
-                    <p class="text-orange-100 text-lg mt-1">รายการหนี้และประวัติการชำระ</p>
+    {{-- ── Hero ──────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 72%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px;">
+                <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-file-invoice-dollar" style="color:#fff;"></i></span>
+                <div style="flex:1; min-width:200px;">
+                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">หนี้ค้างชำระ</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">รายการหนี้และประวัติการชำระ</div>
                 </div>
             </div>
-
-            {{-- ยอดหนี้คงเหลือ --}}
-            @if($debtSummary['has_active_debt'])
-            <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-6">
-                <p class="text-orange-100 text-sm mb-2">ยอดหนี้คงเหลือ</p>
-                <p class="text-5xl md:text-6xl font-bold text-white drop-shadow-lg">฿{{ number_format($debtSummary['total_debt'], 2) }}</p>
-                <p class="text-orange-100 text-sm mt-2">{{ $debtSummary['debt_count'] }} รายการค้างชำระ</p>
-            </div>
-            @else
-            <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-6">
-                <p class="text-green-100 text-sm mb-2">สถานะ</p>
-                <p class="text-3xl font-bold text-white drop-shadow-lg">ไม่มีหนี้ค้างชำระ</p>
-            </div>
-            @endif
-        </div>
-    </div>
-
-    {{-- Statistics Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
-            <div class="flex items-center gap-3">
-                <div class="text-3xl">💰</div>
-                <div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400">ยอดหนี้คงเหลือ</p>
-                    <p class="text-xl font-bold text-red-600 dark:text-red-400">฿{{ number_format($debtSummary['total_debt'], 2) }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
-            <div class="flex items-center gap-3">
-                <div class="text-3xl">📋</div>
-                <div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400">จำนวนหนี้ค้าง</p>
-                    <p class="text-xl font-bold text-orange-600 dark:text-orange-400">{{ $debtSummary['debt_count'] }} รายการ</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
-            <div class="flex items-center gap-3">
-                <div class="text-3xl">✅</div>
-                <div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400">ชำระแล้ว</p>
-                    <p class="text-xl font-bold text-green-600 dark:text-green-400">฿{{ number_format($debtSummary['total_paid'], 2) }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
-            <div class="flex items-center gap-3">
-                <div class="text-3xl">📊</div>
-                <div>
-                    @php
-                        $totalOriginal = $debtSummary['total_debt'] + $debtSummary['total_paid'];
-                        $paidPercent = $totalOriginal > 0 ? round(($debtSummary['total_paid'] / $totalOriginal) * 100, 1) : 100;
-                    @endphp
-                    <p class="text-xs text-gray-600 dark:text-gray-400">อัตราชำระ</p>
-                    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ $paidPercent }}%</p>
-                </div>
+            <div style="margin-top:18px; padding:20px 22px; border-radius:18px; box-shadow:var(--inset);">
+                @if($debtSummary['has_active_debt'])
+                    <div style="font-size:12.5px; color:var(--ink2);">ยอดหนี้คงเหลือ</div>
+                    <div class="tp-num" style="font-size:clamp(32px,7vw,48px); font-weight:800; line-height:1.1; margin-top:4px; color:#d9534f;">฿{{ number_format($debtSummary['total_debt'], 2) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">{{ $debtSummary['debt_count'] }} รายการค้างชำระ</div>
+                @else
+                    <div style="font-size:12.5px; color:var(--ink2);">สถานะ</div>
+                    <div style="font-size:clamp(22px,5vw,30px); font-weight:800; margin-top:4px; color:#5aa07e;">✅ ไม่มีหนี้ค้างชำระ</div>
+                @endif
             </div>
         </div>
     </div>
 
-    {{-- Alert Banner --}}
+    {{-- ── สถิติ 4 ใบ ───────────────────────────────────────── --}}
+    @php
+        $dStats = [
+            ['ยอดหนี้คงเหลือ', '฿'.number_format($debtSummary['total_debt'] ?? 0, 2), '💰', '#d9534f'],
+            ['จำนวนหนี้ค้าง', number_format($debtSummary['debt_count'] ?? 0).' รายการ', '📋', '#e0a52e'],
+            ['ชำระแล้ว', '฿'.number_format($debtSummary['total_paid'] ?? 0, 2), '✅', '#5aa07e'],
+            ['อัตราชำระ', $paidPercent.'%', '📊', '#5689b8'],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px;">
+        @foreach($dStats as [$label, $val, $emoji, $color])
+            <div class="tp-card" style="padding:16px; display:flex; align-items:center; gap:11px;">
+                <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:19px; background:color-mix(in srgb, {{ $color }} 18%, transparent);">{{ $emoji }}</span>
+                <div style="min-width:0;">
+                    <div style="font-size:11.5px; color:var(--ink2);">{{ $label }}</div>
+                    <div class="tp-num" style="font-size:19px; font-weight:800; color:{{ $color }};">{{ $val }}</div>
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    {{-- ── แจ้งเตือนระบบหักหนี้อัตโนมัติ ─────────────────────── --}}
     @if($debtSummary['has_active_debt'])
-    <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-5">
-        <div class="flex items-start gap-3">
-            <div class="text-3xl mt-1">
-                <i class="fas fa-info-circle text-amber-500"></i>
-            </div>
-            <div>
-                <h4 class="text-lg font-bold text-amber-800 dark:text-amber-300">ระบบหักหนี้อัตโนมัติ</h4>
-                <p class="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                    หนี้จะถูกหักอัตโนมัติ <strong>สูงสุด 50%</strong> จากรายได้ใหม่ทุกครั้งที่คุณมีรายรับเข้า Wallet
-                    จนกว่าจะชำระครบ ไม่ต้องดำเนินการใดๆ เพิ่มเติม
-                </p>
-            </div>
+    <div class="tp-card" style="padding:16px 18px; display:flex; gap:13px; align-items:flex-start; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+        <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#e0a52e;"><i class="fas fa-circle-info" style="color:#fff;"></i></span>
+        <div>
+            <div style="font-weight:700; font-size:14px;">ระบบหักหนี้อัตโนมัติ</div>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">หนี้จะถูกหักอัตโนมัติ <strong>สูงสุด 50%</strong> จากรายได้ใหม่ทุกครั้งที่มีรายรับเข้า Wallet จนกว่าจะชำระครบ ไม่ต้องดำเนินการเพิ่มเติม</div>
         </div>
     </div>
     @endif
 
-    {{-- Filter --}}
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-4">
-        <form method="GET" action="{{ route('user.wallet.debts') }}" class="flex flex-wrap items-center gap-3">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">กรองสถานะ:</label>
-            <select name="status" onchange="this.form.submit()"
-                class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                <option value="">ทั้งหมด</option>
-                <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>ค้างชำระ</option>
-                <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>ชำระแล้ว</option>
-                <option value="waived" {{ request('status') === 'waived' ? 'selected' : '' }}>ยกเว้น</option>
-                <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>ยกเลิก</option>
-            </select>
-            @if(request('status'))
-                <a href="{{ route('user.wallet.debts') }}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                    <i class="fas fa-times mr-1"></i>ล้างตัวกรอง
-                </a>
-            @endif
-        </form>
-    </div>
+    {{-- ── ตัวกรอง ──────────────────────────────────────────── --}}
+    <form method="GET" action="{{ route('user.wallet.debts') }}" class="tp-card" style="padding:14px 16px; display:flex; flex-wrap:wrap; align-items:center; gap:12px;">
+        <label style="font-size:12.5px; font-weight:600; color:var(--ink2);">กรองสถานะ:</label>
+        <select name="status" onchange="this.form.submit()" class="tp-input" style="width:auto; min-width:160px;">
+            <option value="">ทั้งหมด</option>
+            <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>ค้างชำระ</option>
+            <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>ชำระแล้ว</option>
+            <option value="waived" {{ request('status') === 'waived' ? 'selected' : '' }}>ยกเว้น</option>
+            <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>ยกเลิก</option>
+        </select>
+        @if(request('status'))
+            <a href="{{ route('user.wallet.debts') }}" class="tp-btn tp-btn-sm"><i class="fas fa-xmark"></i> ล้างตัวกรอง</a>
+        @endif
+    </form>
 
-    {{-- Debt List --}}
-    <div class="space-y-4" x-data="{ expanded: null }">
+    {{-- ── รายการหนี้ ───────────────────────────────────────── --}}
+    <div style="display:flex; flex-direction:column; gap:12px;" x-data="{ expanded: null }">
         @forelse($debts as $debt)
-            <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl overflow-hidden transition-all duration-200 hover:shadow-2xl">
-                {{-- Debt Card Header --}}
-                <div class="p-5 cursor-pointer" @click="expanded === {{ $debt->id }} ? expanded = null : expanded = {{ $debt->id }}">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        {{-- Left: Info --}}
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center
-                                @if($debt->status === 'active') bg-red-100 dark:bg-red-900/30
-                                @elseif($debt->status === 'paid') bg-green-100 dark:bg-green-900/30
-                                @elseif($debt->status === 'waived') bg-yellow-100 dark:bg-yellow-900/30
-                                @else bg-gray-100 dark:bg-gray-900/30
-                                @endif">
-                                <i class="fas
-                                    @if($debt->status === 'active') fa-exclamation-triangle text-red-600 dark:text-red-400
-                                    @elseif($debt->status === 'paid') fa-check-circle text-green-600 dark:text-green-400
-                                    @elseif($debt->status === 'waived') fa-hand-holding-heart text-yellow-600 dark:text-yellow-400
-                                    @else fa-times-circle text-gray-600 dark:text-gray-400
-                                    @endif text-xl"></i>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                    {{ $debt->reason ?? 'หนี้จากระบบ' }}
-                                </p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    {{ $debt->source_type }} #{{ $debt->source_id }}
-                                    &middot; {{ $debt->created_at->format('d/m/Y H:i') }}
-                                </p>
+            @php
+                $m = $debtMeta[$debt->status] ?? [$debt->status_label ?? $debt->status, 'var(--ink2)', 'fa-circle-info'];
+                [$stLabel, $stColor, $stIcon] = $m;
+            @endphp
+            <div class="tp-card" style="padding:0; overflow:hidden;">
+                {{-- หัวการ์ด (กดเพื่อขยาย) --}}
+                <div style="padding:16px 18px; cursor:pointer;" @click="expanded === {{ $debt->id }} ? expanded = null : expanded = {{ $debt->id }}">
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+                        <div style="display:flex; align-items:flex-start; gap:12px; min-width:0;">
+                            <span class="tp-tile" style="width:44px; height:44px; border-radius:13px; font-size:18px; background:color-mix(in srgb, {{ $stColor }} 18%, transparent);"><i class="fas {{ $stIcon }}" style="color:{{ $stColor }};"></i></span>
+                            <div style="min-width:0;">
+                                <div style="font-size:13.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $debt->reason ?? 'หนี้จากระบบ' }}</div>
+                                <div class="tp-num" style="font-size:11px; color:var(--ink2); margin-top:2px;">{{ $debt->source_type }} #{{ $debt->source_id }} · {{ $debt->created_at->format('d/m/Y H:i') }}</div>
                             </div>
                         </div>
-
-                        {{-- Right: Amount & Status --}}
-                        <div class="flex items-center gap-4">
-                            <div class="text-right">
-                                <p class="text-lg font-bold text-red-600 dark:text-red-400">฿{{ number_format($debt->original_amount, 2) }}</p>
+                        <div style="display:flex; align-items:center; gap:14px;">
+                            <div style="text-align:right;">
+                                <div class="tp-num" style="font-size:17px; font-weight:800; color:#d9534f;">฿{{ number_format($debt->original_amount, 2) }}</div>
                                 @if($debt->status === 'active' && $debt->deducted_amount > 0)
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">คงเหลือ ฿{{ number_format($debt->remaining_amount, 2) }}</p>
+                                    <div class="tp-num" style="font-size:11px; color:var(--ink2);">คงเหลือ ฿{{ number_format($debt->remaining_amount, 2) }}</div>
                                 @endif
                             </div>
-
-                            {{-- Status Badge --}}
-                            <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold
-                                @if($debt->status === 'active') bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300
-                                @elseif($debt->status === 'paid') bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300
-                                @elseif($debt->status === 'waived') bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300
-                                @else bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300
-                                @endif">
-                                {{ $debt->status_label }}
-                            </span>
-
-                            {{-- Expand Icon --}}
-                            <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200"
-                               :class="expanded === {{ $debt->id }} ? 'rotate-180' : ''"></i>
+                            <span class="tp-pill" style="color:#fff; background:{{ $stColor }};">{{ $debt->status_label ?? $stLabel }}</span>
+                            <i class="fas fa-chevron-down" style="color:var(--ink2); transition:transform .2s ease;" :style="{ transform: expanded === {{ $debt->id }} ? 'rotate(180deg)' : 'none' }"></i>
                         </div>
                     </div>
 
-                    {{-- Progress Bar (สำหรับหนี้ active) --}}
+                    {{-- progress (active) --}}
                     @if($debt->status === 'active' && $debt->original_amount > 0)
-                    <div class="mt-4">
-                        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <div style="margin-top:14px;">
+                        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--ink2); margin-bottom:5px;">
                             <span>ชำระแล้ว {{ number_format($debt->paid_percentage, 1) }}%</span>
-                            <span>฿{{ number_format($debt->deducted_amount, 2) }} / ฿{{ number_format($debt->original_amount, 2) }}</span>
+                            <span class="tp-num">฿{{ number_format($debt->deducted_amount, 2) }} / ฿{{ number_format($debt->original_amount, 2) }}</span>
                         </div>
-                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                            <div class="bg-gradient-to-r from-orange-500 to-red-500 h-2.5 rounded-full transition-all duration-500"
-                                 style="width: {{ min($debt->paid_percentage, 100) }}%"></div>
+                        <div style="height:10px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
+                            <div style="height:100%; width:{{ min($debt->paid_percentage, 100) }}%; border-radius:20px; background:linear-gradient(90deg,#e0a52e,#d9534f);"></div>
                         </div>
                     </div>
                     @endif
                 </div>
 
-                {{-- Expanded Detail --}}
-                <div x-show="expanded === {{ $debt->id }}"
-                     x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0 -translate-y-2"
-                     x-transition:enter-end="opacity-100 translate-y-0"
-                     x-transition:leave="transition ease-in duration-150"
-                     x-transition:leave-start="opacity-100 translate-y-0"
-                     x-transition:leave-end="opacity-0 -translate-y-2"
-                     class="border-t border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-5">
-
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        <div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">ยอดเดิม</p>
-                            <p class="text-sm font-bold text-gray-900 dark:text-gray-100">฿{{ number_format($debt->original_amount, 2) }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">หักแล้ว</p>
-                            <p class="text-sm font-bold text-green-600 dark:text-green-400">฿{{ number_format($debt->deducted_amount, 2) }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">คงเหลือ</p>
-                            <p class="text-sm font-bold text-red-600 dark:text-red-400">฿{{ number_format($debt->remaining_amount, 2) }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">ลำดับความสำคัญ</p>
-                            <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ $debt->priority }}</p>
-                        </div>
+                {{-- รายละเอียด (ขยาย) --}}
+                <div x-show="expanded === {{ $debt->id }}" x-collapse x-cloak
+                     style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent); padding:16px 18px; box-shadow:var(--inset-sm);">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-bottom:12px;">
+                        <div><div style="font-size:11px; color:var(--ink2);">ยอดเดิม</div><div class="tp-num" style="font-weight:700;">฿{{ number_format($debt->original_amount, 2) }}</div></div>
+                        <div><div style="font-size:11px; color:var(--ink2);">หักแล้ว</div><div class="tp-num" style="font-weight:700; color:#5aa07e;">฿{{ number_format($debt->deducted_amount, 2) }}</div></div>
+                        <div><div style="font-size:11px; color:var(--ink2);">คงเหลือ</div><div class="tp-num" style="font-weight:700; color:#d9534f;">฿{{ number_format($debt->remaining_amount, 2) }}</div></div>
+                        <div><div style="font-size:11px; color:var(--ink2);">ลำดับความสำคัญ</div><div class="tp-num" style="font-weight:700;">{{ $debt->priority }}</div></div>
                     </div>
-
                     @if($debt->fully_paid_at)
-                    <p class="text-xs text-green-600 dark:text-green-400 mb-2">
-                        <i class="fas fa-check-circle mr-1"></i>ชำระครบวันที่ {{ $debt->fully_paid_at->format('d/m/Y H:i') }}
-                    </p>
+                        <div style="font-size:12px; color:#5aa07e; margin-bottom:4px;"><i class="fas fa-circle-check"></i> ชำระครบวันที่ {{ $debt->fully_paid_at->format('d/m/Y H:i') }}</div>
                     @endif
-
                     @if($debt->waived_at)
-                    <p class="text-xs text-yellow-600 dark:text-yellow-400 mb-2">
-                        <i class="fas fa-hand-holding-heart mr-1"></i>ยกเว้นวันที่ {{ $debt->waived_at->format('d/m/Y H:i') }}
-                        @if($debt->waive_reason)
-                            — {{ $debt->waive_reason }}
-                        @endif
-                    </p>
+                        <div style="font-size:12px; color:#e0a52e; margin-bottom:4px;"><i class="fas fa-hand-holding-heart"></i> ยกเว้นวันที่ {{ $debt->waived_at->format('d/m/Y H:i') }}@if($debt->waive_reason) — {{ $debt->waive_reason }}@endif</div>
                     @endif
-
-                    {{-- Deduction History --}}
-                    @php
-                        $history = $debt->metadata['deduction_history'] ?? [];
-                    @endphp
+                    @php $history = $debt->metadata['deduction_history'] ?? []; @endphp
                     @if(!empty($history))
-                    <div class="mt-4">
-                        <h5 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                            <i class="fas fa-history mr-1"></i>ประวัติการหัก
-                        </h5>
-                        <div class="space-y-2 max-h-48 overflow-y-auto">
-                            @foreach(array_reverse($history) as $entry)
-                            <div class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg px-3 py-2 text-xs border border-gray-200 dark:border-gray-700">
-                                <span class="text-gray-600 dark:text-gray-400">
-                                    {{ \Carbon\Carbon::parse($entry['date'])->format('d/m/Y H:i') }}
-                                </span>
-                                <span class="font-bold text-green-600 dark:text-green-400">
-                                    -฿{{ number_format($entry['amount'], 2) }}
-                                </span>
+                        <div style="margin-top:10px;">
+                            <div style="font-size:12.5px; font-weight:700; margin-bottom:7px;"><i class="fas fa-clock-rotate-left"></i> ประวัติการหัก</div>
+                            <div style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto;">
+                                @foreach(array_reverse($history) as $entry)
+                                    <div style="display:flex; align-items:center; justify-content:space-between; padding:7px 11px; border-radius:10px; box-shadow:var(--inset-sm); font-size:11.5px;">
+                                        <span class="tp-num" style="color:var(--ink2);">{{ \Carbon\Carbon::parse($entry['date'])->format('d/m/Y H:i') }}</span>
+                                        <span class="tp-num" style="font-weight:700; color:#5aa07e;">-฿{{ number_format($entry['amount'], 2) }}</span>
+                                    </div>
+                                @endforeach
                             </div>
-                            @endforeach
                         </div>
-                    </div>
                     @endif
                 </div>
             </div>
         @empty
-            {{-- Empty State --}}
-            <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-12 text-center">
-                <div class="inline-block p-6 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 rounded-full mb-4">
-                    <i class="fas fa-check-circle text-6xl text-green-600 dark:text-green-400"></i>
-                </div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ไม่มีหนี้ค้างชำระ</h3>
-                <p class="text-gray-600 dark:text-gray-400">คุณไม่มีรายการหนี้{{ request('status') ? 'ในสถานะที่เลือก' : '' }}</p>
+            <div class="tp-card" style="text-align:center; padding:48px 20px;">
+                <div style="font-size:52px;">✅</div>
+                <div style="font-weight:700; font-size:17px; margin-top:10px;">ไม่มีหนี้ค้างชำระ</div>
+                <div style="font-size:13px; color:var(--ink2); margin-top:4px;">คุณไม่มีรายการหนี้{{ request('status') ? 'ในสถานะที่เลือก' : '' }}</div>
             </div>
         @endforelse
     </div>
 
-    {{-- Pagination --}}
+    {{-- ── Pagination ───────────────────────────────────────── --}}
     @if($debts->hasPages())
-    <div class="flex justify-center">
-        {{ $debts->withQueryString()->links() }}
-    </div>
+        <div class="tp-card" style="padding:14px 16px;">{{ $debts->withQueryString()->links() }}</div>
     @endif
 </div>
-
-@push('scripts')
-<style>
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
-}
-</style>
-@endpush
 @endsection

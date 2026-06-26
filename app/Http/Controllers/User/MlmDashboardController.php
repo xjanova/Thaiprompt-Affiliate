@@ -28,7 +28,8 @@ class MlmDashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $member = $user->mlmMembers()->with('plan', 'rank')->first();
+        // หมายเหตุ: MlmMember ไม่มี relation 'rank' (eager-load 'rank' เดิมทำให้ dashboard 500 — RelationNotFoundException)
+        $member = $user->mlmMembers()->with('plan')->first();
 
         if (! $member) {
             return redirect()->route('user.dashboard')

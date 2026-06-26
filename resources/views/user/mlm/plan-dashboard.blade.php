@@ -1,156 +1,107 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
-@section('title', 'แดshboard แผน MLM')
+@section('title', 'แดชบอร์ดแผน MLM')
+
+@php
+    // ── ชนิดแผน (แปลงเป็นป้ายอ่านง่าย) ────────────────────────────
+    $planTypeMap = [
+        'binary'   => 'Binary',
+        'unilevel' => 'Unilevel',
+        'matrix'   => 'Matrix',
+        'hybrid'   => 'Hybrid',
+    ];
+    $planTypeLabel = $planTypeMap[$member->plan?->type] ?? ($member->plan?->type ?? 'N/A');
+
+    // ── ป้ายสถานะสมาชิก (สี + ข้อความ + ไอคอน) ───────────────────
+    $statusMap = [
+        'active'  => ['สี' => '#5aa07e', 'ข้อความ' => 'ใช้งาน',    'ไอคอน' => 'fa-circle-check'],
+        'pending' => ['สี' => '#e0a52e', 'ข้อความ' => 'รออนุมัติ', 'ไอคอน' => 'fa-clock'],
+    ];
+    $statusInfo = $statusMap[$member->status] ?? ['สี' => 'var(--ink2)', 'ข้อความ' => 'ไม่ใช้งาน', 'ไอคอน' => 'fa-circle-xmark'];
+
+    // ── การ์ดสถิติหลัก 4 ใบ (ตรงกับ MlmDashboardController::plan) ─
+    $kpis = [
+        ['emoji' => '💰', 'label' => 'ค่าคอมมิชชั่นรวม', 'value' => '฿' . number_format($statistics['total_commissions'] ?? 0, 2)],
+        ['emoji' => '⭐', 'label' => 'PV ส่วนตัว',       'value' => number_format($pvStats['personal_pv'] ?? 0, 0)],
+        ['emoji' => '👥', 'label' => 'PV ทีม',           'value' => number_format($pvStats['group_pv'] ?? 0, 0)],
+        ['emoji' => '🤝', 'label' => 'สมาชิกทางตรง',     'value' => $statistics['direct_referrals'] ?? 0],
+    ];
+
+    // ── เมนูด่วน (กรองเฉพาะ route ที่มีจริง) ──────────────────────
+    $quickRaw = [
+        ['👥', 'ทีมของฉัน',   'ดูสมาชิกในทีม',     'user.mlm.team'],
+        ['💰', 'ค่าคอมมิชชั่น', 'รายละเอียดรายได้',  'user.mlm.commissions'],
+        ['🌳', 'โครงสร้างทีม', 'ดูแผนผังองค์กร',     'user.mlm.genealogy'],
+    ];
+    $quick = [];
+    foreach ($quickRaw as $q) {
+        if (\Illuminate\Support\Facades\Route::has($q[3])) {
+            $quick[] = [$q[0], $q[1], $q[2], route($q[3])];
+        }
+    }
+@endphp
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Purple-Pink-Rose for Plan Dashboard) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 dark:from-purple-800 dark:via-pink-800 dark:to-rose-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-chart-line"></i>
+    {{-- ── Hero: หัวเรื่องแผน MLM ──────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:18px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:58px; height:58px; border-radius:18px; font-size:28px;">📊</span>
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">แผน MLM · MLM PLAN DASHBOARD</div>
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:4px 0 0;">{{ $member->plan?->name ?? 'N/A' }}</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">รหัสสมาชิก: <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ $member->member_code }}</span></div>
             </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center justify-between flex-wrap gap-4">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-chart-pie text-4xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-4xl font-bold text-white drop-shadow-lg">แผน MLM: {{ $member->plan?->name ?? 'N/A' }}</h1>
-                        <p class="text-purple-100 text-lg mt-1">รหัสสมาชิก: {{ $member->member_code }}</p>
-                    </div>
-                </div>
-                <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-4">
-                    <div class="text-sm text-purple-100 mb-2">สถานะ</div>
-                    @if($member->status === 'active')
-                        <span class="px-4 py-2 bg-green-500/90 text-white rounded-lg font-bold inline-flex items-center gap-2">
-                            <i class="fas fa-check-circle"></i> ใช้งาน
-                        </span>
-                    @elseif($member->status === 'pending')
-                        <span class="px-4 py-2 bg-yellow-500/90 text-white rounded-lg font-bold inline-flex items-center gap-2">
-                            <i class="fas fa-clock"></i> รออนุมัติ
-                        </span>
-                    @else
-                        <span class="px-4 py-2 bg-gray-500/90 text-white rounded-lg font-bold inline-flex items-center gap-2">
-                            <i class="fas fa-times-circle"></i> ไม่ใช้งาน
-                        </span>
-                    @endif
-                </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:7px;">
+                <div style="font-size:11px; color:var(--ink2); font-weight:600;">สถานะ</div>
+                <span class="tp-pill" style="color:#fff; background:{{ $statusInfo['สี'] }}; font-size:12.5px; padding:6px 14px;">
+                    <i class="fas {{ $statusInfo['ไอคอน'] }}" style="font-size:11px;"></i> {{ $statusInfo['ข้อความ'] }}
+                </span>
             </div>
         </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="grid md:grid-cols-4 gap-4">
-        <!-- Total Commissions -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">💰</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">ค่าคอมมิชชั่นรวม</div>
-                    <div class="text-2xl font-bold text-gray-800 dark:text-white">
-                        ฿{{ number_format($statistics['total_commissions'] ?? 0, 2) }}
+    {{-- ── การ์ดสถิติหลัก 4 ใบ ─────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px;">
+        @foreach($kpis as $k)
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:center; gap:13px;">
+                    <span class="tp-tile" style="width:48px; height:48px; border-radius:14px; font-size:22px;">{{ $k['emoji'] }}</span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $k['label'] }}</div>
+                        <div class="tp-num" style="font-size:22px; font-weight:800; margin-top:3px; letter-spacing:.3px;">{{ $k['value'] }}</div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Personal PV -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">⭐</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">PV ส่วนตัว</div>
-                    <div class="text-2xl font-bold text-gray-800 dark:text-white">
-                        {{ number_format($pvStats['personal_pv'] ?? 0, 0) }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Group PV -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">👥</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">PV ทีม</div>
-                    <div class="text-2xl font-bold text-gray-800 dark:text-white">
-                        {{ number_format($pvStats['group_pv'] ?? 0, 0) }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Direct Referrals -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">🤝</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">สมาชิกทางตรง</div>
-                    <div class="text-2xl font-bold text-gray-800 dark:text-white">
-                        {{ $statistics['direct_referrals'] ?? 0 }}
-                    </div>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
-    <!-- Plan Details & Rank Info -->
-    <div class="grid md:grid-cols-2 gap-6">
-        <!-- Plan Details -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <span>📋</span> รายละเอียดแผน
-            </h2>
-            <div class="space-y-3">
-                <div class="flex justify-between items-center py-2 border-b">
-                    <span class="text-gray-600 dark:text-gray-400">ชื่อแผน:</span>
-                    <span class="font-bold text-gray-800 dark:text-white">{{ $member->plan?->name ?? 'N/A' }}</span>
+    {{-- ── รายละเอียดแผน + ยศปัจจุบัน (2 คอลัมน์) ──────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px;">
+
+        {{-- รายละเอียดแผน --}}
+        <div class="tp-card" style="padding:18px;">
+            <div class="tp-section-h" style="margin-bottom:14px;">📋 รายละเอียดแผน</div>
+            <div style="display:flex; flex-direction:column;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                    <span style="font-size:13px; color:var(--ink2);">ชื่อแผน</span>
+                    <span style="font-size:13.5px; font-weight:700; text-align:right;">{{ $member->plan?->name ?? 'N/A' }}</span>
                 </div>
-                <div class="flex justify-between items-center py-2 border-b">
-                    <span class="text-gray-600 dark:text-gray-400">ประเภท:</span>
-                    <span class="font-bold text-gray-800 dark:text-white">
-                        @if($member->plan?->type === 'binary')
-                            Binary
-                        @elseif($member->plan?->type === 'unilevel')
-                            Unilevel
-                        @elseif($member->plan?->type === 'matrix')
-                            Matrix
-                        @elseif($member->plan?->type === 'hybrid')
-                            Hybrid
-                        @else
-                            {{ $member->plan?->type ?? 'N/A' }}
-                        @endif
-                    </span>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                    <span style="font-size:13px; color:var(--ink2);">ประเภท</span>
+                    <span class="tp-pill tp-pill-soft" style="font-size:11.5px;">{{ $planTypeLabel }}</span>
                 </div>
-                <div class="flex justify-between items-center py-2 border-b">
-                    <span class="text-gray-600 dark:text-gray-400">วันที่เข้าร่วม:</span>
-                    <span class="font-bold text-gray-800 dark:text-white">{{ $member->created_at->format('d/m/Y') }}</span>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                    <span style="font-size:13px; color:var(--ink2);">วันที่เข้าร่วม</span>
+                    <span class="tp-num" style="font-size:13.5px; font-weight:700;">{{ $member->created_at->format('d/m/Y') }}</span>
                 </div>
-                <div class="flex justify-between items-center py-2">
-                    <span class="text-gray-600 dark:text-gray-400">ผู้แนะนำ:</span>
-                    <span class="font-bold text-gray-800 dark:text-white">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0;">
+                    <span style="font-size:13px; color:var(--ink2);">ผู้แนะนำ</span>
+                    <span style="font-size:13.5px; font-weight:700; text-align:right;">
                         @if($member->sponsor)
-                            {{ $member->sponsor->user->name ?? 'N/A' }} ({{ $member->sponsor->member_code }})
+                            {{ $member->sponsor->user->name ?? 'N/A' }} <span class="tp-num" style="color:var(--deep1);">({{ $member->sponsor->member_code }})</span>
                         @else
                             -
                         @endif
@@ -159,135 +110,90 @@
             </div>
         </div>
 
-        <!-- Current Rank -->
-        <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-xl p-6 border border-yellow-200">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <span>🏆</span> ยศปัจจุบัน
-            </h2>
+        {{-- ยศปัจจุบัน --}}
+        <div class="tp-card" style="padding:18px;">
+            <div class="tp-section-h" style="margin-bottom:14px;">🏆 ยศปัจจุบัน</div>
             @if($member->rank)
-                <div class="text-center">
-                    <div class="flex justify-center mb-4">
+                <div style="text-align:center;">
+                    <div style="display:flex; justify-content:center; margin-bottom:14px;">
                         <x-rank-icon :rank="$member->rank" size="xl" />
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">{{ $member->rank->name }}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ $member->rank->description ?? '' }}</p>
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">ระดับ</div>
-                        <div class="text-3xl font-bold text-orange-600">{{ $member->rank->level }}</div>
+                    <h3 style="font-size:20px; font-weight:800; margin:0 0 6px;">{{ $member->rank->name }}</h3>
+                    <p style="font-size:12.5px; color:var(--ink2); margin:0 0 14px;">{{ $member->rank->description ?? '' }}</p>
+                    <div style="padding:14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">ระดับ</div>
+                        <div class="tp-num" style="font-size:28px; font-weight:800; color:var(--deep1);">{{ $member->rank->level }}</div>
                     </div>
                 </div>
             @else
-                <div class="text-center py-8">
-                    <span class="text-4xl mb-4 block">🎯</span>
-                    <p class="text-gray-600 dark:text-gray-400">ยังไม่มียศ</p>
-                    <a href="{{ route('user.ranks.dashboard') }}" class="mt-4 inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                        ดูเงื่อนไขยศ
-                    </a>
+                <div style="text-align:center; padding:24px 0;">
+                    <div style="font-size:46px; opacity:.6;">🎯</div>
+                    <div style="font-size:13px; color:var(--ink2); margin-top:8px;">ยังไม่มียศ</div>
+                    @if(\Illuminate\Support\Facades\Route::has('user.ranks.dashboard'))
+                        <a href="{{ route('user.ranks.dashboard') }}" class="tp-btn tp-btn-primary" style="margin-top:14px;">ดูเงื่อนไขยศ</a>
+                    @endif
                 </div>
             @endif
         </div>
     </div>
 
-    <!-- Commission Breakdown -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <span>💵</span> รายละเอียดค่าคอมมิชชั่น
-        </h2>
-        <div class="grid md:grid-cols-3 gap-4">
-            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
-                <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">ค่าคอมมิชชั่นรวม</div>
-                <div class="text-2xl font-bold text-green-600">฿{{ number_format($statistics['total_commissions'] ?? 0, 2) }}</div>
+    {{-- ── รายละเอียดค่าคอมมิชชั่น ────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">💵 รายละเอียดค่าคอมมิชชั่น</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+            <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">ค่าคอมมิชชั่นรวม</div>
+                <div class="tp-num" style="font-size:22px; font-weight:800; color:#5aa07e;">฿{{ number_format($statistics['total_commissions'] ?? 0, 2) }}</div>
             </div>
-            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
-                <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">ค่าคอมมิชชั่นเดือนนี้</div>
-                <div class="text-2xl font-bold text-blue-600">฿{{ number_format($statistics['month_commissions'] ?? 0, 2) }}</div>
+            <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">ค่าคอมมิชชั่นเดือนนี้</div>
+                <div class="tp-num" style="font-size:22px; font-weight:800; color:#5689b8;">฿{{ number_format($statistics['month_commissions'] ?? 0, 2) }}</div>
             </div>
-            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
-                <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">ค่าคอมมิชชั่นสัปดาห์นี้</div>
-                <div class="text-2xl font-bold text-purple-600">฿{{ number_format($statistics['week_commissions'] ?? 0, 2) }}</div>
+            <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">ค่าคอมมิชชั่นสัปดาห์นี้</div>
+                <div class="tp-num" style="font-size:22px; font-weight:800; color:var(--deep1);">฿{{ number_format($statistics['week_commissions'] ?? 0, 2) }}</div>
             </div>
         </div>
     </div>
 
-    <!-- PV Statistics -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <span>⭐</span> สถิติ PV (Point Value)
-        </h2>
-        <div class="grid md:grid-cols-4 gap-4">
-            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">PV ส่วนตัว</div>
-                <div class="text-2xl font-bold text-blue-600">{{ number_format($pvStats['personal_pv'] ?? 0, 0) }}</div>
+    {{-- ── สถิติ PV (Point Value) ─────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">⭐ สถิติ PV (Point Value)</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px;">
+            <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">PV ส่วนตัว</div>
+                <div class="tp-num" style="font-size:22px; font-weight:800; color:#5689b8;">{{ number_format($pvStats['personal_pv'] ?? 0, 0) }}</div>
             </div>
-            <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">PV ทีม</div>
-                <div class="text-2xl font-bold text-purple-600">{{ number_format($pvStats['group_pv'] ?? 0, 0) }}</div>
+            <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">PV ทีม</div>
+                <div class="tp-num" style="font-size:22px; font-weight:800; color:var(--deep1);">{{ number_format($pvStats['group_pv'] ?? 0, 0) }}</div>
             </div>
-            <div class="bg-green-50 rounded-xl p-4 border border-green-200">
-                <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">PV เดือนนี้</div>
-                <div class="text-2xl font-bold text-green-600">{{ number_format($pvStats['month_pv'] ?? 0, 0) }}</div>
+            <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">PV เดือนนี้</div>
+                <div class="tp-num" style="font-size:22px; font-weight:800; color:#5aa07e;">{{ number_format($pvStats['month_pv'] ?? 0, 0) }}</div>
             </div>
-            <div class="bg-orange-50 rounded-xl p-4 border border-orange-200">
-                <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">PV สัปดาห์นี้</div>
-                <div class="text-2xl font-bold text-orange-600">{{ number_format($pvStats['week_pv'] ?? 0, 0) }}</div>
+            <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">PV สัปดาห์นี้</div>
+                <div class="tp-num" style="font-size:22px; font-weight:800; color:#e0a52e;">{{ number_format($pvStats['week_pv'] ?? 0, 0) }}</div>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="grid md:grid-cols-3 gap-4">
-        <a href="{{ route('user.mlm.team') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">👥</span>
+    {{-- ── เมนูด่วน ────────────────────────────────────────────── --}}
+    @if(count($quick) > 0)
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px;">
+        @foreach($quick as [$emoji, $title, $sub, $href])
+            <a href="{{ $href }}" class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px; padding:18px; text-decoration:none; color:inherit;">
+                <span class="tp-tile" style="width:48px; height:48px; border-radius:14px; font-size:22px;">{{ $emoji }}</span>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:14px; font-weight:700;">{{ $title }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:2px;">{{ $sub }}</div>
                 </div>
-                <div class="flex-1">
-                    <div class="font-bold text-gray-800 dark:text-white">ทีมของฉัน</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400">ดูสมาชิกในทีม</div>
-                </div>
-                <span class="text-blue-600">→</span>
-            </div>
-        </a>
-
-        <a href="{{ route('user.mlm.commissions') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">💰</span>
-                </div>
-                <div class="flex-1">
-                    <div class="font-bold text-gray-800 dark:text-white">ค่าคอมมิชชั่น</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400">รายละเอียดรายได้</div>
-                </div>
-                <span class="text-green-600">→</span>
-            </div>
-        </a>
-
-        <a href="{{ route('user.mlm.genealogy') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">🌳</span>
-                </div>
-                <div class="flex-1">
-                    <div class="font-bold text-gray-800 dark:text-white">โครงสร้างทีม</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400">ดูแผนผังองค์กร</div>
-                </div>
-                <span class="text-purple-600">→</span>
-            </div>
-        </a>
+                <span style="font-size:18px; color:var(--deep1);">→</span>
+            </a>
+        @endforeach
     </div>
+    @endif
+
 </div>
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush

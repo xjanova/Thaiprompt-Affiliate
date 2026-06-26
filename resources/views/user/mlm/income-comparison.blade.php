@@ -1,265 +1,203 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'เปรียบเทียบแผนรายได้')
 
+@php
+    // ── ข้อมูลแผนทั้ง 3 (สำหรับ render การ์ดด้านบน) ───────────────
+    // คีย์ต้องตรงกับ object scenarios ใน JS เพื่อให้ selector .{key}-income / .{key}-yearly ทำงาน
+    $plans = [
+        [
+            'key'   => 'starter',
+            'emoji' => '🌱',
+            'name'  => 'แผนเริ่มต้น',
+            'desc'  => 'เหมาะกับมือใหม่',
+            'color' => '#5aa07e',          // เขียว success
+            'sales' => '฿5,000',
+            'team'  => '5 คน',
+            'tsale' => '฿15,000',
+            'badge' => null,
+        ],
+        [
+            'key'   => 'growth',
+            'emoji' => '🚀',
+            'name'  => 'แผนเติบโต',
+            'desc'  => 'สร้างรายได้มั่นคง',
+            'color' => 'var(--deep1)',     // ทองคำเข้ม (แผนแนะนำ)
+            'sales' => '฿20,000',
+            'team'  => '20 คน',
+            'tsale' => '฿100,000',
+            'badge' => 'แนะนำ!',
+        ],
+        [
+            'key'   => 'elite',
+            'emoji' => '👑',
+            'name'  => 'แผนชนชั้นสูง',
+            'desc'  => 'สร้างอิสรภาพทางการเงิน',
+            'color' => '#e0a52e',          // เหลือง/ทอง warning
+            'sales' => '฿50,000',
+            'team'  => '50 คน',
+            'tsale' => '฿250,000',
+            'badge' => null,
+        ],
+    ];
+
+    // ── เรื่องราวความสำเร็จ ─────────────────────────────────────
+    $stories = [
+        ['emoji' => '👨‍💼', 'name' => 'คุณสมชาย',  'desc' => 'เริ่มต้นด้วยแผนเติบโต ปัจจุบันมีรายได้',    'amount' => '฿85,000/เดือน'],
+        ['emoji' => '👩‍💼', 'name' => 'คุณสมหญิง', 'desc' => 'ทำงานพาร์ทไทม์ สร้างรายได้เสริม',          'amount' => '฿42,000/เดือน'],
+        ['emoji' => '👨‍🎓', 'name' => 'คุณสมศักดิ์','desc' => 'นักศึกษา สร้างรายได้ระหว่างเรียน',         'amount' => '฿18,000/เดือน'],
+    ];
+@endphp
+
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-pink-950 py-8">
-    <div class="container mx-auto px-4">
-        {{-- Premium Hero Header (Indigo-Pink for Income Comparison) --}}
-        <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8 mb-6">
-            {{-- Animated Background Orbs --}}
-            <div class="absolute inset-0 opacity-10">
-                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:54px; height:54px; border-radius:16px; font-size:26px;">🔥</span>
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">เปรียบเทียบแผนรายได้ · INCOME COMPARISON</div>
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:4px 0 0;">เปรียบเทียบแผนรายได้</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">เลือกแผนที่เหมาะกับคุณ — มองเห็นผลตอบแทนชัดเจน</div>
             </div>
-
-            {{-- Floating Icons --}}
-            <div class="absolute inset-0 overflow-hidden pointer-events-none">
-                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-            </div>
-
-            {{-- Header Content --}}
-            <div class="relative z-10">
-                <div class="flex items-center justify-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-fire text-4xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div class="text-center">
-                        <h1 class="text-4xl md:text-5xl font-bold text-white drop-shadow-lg">🔥 เปรียบเทียบแผนรายได้</h1>
-                        <p class="text-purple-100 text-lg mt-2">เลือกแผนที่เหมาะกับคุณ - มองเห็นผลตอบแทนชัดเจน</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Scenario Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- Starter Plan -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl">
-                <div class="bg-gradient-to-br from-green-400 to-teal-500 p-6 text-white">
-                    <div class="text-4xl mb-3 text-center">🌱</div>
-                    <h3 class="text-2xl font-bold text-center mb-2">แผนเริ่มต้น</h3>
-                    <p class="text-center opacity-90">เหมาะกับมือใหม่</p>
-                </div>
-
-                <div class="p-6">
-                    <div class="space-y-4 mb-6">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 dark:text-gray-400">ยอดขาย/เดือน:</span>
-                            <span class="font-bold text-lg">฿5,000</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 dark:text-gray-400">จำนวนทีม:</span>
-                            <span class="font-bold text-lg">5 คน</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 dark:text-gray-400">ยอดขายทีม:</span>
-                            <span class="font-bold text-lg">฿15,000</span>
-                        </div>
-                    </div>
-
-                    <div class="border-t pt-4 mb-4">
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">รายได้รวม/เดือน:</div>
-                        <div class="text-3xl font-bold text-green-600">฿<span class="starter-income">0</span></div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">≈ <span class="starter-yearly">0</span> บาท/ปี</div>
-                    </div>
-
-                    <button onclick="simulateScenario('starter')"
-                            class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-all duration-300">
-                        ดูรายละเอียด
-                    </button>
-                </div>
-            </div>
-
-            <!-- Growth Plan -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl ring-4 ring-purple-500">
-                <div class="bg-gradient-to-br from-purple-500 to-pink-600 p-6 text-white relative">
-                    <div class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full">
-                        แนะนำ!
-                    </div>
-                    <div class="text-4xl mb-3 text-center">🚀</div>
-                    <h3 class="text-2xl font-bold text-center mb-2">แผนเติบโต</h3>
-                    <p class="text-center opacity-90">สร้างรายได้มั่นคง</p>
-                </div>
-
-                <div class="p-6">
-                    <div class="space-y-4 mb-6">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 dark:text-gray-400">ยอดขาย/เดือน:</span>
-                            <span class="font-bold text-lg">฿20,000</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 dark:text-gray-400">จำนวนทีม:</span>
-                            <span class="font-bold text-lg">20 คน</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 dark:text-gray-400">ยอดขายทีม:</span>
-                            <span class="font-bold text-lg">฿100,000</span>
-                        </div>
-                    </div>
-
-                    <div class="border-t pt-4 mb-4">
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">รายได้รวม/เดือน:</div>
-                        <div class="text-3xl font-bold text-purple-600">฿<span class="growth-income">0</span></div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">≈ <span class="growth-yearly">0</span> บาท/ปี</div>
-                    </div>
-
-                    <button onclick="simulateScenario('growth')"
-                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-all duration-300">
-                        ดูรายละเอียด
-                    </button>
-                </div>
-            </div>
-
-            <!-- Elite Plan -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl">
-                <div class="bg-gradient-to-br from-yellow-400 to-orange-500 p-6 text-white">
-                    <div class="text-4xl mb-3 text-center">👑</div>
-                    <h3 class="text-2xl font-bold text-center mb-2">แผนชนชั้นสูง</h3>
-                    <p class="text-center opacity-90">สร้างอิสรภาพทางการเงิน</p>
-                </div>
-
-                <div class="p-6">
-                    <div class="space-y-4 mb-6">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 dark:text-gray-400">ยอดขาย/เดือน:</span>
-                            <span class="font-bold text-lg">฿50,000</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 dark:text-gray-400">จำนวนทีม:</span>
-                            <span class="font-bold text-lg">50 คน</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 dark:text-gray-400">ยอดขายทีม:</span>
-                            <span class="font-bold text-lg">฿250,000</span>
-                        </div>
-                    </div>
-
-                    <div class="border-t pt-4 mb-4">
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">รายได้รวม/เดือน:</div>
-                        <div class="text-3xl font-bold text-orange-600">฿<span class="elite-income">0</span></div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">≈ <span class="elite-yearly">0</span> บาท/ปี</div>
-                    </div>
-
-                    <button onclick="simulateScenario('elite')"
-                            class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg transition-all duration-300">
-                        ดูรายละเอียด
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Comparison Chart -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 mb-8">
-            <h3 class="text-3xl font-bold text-gray-800 dark:text-white mb-6 text-center">📊 เปรียบเทียบรายได้</h3>
-            <canvas id="comparison-chart" height="100"></canvas>
-        </div>
-
-        <!-- Detailed Breakdown -->
-        <div id="detailed-breakdown" class="hidden">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 mb-8">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-3xl font-bold text-gray-800 dark:text-white">รายละเอียด: <span id="scenario-name" class="text-purple-600"></span></h3>
-                    <button onclick="closeBreakdown()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <!-- Income Breakdown Pie -->
-                    <div>
-                        <h4 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">สัดส่วนรายได้</h4>
-                        <canvas id="breakdown-pie" height="250"></canvas>
-                    </div>
-
-                    <!-- Growth Projection -->
-                    <div>
-                        <h4 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">การเติบโต 12 เดือน</h4>
-                        <canvas id="growth-projection" height="250"></canvas>
-                    </div>
-                </div>
-
-                <!-- Key Metrics -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl p-4 text-center">
-                        <div class="text-sm text-gray-700 dark:text-gray-300 mb-1">รายได้เดือนแรก</div>
-                        <div class="text-2xl font-bold text-blue-600">฿<span id="month-1">0</span></div>
-                    </div>
-
-                    <div class="bg-gradient-to-br from-green-100 to-green-200 rounded-xl p-4 text-center">
-                        <div class="text-sm text-gray-700 dark:text-gray-300 mb-1">เดือนที่ 6</div>
-                        <div class="text-2xl font-bold text-green-600">฿<span id="month-6">0</span></div>
-                    </div>
-
-                    <div class="bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl p-4 text-center">
-                        <div class="text-sm text-gray-700 dark:text-gray-300 mb-1">เดือนที่ 12</div>
-                        <div class="text-2xl font-bold text-purple-600">฿<span id="month-12">0</span></div>
-                    </div>
-
-                    <div class="bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl p-4 text-center">
-                        <div class="text-sm text-gray-700 dark:text-gray-300 mb-1">ROI (%)</div>
-                        <div class="text-2xl font-bold text-pink-600"><span id="roi">0</span>%</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Success Stories -->
-        <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white mb-8">
-            <h3 class="text-3xl font-bold mb-6 text-center">🌟 เรื่องราวความสำเร็จ</h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white dark:bg-gray-800 bg-opacity-20 backdrop-blur-lg rounded-xl p-6">
-                    <div class="text-5xl mb-4 text-center">👨‍💼</div>
-                    <h4 class="font-bold text-xl mb-2 text-center">คุณสมชาย</h4>
-                    <p class="text-sm opacity-90 mb-3">เริ่มต้นด้วยแผนเติบโต ปัจจุบันมีรายได้</p>
-                    <div class="text-3xl font-bold text-center">฿85,000/เดือน</div>
-                </div>
-
-                <div class="bg-white dark:bg-gray-800 bg-opacity-20 backdrop-blur-lg rounded-xl p-6">
-                    <div class="text-5xl mb-4 text-center">👩‍💼</div>
-                    <h4 class="font-bold text-xl mb-2 text-center">คุณสมหญิง</h4>
-                    <p class="text-sm opacity-90 mb-3">ทำงานพาร์ทไทม์ สร้างรายได้เสริม</p>
-                    <div class="text-3xl font-bold text-center">฿42,000/เดือน</div>
-                </div>
-
-                <div class="bg-white dark:bg-gray-800 bg-opacity-20 backdrop-blur-lg rounded-xl p-6">
-                    <div class="text-5xl mb-4 text-center">👨‍🎓</div>
-                    <h4 class="font-bold text-xl mb-2 text-center">คุณสมศักดิ์</h4>
-                    <p class="text-sm opacity-90 mb-3">นักศึกษา สร้างรายได้ระหว่างเรียน</p>
-                    <div class="text-3xl font-bold text-center">฿18,000/เดือน</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- CTA -->
-        <div class="text-center">
-            <a href="{{ route('user.mlm.income-simulator') }}"
-               class="inline-block bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xl font-bold px-12 py-5 rounded-2xl shadow-2xl transition-all duration-300 transition-transform hover:scale-[1.02]">
-                🚀 ลองจำลองรายได้ของคุณเอง
-            </a>
+            <a href="{{ route('user.mlm.income-simulator') }}" class="tp-btn tp-btn-primary"><i class="fas fa-rocket"></i> จำลองรายได้</a>
         </div>
     </div>
+
+    {{-- ── การ์ดแผนทั้ง 3 ────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;">
+        @foreach($plans as $p)
+            <div class="tp-card tp-card-hover" style="padding:0; overflow:hidden; position:relative;
+                 {{ $p['badge'] ? 'box-shadow:0 0 0 2px var(--deep1) inset, var(--shadow-soft, none);' : '' }}">
+
+                {{-- ป้ายแนะนำ --}}
+                @if($p['badge'])
+                    <span class="tp-pill tp-pill-gold" style="position:absolute; top:12px; right:12px; z-index:2; font-size:10px;">{{ $p['badge'] }}</span>
+                @endif
+
+                {{-- หัวการ์ด --}}
+                <div style="padding:20px; text-align:center;
+                            background:linear-gradient(120deg, color-mix(in srgb, {{ $p['color'] }} 18%, transparent), transparent 75%);">
+                    <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; font-size:28px; margin:0 auto; background:color-mix(in srgb, {{ $p['color'] }} 22%, transparent);">{{ $p['emoji'] }}</span>
+                    <h3 class="tp-num" style="font-size:19px; font-weight:800; margin:12px 0 2px;">{{ $p['name'] }}</h3>
+                    <div style="font-size:12px; color:var(--ink2);">{{ $p['desc'] }}</div>
+                </div>
+
+                {{-- รายละเอียด --}}
+                <div style="padding:18px;">
+                    <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:13px;">
+                            <span style="color:var(--ink2);">ยอดขาย/เดือน:</span>
+                            <span class="tp-num" style="font-weight:700;">{{ $p['sales'] }}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:13px;">
+                            <span style="color:var(--ink2);">จำนวนทีม:</span>
+                            <span class="tp-num" style="font-weight:700;">{{ $p['team'] }}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:13px;">
+                            <span style="color:var(--ink2);">ยอดขายทีม:</span>
+                            <span class="tp-num" style="font-weight:700;">{{ $p['tsale'] }}</span>
+                        </div>
+                    </div>
+
+                    <div style="padding-top:14px; margin-bottom:14px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                        <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">รายได้รวม/เดือน:</div>
+                        <div class="tp-num" style="font-size:28px; font-weight:800; color:{{ $p['color'] }};">฿<span class="{{ $p['key'] }}-income">0</span></div>
+                        <div style="font-size:11px; color:var(--ink2); margin-top:2px;">≈ <span class="{{ $p['key'] }}-yearly">0</span> บาท/ปี</div>
+                    </div>
+
+                    <button type="button" onclick="simulateScenario('{{ $p['key'] }}')"
+                            class="tp-btn tp-btn-primary" style="width:100%; justify-content:center;">
+                        ดูรายละเอียด
+                    </button>
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    {{-- ── กราฟเปรียบเทียบรายได้ (Chart.js bar) ──────────────── --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:16px; text-align:center;">📊 เปรียบเทียบรายได้</div>
+        <canvas id="comparison-chart" height="100"></canvas>
+    </div>
+
+    {{-- ── รายละเอียดเชิงลึก (ซ่อนไว้ก่อน) ───────────────────── --}}
+    <div id="detailed-breakdown" class="hidden">
+        <div class="tp-card" style="padding:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:18px;">
+                <div class="tp-section-h">รายละเอียด: <span id="scenario-name" style="color:var(--deep1);"></span></div>
+                <button type="button" onclick="closeBreakdown()" class="tp-icon-btn" aria-label="ปิด">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; margin-bottom:18px;">
+                {{-- สัดส่วนรายได้ (doughnut) --}}
+                <div>
+                    <div style="font-size:14px; font-weight:700; margin-bottom:12px;">สัดส่วนรายได้</div>
+                    <canvas id="breakdown-pie" height="250"></canvas>
+                </div>
+
+                {{-- การเติบโต 12 เดือน (line) --}}
+                <div>
+                    <div style="font-size:14px; font-weight:700; margin-bottom:12px;">การเติบโต 12 เดือน</div>
+                    <canvas id="growth-projection" height="250"></canvas>
+                </div>
+            </div>
+
+            {{-- ตัวชี้วัดสำคัญ --}}
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px;">
+                <div class="tp-card" style="padding:16px; text-align:center; box-shadow:var(--inset-sm);">
+                    <div style="font-size:12px; color:var(--ink2); margin-bottom:6px;">รายได้เดือนแรก</div>
+                    <div class="tp-num" style="font-size:22px; font-weight:800; color:#5689b8;">฿<span id="month-1">0</span></div>
+                </div>
+                <div class="tp-card" style="padding:16px; text-align:center; box-shadow:var(--inset-sm);">
+                    <div style="font-size:12px; color:var(--ink2); margin-bottom:6px;">เดือนที่ 6</div>
+                    <div class="tp-num" style="font-size:22px; font-weight:800; color:#5aa07e;">฿<span id="month-6">0</span></div>
+                </div>
+                <div class="tp-card" style="padding:16px; text-align:center; box-shadow:var(--inset-sm);">
+                    <div style="font-size:12px; color:var(--ink2); margin-bottom:6px;">เดือนที่ 12</div>
+                    <div class="tp-num" style="font-size:22px; font-weight:800; color:var(--deep1);">฿<span id="month-12">0</span></div>
+                </div>
+                <div class="tp-card" style="padding:16px; text-align:center; box-shadow:var(--inset-sm);">
+                    <div style="font-size:12px; color:var(--ink2); margin-bottom:6px;">ROI (%)</div>
+                    <div class="tp-num" style="font-size:22px; font-weight:800; color:#e0a52e;"><span id="roi">0</span>%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── เรื่องราวความสำเร็จ ───────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div class="tp-section-h" style="text-align:center; margin:0;">🌟 เรื่องราวความสำเร็จ</div>
+        </div>
+        <div style="padding:18px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px;">
+            @foreach($stories as $s)
+                <div class="tp-card" style="padding:18px; text-align:center; box-shadow:var(--inset-sm);">
+                    <div style="font-size:44px; margin-bottom:8px;">{{ $s['emoji'] }}</div>
+                    <div style="font-size:15px; font-weight:700; margin-bottom:4px;">{{ $s['name'] }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-bottom:10px;">{{ $s['desc'] }}</div>
+                    <div class="tp-num" style="font-size:22px; font-weight:800; color:var(--deep1);">{{ $s['amount'] }}</div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- ── CTA ──────────────────────────────────────────────── --}}
+    <div style="text-align:center; padding:8px 0;">
+        <a href="{{ route('user.mlm.income-simulator') }}" class="tp-btn tp-btn-primary"
+           style="font-size:16px; padding:14px 32px;">
+            🚀 ลองจำลองรายได้ของคุณเอง
+        </a>
+    </div>
+
 </div>
+@endsection
 
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
-
+@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 let comparisonChart, breakdownPie, growthProjection;
@@ -271,27 +209,27 @@ const scenarios = {
         personalSales: 5000,
         teamSize: 5,
         teamAvgSales: 3000,
-        color: '#10b981'
+        color: '#5aa07e'
     },
     growth: {
         name: 'แผนเติบโต',
         personalSales: 20000,
         teamSize: 20,
         teamAvgSales: 5000,
-        color: '#8b5cf6'
+        color: '#c79a3a'
     },
     elite: {
         name: 'แผนชนชั้นสูง',
         personalSales: 50000,
         teamSize: 50,
         teamAvgSales: 5000,
-        color: '#f59e0b'
+        color: '#e0a52e'
     }
 };
 
 async function loadSettings() {
     try {
-        const response = await fetch('{{ route("admin.mlm.settings.get-settings") }}');
+        const response = await fetch('{{ route("user.mlm.settings") }}');
         const data = await response.json();
         settings = data.settings;
         calculateAllScenarios();
@@ -366,14 +304,14 @@ function createComparisonChart() {
                     scenarios.elite.result.total
                 ],
                 backgroundColor: [
-                    'rgba(16, 185, 129, 0.8)',
-                    'rgba(139, 92, 246, 0.8)',
-                    'rgba(245, 158, 11, 0.8)'
+                    'rgba(90, 160, 126, 0.8)',
+                    'rgba(199, 154, 58, 0.8)',
+                    'rgba(224, 165, 46, 0.8)'
                 ],
                 borderColor: [
-                    'rgb(16, 185, 129)',
-                    'rgb(139, 92, 246)',
-                    'rgb(245, 158, 11)'
+                    'rgb(90, 160, 126)',
+                    'rgb(199, 154, 58)',
+                    'rgb(224, 165, 46)'
                 ],
                 borderWidth: 2
             }]
@@ -416,9 +354,9 @@ function simulateScenario(type) {
             datasets: [{
                 data: [result.personal, result.unilevel, result.binary],
                 backgroundColor: [
-                    'rgb(34, 197, 94)',
-                    'rgb(59, 130, 246)',
-                    'rgb(236, 72, 153)'
+                    'rgb(90, 160, 126)',
+                    'rgb(86, 137, 184)',
+                    'rgb(224, 165, 46)'
                 ]
             }]
         },
@@ -491,4 +429,4 @@ function closeBreakdown() {
 
 loadSettings();
 </script>
-@endsection
+@endpush

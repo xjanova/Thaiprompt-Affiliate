@@ -1,192 +1,132 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'สมาชิกที่แนะนำ')
 
+@php
+    // ── นับสถิติจากรายการในหน้าปัจจุบัน (รักษาตรรกะเดิม) ──────────
+    $totalReferrals    = $directReferrals->total();
+    $activeReferrals   = $directReferrals->where('status', 'active')->count();
+    $thisMonthReferrals = $directReferrals->filter(fn($r) => $r->created_at->isCurrentMonth())->count();
+
+    // ── การ์ดสถิติ 3 ใบ ──────────────────────────────────────
+    $cards = [
+        ['label' => 'จำนวนทั้งหมด',  'val' => $totalReferrals,     'color' => 'var(--deep1)', 'soft' => 'color-mix(in srgb, var(--accent1) 16%, transparent)', 'icon' => '👥'],
+        ['label' => 'สมาชิกใช้งาน',  'val' => $activeReferrals,    'color' => '#5aa07e',      'soft' => 'rgba(90,160,126,.16)',  'icon' => '✅'],
+        ['label' => 'เพิ่มเดือนนี้', 'val' => $thisMonthReferrals, 'color' => '#5689b8',      'soft' => 'rgba(86,137,184,.16)',  'icon' => '📅'],
+    ];
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Cyan-Blue-Indigo for Referrals) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 dark:from-cyan-800 dark:via-blue-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-user-plus"></i>
+    {{-- ── หัวข้อ (Hero) ───────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:54px; height:54px; border-radius:17px; font-size:24px;"><i class="fas fa-handshake" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">สมาชิกที่แนะนำทั้งหมด</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">รายชื่อสมาชิกที่คุณแนะนำเข้ามา</div>
             </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-handshake text-4xl text-white drop-shadow-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">สมาชิกที่แนะนำทั้งหมด</h1>
-                    <p class="text-cyan-100 text-lg mt-1">รายชื่อสมาชิกที่คุณแนะนำเข้ามา</p>
-                </div>
-            </div>
+            @if(\Illuminate\Support\Facades\Route::has('user.mlm.referral'))
+                <a href="{{ route('user.mlm.referral') }}" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-link" style="font-size:12px;"></i> ลิงก์แนะนำ
+                </a>
+            @endif
         </div>
     </div>
 
-    <!-- Statistics -->
-    <div class="grid md:grid-cols-3 gap-4">
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">👥</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">จำนวนทั้งหมด</div>
-                    <div class="text-3xl font-bold text-gray-800 dark:text-white">{{ $directReferrals->total() }}</div>
-                </div>
-            </div>
-        </div>
-
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">✅</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">สมาชิกใช้งาน</div>
-                    <div class="text-3xl font-bold text-green-600">
-                        {{ $directReferrals->where('status', 'active')->count() }}
+    {{-- ── สถิติ 3 ใบ ───────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
+        @foreach($cards as $c)
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <div style="min-width:0;">
+                        <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $c['label'] }}</div>
                     </div>
+                    <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:20px; background:{{ $c['soft'] }};">{{ $c['icon'] }}</span>
                 </div>
+                <div class="tp-num" style="font-size:30px; font-weight:800; margin-top:10px; color:{{ $c['color'] }};">{{ number_format($c['val']) }}</div>
             </div>
-        </div>
-
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">📅</span>
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">เพิ่มเดือนนี้</div>
-                    <div class="text-3xl font-bold text-purple-600">
-                        {{ $directReferrals->filter(fn($r) => $r->created_at->isCurrentMonth())->count() }}
-                    </div>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
-    <!-- Referrals List -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <span>📋</span> รายชื่อสมาชิก
-            </h2>
-            <a href="{{ route('user.mlm.referral') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
-                🔗 ลิงก์แนะนำ
-            </a>
+    {{-- ── รายชื่อสมาชิก (ตาราง) ─────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:18px 20px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+            <div class="tp-section-h">📋 รายชื่อสมาชิก</div>
+            @if(\Illuminate\Support\Facades\Route::has('user.mlm.referral'))
+                <a href="{{ route('user.mlm.referral') }}" class="tp-btn tp-btn-sm">🔗 ลิงก์แนะนำ</a>
+            @endif
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">#</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">ชื่อ</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">รหัสสมาชิก</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">วันที่เข้าร่วม</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">สถานะ</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">การดำเนินการ</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($directReferrals as $index => $referral)
-                        <tr class="hover:bg-gray-50 dark:bg-gray-900/50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                                {{ ($directReferrals->currentPage() - 1) * $directReferrals->perPage() + $index + 1 }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                        {{ strtoupper(substr($referral->user->name ?? 'U', 0, 1)) }}
-                                    </div>
-                                    <div>
-                                        <div class="font-medium text-gray-900 dark:text-white">{{ $referral->user->name ?? 'N/A' }}</div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400">{{ $referral->user->email ?? 'N/A' }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <code class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded font-mono text-sm">
-                                    {{ $referral->member_code }}
-                                </code>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900 dark:text-white">{{ $referral->created_at->format('d/m/Y') }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $referral->created_at->diffForHumans() }}</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                @if($referral->status === 'active')
-                                    <span class="px-3 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
-                                        ✅ ใช้งาน
-                                    </span>
-                                @elseif($referral->status === 'pending')
-                                    <span class="px-3 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">
-                                        ⏳ รออนุมัติ
-                                    </span>
-                                @else
-                                    <span class="px-3 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full">
-                                        ❌ ไม่ใช้งาน
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4">
-                                <button class="text-blue-600 hover:text-blue-700 font-semibold text-sm">
-                                    ดูรายละเอียด
-                                </button>
-                            </td>
+        @if($directReferrals->count() > 0)
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
+                            @foreach(['#','ชื่อ','รหัสสมาชิก','วันที่เข้าร่วม','สถานะ','การดำเนินการ'] as $h)
+                                <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">{{ $h }}</th>
+                            @endforeach
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
-                                <span class="text-4xl mb-4 block">🤝</span>
-                                <p class="text-gray-600 dark:text-gray-400 mb-2">ยังไม่มีสมาชิกที่แนะนำ</p>
-                                <a href="{{ route('user.mlm.referral') }}" class="text-blue-600 hover:text-blue-700 font-semibold">
-                                    รับลิงก์แนะนำ →
-                                </a>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @foreach($directReferrals as $index => $referral)
+                            @php
+                                $st = $referral->status;
+                                $stMap = [
+                                    'active'  => ['✅ ใช้งาน',   '#5aa07e'],
+                                    'pending' => ['⏳ รออนุมัติ', '#e0a52e'],
+                                ];
+                                $stInfo = $stMap[$st] ?? ['❌ ไม่ใช้งาน', 'var(--ink2)'];
+                            @endphp
+                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                                <td class="tp-num" style="padding:12px 16px; white-space:nowrap; color:var(--ink2);">
+                                    {{ ($directReferrals->currentPage() - 1) * $directReferrals->perPage() + $index + 1 }}
+                                </td>
+                                <td style="padding:12px 16px;">
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <span class="tp-tile" style="width:38px; height:38px; border-radius:50%; font-size:15px; font-weight:800; color:#fff;">{{ strtoupper(substr($referral->user->name ?? 'U', 0, 1)) }}</span>
+                                        <div style="min-width:0;">
+                                            <div style="font-weight:700; color:var(--ink);">{{ $referral->user->name ?? 'N/A' }}</div>
+                                            <div style="font-size:11.5px; color:var(--ink2);">{{ $referral->user->email ?? 'N/A' }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding:12px 16px; white-space:nowrap;">
+                                    <code class="tp-num tp-pill tp-pill-soft" style="font-size:11.5px;">{{ $referral->member_code }}</code>
+                                </td>
+                                <td class="tp-num" style="padding:12px 16px; white-space:nowrap;">
+                                    <div style="color:var(--ink);">{{ $referral->created_at->format('d/m/Y') }}</div>
+                                    <div style="font-size:11px; color:var(--ink2);">{{ $referral->created_at->diffForHumans() }}</div>
+                                </td>
+                                <td style="padding:12px 16px; white-space:nowrap;">
+                                    <span class="tp-pill" style="color:{{ $stInfo[1] }}; background:color-mix(in srgb, {{ $stInfo[1] }} 16%, transparent);">{{ $stInfo[0] }}</span>
+                                </td>
+                                <td style="padding:12px 16px; white-space:nowrap;">
+                                    <button type="button" class="tp-btn tp-btn-sm">ดูรายละเอียด</button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-        @if($directReferrals->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                {{ $directReferrals->links() }}
+            @if($directReferrals->hasPages())
+                <div style="padding:14px 16px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                    {{ $directReferrals->links() }}
+                </div>
+            @endif
+        @else
+            <div style="text-align:center; padding:56px 20px;">
+                <div style="font-size:52px; opacity:.5;">🤝</div>
+                <div style="font-weight:700; font-size:17px; margin-top:10px;">ยังไม่มีสมาชิกที่แนะนำ</div>
+                <div style="font-size:13px; color:var(--ink2); margin-top:4px;">เริ่มแนะนำเพื่อนเข้าร่วมเพื่อสร้างทีมของคุณ</div>
+                @if(\Illuminate\Support\Facades\Route::has('user.mlm.referral'))
+                    <a href="{{ route('user.mlm.referral') }}" class="tp-btn tp-btn-primary" style="margin-top:16px;">รับลิงก์แนะนำ →</a>
+                @endif
             </div>
         @endif
     </div>
 </div>
-
-@push('styles')
-<style>
-/* Glass Fusion Effect for Hero Header */
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Float Animation */
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
-}
-</style>
-@endpush
 @endsection

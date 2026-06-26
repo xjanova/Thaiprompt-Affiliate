@@ -1,533 +1,449 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'MLM Dashboard')
 
-@push('styles')
-<style>
-    .stat-card {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s;
-    }
+@php
+    use Illuminate\Support\Facades\Route as RouteFacade;
 
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
+    // ── ตรวจชนิดแผน MLM (binary/hybrid แสดง Binary Legs) ──────────
+    $planType  = $member->plan?->type ?? null;
+    $showBinary = in_array($planType, ['binary', 'hybrid'], true);
 
-    .progress-ring {
-        transform: rotate(-90deg);
-    }
+    // ── ลิงก์แนะนำเพื่อน (เผื่อชื่อ route ต่างเวอร์ชัน) ──────────────
+    $referralUrl = RouteFacade::has('register')
+        ? route('register', ['ref' => $member->member_code])
+        : (RouteFacade::has('line.registration.register')
+            ? route('line.registration.register', ['ref' => $member->member_code])
+            : url('/register?ref=' . $member->member_code));
 
-    .progress-ring-circle {
-        transition: stroke-dashoffset 0.5s;
-    }
+    // ── สถานะรักษายอด (Volume Retention) ───────────────────────────
+    $rtEnabled = $retentionStatus['retention_enabled'] ?? true;
+    $rtStatus  = $retentionStatus['status'] ?? 'inactive';
+    $rtText    = match ($rtStatus) {
+        'active' => 'รักษายอดสำเร็จ',
+        'grace_period' => 'อยู่ในช่วงผ่อนผัน',
+        default => 'ยังไม่ถึงเกณฑ์',
+    };
+    $rtEmoji   = match ($rtStatus) {
+        'active' => '✅',
+        'grace_period' => '⏳',
+        default => '⚠️',
+    };
+    $rtColor   = match ($retentionStatus['color'] ?? 'gray') {
+        'green' => '#5aa07e',
+        'yellow' => '#e0a52e',
+        'red' => '#d9534f',
+        default => 'var(--ink2)',
+    };
+    $pvPct     = (float) ($retentionStatus['pv_percentage'] ?? 0);
 
-    /* Glass Fusion Effect for Hero Header */
-    .glass-fusion {
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    /* Float Animation */
-    @keyframes float {
-        0%, 100% {
-            transform: translateY(0px);
-        }
-        50% {
-            transform: translateY(-20px);
-        }
-    }
-</style>
-@endpush
+    // ── ค่าคอมมิชชัน Binary Pair (จาก Global Setting) ──────────────
+    $weakLegPv  = min($member->left_leg_pv ?? 0, $member->right_leg_pv ?? 0);
+    $pairComm   = \App\Models\MlmGlobalSetting::get('binary_pair_commission', 100);
+@endphp
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 py-8">
-    <div class="max-w-7xl mx-auto px-4">
-        {{-- Premium Hero Header (Purple-Pink for MLM Dashboard) --}}
-        <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 dark:from-purple-800 dark:via-pink-800 dark:to-rose-800 rounded-2xl shadow-2xl p-8 mb-8">
-            {{-- Animated Background Orbs --}}
-            <div class="absolute inset-0 opacity-10">
-                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-            </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-            {{-- Floating Icons --}}
-            <div class="absolute inset-0 overflow-hidden pointer-events-none">
-                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                    <i class="fas fa-network-wired"></i>
+    {{-- ── การ์ดต้อนรับ (Hero) ─────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:22px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <span class="tp-tile" style="width:58px; height:58px; border-radius:18px; font-size:26px;"><i class="fas fa-network-wired" style="color:#fff;"></i></span>
+                <div>
+                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">สวัสดี, {{ auth()->user()->name }}!</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">
+                        รหัสสมาชิก: <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ $member->member_code }}</span>
+                    </div>
                 </div>
             </div>
+            <div style="padding:12px 18px; border-radius:14px; box-shadow:var(--inset-sm);">
+                <div style="font-size:11px; color:var(--ink2);">แผน MLM ของคุณ</div>
+                <div style="font-size:18px; font-weight:800; color:var(--deep1); margin-top:2px;">{{ $member->plan?->display_name ?? 'ไม่มีแผน' }}</div>
+            </div>
+        </div>
+    </div>
 
-            {{-- Header Content --}}
-            <div class="relative z-10">
-                <div class="flex items-center justify-between flex-wrap gap-4">
-                    <div class="flex items-center gap-4">
-                        <div class="glass-fusion p-4 rounded-2xl">
-                            <i class="fas fa-chart-network text-4xl text-white drop-shadow-lg"></i>
+    {{-- ── สถิติ 4 ใบ ───────────────────────────────────────── --}}
+    @php
+        $kpis = [
+            [
+                'emoji' => '⭐', 'label' => 'PV รวม',
+                'value' => number_format($member->total_pv ?? 0),
+                'color' => 'var(--deep1)',
+                'progress' => min(($member->total_pv ?? 0) / 10000 * 100, 100),
+                'note' => 'เป้า: 10,000 PV',
+            ],
+            [
+                'emoji' => '👥', 'label' => 'สมาชิกโดยตรง',
+                'value' => number_format($member->total_direct_referrals ?? 0),
+                'color' => '#5689b8',
+                'note' => 'ทีมทั้งหมด: ' . number_format($member->total_team_members ?? 0) . ' คน',
+            ],
+            [
+                'emoji' => '💰', 'label' => 'รายได้รวม',
+                'value' => '฿' . number_format($member->total_earnings ?? 0, 2),
+                'color' => '#5aa07e',
+                'note' => 'รายได้สะสมทั้งหมด',
+            ],
+            [
+                'emoji' => '🏆', 'label' => 'ระดับปัจจุบัน',
+                'value' => $member->rank?->name ?? 'Starter',
+                'color' => '#e0a52e',
+                'note' => 'ระดับถัดไป: Silver',
+            ],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px;">
+        @foreach($kpis as $k)
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+                    <span style="font-size:30px;">{{ $k['emoji'] }}</span>
+                    <div style="text-align:right; min-width:0;">
+                        <div style="font-size:12px; color:var(--ink2); font-weight:600;">{{ $k['label'] }}</div>
+                        <div class="tp-num" style="font-size:24px; font-weight:800; color:{{ $k['color'] }}; margin-top:2px; overflow:hidden; text-overflow:ellipsis;">{{ $k['value'] }}</div>
+                    </div>
+                </div>
+                @if(isset($k['progress']))
+                    <div style="height:8px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden; margin-top:12px;">
+                        <div style="height:100%; width:{{ $k['progress'] }}%; border-radius:20px; background:linear-gradient(90deg, var(--accent1), var(--accent2));"></div>
+                    </div>
+                @endif
+                <div style="font-size:11px; color:var(--ink2); margin-top:8px;">{{ $k['note'] }}</div>
+            </div>
+        @endforeach
+    </div>
+
+    {{-- ── เลย์เอาต์ 2 คอลัมน์ ───────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:2fr 1fr; gap:18px;" class="tp-mlm-grid">
+
+        {{-- ── คอลัมน์ซ้าย ──────────────────────────────────── --}}
+        <div style="display:flex; flex-direction:column; gap:18px; min-width:0;">
+
+            {{-- Binary Legs (เฉพาะแผน binary / hybrid) --}}
+            @if($showBinary)
+            <div class="tp-card" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:16px;">🔀 Binary Legs</div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+                    {{-- Left Leg --}}
+                    <div style="padding:16px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid #5aa07e;">
+                        <div style="font-size:14px; font-weight:700; color:#5aa07e; margin-bottom:12px;">⬅️ Left Leg</div>
+                        <div style="display:flex; flex-direction:column; gap:9px; font-size:12.5px;">
+                            <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">PV:</span><span class="tp-num" style="font-weight:700; color:#5aa07e;">{{ number_format($member->left_leg_pv ?? 0) }}</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">Sales:</span><span class="tp-num" style="font-weight:700; color:#5aa07e;">฿{{ number_format($member->left_leg_sales ?? 0, 2) }}</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">Members:</span><span class="tp-num" style="font-weight:700; color:#5aa07e;">{{ number_format($member->left_leg_members ?? 0) }}</span></div>
+                        </div>
+                    </div>
+
+                    {{-- Right Leg --}}
+                    <div style="padding:16px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f;">
+                        <div style="font-size:14px; font-weight:700; color:#d9534f; margin-bottom:12px;">➡️ Right Leg</div>
+                        <div style="display:flex; flex-direction:column; gap:9px; font-size:12.5px;">
+                            <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">PV:</span><span class="tp-num" style="font-weight:700; color:#d9534f;">{{ number_format($member->right_leg_pv ?? 0) }}</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">Sales:</span><span class="tp-num" style="font-weight:700; color:#d9534f;">฿{{ number_format($member->right_leg_sales ?? 0, 2) }}</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">Members:</span><span class="tp-num" style="font-weight:700; color:#d9534f;">{{ number_format($member->right_leg_members ?? 0) }}</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Pair Matching Today --}}
+                <div style="padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                    <div style="font-size:13px; font-weight:700; color:var(--deep1); margin-bottom:14px;">📊 Pair Matching Today</div>
+                    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; text-align:center;">
+                        <div>
+                            <div style="font-size:11px; color:var(--ink2);">Weak Leg PV</div>
+                            <div class="tp-num" style="font-size:20px; font-weight:800; color:var(--deep1); margin-top:3px;">{{ number_format($weakLegPv) }}</div>
                         </div>
                         <div>
-                            <h1 class="text-4xl font-bold text-white drop-shadow-lg">
-                                สวัสดี, {{ auth()->user()->name }}!
-                            </h1>
-                            <p class="text-purple-100 text-lg mt-1">
-                                รหัสสมาชิก: <span class="font-mono font-bold">{{ $member->member_code }}</span>
-                            </p>
+                            <div style="font-size:11px; color:var(--ink2);">Pairs</div>
+                            <div class="tp-num" style="font-size:20px; font-weight:800; color:var(--deep1); margin-top:3px;">{{ number_format(floor($weakLegPv)) }}</div>
                         </div>
-                    </div>
-                    <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-4">
-                        <div class="text-purple-100 text-sm">แผน MLM ของคุณ</div>
-                        <div class="text-2xl font-bold text-white">{{ $member->plan?->display_name ?? 'ไม่มีแผน' }}</div>
+                        <div>
+                            <div style="font-size:11px; color:var(--ink2);">Est. Commission</div>
+                            <div class="tp-num" style="font-size:20px; font-weight:800; color:#5aa07e; margin-top:3px;">฿{{ number_format(floor($weakLegPv) * $pairComm, 2) }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+            @endif
 
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total PV -->
-            <div class="stat-card">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="text-4xl">⭐</div>
-                    <div class="text-right">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">PV รวม</div>
-                        <div class="text-3xl font-bold text-purple-600">{{ number_format($member->total_pv ?? 0) }}</div>
-                    </div>
-                </div>
-                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500" style="width: {{ min(($member->total_pv ?? 0) / 10000 * 100, 100) }}%"></div>
-                </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">เป้า: 10,000 PV</div>
-            </div>
-
-            <!-- Direct Referrals -->
-            <div class="stat-card">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="text-4xl">👥</div>
-                    <div class="text-right">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">สมาชิกโดยตรง</div>
-                        <div class="text-3xl font-bold text-blue-600">{{ $member->total_direct_referrals ?? 0 }}</div>
-                    </div>
-                </div>
-                <div class="text-sm text-gray-600 dark:text-gray-400 mt-4">
-                    ทีมทั้งหมด: <span class="font-bold text-gray-800 dark:text-white">{{ $member->total_team_members ?? 0 }}</span> คน
-                </div>
-            </div>
-
-            <!-- Total Earnings -->
-            <div class="stat-card">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="text-4xl">💰</div>
-                    <div class="text-right">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">รายได้รวม</div>
-                        <div class="text-3xl font-bold text-green-600">฿{{ number_format($member->total_earnings ?? 0, 2) }}</div>
-                    </div>
-                </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                    <span class="inline-block px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                        +12% จากเดือนที่แล้ว
-                    </span>
-                </div>
-            </div>
-
-            <!-- Current Rank -->
-            <div class="stat-card">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="text-4xl">🏆</div>
-                    <div class="text-right">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">ระดับปัจจุบัน</div>
-                        <div class="text-2xl font-bold text-yellow-600">{{ $member->rank->name ?? 'Starter' }}</div>
-                    </div>
-                </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                    ระดับถัดไป: <span class="font-bold">Silver</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: Binary Legs -->
-            <div class="lg:col-span-2 space-y-8">
-                <!-- Binary Legs Stats -->
-                @if($member->plan?->type === 'binary' || $member->plan?->type === 'hybrid')
-                <x-arrow-x.card-v3 class="p-8">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
-                        <span class="mr-3">🔀</span>
-                        Binary Legs
-                    </h2>
-
-                    <div class="grid grid-cols-2 gap-6 mb-6">
-                        <!-- Left Leg -->
-                        <div class="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-bold text-green-800">⬅️ Left Leg</h3>
-                            </div>
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600 dark:text-gray-400">PV:</span>
-                                    <span class="font-bold text-green-600">{{ number_format($member->left_leg_pv ?? 0) }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600 dark:text-gray-400">Sales:</span>
-                                    <span class="font-bold text-green-600">฿{{ number_format($member->left_leg_sales ?? 0, 2) }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600 dark:text-gray-400">Members:</span>
-                                    <span class="font-bold text-green-600">{{ $member->left_leg_members ?? 0 }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right Leg -->
-                        <div class="p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-xl border-2 border-red-200">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-bold text-red-800">➡️ Right Leg</h3>
-                            </div>
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600 dark:text-gray-400">PV:</span>
-                                    <span class="font-bold text-red-600">{{ number_format($member->right_leg_pv ?? 0) }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600 dark:text-gray-400">Sales:</span>
-                                    <span class="font-bold text-red-600">฿{{ number_format($member->right_leg_sales ?? 0, 2) }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600 dark:text-gray-400">Members:</span>
-                                    <span class="font-bold text-red-600">{{ $member->right_leg_members ?? 0 }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pair Matching Info -->
-                    <div class="p-6 bg-purple-50 rounded-xl">
-                        <h3 class="font-bold text-purple-800 mb-4">📊 Pair Matching Today</h3>
-                        <div class="grid grid-cols-3 gap-4 text-center">
-                            <div>
-                                <div class="text-sm text-gray-600 dark:text-gray-400">Weak Leg PV</div>
-                                <div class="text-2xl font-bold text-purple-600">
-                                    {{ number_format(min($member->left_leg_pv ?? 0, $member->right_leg_pv ?? 0)) }}
-                                </div>
-                            </div>
-                            <div>
-                                <div class="text-sm text-gray-600 dark:text-gray-400">Pairs</div>
-                                <div class="text-2xl font-bold text-purple-600">
-                                    {{ floor(min($member->left_leg_pv ?? 0, $member->right_leg_pv ?? 0)) }}
-                                </div>
-                            </div>
-                            <div>
-                                <div class="text-sm text-gray-600 dark:text-gray-400">Est. Commission</div>
-                                <div class="text-2xl font-bold text-green-600">
-                                    ฿{{ number_format(floor(min($member->left_leg_pv ?? 0, $member->right_leg_pv ?? 0)) * \App\Models\MlmGlobalSetting::get('binary_pair_commission', 100), 2) }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </x-arrow-x.card-v3>
-                @endif
-
-                <!-- Recent Commissions -->
-                <x-arrow-x.card-v3 class="p-8">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center justify-between">
-                        <span><span class="mr-3">💸</span>คอมมิชชันล่าสุด</span>
-                        <a href="{{ route('user.mlm.commissions') }}" class="text-sm text-purple-600 hover:text-purple-700">
-                            ดูทั้งหมด →
-                        </a>
-                    </h2>
-
-                    <div class="space-y-3">
-                        @forelse($recentCommissions ?? [] as $commission)
-                        <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl flex items-center justify-between">
-                            <div>
-                                <div class="font-semibold text-gray-800 dark:text-white">{{ $commission->type_display }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $commission->created_at->diffForHumans() }}</div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-lg font-bold text-green-600">฿{{ number_format($commission->commission_amount, 2) }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">
-                                    <span class="inline-block px-2 py-0.5 rounded-full {{ $commission->status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
-                                        {{ ucfirst($commission->status) }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        @empty
-                        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                            <div class="text-4xl mb-2">💰</div>
-                            <p>ยังไม่มีคอมมิชชัน</p>
-                        </div>
-                        @endforelse
-                    </div>
-                </x-arrow-x.card-v3>
-
-                <!-- Quick Actions -->
-                <x-arrow-x.card-v3 class="p-8">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
-                        <span class="mr-3">🚀</span>
-                        Quick Actions
-                    </h2>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <a href="{{ route('user.mlm.genealogy') }}" class="p-6 bg-purple-50 hover:bg-purple-100 rounded-xl text-center transition-all">
-                            <div class="text-4xl mb-2">🌳</div>
-                            <div class="font-bold text-gray-800 dark:text-white">ดูผังสายงาน</div>
-                        </a>
-
-                        <a href="{{ route('user.mlm.referral') }}" class="p-6 bg-blue-50 hover:bg-blue-100 rounded-xl text-center transition-all">
-                            <div class="text-4xl mb-2">🔗</div>
-                            <div class="font-bold text-gray-800 dark:text-white">Referral Link</div>
-                        </a>
-
-                        <a href="{{ route('user.mlm.commissions') }}" class="p-6 bg-green-50 hover:bg-green-100 rounded-xl text-center transition-all">
-                            <div class="text-4xl mb-2">💸</div>
-                            <div class="font-bold text-gray-800 dark:text-white">ประวัติคอมมิชชัน</div>
-                        </a>
-
-                        <a href="{{ route('user.mlm.team') }}" class="p-6 bg-pink-50 hover:bg-pink-100 rounded-xl text-center transition-all">
-                            <div class="text-4xl mb-2">👥</div>
-                            <div class="font-bold text-gray-800 dark:text-white">ทีมของฉัน</div>
-                        </a>
-                    </div>
-                </x-arrow-x.card-v3>
-            </div>
-
-            <!-- Right Column: Additional Info -->
-            <div class="space-y-8">
-                <!-- สถานะรักษายอด (Volume Retention) -->
-                <x-arrow-x.card-v3 class="p-8">
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
-                        <span class="mr-3">💓</span>
-                        สถานะรักษายอด
-                    </h3>
-
-                    @if(!($retentionStatus['retention_enabled'] ?? true))
-                        {{-- ระบบรักษายอดปิดอยู่ --}}
-                        <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-center">
-                            <div class="text-gray-400 text-sm">ระบบรักษายอดปิดอยู่</div>
-                            <div class="text-green-600 font-bold mt-1">Active ทุกคน</div>
-                        </div>
-                    @else
-                        {{-- แสดงสถานะ --}}
-                        <div class="text-center mb-6">
-                            @php
-                                $statusColor = $retentionStatus['color'] ?? 'gray';
-                                $statusText = match($retentionStatus['status'] ?? 'inactive') {
-                                    'active' => 'รักษายอดสำเร็จ',
-                                    'grace_period' => 'อยู่ในช่วงผ่อนผัน',
-                                    default => 'ยังไม่ถึงเกณฑ์',
-                                };
-                                $statusEmoji = match($retentionStatus['status'] ?? 'inactive') {
-                                    'active' => '✅',
-                                    'grace_period' => '⏳',
-                                    default => '⚠️',
-                                };
-                                $pvPercentage = $retentionStatus['pv_percentage'] ?? 0;
-                            @endphp
-
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold
-                                {{ $statusColor === 'green' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : '' }}
-                                {{ $statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : '' }}
-                                {{ $statusColor === 'red' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : '' }}
-                            ">
-                                {{ $statusEmoji }} {{ $statusText }}
-                            </span>
-                        </div>
-
-                        {{-- PV Progress Ring --}}
-                        <div class="flex items-center justify-center mb-6">
-                            @php
-                                $circumference = 2 * 3.14159 * 55;
-                                $dashOffset = $circumference - ($circumference * min($pvPercentage, 100) / 100);
-                                $ringColor = $pvPercentage >= 100 ? '#22c55e' : ($pvPercentage >= 50 ? '#eab308' : '#ef4444');
-                            @endphp
-                            <svg width="140" height="140">
-                                <circle cx="70" cy="70" r="55" fill="none" stroke="#e5e7eb" stroke-width="10"/>
-                                <circle cx="70" cy="70" r="55" fill="none" stroke="{{ $ringColor }}" stroke-width="10"
-                                        stroke-dasharray="{{ $circumference }}" stroke-dashoffset="{{ $dashOffset }}"
-                                        stroke-linecap="round"
-                                        style="transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.5s;"/>
-                                <text x="70" y="62" text-anchor="middle" dominant-baseline="middle" class="text-2xl font-bold" fill="{{ $ringColor }}">{{ round($pvPercentage) }}%</text>
-                                <text x="70" y="82" text-anchor="middle" dominant-baseline="middle" class="text-xs" fill="#6b7280">PV เดือนนี้</text>
-                            </svg>
-                        </div>
-
-                        {{-- รายละเอียด PV --}}
-                        <div class="space-y-3 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">PV เดือนนี้:</span>
-                                <span class="font-bold {{ ($retentionStatus['monthly_pv'] ?? 0) >= ($retentionStatus['required_pv'] ?? 100) ? 'text-green-600' : 'text-gray-800 dark:text-white' }}">
-                                    {{ number_format($retentionStatus['monthly_pv'] ?? 0, 0) }} / {{ number_format($retentionStatus['required_pv'] ?? 100, 0) }}
-                                </span>
-                            </div>
-
-                            @if(($retentionStatus['remaining_pv'] ?? 0) > 0)
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">PV ที่ต้องการเพิ่ม:</span>
-                                <span class="font-bold text-orange-600">{{ number_format($retentionStatus['remaining_pv'] ?? 0, 0) }} PV</span>
-                            </div>
-                            @endif
-
-                            @if($retentionStatus['days_since_last_purchase'] !== null)
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">ซื้อล่าสุดเมื่อ:</span>
-                                <span class="font-bold text-gray-800 dark:text-white">{{ $retentionStatus['days_since_last_purchase'] }} วันที่แล้ว</span>
-                            </div>
-                            @endif
-                        </div>
-
-                        {{-- Progress Bar --}}
-                        <div class="mt-4">
-                            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                <div class="h-full rounded-full transition-all duration-500
-                                    {{ $pvPercentage >= 100 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : ($pvPercentage >= 50 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' : 'bg-gradient-to-r from-red-400 to-rose-500') }}"
-                                    style="width: {{ min($pvPercentage, 100) }}%">
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Grace Period Warning --}}
-                        @if($retentionStatus['in_grace_period'] ?? false)
-                        <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl">
-                            <div class="flex items-center text-yellow-700 dark:text-yellow-400 text-xs">
-                                <i class="fas fa-clock mr-2"></i>
-                                <span>ช่วงผ่อนผัน: เหลืออีก {{ max(0, ($retentionStatus['grace_days'] ?? 7) - ($retentionStatus['days_since_last_purchase'] ?? 0)) }} วัน</span>
-                            </div>
-                        </div>
-                        @endif
-
-                        {{-- แนะนำเมื่อ PV ไม่ถึง --}}
-                        @if(($retentionStatus['status'] ?? '') === 'inactive')
-                        <div class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl">
-                            <div class="text-red-700 dark:text-red-400 text-xs">
-                                <i class="fas fa-exclamation-triangle mr-1"></i>
-                                <strong>PV ไม่ถึงเกณฑ์!</strong> คอมมิชชันจะถูกระงับจนกว่าจะซื้อสินค้าเพิ่ม
-                            </div>
-                        </div>
-                        @endif
+            {{-- Recent Commissions --}}
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;">
+                    <div class="tp-section-h">💸 คอมมิชชันล่าสุด</div>
+                    @if(RouteFacade::has('user.mlm.commissions'))
+                        <a href="{{ route('user.mlm.commissions') }}" class="tp-btn tp-btn-sm">ดูทั้งหมด →</a>
                     @endif
-                </x-arrow-x.card-v3>
+                </div>
 
-                <!-- Rank Progress -->
-                <x-arrow-x.card-v3 class="p-8">
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
-                        <span class="mr-3">🎯</span>
-                        Rank Progress
-                    </h3>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    @forelse($recentCommissions ?? [] as $commission)
+                        @php
+                            $cStatus = $commission->status;
+                            $cColor  = $cStatus === 'paid' ? '#5aa07e' : ($cStatus === 'rejected' ? '#d9534f' : '#e0a52e');
+                        @endphp
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 14px; border-radius:13px; box-shadow:var(--inset-sm);">
+                            <div style="min-width:0;">
+                                <div style="font-size:13px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $commission->type_display }}</div>
+                                <div style="font-size:11px; color:var(--ink2); margin-top:2px;">{{ $commission->created_at->diffForHumans() }}</div>
+                            </div>
+                            <div style="text-align:right; white-space:nowrap;">
+                                <div class="tp-num" style="font-size:16px; font-weight:800; color:#5aa07e;">฿{{ number_format($commission->commission_amount, 2) }}</div>
+                                <span class="tp-pill" style="margin-top:3px; color:{{ $cColor }}; background:color-mix(in srgb, {{ $cColor }} 16%, transparent);">{{ ucfirst($commission->status) }}</span>
+                            </div>
+                        </div>
+                    @empty
+                        <div style="text-align:center; color:var(--ink2); padding:34px 0;">
+                            <div style="font-size:44px; opacity:.5;">💰</div>
+                            <div style="margin-top:8px; font-weight:600;">ยังไม่มีคอมมิชชัน</div>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
 
-                    <div class="flex items-center justify-center mb-6">
-                        <svg width="150" height="150">
-                            <circle cx="75" cy="75" r="65" fill="none" stroke="#e5e7eb" stroke-width="10"/>
-                            <circle cx="75" cy="75" r="65" fill="none" stroke="url(#gradient)" stroke-width="10"
-                                    stroke-dasharray="408.4" stroke-dashoffset="{{ 408.4 - (408.4 * 0.65) }}"
-                                    class="progress-ring-circle" style="transform: rotate(-90deg); transform-origin: center;"/>
-                            <defs>
-                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
-                                    <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
-                                </linearGradient>
-                            </defs>
-                            <text x="75" y="75" text-anchor="middle" dominant-baseline="middle" class="text-3xl font-bold fill-purple-600">65%</text>
+            {{-- Quick Actions --}}
+            <div class="tp-card" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:16px;">🚀 Quick Actions</div>
+                @php
+                    $quickActions = [
+                        ['🌳', 'ดูผังสายงาน', 'user.mlm.genealogy'],
+                        ['🔗', 'Referral Link', 'user.mlm.referral'],
+                        ['💸', 'ประวัติคอมมิชชัน', 'user.mlm.commissions'],
+                        ['👥', 'ทีมของฉัน', 'user.mlm.team'],
+                    ];
+                @endphp
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    @foreach($quickActions as [$emoji, $label, $route])
+                        @if(RouteFacade::has($route))
+                            <a href="{{ route($route) }}" class="tp-card tp-card-hover" style="display:flex; flex-direction:column; align-items:center; gap:9px; padding:18px 10px; text-decoration:none; color:inherit;">
+                                <span class="tp-tile" style="width:48px; height:48px; border-radius:15px; font-size:24px;">{{ $emoji }}</span>
+                                <span style="font-size:13px; font-weight:700; text-align:center;">{{ $label }}</span>
+                            </a>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
+        {{-- ── คอลัมน์ขวา ──────────────────────────────────── --}}
+        <div style="display:flex; flex-direction:column; gap:18px; min-width:0;">
+
+            {{-- สถานะรักษายอด (Volume Retention) --}}
+            <div class="tp-card" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:16px;">💓 สถานะรักษายอด</div>
+
+                @if(!$rtEnabled)
+                    {{-- ระบบรักษายอดปิดอยู่ --}}
+                    <div style="text-align:center; padding:18px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div style="font-size:13px; color:var(--ink2);">ระบบรักษายอดปิดอยู่</div>
+                        <div style="color:#5aa07e; font-weight:700; margin-top:4px;">Active ทุกคน</div>
+                    </div>
+                @else
+                    {{-- ป้ายสถานะ --}}
+                    <div style="text-align:center; margin-bottom:16px;">
+                        <span class="tp-pill" style="color:#fff; background:{{ $rtColor }}; font-size:12px; padding:6px 14px;">{{ $rtEmoji }} {{ $rtText }}</span>
+                    </div>
+
+                    {{-- วงแหวนความคืบหน้า PV (SVG) --}}
+                    @php
+                        $ringPct    = min($pvPct, 100);
+                        $circ       = 2 * 3.14159 * 55;
+                        $dashOffset = $circ - ($circ * $ringPct / 100);
+                        $ringColor  = $pvPct >= 100 ? '#5aa07e' : ($pvPct >= 50 ? '#e0a52e' : '#d9534f');
+                    @endphp
+                    <div style="display:flex; justify-content:center; margin-bottom:16px;">
+                        <svg width="140" height="140" viewBox="0 0 140 140">
+                            <circle cx="70" cy="70" r="55" fill="none" stroke="color-mix(in srgb, var(--ink2) 22%, transparent)" stroke-width="10"/>
+                            <circle cx="70" cy="70" r="55" fill="none" stroke="{{ $ringColor }}" stroke-width="10"
+                                    stroke-dasharray="{{ $circ }}" stroke-dashoffset="{{ $dashOffset }}"
+                                    stroke-linecap="round"
+                                    style="transform:rotate(-90deg); transform-origin:center; transition:stroke-dashoffset .5s;"/>
+                            <text x="70" y="64" text-anchor="middle" dominant-baseline="middle" font-size="26" font-weight="800" fill="{{ $ringColor }}">{{ round($pvPct) }}%</text>
+                            <text x="70" y="86" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="var(--ink2)">PV เดือนนี้</text>
                         </svg>
                     </div>
 
-                    <div class="space-y-3 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">✓ PV Requirement:</span>
-                            <span class="font-bold text-green-600">5,000 / 5,000</span>
+                    {{-- รายละเอียด PV --}}
+                    <div style="display:flex; flex-direction:column; gap:10px; font-size:12.5px;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="color:var(--ink2);">PV เดือนนี้:</span>
+                            <span class="tp-num" style="font-weight:700; color:{{ ($retentionStatus['monthly_pv'] ?? 0) >= ($retentionStatus['required_pv'] ?? 100) ? '#5aa07e' : 'var(--ink)' }};">
+                                {{ number_format($retentionStatus['monthly_pv'] ?? 0, 0) }} / {{ number_format($retentionStatus['required_pv'] ?? 100, 0) }}
+                            </span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">○ Team PV:</span>
-                            <span class="font-bold text-gray-800 dark:text-white">12,000 / 20,000</span>
+
+                        @if(($retentionStatus['remaining_pv'] ?? 0) > 0)
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="color:var(--ink2);">PV ที่ต้องการเพิ่ม:</span>
+                            <span class="tp-num" style="font-weight:700; color:#e0a52e;">{{ number_format($retentionStatus['remaining_pv'] ?? 0, 0) }} PV</span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">✓ Direct Referrals:</span>
-                            <span class="font-bold text-green-600">3 / 3</span>
+                        @endif
+
+                        @if(($retentionStatus['days_since_last_purchase'] ?? null) !== null)
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="color:var(--ink2);">ซื้อล่าสุดเมื่อ:</span>
+                            <span class="tp-num" style="font-weight:700;">{{ $retentionStatus['days_since_last_purchase'] }} วันที่แล้ว</span>
                         </div>
+                        @endif
                     </div>
 
-                    <div class="mt-6 p-4 bg-purple-50 rounded-xl">
-                        <div class="text-xs text-purple-700 font-semibold mb-1">Next Rank:</div>
-                        <div class="text-lg font-bold text-purple-800">Silver</div>
-                        <div class="text-xs text-purple-600 mt-1">8,000 Team PV needed</div>
-                    </div>
-                </x-arrow-x.card-v3>
-
-                <!-- Referral Link -->
-                <x-arrow-x.card-v3 class="p-8">
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
-                        <span class="mr-3">🔗</span>
-                        Referral Link
-                    </h3>
-
-                    <div class="mb-4">
-                        <input type="text" id="referral-link" value="{{ route('register', ['ref' => $member->member_code]) }}" readonly
-                               class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-sm">
+                    {{-- Progress Bar --}}
+                    <div style="height:12px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden; margin-top:14px;">
+                        <div style="height:100%; width:{{ $ringPct }}%; border-radius:20px; background:linear-gradient(90deg, {{ $ringColor }}, color-mix(in srgb, {{ $ringColor }} 60%, #fff)); transition:width .5s ease;"></div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="copyReferralLink()" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition-all">
-                            📋 Copy
-                        </button>
-                        <button onclick="shareReferralLink()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-all">
-                            📤 Share
-                        </button>
+                    {{-- ช่วงผ่อนผัน --}}
+                    @if($retentionStatus['in_grace_period'] ?? false)
+                    <div style="margin-top:14px; padding:11px 13px; border-radius:12px; box-shadow:var(--inset-sm); font-size:12px; color:#e0a52e;">
+                        <i class="fas fa-clock"></i> ช่วงผ่อนผัน: เหลืออีก {{ max(0, ($retentionStatus['grace_days'] ?? 7) - ($retentionStatus['days_since_last_purchase'] ?? 0)) }} วัน
                     </div>
+                    @endif
 
-                    <!-- QR Code -->
-                    <div class="mt-6 text-center">
-                        <div class="inline-block p-4 bg-gray-100 dark:bg-gray-700 rounded-xl">
-                            <div id="qr-code"></div>
-                        </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">Scan QR Code to Register</div>
+                    {{-- แจ้งเตือน PV ไม่ถึงเกณฑ์ --}}
+                    @if($rtStatus === 'inactive')
+                    <div style="margin-top:14px; padding:11px 13px; border-radius:12px; box-shadow:var(--inset-sm); font-size:12px; color:#d9534f;">
+                        <i class="fas fa-triangle-exclamation"></i> <strong>PV ไม่ถึงเกณฑ์!</strong> คอมมิชชันจะถูกระงับจนกว่าจะซื้อสินค้าเพิ่ม
                     </div>
-                </x-arrow-x.card-v3>
+                    @endif
+                @endif
+            </div>
 
-                <!-- Tips -->
-                <div class="bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl p-8">
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">💡 Tips</h3>
-                    <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                        <li class="flex items-start">
-                            <span class="mr-2">•</span>
-                            <span>สร้างสมดุลระหว่างขาซ้ายและขวาเพื่อเพิ่มคอมมิชชัน Binary</span>
-                        </li>
-                        <li class="flex items-start">
-                            <span class="mr-2">•</span>
-                            <span>แนะนำทีมให้ซื้อสินค้าต่อเนื่องเพื่อสะสม PV</span>
-                        </li>
-                        <li class="flex items-start">
-                            <span class="mr-2">•</span>
-                            <span>ติดตามผังสายงานเพื่อดูการเติบโตของทีม</span>
-                        </li>
-                    </ul>
+            {{-- Rank Progress --}}
+            <div class="tp-card" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:16px;">🎯 Rank Progress</div>
+
+                @php
+                    $rankPctVal   = 65;
+                    $rankCirc     = 2 * 3.14159 * 65;
+                    $rankOffset   = $rankCirc - ($rankCirc * $rankPctVal / 100);
+                @endphp
+                <div style="display:flex; justify-content:center; margin-bottom:16px;">
+                    <svg width="150" height="150" viewBox="0 0 150 150">
+                        <circle cx="75" cy="75" r="65" fill="none" stroke="color-mix(in srgb, var(--ink2) 22%, transparent)" stroke-width="10"/>
+                        <circle cx="75" cy="75" r="65" fill="none" stroke="url(#rankGradient)" stroke-width="10"
+                                stroke-dasharray="{{ $rankCirc }}" stroke-dashoffset="{{ $rankOffset }}"
+                                stroke-linecap="round"
+                                style="transform:rotate(-90deg); transform-origin:center; transition:stroke-dashoffset .5s;"/>
+                        <defs>
+                            <linearGradient id="rankGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="var(--accent1)"/>
+                                <stop offset="100%" stop-color="var(--accent2)"/>
+                            </linearGradient>
+                        </defs>
+                        <text x="75" y="75" text-anchor="middle" dominant-baseline="middle" font-size="30" font-weight="800" fill="var(--deep1)">{{ $rankPctVal }}%</text>
+                    </svg>
                 </div>
+
+                <div style="display:flex; flex-direction:column; gap:10px; font-size:12.5px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:var(--ink2);">✓ PV Requirement:</span>
+                        <span class="tp-num" style="font-weight:700; color:#5aa07e;">5,000 / 5,000</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:var(--ink2);">○ Team PV:</span>
+                        <span class="tp-num" style="font-weight:700;">12,000 / 20,000</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:var(--ink2);">✓ Direct Referrals:</span>
+                        <span class="tp-num" style="font-weight:700; color:#5aa07e;">3 / 3</span>
+                    </div>
+                </div>
+
+                <div style="margin-top:16px; padding:14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                    <div style="font-size:11px; color:var(--ink2); font-weight:600; margin-bottom:2px;">Next Rank:</div>
+                    <div style="font-size:17px; font-weight:800; color:var(--deep1);">Silver</div>
+                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">8,000 Team PV needed</div>
+                </div>
+            </div>
+
+            {{-- Referral Link --}}
+            <div class="tp-card" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:14px;">🔗 Referral Link</div>
+
+                <div style="margin-bottom:12px;">
+                    <input type="text" id="referral-link" value="{{ $referralUrl }}" readonly
+                           class="tp-input" style="width:100%; font-size:12.5px;">
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <button type="button" onclick="copyReferralLink()" class="tp-btn tp-btn-primary" style="justify-content:center;">📋 Copy</button>
+                    <button type="button" onclick="shareReferralLink()" class="tp-btn" style="justify-content:center;">📤 Share</button>
+                </div>
+
+                {{-- QR Code placeholder --}}
+                <div style="margin-top:18px; text-align:center;">
+                    <div style="display:inline-block; padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
+                        <div id="qr-code"></div>
+                    </div>
+                    <div style="font-size:11px; color:var(--ink2); margin-top:8px;">Scan QR Code to Register</div>
+                </div>
+            </div>
+
+            {{-- Tips --}}
+            <div class="tp-card" style="padding:18px;">
+                <div class="tp-section-h" style="margin-bottom:12px;">💡 Tips</div>
+                <ul style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; font-size:12.5px; color:var(--ink2);">
+                    <li style="display:flex; gap:8px;"><span style="color:var(--deep1);">•</span><span>สร้างสมดุลระหว่างขาซ้ายและขวาเพื่อเพิ่มคอมมิชชัน Binary</span></li>
+                    <li style="display:flex; gap:8px;"><span style="color:var(--deep1);">•</span><span>แนะนำทีมให้ซื้อสินค้าต่อเนื่องเพื่อสะสม PV</span></li>
+                    <li style="display:flex; gap:8px;"><span style="color:var(--deep1);">•</span><span>ติดตามผังสายงานเพื่อดูการเติบโตของทีม</span></li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
 
+@push('scripts')
+<style>
+    /* คอลัมน์เดียวบนจอเล็ก (responsive) */
+    @media (max-width: 900px) {
+        .tp-mlm-grid { grid-template-columns: 1fr !important; }
+    }
+</style>
 <script>
+// คัดลอกลิงก์แนะนำเพื่อน
 function copyReferralLink() {
-    const input = document.getElementById('referral-link');
-    input.select();
-    document.execCommand('copy');
-    alert('Copied referral link!');
+    var input = document.getElementById('referral-link');
+    if (!input) return;
+    var link = input.value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(function () {
+            if (window.showNotification) window.showNotification('คัดลอกลิงก์แนะนำสำเร็จ!', 'success');
+        }).catch(function () {
+            fallbackCopy(input);
+        });
+    } else {
+        fallbackCopy(input);
+    }
 }
 
+// วิธีคัดลอกสำรอง (กรณี clipboard API ใช้ไม่ได้)
+function fallbackCopy(input) {
+    input.select();
+    try {
+        document.execCommand('copy');
+        if (window.showNotification) window.showNotification('คัดลอกลิงก์แนะนำสำเร็จ!', 'success');
+    } catch (e) {
+        if (window.showNotification) window.showNotification('คัดลอกไม่สำเร็จ', 'error');
+    }
+}
+
+// แชร์ลิงก์แนะนำเพื่อน (Web Share API + fallback)
 function shareReferralLink() {
-    const link = document.getElementById('referral-link').value;
+    var input = document.getElementById('referral-link');
+    if (!input) return;
+    var link = input.value;
     if (navigator.share) {
         navigator.share({
             title: 'Join my MLM team!',
             text: 'Join my MLM team and start earning today!',
             url: link
-        });
+        }).catch(function () { /* ผู้ใช้ยกเลิกการแชร์ */ });
     } else {
         copyReferralLink();
     }
 }
 </script>
+@endpush
 @endsection

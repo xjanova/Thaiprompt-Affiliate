@@ -1,205 +1,143 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ลิงก์แนะนำสมาชิก')
 
 @section('content')
+<div style="display:flex; flex-direction:column; gap:18px; max-width:880px; margin:0 auto;">
 
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
-
-<div class="max-w-4xl mx-auto space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Pink-Rose-Red for Referral Link) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-pink-600 via-rose-600 to-red-600 dark:from-pink-800 dark:via-rose-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-share-nodes"></i>
+    {{-- ── หัวข้อ (Hero) ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
+                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-link" style="color:#fff;"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ลิงก์แนะนำสมาชิก</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">แชร์ลิงก์นี้เพื่อเชิญเพื่อนเข้าร่วม</div>
             </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-link text-3xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            ลิงก์แนะนำสมาชิก
-                        </h1>
-                        <p class="text-pink-100 mt-1">
-                            แชร์ลิงก์นี้เพื่อเชิญเพื่อนเข้าร่วม
-                        </p>
-                    </div>
-                </div>
-                <a href="{{ route('user.mlm.dashboard') }}"
-                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2 justify-center md:justify-start">
-                    <i class="fas fa-arrow-left"></i>
-                    <span class="hidden md:inline">กลับหน้า MLM</span>
-                </a>
-            </div>
+            @if(\Illuminate\Support\Facades\Route::has('user.mlm.dashboard'))
+            <a href="{{ route('user.mlm.dashboard') }}" class="tp-icon-btn" title="กลับหน้า MLM"><i class="fas fa-arrow-left"></i></a>
+            @endif
         </div>
     </div>
 
-    <!-- Main Referral Card -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
-        <!-- Referral URL -->
-        <div class="mb-8">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <span>🔗</span> ลิงก์แนะนำของคุณ
-            </h2>
-            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">URL:</label>
-                <div class="flex gap-3">
+    {{-- ── การ์ดหลัก: ลิงก์ + รหัส + QR + แชร์ ───────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+
+        {{-- ลิงก์แนะนำ --}}
+        <div style="margin-bottom:26px;">
+            <div class="tp-section-h" style="margin-bottom:12px;">🔗 ลิงก์แนะนำของคุณ</div>
+            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm);">
+                <label style="display:block; font-size:12px; font-weight:700; color:var(--ink2); margin-bottom:8px;">URL:</label>
+                <div style="display:flex; flex-wrap:wrap; gap:10px;">
                     <input type="text"
                            id="referralUrl"
                            value="{{ $referralUrl }}"
                            readonly
-                           class="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border-2 border-blue-300 rounded-lg font-mono text-sm">
-                    <button onclick="copyUrl()"
-                            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors">
-                        📋 คัดลอก
+                           class="tp-input tp-num"
+                           style="flex:1; min-width:200px; font-size:13px;">
+                    <button onclick="copyUrl()" type="button" class="tp-btn tp-btn-primary">
+                        <i class="fas fa-copy"></i> คัดลอก
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Member Code -->
-        <div class="mb-8">
-            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <span>🎫</span> รหัสสมาชิกของคุณ
-            </h3>
-            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
-                <div class="flex gap-3">
+        {{-- รหัสสมาชิก --}}
+        <div style="margin-bottom:26px;">
+            <div class="tp-section-h" style="margin-bottom:12px;">🎫 รหัสสมาชิกของคุณ</div>
+            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm);">
+                <div style="display:flex; flex-wrap:wrap; gap:10px;">
                     <input type="text"
                            id="memberCode"
                            value="{{ $member->member_code }}"
                            readonly
-                           class="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border-2 border-purple-300 rounded-lg font-mono text-2xl font-bold text-center">
-                    <button onclick="copyCode()"
-                            class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors">
-                        📋 คัดลอก
+                           class="tp-input tp-num"
+                           style="flex:1; min-width:200px; font-size:22px; font-weight:800; text-align:center; letter-spacing:1px; color:var(--deep1);">
+                    <button onclick="copyCode()" type="button" class="tp-btn tp-btn-primary">
+                        <i class="fas fa-copy"></i> คัดลอก
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- QR Code Section -->
-        <div class="mb-8">
-            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 text-center flex items-center justify-center gap-2">
-                <span>📱</span> QR Code
-            </h3>
-            <div class="bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-8 border-2 border-gray-200 dark:border-gray-700">
-                <div class="flex justify-center mb-4">
-                    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg">
-                        <div id="qrcode" class="flex items-center justify-center" style="min-width: 200px; min-height: 200px;">
+        {{-- QR Code --}}
+        <div style="margin-bottom:26px;">
+            <div class="tp-section-h" style="margin-bottom:12px; text-align:center;">📱 QR Code</div>
+            <div style="padding:24px; border-radius:16px; box-shadow:var(--inset-sm);">
+                <div style="display:flex; justify-content:center; margin-bottom:16px;">
+                    <div style="background:#fff; padding:20px; border-radius:16px; box-shadow:var(--inset);">
+                        <div id="qrcode" style="display:flex; align-items:center; justify-content:center; min-width:200px; min-height:200px;">
                             {{-- Loading state --}}
-                            <div id="qrcode-loading" class="text-center">
-                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">กำลังสร้าง QR Code...</p>
+                            <div id="qrcode-loading" style="text-align:center;">
+                                <div style="display:inline-block;"><i class="fas fa-spinner fa-spin" style="font-size:34px; color:var(--accent1);"></i></div>
+                                <p style="font-size:13px; color:var(--ink2); margin-top:8px;">กำลังสร้าง QR Code...</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 {{-- Error message (hidden by default) --}}
-                <div id="qrcode-error" class="hidden text-center mb-4">
-                    <p class="text-red-500 text-sm mb-2">ไม่สามารถสร้าง QR Code ได้</p>
-                    <button onclick="generateQRCode()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
-                        ลองใหม่
-                    </button>
+                <div id="qrcode-error" style="display:none; text-align:center; margin-bottom:16px;">
+                    <p style="color:#d9534f; font-size:13px; margin-bottom:10px;">ไม่สามารถสร้าง QR Code ได้</p>
+                    <button onclick="generateQRCode()" type="button" class="tp-btn tp-btn-sm">ลองใหม่</button>
                 </div>
-                <p class="text-center text-sm text-gray-600 dark:text-gray-400">สแกน QR Code เพื่อเข้าสู่หน้าสมัครสมาชิก</p>
-                <div class="mt-4 text-center">
-                    <button id="download-qr" onclick="downloadQR()" class="hidden px-6 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-semibold transition-colors">
+                <p style="text-align:center; font-size:13px; color:var(--ink2);">สแกน QR Code เพื่อเข้าสู่หน้าสมัครสมาชิก</p>
+                <div style="margin-top:16px; text-align:center;">
+                    <button id="download-qr" onclick="downloadQR()" type="button" class="tp-btn tp-btn-sm" style="display:none;">
                         💾 ดาวน์โหลด QR Code
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Share Buttons -->
+        {{-- ปุ่มแชร์ --}}
         <div>
-            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <span>📤</span> แชร์ผ่าน
-            </h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <button onclick="shareViaLine()"
-                        class="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl p-6 transition-all shadow-lg hover:shadow-xl">
-                    <div class="text-4xl mb-2">💚</div>
-                    <div class="font-bold">LINE</div>
-                </button>
-
-                <button onclick="shareViaFacebook()"
-                        class="bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl p-6 transition-all shadow-lg hover:shadow-xl">
-                    <div class="text-4xl mb-2">📘</div>
-                    <div class="font-bold">Facebook</div>
-                </button>
-
-                <button onclick="shareViaTwitter()"
-                        class="bg-gradient-to-br from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white rounded-xl p-6 transition-all shadow-lg hover:shadow-xl">
-                    <div class="text-4xl mb-2">🐦</div>
-                    <div class="font-bold">Twitter</div>
-                </button>
-
-                <button onclick="shareViaEmail()"
-                        class="bg-gradient-to-br from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl p-6 transition-all shadow-lg hover:shadow-xl">
-                    <div class="text-4xl mb-2">📧</div>
-                    <div class="font-bold">Email</div>
-                </button>
+            <div class="tp-section-h" style="margin-bottom:12px;">📤 แชร์ผ่าน</div>
+            @php
+                $shareButtons = [
+                    ['shareViaLine()',     '💚', 'LINE',     '#5aa07e'],
+                    ['shareViaFacebook()', '📘', 'Facebook', '#5689b8'],
+                    ['shareViaTwitter()',  '🐦', 'Twitter',  '#3aa3d9'],
+                    ['shareViaEmail()',    '📧', 'Email',    'var(--ink2)'],
+                ];
+            @endphp
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;">
+                @foreach($shareButtons as [$action, $emoji, $label, $color])
+                    <button onclick="{{ $action }}" type="button" class="tp-card tp-card-hover"
+                            style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:18px 10px; cursor:pointer; border:none; background:transparent;">
+                        <span class="tp-tile" style="width:48px; height:48px; border-radius:15px; font-size:24px; background:color-mix(in srgb, {{ $color }} 18%, transparent);">{{ $emoji }}</span>
+                        <span style="font-size:13px; font-weight:700; color:var(--ink);">{{ $label }}</span>
+                    </button>
+                @endforeach
             </div>
         </div>
     </div>
 
-    <!-- Tips -->
-    <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl shadow-xl p-6 border border-amber-200">
-        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <span>💡</span> วิธีใช้งาน
-        </h3>
-        <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <li class="flex gap-2">
-                <span>✅</span>
+    {{-- ── วิธีใช้งาน ───────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
+        <div class="tp-section-h" style="margin-bottom:12px;">💡 วิธีใช้งาน</div>
+        <ul style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; font-size:13px; color:var(--ink2);">
+            <li style="display:flex; gap:9px; align-items:flex-start;">
+                <span style="color:#5aa07e; flex-shrink:0;">✅</span>
                 <span>คัดลอกลิงก์หรือ QR Code เพื่อแชร์ให้เพื่อน</span>
             </li>
-            <li class="flex gap-2">
-                <span>✅</span>
+            <li style="display:flex; gap:9px; align-items:flex-start;">
+                <span style="color:#5aa07e; flex-shrink:0;">✅</span>
                 <span>เมื่อเพื่อนสมัครผ่านลิงก์นี้ คุณจะได้รับค่าคอมมิชชั่น</span>
             </li>
-            <li class="flex gap-2">
-                <span>✅</span>
+            <li style="display:flex; gap:9px; align-items:flex-start;">
+                <span style="color:#5aa07e; flex-shrink:0;">✅</span>
                 <span>ตรวจสอบรายชื่อสมาชิกที่แนะนำได้ที่เมนู "ทีมของฉัน"</span>
             </li>
         </ul>
     </div>
 </div>
 
-<div id="toast" class="hidden fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-    <span id="toastMessage"></span>
-</div>
-
 @push('scripts')
 {{-- ใช้ CDN ที่ถูกต้องสำหรับ qrcodejs --}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-const referralUrl = "{{ $referralUrl }}";
-const memberCode = "{{ $member->member_code }}";
+const referralUrl = @json($referralUrl);
+const memberCode = @json($member->member_code);
 
 // ตัวแปร global เก็บ QR code instance
 let qrCodeInstance = null;
@@ -218,7 +156,7 @@ function generateQRCode(retryCount = 0) {
     const downloadBtn = document.getElementById('download-qr');
 
     // ซ่อน error message
-    if (errorEl) errorEl.classList.add('hidden');
+    if (errorEl) errorEl.style.display = 'none';
 
     // ตรวจสอบว่า QRCode library โหลดแล้วหรือยัง
     if (typeof QRCode === 'undefined') {
@@ -227,7 +165,7 @@ function generateQRCode(retryCount = 0) {
             setTimeout(() => generateQRCode(retryCount + 1), retryDelay);
             return;
         } else {
-            // ลองใช้ fallback (Google Charts API)
+            // ลองใช้ fallback (QR Server API)
             console.warn('QRCode library โหลดไม่สำเร็จ, ใช้ fallback');
             useFallbackQRCode();
             return;
@@ -256,7 +194,7 @@ function generateQRCode(retryCount = 0) {
 
         // แสดงปุ่มดาวน์โหลด
         if (downloadBtn) {
-            downloadBtn.classList.remove('hidden');
+            downloadBtn.style.display = 'inline-flex';
         }
 
         console.log('สร้าง QR Code สำเร็จ');
@@ -296,7 +234,7 @@ function useFallbackQRCode() {
         qrcodeContainer.innerHTML = '';
         qrcodeContainer.appendChild(img);
         if (downloadBtn) {
-            downloadBtn.classList.remove('hidden');
+            downloadBtn.style.display = 'inline-flex';
         }
         console.log('สร้าง QR Code ด้วย QR Server API สำเร็จ');
     };
@@ -304,9 +242,9 @@ function useFallbackQRCode() {
     img.onerror = function() {
         // แสดง error message
         if (errorEl) {
-            errorEl.classList.remove('hidden');
+            errorEl.style.display = 'block';
         }
-        qrcodeContainer.innerHTML = '<p class="text-gray-500 text-sm">ไม่สามารถโหลด QR Code ได้</p>';
+        qrcodeContainer.innerHTML = '<p style="color:var(--ink2); font-size:13px;">ไม่สามารถโหลด QR Code ได้</p>';
         console.error('ไม่สามารถโหลด QR Code จาก QR Server API');
     };
 }
@@ -317,26 +255,19 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(generateQRCode, 100);
 });
 
-function showToast(message) {
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toastMessage');
-    toastMessage.textContent = message;
-    toast.classList.remove('hidden');
-    setTimeout(() => {
-        toast.style.transition = 'opacity 0.5s';
-        toast.style.opacity = '0';
-        setTimeout(() => {
-            toast.classList.add('hidden');
-            toast.style.opacity = '1';
-        }, 500);
-    }, 3000);
+function notify(message, type) {
+    if (window.showNotification) {
+        window.showNotification(message, type || 'success');
+    }
 }
 
 function copyUrl() {
     const input = document.getElementById('referralUrl');
     input.select();
     navigator.clipboard.writeText(referralUrl).then(() => {
-        showToast('✅ คัดลอกลิงก์แล้ว');
+        notify('คัดลอกลิงก์แล้ว', 'success');
+    }).catch(() => {
+        notify('คัดลอกไม่สำเร็จ', 'error');
     });
 }
 
@@ -344,7 +275,9 @@ function copyCode() {
     const input = document.getElementById('memberCode');
     input.select();
     navigator.clipboard.writeText(memberCode).then(() => {
-        showToast('✅ คัดลอกรหัสแล้ว');
+        notify('คัดลอกรหัสแล้ว', 'success');
+    }).catch(() => {
+        notify('คัดลอกไม่สำเร็จ', 'error');
     });
 }
 
@@ -359,7 +292,7 @@ function downloadQR() {
         // QRCode.js สร้าง canvas
         dataUrl = canvas.toDataURL('image/png');
     } else if (img) {
-        // Fallback ใช้ img จาก Google Charts
+        // Fallback ใช้ img จาก QR Server API
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = img.width;
         tempCanvas.height = img.height;
@@ -373,9 +306,9 @@ function downloadQR() {
         link.download = `referral-qr-${memberCode}.png`;
         link.href = dataUrl;
         link.click();
-        showToast('✅ ดาวน์โหลด QR Code แล้ว');
+        notify('ดาวน์โหลด QR Code แล้ว', 'success');
     } else {
-        showToast('❌ ไม่สามารถดาวน์โหลด QR Code ได้');
+        notify('ไม่สามารถดาวน์โหลด QR Code ได้', 'error');
     }
 }
 
