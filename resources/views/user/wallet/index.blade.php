@@ -1,398 +1,244 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'กระเป๋าเงิน')
 
+@php
+    use Illuminate\Support\Str;
+
+    // สีสถานะธุรกรรม (map จาก status_color → hex ใช้ใน V4 แทน dynamic tailwind class)
+    $txColor = function ($c) {
+        return match ($c) {
+            'green' => '#5aa07e', 'yellow', 'amber' => '#e0a52e',
+            'red', 'rose' => '#d9534f', 'blue', 'indigo' => '#5689b8',
+            default => 'var(--ink2)',
+        };
+    };
+    $incomeTypes = ['deposit', 'transfer_in', 'commission', 'refund', 'bonus'];
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Indigo-Purple-Pink for Wallet) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;" x-data="{}">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-wallet"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-wallet text-4xl text-white drop-shadow-lg"></i>
-                    </div>
+    {{-- ── การ์ดยอดเงิน (Hero) ──────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 18%, transparent), transparent 72%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <span class="tp-tile" style="width:54px; height:54px; border-radius:17px; font-size:24px;"><i class="fas fa-wallet" style="color:#fff;"></i></span>
                     <div>
-                        <h1 class="text-4xl font-bold text-white drop-shadow-lg">กระเป๋าเงินของฉัน</h1>
-                        <p class="text-purple-100 text-lg mt-1">จัดการการเงินของคุณ</p>
+                        <h1 style="font-size:clamp(19px,4vw,24px); font-weight:800; margin:0;">กระเป๋าเงินของฉัน</h1>
+                        <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">จัดการการเงินของคุณ</div>
                     </div>
                 </div>
-
-                {{-- Desktop Wallet Address --}}
-                <div class="hidden md:block">
-                    <p class="text-sm text-indigo-100 mb-1">Wallet Address</p>
-                    <div class="flex items-center gap-2">
-                        <code class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg text-sm font-mono text-white">{{ $wallet->wallet_address }}</code>
-                        <button onclick="copyWalletAddress()" class="p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg transition">
-                            <i class="fas fa-copy text-white"></i>
-                        </button>
+                @if($wallet->wallet_address)
+                <div style="min-width:0;">
+                    <div style="font-size:11px; color:var(--ink2); margin-bottom:4px;">Wallet Address</div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <code class="tp-num" style="padding:7px 12px; border-radius:10px; box-shadow:var(--inset-sm); font-size:12px; color:var(--ink); max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $wallet->wallet_address }}</code>
+                        <button type="button" onclick="copyWalletAddress()" class="tp-icon-btn" title="คัดลอก"><i class="fas fa-copy"></i></button>
                     </div>
                 </div>
+                @endif
             </div>
 
-            {{-- Balance Display --}}
-            <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-6">
-                <p class="text-indigo-100 text-sm mb-2">ยอดเงินคงเหลือ</p>
-                <p class="text-5xl md:text-6xl font-bold text-white drop-shadow-lg">฿{{ number_format($wallet->balance, 2) }}</p>
-                <p class="text-indigo-100 text-sm mt-2">{{ $wallet->currency }}</p>
-            </div>
-
-            {{-- Mobile Wallet Address --}}
-            <div class="md:hidden mt-4">
-                <p class="text-sm text-indigo-100 mb-1">Wallet Address</p>
-                <div class="flex items-center gap-2">
-                    <code class="flex-1 px-3 py-2 bg-white/20 backdrop-blur-sm rounded-lg text-xs font-mono text-white">{{ $wallet->wallet_address }}</code>
-                    <button onclick="copyWalletAddress()" class="p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg transition">
-                        <i class="fas fa-copy text-white"></i>
-                    </button>
-                </div>
+            {{-- ยอดคงเหลือ --}}
+            <div style="margin-top:18px; padding:20px 22px; border-radius:18px; box-shadow:var(--inset);">
+                <div style="font-size:12.5px; color:var(--ink2);">ยอดเงินคงเหลือ</div>
+                <div class="tp-num" style="font-size:clamp(34px,7vw,52px); font-weight:800; line-height:1.1; margin-top:4px; color:var(--deep1);">฿{{ number_format($wallet->balance, 2) }}</div>
+                <div style="font-size:12px; color:var(--ink2); margin-top:4px;">{{ $wallet->currency }}</div>
             </div>
         </div>
     </div>
 
-    {{-- Quick Actions --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <a href="{{ route('user.wallet.deposit') }}" class="group relative overflow-hidden rounded-2xl shadow-xl p-6 text-center transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-800">
-            <div class="absolute -right-6 -top-6 opacity-10">
-                <i class="fas fa-arrow-down text-7xl text-white"></i>
-            </div>
-            <div class="relative z-10">
-                <div class="text-5xl mb-3">💵</div>
-                <p class="text-white font-bold text-lg">ฝากเงิน</p>
-                <p class="text-xs text-green-100 mt-1">Deposit</p>
-            </div>
-        </a>
-
-        <a href="{{ route('user.wallet.withdraw') }}" class="group relative overflow-hidden rounded-2xl shadow-xl p-6 text-center transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-red-500 to-rose-600 dark:from-red-600 dark:to-rose-800">
-            <div class="absolute -right-6 -top-6 opacity-10">
-                <i class="fas fa-arrow-up text-7xl text-white"></i>
-            </div>
-            <div class="relative z-10">
-                <div class="text-5xl mb-3">💸</div>
-                <p class="text-white font-bold text-lg">ถอนเงิน</p>
-                <p class="text-xs text-red-100 mt-1">Withdraw</p>
-            </div>
-        </a>
-
-        <a href="{{ route('user.wallet.transfer') }}" class="group relative overflow-hidden rounded-2xl shadow-xl p-6 text-center transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-blue-500 to-cyan-600 dark:from-blue-600 dark:to-cyan-800">
-            <div class="absolute -right-6 -top-6 opacity-10">
-                <i class="fas fa-exchange-alt text-7xl text-white"></i>
-            </div>
-            <div class="relative z-10">
-                <div class="text-5xl mb-3">📤</div>
-                <p class="text-white font-bold text-lg">โอนเงิน</p>
-                <p class="text-xs text-blue-100 mt-1">Transfer</p>
-            </div>
-        </a>
-
-        <a href="{{ route('user.wallet.transactions') }}" class="group relative overflow-hidden rounded-2xl shadow-xl p-6 text-center transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-purple-500 to-indigo-600 dark:from-purple-600 dark:to-indigo-800">
-            <div class="absolute -right-6 -top-6 opacity-10">
-                <i class="fas fa-history text-7xl text-white"></i>
-            </div>
-            <div class="relative z-10">
-                <div class="text-5xl mb-3">📝</div>
-                <p class="text-white font-bold text-lg">ประวัติ</p>
-                <p class="text-xs text-purple-100 mt-1">History</p>
-            </div>
-        </a>
+    {{-- ── เมนูด่วน ──────────────────────────────────────────── --}}
+    @php
+        $walletActions = [
+            ['💵', 'ฝากเงิน', 'Deposit', 'user.wallet.deposit'],
+            ['💸', 'ถอนเงิน', 'Withdraw', 'user.wallet.withdraw'],
+            ['📤', 'โอนเงิน', 'Transfer', 'user.wallet.transfer'],
+            ['📝', 'ประวัติ', 'History', 'user.wallet.transactions'],
+            ['🔳', 'QR Code ของฉัน', 'รับเงิน', 'user.wallet.qr-code'],
+            ['📷', 'สแกนจ่าย', 'โอนเงิน', 'user.wallet.qr-transfer'],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;">
+        @foreach($walletActions as [$emoji, $label, $sub, $route])
+            @if(\Illuminate\Support\Facades\Route::has($route))
+                <a href="{{ route($route) }}" class="tp-card tp-card-hover" style="display:flex; flex-direction:column; align-items:center; gap:7px; padding:16px 10px; text-decoration:none; color:inherit;">
+                    <span class="tp-tile" style="width:46px; height:46px; border-radius:15px; font-size:21px;">{{ $emoji }}</span>
+                    <span style="font-size:13px; font-weight:700; text-align:center;">{{ $label }}</span>
+                    <span style="font-size:10px; color:var(--ink2);">{{ $sub }}</span>
+                </a>
+            @endif
+        @endforeach
     </div>
 
-    {{-- QR Code Actions --}}
-    <div class="grid grid-cols-2 gap-4">
-        <a href="{{ route('user.wallet.qr-code') }}" class="group relative overflow-hidden rounded-2xl shadow-xl p-6 text-center transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600">
-            <div class="absolute -right-6 -top-6 opacity-10">
-                <i class="fas fa-qrcode text-9xl text-white"></i>
-            </div>
-            <div class="relative z-10">
-                <div class="text-5xl mb-3">
-                    <i class="fas fa-qrcode text-white"></i>
-                </div>
-                <p class="text-white font-bold text-lg">QR Code ของฉัน</p>
-                <p class="text-white/80 text-sm mt-1">แสดง QR เพื่อรับเงิน</p>
-            </div>
-        </a>
-
-        <a href="{{ route('user.wallet.qr-transfer') }}" class="group relative overflow-hidden rounded-2xl shadow-xl p-6 text-center transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-500 dark:from-cyan-600 dark:via-blue-600 dark:to-indigo-600">
-            <div class="absolute -right-6 -top-6 opacity-10">
-                <i class="fas fa-camera text-9xl text-white"></i>
-            </div>
-            <div class="relative z-10">
-                <div class="text-5xl mb-3">
-                    <i class="fas fa-camera text-white"></i>
-                </div>
-                <p class="text-white font-bold text-lg">สแกนจ่าย</p>
-                <p class="text-white/80 text-sm mt-1">สแกน QR เพื่อโอนเงิน</p>
-            </div>
-        </a>
-    </div>
-
-    {{-- Debt Warning Card (แสดงเฉพาะเมื่อมีหนี้ active) --}}
-    @if(isset($debtSummary) && $debtSummary['has_active_debt'])
-    <a href="{{ route('user.wallet.debts') }}" class="block group">
-        <div class="relative overflow-hidden bg-gradient-to-r from-red-500 via-orange-500 to-amber-500 dark:from-red-700 dark:via-orange-700 dark:to-amber-700 rounded-2xl shadow-xl p-6 text-white transition-all duration-300 group-hover:shadow-2xl group-hover:scale-[1.01]">
-            <div class="absolute -right-6 -top-6 opacity-10">
-                <i class="fas fa-exclamation-triangle text-9xl text-white"></i>
-            </div>
-            <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
-                        <i class="fas fa-file-invoice-dollar text-2xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-bold">คุณมีหนี้ค้างชำระ</h3>
-                        <p class="text-white/80 text-sm">{{ $debtSummary['debt_count'] }} รายการ &middot; ระบบจะหักจากรายได้อัตโนมัติ 50%</p>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <p class="text-3xl font-bold">฿{{ number_format($debtSummary['total_debt'], 2) }}</p>
-                    <p class="text-white/70 text-xs mt-1">ดูรายละเอียด <i class="fas fa-arrow-right ml-1"></i></p>
-                </div>
-            </div>
+    {{-- ── เตือนหนี้ค้างชำระ ─────────────────────────────────── --}}
+    @if(isset($debtSummary) && ($debtSummary['has_active_debt'] ?? false))
+    <a href="{{ route('user.wallet.debts') }}" class="tp-card tp-card-hover" style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; padding:16px 18px; text-decoration:none; color:inherit; box-shadow:var(--inset-sm); border-left:4px solid #d9534f;">
+        <span class="tp-tile" style="width:44px; height:44px; border-radius:13px; font-size:18px; background:#d9534f;"><i class="fas fa-file-invoice-dollar" style="color:#fff;"></i></span>
+        <div style="flex:1; min-width:180px;">
+            <div style="font-weight:700; font-size:14px;">คุณมีหนี้ค้างชำระ</div>
+            <div style="font-size:12px; color:var(--ink2); margin-top:2px;">{{ $debtSummary['debt_count'] ?? 0 }} รายการ · ระบบจะหักจากรายได้อัตโนมัติ 50%</div>
+        </div>
+        <div style="text-align:right;">
+            <div class="tp-num" style="font-size:22px; font-weight:800; color:#d9534f;">฿{{ number_format($debtSummary['total_debt'] ?? 0, 2) }}</div>
+            <div style="font-size:11px; color:var(--ink2);">ดูรายละเอียด →</div>
         </div>
     </a>
     @endif
 
-    {{-- Statistics Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <x-arrow-x.stats.card-3d
-            :value="'฿' . number_format($wallet->total_income, 2)"
-            label="รายรับทั้งหมด"
-            icon="fas fa-arrow-down"
-            gradient="from-green-500 to-emerald-600"
-        />
-
-        <x-arrow-x.stats.card-3d
-            :value="'฿' . number_format($wallet->total_expense, 2)"
-            label="รายจ่ายทั้งหมด"
-            icon="fas fa-arrow-up"
-            gradient="from-red-500 to-rose-600"
-        />
-
-        <x-arrow-x.stats.card-3d
-            :value="'฿' . number_format($wallet->balance, 2)"
-            label="ยอดเงินคงเหลือ"
-            icon="fas fa-wallet"
-            gradient="from-blue-500 to-indigo-600"
-        />
-
-        <x-arrow-x.stats.card-3d
-            :value="'฿' . number_format($cashbackStats['total'] ?? 0, 2)"
-            label="Cashback ทั้งหมด"
-            subtitle="{{ ($cashbackStats['count'] ?? 0) }} ครั้ง"
-            icon="fas fa-gift"
-            gradient="from-amber-500 to-orange-600"
-        />
+    {{-- ── สถิติ 4 ใบ ───────────────────────────────────────── --}}
+    @php
+        $wStats = [
+            ['รายรับทั้งหมด', '฿' . number_format($wallet->total_income, 2), 'fa-arrow-down', '#5aa07e'],
+            ['รายจ่ายทั้งหมด', '฿' . number_format($wallet->total_expense, 2), 'fa-arrow-up', '#d9534f'],
+            ['ยอดเงินคงเหลือ', '฿' . number_format($wallet->balance, 2), 'fa-wallet', '#5689b8'],
+            ['Cashback ทั้งหมด', '฿' . number_format($cashbackStats['total'] ?? 0, 2), 'fa-gift', '#e0a52e'],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
+        @foreach($wStats as [$label, $val, $icon, $color])
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $label }}</div>
+                    <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:15px; background:color-mix(in srgb, {{ $color }} 18%, transparent);"><i class="fas {{ $icon }}" style="color:{{ $color }};"></i></span>
+                </div>
+                <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:10px;">{{ $val }}</div>
+                @if($label === 'Cashback ทั้งหมด')
+                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">{{ $cashbackStats['count'] ?? 0 }} ครั้ง</div>
+                @endif
+            </div>
+        @endforeach
     </div>
 
-    {{-- Admin Adjustments Card --}}
-    @if(isset($adminStats) && $adminStats['total'] > 0)
-    <div class="bg-gradient-to-br from-purple-500 via-indigo-500 to-purple-600 dark:from-purple-600 dark:via-indigo-600 dark:to-purple-700 rounded-2xl shadow-xl p-6 text-white">
-        <div class="flex items-center justify-between mb-4">
-            <div class="text-5xl">⚡</div>
+    {{-- ── เงินจากแอดมิน/ระบบ ────────────────────────────────── --}}
+    @if(isset($adminStats) && ($adminStats['total'] ?? 0) > 0)
+    <div class="tp-card" style="padding:20px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:18px;">⚡</span>
+            <div>
+                <div style="font-size:12.5px; color:var(--ink2);">เงินที่ได้จากแอดมิน/ระบบ</div>
+                <div class="tp-num" style="font-size:28px; font-weight:800; color:var(--deep1);">฿{{ number_format($adminStats['total'] ?? 0, 2) }}</div>
+            </div>
+            <span class="tp-pill tp-pill-soft" style="margin-left:auto;">{{ $adminStats['count'] ?? 0 }} ครั้ง</span>
         </div>
-        <p class="text-white/80 text-sm mb-1">เงินที่ได้จากแอดมิน/ระบบ</p>
-        <p class="text-4xl md:text-5xl font-bold">฿{{ number_format($adminStats['total'] ?? 0, 2) }}</p>
-        <p class="text-xs text-white/70 mt-2">{{ $adminStats['count'] ?? 0 }} ครั้ง</p>
-        <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/20">
-            <div>
-                <p class="text-xs text-white/70 mb-1">เดือนนี้</p>
-                <p class="text-lg font-bold">฿{{ number_format($adminStats['this_month'] ?? 0, 2) }}</p>
-            </div>
-            <div>
-                <p class="text-xs text-white/70 mb-1">30 วันล่าสุด</p>
-                <p class="text-lg font-bold">฿{{ number_format($adminStats['last_30_days'] ?? 0, 2) }}</p>
-            </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; padding-top:14px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+            <div><div style="font-size:11px; color:var(--ink2);">เดือนนี้</div><div class="tp-num" style="font-weight:700;">฿{{ number_format($adminStats['this_month'] ?? 0, 2) }}</div></div>
+            <div><div style="font-size:11px; color:var(--ink2);">30 วันล่าสุด</div><div class="tp-num" style="font-weight:700;">฿{{ number_format($adminStats['last_30_days'] ?? 0, 2) }}</div></div>
         </div>
     </div>
     @endif
 
-    {{-- Cashback Details --}}
-    @if(isset($cashbackStats) && $cashbackStats['total'] > 0)
-    <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 backdrop-blur-sm border-2 border-green-200 dark:border-green-800 rounded-2xl shadow-lg p-6">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h3 class="text-xl font-bold text-green-800 dark:text-green-300 flex items-center gap-2">
-                    <span class="text-2xl">💸</span>
-                    สถิติ Cashback
-                </h3>
-                <p class="text-sm text-green-600 dark:text-green-400 mt-1">รายรับจากการคืนเงิน</p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div class="bg-white/60 dark:bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-green-200 dark:border-green-800">
-                <p class="text-sm text-gray-700 dark:text-gray-300 mb-1">Cashback เดือนนี้</p>
-                <p class="text-2xl font-bold text-green-600 dark:text-green-400">฿{{ number_format($cashbackStats['this_month'] ?? 0, 2) }}</p>
-            </div>
-
-            <div class="bg-white/60 dark:bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-green-200 dark:border-green-800">
-                <p class="text-sm text-gray-700 dark:text-gray-300 mb-1">30 วันล่าสุด</p>
-                <p class="text-2xl font-bold text-green-600 dark:text-green-400">฿{{ number_format($cashbackStats['last_30_days'] ?? 0, 2) }}</p>
-            </div>
-
-            <div class="bg-white/60 dark:bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-green-200 dark:border-green-800">
-                <p class="text-sm text-gray-700 dark:text-gray-300 mb-1">Cashback เฉลี่ย</p>
-                <p class="text-2xl font-bold text-green-600 dark:text-green-400">
-                    ฿{{ $cashbackStats['count'] > 0 ? number_format($cashbackStats['total'] / $cashbackStats['count'], 2) : '0.00' }}
-                </p>
-            </div>
+    {{-- ── สถิติ Cashback ─────────────────────────────────────── --}}
+    @if(isset($cashbackStats) && ($cashbackStats['total'] ?? 0) > 0)
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">💸 สถิติ Cashback</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;">
+            <div style="padding:13px; border-radius:13px; box-shadow:var(--inset-sm);"><div style="font-size:12px; color:var(--ink2);">Cashback เดือนนี้</div><div class="tp-num" style="font-size:20px; font-weight:800; color:#5aa07e;">฿{{ number_format($cashbackStats['this_month'] ?? 0, 2) }}</div></div>
+            <div style="padding:13px; border-radius:13px; box-shadow:var(--inset-sm);"><div style="font-size:12px; color:var(--ink2);">30 วันล่าสุด</div><div class="tp-num" style="font-size:20px; font-weight:800; color:#5aa07e;">฿{{ number_format($cashbackStats['last_30_days'] ?? 0, 2) }}</div></div>
+            <div style="padding:13px; border-radius:13px; box-shadow:var(--inset-sm);"><div style="font-size:12px; color:var(--ink2);">Cashback เฉลี่ย</div><div class="tp-num" style="font-size:20px; font-weight:800; color:#5aa07e;">฿{{ ($cashbackStats['count'] ?? 0) > 0 ? number_format($cashbackStats['total'] / $cashbackStats['count'], 2) : '0.00' }}</div></div>
         </div>
     </div>
     @endif
 
-    {{-- Additional Statistics --}}
+    {{-- ── สถิติเพิ่มเติม ──────────────────────────────────────── --}}
     @if(isset($statistics) && !empty($statistics))
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px;">
         @foreach($statistics as $key => $stat)
-            <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-4">
-                <div class="flex items-center gap-3">
-                    <div class="text-4xl">{{ $stat['icon'] ?? '📊' }}</div>
-                    <div>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $stat['label'] ?? ucfirst($key) }}</p>
-                        <p class="text-xl font-bold text-gray-900 dark:text-white">{{ $stat['value'] ?? '0' }}</p>
-                    </div>
+            <div class="tp-card" style="padding:15px; display:flex; align-items:center; gap:11px;">
+                <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:18px;">{{ is_array($stat) ? ($stat['icon'] ?? '📊') : '📊' }}</span>
+                <div style="min-width:0;">
+                    <div style="font-size:11px; color:var(--ink2);">{{ is_array($stat) ? ($stat['label'] ?? Str::headline((string) $key)) : Str::headline((string) $key) }}</div>
+                    <div class="tp-num" style="font-size:18px; font-weight:800;">{{ is_array($stat) ? ($stat['value'] ?? '0') : $stat }}</div>
                 </div>
             </div>
         @endforeach
     </div>
     @endif
 
-    {{-- Recent Transactions --}}
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl overflow-hidden">
-        <div class="px-8 py-6 border-b border-gray-200 dark:border-white/10">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <i class="fas fa-history text-indigo-600 dark:text-indigo-400"></i>
-                        รายการธุรกรรมล่าสุด
-                    </h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">10 รายการล่าสุด</p>
-                </div>
-                <a href="{{ route('user.wallet.transactions') }}" class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold">
-                    ดูทั้งหมด →
-                </a>
+    {{-- ── รายการธุรกรรมล่าสุด ──────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:18px 20px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+            <div>
+                <div class="tp-section-h">🕑 รายการธุรกรรมล่าสุด</div>
+                <div style="font-size:11px; color:var(--ink2); margin-top:2px;">10 รายการล่าสุด</div>
             </div>
+            <a href="{{ route('user.wallet.transactions') }}" class="tp-btn tp-btn-sm">ดูทั้งหมด →</a>
         </div>
-
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-white/60 dark:bg-white/10">
-                    <tr>
-                        <th class="text-left py-3 px-6 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">ประเภท</th>
-                        <th class="text-left py-3 px-6 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">รายละเอียด</th>
-                        <th class="text-right py-3 px-6 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">จำนวนเงิน</th>
-                        <th class="text-center py-3 px-6 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">สถานะ</th>
-                        <th class="text-right py-3 px-6 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">วันที่</th>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
+                        <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;">ประเภท</th>
+                        <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;">รายละเอียด</th>
+                        <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">จำนวนเงิน</th>
+                        <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:center;">สถานะ</th>
+                        <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">วันที่</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+                <tbody>
                     @forelse($recentTransactions as $transaction)
-                        <tr class="hover:bg-white/80 dark:hover:bg-white/10 transition-all duration-200">
-                            <td class="py-4 px-6">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-2xl">{{ $transaction->type_icon }}</span>
-                                    <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $transaction->type_label }}</span>
+                        <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                            <td style="padding:12px 16px; white-space:nowrap;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-size:18px;">{{ $transaction->type_icon }}</span>
+                                    <span style="font-size:12.5px; font-weight:600;">{{ $transaction->type_label }}</span>
                                 </div>
                             </td>
-                            <td class="py-4 px-6">
-                                <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ $transaction->description }}</p>
+                            <td style="padding:12px 16px;">
+                                <div style="font-size:12.5px; font-weight:600;">{{ $transaction->description }}</div>
                                 @if($transaction->relatedWallet)
-                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                        {{ $transaction->type === 'transfer_in' ? 'จาก' : 'ถึง' }}: {{ $transaction->relatedWallet->user->name }}
-                                    </p>
+                                    <div style="font-size:11px; color:var(--ink2);">{{ $transaction->type === 'transfer_in' ? 'จาก' : 'ถึง' }}: {{ $transaction->relatedWallet->user->name ?? '—' }}</div>
                                 @endif
-                                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">ID: {{ $transaction->transaction_id }}</p>
+                                <div class="tp-num" style="font-size:10.5px; color:var(--ink2);">ID: {{ $transaction->transaction_id }}</div>
                             </td>
-                            <td class="py-4 px-6 text-right">
-                                <span class="text-sm font-bold {{ in_array($transaction->type, ['deposit', 'transfer_in', 'commission', 'refund', 'bonus']) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
-                                    {{ $transaction->formatted_amount }}
-                                </span>
+                            <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; color:{{ in_array($transaction->type, $incomeTypes) ? '#5aa07e' : '#d9534f' }};">{{ $transaction->formatted_amount }}</td>
+                            <td style="padding:12px 16px; text-align:center; white-space:nowrap;">
+                                <span class="tp-pill" style="color:{{ $txColor($transaction->status_color) }}; background:color-mix(in srgb, {{ $txColor($transaction->status_color) }} 16%, transparent);">{{ $transaction->status_label }}</span>
                             </td>
-                            <td class="py-4 px-6 text-center">
-                                <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-{{ $transaction->status_color }}-100 dark:bg-{{ $transaction->status_color }}-900/30 text-{{ $transaction->status_color }}-800 dark:text-{{ $transaction->status_color }}-300">
-                                    {{ $transaction->status_label }}
-                                </span>
-                            </td>
-                            <td class="py-4 px-6 text-right">
-                                <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ $transaction->created_at->format('d/m/Y') }}</p>
-                                <p class="text-xs text-gray-600 dark:text-gray-400">{{ $transaction->created_at->format('H:i') }}</p>
+                            <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap;">
+                                <div>{{ $transaction->created_at->format('d/m/Y') }}</div>
+                                <div style="font-size:11px; color:var(--ink2);">{{ $transaction->created_at->format('H:i') }}</div>
                             </td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="5" class="py-16 text-center">
-                                <div class="inline-block p-6 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-full mb-4">
-                                    <i class="fas fa-inbox text-6xl text-indigo-600 dark:text-indigo-400"></i>
-                                </div>
-                                <p class="text-gray-600 dark:text-gray-400 text-lg font-semibold">ยังไม่มีรายการธุรกรรม</p>
-                            </td>
-                        </tr>
+                        <tr><td colspan="5" style="padding:48px 20px; text-align:center; color:var(--ink2);"><div style="font-size:46px; opacity:.5;">📭</div><div style="margin-top:8px; font-weight:600;">ยังไม่มีรายการธุรกรรม</div></td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
 
-    {{-- Payment Methods --}}
+    {{-- ── ช่องทางรับเงิน ─────────────────────────────────────── --}}
     @if($paymentMethods->isNotEmpty())
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <div class="flex items-center justify-between mb-6">
+    <div class="tp-card" style="padding:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;">
             <div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <i class="fas fa-university text-blue-600 dark:text-blue-400"></i>
-                    ช่องทางรับเงิน
-                </h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">บัญชีสำหรับถอนเงิน</p>
+                <div class="tp-section-h">🏦 ช่องทางรับเงิน</div>
+                <div style="font-size:11px; color:var(--ink2); margin-top:2px;">บัญชีสำหรับถอนเงิน</div>
             </div>
-            <a href="{{ route('user.wallet.payment-methods') }}" class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold">
-                จัดการ →
-            </a>
+            <a href="{{ route('user.wallet.payment-methods') }}" class="tp-btn tp-btn-sm">จัดการ →</a>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
             @foreach($paymentMethods as $method)
-                <div class="bg-white/60 dark:bg-white/10 backdrop-blur-sm border-2 border-gray-200 dark:border-white/20 rounded-xl p-4 hover:bg-white/80 dark:hover:bg-white/15 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center gap-2">
-                            <span class="text-2xl">
-                                @if($method->type === 'promptpay') 💳
-                                @elseif($method->type === 'bank_transfer') 🏦
-                                @elseif($method->type === 'paypal') 💰
-                                @else 💵
-                                @endif
-                            </span>
-                            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $method->name }}</span>
+                <div style="padding:14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:18px;">@if($method->type === 'promptpay')💳@elseif($method->type === 'bank_transfer')🏦@elseif($method->type === 'paypal')💰@else💵@endif</span>
+                            <span style="font-size:13px; font-weight:700;">{{ $method->name }}</span>
                         </div>
-                        @if($method->is_default)
-                            <span class="px-2 py-1 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-800 dark:text-green-300 rounded-lg text-xs font-bold">
-                                ค่าเริ่มต้น
-                            </span>
-                        @endif
+                        @if($method->is_default)<span class="tp-pill" style="color:#fff; background:#5aa07e;">ค่าเริ่มต้น</span>@endif
                     </div>
-
                     @if($method->type === 'bank_transfer')
-                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $method->bank_name }}</p>
-                        <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ $method->account_name }}</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $method->account_number }}</p>
+                        <div style="font-size:11px; color:var(--ink2);">{{ $method->bank_name }}</div>
+                        <div style="font-size:13px; font-weight:600;">{{ $method->account_name }}</div>
+                        <div class="tp-num" style="font-size:12px; color:var(--ink2);">{{ $method->account_number }}</div>
                     @elseif($method->type === 'promptpay')
-                        <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ $method->account_name }}</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $method->account_number }}</p>
+                        <div style="font-size:13px; font-weight:600;">{{ $method->account_name }}</div>
+                        <div class="tp-num" style="font-size:12px; color:var(--ink2);">{{ $method->account_number }}</div>
                     @elseif($method->type === 'paypal')
-                        <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ $method->paypal_email }}</p>
+                        <div style="font-size:13px; font-weight:600;">{{ $method->paypal_email }}</div>
                     @endif
                 </div>
             @endforeach
@@ -400,88 +246,45 @@
     </div>
     @endif
 
-    {{-- Available Payment Gateways --}}
+    {{-- ── ช่องทางการฝากเงิน ─────────────────────────────────── --}}
     @if(isset($availableGateways) && !empty($availableGateways))
-    <div class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600 rounded-2xl shadow-xl p-6 text-white">
-        <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
-            <i class="fas fa-credit-card"></i>
-            ช่องทางการฝากเงิน
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:14px;">💳 ช่องทางการฝากเงิน</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px;">
             @foreach($availableGateways as $gateway)
-                <div class="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl p-4 text-center transition-all duration-200">
-                    <div class="text-4xl mb-2">{{ $gateway['icon'] ?? '💰' }}</div>
-                    <p class="text-sm font-semibold">{{ $gateway['name'] ?? 'Gateway' }}</p>
+                <div style="padding:15px 10px; border-radius:13px; box-shadow:var(--inset-sm); text-align:center;">
+                    <div style="font-size:28px;">{{ $gateway['icon'] ?? '💰' }}</div>
+                    <div style="font-size:12.5px; font-weight:600; margin-top:4px;">{{ $gateway['name'] ?? 'Gateway' }}</div>
                 </div>
             @endforeach
         </div>
     </div>
     @endif
 
-    {{-- Wallet Status Alert --}}
+    {{-- ── แจ้งกระเป๋าถูกล็อก ─────────────────────────────────── --}}
     @if($wallet->isLocked())
-        <x-arrow-x.alert-v3 type="error">
-            <div class="flex items-center gap-3">
-                <span class="text-3xl">🔒</span>
-                <div>
-                    <p class="font-semibold text-lg">กระเป๋าเงินของคุณถูกล็อก</p>
-                    <p class="text-sm">กรุณาติดต่อฝ่ายสนับสนุนเพื่อปลดล็อค</p>
-                    @if($wallet->locked_until)
-                        <p class="text-xs mt-1">ล็อคจนถึง: {{ $wallet->locked_until->format('d/m/Y H:i') }}</p>
-                    @endif
-                </div>
-            </div>
-        </x-arrow-x.alert-v3>
+    <div class="tp-card" style="padding:16px 18px; display:flex; align-items:center; gap:14px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f;">
+        <span class="tp-tile" style="width:44px; height:44px; border-radius:13px; font-size:20px; background:#d9534f;">🔒</span>
+        <div>
+            <div style="font-weight:700;">กระเป๋าเงินของคุณถูกล็อก</div>
+            <div style="font-size:12.5px; color:var(--ink2);">กรุณาติดต่อฝ่ายสนับสนุนเพื่อปลดล็อก</div>
+            @if($wallet->locked_until)<div style="font-size:11px; color:var(--ink2); margin-top:2px;">ล็อกจนถึง: {{ $wallet->locked_until->format('d/m/Y H:i') }}</div>@endif
+        </div>
+    </div>
     @endif
 </div>
 
 @push('scripts')
 <script>
-// Copy Wallet Address Function
 function copyWalletAddress() {
-    const walletAddress = '{{ $wallet->wallet_address }}';
-
-    navigator.clipboard.writeText(walletAddress).then(() => {
-        // Create toast notification
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
-        toast.innerHTML = '✅ คัดลอก Wallet Address สำเร็จ!';
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
-    }).catch(err => {
-        console.error('Failed to copy:', err);
-        alert('เกิดข้อผิดพลาดในการคัดลอก');
+    var addr = @json($wallet->wallet_address ?? '');
+    if (!addr) return;
+    navigator.clipboard.writeText(addr).then(function () {
+        if (window.showNotification) window.showNotification('คัดลอก Wallet Address สำเร็จ!', 'success');
+    }).catch(function () {
+        if (window.showNotification) window.showNotification('คัดลอกไม่สำเร็จ', 'error');
     });
 }
 </script>
-
-<style>
-@keyframes fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
-}
-
-.animate-fade-in {
-    animation: fade-in 0.3s ease-out;
-}
-</style>
 @endpush
 @endsection
