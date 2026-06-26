@@ -30,6 +30,10 @@ class FortuneCelticCrossController extends Controller
      */
     public function index(Request $request)
     {
+        // 🛡️ (2026-06-26) อ่าน settings สดจาก DB เสมอ — กันหน้าตั้งค่าโชว์ค่าเก่า
+        //   (php-fpm มีหลาย process แต่ละตัวถือ static cache แยก → process ที่เสิร์ฟหน้านี้
+        //    อาจถือค่าเก่าที่ไม่ถูกล้างตอนกดบันทึก = แอดมินเห็น "ค่าไม่จำ" ทั้งที่ DB อัปเดตแล้ว)
+        FortuneTellingSetting::clearSettingsCache();
         $settings = FortuneTellingSetting::getSettings();
 
         // สถิติ Celtic Cross
