@@ -823,10 +823,26 @@ class FortuneTellingSetting extends Model
      */
     protected static ?self $cachedInstance = null;
 
+    /**
+     * เวลาที่ cache static ล่าสุด (microtime) — ใช้คู่กับ TTL
+     */
+    protected static float $cachedAt = 0.0;
+
+    /**
+     * 🛡️ (2026-06-26) TTL ของ static memo (วินาที)
+     *
+     * เดิม static memo ไม่มีหมดอายุ → ใน "โปรเซสที่รันยาว" (fortune-queue-worker / octane)
+     * จะถือ settings ค้างตั้งแต่ตอนเริ่มโปรเซส → แอดมินกดบันทึกแล้ว "ไม่มีผล" จนกว่าจะ restart worker
+     * (clearSettingsCache ล้างได้แค่ใน php-fpm ที่กดบันทึก ไม่ถึง worker). ใส่ TTL สั้น → worker
+     * อ่านใหม่ทุก ≤N วิ = การตั้งค่ามีผลภายในไม่กี่วินาทีเอง โดยไม่ต้อง restart
+     */
+    protected const SETTINGS_CACHE_TTL_SEC = 5;
+
     public static function getSettings(): self
     {
-        // ⚡ Cache per-request: ลดจาก 3+ DB queries เหลือ 1
-        if (static::$cachedInstance !== null) {
+        // ⚡ static memo ลด DB query — แต่มี TTL กัน long-running worker/octane ถือค้าง (admin แก้ไม่มีผล)
+        if (static::$cachedInstance !== null
+            && (microtime(true) - static::$cachedAt) < self::SETTINGS_CACHE_TTL_SEC) {
             return static::$cachedInstance;
         }
 
@@ -843,6 +859,7 @@ class FortuneTellingSetting extends Model
         }
 
         static::$cachedInstance = $settings;
+        static::$cachedAt = microtime(true);
 
         return $settings;
     }
@@ -853,6 +870,7 @@ class FortuneTellingSetting extends Model
     public static function clearSettingsCache(): void
     {
         static::$cachedInstance = null;
+        static::$cachedAt = 0.0;
     }
 
     // ════════════════════════════════════════════════════════════
