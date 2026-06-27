@@ -237,7 +237,7 @@
                     </label>
                     <div class="tp-well tp-input" style="padding:0;">
                         <input type="number" name="celtic_cross_max_questions"
-                               value="{{ $settings->celtic_cross_max_questions ?? 5 }}" min="0" max="50"
+                               value="{{ $settings->celtic_cross_max_questions ?? 0 }}" min="0" max="50"
                                style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
                     </div>
                     <div style="font-size:11px; color:var(--ink2); margin-top:5px;">📊 บังคับ enforcement (2026-05-03) — ครบโควต้าจะจบ session ให้คำตอบสุดท้าย</div>

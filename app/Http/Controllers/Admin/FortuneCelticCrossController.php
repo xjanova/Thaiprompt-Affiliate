@@ -132,9 +132,10 @@ class FortuneCelticCrossController extends Controller
             'enable_bill_payment_nudge' => 'sometimes|boolean',
             'fortune_consent_cancel_enabled' => 'sometimes|boolean',
             'celtic_cross_price' => 'numeric|min:1|max:9999',
-            // 🌙 (2026-05-23 v3) Hard cap 5 คำถาม / 15 นาที — บังคับให้ min 1 (ไม่ใช่ 0)
-            //    user spec: "ถาม 5 คำถาม ภายใน 15 นาที และต้องบอกกติการให้ชัดทุกที่"
-            'celtic_cross_max_questions' => 'integer|min:1|max:50',
+            // 🔢 (2026-06-27) min:0 — 0 = ไม่จำกัดคำถาม (ตาม design unlimited 2026-06-07 + blade ระบุ "0 = ไม่จำกัด")
+            //    ⚠️ เดิม min:1 → validation reject 0 → admin ตั้งไม่จำกัดไม่ได้ + ทั้งหน้าเซฟไม่ผ่าน
+            //    ถ้าเผลอแก้เป็น >=1 เพื่อให้เซฟผ่าน = ทับ "ไม่จำกัด" กลับเป็น cap (เคส FTU-260627-U1003 ถูกตัดที่ 5Q)
+            'celtic_cross_max_questions' => 'integer|min:0|max:50',
             'celtic_cross_qa_window_minutes' => 'integer|min:5|max:1440',
             'celtic_cross_main_prompt' => 'nullable|string|max:10000',
             'celtic_cross_followup_prompt' => 'nullable|string|max:10000',
@@ -158,7 +159,10 @@ class FortuneCelticCrossController extends Controller
         // ถามก่อนยกเลิกบิล (ของเดิม fortune_consent_cancel_enabled — ย้ายมาคุมที่หน้านี้ด้วย)
         $settings->fortune_consent_cancel_enabled = $request->boolean('fortune_consent_cancel_enabled');
         $settings->celtic_cross_price = $validated['celtic_cross_price'] ?? 99.00;
-        $settings->celtic_cross_max_questions = $validated['celtic_cross_max_questions'] ?? 5;
+        // ❗ ห้าม default 5 — ถ้า field ไม่ถูกส่งมา ให้คงค่าเดิม (กันทับ "ไม่จำกัด" 0 → 5 โดยไม่ตั้งใจ)
+        if (array_key_exists('celtic_cross_max_questions', $validated)) {
+            $settings->celtic_cross_max_questions = (int) $validated['celtic_cross_max_questions'];
+        }
         $settings->celtic_cross_qa_window_minutes = $validated['celtic_cross_qa_window_minutes'] ?? 15;
 
         // เก็บ prompt เฉพาะถ้าส่งมา (เว้นว่าง = ใช้ default ใน CelticCrossService)
@@ -189,7 +193,7 @@ class FortuneCelticCrossController extends Controller
             'reading' => $reading,
             'cards' => $cards,
             'positions' => FortuneReading::CELTIC_POSITIONS,
-            'maxQuestions' => (int) ($settings->celtic_cross_max_questions ?? 5),
+            'maxQuestions' => (int) ($settings->celtic_cross_max_questions ?? 0), // 0 = ไม่จำกัด
             'pageTitle' => "Celtic Cross #{$reading->id}",
         ]);
     }
