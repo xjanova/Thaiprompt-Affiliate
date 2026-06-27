@@ -234,18 +234,24 @@ class MysticContentAutoPostService
 
             $body = trim($result['response'] ?? '');
 
-            // ลบ hashtag ที่ AI อาจใส่มาเอง
-            $body = preg_replace('/#[^\s#]+/u', '', $body);
-            $body = trim(preg_replace('/\s+/u', ' ', $body));
+            // ลบ hashtag ที่ AI อาจใส่มาเอง (กันซ้ำกับ hashtag ที่ระบบเติมท้าย)
+            //   (?? $body กัน preg_replace คืน null ตอน PCRE error → ไม่ให้ TypeError ปลายทาง)
+            $body = preg_replace('/#[^\s#]+/u', '', $body) ?? $body;
+
+            // ลบ markdown ที่ AI อาจหลุดมา (**, ##) — แต่ "คงบรรทัดใหม่" ไว้เพื่อให้อ่านง่าย
+            $body = preg_replace('/\*{1,3}|#{1,6}/u', '', $body) ?? $body;
+
+            // ✅ Normalize เฉพาะช่องว่าง "แนวนอน" — เก็บ \n ไว้รักษาย่อหน้า/อิโมจิขึ้นบรรทัด
+            //    (เดิม preg_replace('/\s+/u', ' ') ยุบ \n หมด → กลายเป็นพืดเดียว คนอ่านงง)
+            $body = $this->normalizeWhitespace($body);
 
             if ($body === '' || mb_strlen($body) < 100) {
                 throw new Exception('AI body สั้นเกินไป ('.mb_strlen($body).' ตัวอักษร)');
             }
 
-            // ตัดถ้ายาวเกิน max + buffer 100
-            if (mb_strlen($body) > $maxLen + 100) {
-                $body = mb_substr($body, 0, $maxLen + 50).'...';
-            }
+            // ✅ ตัด "เฉพาะตอนยาวเกินเพดานจริงๆ" และตัดที่จุดจบประโยค/ย่อหน้าเท่านั้น
+            //    กันอาการข้อความขาดกลางประโยค (เดิม mb_substr(maxLen+50).'...' ตัดดิบกลางคำ)
+            $body = $this->trimToSentenceBoundary($body, $maxLen);
 
             return $body."\n\n".$hashtagLine;
         } catch (Exception $e) {
@@ -285,6 +291,87 @@ class MysticContentAutoPostService
         $cta = "💬 ใครเคยมีประสบการณ์แบบนี้ คอมเมนต์เล่าได้นะ — แม่หมอจันทราคอยอยู่\n\n";
 
         return $intro.$body.$cta.$hashtagLine;
+    }
+
+    /**
+     * Normalize ช่องว่างโดย "รักษาการขึ้นบรรทัดใหม่" — เพื่อให้โพสเป็นย่อหน้า อ่านง่าย
+     *
+     * - ยุบ space/tab ซ้ำในบรรทัดเดียวกัน (ไม่ยุ่งกับ \n)
+     * - ตัดช่องว่างหัว-ท้ายของแต่ละบรรทัด
+     * - ยุบบรรทัดว่างเกิน 2 → เหลือ 1 บรรทัดว่าง (คั่นย่อหน้าพอดี ไม่โหว่)
+     *
+     * @param  string  $text  เนื้อหาดิบจาก AI
+     * @return string  เนื้อหาที่จัดช่องว่างแล้ว แต่ยังคงย่อหน้าไว้ครบ
+     */
+    protected function normalizeWhitespace(string $text): string
+    {
+        // รวมรูปแบบ line ending ให้เป็น \n อย่างเดียว
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+
+        // ยุบ space/tab/non-breaking space ที่ติดกันในบรรทัด (ไม่แตะ \n)
+        $text = preg_replace('/[ \t\x{00A0}]+/u', ' ', $text) ?? $text;
+
+        // ตัดช่องว่างหัว-ท้ายรอบ ๆ การขึ้นบรรทัดใหม่
+        $text = preg_replace('/[ \t]*\n[ \t]*/u', "\n", $text) ?? $text;
+
+        // บรรทัดว่างเกิน 2 → เหลือ 2 (\n\n = 1 บรรทัดว่างคั่นย่อหน้า)
+        $text = preg_replace('/\n{3,}/u', "\n\n", $text) ?? $text;
+
+        return trim($text);
+    }
+
+    /**
+     * ตัดข้อความให้จบ "ที่ประโยค/ย่อหน้าสมบูรณ์" เมื่อยาวเกินเพดาน — ไม่ตัดกลางประโยค
+     *
+     * เป้าหมายหลัก: "ข้อความออกครบ"
+     * - ถ้ายังอยู่ในเพดาน (max + เผื่อ) → คืนทั้งหมด ไม่ตัดอะไรเลย
+     * - ถ้าเกินจริง → ถอยหลังหาจุดจบที่ใกล้สุด ลำดับ: ย่อหน้า > บรรทัด > .!?ฯ > เว้นวรรค
+     * - "ไม่เติม ..." เพราะจุดไข่ปลาทำให้ดูเหมือนข้อความขาด
+     *
+     * @param  string  $text  เนื้อหา (normalize แล้ว)
+     * @param  int  $maxLen  ความยาวเป้าหมายสูงสุด (ตัวอักษร, ไม่รวม hashtag)
+     */
+    protected function trimToSentenceBoundary(string $text, int $maxLen): string
+    {
+        // เพดานจริง — เผื่อให้ยาวกว่าเป้าได้พอควร (Facebook รับข้อความยาวอยู่แล้ว)
+        $ceiling = max($maxLen + 250, (int) round($maxLen * 1.4));
+        if (mb_strlen($text) <= $ceiling) {
+            return $text;
+        }
+
+        $head = mb_substr($text, 0, $ceiling);
+        $minKeep = (int) round($maxLen * 0.5);
+
+        // 1) จบที่ "ย่อหน้า/บรรทัดใหม่" — จุดตัดธรรมชาติที่สุดของโพส
+        foreach (["\n\n", "\n"] as $brk) {
+            $pos = mb_strrpos($head, $brk);
+            if ($pos !== false && $pos >= $minKeep) {
+                return rtrim(mb_substr($head, 0, $pos));
+            }
+        }
+
+        // 2) จบที่เครื่องหมายจบประโยค (ตามด้วยช่องว่าง = จุดจบจริง)
+        $best = false;
+        foreach (['. ', '! ', '? ', 'ฯ ', '。'] as $needle) {
+            $pos = mb_strrpos($head, $needle);
+            if ($pos !== false) {
+                $end = $pos + mb_strlen($needle);
+                if ($best === false || $end > $best) {
+                    $best = $end;
+                }
+            }
+        }
+        if ($best !== false && $best >= $minKeep) {
+            return rtrim(mb_substr($head, 0, $best));
+        }
+
+        // 3) สุดท้าย: ตัดที่เว้นวรรคคำสุดท้าย (อย่างน้อยไม่ตัดกลางคำ) — ไม่เติม ...
+        $pos = mb_strrpos($head, ' ');
+        if ($pos !== false && $pos >= $minKeep) {
+            return rtrim(mb_substr($head, 0, $pos));
+        }
+
+        return rtrim($head);
     }
 
     /**
