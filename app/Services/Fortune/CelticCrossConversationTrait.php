@@ -572,7 +572,9 @@ trait CelticCrossConversationTrait
         //   เคสจริง (มุกดา แสนนุภาพ FTU-260620): พิมพ์ "QR" ที่ tier_choice → tier_choice_invalid
         //   "เลือกแพคเกจอีกครั้ง" → ลูกค้างงว่าทำไมไม่ส่ง QR. วางหลัง keyword tier (39/99/celtic ชนะก่อน)
         //   - เปิดแพคเกจเดียว → route ออก QR เลย / เปิดทั้งคู่ → ชวนเลือกแบบ payment-positive (มีปุ่มด้านล่าง)
-        $paymentIntentNoTier = ['qr', 'คิวอาร์', 'พร้อมโอน', 'ขอโอน', 'โอนเลย', 'พร้อมจ่าย', 'จ่ายเลย', 'ขอเลขบัญชี', 'ขอบัญชี', 'เลขบัญชี'];
+        // 🆕 (2026-06-27) เพิ่ม "ธนาคาร/บัญชี/พร้อมเพย์" — ลูกค้าถามช่องทางจ่ายตั้งแต่ยังไม่เลือกแพคเกจ
+        //   (เคสจริงที่เจ้าของยกมา: พิมพ์ "ธนาคาร" → เดิมหลุดไปกล่อง "เลือกแพคเกจอีกครั้ง")
+        $paymentIntentNoTier = ['qr', 'คิวอาร์', 'พร้อมโอน', 'ขอโอน', 'โอนเลย', 'พร้อมจ่าย', 'จ่ายเลย', 'ขอเลขบัญชี', 'ขอบัญชี', 'เลขบัญชี', 'ธนาคาร', 'บัญชี', 'พร้อมเพย์', 'promptpay'];
         foreach ($paymentIntentNoTier as $kw) {
             if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
                 // เปิดเฉพาะ Deep → ออก QR Deep ทันที
@@ -638,12 +640,24 @@ trait CelticCrossConversationTrait
             }
         }
 
-        // 🛡️ Safe guard — ถ้า looksLikeMetaOrChitchat/buildAIAssistedStepReminder ไม่มี (trait isolation)
+        // 🗣️ (2026-06-27) ขยาย gate — ระหว่าง "เลือกแพคเกจ" ลูกค้าพิมพ์อะไรที่ไม่ใช่คำสั่ง
+        //   ต้องให้ AI ตอบบริบท ไม่ใช่เด้งเมนูซ้ำ (เจ้าของสั่ง: "รับข้อความเพื่อจำแนกบริบท
+        //   ไม่ใช่เอาแต่ส่งกล่อง — เช่น 'ธนาคาร' / 'ไม่มีเงิน' ต้องคุยตอบปกติ")
+        //   เดิมจับแค่ tierHelp + meta/chitchat → "ไม่มีเงิน"/ประโยคทั่วไป หลุดไปกล่อง
+        //   เพิ่ม: looksLikeCustomerExcuseOrLifeUpdate (ไม่มีเงิน/ไฟดับ/รอแป๊บ/แพงไป...)
+        //          + catch-all ≥ 6 ตัวอักษร (คำสั่ง 39/99/celtic/qr ถูกจับไปหมดแล้วด้านบน)
+        $trimmedLen = mb_strlen(trim($messageText));
+        $looksSubstantive = $looksLikeTierHelp
+            || (method_exists($this, 'looksLikeMetaOrChitchat')
+                && $this->looksLikeMetaOrChitchat($messageText))
+            || (method_exists($this, 'looksLikeCustomerExcuseOrLifeUpdate')
+                && $this->looksLikeCustomerExcuseOrLifeUpdate($messageText))
+            || $trimmedLen >= 6;
+
+        // 🛡️ Safe guard — ถ้า buildAIAssistedStepReminder ไม่มี (trait isolation)
         //   หรือ throw exception → fallback re-show menu ปกติ ไม่ทำให้ flow crash
         try {
-            if ($looksLikeTierHelp
-                || (method_exists($this, 'looksLikeMetaOrChitchat')
-                    && $this->looksLikeMetaOrChitchat($messageText))) {
+            if ($looksSubstantive) {
                 $aiMessage = $this->buildAIAssistedStepReminder(
                     $messageText,
                     $stepHintCompact,

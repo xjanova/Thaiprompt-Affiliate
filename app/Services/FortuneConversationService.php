@@ -7815,7 +7815,26 @@ class FortuneConversationService
             }
         }
 
-        $message = "⏳ ระบบกำลังรอการชำระเงินผ่านบัตรเครดิต\n\n";
+        // 🗣️ (2026-06-27) ลูกค้าพิมพ์เรื่องอื่นระหว่างรอจ่ายบัตร (ไม่ใช่ "กลับ/qr/ยกเลิก")
+        //   → ให้ AI ตอบบริบทก่อน แล้วค่อยแนบ reminder ลิงก์ (เดิมไม่มี AI เลย ส่งแต่ลิงก์)
+        //   เจ้าของสั่ง: "รับข้อความเพื่อจำแนกบริบท ไม่ใช่เอาแต่ส่งกล่อง"
+        $stripeAiPrefix = '';
+        try {
+            $trimmedLen = mb_strlen(trim($messageText));
+            $substantive = $this->looksLikeMetaOrChitchat($messageText)
+                || $this->looksLikeCustomerExcuseOrLifeUpdate($messageText)
+                || $trimmedLen >= 10;
+            if ($substantive) {
+                $ack = trim($this->buildAIAssistedStepReminder($messageText, '', $reading->user_profile, 'pending_stripe_payment'));
+                if ($ack !== '') {
+                    $stripeAiPrefix = $ack."\n\n";
+                }
+            }
+        } catch (\Throwable $e) {
+            // non-blocking — ตกไปใช้ reminder ปกติ
+        }
+
+        $message = $stripeAiPrefix."⏳ ระบบกำลังรอการชำระเงินผ่านบัตรเครดิต\n\n";
         if ($sessionUrl) {
             $message .= "👇 กดลิงก์เดิมเพื่อจ่ายต่อ:\n{$sessionUrl}\n\n";
         }
