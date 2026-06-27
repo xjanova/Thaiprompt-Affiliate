@@ -668,6 +668,21 @@ trait FortuneConsentGateTrait
             && $this->looksLikeNeedPaymentHelp($cancelReasonText);
         $alreadyWarned = (bool) $cancelledReading->getConversationState('cancel_warning_sent');
 
+        // 🔇 (2026-06-27 owner) ปิดสวิตช์ "ถามก่อนยกเลิกบิล" (fortune_consent_cancel_enabled) +
+        //   ลูกค้ากดยกเลิกเอง → เงียบสนิท "ยกเลิกได้เลย ไม่เตือน" (ตรงตามคำโฆษณา toggle หน้า celtic-cross)
+        //   BUG เดิม: ปิด toggle ตัดแค่ "รูป+เตือนแรง" (deliverCancelWarning คืน false) แต่ยัง fall-through
+        //   ส่ง buildCancelWakeupMessage ("💭 ก่อนจากกัน ขอฝากข้อคิด...") = owner เห็นว่า "ยังเตือน/ถาม"
+        //   เฉพาะ $intentional (ลูกค้าพิมพ์ยกเลิกเอง 2 จุด) — flow-internal (cancelReasonText=null) คง wakeup เดิม
+        //   auto-expire ใช้ deliverCancelWarning(mode=expire) คนละ toggle (fortune_consent_expire_enabled) ไม่กระทบ
+        if ($intentional && ! $this->settings->isConsentCancelEnabled()) {
+            Log::info('Fortune: ยกเลิกบิล (ลูกค้ากดเอง) + ปิด "ถามก่อนยกเลิก" → เงียบ ไม่ส่งข้อความ', [
+                'user_id' => $userId,
+                'reading_id' => $cancelledReading->id,
+            ]);
+
+            return;
+        }
+
         $shouldWarnHard = $intentional && ! $forceMajeure && ! $alreadyWarned;
 
         // 🔴 เจตนาเบี้ยว → รูป (scope cancel) + ข้อความเตือนแรง
