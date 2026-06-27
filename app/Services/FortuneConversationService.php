@@ -17284,7 +17284,8 @@ PROMPT;
                 ."3. *ห้ามกดดัน ห้ามตื้อ ห้ามเร่งให้จ่าย* — ถ้าลูกค้าไม่พร้อม บอกว่าไว้คราวหน้าได้\n"
                 .'ห้ามอธิบายยาว ห้ามใส่ลิสต์ ห้ามใส่ [OFFER_FORTUNE]';
 
-            $result = $aiService->generateChatResponse($promptForAI, $userProfile);
+            // 🩹 (2026-06-27) guardText=ข้อความดิบลูกค้า → guard ตรวจ input จริง ไม่ใช่คำสั่งในพรอมต์ (กัน "ไม่เข้าใจสัญลักษณ์")
+            $result = $aiService->generateChatResponse($promptForAI, $userProfile, guardText: $messageText);
             LineGatekeeperService::recordAICall('fortune');
 
             $aiReply = trim($result['response'] ?? '');
@@ -17379,7 +17380,9 @@ PROMPT;
                 ."ห้ามด่า ห้ามทำให้ลูกค้าอาย ห้ามใส่ลิสต์ ห้ามใส่ [OFFER_FORTUNE]\n"
                 .'ตอบเป็นข้อความบรรยายธรรมดา 2 ประโยคพอดี';
 
-            $result = $aiService->generateChatResponse($promptForAI, $reading->user_profile);
+            // 🩹 (2026-06-27) $promptForAI = พรอมต์ที่ระบบสร้าง (มี "ห้ามใส่ [OFFER_FORTUNE]") →
+            //   ส่ง guardText=ข้อความดิบลูกค้า ให้ guard ตรวจ input จริง ไม่ใช่คำสั่งในพรอมต์
+            $result = $aiService->generateChatResponse($promptForAI, $reading->user_profile, guardText: $messageText);
             LineGatekeeperService::recordAICall('fortune');
 
             $aiReply = trim(str_replace('[OFFER_FORTUNE]', '', $result['response'] ?? ''));
@@ -17619,7 +17622,8 @@ PROMPT;
                 ."ห้ามใช้คำหยาบ ห้ามด่า ห้ามทำให้ลูกค้าอายหรืออับอาย\n"
                 .'ห้ามใส่ [OFFER_FORTUNE] tag';
 
-            $result = $aiService->generateChatResponse($promptForAI, $userProfile);
+            // 🩹 (2026-06-27) guardText=ข้อความดิบลูกค้า → guard ตรวจ input จริง ไม่ใช่คำสั่งในพรอมต์ (กัน "ไม่เข้าใจสัญลักษณ์")
+            $result = $aiService->generateChatResponse($promptForAI, $userProfile, guardText: $messageText);
             LineGatekeeperService::recordAICall('fortune');
 
             $aiReply = trim($result['response'] ?? '');

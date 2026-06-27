@@ -564,13 +564,17 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
      *
      * @throws Exception เมื่อไม่มี API Key หรือ API ล้มเหลว
      */
-    public function generateChatResponse(string $messageText, ?array $userProfile = null, string $sanitizeMode = 'chat'): array
+    public function generateChatResponse(string $messageText, ?array $userProfile = null, string $sanitizeMode = 'chat', ?string $guardText = null): array
     {
         // 🛡 (2026-05-26) Input sanitizer — block adversarial input ก่อน call AI
         //   ลูกค้ารู้โค้ดอาจส่ง "ignore previous instructions" / "DAN mode" / "write Python"
         //   → return canned reply ไม่ส่ง AI = ประหยัด token + กัน leak persona
         //   เคสปกติ (ลูกค้าทั่วไป) จะไม่ match → flow ต่อปกติ
-        $attackType = self::detectAdversarialInput($messageText);
+        //   🩹 (2026-06-27) $guardText — ถ้า caller ส่ง "พรอมต์ที่ระบบสร้าง" เป็น $messageText
+        //     (เช่น nudge/pricing/chitchat ที่มี "...ห้ามใส่ [OFFER_FORTUNE]" ในคำสั่ง) ให้ส่ง
+        //     "ข้อความดิบของลูกค้า" มาทาง $guardText เพื่อตรวจ guard ที่ "input จริงของลูกค้า"
+        //     เท่านั้น — กัน guard false-positive บนคำสั่ง/แท็กภายในพรอมต์ (PROD-DOWN 2026-06-27)
+        $attackType = self::detectAdversarialInput($guardText ?? $messageText);
         if ($attackType !== null) {
             Log::warning('FortuneAIService: ตรวจพบ adversarial input — block + canned reply', [
                 'attack_type' => $attackType,
