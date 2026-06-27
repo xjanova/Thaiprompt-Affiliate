@@ -895,10 +895,15 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
             return 'cost_attack';
         }
 
-        // 5. Token injection — user ส่ง ACTION tag ที่ AI ควรเป็นคนใส่ (กัน fake intent trigger)
+        // 5. Token injection — user ส่ง ACTION tag "เดี่ยวๆ" (กัน fake intent trigger)
         //   ⚠️ ลบ system context tags (TURN N / RETURNING_24H / HAS_FRESH_DEEP_READING / etc.)
         //   จาก list — เพราะมัน prefix จาก caller ไม่ใช่ attack vector. เก็บแค่ action tags.
-        if (preg_match('/\[(?:OFFER_FORTUNE|DEEP_READING|USE_STRIPE|ASK_SAVE|END_SESSION)\]/i', $textTrim)) {
+        //   🩹 (2026-06-27 PROD-DOWN) เดิม match แท็กที่ "ฝังในข้อความ" ด้วย → caller หลายจุด
+        //      (pricing/soft-decline/chitchat/persona) สร้างพรอมต์ที่มี "...ห้ามใส่ [OFFER_FORTUNE]"
+        //      แล้วส่งเข้า generateChatResponse → guard เห็นแท็กในพรอมต์ → block ทุกข้อความ =
+        //      บอทตอบ "ไม่เข้าใจสัญลักษณ์" หมด. แก้: flag เฉพาะเมื่อ "ทั้งข้อความคือแท็ก
+        //      (เดี่ยวๆ/ติดกันล้วน)" = injection จริง ; แท็กที่ฝังในเนื้อหาจริง = ปล่อยผ่าน
+        if (preg_match('/^(?:\s*\[(?:OFFER_FORTUNE|DEEP_READING|USE_STRIPE|ASK_SAVE|END_SESSION)\]\s*)+$/i', $textTrim)) {
             return 'token_injection';
         }
 
