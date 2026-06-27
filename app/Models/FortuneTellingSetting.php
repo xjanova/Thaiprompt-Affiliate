@@ -2058,10 +2058,19 @@ PROMPT;
     // ===== AI Chat ทั่วไป (สนทนาอัจฉริยะ) =====
 
     /**
+     * 🧭 (2026-06-27) memo ต่อ instance — กัน acquireKeyAnyProvider() หมุน key (rotation)
+     *   แล้ว getter 3 ตัว (provider/model/key) ได้คนละ key = ไม่เข้าชุด (mismatch)
+     *   instance ถูกสร้างใหม่ทุกข้อความ (settings อ่านสดจาก DB) → memo ไม่ค้างข้ามข้อความ
+     *
+     * @var array{provider: string, model: string, key: ?string}|null
+     */
+    protected ?array $resolvedChatAiConfig = null;
+
+    /**
      * ดึง AI Provider สำหรับ Chat ทั่วไป
      *
-     * แยกจาก getActualAIProvider() ซึ่งใช้สำหรับทำนาย (Grok)
-     * Chat ใช้ Gemini เป็นค่าเริ่มต้น — เร็ว ฟรี สนทนาดี
+     * แยกจาก getActualAIProvider() ซึ่งใช้สำหรับทำนาย
+     * Chat ดึง key ตาม purpose='chat' จาก Pool (ทุก provider) — ดู resolveChatAiConfig()
      */
     public function getChatAIProvider(): string
     {
@@ -2089,33 +2098,46 @@ PROMPT;
     /**
      * 🧭 (2026-06-27) Resolver กลาง — คืน provider/model/key ที่ "เข้าชุดกัน" สำหรับ Chat AI
      *
-     * 🐛 Root cause ที่แก้: chat_ai_provider = 'groq' แต่ใน Key Pool ไม่มี groq key เลย
-     *    → getChatAIApiKey() คืน null → ทุก nudge/chitchat AI (buildAIAssistedStepReminder,
-     *    buildPendingPaymentNudge) โยน Exception เงียบ → บอท fall ลงไปส่งแต่ "กล่องเลือกแพคเกจ/
-     *    จ่ายเงิน" ไม่ตอบบริบทที่ลูกค้าพิมพ์ (เช่น "ไม่มีเงิน" / "ธนาคาร") — ทำให้ดูเหมือน
-     *    "ไม่ทำงานสักครั้งเลย" แม้จะเพิ่ม pattern จับคำไปแล้วหลายรอบ (AI ตายตั้งแต่ต้นทาง)
+     * 🐛 Root cause เดิม: chat_ai_provider='groq' แต่ Pool ไม่มี groq key → getChatAIApiKey()=null
+     *    → ทุก nudge/chitchat AI โยน Exception เงียบ → บอทส่งแต่กล่อง ไม่ตอบบริบท ("ไม่มีเงิน"/"ธนาคาร")
      *
-     * 🗣️ เจ้าของสั่ง (2026-06-27): "ใช้คีย์ที่ตั้งค่าไว้ ทั้ง Pool ไม่จำกัดค่าย"
-     *    → ถ้า provider ที่ตั้งไว้ไม่มี key ใช้งานได้ ระบบจะ self-heal ไปใช้ key ที่ดีที่สุด
-     *      ใน Pool (ค่ายไหนก็ได้) โดย provider+model+key ออกมาเป็นชุดเดียวกัน — กัน
-     *      endpoint/auth mismatch (เคสเดิม: override gemini แต่ key ยังเป็น groq)
+     * 🗣️ เจ้าของสั่ง: "ใช้คีย์ที่ตั้งไว้ ทั้ง Pool ไม่จำกัดค่าย — key ที่ตั้ง purpose=chat ควรถูกใช้เอง"
+     *    → ระบบมี purpose-based routing (AiApiKey.purpose: chat/prediction/sensitive/tts) +
+     *      AiApiKeyPoolService::acquireKeyAnyProvider($purpose) (cross-provider + rotation + health gate)
+     *    → chat ต้องดึง key ตาม purpose='chat' (เช่น gemini หลายตัวที่แอดมินตั้ง) ไม่ใช่หยิบ key
+     *      priority สูงสุดที่เป็น 'prediction'/'sensitive' มามั่ว (bug เดิมของ self-heal naive)
      *
      * ลำดับ:
      *   1. chat_ai_api_key (เคารพ provider/model ที่แอดมินตั้งเป๊ะ)
-     *   2. Pool key ของ chat provider ที่ตั้งไว้ (มี key = ใช้ตามความตั้งใจ)
-     *   3. 🩹 self-heal — Pool key ที่ดีที่สุด (available() ค่ายใดก็ได้ priority สูงสุด)
-     *      reuse getActualAIProvider()/getActualAIModel() ที่ "ตัวทำนาย" ใช้อยู่จริง = การันตี
-     *   4. Global AI Settings (legacy)
-     *   5. ไม่เจอ → key=null (caller fallback เป็น template)
+     *   2. 🎯 Pool purpose='chat' ทุก provider (acquireKeyAnyProvider — rotation กระจายโหลด + health gate)
+     *   3. legacy — Pool key ของ provider ที่ตั้งไว้ (เผื่อยังไม่ได้ตั้ง purpose)
+     *   4. fortune ai_api_key / 5. Global / 6. null
+     *
+     * ⚠️ memoize ผ่าน $this->resolvedChatAiConfig — acquireKeyAnyProvider หมุน key (rotation)
+     *    ถ้า getter 3 ตัวเรียกซ้ำจะได้คนละ key = mismatch
      *
      * @return array{provider: string, model: string, key: ?string}
      */
     protected function resolveChatAiConfig(): array
     {
+        if (is_array($this->resolvedChatAiConfig)) {
+            return $this->resolvedChatAiConfig;
+        }
+
+        return $this->resolvedChatAiConfig = $this->computeChatAiConfig();
+    }
+
+    /**
+     * คำนวณ provider/model/key สำหรับ Chat AI (ไม่ memo — เรียกผ่าน resolveChatAiConfig())
+     *
+     * @return array{provider: string, model: string, key: ?string}
+     */
+    protected function computeChatAiConfig(): array
+    {
         $configuredProvider = $this->chat_ai_provider ?: 'groq';
         $configuredModel = $this->chat_ai_model ?: null;
 
-        // 1) key เฉพาะ chat — เคารพ provider/model ที่แอดมินตั้ง
+        // 1) key เฉพาะ chat ที่แอดมินตั้งเอง → เคารพ provider/model เป๊ะ
         if (! empty($this->chat_ai_api_key)) {
             return [
                 'provider' => $configuredProvider,
@@ -2124,7 +2146,23 @@ PROMPT;
             ];
         }
 
-        // 2) Pool key ของ provider ที่ตั้งไว้ (เคารพความตั้งใจถ้ามี key)
+        // 2) 🎯 Pool ตาม purpose='chat' — ทุก provider ไม่จำกัดค่าย (rotation + health gate)
+        //    ตรงสถาปัตยกรรม: key ที่แอดมินตั้ง purpose=chat (เช่น gemini หลายตัว) ถูกใช้อัตโนมัติ
+        //    + กระจายโหลดข้ามหลาย key กัน rate limit. provider+model+key จาก row เดียว = coherent
+        try {
+            $chatKey = app(\App\Services\AiApiKeyPoolService::class)->acquireKeyAnyProvider('chat');
+            if ($chatKey && ! empty($chatKey->api_key)) {
+                return [
+                    'provider' => $chatKey->provider,
+                    'model' => $chatKey->resolveModel() ?: $this->defaultChatModelFor($chatKey->provider),
+                    'key' => $chatKey->api_key,
+                ];
+            }
+        } catch (\Throwable $e) {
+            // pool service ล่ม → ตกไป fallback
+        }
+
+        // 3) legacy fallback — Pool key ของ provider ที่ตั้งไว้ (เผื่อยังไม่ได้ตั้ง purpose)
         if ($row = $this->firstActiveChatPoolKey($configuredProvider)) {
             return [
                 'provider' => $configuredProvider,
@@ -2133,21 +2171,7 @@ PROMPT;
             ];
         }
 
-        // 3) 🩹 self-heal — Pool ทั้งหมด ไม่จำกัดค่าย (provider+model+key มาจาก row เดียวกัน)
-        try {
-            $healRow = AiApiKey::available()->orderByDesc('priority')->first();
-            if ($healRow) {
-                return [
-                    'provider' => $healRow->provider,
-                    'model' => $healRow->resolveModel() ?: $this->defaultChatModelFor($healRow->provider),
-                    'key' => $healRow->api_key,
-                ];
-            }
-        } catch (\Throwable $e) {
-            // Pool DB ล่ม / scope ไม่มี → ตกไป fallback
-        }
-
-        // 3b) Pool ว่าง แต่ fortune ai_api_key ยังมี → ใช้คู่กับ fortune provider/model
+        // 4) Pool ว่าง แต่ fortune ai_api_key ยังมี → ใช้คู่กับ fortune provider/model
         if (! empty($this->ai_api_key)) {
             return [
                 'provider' => $this->getActualAIProvider(),
@@ -2156,7 +2180,7 @@ PROMPT;
             ];
         }
 
-        // 4) Global AI Settings (legacy)
+        // 5) Global AI Settings (legacy)
         $globalKey = match ($configuredProvider) {
             'gemini' => AiContentSetting::getValue('gemini_api_key'),
             'openrouter' => AiContentSetting::getValue('claude_api_key')
@@ -2171,7 +2195,7 @@ PROMPT;
             ];
         }
 
-        // 5) ไม่เจอ key เลย
+        // 6) ไม่เจอ key เลย
         return [
             'provider' => $configuredProvider,
             'model' => $configuredModel ?: $this->defaultChatModelFor($configuredProvider),
