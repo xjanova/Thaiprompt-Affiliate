@@ -31,7 +31,7 @@
         ['emoji' => '🏍️', 'tag' => 'DELIVERY', 'th' => 'ไรเดอร์ & เดลิเวอรี่', 'desc' => 'ส่งอาหารและพัสดุทั่วเมือง ค่าส่งเป็นธรรม ติดตามเรียลไทม์', 'url' => '#services'],
         ['emoji' => '💰', 'tag' => 'WALLET', 'th' => 'กระเป๋าเงินดิจิทัล', 'desc' => 'จัดการเงิน เหรียญ TPX และปันผล จากแอปเดียว โปร่งใสบนเชน', 'url' => '#wallet'],
         ['emoji' => '📈', 'tag' => 'AFFILIATE', 'th' => 'ปันผล & พันธมิตร', 'desc' => 'สร้างรายได้จากเครือข่าย ระบบคอมมิชชั่นโปร่งใส ตรวจสอบได้', 'url' => '#services'],
-        ['emoji' => '🤖', 'tag' => 'AI BOT', 'th' => 'ตลาด AI Bot', 'desc' => 'เช่า/ขายบอท AI ช่วยงานขายและบริการลูกค้าอัตโนมัติ 24 ชม.', 'url' => \Illuminate\Support\Facades\Illuminate\Support\Facades\Route::has('marketplace.index') ? route('marketplace.index') : '#'],
+        ['emoji' => '🤖', 'tag' => 'AI BOT', 'th' => 'ตลาด AI Bot', 'desc' => 'เช่า/ขายบอท AI ช่วยงานขายและบริการลูกค้าอัตโนมัติ 24 ชม.', 'url' => \Illuminate\Support\Facades\Route::has('marketplace.index') ? route('marketplace.index') : '#'],
         ['emoji' => '⛓️', 'tag' => 'BLOCKCHAIN', 'th' => 'Blockchain ของเราเอง', 'desc' => 'ทุกธุรกรรมบันทึกบนเชน TPIX ตรวจสอบย้อนหลังได้ทุกขั้นตอน', 'url' => '#wallet'],
     ];
 
@@ -48,9 +48,8 @@
 
     {{-- ════════ NAV ════════ --}}
     <header style="position:sticky; top:0; z-index:30; display:flex; align-items:center; flex-wrap:wrap; gap:12px 18px; padding:15px clamp(16px,3vw,40px); background:var(--card-bg); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:var(--card-shadow-sm); border-bottom:var(--card-border);">
-        <a href="{{ url('/') }}" style="display:flex; align-items:center; gap:11px; text-decoration:none;">
-            <div style="width:40px; height:40px; border-radius:13px; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); display:grid; place-items:center; color:#fff; font-family:'Sora','Anuphan'; font-weight:800; font-size:14px; text-shadow:0 1px 2px rgba(0,0,0,.22);">TP</div>
-            <div style="line-height:1.15;"><div style="font-weight:700; font-size:15.5px; color:var(--ink);">ไทยพร๊อมท์</div><div style="font-size:10px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">THAIPROMPT</div></div>
+        <a href="{{ url('/') }}" style="display:flex; align-items:center; text-decoration:none;" title="ไทยพร๊อมท์">
+            <x-theme-v4.brand-logo :height="44" />
         </a>
         <nav style="display:flex; gap:4px; margin-left:14px; flex-wrap:wrap;">
             <a href="#services" style="text-decoration:none; padding:9px 14px; border-radius:11px; font-size:13px; font-weight:600; color:var(--ink2);">บริการ</a>

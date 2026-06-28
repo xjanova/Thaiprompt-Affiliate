@@ -41,13 +41,9 @@
         <i class="fas fa-bars"></i>
     </button>
 
-    {{-- โลโก้ --}}
-    <a href="{{ route($tpDashRoute) }}" style="display:flex; align-items:center; gap:12px; flex:none; text-decoration:none; color:inherit;">
-        <span class="tp-tile" style="width:42px; height:42px; border-radius:14px; font-family:var(--tp-font-num); font-weight:800; font-size:15px;">TP</span>
-        <span style="line-height:1.2;" class="hidden sm:block">
-            <span style="display:block; font-weight:700; font-size:15px; letter-spacing:.2px;">ไทยพรอมต์ แอฟฟิลิเอต</span>
-            <span style="display:block; font-size:10px; color:var(--ink2); font-weight:600; letter-spacing:.3px;">{{ $tpBrandSub }}</span>
-        </span>
+    {{-- โลโก้ (โลโก้แนวนอน "ไทยพร๊อมท์" แทนกล่อง TP + ตัวหนังสือ) --}}
+    <a href="{{ route($tpDashRoute) }}" style="display:flex; align-items:center; flex:none; text-decoration:none; color:inherit;" title="ไทยพร๊อมท์">
+        <x-theme-v4.brand-logo :height="40" />
     </a>
 
     {{-- ค้นหา --}}
