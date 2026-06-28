@@ -896,6 +896,11 @@ Route::match(['GET', 'HEAD'], '/privacy-policy.html', function () {
     return view('privacy-policy');
 })->name('privacy-policy.html');
 
+// การรับประกันซอฟต์แวร์ (รับประกันโดย บริษัท เอ็กซ์แมน เอ็นเตอร์ไพรส์ จำกัด)
+Route::match(['GET', 'HEAD'], '/software-warranty', function () {
+    return view('software-warranty');
+})->name('software-warranty');
+
 // Facebook App Review Demo Page
 // หน้าสาธิตสำหรับ Facebook App Review - แสดงการใช้งาน permissions
 Route::match(['GET', 'HEAD'], '/facebook-app-review-demo', function () {

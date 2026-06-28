@@ -420,11 +420,13 @@
                         <li><a href="{{ route('terms-of-service.html') }}" class="hover:text-indigo-600 transition">ข้อกำหนดการใช้งาน</a></li>
                         <li><a href="{{ route('privacy-policy.html') }}" class="hover:text-indigo-600 transition">นโยบายความเป็นส่วนตัว</a></li>
                         <li><a href="{{ route('cookie-policy') }}" class="hover:text-indigo-600 transition">นโยบายคุกกี้</a></li>
+                        <li><a href="{{ route('software-warranty') }}" class="hover:text-indigo-600 transition">การรับประกันซอฟต์แวร์</a></li>
                     </ul>
                 </div>
             </div>
-            <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800 text-center text-xs text-gray-400">
-                © {{ date('Y') + 543 }} ไทยพร๊อมท์ · ThaiPrompt — แพลตฟอร์มคนไทย เพื่อคนไทย เพื่อเอเชีย
+            <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800 text-center text-xs text-gray-400 leading-relaxed">
+                © {{ date('Y') + 543 }} ไทยพร๊อมท์ · ThaiPrompt — แพลตฟอร์มคนไทย เพื่อคนไทย เพื่อเอเชีย<br>
+                พัฒนาและรับประกันโดย <a href="https://xman4289.com" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">บริษัท เอ็กซ์แมน เอ็นเตอร์ไพรส์ จำกัด</a>
             </div>
         </div>
     </footer>

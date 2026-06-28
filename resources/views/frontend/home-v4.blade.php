@@ -267,11 +267,12 @@
                     <a href="{{ route('terms-of-service.html') }}" class="tp-foot-link">ข้อกำหนดการใช้งาน</a>
                     <a href="{{ route('privacy-policy.html') }}" class="tp-foot-link">นโยบายความเป็นส่วนตัว</a>
                     <a href="{{ route('cookie-policy') }}" class="tp-foot-link">นโยบายคุกกี้</a>
+                    <a href="{{ route('software-warranty') }}" class="tp-foot-link">การรับประกันซอฟต์แวร์</a>
                 </div>
             </div>
         </div>
         <div style="border-top:var(--card-border); padding:16px clamp(16px,3vw,40px); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-            <div style="font-size:12px; color:var(--ink2);">© {{ date('Y') + 543 }} ไทยพร๊อมท์ · ThaiPrompt — แพลตฟอร์มคนไทย เพื่อคนไทย เพื่อเอเชีย</div>
+            <div style="font-size:12px; color:var(--ink2); line-height:1.7;">© {{ date('Y') + 543 }} ไทยพร๊อมท์ · ThaiPrompt — แพลตฟอร์มคนไทย เพื่อคนไทย เพื่อเอเชีย<br>พัฒนาและรับประกันโดย <a href="https://xman4289.com" target="_blank" rel="noopener noreferrer" style="color:var(--deep1); text-decoration:none;">บริษัท เอ็กซ์แมน เอ็นเตอร์ไพรส์ จำกัด</a></div>
             <div style="display:flex; gap:16px; flex-wrap:wrap;">
                 <a href="{{ route('privacy-policy.html') }}" class="tp-foot-link">ความเป็นส่วนตัว</a>
                 <a href="{{ route('terms-of-service.html') }}" class="tp-foot-link">ข้อกำหนด</a>
