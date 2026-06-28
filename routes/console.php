@@ -97,6 +97,15 @@ Schedule::command('fortune:stripe-poll --max-age=7200')
     ->name('fortune-stripe-poll')
     ->runInBackground();
 
+// 💳 E-commerce order Stripe — poll session ที่ลูกค้าจ่ายแล้วแต่ไม่ได้กลับมา (ปิดแท็บ)
+//   ตัวสำรองของ success_url return + webhook → กันออเดอร์ค้าง pending ทั้งที่จ่ายแล้ว
+Schedule::command('order:stripe-poll --minutes=180')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('order-stripe-poll')
+    ->runInBackground();
+
 // ════════════════════════════════════════════════════════════════
 // 🔔 (2026-05-25 Patch E) Fortune Remind Stuck Celtic — Soft reminder
 // ════════════════════════════════════════════════════════════════

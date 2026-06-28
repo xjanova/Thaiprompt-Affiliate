@@ -364,8 +364,8 @@ class PaymentService
                     Product::where('id', $product->id)
                         ->where('stock_quantity', '>=', $qty)
                         ->update([
-                            'stock_quantity' => DB::raw('stock_quantity - ' . $qty),
-                            'sales_count' => DB::raw('sales_count + ' . $qty),
+                            'stock_quantity' => DB::raw('stock_quantity - '.$qty),
+                            'sales_count' => DB::raw('sales_count + '.$qty),
                         ]);
 
                     // ถ้า stock ไม่พอ (race condition) → log แต่ไม่ block payment
@@ -504,7 +504,7 @@ class PaymentService
             'amount' => $transaction->amount,
             'balance_before' => $wallet->balance,
             'balance_after' => $wallet->balance - $transaction->amount,
-            'description' => 'ถอนเงินผ่าน ' . $transaction->payment_method,
+            'description' => 'ถอนเงินผ่าน '.$transaction->payment_method,
             'reference_type' => 'PaymentTransaction',
             'reference_id' => $transaction->id,
             'status' => 'completed',
@@ -823,6 +823,26 @@ class PaymentService
                     'category' => 'bank',
                 ],
             ]);
+        }
+
+        // 💳 บัตรเครดิต/เดบิต ผ่าน Stripe (ใช้บัญชี/คีย์เดียวกับดูดวง) —
+        //    แสดงอัตโนมัติเมื่อเปิดใช้งาน Stripe เท่านั้น (กันซ้ำถ้ามี gateway 'credit_card' อยู่แล้ว)
+        try {
+            if (app(OrderStripeService::class)->isEnabled()) {
+                $hasCard = collect($methods)->contains(fn ($m) => ($m['id'] ?? null) === 'credit_card');
+                if (! $hasCard) {
+                    $methods[] = [
+                        'id' => 'credit_card',
+                        'name' => 'บัตรเครดิต/เดบิต',
+                        'description' => 'ชำระผ่าน Stripe ปลอดภัย (Visa / Mastercard / JCB)',
+                        'icon' => '💳',
+                        'enabled' => true,
+                        'category' => 'card',
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::debug('OrderStripe availability check failed: '.$e->getMessage());
         }
 
         return $methods;

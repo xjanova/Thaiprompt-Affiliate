@@ -600,6 +600,9 @@ Route::middleware('auth')->prefix('checkout')->name('checkout.')->group(function
     Route::post('/payment/{orderId}/process', [\App\Http\Controllers\CheckoutController::class, 'processPayment'])->name('payment.process');
     Route::get('/processing/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'paymentProcessing'])->name('processing');
     Route::get('/success/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('success');
+    // 💳 Stripe (บัตรเครดิต/เดบิต) — กลับมาจากหน้าจ่ายของ Stripe
+    Route::get('/stripe/{orderId}/return', [\App\Http\Controllers\CheckoutController::class, 'stripeReturn'])->name('stripe.return');
+    Route::get('/stripe/{orderId}/cancel', [\App\Http\Controllers\CheckoutController::class, 'stripeCancel'])->name('stripe.cancel');
 });
 
 // Payment Callback Routes (for webhooks - no auth required)
@@ -1259,6 +1262,23 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
     //   $except ใน VerifyCsrfToken (webhook/* wildcard) ครอบ /webhook/fortune-stripe แล้ว
     Route::post('/fortune-stripe', [\App\Http\Controllers\Webhook\FortuneStripeWebhookController::class, 'handle'])
         ->name('fortune.stripe.webhook')
+        ->withoutMiddleware([
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+            \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\TrackVendorStoreVisit::class,
+            \App\Http\Middleware\TrackRequestMetrics::class,
+            \App\Http\Middleware\TrackPageView::class,
+        ]);
+
+    // 💳 Stripe Checkout webhook — E-commerce order payment (แยกจากดูดวง ใช้บัญชี Stripe เดียวกัน)
+    //   $except ใน VerifyCsrfToken (webhook/* wildcard) ครอบ /webhook/order-stripe แล้ว
+    Route::post('/order-stripe', [\App\Http\Controllers\Webhook\OrderStripeWebhookController::class, 'handle'])
+        ->name('order.stripe.webhook')
         ->withoutMiddleware([
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,

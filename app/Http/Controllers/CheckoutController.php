@@ -10,6 +10,7 @@ use App\Models\UniquePaymentAmount;
 use App\Models\Wallet;
 use App\Notifications\NewOrderNotification;
 use App\Services\CashbackService;
+use App\Services\Payment\OrderStripeService;
 use App\Services\Payment\PaymentService;
 use App\Services\Payment\PromptPayProvider;
 use App\Services\ShippingService;
@@ -352,6 +353,24 @@ class CheckoutController extends Controller
             return back()->with('error', 'ไม่พบรายการชำระเงิน');
         }
 
+        // 💳 บัตรเครดิต/เดบิต → ใช้ Stripe Checkout (บัญชีเดียวกับดูดวง)
+        //    redirect ไปหน้าจ่ายของ Stripe (hosted, PCI-safe) แล้วกลับมาที่ stripe.return
+        if ($order->payment_method === 'credit_card') {
+            $stripe = app(OrderStripeService::class);
+
+            if (! $stripe->isEnabled()) {
+                return back()->with('error', 'การชำระด้วยบัตรยังไม่พร้อมใช้งาน กรุณาเลือกวิธีชำระเงินอื่น');
+            }
+
+            $session = $stripe->createCheckoutSession($order, $transaction);
+
+            if (! ($session['success'] ?? false)) {
+                return back()->with('error', $session['error'] ?? 'ไม่สามารถเริ่มการชำระด้วยบัตรได้ กรุณาลองใหม่');
+            }
+
+            return redirect()->away($session['url']);
+        }
+
         // Process payment based on method
         try {
             $result = $this->paymentService->processPayment($transaction, $request->all());
@@ -531,6 +550,59 @@ class CheckoutController extends Controller
 
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * 💳 กลับมาจากหน้าจ่ายบัตรของ Stripe (success_url)
+     * ยืนยันการจ่ายแบบ synchronous (retrieve session) แล้ว complete order ทันที
+     */
+    public function stripeReturn(Request $request, $orderId)
+    {
+        $order = Order::where('id', $orderId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        if ($order->payment_status === 'paid') {
+            return redirect()->route('checkout.success', $order->id)->with('success', 'ชำระเงินสำเร็จ');
+        }
+
+        $sessionId = $request->query('session_id');
+        if ($sessionId) {
+            try {
+                $stripe = app(OrderStripeService::class);
+                $session = $stripe->retrieveSession($sessionId);
+
+                // ตรวจว่า session นี้เป็นของออเดอร์นี้จริง ก่อน complete (กันสลับ)
+                if ($session && (string) ($session['metadata']['order_id'] ?? '') === (string) $order->id) {
+                    $stripe->completeOrderFromSession($session);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Stripe return verify failed: '.$e->getMessage());
+            }
+        }
+
+        $order->refresh();
+
+        if ($order->payment_status === 'paid') {
+            return redirect()->route('checkout.success', $order->id)->with('success', 'ชำระเงินสำเร็จ');
+        }
+
+        // ยังไม่ยืนยัน (async / ปิดแท็บ) → ระบบ webhook+poll จะตามอัปเดตให้
+        return redirect()->route('orders.show', $order->id)
+            ->with('info', 'ระบบกำลังตรวจสอบการชำระเงิน สถานะจะอัปเดตให้อัตโนมัติเมื่อยืนยันสำเร็จ');
+    }
+
+    /**
+     * 💳 ยกเลิกการจ่ายบัตร (cancel_url) → กลับมาหน้าชำระเงิน
+     */
+    public function stripeCancel(Request $request, $orderId)
+    {
+        $order = Order::where('id', $orderId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        return redirect()->route('checkout.payment', $order->id)
+            ->with('error', 'ยกเลิกการชำระด้วยบัตรแล้ว — ลองใหม่อีกครั้ง หรือเลือกวิธีชำระเงินอื่นได้');
     }
 
     /**

@@ -135,82 +135,46 @@
                     @endif
 
                     <!-- Payment Method Section -->
+                    @php
+                        // ตรวจว่าเปิดบัตรเครดิต (Stripe) ไหม — getAvailablePaymentMethods ใส่ 'credit_card' ให้เมื่อเปิดใช้งาน
+                        $cardEnabled = collect($paymentMethods ?? [])->contains(fn ($m) => ($m['id'] ?? null) === 'credit_card');
+                        // รายการวิธีชำระเงินหลัก (id ตรงกับ backend validation: cash_on_delivery ไม่ใช่ cod)
+                        $payOptions = [
+                            ['id' => 'promptpay', 'icon' => '📱', 'name' => 'PromptPay', 'desc' => 'สแกน QR Code เพื่อชำระเงิน'],
+                            ['id' => 'bank_transfer', 'icon' => '🏦', 'name' => 'โอนเงินผ่านธนาคาร', 'desc' => 'โอนเงินเข้าบัญชีธนาคาร'],
+                        ];
+                        if ($cardEnabled) {
+                            $payOptions[] = ['id' => 'credit_card', 'icon' => '💳', 'name' => 'บัตรเครดิต/เดบิต', 'desc' => 'ชำระผ่าน Stripe ปลอดภัย · Visa / Mastercard / JCB', 'badge' => 'แนะนำ'];
+                        }
+                        $payOptions[] = ['id' => 'cash_on_delivery', 'icon' => '💵', 'name' => 'เก็บเงินปลายทาง (COD)', 'desc' => 'ชำระเงินเมื่อได้รับสินค้า'];
+                    @endphp
                     <div class="bg-white rounded-2xl shadow-lg p-6">
                         <h2 class="text-xl font-bold text-gray-900 mb-6">💰 วิธีการชำระเงิน</h2>
 
                         <div class="space-y-3">
-                            <!-- PromptPay -->
+                            @foreach($payOptions as $opt)
                             <div class="relative">
                                 <input type="radio"
                                        name="payment_method"
-                                       id="payment-promptpay"
-                                       value="promptpay"
-                                       class="peer sr-only"
-                                       required>
-                                <label for="payment-promptpay"
-                                       class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition">
-                                    <div class="text-3xl mr-4">📱</div>
-                                    <div class="flex-1">
-                                        <div class="font-bold text-gray-900">PromptPay</div>
-                                        <p class="text-sm text-gray-600">สแกน QR Code เพื่อชำระเงิน</p>
-                                    </div>
-                                    <div class="w-5 h-5 border-2 border-gray-300 rounded-full peer-checked:border-indigo-600 peer-checked:bg-indigo-600"></div>
-                                </label>
-                            </div>
-
-                            <!-- Bank Transfer -->
-                            <div class="relative">
-                                <input type="radio"
-                                       name="payment_method"
-                                       id="payment-bank"
-                                       value="bank_transfer"
+                                       id="payment-{{ $opt['id'] }}"
+                                       value="{{ $opt['id'] }}"
                                        class="peer sr-only">
-                                <label for="payment-bank"
+                                <label for="payment-{{ $opt['id'] }}"
                                        class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition">
-                                    <div class="text-3xl mr-4">🏦</div>
+                                    <div class="text-3xl mr-4">{{ $opt['icon'] }}</div>
                                     <div class="flex-1">
-                                        <div class="font-bold text-gray-900">โอนเงินผ่านธนาคาร</div>
-                                        <p class="text-sm text-gray-600">โอนเงินเข้าบัญชีธนาคาร</p>
+                                        <div class="font-bold text-gray-900 flex items-center gap-2">
+                                            {{ $opt['name'] }}
+                                            @if(!empty($opt['badge']))
+                                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-green-100 text-green-700">{{ $opt['badge'] }}</span>
+                                            @endif
+                                        </div>
+                                        <p class="text-sm text-gray-600">{{ $opt['desc'] }}</p>
                                     </div>
                                     <div class="w-5 h-5 border-2 border-gray-300 rounded-full peer-checked:border-indigo-600 peer-checked:bg-indigo-600"></div>
                                 </label>
                             </div>
-
-                            <!-- Credit Card -->
-                            <div class="relative">
-                                <input type="radio"
-                                       name="payment_method"
-                                       id="payment-credit"
-                                       value="credit_card"
-                                       class="peer sr-only">
-                                <label for="payment-credit"
-                                       class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition">
-                                    <div class="text-3xl mr-4">💳</div>
-                                    <div class="flex-1">
-                                        <div class="font-bold text-gray-900">บัตรเครดิต/เดบิต</div>
-                                        <p class="text-sm text-gray-600">ชำระด้วยบัตรเครดิตหรือเดบิต</p>
-                                    </div>
-                                    <div class="w-5 h-5 border-2 border-gray-300 rounded-full peer-checked:border-indigo-600 peer-checked:bg-indigo-600"></div>
-                                </label>
-                            </div>
-
-                            <!-- Cash on Delivery -->
-                            <div class="relative">
-                                <input type="radio"
-                                       name="payment_method"
-                                       id="payment-cod"
-                                       value="cod"
-                                       class="peer sr-only">
-                                <label for="payment-cod"
-                                       class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition">
-                                    <div class="text-3xl mr-4">💵</div>
-                                    <div class="flex-1">
-                                        <div class="font-bold text-gray-900">เก็บเงินปลายทาง (COD)</div>
-                                        <p class="text-sm text-gray-600">ชำระเงินเมื่อได้รับสินค้า</p>
-                                    </div>
-                                    <div class="w-5 h-5 border-2 border-gray-300 rounded-full peer-checked:border-indigo-600 peer-checked:bg-indigo-600"></div>
-                                </label>
-                            </div>
+                            @endforeach
                         </div>
                         @error('payment_method')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

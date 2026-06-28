@@ -153,7 +153,7 @@
                         </button>
                     </div>
 
-                    <!-- Credit Card Payment -->
+                    <!-- Credit Card Payment (Stripe) -->
                     @elseif($order->payment_method === 'credit_card')
                     <div class="space-y-4">
                         <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
@@ -161,13 +161,21 @@
                                 <span class="text-3xl mr-3">💳</span>
                                 <div>
                                     <h3 class="font-semibold text-gray-900 dark:text-white">ชำระด้วยบัตรเครดิต/เดบิต</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Visa, Mastercard, JCB</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Visa · Mastercard · JCB · American Express</p>
                                 </div>
                             </div>
+                            <div class="bg-white dark:bg-gray-900 rounded-lg p-4 flex items-center justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">ยอดที่ต้องชำระ</span>
+                                <span class="text-2xl font-bold text-purple-600">฿{{ number_format($order->total_amount, 2) }}</span>
+                            </div>
+                            <p class="mt-3 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944z" clip-rule="evenodd"/></svg>
+                                ชำระผ่านหน้าเพย์เมนต์ที่ปลอดภัยของ Stripe — เราไม่เก็บเลขบัตรของคุณ
+                            </p>
                         </div>
 
                         <button type="submit" class="w-full py-3 px-4 rounded-lg font-semibold text-white bg-purple-600 hover:bg-purple-700 transition">
-                            ไปยังหน้าชำระเงิน
+                            ไปชำระด้วยบัตรอย่างปลอดภัย →
                         </button>
                     </div>
 
