@@ -49,7 +49,9 @@
             'ลาเวนเดอร์': { a1:'#c4a6e0', a2:'#9fb0e8', d1:'#9a6fc4', d2:'#6f82d6', light:{a1s:'#ece2f7',a2s:'#e2e7fb'}, dark:{a1s:'#2f2740',a2s:'#262a44'} },
             'มินต์':      { a1:'#86cfae', a2:'#8fbfe0', d1:'#4f9e7e', d2:'#5689b8', light:{a1s:'#e0f1ea',a2s:'#e1eef7'}, dark:{a1s:'#1f3a30',a2s:'#1f3340'} },
             'มหาสมุทร':   { a1:'#6fc3d4', a2:'#7d9ee0', d1:'#4d97a6', d2:'#5f78c2', light:{a1s:'#dbeff3',a2s:'#e0e6f9'}, dark:{a1s:'#1d3940',a2s:'#212a48'} },
-            'พระอาทิตย์': { a1:'#f0a86a', a2:'#ec828f', d1:'#d6824a', d2:'#cf6f7c', light:{a1s:'#fae6d6',a2s:'#fbdfe3'}, dark:{a1s:'#3d2c1c',a2s:'#3a2226'} }
+            'พระอาทิตย์': { a1:'#f0a86a', a2:'#ec828f', d1:'#d6824a', d2:'#cf6f7c', light:{a1s:'#fae6d6',a2s:'#fbdfe3'}, dark:{a1s:'#3d2c1c',a2s:'#3a2226'} },
+            // 🎨 สีแบรนด์ตามโลโก้ ไทยพร๊อมท์ — น้ำเงินรอยัล (หลัก) + ทอง (รอง)
+            'ไทยพร๊อมท์': { a1:'#2a5cc0', a2:'#e8a31f', d1:'#1e4596', d2:'#bd8016', light:{a1s:'#dde6f8',a2s:'#f8ead0'}, dark:{a1s:'#16223f',a2s:'#352a13'} }
         };
         const surfaceTones = { 'ครีม':null, 'พีช':70, 'ทราย':45, 'กุหลาบ':20, 'ม่วง':330, 'คราม':285, 'ฟ้า':230, 'เขียวน้ำ':195, 'เซจ':150 };
 
@@ -138,31 +140,12 @@
         function load() { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('tp_theme_v4')) || {}); } catch (e) { return Object.assign({}, DEFAULTS); } }
 
         window.TPTheme = { bases, palettes, surfaceTones, apply, DEFAULTS, KEYS, load, paletteNames: Object.keys(palettes) };
-        apply(load());
-
-        document.addEventListener('alpine:init', () => {
-            window.Alpine.store('tp', Object.assign({}, window.TPTheme.load(), {
-                studioOpen: false,
-                paletteNames: window.TPTheme.paletteNames,
-                surfaceTones: window.TPTheme.surfaceTones,
-                init() { this.apply(); },
-                apply() { window.TPTheme.apply(this); },
-                save() { const o = {}; window.TPTheme.KEYS.forEach(k => o[k] = this[k]); localStorage.setItem('tp_theme_v4', JSON.stringify(o)); },
-                commit() { this.apply(); this.save(); },
-                toggleDark() { this.dark = !this.dark; this.commit(); },
-                cyclePalette() { this.colorMode = 'preset'; const n = this.paletteNames; this.palette = n[(n.indexOf(this.palette) + 1) % n.length]; this.commit(); },
-                setPalette(p) { this.colorMode = 'preset'; this.palette = p; this.commit(); },
-                setVariant(v) { this.variant = v; if (v === 'กระจกใส Glass' && this.glassLevel < 2) this.glassLevel = 55; if (v !== 'กระจกใส Glass') this.glassLevel = 0; this.commit(); },
-                setHue(h) { this.colorMode = 'custom'; this.baseHue = h; this.commit(); },
-                setEndHue(h) { this.colorMode = 'custom'; this.gradientOn = true; this.endHue = h; this.commit(); },
-                toggleGradient() { this.colorMode = 'custom'; this.gradientOn = !this.gradientOn; this.commit(); },
-                setSurfHue(h) { this.surfMode = 'custom'; this.surfHue = h; this.commit(); },
-                setSurfEnd(h) { this.surfMode = 'custom'; this.bgGradOn = true; this.surfHue2 = h; this.commit(); },
-                toggleBgGrad() { this.surfMode = 'custom'; this.bgGradOn = !this.bgGradOn; this.commit(); },
-                setSurfDefault() { this.surfMode = 'preset'; this.commit(); },
-                reset() { Object.assign(this, window.TPTheme.DEFAULTS); this.commit(); }
-            }));
-        });
+        // 🎨 หน้าสาธารณะ: ใช้ "สีแบรนด์ตามโลโก้" แบบตายตัว (น้ำเงิน+ทอง)
+        //    ไม่อ่าน localStorage / ไม่มี Theme Studio — หน้าแรกจึงเป็นสีแบรนด์เสมอ
+        const BRAND = { dark:false, palette:'ไทยพร๊อมท์', colorMode:'preset', surfMode:'preset', variant:'นวลนุ่ม Clay', lavaLevel:34, lavaSpeed:45, glassLevel:0, gradientOn:true, baseHue:45, endHue:28, surfHue:70, surfHue2:30, bgGradOn:false };
+        apply(BRAND);
+        // re-apply เมื่อ body พร้อม (apply() ตั้งพื้นหลังบน document.body)
+        document.addEventListener('DOMContentLoaded', () => apply(BRAND));
     })();
     </script>
 
@@ -177,8 +160,7 @@
         @yield('content')
     </div>
 
-    {{-- Theme Studio (ปุ่ม 🎨 มุมขวาล่าง) --}}
-    <x-theme-v4.theme-studio />
+    {{-- หน้าสาธารณะใช้สีแบรนด์ตามโลโก้ — ไม่มี Theme Studio (ปรับแต่งธีม) --}}
 
     {{-- Toast: session flash --}}
     <div class="fixed bottom-4 right-4 z-[100] space-y-2"

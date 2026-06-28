@@ -58,9 +58,6 @@
             <a href="#wallet" style="text-decoration:none; padding:9px 14px; border-radius:11px; font-size:13px; font-weight:600; color:var(--ink2);">Wallet</a>
         </nav>
         <div style="display:flex; align-items:center; gap:9px; margin-left:auto;">
-            <button @click="$store.tp.toggleDark()" title="สลับโหมดสว่าง/มืด" type="button" style="cursor:pointer; border:0; width:40px; height:40px; border-radius:12px; background:var(--card-bg); box-shadow:var(--raise); display:grid; place-items:center; color:var(--deep2);">
-                <i class="fas" :class="$store.tp && $store.tp.dark ? 'fa-sun' : 'fa-moon'"></i>
-            </button>
             @auth
                 <span class="tp-muted" style="font-size:12px; font-weight:600; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">สวัสดี, {{ \Illuminate\Support\Str::limit($authUser->name ?? 'สมาชิก', 16) }}</span>
                 <a href="{{ $dashUrl }}" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; padding:0 16px; height:40px; border-radius:12px; font-weight:700; font-size:12.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">
