@@ -170,9 +170,9 @@
                                     </div>
                                 @else
                                     <div class="relative group">
-                                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-xl opacity-50"></div>
-                                        <div class="relative w-16 h-16 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-2xl flex items-center justify-center shadow-2xl animate-float">
-                                            <span class="text-white font-black text-2xl">TP</span>
+                                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-amber-400 rounded-2xl blur-xl opacity-40"></div>
+                                        <div class="relative bg-white rounded-2xl p-3 shadow-2xl animate-float">
+                                            <img src="{{ asset('images/logo.png') }}" alt="ไทยพร๊อมท์" class="h-12 sm:h-14 w-auto">
                                         </div>
                                     </div>
                                 @endif

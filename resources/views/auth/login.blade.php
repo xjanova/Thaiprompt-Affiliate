@@ -244,9 +244,9 @@
                             </div>
                         @else
                             <div class="relative group">
-                                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-xl opacity-50"></div>
-                                <div class="relative w-20 h-20 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-2xl flex items-center justify-center shadow-2xl animate-float">
-                                    <span class="text-white font-black text-3xl">TP</span>
+                                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-amber-400 rounded-2xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity"></div>
+                                <div class="relative bg-white rounded-2xl p-4 shadow-2xl animate-float">
+                                    <img src="{{ asset('images/logo.png') }}" alt="{{ $appName }}" class="h-14 sm:h-16 w-auto">
                                 </div>
                             </div>
                         @endif
