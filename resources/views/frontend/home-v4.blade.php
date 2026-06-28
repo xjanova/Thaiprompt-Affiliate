@@ -232,14 +232,59 @@
     </section>
 
     {{-- ════════ FOOTER ════════ --}}
-    <footer style="border-top:var(--card-border); padding:30px; text-align:center; margin-top:auto;">
-        <div style="font-weight:700; font-size:15px; color:var(--ink);">ไทยพร๊อมท์ · ThaiPrompt</div>
-        <div style="font-size:12px; color:var(--ink2); margin-top:6px;">© {{ date('Y') + 543 }} ThaiPrompt · แพลตฟอร์มคนไทย เพื่อคนไทย เพื่อเอเชีย</div>
-        <div style="font-size:12px; color:var(--ink2); margin-top:10px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-            <a href="{{ $shopUrl }}" style="color:var(--deep1); text-decoration:none; font-weight:600;">ร้านค้า</a>
-            <a href="#services" style="color:var(--ink2); text-decoration:none;">บริการ</a>
-            <a href="{{ $authUser ? $dashUrl : $loginUrl }}" style="color:var(--ink2); text-decoration:none;">{{ $authUser ? 'แดชบอร์ด' : 'เข้าสู่ระบบ' }}</a>
+    <style>
+        .tp-foot-link { color: var(--ink2); text-decoration: none; font-size: 12.5px; transition: color .15s ease; }
+        .tp-foot-link:hover { color: var(--deep1); }
+        .tp-foot-h { font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 12px; }
+    </style>
+    <footer style="border-top:var(--card-border); margin-top:auto;">
+        <div style="max-width:1180px; margin:0 auto; padding:42px clamp(16px,3vw,40px) 26px; display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:28px;" class="tp-foot-grid">
+            {{-- แบรนด์ --}}
+            <div>
+                <x-theme-v4.brand-logo :height="40" />
+                <p style="font-size:12.5px; color:var(--ink2); line-height:1.7; margin:14px 0 0; max-width:280px;">แพลตฟอร์มคนไทย รวมอีคอมเมิร์ซ ไรเดอร์ ตลาดสด กระเป๋าเงินดิจิทัล และระบบปันผลโปร่งใสด้วย Blockchain ของเราเอง</p>
+            </div>
+            {{-- ร้านค้า & บริการ --}}
+            <div>
+                <div class="tp-foot-h">ร้านค้า &amp; บริการ</div>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <a href="{{ $shopUrl }}" class="tp-foot-link">ร้านค้าออนไลน์</a>
+                    <a href="#products" class="tp-foot-link">สินค้าแนะนำ</a>
+                    <a href="#services" class="tp-foot-link">บริการทั้งหมด</a>
+                    <a href="#wallet" class="tp-foot-link">กระเป๋าเงิน TPX</a>
+                </div>
+            </div>
+            {{-- บริษัท --}}
+            <div>
+                <div class="tp-foot-h">บริษัท</div>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <a href="{{ route('page.show', 'about-us') }}" class="tp-foot-link">เกี่ยวกับเรา</a>
+                    <a href="{{ route('page.show', 'contact') }}" class="tp-foot-link">ติดต่อเรา</a>
+                    <a href="{{ route('page.show', 'faq') }}" class="tp-foot-link">คำถามที่พบบ่อย</a>
+                </div>
+            </div>
+            {{-- ข้อกำหนด & นโยบาย --}}
+            <div>
+                <div class="tp-foot-h">ข้อกำหนด &amp; นโยบาย</div>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <a href="{{ route('page.show', 'terms') }}" class="tp-foot-link">ข้อกำหนดการใช้งาน</a>
+                    <a href="{{ route('page.show', 'privacy') }}" class="tp-foot-link">นโยบายความเป็นส่วนตัว</a>
+                    <a href="{{ route('page.show', 'cookie-policy') }}" class="tp-foot-link">นโยบายคุกกี้</a>
+                </div>
+            </div>
+        </div>
+        <div style="border-top:var(--card-border); padding:16px clamp(16px,3vw,40px); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div style="font-size:12px; color:var(--ink2);">© {{ date('Y') + 543 }} ไทยพร๊อมท์ · ThaiPrompt — แพลตฟอร์มคนไทย เพื่อคนไทย เพื่อเอเชีย</div>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                <a href="{{ route('page.show', 'privacy') }}" class="tp-foot-link">ความเป็นส่วนตัว</a>
+                <a href="{{ route('page.show', 'terms') }}" class="tp-foot-link">ข้อกำหนด</a>
+                <a href="{{ $authUser ? $dashUrl : $loginUrl }}" class="tp-foot-link">{{ $authUser ? 'แดชบอร์ด' : 'เข้าสู่ระบบ' }}</a>
+            </div>
         </div>
     </footer>
+    <style>
+        @media (max-width: 760px) { .tp-foot-grid { grid-template-columns: 1fr 1fr !important; } }
+        @media (max-width: 460px) { .tp-foot-grid { grid-template-columns: 1fr !important; } }
+    </style>
 </div>
 @endsection
