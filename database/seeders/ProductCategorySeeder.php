@@ -183,6 +183,12 @@ class ProductCategorySeeder extends Seeder
                 'description' => 'นาฬิกาข้อมือ นาฬิกาตั้งโต๊ะ แว่นตา และอุปกรณ์เสริม',
                 'is_active' => true,
             ],
+            [
+                'name' => 'ไอที / คอมพิวเตอร์',
+                'slug' => 'it-computer',
+                'description' => 'สินค้าไอที คอมพิวเตอร์ โน้ตบุ๊ค และอุปกรณ์เสริม',
+                'is_active' => true,
+            ],
         ];
     }
 }

@@ -250,6 +250,7 @@ return [
             'submenu' => [
                 ['label' => 'แดชบอร์ด', 'route' => 'admin.ecommerce.dashboard', 'icon' => 'fas fa-tachometer-alt'],
                 ['label' => 'สินค้าทั้งหมด', 'route' => 'admin.ecommerce.products.index', 'icon' => 'fas fa-box'],
+                ['label' => 'นำเข้าจาก Lazada', 'route' => 'admin.ecommerce.lazada-import.form', 'icon' => 'fas fa-cloud-download-alt', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-blue-500 to-cyan-500'],
                 ['label' => 'สินค้าที่ถูกบล็อก', 'route' => 'admin.ecommerce.products.blocked', 'icon' => 'fas fa-ban', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-red-500 to-orange-500'],
                 ['label' => 'คำสั่งซื้อ', 'route' => 'admin.ecommerce.orders.index', 'icon' => 'fas fa-shopping-cart'],
                 ['label' => 'หมวดหมู่', 'route' => 'admin.ecommerce.categories.index', 'icon' => 'fas fa-tags'],

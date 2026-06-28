@@ -54,6 +54,7 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\Dev\DevReleaseController;
 use App\Http\Controllers\Admin\DeveloperApprovalController;
 use App\Http\Controllers\Admin\ECommerceController;
+use App\Http\Controllers\Admin\LazadaImportController;
 use App\Http\Controllers\Admin\EmailAnalyticsController;
 use App\Http\Controllers\Admin\EmailCampaignController;
 use App\Http\Controllers\Admin\EmailController;
@@ -1563,6 +1564,13 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
         // Block/Unblock สินค้า
         Route::post('/{product}/block', [ECommerceController::class, 'blockProduct'])->name('block');
         Route::post('/{product}/unblock', [ECommerceController::class, 'unblockProduct'])->name('unblock');
+    });
+
+    // นำเข้าสินค้าจาก Lazada (แอดมินวางลิงก์เลือกเอง → preview → นำเข้า)
+    Route::prefix('lazada-import')->name('lazada-import.')->group(function () {
+        Route::get('/', [LazadaImportController::class, 'form'])->name('form');
+        Route::post('/preview', [LazadaImportController::class, 'preview'])->name('preview');
+        Route::post('/import', [LazadaImportController::class, 'import'])->name('import');
     });
 
     // Orders Management
