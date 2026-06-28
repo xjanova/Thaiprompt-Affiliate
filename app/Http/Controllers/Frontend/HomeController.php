@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
-use App\Models\HomepageSection;
 use App\Models\User;
 
 class HomeController extends Controller
@@ -27,15 +26,24 @@ class HomeController extends Controller
             return redirect()->route('setup.index');
         }
 
-        // ดึง sections จาก Homepage Manager
-        $sections = HomepageSection::with('activeElements')
-            ->active()
-            ->ordered()
+        // สินค้าแนะนำสำหรับหน้าแรก (เฉพาะสินค้าที่พร้อมขายจริง: active + ไม่ซ่อน + ไม่บล็อก)
+        $products = \App\Models\Product::publicVisible()
+            ->with('images')
+            ->latest('published_at')
+            ->take(8)
             ->get();
 
-        // แสดงหน้าแรกใหม่แบบมืออาชีพ พร้อมข้อมูลจาก Homepage Manager
-        return view('frontend.home-new', [
-            'sections' => $sections,
+        // สถิติแพลตฟอร์มสำหรับโชว์บนหน้าแรก
+        $stats = [
+            'products' => \App\Models\Product::publicVisible()->count(),
+            'categories' => \App\Models\ProductCategory::where('is_active', true)->count(),
+            'members' => User::count(),
+        ];
+
+        // หน้าแรกธีม V4 "นวลทองคำ" (อิงไฟล์ต้นแบบ .theme-new) + สินค้าแนะนำ + ลิงก์ร้านค้า
+        return view('frontend.home-v4', [
+            'products' => $products,
+            'stats' => $stats,
         ]);
     }
 
