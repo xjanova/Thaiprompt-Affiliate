@@ -323,7 +323,7 @@
                 <div class="c-value">main.thaiprompt.online</div>
             </div>
         </div>
-        <p style="margin-top: 16px; color: #94a3b8; font-size: 0.9em;">เจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล (DPO): บุญณราช อุปเสน<br>ที่อยู่: 180/1 ม.9 ต.ปากช่อง อ.หล่มสัก จ.เพชรบูรณ์ 67110</p>
+        <p style="margin-top: 16px; color: #94a3b8; font-size: 0.9em;">ติดต่อเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล (DPO) ได้ผ่านอีเมลด้านบน</p>
     </div>
 
     <div class="footer">

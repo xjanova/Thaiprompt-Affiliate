@@ -249,7 +249,6 @@
         <ul>
             <li>อีเมล: <strong>xjanovax@gmail.com</strong></li>
             <li>เว็บไซต์: <strong>main.thaiprompt.online</strong></li>
-            <li>ที่อยู่: 180/1 ม.9 ต.ปากช่อง อ.หล่มสัก จ.เพชรบูรณ์ 67110</li>
         </ul>
     </div>
 
