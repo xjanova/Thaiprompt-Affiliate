@@ -1,11 +1,11 @@
-@extends('layouts.app')
+@extends('layouts.frontend-v4')
 
-@section('title', 'นโยบายคุกกี้')
+@section('title', 'นโยบายคุกกี้ · ไทยพร๊อมท์')
 
 @section('content')
-<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-12">
+<div style="padding:40px 0 60px;">
     <div class="container mx-auto px-4 max-w-4xl">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 md:p-12">
+        <div class="tp-card" style="padding:clamp(20px,4vw,40px);">
             <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-6">นโยบายคุกกี้</h1>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-8">อัปเดตล่าสุด: {{ now()->format('d/m/Y') }}</p>
 

@@ -264,17 +264,17 @@
             <div>
                 <div class="tp-foot-h">ข้อกำหนด &amp; นโยบาย</div>
                 <div style="display:flex; flex-direction:column; gap:10px;">
-                    <a href="{{ route('page.show', 'terms') }}" class="tp-foot-link">ข้อกำหนดการใช้งาน</a>
-                    <a href="{{ route('page.show', 'privacy') }}" class="tp-foot-link">นโยบายความเป็นส่วนตัว</a>
-                    <a href="{{ route('page.show', 'cookie-policy') }}" class="tp-foot-link">นโยบายคุกกี้</a>
+                    <a href="{{ route('terms-of-service.html') }}" class="tp-foot-link">ข้อกำหนดการใช้งาน</a>
+                    <a href="{{ route('privacy-policy.html') }}" class="tp-foot-link">นโยบายความเป็นส่วนตัว</a>
+                    <a href="{{ route('cookie-policy') }}" class="tp-foot-link">นโยบายคุกกี้</a>
                 </div>
             </div>
         </div>
         <div style="border-top:var(--card-border); padding:16px clamp(16px,3vw,40px); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
             <div style="font-size:12px; color:var(--ink2);">© {{ date('Y') + 543 }} ไทยพร๊อมท์ · ThaiPrompt — แพลตฟอร์มคนไทย เพื่อคนไทย เพื่อเอเชีย</div>
             <div style="display:flex; gap:16px; flex-wrap:wrap;">
-                <a href="{{ route('page.show', 'privacy') }}" class="tp-foot-link">ความเป็นส่วนตัว</a>
-                <a href="{{ route('page.show', 'terms') }}" class="tp-foot-link">ข้อกำหนด</a>
+                <a href="{{ route('privacy-policy.html') }}" class="tp-foot-link">ความเป็นส่วนตัว</a>
+                <a href="{{ route('terms-of-service.html') }}" class="tp-foot-link">ข้อกำหนด</a>
                 <a href="{{ $authUser ? $dashUrl : $loginUrl }}" class="tp-foot-link">{{ $authUser ? 'แดชบอร์ด' : 'เข้าสู่ระบบ' }}</a>
             </div>
         </div>

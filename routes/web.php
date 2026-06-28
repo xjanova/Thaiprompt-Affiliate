@@ -887,6 +887,15 @@ Route::match(['GET', 'HEAD'], '/terms-of-service', function () {
     return view('terms-of-service');
 })->name('terms-of-service');
 
+// 🔗 รองรับ URL เดิม .html (เคยเป็นไฟล์ static ธีมเก่า — ลบไฟล์แล้ว ให้ route V4 ทำงานแทน)
+Route::match(['GET', 'HEAD'], '/terms-of-service.html', function () {
+    return view('terms-of-service');
+})->name('terms-of-service.html');
+
+Route::match(['GET', 'HEAD'], '/privacy-policy.html', function () {
+    return view('privacy-policy');
+})->name('privacy-policy.html');
+
 // Facebook App Review Demo Page
 // หน้าสาธิตสำหรับ Facebook App Review - แสดงการใช้งาน permissions
 Route::match(['GET', 'HEAD'], '/facebook-app-review-demo', function () {
