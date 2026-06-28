@@ -12,12 +12,26 @@
     $loginUrl = \Illuminate\Support\Facades\Route::has('login') ? route('login') : url('/login');
     $registerUrl = \Illuminate\Support\Facades\Route::has('register') ? route('register') : url('/register');
 
+    // สถานะล็อกอิน — หน้าแรกต้องรับรู้ว่าผู้ใช้ล็อกอินอยู่ (ไม่โชว์ปุ่มเข้าสู่ระบบ/สมัคร)
+    $authUser = auth()->user();
+    $isAdmin = $authUser && ((($authUser->role ?? null) === 'admin') || ($authUser->is_super_admin ?? false));
+    if ($isAdmin && \Illuminate\Support\Facades\Route::has('admin.dashboard')) {
+        $dashUrl = route('admin.dashboard');
+    } elseif (\Illuminate\Support\Facades\Route::has('user.dashboard')) {
+        $dashUrl = route('user.dashboard');
+    } else {
+        $dashUrl = url('/');
+    }
+    $logoutUrl = \Illuminate\Support\Facades\Route::has('logout') ? route('logout') : url('/logout');
+    $primaryCtaUrl = $authUser ? $dashUrl : $registerUrl;
+    $primaryCtaLabel = $authUser ? 'ไปที่แดชบอร์ด' : 'เริ่มต้นใช้งานฟรี';
+
     $services = [
         ['emoji' => '🛒', 'tag' => 'E-COMMERCE', 'th' => 'อีคอมเมิร์ซ & ตลาดสด', 'desc' => 'ช้อปสินค้าหลากหลายหมวด ส่งไว ปลอดภัย พร้อมระบบรีวิวจริง', 'url' => $shopUrl],
         ['emoji' => '🏍️', 'tag' => 'DELIVERY', 'th' => 'ไรเดอร์ & เดลิเวอรี่', 'desc' => 'ส่งอาหารและพัสดุทั่วเมือง ค่าส่งเป็นธรรม ติดตามเรียลไทม์', 'url' => '#services'],
         ['emoji' => '💰', 'tag' => 'WALLET', 'th' => 'กระเป๋าเงินดิจิทัล', 'desc' => 'จัดการเงิน เหรียญ TPX และปันผล จากแอปเดียว โปร่งใสบนเชน', 'url' => '#wallet'],
         ['emoji' => '📈', 'tag' => 'AFFILIATE', 'th' => 'ปันผล & พันธมิตร', 'desc' => 'สร้างรายได้จากเครือข่าย ระบบคอมมิชชั่นโปร่งใส ตรวจสอบได้', 'url' => '#services'],
-        ['emoji' => '🤖', 'tag' => 'AI BOT', 'th' => 'ตลาด AI Bot', 'desc' => 'เช่า/ขายบอท AI ช่วยงานขายและบริการลูกค้าอัตโนมัติ 24 ชม.', 'url' => \Illuminate\Support\Facades\Route::has('marketplace.index') ? route('marketplace.index') : '#'],
+        ['emoji' => '🤖', 'tag' => 'AI BOT', 'th' => 'ตลาด AI Bot', 'desc' => 'เช่า/ขายบอท AI ช่วยงานขายและบริการลูกค้าอัตโนมัติ 24 ชม.', 'url' => \Illuminate\Support\Facades\Illuminate\Support\Facades\Route::has('marketplace.index') ? route('marketplace.index') : '#'],
         ['emoji' => '⛓️', 'tag' => 'BLOCKCHAIN', 'th' => 'Blockchain ของเราเอง', 'desc' => 'ทุกธุรกรรมบันทึกบนเชน TPIX ตรวจสอบย้อนหลังได้ทุกขั้นตอน', 'url' => '#wallet'],
     ];
 
@@ -48,8 +62,21 @@
             <button @click="$store.tp.toggleDark()" title="สลับโหมดสว่าง/มืด" type="button" style="cursor:pointer; border:0; width:40px; height:40px; border-radius:12px; background:var(--card-bg); box-shadow:var(--raise); display:grid; place-items:center; color:var(--deep2);">
                 <i class="fas" :class="$store.tp && $store.tp.dark ? 'fa-sun' : 'fa-moon'"></i>
             </button>
-            <a href="{{ $loginUrl }}" style="text-decoration:none; display:grid; place-items:center; padding:0 15px; height:40px; border-radius:12px; font-weight:600; font-size:12.5px; color:var(--ink); background:var(--card-bg); box-shadow:var(--raise);">เข้าสู่ระบบ</a>
-            <a href="{{ $registerUrl }}" style="text-decoration:none; display:grid; place-items:center; padding:0 18px; height:40px; border-radius:12px; font-weight:700; font-size:12.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">สมัครสมาชิก</a>
+            @auth
+                <span class="tp-muted" style="font-size:12px; font-weight:600; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">สวัสดี, {{ \Illuminate\Support\Str::limit($authUser->name ?? 'สมาชิก', 16) }}</span>
+                <a href="{{ $dashUrl }}" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; padding:0 16px; height:40px; border-radius:12px; font-weight:700; font-size:12.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">
+                    <i class="fas fa-gauge-high"></i> แดชบอร์ด
+                </a>
+                <form method="POST" action="{{ $logoutUrl }}" style="margin:0;">
+                    @csrf
+                    <button type="submit" title="ออกจากระบบ" style="cursor:pointer; border:0; display:grid; place-items:center; width:40px; height:40px; border-radius:12px; font-weight:600; color:var(--ink); background:var(--card-bg); box-shadow:var(--raise);">
+                        <i class="fas fa-arrow-right-from-bracket"></i>
+                    </button>
+                </form>
+            @else
+                <a href="{{ $loginUrl }}" style="text-decoration:none; display:grid; place-items:center; padding:0 15px; height:40px; border-radius:12px; font-weight:600; font-size:12.5px; color:var(--ink); background:var(--card-bg); box-shadow:var(--raise);">เข้าสู่ระบบ</a>
+                <a href="{{ $registerUrl }}" style="text-decoration:none; display:grid; place-items:center; padding:0 18px; height:40px; border-radius:12px; font-weight:700; font-size:12.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">สมัครสมาชิก</a>
+            @endauth
         </div>
     </header>
 
@@ -173,7 +200,7 @@
                 <h2 style="margin:8px 0 12px; font-size:28px; font-weight:700; letter-spacing:-.4px; color:var(--ink);">กระเป๋าเงินดิจิทัล <span style="color:var(--deep1);">ปลอดภัย โปร่งใส</span></h2>
                 <p style="font-size:14px; color:var(--ink2); line-height:1.7; margin:0 0 22px;">จัดการเงิน ปันผล และเหรียญ TPX ได้จากแอปเดียว ทุกธุรกรรมบันทึกบน Blockchain ของเรา ตรวจสอบได้ทุกขั้นตอน</p>
                 <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                    <a href="{{ $registerUrl }}" style="text-decoration:none; display:inline-grid; place-items:center; padding:13px 24px; border-radius:13px; font-weight:700; font-size:13.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">เปิดกระเป๋า TPX</a>
+                    <a href="{{ $primaryCtaUrl }}" style="text-decoration:none; display:inline-grid; place-items:center; padding:13px 24px; border-radius:13px; font-weight:700; font-size:13.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">{{ $authUser ? 'ไปที่กระเป๋าเงิน' : 'เปิดกระเป๋า TPX' }}</a>
                     <a href="{{ $shopUrl }}" style="text-decoration:none; display:inline-grid; place-items:center; padding:13px 22px; border-radius:13px; font-weight:600; font-size:13.5px; color:var(--ink); background:var(--surf); box-shadow:var(--raise);">เริ่มช้อป</a>
                 </div>
             </div>
@@ -201,7 +228,7 @@
     <section style="max-width:1180px; margin:20px auto 50px; padding:0 clamp(16px,3vw,40px);">
         <div style="position:relative; overflow:hidden; padding:46px clamp(24px,4vw,44px); border-radius:28px; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:0 14px 40px rgba(0,0,0,.16); color:#fff; display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;">
             <div><h2 style="margin:0; font-size:clamp(23px,4vw,30px); font-weight:700; letter-spacing:-.4px; text-shadow:0 1px 3px rgba(0,0,0,.14);">พร้อมเริ่มต้นกับไทยพร๊อมท์แล้วหรือยัง?</h2><div style="font-family:'Sora','Anuphan'; font-size:14px; font-weight:600; opacity:.92; margin-top:6px;">หนึ่งแอป ครบทุกบริการ เพื่อชีวิตที่ดีกว่า</div></div>
-            <a href="{{ $registerUrl }}" style="text-decoration:none; flex:none; display:inline-grid; place-items:center; padding:16px 32px; border-radius:15px; font-weight:700; font-size:15px; color:var(--deep1); background:#fff; box-shadow:0 8px 22px rgba(0,0,0,.16);">เริ่มต้นใช้งานฟรี →</a>
+            <a href="{{ $primaryCtaUrl }}" style="text-decoration:none; flex:none; display:inline-grid; place-items:center; padding:16px 32px; border-radius:15px; font-weight:700; font-size:15px; color:var(--deep1); background:#fff; box-shadow:0 8px 22px rgba(0,0,0,.16);">{{ $primaryCtaLabel }} →</a>
         </div>
     </section>
 
@@ -212,7 +239,7 @@
         <div style="font-size:12px; color:var(--ink2); margin-top:10px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
             <a href="{{ $shopUrl }}" style="color:var(--deep1); text-decoration:none; font-weight:600;">ร้านค้า</a>
             <a href="#services" style="color:var(--ink2); text-decoration:none;">บริการ</a>
-            <a href="{{ $loginUrl }}" style="color:var(--ink2); text-decoration:none;">เข้าสู่ระบบ</a>
+            <a href="{{ $authUser ? $dashUrl : $loginUrl }}" style="color:var(--ink2); text-decoration:none;">{{ $authUser ? 'แดชบอร์ด' : 'เข้าสู่ระบบ' }}</a>
         </div>
     </footer>
 </div>
