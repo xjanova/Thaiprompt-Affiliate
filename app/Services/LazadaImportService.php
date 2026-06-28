@@ -138,6 +138,9 @@ class LazadaImportService
                 'stock_status' => 'in_stock',
                 'is_active' => true,
                 'is_featured' => false,
+                'is_hidden' => false,            // คอลัมน์ prod nullable → ต้องตั้งชัดเจน ไม่งั้น scope visible() (is_hidden=false) ตกหล่น
+                'is_public_approved' => true,    // แอดมินเป็นคนนำเข้าเอง = อนุมัติให้ขึ้นหน้าร้านได้เลย
+                'public_approved_at' => now(),
                 'has_variants' => false, // ตัวเลือกเก็บใน attributes (ยังไม่ทำ variant-based purchase)
                 'published_at' => now(),
                 'main_image_url' => $data['main_image'],
