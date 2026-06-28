@@ -1261,6 +1261,10 @@ trait CelticCrossConversationTrait
     {
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_PICKING]);
 
+        // 🧹 (2026-06-28) จ่าย/กู้บิล Celtic แล้ว → ปิดบิล "ขายใหม่" ที่ค้างชนกัน
+        //   (เคส FTU-260628-W2607: บิลหมดอายุ → ลูกค้าทักใหม่ → บอทเปิดบิลใหม่ → โอนเข้าบิลเก่า → 2 flow ซ้อน)
+        $this->cancelCompetingPrePaymentReadings($reading, 'celtic_payment_confirmed');
+
         return $this->promptNextCelticCard($reading);
     }
 

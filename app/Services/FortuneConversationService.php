@@ -4080,6 +4080,112 @@ class FortuneConversationService
     }
 
     /**
+     * 🧹 (2026-06-28) ปิดบิล "ขายใหม่" ที่ค้างชนกับบิลที่เพิ่งจ่าย/กู้คืน
+     *
+     * เคสจริง FTU-260628-W2607 (บุปผา มาพรม, reading 8143 — Deep 39):
+     *   - 16:33 สร้างบิล (pay-first) → ลูกค้าไม่จ่าย → 19:40 auto_expired
+     *   - 20:40 ลูกค้าพิมพ์ "ดูดวง" → บิลเก่าหมดอายุแล้ว → บอท "ซื้อใหม่"
+     *     สร้าง reading 8162 (tier_choice) = **บอทขายใหม่ทำงาน**
+     *   - 20:48 ลูกค้าโอน 39.64 → match/force-approve บิลเก่า 8143 → resume
+     *     → ขอวันเกิด = **บอทขอวันเกิดทำงาน**
+     *   → 2 flow ซ้อนกัน ลูกค้างง: บิลใหม่ tier_choice (8162) ยังค้างบังบิลที่เพิ่งจ่าย (8143)
+     *
+     * Fix: ตอน "ยืนยันจ่ายเงิน" (SMS match / admin force / SlipOK) → ปิดบิลค้างอื่น
+     *   ของ user คนเดียวกันที่ยัง "ก่อนจ่าย" (tier_choice / pending_payment / ฯลฯ)
+     *   ให้เหลือ flow เดียว = บิลที่เพิ่งจ่าย. (เทียบเคียง logic ใน SlipOK recover path)
+     *
+     * ⚠️ เงียบโดยตั้งใจ — ไม่ส่งข้อความ "ยกเลิกแล้ว" / ไม่นับ BillTrollGuard strike
+     *   เพราะเป็นการ reconcile ของระบบ ไม่ใช่ลูกค้ากดยกเลิก (จะยิ่งทำให้งง)
+     *
+     * @param  FortuneReading  $keep  บิลที่เพิ่งจ่าย/กู้คืน (ห้ามปิด)
+     * @param  string  $context  ที่มาของการเรียก (log)
+     * @return int จำนวนบิลที่ปิด
+     */
+    protected function cancelCompetingPrePaymentReadings(FortuneReading $keep, string $context = 'payment_confirmed'): int
+    {
+        // รวมทุก id ของ user คนนี้ (FB psid + platform_user_id ของ LINE)
+        $userIds = array_values(array_unique(array_filter([
+            $keep->facebook_user_id,
+            $keep->platform_user_id,
+        ])));
+
+        if (empty($userIds)) {
+            return 0;
+        }
+
+        // เฉพาะสถานะ "ก่อนจ่าย / เพิ่งทักมาขาย" — ไม่แตะบิล paid หรือบิลที่กำลังทำนายจริง
+        $prePaymentStatuses = [
+            FortuneReading::STATUS_NEW,
+            FortuneReading::STATUS_AWAITING_CONFIRMATION,
+            FortuneReading::STATUS_TIER_CHOICE,
+            FortuneReading::STATUS_PENDING_PAYMENT,
+            FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+            FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+            FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
+            FortuneReading::STATUS_DISCOVERY_CHAT,
+            FortuneReading::STATUS_DISCOVERY_CONFIRM,
+        ];
+
+        try {
+            $competing = FortuneReading::where(function ($q) use ($userIds) {
+                $q->whereIn('facebook_user_id', $userIds)
+                    ->orWhereIn('platform_user_id', $userIds);
+            })
+                ->where('id', '!=', $keep->id)
+                ->where('is_paid', false)
+                ->whereIn('conversation_status', $prePaymentStatuses)
+                ->with('uniquePaymentAmount')
+                ->get();
+
+            if ($competing->isEmpty()) {
+                return 0;
+            }
+
+            foreach ($competing as $other) {
+                // ปลด UPA ที่ยังจองอยู่ (กันยอดซ้ำ + ให้ SMS app เห็น slot ว่าง)
+                if ($other->uniquePaymentAmount && $other->uniquePaymentAmount->status === 'reserved') {
+                    try {
+                        $other->uniquePaymentAmount->cancel();
+                    } catch (\Throwable $e) {
+                        // non-blocking
+                    }
+                }
+
+                $other->setConversationState('cancelled_at', now()->toIso8601String());
+                $other->setConversationState('cancellation_reason', 'superseded_by_paid');
+                $other->setConversationState('superseded_by_reading_id', $keep->id);
+                $other->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                // แจ้งแอพ SMS Checker ให้ลบบิลค้างนี้ออกจากจอ (best-effort)
+                try {
+                    app(FcmNotificationService::class)->notifyFortuneReadingCancelled($other);
+                } catch (\Throwable $e) {
+                    // non-blocking
+                }
+            }
+
+            Log::info('Fortune: ปิดบิลขายใหม่ที่ค้างชนกับบิลที่เพิ่งจ่าย (reconcile)', [
+                'kept_reading_id' => $keep->id,
+                'kept_bill_reference' => $keep->bill_reference,
+                'context' => $context,
+                'closed_count' => $competing->count(),
+                'closed_ids' => $competing->pluck('id')->all(),
+            ]);
+
+            return $competing->count();
+        } catch (\Throwable $e) {
+            // ห้ามให้การ reconcile ขวาง flow จ่ายเงิน
+            Log::warning('Fortune: cancelCompetingPrePaymentReadings ล้มเหลว (non-blocking)', [
+                'kept_reading_id' => $keep->id,
+                'context' => $context,
+                'error' => $e->getMessage(),
+            ]);
+
+            return 0;
+        }
+    }
+
+    /**
      * ถามผู้ใช้ก่อนว่าจะดูดวงไหม พร้อมแจ้งสิทธิ์ฟรีที่เหลือวันนี้
      *
      * สร้าง reading ในสถานะ awaiting_confirmation แล้วส่งข้อความถาม
@@ -8518,6 +8624,10 @@ class FortuneConversationService
             if (! $skipConfirm) {
                 // ยืนยันการชำระเงิน (มี SMS หลักฐาน OR reading paid อยู่แล้ว — confirmPayment idempotent)
                 $reading->confirmPayment($notification);
+
+                // 🧹 (2026-06-28) จ่ายเงิน/กู้บิลแล้ว → ปิดบิล "ขายใหม่" ที่ค้างชนกัน (FTU-260628-W2607)
+                //   กันเคสบิลหมดอายุ→ลูกค้าทักใหม่ (บอทเปิดบิล tier_choice ใหม่)→โอนเข้าบิลเก่า→2 flow ซ้อน
+                $this->cancelCompetingPrePaymentReadings($reading->fresh(), 'deep_payment_confirmed');
 
                 // 🆕 (2026-05-29 Fix A) จ่ายเงินจริง → ล้าง free-chat daily counter (fresh start)
                 //   ย้ายการ reset counter มาที่ "จ่ายจริง" เท่านั้น (เดิม reset ด้วยคำว่า "ดูดวง" = รั่ว)
@@ -15042,6 +15152,10 @@ class FortuneConversationService
 
         // ตัดบิล (idempotent — ไม่มี SMS notification)
         $reading->confirmPayment(null);
+
+        // 🧹 (2026-06-28) ตัดบิลผ่าน SlipOK แล้ว → ปิดบิล "ขายใหม่" ที่ค้างชนกัน
+        //   ครอบทั้ง Celtic / Deep / Deep-ขอวันเกิด (branch ด้านล่างที่ไม่ผ่าน processPaymentConfirmed)
+        $this->cancelCompetingPrePaymentReadings($reading->fresh(), 'slipok_approved');
 
         // ลบไฟล์สลิป (PDPA)
         $this->cleanupStoredSlip($reading);
