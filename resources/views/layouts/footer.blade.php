@@ -36,7 +36,7 @@
                     <span class="text-gray-600">|</span>
                     <a href="/terms-of-service.html" target="_blank" class="text-gray-400 hover:text-white transition">ข้อกำหนดการใช้งาน</a>
                     <span class="text-gray-600">|</span>
-                    <a href="{{ route('page.show', 'cookie-policy') }}" class="text-gray-400 hover:text-white transition">นโยบายคุ๊กกี้</a>
+                    <a href="{{ route('cookie-policy') }}" class="text-gray-400 hover:text-white transition">นโยบายคุ๊กกี้</a>
                 </div>
             </div>
             <p class="text-center text-gray-400 text-sm">

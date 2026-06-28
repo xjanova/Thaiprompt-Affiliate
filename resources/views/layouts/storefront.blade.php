@@ -391,6 +391,44 @@
         @yield('content')
     </div>
 
+    {{-- Footer: ลิงก์สำคัญ (นโยบาย/ข้อกำหนด/บริษัท/ร้านค้า) --}}
+    <footer class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-12 relative z-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="col-span-2 md:col-span-1">
+                    <x-theme-v4.brand-logo :height="38" />
+                    <p class="mt-3 text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-xs">แพลตฟอร์มคนไทย — อีคอมเมิร์ซ ไรเดอร์ กระเป๋าเงินดิจิทัล และระบบปันผลโปร่งใสด้วย Blockchain ของเราเอง</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 dark:text-white text-sm mb-3">ร้านค้า &amp; บริการ</h4>
+                    <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+                        <li><a href="{{ route('storefront.index') }}" class="hover:text-indigo-600 transition">ร้านค้าออนไลน์</a></li>
+                        <li><a href="{{ url('/') }}" class="hover:text-indigo-600 transition">หน้าแรก</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 dark:text-white text-sm mb-3">บริษัท</h4>
+                    <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+                        <li><a href="{{ route('page.show', 'about-us') }}" class="hover:text-indigo-600 transition">เกี่ยวกับเรา</a></li>
+                        <li><a href="{{ route('page.show', 'contact') }}" class="hover:text-indigo-600 transition">ติดต่อเรา</a></li>
+                        <li><a href="{{ route('page.show', 'faq') }}" class="hover:text-indigo-600 transition">คำถามที่พบบ่อย</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 dark:text-white text-sm mb-3">ข้อกำหนด &amp; นโยบาย</h4>
+                    <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+                        <li><a href="{{ route('terms-of-service.html') }}" class="hover:text-indigo-600 transition">ข้อกำหนดการใช้งาน</a></li>
+                        <li><a href="{{ route('privacy-policy.html') }}" class="hover:text-indigo-600 transition">นโยบายความเป็นส่วนตัว</a></li>
+                        <li><a href="{{ route('cookie-policy') }}" class="hover:text-indigo-600 transition">นโยบายคุกกี้</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800 text-center text-xs text-gray-400">
+                © {{ date('Y') + 543 }} ไทยพร๊อมท์ · ThaiPrompt — แพลตฟอร์มคนไทย เพื่อคนไทย เพื่อเอเชีย
+            </div>
+        </div>
+    </footer>
+
     {{-- Toast Notifications --}}
     <div class="fixed bottom-4 right-4 z-[9999] space-y-2 max-w-md"
          x-data="{ notifications: [] }"
