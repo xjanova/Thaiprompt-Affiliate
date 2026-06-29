@@ -412,6 +412,7 @@
                         <li><a href="{{ route('page.show', 'about-us') }}" class="hover:text-indigo-600 transition">เกี่ยวกับเรา</a></li>
                         <li><a href="{{ route('page.show', 'contact') }}" class="hover:text-indigo-600 transition">ติดต่อเรา</a></li>
                         <li><a href="{{ route('page.show', 'faq') }}" class="hover:text-indigo-600 transition">คำถามที่พบบ่อย</a></li>
+                        <li><a href="{{ route('wiki.index') }}" class="hover:text-indigo-600 transition">วิกิแพลตฟอร์ม</a></li>
                     </ul>
                 </div>
                 <div>

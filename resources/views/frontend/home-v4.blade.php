@@ -258,6 +258,7 @@
                     <a href="{{ route('page.show', 'about-us') }}" class="tp-foot-link">เกี่ยวกับเรา</a>
                     <a href="{{ route('page.show', 'contact') }}" class="tp-foot-link">ติดต่อเรา</a>
                     <a href="{{ route('page.show', 'faq') }}" class="tp-foot-link">คำถามที่พบบ่อย</a>
+                    <a href="{{ route('wiki.index') }}" class="tp-foot-link">วิกิแพลตฟอร์ม</a>
                 </div>
             </div>
             {{-- ข้อกำหนด & นโยบาย --}}

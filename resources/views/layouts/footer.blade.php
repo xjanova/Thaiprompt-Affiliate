@@ -23,7 +23,7 @@
                 <ul class="space-y-2">
                     <li><a href="{{ route('forum.index') }}" class="text-gray-300 hover:text-white transition">💬 ฟอรั่มถาม-ตอบ</a></li>
                     <li><a href="#" class="text-gray-300 hover:text-white transition">คำถามที่พบบ่อย</a></li>
-                    <li><a href="#" class="text-gray-300 hover:text-white transition">เอกสาร</a></li>
+                    <li><a href="{{ route('wiki.index') }}" class="text-gray-300 hover:text-white transition">วิกิ / เอกสาร</a></li>
                     <li><a href="#" class="text-gray-300 hover:text-white transition">สนับสนุน</a></li>
                 </ul>
             </div>
