@@ -5,6 +5,22 @@
 @section('content')
 <div class="py-6">
 
+    {{-- Breadcrumb: กลับหน้าแรก/ร้านค้า ได้ง่าย (layout storefront ไม่มี navbar — แต่ละหน้าใส่เมนูเอง) --}}
+    <nav class="container mx-auto px-4 mb-4" aria-label="Breadcrumb">
+        <ol class="flex items-center flex-wrap gap-2 text-sm">
+            <li>
+                <a href="{{ route('home') }}" class="text-gray-500 hover:text-indigo-600 transition flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+                    หน้าแรก
+                </a>
+            </li>
+            <li><span class="text-gray-400">/</span></li>
+            <li><a href="{{ route('storefront.index') }}" class="text-gray-500 hover:text-indigo-600 transition">ร้านค้า</a></li>
+            <li><span class="text-gray-400">/</span></li>
+            <li><span class="text-gray-700 dark:text-gray-300 font-medium">คำสั่งซื้อของฉัน</span></li>
+        </ol>
+    </nav>
+
     <!-- Hero Header -->
     <div class="relative overflow-hidden bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 dark:from-orange-700 dark:via-amber-700 dark:to-yellow-700">
         <div class="absolute inset-0 opacity-10">
