@@ -24,8 +24,11 @@ echo "   PHP binary: ${PHP_BIN}"
 # ดึง crontab ปัจจุบัน (ถ้ายังไม่มีจะได้ empty)
 CURRENT="$(crontab -l 2>/dev/null || true)"
 
-# ลบ entry เดิมที่มี marker เดียวกัน (กัน duplicate ตอน path เปลี่ยน)
-FILTERED="$(echo "$CURRENT" | grep -v -F "${MARKER}" | grep -v -F "artisan schedule:run.*${PROJECT_PATH}" || true)"
+# ลบ entry เดิมของโปรเจกต์นี้ทั้งหมด (marker + ทุกบรรทัด schedule:run ของ path นี้)
+# ⚠️ BUGFIX: ของเดิมใช้ `grep -v -F "artisan schedule:run.*${PATH}"` — `-F` มองว่า `.*`
+#    เป็นตัวอักษรจริง เลย "ไม่เคย match" บรรทัด cron → ลบของเก่าไม่ได้ → สะสม +1 ทุก deploy (เคย 124)
+# ใช้ awk ลบเฉพาะบรรทัดที่มีทั้ง path นี้ + "artisan schedule:run" (ไม่แตะ cron ของแอป/ path อื่น)
+FILTERED="$(printf '%s\n' "$CURRENT" | grep -v -F "${MARKER}" | awk -v p="${PROJECT_PATH}" '!(index($0, p) && index($0, "artisan schedule:run"))' || true)"
 
 # ใส่ entry ใหม่พร้อม marker
 NEW_CRON="$(printf "%s\n%s\n%s\n" "$FILTERED" "$MARKER" "$CRON_LINE" | sed '/^$/d')"

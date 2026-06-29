@@ -2058,11 +2058,15 @@ fi
 # Verify cron actually installed (independent check)
 if command -v crontab >/dev/null 2>&1; then
     if crontab -l 2>/dev/null | grep -q "artisan schedule:run"; then
-        CRON_COUNT=$(crontab -l 2>/dev/null | grep -c "artisan schedule:run")
-        if [ "$CRON_COUNT" -eq 1 ]; then
-            print_success "✓ Cron verified: 1 schedule:run entry present"
+        # นับเฉพาะ entry ของโปรเจกต์นี้ (path = $SCRIPT_DIR) — ไม่รวมแอป/path อื่นบนเครื่องเดียวกัน
+        CRON_COUNT=$(crontab -l 2>/dev/null | awk -v p="$SCRIPT_DIR" 'index($0, p) && index($0, "artisan schedule:run")' | wc -l | tr -d ' ')
+        if [ "$CRON_COUNT" -le 1 ]; then
+            print_success "✓ Cron verified: ${CRON_COUNT} schedule:run entry สำหรับโปรเจกต์นี้"
         else
-            print_warning "⚠ Found $CRON_COUNT schedule:run entries (expected 1) — may need cleanup"
+            # 🔧 Self-heal: เคยมีบั๊กทำให้ entry ซ้ำสะสม (124 บรรทัด → cron storm ทุกนาที โหลดพุ่ง เว็บไม่เสถียร)
+            #    ลบบรรทัดที่ซ้ำกันเป๊ะ (exact duplicate) อัตโนมัติ — ปลอดภัย ไม่กระทบ cron อื่น
+            print_warning "⚠ Found $CRON_COUNT schedule:run entries สำหรับ path นี้ — auto-dedupe..."
+            crontab -l 2>/dev/null | awk '!seen[$0]++' | crontab - && print_success "✓ Auto-deduped crontab (ลบบรรทัดซ้ำออกแล้ว)"
         fi
     else
         print_warning "⚠ CRITICAL: No 'artisan schedule:run' cron found after install attempt!"
