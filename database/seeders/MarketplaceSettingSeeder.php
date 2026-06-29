@@ -205,6 +205,43 @@ class MarketplaceSettingSeeder extends Seeder
                 'description' => 'ต้องซื้อก่อนจึงรีวิวได้',
                 'is_public' => true,
             ],
+
+            // ── Lazada Hub Settings ──
+            [
+                'setting_key' => 'lazada_default_markup_percent',
+                'setting_value' => '30',
+                'setting_type' => 'decimal',
+                'description' => 'เปอร์เซ็นต์บวกกำไรเริ่มต้น (โหมดขายเอง) (%)',
+                'is_public' => false,
+            ],
+            [
+                'setting_key' => 'lazada_price_rounding',
+                'setting_value' => 'baht',
+                'setting_type' => 'string',
+                'description' => 'กฎปัดเศษราคา: none / baht (จำนวนเต็ม) / ten (หลักสิบ) / nine (ลงท้าย 9)',
+                'is_public' => false,
+            ],
+            [
+                'setting_key' => 'lazada_default_fulfillment_mode',
+                'setting_value' => 'affiliate',
+                'setting_type' => 'string',
+                'description' => 'โหมดเริ่มต้นของสินค้านำเข้า: affiliate / resell',
+                'is_public' => false,
+            ],
+            [
+                'setting_key' => 'lazada_auto_sync_enabled',
+                'setting_value' => 'false',
+                'setting_type' => 'boolean',
+                'description' => 'เปิด auto-sync ราคา/สต็อก/ออเดอร์ ตามเวลา (ต้องมี API)',
+                'is_public' => false,
+            ],
+            [
+                'setting_key' => 'lazada_commission_to_mlm',
+                'setting_value' => 'true',
+                'setting_type' => 'boolean',
+                'description' => 'กระจายค่าคอม affiliate เข้าระบบ MLM',
+                'is_public' => false,
+            ],
         ];
     }
 }

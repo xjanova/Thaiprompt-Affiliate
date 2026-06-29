@@ -15,6 +15,7 @@ class MarketplaceAccount extends Model
     protected $fillable = [
         'user_id',
         'platform_id',
+        'program_type',
         'account_name',
         'shop_id',
         'shop_name',
@@ -214,5 +215,25 @@ class MarketplaceAccount extends Model
         }
 
         return $this->token_expires_at->isPast();
+    }
+
+    /**
+     * เป็นบัญชีโปรแกรมพันธมิตร (affiliate) หรือไม่
+     * (seller = Lazada Open Platform / affiliate = Involve Asia ฯลฯ)
+     */
+    public function isAffiliateProgram(): bool
+    {
+        return $this->program_type === 'affiliate';
+    }
+
+    /**
+     * ดึงค่าใน additional_credentials อย่างปลอดภัย
+     * (ใช้เก็บคีย์ของระบบพันธมิตร เช่น Involve Asia: api_key, secret_key, sub_id)
+     */
+    public function cred(string $key, mixed $default = null): mixed
+    {
+        $bag = $this->additional_credentials;
+
+        return is_array($bag) ? ($bag[$key] ?? $default) : $default;
     }
 }

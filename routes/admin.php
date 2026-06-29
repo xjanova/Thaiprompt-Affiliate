@@ -3728,6 +3728,31 @@ Route::prefix('marketplace')->name('marketplace.')->group(function () {
 });
 
 // ========================================
+// LAZADA HUB — ศูนย์เชื่อมต่อ Lazada (Hybrid: affiliate + ขายเองบวกกำไร)
+// ต่อยอดตาราง marketplace_* เดิม (reuse model/service) — เมนูแยกเฉพาะ Lazada
+// ========================================
+Route::prefix('lazada-hub')->name('lazada-hub.')->group(function () {
+    // แดชบอร์ดภาพรวม
+    Route::get('/', [\App\Http\Controllers\Admin\LazadaHub\DashboardController::class, 'index'])
+        ->name('dashboard');
+
+    // การเชื่อมต่อ (กรอก/ทดสอบ API credential)
+    Route::prefix('connections')->name('connections.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LazadaHub\ConnectionController::class, 'index'])->name('index');
+        // OAuth callback (Lazada เด้งกลับมาที่นี่) — ต้องมาก่อน {account} กันชนกับ wildcard
+        Route::get('/callback', [\App\Http\Controllers\Admin\LazadaHub\ConnectionController::class, 'callback'])->name('callback');
+        Route::get('/create', [\App\Http\Controllers\Admin\LazadaHub\ConnectionController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\LazadaHub\ConnectionController::class, 'store'])->name('store');
+        Route::get('/{account}/edit', [\App\Http\Controllers\Admin\LazadaHub\ConnectionController::class, 'edit'])->name('edit');
+        Route::put('/{account}', [\App\Http\Controllers\Admin\LazadaHub\ConnectionController::class, 'update'])->name('update');
+        Route::delete('/{account}', [\App\Http\Controllers\Admin\LazadaHub\ConnectionController::class, 'destroy'])->name('destroy');
+        Route::post('/{account}/test', [\App\Http\Controllers\Admin\LazadaHub\ConnectionController::class, 'test'])->name('test');
+        // เริ่ม OAuth (พาไปหน้าอนุญาต Lazada)
+        Route::get('/{account}/connect', [\App\Http\Controllers\Admin\LazadaHub\ConnectionController::class, 'connect'])->name('connect');
+    });
+});
+
+// ========================================
 // CLOUDFLARE MANAGEMENT SYSTEM
 // ========================================
 

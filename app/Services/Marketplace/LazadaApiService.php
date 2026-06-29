@@ -3,10 +3,18 @@
 namespace App\Services\Marketplace;
 
 use App\Models\MarketplaceAccount;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class LazadaApiService extends BaseMarketplaceService
 {
     protected string $baseUrl = 'https://api.lazada.co.th/rest';
+
+    /** Gateway สำหรับ System API (auth/token) — คนละ host กับ baseUrl */
+    protected string $authUrl = 'https://auth.lazada.com/rest';
+
+    /** URL หน้าอนุญาต (OAuth authorize) */
+    protected const AUTHORIZE_ENDPOINT = 'https://auth.lazada.com/oauth/authorize';
 
     public function __construct(MarketplaceAccount $account)
     {
@@ -171,6 +179,77 @@ class LazadaApiService extends BaseMarketplaceService
         // This would need integration with Lazada Affiliate API
         // For now, return the product URL
         return "https://www.lazada.co.th/products/{$productId}.html";
+    }
+
+    /**
+     * สร้าง URL หน้าอนุญาต (OAuth authorize) ของ Lazada
+     *
+     * ผู้ใช้กดลิงก์นี้ → ล็อกอิน/อนุญาต → Lazada เด้งกลับมาที่ $redirectUri พร้อม ?code=...&state=...
+     *
+     * @param  string  $appKey  App Key ของแอป (client_id)
+     * @param  string  $redirectUri  Callback URL (ต้องตรงกับที่ลงทะเบียนในแอป Lazada)
+     * @param  string|null  $state  ค่าสุ่มกัน CSRF (ส่งกลับมาใน callback)
+     */
+    public static function buildAuthorizationUrl(string $appKey, string $redirectUri, ?string $state = null): string
+    {
+        $params = [
+            'response_type' => 'code',
+            'force_auth' => 'true',
+            'redirect_uri' => $redirectUri,
+            'client_id' => $appKey,
+        ];
+
+        if ($state !== null && $state !== '') {
+            $params['state'] = $state;
+        }
+
+        return self::AUTHORIZE_ENDPOINT.'?'.http_build_query($params);
+    }
+
+    /**
+     * แลก authorization code → access_token (เรียก /auth/token/create)
+     *
+     * หมายเหตุ: เซ็นแบบเฉพาะ (ไม่ใส่ access_token เดิมลง signature เพราะกำลังจะออก token ใหม่)
+     *
+     * @return array|null payload ตอบกลับ (มี access_token/refresh_token/expires_in) หรือ payload error / null ถ้า transport ล้ม
+     */
+    public function createTokenFromCode(string $code): ?array
+    {
+        $path = '/auth/token/create';
+
+        $params = [
+            'app_key' => $this->account->app_key,
+            'timestamp' => (string) (time() * 1000),
+            'sign_method' => 'sha256',
+            'code' => $code,
+        ];
+
+        ksort($params);
+
+        $stringToSign = $path;
+        foreach ($params as $key => $value) {
+            $stringToSign .= $key.$value;
+        }
+        $params['sign'] = strtoupper(hash_hmac('sha256', $stringToSign, $this->account->app_secret));
+
+        try {
+            $response = Http::timeout(30)->get($this->authUrl.$path, $params);
+            $data = $response->json();
+        } catch (\Throwable $e) {
+            Log::error('Lazada token/create transport error', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+
+        if (! is_array($data)) {
+            return null;
+        }
+
+        if (empty($data['access_token'])) {
+            Log::warning('Lazada token/create ไม่สำเร็จ', ['resp' => $data]);
+        }
+
+        return $data; // controller เป็นผู้ตรวจ access_token / message
     }
 
     /**

@@ -260,6 +260,19 @@ return [
         ],
 
         [
+            'id' => 'lazada-hub',
+            'label' => 'Lazada Hub',
+            'icon' => '🛒',
+            'route' => null,
+            'order' => 6.5,
+            'permissions' => [],
+            'submenu' => [
+                ['label' => '📊 แดชบอร์ด', 'route' => 'admin.lazada-hub.dashboard', 'icon' => 'fas fa-gauge-high', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-orange-500 to-amber-500'],
+                ['label' => '🔌 การเชื่อมต่อ API', 'route' => 'admin.lazada-hub.connections.index', 'icon' => 'fas fa-plug'],
+            ],
+        ],
+
+        [
             'id' => 'pos',
             'label' => 'ระบบ POS',
             'icon' => '🏪',
