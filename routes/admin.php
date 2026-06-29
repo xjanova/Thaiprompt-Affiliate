@@ -3750,6 +3750,17 @@ Route::prefix('lazada-hub')->name('lazada-hub.')->group(function () {
         // เริ่ม OAuth (พาไปหน้าอนุญาต Lazada)
         Route::get('/{account}/connect', [\App\Http\Controllers\Admin\LazadaHub\ConnectionController::class, 'connect'])->name('connect');
     });
+
+    // แคตตาล็อกสินค้า (ต้นทุน/markup/ราคาเรา/กำไร + นำเข้า scrape + แก้ราคา/โหมด)
+    Route::prefix('catalog')->name('catalog.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LazadaHub\CatalogController::class, 'index'])->name('index');
+        Route::get('/import', [\App\Http\Controllers\Admin\LazadaHub\CatalogController::class, 'importForm'])->name('import');
+        Route::post('/import/preview', [\App\Http\Controllers\Admin\LazadaHub\CatalogController::class, 'importPreview'])->name('import-preview');
+        Route::post('/import', [\App\Http\Controllers\Admin\LazadaHub\CatalogController::class, 'importStore'])->name('import-store');
+        Route::put('/{product}', [\App\Http\Controllers\Admin\LazadaHub\CatalogController::class, 'update'])->name('update');
+        Route::post('/{product}/sync-price', [\App\Http\Controllers\Admin\LazadaHub\CatalogController::class, 'syncPrice'])->name('sync-price');
+        Route::delete('/{product}', [\App\Http\Controllers\Admin\LazadaHub\CatalogController::class, 'destroy'])->name('destroy');
+    });
 });
 
 // ========================================

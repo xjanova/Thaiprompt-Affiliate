@@ -269,6 +269,8 @@ return [
             'submenu' => [
                 ['label' => '📊 แดชบอร์ด', 'route' => 'admin.lazada-hub.dashboard', 'icon' => 'fas fa-gauge-high', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-orange-500 to-amber-500'],
                 ['label' => '🔌 การเชื่อมต่อ API', 'route' => 'admin.lazada-hub.connections.index', 'icon' => 'fas fa-plug'],
+                ['label' => '🗂️ แคตตาล็อก', 'route' => 'admin.lazada-hub.catalog.index', 'icon' => 'fas fa-layer-group'],
+                ['label' => '⬇️ นำเข้าสินค้า', 'route' => 'admin.lazada-hub.catalog.import', 'icon' => 'fas fa-cloud-download-alt'],
             ],
         ],
 

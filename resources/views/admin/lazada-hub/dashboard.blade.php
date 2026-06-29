@@ -94,7 +94,7 @@
                 $tiles = [
                     ['label' => 'การเชื่อมต่อ', 'desc' => 'กรอก/ทดสอบ API', 'icon' => 'fa-plug', 'route' => route('admin.lazada-hub.connections.index'), 'ready' => true],
                     ['label' => 'นำเข้าสินค้า (วางลิงก์)', 'desc' => 'scrape PDP → ร้านเรา', 'icon' => 'fa-cloud-download-alt', 'route' => route('admin.ecommerce.lazada-import.form'), 'ready' => true],
-                    ['label' => 'แคตตาล็อก + ราคา/กำไร', 'desc' => 'เร็วๆ นี้ (Phase 2)', 'icon' => 'fa-layer-group', 'route' => null, 'ready' => false],
+                    ['label' => 'แคตตาล็อก + ราคา/กำไร', 'desc' => 'ต้นทุน·markup·ราคาเรา', 'icon' => 'fa-layer-group', 'route' => route('admin.lazada-hub.catalog.index'), 'ready' => true],
                     ['label' => 'ค่าคอมมิชชั่น → MLM', 'desc' => 'เร็วๆ นี้ (Phase 4)', 'icon' => 'fa-coins', 'route' => null, 'ready' => false],
                 ];
             @endphp
