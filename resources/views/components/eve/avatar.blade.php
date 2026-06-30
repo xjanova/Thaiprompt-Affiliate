@@ -54,7 +54,8 @@
 @endonce
 <div {{ $attributes->merge(['class' => 'eve-ava'.($crop ? ' eve-crop' : '')]) }} style="--eve-w:{{ (int) $size }}px">
     <div class="eve-in">
-        <img class="eve-body" src="{{ asset('images/eve/eve-body.svg') }}" alt="น้อง Eve" loading="lazy">
+        {{-- ?v=mtime กัน Cloudflare/เบราว์เซอร์ cache SVG เก่า (ชื่อไฟล์เดิม) — เปลี่ยนเองทุกครั้งที่ไฟล์อัปเดต --}}
+        <img class="eve-body" src="{{ asset('images/eve/eve-body.svg') }}?v={{ @filemtime(public_path('images/eve/eve-body.svg')) ?: '3' }}" alt="น้อง Eve" loading="lazy">
         <div class="eve-face">
             <div class="eve-brow l"></div><div class="eve-brow r"></div>
             <div class="eve-eye l"><span class="eve-hi"></span><span class="eve-hi2"></span></div>
