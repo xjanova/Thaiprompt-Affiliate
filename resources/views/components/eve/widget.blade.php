@@ -109,6 +109,7 @@ function eveWidget() {
         _dotTimer: null,
         _audio: null,
         _ttsQueue: [],
+        _speakSeq: 0,
         csrf: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
 
         toggle() {
@@ -169,9 +170,10 @@ function eveWidget() {
             const clean = (text || '').replace(/\[[^\]]*\]/g, '').replace(/[*_#`>]/g, '').trim();
             if (!clean) return [];
             const out = []; let buf = '';
-            const parts = clean.split(/(?<=[ค่ะคะครับ.!?\n])\s*/);
+            // แยกประโยคหลังคำลงท้าย (ค่ะ/คะ/ครับ) หรือเครื่องหมาย — ใช้ alternation ไม่ใช่ char-class (กันตัดกลางคำ) + คงเว้นวรรค
+            const parts = clean.split(/(?<=(?:ค่ะ|คะ|ครับ|[.!?\n]))/);
             for (const p of parts) {
-                if ((buf + p).length > 170) { if (buf) out.push(buf.trim()); buf = p; }
+                if ((buf + p).length > 170) { if (buf.trim()) out.push(buf.trim()); buf = p; }
                 else buf += p;
             }
             if (buf.trim()) out.push(buf.trim());
@@ -183,29 +185,35 @@ function eveWidget() {
             this.stopSpeak();
             const chunks = this.chunkForTts(text);
             if (!chunks.length) return;
+            const seq = this._speakSeq; // stopSpeak() เพิ่ง ++ ให้แล้ว = เซสชันพูดปัจจุบัน
             this._ttsQueue = chunks.map((c, i) =>
                 `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=th&q=${encodeURIComponent(c)}&total=${chunks.length}&idx=${i}&textlen=${c.length}`);
             this.speaking = true;
             const prev = this.emotion;
             this.emotion = 'talking';
-            this._playNext(() => { this.speaking = false; this.emotion = (prev === 'happy' ? 'happy' : 'idle'); });
+            this._playNext(seq, () => { if (seq !== this._speakSeq) return; this.speaking = false; this.emotion = (prev === 'happy' ? 'happy' : 'idle'); });
         },
 
-        _playNext(done) {
+        _playNext(seq, done) {
+            if (seq !== this._speakSeq) return;        // เซสชันเก่า (ถูก stopSpeak ไปแล้ว) — ทิ้ง ไม่ให้ stomp อารมณ์ใหม่
             if (!this._ttsQueue.length) { done && done(); return; }
             const url = this._ttsQueue.shift();
             const a = new Audio();
             a.referrerPolicy = 'no-referrer';
             a.src = url;
             this._audio = a;
-            a.onended = () => this._playNext(done);
-            a.onerror = () => this._playNext(done);
-            a.play().catch(() => this._playNext(done));
+            a.onended = () => this._playNext(seq, done);
+            a.onerror = () => this._playNext(seq, done);
+            a.play().catch(() => this._playNext(seq, done));
         },
 
         stopSpeak() {
+            this._speakSeq++; // invalidate เซสชันพูดเก่า → callback ที่ค้างจะ bail ไม่ stomp อารมณ์
             this._ttsQueue = [];
-            if (this._audio) { try { this._audio.pause(); } catch (e) {} this._audio = null; }
+            if (this._audio) {
+                try { this._audio.onended = null; this._audio.onerror = null; this._audio.pause(); } catch (e) {}
+                this._audio = null;
+            }
             this.speaking = false;
             if (this.emotion === 'talking') this.emotion = 'idle';
         }

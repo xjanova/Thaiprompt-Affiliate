@@ -52,7 +52,22 @@ class LazadaImportService
             'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language' => 'th-TH,th;q=0.9,en;q=0.8',
             'Referer' => 'https://www.lazada.co.th/',
-        ])->timeout(30)->retry(2, 1500)->get($url);
+        ])->timeout(30)->retry(2, 1500)
+            ->withOptions(['allow_redirects' => [
+                'max' => 3,
+                'strict' => true,
+                'referer' => false,
+                'protocols' => ['https'],                    // กัน redirect downgrade ไป http (เลี่ยง http://127.0.0.1)
+                'on_redirect' => function ($request, $response, $uri) {
+                    // 🔒 กัน SSRF: ปลายทาง redirect ต้องอยู่ในโดเมน lazada เท่านั้น
+                    //    (ของเดิม allowlist เช็คแค่ request แรก → 30x ไป 169.254.169.254/127.0.0.1/evil.com ได้)
+                    $host = strtolower((string) $uri->getHost());
+                    if (! str_ends_with($host, 'lazada.co.th')) {
+                        throw new RuntimeException('redirect ออกนอกโดเมน Lazada ถูกบล็อก (กัน SSRF): '.$host);
+                    }
+                },
+            ]])
+            ->get($url);
 
         if (! $response->successful()) {
             throw new RuntimeException("ดึงข้อมูลไม่สำเร็จ (HTTP {$response->status()}) — {$url}");

@@ -218,18 +218,10 @@ class CartController extends Controller
 
         // จัดรูปแบบข้อมูลสำหรับ JSON
         $items = $cartItems->map(function ($item) {
-            // รูปสินค้า: main_image_url ใน DB เก็บเป็น URL ที่พร้อมใช้อยู่แล้ว
-            //  - สินค้านำเข้า Lazada = URL เต็มจาก CDN (https://...slatic.net/...)
-            //  - สินค้าทั่วไป = /storage/... หรือ path
-            // ทุกหน้าอื่นเรนเดอร์ค่านี้แบบดิบ → ห้าม wrap Storage::url กับ URL เต็ม (รูปจะพัง)
-            // จึง wrap เฉพาะกรณีเป็น "path เปล่า" (ไม่ขึ้นต้นด้วย http/https///)
-            $imageUrl = null;
-            if ($item->product && $item->product->main_image_url) {
-                $raw = $item->product->main_image_url;
-                $imageUrl = \Illuminate\Support\Str::startsWith($raw, ['http://', 'https://', '//', '/'])
-                    ? $raw
-                    : \Storage::url($raw);
-            }
+            // รูปสินค้า: Product::getMainImageUrlAttribute() คืน URL พร้อมใช้แล้ว
+            //   (URL เต็ม → คืนเดิม / path → /storage/...) เหมือนที่หน้าอื่นเรนเดอร์ {{ $product->main_image_url }} ดิบ
+            // ❌ ห้าม wrap Storage::url ซ้ำ — เคยทำให้ Lazada CDN URL พัง (double-prefix)
+            $imageUrl = $item->product?->main_image_url;
 
             return [
                 'id' => $item->id,

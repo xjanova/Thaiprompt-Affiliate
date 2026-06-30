@@ -65,7 +65,7 @@ class AutoImportController extends Controller
         $data = $request->validate([
             'urls' => ['required', 'string', 'max:60000'],
             'price_min' => ['nullable', 'numeric', 'min:0'],
-            'price_max' => ['nullable', 'numeric', 'min:0'],
+            'price_max' => ['nullable', 'numeric', 'min:0', 'gte:price_min'],
             'fulfillment_mode' => ['nullable', 'in:affiliate,resell'],
             'batch_label' => ['nullable', 'string', 'max:100'],
         ]);
@@ -73,7 +73,7 @@ class AutoImportController extends Controller
         // แยกลิงก์ทีละบรรทัด + เฉพาะ Lazada + กันซ้ำกับที่ยัง pending
         $urls = collect(preg_split('/\r\n|\r|\n/', $data['urls']))
             ->map(fn ($u) => trim($u))
-            ->filter(fn ($u) => $u !== '' && preg_match('#lazada\.co\.th#i', $u))
+            ->filter(fn ($u) => $u !== '' && str_ends_with(strtolower((string) parse_url($u, PHP_URL_HOST)), 'lazada.co.th'))
             ->unique()
             ->take(self::MAX_ENQUEUE)
             ->values();

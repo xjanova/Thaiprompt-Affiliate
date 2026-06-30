@@ -74,20 +74,30 @@ class LazadaHubAutoImport extends Command
                     continue;
                 }
 
-                // กันซ้ำ
-                $existing = MarketplaceProduct::where('platform_id', $platformId)
-                    ->where('external_product_id', $data['item_id'])
-                    ->first();
-                if ($existing) {
-                    $item->update(['status' => 'skipped', 'error' => 'มีในแคตตาล็อกแล้ว', 'marketplace_product_id' => $existing->id]);
-                    $skipped++;
-
-                    continue;
+                // 🔒 ล็อกต่อ item (key เดียวกับ manual import) กัน race → สินค้าซ้ำ
+                $lock = \Illuminate\Support\Facades\Cache::lock('lazada_catalog:'.$platformId.':'.$data['item_id'], 15);
+                if (! $lock->get()) {
+                    continue; // กระบวนการอื่นกำลังนำเข้า item นี้ — ปล่อย pending ไว้ รอบหน้าค่อยลอง
                 }
 
-                $product = $this->createCatalogProduct($data, $item->fulfillment_mode ?: $defaults['mode'], $defaults, $platformId);
-                $item->update(['status' => 'done', 'marketplace_product_id' => $product->id, 'error' => null]);
-                $done++;
+                try {
+                    // กันซ้ำ
+                    $existing = MarketplaceProduct::where('platform_id', $platformId)
+                        ->where('external_product_id', $data['item_id'])
+                        ->first();
+                    if ($existing) {
+                        $item->update(['status' => 'skipped', 'error' => 'มีในแคตตาล็อกแล้ว', 'marketplace_product_id' => $existing->id]);
+                        $skipped++;
+
+                        continue;
+                    }
+
+                    $product = $this->createCatalogProduct($data, $item->fulfillment_mode ?: $defaults['mode'], $defaults, $platformId);
+                    $item->update(['status' => 'done', 'marketplace_product_id' => $product->id, 'error' => null]);
+                    $done++;
+                } finally {
+                    $lock->release();
+                }
             } catch (\Throwable $e) {
                 $attempts = $item->attempts + 1;
                 $item->update([
@@ -149,7 +159,7 @@ class LazadaHubAutoImport extends Command
         return [
             'markup' => (float) MarketplaceSetting::get('lazada_default_markup_percent', 30),
             'rounding' => (string) MarketplaceSetting::get('lazada_price_rounding', 'baht'),
-            'mode' => (string) MarketplaceSetting::get('lazada_default_fulfillment_mode', 'affiliate'),
+            'mode' => in_array($m = (string) MarketplaceSetting::get('lazada_default_fulfillment_mode', 'affiliate'), ['affiliate', 'resell'], true) ? $m : 'affiliate',
             'commission' => (float) MarketplaceSetting::get('affiliate_commission_default', 5),
         ];
     }

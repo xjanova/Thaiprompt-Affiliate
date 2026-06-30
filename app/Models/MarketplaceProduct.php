@@ -186,7 +186,12 @@ class MarketplaceProduct extends Model
         return match ($rounding) {
             'baht' => (float) ceil($price),
             'ten' => (float) (ceil($price / 10) * 10),
-            'nine' => (float) (ceil($price / 10) * 10 - 1),
+            // ลงท้าย 9 แต่กันต่ำกว่าราคาที่คำนวณ (เช่น cost 1000 markup 0 → 1009 ไม่ใช่ 999 = ขาดทุน)
+            'nine' => (function () use ($price) {
+                $r = ceil($price / 10) * 10 - 1;
+
+                return (float) ($r < $price ? $r + 10 : $r);
+            })(),
             default => round($price, 2),
         };
     }

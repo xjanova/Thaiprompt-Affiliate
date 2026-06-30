@@ -166,16 +166,25 @@ class EveAssistantController extends Controller
      */
     private function runProductSearch(string $reply, ?int $userId): array
     {
+        // ดึงคำค้น + งบจากแท็ก (ทนทานต่อ noise: "500 บาท", "1,500", "~500", case-insensitive, เว้นวรรครอบ :|)
+        $query = null;
+        $budget = null;
+        if (preg_match('/\[\s*FIND\s*:\s*([^\]|]+?)\s*(?:\|\s*([^\]]*?))?\s*\]/iu', $reply, $m)) {
+            $query = trim($m[1]);
+            if (isset($m[2])) {
+                $num = preg_replace('/[^0-9.]/', '', $m[2]);   // '500 บาท'/'1,500' → 500/1500 · 'ไม่จำกัด' → ''
+                $budget = ($num !== '' && (float) $num > 0) ? (float) $num : null;
+            }
+        }
+
+        // ⚠️ ลบแท็ก [FIND...] "เสมอ" ก่อน return — ไม่ว่าจะ parse งบได้หรือไม่ กันแท็กดิบหลุดให้ลูกค้าเห็น
+        $reply = trim((string) preg_replace('/\[\s*FIND\s*:[^\]]*\]/iu', '', $reply));
+
         $products = [];
         $mood = $this->guessMood($reply);
 
-        if (preg_match('/\[FIND:\s*([^\|\]]+?)\s*(?:\|\s*([0-9]+(?:\.[0-9]+)?))?\s*\]/u', $reply, $m)) {
-            $query = trim($m[1]);
-            $budget = isset($m[2]) && $m[2] !== '' ? (float) $m[2] : null;
-            // ลบแท็กออกจากข้อความที่ลูกค้าจะเห็น
-            $reply = trim((string) preg_replace('/\[FIND:[^\]]*\]/u', '', $reply));
-
-            if ($query !== '') {
+        if ($query !== null && $query !== '') {
+            {
                 $products = $this->searchCatalog($query, $budget);
 
                 if (empty($products)) {

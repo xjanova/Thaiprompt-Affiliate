@@ -37,28 +37,18 @@ class LazadaApiService extends BaseMarketplaceService
      */
     private function generateSignature(string $path, array $params): string
     {
-        // Add common parameters
-        $params['app_key'] = $this->account->app_key;
-        $params['timestamp'] = (string) (time() * 1000);
-        $params['sign_method'] = 'sha256';
-
-        if ($this->account->access_token) {
-            $params['access_token'] = $this->account->access_token;
-        }
-
-        // Sort parameters
+        // 🩹 เซ็น "ตามพารามิเตอร์ที่ส่งจริง" — ไม่ re-inject app_key/timestamp/access_token ซ้ำ
+        //   (ของเดิมตั้ง timestamp = time()*1000 ใหม่ในนี้ → ถ้าวินาทีพลิกระหว่าง makeSignedRequest กับตรงนี้
+        //    จะเซ็นจาก timestamp คนละค่ากับที่ส่ง → Lazada ตอบ IllegalSignature แบบสุ่ม)
+        unset($params['sign']);
         ksort($params);
 
-        // Concatenate all parameters
         $stringToBeSigned = $path;
         foreach ($params as $key => $value) {
             $stringToBeSigned .= $key.$value;
         }
 
-        // Generate HMAC-SHA256 signature
-        $signature = hash_hmac('sha256', $stringToBeSigned, $this->account->app_secret);
-
-        return strtoupper($signature);
+        return strtoupper(hash_hmac('sha256', $stringToBeSigned, $this->account->app_secret));
     }
 
     /**
@@ -67,14 +57,14 @@ class LazadaApiService extends BaseMarketplaceService
     private function makeSignedRequest(string $path, array $params = [], string $method = 'GET'): ?array
     {
         $params['app_key'] = $this->account->app_key;
-        $params['timestamp'] = (string) (time() * 1000);
+        $params['timestamp'] = (string) (time() * 1000); // จับ timestamp ครั้งเดียว ใช้ทั้งเซ็นและส่ง
         $params['sign_method'] = 'sha256';
 
         if ($this->account->access_token) {
             $params['access_token'] = $this->account->access_token;
         }
 
-        // Generate signature
+        // เซ็นจาก $params ชุดเดียวกับที่จะส่ง (generateSignature ไม่แก้ค่าใดๆ แล้ว)
         $params['sign'] = $this->generateSignature($path, $params);
 
         return $this->makeRequest($method, $path, $params);
@@ -261,18 +251,42 @@ class LazadaApiService extends BaseMarketplaceService
             return false;
         }
 
-        $response = $this->makeSignedRequest('/auth/token/refresh', [
+        // 🩹 /auth/token/refresh อยู่บน auth gateway (authUrl) ไม่ใช่ baseUrl (api.lazada.co.th)
+        //   และต้องเซ็นแบบไม่ใส่ access_token เก่า (เหมือน createTokenFromCode) — ของเดิมยิงผิด host
+        //   + เอา access_token ที่หมดอายุไปเซ็น → refresh พังเสมอหลัง token หมดอายุ
+        $path = '/auth/token/refresh';
+        $params = [
+            'app_key' => $this->account->app_key,
+            'timestamp' => (string) (time() * 1000),
+            'sign_method' => 'sha256',
             'refresh_token' => $this->account->refresh_token,
-        ]);
+        ];
+        ksort($params);
+        $stringToSign = $path;
+        foreach ($params as $k => $v) {
+            $stringToSign .= $k.$v;
+        }
+        $params['sign'] = strtoupper(hash_hmac('sha256', $stringToSign, $this->account->app_secret));
 
-        if (! $response || ! isset($response['access_token'])) {
+        try {
+            $response = Http::timeout(30)->get($this->authUrl.$path, $params);
+            $data = $response->json();
+        } catch (\Throwable $e) {
+            Log::error('Lazada token/refresh transport error', ['error' => $e->getMessage()]);
+
+            return false;
+        }
+
+        if (! is_array($data) || empty($data['access_token'])) {
+            Log::warning('Lazada token/refresh ไม่สำเร็จ', ['resp' => $data]);
+
             return false;
         }
 
         $this->account->update([
-            'access_token' => $response['access_token'],
-            'refresh_token' => $response['refresh_token'] ?? $this->account->refresh_token,
-            'token_expires_at' => now()->addSeconds($response['expires_in'] ?? 3600),
+            'access_token' => $data['access_token'],
+            'refresh_token' => $data['refresh_token'] ?? $this->account->refresh_token,
+            'token_expires_at' => now()->addSeconds((int) ($data['expires_in'] ?? 3600)),
             'status' => 'active',
         ]);
 

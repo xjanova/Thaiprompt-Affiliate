@@ -144,46 +144,59 @@ class CatalogController extends Controller
             try {
                 $data = $this->importer->fetchProductData($row['url']);
 
-                if ($this->existsInCatalog($data['item_id'])) {
-                    $skipped[] = ['name' => $data['name'], 'reason' => 'มีในแคตตาล็อกแล้ว'];
+                // 🔒 ล็อกต่อ item กัน race (manual import ชนกับ cron auto-import ของ item เดียวกัน → ซ้ำ
+                //    เพราะ unique index เดิม (account_id,external_product_id) ใช้ไม่ได้เมื่อ account_id=NULL)
+                $lock = \Illuminate\Support\Facades\Cache::lock('lazada_catalog:'.$platformId.':'.$data['item_id'], 15);
+                if (! $lock->get()) {
+                    $skipped[] = ['name' => $data['name'], 'reason' => 'กำลังนำเข้าโดยกระบวนการอื่น'];
 
                     continue;
                 }
 
-                $cost = (float) $data['price'];
-                $mode = $row['mode'] ?? $d['mode'];
+                try {
+                    if ($this->existsInCatalog($data['item_id'])) {
+                        $skipped[] = ['name' => $data['name'], 'reason' => 'มีในแคตตาล็อกแล้ว'];
 
-                $product = MarketplaceProduct::create([
-                    'account_id' => null,
-                    'platform_id' => $platformId,
-                    'fulfillment_mode' => $mode,
-                    'external_product_id' => $data['item_id'],
-                    'name' => mb_substr($data['name'], 0, 500),
-                    'description' => $data['description_html'] ?? null,
-                    'brand' => $data['brand'],
-                    'category' => $data['lazada_category'] ?: null,
-                    'price' => $cost,
-                    'original_price' => $data['compare_at_price'],
-                    'cost_price' => $cost,
-                    'selling_price' => MarketplaceProduct::computeSellingPrice($cost, $d['markup'], $d['rounding']),
-                    'markup_percent' => $d['markup'],
-                    'price_is_manual' => false,
-                    'currency' => 'THB',
-                    'stock_quantity' => 0,
-                    'is_available' => true,
-                    'main_image_url' => $data['main_image'],
-                    'images' => $data['images'],
-                    'variants' => $data['variants'],
-                    'affiliate_url' => $data['source_url'],
-                    'commission_rate' => $d['commission'],
-                    'source' => 'scrape',
-                    'source_url' => $data['source_url'],
-                    'sync_status' => 'synced',
-                    'is_active' => true,
-                    'last_synced_at' => now(),
-                ]);
+                        continue;
+                    }
 
-                $imported[] = ['id' => $product->id, 'name' => $product->name];
+                    $cost = (float) $data['price'];
+                    $mode = $row['mode'] ?? $d['mode'];
+
+                    $product = MarketplaceProduct::create([
+                        'account_id' => null,
+                        'platform_id' => $platformId,
+                        'fulfillment_mode' => $mode,
+                        'external_product_id' => $data['item_id'],
+                        'name' => mb_substr($data['name'], 0, 500),
+                        'description' => $data['description_html'] ?? null,
+                        'brand' => $data['brand'],
+                        'category' => $data['lazada_category'] ?: null,
+                        'price' => $cost,
+                        'original_price' => $data['compare_at_price'],
+                        'cost_price' => $cost,
+                        'selling_price' => MarketplaceProduct::computeSellingPrice($cost, $d['markup'], $d['rounding']),
+                        'markup_percent' => $d['markup'],
+                        'price_is_manual' => false,
+                        'currency' => 'THB',
+                        'stock_quantity' => 0,
+                        'is_available' => true,
+                        'main_image_url' => $data['main_image'],
+                        'images' => $data['images'],
+                        'variants' => $data['variants'],
+                        'affiliate_url' => $data['source_url'],
+                        'commission_rate' => $d['commission'],
+                        'source' => 'scrape',
+                        'source_url' => $data['source_url'],
+                        'sync_status' => 'synced',
+                        'is_active' => true,
+                        'last_synced_at' => now(),
+                    ]);
+
+                    $imported[] = ['id' => $product->id, 'name' => $product->name];
+                } finally {
+                    $lock->release();
+                }
             } catch (\Throwable $e) {
                 Log::warning('Lazada Hub: นำเข้าแคตตาล็อกล้มเหลว', ['url' => $row['url'], 'error' => $e->getMessage()]);
                 $errors[] = ['url' => $row['url'], 'error' => $e->getMessage()];
@@ -223,9 +236,13 @@ class CatalogController extends Controller
         $product->markup_percent = $markup;
         $product->is_active = (bool) ($validated['is_active'] ?? $product->is_active);
 
-        if ($manual && isset($validated['selling_price'])) {
-            $product->selling_price = (float) $validated['selling_price'];
+        if ($manual) {
+            // ตั้งราคาเอง: กรอกราคามา → ใช้ค่านั้น / ถ้าเว้นว่าง (ลบช่องทิ้ง) → คงราคาเดิมไว้
+            // (ไม่เด้งกลับเป็นโหมดอัตโนมัติเงียบๆ — ผู้ใช้ตั้งใจติ๊ก "ตั้งราคาเอง" ไว้)
             $product->price_is_manual = true;
+            if (isset($validated['selling_price']) && $validated['selling_price'] !== null) {
+                $product->selling_price = (float) $validated['selling_price'];
+            }
         } else {
             $product->price_is_manual = false;
             $product->selling_price = MarketplaceProduct::computeSellingPrice($cost, $markup, $d['rounding']);
@@ -302,7 +319,7 @@ class CatalogController extends Controller
         return [
             'markup' => (float) MarketplaceSetting::get('lazada_default_markup_percent', 30),
             'rounding' => (string) MarketplaceSetting::get('lazada_price_rounding', 'baht'),
-            'mode' => (string) MarketplaceSetting::get('lazada_default_fulfillment_mode', 'affiliate'),
+            'mode' => in_array($m = (string) MarketplaceSetting::get('lazada_default_fulfillment_mode', 'affiliate'), ['affiliate', 'resell'], true) ? $m : 'affiliate',
             'commission' => (float) MarketplaceSetting::get('affiliate_commission_default', 5),
         ];
     }

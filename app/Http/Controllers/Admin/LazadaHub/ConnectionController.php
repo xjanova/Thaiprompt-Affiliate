@@ -82,7 +82,7 @@ class ConnectionController extends Controller
 
         return redirect()
             ->route('admin.lazada-hub.connections.index')
-            ->with('success', 'เพิ่มการเชื่อมต่อสำเร็จ — กด "ทดสอบการเชื่อมต่อ" เพื่อยืนยัน');
+            ->with('success', 'เพิ่มการเชื่อมต่อสำเร็จ — บัญชี Seller กดปุ่ม "เชื่อมต่อ" (OAuth) เพื่อรับ Access Token ก่อน แล้วค่อยกด "ทดสอบ"');
     }
 
     /**
@@ -109,11 +109,17 @@ class ConnectionController extends Controller
         $data = $this->validateInput($request, isCreate: false);
 
         $this->fillAccount($account, $data, isCreate: false);
+
+        // เพิ่งแก้ credential → ล้างสถานะ error เก่า (กันโชว์ "มีปัญหา" + ข้อความเดิมค้างทั้งที่แก้ถูกแล้ว)
+        if ($account->status === 'error') {
+            $account->status = 'inactive';
+            $account->last_error = null;
+        }
         $account->save();
 
         return redirect()
             ->route('admin.lazada-hub.connections.index')
-            ->with('success', 'อัพเดทการเชื่อมต่อสำเร็จ');
+            ->with('success', 'อัพเดทการเชื่อมต่อสำเร็จ — กดทดสอบอีกครั้งเพื่อยืนยัน');
     }
 
     /**
@@ -145,6 +151,15 @@ class ConnectionController extends Controller
             ]);
         }
 
+        // ยังไม่มี Access Token (เพิ่งกรอก key/secret ยังไม่ได้ทำ OAuth) → /seller/get จะ fail แน่
+        // ไม่ตั้ง status=error (credential อาจถูก แค่ต้อง authorize ก่อน) — ชี้ทางให้กด "เชื่อมต่อ"
+        if (empty($account->access_token)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'บัญชีนี้ยังไม่มี Access Token — กดปุ่ม "เชื่อมต่อ" เพื่อรับ token ผ่าน OAuth ก่อน แล้วค่อยกดทดสอบนะคะ',
+            ]);
+        }
+
         try {
             $account->loadMissing('platform');
             $service = MarketplaceFactory::create($account);
@@ -169,7 +184,7 @@ class ConnectionController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+                'message' => 'เชื่อมต่อไม่สำเร็จ ระบบขัดข้องหรือคีย์ไม่ถูกต้อง ลองใหม่อีกครั้งนะคะ',
             ], 200);
         }
     }
@@ -195,9 +210,17 @@ class ConnectionController extends Controller
                 ->with('error', 'กรุณากรอก App Key / App Secret ก่อนเริ่มเชื่อมต่อ');
         }
 
-        // state กัน CSRF — เก็บใน session แล้วเทียบตอน callback
+        // state กัน CSRF — เก็บแบบ map (state => account_id) รองรับเชื่อมหลายบัญชี/หลายแท็บพร้อมกัน
         $state = Str::random(40);
-        session(['lazada_oauth' => ['state' => $state, 'account_id' => $account->id]]);
+        $map = session('lazada_oauth', []);
+        if (! is_array($map)) {
+            $map = [];
+        }
+        $map[$state] = $account->id;
+        if (count($map) > 8) {            // เก็บไม่เกิน 8 flow ล่าสุด กัน session บวม
+            $map = array_slice($map, -8, null, true);
+        }
+        session(['lazada_oauth' => $map]);
 
         $url = LazadaApiService::buildAuthorizationUrl(
             $account->app_key,
@@ -217,14 +240,18 @@ class ConnectionController extends Controller
 
         $code = (string) $request->query('code', '');
         $state = (string) $request->query('state', '');
-        $saved = session('lazada_oauth');
-        session()->forget('lazada_oauth');
+        $map = session('lazada_oauth', []);
+        $accountId = is_array($map) ? ($map[$state] ?? null) : null;
+        if ($accountId !== null) {
+            unset($map[$state]);                  // state ใช้ครั้งเดียว (one-time)
+            session(['lazada_oauth' => $map]);
+        }
 
-        if ($code === '' || ! is_array($saved) || ! hash_equals((string) ($saved['state'] ?? ''), $state)) {
+        if ($code === '' || ! $accountId) {
             return redirect($index)->with('error', 'การเชื่อมต่อถูกยกเลิก หรือ state ไม่ถูกต้อง (ลองใหม่อีกครั้ง)');
         }
 
-        $account = MarketplaceAccount::find($saved['account_id'] ?? 0);
+        $account = MarketplaceAccount::find($accountId);
         if (! $account) {
             return redirect($index)->with('error', 'ไม่พบบัญชีที่จะเชื่อมต่อ');
         }
@@ -240,9 +267,11 @@ class ConnectionController extends Controller
 
             if (! is_array($token) || empty($token['access_token'])) {
                 $msg = is_array($token) ? ($token['message'] ?? 'แลก token ไม่สำเร็จ') : 'แลก token ไม่สำเร็จ';
+                // เก็บรายละเอียดฝั่ง server, แสดงผู้ใช้แบบ generic (ไม่หลุด raw provider message ออก UI)
+                Log::warning('Lazada Hub: createTokenFromCode ไม่สำเร็จ', ['account_id' => $account->id, 'message' => $msg]);
                 $account->update(['status' => 'error', 'last_error' => mb_substr((string) $msg, 0, 1000)]);
 
-                return redirect($index)->with('error', 'เชื่อมต่อไม่สำเร็จ: '.$msg);
+                return redirect($index)->with('error', 'เชื่อมต่อไม่สำเร็จ — ตรวจสอบ App Key/Secret และ Callback URL ในแอป Lazada แล้วลองใหม่นะคะ');
             }
 
             $account->access_token = $token['access_token'];
@@ -261,7 +290,7 @@ class ConnectionController extends Controller
         } catch (\Throwable $e) {
             Log::error('Lazada Hub: callback ล้มเหลว', ['account_id' => $account->id, 'error' => $e->getMessage()]);
 
-            return redirect($index)->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return redirect($index)->with('error', 'เชื่อมต่อไม่สำเร็จ ระบบขัดข้องชั่วคราว ลองใหม่อีกครั้งนะคะ');
         }
     }
 
