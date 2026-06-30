@@ -12,14 +12,17 @@
 .eve-fab:hover{transform:translateY(-2px) scale(1.03)}
 .eve-fab .eve-fab-txt{font-weight:700;font-size:13.5px;white-space:nowrap}
 .eve-fab .eve-fab-sub{font-size:10px;opacity:.85;font-weight:400}
-.eve-panel{position:absolute;right:0;bottom:0;width:min(360px,calc(100vw - 24px));height:min(560px,calc(100vh - 90px));background:#fffdf9;border-radius:20px;box-shadow:0 24px 60px rgba(40,30,90,.34);display:flex;flex-direction:column;overflow:hidden;border:1px solid #efe6d6}
+.eve-panel{position:absolute;right:0;bottom:0;width:min(392px,calc(100vw - 24px));height:min(560px,calc(100vh - 90px));background:#fffdf9;border-radius:20px;box-shadow:0 24px 60px rgba(40,30,90,.34);display:flex;flex-direction:column;overflow:hidden;border:1px solid #efe6d6}
 .eve-head{display:flex;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(135deg,#7a5cff,#9b7bff);color:#fff}
 .eve-head .nm{font-weight:800;font-size:15px;line-height:1.1}
 .eve-head .st{font-size:11px;opacity:.9}
 .eve-ic{margin-left:auto;display:flex;gap:4px}
 .eve-ic button{background:rgba(255,255,255,.18);border:0;color:#fff;width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
 .eve-ic button:hover{background:rgba(255,255,255,.32)}
-.eve-body-c{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#fffdf9}
+.eve-body{flex:1;display:flex;min-height:0}
+.eve-evecol{width:116px;flex:0 0 116px;position:relative;background:linear-gradient(180deg,#f4eeff,#e7defa);display:flex;align-items:flex-end;justify-content:center;border-right:1px solid #efe6d6;overflow:hidden}
+.eve-evecol .eve-ava{margin-bottom:-4px}
+.eve-body-c{flex:1;min-width:0;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#fffdf9}
 .eve-msg{max-width:82%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;word-wrap:break-word}
 .eve-msg.u{align-self:flex-end;background:linear-gradient(135deg,#7a5cff,#9b7bff);color:#fff;border-bottom-right-radius:4px}
 .eve-msg.a{align-self:flex-start;background:#f1ecff;color:#3a2b5e;border-bottom-left-radius:4px}
@@ -54,7 +57,6 @@
     {{-- แผงแชท --}}
     <div class="eve-panel" x-show="open" x-transition.scale.origin.bottom.right>
         <div class="eve-head">
-            <x-eve.avatar :size="56" crop x-bind:class="'eve-'+emotion" />
             <div>
                 <div class="nm">น้อง Eve</div>
                 <div class="st" x-text="busy ? 'กำลังคิด...' : (speaking ? 'กำลังพูด...' : 'พร้อมช่วยค่ะ')"></div>
@@ -65,7 +67,12 @@
             </div>
         </div>
 
-        <div class="eve-body-c" x-ref="list">
+        <div class="eve-body">
+            {{-- Eve เต็มตัว คอลัมน์ซ้าย (ไม่ทับข้อความ) + หน้าขยับตามอารมณ์ --}}
+            <div class="eve-evecol">
+                <x-eve.avatar :size="114" x-bind:class="'eve-'+emotion" />
+            </div>
+            <div class="eve-body-c" x-ref="list">
             <template x-for="(m,i) in messages" :key="i">
                 <div style="display:flex;flex-direction:column;gap:6px;max-width:100%" :style="m.role==='user' ? 'align-items:flex-end' : 'align-items:flex-start'">
                     <div class="eve-msg" :class="m.role==='user' ? 'u' : 'a'" x-text="m.content"></div>
@@ -84,6 +91,7 @@
                 </div>
             </template>
             <div class="eve-typing" x-show="busy">น้อง Eve กำลังพิมพ์<span x-text="dots"></span></div>
+            </div>
         </div>
 
         <div class="eve-foot">
