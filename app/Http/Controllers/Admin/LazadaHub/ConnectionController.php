@@ -143,12 +143,14 @@ class ConnectionController extends Controller
     {
         $this->authorizeLazada($account);
 
-        // โปรแกรม affiliate (Involve Asia) ยังไม่มี endpoint ทดสอบในเฟสนี้
+        // โปรแกรม affiliate (Involve Asia) — ทดสอบด้วยการ authenticate (key+secret → token)
         if ($account->isAffiliateProgram()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'การทดสอบบัญชี Affiliate (Involve Asia) จะเปิดใช้งานใน Phase ถัดไป',
-            ]);
+            [$ok, $msg] = (new \App\Services\Marketplace\InvolveAsiaService($account))->testConnection();
+            $account->update($ok
+                ? ['status' => 'active', 'last_error' => null]
+                : ['status' => 'error', 'last_error' => mb_substr($msg, 0, 1000)]);
+
+            return response()->json(['success' => $ok, 'message' => $msg]);
         }
 
         // ยังไม่มี Access Token (เพิ่งกรอก key/secret ยังไม่ได้ทำ OAuth) → /seller/get จะ fail แน่
