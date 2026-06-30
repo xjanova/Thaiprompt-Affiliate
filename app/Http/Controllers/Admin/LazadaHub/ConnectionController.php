@@ -240,6 +240,10 @@ class ConnectionController extends Controller
 
         $code = (string) $request->query('code', '');
         $state = (string) $request->query('state', '');
+        // 🩺 Lazada เด้งกลับพร้อม error แทน code (callback URL ไม่ตรง / ผู้ใช้ปฏิเสธ / แอปไม่มีสิทธิ์ / region ไม่ตรง)
+        //    เดิมกลืนเป็น "ถูกยกเลิก" หมด → มองไม่เห็นเหตุจริง. เก็บไว้โชว์/log ให้ debug ได้
+        $oauthError = trim((string) ($request->query('error_description') ?: $request->query('error') ?: ''));
+
         $map = session('lazada_oauth', []);
         $accountId = is_array($map) ? ($map[$state] ?? null) : null;
         if ($accountId !== null) {
@@ -247,8 +251,23 @@ class ConnectionController extends Controller
             session(['lazada_oauth' => $map]);
         }
 
-        if ($code === '' || ! $accountId) {
-            return redirect($index)->with('error', 'การเชื่อมต่อถูกยกเลิก หรือ state ไม่ถูกต้อง (ลองใหม่อีกครั้ง)');
+        if ($code === '') {
+            // เก็บเหตุจริงจาก Lazada ลงบัญชี (ถ้า resolve ได้) ให้แอดมินเห็นในรายการเชื่อมต่อ
+            if ($oauthError !== '' && $accountId && ($errAcc = MarketplaceAccount::find($accountId))) {
+                $this->authorizeLazada($errAcc);
+                $errAcc->update(['status' => 'error', 'last_error' => 'Lazada ปฏิเสธ OAuth: '.mb_substr($oauthError, 0, 800)]);
+            }
+            if ($oauthError !== '') {
+                Log::warning('Lazada Hub: OAuth authorize ส่ง error', ['account_id' => $accountId, 'error' => $oauthError]);
+
+                return redirect($index)->with('error', 'เชื่อมต่อไม่สำเร็จ: '.Str::limit($oauthError, 160).' — ตรวจให้ Callback URL ในแอป Lazada ตรงกับด้านบนเป๊ะ แล้วลองใหม่');
+            }
+
+            return redirect($index)->with('error', 'การเชื่อมต่อถูกยกเลิก (Lazada ไม่ได้ส่ง code กลับมา) — ตรวจ Callback URL ในแอปให้ตรงเป๊ะ แล้วกด "เชื่อมต่อ" ใหม่');
+        }
+
+        if (! $accountId) {
+            return redirect($index)->with('error', 'เซสชันเชื่อมต่อหมดอายุ (state ไม่ตรง) — กดปุ่ม "เชื่อมต่อ" ใหม่จากหน้านี้อีกครั้ง (อย่าเปิดลิงก์ค้างข้ามนาน)');
         }
 
         $account = MarketplaceAccount::find($accountId);
@@ -266,12 +285,16 @@ class ConnectionController extends Controller
                 : null;
 
             if (! is_array($token) || empty($token['access_token'])) {
-                $msg = is_array($token) ? ($token['message'] ?? 'แลก token ไม่สำเร็จ') : 'แลก token ไม่สำเร็จ';
-                // เก็บรายละเอียดฝั่ง server, แสดงผู้ใช้แบบ generic (ไม่หลุด raw provider message ออก UI)
-                Log::warning('Lazada Hub: createTokenFromCode ไม่สำเร็จ', ['account_id' => $account->id, 'message' => $msg]);
-                $account->update(['status' => 'error', 'last_error' => mb_substr((string) $msg, 0, 1000)]);
+                // 🩺 เก็บเหตุจริงจาก Lazada (type/code/message) — หน้านี้แอดมินเท่านั้น แสดงเหตุได้เพื่อ debug
+                //    (เช่น IllegalSignature=secret ผิด, invalid code=callback ช้า/ใช้ซ้ำ, ApiCallLimit ฯลฯ)
+                $reason = is_array($token)
+                    ? trim(((string) ($token['type'] ?? '')).' '.((string) ($token['code'] ?? '')).' '.((string) ($token['message'] ?? '')))
+                    : 'ไม่มีการตอบกลับจาก Lazada (transport ล้มเหลว)';
+                $reason = $reason !== '' ? $reason : 'แลก token ไม่สำเร็จ';
+                Log::warning('Lazada Hub: createTokenFromCode ไม่สำเร็จ', ['account_id' => $account->id, 'reason' => $reason]);
+                $account->update(['status' => 'error', 'last_error' => mb_substr($reason, 0, 1000)]);
 
-                return redirect($index)->with('error', 'เชื่อมต่อไม่สำเร็จ — ตรวจสอบ App Key/Secret และ Callback URL ในแอป Lazada แล้วลองใหม่นะคะ');
+                return redirect($index)->with('error', 'เชื่อมต่อไม่สำเร็จ: '.Str::limit($reason, 160).' — ตรวจ App Key/Secret + Callback URL ในแอป Lazada แล้วลองใหม่');
             }
 
             $account->access_token = $token['access_token'];
