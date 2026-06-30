@@ -23,9 +23,12 @@
 .eve-evecol{width:116px;flex:0 0 116px;position:relative;background:linear-gradient(180deg,#f4eeff,#e7defa);display:flex;align-items:flex-end;justify-content:center;border-right:1px solid #efe6d6;overflow:hidden}
 .eve-evecol .eve-ava{margin-bottom:-4px}
 .eve-body-c{flex:1;min-width:0;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#fffdf9}
-.eve-msg{max-width:82%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;word-wrap:break-word}
-.eve-msg.u{align-self:flex-end;background:linear-gradient(135deg,#7a5cff,#9b7bff);color:#fff;border-bottom-right-radius:4px}
-.eve-msg.a{align-self:flex-start;background:#f1ecff;color:#3a2b5e;border-bottom-left-radius:4px}
+.eve-msg{max-width:82%;padding:9px 13px;border-radius:15px;font-size:13.5px;line-height:1.5;word-wrap:break-word;position:relative}
+/* หางชี้ทิศ — บอกชัดว่าใครพูด: ลูกค้า=ชี้ขวา / น้อง Eve=ชี้ซ้าย */
+.eve-msg.u{align-self:flex-end;background:linear-gradient(135deg,#7a5cff,#9b7bff);color:#fff;border-bottom-right-radius:3px}
+.eve-msg.u::after{content:'';position:absolute;bottom:0;right:-6px;width:12px;height:14px;background:#9b7bff;clip-path:polygon(0 0,0 100%,100% 100%)}
+.eve-msg.a{align-self:flex-start;background:#f1ecff;color:#3a2b5e;border-bottom-left-radius:3px}
+.eve-msg.a::after{content:'';position:absolute;bottom:0;left:-6px;width:12px;height:14px;background:#f1ecff;clip-path:polygon(100% 0,100% 100%,0 100%)}
 .eve-typing{align-self:flex-start;color:#9b8fc0;font-size:13px;padding:4px 8px}
 .eve-cards{display:flex;gap:8px;overflow-x:auto;padding:2px 1px 6px;max-width:100%;scrollbar-width:thin}
 .eve-card{flex:0 0 128px;width:128px;background:#fff;border:1px solid #ece4f7;border-radius:12px;overflow:hidden;text-decoration:none;color:#3a2b5e;box-shadow:0 3px 10px rgba(90,60,180,.08);transition:transform .12s}
