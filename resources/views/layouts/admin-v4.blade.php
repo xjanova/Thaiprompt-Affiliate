@@ -235,6 +235,9 @@
     @if(session('warning'))<div x-data x-init="$dispatch('notify',{type:'warning',message:@js(session('warning'))})"></div>@endif
     @if(session('info'))<div x-data x-init="$dispatch('notify',{type:'info',message:@js(session('info'))})"></div>@endif
 
+    {{-- 🌸 น้อง Eve — ผู้ช่วย AI (หลังบ้านแอดมิน) --}}
+    <x-eve.widget />
+
     @stack('scripts')
 </body>
 </html>

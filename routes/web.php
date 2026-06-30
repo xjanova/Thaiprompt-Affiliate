@@ -466,6 +466,10 @@ Route::get('/platform-wiki', function () {
     return redirect()->route('wiki.index');
 })->name('platform.wiki');
 
+// 🌸 น้อง Eve — ผู้ช่วย AI หน้าเว็บ (ฝั่งลูกค้า) — public + throttle กัน spam
+Route::post('/eve/chat', [\App\Http\Controllers\EveAssistantController::class, 'chat'])
+    ->middleware('throttle:30,1')->name('eve.chat');
+
 // Dynamic Page Routes (Privacy Policy, Terms, etc.)
 // ⚠️ Legal Critical: Privacy Policy, Terms of Service ต้องเข้าถึงได้ตลอดเวลา
 Route::match(['GET', 'HEAD'], '/page/{slug}', [PageController::class, 'show'])->name('page.show');
