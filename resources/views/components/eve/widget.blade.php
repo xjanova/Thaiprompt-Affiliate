@@ -24,6 +24,14 @@
 .eve-msg.u{align-self:flex-end;background:linear-gradient(135deg,#7a5cff,#9b7bff);color:#fff;border-bottom-right-radius:4px}
 .eve-msg.a{align-self:flex-start;background:#f1ecff;color:#3a2b5e;border-bottom-left-radius:4px}
 .eve-typing{align-self:flex-start;color:#9b8fc0;font-size:13px;padding:4px 8px}
+.eve-cards{display:flex;gap:8px;overflow-x:auto;padding:2px 1px 6px;max-width:100%;scrollbar-width:thin}
+.eve-card{flex:0 0 128px;width:128px;background:#fff;border:1px solid #ece4f7;border-radius:12px;overflow:hidden;text-decoration:none;color:#3a2b5e;box-shadow:0 3px 10px rgba(90,60,180,.08);transition:transform .12s}
+.eve-card:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(90,60,180,.16)}
+.eve-card-img{width:100%;height:92px;background:#f6f2fc;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.eve-card-img img{width:100%;height:100%;object-fit:contain}
+.eve-card-nm{font-size:11.5px;line-height:1.35;padding:6px 8px 2px;height:46px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.eve-card-pr{font-size:13px;font-weight:800;color:#7a5cff;padding:0 8px 4px}
+.eve-card-btn{margin:0 8px 8px;text-align:center;background:linear-gradient(135deg,#7a5cff,#9b7bff);color:#fff;font-size:11px;font-weight:700;padding:5px 0;border-radius:8px}
 .eve-foot{display:flex;gap:8px;padding:10px;border-top:1px solid #efe6d6;background:#fff}
 .eve-foot input{flex:1;border:1px solid #e3d9f0;border-radius:12px;padding:9px 13px;font-size:13.5px;outline:none;font-family:inherit}
 .eve-foot input:focus{border-color:#9b7bff}
@@ -59,7 +67,21 @@
 
         <div class="eve-body-c" x-ref="list">
             <template x-for="(m,i) in messages" :key="i">
-                <div class="eve-msg" :class="m.role==='user' ? 'u' : 'a'" x-text="m.content"></div>
+                <div style="display:flex;flex-direction:column;gap:6px;max-width:100%" :style="m.role==='user' ? 'align-items:flex-end' : 'align-items:flex-start'">
+                    <div class="eve-msg" :class="m.role==='user' ? 'u' : 'a'" x-text="m.content"></div>
+                    <template x-if="m.products && m.products.length">
+                        <div class="eve-cards">
+                            <template x-for="(p,pi) in m.products" :key="pi">
+                                <a class="eve-card" :href="p.url" target="_blank" rel="noopener">
+                                    <div class="eve-card-img"><img :src="p.image || '/images/no-image.png'" :alt="p.name" loading="lazy" onerror="this.style.opacity=0"></div>
+                                    <div class="eve-card-nm" x-text="p.name"></div>
+                                    <div class="eve-card-pr" x-text="'฿' + (p.price||0).toLocaleString('th-TH')"></div>
+                                    <div class="eve-card-btn">ดูสินค้า</div>
+                                </a>
+                            </template>
+                        </div>
+                    </template>
+                </div>
             </template>
             <div class="eve-typing" x-show="busy">น้อง Eve กำลังพิมพ์<span x-text="dots"></span></div>
         </div>
@@ -130,7 +152,7 @@ function eveWidget() {
                 });
                 const data = await res.json();
                 const reply = data?.data?.reply || data?.message || 'ขออภัยค่ะ ตอนนี้น้อง Eve ตอบไม่ได้ ลองใหม่อีกครั้งนะคะ';
-                this.messages.push({ role: 'assistant', content: reply });
+                this.messages.push({ role: 'assistant', content: reply, products: (data?.data?.products || []) });
                 this.emotion = this.moodToEmotion(data?.data?.mood);
                 this.scroll();
                 this.speak(reply);

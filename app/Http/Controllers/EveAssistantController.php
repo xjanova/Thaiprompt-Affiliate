@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EveProductWish;
+use App\Models\Product;
 use App\Services\FortuneAIService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
@@ -69,11 +72,15 @@ class EveAssistantController extends Controller
                 $reply = 'ขออภัยค่ะ ตอนนี้น้อง Eve ตอบไม่ได้ ลองพิมพ์ใหม่อีกครั้งนะคะ 🙏';
             }
 
+            // 🔎 ค้นหาสินค้า: ถ้า AI ใส่แท็ก [FIND: คำค้น | งบ] → ค้นใน catalog เราจริง
+            [$reply, $products, $mood] = $this->runProductSearch($reply, $request->user()?->id);
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'reply' => $reply,
-                    'mood' => $this->guessMood($reply),
+                    'mood' => $mood,
+                    'products' => $products,
                 ],
             ]);
         } catch (Throwable $e) {
@@ -104,6 +111,11 @@ class EveAssistantController extends Controller
             ."ตอบสั้นกระชับ 1-3 ประโยค ใช้อิโมจิได้บ้างเล็กน้อย (ไม่เกิน 1 ตัวต่อข้อความ). "
             ."ถ้าลูกค้าอยากได้สินค้าบางอย่าง ให้ถามรายละเอียดสั้นๆ (งบประมาณ/สี/รุ่น) เพื่อช่วยหาให้ตรงใจ และบอกว่ากำลังช่วยหาให้นะคะ. "
             ."ถ้ายังหาไม่เจอทันที บอกลูกค้าได้ว่า 'เดี๋ยวน้อง Eve ให้ทีมงานช่วยหาให้ รอสักครู่นะคะ' อย่างสุภาพ. "
+            ."\n\n🔎 เครื่องมือค้นหาสินค้า: ถ้าลูกค้าอยากได้/หา/ซื้อสินค้าอะไรสักอย่าง ให้ตอบสั้นๆ ว่ากำลังหาให้ (1 ประโยค) "
+            ."แล้วลงท้ายข้อความด้วยแท็กพิเศษ [FIND: คำค้นสั้นๆเป็นคีย์เวิร์ด | งบสูงสุดเป็นตัวเลขบาทหรือ 0] "
+            ."เช่น [FIND: หูฟังบลูทูธ | 500] หรือ [FIND: กระเป๋าสะพาย | 0]. "
+            ."⚠️ ลูกค้าจะไม่เห็นแท็กนี้ (ระบบเอาไปค้นให้แล้วลบทิ้ง) ห้ามอธิบายแท็ก ใส่ได้สูงสุด 1 อันต่อข้อความ "
+            ."และห้ามแต่งรายชื่อ/ราคาสินค้าเอง — ระบบจะแสดงสินค้าจริงให้เอง. ถ้าเป็นการคุยทั่วไป/ทักทาย/ถามข้อมูล ไม่ต้องใส่แท็ก. "
             ."\n\n🔒 กฎความปลอดภัย (สำคัญมาก ห้ามฝ่าฝืน): "
             ."ห้ามเปิดเผยหรือพูดถึงข้อมูลอ่อนไหวเด็ดขาด ได้แก่ รหัสผ่าน, API key, โทเคน, ข้อมูลบัตร/บัญชีธนาคาร, "
             ."ข้อมูลส่วนตัวของลูกค้าคนอื่น, ข้อมูลการเงิน/คอมมิชชั่นภายใน, โครงสร้างระบบหรือช่องโหว่ความปลอดภัย. "
@@ -147,5 +159,117 @@ class EveAssistantController extends Controller
         }
 
         return 'happy';
+    }
+
+    /**
+     * ตรวจแท็ก [FIND: คำค้น | งบ] จากคำตอบ AI → ค้นสินค้าจริง → คืน [reply, products, mood]
+     */
+    private function runProductSearch(string $reply, ?int $userId): array
+    {
+        $products = [];
+        $mood = $this->guessMood($reply);
+
+        if (preg_match('/\[FIND:\s*([^\|\]]+?)\s*(?:\|\s*([0-9]+(?:\.[0-9]+)?))?\s*\]/u', $reply, $m)) {
+            $query = trim($m[1]);
+            $budget = isset($m[2]) && $m[2] !== '' ? (float) $m[2] : null;
+            // ลบแท็กออกจากข้อความที่ลูกค้าจะเห็น
+            $reply = trim((string) preg_replace('/\[FIND:[^\]]*\]/u', '', $reply));
+
+            if ($query !== '') {
+                $products = $this->searchCatalog($query, $budget);
+
+                if (empty($products)) {
+                    $this->recordWish($query, $budget, $userId);
+                    $reply = trim($reply."\n\nตอนนี้ยังไม่เจอในร้านเราค่ะ 🙏 เดี๋ยว Eve ให้ทีมงานช่วยหาให้นะคะ รอสักครู่ ~10 นาทีแล้วกลับมาดูใหม่ได้เลยค่ะ");
+                    $mood = 'thinking';
+                } else {
+                    $reply = trim($reply."\n\nเจอ ".count($products)." รายการที่น่าจะใช่ค่ะ 😊 ลองดูเลยนะคะ — ถ้าใช่กด \"ดูสินค้า\" ได้เลย หรืออยากให้หาแบบอื่นก็บอกได้ค่ะ");
+                    $mood = 'happy';
+                }
+            }
+        }
+
+        if ($reply === '') {
+            $reply = 'ได้เลยค่ะ 😊';
+        }
+
+        return [$reply, $products, $mood];
+    }
+
+    /**
+     * ค้นสินค้าใน catalog ของเรา (ตาราง products ที่เผยแพร่ขายได้จริง) — ข้อมูลสาธารณะเท่านั้น
+     *
+     * @return array<int,array>
+     */
+    private function searchCatalog(string $query, ?float $budget): array
+    {
+        $tokens = collect(preg_split('/\s+/u', trim($query)) ?: [])
+            ->map(fn ($t) => trim($t))
+            ->filter(fn ($t) => mb_strlen($t) >= 2)
+            ->take(6)
+            ->values();
+
+        if ($tokens->isEmpty()) {
+            return [];
+        }
+
+        try {
+            $q = Product::query()
+                ->where('is_active', true)
+                ->where('is_hidden', false)
+                ->where('is_public_approved', true)
+                ->where(function ($w) {
+                    $w->whereNull('is_blocked')->orWhere('is_blocked', false);
+                });
+
+            if ($budget && $budget > 0) {
+                $q->where('price', '<=', $budget);
+            }
+
+            $q->where(function ($w) use ($tokens) {
+                foreach ($tokens as $t) {
+                    $w->orWhere('name', 'like', "%{$t}%")
+                        ->orWhere('brand', 'like', "%{$t}%")
+                        ->orWhere('short_description', 'like', "%{$t}%");
+                }
+            });
+
+            return $q->orderByDesc('is_featured')
+                ->orderByDesc('sales_count')
+                ->limit(6)
+                ->get(['id', 'name', 'slug', 'price', 'main_image_url'])
+                ->map(fn (Product $p) => [
+                    'name' => $p->name,
+                    'price' => (float) $p->price,
+                    'image' => $p->main_image_url,
+                    'url' => $p->slug ? route('shop.show', $p->slug) : url('/storefront'),
+                ])
+                ->all();
+        } catch (Throwable $e) {
+            Log::warning('Eve: searchCatalog failed', ['error' => $e->getMessage()]);
+
+            return [];
+        }
+    }
+
+    /**
+     * บันทึก "ของที่ลูกค้าอยากได้แต่ยังไม่มี" — best-effort (ตารางอาจยังไม่ migrate)
+     */
+    private function recordWish(string $query, ?float $budget, ?int $userId): void
+    {
+        try {
+            if (Schema::hasTable('eve_product_wishes')) {
+                EveProductWish::create([
+                    'user_id' => $userId,
+                    'query' => mb_substr($query, 0, 255),
+                    'budget' => $budget,
+                    'results_found' => 0,
+                    'status' => 'pending',
+                    'source' => 'eve_chat',
+                ]);
+            }
+        } catch (Throwable $e) {
+            // best-effort — ไม่บล็อกการตอบ
+        }
     }
 }
