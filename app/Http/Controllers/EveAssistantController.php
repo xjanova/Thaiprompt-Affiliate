@@ -72,8 +72,9 @@ class EveAssistantController extends Controller
                 $reply = 'ขออภัยค่ะ ตอนนี้น้อง Eve ตอบไม่ได้ ลองพิมพ์ใหม่อีกครั้งนะคะ 🙏';
             }
 
-            // 🔎 ค้นหาสินค้า: ถ้า AI ใส่แท็ก [FIND: คำค้น | งบ] → ค้นใน catalog เราจริง
-            [$reply, $products, $mood] = $this->runProductSearch($reply, $request->user()?->id);
+            // 🔎 ค้นหาสินค้า: ใช้แท็ก [FIND:] จาก AI ถ้ามี — ไม่งั้นดึงเจตนาจาก "ข้อความลูกค้า" เอง
+            //    (กันเคสโมเดลเล็กไม่ปล่อยแท็ก → เดิมตอบ "หาให้ค่ะ" แต่ไม่เคยค้นจริง = ลูกค้าเห็นเป็นค้าง)
+            [$reply, $products, $mood] = $this->runProductSearch($reply, $data['message'], $request->user()?->id);
 
             return response()->json([
                 'success' => true,
@@ -164,7 +165,7 @@ class EveAssistantController extends Controller
     /**
      * ตรวจแท็ก [FIND: คำค้น | งบ] จากคำตอบ AI → ค้นสินค้าจริง → คืน [reply, products, mood]
      */
-    private function runProductSearch(string $reply, ?int $userId): array
+    private function runProductSearch(string $reply, string $userMessage, ?int $userId): array
     {
         // ดึงคำค้น + งบจากแท็ก (ทนทานต่อ noise: "500 บาท", "1,500", "~500", case-insensitive, เว้นวรรครอบ :|)
         $query = null;
@@ -180,6 +181,18 @@ class EveAssistantController extends Controller
         // ⚠️ ลบแท็ก [FIND...] "เสมอ" ก่อน return — ไม่ว่าจะ parse งบได้หรือไม่ กันแท็กดิบหลุดให้ลูกค้าเห็น
         $reply = trim((string) preg_replace('/\[\s*FIND\s*:[^\]]*\]/iu', '', $reply));
 
+        // ⭐ Fallback กันค้าง: ถ้า AI ไม่ปล่อยแท็ก แต่ลูกค้าสื่อว่าอยากได้/หาสินค้า
+        //    → ดึงคำค้นจาก "ข้อความลูกค้า" เองแล้วค้นให้เสมอ (โมเดลเล็กมักไม่ใส่แท็ก จึงต้องไม่พึ่งมัน)
+        if ($query === null || $query === '') {
+            [$intentQuery, $intentBudget] = $this->extractSearchIntent($userMessage);
+            if ($intentQuery !== null) {
+                $query = $intentQuery;
+                if ($budget === null) {
+                    $budget = $intentBudget;
+                }
+            }
+        }
+
         $products = [];
         $mood = $this->guessMood($reply);
 
@@ -189,7 +202,8 @@ class EveAssistantController extends Controller
 
                 if (empty($products)) {
                     $this->recordWish($query, $budget, $userId);
-                    $reply = trim($reply."\n\nตอนนี้ยังไม่เจอในร้านเราค่ะ 🙏 เดี๋ยว Eve ให้ทีมงานช่วยหาให้นะคะ รอสักครู่ ~10 นาทีแล้วกลับมาดูใหม่ได้เลยค่ะ");
+                    // 🙏 จริงใจ + ชวนปรับคำค้น (เลี่ยงสัญญา "รอ 10 นาที" ที่ยังไม่มีระบบส่งผลกลับจริง = ค้าง)
+                    $reply = trim($reply."\n\nตอนนี้ยังไม่เจอสินค้านี้ในร้านค่ะ 🙏 ลองบอกยี่ห้อ/รุ่น หรือพิมพ์คำค้นอื่นดูได้นะคะ เดี๋ยว Eve หาให้ใหม่ค่ะ");
                     $mood = 'thinking';
                 } else {
                     $reply = trim($reply."\n\nเจอ ".count($products)." รายการที่น่าจะใช่ค่ะ 😊 ลองดูเลยนะคะ — ถ้าใช่กด \"ดูสินค้า\" ได้เลย หรืออยากให้หาแบบอื่นก็บอกได้ค่ะ");
@@ -203,6 +217,60 @@ class EveAssistantController extends Controller
         }
 
         return [$reply, $products, $mood];
+    }
+
+    /**
+     * ดึง "เจตนาหาสินค้า + คำค้น + งบ" จากข้อความลูกค้าเอง (ไม่พึ่งแท็ก [FIND:] ของ AI)
+     *
+     * ⚠️ เหตุผล: โมเดล chat เล็ก (เช่น gemini-flash-lite) มักไม่ปล่อยแท็ก →
+     *    เดิม Eve ตอบ "กำลังหาให้ค่ะ" แต่ไม่เคยค้นจริง → ลูกค้าเห็นเป็น "ค้างไปเลย"
+     *    เมธอดนี้การันตีว่าถ้าลูกค้าสื่อว่าอยากได้ของ ระบบจะค้น catalog ให้เสมอ
+     *
+     * 🇹🇭 ความปลอดภัยภาษาไทย: ตัดคำสั่ง/คำเติม "เฉพาะหัว/ท้ายประโยค" (anchored ^ $) เท่านั้น
+     *    ห้าม str_replace ทั้งสตริง — "หา" เป็น substring ของ "อาหาร", "มี" ของ "มีด", "ขอ" ของ "ของ"
+     *    จึงไม่ใส่ มี/ขอ/ดู ในรายการตัดหัว (อันตราย) — ใช้คำประสมที่ชัดแทน เช่น "ขอดู"
+     *
+     * @return array{0: ?string, 1: ?float} [คำค้น (null = ไม่ใช่การหาสินค้า), งบ]
+     */
+    private function extractSearchIntent(string $message): array
+    {
+        $q = trim((string) preg_replace('/\s+/u', ' ', $message));
+        if ($q === '') {
+            return [null, null];
+        }
+
+        // ต้องมีสัญญาณว่ากำลังหา/อยากได้สินค้า ไม่งั้นถือเป็นคุยเล่น/ทักทาย (ไม่ค้น)
+        if (! preg_match('/(หา|อยากได้|อยากซื้อ|หาซื้อ|ซื้อ|ขาย|มีขาย|มี.{0,8}(ไหม|มั้ย|ป่าว|รึเปล่า)|แนะนำ|อยากหา|ช่วยหา|ขอดู|เอา|สั่ง|รุ่นไหน|ยี่ห้อ|ราคา|งบ)/u', $q)) {
+            return [null, null];
+        }
+
+        // งบประมาณ: "งบ 500", "ไม่เกิน 500", "ราคา 500", "500 บาท"
+        $budget = null;
+        if (preg_match('/(?:งบ|ไม่เกิน|ภายใน|ไม่ถึง|ราคา)\s*([0-9][0-9,.]*)/u', $q, $b)
+            || preg_match('/([0-9][0-9,.]*)\s*บาท/u', $q, $b)) {
+            $num = (float) preg_replace('/[^0-9.]/', '', $b[1]);
+            $budget = $num > 0 ? $num : null;
+        }
+
+        // ตัดวลีงบ/ราคา (มีตัวเลข = ปลอดภัย ไม่ทับชื่อสินค้า)
+        $q = preg_replace('/(?:งบ|ไม่เกิน|ภายใน|ไม่ถึง|ราคาไม่เกิน|ราคา)\s*[0-9][0-9,.]*\s*(?:บาท)?/u', ' ', $q);
+        $q = preg_replace('/[0-9][0-9,.]*\s*บาท/u', ' ', $q);
+
+        // ตัดคำสั่ง "หัวประโยค" (anchored ^) ทีละชั้น — คำประสมที่ยาว/ชัดก่อน
+        $q = preg_replace('/^\s*(ช่วย|รบกวน)\s*/u', '', (string) $q);
+        $q = preg_replace('/^\s*(ขอดู|อยากได้|อยากซื้อ|อยากหา|หาซื้อ|หาให้|ช่วยหา|แนะนำ|สั่งซื้อ|หา|ซื้อ|สั่ง|เอา)\s*/u', '', (string) $q);
+
+        // ตัดคำลงท้าย/คำถาม "ท้ายประโยค" (anchored $)
+        $q = preg_replace('/\s*(ราคาถูกๆ|ราคาถูก|ราคาประหยัด|เท่าไหร่|เท่าไร|ถูกๆ|ถูก|ดีๆ|สวยๆ|หน่อยค่ะ|หน่อยครับ|หน่อย|ด้วยค่ะ|ด้วยครับ|ด้วย|ให้หน่อย|ให้ที|ทีนะ|นะคะ|นะครับ|จ้า|ค่ะ|คะ|ครับ|มีไหม|มีมั้ย|ไหม|มั้ย|ป่าว|รึเปล่า|บ้าง|อะ|อ่ะ)+\s*$/u', '', (string) $q);
+
+        $q = trim((string) preg_replace('/\s+/u', ' ', (string) $q));
+
+        // เหลือสั้นไป หรือเหลือแต่คำถามล้วน → ไม่ค้น (กันค้นมั่ว)
+        if (mb_strlen($q) < 2 || preg_match('/^(อะไร|เท่าไหร่|เท่าไร|ยังไง|ที่ไหน|อันไหน|แบบไหน|ไง|ดี|มี|ของ|ราคา)$/u', $q)) {
+            return [null, null];
+        }
+
+        return [$q, $budget];
     }
 
     /**
