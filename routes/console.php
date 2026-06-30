@@ -47,6 +47,18 @@ Schedule::command('fortune:bill-reminder')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
+// 🛒 (2026-06-30) Lazada Hub — Auto-import คิวสินค้า (ค่อยๆ ดึงทีละน้อย)
+// ════════════════════════════════════════════════════════════════
+// อ่านคิว lazada_auto_import_queue → scrape ทีละ 5 รายการทุก 5 นาที จนครบ
+// เปิด/ปิดด้วย setting lazada_auto_sync_enabled (command เช็คเอง + return ถ้าปิด/คิวว่าง = ถูกมาก)
+Schedule::command('lazada-hub:auto-import --limit=5')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('lazada-hub-auto-import')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // 💬 (2026-06-19) Realtime warroom chat log — midnight cleanup
 // ════════════════════════════════════════════════════════════════
 // The chat log (Redis) keeps only TODAY's conversation for the warroom /chat

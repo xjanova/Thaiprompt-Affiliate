@@ -3761,6 +3761,17 @@ Route::prefix('lazada-hub')->name('lazada-hub.')->group(function () {
         Route::post('/{product}/sync-price', [\App\Http\Controllers\Admin\LazadaHub\CatalogController::class, 'syncPrice'])->name('sync-price');
         Route::delete('/{product}', [\App\Http\Controllers\Admin\LazadaHub\CatalogController::class, 'destroy'])->name('destroy');
     });
+
+    // นำเข้าอัตโนมัติ (คิว URL ค่อยๆ ดึง) + คำขอจากลูกค้า (Eve wishes)
+    Route::prefix('auto-import')->name('auto-import.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'index'])->name('index');
+        Route::post('/enqueue', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'enqueue'])->name('enqueue');
+        Route::post('/toggle', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'toggle'])->name('toggle');
+        Route::post('/clear', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'clearFinished'])->name('clear');
+        Route::post('/{item}/retry', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'retry'])->name('retry');
+        Route::delete('/{item}', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'destroy'])->name('destroy');
+    });
+    Route::post('/wishes/{wish}/status', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'wishStatus'])->name('wishes.status');
 });
 
 // ========================================
