@@ -40,6 +40,19 @@
 .eve-foot input:focus{border-color:#9b7bff}
 .eve-foot button{background:linear-gradient(135deg,#7a5cff,#9b7bff);color:#fff;border:0;border-radius:12px;width:42px;cursor:pointer;font-size:15px}
 .eve-foot button:disabled{opacity:.5;cursor:default}
+
+/* ── อีโมจิลอยตามอารมณ์ (เหนือหัว Eve) — ลอยขึ้น+จางหาย ใช้พื้นที่ว่างคอลัมน์ซ้าย ── */
+.eve-floats{position:absolute;left:2px;right:2px;top:4px;bottom:25%;pointer-events:none;z-index:3;overflow:visible}
+.eve-float{position:absolute;bottom:0;font-size:21px;line-height:1;will-change:transform,opacity;animation:eve-rise 2.4s ease-out forwards}
+/* บัลลูนความคิด (ตอนคิด) — ฟองขาวมีหางจุดเล็ก */
+.eve-float.bub{font-size:15px;background:#fff;border:1px solid #e7ddf4;border-radius:13px;padding:2px 9px;box-shadow:0 3px 11px rgba(90,60,180,.2)}
+.eve-float.bub::after{content:'';position:absolute;left:-4px;bottom:2px;width:6px;height:6px;background:#fff;border:1px solid #e7ddf4;border-radius:50%}
+/* ปิ๊งไอเดีย (หลอดไฟ) — เด้งโต+เรืองแสงทอง */
+.eve-float.idea{font-size:26px;filter:drop-shadow(0 0 7px rgba(255,206,77,.9));animation:eve-idea 2.3s ease-out forwards}
+@keyframes eve-rise{0%{transform:translateY(8px) scale(.4);opacity:0}18%{opacity:1;transform:translateY(0) scale(1.05)}38%{transform:translateY(-34px) scale(1)}100%{transform:translateY(-140px) scale(.82);opacity:0}}
+@keyframes eve-idea{0%{transform:translateY(0) scale(.2);opacity:0}16%{opacity:1;transform:translateY(-4px) scale(1.3)}32%{transform:translateY(-8px) scale(1)}56%{transform:translateY(-13px) scale(1.14)}100%{transform:translateY(-122px) scale(.9);opacity:0}}
+@media (prefers-reduced-motion:reduce){.eve-float{animation-duration:.01ms;opacity:0}}
+
 [x-cloak]{display:none!important}
 </style>
 @endonce
@@ -68,8 +81,13 @@
         </div>
 
         <div class="eve-body">
-            {{-- Eve เต็มตัว คอลัมน์ซ้าย (ไม่ทับข้อความ) + หน้าขยับตามอารมณ์ --}}
+            {{-- Eve เต็มตัว คอลัมน์ซ้าย (ไม่ทับข้อความ) + หน้าขยับตามอารมณ์ + อีโมจิลอยเหนือหัว --}}
             <div class="eve-evecol">
+                <div class="eve-floats" aria-hidden="true">
+                    <template x-for="f in floats" :key="f.id">
+                        <div class="eve-float" :class="f.type" :style="`left:${f.x}%`" x-text="f.char"></div>
+                    </template>
+                </div>
                 <x-eve.avatar :size="114" x-bind:class="'eve-'+emotion" />
             </div>
             <div class="eve-body-c" x-ref="list">
@@ -118,17 +136,62 @@ function eveWidget() {
         _audio: null,
         _ttsQueue: [],
         _speakSeq: 0,
+        floats: [],          // อีโมจิที่กำลังลอยอยู่ {id,char,type,x}
+        _fid: 0,             // running id กัน key ซ้ำใน x-for
+        _ambient: null,      // timer เด้งอีโมจิเบาๆ ตอนว่าง
         csrf: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+
+        // ชุดอีโมจิตามอารมณ์ — สุ่มหยิบมาลอย
+        EMOJI: {
+            happy:    ['😊','✨','💜','🥰','🎀','💖'],
+            thinking: ['🤔','💭','❓'],
+            talking:  ['💬','🎵','🌸'],
+            idle:     ['✨','🌸','💜','🌟'],
+            found:    ['🛍️','🎉','✨','👍'],
+        },
+
+        // ปล่อยอีโมจิ 1 ตัวให้ลอยขึ้น (type: emoji | bub บัลลูนความคิด | idea หลอดไฟ)
+        pop(char, type = 'emoji') {
+            if (!char || !this.open) return;                 // ไม่ปล่อยถ้าปิดแผง (กัน fetch ค้าง resolve ทีหลังแล้วอีโมจิค้าง)
+            const id = ++this._fid;
+            const x = 16 + Math.floor(Math.random() * 44);   // 16–60% เหนือหัว Eve (เผื่อบัลลูนกว้าง ไม่ให้โดนคอลัมน์ตัดขอบ)
+            this.floats.push({ id, char, type, x });
+            if (this.floats.length > 8) this.floats.splice(0, this.floats.length - 8); // กันค้างเยอะ
+            setTimeout(() => { this.floats = this.floats.filter(f => f.id !== id); }, type === 'idea' ? 2300 : 2400);
+        },
+
+        // ปล่อยอีโมจิตามหมวดอารมณ์ (thinking = บัลลูนความคิด)
+        popMood(mood) {
+            const set = this.EMOJI[mood] || this.EMOJI.idle;
+            this.pop(set[Math.floor(Math.random() * set.length)], mood === 'thinking' ? 'bub' : 'emoji');
+        },
+
+        // เด้งอีโมจิเบาๆ ตอนว่าง (ไม่รบกวนตอนคุย/คิด/พูด/แท็บถูกซ่อน)
+        startAmbient() {
+            this.stopAmbient();
+            this._ambient = setInterval(() => {
+                if (!this.open || this.busy || this.speaking || document.hidden) return;
+                if (Math.random() < 0.5) this.popMood('idle');
+            }, 5200);
+        },
+        stopAmbient() { clearInterval(this._ambient); this._ambient = null; },
 
         toggle() {
             this.open = !this.open;
-            if (this.open && this.messages.length === 0) {
-                this.messages.push({ role: 'assistant', content: 'สวัสดีค่ะ น้อง Eve เองค่ะ 🌸 อยากได้สินค้าแบบไหน หรือมีอะไรให้ช่วยไหมคะ?' });
-                this.emotion = 'happy';
-                this.speak('สวัสดีค่ะ น้อง Eve เองค่ะ อยากได้สินค้าแบบไหนคะ');
-                setTimeout(() => { if (!this.speaking) this.emotion = 'idle'; }, 2600);
+            if (this.open) {
+                if (this.messages.length === 0) {
+                    this.messages.push({ role: 'assistant', content: 'สวัสดีค่ะ น้อง Eve เองค่ะ 🌸 อยากได้สินค้าแบบไหน หรือมีอะไรให้ช่วยไหมคะ?' });
+                    this.emotion = 'happy';
+                    this.speak('สวัสดีค่ะ น้อง Eve เองค่ะ อยากได้สินค้าแบบไหนคะ');
+                    this.pop('👋'); setTimeout(() => this.pop('🌸'), 480);
+                    setTimeout(() => { if (!this.speaking) this.emotion = 'idle'; }, 2600);
+                }
+                this.startAmbient();          // เริ่มเด้งอีโมจิเบาๆ ตอนเปิดแผง
+            } else {
+                this.stopSpeak();
+                this.stopAmbient();
+                this.floats = [];             // เคลียร์อีโมจิค้างเมื่อปิดแผง
             }
-            if (!this.open) this.stopSpeak();
         },
 
         moodToEmotion(mood) {
@@ -151,6 +214,7 @@ function eveWidget() {
             this.stopSpeak();
             this.messages.push({ role: 'user', content: text });
             this.busy = true; this.emotion = 'thinking'; this.startDots(); this.scroll();
+            this.popMood('thinking');   // บัลลูนความคิด 💭 ระหว่างค้นหา
 
             const history = this.messages.slice(-13, -1).map(m => ({ role: m.role, content: m.content }));
             try {
@@ -161,13 +225,18 @@ function eveWidget() {
                 });
                 const data = await res.json();
                 const reply = data?.data?.reply || data?.message || 'ขออภัยค่ะ ตอนนี้น้อง Eve ตอบไม่ได้ ลองใหม่อีกครั้งนะคะ';
-                this.messages.push({ role: 'assistant', content: reply, products: (data?.data?.products || []) });
+                const prods = data?.data?.products || [];
+                this.messages.push({ role: 'assistant', content: reply, products: prods });
                 this.emotion = this.moodToEmotion(data?.data?.mood);
                 this.scroll();
                 this.speak(reply);
+                // เจอสินค้า → ปิ๊งไอเดีย 💡 + ดีใจ / ไม่งั้นเด้งอีโมจิตามอารมณ์ที่ตอบ
+                if (prods.length) { this.pop('💡', 'idea'); setTimeout(() => this.popMood('found'), 440); }
+                else { this.popMood(({ happy: 'happy', surprise: 'found', talking: 'talking' })[data?.data?.mood] || 'happy'); }
             } catch (e) {
                 this.messages.push({ role: 'assistant', content: 'ขออภัยค่ะ การเชื่อมต่อมีปัญหา ลองใหม่อีกครั้งนะคะ 🙏' });
                 this.emotion = 'idle';
+                this.pop('🙏');
             } finally {
                 this.busy = false; this.stopDots(); this.scroll();
             }
