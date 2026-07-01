@@ -227,6 +227,15 @@ class MarketplaceAccount extends Model
     }
 
     /**
+     * เป็นบัญชี Lazada Affiliate (Open API ของ Lazada เอง) หรือไม่
+     * (คนละตัวกับ 'affiliate' = Involve Asia — อันนี้ใช้ App Key/Secret + ลายเซ็น GOP)
+     */
+    public function isNativeAffiliateProgram(): bool
+    {
+        return $this->program_type === 'affiliate_native';
+    }
+
+    /**
      * ดึงค่าใน additional_credentials อย่างปลอดภัย
      * (ใช้เก็บคีย์ของระบบพันธมิตร เช่น Involve Asia: api_key, secret_key, sub_id)
      */

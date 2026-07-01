@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\LazadaHub;
 use App\Http\Controllers\Controller;
 use App\Models\MarketplaceAccount;
 use App\Models\MarketplacePlatform;
+use App\Services\Marketplace\LazadaAffiliateService;
 use App\Services\Marketplace\LazadaApiService;
 use App\Services\Marketplace\MarketplaceFactory;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +30,7 @@ class ConnectionController extends Controller
     private const DOC_LINKS = [
         'seller' => 'https://open.lazada.com/apps/doc/api?path=%2Fauth%2Ftoken%2Fcreate',
         'affiliate' => 'https://help.involve.asia/hc/en-us/articles/42549337855001-Lazada-Product-Link-Generation',
+        'affiliate_native' => 'https://adsense.lazada.co.th/index.htm#!/integration/open_api',
     ];
 
     /**
@@ -153,6 +155,17 @@ class ConnectionController extends Controller
             return response()->json(['success' => $ok, 'message' => $msg]);
         }
 
+        // โปรแกรม Lazada Affiliate (Open API ของ Lazada เอง) — ทดสอบ App Key/Secret ด้วยลายเซ็น GOP
+        // ไม่ต้องมี Access Token ก็ยืนยัน "คีย์ถูก" ได้ (gateway ตรวจลายเซ็นก่อน route ไป endpoint)
+        if ($account->isNativeAffiliateProgram()) {
+            [$ok, $msg] = (new LazadaAffiliateService($account))->testConnection();
+            $account->update($ok
+                ? ['status' => 'active', 'last_error' => null]
+                : ['status' => 'error', 'last_error' => mb_substr($msg, 0, 1000)]);
+
+            return response()->json(['success' => $ok, 'message' => $msg]);
+        }
+
         // ยังไม่มี Access Token (เพิ่งกรอก key/secret ยังไม่ได้ทำ OAuth) → /seller/get จะ fail แน่
         // ไม่ตั้ง status=error (credential อาจถูก แค่ต้อง authorize ก่อน) — ชี้ทางให้กด "เชื่อมต่อ"
         if (empty($account->access_token)) {
@@ -200,10 +213,10 @@ class ConnectionController extends Controller
     {
         $this->authorizeLazada($account);
 
-        if ($account->isAffiliateProgram()) {
+        if ($account->isAffiliateProgram() || $account->isNativeAffiliateProgram()) {
             return redirect()
                 ->route('admin.lazada-hub.connections.index')
-                ->with('error', 'OAuth ใช้กับบัญชี Seller (Open Platform) เท่านั้น');
+                ->with('error', 'OAuth ใช้กับบัญชี Seller (Open Platform) เท่านั้น — บัญชี Affiliate ยืนยันด้วยปุ่ม "ทดสอบ"');
         }
 
         if (empty($account->app_key)) {
@@ -330,7 +343,7 @@ class ConnectionController extends Controller
     {
         return $request->validate([
             'account_name' => ['required', 'string', 'max:100'],
-            'program_type' => ['required', 'in:seller,affiliate'],
+            'program_type' => ['required', 'in:seller,affiliate,affiliate_native'],
             // คู่คีย์หลัก: บังคับตอนสร้าง, ตอนแก้ไขเว้นว่าง = คงค่าเดิม
             'app_key' => [$isCreate ? 'required' : 'nullable', 'string', 'max:500'],
             'app_secret' => [$isCreate ? 'required' : 'nullable', 'string', 'max:1000'],
