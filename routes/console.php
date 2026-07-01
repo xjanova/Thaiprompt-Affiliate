@@ -354,9 +354,11 @@ Schedule::command('fortune:celtic-redeliver --limit=30')
     ->name('fortune-celtic-redeliver')
     ->runInBackground();
 
-// 3c) Fortune Pro Session Nudge — 🔔 (2026-06-23, owner) ตามให้ลูกค้าเริ่มถามคำถาม
-//     owner spec: ถึงขั้นพร้อมให้ถามแล้วแต่เงียบเกิน 1 นาที → ส่งกล่องตามให้เริ่มถาม (ตามครั้งเดียว)
-//     ทั้ง Deep 39 (หลังส่งคำทำนาย) + Celtic 99 (หลังพื้นดวง Q1) — เวลาเริ่มจับหลังถามจริง
+// 3c) Fortune Pro Session Nudge — 🔔 (2026-06-30, owner) ตามให้ลูกค้าเริ่มถามคำถาม
+//     owner spec: ลูกค้ายังไม่ถามเลย → ตามทุก interval (default 10 นาที) ระหว่างสแตนบาย (default 30 นาที)
+//     ครบสแตนบายไม่ถาม → auto-finalize สรุปให้ (เดิม: ตามครั้งเดียว → เปลี่ยนเป็นตามซ้ำทุก interval)
+//     ทั้ง Deep 39 (หลังส่งคำทำนาย) + Celtic 99 (หลังพื้นดวง Q1) — เวลา QA เริ่มจับหลังถามจริง
+//     cron รันทุกนาที แต่ isProSessionAwaitingNudge คุมระยะเว้น interval เอง
 Schedule::command('fortune:pro-session-nudge --limit=30')
     ->everyMinute()
     ->withoutOverlapping(5)

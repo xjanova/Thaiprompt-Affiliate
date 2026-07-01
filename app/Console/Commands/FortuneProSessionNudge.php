@@ -90,11 +90,12 @@ class FortuneProSessionNudge extends Command
                 }
 
                 // 🛡️ double-check idempotency (กัน race ถ้า command รันคู่กัน)
+                //   🔔 (2026-06-30) เลิกเช็ค pro_session_nudge_sent (ตอนนี้ตามซ้ำได้ทุก interval)
+                //   — ระยะเว้น interval คุมโดย getProSessionsAwaitingNudge (isProSessionAwaitingNudge) แล้ว
                 $fresh = $reading->fresh();
-                if ($fresh->getConversationState('pro_session_nudge_sent', false)
-                    || ! $fresh->getConversationState('pro_session_awaiting_first_question', false)
+                if (! $fresh->getConversationState('pro_session_awaiting_first_question', false)
                     || $fresh->getConversationState('pro_session_pending_exit', false)) {
-                    $this->warn("  #{$reading->id} skip — ตามไปแล้ว/ลูกค้าถามแล้ว/กำลังขอออก");
+                    $this->warn("  #{$reading->id} skip — ลูกค้าถามแล้ว/กำลังขอออก");
 
                     continue;
                 }

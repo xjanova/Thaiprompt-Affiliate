@@ -203,8 +203,9 @@ trait ProSessionTrait
             if (empty($readyAt)) {
                 return false; // ยังไม่พร้อมให้ถาม (เช่น ยังไม่ส่งคำทำนาย)
             }
-            // ให้เวลาถาม = window เต็ม + เผื่อ nudge (ลูกค้าไม่ถามเลยจริงๆ ถึงปิด)
-            $abandonMin = $windowMin + (int) ceil($this->proSessionNudgeAfterSeconds() / 60) + 1;
+            // 🕰️ (2026-06-30) ลูกค้าไม่ถามเลย → สแตนบายรอเต็ม standby window (default 30 นาที)
+            //   แล้วค่อยปิด (ระหว่างนั้น cron nudge ตามทุก interval) — owner spec
+            $abandonMin = $this->proSessionStandbyMinutes();
             try {
                 $elapsedReady = (int) Carbon::parse($readyAt)->diffInMinutes(now(), true);
             } catch (\Throwable $e) {
@@ -989,9 +990,33 @@ trait ProSessionTrait
     }
 
     /**
-     * 🔔 (2026-06-23) reading นี้ "พร้อมให้ถาม + ลูกค้ายังไม่ถาม + เกิน 1 นาที + ยังไม่ตาม" ไหม
+     * 🕰️ (2026-06-30) สแตนบายรอลูกค้าที่ "ยังไม่ถามเลย" กี่นาที ก่อน auto-finalize (default 30)
+     *   owner spec: ลูกค้าเงียบหลังพื้นดวง/คำทำนาย → รอ 30 นาที (ตามระหว่างนั้น) แล้วสรุปให้เลย
+     */
+    protected function proSessionStandbyMinutes(): int
+    {
+        $m = (int) ($this->settings->pro_session_standby_minutes ?? 30);
+
+        return $m > 0 ? $m : 30;
+    }
+
+    /**
+     * 🔔 (2026-06-30) ตามลูกค้าให้เริ่มถามทุกกี่นาที ระหว่างสแตนบาย (default 10)
+     */
+    protected function proSessionNudgeIntervalMinutes(): int
+    {
+        $m = (int) ($this->settings->pro_session_nudge_interval_minutes ?? 10);
+
+        return $m > 0 ? $m : 10;
+    }
+
+    /**
+     * 🔔 (2026-06-30) reading นี้ควร "ตามให้เริ่มถาม" ตอนนี้ไหม (nudge ทุก interval ระหว่างสแตนบาย)
      *   ใช้ pro_session_ready_at (ตั้งตอนพร้อมให้ถามจริง — Deep: ส่งคำทำนาย / Celtic: ส่งพื้นดวง)
-     *   idempotent ผ่าน pro_session_nudge_sent (ตามครั้งเดียว ตาม owner: "ตาม 1 ครั้ง แล้วค้างไว้")
+     *
+     *   owner spec 2026-06-30: ลูกค้ายังไม่ถามเลย → ตามทุก 10 นาที ระหว่างสแตนบาย 30 นาที
+     *     (เดิม: ตามครั้งเดียวแล้วค้าง). เลย standby แล้ว → หยุดตาม (ปล่อย auto-finalize จัดการ)
+     *   idempotent ผ่าน pro_session_last_nudge_at (เว้นระยะ interval ต่อครั้ง)
      */
     protected function isProSessionAwaitingNudge(FortuneReading $reading): bool
     {
@@ -1000,9 +1025,6 @@ trait ProSessionTrait
         }
         if (! $reading->getConversationState('pro_session_awaiting_first_question', false)) {
             return false; // ลูกค้าถามแล้ว (timer เริ่มแล้ว) → ไม่ต้องตาม
-        }
-        if ($reading->getConversationState('pro_session_nudge_sent', false)) {
-            return false; // ตามไปแล้ว 1 ครั้ง
         }
         // 🛡️ (2026-06-23 bug-hunt) ลูกค้ากำลังถูกถามยืนยันออกจาก session (พิมพ์ขอบคุณ/พอแล้ว) → ห้ามตาม (ขัดเจตนา)
         if ($reading->getConversationState('pro_session_pending_exit', false)) {
@@ -1017,12 +1039,35 @@ trait ProSessionTrait
             return false; // ยังไม่พร้อมให้ถาม (เช่น Celtic ยังไม่ส่งพื้นดวง)
         }
         try {
-            $elapsed = (int) Carbon::parse($readyAt)->diffInSeconds(now(), true);
+            $elapsedMin = Carbon::parse($readyAt)->diffInMinutes(now(), true);
         } catch (\Throwable $e) {
             return false;
         }
 
-        return $elapsed >= $this->proSessionNudgeAfterSeconds();
+        $interval = $this->proSessionNudgeIntervalMinutes();
+        $standby = $this->proSessionStandbyMinutes();
+
+        // เลยสแตนบายแล้ว → หยุดตาม (auto-finalize จะสรุปให้เอง)
+        if ($elapsedMin >= $standby) {
+            return false;
+        }
+        // ยังไม่ถึงรอบตามครั้งแรก (นับจากพร้อมให้ถาม)
+        if ($elapsedMin < $interval) {
+            return false;
+        }
+        // เว้นระยะจากการตามครั้งล่าสุด ≥ interval
+        $lastNudge = $reading->getConversationState('pro_session_last_nudge_at');
+        if (! empty($lastNudge)) {
+            try {
+                if (Carbon::parse($lastNudge)->diffInMinutes(now(), true) < $interval) {
+                    return false;
+                }
+            } catch (\Throwable $e) {
+                // parse ไม่ได้ → ถือว่าตามได้ (ปลอดภัยกว่าเงียบ)
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1061,10 +1106,25 @@ trait ProSessionTrait
         $type = (string) $reading->getConversationState('pro_session_type', 'deep');
 
         if ($type === 'celtic') {
-            $msg = "🌙 คุณ{$name}คะ — แม่หมอเปิดไพ่ทั้ง 10 ใบรออยู่แล้วนะคะ ✨\n\n"
-                ."💬 *อยากให้แม่หมอดูเรื่องไหนก่อนดีคะ?* พิมพ์คำถามมาได้เลย\n"
-                ."🌟 ความรัก / การงาน / การเงิน / สุขภาพ / ครอบครัว — แม่หมอทำนายจากไพ่ให้\n\n"
-                .'⏳ ไม่ต้องรีบนะคะ — เวลาคุยจะเริ่มนับ *หลังจากเจ้าชะตาถามคำถามแรก* ค่ะ';
+            // 🪬 (2026-06-30) โหมดดูคุณไสย์ → ตามด้วยหัวข้อของ/คุณไสย์ ไม่ใช่ รัก/งาน/เงินทั่วไป
+            $bmForced = false;
+            try {
+                $bmForced = app(\App\Services\CelticCrossService::class)->isBlackMagicModeForced($reading);
+            } catch (\Throwable $e) {
+                // non-blocking → ใช้ข้อความปกติ
+            }
+
+            if ($bmForced) {
+                $msg = "🪬 คุณ{$name}คะ — แม่หมอล็อกพลังไพ่ทั้ง 10 ใบทะลุเรื่องของ/คุณไสย์รออยู่แล้วนะคะ ✨\n\n"
+                    ."💬 *อยากให้แม่หมอเจาะเรื่องไหนก่อนดีคะ?* พิมพ์ถามมาได้เลย\n"
+                    ."🌟 โดนของ/คุณไสย์ไหม / ใครทำ / จะแก้-ถอน-ป้องกันยังไง — แม่หมอฟันธงจากไพ่ให้\n\n"
+                    .'⏳ ไม่ต้องรีบนะคะ — เวลาคุยจะเริ่มนับ *หลังจากเจ้าชะตาถามคำถามแรก* ค่ะ';
+            } else {
+                $msg = "🌙 คุณ{$name}คะ — แม่หมอเปิดไพ่ทั้ง 10 ใบรออยู่แล้วนะคะ ✨\n\n"
+                    ."💬 *อยากให้แม่หมอดูเรื่องไหนก่อนดีคะ?* พิมพ์คำถามมาได้เลย\n"
+                    ."🌟 ความรัก / การงาน / การเงิน / สุขภาพ / ครอบครัว — แม่หมอทำนายจากไพ่ให้\n\n"
+                    .'⏳ ไม่ต้องรีบนะคะ — เวลาคุยจะเริ่มนับ *หลังจากเจ้าชะตาถามคำถามแรก* ค่ะ';
+            }
         } else {
             $msg = "🌙 คุณ{$name}คะ — แม่หมอยังรอเจ้าชะตาอยู่นะคะ ✨\n\n"
                 ."💬 *มีเรื่องไหนอยากให้แม่หมอช่วยดูต่อไหมคะ?* พิมพ์ถามได้เลย\n"
@@ -1080,10 +1140,15 @@ trait ProSessionTrait
     }
 
     /**
-     * 🔔 (2026-06-23) mark ว่าตามให้ถามไปแล้ว (idempotent — ตามครั้งเดียว)
+     * 🔔 (2026-06-30) บันทึกว่าตามให้ถามไปแล้ว 1 ครั้ง (นับรอบ + เวลาล่าสุด สำหรับเว้นระยะ interval)
+     *   เดิม: set pro_session_nudge_sent=true (ครั้งเดียว) → เปลี่ยนเป็นนับรอบ ตามได้ทุก interval
      */
     public function markProSessionNudgeSent(FortuneReading $reading): void
     {
+        $count = (int) $reading->getConversationState('pro_session_nudge_count', 0);
+        $reading->setConversationState('pro_session_nudge_count', $count + 1);
+        $reading->setConversationState('pro_session_last_nudge_at', now()->toIso8601String());
+        // เก็บ flag เดิมไว้ backward-compat (reset ตอนลูกค้าถามจริงยังใช้อยู่)
         $reading->setConversationState('pro_session_nudge_sent', true);
         $reading->setConversationState('pro_session_nudge_sent_at', now()->toIso8601String());
     }

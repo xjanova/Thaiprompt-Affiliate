@@ -193,6 +193,10 @@ class FortuneCelticAutoFinalize extends Command
         $settings = FortuneTellingSetting::getSettings();
         $qaWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 15);
         $qaCutoff = now()->subMinutes($qaWindow);
+        // 🕰️ (2026-06-30) เคส B (ลูกค้าไม่ถามเลย) ใช้ standby window แยก (default 30 นาที) — owner spec
+        //   ให้เวลาลูกค้าเริ่มถามนานกว่า qa_window ปกติ (ระหว่างนั้น cron nudge ตามทุก interval)
+        $standbyWindow = (int) ($settings->pro_session_standby_minutes ?? 30);
+        $standbyCutoff = now()->subMinutes($standbyWindow > 0 ? $standbyWindow : 30);
 
         $query = FortuneReading::query()
             ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
@@ -232,16 +236,17 @@ class FortuneCelticAutoFinalize extends Command
 
         // 🆕 (2026-06-23) เคส B (first_answered=NULL): finalize เมื่อ "พื้นดวงส่งแล้วเงียบ" เกิน qa_window
         //   อ้างอิง pro_session_ready_at (ISO8601 — parse ใน PHP เลี่ยง STR_TO_DATE เปราะ)
-        $readings = $readings->filter(function ($r) use ($qaCutoff) {
+        $readings = $readings->filter(function ($r) use ($standbyCutoff) {
             if (! empty($r->celtic_first_answered_at)) {
-                return true; // เคส A ผ่าน SQL แล้ว
+                return true; // เคส A ผ่าน SQL แล้ว (qa_window)
             }
+            // เคส B (ไม่ถามเลย) → รอเต็ม standby window (30 นาที) นับจากส่งพื้นดวง
             $readyAt = $r->getConversationState('pro_session_ready_at');
             if (empty($readyAt)) {
                 return false; // ยังไม่ได้ส่งพื้นดวง (เช่น เพิ่งเปิดไพ่/รอวันเกิด) → ยังไม่ปิด
             }
             try {
-                return \Carbon\Carbon::parse($readyAt)->lessThanOrEqualTo($qaCutoff);
+                return \Carbon\Carbon::parse($readyAt)->lessThanOrEqualTo($standbyCutoff);
             } catch (\Throwable $e) {
                 return false;
             }

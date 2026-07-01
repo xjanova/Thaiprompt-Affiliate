@@ -2442,7 +2442,10 @@ trait CelticCrossConversationTrait
                     cache()->put('celtic:pending_carry:'.$reading->id, $carryForwardQuestion, now()->addMinutes(3));
                 }
                 // 🔔 (2026-06-23) ลูกค้าพิมพ์คำถาม (กำลัง buffer) = engaged → กัน nudge ตามถามยิงระหว่างรอ settle window
+                //   🔔 (2026-06-30) nudge เปลี่ยนเป็นตามทุก interval → กดเวลา last_nudge เพื่อระงับ nudge ช่วง settle
+                //   (คำถามจะ process ในไม่กี่วินาที → markCelticAnswered ปิด awaiting_first_question เอง)
                 $reading->setConversationState('pro_session_nudge_sent', true);
+                $reading->setConversationState('pro_session_last_nudge_at', now()->toIso8601String());
 
                 app(\App\Services\Fortune\MessageBuffer::class)->append('celtic_q', $dUserId, $question);
                 \App\Jobs\ProcessBufferedCelticMessageJob::dispatch($reading->id, $dPlatform, $dUserId, $settleSec)

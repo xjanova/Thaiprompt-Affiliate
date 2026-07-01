@@ -259,6 +259,8 @@ class FortuneTellingSetting extends Model
         'celtic_cross_price',
         'celtic_cross_max_questions',
         'celtic_cross_qa_window_minutes',
+        'pro_session_standby_minutes',
+        'pro_session_nudge_interval_minutes',
         'celtic_cross_main_prompt',
         'celtic_cross_followup_prompt',
         'celtic_cross_proactive_enabled',
@@ -501,6 +503,8 @@ class FortuneTellingSetting extends Model
         'celtic_cross_price' => 'decimal:2',
         'celtic_cross_max_questions' => 'integer',
         'celtic_cross_qa_window_minutes' => 'integer',
+        'pro_session_standby_minutes' => 'integer',
+        'pro_session_nudge_interval_minutes' => 'integer',
         'celtic_cross_proactive_enabled' => 'boolean',
         'enable_celtic_enrichment' => 'boolean',
         'enable_celtic_black_magic_mode' => 'boolean',
@@ -678,6 +682,8 @@ class FortuneTellingSetting extends Model
         'celtic_cross_price' => 99.00,
         'celtic_cross_max_questions' => 0, // (2026-06-07) 0 = ไม่จำกัดคำถาม ภายในเวลา 15 นาที (เดิม 5 คำถาม — ยกเลิก hard cap จำนวน)
         'celtic_cross_qa_window_minutes' => 15, // (2026-05-23 v3) 15 นาที — ลดจาก 30
+        'pro_session_standby_minutes' => 30, // (2026-06-30) ลูกค้ายังไม่ถามเลย → สแตนบายรอ 30 นาที ก่อนสรุปเอง
+        'pro_session_nudge_interval_minutes' => 10, // (2026-06-30) ตามลูกค้าให้เริ่มถามทุก 10 นาที ระหว่างสแตนบาย
         'celtic_cross_proactive_enabled' => true,
         // 🔍 (2026-05-25) Celtic enrichment — default true (admin ปิดได้ที่ admin UI)
         'enable_celtic_enrichment' => true,
