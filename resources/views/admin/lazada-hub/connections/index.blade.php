@@ -87,19 +87,23 @@
                         'expired' => ['', '#e0a52e', 'token หมดอายุ'],
                     ];
                     $st = $statusMap[$acc->status] ?? ['', 'var(--ink2)', $acc->status];
-                    $isAff = $acc->program_type === 'affiliate';
+                    $isInvolve = $acc->program_type === 'affiliate';
+                    $isNativeAff = $acc->program_type === 'affiliate_native';
+                    $isAff = $isInvolve || $isNativeAff;            // ทั้งคู่ = affiliate (ไอคอน/สี)
+                    $typeLabel = $isNativeAff ? 'Lazada Affiliate' : ($isInvolve ? 'Affiliate' : 'Seller');
+                    $typeColor = $isNativeAff ? '#5aa07e' : ($isInvolve ? '#b79ae8' : '#5a8fd0');
                 @endphp
                 <div class="tp-card" style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;">
                     {{-- ไอคอนชนิด --}}
                     <div class="tp-inset" style="width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fas {{ $isAff ? 'fa-link' : 'fa-store' }}" style="color:{{ $isAff ? '#b79ae8' : '#5a8fd0' }};font-size:1.15rem;"></i>
+                        <i class="fas {{ $isAff ? 'fa-link' : 'fa-store' }}" style="color:{{ $typeColor }};font-size:1.15rem;"></i>
                     </div>
 
                     {{-- ชื่อ + ป้าย --}}
                     <div style="flex:1;min-width:180px;">
                         <div style="font-weight:700;color:var(--ink);font-size:.95rem;">{{ $acc->account_name }}</div>
                         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;align-items:center;">
-                            <span class="tp-pill" style="background:{{ $isAff ? '#b79ae8' : '#5a8fd0' }};color:#fff;font-size:10px;font-weight:700;">{{ $isAff ? 'Affiliate' : 'Seller' }}</span>
+                            <span class="tp-pill" style="background:{{ $typeColor }};color:#fff;font-size:10px;font-weight:700;">{{ $typeLabel }}</span>
                             <span class="tp-pill" style="background:{{ $st[1] }};color:#fff;font-size:10px;font-weight:700;">{{ $st[2] }}</span>
                             @if($acc->shop_id)
                                 <span class="tp-muted tp-num" style="font-size:.72rem;">ร้าน: {{ $acc->shop_id }}</span>
@@ -115,9 +119,9 @@
 
                     {{-- ปุ่ม --}}
                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                        @unless($isAff)
+                        @unless($isInvolve)
                         <a href="{{ route('admin.lazada-hub.connections.connect', $acc) }}" class="tp-btn tp-btn-sm" style="color:#5a8fd0;">
-                            <i class="fas fa-link"></i> <span>เชื่อมต่อ</span>
+                            <i class="fas fa-link"></i> <span>{{ $isNativeAff ? 'เชื่อมต่อ (รับ token)' : 'เชื่อมต่อ' }}</span>
                         </a>
                         @endunless
                         <button type="button" class="tp-btn tp-btn-sm" @click="test({{ $acc->id }})" :disabled="testing === {{ $acc->id }}">

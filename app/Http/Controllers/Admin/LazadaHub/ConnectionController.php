@@ -213,10 +213,12 @@ class ConnectionController extends Controller
     {
         $this->authorizeLazada($account);
 
-        if ($account->isAffiliateProgram() || $account->isNativeAffiliateProgram()) {
+        // Involve Asia ไม่ใช้ OAuth (ยืนยันด้วย key+secret). ส่วน Lazada native affiliate ใช้ OAuth
+        // เหมือน Seller ได้ (แอปเดียวกันบน Open Platform) เพื่อรับ access_token ที่ /marketing/getlink ต้องใช้
+        if ($account->isAffiliateProgram()) {
             return redirect()
                 ->route('admin.lazada-hub.connections.index')
-                ->with('error', 'OAuth ใช้กับบัญชี Seller (Open Platform) เท่านั้น — บัญชี Affiliate ยืนยันด้วยปุ่ม "ทดสอบ"');
+                ->with('error', 'Involve Asia ไม่ใช้ OAuth — ยืนยันด้วยปุ่ม "ทดสอบ" (key+secret)');
         }
 
         if (empty($account->app_key)) {
