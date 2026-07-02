@@ -179,6 +179,23 @@ class FortuneReading extends Model
     ];
 
     /**
+     * 🌙 (2026-07-02) Deep-39 active states — ระหว่างทำนายอยู่ (จ่ายแล้ว/กำลังเก็บ input จากลูกค้า)
+     *
+     * เคสจริง FTU-260702-F3343 (reading 8448): ลูกค้า Deep-39 จ่ายแล้ว → บอทขอวันเกิด
+     *   (status = collecting_birthdate) แต่ pre-handler อื่น (paid-claim ขอสลิป / rebuttal บิลเก่า /
+     *   slip-image) เช็ก "ลูกค้ามีบิล active ไหม" ด้วยลิสต์ที่ "ลืมใส่" 3 สถานะนี้ → มองว่าไม่มีบิล
+     *   active → แย่งข้อความ (วันเกิด) ไปตอบผิด (ขอสลิป/ตอบโต้บิลเก่า) → ทำนายไม่ได้ ลูกค้าโวยวาย
+     *
+     * ⚠️ ทุกจุดที่ถามว่า "ลูกค้ากำลังทำนาย Deep อยู่ไหม" ต้องรวมลิสต์นี้ (source-of-truth เดียว)
+     *   คู่กับ CELTIC_ACTIVE_STATUSES (Celtic 99) — ครอบทั้งสอง flow
+     */
+    public const DEEP_ACTIVE_STATUSES = [
+        self::STATUS_COLLECTING_BIRTHDATE,
+        self::STATUS_COLLECTING_QUESTIONS,
+        self::STATUS_COLLECTING_TAROT,
+    ];
+
+    /**
      * 🚦 (2026-05-06) Active reading statuses — รวมทั้ง Deep 39 + Celtic 99
      *
      * ใช้ในการ "ปิดปุ่ม Quick Reply ลอย" (default QR) ระหว่างทำนาย

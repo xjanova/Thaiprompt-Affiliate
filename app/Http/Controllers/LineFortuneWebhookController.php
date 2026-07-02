@@ -1836,7 +1836,10 @@ class LineFortuneWebhookController extends Controller
                     //   ทำให้ Celtic 99 ที่ส่งสลิปตอนรอจ่าย ไม่ถูกจับ → silent
                     FortuneReading::PENDING_PAYMENT_STATUSES,
                     [FortuneReading::STATUS_PAID],
-                    FortuneReading::CELTIC_ACTIVE_STATUSES
+                    FortuneReading::CELTIC_ACTIVE_STATUSES,
+                    // 🌙 (2026-07-02 FTU-260702-F3343) รวม DEEP_ACTIVE_STATUSES — เดิมตกหล่น
+                    //   collecting_birthdate/questions/tarot → Deep-39 จ่ายแล้วส่งรูประหว่างรอวันเกิด → silent
+                    FortuneReading::DEEP_ACTIVE_STATUSES
                 ))
                 ->latest()
                 ->first();

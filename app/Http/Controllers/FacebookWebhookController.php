@@ -2106,7 +2106,12 @@ class FacebookWebhookController extends Controller
                     //   ทำให้ Celtic 99 (celtic_pending_payment) ที่ส่งสลิป ไม่ถูกจับ → silent
                     FortuneReading::PENDING_PAYMENT_STATUSES,
                     [FortuneReading::STATUS_PAID],
-                    FortuneReading::CELTIC_ACTIVE_STATUSES
+                    FortuneReading::CELTIC_ACTIVE_STATUSES,
+                    // 🌙 (2026-07-02 FTU-260702-F3343) รวม DEEP_ACTIVE_STATUSES — เดิมตกหล่น
+                    //   collecting_birthdate → ลูกค้าจ่ายแล้วส่ง "รูปวันเกิด" (ไม่ใช่ตัวเลข) โดน fallback
+                    //   latest('updated_at') บังด้วยบิลเก่า → "no active reading → silent" ทิ้งรูปเงียบ
+                    //   ตอนนี้เจอ 8448 ตรงๆ → เข้า PAID branch ตอบ "รอวันเกิด พิมพ์ 15/3/2538" (มีอยู่แล้ว)
+                    FortuneReading::DEEP_ACTIVE_STATUSES
                 ))
                 ->latest()
                 ->first();

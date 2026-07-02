@@ -13056,10 +13056,14 @@ class FortuneConversationService
             }
 
             // มีบิล active → ปล่อยให้ handler เดิมจัดการ (มี wiring แล้ว)
+            //   🌙 (2026-07-02 FTU-260702-F3343) รวม DEEP_ACTIVE_STATUSES — เดิมตกหล่น collecting_birthdate/
+            //   questions/tarot → ลูกค้า Deep-39 จ่ายแล้วกำลังกรอกวันเกิด พิมพ์ "จ่ายแล้วทำไมไม่ดู" →
+            //   guard นี้มองว่าไม่มีบิล active → ตกไป "ขอสลิป" แทนที่จะปล่อยให้ handleBirthdateInput ทำงาน
             $hasActive = FortuneReading::where('facebook_user_id', $userId)
                 ->whereIn('conversation_status', array_merge(
                     FortuneReading::PENDING_PAYMENT_STATUSES,
                     FortuneReading::CELTIC_ACTIVE_STATUSES,
+                    FortuneReading::DEEP_ACTIVE_STATUSES,
                     [FortuneReading::STATUS_PAID]
                 ))
                 ->exists();
@@ -17667,6 +17671,15 @@ PROMPT;
      */
     protected function handleCancelledBillRebuttal(string $facebookUserId, string $messageText, ?array $userProfile = null): ?array
     {
+        // 🌙 (2026-07-02 FTU-260702-F3343) กันบิลเก่าที่ถูกยกเลิกมาแย่งข้อความของ "บิลใหม่ที่จ่ายแล้ว"
+        //   เคสจริง reading 8448: ลูกค้าจ่าย Deep-39 → บอทขอวันเกิด (collecting_birthdate)
+        //   แต่มีบิลเก่า 8431 ค้างใน rebuttal window → ข้อความลูกค้า ("ส่งสลิปค่ะ"/วันเกิด) โดน rebuttal
+        //   จับไปตอบ "จังหวะยังไม่พร้อม" แทนที่จะไหลเข้า handleBirthdateInput → ทำนายไม่ได้
+        //   → ถ้าลูกค้ามี paid active reading อยู่ ห้าม rebuttal เด็ดขาด (rule_paid_customer_bypass_all_guards)
+        if ($this->hasPaidActiveReading($facebookUserId)) {
+            return null;
+        }
+
         // ข้ามถ้าผู้ใช้พิมพ์คำสั่งเริ่มใหม่ — ปล่อยให้ flow ปกติจัดการ
         // ⚠️ ใช้ exact match เท่านั้น — หลีกเลี่ยง substring match เพราะ "หมอช่วย" ไม่ควรนับเป็น "หมอ" (start)
         $startKeywords = ['ดูดวง', 'เริ่ม', 'start', 'ดูดวงละเอียด', 'ทำนาย', 'restart', 'reset'];
