@@ -13234,7 +13234,7 @@ class FortuneConversationService
     protected function createProvisionalCelticReading(string $platform, string $userId): ?FortuneReading
     {
         try {
-            return FortuneReading::create([
+            $reading = FortuneReading::create([
                 'facebook_user_id' => $userId,           // LINE id เก็บ field เดียวกัน (ขึ้นต้น U)
                 'facebook_user_name' => null,
                 'user_profile' => null,
@@ -13248,6 +13248,13 @@ class FortuneConversationService
                 'platform_user_id' => $userId,
                 'bill_reference' => FortuneReading::generateBillReference(),
             ]);
+
+            // 💎 (2026-07-02, owner) ธงถาวร "บิลโอนก่อนบิล" — ใช้แยกจากบิล Celtic จริงที่ลูกค้าเลือกเอง
+            //   (หลังสร้างบิล top-up จะมี UPA เหมือนกัน แยกด้วย UPA ไม่ได้แล้ว → ต้องใช้ธงนี้)
+            //   ให้ยอดสะสมโอนขาด route ตามช่วงราคาได้ (39-40 เปิด Deep / 40.01-98 ถาม 39-99)
+            $reading->setConversationState('prepay_provisional', true);
+
+            return $reading;
         } catch (\Throwable $e) {
             Log::warning('💎 SlipOK auto-provision: createProvisionalCelticReading ล้มเหลว', [
                 'platform' => $platform, 'user_id' => $userId, 'error' => $e->getMessage(),
@@ -13290,13 +13297,33 @@ class FortuneConversationService
             $deepPrice = (float) ($this->settings->deep_reading_price ?? 39);
             $celticPrice = (float) ($this->settings->celtic_cross_price ?? 99);
             $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+            // 🛡️ (2026-07-02 owner) Deep ปิดขาย → ห้ามเปิด/เสนอ Deep จาก routing (เดิมไม่เช็ค toggle)
+            $deepEnabled = $this->settings->isDeepReadingEnabled();
             // เพดาน "ชัดเจนว่าตั้งใจโอน 39" = deep_price + 1.00 (ครอบเศษ unique-cents 0.xx)
             //   owner: "เริ่มถามที่ 40.01" → ≤40.00 = Deep ทันที, ≥40.01 = ถาม
             $deepCeil = $deepPrice + 1.0;
 
+            // 💎 (2026-07-02, owner) สลิป "ใบที่สอง" มาระหว่างรอเลือก 39/99 (คนละ transRef กับใบที่เก็บไว้)
+            //   เดิม: verify ใบใหม่ทับใบเก่า → เงินใบแรกหายเงียบ → ส่งเข้า partial flow แทน
+            //   (handlePartialPayment มีด่านเครดิตสลิปที่ค้างรอเลือกให้เอง → ยอดสะสมจะ route ต่อ:
+            //    39-40 เปิด Deep / 40.01-98 ถามใหม่ / ≥99 เปิด Celtic)
+            $pendingVerify = $provisional->getConversationState('prepay_choice_verify');
+            if ($provisional->getConversationState('prepay_choice_pending', false)
+                && is_array($pendingVerify)
+                && (string) ($pendingVerify['transRef'] ?? '') !== ''
+                && (string) ($verify['transRef'] ?? '') !== (string) ($pendingVerify['transRef'] ?? '')) {
+                Log::warning('💎 Prepay routing: สลิปใบที่ 2 ระหว่างรอเลือก 39/99 → เครดิตสะสมทั้งสองใบ', [
+                    'reading_id' => $provisional->id,
+                    'stored_transRef' => $pendingVerify['transRef'] ?? null,
+                    'new_transRef' => $verify['transRef'] ?? null,
+                ]);
+
+                return $this->handlePartialPayment($provisional, $verify, $platform, $userId, 'returning');
+            }
+
             // 🚫 Celtic ปิด → มีแค่ Deep 39 → ไม่ถาม/ไม่เสนอ 99 : ยอดถึง deep_price = เปิด Deep
             if (! $celticEnabled) {
-                if ($amount + 0.001 >= $deepPrice) {
+                if ($deepEnabled && $amount + 0.001 >= $deepPrice) {
                     Log::warning('💎 Prepay routing: Celtic ปิด → เปิด Deep อัตโนมัติ', [
                         'reading_id' => $provisional->id, 'amount' => $amount,
                     ]);
@@ -13319,6 +13346,11 @@ class FortuneConversationService
                 return null;
             }
 
+            // 🛡️ (2026-07-02) Deep ปิดขาย → เหลือแค่ Celtic 99 → ทุกยอด <99 = โอนขาด เติมให้ครบ 99 (ไม่เสนอ 39)
+            if (! $deepEnabled) {
+                return null;
+            }
+
             // ยอด deep_price..deepCeil (≈39.00-40.00) → เปิด Deep 39 อัตโนมัติ (repurpose บิล provisional เป็น Deep)
             if ($amount <= $deepCeil + 0.001) {
                 Log::warning('💎 Prepay routing: ยอด≈Deep → เปิด Deep อัตโนมัติ (โอนก่อนบิล)', [
@@ -13335,6 +13367,21 @@ class FortuneConversationService
                 'reading_id' => $provisional->id ?? null, 'error' => $e->getMessage(),
             ]);
 
+            // 🛡️ (2026-07-02 จับผี) ถ้าพังหลัง finalize ไปบางส่วน (ตัดบิล/เปลี่ยนเป็น Deep แล้ว)
+            //   — ห้ามคืน null ให้ REJECT_AMOUNT ถอยไปออกบิล top-up 99 ซ้ำใส่ลูกค้าที่เพิ่งจ่ายสำเร็จ
+            try {
+                $fresh = $provisional->fresh();
+                if ($fresh && ($fresh->is_paid || $fresh->reading_type === FortuneReading::READING_TYPE_DEEP)) {
+                    return [
+                        'action' => 'prepay_routing_recovering',
+                        'message' => '🙏 แม่หมอได้รับยอดแล้ว กำลังตรวจสอบและเปิดดวงให้อยู่นะคะ รอสักครู่ค่ะ ✨',
+                        'reading' => $fresh,
+                    ];
+                }
+            } catch (\Throwable $e2) {
+                // ปล่อย fallback เดิม
+            }
+
             return null;
         }
     }
@@ -13345,7 +13392,25 @@ class FortuneConversationService
      */
     protected function provisionDeepFromVerifiedSlip(FortuneReading $provisional, array $verify, string $platform, string $userId): array
     {
-        $provisional->forceFill(['reading_type' => FortuneReading::READING_TYPE_DEEP])->save();
+        $fill = ['reading_type' => FortuneReading::READING_TYPE_DEEP];
+
+        // 🩹 (2026-07-02 จับผี) เคสยอดสะสม: reading ถือ UPA top-up (ยอดเติมให้ครบ 99) ที่ไม่มีใครจ่ายจริง
+        //   ถ้าปล่อยไว้ confirmPayment จะ mark 'used' → reconciliation เพี้ยน (UPA used ที่ไม่มี SMS/สลิปคู่)
+        //   → cancel คืน suffix + ปลด FK แล้วให้ amount_paid = ยอดสะสมที่จ่ายจริง
+        if (! empty($provisional->unique_payment_amount_id)) {
+            try {
+                $provisional->uniquePaymentAmount?->cancel();
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+            $fill['unique_payment_amount_id'] = null;
+        }
+        $paidTotal = (float) ($provisional->partial_paid_total ?? 0);
+        if ($paidTotal > 0) {
+            $fill['amount_paid'] = $paidTotal;
+        }
+
+        $provisional->forceFill($fill)->save();
         $resp = $this->finalizeSlipOkApproved($provisional, $verify, $platform, $userId);
         $this->clearPrepayChoice($userId, $provisional);
 
@@ -13357,6 +13422,19 @@ class FortuneConversationService
      */
     protected function presentPrepayPackageChoice(FortuneReading $provisional, array $verify, float $amount, string $platform, string $userId): array
     {
+        // 🩹 (2026-07-02 จับผี) บิลหลุดสถานะรอจ่ายไปแล้ว (เช่น cron หมดอายุปิดเป็น completed) แต่เงินจริง
+        //   เพิ่งเข้ามาถึงขั้นถาม 39/99 → ปลุกกลับมารอจ่าย — ไม่งั้น guard ตอนลูกค้าตอบจะเคลียร์ choice ทิ้ง
+        //   ลูกค้าตอบไม่ได้ + เงินค้างเงียบ (กฎ paid-bills-always-resume)
+        if (! in_array($provisional->conversation_status, [
+            FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+            FortuneReading::STATUS_PENDING_PAYMENT,
+        ], true)) {
+            $provisional->forceFill(['conversation_status' => FortuneReading::STATUS_CELTIC_PENDING_PAYMENT])->save();
+            Log::warning('💎 Prepay: ปลุกบิลที่หลุดสถานะรอจ่ายกลับมา (มีเงินเครดิตจริง + กำลังถาม 39/99)', [
+                'reading_id' => $provisional->id,
+            ]);
+        }
+
         $deepPrice = (int) ($this->settings->deep_reading_price ?? 39);
         $celticPrice = (int) ($this->settings->celtic_cross_price ?? 99);
         $topUp = max(0, $celticPrice - $amount);
@@ -13376,7 +13454,7 @@ class FortuneConversationService
 
         return [
             'action' => 'prepay_package_choice',
-            'message' => "🙏 แม่หมอได้รับยอดโอน *฿{$amountStr}* เรียบร้อยแล้วนะคะ ✨\n\n"
+            'message' => "🙏 แม่หมอได้รับยอดโอนรวม *฿{$amountStr}* เรียบร้อยแล้วนะคะ ✨\n\n"
                 ."ขอถามก่อนนะคะว่าเจ้าชะตาต้องการดูแบบไหน:\n\n"
                 ."🔹 *ดูดวงเชิงลึก {$deepPrice}฿* — ยอดที่โอนมาพอแล้ว แม่หมอเปิดให้ได้เลย\n"
                 ."💎 *ไพ่ Celtic Cross {$celticPrice}฿* (10 ใบ) — โอนเพิ่มอีก *฿{$topUpStr}* ให้ครบ {$celticPrice}\n\n"
@@ -13405,6 +13483,111 @@ class FortuneConversationService
     }
 
     /**
+     * 💎 (2026-07-02, owner) route "ยอดสะสม" ของบิลโอนก่อนบิล — เหมือน routePrepaySlipByAmount แต่ใช้ยอดรวม
+     *
+     * ปิด GAP: ลูกค้าโอน 20 (ขาด) → เดิมถูกทวงให้เติมครบ 99 อย่างเดียว พอเติมอีก 19 (รวม 39 = ตั้งใจดู Deep)
+     *   ก็ยังโดนทวง "ขาดอีก 60" ไม่มีทางเลือก Deep เลย (routePrepaySlipByAmount ไม่ทำงานซ้ำเพราะมี UPA top-up แล้ว)
+     *
+     * เรียกจาก handlePartialPayment หลังคำนวณยอดสะสม ($newPaid) — เฉพาะ:
+     *   • บิลธง prepay_provisional (โอนก่อนบิล) ที่ยัง type=celtic — บิล Celtic จริงที่ลูกค้าเลือกเอง ไม่เข้า
+     *   • ยังไม่เคยเลือก "99" (prepay_package_locked) — เลือกแล้วห้ามถามซ้ำ ให้เติมจนครบ 99 ตามเดิม
+     *   • Deep เปิดขายอยู่
+     * ยอดสะสม ≥99 ไม่มาถึงนี่ (complete branch ของ handlePartialPayment จับก่อน → เปิด Celtic)
+     *
+     * @param  float  $newPaid  ยอดสะสมรวมสลิปใบล่าสุด
+     * @return array|null response (เปิด Deep / ถาม 39-99) หรือ null = ใช้ partial flow เดิม (ทวงเติมครบ 99)
+     */
+    protected function routePrepayPartialByTotal(FortuneReading $reading, array $verify, float $newPaid, int $rounds, array $refs, float $target, ?string $platform, ?string $userId): ?array
+    {
+        try {
+            if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS
+                || ! $reading->getConversationState('prepay_provisional', false)
+                || $reading->getConversationState('prepay_package_locked') === 'celtic'
+                || ! $this->settings->isDeepReadingEnabled()) {
+                return null;
+            }
+
+            $deepPrice = (float) ($this->settings->deep_reading_price ?? 39);
+            $deepCeil = $deepPrice + 1.0; // สอดคล้อง routePrepaySlipByAmount (เริ่มถามที่ 40.01)
+
+            if ($newPaid + 0.001 < $deepPrice) {
+                return null; // สะสมยังไม่ถึง 39 → partial เดิม (ข้อความจะเสนอ 2 ทางเลือกให้เอง)
+            }
+
+            // 💾 ยอดสะสมที่ต้อง persist ก่อนออกจาก partial flow (ทุก exit — audit + กันเครดิตหาย)
+            $persistTotals = [
+                'partial_paid_total' => $newPaid, 'partial_target_total' => $target,
+                'partial_rounds' => $rounds, 'partial_transrefs' => $refs, 'partial_hold_at' => null,
+            ];
+
+            // สะสม 39.00-40.00 → ชัดเจนว่าตั้งใจดู Deep → เปิดให้เลย (ไม่สน rounds — ส่งของ = จบเรื่อง)
+            if ($newPaid <= $deepCeil + 0.001) {
+                $reading->forceFill($persistTotals)->save();
+                Log::warning('💎 Prepay routing: ยอดสะสม≈Deep → เปิด Deep อัตโนมัติ (โอนก่อนบิล)', [
+                    'reading_id' => $reading->id, 'paid_total' => $newPaid, 'deep_ceil' => $deepCeil,
+                ]);
+
+                return $this->provisionDeepFromVerifiedSlip($reading, $verify, (string) $platform, (string) $userId);
+            }
+
+            // 🛡️ (จับผี) สะสมถึงราคา Celtic แล้วแต่หลุดมาถึงนี่ (config target ≠ celtic_price เพี้ยน)
+            //   → ปล่อย flow เดิมตัดสิน (complete/partial) ไม่ถามซ้อน
+            $celticPrice = (float) ($this->settings->celtic_cross_price ?? 99);
+            if ($newPaid + 0.001 >= $celticPrice) {
+                return null;
+            }
+
+            // สะสม 40.01-98.xx → กำกวม → ถาม 39/99 (Celtic ต้องเปิดขายถึงเสนอ 99 ได้)
+            if (! (bool) ($this->settings->enable_celtic_cross ?? false)) {
+                return null;
+            }
+
+            // 🛡️ (จับผี) เคารพนโยบาย HOLD เดิม — โอนขาดครบ 3 รอบแล้วยังกำกวม → ไม่ถามต่อ
+            //   ปล่อยไป HOLD พักให้แม่หมอ/แอดมินตรวจ (กันโอนจุกจิกวนถามไม่รู้จบ)
+            if ($rounds >= 3) {
+                return null;
+            }
+
+            $reading->forceFill($persistTotals)->save();
+
+            // 🩹 (จับผี) รีเฟรชบิล top-up ให้ตรงยอดขาดจริง — UPA รอบก่อนยอด stale (เช่นค้าง 79 ทั้งที่เหลือ 54)
+            //   กัน SMS auto-match ยอดเก่าเก็บเงินเกิน + ต่ออายุบิลให้ครอบช่วงตัดสินใจไปในตัว
+            try {
+                $this->createPartialTopupBill($reading, max(1, (int) ceil($celticPrice - $newPaid - 0.001)));
+            } catch (\Throwable $eTopup) {
+                // non-blocking — พลาดแค่ UPA stale ต่อไป (พฤติกรรมเท่าของเดิม)
+            }
+
+            Log::warning('💎 Prepay routing: ยอดสะสมกำกวม → ถามแพคเกจ 39/99', [
+                'reading_id' => $reading->id, 'paid_total' => $newPaid,
+            ]);
+
+            return $this->presentPrepayPackageChoice($reading, $verify, $newPaid, (string) $platform, (string) $userId);
+        } catch (\Throwable $e) {
+            Log::warning('💎 Prepay routing (ยอดสะสม) ล้มเหลว — fallback partial เดิม', [
+                'reading_id' => $reading->id ?? null, 'error' => $e->getMessage(),
+            ]);
+
+            // 🛡️ (จับผี) ถ้าพังหลัง finalize ไปบางส่วน (ตัดบิล/เปลี่ยนเป็น Deep แล้ว) — ห้ามถอยไป
+            //   partial flow ที่จะออกบิล top-up 99 ซ้ำใส่ลูกค้าที่เพิ่งจ่ายสำเร็จ
+            try {
+                $fresh = $reading->fresh();
+                if ($fresh && ($fresh->is_paid || $fresh->reading_type === FortuneReading::READING_TYPE_DEEP)) {
+                    return [
+                        'action' => 'prepay_partial_recovering',
+                        'message' => '🙏 แม่หมอได้รับยอดแล้ว กำลังตรวจสอบและเปิดดวงให้อยู่นะคะ รอสักครู่ค่ะ ✨',
+                        'reading' => $fresh,
+                    ];
+                }
+            } catch (\Throwable $e2) {
+                // ปล่อย fallback เดิม
+            }
+
+            return null;
+        }
+    }
+
+    /**
      * 💎 (2026-06-23) ลูกค้าพิมพ์/กดเลือก 39 หรือ 99 ตอบกลับคำถามแพคเกจ (โอนก่อนบิล)
      *
      * เรียกจาก maybeHandlePrepayChoiceReply (early-gate ใน processMessage)
@@ -13425,11 +13608,54 @@ class FortuneConversationService
             ];
         }
 
+        // 🛡️ (2026-07-02 จับผี) re-check ใต้ lock — SMS auto-match/สลิปอีก thread อาจเพิ่งตัดบิลไป
+        //   ระหว่างลูกค้ากดตอบ (model ที่ถืออยู่อ่านมาก่อน commit) → ห้ามทับบิลที่จ่ายแล้วเป็น Deep
+        $reading->refresh();
+        if ($reading->is_paid) {
+            \Illuminate\Support\Facades\Cache::forget($lockKey);
+            $this->clearPrepayChoice($userId, $reading);
+
+            return [
+                'action' => 'prepay_choice_already_settled',
+                'message' => '🙏 แม่หมอได้รับยอดครบเรียบร้อยแล้วค่ะ กำลังเปิดดวงให้เลยนะคะ ✨',
+                'reading' => $reading,
+            ];
+        }
+        if (! in_array($reading->conversation_status, [
+            FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+            FortuneReading::STATUS_PENDING_PAYMENT,
+        ], true)) {
+            \Illuminate\Support\Facades\Cache::forget($lockKey);
+            $this->clearPrepayChoice($userId, $reading);
+
+            return [
+                'action' => 'prepay_choice_bill_closed',
+                'message' => "🙏 บิลนี้ถูกปิดไปแล้วค่ะ ยอดที่โอนมาแม่หมอบันทึกไว้ให้เรียบร้อย\n"
+                    .'พิมพ์ "คุยกับแม่หมอ" ให้ทีมงานช่วยดูแลต่อ หรือพิมพ์ "ดูดวง" เพื่อเริ่มใหม่นะคะ ✨',
+                'reading' => $reading,
+            ];
+        }
+
         $verify = $reading->getConversationState('prepay_choice_verify');
         if (! is_array($verify) || empty($verify['transRef'])) {
             // สลิปที่เก็บไว้หาย → ขอสลิปใหม่ (ปลอดภัยกว่าเดาต่อ)
             \Illuminate\Support\Facades\Cache::forget($lockKey);
             $this->clearPrepayChoice($userId, $reading);
+
+            return $this->askForSlipMessage($reading);
+        }
+
+        // 🛡️ (2026-07-02 จับผี) สลิปที่เก็บไว้ถูกใช้ตัด "บิลอื่น" ไปแล้วระหว่างรอเลือก
+        //   → ห้ามเอามาเปิดดวง/เครดิตซ้ำ (finalize จะ updateOrCreate ทับ registry ของบิลอื่น) → ขอสลิปใหม่
+        $storedRef = (string) ($verify['transRef'] ?? '');
+        if ($storedRef !== ''
+            && ! in_array($storedRef, is_array($reading->partial_transrefs) ? $reading->partial_transrefs : [], true)
+            && \App\Models\SlipVerification::where('trans_ref', $storedRef)->where('fortune_reading_id', '!=', $reading->id)->exists()) {
+            \Illuminate\Support\Facades\Cache::forget($lockKey);
+            $this->clearPrepayChoice($userId, $reading);
+            Log::warning('💎 Prepay choice: สลิปที่เก็บไว้ถูกใช้กับบิลอื่นแล้ว → ขอสลิปใหม่', [
+                'reading_id' => $reading->id, 'transRef' => $storedRef,
+            ]);
 
             return $this->askForSlipMessage($reading);
         }
@@ -13466,6 +13692,35 @@ class FortuneConversationService
             'reading_id' => $reading->id, 'transRef' => $verify['transRef'] ?? null,
         ]);
 
+        // 🔒 (2026-07-02) เลือก 99 แล้ว = ล็อกแพคเกจ — ยอดสะสมรอบถัดไปห้ามถาม 39/99 ซ้ำ/ห้ามเปิด Deep
+        $reading->setConversationState('prepay_package_locked', 'celtic');
+
+        // 💎 (2026-07-02) choice ที่มาจาก "ยอดสะสม" — สลิปใบนี้ถูกเครดิตเข้า partial ไปแล้ว
+        //   ห้ามส่งเข้า handlePartialPayment ซ้ำ (จะโดนด่าน duplicate-slip ตอบงงๆ) → แจ้งยอดขาด + ออกบิล top-up ตรงยอด
+        $refs = is_array($reading->partial_transrefs) ? $reading->partial_transrefs : [];
+        if (in_array((string) ($verify['transRef'] ?? ''), $refs, true)) {
+            $celticPrice = (float) ($this->settings->celtic_cross_price ?? 99);
+            $paidTotal = (float) ($reading->partial_paid_total ?? 0);
+            $remain = max(0, round($celticPrice - $paidTotal, 2));
+            $shortfall = max(1, (int) ceil($remain - 0.001));
+            // ออกบิล top-up ยอดที่ขาดจริง (cancel UPA เก่าที่ยอด stale ให้เอง + re-point reading)
+            $topupUpa = $this->createPartialTopupBill($reading, $shortfall);
+
+            $msg = '💎 รับทราบค่ะ เจ้าชะตาเลือก *ไพ่ Celtic Cross '.number_format($celticPrice, 0)."฿* ✨\n\n"
+                .'ยอดสะสมตอนนี้ ฿'.number_format($paidTotal, 2).' — เหลืออีก *฿'.number_format($remain, 2)."*\n";
+            $msg .= $topupUpa
+                ? '💸 รบกวนโอนเพิ่ม *฿'.number_format((float) $topupUpa->unique_amount, 2)."* (ใส่เศษสตางค์ด้วย ระบบจะตัดให้อัตโนมัติ)\n"
+                    .'   หรือโอน ฿'.number_format($shortfall, 2)." แล้วส่งสลิปมาให้แม่หมอตรวจก็ได้ค่ะ\n\n"
+                : '💸 รบกวนโอนเพิ่ม ฿'.number_format($remain, 2)." แล้วส่งสลิปมาให้แม่หมอตรวจนะคะ\n\n";
+            $msg .= '✨ พอครบ แม่หมอจะเปิดไพ่ 10 ใบให้ทันทีเลยค่ะ 🌙';
+
+            return [
+                'action' => 'partial_topup',
+                'message' => $msg,
+                'reading' => $reading,
+            ];
+        }
+
         return $this->handlePartialPayment($reading, $verify, $platform, $userId, 'prepay_choice');
     }
 
@@ -13498,7 +13753,13 @@ class FortuneConversationService
                 $q->where('facebook_user_id', $userId)->orWhere('platform_user_id', $userId);
             })
                 ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
-                ->where('conversation_status', FortuneReading::STATUS_CELTIC_PENDING_PAYMENT)
+                // 💎 (2026-07-02) รับ PENDING_PAYMENT ด้วย — choice จาก "ยอดสะสม" เกิดหลังมีบิล top-up
+                //   (createPartialTopupBill เปลี่ยน status เป็น pending_payment) ปลอดภัยเพราะยัง gate
+                //   ด้วย type=celtic + flag prepay_choice_pending (มีเฉพาะบิลโอนก่อนบิล) + is_paid=false
+                ->whereIn('conversation_status', [
+                    FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                    FortuneReading::STATUS_PENDING_PAYMENT,
+                ])
                 ->where('is_paid', false)
                 ->whereRaw("JSON_EXTRACT(conversation_state, '$.prepay_choice_pending') = true")
                 ->where('created_at', '>=', now()->subMinutes(FortuneReading::billTimeoutMinutes()))
@@ -13507,11 +13768,14 @@ class FortuneConversationService
         }
 
         // 💎 (2026-06-23 bug-hunt) state guard — reading ต้องยัง "รอเลือกแพคเกจ" จริง
-        //   (ยกเลิก/จ่ายแล้ว/เปลี่ยน type → status ออกจาก CELTIC_PENDING_PAYMENT/is_paid → flag ตกค้าง
+        //   (ยกเลิก/จ่ายแล้ว/เปลี่ยน type → status ออกจากสถานะรอจ่าย/is_paid → flag ตกค้าง
         //    ห้าม re-fire สลิปเก่าซ้ำ) → เคลียร์ flag+cache แล้วปล่อย flow ปกติ
         if (! $reading
             || ! $reading->getConversationState('prepay_choice_pending', false)
-            || $reading->conversation_status !== FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
+            || ! in_array($reading->conversation_status, [
+                FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                FortuneReading::STATUS_PENDING_PAYMENT,
+            ], true)
             || $reading->is_paid) {
             $this->clearPrepayChoice($userId, $reading);
 
@@ -14306,6 +14570,40 @@ class FortuneConversationService
                 ];
             }
 
+            // 💎 (2026-07-02, owner) สลิปที่ "ค้างรอเลือก 39/99" (เก็บ verify ไว้ ยังไม่เคยเครดิต) + สลิปใหม่มาแทนคำตอบ
+            //   → เครดิตใบที่ค้างเข้ายอดสะสมก่อน (กันเงินใบแรกหายเงียบ) แล้วเครดิตใบใหม่ต่อตามปกติ
+            //   ครอบทุกทางเข้า (returning / active_bill ผ่าน fallback job) — ไม่นับเป็น round เพิ่ม
+            $stacked = $reading->getConversationState('prepay_choice_verify');
+            $stackedRef = is_array($stacked) ? (string) ($stacked['transRef'] ?? '') : '';
+            if ($reading->getConversationState('prepay_choice_pending', false)
+                && $stackedRef !== '' && $stackedRef !== $transRef
+                && ! in_array($stackedRef, $refs, true)) {
+                // 🛡️ (2026-07-02 จับผี) สลิปค้างถูกเอาไปตัด "บิลอื่น" ไปแล้วระหว่างรอเลือก → ห้าม phantom-credit
+                //   (registry กลาง SlipVerification คือความจริงเดียว — refs บน reading นี้ไม่พอ)
+                $consumedElsewhere = \App\Models\SlipVerification::where('trans_ref', $stackedRef)
+                    ->where('fortune_reading_id', '!=', $reading->id)->exists();
+                if ($consumedElsewhere) {
+                    $this->clearPrepayChoice((string) $userId, $reading);
+                    Log::warning('💎 Prepay: สลิปค้างรอเลือกถูกใช้กับบิลอื่นแล้ว → ไม่เครดิต (เคลียร์ choice)', [
+                        'reading_id' => $reading->id, 'stacked_transRef' => $stackedRef,
+                    ]);
+                } else {
+                    $alreadyPaid = round($alreadyPaid + (float) ($stacked['amount'] ?? 0), 2);
+                    $refs[] = $stackedRef;
+                    // 💾 persist ทันที ก่อน register transRef — กัน crash window ที่ transRef ถูก consume แต่เงินไม่ลงบัญชี
+                    $reading->forceFill(['partial_paid_total' => $alreadyPaid, 'partial_transrefs' => $refs])->save();
+                    $this->registerPartialSlip($reading, $stacked, (string) $platform, (string) $userId);
+                    $this->clearPrepayChoice((string) $userId, $reading);
+
+                    Log::warning('💎 Prepay: เครดิตสลิปที่ค้างรอเลือก 39/99 เข้ายอดสะสม (สลิปใหม่มาแทนคำตอบ)', [
+                        'reading_id' => $reading->id,
+                        'stacked_transRef' => $stackedRef,
+                        'stacked_amount' => $stacked['amount'] ?? null,
+                        'new_transRef' => $transRef,
+                    ]);
+                }
+            }
+
             // เครดิตยอดใหม่
             $newPaid = round($alreadyPaid + $amount, 2);
             $rounds = (int) ($reading->partial_rounds ?? 0) + 1;
@@ -14328,6 +14626,14 @@ class FortuneConversationService
                 return $context === 'returning'
                     ? $this->recoverCelticFromVerifiedSlip($reading, $verify, $platform, $userId)
                     : $this->finalizeSlipOkApproved($reading, $verify, $platform, $userId);
+            }
+
+            // 💎 (2026-07-02, owner) บิลโอนก่อนบิล (prepay_provisional) — ยอดสะสมถึงช่วงราคาแล้ว
+            //   route เหมือนสลิปใบแรก: สะสม 39-40 → เปิด Deep เลย / 40.01-98 → ถาม 39-99
+            //   (เดิมโอน 20 แล้วเติม 19 = รวม 39 ยังโดนทวง "ขาดอีก 60 ให้ครบ 99" ไม่มีทางเลือก Deep)
+            $prepayResp = $this->routePrepayPartialByTotal($reading, $verify, $newPaid, $rounds, $refs, $target, $platform, $userId);
+            if ($prepayResp !== null) {
+                return $prepayResp;
             }
 
             // ❌ ครบ 3 รอบยังไม่ครบ → HOLD พักให้แม่หมอ/แอดมินตรวจ (เงินไม่หาย ไม่แบน)
@@ -14374,6 +14680,29 @@ class FortuneConversationService
                     'message' => '🙏 ได้รับยอด ฿'.number_format($amount, 2).' แล้วค่ะ (รวม ฿'.number_format($newPaid, 2).")\n"
                         .'ยังขาดอีก ฿'.number_format($remaining, 2).' ให้ครบ ฿'.number_format($target, 2)."\n"
                         .'รบกวนโอนส่วนที่ขาดแล้วส่งสลิปมาให้แม่หมอตรวจอีกครั้งนะคะ ✨',
+                    'reading' => $reading,
+                ];
+            }
+
+            // 💎 (2026-07-02, owner) บิลโอนก่อนบิล สะสมยังไม่ถึงราคา Deep (39) → เสนอ 2 ทางเลือก
+            //   "เติมให้ครบ 39 (Deep)" หรือ "เติมให้ครบ 99 (Celtic)" — เดิมทวงครบ 99 อย่างเดียว ลูกค้าตั้งใจ 39 งง
+            //   (บิล top-up/UPA คือยอดถึง 99 — สาย 39 ให้โอนส่วนต่างแล้วส่งสลิป ยอดสะสมถึง 39 router จะเปิด Deep เอง)
+            $deepPrice = (float) ($this->settings->deep_reading_price ?? 39);
+            if ($reading->getConversationState('prepay_provisional', false)
+                && $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                && $reading->getConversationState('prepay_package_locked') !== 'celtic'
+                && $this->settings->isDeepReadingEnabled()
+                && (bool) ($this->settings->enable_celtic_cross ?? false)
+                && $newPaid + 0.001 < $deepPrice) {
+                $toDeep = max(0, round($deepPrice - $newPaid, 2));
+
+                return [
+                    'action' => 'partial_topup',
+                    'message' => '🙏 ได้รับยอด ฿'.number_format($amount, 2).' แล้วค่ะ (สะสม ฿'.number_format($newPaid, 2).")\n\n"
+                        ."เจ้าชะตาเลือกเติมได้ 2 แบบนะคะ:\n"
+                        .'🔹 *ดูดวงเชิงลึก '.number_format($deepPrice, 0).'฿* — โอนเพิ่มอีก *฿'.number_format($toDeep, 2)."* แล้วส่งสลิปมาให้แม่หมอตรวจค่ะ\n"
+                        .'💎 *ไพ่ Celtic Cross '.number_format($target, 0).'฿* (10 ใบ) — โอนเพิ่ม *฿'.number_format((float) $topupUpa->unique_amount, 2)."* (ใส่เศษสตางค์ด้วย ระบบตัดให้อัตโนมัติ)\n\n"
+                        .'✨ พอยอดครบแบบไหน แม่หมอเปิดดวงแบบนั้นให้ทันทีเลยค่ะ 🌙',
                     'reading' => $reading,
                 ];
             }
@@ -15116,6 +15445,34 @@ class FortuneConversationService
     protected function finalizeSlipOkApproved(FortuneReading $reading, array $verify, string $platform, string $userId): array
     {
         $transRef = (string) $verify['transRef'];
+
+        // 💎 (2026-07-02 จับผี) มีสลิป "ค้างรอเลือก 39/99" ที่ยังไม่เคยเครดิต + ใบที่กำลัง finalize เป็นคนละใบ
+        //   (เช่นลูกค้าไม่ตอบคำถาม แต่ส่งสลิป ≥99 มาทาง active_bill → เข้า finalize ตรง ไม่ผ่าน partial)
+        //   → เก็บเข้ายอดสะสมก่อนปิดบิล — เงินไม่หายเงียบ แอดมินเห็น partial_paid_total เกินราคา ตัดสินคืน/เครดิตได้
+        try {
+            $heldVerify = $reading->getConversationState('prepay_choice_verify');
+            $heldRef = is_array($heldVerify) ? (string) ($heldVerify['transRef'] ?? '') : '';
+            $heldRefs = is_array($reading->partial_transrefs) ? $reading->partial_transrefs : [];
+            if ($reading->getConversationState('prepay_choice_pending', false)
+                && $heldRef !== '' && $heldRef !== $transRef
+                && ! in_array($heldRef, $heldRefs, true)
+                && ! \App\Models\SlipVerification::where('trans_ref', $heldRef)->where('fortune_reading_id', '!=', $reading->id)->exists()) {
+                $heldRefs[] = $heldRef;
+                $reading->forceFill([
+                    'partial_paid_total' => round((float) ($reading->partial_paid_total ?? 0) + (float) ($heldVerify['amount'] ?? 0), 2),
+                    'partial_transrefs' => $heldRefs,
+                ])->save();
+                $this->registerPartialSlip($reading, $heldVerify, $platform, $userId);
+                $this->clearPrepayChoice($userId, $reading);
+
+                Log::warning('💎 Prepay: เก็บสลิปค้างรอเลือกเข้ายอดสะสมก่อน finalize (กันเงินหายเงียบ)', [
+                    'reading_id' => $reading->id, 'held_transRef' => $heldRef,
+                    'held_amount' => $heldVerify['amount'] ?? null, 'finalize_transRef' => $transRef,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // non-blocking — bookkeeping พลาดไม่ควรขวางการตัดบิล/เปิดดวง
+        }
 
         // 🛡️ (2026-06-04) verify ผ่าน = จ่ายจริง → เคลียร์ตัวนับ flood (ลูกค้าซ้ำไม่ติดเพดานข้ามบิล)
         (new \App\Services\Fortune\SlipOkService($this->settings))->clearFloodCounters($platform, $userId);
