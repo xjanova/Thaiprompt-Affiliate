@@ -54,7 +54,6 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\Dev\DevReleaseController;
 use App\Http\Controllers\Admin\DeveloperApprovalController;
 use App\Http\Controllers\Admin\ECommerceController;
-use App\Http\Controllers\Admin\LazadaImportController;
 use App\Http\Controllers\Admin\EmailAnalyticsController;
 use App\Http\Controllers\Admin\EmailCampaignController;
 use App\Http\Controllers\Admin\EmailController;
@@ -125,6 +124,7 @@ use App\Http\Controllers\Admin\KeywordSuggestionController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\KycController;
 use App\Http\Controllers\Admin\LanguageSettingController;
+use App\Http\Controllers\Admin\LazadaImportController;
 use App\Http\Controllers\Admin\LearningCenterController;
 use App\Http\Controllers\Admin\LeaveController;
 use App\Http\Controllers\Admin\LineBotAiController;
@@ -4407,6 +4407,9 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/', [FortuneDebugToolsController::class, 'index'])->name('index');
         Route::get('/logs', [FortuneDebugToolsController::class, 'tailLog'])->name('logs');
         Route::post('/test-ai', [FortuneDebugToolsController::class, 'testAi'])->name('test-ai');
+        // 🔀 (2026-07-03) สลับแพ็กเกจบิล 39 (Deep) ↔ 99 (Celtic) — แอดมินแก้เคสลูกค้าเปิดผิดแพ็กเกจ
+        Route::get('/bill-info', [FortuneDebugToolsController::class, 'billInfo'])->name('bill-info');
+        Route::post('/switch-package', [FortuneDebugToolsController::class, 'switchPackage'])->name('switch-package');
     });
 
     // ========================================

@@ -8,6 +8,7 @@ use App\Models\FortuneTellingSetting;
 use App\Services\CelticCrossService;
 use App\Services\FortuneAIService;
 use App\Services\FortuneChannelManager;
+use App\Services\FortuneConversationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -235,6 +236,117 @@ class FortuneDebugToolsController extends Controller
         }
 
         return response()->json($result);
+    }
+
+    /**
+     * 🔀 (2026-07-03) AJAX — โหลดสถานะบิล (preview ก่อนสลับแพ็กเกจ)
+     *
+     * Query: bill = bill_reference (FTU-...) หรือ reading_id (ตัวเลข)
+     */
+    public function billInfo(Request $request): JsonResponse
+    {
+        $bill = trim((string) $request->query('bill', ''));
+        if ($bill === '') {
+            return response()->json(['success' => false, 'message' => 'กรุณาระบุเลขบิลหรือ reading id']);
+        }
+
+        $reading = $this->resolveReading($bill);
+        if (! $reading) {
+            return response()->json(['success' => false, 'message' => "ไม่พบบิล: {$bill}"]);
+        }
+
+        // เงินที่รับจริง (paid → amount_paid, ค้าง → partial_paid_total)
+        $moneyIn = $reading->is_paid
+            ? (float) ($reading->amount_paid ?? 0)
+            : (float) ($reading->partial_paid_total ?? 0);
+        $moneyIn = max($moneyIn, (float) ($reading->partial_paid_total ?? 0), (float) ($reading->amount_received ?? 0));
+
+        return response()->json([
+            'success' => true,
+            'reading' => [
+                'id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'reading_type' => $reading->reading_type,
+                'conversation_status' => $reading->conversation_status,
+                'is_paid' => (bool) $reading->is_paid,
+                'amount_paid' => (float) ($reading->amount_paid ?? 0),
+                'partial_paid_total' => (float) ($reading->partial_paid_total ?? 0),
+                'money_in' => $moneyIn,
+                'has_birth_date' => ! empty($reading->birth_date),
+                'celtic_cards' => $reading->getCelticPickedCount(),
+                'has_deep_response' => ! empty($reading->deep_response),
+                'facebook_user_name' => $reading->facebook_user_name,
+                'platform' => $reading->platform,
+                'created_at' => $reading->created_at?->format('Y-m-d H:i'),
+            ],
+        ]);
+    }
+
+    /**
+     * 🔀 (2026-07-03) AJAX — สลับแพ็กเกจบิล Deep 39 ↔ Celtic 99
+     *
+     * Body:
+     *   - bill: bill_reference หรือ reading_id
+     *   - target: 'deep' | 'celtic_cross'
+     *   - pay_mode: 'charge' (ออกบิลส่วนต่าง) | 'free' (อัปเกรดฟรี)
+     *   - force: bool (ยืนยันแม้บิลมีความคืบหน้า)
+     *
+     * ⚠️ SILENT — เปลี่ยน DB เท่านั้น ไม่ push หาลูกค้า (owner แจ้งเอง)
+     */
+    public function switchPackage(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'bill' => 'required|string|max:64',
+            'target' => 'required|in:deep,celtic_cross',
+            'pay_mode' => 'required|in:charge,free',
+            'force' => 'sometimes|boolean',
+        ]);
+
+        $reading = $this->resolveReading($validated['bill']);
+        if (! $reading) {
+            return response()->json(['success' => false, 'message' => "ไม่พบบิล: {$validated['bill']}"]);
+        }
+
+        try {
+            $service = new FortuneConversationService(FortuneTellingSetting::getSettings());
+            $result = $service->adminSwitchPackage(
+                $reading,
+                $validated['target'],
+                $validated['pay_mode'],
+                (bool) ($validated['force'] ?? false)
+            );
+
+            Log::warning('🔀 Admin สลับแพ็กเกจบิล', [
+                'admin_id' => $request->user()?->id,
+                'bill_reference' => $reading->bill_reference,
+                'reading_id' => $reading->id,
+                'target' => $validated['target'],
+                'pay_mode' => $validated['pay_mode'],
+                'ok' => $result['ok'] ?? false,
+            ]);
+
+            return response()->json(array_merge(['success' => (bool) ($result['ok'] ?? false)], $result));
+        } catch (\Throwable $e) {
+            Log::error('🔀 Admin สลับแพ็กเกจบิล ล้มเหลว', [
+                'bill' => $validated['bill'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * หา reading จาก bill_reference (FTU-...) หรือ reading_id (ตัวเลข)
+     */
+    protected function resolveReading(string $bill): ?FortuneReading
+    {
+        return is_numeric($bill)
+            ? FortuneReading::find((int) $bill)
+            : FortuneReading::where('bill_reference', $bill)->first();
     }
 
     /**

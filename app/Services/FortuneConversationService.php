@@ -13418,6 +13418,216 @@ class FortuneConversationService
     }
 
     /**
+     * 🔀 (2026-07-03) แอดมินสลับแพ็กเกจบิล Deep 39 ↔ Celtic 99 ด้วยตนเอง (หน้า Debug Tools)
+     *
+     * แก้เคสลูกค้าเปิดผิดแพ็กเกจ / จ่ายไม่ตรงราคา — เช่นเปิด Celtic 99 แต่โอน 39 อยากดู Deep แทน
+     * (เดิมต้องให้ dev รัน provisionDeepFromVerifiedSlip ผ่าน tinker ทุกครั้ง)
+     *
+     * ⚠️ SILENT — เปลี่ยนสถานะใน DB เท่านั้น "ไม่ push" ข้อความหาลูกค้า (owner: แจ้งลูกค้าเอง)
+     *   เหตุผล: ช่วงนี้ FB ส่งข้อความมีปัญหา (error 551) + owner ต้องการคุมการแจ้งเอง
+     *
+     * @param  FortuneReading  $reading  บิลที่จะสลับ
+     * @param  string  $target  แพ็กเกจปลายทาง: 'deep' (39) หรือ 'celtic_cross' (99)
+     * @param  string  $payMode  'charge' = ออกบิลเก็บเงินส่วนต่าง | 'free' = อัปเกรดฟรี (ถือว่าจ่ายครบ)
+     * @param  bool  $force  ยืนยันแม้บิลมีความคืบหน้า (ไพ่เปิดแล้ว / มีคำทำนายแล้ว)
+     * @return array ผลลัพธ์ { ok, message, before, after, ... } สำหรับแสดงในหน้าแอดมิน (ไม่ push)
+     */
+    public function adminSwitchPackage(FortuneReading $reading, string $target, string $payMode = 'charge', bool $force = false): array
+    {
+        // ── ตรวจ target ──
+        $validTargets = [FortuneReading::READING_TYPE_DEEP, FortuneReading::READING_TYPE_CELTIC_CROSS];
+        if (! in_array($target, $validTargets, true)) {
+            return ['ok' => false, 'message' => 'แพ็กเกจปลายทางไม่ถูกต้อง (ต้องเป็น deep หรือ celtic_cross)'];
+        }
+        if ($reading->reading_type === $target) {
+            return ['ok' => false, 'message' => 'บิลนี้เป็นแพ็กเกจนี้อยู่แล้ว ไม่ต้องสลับ'];
+        }
+        $payMode = $payMode === 'free' ? 'free' : 'charge';
+
+        // ── guard: บิลมีความคืบหน้าจริง (destructive) → ต้อง force ──
+        $celticCards = $reading->getCelticPickedCount();
+        $hasDeepResponse = ! empty($reading->deep_response);
+        if (! $force && ($celticCards > 0 || $hasDeepResponse)) {
+            return [
+                'ok' => false,
+                'needs_confirm' => true,
+                'message' => 'บิลนี้มีความคืบหน้าแล้ว ('
+                    .($celticCards > 0 ? "เปิดไพ่ {$celticCards}/10 ใบ" : 'มีคำทำนาย Deep แล้ว')
+                    .') — การสลับจะทำให้การทำนายเดิมใช้ไม่ได้ กด "ยืนยันสลับ" อีกครั้งเพื่อดำเนินการต่อ',
+            ];
+        }
+
+        $deepPrice = $this->getDeepReadingPrice();
+        $celticPrice = (float) ($this->settings->celtic_cross_price ?? 99);
+        $newPrice = $target === FortuneReading::READING_TYPE_DEEP ? $deepPrice : $celticPrice;
+
+        // 💰 เงินที่ลูกค้าจ่ายจริง — บิลจ่ายแล้วอ่านจาก amount_paid, บิลค้างอ่านจาก partial_paid_total
+        //   (บิลค้าง amount_paid = "ยอดที่ต้องโอน" ไม่ใช่ยอดที่รับ จึงห้ามใช้เป็นยอดรับ)
+        $moneyIn = $reading->is_paid
+            ? (float) ($reading->amount_paid ?? 0)
+            : (float) ($reading->partial_paid_total ?? 0);
+        $moneyIn = max($moneyIn, (float) ($reading->partial_paid_total ?? 0), (float) ($reading->amount_received ?? 0));
+
+        $before = $this->adminSwitchStateSnapshot($reading);
+        $before['money_in'] = $moneyIn;
+        $wasPaidBefore = (bool) $reading->is_paid;
+
+        // ── ปล่อยคืน UPA เดิม (ยอดเก่า / top-up) เพื่อคืน suffix ── (mirror provisionDeepFromVerifiedSlip)
+        if (! empty($reading->unique_payment_amount_id)) {
+            try {
+                $reading->uniquePaymentAmount?->cancel();
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+            $reading->unique_payment_amount_id = null;
+        }
+
+        $reading->reading_type = $target;
+
+        // ครอบ = จ่ายถึงราคาใหม่แล้ว หรือ owner เลือก "ฟรี"
+        $covered = ($payMode === 'free') || ($moneyIn + 0.001 >= $newPrice);
+
+        Log::warning('🔀 adminSwitchPackage', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'target' => $target,
+            'pay_mode' => $payMode,
+            'money_in' => $moneyIn,
+            'new_price' => $newPrice,
+            'covered' => $covered,
+            'was_paid_before' => $wasPaidBefore,
+        ]);
+
+        if ($covered) {
+            return $this->applyAdminSwitchCovered($reading, $target, $moneyIn, $newPrice, $wasPaidBefore, $before);
+        }
+
+        return $this->applyAdminSwitchCharge($reading, $target, $moneyIn, $newPrice, $before);
+    }
+
+    /**
+     * 🔀 ครอบ: เงินถึง/ฟรี → mark paid + เปิดแพ็กเกจปลายทาง (ไม่ push — คืน array ให้แอดมินดู)
+     */
+    protected function applyAdminSwitchCovered(FortuneReading $reading, string $target, float $moneyIn, float $newPrice, bool $wasPaidBefore, array $before): array
+    {
+        // amount_paid = เงินจริงที่รับ (ฟรีแบบไม่เคยจ่าย = 0 → ถือเป็นคอมพ์ไม่ปั่นยอดขาย)
+        $reading->forceFill(['amount_paid' => $moneyIn])->save();
+
+        // mark paid (idempotent — ถ้าจ่ายอยู่แล้วจะไม่ทำซ้ำ) ; UPA = null แล้วจึง skip UPA→used
+        //   confirmPayment เงียบต่อลูกค้า (แค่ set paid + dispatch persona job — ไม่ส่งข้อความ)
+        $reading->confirmPayment(null);
+
+        // 🧾 หมายเหตุ: จงใจ "ไม่" เรียก processAffiliateAndCommissions ที่นี่
+        //   เหตุผล: owner ต้องการ SILENT (DB อย่างเดียว) + autoRegisterFromFortune อาจ push affiliate/LINE
+        //   หาลูกค้า → ผิดเงื่อนไข. ถ้าต้องการคอมมิชชั่นให้บิลที่สลับ ให้จัดการแยกภายหลัง
+        //   ($wasPaidBefore เก็บไว้เป็น context/เผื่อ logic คอมมิชชั่นในอนาคต)
+
+        if ($target === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            // เปิด Celtic → CELTIC_PICKING + คืน prompt (แต่ "ไม่ push" — ลูกค้าเปิดไพ่เมื่อทักมา)
+            $this->onCelticPaymentConfirmed($reading->fresh());
+            $fresh = $reading->fresh();
+
+            return [
+                'ok' => true,
+                'silent' => true,
+                'message' => 'สลับเป็น Celtic (99฿) + ตัดชำระแล้ว (ถือว่าจ่ายครบ) — ลูกค้าเริ่มเปิดไพ่ได้เมื่อทักมา',
+                'before' => $before,
+                'after' => $this->adminSwitchStateSnapshot($fresh),
+                'customer_hint' => 'ให้ลูกค้าพิมพ์ "พร้อม" เพื่อเริ่มเปิดไพ่ยิปซี 10 ใบค่ะ',
+            ];
+        }
+
+        // Deep → ยังไม่มีวันเกิด: ขอวันเกิด (COLLECTING_BIRTHDATE) ; มีแล้ว: คง PAID ให้คิว deliver ตามปกติ
+        $deepFresh = $reading->fresh();
+        if (empty($deepFresh->birth_date)) {
+            $deepFresh->setConversationState('pay_first_mode', true);
+            $deepFresh->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE]);
+            $hint = 'ให้ลูกค้าส่งวันเดือนปีเกิด (เช่น 15 มีนาคม 2538) แม่หมอจะได้คำนวณดวงค่ะ';
+        } else {
+            $hint = 'มีวันเกิดครบแล้ว — ระบบจะทำนายและส่งให้เมื่อคิวเดินหรือลูกค้าทักมาค่ะ';
+        }
+        $fresh = $reading->fresh();
+
+        return [
+            'ok' => true,
+            'silent' => true,
+            'message' => 'สลับเป็น Deep (39฿) + ตัดชำระแล้ว (ถือว่าจ่ายครบ)',
+            'before' => $before,
+            'after' => $this->adminSwitchStateSnapshot($fresh),
+            'customer_hint' => $hint,
+        ];
+    }
+
+    /**
+     * 🔀 เก็บเงินเพิ่ม: ออกบิลส่วนต่าง (newPrice − moneyIn) เป็นยอด pending ใหม่ (ไม่ push)
+     */
+    protected function applyAdminSwitchCharge(FortuneReading $reading, string $target, float $moneyIn, float $newPrice, array $before): array
+    {
+        $remaining = round($newPrice - $moneyIn, 2);
+        if ($remaining < 1) {
+            // ยอดต่างน้อยมาก → ถือว่าครอบ (กันออกบิลเศษสตางค์)
+            return $this->applyAdminSwitchCovered($reading, $target, $moneyIn, $newPrice, (bool) $reading->is_paid, $before);
+        }
+
+        $expiry = FortuneReading::billTimeoutMinutes();
+        $upa = UniquePaymentAmount::generate($remaining, $reading->id, 'fortune_reading', $expiry);
+        if (! $upa) {
+            return ['ok' => false, 'message' => 'สร้างยอดโอน (UPA) ไม่สำเร็จ — ลองใหม่อีกครั้ง'];
+        }
+
+        $status = $target === FortuneReading::READING_TYPE_CELTIC_CROSS
+            ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
+            : FortuneReading::STATUS_PENDING_PAYMENT;
+
+        $fill = [
+            'unique_payment_amount_id' => $upa->id,
+            'amount_paid' => $upa->unique_amount,      // ยอดที่ต้องโอน (ยังไม่รับ)
+            'partial_paid_total' => $moneyIn,           // เงินที่รับมาแล้ว (คงไว้เพื่อ reconcile)
+            'is_paid' => false,
+            'paid_at' => null,
+            'conversation_status' => $status,
+        ];
+        if (empty($reading->bill_reference)) {
+            $fill['bill_reference'] = FortuneReading::generateBillReference();
+        }
+        // Deep = Pay-First → ตั้ง flag ให้ระบบรู้ว่าจ่ายแล้วค่อยเก็บวันเกิด
+        if ($target === FortuneReading::READING_TYPE_DEEP) {
+            $reading->setConversationState('pay_first_mode', true);
+        }
+        $reading->forceFill($fill)->save();
+
+        $pkgName = $target === FortuneReading::READING_TYPE_CELTIC_CROSS ? 'ไพ่ยิปซี Celtic (99฿)' : 'เจาะลึก Deep (39฿)';
+        $fresh = $reading->fresh();
+
+        return [
+            'ok' => true,
+            'silent' => true,
+            'message' => "สลับเป็น {$pkgName} + ออกบิลส่วนต่างแล้ว — รอลูกค้าโอนเพิ่ม ฿".number_format((float) $upa->unique_amount, 2),
+            'before' => $before,
+            'after' => $this->adminSwitchStateSnapshot($fresh),
+            'remaining_to_pay' => $remaining,
+            'unique_amount' => (float) $upa->unique_amount,
+            'customer_hint' => 'ให้ลูกค้าโอนเพิ่มอีก ฿'.number_format((float) $upa->unique_amount, 2).' (ยอดเป๊ะ) เพื่อเปิด'.$pkgName,
+        ];
+    }
+
+    /**
+     * 🔀 snapshot สถานะบิล สำหรับแสดงผล before/after ในหน้าแอดมิน
+     */
+    protected function adminSwitchStateSnapshot(FortuneReading $r): array
+    {
+        return [
+            'reading_type' => $r->reading_type,
+            'conversation_status' => $r->conversation_status,
+            'is_paid' => (bool) $r->is_paid,
+            'amount_paid' => (float) ($r->amount_paid ?? 0),
+            'partial_paid_total' => (float) ($r->partial_paid_total ?? 0),
+            'unique_payment_amount_id' => $r->unique_payment_amount_id,
+            'bill_reference' => $r->bill_reference,
+        ];
+    }
+
+    /**
      * 💎 (2026-06-23) ถามแพคเกจ 39/99 เมื่อโอนก่อนบิล + ยอดกำกวม — เก็บสลิปที่ verify แล้วไว้รอเลือก
      */
     protected function presentPrepayPackageChoice(FortuneReading $provisional, array $verify, float $amount, string $platform, string $userId): array
