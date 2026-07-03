@@ -6122,6 +6122,34 @@ class FortuneConversationService
         $birthDate = $this->parseBirthDate($messageText);
 
         if (! $birthDate) {
+            // 🎂 (2026-07-03) ปีเกิด "เป็นไปไม่ได้" (ปีนี้/อนาคต/เก่าเกิน 120 ปี) → ตอบชี้ที่ "ปี" ให้ชัด
+            //   เคสจริง FTU-260703-U6518: ลูกค้าพิมพ์ "30 มกราคม 2569" (2569=ปีนี้) แล้วบอทตอบ generic
+            //   → ลูกค้าไม่รู้ว่าปีผิดตรงไหน เลยเงียบ. ไม่นับ attempt (ไม่ดันเข้า step mode เพราะพิมพ์รูปวันเกิดถูก แค่ปีพลาด)
+            if ($yearIssue = $this->detectImplausibleBirthYear($messageText)) {
+                $rawYear = $yearIssue['raw'];
+
+                if ($yearIssue['issue'] === 'too_old') {
+                    $yearMsg = "🎂 เอ๊ะ... ปีเกิด *{$rawYear}* ดูจะย้อนไปไกลเกินไปหน่อยนะคะ 😊\n\n"
+                        ."🪄 ช่วยเช็กแล้วพิมพ์ *ปีเกิด* อีกครั้งนะคะ เช่น\n"
+                        ."   • 30 มกราคม 2539\n"
+                        ."   • 30/1/2539\n\n"
+                        .'💡 ใส่เป็น พ.ศ. หรือ ค.ศ. ก็ได้ค่ะ';
+                } else {
+                    $yearMsg = "🎂 เอ๊ะ... ปีเกิด *{$rawYear}* ที่เจ้าชะตาพิมพ์มา เป็นปีปัจจุบัน/อนาคตนะคะ 😊\n"
+                        ."(ถ้าคิดเป็นอายุ ยังไม่ทันเกิดเลยค่ะ)\n\n"
+                        ."🪄 ช่วยพิมพ์ *ปีเกิดจริง* อีกครั้งนะคะ เช่น\n"
+                        ."   • 30 มกราคม 2539\n"
+                        ."   • 30/1/2539\n\n"
+                        .'💡 ใส่เป็น พ.ศ. (เช่น 2539) หรือ ค.ศ. (เช่น 1996) ก็ได้ค่ะ';
+                }
+
+                return [
+                    'action' => 'collecting_birthdate',
+                    'message' => $yearMsg,
+                    'reading' => $reading,
+                ];
+            }
+
             // 🎯 Phase A.3 — นับจำนวนพลาด ถ้า ≥ 2 → สลับเข้าโหมดถามทีละส่วน
             $attempts = (int) $reading->getConversationState('birthdate_attempts', 0) + 1;
             $reading->setConversationState('birthdate_attempts', $attempts);
@@ -19752,6 +19780,68 @@ PROMPT;
             ]);
         }
 
+        return null;
+    }
+
+    /**
+     * 🎂 (2026-07-03) ตรวจจับ "ปีเกิดที่เป็นไปไม่ได้" เพื่อตอบให้ตรงจุด
+     *
+     * เคสจริง (FTU-260703-U6518): ลูกค้าพิมพ์ "30 มกราคม 2569 ราศีมังกรครับ"
+     *   → 2569 พ.ศ. = ปีปัจจุบัน (ค.ศ. 2026) → isValidBirthYear (อายุ 1-120) ตีตก
+     *   → parseBirthDate คืน null → บอทตอบข้อความ generic (ไม่บอกว่า "ปี" ผิด) → ลูกค้างงแล้วเงียบ
+     *
+     * เมธอดนี้ดูว่าข้อความ "หน้าตาเป็นวันเกิด" แต่ "ปีไม่สมเหตุสมผล"
+     * (อนาคต/ปีปัจจุบัน = อายุ < 1 ปี หรือ เก่าเกิน 120 ปี)
+     * เพื่อให้ handleBirthdateInput ตอบชี้ที่ "ปี" โดยเฉพาะ — ไม่เดาปีให้เอง (2549/2559 เดาไม่ได้)
+     *
+     * ⚠️ ใช้ Thai block [\x{0E01}-\x{0E4E}] ไม่ใช่ [ก-ฮ] เพราะชื่อเดือนมีสระ (เช่น "า" ใน "มกราคม")
+     *    ที่อยู่นอกช่วง ก-ฮ → ถ้าใช้ ก-ฮ จะ match ชื่อเดือนหลายพยางค์ไม่ได้
+     *
+     * @return array{raw:int, ce:int, issue:string}|null
+     *   issue = 'future_or_current' (อายุ < 1) | 'too_old' (อายุ > 120) ; null = ปีปกติ/ไม่ใช่วันเกิด
+     */
+    protected function detectImplausibleBirthYear(string $text): ?array
+    {
+        // แปลงเลขไทย/ลาว → อารบิก ก่อน (เหมือน parseBirthDate)
+        $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+        $laoDigits = ['໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'];
+        $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        $t = str_replace($thaiDigits, $arabicDigits, trim($text));
+        $t = str_replace($laoDigits, $arabicDigits, $t);
+
+        $day = null;
+        $year = null;
+
+        // รูปแบบ dd/mm/yyyy — บังคับ "ปี 3-4 หลัก" (เลี่ยงปีย่อ 2 หลักที่กำกวม normalizeBirthYear คุมเอง)
+        if (preg_match('/(\d{1,2})[\/\-\.\s]+(\d{1,2})[\/\-\.\s]+(\d{3,4})/u', $t, $m)) {
+            $day = (int) $m[1];
+            $year = (int) $m[3];
+        }
+        // รูปแบบ dd ชื่อเดือนไทย yyyy (เช่น "30 มกราคม 2569")
+        elseif (preg_match('/(\d{1,2})\s*[\x{0E01}-\x{0E4E}\.]{2,20}\s*(\d{3,4})/u', $t, $m)) {
+            $day = (int) $m[1];
+            $year = (int) $m[2];
+        }
+
+        // ไม่พบรูปวันเกิด (ที่มีปี 3-4 หลัก) หรือวันเลย 1-31 → ปล่อยให้ flow generic จัดการ
+        if ($year === null || $day < 1 || $day > 31) {
+            return null;
+        }
+
+        // พ.ศ. → ค.ศ. (เกณฑ์เดียวกับ normalizeBirthYear)
+        $ce = $year > 2400 ? $year - 543 : $year;
+        $currentYear = (int) now()->format('Y');
+        $age = $currentYear - $ce;
+
+        if ($age < 1) {
+            // ปีปัจจุบัน/อนาคต → อายุติดลบหรือ 0
+            return ['raw' => $year, 'ce' => $ce, 'issue' => 'future_or_current'];
+        }
+        if ($age > 120) {
+            return ['raw' => $year, 'ce' => $ce, 'issue' => 'too_old'];
+        }
+
+        // ปีสมเหตุสมผล (1-120 ปี) — ถ้ามาถึงตรงนี้แปลว่า parse fail ด้วยเหตุอื่น (วัน/เดือนผิด) → generic
         return null;
     }
 
