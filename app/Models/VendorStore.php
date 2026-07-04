@@ -20,6 +20,18 @@ class VendorStore extends Model
      */
     public const PLATFORM_STORE_SLUG = 'thaiprompt-official';
 
+    /** ชนิดร้าน — ร้านขายเองปกติ / ร้าน affiliate Lazada / ร้าน affiliate+dropship AliExpress */
+    public const STORE_TYPE_VENDOR = 'vendor';
+
+    public const STORE_TYPE_LAZADA = 'lazada_affiliate';
+
+    public const STORE_TYPE_ALIEXPRESS = 'aliexpress_affiliate';
+
+    /** slug ร้าน affiliate มาตรฐาน (ใช้ค้น/สร้าง) */
+    public const LAZADA_STORE_SLUG = 'lazada-affiliate';
+
+    public const ALIEXPRESS_STORE_SLUG = 'aliexpress';
+
     protected $fillable = [
         'user_id',
         'package_id',
@@ -68,6 +80,8 @@ class VendorStore extends Model
         'is_featured_home',
         'featured_home_order',
         'status',
+        'store_type',
+        'platform_slug',
         'suspension_reason',
         'subscription_started_at',
         'subscription_expires_at',
@@ -392,6 +406,22 @@ class VendorStore extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true)->where('status', 'active');
+    }
+
+    /**
+     * Scope: กรองตามชนิดร้าน (vendor / lazada_affiliate / aliexpress_affiliate)
+     */
+    public function scopeByType($query, string $type)
+    {
+        return $query->where('store_type', $type);
+    }
+
+    /**
+     * เป็นร้าน affiliate (สินค้าซื้อผ่านลิงก์นอก) หรือไม่
+     */
+    public function isAffiliateStore(): bool
+    {
+        return in_array($this->store_type, [self::STORE_TYPE_LAZADA, self::STORE_TYPE_ALIEXPRESS], true);
     }
 
     /**

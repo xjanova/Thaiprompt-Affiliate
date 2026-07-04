@@ -56,6 +56,12 @@ class Product extends Model
         'is_featured',
         'is_hidden',
         'is_virtual',
+        // Affiliate (สินค้าจากแพลตฟอร์มนอก — ปุ่มซื้อวิ่งไปลิงก์ค่าคอม)
+        'is_affiliate',
+        'affiliate_url',
+        'external_platform',
+        'external_product_id',
+        'shipping_speed',
         // Shipping fields
         'shipping_method',
         'shipping_fee',
@@ -103,6 +109,7 @@ class Product extends Model
         'is_featured' => 'boolean',
         'is_hidden' => 'boolean',
         'is_virtual' => 'boolean',
+        'is_affiliate' => 'boolean',
         // Shipping casts
         'shipping_fee' => 'decimal:2',
         'shipping_weight_kg' => 'decimal:3',
