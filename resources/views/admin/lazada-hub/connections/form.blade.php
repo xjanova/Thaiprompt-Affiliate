@@ -119,6 +119,16 @@
                    placeholder="ใช้แยกแหล่งที่มาของยอด">
         </div>
 
+        {{-- Lazada native affiliate: User Token — จำเป็นสำหรับ Open API "Get product feed" (ดึงสินค้าเอง 24 ชม.) --}}
+        <div x-show="programType==='affiliate_native'" x-cloak style="display:none;max-width:100%;">
+            <label style="display:block;font-weight:600;color:var(--ink);font-size:.85rem;margin-bottom:6px;">
+                User Token
+                <span class="tp-muted" style="font-weight:400;">— กด "Acquire User Token" ในพอร์ทัล Lazada Affiliate → Open API แล้ววางที่นี่</span>
+            </label>
+            <input type="text" name="user_token" class="tp-input tp-num" autocomplete="off"
+                   placeholder="{{ $isEdit && $account?->cred('user_token') ? 'มีค่าเดิมอยู่ — เว้นว่าง = คงเดิม' : 'วาง User Token ที่นี่' }}">
+        </div>
+
 
         {{-- ตั้งค่า sync + คอม --}}
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;align-items:end;">

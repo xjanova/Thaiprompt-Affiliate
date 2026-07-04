@@ -3,6 +3,7 @@
 namespace App\Services\Marketplace;
 
 use App\Models\MarketplaceAccount;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -76,7 +77,7 @@ class LazadaAffiliateService
      * @param  array<string,mixed>  $extra  พารามิเตอร์เฉพาะของ endpoint
      * @return array<string,mixed>|null  payload JSON หรือ null ถ้า transport ล้ม
      */
-    protected function signedGet(string $path, array $extra = []): ?array
+    protected function signedGet(string $path, array $extra = [], bool $includeAccessToken = true): ?array
     {
         $params = array_merge($extra, [
             'app_key' => (string) $this->account->app_key,
@@ -84,7 +85,10 @@ class LazadaAffiliateService
             'sign_method' => 'sha256',
         ]);
 
-        if ($this->account->access_token) {
+        // ⚠️ บาง API (เช่น /marketing/product/feed) auth ด้วย userToken param ไม่ใช่ access_token
+        //    และบัญชี native มักมี seller access_token เก่าค้าง → ถ้าแนบไปจะ IllegalAccessToken
+        //    caller จึงสั่ง includeAccessToken=false ได้ เพื่อไม่ให้ token เก่ามาทำ auth พัง
+        if ($includeAccessToken && $this->account->access_token) {
             $params['access_token'] = (string) $this->account->access_token;
         }
 
@@ -207,13 +211,139 @@ class LazadaAffiliateService
     }
 
     /**
-     * (scaffold) ค้นสินค้า affiliate — เติม implementation หลัง probe ยืนยัน endpoint จริง
+     * ดึงฟีดสินค้า affiliate จาก Open API ทางการ — endpoint จริง `/marketing/product/feed` (สถานะ IN USE)
+     *
+     * ยืนยัน spec จากเอกสารในพอร์ทัล (2026-07-04, อ่านหน้า Open API ด้วย Chrome จริง):
+     *   Request (บังคับ): offerType(1=Regular/2=MM/3=DM), userToken, page(เริ่ม 1), limit
+     *          (ตัวเลือก): categoryL1, productIds[list], mmCampaignId, dmInviteId
+     *   Response fields: productId, productName, pictures, discountPrice, currency, stock, outOfStock,
+     *          sellerName, brandName, sales7d, totalCommissionRate/Amount ฯลฯ — ⚠️ ไม่มีลิงก์ + ไม่มี keyword
+     *
+     * ⚠️ API ไม่มีพารามิเตอร์ค้นด้วยคำ (keyword) → sync ฟีดเข้า index ในบ้านแล้วค้นฝั่งเรา
+     * ⚠️ ลิงก์ค่าคอมต้องเรียกแยก (Batch get link by productId) — เติมภายหลัง (generateProductLink)
+     *
+     * @param  int  $offerType  1=สินค้าปกติ (ใช้ทั่วไป), 2=MM, 3=DM
+     * @param  int  $page  หน้า (เริ่มที่ 1)
+     * @param  int  $limit  จำนวนต่อหน้า (1-100)
+     * @param  int|null  $categoryL1  กรองหมวดระดับ 1 (ไม่ระบุ = ทุกหมวด)
+     * @param  array<int,int|string>  $productIds  กรอง product id เจาะจง (ไม่บังคับ)
+     * @return array{ok:bool, items:array<int,array>, error:?string, page:int, hasMore:bool, raw:mixed}
+     */
+    public function getProductFeed(int $offerType = 1, int $page = 1, int $limit = 50, ?int $categoryL1 = null, array $productIds = []): array
+    {
+        // User Token เก็บแบบเข้ารหัสใน additional_credentials → ถอดก่อนใช้ (เผื่อค่าเก่า plaintext = fallback)
+        $stored = (string) $this->account->cred('user_token', '');
+        $userToken = '';
+        if ($stored !== '') {
+            try {
+                $userToken = Crypt::decryptString($stored);
+            } catch (\Throwable $e) {
+                $userToken = $stored;
+            }
+        }
+        if ($userToken === '') {
+            return ['ok' => false, 'items' => [], 'error' => 'ยังไม่มี User Token — กด "Acquire User Token" ในพอร์ทัล Lazada Affiliate → Open API แล้วกรอกในหน้าแก้ไขบัญชี', 'page' => $page, 'hasMore' => false, 'raw' => null];
+        }
+
+        $params = [
+            'offerType' => (string) $offerType,
+            'userToken' => $userToken,
+            'page' => (string) max(1, $page),
+            'limit' => (string) max(1, min(100, $limit)),
+        ];
+        if ($categoryL1 !== null && $categoryL1 > 0) {
+            $params['categoryL1'] = (string) $categoryL1;
+        }
+        if (! empty($productIds)) {
+            // เอกสารตัวอย่าง productIds = [1,2,3] → ส่งเป็น JSON array string
+            $params['productIds'] = json_encode(array_values(array_map('strval', $productIds)));
+        }
+
+        // includeAccessToken:false — API นี้ auth ด้วย userToken (แนบ seller access_token เก่า = IllegalAccessToken)
+        $data = $this->signedGet('/marketing/product/feed', $params, includeAccessToken: false);
+        if ($data === null) {
+            return ['ok' => false, 'items' => [], 'error' => 'ยิง API ไม่ถึง/timeout', 'page' => $page, 'hasMore' => false, 'raw' => null];
+        }
+
+        $code = (string) ($data['code'] ?? '');
+        if ($code !== '' && $code !== '0') {
+            return ['ok' => false, 'items' => [], 'error' => trim($code.' '.(string) ($data['message'] ?? $data['type'] ?? '')), 'page' => $page, 'hasMore' => false, 'raw' => $data];
+        }
+
+        $rows = $this->extractFeedRows($data);
+        $items = array_values(array_filter(array_map(fn ($r) => $this->normalizeFeedItem($r), $rows)));
+
+        return [
+            'ok' => true,
+            'items' => $items,
+            'error' => null,
+            'page' => $page,
+            'hasMore' => count($rows) >= $limit, // เต็มหน้า = อาจมีต่อ (best-effort จนกว่ายืนยันฟิลด์ total)
+            'raw' => $data,
+        ];
+    }
+
+    /**
+     * หา "แถวสินค้า" ในผลลัพธ์ feed — เผื่อหลายรูปแบบ path (ยืนยัน exact จาก dump raw ครั้งแรก)
+     *
+     * @param  array<string,mixed>  $data
+     * @return array<int,array<string,mixed>>
+     */
+    protected function extractFeedRows(array $data): array
+    {
+        foreach (['data.products', 'data.result', 'data.list', 'data.items', 'data.records', 'data.data', 'data'] as $path) {
+            $v = data_get($data, $path);
+            if (is_array($v) && array_is_list($v) && ! empty($v) && is_array($v[0])) {
+                return $v;
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * แปลง 1 แถวจาก feed → โครงสินค้ากลางของเรา (เก็บ product_id ไว้ขอลิงก์ค่าคอมทีหลัง)
+     *
+     * @param  array<string,mixed>  $r
+     * @return array<string,mixed>|null  null = ข้อมูลไม่พอ (ข้าม)
+     */
+    protected function normalizeFeedItem(array $r): ?array
+    {
+        $productId = (string) ($r['productId'] ?? $r['itemId'] ?? '');
+        $name = trim((string) ($r['productName'] ?? $r['title'] ?? ''));
+        if ($productId === '' || $name === '') {
+            return null;
+        }
+
+        $pics = $r['pictures'] ?? $r['imageList'] ?? $r['image'] ?? [];
+        if (is_string($pics)) {
+            $pics = [$pics];
+        }
+        $image = is_array($pics) ? (string) ($pics[0] ?? '') : '';
+
+        return [
+            'product_id' => $productId,
+            'name' => mb_substr($name, 0, 255),
+            'image' => $image,
+            'price' => (float) preg_replace('/[^0-9.]/', '', (string) ($r['discountPrice'] ?? $r['price'] ?? '0')),
+            'currency' => (string) ($r['currency'] ?? '฿'),
+            'brand' => (string) ($r['brandName'] ?? ''),
+            'seller' => (string) ($r['sellerName'] ?? ''),
+            'category_l1' => (string) ($r['categoryL1'] ?? ''),
+            'commission_rate' => (string) ($r['totalCommissionRate'] ?? ''),
+            'sales7d' => (int) ($r['sales7d'] ?? 0),
+            'out_of_stock' => (bool) ($r['outOfStock'] ?? false),
+        ];
+    }
+
+    /**
+     * (scaffold) ค้นสินค้า affiliate — สำหรับ affiliate API ที่ค้นด้วย keyword ได้ (เช่น Involve Asia)
+     * Lazada native ไม่มี keyword-search → ใช้ getProductFeed() + ค้นฝั่งเราแทน
      *
      * @return array<int,array>
      */
     public function searchProducts(string $keyword, ?float $maxPrice = null, int $limit = 20): array
     {
-        // TODO(after-probe): map endpoint + พารามิเตอร์จริง → normalize เป็นสินค้า (name/price/image/url)
         return [];
     }
 

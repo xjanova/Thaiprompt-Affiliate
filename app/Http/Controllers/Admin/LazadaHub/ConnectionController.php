@@ -10,6 +10,7 @@ use App\Services\Marketplace\LazadaApiService;
 use App\Services\Marketplace\MarketplaceFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -353,6 +354,8 @@ class ConnectionController extends Controller
             'refresh_token' => ['nullable', 'string', 'max:2000'],
             'shop_id' => ['nullable', 'string', 'max:100'],
             'sub_id' => ['nullable', 'string', 'max:100'],
+            // User Token ของ Lazada native affiliate (จาก "Acquire User Token" ในพอร์ทัล) — จำเป็นสำหรับ Open API product feed
+            'user_token' => ['nullable', 'string', 'max:2000'],
             'commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'auto_sync_products' => ['nullable', 'boolean'],
             'auto_sync_orders' => ['nullable', 'boolean'],
@@ -391,6 +394,12 @@ class ConnectionController extends Controller
         $extra = is_array($account->additional_credentials) ? $account->additional_credentials : [];
         if (array_key_exists('sub_id', $data)) {
             $extra['sub_id'] = $data['sub_id'];
+        }
+        // User Token — เว้นว่าง = คงค่าเดิม (เหมือน key/secret) ป้องกันเผลอล้าง token ตอนแก้ฟิลด์อื่น
+        // 🔒 เข้ารหัสก่อนเก็บ (additional_credentials เป็น JSON ธรรมดา ไม่ได้เข้ารหัสอัตโนมัติเหมือน app_key)
+        //    User Token = credential เข้าถึง affiliate API → ห้ามเก็บ plaintext (ตรงกับที่ฟอร์มแจ้งว่าเข้ารหัส)
+        if (! empty($data['user_token'])) {
+            $extra['user_token'] = Crypt::encryptString($data['user_token']);
         }
         $account->additional_credentials = $extra;
     }
