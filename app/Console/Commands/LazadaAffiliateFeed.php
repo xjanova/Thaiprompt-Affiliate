@@ -27,6 +27,7 @@ class LazadaAffiliateFeed extends Command
         {--page=1 : หน้า (เริ่ม 1)}
         {--limit=5 : จำนวนต่อหน้า (1-100)}
         {--cat= : categoryL1 (ไม่ระบุ = ทุกหมวด)}
+        {--link= : ทดสอบดึงลิงก์ค่าคอมของ productId นี้ (dump raw ยืนยันฟิลด์ url)}
         {--raw : พิมพ์โครง response ดิบ เพื่อยืนยัน mapping}';
 
     protected $description = 'ทดสอบดึงฟีดสินค้า Lazada Affiliate Open API (/marketing/product/feed)';
@@ -41,6 +42,17 @@ class LazadaAffiliateFeed extends Command
         }
         if (! $account->isNativeAffiliateProgram()) {
             $this->warn('⚠️ บัญชีนี้ program_type='.$account->program_type.' (ไม่ใช่ affiliate_native) — feed API ใช้กับ affiliate_native');
+        }
+
+        // โหมด debug: ทดสอบดึงลิงก์ค่าคอมของ productId + dump raw (ยืนยันชื่อฟิลด์ url)
+        if ($pid = $this->option('link')) {
+            $svc = new LazadaAffiliateService($account);
+            $this->line('getProductLink('.$pid.') => '.($svc->getProductLink($pid) ?: 'NULL'));
+            $raw = $svc->fetchProductLinkRaw($pid);
+            $this->line('── RAW link response ──');
+            $this->line(is_array($raw) ? mb_substr((string) json_encode($raw, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 0, 1600) : '(null)');
+
+            return self::SUCCESS;
         }
 
         $cat = $this->option('cat');
@@ -63,7 +75,7 @@ class LazadaAffiliateFeed extends Command
                 mb_substr($it['name'], 0, 44),
                 $it['price'],
                 $it['currency'],
-                $it['commission_rate'] !== '' ? $it['commission_rate'] : '-',
+                ($it['commission_rate'] ?? 0) > 0 ? round($it['commission_rate'] * 100, 1).'%' : '-',
                 $it['brand'] !== '' ? $it['brand'] : $it['seller']
             ));
         }

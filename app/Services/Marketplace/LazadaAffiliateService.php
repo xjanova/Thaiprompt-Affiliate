@@ -341,6 +341,25 @@ class LazadaAffiliateService
     }
 
     /**
+     * (debug) คืน raw response ของ `/marketing/product/link` — ไว้ยืนยันชื่อฟิลด์ url จริง
+     * ก่อนล็อก mapping ใน getProductLink()
+     *
+     * @return array<string,mixed>|null
+     */
+    public function fetchProductLinkRaw(string|int $productId): ?array
+    {
+        $userToken = $this->resolveUserToken();
+        if ($userToken === '') {
+            return null;
+        }
+
+        return $this->signedGet('/marketing/product/link', [
+            'userToken' => $userToken,
+            'productId' => (string) $productId,
+        ], includeAccessToken: false);
+    }
+
+    /**
      * หา "แถวสินค้า" ในผลลัพธ์ feed — เผื่อหลายรูปแบบ path (ยืนยัน exact จาก dump raw ครั้งแรก)
      *
      * @param  array<string,mixed>  $data
@@ -378,20 +397,30 @@ class LazadaAffiliateService
         if (is_string($pics)) {
             $pics = [$pics];
         }
-        $image = is_array($pics) ? (string) ($pics[0] ?? '') : '';
+        $pics = is_array($pics) ? array_values(array_filter($pics, fn ($u) => is_string($u) && $u !== '')) : [];
 
         return [
             'product_id' => $productId,
-            'name' => mb_substr($name, 0, 255),
-            'image' => $image,
+            'name' => mb_substr($name, 0, 500),
+            'image' => $pics[0] ?? '',
+            'images' => $pics,
             'price' => (float) preg_replace('/[^0-9.]/', '', (string) ($r['discountPrice'] ?? $r['price'] ?? '0')),
-            'currency' => (string) ($r['currency'] ?? '฿'),
+            'currency' => (string) ($r['currency'] ?? 'THB'),
             'brand' => (string) ($r['brandName'] ?? ''),
+            'brand_id' => (string) ($r['brandId'] ?? ''),
             'seller' => (string) ($r['sellerName'] ?? ''),
+            'seller_id' => (string) ($r['sellerId'] ?? ''),
             'category_l1' => (string) ($r['categoryL1'] ?? ''),
-            'commission_rate' => (string) ($r['totalCommissionRate'] ?? ''),
             'sales7d' => (int) ($r['sales7d'] ?? 0),
+            'stock' => (int) ($r['stock'] ?? 0),
             'out_of_stock' => (bool) ($r['outOfStock'] ?? false),
+            'commission_rate' => (float) ($r['totalCommissionRate'] ?? 0),      // เศษส่วน 0.05 = 5%
+            'commission_amount' => (float) ($r['totalCommissionAmount'] ?? 0),
+            'hyper_commission_rate' => (float) ($r['hyperCommissionRate'] ?? 0),
+            'cps_commission_rate' => (float) ($r['cpsCommissionRate'] ?? 0),
+            'cps_commission_amount' => (float) ($r['cpsCommissionAmount'] ?? 0),
+            'bonus_offer_flag' => (bool) ($r['bonusOfferFlag'] ?? false),
+            'raw' => $r,
         ];
     }
 
