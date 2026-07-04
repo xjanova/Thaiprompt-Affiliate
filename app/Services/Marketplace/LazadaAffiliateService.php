@@ -231,16 +231,7 @@ class LazadaAffiliateService
      */
     public function getProductFeed(int $offerType = 1, int $page = 1, int $limit = 50, ?int $categoryL1 = null, array $productIds = []): array
     {
-        // User Token เก็บแบบเข้ารหัสใน additional_credentials → ถอดก่อนใช้ (เผื่อค่าเก่า plaintext = fallback)
-        $stored = (string) $this->account->cred('user_token', '');
-        $userToken = '';
-        if ($stored !== '') {
-            try {
-                $userToken = Crypt::decryptString($stored);
-            } catch (\Throwable $e) {
-                $userToken = $stored;
-            }
-        }
+        $userToken = $this->resolveUserToken();
         if ($userToken === '') {
             return ['ok' => false, 'items' => [], 'error' => 'ยังไม่มี User Token — กด "Acquire User Token" ในพอร์ทัล Lazada Affiliate → Open API แล้วกรอกในหน้าแก้ไขบัญชี', 'page' => $page, 'hasMore' => false, 'raw' => null];
         }
@@ -284,6 +275,72 @@ class LazadaAffiliateService
     }
 
     /**
+     * ถอด User Token (เก็บเข้ารหัสใน additional_credentials) — เผื่อค่าเก่า plaintext = fallback
+     */
+    protected function resolveUserToken(): string
+    {
+        $stored = (string) $this->account->cred('user_token', '');
+        if ($stored === '') {
+            return '';
+        }
+        try {
+            return Crypt::decryptString($stored);
+        } catch (\Throwable $e) {
+            return $stored;
+        }
+    }
+
+    /**
+     * สร้างลิงก์ติดตาม (ได้ค่าคอม) จาก productId — endpoint จริง `/marketing/product/link`
+     *
+     * ยืนยัน spec (2026-07-04): Request userToken(required) + productId(required) + mmCampaignId?/dmInviteId?
+     * ใช้ห่อสินค้าจาก feed ให้คลิกแล้วเราได้ค่าคอม (feed ไม่มีลิงก์มาด้วย)
+     *
+     * @return string|null ลิงก์ affiliate หรือ null ถ้าไม่สำเร็จ (caller fallback = PDP ปกติ, ไม่ได้ค่าคอม)
+     */
+    public function getProductLink(string|int $productId): ?string
+    {
+        $userToken = $this->resolveUserToken();
+        if ($userToken === '' || (string) $productId === '') {
+            return null;
+        }
+
+        $data = $this->signedGet('/marketing/product/link', [
+            'userToken' => $userToken,
+            'productId' => (string) $productId,
+        ], includeAccessToken: false);
+        if (! is_array($data)) {
+            return null;
+        }
+
+        $code = (string) ($data['code'] ?? '');
+        if ($code !== '' && $code !== '0') {
+            Log::warning('Lazada Affiliate getProductLink ไม่สำเร็จ', [
+                'account_id' => $this->account->id,
+                'product_id' => (string) $productId,
+                'code' => $code,
+                'message' => (string) ($data['message'] ?? $data['type'] ?? ''),
+            ]);
+
+            return null;
+        }
+
+        // หา url ในผลลัพธ์ (ยืนยันชื่อฟิลด์จริงตอน dump ครั้งแรก) — เผื่อหลายชื่อ
+        foreach (['result.clickUrl', 'result.trackingUrl', 'result.shortLink', 'result.link', 'result.url', 'result.data.clickUrl', 'result.data.url', 'data.clickUrl', 'data.url'] as $p) {
+            $u = data_get($data, $p);
+            if (is_string($u) && str_starts_with($u, 'http')) {
+                return $u;
+            }
+        }
+        $r = $data['result'] ?? null;
+        if (is_string($r) && str_starts_with($r, 'http')) {
+            return $r;
+        }
+
+        return null;
+    }
+
+    /**
      * หา "แถวสินค้า" ในผลลัพธ์ feed — เผื่อหลายรูปแบบ path (ยืนยัน exact จาก dump raw ครั้งแรก)
      *
      * @param  array<string,mixed>  $data
@@ -291,7 +348,9 @@ class LazadaAffiliateService
      */
     protected function extractFeedRows(array $data): array
     {
-        foreach (['data.products', 'data.result', 'data.list', 'data.items', 'data.records', 'data.data', 'data'] as $path) {
+        // ✅ ยืนยันจาก response จริง (2026-07-04): envelope = { result: { data: [...] }, code, request_id }
+        //    เผื่อ path อื่นไว้กัน Lazada ปรับ schema
+        foreach (['result.data', 'result.products', 'result.list', 'result.records', 'data.products', 'data.result', 'data.list', 'data.items', 'data'] as $path) {
             $v = data_get($data, $path);
             if (is_array($v) && array_is_list($v) && ! empty($v) && is_array($v[0])) {
                 return $v;

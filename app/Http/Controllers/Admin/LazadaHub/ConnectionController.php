@@ -222,6 +222,14 @@ class ConnectionController extends Controller
                 ->with('error', 'Involve Asia ไม่ใช้ OAuth — ยืนยันด้วยปุ่ม "ทดสอบ" (key+secret)');
         }
 
+        // Lazada Affiliate (Open API) ใช้ "User Token" (Acquire User Token ในพอร์ทัล) ไม่ใช่ OAuth ฝั่ง Seller
+        //   → กดปุ่มนี้จะเด้งหน้า Lazada "Redirect uri does not match" เปล่าๆ (คนละ flow) จึงบล็อกไว้ชี้ทางแทน
+        if ($account->isNativeAffiliateProgram()) {
+            return redirect()
+                ->route('admin.lazada-hub.connections.index')
+                ->with('error', 'Lazada Affiliate (Open API) ไม่ต้องกด "เชื่อมต่อ" — ใช้ User Token: กด "Acquire User Token" ในพอร์ทัล Lazada แล้วนำมากรอกในหน้าแก้ไข จากนั้นกด "ทดสอบ"');
+        }
+
         if (empty($account->app_key)) {
             return redirect()
                 ->route('admin.lazada-hub.connections.edit', $account)
