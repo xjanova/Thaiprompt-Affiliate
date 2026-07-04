@@ -325,8 +325,9 @@ class LazadaAffiliateService
             return null;
         }
 
-        // หา url ในผลลัพธ์ (ยืนยันชื่อฟิลด์จริงตอน dump ครั้งแรก) — เผื่อหลายชื่อ
-        foreach (['result.clickUrl', 'result.trackingUrl', 'result.shortLink', 'result.link', 'result.url', 'result.data.clickUrl', 'result.data.url', 'data.clickUrl', 'data.url'] as $p) {
+        // ✅ ยืนยันจาก response จริง (2026-07-04): result.data.trackingLink
+        //    เผื่อชื่ออื่นไว้กัน Lazada ปรับ schema
+        foreach (['result.data.trackingLink', 'result.trackingLink', 'result.data.shortLink', 'result.data.link', 'result.data.clickUrl', 'result.data.url', 'result.clickUrl', 'result.link', 'result.url', 'data.trackingLink', 'data.clickUrl', 'data.url'] as $p) {
             $u = data_get($data, $p);
             if (is_string($u) && str_starts_with($u, 'http')) {
                 return $u;

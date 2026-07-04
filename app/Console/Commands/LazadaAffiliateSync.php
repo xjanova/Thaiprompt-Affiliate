@@ -28,7 +28,8 @@ class LazadaAffiliateSync extends Command
     protected $signature = 'lazada:affiliate-sync
         {account : ID บัญชี affiliate_native}
         {--per-category=10 : จำนวนสินค้าต่อหมวด}
-        {--pages=40 : จำนวนหน้า feed สูงสุดที่จะกวาด}
+        {--categories= : ระบุ categoryL1 เอง คั่นด้วย comma (ไม่ระบุ = ค้นหาหมวดจาก featured feed)}
+        {--cat-pages=4 : จำนวนหน้าสูงสุดที่ยิงต่อหมวด (ตอนเก็บให้ครบ per-category)}
         {--limit=50 : สินค้าต่อหน้า (1-100)}
         {--offer=1 : offerType 1=Regular 2=MM 3=DM}
         {--no-link : ไม่ดึงลิงก์ค่าคอม (เร็วขึ้น)}
@@ -46,68 +47,93 @@ class LazadaAffiliateSync extends Command
         }
 
         $perCat = max(1, (int) $this->option('per-category'));
-        $pages = max(1, (int) $this->option('pages'));
+        $catPages = max(1, (int) $this->option('cat-pages'));
         $limit = max(1, min(100, (int) $this->option('limit')));
         $offer = (int) $this->option('offer');
         $dry = (bool) $this->option('dry');
         $withLink = ! $this->option('no-link') && ! $dry;
+        $catsOpt = trim((string) $this->option('categories'));
 
         $svc = new LazadaAffiliateService($account);
         $platformId = MarketplacePlatform::firstOrCreate(['slug' => 'lazada'], ['name' => 'Lazada', 'is_active' => true])->id;
 
-        // ── 1) กวาด feed หลายหน้า (dedup ด้วย product_id) ──
-        $this->info("🔎 กวาด feed offerType={$offer} สูงสุด {$pages} หน้า × {$limit}/หน้า...");
-        $all = [];
-        for ($p = 1; $p <= $pages; $p++) {
-            $res = $svc->getProductFeed(offerType: $offer, page: $p, limit: $limit);
-            if (! $res['ok']) {
-                $this->warn("  หน้า {$p} หยุด: ".$res['error']);
-                break;
+        // ── 1) หาว่าจะดึงหมวดไหนบ้าง ──
+        //    feed แบบไม่ใส่หมวด = ชุด "แนะนำ" ~98 ชิ้น (หน้าเดียว) → ใช้ค้นหารายชื่อหมวด
+        //    feed แบบใส่ categoryL1 = แบ่งหน้าลึกจริง → ใช้เก็บหมวดละ N
+        $categories = [];
+        if ($catsOpt !== '') {
+            $categories = array_values(array_filter(array_map('trim', explode(',', $catsOpt))));
+            $this->info('📂 ใช้หมวดที่ระบุ: '.implode(', ', $categories));
+        } else {
+            $this->info("🔎 ค้นหาหมวดจาก featured feed (offerType={$offer})...");
+            $seen = [];
+            foreach ([1, 2] as $fp) { // 2 หน้าเผื่อ featured หมุน
+                $res = $svc->getProductFeed(offerType: $offer, page: $fp, limit: 100);
+                if (! $res['ok']) {
+                    if ($fp === 1) {
+                        $this->error('ดึง featured feed ไม่ได้: '.$res['error']);
+
+                        return self::FAILURE;
+                    }
+                    break;
+                }
+                foreach ($res['items'] as $it) {
+                    if (($it['category_l1'] ?? '') !== '' && ($it['commission_rate'] ?? 0) > 0) {
+                        $seen[$it['category_l1']] = true;
+                    }
+                }
+                if (! $res['hasMore']) {
+                    break;
+                }
+                usleep(150000);
             }
-            if (empty($res['items'])) {
-                break;
-            }
-            $before = count($all);
-            foreach ($res['items'] as $it) {
-                $all[$it['product_id']] = $it;
-            }
-            $this->line("  หน้า {$p}: +".count($res['items']).' (รวม '.count($all).')');
-            if (! $res['hasMore']) {
-                break;
-            }
-            if (count($all) === $before) {
-                $this->line('  (ไม่มีสินค้าใหม่เพิ่ม — หยุดกวาด)'); // pagination ไม่ขยับ/ซ้ำ → เลิก
-                break;
-            }
-            usleep(200000); // กัน rate limit
+            $categories = array_keys($seen);
+            $this->info('  พบ '.count($categories).' หมวด: '.implode(', ', $categories));
         }
 
-        if (empty($all)) {
-            $this->error('ไม่ได้สินค้าเลย — เช็ค User Token / สิทธิ์ API');
+        if (empty($categories)) {
+            $this->error('ไม่พบหมวด — ระบุเองด้วย --categories=id1,id2 ได้');
 
             return self::FAILURE;
         }
 
-        // ── 2) ข้ามที่ไม่ได้ค่าคอม + จัดกลุ่มตามหมวด + ตัดหมวดละ perCat ──
-        $noComm = 0;
+        // ── 2) เก็บสินค้าหมวดละ perCat (ยิง feed ต่อหมวด แบ่งหน้าลึก) ──
         $byCat = [];
-        foreach ($all as $it) {
-            if (($it['commission_rate'] ?? 0) <= 0) {
-                $noComm++;
+        $noComm = 0;
+        foreach ($categories as $cat) {
+            $picked = [];
+            for ($p = 1; $p <= $catPages && count($picked) < $perCat; $p++) {
+                $res = $svc->getProductFeed(offerType: $offer, page: $p, limit: max($perCat, $limit), categoryL1: (int) $cat);
+                if (! $res['ok'] || empty($res['items'])) {
+                    break;
+                }
+                // เรียงยอดขาย 7 วันในหน้านั้นก่อนหยิบ
+                $items = $res['items'];
+                usort($items, fn ($a, $b) => ($b['sales7d'] <=> $a['sales7d']) ?: ($b['commission_amount'] <=> $a['commission_amount']));
+                foreach ($items as $it) {
+                    if (count($picked) >= $perCat) {
+                        break;
+                    }
+                    if (($it['commission_rate'] ?? 0) <= 0) {
+                        $noComm++;
 
-                continue;
+                        continue;
+                    }
+                    $picked[$it['product_id']] = $it;
+                }
+                if (! $res['hasMore']) {
+                    break;
+                }
+                usleep(150000);
             }
-            $cat = ($it['category_l1'] ?? '') !== '' ? $it['category_l1'] : 'unknown';
-            $byCat[$cat][] = $it;
+            if (! empty($picked)) {
+                $byCat[$cat] = array_values($picked);
+            }
+            $this->line('  หมวด '.$cat.': '.count($picked).' ชิ้น');
         }
-        foreach ($byCat as $cat => &$list) {
-            usort($list, fn ($a, $b) => ($b['sales7d'] <=> $a['sales7d']) ?: ($b['commission_amount'] <=> $a['commission_amount']));
-            $list = array_slice($list, 0, $perCat);
-        }
-        unset($list);
         ksort($byCat);
 
-        $this->info('📦 พบ '.count($byCat).' หมวด | ข้ามเพราะไม่มีค่าคอม: '.$noComm.' | จะนำเข้าสูงสุด '.array_sum(array_map('count', $byCat)).' ชิ้น');
+        $this->info('📦 เก็บได้ '.count($byCat).' หมวด | ข้ามไม่มีค่าคอม: '.$noComm.' | นำเข้าสูงสุด '.array_sum(array_map('count', $byCat)).' ชิ้น');
 
         // ── 3) นำเข้า (ดึงลิงก์ค่าคอมต่อชิ้น) ──
         $imported = 0;
