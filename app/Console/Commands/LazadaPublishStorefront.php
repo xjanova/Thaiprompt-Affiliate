@@ -26,6 +26,8 @@ class LazadaPublishStorefront extends Command
     protected $signature = 'lazada:publish-storefront
         {account : ID บัญชี affiliate_native}
         {--visible : เปิดให้เห็นหน้าร้านทันที (ไม่งั้น stage ซ่อนไว้ก่อน)}
+        {--fresh : ล้างสินค้า Lazada เดิมในร้านก่อน (คัดใหม่)}
+        {--max-price= : เผยแพร่เฉพาะราคา ≤ นี้ (บาท) — คัดของใช้ทั่วไป}
         {--dividend= : เปอร์เซ็นต์ปันผลเข้ากอง PV (ไม่ระบุ = ค่ากลาง MLM หรือ 50)}';
 
     protected $description = 'เผยแพร่สินค้า Lazada affiliate เข้าหน้าร้าน (ร้าน Lazada Affiliate) + คำนวณ PV จากค่าคอม';
@@ -47,9 +49,17 @@ class LazadaPublishStorefront extends Command
 
         $store = $this->ensureLazadaStore($account);
         $categoryId = $this->ensureLazadaCategory()->id;
+        $maxPrice = $this->option('max-price') !== null && $this->option('max-price') !== ''
+            ? (float) $this->option('max-price') : 0.0;
 
-        $this->info("🏪 ร้าน: {$store->store_name} (id={$store->id}) | PV = ค่าคอม × {$dividendPercent}% ÷ {$commissionPerPv}");
+        $this->info("🏪 ร้าน: {$store->store_name} (id={$store->id}) | PV = ค่าคอม × {$dividendPercent}% ÷ {$commissionPerPv}".($maxPrice > 0 ? " | ราคา ≤ {$maxPrice}฿" : ''));
         $this->info($visible ? '👁️  โหมด: เปิดให้เห็นหน้าร้าน' : '🙈 โหมด: stage (ซ่อนไว้ก่อน ใช้ --visible เพื่อเปิด)');
+
+        // --fresh: ล้างสินค้า Lazada เดิมในร้านก่อนคัดใหม่ (soft delete)
+        if ($this->option('fresh')) {
+            $del = Product::where('store_id', $store->id)->where('external_platform', 'lazada')->delete();
+            $this->warn("🧹 ล้างสินค้า Lazada เดิม {$del} ชิ้น");
+        }
 
         $created = 0;
         $updated = 0;
@@ -58,6 +68,7 @@ class LazadaPublishStorefront extends Command
         MarketplaceProduct::where('source', 'affiliate_feed')
             ->where('is_active', true)
             ->whereNotNull('affiliate_url')
+            ->when($maxPrice > 0, fn ($q) => $q->where('price', '<=', $maxPrice))
             ->chunkById(100, function ($rows) use (&$created, &$updated, &$skipped, $store, $categoryId, $commissionPerPv, $dividendPercent, $visible) {
                 foreach ($rows as $mp) {
                     try {

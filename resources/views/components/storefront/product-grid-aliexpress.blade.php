@@ -35,7 +35,7 @@
             $discount = round((($product->compare_at_price - $product->price) / $product->compare_at_price) * 100);
         }
 
-        // คำนวณ PV
+        // คำนวณ PV — ใช้ mlm_product_pv ถ้ามี ไม่งั้น fallback ไป pv_value บนสินค้า (สินค้า affiliate)
         $totalPv = 0;
         if ($product->mlmProductPv && $product->mlmProductPv->count() > 0) {
             foreach ($product->mlmProductPv as $pv) {
@@ -43,10 +43,21 @@
             }
             $totalPv = $totalPv / $product->mlmProductPv->count();
         }
+        // สินค้า affiliate — ปุ่ม/ลิงก์วิ่งไปแพลตฟอร์มนอก (Lazada/AliExpress) ไม่เข้าตะกร้าเรา
+        $isAffiliate = (bool) ($product->is_affiliate ?? false) && ! empty($product->affiliate_url);
+        // affiliate เก็บ PV ที่คอลัมน์ pv_value (ไม่มี mlm_product_pv) → fallback เฉพาะ affiliate กันกระทบสินค้าปกติ
+        if ($totalPv <= 0 && $isAffiliate) {
+            $totalPv = (float) ($product->pv_value ?? 0);
+        }
+        $affiliateUrl = (string) ($product->affiliate_url ?? '');
+        $platform = (string) ($product->external_platform ?? '');
+        $platformLabel = $platform === 'aliexpress' ? 'AliExpress' : 'Lazada';
+        $targetUrl = $isAffiliate ? $affiliateUrl : route('shop.show', $product->slug ?: $product->id);
     @endphp
 
     <div class="group">
-        <a href="{{ route('shop.show', $product->slug ?: $product->id) }}"
+        <a href="{{ $targetUrl }}"
+           @if($isAffiliate) target="_blank" rel="noopener nofollow sponsored" @endif
            class="block bg-white dark:bg-gray-800
                  rounded-xl md:rounded-2xl overflow-hidden
                  shadow hover:shadow-xl
@@ -64,6 +75,14 @@
 
                 {{-- Top Badges --}}
                 <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                    {{-- Platform Badge (affiliate) --}}
+                    @if($isAffiliate)
+                    <span class="px-2 py-0.5 text-white text-xs font-bold rounded"
+                          style="background: {{ $platform === 'aliexpress' ? '#e62e04' : '#0f146d' }};">
+                        {{ $platformLabel }}
+                    </span>
+                    @endif
+
                     {{-- Discount Badge --}}
                     @if($discount > 0)
                     <span class="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded">
@@ -110,6 +129,17 @@
                 </button>
 
                 {{-- Shipping Badge --}}
+                @if($isAffiliate)
+                    @if(($product->shipping_speed ?? '') === 'slow')
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold py-1 px-2 text-center">
+                        🔴 ส่งช้า (จากจีน)
+                    </div>
+                    @else
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-semibold py-1 px-2 text-center">
+                        🟢 ส่งไว (ในไทย)
+                    </div>
+                    @endif
+                @else
                 @php
                     $shippingMethod = $product->shipping_method ?? 'store_default';
                     $isFreeShipping = $shippingMethod === 'free' || ($shippingMethod === 'store_default' && $product->price >= 500);
@@ -140,6 +170,7 @@
                         ค่าส่ง ฿{{ number_format($product->shipping_fee, 0) }}
                     </span>
                 </div>
+                @endif
                 @endif
             </div>
 
@@ -193,7 +224,7 @@
                 @endif
 
                 {{-- Commission Badge --}}
-                @if($showCommission && $product->commission_rate > 0)
+                @if(($showCommission || $isAffiliate) && $product->commission_rate > 0)
                 <div class="flex items-center gap-1 text-xs mt-1">
                     <span class="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30
                                text-green-700 dark:text-green-400
@@ -205,10 +236,23 @@
             </div>
         </a>
 
-        {{-- Quick Add to Cart (appears on hover) --}}
+        {{-- Quick action (appears on hover) --}}
         <div class="mt-2 opacity-0 group-hover:opacity-100
                    transform translate-y-2 group-hover:translate-y-0
                    transition-all duration-300">
+            @if($isAffiliate)
+            {{-- สินค้า affiliate → วิ่งไปซื้อที่แพลตฟอร์มต้นทาง (ได้ค่าคอม/PV) --}}
+            <a href="{{ $affiliateUrl }}" target="_blank" rel="noopener nofollow sponsored"
+               class="block w-full py-2 text-center text-white text-sm font-semibold rounded-lg shadow hover:shadow-lg transition-all"
+               style="background: {{ $platform === 'aliexpress' ? '#e62e04' : '#0f146d' }};">
+                <span class="flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                    ดูที่ {{ $platformLabel }}
+                </span>
+            </a>
+            @else
             <button type="button"
                     onclick="addToCartAli({{ $product->id }})"
                     class="w-full py-2 text-center
@@ -225,6 +269,7 @@
                     <span class="sm:hidden">ซื้อ</span>
                 </span>
             </button>
+            @endif
         </div>
     </div>
     @empty

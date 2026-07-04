@@ -30,6 +30,7 @@ class LazadaAffiliateSync extends Command
         {--per-category=10 : จำนวนสินค้าต่อหมวด}
         {--categories= : ระบุ categoryL1 เอง คั่นด้วย comma (ไม่ระบุ = ค้นหาหมวดจาก featured feed)}
         {--cat-pages=4 : จำนวนหน้าสูงสุดที่ยิงต่อหมวด (ตอนเก็บให้ครบ per-category)}
+        {--max-price= : ราคาสูงสุด (บาท) — ข้ามสินค้าแพงกว่านี้ (คัดของใช้ทั่วไป)}
         {--limit=50 : สินค้าต่อหน้า (1-100)}
         {--offer=1 : offerType 1=Regular 2=MM 3=DM}
         {--no-link : ไม่ดึงลิงก์ค่าคอม (เร็วขึ้น)}
@@ -53,6 +54,8 @@ class LazadaAffiliateSync extends Command
         $dry = (bool) $this->option('dry');
         $withLink = ! $this->option('no-link') && ! $dry;
         $catsOpt = trim((string) $this->option('categories'));
+        $maxPrice = $this->option('max-price') !== null && $this->option('max-price') !== ''
+            ? (float) $this->option('max-price') : 0.0;
 
         $svc = new LazadaAffiliateService($account);
         $platformId = MarketplacePlatform::firstOrCreate(['slug' => 'lazada'], ['name' => 'Lazada', 'is_active' => true])->id;
@@ -117,6 +120,13 @@ class LazadaAffiliateSync extends Command
                     if (($it['commission_rate'] ?? 0) <= 0) {
                         $noComm++;
 
+                        continue;
+                    }
+                    // คัดของใช้ทั่วไป: ข้ามราคาเกินเพดาน (ถ้ากำหนด) + ข้ามราคา 0
+                    if ($maxPrice > 0 && (float) $it['price'] > $maxPrice) {
+                        continue;
+                    }
+                    if ((float) $it['price'] <= 0) {
                         continue;
                     }
                     $picked[$it['product_id']] = $it;
