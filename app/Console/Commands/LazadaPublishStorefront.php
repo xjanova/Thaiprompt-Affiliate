@@ -55,9 +55,10 @@ class LazadaPublishStorefront extends Command
         $this->info("🏪 ร้าน: {$store->store_name} (id={$store->id}) | PV = ค่าคอม × {$dividendPercent}% ÷ {$commissionPerPv}".($maxPrice > 0 ? " | ราคา ≤ {$maxPrice}฿" : ''));
         $this->info($visible ? '👁️  โหมด: เปิดให้เห็นหน้าร้าน' : '🙈 โหมด: stage (ซ่อนไว้ก่อน ใช้ --visible เพื่อเปิด)');
 
-        // --fresh: ล้างสินค้า Lazada เดิมในร้านก่อนคัดใหม่ (soft delete)
+        // --fresh: ล้างสินค้า Lazada เดิมในร้านก่อนคัดใหม่
+        // ⚠️ ต้อง forceDelete (Product ใช้ SoftDeletes) ไม่งั้น row เก่าค้าง → re-create ชน unique slug/sku
         if ($this->option('fresh')) {
-            $del = Product::where('store_id', $store->id)->where('external_platform', 'lazada')->delete();
+            $del = Product::where('store_id', $store->id)->where('external_platform', 'lazada')->forceDelete();
             $this->warn("🧹 ล้างสินค้า Lazada เดิม {$del} ชิ้น");
         }
 

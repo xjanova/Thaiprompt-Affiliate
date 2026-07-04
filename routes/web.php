@@ -523,6 +523,11 @@ Route::prefix('storefront')->name('storefront.')->group(function () {
     Route::match(['GET', 'HEAD'], '/products', [\App\Http\Controllers\StorefrontController::class, 'loadMoreProducts'])->name('products');
 });
 
+// หน้าร้าน affiliate เฉพาะแพลตฟอร์ม (Lazada / AliExpress)
+// ใช้ StorefrontController::showStore + view storefront.store (การ์ด affiliate + แบรนด์ร้าน/สีของร้าน)
+Route::match(['GET', 'HEAD'], '/lazada', fn (\App\Http\Controllers\StorefrontController $c) => $c->showStore(\App\Models\VendorStore::LAZADA_STORE_SLUG))->name('mall.lazada');
+Route::match(['GET', 'HEAD'], '/aliexpress', fn (\App\Http\Controllers\StorefrontController $c) => $c->showStore(\App\Models\VendorStore::ALIEXPRESS_STORE_SLUG))->name('mall.aliexpress');
+
 // Store Pages (Individual Vendor Store Pages)
 // ⚠️ E-commerce Critical: หน้าร้านค้าแต่ละร้าน ต้องถูก index
 Route::prefix('store')->name('store.')->group(function () {
