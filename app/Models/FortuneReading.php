@@ -162,6 +162,22 @@ class FortuneReading extends Model
     ];
 
     /**
+     * 🏷️ (2026-07-05) สถานะ "รอชำระ" สำหรับ "แสดงผล/ฟิลเตอร์ในหลังบ้าน" เท่านั้น
+     *
+     * กว้างกว่า PENDING_PAYMENT_STATUSES — รวมบิลที่ลูกค้ายังไม่จ่ายตั้งแต่
+     * เลือกวิธีจ่าย (awaiting_payment_method) → รอโอน (pending_payment/celtic) → รอ Stripe
+     *
+     * ⚠️ ใช้เฉพาะหน้า admin billing (filter status=pending + KPI รอชำระ + status pill)
+     *    ห้ามนำไปใช้ใน flow จับคู่เงิน/หมดอายุ — จุดนั้นต้องใช้ PENDING_PAYMENT_STATUSES (แคบ) เท่านั้น
+     */
+    public const PENDING_DISPLAY_STATUSES = [
+        self::STATUS_PENDING_PAYMENT,
+        self::STATUS_CELTIC_PENDING_PAYMENT,
+        self::STATUS_AWAITING_PAYMENT_METHOD,
+        self::STATUS_PENDING_STRIPE_PAYMENT,
+    ];
+
+    /**
      * 🔮 Celtic active states — หลังจ่ายแล้ว แต่ยังไม่จบ session
      *
      * ใช้เป็น "lock guard" — เมื่อ status ใดๆ ในนี้ active:
@@ -1118,7 +1134,9 @@ class FortuneReading extends Model
     public function getReadingTypeLabel(): string
     {
         return match ($this->reading_type) {
-            'deep' => '🌟 เชิงลึก',
+            self::READING_TYPE_DEEP => '🌟 เชิงลึก',
+            self::READING_TYPE_CELTIC_CROSS => '💎 Celtic 99',
+            self::READING_TYPE_FREE_CARD => '🎁 ไพ่ฟรี',
             default => '🔮 พื้นฐาน',
         };
     }

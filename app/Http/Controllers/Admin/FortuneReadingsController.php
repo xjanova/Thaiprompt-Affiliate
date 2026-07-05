@@ -83,6 +83,8 @@ class FortuneReadingsController extends Controller
             'total' => FortuneReading::count(),
             'today' => FortuneReading::today()->count(),
             'deep' => FortuneReading::deep()->count(),
+            // 💎 (2026-07-05) นับ Celtic 99 แยก (เดิมตกสำรวจ — ไม่มีในการ์ดใดเลย)
+            'celtic' => FortuneReading::where('reading_type', 'celtic_cross')->count(),
             'basic' => FortuneReading::basic()->count(),
             'paid' => FortuneReading::paid()->count(),
             'free' => FortuneReading::free()->count(),
@@ -138,7 +140,7 @@ class FortuneReadingsController extends Controller
     {
         return view('admin.fortune.readings.edit', [
             'reading' => $reading,
-            'pageTitle' => 'แก้ไขการทำนาย #' . $reading->id,
+            'pageTitle' => 'แก้ไขการทำนาย #'.$reading->id,
         ]);
     }
 
@@ -153,7 +155,9 @@ class FortuneReadingsController extends Controller
             'deep_response' => 'nullable|string|max:50000',
             'basic_response' => 'nullable|string|max:20000',
             'ai_response' => 'nullable|string|max:20000',
-            'conversation_status' => 'required|in:new,awaiting_confirmation,basic_done,collecting_birthdate,collecting_questions,collecting_tarot,pending_payment,paid,completed',
+            // 💎 (2026-07-05) เพิ่มสถานะ Celtic 99 + payment + free/cancel ที่ตกสำรวจ
+            //    เดิม in: มีแค่ deep/basic — แก้ไขบิล Celtic แล้ว validation fail
+            'conversation_status' => 'required|in:new,awaiting_confirmation,basic_done,discovery_chat,discovery_confirm,collecting_birthdate,collecting_questions,collecting_tarot,tier_choice,awaiting_payment_method,pending_payment,pending_stripe_payment,celtic_pending_payment,celtic_picking,celtic_awaiting_question,celtic_generating,celtic_qa_prompt,free_predicted,free_declined,paid,completed,cancelled,expired',
             'is_paid' => 'required|boolean',
             'amount_paid' => 'nullable|numeric|min:0|max:999999',
             'paid_at' => 'nullable|date',

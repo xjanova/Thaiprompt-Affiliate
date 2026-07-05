@@ -82,6 +82,18 @@
                 </div>
             </div>
         </div>
+        {{-- 💎 Celtic 99 --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#8a63c9;">
+                    <i class="fas fa-gem"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['celtic'] ?? 0) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">💎 Celtic 99</div>
+                </div>
+            </div>
+        </div>
         {{-- ชำระเงินแล้ว --}}
         <div class="tp-card" style="padding:18px;">
             <div style="display:flex; align-items:center; gap:12px;">
@@ -200,9 +212,21 @@
                         <option value="basic_done" {{ request('conversation_status') === 'basic_done' ? 'selected' : '' }}>🔮 Basic Done</option>
                         <option value="collecting_birthdate" {{ request('conversation_status') === 'collecting_birthdate' ? 'selected' : '' }}>📅 Collecting Birthdate</option>
                         <option value="collecting_questions" {{ request('conversation_status') === 'collecting_questions' ? 'selected' : '' }}>❓ Collecting Questions</option>
-                        <option value="pending_payment" {{ request('conversation_status') === 'pending_payment' ? 'selected' : '' }}>💳 Pending Payment</option>
+                        <option value="collecting_tarot" {{ request('conversation_status') === 'collecting_tarot' ? 'selected' : '' }}>🃏 Collecting Tarot</option>
+                        <option value="awaiting_payment_method" {{ request('conversation_status') === 'awaiting_payment_method' ? 'selected' : '' }}>💳 Awaiting Payment Method</option>
+                        <option value="pending_payment" {{ request('conversation_status') === 'pending_payment' ? 'selected' : '' }}>⏳ Pending Payment</option>
+                        <option value="pending_stripe_payment" {{ request('conversation_status') === 'pending_stripe_payment' ? 'selected' : '' }}>💳 Pending Stripe</option>
+                        <option value="celtic_pending_payment" {{ request('conversation_status') === 'celtic_pending_payment' ? 'selected' : '' }}>💎 Celtic Pending Payment</option>
+                        <option value="celtic_picking" {{ request('conversation_status') === 'celtic_picking' ? 'selected' : '' }}>💎 Celtic Picking</option>
+                        <option value="celtic_awaiting_question" {{ request('conversation_status') === 'celtic_awaiting_question' ? 'selected' : '' }}>💎 Celtic Awaiting Q</option>
+                        <option value="celtic_generating" {{ request('conversation_status') === 'celtic_generating' ? 'selected' : '' }}>💎 Celtic Generating</option>
+                        <option value="celtic_qa_prompt" {{ request('conversation_status') === 'celtic_qa_prompt' ? 'selected' : '' }}>💎 Celtic Q&A</option>
+                        <option value="free_predicted" {{ request('conversation_status') === 'free_predicted' ? 'selected' : '' }}>🎁 Free Predicted</option>
+                        <option value="free_declined" {{ request('conversation_status') === 'free_declined' ? 'selected' : '' }}>🎁 Free Declined</option>
                         <option value="paid" {{ request('conversation_status') === 'paid' ? 'selected' : '' }}>✅ Paid</option>
                         <option value="completed" {{ request('conversation_status') === 'completed' ? 'selected' : '' }}>🏁 Completed</option>
+                        <option value="cancelled" {{ request('conversation_status') === 'cancelled' ? 'selected' : '' }}>❌ Cancelled</option>
+                        <option value="expired" {{ request('conversation_status') === 'expired' ? 'selected' : '' }}>⌛ Expired</option>
                     </select>
                 </div>
             </div>
@@ -231,6 +255,8 @@
                         <option value="">ทั้งหมด</option>
                         <option value="basic" {{ request('reading_type') === 'basic' ? 'selected' : '' }}>🔮 พื้นฐาน</option>
                         <option value="deep" {{ request('reading_type') === 'deep' ? 'selected' : '' }}>🌟 เชิงลึก</option>
+                        <option value="celtic_cross" {{ request('reading_type') === 'celtic_cross' ? 'selected' : '' }}>💎 Celtic 99</option>
+                        <option value="free_card" {{ request('reading_type') === 'free_card' ? 'selected' : '' }}>🎁 ไพ่ฟรี</option>
                     </select>
                 </div>
             </div>
@@ -333,6 +359,10 @@
                             <td style="padding:14px 16px; white-space:nowrap;">
                                 @if($reading->reading_type === 'deep')
                                     <span class="tp-pill" style="background:rgba(183,154,232,.18); color:#7a5db8;">🌟 เชิงลึก</span>
+                                @elseif($reading->reading_type === 'celtic_cross')
+                                    <span class="tp-pill" style="background:rgba(138,99,201,.18); color:#6a44b0;">💎 Celtic 99</span>
+                                @elseif($reading->reading_type === 'free_card')
+                                    <span class="tp-pill" style="background:rgba(154,143,124,.18); color:#7a6f5c;">🎁 ไพ่ฟรี</span>
                                 @else
                                     <span class="tp-pill" style="background:rgba(86,137,184,.18); color:#3f6a96;">🔮 พื้นฐาน</span>
                                 @endif
@@ -407,7 +437,8 @@
     {{-- ===== Pagination ===== --}}
     @if($readings->hasPages())
         <div>
-            {{ $readings->links() }}
+            {{-- 🗓️ (2026-07-05) appends(query) — เดิมกดหน้า 2 แล้วตัวกรองหลุด --}}
+            {{ $readings->appends(request()->query())->links() }}
         </div>
     @endif
 

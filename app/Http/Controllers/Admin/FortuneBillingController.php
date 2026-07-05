@@ -27,26 +27,31 @@ class FortuneBillingController extends Controller
     public function index(Request $request)
     {
         // กรองตามช่วงวันที่
-        $dateFrom = $request->input('date_from', now()->startOfMonth()->format('Y-m-d'));
-        $dateTo = $request->input('date_to', now()->format('Y-m-d'));
-        $status = $request->input('status'); // all, paid, pending, floating
+        // 🗓️ (2026-07-05) ไม่มี default "เดือนนี้" แล้ว — ว่าง = แสดงทุกช่วงเวลา
+        //    เดิม default เดือนนี้บังคับ whereDate created_at ทุก query รวม filter สถานะ
+        //    ทำให้ status=paid/floating เห็นแค่บิลเดือนนี้ (บิลเก่าหาย + KPI ≠ ตาราง)
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $status = $request->input('status'); // all, paid, pending, floating, free
 
-        // Query พื้นฐาน
+        // Query พื้นฐาน — ใส่ช่วงวันที่เฉพาะเมื่อระบุ (กันวันที่สลับ/ว่าง)
         $query = FortuneReading::query()
             ->with(['user', 'smsNotification'])
-            ->whereDate('created_at', '>=', $dateFrom)
-            ->whereDate('created_at', '<=', $dateTo);
+            ->when($dateFrom, fn ($q) => $q->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo, fn ($q) => $q->whereDate('created_at', '<=', $dateTo));
 
         // กรองตามสถานะ
         if ($status === 'paid') {
             $query->where('is_paid', true)->where('is_floating', false);
         } elseif ($status === 'pending') {
-            // รองรับทั้ง Deep 39฿ และ Celtic Cross 99฿
-            $query->where('is_paid', false)->whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES);
+            // 🗓️ (2026-07-05) ใช้ลิสต์กว้าง — รวม awaiting_payment_method + Stripe pending
+            //    (Deep 39฿ + Celtic 99฿ + ทุกขั้นก่อนจ่ายเสร็จ)
+            $query->where('is_paid', false)->whereIn('conversation_status', FortuneReading::PENDING_DISPLAY_STATUSES);
         } elseif ($status === 'floating') {
             $query->where('is_floating', true);
         } elseif ($status === 'free') {
-            $query->where('is_paid', false)->where('reading_type', 'basic');
+            // 🗓️ (2026-07-05) ฟรี = ไพ่ฟรี (free_card) + ดูดวงพื้นฐานที่ยังไม่จ่าย (basic)
+            $query->where('is_paid', false)->whereIn('reading_type', ['basic', 'free_card']);
         }
 
         $bills = $query->orderBy('created_at', 'desc')->paginate(20);
@@ -284,17 +289,18 @@ class FortuneBillingController extends Controller
      */
     public function exportRevenue(Request $request)
     {
-        $dateFrom = $request->input('date_from', now()->startOfMonth()->format('Y-m-d'));
-        $dateTo = $request->input('date_to', now()->format('Y-m-d'));
+        // 🗓️ (2026-07-05) ว่าง = export ทั้งหมด (สอดคล้องกับหน้า list)
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
 
         $readings = FortuneReading::with(['user', 'smsNotification'])
             ->where('is_paid', true)
-            ->whereDate('created_at', '>=', $dateFrom)
-            ->whereDate('created_at', '<=', $dateTo)
+            ->when($dateFrom, fn ($q) => $q->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo, fn ($q) => $q->whereDate('created_at', '<=', $dateTo))
             ->orderBy('paid_at', 'desc')
             ->get();
 
-        $filename = 'fortune_revenue_'.$dateFrom.'_to_'.$dateTo.'.csv';
+        $filename = 'fortune_revenue_'.($dateFrom ?: 'all').'_to_'.($dateTo ?: 'all').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -328,7 +334,12 @@ class FortuneBillingController extends Controller
                     $reading->facebook_user_name ?? $reading->user?->name ?? '-',
                     $reading->facebook_user_id,
                     number_format($reading->amount_paid, 2),
-                    $reading->reading_type === 'deep' ? 'เชิงลึก' : 'พื้นฐาน',
+                    match ($reading->reading_type) {
+                        'deep' => 'เชิงลึก',
+                        'celtic_cross' => 'Celtic 99',
+                        'free_card' => 'ไพ่ฟรี',
+                        default => 'พื้นฐาน',
+                    },
                     $reading->sender_bank ?? '-',
                     $reading->sender_info ?? '-',
                     $reading->is_floating ? 'ใช่' : 'ไม่ใช่',
@@ -364,17 +375,18 @@ class FortuneBillingController extends Controller
     /**
      * คำนวณสถิติรายได้
      */
-    protected function calculateStats(string $dateFrom, string $dateTo): array
+    protected function calculateStats(?string $dateFrom, ?string $dateTo): array
     {
+        // 🗓️ (2026-07-05) ช่วงวันที่เป็น optional — ว่าง = ทั้งหมด (สอดคล้องกับ list)
+        $inPeriod = fn ($q) => $q
+            ->when($dateFrom, fn ($qq) => $qq->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo, fn ($qq) => $qq->whereDate('created_at', '<=', $dateTo));
+
         // รายได้ในช่วงที่เลือก
-        $periodRevenue = FortuneReading::where('is_paid', true)
-            ->whereDate('created_at', '>=', $dateFrom)
-            ->whereDate('created_at', '<=', $dateTo)
+        $periodRevenue = $inPeriod(FortuneReading::where('is_paid', true))
             ->sum('amount_paid');
 
-        $periodCount = FortuneReading::where('is_paid', true)
-            ->whereDate('created_at', '>=', $dateFrom)
-            ->whereDate('created_at', '<=', $dateTo)
+        $periodCount = $inPeriod(FortuneReading::where('is_paid', true))
             ->count();
 
         // รายได้วันนี้
@@ -405,19 +417,14 @@ class FortuneBillingController extends Controller
         $floatingCount = FortuneReading::where('is_floating', true)->count();
         $floatingAmount = FortuneReading::where('is_floating', true)->sum('amount_paid');
 
-        // รอชำระ (Deep 39฿ + Celtic Cross 99฿)
-        $pendingCount = FortuneReading::whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
+        // รอชำระ — 🗓️ (2026-07-05) ใช้ลิสต์กว้าง (รวม awaiting_payment_method + Stripe) ให้ตรงกับ filter
+        $pendingCount = FortuneReading::whereIn('conversation_status', FortuneReading::PENDING_DISPLAY_STATUSES)
             ->where('is_paid', false)
             ->count();
 
         // อัตราส่วน paid vs free
-        $totalReadings = FortuneReading::whereDate('created_at', '>=', $dateFrom)
-            ->whereDate('created_at', '<=', $dateTo)
-            ->count();
-        $paidReadings = FortuneReading::where('is_paid', true)
-            ->whereDate('created_at', '>=', $dateFrom)
-            ->whereDate('created_at', '<=', $dateTo)
-            ->count();
+        $totalReadings = $inPeriod(FortuneReading::query())->count();
+        $paidReadings = $inPeriod(FortuneReading::where('is_paid', true))->count();
         $conversionRate = $totalReadings > 0 ? round(($paidReadings / $totalReadings) * 100, 1) : 0;
 
         // เฉลี่ยต่อบิล

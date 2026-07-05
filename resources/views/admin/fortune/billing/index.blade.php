@@ -246,6 +246,14 @@
                                     <span class="tp-pill" style="background:var(--a2soft);color:#b79ae8;font-size:12px;">
                                         <i class="fas fa-star"></i> เชิงลึก
                                     </span>
+                                @elseif($bill->reading_type === 'celtic_cross')
+                                    <span class="tp-pill" style="background:rgba(138,99,201,.16);color:#8a63c9;font-size:12px;">
+                                        <i class="fas fa-gem"></i> Celtic 99
+                                    </span>
+                                @elseif($bill->reading_type === 'free_card')
+                                    <span class="tp-pill tp-pill-soft" style="font-size:12px;">
+                                        <i class="fas fa-gift"></i> ไพ่ฟรี
+                                    </span>
                                 @else
                                     <span class="tp-pill" style="background:var(--a1soft);color:#5689b8;font-size:12px;">
                                         <i class="fas fa-moon"></i> พื้นฐาน
@@ -257,8 +265,12 @@
                             <td style="padding:12px 14px;white-space:nowrap;font-weight:700;" class="tp-num">
                                 @if($bill->is_paid)
                                     <span style="color:#5aa07e;">฿{{ number_format($bill->amount_paid, 2) }}</span>
-                                @elseif($bill->conversation_status === 'pending_payment')
-                                    <span style="color:#e0a52e;">฿{{ number_format($bill->amount_paid, 2) }}</span>
+                                @elseif(in_array($bill->conversation_status, \App\Models\FortuneReading::PENDING_DISPLAY_STATUSES))
+                                    @if($bill->amount_paid > 0)
+                                        <span style="color:#e0a52e;">฿{{ number_format($bill->amount_paid, 2) }}</span>
+                                    @else
+                                        <span class="tp-muted" style="font-size:12px;font-weight:600;">รอโอน</span>
+                                    @endif
                                 @else
                                     <span class="tp-muted">-</span>
                                 @endif
@@ -275,7 +287,7 @@
                                     <span class="tp-pill" style="background:rgba(90,160,126,.16);color:#5aa07e;font-size:12px;">
                                         <i class="fas fa-circle-check"></i> ชำระแล้ว
                                     </span>
-                                @elseif($bill->conversation_status === 'pending_payment')
+                                @elseif(in_array($bill->conversation_status, \App\Models\FortuneReading::PENDING_DISPLAY_STATUSES))
                                     <span class="tp-pill" style="background:rgba(224,165,46,.16);color:#e0a52e;font-size:12px;">
                                         <i class="fas fa-hourglass-half"></i> รอชำระ
                                     </span>
@@ -288,8 +300,14 @@
                                     <span class="tp-pill" style="background:rgba(214,130,74,.16);color:#d6824a;font-size:12px;">
                                         <i class="fas fa-clipboard-list"></i> บิลลอย
                                     </span>
-                                @else
+                                @elseif($bill->reading_type === 'basic' || $bill->reading_type === 'free_card')
+                                    {{-- ดูดวงฟรี (พื้นฐาน/ไพ่ฟรี) — ไม่มีการชำระเงิน --}}
                                     <span class="tp-pill tp-pill-soft" style="font-size:12px;">ฟรี</span>
+                                @else
+                                    {{-- Deep/Celtic ที่ยังไม่ถึงขั้นรอโอน = ลูกค้าเลิกกลางคัน/ไม่จ่าย --}}
+                                    <span class="tp-pill" style="background:rgba(154,143,124,.16);color:var(--ink2);font-size:12px;">
+                                        <i class="fas fa-circle-minus"></i> ยังไม่ชำระ
+                                    </span>
                                 @endif
                             </td>
 
