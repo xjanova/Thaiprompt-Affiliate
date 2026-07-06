@@ -17922,17 +17922,35 @@ PROMPT;
             return $stepHint;
         }
 
-        // 🚦 (2026-05-06) Rate-limit ต่อ user — 1 AI ack ต่อ 60 วินาที
-        //   กัน AI call ทุกข้อความตอน user พิมพ์รัวๆ — ลด latency + cost
-        //   key ใช้ profile.id ถ้ามี (FB PSID / LINE userId) — fallback hash messageText
+        // 🚦 (2026-05-06) Rate-limit ต่อ user — กัน AI call ทุกข้อความตอน user พิมพ์รัวๆ
+        //   key ใช้ profile.id ถ้ามี (FB PSID / LINE userId)
+        //
+        // 🗣️ (2026-07-06) หน้าต่าง throttle แยกตาม context — เจ้าของรายงาน:
+        //   ระหว่าง "เลือกแพคเกจ" ลูกค้าพิมพ์คำถาม/ความเห็น (เช่น "ดูชื่อ ดูเลขบัตร ดูเบอมือถือได้ไหม",
+        //   "ผมดูมาหมดละ") แต่บอทส่งแต่กล่องเลือกแพคเกจซ้ำ ไม่ตอบโต้ = เหมือนบอทเกินไป
+        //   (reading 8710, 2026-07-06 16:45 — 2 ข้อความติดถูก throttle 60s → ได้แต่กล่อง 204 ตัวอักษร)
+        //
+        //   ต้นเหตุ: throttle 60s เดิม — หลังตอบ AI ครั้งแรก ทุกข้อความใน 60s ได้แต่ hint เย็นๆ
+        //   แก้: pre-sale context (ลูกค้ากำลังตัดสินใจ/ถามก่อนจ่าย) ใช้หน้าต่างสั้น 8s
+        //        → คำถามที่ห่างกันเกิน ~8s ได้คำตอบจริงทุกครั้ง (debounce 3s รวมพิมพ์รัวอยู่แล้ว
+        //          + Gatekeeper คุมโหลดรวม — throttle จึงเหลือหน้าที่แค่กันกดซ้ำจริง ๆ ภายใน 8s)
+        //        context กลางการทำนาย (birthdate/tarot) คงหน้าต่าง 60s เดิม กัน AI call ถี่เกิน
+        $preSaleContexts = [
+            'tier_choice',             // เลือกแพคเกจ 39/99 — เคสที่เจ้าของรายงาน
+            'awaiting_confirmation',   // ตัดสินใจว่าจะดูดวงไหม
+            'awaiting_payment_method', // เลือกวิธีชำระเงิน (QR ไทย / บัตร ตปท.)
+            'pending_payment',         // รอโอน
+            'pending_stripe_payment',  // รอจ่ายผ่านบัตร
+        ];
+        $throttleSeconds = in_array($flowContext, $preSaleContexts, true) ? 8 : 60;
         try {
             $rateLimitId = $userProfile['id'] ?? null;
             if ($rateLimitId) {
                 $rateLimitKey = "fortune:ai_ack_throttle:{$rateLimitId}";
                 if (\Illuminate\Support\Facades\Cache::has($rateLimitKey)) {
-                    return $stepHint; // ส่ง AI ack ไปแล้วใน 60s ที่แล้ว — ใช้ hint อย่างเดียว
+                    return $stepHint; // ส่ง AI ack ไปแล้วในหน้าต่างที่ผ่านมา — ใช้ hint อย่างเดียว
                 }
-                \Illuminate\Support\Facades\Cache::put($rateLimitKey, true, now()->addSeconds(60));
+                \Illuminate\Support\Facades\Cache::put($rateLimitKey, true, now()->addSeconds($throttleSeconds));
             }
         } catch (\Throwable $e) {
             // throttle ล้ม → ปล่อยให้ทำงานต่อไป
