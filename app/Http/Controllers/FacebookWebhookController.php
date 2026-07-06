@@ -1840,6 +1840,15 @@ class FacebookWebhookController extends Controller
             //    User: "ตอนลูกค้าส่งรูปในแชทปกติ → เงียบ ไม่ตอบ"
             //    Vision classify ถูก skip ไปแล้ว (gate ที่ $hasActiveFortune) — saved quota
             if (empty($messageText) && ! $hasActiveFortune) {
+                // 👋 (2026-07-06) สติกเกอร์/ไอคอน (ไม่ใช่รูปสลิป) จากลูกค้าที่ไม่มีดูดวงค้าง
+                //   → ทักทายชวนดูดวง แทนที่จะเงียบ (เจ้าของรายงาน: ลูกค้าอยากดูดวง กดส่งไอคอนมา
+                //   แต่บอทไม่ตอบ = พลาดลูกค้า). สติกเกอร์ไม่ใช่สลิป → ข้าม slip-capture/vision ทั้งหมด
+                if ($hasSticker) {
+                    $this->sendGestureEngagementNudge($senderId, 'sticker');
+
+                    return;
+                }
+
                 // 🧾 (2026-06-01) ก่อน silent — ลูกค้า returning (ทิ้งบิล/บิลหมดอายุ) ส่ง "รูปสลิป" ยืนยันการโอน
                 //    → ตรวจ+กู้บิล ไม่ใช่ทิ้งเงียบ (parity กับ LINE — bug เดียวกัน: returning-slip recovery
                 //    wired ใน handleSlipImageOnly ซึ่งถูกเรียก *หลัง* guard นี้ → no-active-flow มาไม่ถึง)
@@ -1981,6 +1990,14 @@ class FacebookWebhookController extends Controller
         // 🔇 (2026-05-01) ไม่มี active flow + ข้อความเป็นแค่ลิงก์/อีโมจิล้วน → silent
         //   (ป้องกันลูกค้าทดลองส่ง junk ทำให้บอทพยายามตอบไม่ตรงประเด็น)
         if (! empty($messageText) && ! $hasActiveFortune && $this->isNonFortuneNoise($messageText)) {
+            // 👋 (2026-07-06) อีโมจิล้วน (ไม่ใช่ลิงก์) จากลูกค้าที่ไม่มีดูดวงค้าง → ทักทายชวนดูดวง
+            //   เจ้าของรายงาน: ลูกค้าตอบด้วยอีโมจิ/ไอคอน (💕😍🙏👍) แต่บอทเงียบ = พลาดลูกค้า
+            //   ลิงก์/junk ยังเงียบเหมือนเดิม (กัน spam)
+            $hasLink = (bool) preg_match('#https?://|www\.|\b\S+\.(com|net|org|co|io|ai|app|in|me|tv)\b#iu', $messageText);
+            if (! $hasLink && $this->sendGestureEngagementNudge($senderId, 'emoji')) {
+                return;
+            }
+
             Log::debug('FB: silent ignore non-fortune noise (link/emoji-only, no active flow)', [
                 'sender_id' => $senderId,
                 'preview' => mb_substr($messageText, 0, 60),
@@ -2436,6 +2453,50 @@ class FacebookWebhookController extends Controller
         }
 
         return false;
+    }
+
+    /**
+     * 👋 (2026-07-06) ลูกค้าส่งสติกเกอร์/อีโมจิล้วน (ไม่มีดูดวงค้าง) → ทักทายชวนดูดวง แทนที่จะเงียบ
+     *
+     * เจ้าของรายงาน: ลูกค้าอยากดูดวง กดส่งไอคอน/สติกเกอร์มา (บ่อยครั้งเป็น warm lead ที่บอท
+     * เพิ่งทักชวน แล้วตอบรับด้วยอีโมจิ/สติกเกอร์) แต่บอทมองเป็น junk แล้วเงียบ = พลาดลูกค้าไปเลย
+     *
+     * throttle 1 ครั้ง/6 ชม. ต่อคน — กันสแปม (ลูกค้าส่งอีโมจิรัว ๆ 😍🙏👌 จะได้ทักครั้งเดียว)
+     *
+     * @param  string  $gestureType  'sticker' | 'emoji' (ไว้ log)
+     * @return bool true ถ้าส่งทักทาย, false ถ้าโดน throttle (ให้ caller เงียบตามเดิม)
+     */
+    protected function sendGestureEngagementNudge(string $senderId, string $gestureType): bool
+    {
+        // ทักไปแล้วใน 6 ชม. → เงียบ กันสแปม
+        $throttleKey = "fortune:gesture_nudge:{$senderId}";
+        if (\Illuminate\Support\Facades\Cache::has($throttleKey)) {
+            return false;
+        }
+        \Illuminate\Support\Facades\Cache::put($throttleKey, true, now()->addHours(6));
+
+        try {
+            $message = "สวัสดีค่ะ 🙏 แม่หมอจันทราอยู่ตรงนี้นะคะ\n"
+                .'ถ้าเจ้าชะตาอยากให้แม่หมอดูดวงให้ กดปุ่มด้านล่าง หรือพิมพ์เรื่องที่อยากรู้มาได้เลยค่ะ 🔮';
+            $quickReplies = [
+                ['content_type' => 'text', 'title' => '🔮 ดูดวงเลย', 'payload' => 'MENU_FORTUNE'],
+            ];
+            $this->facebookService->sendQuickReplies($senderId, $message, $quickReplies);
+
+            Log::info('FB: gesture (sticker/emoji) → ทักทายชวนดูดวง (แทน silent)', [
+                'sender_id' => $senderId,
+                'gesture_type' => $gestureType,
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('FB: sendGestureEngagementNudge ล้มเหลว (non-blocking)', [
+                'sender_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**
