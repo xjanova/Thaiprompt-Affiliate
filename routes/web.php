@@ -1241,6 +1241,7 @@ Route::get('/download/{token}', [SoftwareDownloadController::class, 'downloadByT
 | FortuneRateLimitMiddleware ใช้สำหรับ public API routes เท่านั้น
 */
 
+use App\Http\Controllers\FacebookDataDeletionController;
 use App\Http\Controllers\FacebookWebhookController;
 use App\Http\Controllers\LineFortuneWebhookController;
 
@@ -1252,6 +1253,11 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
     // Verify webhook (GET only - สำหรับ Facebook verification)
     Route::get('/facebook/verify', [FacebookWebhookController::class, 'verify'])
         ->name('facebook.verify');
+
+    // 🗑️ (2026-07-07) Facebook Data Deletion Callback (PDPA) — รับ signed_request แล้วคิวงานลบ
+    //   อยู่ใต้ prefix webhook/* → ยกเว้น CSRF อัตโนมัติ (ดู bootstrap/app.php)
+    Route::post('/facebook/data-deletion', [FacebookDataDeletionController::class, 'handle'])
+        ->name('facebook.data-deletion');
 
     // LINE Fortune Webhook (สำหรับระบบดูดวงผ่าน LINE Official Account)
     // ⚡ withoutMiddleware: ลบ middleware ที่ไม่จำเป็นสำหรับ webhook (เร็วขึ้น ~30-50ms)
@@ -1332,6 +1338,10 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
             \App\Http\Middleware\TrackPageView::class,
         ]);
 });
+
+// 🗑️ (2026-07-07) หน้าเช็คสถานะการลบข้อมูล (PDPA) — ลิงก์ที่ตอบกลับ Facebook ชี้มาที่นี่
+Route::get('/privacy/data-deletion-status/{code}', [FacebookDataDeletionController::class, 'status'])
+    ->name('fortune.data-deletion.status');
 
 /*
 |--------------------------------------------------------------------------

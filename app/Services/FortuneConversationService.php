@@ -33,6 +33,7 @@ class FortuneConversationService
 {
     use \App\Services\Fortune\CelticCrossConversationTrait;
     use \App\Services\Fortune\FortuneConsentGateTrait;
+    use \App\Services\Fortune\FortunePdpaDeletionTrait;
     use \App\Services\Fortune\FreeCardConversationTrait;
     use \App\Services\Fortune\PayFirstGateTrait;
     use \App\Services\Fortune\ProSessionTrait;
@@ -840,6 +841,19 @@ class FortuneConversationService
             $consentAccept = $this->handleConsentAcceptIfPending($facebookUserId, $messageText, $userProfile);
             if ($consentAccept !== null) {
                 return $consentAccept;
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // 🗑️ (2026-07-07) PDPA "ลบข้อมูลของฉัน" — flow ยืนยัน 2 ขั้น
+            // ═══════════════════════════════════════════════════════════════
+            //   ลูกค้าใช้สิทธิ์ลบข้อมูลตาม PDPA — ต้องดักก่อน guard อื่น (silence/cancel-
+            //   dialog/smart-skip) กันไม่ให้คำว่า "ยืนยันลบ" ถูกกลืน. มี Cache pending guard
+            //   (ทำงานเฉพาะตอนมีคำขอค้าง) + strict matcher → ไม่ over-match flow ปกติ
+            //   วางหลัง in-prediction guard: ลูกค้าที่จ่ายแล้ว/กำลังทำนาย จะถูกดักไปก่อน
+            //   (ให้จบ/ยกเลิกบริการเดิมก่อนค่อยลบ)
+            $pdpaResult = $this->handlePdpaDeletionFlow($facebookUserId, $messageText, $userProfile);
+            if ($pdpaResult !== null) {
+                return $pdpaResult;
             }
 
             // ═══════════════════════════════════════════════════════════════

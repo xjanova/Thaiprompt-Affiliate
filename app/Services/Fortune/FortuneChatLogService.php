@@ -25,23 +25,28 @@ use Illuminate\Support\Facades\Redis;
 class FortuneChatLogService
 {
     public const TZ = 'Asia/Bangkok';
+
     private const KEY_PREFIX = 'fortune:chatlog';
+
     private const MAX_PER_CONV = 400;   // cap memory per customer/day
+
     private const MAX_TEXT = 4000;      // clamp very long messages
 
     /** Availability memo so a down redis doesn't get hammered. Re-checked every
      *  RECHECK_SECONDS so a long-lived worker (queue/Octane) recovers when redis
      *  comes back, instead of pinning 'down' until restart. */
     private static ?bool $available = null;
+
     private static int $checkedAt = 0;
+
     private const RECHECK_SECONDS = 60;
 
     /**
      * Append one message to a customer's running conversation log.
      *
-     * @param string $platform 'facebook' | 'line'
-     * @param string $userId   platform user id (FB PSID / LINE userId)
-     * @param string $role     'user' | 'bot' | 'admin'
+     * @param  string  $platform  'facebook' | 'line'
+     * @param  string  $userId  platform user id (FB PSID / LINE userId)
+     * @param  string  $role  'user' | 'bot' | 'admin'
      */
     public function record(string $platform, string $userId, string $role, ?string $text, array $meta = []): void
     {
@@ -132,6 +137,39 @@ class FortuneChatLogService
         }
     }
 
+    /**
+     * PDPA erasure — ลบ log บทสนทนาของลูกค้าคนเดียว (ทุกวันที่ยังไม่หมดอายุ)
+     *
+     * key ถูก stamp ด้วยวันที่แบบ Bangkok + TTL ถึง ~00:30 วันถัดไป จึงมีได้อย่างมาก
+     * 2 วัน (วันนี้ + เมื่อวาน). ลบทั้งคู่ให้ครบ + ถอนออกจาก day-index ด้วย
+     *
+     * @return int จำนวน key ที่ลบ
+     */
+    public function purgeCustomer(string $platform, string $userId): int
+    {
+        if ($userId === '' || ! $this->available()) {
+            return 0;
+        }
+        try {
+            $conn = Redis::connection();
+            $p = $platform === 'line' ? 'line' : 'facebook';
+            $deleted = 0;
+
+            foreach ([Carbon::now(self::TZ)->toDateString(), Carbon::yesterday(self::TZ)->toDateString()] as $date) {
+                $key = self::KEY_PREFIX.":{$date}:{$p}:{$userId}";
+                $deleted += (int) $conn->del($key);
+                // ถอน key ออกจาก day-index (best-effort — index มี TTL อยู่แล้ว)
+                $conn->srem($this->indexKey($date), $key);
+            }
+
+            return $deleted;
+        } catch (\Throwable $e) {
+            Log::debug('FortuneChatLog: purgeCustomer skipped', ['err' => $e->getMessage()]);
+
+            return 0;
+        }
+    }
+
     private function available(): bool
     {
         $now = time();
@@ -155,12 +193,12 @@ class FortuneChatLogService
         $p = $platform === 'line' ? 'line' : 'facebook';
         $date = Carbon::now(self::TZ)->toDateString();
 
-        return self::KEY_PREFIX . ":{$date}:{$p}:{$userId}";
+        return self::KEY_PREFIX.":{$date}:{$p}:{$userId}";
     }
 
     private function indexKey(string $date): string
     {
-        return self::KEY_PREFIX . ":index:{$date}";
+        return self::KEY_PREFIX.":index:{$date}";
     }
 
     /** Seconds until ~00:30 tomorrow (Bangkok) → each day's log clears at midnight. */

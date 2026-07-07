@@ -245,7 +245,9 @@ class FortuneChannelManager
     protected function prependPendingCommissionNotification(array &$result, string $platform, string $userId): void
     {
         $action = $result['action'] ?? '';
-        if (in_array($action, ['skipped_takeover', 'dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'abuse_auto_banned'], true)) {
+        // 🗑️ PDPA actions — ห้ามแทรกโฆษณาคอมมิชชั่นในข้อความลบข้อมูล (ผิดบริบท legal)
+        if (in_array($action, ['skipped_takeover', 'dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'abuse_auto_banned',
+            'pdpa_delete_confirm', 'pdpa_deleted', 'pdpa_delete_cancelled'], true)) {
             return;
         }
 
@@ -788,6 +790,10 @@ class FortuneChannelManager
 
                     return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
                 })(),
+
+                // 🗑️ (2026-07-07) PDPA ลบข้อมูล — กล่องยืนยัน (คำเตือน + ปุ่มยืนยัน/ยกเลิก) / ผลลัพธ์ (text ล้วน)
+                'pdpa_delete_confirm' => $fbService->sendQuickReplies($userId, $message, $result['quick_replies'] ?? [], $extra),
+                'pdpa_deleted', 'pdpa_delete_cancelled' => $fbService->sendMessage($userId, $message, $extra),
 
                 // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมบูชาครู/ยกเลิก)
                 'consent_gate' => (function () use ($fbService, $userId, $message, $result, $extra) {
@@ -2243,6 +2249,20 @@ class FortuneChannelManager
                     ['label' => '🔄 เช็คอีกครั้ง', 'text' => 'เช็คสถานะ'],
                     ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                 ]),
+
+                // 🗑️ (2026-07-07) PDPA ลบข้อมูล — กล่องยืนยัน (คำเตือน + ปุ่มยืนยัน/ยกเลิก) / ผลลัพธ์ (text ล้วน)
+                'pdpa_delete_confirm' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $lineQr = [];
+                    foreach (($result['quick_replies'] ?? []) as $b) {
+                        $lineQr[] = [
+                            'label' => mb_substr($b['title'] ?? '', 0, 20),
+                            'text' => $b['text'] ?? ($b['title'] ?? ''),
+                        ];
+                    }
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
+                })(),
+                'pdpa_deleted', 'pdpa_delete_cancelled' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมบูชาครู/ยกเลิก)
                 'consent_gate' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
