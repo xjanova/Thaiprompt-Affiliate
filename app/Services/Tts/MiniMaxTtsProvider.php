@@ -4,6 +4,7 @@ namespace App\Services\Tts;
 
 use App\Models\AiApiKey;
 use App\Models\FortuneTellingSetting;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -119,9 +120,26 @@ class MiniMaxTtsProvider implements TtsProviderInterface
         ];
 
         try {
+            // 🔁 (2026-07-09) Retry เฉพาะ connection/SSL timeout (cURL 28) ก่อน fallback
+            //   เคสจริง reading 8888 (FTU-260709-T5259): minimax SSL connection timeout ครั้งเดียว
+            //   → ตกไป gtts ทันที ทั้งที่เครดิตยังมี (endpoint ต่างประเทศ เน็ตสะดุดชั่วคราว).
+            //   retry 2 ครั้ง (รวม 3 attempts) เว้น 2 วิ — retry เฉพาะ ConnectionException
+            //   (ไม่ retry error API เช่น quota/auth ที่ตอบ HTTP 200 + base_resp.status_code)
+            //   + connectTimeout(12) กัน hang ยาว (default อาจรอนานเกิน)
             $response = Http::withToken($apiKey)
                 ->withHeaders(['Content-Type' => 'application/json'])
+                ->connectTimeout(12)
                 ->timeout(60)
+                ->retry(3, 2000, function ($exception) {
+                    $retryable = $exception instanceof ConnectionException;
+                    if ($retryable) {
+                        Log::warning('MiniMax TTS: connection fail → retry', [
+                            'error' => mb_substr($exception->getMessage(), 0, 160),
+                        ]);
+                    }
+
+                    return $retryable;
+                }, throw: true)
                 ->post($url, $payload);
 
             if (! $response->successful()) {

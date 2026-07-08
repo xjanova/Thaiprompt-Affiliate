@@ -196,7 +196,12 @@ class FortuneCelticAutoFinalize extends Command
         // 🕰️ (2026-06-30) เคส B (ลูกค้าไม่ถามเลย) ใช้ standby window แยก (default 30 นาที) — owner spec
         //   ให้เวลาลูกค้าเริ่มถามนานกว่า qa_window ปกติ (ระหว่างนั้น cron nudge ตามทุก interval)
         $standbyWindow = (int) ($settings->pro_session_standby_minutes ?? 30);
-        $standbyCutoff = now()->subMinutes($standbyWindow > 0 ? $standbyWindow : 30);
+        $standbyWindow = $standbyWindow > 0 ? $standbyWindow : 30;
+        $standbyCutoff = now()->subMinutes($standbyWindow);
+        // 🩹 (2026-07-09) เคส C safety-net cutoff — reading เปิดไพ่ครบ 10 แต่ค้างไม่ได้ finale
+        //   ตัวจับเวลา A/B เชื่อไม่ได้ (q_used=0 / first_answered / ready_at ตกหล่น เคสจริง 8591/6561/4701)
+        //   → ใช้ updated_at เป็นสัญญาณ abandon (อย่างน้อย 60 นาที กันตัด session ที่ยัง active)
+        $abandonCutoff = now()->subMinutes(max($standbyWindow, 60));
 
         $query = FortuneReading::query()
             ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
@@ -204,58 +209,59 @@ class FortuneCelticAutoFinalize extends Command
             ->whereIn('conversation_status', [
                 FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
                 FortuneReading::STATUS_CELTIC_QA_PROMPT,
-            ])
-            // ลูกค้าได้ถามอย่างน้อย 1 ข้อ (รวมพื้นดวง Q1 auto ที่นับ used=1)
-            ->where('celtic_questions_used', '>=', 1)
-            // 🆕 (2026-06-23 bug-hunt) ครอบ 2 เคส (กัน regression Part B: timer ย้ายไป Q2):
-            //   A) ลูกค้าถาม Q จริงแล้ว → celtic_first_answered_at + qa_window หมดอายุ (เดิม)
-            //   B) ได้พื้นดวง (Q1 auto) แล้วเงียบ ไม่เคยถาม Q2 → first_answered=NULL → กรองเวลาใน PHP (ready_at)
-            //      ⚠️ ถ้าไม่ครอบเคส B ลูกค้าจ่าย 99 จะไม่ได้ Grand Finale (ผิดกฎ "99 ต้องได้ summary ทุกครั้ง")
-            ->where(function ($q) use ($qaCutoff) {
-                $q->where(function ($a) use ($qaCutoff) {
-                    $a->whereNotNull('celtic_first_answered_at')
-                        ->where('celtic_first_answered_at', '<=', $qaCutoff);
-                })->orWhereNull('celtic_first_answered_at');
-            });
+            ]);
 
+        // admin manual recovery (--id) — ดึงตรง ข้าม timing filter (idempotency เช็คใน handle())
         if ($specificId) {
-            $query->where('id', (int) $specificId);
-        } else {
-            // กรอง readings ที่ finalize ไปแล้ว (ใช้ JSON path)
-            $query->where(function ($q) {
-                $q->whereNull('conversation_state')
-                    ->orWhere(function ($q2) {
-                        $q2->whereRaw("JSON_EXTRACT(conversation_state, '$.celtic_grand_finale_at') IS NULL");
-                    });
-            });
-            // เผื่อเคส B ถูกกรองออกใน PHP → ดึงมากกว่า limit เล็กน้อยแล้ว take ทีหลัง
-            $query->limit(max($limit * 2, 40));
+            return $query->where('id', (int) $specificId)->orderBy('updated_at', 'asc')->get();
         }
 
-        $readings = $query->orderBy('updated_at', 'asc')->get();
-
-        // 🆕 (2026-06-23) เคส B (first_answered=NULL): finalize เมื่อ "พื้นดวงส่งแล้วเงียบ" เกิน qa_window
-        //   อ้างอิง pro_session_ready_at (ISO8601 — parse ใน PHP เลี่ยง STR_TO_DATE เปราะ)
-        $readings = $readings->filter(function ($r) use ($standbyCutoff) {
-            if (! empty($r->celtic_first_answered_at)) {
-                return true; // เคส A ผ่าน SQL แล้ว (qa_window)
-            }
-            // เคส B (ไม่ถามเลย) → รอเต็ม standby window (30 นาที) นับจากส่งพื้นดวง
-            $readyAt = $r->getConversationState('pro_session_ready_at');
-            if (empty($readyAt)) {
-                return false; // ยังไม่ได้ส่งพื้นดวง (เช่น เพิ่งเปิดไพ่/รอวันเกิด) → ยังไม่ปิด
-            }
-            try {
-                return \Carbon\Carbon::parse($readyAt)->lessThanOrEqualTo($standbyCutoff);
-            } catch (\Throwable $e) {
-                return false;
-            }
+        // กรอง readings ที่ finalize ไปแล้ว (celtic_grand_finale_at IS NULL)
+        $query->where(function ($q) {
+            $q->whereNull('conversation_state')
+                ->orWhere(function ($q2) {
+                    $q2->whereRaw("JSON_EXTRACT(conversation_state, '$.celtic_grand_finale_at') IS NULL");
+                });
         });
 
-        if (! $specificId) {
-            $readings = $readings->take($limit);
-        }
+        // 🩹 (2026-07-09) ไม่ gate ด้วย celtic_questions_used อีกต่อไป (counter เชื่อไม่ได้ = 0 ทั้งที่ถามแล้ว)
+        //   ดึงกว้างแล้วคัดด้วย 3 เคสใน PHP (A: ถามแล้ว+window / B: พื้นดวงเงียบ / C: ไพ่ครบ 10+abandon)
+        $readings = $query->orderBy('updated_at', 'asc')->limit(max($limit * 3, 60))->get();
 
-        return $readings->values();
+        $readings = $readings->filter(function ($r) use ($qaCutoff, $standbyCutoff, $abandonCutoff) {
+            $firstAnswered = $r->celtic_first_answered_at;
+            $readyAt = $r->getConversationState('pro_session_ready_at');
+
+            // เคส A: ถามแล้ว (celtic_first_answered_at) + qa_window หมดอายุ
+            if (! empty($firstAnswered)) {
+                try {
+                    if (\Carbon\Carbon::parse($firstAnswered)->lessThanOrEqualTo($qaCutoff)) {
+                        return true;
+                    }
+                } catch (\Throwable $e) {
+                    // parse fail → ตกไปเช็คเคส C
+                }
+            }
+
+            // เคส B: ได้พื้นดวง (ready_at) แล้วเงียบเกิน standby (ยังไม่เคยถาม)
+            if (empty($firstAnswered) && ! empty($readyAt)) {
+                try {
+                    if (\Carbon\Carbon::parse($readyAt)->lessThanOrEqualTo($standbyCutoff)) {
+                        return true;
+                    }
+                } catch (\Throwable $e) {
+                    // parse fail → ตกไปเช็คเคส C
+                }
+            }
+
+            // 🩹 เคส C (safety-net): เปิดไพ่ครบ 10 + ค้างเงียบเกิน abandon cutoff (60+ นาที)
+            //   ครอบ reading ที่ตัวจับเวลา A/B เชื่อไม่ได้ — จ่าย 99 ต้องได้ Grand Finale เสมอ
+            $cards = $r->getCelticCards();
+
+            return is_array($cards) && count($cards) >= 10
+                && $r->updated_at && $r->updated_at->lessThanOrEqualTo($abandonCutoff);
+        });
+
+        return $readings->take($limit)->values();
     }
 }

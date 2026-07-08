@@ -3079,10 +3079,12 @@ trait CelticCrossConversationTrait
         //   user spec 2026-05-05: "หากยังถามไม่ครบแต่ยุติลงก่อน...หลุดหมดเวลาคุย ให้เข้าโฟลว์
         //   บทสรุปเองและส่งคำทำนายสุดท้ายไปให้อัตโนมัติ"
         //   เดิม: skip ตอน time_expired/idle (เพราะคิดว่าลูกค้า offline)
-        //   ใหม่: generate ทุกครั้งถ้ามีคำถาม + ไพ่ครบ — ลูกค้าจ่าย 99 บาท สมควรได้ summary
+        //   ใหม่: generate ทุกครั้งถ้าไพ่ครบ 10 ใบ — ลูกค้าจ่าย 99 บาท สมควรได้ summary
         //         (idle/time_expired pushed ผ่าน fortune:celtic-auto-finalize command)
-        $shouldGenerateFinale = $reading->fresh()->celtic_questions_used >= 1
-            && $reading->getCelticPickedCount() >= 10;
+        //   🩹 (2026-07-09) ตัดเงื่อนไข celtic_questions_used >= 1 ออก — counter เชื่อไม่ได้
+        //     (เคสจริง 8591/6561/4701: เปิดไพ่ครบ 10 แต่ q_used=0 → เดิมไม่ generate → จ่าย 99
+        //      แล้วไม่ได้ Grand Finale เลย ค้างถาวร). ไพ่ครบ 10 = สร้าง summary ได้ (คำถาม optional)
+        $shouldGenerateFinale = $reading->getCelticPickedCount() >= 10;
 
         $grandFinale = null;
         if ($shouldGenerateFinale) {
