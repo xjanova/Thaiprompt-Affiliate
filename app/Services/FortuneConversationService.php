@@ -11287,21 +11287,13 @@ class FortuneConversationService
         $key = "fortune:in_prediction:{$userId}";
 
         return (bool) Cache::remember($key, 30, function () use ($userId) {
-            return FortuneReading::where(function ($q) use ($userId) {
+            // 1️⃣ reading ที่อยู่ในสถานะทำนายจริงๆ (paid + IN_PREDICTION_STATUSES) → ทำนายแน่นอน
+            $hasActive = FortuneReading::where(function ($q) use ($userId) {
                 $q->where('facebook_user_id', $userId)
                     ->orWhere('platform_user_id', $userId);
             })
                 ->where('is_paid', true)
-                ->where(function ($s) {
-                    $s->whereIn('conversation_status', FortuneReading::IN_PREDICTION_STATUSES)
-                        // 🛡️ (2026-06-22 FTU-260622-R1626) Pro Session ยังเปิด แม้ status=completed
-                        //   (Celtic Q&A linger 15 นาที) → ยังถือว่าทำนายอยู่ → guard ที่ startDeepReadingFlow
-                        //   silent_skip ทุก call site กันสร้างบิลใหม่ระหว่าง window
-                        ->orWhere(function ($s2) {
-                            $s2->where('conversation_status', FortuneReading::STATUS_COMPLETED)
-                                ->whereRaw("JSON_EXTRACT(conversation_state, '$.pro_session_active') = true");
-                        });
-                })
+                ->whereIn('conversation_status', FortuneReading::IN_PREDICTION_STATUSES)
                 ->where(function ($flag) {
                     // 🛡️ admin_review_alerted=true → out of scope (admin handles)
                     $flag->whereNull('conversation_state')
@@ -11309,6 +11301,40 @@ class FortuneConversationService
                         ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') != true");
                 })
                 ->exists();
+
+            if ($hasActive) {
+                return true;
+            }
+
+            // 2️⃣ (2026-06-22 FTU-260622-R1626) Pro Session linger — completed แต่ยังคุยต่อได้ (Celtic Q&A 15 นาที)
+            //   🐛 (2026-07-08) เดิมเช็คแค่ flag `pro_session_active=true` แบบดิบ ไม่มีขอบเขตเวลา
+            //      → ถ้า flag ค้าง (session จบแต่ exit path ไม่ clear) = ลูกค้าถูกมองว่า "ทำนายอยู่" ตลอดกาล
+            //      → พิมพ์ "ดูดวง" ครั้งใด guard silent_skip ทุกครั้ง (เคส Siripon Schröter + 82 ลูกค้าติดผี)
+            //   ✅ Fix: ยืนยันด้วย isInProSession() ที่ตรวจ started_at + window (auto-clear flag ที่หมดเวลา)
+            //      → stale flag จาก session เก่าจะ expire ทันที ไม่บล็อกการเปิดดวงใหม่
+            $candidates = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)
+                    ->orWhere('platform_user_id', $userId);
+            })
+                ->where('is_paid', true)
+                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                ->whereRaw("JSON_EXTRACT(conversation_state, '$.pro_session_active') = true")
+                ->where(function ($flag) {
+                    $flag->whereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') IS NULL")
+                        ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') != true");
+                })
+                ->latest('updated_at')
+                ->limit(5)
+                ->get();
+
+            foreach ($candidates as $reading) {
+                // isInProSession() = flag + started_at + window; หมดเวลา → clear flag + return false
+                if ($this->isInProSession($reading)) {
+                    return true;
+                }
+            }
+
+            return false;
         });
     }
 
@@ -19830,7 +19856,7 @@ PROMPT;
      *    ที่อยู่นอกช่วง ก-ฮ → ถ้าใช้ ก-ฮ จะ match ชื่อเดือนหลายพยางค์ไม่ได้
      *
      * @return array{raw:int, ce:int, issue:string}|null
-     *   issue = 'future_or_current' (อายุ < 1) | 'too_old' (อายุ > 120) ; null = ปีปกติ/ไม่ใช่วันเกิด
+     *                                                   issue = 'future_or_current' (อายุ < 1) | 'too_old' (อายุ > 120) ; null = ปีปกติ/ไม่ใช่วันเกิด
      */
     protected function detectImplausibleBirthYear(string $text): ?array
     {

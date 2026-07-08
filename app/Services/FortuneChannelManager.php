@@ -401,7 +401,10 @@ class FortuneChannelManager
         // 🛡️ (2026-06-04) slip_flood_silent / slip_flood_banned = flood guard เกินเพดานรอบถัดไป/แบน → เงียบ
         //   (กัน VerifySlipFallbackJob / on-ping ส่ง "ระบบกำลังดำเนินการ" ตอน message ว่าง — flooder ไม่ควรได้ตอบ)
         // 🚫 (2026-06-11) abuse_auto_banned = แบนคำหยาบรุนแรง → เงียบ (FB ถูก page block แล้ว ส่งไม่ถึงอยู่ดี)
-        if (in_array($action, ['dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'slip_flood_silent', 'slip_flood_banned', 'abuse_auto_banned'], true)) {
+        // 🔇 (2026-07-08) silent_skip_in_prediction = interrupt keyword ("ดูดวง"/"39"/"99"/ยกเลิก) ระหว่างทำนาย
+        //   เดิมตกไป default → ส่ง "ระบบกำลังดำเนินการ 🙏" ตรงข้ามกับชื่อ action (ต้องเงียบ)
+        //   เคส Siripon Schröter + 82 ลูกค้า: flag pro_session ค้าง → guard ยิงทุกครั้ง → ลูกค้าเห็นแต่ "กำลังดำเนินการ"
+        if (in_array($action, ['dedup_skip', 'smart_skip', 'silent_skip', 'silent_skip_in_prediction', 'silent_warning', 'slip_flood_silent', 'slip_flood_banned', 'abuse_auto_banned'], true)) {
             // silent_warning อาจมี message ที่ต้องส่ง 1 ครั้ง — แยก case
             if ($action === 'silent_warning' && ! empty($message)) {
                 $platformService = $this->getPlatform($platform);
