@@ -366,6 +366,18 @@ Schedule::command('fortune:celtic-redeliver --limit=30')
     ->name('fortune-celtic-redeliver')
     ->runInBackground();
 
+// 3b-bis) Fortune Celtic Answer Recover — 🛟 (2026-07-08) กู้ "ถามแล้วไม่มีคำตอบ" (คนละจุดกับ redeliver)
+//     เคส Siripon Schröter: buffered question job (tries=1) หายตอน deploy รีสตาร์ท worker → เงียบ 9 นาที
+//     A) awaiting + buffer celtic_q ค้างเกิน grace → re-dispatch job (flush-lock กัน double-answer)
+//     B) generating ค้าง >5 นาที (job timeout 180s = ตายแน่) → revert awaiting + nudge ให้พิมพ์ใหม่
+//     ทุกนาที — buffer TTL 5 นาที จึงต้องจับให้ทัน; ไม่แตะ hot path (idempotent ทั้งคู่)
+Schedule::command('fortune:celtic-answer-recover --limit=50')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('fortune-celtic-answer-recover')
+    ->runInBackground();
+
 // 3c) Fortune Pro Session Nudge — 🔔 (2026-06-30, owner) ตามให้ลูกค้าเริ่มถามคำถาม
 //     owner spec: ลูกค้ายังไม่ถามเลย → ตามทุก interval (default 10 นาที) ระหว่างสแตนบาย (default 30 นาที)
 //     ครบสแตนบายไม่ถาม → auto-finalize สรุปให้ (เดิม: ตามครั้งเดียว → เปลี่ยนเป็นตามซ้ำทุก interval)
