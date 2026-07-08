@@ -172,6 +172,39 @@ trait ProSessionTrait
     }
 
     /**
+     * 🧹 (2026-07-08) เช็คว่า Pro Session window "หมดเวลา" แล้วหรือยัง — non-mutating (ไม่ clear flag)
+     *
+     * ต่างจาก isInProSession():
+     *   - ตัวนี้ไม่มี side-effect (isInProSession clear flag ทันทีเมื่อหมดเวลา — ใช้ dry-run ไม่ได้)
+     *   - คืน true = "หมดเวลาแล้ว ควรกวาด flag ทิ้ง" ; false = ยัง linger จริง / ยังไม่เริ่มนับ
+     *
+     * ใช้โดย sweep cron (clearStaleLingeringProSessions) — ต้นตอ incident 82-customer 2026-07-08:
+     *   Celtic finale ผ่าน max_questions_reached/ai_signal คง pro_session_active ไว้ให้ linger
+     *   แต่ถ้าลูกค้าเงียบหลัง finale ไม่มี cron ไหนกวาด (celtic/deep-auto-finalize จับเฉพาะ status
+     *   ที่ยังไม่ completed) → flag ค้างถาวร → isInPrediction บล็อก "ดูดวง" ครั้งถัดไป
+     */
+    protected function proSessionWindowExpired(FortuneReading $reading): bool
+    {
+        if (! $reading->getConversationState('pro_session_active', false)) {
+            return false; // ไม่มี flag = ไม่มีอะไรต้องกวาด
+        }
+
+        $startedAt = $reading->getConversationState('pro_session_started_at');
+        if (empty($startedAt)) {
+            // ยังไม่เริ่มนับ (รอคำถามแรก): awaiting=true → ยังไม่หมด ; ไม่ awaiting → malformed ควรกวาด
+            return ! (bool) $reading->getConversationState('pro_session_awaiting_first_question', false);
+        }
+
+        $windowMin = (int) $reading->getConversationState('pro_session_window_minutes', self::PRO_SESSION_DEEP_MINUTES);
+        try {
+            // 🩹 Carbon 3 — absolute=true เสมอ (กัน now() < started → ค่าลบ → never expires)
+            return (int) Carbon::parse($startedAt)->diffInMinutes(now(), true) >= $windowMin;
+        } catch (\Throwable $e) {
+            return true; // parse ไม่ได้ = malformed → กวาดทิ้ง
+        }
+    }
+
+    /**
      * 🌙 (2026-06-08) เช็คว่าเป็น Deep 39 Pro Session ที่หมดเวลาแล้ว + ยังไม่ได้แจ้ง "หมดเวลา"
      *
      * ใช้ timestamp (pro_session_started_at + window) — ไม่พึ่ง pro_session_active flag

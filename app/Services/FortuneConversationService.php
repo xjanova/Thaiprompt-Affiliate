@@ -11237,6 +11237,58 @@ class FortuneConversationService
     }
 
     /**
+     * 🧹 (2026-07-08) Safety-net sweep — กวาด flag pro_session_active ที่ค้างบน reading completed
+     *
+     * ต้นตอ incident 82-customer (Siripon Schröter): Celtic Grand Finale ที่จบผ่าน
+     * max_questions_reached/ai_signal จะ "คง" pro_session_active=true ไว้ให้ linger 15 นาที
+     * (endCelticSession) — แต่ถ้าลูกค้าเงียบหลัง finale ไม่มี cron ไหนกวาด flag นี้เลย:
+     *   - fortune:celtic-auto-finalize / fortune:deep-auto-finalize จับเฉพาะ status ที่ยังไม่ completed
+     *   - isInProSession() clear ได้ แต่ทำงานแบบ lazy (เฉพาะตอนลูกค้าทักครั้งถัดไป)
+     * → flag ค้างถาวร → isInPrediction() มองว่า "ทำนายอยู่" → "ดูดวง" ครั้งใหม่ถูก silent-skip
+     *
+     * ตัวนี้ปิด gap เชิงรุก: หา completed + pro_session_active=true ที่ window หมดเวลาแล้ว → clear
+     * ใช้ proSessionWindowExpired() (non-mutating, time-bound) ตัดสิน — reading ที่ยัง linger จริงไม่ถูกแตะ
+     *
+     * @param  int  $limit  จำนวนสูงสุดต่อรอบ (กัน write ระเบิด)
+     * @param  bool  $apply  false = dry-run (ไม่ clear จริง แค่รายงาน)
+     * @return array{scanned:int, cleared:int, kept_active:int, cleared_ids:array<int>}
+     */
+    public function clearStaleLingeringProSessions(int $limit = 100, bool $apply = true): array
+    {
+        $candidates = FortuneReading::where('is_paid', true)
+            ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+            ->whereRaw("JSON_EXTRACT(conversation_state, '$.pro_session_active') = true")
+            ->orderBy('updated_at', 'asc')
+            ->limit(max(1, $limit))
+            ->get();
+
+        $cleared = 0;
+        $keptActive = 0;
+        $clearedIds = [];
+
+        foreach ($candidates as $reading) {
+            if (! $this->proSessionWindowExpired($reading)) {
+                $keptActive++; // ยัง linger จริงภายใน window — ไม่แตะ
+
+                continue;
+            }
+
+            if ($apply) {
+                $this->clearProSessionFlags($reading);
+            }
+            $cleared++;
+            $clearedIds[] = (int) $reading->id;
+        }
+
+        return [
+            'scanned' => $candidates->count(),
+            'cleared' => $cleared,
+            'kept_active' => $keptActive,
+            'cleared_ids' => $clearedIds,
+        ];
+    }
+
+    /**
      * 💳 (2026-06-03) ตรวจว่า user มี "บิลค้างจ่าย" (ยังไม่ paid) หรือไม่
      *
      * = reading ที่ conversation_status ∈ PENDING_PAYMENT_STATUSES + is_paid=false

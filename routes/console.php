@@ -343,6 +343,18 @@ Schedule::command('fortune:deep-auto-finalize --limit=30')
     ->name('fortune-deep-auto-finalize')
     ->runInBackground();
 
+// 3a-bis) Fortune Pro Session Clear-Stale — 🧹 (2026-07-08) safety-net กวาด flag pro_session_active ค้าง
+//     ต้นตอ incident 82-customer: Celtic finale ผ่าน max_questions_reached/ai_signal คง flag ไว้ให้ linger
+//     ถ้าลูกค้าเงียบหลัง finale → ไม่มี cron ไหนกวาด (auto-finalize จับเฉพาะ status ที่ยังไม่ completed)
+//     → flag ค้างถาวร → isInPrediction บล็อก "ดูดวง" ครั้งใหม่ ("ระบบกำลังดำเนินการ")
+//     ทุก 10 นาที สแกน completed + pro_session_active=true ที่ window หมดเวลา → clear (time-bound, ไม่แตะที่ยัง linger)
+Schedule::command('fortune:prosession-clear-stale --limit=200')
+    ->everyTenMinutes()
+    ->withoutOverlapping(15)
+    ->onOneServer()
+    ->name('fortune-prosession-clear-stale')
+    ->runInBackground();
+
 // 3b) Fortune Celtic Re-Deliver — 🐛 (2026-05-28) หลักประกันลูกค้าได้รับคำทำนายเสมอ
 //     เคส FTU-260528-E8815: AI ตอบสำเร็จ + บันทึก DB แต่ push แรกไม่ถึงลูกค้า (เห็นแค่ "ติดขัด")
 //     ทุกนาที — หา question ที่ answered แต่ delivered_at null (ภายใน 2 ชม.) → re-push
