@@ -635,6 +635,16 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // 🤖 (2026-07-09) ลบ mention "@Meta AI" ที่ Facebook เด้งแนะนำ แล้วลูกค้าเผลอกดติดมา
+            // ═══════════════════════════════════════════════════════════════
+            //   Meta AI = ผู้ช่วย AI ของแพลตฟอร์ม FB/Messenger เอง (คนละตัวกับแม่หมอจันทรา)
+            //   ในกลุ่ม/คอมเมนต์/ช่องพิมพ์ FB เด้ง "@Meta AI" เป็นตัวเลือกแรก ลูกค้ากดโดนบ่อย
+            //   → ข้อความมาถึงบอทเราเป็น "@Meta AI 🔮 ดูดวงเลย" ทำให้ intent exact-match ("ดูดวง") ไม่ตรง
+            //   ตัดที่นี่ (จุดเดียวที่ inbound text ทุก path ผ่าน) → สะอาดทั้ง intent + prompt AI
+            //   ⚠️ log ดิบด้านบน (FortuneChatLogService) เก็บของจริงไว้แล้ว → warroom ยังเห็นที่ลูกค้าพิมพ์
+            $messageText = $this->stripPlatformAiMention($messageText);
+
+            // ═══════════════════════════════════════════════════════════════
             // 🌍 (2026-06-20) Sticky Lao detection — จำว่าลูกค้าคนนี้เคย "พิมพ์ภาษาลาว"
             // ═══════════════════════════════════════════════════════════════
             //   ปิดช่องโหว่: gate Celtic (doStartCelticCrossFlow) + createPaymentBill
@@ -15943,6 +15953,39 @@ class FortuneConversationService
      * @param  string  $text  ข้อความดิบจากผู้ใช้
      * @return string ข้อความที่ normalize แล้ว (lowercase, trim, ไม่มีคำลงท้าย)
      */
+    /**
+     * 🤖 (2026-07-09) ลบ mention "@Meta AI" ออกจากข้อความลูกค้า
+     *
+     * Meta AI = ผู้ช่วย AI ของแพลตฟอร์ม Facebook/Messenger เอง (คนละตัวกับแม่หมอจันทรา).
+     * FB เด้ง "@Meta AI" เป็นตัวเลือก mention แรกในกลุ่ม/คอมเมนต์/ช่องพิมพ์ ลูกค้ากดโดนบ่อย
+     * → ข้อความมาถึงบอทเราเป็น "@Meta AI 🔮 ดูดวงเลย" → intent exact-match ไม่ตรง + prompt รก
+     *
+     * ตัดเฉพาะ "token mention จริง" เท่านั้น — ต้องมี "@" นำ หรืออยู่ต้นข้อความ
+     *   (กันไปกินคำ "meta"/"ai" กลางประโยคที่อาจ legit — บทเรียนจาก normalize กิน "นะ" ใน "สถานะ")
+     * รองรับรูป: "@Meta AI" / "@MetaAI" / "@ meta ai" (case-insensitive)
+     *
+     * @param  string  $text  ข้อความดิบจากลูกค้า
+     * @return string  ข้อความที่ตัด mention แล้ว (trim)
+     */
+    protected function stripPlatformAiMention(string $text): string
+    {
+        // fast path — ไม่มีคำว่า "meta" เลย ข้ามทันที (รันทุกข้อความขาเข้า ต้องถูก)
+        if ($text === '' || mb_stripos($text, 'meta') === false) {
+            return $text;
+        }
+
+        // 1) รูปมี "@" นำ — ตัดได้ทุกตำแหน่ง (ปลอดภัย ไม่มีคำไทยขึ้นต้นด้วย "@meta ai")
+        $text = preg_replace('/@\s*meta\s*ai\b/iu', ' ', $text) ?? $text;
+
+        // 2) รูปไม่มี "@" — ตัดเฉพาะที่ "ต้นข้อความ" เท่านั้น (mention มักนำหน้า) กันกินคำกลางประโยค
+        $text = preg_replace('/^\s*meta\s*ai\b\s*/iu', '', $text) ?? $text;
+
+        // ยุบช่องว่างที่เหลือจากการตัด + trim
+        $text = preg_replace('/\s{2,}/u', ' ', $text) ?? $text;
+
+        return trim($text);
+    }
+
     protected function normalizeUserInput(string $text): string
     {
         $text = mb_strtolower(trim($text));
