@@ -3,6 +3,11 @@
     /** @var \App\Models\FortuneContentCampaign|null $campaign */
     $campaign = $campaign ?? null;
     $joinLines = fn ($arr) => implode("\n", is_array($arr) ? $arr : []);
+
+    // เวลาโพสตั้งต้นสำหรับ repeater — validation พลาดใช้ old ก่อน แล้วค่อย schedule ของแคมเปญ
+    $initialSlots = old('schedule_text') !== null
+        ? array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', old('schedule_text')))))
+        : array_values($campaign->schedule ?? []);
 @endphp
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
@@ -16,11 +21,40 @@
         <input type="text" name="emoji" value="{{ old('emoji', $campaign->emoji ?? '') }}" maxlength="10"
                class="tp-input" style="width:100%;" placeholder="เช่น 💪">
     </div>
-    <div>
-        <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:4px;">เวลาโพส (คั่นด้วย , หรือขึ้นบรรทัดใหม่)</label>
-        <input type="text" name="schedule_text"
-               value="{{ old('schedule_text', implode(', ', $campaign->schedule ?? [])) }}"
-               class="tp-input" style="width:100%;" placeholder="เช่น 07:30, 19:00">
+</div>
+
+{{-- ── ตารางเวลาโพส: repeater กด + เพิ่มได้หลายเวลา (ไม่ใช่ 2 เวลาตายตัว) ── --}}
+<div style="margin-top:14px;">
+    <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:6px;">
+        <i class="fas fa-clock"></i> เวลาโพส (Asia/Bangkok) — กด “เพิ่มเวลา” ได้เรื่อยๆ
+    </label>
+    <div x-data="{ slots: {{ Illuminate\Support\Js::from($initialSlots) }}, max: 12 }">
+        {{-- ส่งค่าเป็น schedule_text (comma-join) — controller parse ผ่าน normalizeSlot() เดิม --}}
+        <input type="hidden" name="schedule_text" :value="slots.join(',')">
+
+        <template x-for="(slot, idx) in slots" :key="idx">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <input type="time" x-model="slots[idx]"
+                       class="tp-input" style="max-width:200px;">
+                <button type="button" @click="slots.splice(idx, 1)"
+                        class="tp-btn" style="color:#d9534f;padding:0 12px;" title="ลบเวลานี้">
+                    <i class="fas fa-trash-can"></i>
+                </button>
+            </div>
+        </template>
+
+        <template x-if="slots.length === 0">
+            <p class="tp-muted" style="font-size:12px;margin:2px 0 8px;">ยังไม่มีเวลา — กด “เพิ่มเวลา” (ถ้าเว้นว่างแคมเปญจะไม่โพสอัตโนมัติ)</p>
+        </template>
+
+        <button type="button" @click="if (slots.length < max) slots.push('12:00')" :disabled="slots.length >= max"
+                class="tp-btn tp-btn-sm" style="margin-top:4px;"
+                :style="slots.length >= max ? 'opacity:.5;cursor:not-allowed;' : ''">
+            <i class="fas fa-plus"></i> เพิ่มเวลา
+        </button>
+        <span class="tp-muted" style="font-size:11px;margin-left:10px;">
+            <span x-text="slots.length"></span>/<span x-text="max"></span> เวลา · แนะนำไม่ถี่เกินไปกันโดน FB ลด reach
+        </span>
     </div>
 </div>
 
