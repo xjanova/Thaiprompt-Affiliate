@@ -17523,11 +17523,14 @@ PROMPT;
         $msg .= "━━━━━━━━━━━━━━━━━\n";
 
         // 39฿ — Deep (🌙 2026-05-23 wrap toggle)
+        // 🌙 (2026-07-10) แก้ให้ตรงจริง: แพ็คเกจ 39 = Pro Session คุยได้ไม่อั้นภายในเวลาที่ตั้ง
+        //    (deep_reading_qa_window_minutes default 7) — ไม่ใช่ "ตอบ 2 คำถาม" อีกต่อไป
+        //    + ตัดถ้อยคำให้สั้น อ่านง่ายสำหรับผู้สูงอายุ
         if ($deepEnabled) {
+            $_winDeep = (int) ($this->settings->deep_reading_qa_window_minutes ?? 7);
             $msg .= "🔹 *แพ็คเกจ {$deepPrice} บาท* — ดูดวงเชิงลึก\n";
-            $msg .= "   • วิเคราะห์วันเดือนปีเกิด + ดวงดาว\n";
-            $msg .= "   • สุ่มไพ่ยิปซี 1 ใบ + ทำนายเชิงลึก\n";
-            $msg .= "   • ตอบ 2 คำถามที่เจ้าชะตาสงสัย\n\n";
+            $msg .= "   • เปิดไพ่ยิปซี 1 ใบ ทำนายจากวันเกิด\n";
+            $msg .= "   • ถามได้ไม่อั้น ใน {$_winDeep} นาที\n\n";
         }
 
         // 99฿ — Celtic
@@ -17535,16 +17538,16 @@ PROMPT;
         if ($celticEnabled) {
             $_maxQCelt = (int) ($this->settings->celtic_cross_max_questions ?? 5);
             $_winCelt = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
-            $_qTxtCelt = $_maxQCelt > 0 ? "{$_maxQCelt} คำถาม" : 'ไม่จำกัด';
+            // 🌙 (2026-07-10) ถ้อยคำสั้น อ่านง่าย: 0 = "ถามได้ไม่อั้น"
+            $_qTxtCelt = $_maxQCelt > 0 ? "ถามได้ {$_maxQCelt} คำถาม" : 'ถามได้ไม่อั้น';
             $msg .= "━━━━━━━━━━━━━━━━━\n";
             $msg .= "💎 *แพ็คเกจ {$celticPrice} บาท* — ไพ่ Celtic Cross 10 ใบ ⭐ พรีเมียม\n";
-            $msg .= "   • เปิดไพ่ยิปซี 10 ใบเต็มสำรับ\n";
-            $msg .= "   • คุยกับแม่หมอได้ {$_qTxtCelt} ภายใน {$_winCelt} นาที (ตอบทันที)\n";
-            $msg .= "   • ทำนายลึกซึ้ง — แม่นยำที่สุด\n";
-            // 🎧 (2026-06-20) แสดง "ขอให้ผู้ช่วย AI อ่านสรุปให้ฟัง" เฉพาะถ้า admin เปิด voice summary
+            $msg .= "   • เปิดไพ่เต็มสำรับ 10 ใบ ทำนายละเอียด\n";
+            $msg .= "   • {$_qTxtCelt} ใน {$_winCelt} นาที\n";
+            // 🎧 (2026-06-20) แสดง "ฟังเสียงสรุปจากผู้ช่วย AI" เฉพาะถ้า admin เปิด voice summary
             //    user spec: "เป็นเสียงผู้ช่วย AI ต้องบอกแบบนั้น" + ขอเอง (on-demand)
             if (! empty($this->settings->voice_summary_enabled)) {
-                $msg .= "   • ขอให้ผู้ช่วย AI อ่านบทสรุปให้ฟังได้ 🎧\n";
+                $msg .= "   • ฟังเสียงสรุปจากผู้ช่วย AI ได้ 🎧\n";
             }
             $msg .= "\n";
         }
