@@ -4424,6 +4424,21 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     });
 
     // ========================================
+    // CONTENT CAMPAIGNS — โพสคอนเทนต์อัตโนมัติหลายแคมเปญ (2026-07-10)
+    // generalize จากระบบสายมู: แต่ละแคมเปญคนละแนว คนละเวลา อิสระจากกัน
+    // ========================================
+    Route::prefix('content-campaigns')->name('content-campaigns.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\ContentCampaignController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Admin\ContentCampaignController::class, 'store'])->name('store');
+        Route::post('/disable-all', [\App\Http\Controllers\Admin\ContentCampaignController::class, 'disableAll'])->name('disable-all');
+        Route::get('/posts/{post}', [\App\Http\Controllers\Admin\ContentCampaignController::class, 'showPost'])->name('posts.show');
+        Route::put('/{campaign}', [\App\Http\Controllers\Admin\ContentCampaignController::class, 'update'])->name('update');
+        Route::post('/{campaign}/toggle', [\App\Http\Controllers\Admin\ContentCampaignController::class, 'toggle'])->name('toggle');
+        Route::delete('/{campaign}', [\App\Http\Controllers\Admin\ContentCampaignController::class, 'destroy'])->name('destroy');
+        Route::post('/{campaign}/publish-now', [\App\Http\Controllers\Admin\ContentCampaignController::class, 'publishNow'])->name('publish-now');
+    });
+
+    // ========================================
     // HOROSCOPE PUBLIC — จัดการระบบดูดวงสาธารณะ (frontend)
     // ========================================
     Route::prefix('horoscope-public')->name('horoscope-public.')->group(function () {

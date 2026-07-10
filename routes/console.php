@@ -258,6 +258,31 @@ Schedule::command('fortune:mystic:publish')
     });
 
 // ════════════════════════════════════════════════════════════════
+// 📣 Content Campaigns — โพสคอนเทนต์อัตโนมัติแบบหลายแคมเปญ (2026-07-10)
+// ════════════════════════════════════════════════════════════════
+// Generalize จากระบบสายมูเดิม: แต่ละแคมเปญ (กำลังใจ/กฎแห่งกรรม/จิตวิทยา/สายมู ฯลฯ)
+// มีตารางเวลาของตัวเองใน fortune_content_campaigns.schedule — อิสระจากกัน
+//
+// รันทุก 5 นาที → command loop แคมเปญที่เปิด แล้ว match slot ใน window 5 นาที
+// Toggle: is_enabled รายแคมเปญ (ไม่มี global toggle) — when() เช็คว่ามีแคมเปญเปิดอย่างน้อย 1
+Schedule::command('fortune:content:publish')
+    ->everyFiveMinutes()
+    ->timezone('Asia/Bangkok')
+    ->withoutOverlapping(20)
+    ->onOneServer()
+    ->name('content-campaigns-publish')
+    ->runInBackground()
+    ->when(function () {
+        try {
+            return \App\Models\FortuneContentCampaign::query()
+                ->where('is_enabled', true)
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    });
+
+// ════════════════════════════════════════════════════════════════
 // 🤖 Bot Automation — รัน automation ที่ถึงเวลาตาม next_execution_at
 // ════════════════════════════════════════════════════════════════
 // ปัญหาก่อนแก้: command `bot:process-automations` มีอยู่แต่ไม่ถูกลงทะเบียน

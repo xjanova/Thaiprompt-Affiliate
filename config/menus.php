@@ -770,6 +770,7 @@ return [
                 ['label' => '📣 การตลาดอัตโนมัติ', 'route' => 'admin.fortune.marketing.index', 'description' => 'AI สร้างข้อความ + ตั้งเวลาส่งอัตโนมัติ'],
                 ['label' => '🌟 ดวงรายวันอัตโนมัติ', 'route' => 'admin.fortune.horoscope.index', 'description' => 'AI สร้างดวง 7 วันเกิด + โพส FB/LINE อัตโนมัติ'],
                 ['label' => '🌙 คอนเทนต์สายมูอัตโนมัติ', 'route' => 'admin.fortune.mystic.index', 'description' => 'โพส FB อัตโนมัติ — สายมู/แก้เคล็ด/ปัญหาชีวิต/สิ่งลี้ลับ/รู้หรือไม่ทั่วโลก'],
+                ['label' => '📣 แคมเปญคอนเทนต์อัตโนมัติ', 'route' => 'admin.fortune.content-campaigns.index', 'description' => 'โพส FB หลายแคมเปญอิสระ — กำลังใจ/โดพามีน/กฎแห่งกรรม/จิตวิทยา หรือแนวที่กำหนดเอง คนละเวลา คนละเรื่อง'],
                 ['label' => '🔮 Celtic Cross Tarot (99฿)', 'route' => 'admin.fortune.celtic-cross.index', 'description' => 'ดูดวงไพ่ยิปซีเต็มสำรับ 10 ใบ — toggle, ราคา, prompt, log Q&A'],
                 ['label' => '📜 กติกาก่อนจองคิว (เด้งก่อนสร้างบิล)', 'route' => 'admin.fortune.consent.index', 'description' => 'แก้ข้อความกติกา + คลังรูปเตือน (สุ่ม) เด้งให้ลูกค้ายืนยันก่อนออก QR ค่าครู + เตือนตอนยกเลิก'],
                 ['label' => '🚨 Emergency Recover (Celtic)', 'route' => 'admin.fortune.celtic-cross.emergency-recover', 'description' => 'กู้บิล Celtic ด่วน — ใส่เลขบิลแล้วระบบ re-push prompt ทันที'],

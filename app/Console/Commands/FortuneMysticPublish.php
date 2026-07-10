@@ -39,6 +39,23 @@ class FortuneMysticPublish extends Command
             return self::SUCCESS;
         }
 
+        // 🛡️ (2026-07-10) Runtime guard กันโพสซ้ำ 2 ระบบ: ถ้ามีแคมเปญ bridge สายมู
+        //    (topic_source=mystic_topics) เปิดอยู่ในระบบแคมเปญใหม่ → ระบบเก่าหลบให้
+        //    (idempotency อยู่คนละตาราง — ถ้าปล่อยรันคู่จะโพสซ้ำบนเพจ + แย่ง LRU topic กัน)
+        try {
+            $bridgeActive = \App\Models\FortuneContentCampaign::query()
+                ->where('is_enabled', true)
+                ->where('topic_source', \App\Models\FortuneContentCampaign::SOURCE_MYSTIC_TOPICS)
+                ->exists();
+            if ($bridgeActive) {
+                $this->info('ℹ️  แคมเปญ "สายมู" ในระบบแคมเปญใหม่เปิดอยู่ — ระบบเก่าหลบให้ (กันโพสซ้ำ)');
+
+                return self::SUCCESS;
+            }
+        } catch (\Throwable $e) {
+            // ตารางแคมเปญยังไม่มี (ยังไม่ migrate) → ระบบเก่าทำงานตามปกติ
+        }
+
         $date = $this->option('date')
             ? Carbon::parse($this->option('date'), 'Asia/Bangkok')
             : now('Asia/Bangkok');
