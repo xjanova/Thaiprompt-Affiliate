@@ -26,6 +26,18 @@ if (! function_exists('render_seo_meta')) {
     }
 }
 
+if (! function_exists('render_global_structured_data')) {
+    /**
+     * เรนเดอร์ structured data ระดับเว็บ (Organization + WebSite) เป็น JSON-LD
+     *
+     * ใช้ใน <head> ของ layout สาธารณะทุกตัว
+     */
+    function render_global_structured_data(): string
+    {
+        return app(SeoService::class)->renderGlobalStructuredData();
+    }
+}
+
 if (! function_exists('structured_data')) {
     /**
      * Generate structured data JSON-LD
@@ -34,7 +46,8 @@ if (! function_exists('structured_data')) {
     {
         return sprintf(
             '<script type="application/ld+json">%s</script>',
-            json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+            // JSON_HEX_TAG|JSON_HEX_AMP กัน XSS: ไม่ให้ค่าที่มี </script> หลุดออกจาก script tag
+            json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_HEX_AMP)
         );
     }
 }

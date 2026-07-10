@@ -177,6 +177,21 @@
                         </div>
                     </div>
 
+                    <!-- Structured Data (Schema.org JSON-LD) -->
+                    <div class="border-t pt-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Structured Data (Schema.org JSON-LD)</h3>
+                        <p class="text-sm text-gray-500 mb-3">
+                            ข้อมูลโครงสร้างเฉพาะหน้านี้ในรูปแบบ JSON (เช่น FAQPage, Article, Product, Service)
+                            — ช่วยให้ Google AI / Gemini เข้าใจเนื้อหา และมีโอกาสขึ้น Rich Results / AI Overviews (เว้นว่างได้)
+                        </p>
+                        <textarea name="structured_data" rows="8"
+                            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
+                            placeholder='{&#10;  "@context": "https://schema.org",&#10;  "@type": "FAQPage",&#10;  "mainEntity": []&#10;}'>{{ old('structured_data', $seo->structured_data ? json_encode($seo->structured_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '') }}</textarea>
+                        @error('structured_data')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }} (ต้องเป็น JSON ที่ถูกต้อง)</p>
+                        @enderror
+                    </div>
+
                     <div class="flex items-center justify-end space-x-4 pt-6 border-t">
                         <a href="{{ route('admin.seo.index') }}" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
                             ยกเลิก

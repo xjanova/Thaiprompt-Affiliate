@@ -12,6 +12,9 @@
 
     {!! render_seo_meta($pageType, $seoData) !!}
 
+    {{-- Structured Data (Schema.org JSON-LD) — สัญญาณสำคัญสำหรับ Google AI Overviews / Gemini --}}
+    {!! render_global_structured_data() !!}
+
     @php
         $favicon = \App\Models\Setting::get('favicon');
     @endphp

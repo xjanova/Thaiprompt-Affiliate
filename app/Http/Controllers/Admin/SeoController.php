@@ -19,6 +19,26 @@ class SeoController extends Controller
     }
 
     /**
+     * แสดงหน้าตั้งค่า SEO ทั่วเว็บไซต์
+     *
+     * @return \Illuminate\View\View
+     */
+    public function settings()
+    {
+        return view('admin.seo.settings');
+    }
+
+    /**
+     * แสดงหน้าวิเคราะห์ประสิทธิภาพ SEO
+     *
+     * @return \Illuminate\View\View
+     */
+    public function analysis()
+    {
+        return view('admin.seo.analysis');
+    }
+
+    /**
      * Show the form for creating new SEO meta.
      */
     public function create()
@@ -49,12 +69,18 @@ class SeoController extends Controller
             'twitter_description' => 'nullable|string',
             'twitter_image' => 'nullable|string',
             'canonical_url' => 'nullable|string',
+            'structured_data' => 'nullable|json',
             'index' => 'boolean',
             'follow' => 'boolean',
         ]);
 
         $validated['index'] = $request->boolean('index', true);
         $validated['follow'] = $request->boolean('follow', true);
+
+        // structured_data ถูก cast เป็น array ใน model — decode JSON string เป็น array ก่อนบันทึก
+        $validated['structured_data'] = $request->filled('structured_data')
+            ? json_decode($request->input('structured_data'), true)
+            : null;
 
         SeoMeta::create($validated);
 
@@ -92,12 +118,18 @@ class SeoController extends Controller
             'twitter_description' => 'nullable|string',
             'twitter_image' => 'nullable|string',
             'canonical_url' => 'nullable|string',
+            'structured_data' => 'nullable|json',
             'index' => 'boolean',
             'follow' => 'boolean',
         ]);
 
         $validated['index'] = $request->boolean('index');
         $validated['follow'] = $request->boolean('follow');
+
+        // structured_data ถูก cast เป็น array ใน model — decode JSON string เป็น array ก่อนบันทึก
+        $validated['structured_data'] = $request->filled('structured_data')
+            ? json_decode($request->input('structured_data'), true)
+            : null;
 
         $seo->update($validated);
 

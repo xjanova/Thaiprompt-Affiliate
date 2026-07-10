@@ -127,6 +127,95 @@ class SeoService
     }
 
     /**
+     * สร้าง structured data ประเภท WebSite (Schema.org)
+     *
+     * ช่วยให้ Google/AI เข้าใจว่าเว็บคืออะไร ชื่ออะไร ภาษาอะไร
+     * เป็นสัญญาณสำคัญสำหรับ Google AI Overviews / AI Mode / Gemini grounding
+     *
+     * @return array
+     */
+    public function generateWebsiteStructuredData(): array
+    {
+        $siteName = Setting::get('site_name', config('app.name'));
+        $siteUrl = config('app.url');
+
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => $siteName,
+            'url' => $siteUrl,
+            'inLanguage' => app()->getLocale(),
+            'description' => Setting::get('site_description', 'ระบบ Affiliate Marketing MLM อันดับ 1 ของไทย'),
+        ];
+    }
+
+    /**
+     * เรนเดอร์ structured data ระดับเว็บ (Organization + WebSite) เป็น JSON-LD
+     *
+     * ใส่ทุกหน้าสาธารณะผ่าน layout — เป็น JSON-LD ที่ Google AI ใช้ "เข้าใจ" เว็บ
+     * รวมเป็น @graph ก้อนเดียวเพื่อความสะอาดและลด <script> ซ้ำซ้อน
+     *
+     * @return string HTML ของ <script type="application/ld+json">
+     */
+    public function renderGlobalStructuredData(): string
+    {
+        $nodes = [
+            $this->generateOrganizationStructuredData(),
+            $this->generateWebsiteStructuredData(),
+        ];
+
+        // ตัด @context ออกจากแต่ละ node (ย้ายไปไว้ที่ระดับบนสุด) + ตัดค่า null ทิ้ง
+        $graph = array_map(function (array $node) {
+            unset($node['@context']);
+
+            return $this->stripNulls($node);
+        }, $nodes);
+
+        $data = [
+            '@context' => 'https://schema.org',
+            '@graph' => $graph,
+        ];
+
+        return sprintf(
+            '<script type="application/ld+json">%s</script>',
+            // JSON_HEX_TAG|JSON_HEX_AMP กัน XSS: escape < > & เป็น < ฯลฯ ไม่ให้หลุด </script>
+            json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP)
+        );
+    }
+
+    /**
+     * ตัดค่า null (และ array ว่าง) ออกจาก structured data แบบ recursive
+     *
+     * ป้องกันไม่ให้ JSON-LD มี field ที่เป็น null เช่น logo/email ที่ยังไม่ตั้งค่า
+     * ซึ่งอาจทำให้ Rich Results Test เตือนได้
+     *
+     * @param array $data
+     * @return array
+     */
+    private function stripNulls(array $data): array
+    {
+        $clean = [];
+
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $value = $this->stripNulls($value);
+
+                if (empty($value)) {
+                    continue;
+                }
+            }
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $clean[$key] = $value;
+        }
+
+        return $clean;
+    }
+
+    /**
      * Get full URL for image
      */
     private function getFullUrl(?string $path): ?string
@@ -186,7 +275,8 @@ class SeoService
         if (! empty($meta['structured_data'])) {
             $html[] = sprintf(
                 '<script type="application/ld+json">%s</script>',
-                json_encode($meta['structured_data'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+                // JSON_HEX_TAG|JSON_HEX_AMP กัน XSS จากค่า structured_data ที่แอดมินกรอก (อาจมี </script>)
+                json_encode($meta['structured_data'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP)
             );
         }
 

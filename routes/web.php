@@ -257,6 +257,10 @@ Route::get('/demo/tetris', function () {
 // ⚠️ SEO Critical: Search engines ใช้ HEAD request ตรวจสอบ sitemap
 Route::match(['GET', 'HEAD'], '/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
+// robots.txt (dynamic) — ต้องลบไฟล์ public/robots.txt ออกแล้ว route นี้ถึงจะทำงาน
+// (web server เสิร์ฟไฟล์ static ก่อน routing ตาม .htaccess REQUEST_FILENAME !-f)
+Route::match(['GET', 'HEAD'], '/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+
 // Language Switching
 Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('lang.switch');
 

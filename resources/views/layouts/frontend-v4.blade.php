@@ -150,6 +150,9 @@
     </script>
 
     @stack('styles')
+
+    {{-- Structured Data (Schema.org JSON-LD) — Organization + WebSite สำหรับ Google AI Overviews / Gemini --}}
+    {!! render_global_structured_data() !!}
 </head>
 <body class="tp-root">
 

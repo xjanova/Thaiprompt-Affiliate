@@ -492,7 +492,11 @@ Route::prefix('classic-x-settings')->name('classic-x-settings.')->group(function
 });
 
 // SEO Management
-Route::resource('seo', SeoController::class);
+// ⚠️ ต้องประกาศ route ย่อยก่อน resource มิฉะนั้น /seo/settings และ /seo/analysis
+// จะถูก match กับ /seo/{seo} (show) แล้ว model-bind คำว่า "settings" เป็น SeoMeta -> 404
+Route::get('seo/settings', [SeoController::class, 'settings'])->name('seo.settings');
+Route::get('seo/analysis', [SeoController::class, 'analysis'])->name('seo.analysis');
+Route::resource('seo', SeoController::class)->except(['show']); // ไม่มี show() ใน controller
 
 // Wallet Management
 Route::prefix('wallet')->name('wallet.')->group(function () {
