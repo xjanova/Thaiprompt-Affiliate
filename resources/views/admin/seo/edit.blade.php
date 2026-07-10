@@ -1,208 +1,198 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'แก้ไข SEO Meta')
 
 @section('content')
-<div class="py-12">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="p-6">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">แก้ไข SEO Meta Tags</h2>
-                    <p class="text-sm text-gray-600 mt-2">หน้า: <span class="font-semibold">{{ $seo->page_type }}</span> | ภาษา: <span class="font-semibold">{{ $seo->language }}</span></p>
-                </div>
+{{-- ════════════════════════════════════════════════════════════
+     หน้า: แก้ไข SEO Meta (ธีม V4 "นวลทองคำ")
+     ── page_type/language แก้ไม่ได้ (แสดงเป็นข้อมูล) — แก้ได้เฉพาะเนื้อหา meta
+     ════════════════════════════════════════════════════════════ --}}
+<div x-data="seoForm({ title: @js(old('meta_title', $seo->meta_title)), desc: @js(old('meta_description', $seo->meta_description)) })"
+     style="max-width:820px; margin:0 auto; display:flex; flex-direction:column; gap:18px;">
 
-                <form action="{{ route('admin.seo.update', $seo) }}" method="POST" class="space-y-6">
-                    @csrf
-                    @method('PUT')
-
-                    <!-- Basic Meta Tags -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Meta Tags พื้นฐาน</h3>
-
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
-                                <input type="text" name="meta_title" value="{{ old('meta_title', $seo->meta_title) }}"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                    placeholder="หัวข้อหน้า (แนะนำ 50-60 ตัวอักษร)">
-                                @error('meta_title')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
-                                <textarea name="meta_description" rows="3"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                    placeholder="คำอธิบายหน้า (แนะนำ 150-160 ตัวอักษร)">{{ old('meta_description', $seo->meta_description) }}</textarea>
-                                @error('meta_description')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Meta Keywords</label>
-                                <input type="text" name="meta_keywords" value="{{ old('meta_keywords', $seo->meta_keywords) }}"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                    placeholder="คำสำคัญ (คั่นด้วยจุลภาค)">
-                                @error('meta_keywords')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Canonical URL</label>
-                                <input type="url" name="canonical_url" value="{{ old('canonical_url', $seo->canonical_url) }}"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                    placeholder="https://example.com/page">
-                                @error('canonical_url')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Open Graph Tags -->
-                    <div class="border-t pt-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Open Graph Tags (Facebook)</h3>
-
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">OG Title</label>
-                                <input type="text" name="og_title" value="{{ old('og_title', $seo->og_title) }}"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                                @error('og_title')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">OG Description</label>
-                                <textarea name="og_description" rows="3"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">{{ old('og_description', $seo->og_description) }}</textarea>
-                                @error('og_description')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">OG Image URL</label>
-                                <input type="url" name="og_image" value="{{ old('og_image', $seo->og_image) }}"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                    placeholder="https://example.com/image.jpg">
-                                @error('og_image')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">OG Type</label>
-                                <input type="text" name="og_type" value="{{ old('og_type', $seo->og_type) }}"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                                @error('og_type')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Twitter Card Tags -->
-                    <div class="border-t pt-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Twitter Card Tags</h3>
-
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Twitter Card Type</label>
-                                <select name="twitter_card" class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                                    <option value="summary_large_image" {{ old('twitter_card', $seo->twitter_card) == 'summary_large_image' ? 'selected' : '' }}>Summary Large Image</option>
-                                    <option value="summary" {{ old('twitter_card', $seo->twitter_card) == 'summary' ? 'selected' : '' }}>Summary</option>
-                                </select>
-                                @error('twitter_card')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Twitter Title</label>
-                                <input type="text" name="twitter_title" value="{{ old('twitter_title', $seo->twitter_title) }}"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                                @error('twitter_title')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Twitter Description</label>
-                                <textarea name="twitter_description" rows="3"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">{{ old('twitter_description', $seo->twitter_description) }}</textarea>
-                                @error('twitter_description')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Twitter Image URL</label>
-                                <input type="url" name="twitter_image" value="{{ old('twitter_image', $seo->twitter_image) }}"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                                @error('twitter_image')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Robots Settings -->
-                    <div class="border-t pt-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">การตั้งค่า Robots</h3>
-
-                        <div class="space-y-4">
-                            <div class="flex items-center">
-                                <input type="checkbox" id="index" name="index" value="1"
-                                    {{ old('index', $seo->index) ? 'checked' : '' }}
-                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                <label for="index" class="ml-2 text-sm text-gray-700">
-                                    Index - อนุญาตให้ Search Engine จัดทำดัชนี
-                                </label>
-                            </div>
-
-                            <div class="flex items-center">
-                                <input type="checkbox" id="follow" name="follow" value="1"
-                                    {{ old('follow', $seo->follow) ? 'checked' : '' }}
-                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                <label for="follow" class="ml-2 text-sm text-gray-700">
-                                    Follow - อนุญาตให้ Search Engine ติดตามลิงก์
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Structured Data (Schema.org JSON-LD) -->
-                    <div class="border-t pt-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Structured Data (Schema.org JSON-LD)</h3>
-                        <p class="text-sm text-gray-500 mb-3">
-                            ข้อมูลโครงสร้างเฉพาะหน้านี้ในรูปแบบ JSON (เช่น FAQPage, Article, Product, Service)
-                            — ช่วยให้ Google AI / Gemini เข้าใจเนื้อหา และมีโอกาสขึ้น Rich Results / AI Overviews (เว้นว่างได้)
-                        </p>
-                        <textarea name="structured_data" rows="8"
-                            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
-                            placeholder='{&#10;  "@context": "https://schema.org",&#10;  "@type": "FAQPage",&#10;  "mainEntity": []&#10;}'>{{ old('structured_data', $seo->structured_data ? json_encode($seo->structured_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '') }}</textarea>
-                        @error('structured_data')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }} (ต้องเป็น JSON ที่ถูกต้อง)</p>
-                        @enderror
-                    </div>
-
-                    <div class="flex items-center justify-end space-x-4 pt-6 border-t">
-                        <a href="{{ route('admin.seo.index') }}" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
-                            ยกเลิก
-                        </a>
-                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                            <i class="fas fa-save mr-2"></i>บันทึก
-                        </button>
-                    </div>
-                </form>
+    {{-- ── Header ── --}}
+    <div style="display:flex; align-items:center; gap:14px;">
+        <a href="{{ route('admin.seo.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+        <div style="flex:1; min-width:0;">
+            <div class="tp-muted" style="font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px;">
+                หลังบ้าน · SEO · แก้ไข
             </div>
+            <h1 class="tp-num" style="font-size:1.6rem; font-weight:800; color:var(--ink); margin:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                {{ $seo->page_type }}
+                <span class="tp-pill tp-pill-soft" style="font-size:12px; padding:2px 10px; text-transform:uppercase;">{{ $seo->language }}</span>
+            </h1>
         </div>
     </div>
+
+    @if($errors->any())
+        <div class="tp-card" style="border-left:3px solid #d9534f;">
+            <div style="font-weight:700; color:#d9534f; font-size:13px; margin-bottom:6px;"><i class="fas fa-triangle-exclamation"></i> ตรวจสอบข้อมูลอีกครั้ง</div>
+            <ul class="tp-muted" style="font-size:12.5px; margin:0; padding-left:18px; line-height:1.7;">
+                @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="{{ route('admin.seo.update', $seo) }}" method="POST" style="display:flex; flex-direction:column; gap:18px;">
+        @csrf
+        @method('PUT')
+
+        {{-- ═══ Meta Tags พื้นฐาน ═══ --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700; margin-bottom:16px;">
+                <i class="fas fa-tag" style="color:var(--accent1);"></i> Meta Tags พื้นฐาน
+            </div>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <div>
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <label class="tp-muted" style="font-weight:700; font-size:.82rem; color:var(--ink);">Meta Title</label>
+                        <span class="tp-muted" style="font-size:11px;" :style="titleColor"><span x-text="title.length"></span>/60</span>
+                    </div>
+                    <input type="text" name="meta_title" x-model="title" value="{{ old('meta_title', $seo->meta_title) }}"
+                           placeholder="หัวข้อหน้า (แนะนำ 50-60 ตัวอักษร)" class="tp-input" style="width:100%; margin-top:6px;">
+                </div>
+                <div>
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <label class="tp-muted" style="font-weight:700; font-size:.82rem; color:var(--ink);">Meta Description</label>
+                        <span class="tp-muted" style="font-size:11px;" :style="descColor"><span x-text="desc.length"></span>/160</span>
+                    </div>
+                    <textarea name="meta_description" x-model="desc" rows="3"
+                              placeholder="คำอธิบายหน้า (แนะนำ 150-160 ตัวอักษร)" class="tp-input" style="width:100%; margin-top:6px; resize:vertical;">{{ old('meta_description', $seo->meta_description) }}</textarea>
+                </div>
+                <div>
+                    <label class="tp-muted" style="display:block; font-weight:700; font-size:.82rem; margin-bottom:6px; color:var(--ink);">Meta Keywords</label>
+                    <input type="text" name="meta_keywords" value="{{ old('meta_keywords', $seo->meta_keywords) }}"
+                           placeholder="คำสำคัญ คั่นด้วยจุลภาค" class="tp-input" style="width:100%;">
+                </div>
+                <div>
+                    <label class="tp-muted" style="display:block; font-weight:700; font-size:.82rem; margin-bottom:6px; color:var(--ink);">Canonical URL</label>
+                    <input type="url" name="canonical_url" value="{{ old('canonical_url', $seo->canonical_url) }}"
+                           placeholder="https://main.thaiprompt.online/..." class="tp-input" style="width:100%; font-family:monospace; font-size:.82rem;">
+                </div>
+            </div>
+        </div>
+
+        {{-- ═══ Open Graph ═══ --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700; margin-bottom:16px;">
+                <i class="fab fa-facebook" style="color:var(--accent1);"></i> Open Graph (Facebook / LINE)
+            </div>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <div>
+                    <label class="tp-muted" style="display:block; font-weight:700; font-size:.82rem; margin-bottom:6px; color:var(--ink);">OG Title</label>
+                    <input type="text" name="og_title" value="{{ old('og_title', $seo->og_title) }}" class="tp-input" style="width:100%;">
+                </div>
+                <div>
+                    <label class="tp-muted" style="display:block; font-weight:700; font-size:.82rem; margin-bottom:6px; color:var(--ink);">OG Description</label>
+                    <textarea name="og_description" rows="2" class="tp-input" style="width:100%; resize:vertical;">{{ old('og_description', $seo->og_description) }}</textarea>
+                </div>
+                <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px;">
+                    <div>
+                        <label class="tp-muted" style="display:block; font-weight:700; font-size:.82rem; margin-bottom:6px; color:var(--ink);">OG Image URL</label>
+                        <input type="url" name="og_image" value="{{ old('og_image', $seo->og_image) }}" placeholder="https://.../image.jpg" class="tp-input" style="width:100%; font-family:monospace; font-size:.8rem;">
+                    </div>
+                    <div>
+                        <label class="tp-muted" style="display:block; font-weight:700; font-size:.82rem; margin-bottom:6px; color:var(--ink);">OG Type</label>
+                        <input type="text" name="og_type" value="{{ old('og_type', $seo->og_type) }}" class="tp-input" style="width:100%;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ═══ Twitter Card ═══ --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700; margin-bottom:16px;">
+                <i class="fab fa-x-twitter" style="color:var(--accent1);"></i> Twitter Card
+            </div>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <div style="max-width:280px;">
+                    <label class="tp-muted" style="display:block; font-weight:700; font-size:.82rem; margin-bottom:6px; color:var(--ink);">Card Type</label>
+                    <select name="twitter_card" class="tp-input" style="width:100%;">
+                        <option value="summary_large_image" @selected(old('twitter_card', $seo->twitter_card)=='summary_large_image')>Summary Large Image</option>
+                        <option value="summary" @selected(old('twitter_card', $seo->twitter_card)=='summary')>Summary</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="tp-muted" style="display:block; font-weight:700; font-size:.82rem; margin-bottom:6px; color:var(--ink);">Twitter Title</label>
+                    <input type="text" name="twitter_title" value="{{ old('twitter_title', $seo->twitter_title) }}" class="tp-input" style="width:100%;">
+                </div>
+                <div>
+                    <label class="tp-muted" style="display:block; font-weight:700; font-size:.82rem; margin-bottom:6px; color:var(--ink);">Twitter Description</label>
+                    <textarea name="twitter_description" rows="2" class="tp-input" style="width:100%; resize:vertical;">{{ old('twitter_description', $seo->twitter_description) }}</textarea>
+                </div>
+                <div>
+                    <label class="tp-muted" style="display:block; font-weight:700; font-size:.82rem; margin-bottom:6px; color:var(--ink);">Twitter Image URL</label>
+                    <input type="url" name="twitter_image" value="{{ old('twitter_image', $seo->twitter_image) }}" class="tp-input" style="width:100%; font-family:monospace; font-size:.8rem;">
+                </div>
+            </div>
+        </div>
+
+        {{-- ═══ Structured Data ═══ --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700; margin-bottom:6px;">
+                <i class="fas fa-diagram-project" style="color:var(--accent1);"></i> Structured Data (Schema.org JSON-LD)
+            </div>
+            <p class="tp-muted" style="margin:0 0 12px; font-size:12.5px; line-height:1.6;">
+                ข้อมูลโครงสร้างเฉพาะหน้านี้ (JSON) เช่น FAQPage, Article, Product — ช่วยให้ Google AI / Gemini เข้าใจเนื้อหา (เว้นว่างได้)
+            </p>
+            <textarea name="structured_data" rows="8" class="tp-input" spellcheck="false"
+                      style="width:100%; font-family:ui-monospace,monospace; font-size:12.5px; resize:vertical;"
+                      placeholder="วางโค้ด JSON-LD ที่นี่ (เช่น FAQPage, Article, Product) — เว้นว่างได้">{{ old('structured_data', $seo->structured_data ? json_encode($seo->structured_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '') }}</textarea>
+        </div>
+
+        {{-- ═══ Robots ═══ --}}
+        <div class="tp-card">
+            <div class="tp-section-h" style="display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700; margin-bottom:16px;">
+                <i class="fas fa-robot" style="color:var(--accent1);"></i> การตั้งค่า Robots
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px;">
+                <label class="tp-well" style="display:flex; align-items:center; gap:12px; padding:14px; border-radius:14px; cursor:pointer;">
+                    <input type="checkbox" name="index" value="1" @checked(old('index', $seo->index))
+                           style="accent-color:var(--accent1); width:18px; height:18px; flex:0 0 auto;">
+                    <span>
+                        <span style="display:block; font-weight:700; font-size:13px; color:var(--ink);">Index</span>
+                        <span class="tp-muted" style="font-size:11.5px;">อนุญาตให้ search engine จัดทำดัชนี</span>
+                    </span>
+                </label>
+                <label class="tp-well" style="display:flex; align-items:center; gap:12px; padding:14px; border-radius:14px; cursor:pointer;">
+                    <input type="checkbox" name="follow" value="1" @checked(old('follow', $seo->follow))
+                           style="accent-color:var(--accent1); width:18px; height:18px; flex:0 0 auto;">
+                    <span>
+                        <span style="display:block; font-weight:700; font-size:13px; color:var(--ink);">Follow</span>
+                        <span class="tp-muted" style="font-size:11.5px;">อนุญาตให้ติดตามลิงก์ในหน้า</span>
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        {{-- ── ปุ่ม ── --}}
+        <div style="display:flex; align-items:center; gap:12px;">
+            <button type="submit" class="tp-btn tp-btn-primary" style="flex:1; justify-content:center;">
+                <i class="fas fa-floppy-disk"></i> บันทึกการแก้ไข
+            </button>
+            <a href="{{ route('admin.seo.index') }}" class="tp-btn"><i class="fas fa-xmark"></i> ยกเลิก</a>
+        </div>
+    </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function seoForm(initial) {
+        return {
+            title: initial.title || '',
+            desc: initial.desc || '',
+            get titleColor() {
+                const n = this.title.length;
+                if (n === 0) return 'color:var(--ink2);';
+                return (n >= 50 && n <= 60) ? 'color:#5aa07e;font-weight:700;' : (n > 60 ? 'color:#d9534f;font-weight:700;' : 'color:#c98a3c;');
+            },
+            get descColor() {
+                const n = this.desc.length;
+                if (n === 0) return 'color:var(--ink2);';
+                return (n >= 150 && n <= 160) ? 'color:#5aa07e;font-weight:700;' : (n > 160 ? 'color:#d9534f;font-weight:700;' : 'color:#c98a3c;');
+            },
+        };
+    }
+</script>
+@endpush

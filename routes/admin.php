@@ -495,6 +495,7 @@ Route::prefix('classic-x-settings')->name('classic-x-settings.')->group(function
 // ⚠️ ต้องประกาศ route ย่อยก่อน resource มิฉะนั้น /seo/settings และ /seo/analysis
 // จะถูก match กับ /seo/{seo} (show) แล้ว model-bind คำว่า "settings" เป็น SeoMeta -> 404
 Route::get('seo/settings', [SeoController::class, 'settings'])->name('seo.settings');
+Route::put('seo/settings', [SeoController::class, 'updateSettings'])->name('seo.settings.update');
 Route::get('seo/analysis', [SeoController::class, 'analysis'])->name('seo.analysis');
 Route::resource('seo', SeoController::class)->except(['show']); // ไม่มี show() ใน controller
 
