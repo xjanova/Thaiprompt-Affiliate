@@ -2553,6 +2553,25 @@ class FortuneReading extends Model
                 ['reading_id' => $this->id, 'error' => $e->getMessage()]
             );
         }
+
+        // 🔊 (2026-07-11) ลูกค้าจ่ายเงินแล้ว → ล้างธง "ปิดปาก" (silence) ถ้ามีค้าง
+        //   กันเคส FTU-260711-T4317: จ่าย 39฿ แล้วโดน chat_silenced_until ค้าง → พอ Deep session
+        //   7 นาทีหมด paid-bypass เลิกทำงาน → บอทเงียบใส่คนจ่ายเงินแล้ว. ครอบทุก path จ่าย
+        //   (SMS match / admin force / slip) เพราะรวมศูนย์ที่ confirmPayment. Non-blocking.
+        try {
+            $silenceUid = $this->platform_user_id ?: $this->facebook_user_id;
+            $silencePlatform = $this->platform
+                ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $silenceUid) ? 'line' : 'facebook');
+            if (! empty($silenceUid)) {
+                app(\App\Services\Fortune\CustomerPersonaService::class)
+                    ->clearSilenceOnPaid($silencePlatform, (string) $silenceUid);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning(
+                'FortuneReading: clear silence on paid failed (non-blocking)',
+                ['reading_id' => $this->id, 'error' => $e->getMessage()]
+            );
+        }
     }
 
     /**

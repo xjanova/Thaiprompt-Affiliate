@@ -255,6 +255,52 @@ class CustomerPersonaService
     }
 
     /**
+     * 🔊 (2026-07-11) ลูกค้าจ่ายเงินแล้ว → ล้างธง "ปิดปาก" (rambler/time-waster silence) ทิ้ง + invalidate cache
+     *
+     * เคส FTU-260711-T4317 (reading 9003): ลูกค้าจ่าย Deep 39฿ แต่โดน chat_silenced_until ค้าง
+     *   (ถูกตั้ง ~ตอนจ่าย จากพิมพ์รัวก่อนหน้า → เงียบ 10 ชม.) → ช่วง pro session (Deep 7 นาที)
+     *   ยัง bypass ได้ แต่พอ session หมด paid-bypass เลิกทำงาน → บอทเงียบใส่คนที่จ่ายเงินแล้ว
+     *   (24 ข้อความโดน silent_skip). คนจ่ายเงิน = เจตนาจริง ไม่ควรมีธงเงียบ/time-waster ค้าง
+     *   → reset counter ที่จะทำให้โดน re-silence ทันทีด้วย (คง silence_count เป็นประวัติ lifetime)
+     *
+     * @return bool true = เคยมีธงเงียบและล้างแล้ว
+     */
+    public function clearSilenceOnPaid(string $platform, string $userId): bool
+    {
+        try {
+            $persona = FortuneCustomerPersona::findByPlatformUser($platform, $userId);
+            if (! $persona || $persona->chat_silenced_until === null) {
+                return false; // ไม่มีธงเงียบ → ไม่ต้องทำอะไร
+            }
+
+            $persona->update([
+                'chat_silenced_until' => null,
+                'last_silence_reason' => 'cleared_on_payment',
+                // reset ตัวนับที่จะ re-silence ทันที (จ่ายแล้ว = พิสูจน์เจตนา ; silence_count คงไว้เป็นประวัติ)
+                'sales_pitch_failed_count' => 0,
+                'time_waster_score' => 0,
+            ]);
+
+            $this->invalidateCache($platform, $userId);
+
+            Log::info('CustomerPersonaService: ล้างธงเงียบหลังลูกค้าจ่ายเงิน (paid = ไม่ปิดปาก)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('CustomerPersonaService: clearSilenceOnPaid ล้มเหลว (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * 👤 (2026-05-25 Patch F) Eager Persona extraction หลังลูกค้าจ่ายเงิน
      *
      * เคสจริง R3741 (2026-05-25): ลูกค้าทัก 10:11 → จ่าย 10:24 = 13 นาที
