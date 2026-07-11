@@ -826,7 +826,9 @@ class FortuneChannelManager
                         } catch (\Throwable $e) {
                             \Illuminate\Support\Facades\Log::debug('🔊 ConsentCode: ส่งเสียงรวม FB ไม่สำเร็จ', ['error' => $e->getMessage()]);
                         }
-                    } else {
+                    } elseif (empty($result['suppress_consent_voice'])) {
+                        // 📋 (2026-07-11) โหมดแบบสอบถามยืนยันเจตนา ตั้งธง suppress_consent_voice
+                        //   → ไม่แนบเสียงกติกา static (การถาม 5 ข้อคือการยินยอมอยู่แล้ว + ส่งหลายข้อ = เสียงซ้ำ)
                         $this->attachSystemVoiceFb($fbService, $userId, 'consent_rules', $extra);
                     }
 

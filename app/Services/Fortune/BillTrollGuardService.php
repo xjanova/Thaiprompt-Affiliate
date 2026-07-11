@@ -187,11 +187,6 @@ class BillTrollGuardService
             return;
         }
 
-        // ต้องเคยเห็นคำเตือนบนบิลใบนี้ก่อน — กันแบนย้อนหลังคนที่ไม่เคยถูกเตือน
-        if (! (bool) $reading->getConversationState('troll_warning_shown')) {
-            return;
-        }
-
         $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id);
         if ($userId === '') {
             return;
@@ -199,6 +194,21 @@ class BillTrollGuardService
 
         $platform = $reading->platform
             ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+
+        // 📋 (2026-07-11) เส้นทาง "แบบสอบถามยืนยันเจตนา" — ลูกค้ายอมรับกติกา 5 ข้อ
+        //   (รวมข้อ "ถ้าไม่จ่าย = งดใช้งานเพจ N วัน") แล้วบิลนี้ยังไม่ถูกชำระ
+        //   → แบน "ชั่วคราวตามที่ตกลง" (default 7 วัน, auto หมดอายุ) แทนแบนถาวร
+        //   ไม่ต้องรอ strike ครบ 3 / ไม่ต้องมี troll_warning_shown (เขายอมรับ contract ชัดเจนแล้ว)
+        if ((bool) $reading->getConversationState('quiz_gate_accepted')) {
+            $this->banForQuizUnpaid($reading, $userId, $platform);
+
+            return;
+        }
+
+        // ต้องเคยเห็นคำเตือนบนบิลใบนี้ก่อน — กันแบนย้อนหลังคนที่ไม่เคยถูกเตือน
+        if (! (bool) $reading->getConversationState('troll_warning_shown')) {
+            return;
+        }
 
         // บิลใบนี้ถูก mark COMPLETED แล้วก่อนเรียก → strikeCount รวมใบนี้ด้วย
         $strikes = $this->strikeCount($userId);
@@ -283,5 +293,101 @@ class BillTrollGuardService
             'strikes' => $strikes,
             'fb_page_blocked' => $platform === 'facebook',
         ]);
+    }
+
+    /**
+     * 📋 (2026-07-11) แบน "ชั่วคราว N วัน" หลังลูกค้ายอมรับแบบสอบถาม 5 ข้อแล้วยังไม่ชำระ
+     *
+     * ต่างจากเส้นทางถาวร: ลูกค้ายอมรับ contract "ไม่จ่าย = งดใช้งานเพจ N วัน" ชัดเจนก่อนสร้างบิล
+     *   → แบนชั่วคราวตามที่ตกลง (bot-level, auto หมดอายุเอง) แทนแบนถาวร + FB page-block
+     *   → ไม่ FB page-block เพราะ block ไม่มีอายุ = ไม่ตรงกับ "N วัน" (แบน bot-level หมดอายุเองพอ)
+     */
+    protected function banForQuizUnpaid(FortuneReading $reading, string $userId, string $platform): void
+    {
+        $days = $this->quizBanDays($reading);
+
+        // 🛟 Safety: ลูกค้าจริงที่เคยจ่ายใน 30 วัน → ไม่ auto-ban (log แจ้งแอดมิน)
+        $recentlyPaid = FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->where('is_paid', true)
+            ->where('created_at', '>=', now()->subDays(self::PAID_CUSTOMER_GRACE_DAYS))
+            ->exists();
+
+        if ($recentlyPaid) {
+            Log::warning('📋 ConsentQuiz: เข้าเกณฑ์แบน (quiz) แต่เป็นลูกค้าเคยจ่ายใน 30 วัน → ข้าม (แอดมินรีวิว)', [
+                'reading_id' => $reading->id,
+                'user_id' => $userId,
+                'platform' => $platform,
+                'ban_days' => $days,
+            ]);
+
+            return;
+        }
+
+        $banService = app(FortuneBanService::class);
+        if ($banService->isBanned($platform, $userId)) {
+            return; // แบนอยู่แล้ว — ไม่ทำซ้ำ
+        }
+
+        // 1) แจ้งครั้งสุดท้าย (best-effort ก่อนแบน)
+        try {
+            $platformService = app(\App\Services\FortuneChannelManager::class)->getPlatform($platform);
+            if ($platformService) {
+                $platformService->sendMessage($userId,
+                    "🚫 *ระบบงดให้บริการชั่วคราว {$days} วัน*\n"
+                    ."═══════════════════════\n"
+                    ."เจ้าชะตาได้ยืนยันกติกาก่อนสร้างบิลไว้ว่า หากไม่ชำระจะถูกงดใช้งานเพจ {$days} วัน\n"
+                    ."เมื่อบิลนี้ไม่ถูกชำระตามเวลาที่กำหนด ระบบจึงงดให้บริการตามที่ตกลงไว้ค่ะ\n"
+                    ."═══════════════════════\n"
+                    .'ครบกำหนดแล้วกลับมาดูดวงได้ตามปกติ — หากเป็นความเข้าใจผิด ติดต่อแอดมินเพจค่ะ 🙏'
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('📋 ConsentQuiz: ส่งข้อความแจ้งแบนล้มเหลว (best-effort)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // 2) Bot-level ban ชั่วคราว N วัน (auto หมดอายุ — FortuneBanService รับหน่วยเป็น "นาที")
+        $banService->ban(
+            $platform,
+            $userId,
+            $days * 24 * 60,
+            'consent_quiz: ยอมรับกติกา 5 ข้อแล้วไม่ชำระ (แบน '.$days.' วัน)',
+            null,
+            $reading->facebook_user_name
+        );
+
+        Log::warning('📋 ConsentQuiz: แบนชั่วคราว '.$days.' วัน — ยอมรับกติกาแล้วไม่ชำระ', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'user_id' => $userId,
+            'platform' => $platform,
+            'display_name' => $reading->facebook_user_name,
+            'ban_days' => $days,
+        ]);
+    }
+
+    /**
+     * 📋 (2026-07-11) จำนวนวันแบน — อ่านจากธงบนบิล (ค่าที่ลูกค้ายอมรับตอนสร้าง) ก่อน
+     *   ไม่งั้น fallback setting ปัจจุบัน (default 7). กันเคสเจ้าของแก้ setting หลังลูกค้ายอมรับไปแล้ว
+     */
+    protected function quizBanDays(?FortuneReading $reading = null): int
+    {
+        $fromReading = $reading ? (int) ($reading->getConversationState('quiz_gate_ban_days') ?? 0) : 0;
+        if ($fromReading > 0) {
+            return $fromReading;
+        }
+
+        try {
+            $days = (int) (FortuneTellingSetting::getSettings()->consent_quiz_ban_days ?? 7);
+
+            return $days > 0 ? $days : 7;
+        } catch (\Throwable $e) {
+            return 7;
+        }
     }
 }

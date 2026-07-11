@@ -55,6 +55,9 @@ class FortuneFlowNudge extends Command
     /** 🔊 (2026-06-26) Cache key — รหัสยืนยันเสียงกติกา (ต้องตรงกับ FortuneConsentGateTrait::CONSENT_CODE_PREFIX) */
     private const CONSENT_CODE_PREFIX = 'fortune:consent_code:';
 
+    /** 📋 (2026-07-11) Cache key — ขั้นแบบสอบถามยืนยันเจตนา (ต้องตรงกับ FortuneConsentGateTrait::CONSENT_QUIZ_STEP_PREFIX) */
+    private const CONSENT_QUIZ_STEP_PREFIX = 'fortune:consent_quiz_step:';
+
     public function handle(): int
     {
         $dry = (bool) $this->option('dry');
@@ -293,6 +296,20 @@ class FortuneFlowNudge extends Command
 
             $message = "🌙 เลือกได้เลยนะคะ คุณ{$name} — แม่หมอจันทรารออยู่ค่ะ ✨\n\n"
                 .'กดปุ่มด้านล่างเพื่อเริ่มดูดวงได้เลย 👇';
+
+            return [$message, $buttons];
+        }
+
+        // 📋 (2026-07-11) โหมดแบบสอบถามยืนยันเจตนา — มีแบบสอบถามค้าง → กระตุ้นให้ "ตอบ ใช่/ไม่ใช่"
+        //   ไม่ใช่ "กดพร้อมบูชาครู" (กันคำสั่งขัดกันตอนลูกค้ากำลังตอบคำถามยืนยันเจตนา)
+        if ((bool) ($settings->enable_consent_quiz ?? false)
+            && Cache::get(self::CONSENT_QUIZ_STEP_PREFIX.$userId) !== null) {
+            $message = "🙏 รบกวนตอบคำถามยืนยันเจตนาให้ครบก่อนนะคะ — พิมพ์ \"ใช่\" หรือ \"ไม่ใช่\" ในแต่ละข้อค่ะ\n\n"
+                .'ถ้าไม่สะดวกแล้ว พิมพ์ "ยกเลิก" ได้เลยนะคะ';
+            $buttons = [
+                ['content_type' => 'text', 'title' => '✅ ใช่', 'text' => 'ใช่', 'payload' => 'ใช่'],
+                ['content_type' => 'text', 'title' => '🙏 ยกเลิก', 'text' => 'ยกเลิก', 'payload' => 'ยกเลิก'],
+            ];
 
             return [$message, $buttons];
         }

@@ -171,6 +171,43 @@
                     </div>
                 </div>
             </label>
+
+            {{-- 📋 (2026-07-11) แบบสอบถามยืนยันเจตนา 5 ข้อ ก่อนสร้างบิล (เฉพาะคนสร้างบิลแล้วไม่จ่าย "หลอด") --}}
+            <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:16px; border-radius:14px; cursor:pointer; margin-top:12px; border-left:4px solid #c0392b;">
+                <input type="hidden" name="enable_consent_quiz" value="0">
+                <input type="checkbox" name="enable_consent_quiz" value="1"
+                       {{ ($settings->enable_consent_quiz ?? false) ? 'checked' : '' }}
+                       style="width:18px; height:18px; margin-top:2px; accent-color:#c0392b; cursor:pointer;">
+                <div style="flex:1;">
+                    <div style="font-weight:700; color:var(--ink); font-size:14.5px;">📋 แบบสอบถามยืนยันเจตนา 5 ข้อ ก่อนสร้างบิล (กันคน "สร้างบิลไม่จ่าย")</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">
+                        เปิด — คนที่เข้าเกณฑ์ "บิลค้างไม่จ่าย" จะต้องตอบ <b>ใช่/ไม่ใช่ 5 ข้อ</b> เชิงจิตวิทยา (ตั้งใจดูดวงจริง / เข้าใจว่าต้องจ่าย /
+                        <b>ยอมรับว่าถ้าไม่จ่าย = งดใช้งานเพจ N วัน</b>) จึงจะออกบิล. ตอบ "ไม่ใช่" = ปิดเงียบ ไม่สร้างบิล ไม่แบน.
+                        ยอมรับครบแล้วยังไม่จ่าย → แบนอัตโนมัติ N วัน (หมดอายุเอง). ปิด — ไม่ถาม (กล่องกติกาปกติ)
+                    </div>
+                    <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:12px; color:var(--ink2); font-weight:600;">บังคับเฉพาะคนที่มีบิลค้างไม่จ่าย ≥</span>
+                        <input type="number" name="consent_quiz_min_unpaid_bills" min="0" max="99" step="1"
+                               value="{{ (int) ($settings->consent_quiz_min_unpaid_bills ?? 2) }}"
+                               onclick="event.preventDefault();" onmousedown="event.stopPropagation();"
+                               style="width:70px; padding:6px 10px; border-radius:8px; font-size:12.5px; border:1px solid var(--sd); background:var(--bg);">
+                        <span style="font-size:12px; color:var(--ink2); font-weight:600;">บิล</span>
+                        <span style="font-size:11px; color:var(--ink2);">(0 = ทุกคน / เช่น 2 = เฉพาะคนเคยสร้างบิลแล้วไม่จ่าย ≥ 2 บิล)</span>
+                    </div>
+                    <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:12px; color:var(--ink2); font-weight:600;">ยอมรับแล้วไม่จ่าย → แบน</span>
+                        <input type="number" name="consent_quiz_ban_days" min="1" max="365" step="1"
+                               value="{{ (int) ($settings->consent_quiz_ban_days ?? 7) }}"
+                               onclick="event.preventDefault();" onmousedown="event.stopPropagation();"
+                               style="width:70px; padding:6px 10px; border-radius:8px; font-size:12.5px; border:1px solid var(--sd); background:var(--bg);">
+                        <span style="font-size:12px; color:var(--ink2); font-weight:600;">วัน</span>
+                        <span style="font-size:11px; color:var(--ink2);">(เลขนี้จะโชว์ในคำถามข้อ 5 ด้วย — แบนหมดอายุเองอัตโนมัติ)</span>
+                    </div>
+                    <div style="font-size:11px; color:#c0392b; margin-top:8px;">
+                        ⚠️ การแบนอัตโนมัติใช้ระบบเดียวกับ "แบนคนสร้างบิลเล่นๆ" (<code>enable_bill_troll_ban</code>) — ถ้าปิดระบบแบนนั้น คำถามจะยังถามได้แต่จะไม่แบนจริง
+                    </div>
+                </div>
+            </label>
         </div>
 
         {{-- 🎚️ (2026-06-26) สวิตช์พฤติกรรมเชิงรุกของบอท — รวมไว้หน้าเดียว ตั้งค่าง่าย --}}

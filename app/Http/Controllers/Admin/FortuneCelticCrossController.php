@@ -125,6 +125,10 @@ class FortuneCelticCrossController extends Controller
             'enable_consent_audio_code' => 'sometimes|boolean',
             'consent_audio_code_voice_provider' => 'nullable|string|in:minimax,openai_tts,google_tts,gtts',
             'consent_audio_code_min_unpaid_bills' => 'nullable|integer|min:0|max:99',
+            // 📋 (2026-07-11) แบบสอบถามยืนยันเจตนา 5 ข้อ ก่อนสร้างบิล (เฉพาะคนสร้างบิลแล้วไม่จ่าย)
+            'enable_consent_quiz' => 'sometimes|boolean',
+            'consent_quiz_min_unpaid_bills' => 'nullable|integer|min:0|max:99',
+            'consent_quiz_ban_days' => 'nullable|integer|min:1|max:365',
             // ⚡ ข้ามกล่องกติกาทั้งหมด → สร้างบิลทันที
             'consent_gate_bypass' => 'sometimes|boolean',
             // 🎚️ สวิตช์พฤติกรรมเชิงรุก (กระตุ้นการขาย / กระตุ้นจ่ายบิล / ถามก่อนยกเลิก — รวมไว้หน้านี้)
@@ -151,6 +155,10 @@ class FortuneCelticCrossController extends Controller
         $settings->enable_consent_audio_code = $request->boolean('enable_consent_audio_code');
         $settings->consent_audio_code_voice_provider = $validated['consent_audio_code_voice_provider'] ?? 'minimax';
         $settings->consent_audio_code_min_unpaid_bills = (int) ($validated['consent_audio_code_min_unpaid_bills'] ?? 0);
+        // 📋 (2026-07-11) แบบสอบถามยืนยันเจตนา 5 ข้อ — toggle + เกณฑ์บิลค้าง + จำนวนวันแบน
+        $settings->enable_consent_quiz = $request->boolean('enable_consent_quiz');
+        $settings->consent_quiz_min_unpaid_bills = (int) ($validated['consent_quiz_min_unpaid_bills'] ?? 2);
+        $settings->consent_quiz_ban_days = (int) ($validated['consent_quiz_ban_days'] ?? 7);
         // ⚡ ข้ามกล่องกติกาทั้งหมด → สร้างบิลทันที
         $settings->consent_gate_bypass = $request->boolean('consent_gate_bypass');
         // 🎚️ สวิตช์พฤติกรรมเชิงรุก

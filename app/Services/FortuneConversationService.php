@@ -17300,6 +17300,18 @@ PROMPT;
      */
     protected function appendTrollWarningIfNeeded(FortuneReading $reading): string
     {
+        // 📋 (2026-07-11) ลูกค้าเพิ่งผ่าน "แบบสอบถามยืนยันเจตนา 5 ข้อ" (ยอมรับกติกา รวมข้อแบน N วัน)
+        //   → ติดธง quiz_gate_accepted บนบิลใบนี้ (consume marker) เพื่อให้ BillTrollGuard แบน N วัน
+        //   ถ้าบิลนี้ไม่ถูกชำระ. ทำ "เสมอ" ไม่ผูกกับเงื่อนไขคำเตือน (troll warning) ด้านล่าง
+        try {
+            $this->markQuizAcceptedOnBill($reading);
+        } catch (\Throwable $e) {
+            Log::warning('📋 ConsentQuiz: markQuizAcceptedOnBill ล้มเหลว (best-effort)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         try {
             $warning = app(\App\Services\Fortune\BillTrollGuardService::class)->warningForNewBill($reading);
             if ($warning !== null) {

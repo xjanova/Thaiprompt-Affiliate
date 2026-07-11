@@ -273,6 +273,10 @@ class FortuneTellingSetting extends Model
         'consent_audio_code_voice_provider',
         // เกณฑ์บิลค้างไม่จ่าย: 0 = ทุกบิล / N = เฉพาะลูกค้ามีประวัติบิลค้าง >= N
         'consent_audio_code_min_unpaid_bills',
+        // 📋 (2026-07-11) แบบสอบถามยืนยันเจตนา 5 ข้อ (ใช่/ไม่ใช่) ก่อนสร้างบิล — เฉพาะคนสร้างบิลแล้วไม่จ่าย
+        'enable_consent_quiz',
+        'consent_quiz_min_unpaid_bills',
+        'consent_quiz_ban_days',
         // ⚡ (2026-06-26) ข้ามกล่องกติกา/รหัสเสียงทั้งหมด → สร้างบิลทันที
         'consent_gate_bypass',
         // 🎚️ (2026-06-26) สวิตช์พฤติกรรมเชิงรุก — กระตุ้นการขาย / กระตุ้นจ่ายบิล
@@ -510,6 +514,9 @@ class FortuneTellingSetting extends Model
         'enable_celtic_black_magic_mode' => 'boolean',
         'enable_consent_audio_code' => 'boolean',
         'consent_audio_code_min_unpaid_bills' => 'integer',
+        'enable_consent_quiz' => 'boolean',
+        'consent_quiz_min_unpaid_bills' => 'integer',
+        'consent_quiz_ban_days' => 'integer',
         'consent_gate_bypass' => 'boolean',
         'enable_sales_pitch' => 'boolean',
         'enable_bill_payment_nudge' => 'boolean',
@@ -693,6 +700,10 @@ class FortuneTellingSetting extends Model
         'enable_consent_audio_code' => false,
         'consent_audio_code_voice_provider' => 'minimax',
         'consent_audio_code_min_unpaid_bills' => 0,
+        // 📋 (2026-07-11) แบบสอบถามยืนยันเจตนา 5 ข้อ — default ปิด (opt-in) / เกณฑ์ 2 บิลค้าง / แบน 7 วัน
+        'enable_consent_quiz' => false,
+        'consent_quiz_min_unpaid_bills' => 2,
+        'consent_quiz_ban_days' => 7,
         'consent_gate_bypass' => false,
         // 🎚️ พฤติกรรมเชิงรุก default เปิด (ค่าเดิม — แอดมินปิดได้)
         'enable_sales_pitch' => true,

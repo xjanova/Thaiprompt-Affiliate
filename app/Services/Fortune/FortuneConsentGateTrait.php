@@ -51,6 +51,12 @@ trait FortuneConsentGateTrait
     /** 🔊 (2026-06-26) พิมพ์รหัสผิดกี่ครั้งแล้วเฉลยรหัสให้ (กันลูกค้าติด) */
     protected const CONSENT_CODE_MAX_ATTEMPTS = 3;
 
+    /** 📋 (2026-07-11) Cache key — ขั้นแบบสอบถามยืนยันเจตนา (0-based = ข้อที่กำลังถามอยู่) */
+    protected const CONSENT_QUIZ_STEP_PREFIX = 'fortune:consent_quiz_step:';
+
+    /** 📋 (2026-07-11) Cache key — marker ส่งต่อให้บิลใหม่หลังผ่านแบบสอบถาม (ค่า = จำนวนวันแบนที่ตกลงไว้) */
+    protected const CONSENT_QUIZ_ACCEPTED_PREFIX = 'fortune:quiz_accepted:';
+
     /**
      * 🔔 ตรวจ consent gate — เรียกจากจุดสร้างบิล (Celtic/Deep) ก่อน UPA generate
      *
@@ -110,6 +116,16 @@ trait FortuneConsentGateTrait
             'tier' => $tier,
             'reading_id' => $reading?->id,
         ]);
+
+        // 📋 (2026-07-11) โหมด "แบบสอบถามยืนยันเจตนา 5 ข้อ" — เฉพาะคนสร้างบิลแล้วไม่จ่าย (พวก "หลอด")
+        //   ถามใช่/ไม่ใช่ 5 ข้อ เชิงจิตวิทยา (รวมข้อยอมรับ "ถ้าไม่จ่าย = งดใช้งานเพจ N วัน") ก่อนออกบิล
+        //   มีศักดิ์เหนือรหัสเสียง (เป็น contract ที่ชัดกว่า). error → degrade เป็น audio-code/กล่องปกติ
+        if ($this->shouldUseConsentQuiz($uid)) {
+            $quizGate = $this->buildConsentQuizGate($uid, $tier, $reading);
+            if ($quizGate !== null) {
+                return $quizGate;
+            }
+        }
 
         // 🔊 (2026-06-26) โหมดบังคับฟังเสียงกติกา + กรอกรหัสท้ายคลิป
         //   เปิดเฉพาะเมื่อเข้าเกณฑ์บิลค้างไม่จ่าย (shouldUseAudioCode) — 0 = ทุกคน / N = เฉพาะคนค้างบิล >= N
@@ -188,6 +204,12 @@ trait FortuneConsentGateTrait
         $pendingTier = Cache::get(self::CONSENT_PENDING_PREFIX.$uid);
         if (empty($pendingTier)) {
             return null; // ไม่มีกล่องกติกาค้าง → ไม่เกี่ยว
+        }
+
+        // 📋 (2026-07-11) ถ้ากล่องกติกานี้เป็นโหมด "แบบสอบถามยืนยันเจตนา 5 ข้อ" → route ไป handler เฉพาะ
+        //   (ตอบ ใช่/ไม่ใช่ ทีละข้อ ; ครบ 5 ข้อ = ผ่าน → สร้างบิล ; ไม่ใช่/ยกเลิก = ปิด ไม่สร้างบิล ไม่แบน)
+        if ($this->consentQuizActiveFor($uid)) {
+            return $this->handleConsentQuizReply($uid, $messageText, $pendingTier, $userProfile);
         }
 
         // 🔊 (2026-06-26) ถ้ากล่องกติกานี้เป็นโหมด "บังคับรหัสเสียง" → ต้องพิมพ์รหัสตรงก่อนจึงสร้างบิล
@@ -321,6 +343,312 @@ trait FortuneConsentGateTrait
 
             return false;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 📋 (2026-07-11) แบบสอบถามยืนยันเจตนา 5 ข้อ ก่อนสร้างบิล (เฉพาะคนสร้างบิลแล้วไม่จ่าย)
+    //   เจ้าของสั่ง: คนแบบ "หลอด" สร้างแต่บิลไม่จ่าย → ให้ตอบใช่/ไม่ใช่ 5 ข้อเชิงจิตวิทยา
+    //   ยืนยัน "ตั้งใจดูดวงจริง เข้าใจว่าต้องจ่าย และยอมรับว่าถ้าไม่จ่าย = งดใช้งานเพจ N วัน"
+    //   ผ่านครบ → สร้างบิล + ติดธง quiz_gate_accepted (BillTrollGuard แบน N วันถ้าใบนี้ไม่จ่าย)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * 📋 เปิดโหมดแบบสอบถามยืนยันเจตนาหรือไม่ (toggle + consent ต้องเปิด)
+     */
+    protected function consentQuizEnabled(): bool
+    {
+        return (bool) ($this->settings->enable_consent_quiz ?? false)
+            && $this->settings->isConsentEnabled();
+    }
+
+    /**
+     * 📋 ควรบังคับ "แบบสอบถาม 5 ข้อ" กับ uid นี้ไหม — ตามเกณฑ์บิลค้างไม่จ่าย
+     *
+     * - toggle ปิด → false
+     * - consent_quiz_min_unpaid_bills = 0 → true (บังคับทุกคน)
+     * - N > 0 → true เฉพาะลูกค้าที่มีประวัติบิลค้างไม่จ่าย >= N (ลูกค้าใหม่/ดี = ไม่บังคับ)
+     * - นับไม่ได้/ไม่มี uid → false (degrade ปลอดภัย ไม่เพิ่ม friction ให้คนที่ระบุตัวไม่ได้)
+     */
+    protected function shouldUseConsentQuiz(string $uid): bool
+    {
+        if (! $this->consentQuizEnabled()) {
+            return false;
+        }
+
+        $threshold = (int) ($this->settings->consent_quiz_min_unpaid_bills ?? 2);
+        if ($threshold <= 0) {
+            return true; // 0 = ทุกคน
+        }
+
+        if (empty($uid)) {
+            return false;
+        }
+
+        try {
+            $unpaid = app(\App\Services\Fortune\BillTrollGuardService::class)->unpaidBillCountAllTime($uid);
+
+            return $unpaid >= $threshold;
+        } catch (\Throwable $e) {
+            Log::warning('📋 ConsentQuiz: นับบิลค้างไม่สำเร็จ → ไม่บังคับแบบสอบถาม (degrade)', ['user_id' => $uid, 'error' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 📋 มีแบบสอบถามค้างอยู่สำหรับ uid นี้ไหม (= กล่องกติกาถูกแสดงในโหมดแบบสอบถาม)
+     */
+    protected function consentQuizActiveFor(string $uid): bool
+    {
+        return $this->consentQuizEnabled()
+            && ! empty($uid)
+            && Cache::get(self::CONSENT_QUIZ_STEP_PREFIX.$uid) !== null;
+    }
+
+    /**
+     * 📋 จำนวนวันแบนที่ตกลงไว้ (ถ้ายอมรับกติกาแล้วไม่จ่าย) — default 7
+     */
+    protected function consentQuizBanDays(): int
+    {
+        $days = (int) ($this->settings->consent_quiz_ban_days ?? 7);
+
+        return $days > 0 ? $days : 7;
+    }
+
+    /**
+     * 📋 ชุดคำถามยืนยันเจตนา 5 ข้อ (ทุกข้อต้องตอบ "ใช่" จึงจะผ่าน)
+     *
+     * ข้อ 5 ฝัง "จำนวนวันแบน" ตาม setting เพื่อให้ลูกค้ายอมรับ contract ที่ตรงกับที่จะบังคับใช้จริง
+     */
+    protected function consentQuizQuestions(): array
+    {
+        $days = $this->consentQuizBanDays();
+
+        return [
+            "🌙 ก่อนสร้างบิล แม่หมอขอยืนยันความตั้งใจสัก 5 ข้อนะคะ\n(รบกวนตอบ \"ใช่\" หรือ \"ไม่ใช่\" ในแต่ละข้อค่ะ)\n\n"
+                .'📌 ข้อ 1/5 — เจ้าชะตาตั้งใจอยากดูดวงกับแม่หมอจริง ๆ ใช่ไหมคะ?',
+            '📌 ข้อ 2/5 — เจ้าชะตาเข้าใจว่าการดูดวงครั้งนี้มี "ค่าครู" ที่ต้องชำระเงินจริง (ไม่ใช่ของฟรี) ใช่ไหมคะ?',
+            '📌 ข้อ 3/5 — เจ้าชะตายืนยันว่าจะโอนชำระค่าครูหลังสร้างบิล ไม่ได้กดสร้างเล่น ๆ ใช่ไหมคะ?',
+            '📌 ข้อ 4/5 — เจ้าชะตาเข้าใจว่า การสร้างบิลแล้วไม่ชำระ ถือเป็นการรบกวนแม่หมอและระบบ ใช่ไหมคะ?',
+            "📌 ข้อ 5/5 (ข้อสำคัญ) — เจ้าชะตายอมรับว่า ถ้าสร้างบิลรอบนี้แล้ว \"ไม่ชำระ\" ภายในเวลาที่กำหนด "
+                ."จะถูก*งดใช้งานเพจเป็นเวลา {$days} วัน* ใช่ไหมคะ?",
+        ];
+    }
+
+    /**
+     * 📋 สร้างกล่องแบบสอบถาม — แสดงคำถามข้อปัจจุบัน (reuse step ถ้ามีค้าง ไม่รีเซ็ตกลับข้อ 1)
+     *
+     * @return array|null response / null (exception → caller degrade เป็น audio-code/กล่องปกติ)
+     */
+    protected function buildConsentQuizGate(string $uid, string $tier, ?FortuneReading $reading = null): ?array
+    {
+        try {
+            $total = count($this->consentQuizQuestions());
+
+            // reuse step ที่ค้างอยู่ (re-entry/nudge เรียก consentGateOrNull ซ้ำ) — กันถอยกลับข้อ 1
+            $step = Cache::get(self::CONSENT_QUIZ_STEP_PREFIX.$uid);
+            if ($step === null || (int) $step < 0 || (int) $step >= $total) {
+                $step = 0;
+            }
+            $step = (int) $step;
+            Cache::put(self::CONSENT_QUIZ_STEP_PREFIX.$uid, $step, self::CONSENT_TTL);
+
+            if ($reading) {
+                $reading->setConversationState('consent_quiz_active', true);
+            }
+
+            Log::info('📋 ConsentQuiz: แสดงแบบสอบถามยืนยันเจตนา', ['user_id' => $uid, 'tier' => $tier, 'step' => $step]);
+
+            return $this->quizQuestionResponse($step, $reading);
+        } catch (\Throwable $e) {
+            Log::warning('📋 ConsentQuiz: buildConsentQuizGate exception → degrade', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 📋 response กล่องคำถามข้อ $stepIndex + ปุ่ม ใช่/ไม่ใช่
+     *
+     * @param  bool  $reask  ตอบไม่ชัด → ย้ำให้ตอบ ใช่/ไม่ใช่ (ถามข้อเดิม)
+     */
+    protected function quizQuestionResponse(int $stepIndex, ?FortuneReading $reading = null, bool $reask = false): array
+    {
+        $questions = $this->consentQuizQuestions();
+        $question = $questions[$stepIndex] ?? end($questions);
+        $prefix = $reask ? "🙏 รบกวนตอบ \"ใช่\" หรือ \"ไม่ใช่\" นะคะ\n\n" : '';
+
+        return [
+            'action' => 'consent_gate',
+            'message' => $prefix.$question,
+            // 📋 แบบสอบถามคือการยินยอมอยู่แล้ว → ไม่แนบเสียงกติกา static (กันเสียงซ้ำทุกข้อ)
+            'suppress_consent_voice' => true,
+            'quick_replies' => [
+                // ต้องมีทั้ง 'text' (LINE) และ 'payload' (FB)
+                ['content_type' => 'text', 'title' => '✅ ใช่', 'text' => 'ใช่', 'payload' => 'ใช่'],
+                ['content_type' => 'text', 'title' => '❌ ไม่ใช่', 'text' => 'ไม่ใช่', 'payload' => 'ไม่ใช่'],
+            ],
+            'show_quick_replies' => true,
+            'block_followups' => true,
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 📋 จัดการคำตอบลูกค้าตอนอยู่หน้าแบบสอบถาม
+     *
+     * - "ยกเลิก" → เคลียร์ + ปล่อย cancel flow เดิม (upstream)
+     * - "ไม่ใช่" → ปิดอย่างสุภาพ ไม่สร้างบิล ไม่แบน (ยังไม่ได้สร้างบิล = ไม่ผิดกติกา)
+     * - ตอบไม่ชัด → ย้ำให้ตอบ ใช่/ไม่ใช่ (ถามข้อเดิม)
+     * - "ใช่" → ไปข้อถัดไป ; ครบทุกข้อ → สร้างบิล + ติด marker (แบน N วันถ้าบิลนี้ไม่จ่าย)
+     */
+    protected function handleConsentQuizReply(string $uid, string $messageText, string $pendingTier, ?array $userProfile = null): ?array
+    {
+        $total = count($this->consentQuizQuestions());
+        $step = (int) Cache::get(self::CONSENT_QUIZ_STEP_PREFIX.$uid, 0);
+        if ($step < 0) {
+            $step = 0;
+        }
+
+        // 1) ยกเลิกชัดเจน → เคลียร์ + forget pending แล้วปล่อย cancel flow เดิม (upstream)
+        if ($this->isCancelRequest($messageText)) {
+            $this->clearConsentQuiz($uid);
+            Cache::forget(self::CONSENT_PENDING_PREFIX.$uid);
+
+            return null;
+        }
+
+        $answer = $this->quizAnswer($messageText);
+
+        // 2) ตอบ "ไม่ใช่" → ปิดอย่างสุภาพ (ยังไม่สร้างบิล = ไม่แบน) เคารพกฎ "ลูกค้าปฏิเสธ ห้ามตื้อ"
+        if ($answer === false) {
+            $this->clearConsentQuiz($uid);
+            Cache::forget(self::CONSENT_PENDING_PREFIX.$uid);
+            if (method_exists($this, 'closeAllActiveConversations')) {
+                $this->closeAllActiveConversations($uid);
+            }
+
+            Log::info('📋 ConsentQuiz: ลูกค้าตอบ "ไม่ใช่" → ปิด ไม่สร้างบิล', ['user_id' => $uid, 'step' => $step]);
+
+            return [
+                'action' => 'cancelled',
+                'message' => "🙏 รับทราบค่ะ ไม่เป็นไรเลยนะคะ\n\n"
+                    .'เมื่อไหร่ที่เจ้าชะตาพร้อมและตั้งใจดูดวงจริง ๆ พิมพ์ "ดูดวง" ทักแม่หมอมาได้เสมอค่ะ ✨',
+                'reading' => null,
+            ];
+        }
+
+        // 3) ตอบไม่ชัด (ไม่ใช่ทั้ง ใช่/ไม่ใช่) → ย้ำให้ตอบ ใช่/ไม่ใช่ (ถามข้อเดิม)
+        if ($answer === null) {
+            return $this->quizQuestionResponse($step, null, true);
+        }
+
+        // 4) ตอบ "ใช่" → ไปข้อถัดไป
+        $step++;
+        if ($step < $total) {
+            Cache::put(self::CONSENT_QUIZ_STEP_PREFIX.$uid, $step, self::CONSENT_TTL);
+
+            return $this->quizQuestionResponse($step);
+        }
+
+        // 5) ครบทุกข้อ (ยอมรับกติกา + ข้อแบน) → สร้างบิล + marker ให้ผูกธงบนบิลใหม่
+        $this->clearConsentQuiz($uid);
+        Cache::put(self::CONSENT_OK_PREFIX.$uid, true, self::CONSENT_TTL);
+        Cache::forget(self::CONSENT_PENDING_PREFIX.$uid);
+        // marker ถูก consume (Cache::pull) ที่ตอนสร้างบิลใน request เดียวกัน (sync) → TTL สั้นพอ
+        //   กันเคส marker ค้างไปติดบิลอื่นถ้า re-dispatch ไม่ได้สร้างบิล (เช่น deep ปิด/ถูกบล็อก)
+        Cache::put(self::CONSENT_QUIZ_ACCEPTED_PREFIX.$uid, $this->consentQuizBanDays(), 120);
+
+        Log::info('📋 ConsentQuiz: ผ่านครบทุกข้อ (ยอมรับกติกาแบน) → สร้างบิล', [
+            'user_id' => $uid,
+            'tier' => $pendingTier,
+            'ban_days' => $this->consentQuizBanDays(),
+        ]);
+
+        return $this->startDeepReadingFlow($uid, $userProfile, $pendingTier, null);
+    }
+
+    /**
+     * 📋 ติดธง quiz_gate_accepted บนบิลใหม่ (เรียกจาก appendTrollWarningIfNeeded ตอนสร้างบิลทุก tier)
+     *
+     * consume marker (Cache::pull) → ธงติดครั้งเดียวต่อบิล. ถ้าบิลนี้ไม่ถูกชำระ BillTrollGuard
+     * จะอ่านธงนี้แล้วแบน N วันตามที่ลูกค้ายอมรับไว้
+     */
+    protected function markQuizAcceptedOnBill(FortuneReading $reading): void
+    {
+        $uid = $reading->facebook_user_id ?: $reading->platform_user_id;
+        if (empty($uid)) {
+            return;
+        }
+
+        $banDays = Cache::pull(self::CONSENT_QUIZ_ACCEPTED_PREFIX.$uid);
+        if ($banDays === null) {
+            return;
+        }
+
+        $reading->setConversationState('quiz_gate_accepted', true);
+        $reading->setConversationState('quiz_gate_accepted_at', now()->toIso8601String());
+        $reading->setConversationState('quiz_gate_ban_days', (int) $banDays);
+
+        Log::info('📋 ConsentQuiz: ติดธง quiz_gate_accepted บนบิล', [
+            'reading_id' => $reading->id,
+            'user_id' => $uid,
+            'ban_days' => (int) $banDays,
+        ]);
+    }
+
+    /**
+     * 📋 แยกคำตอบ ใช่/ไม่ใช่ — return true (ใช่) / false (ไม่ใช่) / null (ไม่ชัด)
+     *
+     * ⚠️ เช็ค "ไม่ใช่" ก่อน "ใช่" เพราะ "ใช่" เป็น substring ของ "ไม่ใช่"
+     */
+    protected function quizAnswer(string $text): ?bool
+    {
+        $t = mb_strtolower(trim($text));
+        if ($t === '') {
+            return null;
+        }
+
+        // 1) ปฏิเสธ "คำตอบ" ชัดเจน (เช็คก่อน — "ไม่ใช่" มี "ใช่" เป็น substring)
+        //    ⚠️ ห้ามใส่ particle สุภาพ (ครับ/ค่ะ/คะ/จ้า) — ไม่ใช่คำตอบ แต่ต่อท้ายทุกประโยค
+        foreach (['ไม่ใช่', 'ไม่เอา', 'ไม่ยอมรับ', 'ไม่รับ', 'ไม่ตกลง', 'ไม่โอน', 'ไม่จ่าย',
+            'ปฏิเสธ', 'ยกเลิก', 'no', 'nope', '❌', '✗'] as $no) {
+            if (mb_strpos($t, $no) !== false) {
+                return false;
+            }
+        }
+
+        // 2) มีคำว่า "ใช่" (ตัด "ไม่ใช่" ทิ้งไปแล้วข้างบน) = ยอมรับ — จับก่อน "ไม่" กว้าง
+        //    กันเคส "ใช่ค่ะ ไม่มีปัญหา" (มีทั้ง ใช่ + ไม่ → ต้องเป็น ใช่)
+        if (mb_strpos($t, 'ใช่') !== false) {
+            return true;
+        }
+
+        // 3) คำยอมรับอื่น ๆ (ไม่รวม particle สุภาพ ที่ไม่ใช่คำตอบ)
+        foreach (['ยอมรับ', 'ยินยอม', 'ตกลง', 'โอเค', 'รับทราบ', 'เข้าใจแล้ว', 'แน่นอน', 'ยินดี', '✅', '✓'] as $yes) {
+            if (mb_strpos($t, $yes) !== false) {
+                return true;
+            }
+        }
+        if (in_array($t, ['yes', 'y', 'ok', 'okay', 'yep', 'ya', '1'], true)) {
+            return true;
+        }
+
+        // 4) คำปฏิเสธกว้าง "ไม่..." (จับหลัง yes เพื่อไม่ตัด "ใช่...ไม่มีปัญหา")
+        if (mb_strpos($t, 'ไม่') !== false) {
+            return false;
+        }
+
+        // 5) ไม่ชัด (รวมตอบแค่ particle "ครับ/ค่ะ" หรือถามคำถามกลับ) → re-ask ให้ตอบ ใช่/ไม่ใช่
+        return null;
+    }
+
+    /**
+     * 📋 ล้างสถานะแบบสอบถาม (step)
+     */
+    protected function clearConsentQuiz(string $uid): void
+    {
+        Cache::forget(self::CONSENT_QUIZ_STEP_PREFIX.$uid);
     }
 
     /**
