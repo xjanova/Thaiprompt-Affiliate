@@ -40,7 +40,7 @@ class OpenaiProvider extends BaseAiGenProvider
         $apiKey = $this->getConfig('api_key');
         $baseUrl = $this->getConfig('api_endpoint', 'https://api.openai.com/v1');
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             return ['success' => false, 'error' => 'OpenAI API key ยังไม่ได้ตั้งค่า'];
         }
 
@@ -52,23 +52,26 @@ class OpenaiProvider extends BaseAiGenProvider
             'prompt' => $prompt,
             'n' => min($parameters['num_images'] ?? 1, 4),
             'size' => $size,
-            'response_format' => 'b64_json',
         ];
 
         if ($model === 'dall-e-3') {
+            // ⚠️ response_format ใส่ได้เฉพาะ dall-e-3 — gpt-image-1 ไม่รับพารามิเตอร์นี้ (400)
+            //    และคืน b64_json เป็น default อยู่แล้ว จึงอ่านผลลัพธ์แบบเดียวกันได้
+            $data['response_format'] = 'b64_json';
             $data['quality'] = $parameters['quality'] ?? 'standard';
             $data['style'] = $parameters['style'] ?? 'vivid';
         }
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
+                'Authorization' => 'Bearer '.$apiKey,
                 'Content-Type' => 'application/json',
-            ])->timeout(120)->post($baseUrl . '/images/generations', $data);
+            ])->timeout(120)->post($baseUrl.'/images/generations', $data);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 $errorBody = $response->json();
-                return ['success' => false, 'error' => 'OpenAI error: ' . ($errorBody['error']['message'] ?? $response->body())];
+
+                return ['success' => false, 'error' => 'OpenAI error: '.($errorBody['error']['message'] ?? $response->body())];
             }
 
             $result = $response->json();
@@ -95,7 +98,7 @@ class OpenaiProvider extends BaseAiGenProvider
                 'data' => ['model' => $model, 'provider' => 'openai', 'images' => $images],
             ];
         } catch (\Exception $e) {
-            return ['success' => false, 'error' => 'OpenAI request failed: ' . $e->getMessage()];
+            return ['success' => false, 'error' => 'OpenAI request failed: '.$e->getMessage()];
         }
     }
 
@@ -116,27 +119,27 @@ class OpenaiProvider extends BaseAiGenProvider
 
     public function isConfigured(): bool
     {
-        return !empty($this->getConfig('api_key'));
+        return ! empty($this->getConfig('api_key'));
     }
 
     public function testConnection(): array
     {
         $apiKey = $this->getConfig('api_key');
-        if (!$apiKey) {
+        if (! $apiKey) {
             return ['success' => false, 'message' => 'API key ยังไม่ได้ตั้งค่า'];
         }
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
+                'Authorization' => 'Bearer '.$apiKey,
             ])->timeout(15)->get('https://api.openai.com/v1/models');
 
             return [
                 'success' => $response->successful(),
-                'message' => $response->successful() ? 'เชื่อมต่อ OpenAI สำเร็จ' : 'เชื่อมต่อล้มเหลว: ' . $response->body(),
+                'message' => $response->successful() ? 'เชื่อมต่อ OpenAI สำเร็จ' : 'เชื่อมต่อล้มเหลว: '.$response->body(),
             ];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'เชื่อมต่อล้มเหลว: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'เชื่อมต่อล้มเหลว: '.$e->getMessage()];
         }
     }
 
@@ -148,8 +151,8 @@ class OpenaiProvider extends BaseAiGenProvider
 
         try {
             $imageData = base64_decode($base64Data);
-            $filename = $providerName . '_' . date('Ymd_His') . '_' . $index . '_' . Str::random(8) . '.png';
-            $path = 'ai-gen/' . $providerName . '/' . date('Y/m') . '/' . $filename;
+            $filename = $providerName.'_'.date('Ymd_His').'_'.$index.'_'.Str::random(8).'.png';
+            $path = 'ai-gen/'.$providerName.'/'.date('Y/m').'/'.$filename;
             Storage::disk('public')->put($path, $imageData);
 
             return ['url' => Storage::disk('public')->url($path), 'path' => $path, 'filename' => $filename];

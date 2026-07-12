@@ -7,7 +7,6 @@ use App\Models\FortuneContentCampaign;
 use App\Models\FortuneContentPost;
 use App\Models\FortuneMysticTopic;
 use App\Models\FortuneTellingSetting;
-use App\Services\AiGen\CloudflareAiProvider;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -23,8 +22,11 @@ use Illuminate\Support\Facades\Storage;
  * 1. เลือกหัวข้อ — inline pool ของแคมเปญ หรือ bridge ไปคลังสายมูเดิม (LRU)
  * 2. WebSearchService (ถ้าแคมเปญเปิด) — Tavily/Brave/DDG หาแหล่งอ้างอิง
  * 3. AI เขียน caption ตามแนวแคมเปญ (custom prompt หรือ auto-build จาก keywords)
- * 4. 🎨 AI อ่าน caption แล้ว "เขียน image prompt เอง" ให้ภาพเข้ากับเนื้อหา
- *    (ไม่ใช้ keyword ตายตัว) → Cloudflare AI → Pollinations
+ *    — เลือก provider/model เจนบทความรายแคมเปญได้ (text_provider/text_model)
+ * 4. 🎨 ภาพประกอบ (ปิดรายแคมเปญได้ผ่าน generate_image):
+ *    - prompt: AI อ่าน caption เขียนเอง (ติ๊ก match_caption) + custom prompt + preset options
+ *    - โมเดล: เลือกได้รายแคมเปญ (image_provider_choice "slug:model")
+ *      ล้ม → fallback chain เดิม Cloudflare FLUX → Pollinations
  * 5. POST ไป Facebook Page (page เดิม ใช้ token ร่วมกันทุกแคมเปญ)
  * 6. บันทึก audit trail ครบ (sources, image_prompt, fb_post_id)
  *
@@ -32,6 +34,46 @@ use Illuminate\Support\Facades\Storage;
  */
 class ContentCampaignAutoPostService
 {
+    /**
+     * 🖼️ Provider เจนภาพที่ให้เลือกรายแคมเปญ — slug (ตาราง ai_gen_providers) → class
+     *
+     * แสดงใน dropdown เฉพาะตัวที่ตั้งค่าคีย์แล้ว (isConfigured) เท่านั้น
+     *
+     * ⛔ 'freepik' ไม่อยู่ในลิสต์โดยเจตนา — กฎ ABSOLUTE BAN ห้ามใช้โมเดลกินเครดิต
+     *    (ดู rule_freepik_unlimited_only) ห้ามเพิ่มกลับเข้ามา
+     * ⛔ 'kling-ai' ไม่อยู่เช่นกัน — เน้นวิดีโอ + คิดเครดิตต่อภาพไม่ชัดเจน
+     */
+    public const IMAGE_PROVIDER_CLASSES = [
+        'cloudflare-ai' => \App\Services\AiGen\CloudflareAiProvider::class,
+        'openai' => \App\Services\AiGen\OpenaiProvider::class,
+        'together-ai' => \App\Services\AiGen\TogetherAiProvider::class,
+        'grok' => \App\Services\AiGen\GrokProvider::class,
+        // ⛔ 'stability-ai' ตัดออก — StabilityAiProvider ส่ง JSON แต่ API v2beta ต้องการ
+        //    multipart/form-data → ล้มทุกครั้ง (เพิ่มกลับได้เมื่อแก้ provider แล้ว)
+        'fal-ai' => \App\Services\AiGen\FalAiProvider::class,
+        'bfl' => \App\Services\AiGen\BflProvider::class,
+        'replicate' => \App\Services\AiGen\ReplicateProvider::class,
+        'ideogram' => \App\Services\AiGen\IdeogramProvider::class,
+        'leonardo-ai' => \App\Services\AiGen\LeonardoAiProvider::class,
+        'huggingface' => \App\Services\AiGen\HuggingfaceProvider::class,
+    ];
+
+    /**
+     * ป้ายบอกค่าใช้จ่ายต่อ provider — ต่อท้ายชื่อกลุ่มใน dropdown ให้แอดมินรู้ก่อนเลือก
+     * (แคมเปญ = โพส scheduled ทุกวัน — เลือกตัวเสียเงินคือจ่ายซ้ำเงียบๆ ทุก slot)
+     */
+    protected const IMAGE_PROVIDER_COST_HINTS = [
+        'cloudflare-ai' => 'ฟรี ~40 ภาพ/วัน',
+        'huggingface' => 'ฟรี tier',
+        'together-ai' => 'ฟรีเฉพาะ flux-schnell-free',
+    ];
+
+    /**
+     * โมเดล Pollinations ที่ให้เลือก — เรียกผ่าน URL ตรง ไม่ต้องมีคีย์ (ฟรีเสมอ)
+     * แยกจาก IMAGE_PROVIDER_CLASSES เพราะไม่ผ่าน AiGenProvider registry
+     */
+    public const POLLINATIONS_MODELS = ['turbo', 'flux'];
+
     protected FortuneTellingSetting $settings;
 
     protected WebSearchService $webSearch;
@@ -160,8 +202,10 @@ class ContentCampaignAutoPostService
                 'generated_at' => now(),
             ]);
 
-            // 4. AI image — prompt สร้างจากเนื้อหาอัตโนมัติ (bridge สายมู: fallback = keywords หมวดเดิม)
-            $this->generateImage($campaign, $post, $mysticTopic);
+            // 4. AI image — ปิดรายแคมเปญได้ (generate_image=false → โพส text-only โดยเจตนา)
+            if ($campaign->generate_image ?? true) {
+                $this->generateImage($campaign, $post, $mysticTopic);
+            }
 
             // 5. โพส FB
             $post->update(['status' => FortuneContentPost::STATUS_PUBLISHING]);
@@ -331,7 +375,7 @@ class ContentCampaignAutoPostService
         $hashtagLine = implode(' ', $hashtags);
 
         try {
-            $body = $this->generateText($prompt, "content_campaign:{$campaign->slug}");
+            $body = $this->generateText($prompt, "content_campaign:{$campaign->slug}", $campaign);
 
             // ถ้าให้ AI เลือกหัวข้อเอง — ดึงบรรทัด "หัวข้อ: ..." ออกมาเก็บเป็น sub_topic
             if ($subTopic === null && preg_match('/^หัวข้อ\s*[:：]\s*(.+)$/mu', $body, $m)) {
@@ -370,13 +414,19 @@ class ContentCampaignAutoPostService
     }
 
     /**
-     * ⭐ จุดเรียก AI text ที่เดียวของ service — Gemini หลัก, fallback pool อัตโนมัติ
+     * ⭐ จุดเรียก AI text ที่เดียวของ service — เปลี่ยน provider/พารามิเตอร์ แก้ที่นี่ที่เดียว
      *
-     * ใช้ทั้ง caption และ image prompt — เปลี่ยน provider/พารามิเตอร์ แก้ที่นี่ที่เดียว
+     * ใช้ทั้ง caption และ image prompt
+     * - แคมเปญตั้ง text_provider → ใช้เป็น provider หลัก (ไม่ตั้ง = gemini เดิม)
+     * - แคมเปญตั้ง text_model → บังคับโมเดลนั้นกับ key ของ provider ที่เลือกเท่านั้น
+     *   (key provider อื่นใน fallback chain ยังใช้โมเดลของตัวเอง — model ข้าม provider ไม่ได้)
      */
-    protected function generateText(string $prompt, string $userContext): string
+    protected function generateText(string $prompt, string $userContext, ?FortuneContentCampaign $campaign = null): string
     {
-        $aiService = new FortuneAIService($this->settings, preferredProvider: 'gemini');
+        $provider = trim((string) ($campaign->text_provider ?? '')) ?: 'gemini';
+        $model = trim((string) ($campaign->text_model ?? ''));
+
+        $aiService = new FortuneAIService($this->settings, preferredProvider: $provider);
         $result = $aiService->generateWithRetryAndFallback(
             questions: [$prompt],
             userProfile: null,
@@ -385,6 +435,7 @@ class ContentCampaignAutoPostService
             readingType: 'basic',
             birthDate: null,
             userContext: $userContext,
+            modelOverrides: $model !== '' ? [$provider => $model] : null,
         );
 
         return trim($result['response'] ?? '');
@@ -421,37 +472,85 @@ class ContentCampaignAutoPostService
     }
 
     /**
-     * 4. สร้างรูปประกอบ — image prompt "สร้างจากเนื้อหาโพสอัตโนมัติ"
+     * 4. สร้างรูปประกอบ — prompt ประกอบจาก 3 ชั้น + โมเดลเลือกได้รายแคมเปญ
      *
-     * ขั้นแรกให้ AI อ่าน caption แล้วเขียน image prompt ภาษาอังกฤษเอง
-     * (แนวภาพจึงเข้ากับเรื่องเสมอ ไม่ต้องตั้ง prompt เอง)
-     * ล้ม → fallback: keywords หมวดสายมูเดิม (bridge) หรือ keywords ของแคมเปญ
+     * ชั้น prompt:
+     * 1. แกนภาพ: AI อ่าน caption เขียนเอง (ติ๊ก match_caption) โดยผสาน custom prompt
+     *    ของแอดมินเป็นข้อกำหนดบังคับ / ไม่ติ๊ก = ใช้ custom prompt ตรงๆ
+     *    / ไม่มีทั้งคู่ = keywords หมวดสายมูเดิม (bridge) หรือ keywords แคมเปญ
+     * 2. สไตล์เสริม (image_style_hint)
+     * 3. Preset options ที่ติ๊กไว้ (photorealistic, no text ฯลฯ — null = ชุด default เดิม)
+     *
+     * โมเดล: image_provider_choice "slug:model" → ลองตัวที่เลือกก่อน
+     * ล้ม/ไม่ตั้ง → chain เดิม Cloudflare FLUX → Pollinations
      */
     protected function generateImage(
         FortuneContentCampaign $campaign,
         FortuneContentPost $post,
         ?FortuneMysticTopic $mysticTopic = null
     ): void {
-        $imagePrompt = $this->buildImagePromptFromCaption($campaign, $post)
-            ?: ($mysticTopic?->pickImagePromptSeed() ?: $campaign->fallbackImageSeed());
+        $options = $campaign->resolvedImageOptions();
 
-        // เติมสไตล์เสริมของแคมเปญ + มาตรฐานคุณภาพ (pattern เดิมที่ผ่าน anti-shadowban มาแล้ว)
+        // Custom prompt ของแอดมิน — รองรับ placeholder {sub_topic}
+        $customPrompt = trim(strtr((string) $campaign->image_custom_prompt, [
+            '{sub_topic}' => (string) ($post->sub_topic ?? ''),
+        ]));
+
+        // ชั้น 1: แกนภาพ
+        $imagePrompt = null;
+        if (in_array('match_caption', $options, true)) {
+            $imagePrompt = $this->buildImagePromptFromCaption(
+                $campaign,
+                $post,
+                $customPrompt !== '' ? $customPrompt : null,
+                $options,
+            );
+        }
+        if ($imagePrompt === null || $imagePrompt === '') {
+            $imagePrompt = $customPrompt !== ''
+                ? $customPrompt
+                : ($mysticTopic?->pickImagePromptSeed() ?: $campaign->fallbackImageSeed());
+        }
+
+        // ชั้น 2+3: สไตล์เสริม + preset fragments (ชุด default = pattern เดิมที่ผ่าน anti-shadowban มาแล้ว)
         $styleHint = trim((string) $campaign->image_style_hint);
-        $fullPrompt = $imagePrompt.', '
-            .($styleHint !== '' ? "{$styleHint}, " : '')
-            .'professional photography, soft volumetric lighting, '
-            .'rich saturated colors, photorealistic, ultra sharp, 8k detail, '
-            .'magazine cover quality, '
-            .'no text, no watermark, no people faces';
+        $fullPrompt = implode(', ', array_filter(array_merge(
+            [$imagePrompt, $styleHint],
+            $campaign->imageOptionFragments(),
+        ), fn ($part) => trim((string) $part) !== ''));
 
         $post->update(['image_prompt' => $fullPrompt]);
 
-        // Cloudflare AI (primary) → Pollinations (fallback) — helper ทั้งคู่ catch ภายในเอง
-        $url = $this->generateImageWithCloudflare($post, $fullPrompt);
-        if ($url) {
-            $post->update(['image_url' => $url, 'image_provider' => 'cloudflare-ai']);
+        // โมเดลที่แอดมินเลือก — ลองก่อน ล้มค่อย fallback chain (โพสมีภาพสำคัญกว่าตรงโมเดล)
+        $choice = trim((string) $campaign->image_provider_choice);
+        if ($choice !== '' && $choice !== 'auto' && str_contains($choice, ':')) {
+            [$slug, $model] = explode(':', $choice, 2);
 
-            return;
+            $url = $slug === 'pollinations'
+                ? $this->generateImageWithPollinations($post, $fullPrompt, $model)
+                : $this->generateImageWithAiGenProvider($post, $slug, $model, $fullPrompt);
+
+            if ($url) {
+                $post->update(['image_url' => $url, 'image_provider' => $choice]);
+
+                return;
+            }
+
+            Log::warning('ContentCampaign: โมเดลภาพที่เลือกล้มเหลว → fallback chain อัตโนมัติ', [
+                'campaign' => $campaign->slug,
+                'choice' => $choice,
+            ]);
+        }
+
+        // Chain เดิม: Cloudflare FLUX (primary) → Pollinations (fallback) — catch ภายในเอง
+        // (ข้ามถ้าตัวที่แอดมินเลือกคือ CF flux ตัวเดียวกันที่เพิ่งล้ม — ไม่ยิงซ้ำเสีย timeout ฟรี)
+        if ($choice !== 'cloudflare-ai:flux-1-schnell') {
+            $url = $this->generateImageWithAiGenProvider($post, 'cloudflare-ai', 'flux-1-schnell', $fullPrompt);
+            if ($url) {
+                $post->update(['image_url' => $url, 'image_provider' => 'cloudflare-ai']);
+
+                return;
+            }
         }
 
         $url = $this->generateImageWithPollinations($post, $fullPrompt);
@@ -461,8 +560,8 @@ class ContentCampaignAutoPostService
             return;
         }
 
-        // ทั้ง 2 provider ล้ม → โพสแบบ text-only (log ไว้ให้ตามรอย)
-        Log::warning('ContentCampaign: image gen ล้มทั้ง 2 provider — โพสแบบ text-only', [
+        // ทุก provider ล้ม → โพสแบบ text-only (log ไว้ให้ตามรอย)
+        Log::warning('ContentCampaign: image gen ล้มทุก provider — โพสแบบ text-only', [
             'campaign' => $campaign->slug,
             'post_id' => $post->id,
         ]);
@@ -471,28 +570,57 @@ class ContentCampaignAutoPostService
     /**
      * 🎨 ให้ AI อ่าน caption แล้วเขียน image prompt ภาษาอังกฤษให้เข้ากับเนื้อหา
      *
-     * @return string|null  image prompt (อังกฤษ, 1 บรรทัด) หรือ null ถ้าล้มเหลว
+     * @param  string|null  $adminRequirements  custom prompt ของแอดมิน — AI ต้องผสานเข้าไปใน prompt
+     * @param  array<string>  $options  preset options ที่ติ๊กไว้ (คุมกฎ no_text/no_faces ใน instruction)
+     * @return string|null image prompt (อังกฤษ, 1 บรรทัด) หรือ null ถ้าล้มเหลว
      */
     protected function buildImagePromptFromCaption(
         FortuneContentCampaign $campaign,
-        FortuneContentPost $post
+        FortuneContentPost $post,
+        ?string $adminRequirements = null,
+        array $options = FortuneContentCampaign::DEFAULT_IMAGE_OPTIONS
     ): ?string {
         $caption = trim((string) $post->caption);
         if ($caption === '') {
             return null;
         }
 
+        // กฎห้ามตัวหนังสือ/หน้าคน — ตามที่แอดมินติ๊กไว้เท่านั้น (default = ห้ามทั้งคู่ เหมือนเดิม)
+        $restrictions = [];
+        if (in_array('no_text', $options, true)) {
+            $restrictions[] = 'ห้ามมีตัวหนังสือในภาพ';
+        }
+        if (in_array('no_faces', $options, true)) {
+            $restrictions[] = 'ห้ามใบหน้าคนชัดๆ (silhouette/มุมหลังได้)';
+        }
+
+        $adminLine = trim((string) $adminRequirements) !== ''
+            ? "\n📌 ข้อกำหนดภาพจากแอดมิน (ต้องผสานเข้าไปใน prompt ด้วย):\n".trim($adminRequirements)."\n"
+            : '';
+
+        // ประกอบกฎแบบ renumber อัตโนมัติ — ข้อ restriction หายไปเลขต้องไม่กระโดด
+        $rules = array_merge(
+            [
+                'ภาษาอังกฤษเท่านั้น ยาว 15-40 คำ',
+                'บรรยายฉาก/บรรยากาศ/แสง/อารมณ์ เป็นรูปธรรม (ไม่ใช่นามธรรมลอยๆ)',
+            ],
+            ! empty($restrictions) ? [implode(' ', $restrictions)] : [],
+            ['ตอบเฉพาะ prompt อย่างเดียว ไม่ต้องอธิบาย ไม่ต้องมีเครื่องหมายคำพูด'],
+        );
+        $ruleText = '';
+        foreach ($rules as $i => $rule) {
+            $ruleText .= ($i + 1).'. '.$rule."\n";
+        }
+
         $prompt = "อ่านโพสต์ Facebook ภาษาไทยด้านล่าง แล้วเขียน image generation prompt เป็นภาษาอังกฤษ 1 บรรทัด\n"
-            ."สำหรับสร้างภาพประกอบโพสต์ให้ 'อารมณ์และเรื่องราวตรงกับเนื้อหา'\n\n"
-            ."กฎ:\n"
-            ."1. ภาษาอังกฤษเท่านั้น ยาว 15-40 คำ\n"
-            ."2. บรรยายฉาก/บรรยากาศ/แสง/อารมณ์ เป็นรูปธรรม (ไม่ใช่นามธรรมลอยๆ)\n"
-            ."3. ห้ามมีตัวหนังสือในภาพ ห้ามใบหน้าคนชัดๆ (silhouette/มุมหลังได้)\n"
-            ."4. ตอบเฉพาะ prompt อย่างเดียว ไม่ต้องอธิบาย ไม่ต้องมีเครื่องหมายคำพูด\n\n"
-            ."โพสต์:\n".mb_substr($caption, 0, 1200);
+            ."สำหรับสร้างภาพประกอบโพสต์ให้ 'อารมณ์และเรื่องราวตรงกับเนื้อหา'\n"
+            .$adminLine
+            ."\nกฎ:\n"
+            .$ruleText
+            ."\nโพสต์:\n".mb_substr($caption, 0, 1200);
 
         try {
-            $raw = $this->generateText($prompt, "content_campaign_img:{$campaign->slug}");
+            $raw = $this->generateText($prompt, "content_campaign_img:{$campaign->slug}", $campaign);
             if ($raw === '') {
                 return null;
             }
@@ -529,67 +657,212 @@ class ContentCampaignAutoPostService
         }
     }
 
-    protected function generateImageWithCloudflare(FortuneContentPost $post, string $prompt): ?string
+    /**
+     * 🎛️ รายการโมเดลเจนภาพที่ "พร้อมใช้จริง" สำหรับ dropdown หน้า admin
+     *
+     * เงื่อนไขปรากฏในลิสต์: provider อยู่ใน registry (ai_gen_providers) + is_active
+     * + ตั้งค่าคีย์แล้ว (isConfigured) — คีย์หาย/ยังไม่ตั้ง = ไม่โผล่ให้เลือก
+     * Pollinations พิเศษ: เรียก URL ตรงไม่ต้องมีคีย์ → พร้อมเสมอ
+     *
+     * @return array<array{value:string,label:string,group:string}>
+     */
+    public static function availableImageModels(): array
+    {
+        $options = [
+            ['value' => 'auto', 'label' => 'อัตโนมัติ (Cloudflare FLUX → Pollinations)', 'group' => 'ค่าเริ่มต้นระบบ'],
+        ];
+
+        try {
+            $providers = AiGenProvider::active()
+                ->whereIn('type', ['image', 'both'])
+                ->whereIn('slug', array_keys(self::IMAGE_PROVIDER_CLASSES))
+                ->orderBy('priority')
+                ->get();
+
+            foreach ($providers as $providerModel) {
+                $class = self::IMAGE_PROVIDER_CLASSES[$providerModel->slug];
+                try {
+                    $instance = new $class($providerModel);
+                    if (! $instance->isConfigured()) {
+                        continue;
+                    }
+                    $costHint = self::IMAGE_PROVIDER_COST_HINTS[$providerModel->slug] ?? '💰 เสียเงินต่อภาพ';
+                    foreach (self::providerModelKeys($class) as $modelKey) {
+                        $options[] = [
+                            'value' => "{$providerModel->slug}:{$modelKey}",
+                            'label' => $modelKey,
+                            'group' => "{$providerModel->name} — {$costHint}",
+                        ];
+                    }
+                } catch (Exception $e) {
+                    continue; // provider ตัวเดียวพัง — ไม่ควรล้มทั้ง dropdown
+                }
+            }
+        } catch (Exception $e) {
+            Log::warning('ContentCampaign: โหลดรายการโมเดลภาพไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
+
+        // Pollinations — ฟรี ไม่ต้องมีคีย์ ใช้ได้เสมอ
+        foreach (self::POLLINATIONS_MODELS as $modelKey) {
+            $options[] = [
+                'value' => "pollinations:{$modelKey}",
+                'label' => $modelKey,
+                'group' => 'Pollinations.ai (ฟรี ไม่ต้องมีคีย์)',
+            ];
+        }
+
+        return $options;
+    }
+
+    /**
+     * อ่านรายชื่อโมเดลจาก const MODELS ของ provider class (protected → ใช้ reflection)
+     * class ไม่มี MODELS → คืน ['default'] (ตอนเรียกจะไม่ส่งพารามิเตอร์ model)
+     *
+     * @return array<string>
+     */
+    protected static function providerModelKeys(string $class): array
     {
         try {
-            $providerModel = AiGenProvider::where('slug', 'cloudflare-ai')->first();
+            $reflection = new \ReflectionClass($class);
+            if ($reflection->hasConstant('MODELS')) {
+                $models = $reflection->getConstant('MODELS');
+                if (is_array($models) && $models !== []) {
+                    return array_keys($models);
+                }
+            }
+        } catch (\Throwable $e) {
+            // ตกไปใช้ default ด้านล่าง
+        }
+
+        return ['default'];
+    }
+
+    /**
+     * เจนภาพผ่าน AiGenProvider registry ตัวใดก็ได้ในลิสต์ที่รองรับ
+     *
+     * ใช้ทั้งโมเดลที่แอดมินเลือก และ Cloudflare ใน fallback chain — ทางเดินเดียวกัน
+     *
+     * @param  string  $slug  slug ใน ai_gen_providers (ต้องอยู่ใน IMAGE_PROVIDER_CLASSES)
+     * @param  string  $model  model key ของ provider นั้น ('default' = ไม่ส่ง ให้ provider เลือกเอง)
+     * @return string|null URL ภาพที่เซฟแล้ว หรือ null ถ้าล้มเหลว
+     */
+    protected function generateImageWithAiGenProvider(
+        FortuneContentPost $post,
+        string $slug,
+        string $model,
+        string $prompt
+    ): ?string {
+        try {
+            $class = self::IMAGE_PROVIDER_CLASSES[$slug] ?? null;
+            if (! $class) {
+                return null;
+            }
+
+            $providerModel = AiGenProvider::where('slug', $slug)->first();
             if (! $providerModel) {
                 return null;
             }
 
-            $cfProvider = new CloudflareAiProvider($providerModel);
-            if (! $cfProvider->isConfigured()) {
+            $instance = new $class($providerModel);
+            if (! $instance->isConfigured()) {
                 return null;
             }
 
-            $result = $cfProvider->generateImage($prompt, [
-                'model' => 'flux-1-schnell',
-                'size' => '1024x1024',
-                'steps' => 8,
+            // 🛡️ ยืนยัน model กับลิสต์ของ provider class — ค่าแปลกปลอม (POST ตรง/มือแก้ DB)
+            //    บังคับกลับเป็น default: กัน BFL ต่อ model ดิบเข้า URL path โดยแนบคีย์จริงไปด้วย
+            if (! in_array($model, self::providerModelKeys($class), true)) {
+                $model = 'default';
+            }
+
+            $parameters = [
                 'seed' => $this->imageSeed($post),
-            ]);
+            ];
+            if ($model !== '' && $model !== 'default') {
+                $parameters['model'] = $model;
+            }
+            // ขนาดภาพ — grok: xAI images API ไม่รองรับ size (reject ทั้ง request)
+            //           fal-ai: รับเฉพาะ enum ('square_hd' ฯลฯ) ไม่ใช่ "WxH"
+            if ($slug === 'fal-ai') {
+                $parameters['size'] = 'square_hd';
+            } elseif ($slug !== 'grok') {
+                $parameters['size'] = '1024x1024';
+            }
+            // Cloudflare FLUX: default 4 steps ภาพหยาบ — คงค่า 8 เดิมของระบบไว้
+            if ($slug === 'cloudflare-ai') {
+                $parameters['steps'] = 8;
+            }
+
+            $result = $instance->generateImage($prompt, $parameters);
 
             if (! ($result['success'] ?? false) || empty($result['images'][0]['url'])) {
+                Log::warning('ContentCampaign: image provider ตอบไม่สำเร็จ', [
+                    'provider' => $slug,
+                    'model' => $model,
+                    'error' => $result['error'] ?? 'unknown',
+                ]);
+
                 return null;
             }
 
-            $sourceUrl = $result['images'][0]['url'];
-            $relativePath = $this->savedImagePath($post);
-            $absolutePath = $this->ensureDir($relativePath);
-
-            // Cloudflare provider เซฟใน Storage::disk('public') แล้ว — copy มาที่ path ของเรา
-            $sourcePath = (string) parse_url($sourceUrl, PHP_URL_PATH);
-            if (str_starts_with($sourcePath, '/storage/')) {
-                $diskRelative = substr($sourcePath, strlen('/storage/'));
-                if (Storage::disk('public')->exists($diskRelative)) {
-                    file_put_contents($absolutePath, Storage::disk('public')->get($diskRelative));
-                } else {
-                    return null;
-                }
-            } else {
-                $resp = Http::timeout(30)->get($sourceUrl);
-                if (! $resp->successful()) {
-                    return null;
-                }
-                file_put_contents($absolutePath, $resp->body());
-            }
-
-            $post->update(['image_path' => $relativePath]);
-
-            return asset('storage/'.$relativePath);
+            return $this->storeImageFromUrl($post, $result['images'][0]['url']);
         } catch (Exception $e) {
-            Log::warning('ContentCampaign: Cloudflare AI exception', ['error' => $e->getMessage()]);
+            Log::warning('ContentCampaign: image provider exception', [
+                'provider' => $slug,
+                'model' => $model,
+                'error' => $e->getMessage(),
+            ]);
 
             return null;
         }
     }
 
-    protected function generateImageWithPollinations(FortuneContentPost $post, string $prompt): ?string
+    /**
+     * ดึงภาพจาก URL ผลลัพธ์ของ provider มาเซฟที่ path ของ campaign
+     *
+     * Provider ส่วนใหญ่เซฟใน Storage::disk('public') แล้วคืน asset URL → copy จาก disk ตรง
+     * บาง provider คืน URL ภายนอก → download ผ่าน HTTP
+     */
+    protected function storeImageFromUrl(FortuneContentPost $post, string $sourceUrl): ?string
     {
+        $relativePath = $this->savedImagePath($post);
+        $absolutePath = $this->ensureDir($relativePath);
+
+        $sourcePath = (string) parse_url($sourceUrl, PHP_URL_PATH);
+        if (str_starts_with($sourcePath, '/storage/')) {
+            $diskRelative = substr($sourcePath, strlen('/storage/'));
+            if (Storage::disk('public')->exists($diskRelative)) {
+                file_put_contents($absolutePath, Storage::disk('public')->get($diskRelative));
+            } else {
+                return null;
+            }
+        } else {
+            $resp = Http::timeout(30)->get($sourceUrl);
+            if (! $resp->successful() || empty($resp->body())) {
+                return null;
+            }
+            file_put_contents($absolutePath, $resp->body());
+        }
+
+        $post->update(['image_path' => $relativePath]);
+
+        return asset('storage/'.$relativePath);
+    }
+
+    /**
+     * Pollinations — เรียก URL ตรง ฟรี ไม่ต้องมีคีย์ (fallback สุดท้าย + เลือกเป็นโมเดลหลักได้)
+     *
+     * @param  string  $model  ต้องอยู่ใน POLLINATIONS_MODELS — ค่าแปลกปลอมถูกบังคับกลับเป็น turbo
+     */
+    protected function generateImageWithPollinations(FortuneContentPost $post, string $prompt, string $model = 'turbo'): ?string
+    {
+        if (! in_array($model, self::POLLINATIONS_MODELS, true)) {
+            $model = 'turbo';
+        }
+
         $encoded = rawurlencode(mb_substr($prompt, 0, 800));
         $seed = $this->imageSeed($post);
         $url = "https://image.pollinations.ai/prompt/{$encoded}"
-            ."?width=1080&height=1080&seed={$seed}&nologo=true&model=turbo&enhance=true";
+            ."?width=1080&height=1080&seed={$seed}&nologo=true&model={$model}&enhance=true";
 
         try {
             $response = Http::timeout(45)
@@ -712,7 +985,7 @@ class ContentCampaignAutoPostService
      *
      * (แยก 2 copy แล้ว chain diverge = --force ลบโพสเก่าไม่ได้เงียบๆ → โพสซ้ำบนเพจ)
      *
-     * @return array{0: string|null, 1: string|null}  [pageId, pageToken]
+     * @return array{0: string|null, 1: string|null} [pageId, pageToken]
      */
     protected function resolvePageCredentials(): array
     {

@@ -30,6 +30,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $caption_max
  * @property int|null $hashtag_count
  * @property string|null $image_style_hint
+ * @property bool $generate_image สร้างภาพประกอบโพสหรือไม่
+ * @property array|null $image_options preset คุมแนวภาพ (null = ชุด default)
+ * @property string|null $image_custom_prompt พร้อมท์ภาพหลักกำหนดเอง
+ * @property string|null $image_provider_choice โมเดลเจนภาพ "slug:model" (null = auto chain)
+ * @property string|null $text_provider provider เจนบทความ (null = gemini-first เดิม)
+ * @property string|null $text_model บังคับโมเดลเจนบทความ (null = model ของ key ใน pool)
  * @property int $post_count
  * @property \Carbon\Carbon|null $last_posted_at
  */
@@ -40,6 +46,41 @@ class FortuneContentCampaign extends Model
     public const SOURCE_INLINE = 'inline';
 
     public const SOURCE_MYSTIC_TOPICS = 'mystic_topics';
+
+    /**
+     * 🖼️ Preset ออปชั่นภาพประกอบ — ติ๊กเลือกได้ในหน้า admin
+     *
+     * - label    : ข้อความไทยที่แสดงบนหน้าจอ
+     * - fragment : ท่อน prompt อังกฤษที่ต่อท้ายภาพ (null = เป็น behavior flag ไม่ใช่ท่อน prompt)
+     *
+     * ⚠️ 'match_caption' พิเศษ: ไม่ใช่ fragment แต่เป็นตัวสั่งให้ AI อ่าน caption
+     *    แล้วเขียน image prompt เอง (พฤติกรรมเดิมของระบบ)
+     */
+    public const IMAGE_OPTIONS = [
+        'match_caption' => ['label' => 'ภาพสอดคล้องกับเนื้อหาโพส (AI อ่านบทความแล้วคิดภาพเอง)', 'fragment' => null],
+        'photorealistic' => ['label' => 'ภาพถ่ายเหมือนจริง คุณภาพสูง', 'fragment' => 'professional photography, photorealistic, ultra sharp, 8k detail, magazine cover quality'],
+        'illustration' => ['label' => 'ภาพวาดสไตล์อาร์ต', 'fragment' => 'beautiful digital illustration, painterly art style, detailed artwork'],
+        'vivid_light' => ['label' => 'แสงนุ่ม สีสันสดใส', 'fragment' => 'soft volumetric lighting, rich saturated colors'],
+        'warm_tone' => ['label' => 'โทนอบอุ่น มีความหวัง', 'fragment' => 'warm golden hour tone, cozy hopeful mood'],
+        'thai_mystic' => ['label' => 'บรรยากาศไทย/สายมู (วัด เทียน ธูป ดอกบัว)', 'fragment' => 'thai spiritual atmosphere, temple ambience, candlelight, incense smoke, lotus flowers'],
+        'minimal' => ['label' => 'มินิมอล พื้นหลังสะอาด', 'fragment' => 'minimalist composition, clean simple background, negative space'],
+        'no_text' => ['label' => 'ห้ามมีตัวหนังสือในภาพ', 'fragment' => 'no text'],
+        'no_watermark' => ['label' => 'ไม่มีลายน้ำ/โลโก้', 'fragment' => 'no watermark'],
+        'no_faces' => ['label' => 'ไม่เห็นใบหน้าคนชัดเจน', 'fragment' => 'no people faces'],
+    ];
+
+    /**
+     * ชุด default เมื่อแคมเปญยังไม่เคยตั้ง (image_options = null)
+     * — ต้องให้ผลลัพธ์เทียบเท่าพฤติกรรมเดิมก่อนมีฟีเจอร์นี้ (backward compat)
+     */
+    public const DEFAULT_IMAGE_OPTIONS = [
+        'match_caption',
+        'photorealistic',
+        'vivid_light',
+        'no_text',
+        'no_watermark',
+        'no_faces',
+    ];
 
     protected $fillable = [
         'slug',
@@ -60,6 +101,12 @@ class FortuneContentCampaign extends Model
         'caption_max',
         'hashtag_count',
         'image_style_hint',
+        'generate_image',
+        'image_options',
+        'image_custom_prompt',
+        'image_provider_choice',
+        'text_provider',
+        'text_model',
         'post_count',
         'last_posted_at',
         'sort_order',
@@ -76,6 +123,8 @@ class FortuneContentCampaign extends Model
         'caption_min' => 'integer',
         'caption_max' => 'integer',
         'hashtag_count' => 'integer',
+        'generate_image' => 'boolean',
+        'image_options' => 'array',
         'post_count' => 'integer',
         'last_posted_at' => 'datetime',
         'sort_order' => 'integer',
@@ -203,6 +252,41 @@ class FortuneContentCampaign extends Model
         $kw = ! empty($keywords) ? $keywords[array_rand($keywords)] : $this->name_th;
 
         return trim(($subTopic ? "{$subTopic} " : '').$kw);
+    }
+
+    /**
+     * ออปชั่นภาพที่ resolve แล้ว — null = ชุด default (พฤติกรรมเดิม), array = ตามที่ admin ติ๊ก
+     *
+     * กรอง key แปลกปลอมทิ้งเสมอ (กันข้อมูลเก่า/มือแก้ DB ใส่ key ที่ไม่มีจริง)
+     *
+     * @return array<string>
+     */
+    public function resolvedImageOptions(): array
+    {
+        $opts = $this->image_options;
+        if (! is_array($opts)) {
+            return self::DEFAULT_IMAGE_OPTIONS;
+        }
+
+        return array_values(array_intersect($opts, array_keys(self::IMAGE_OPTIONS)));
+    }
+
+    /**
+     * ท่อน prompt อังกฤษจากออปชั่นที่ติ๊กไว้ (ข้าม behavior flag เช่น match_caption)
+     *
+     * @return array<string>
+     */
+    public function imageOptionFragments(): array
+    {
+        $fragments = [];
+        foreach ($this->resolvedImageOptions() as $key) {
+            $fragment = self::IMAGE_OPTIONS[$key]['fragment'] ?? null;
+            if ($fragment !== null && $fragment !== '') {
+                $fragments[] = $fragment;
+            }
+        }
+
+        return $fragments;
     }
 
     /**

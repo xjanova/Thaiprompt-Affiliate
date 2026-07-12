@@ -4367,12 +4367,13 @@ PROMPT;
         string $readingType = 'basic',
         ?string $birthDate = null,
         ?string $userContext = null,
-        string $purpose = 'prediction'
+        string $purpose = 'prediction',
+        ?array $modelOverrides = null
     ): array {
         try {
             return $this->generateWithRetryAndFallbackInner(
                 $questions, $userProfile, $userPosts, $promptTemplate,
-                $readingType, $birthDate, $userContext, $purpose,
+                $readingType, $birthDate, $userContext, $purpose, $modelOverrides,
             );
         } finally {
             // 🪪 (2026-05-24) Clear customer context — same reason as
@@ -4396,7 +4397,8 @@ PROMPT;
         string $readingType = 'basic',
         ?string $birthDate = null,
         ?string $userContext = null,
-        string $purpose = 'prediction'
+        string $purpose = 'prediction',
+        ?array $modelOverrides = null
     ): array {
         $errors = [];
         $prompt = $this->buildPrompt($questions, $userProfile, $userPosts, $promptTemplate, $birthDate);
@@ -4432,6 +4434,19 @@ PROMPT;
                 ]];
             } else {
                 throw new Exception('ไม่มี API Key ที่ใช้ได้เลย — กรุณาเพิ่ม key ในระบบ AI API Key Pool');
+            }
+        }
+
+        // 🎛️ (2026-07-12) Model override รายพารามิเตอร์ — map provider => model
+        //   ใช้กับงานที่ caller กำหนดโมเดลเจาะจงเอง (เช่น content campaign เลือกโมเดลเขียนบทความ)
+        //   บังคับเฉพาะ key ของ provider ที่ระบุ — key provider อื่นใน fallback chain
+        //   ยังใช้ model ของตัวเองตามเดิม (model เป็นของคู่กับ provider ข้ามกันไม่ได้)
+        if (! empty($modelOverrides)) {
+            foreach ($allKeys as $i => $keyInfo) {
+                $kp = $keyInfo['provider'] ?? null;
+                if ($kp !== null && ! empty($modelOverrides[$kp])) {
+                    $allKeys[$i]['model'] = $modelOverrides[$kp];
+                }
             }
         }
 

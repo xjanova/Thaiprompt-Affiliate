@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiApiKey;
 use App\Models\FortuneContentCampaign;
 use App\Models\FortuneContentPost;
 use App\Services\ContentCampaignAutoPostService;
@@ -49,12 +50,56 @@ class ContentCampaignController extends Controller
                 ->count(),
         ];
 
-        return view('admin.fortune.campaigns.index', [
+        return view('admin.fortune.campaigns.index', array_merge([
             'campaigns' => $campaigns,
             'recentPosts' => $recentPosts,
             'stats' => $stats,
             'pageTitle' => 'แคมเปญคอนเทนต์อัตโนมัติ',
-        ]);
+        ], $this->modelSelectionOptions()));
+    }
+
+    /**
+     * ข้อมูลตัวเลือกโมเดล AI สำหรับ dropdown ในฟอร์มแคมเปญ
+     *
+     * - imageModelOptions   : โมเดลเจนภาพที่คีย์พร้อมใช้จริง (isConfigured เท่านั้น)
+     * - textProviderOptions : provider เจนบทความที่มี key เทสผ่านใน pool (scopeAvailable)
+     * - textModelsByProvider: โมเดลข้อความต่อ provider (กรอง TTS ออก)
+     *
+     * @return array{imageModelOptions: array, textProviderOptions: array, textModelsByProvider: array}
+     */
+    protected function modelSelectionOptions(): array
+    {
+        $imageModelOptions = ContentCampaignAutoPostService::availableImageModels();
+
+        // provider ที่มี key พร้อมใช้ (เทสผ่าน + active) — minimax เป็น TTS ไม่ใช่ text
+        try {
+            $availableProviders = AiApiKey::available()
+                ->distinct()
+                ->pluck('provider')
+                ->filter(fn ($p) => $p !== 'minimax')
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            $availableProviders = []; // migration test-column ยังไม่รัน → แสดงแค่ "อัตโนมัติ"
+        }
+
+        $textProviderOptions = array_intersect_key(AiApiKey::PROVIDERS, array_flip($availableProviders));
+
+        // โมเดลต่อ provider — ตัดโมเดล TTS ของ openai ออก (ใช้กับเสียง ไม่ใช่บทความ)
+        $textModelsByProvider = [];
+        foreach ($availableProviders as $provider) {
+            $models = AiApiKey::MODELS_BY_PROVIDER[$provider] ?? [];
+            $textModelsByProvider[$provider] = array_values(array_filter(
+                $models,
+                fn ($m) => ! str_starts_with($m, 'tts-') && ! str_contains($m, '-tts')
+            ));
+        }
+
+        return [
+            'imageModelOptions' => $imageModelOptions,
+            'textProviderOptions' => $textProviderOptions,
+            'textModelsByProvider' => $textModelsByProvider,
+        ];
     }
 
     /**
@@ -226,6 +271,18 @@ class ContentCampaignController extends Controller
             'content_prompt' => 'nullable|string|max:5000',
             'image_style_hint' => 'nullable|string|max:500',
 
+            // 🖼️ ภาพประกอบ — toggle + preset options + custom prompt + โมเดลที่เลือก
+            'generate_image' => 'sometimes|boolean',
+            'image_options' => 'sometimes|array',
+            'image_options.*' => 'string|in:'.implode(',', array_keys(FortuneContentCampaign::IMAGE_OPTIONS)),
+            'image_custom_prompt' => 'nullable|string|max:2000',
+            // max:50 = ความยาวคอลัมน์ image_provider ของตาราง posts (เกิน → QueryException ตอนโพส)
+            'image_provider_choice' => ['nullable', 'string', 'max:50', 'regex:/^(auto|[a-z0-9\-]+:[A-Za-z0-9._\/\-]+)$/'],
+
+            // 🤖 โมเดลเจนบทความ — provider ต้องเป็นตัวที่ระบบรู้จัก (minimax = TTS ห้ามใช้เขียนบทความ)
+            'text_provider' => 'nullable|string|in:'.implode(',', array_diff(array_keys(AiApiKey::PROVIDERS), ['minimax'])),
+            'text_model' => 'nullable|string|max:120',
+
             // Pools — textarea 1 บรรทัด/รายการ
             'keywords_text' => 'nullable|string|max:3000',
             'sub_topic_pool_text' => 'nullable|string|max:5000',
@@ -246,6 +303,29 @@ class ContentCampaignController extends Controller
             ]);
         }
 
+        // ✋ Cross-field: text_model ต้องเป็นโมเดลที่ provider นั้นรองรับจริง
+        //    (กันพิมพ์ model ID มั่ว → ทุก key ของ provider ล้มเงียบทุกโพส)
+        $textProvider = trim((string) ($validated['text_provider'] ?? ''));
+        $textModel = trim((string) ($validated['text_model'] ?? ''));
+        if ($textModel !== '') {
+            if ($textProvider === '') {
+                // เลือกโมเดลโดยไม่เลือก provider = ไม่มีความหมาย → ล้างทิ้ง
+                $validated['text_model'] = null;
+            } else {
+                // กรอง TTS ออกด้วย filter เดียวกับ dropdown — กัน POST ตรงยัด tts-1
+                // แล้วทุก key ของ provider ล้มเงียบทุกโพส
+                $allowedModels = array_filter(
+                    AiApiKey::MODELS_BY_PROVIDER[$textProvider] ?? [],
+                    fn ($m) => ! str_starts_with($m, 'tts-') && ! str_contains($m, '-tts')
+                );
+                if (! in_array($textModel, $allowedModels, true)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'text_model' => "โมเดล \"{$textModel}\" ไม่อยู่ในรายการที่รองรับของ provider ที่เลือก",
+                    ]);
+                }
+            }
+        }
+
         return $validated;
     }
 
@@ -254,7 +334,35 @@ class ContentCampaignController extends Controller
      */
     protected function campaignAttributes(Request $request, array $validated): array
     {
-        return [
+        $attributes = [];
+
+        // 🖼️ ฟิลด์ภาพ/โมเดล — เขียนเฉพาะเมื่อฟอร์มส่งมาจริง (ฟอร์มเวอร์ชันใหม่มี hidden marker เสมอ)
+        //    กันฟอร์มเก่าที่ cache ค้างส่งมาโดยไม่มีฟิลด์ → ไป reset ค่าที่ตั้งไว้เงียบๆ
+        if ($request->has('generate_image')) {
+            $attributes['generate_image'] = $request->boolean('generate_image');
+        }
+        if ($request->has('image_options_submitted')) {
+            $attributes['image_options'] = array_values(array_unique(array_intersect(
+                (array) $request->input('image_options', []),
+                array_keys(FortuneContentCampaign::IMAGE_OPTIONS)
+            )));
+        }
+        if ($request->has('image_custom_prompt')) {
+            $attributes['image_custom_prompt'] = trim((string) ($validated['image_custom_prompt'] ?? '')) ?: null;
+        }
+        if ($request->has('image_provider_choice')) {
+            $choice = trim((string) ($validated['image_provider_choice'] ?? ''));
+            $attributes['image_provider_choice'] = ($choice === '' || $choice === 'auto') ? null : $choice;
+        }
+        if ($request->has('text_provider')) {
+            $provider = trim((string) ($validated['text_provider'] ?? ''));
+            $model = trim((string) ($validated['text_model'] ?? ''));
+            $attributes['text_provider'] = $provider ?: null;
+            // provider ว่าง = อัตโนมัติ → โมเดลที่ค้างอยู่ไม่มีความหมาย ล้างคู่กัน
+            $attributes['text_model'] = ($provider !== '' && $model !== '') ? $model : null;
+        }
+
+        return $attributes + [
             'name_th' => $validated['name_th'],
             'description_th' => $validated['description_th'] ?? null,
             'emoji' => $validated['emoji'] ?? null,

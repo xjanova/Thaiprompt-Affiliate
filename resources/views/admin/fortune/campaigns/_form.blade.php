@@ -8,6 +8,29 @@
     $initialSlots = old('schedule_text') !== null
         ? array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', old('schedule_text')))))
         : array_values($campaign->schedule ?? []);
+
+    // ── ตัวเลือกโมเดล AI (ส่งจาก controller — partial อาจถูก include จากที่อื่น จึงมี default เสมอ)
+    $imageModelOptions = $imageModelOptions ?? [
+        ['value' => 'auto', 'label' => 'อัตโนมัติ (Cloudflare FLUX → Pollinations)', 'group' => 'ค่าเริ่มต้นระบบ'],
+    ];
+    $textProviderOptions = $textProviderOptions ?? [];
+    $textModelsByProvider = $textModelsByProvider ?? [];
+
+    // จัดกลุ่มโมเดลภาพเป็น optgroup ต่อ provider
+    $imageChoiceValues = array_column($imageModelOptions, 'value');
+    $imageGroups = [];
+    foreach ($imageModelOptions as $opt) {
+        $imageGroups[$opt['group']][] = $opt;
+    }
+
+    // ค่าตั้งต้น — validation พลาดใช้ old ก่อน แล้วค่อยค่าของแคมเปญ
+    $genImageInit = old('generate_image', ($campaign->generate_image ?? true) ? '1' : '0') == '1';
+    $currentImageChoice = old('image_provider_choice', $campaign->image_provider_choice ?? 'auto') ?: 'auto';
+    $selectedImageOptions = old('image_options_submitted') !== null
+        ? (array) old('image_options', [])
+        : ($campaign ? $campaign->resolvedImageOptions() : \App\Models\FortuneContentCampaign::DEFAULT_IMAGE_OPTIONS);
+    $currentTextProvider = old('text_provider', $campaign->text_provider ?? '') ?? '';
+    $currentTextModel = old('text_model', $campaign->text_model ?? '') ?? '';
 @endphp
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
@@ -81,11 +104,6 @@
         <input type="text" name="persona" value="{{ old('persona', $campaign->persona ?? '') }}" maxlength="200"
                class="tp-input" style="width:100%;" placeholder="เว้นว่าง = ใช้ชื่อแบรนด์ (แม่หมอจันทรา)">
     </div>
-    <div>
-        <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:4px;">สไตล์ภาพเสริม (ต่อท้าย prompt ที่ AI สร้างจากเนื้อหา)</label>
-        <input type="text" name="image_style_hint" value="{{ old('image_style_hint', $campaign->image_style_hint ?? '') }}" maxlength="500"
-               class="tp-input" style="width:100%;" placeholder="เช่น warm cinematic tone, golden hour">
-    </div>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:12px;">
@@ -117,6 +135,113 @@
     </label>
     <textarea name="content_prompt" rows="3" class="tp-input" style="width:100%;font-family:monospace;font-size:12px;"
               placeholder="ใช้ {sub_topic} {min_len} {max_len} เป็น placeholder ได้">{{ old('content_prompt', $campaign->content_prompt ?? '') }}</textarea>
+</div>
+
+{{-- ── 🤖 โมเดล AI เขียนบทความ ── --}}
+<div style="margin-top:14px;padding:14px 16px;border:1px solid var(--line,rgba(128,128,128,.2));border-radius:12px;"
+     x-data="{ prov: {{ Illuminate\Support\Js::from($currentTextProvider) }}, models: {{ Illuminate\Support\Js::from($textModelsByProvider) }} }">
+    <div style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;">
+        <i class="fas fa-robot" style="color:var(--accent1);"></i> โมเดล AI เขียนบทความ
+    </div>
+    <p class="tp-muted" style="font-size:12px;margin:4px 0 10px;">
+        แสดงเฉพาะ provider ที่มีคีย์เทสผ่านใน AI Key Pool — เว้นว่าง = อัตโนมัติ (Gemini หลัก + fallback ทั้ง pool เหมือนเดิม)
+    </p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+        <div>
+            <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:4px;">Provider</label>
+            <select name="text_provider" x-model="prov" class="tp-input" style="width:100%;">
+                <option value="">อัตโนมัติ (Gemini หลัก + fallback pool)</option>
+                @foreach($textProviderOptions as $providerKey => $providerLabel)
+                    <option value="{{ $providerKey }}">{{ $providerLabel }}</option>
+                @endforeach
+                @if($currentTextProvider !== '' && ! array_key_exists($currentTextProvider, $textProviderOptions))
+                    <option value="{{ $currentTextProvider }}">⚠️ {{ $currentTextProvider }} (ไม่มีคีย์พร้อมใช้แล้ว)</option>
+                @endif
+            </select>
+        </div>
+        <div>
+            <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:4px;">โมเดล</label>
+            <select name="text_model" class="tp-input" style="width:100%;" :disabled="prov === ''">
+                <option value="">อัตโนมัติ (ใช้โมเดลของคีย์ใน pool)</option>
+                <template x-for="m in (models[prov] || [])" :key="m">
+                    <option :value="m" x-text="m" :selected="m === {{ Illuminate\Support\Js::from($currentTextModel) }}"></option>
+                </template>
+            </select>
+            <p class="tp-muted" style="font-size:11px;margin:4px 0 0;">
+                บังคับโมเดลนี้เฉพาะคีย์ของ provider ที่เลือก — คีย์ provider อื่นใน fallback ใช้โมเดลของตัวเอง
+            </p>
+        </div>
+    </div>
+</div>
+
+{{-- ── 🖼️ ภาพประกอบโพส ── --}}
+<div style="margin-top:14px;padding:14px 16px;border:1px solid var(--line,rgba(128,128,128,.2));border-radius:12px;"
+     x-data="{ genImage: {{ $genImageInit ? 'true' : 'false' }} }">
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;cursor:pointer;">
+        <input type="hidden" name="generate_image" value="0">
+        <input type="checkbox" name="generate_image" value="1" x-model="genImage" {{ $genImageInit ? 'checked' : '' }}>
+        <i class="fas fa-image" style="color:var(--accent1);"></i> สร้างภาพประกอบโพสอัตโนมัติ
+    </label>
+    <p class="tp-muted" style="font-size:12px;margin:4px 0 0 24px;">ปิด = โพสข้อความล้วน (ไม่มีภาพ)</p>
+
+    <div x-show="genImage" x-cloak style="margin-top:12px;">
+        {{-- โมเดลเจนภาพ — แสดงเฉพาะตัวที่คีย์พร้อมใช้จริง --}}
+        <div>
+            <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:4px;">
+                โมเดลเจนภาพ (แสดงเฉพาะตัวที่ตั้งคีย์แล้วพร้อมใช้ — จัดการคีย์ที่เมนู AI Generation)
+            </label>
+            <select name="image_provider_choice" class="tp-input" style="width:100%;max-width:520px;">
+                @if(! in_array($currentImageChoice, $imageChoiceValues, true))
+                    <option value="{{ $currentImageChoice }}" selected>⚠️ {{ $currentImageChoice }} (คีย์ใช้ไม่ได้แล้ว — กรุณาเลือกใหม่)</option>
+                @endif
+                @foreach($imageGroups as $groupLabel => $groupOptions)
+                    <optgroup label="{{ $groupLabel }}">
+                        @foreach($groupOptions as $opt)
+                            <option value="{{ $opt['value'] }}" {{ $currentImageChoice === $opt['value'] ? 'selected' : '' }}>
+                                {{ $opt['label'] }}
+                            </option>
+                        @endforeach
+                    </optgroup>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Preset options — ติ๊กคุมแนวภาพ (สำหรับคนคิด prompt ไม่ออก) --}}
+        <div style="margin-top:12px;">
+            <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:6px;">
+                ออปชั่นภาพ (ติ๊กเลือกได้ — ชุดที่ติ๊กไว้แล้วคือค่าแนะนำของระบบ)
+            </label>
+            <input type="hidden" name="image_options_submitted" value="1">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 14px;">
+                @foreach(\App\Models\FortuneContentCampaign::IMAGE_OPTIONS as $optionKey => $optionDef)
+                    <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;cursor:pointer;">
+                        <input type="checkbox" name="image_options[]" value="{{ $optionKey }}" style="margin-top:3px;"
+                               {{ in_array($optionKey, $selectedImageOptions, true) ? 'checked' : '' }}>
+                        <span>{{ $optionDef['label'] }}</span>
+                    </label>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Custom prompt ภาพ --}}
+        <div style="margin-top:12px;">
+            <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:4px;">
+                พร้อมท์ภาพหลักกำหนดเอง (เว้นว่าง = AI คิดจากเนื้อหาโพสให้เอง · ใช้ {sub_topic} เป็น placeholder ได้)
+            </label>
+            <textarea name="image_custom_prompt" rows="2" class="tp-input" style="width:100%;font-family:monospace;font-size:12px;"
+                      placeholder="เช่น a golden buddhist amulet glowing on silk cloth, candle light">{{ old('image_custom_prompt', $campaign->image_custom_prompt ?? '') }}</textarea>
+            <p class="tp-muted" style="font-size:11px;margin:4px 0 0;">
+                ถ้าติ๊ก "ภาพสอดคล้องกับเนื้อหาโพส" ด้วย — AI จะผสานพร้อมท์นี้เข้ากับเนื้อหาโพสให้ · ถ้าไม่ติ๊ก — ใช้พร้อมท์นี้ตรงๆ ทุกโพส
+            </p>
+        </div>
+
+        {{-- สไตล์เสริม (ย้ายมาจากด้านบน — ต่อท้าย prompt เสมอ) --}}
+        <div style="margin-top:12px;">
+            <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:4px;">สไตล์ภาพเสริม (ต่อท้าย prompt เสมอ)</label>
+            <input type="text" name="image_style_hint" value="{{ old('image_style_hint', $campaign->image_style_hint ?? '') }}" maxlength="500"
+                   class="tp-input" style="width:100%;" placeholder="เช่น warm cinematic tone, golden hour">
+        </div>
+    </div>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px;align-items:end;">

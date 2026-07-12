@@ -126,6 +126,14 @@
                         @if($campaign->topic_source === 'mystic_topics')
                             <span class="tp-pill tp-pill-soft" style="font-size:11px;">🌙 ใช้คลังสายมูเดิม</span>
                         @endif
+                        @if(! ($campaign->generate_image ?? true))
+                            <span class="tp-pill tp-pill-soft" style="font-size:11px;">🚫 ไม่สร้างภาพ</span>
+                        @elseif($campaign->image_provider_choice)
+                            <span class="tp-pill tp-pill-soft" style="font-size:11px;">🖼️ {{ $campaign->image_provider_choice }}</span>
+                        @endif
+                        @if($campaign->text_provider)
+                            <span class="tp-pill tp-pill-soft" style="font-size:11px;">🤖 {{ $campaign->text_provider }}{{ $campaign->text_model ? ' · '.$campaign->text_model : '' }}</span>
+                        @endif
                     </div>
                     @if($campaign->description_th)
                         <p class="tp-muted" style="margin:6px 0 0;font-size:13px;">{{ Str::limit($campaign->description_th, 140) }}</p>
