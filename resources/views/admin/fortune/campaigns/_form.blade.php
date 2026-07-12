@@ -204,6 +204,10 @@
                     </optgroup>
                 @endforeach
             </select>
+            <p class="tp-muted" style="font-size:11px;margin:4px 0 0;">
+                Gemini Nano Banana / OpenAI gpt-image ใช้คีย์จาก AI Key Pool โดยตรง —
+                Gemini จะแสดงเมื่อมีคีย์แบบเปิด billing (free tier เจนภาพไม่ได้ ระบบเช็คให้อัตโนมัติทุก 6 ชม.)
+            </p>
         </div>
 
         {{-- Preset options — ติ๊กคุมแนวภาพ (สำหรับคนคิด prompt ไม่ออก) --}}

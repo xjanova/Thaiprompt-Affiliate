@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AiApiKey;
 use App\Models\AiGenProvider;
 use App\Models\FortuneContentCampaign;
 use App\Models\FortuneContentPost;
@@ -73,6 +74,39 @@ class ContentCampaignAutoPostService
      * แยกจาก IMAGE_PROVIDER_CLASSES เพราะไม่ผ่าน AiGenProvider registry
      */
     public const POLLINATIONS_MODELS = ['turbo', 'flux'];
+
+    /**
+     * 🏊 โมเดลเจนภาพที่ใช้ "คีย์จาก AI Key Pool" (ตาราง ai_api_keys) โดยตรง
+     *
+     * คนละที่กับ AiGen registry — คีย์ Gemini/OpenAI ของเราอยู่ใน pool (เทสผ่านแล้ว)
+     * จึงเปิดเส้นทางนี้ให้เจนภาพด้วยคีย์เดียวกับที่ใช้เขียนบทความได้เลย
+     *
+     * ✅ ทุก model ID ยืนยันสดกับ API จริงด้วยคีย์ prod แล้ว 2026-07-12
+     *    (Gemini: GET /v1beta/models · OpenAI: GET /v1/models — กฎ verify-model-ids-live)
+     *    ห้ามเพิ่ม ID ใหม่โดยไม่ยิงทดสอบก่อน
+     */
+    public const POOL_IMAGE_MODELS = [
+        'pool-gemini' => [
+            'gemini-2.5-flash-image' => 'gemini-2.5-flash-image (Nano Banana)',
+            'gemini-3.1-flash-image' => 'gemini-3.1-flash-image (Nano Banana รุ่นใหม่)',
+            'gemini-3.1-flash-lite-image' => 'gemini-3.1-flash-lite-image (เบา/ถูกสุด)',
+            'gemini-3-pro-image' => 'gemini-3-pro-image (Nano Banana Pro 💰)',
+        ],
+        'pool-openai' => [
+            'gpt-image-2' => 'gpt-image-2 (ใหม่สุด 💰)',
+            'gpt-image-1.5' => 'gpt-image-1.5 💰',
+            'gpt-image-1' => 'gpt-image-1 💰',
+            'gpt-image-1-mini' => 'gpt-image-1-mini (ถูกสุดของ OpenAI)',
+        ],
+    ];
+
+    /**
+     * map slug pool → provider ในตาราง ai_api_keys + ชื่อกลุ่มบน dropdown
+     */
+    protected const POOL_IMAGE_GROUPS = [
+        'pool-gemini' => ['provider' => 'gemini', 'group' => 'Google Gemini — คีย์จาก AI Pool (flash มี free tier)'],
+        'pool-openai' => ['provider' => 'openai', 'group' => 'OpenAI gpt-image — คีย์จาก AI Pool 💰 เสียเงินต่อภาพ'],
+    ];
 
     protected FortuneTellingSetting $settings;
 
@@ -526,9 +560,13 @@ class ContentCampaignAutoPostService
         if ($choice !== '' && $choice !== 'auto' && str_contains($choice, ':')) {
             [$slug, $model] = explode(':', $choice, 2);
 
-            $url = $slug === 'pollinations'
-                ? $this->generateImageWithPollinations($post, $fullPrompt, $model)
-                : $this->generateImageWithAiGenProvider($post, $slug, $model, $fullPrompt);
+            if (isset(self::POOL_IMAGE_MODELS[$slug])) {
+                $url = $this->generateImageWithPoolKey($post, $slug, $model, $fullPrompt);
+            } elseif ($slug === 'pollinations') {
+                $url = $this->generateImageWithPollinations($post, $fullPrompt, $model);
+            } else {
+                $url = $this->generateImageWithAiGenProvider($post, $slug, $model, $fullPrompt);
+            }
 
             if ($url) {
                 $post->update(['image_url' => $url, 'image_provider' => $choice]);
@@ -672,6 +710,27 @@ class ContentCampaignAutoPostService
             ['value' => 'auto', 'label' => 'อัตโนมัติ (Cloudflare FLUX → Pollinations)', 'group' => 'ค่าเริ่มต้นระบบ'],
         ];
 
+        // โมเดลจากคีย์ AI Key Pool — Gemini Nano Banana / OpenAI gpt-image
+        // แสดงเมื่อคีย์ "เจนภาพได้จริง" (probe + cache) ไม่ใช่แค่มีคีย์:
+        // Gemini free tier เจนภาพไม่ได้ (quota=0) — ถ้าโชว์ทั้งที่ใช้ไม่ได้ แอดมินเลือกแล้ว
+        // ทุกโพสจะ fallback เงียบๆ ตลอด
+        try {
+            foreach (self::POOL_IMAGE_GROUPS as $slug => $info) {
+                if (! self::poolImageCapable($slug)) {
+                    continue;
+                }
+                foreach (self::POOL_IMAGE_MODELS[$slug] as $modelKey => $label) {
+                    $options[] = [
+                        'value' => "{$slug}:{$modelKey}",
+                        'label' => $label,
+                        'group' => $info['group'],
+                    ];
+                }
+            }
+        } catch (Exception $e) {
+            // migration คอลัมน์เทสยังไม่รัน ฯลฯ — ข้ามกลุ่ม pool ไป dropdown ยังใช้ได้
+        }
+
         try {
             $providers = AiGenProvider::active()
                 ->whereIn('type', ['image', 'both'])
@@ -814,6 +873,312 @@ class ContentCampaignAutoPostService
 
             return null;
         }
+    }
+
+    /**
+     * ไฟล์เก็บผล probe ความสามารถเจนภาพของคีย์ pool
+     *
+     * ⚠️ ใช้ไฟล์แทน cache() โดยเจตนา — deploy.sh รัน `artisan cache:clear` ทุก deploy
+     * (repo นี้ push = auto-deploy เกือบทุกวัน) ถ้าเก็บใน cache ผล positive จะไม่เคยรอด
+     * → probe Gemini จ่ายเงินเจนภาพจริง + หน้า admin ช้า ซ้ำทุกรอบ deploy
+     */
+    protected const POOL_CAP_FILE = 'content-campaigns/pool-image-capability.json';
+
+    /**
+     * 🏊 เช็คว่าคีย์ใน pool "เจนภาพได้จริง" ไหม
+     *
+     * - pool-openai: GET /v1/models (ฟรี) — มี gpt-image-* ในลิสต์ = บัญชีเข้าถึง image API
+     * - pool-gemini: ยิงเจนภาพจิ๋วจริง (shape เดียวกับตอนโพสจริง รวม seed) —
+     *   คีย์ free tier 429 ทันที (quota=0, ไม่เสียเงิน) / คีย์ billing เจนสำเร็จ
+     *   (~1-2฿ ต่อ 3 วัน — ยอมรับได้ แลกกับ dropdown ที่ไม่หลอก)
+     * - ผลเก็บลงไฟล์: ใช้ได้ 3 วัน / ใช้ไม่ได้ 6 ชม. / คลุมเครือ (5xx, timeout) 15 นาที
+     *   (คลุมเครือต้อง cache สั้นๆ ด้วย — ไม่งั้นช่วง provider ล่ม จะยิง probe ทุก page load)
+     */
+    protected static function poolImageCapable(string $slug): bool
+    {
+        $provider = self::POOL_IMAGE_GROUPS[$slug]['provider'] ?? null;
+        if ($provider === null || ! AiApiKey::forProvider($provider)->available()->exists()) {
+            return false;
+        }
+
+        $state = self::readPoolCapabilityState($slug);
+        if ($state !== null && ($state['expires_at'] ?? 0) > time()) {
+            return (bool) ($state['capable'] ?? false);
+        }
+
+        $capable = $slug === 'pool-gemini'
+            ? self::probeGeminiImageQuota()
+            : self::probeOpenAiImageAccess();
+
+        $ttlSeconds = $capable === true
+            ? 3 * 86400
+            : ($capable === false ? 6 * 3600 : 900); // null = คลุมเครือ → เช็คใหม่ใน 15 นาที
+
+        self::writePoolCapabilityState($slug, (bool) $capable, $ttlSeconds);
+
+        return (bool) $capable;
+    }
+
+    /**
+     * อ่านผล probe จากไฟล์ — คืน null ถ้าไม่มี/อ่านไม่ได้/format ผิด
+     *
+     * @return array{capable: bool, expires_at: int}|null
+     */
+    protected static function readPoolCapabilityState(string $slug): ?array
+    {
+        try {
+            if (! Storage::disk('local')->exists(self::POOL_CAP_FILE)) {
+                return null;
+            }
+            $data = json_decode((string) Storage::disk('local')->get(self::POOL_CAP_FILE), true);
+            $state = $data[$slug] ?? null;
+
+            return (is_array($state) && isset($state['capable'], $state['expires_at'])) ? $state : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * บันทึกผล probe ลงไฟล์ (เก็บรวมทุก slug ในไฟล์เดียว)
+     */
+    protected static function writePoolCapabilityState(string $slug, bool $capable, int $ttlSeconds): void
+    {
+        try {
+            $data = [];
+            if (Storage::disk('local')->exists(self::POOL_CAP_FILE)) {
+                $decoded = json_decode((string) Storage::disk('local')->get(self::POOL_CAP_FILE), true);
+                $data = is_array($decoded) ? $decoded : [];
+            }
+            $data[$slug] = [
+                'capable' => $capable,
+                'expires_at' => time() + $ttlSeconds,
+                'checked_at' => time(),
+            ];
+            Storage::disk('local')->put(self::POOL_CAP_FILE, json_encode($data, JSON_PRETTY_PRINT));
+        } catch (\Throwable $e) {
+            // เขียนไฟล์ไม่ได้ — probe รอบหน้าใหม่ ไม่ใช่เหตุให้หน้า admin พัง
+        }
+    }
+
+    /**
+     * Probe: คีย์ Gemini ตัวไหนเจนภาพได้จริงไหม (ไล่สูงสุด 3 คีย์ตาม priority)
+     *
+     * ใช้ shape เดียวกับ request จริงตอนโพส (responseModalities + seed) — probe ผ่าน
+     * แล้วโพสจริงต้องผ่านด้วย ไม่ใช่ probe หลอก
+     *
+     * @return bool|null null = คลุมเครือ (network/5xx) — caller cache สั้นๆ เท่านั้น
+     */
+    protected static function probeGeminiImageQuota(): ?bool
+    {
+        $keys = AiApiKey::forProvider('gemini')->available()->orderByDesc('priority')->limit(3)->get();
+        $probeModel = (string) array_key_first(self::POOL_IMAGE_MODELS['pool-gemini']);
+        $sawDefinitiveNo = false;
+
+        foreach ($keys as $key) {
+            try {
+                $baseUrl = rtrim($key->resolveBaseUrl() ?: 'https://generativelanguage.googleapis.com/v1beta', '/');
+                $response = Http::timeout(30)
+                    ->withHeaders(['x-goog-api-key' => $key->api_key])
+                    ->post("{$baseUrl}/models/{$probeModel}:generateContent", [
+                        'contents' => [['parts' => [['text' => 'tiny golden lotus, warm light']]]],
+                        'generationConfig' => [
+                            'responseModalities' => ['TEXT', 'IMAGE'],
+                            'seed' => 12345,
+                        ],
+                    ]);
+
+                foreach ($response->json('candidates.0.content.parts', []) as $part) {
+                    if (! empty($part['inlineData']['data'])) {
+                        return true;
+                    }
+                }
+                if (in_array($response->status(), [400, 403, 429], true)) {
+                    $sawDefinitiveNo = true; // ตอบชัดว่าใช้ไม่ได้ (เช่น free tier quota=0)
+                }
+                // 5xx/overloaded → ไม่นับทั้งสองทาง (คลุมเครือ)
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        return $sawDefinitiveNo ? false : null;
+    }
+
+    /**
+     * Probe: บัญชี OpenAI เข้าถึง image API ไหม — GET /v1/models (ฟรี ไม่เจนจริง)
+     *
+     * @return bool|null null = คลุมเครือ — caller ห้าม cache
+     */
+    protected static function probeOpenAiImageAccess(): ?bool
+    {
+        $keys = AiApiKey::forProvider('openai')->available()->orderByDesc('priority')->limit(3)->get();
+        $sawDefinitiveNo = false;
+
+        foreach ($keys as $key) {
+            try {
+                $baseUrl = rtrim($key->resolveBaseUrl() ?: 'https://api.openai.com/v1', '/');
+                $response = Http::timeout(15)->withToken($key->api_key)->get("{$baseUrl}/models");
+
+                if ($response->successful()) {
+                    $ids = collect($response->json('data', []))->pluck('id');
+                    if ($ids->contains(fn ($id) => str_starts_with((string) $id, 'gpt-image-'))) {
+                        return true;
+                    }
+                    $sawDefinitiveNo = true;
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        return $sawDefinitiveNo ? false : null;
+    }
+
+    /**
+     * 🏊 เจนภาพด้วยคีย์จาก AI Key Pool (Gemini Nano Banana / OpenAI gpt-image)
+     *
+     * ไล่ลองสูงสุด 3 คีย์ตาม priority — คีย์ free tier ของ Gemini จะ 429 ทันที (ไม่เสียเวลา)
+     * ล้มเหลวทุกกรณีคืน null → caller fallback chain ต่อ โพสไม่มีวันตายเพราะภาพ
+     *
+     * @param  string  $slug  'pool-gemini' | 'pool-openai'
+     */
+    protected function generateImageWithPoolKey(
+        FortuneContentPost $post,
+        string $slug,
+        string $model,
+        string $prompt
+    ): ?string {
+        $models = self::POOL_IMAGE_MODELS[$slug] ?? [];
+        $provider = self::POOL_IMAGE_GROUPS[$slug]['provider'] ?? null;
+        if ($provider === null || $models === []) {
+            return null;
+        }
+
+        // 🛡️ whitelist model — ค่าแปลกปลอม (POST ตรง/มือแก้ DB) บังคับตัวแรกของลิสต์
+        if (! isset($models[$model])) {
+            $model = (string) array_key_first($models);
+        }
+
+        $keys = AiApiKey::forProvider($provider)->available()->orderByDesc('priority')->limit(3)->get();
+        if ($keys->isEmpty()) {
+            Log::warning('ContentCampaign: pool ไม่มีคีย์พร้อมใช้สำหรับเจนภาพ', [
+                'provider' => $provider,
+                'model' => $model,
+            ]);
+
+            return null;
+        }
+
+        foreach ($keys as $key) {
+            try {
+                $b64 = $provider === 'gemini'
+                    ? $this->callGeminiImageApi($key, $model, $prompt, $this->imageSeed($post))
+                    : $this->callOpenAiImageApi($key, $model, $prompt);
+
+                if ($b64) {
+                    return $this->storeImageFromBase64($post, $b64);
+                }
+            } catch (Exception $e) {
+                Log::warning('ContentCampaign: pool image exception — ลองคีย์ถัดไป', [
+                    'slug' => $slug,
+                    'model' => $model,
+                    'key_id' => $key->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gemini image (generateContent + responseModalities IMAGE) → base64 PNG
+     *
+     * ใช้ header x-goog-api-key — ไม่ฝังคีย์ใน URL (กันหลุดใน log/exception message)
+     */
+    protected function callGeminiImageApi(AiApiKey $key, string $model, string $prompt, int $seed): ?string
+    {
+        $baseUrl = rtrim($key->resolveBaseUrl() ?: 'https://generativelanguage.googleapis.com/v1beta', '/');
+
+        $response = Http::timeout(90)
+            ->withHeaders(['x-goog-api-key' => $key->api_key])
+            ->post("{$baseUrl}/models/{$model}:generateContent", [
+                'contents' => [['parts' => [['text' => $prompt]]]],
+                'generationConfig' => [
+                    // TEXT+IMAGE = ชุดที่โมเดลภาพทุกรุ่นรองรับ (IMAGE เดี่ยวบางรุ่น reject)
+                    'responseModalities' => ['TEXT', 'IMAGE'],
+                    'seed' => $seed,
+                ],
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('ContentCampaign: Gemini image API ตอบไม่สำเร็จ', [
+                'model' => $model,
+                'status' => $response->status(),
+                'error' => $response->json('error.message', 'unknown'),
+            ]);
+
+            return null;
+        }
+
+        foreach ($response->json('candidates.0.content.parts', []) as $part) {
+            if (! empty($part['inlineData']['data'])) {
+                return $part['inlineData']['data'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * OpenAI gpt-image (images/generations) → base64 PNG
+     *
+     * ⚠️ ห้ามส่ง response_format — ตระกูล gpt-image ไม่รับพารามิเตอร์นี้ (คืน b64 เป็น default)
+     */
+    protected function callOpenAiImageApi(AiApiKey $key, string $model, string $prompt): ?string
+    {
+        $baseUrl = rtrim($key->resolveBaseUrl() ?: 'https://api.openai.com/v1', '/');
+
+        $response = Http::timeout(120)
+            ->withToken($key->api_key)
+            ->post("{$baseUrl}/images/generations", [
+                'model' => $model,
+                'prompt' => mb_substr($prompt, 0, 4000),
+                'n' => 1,
+                'size' => '1024x1024',
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('ContentCampaign: OpenAI image API ตอบไม่สำเร็จ', [
+                'model' => $model,
+                'status' => $response->status(),
+                'error' => $response->json('error.message', 'unknown'),
+            ]);
+
+            return null;
+        }
+
+        return $response->json('data.0.b64_json') ?: null;
+    }
+
+    /**
+     * เซฟภาพ base64 ที่ path ของ campaign → คืน public URL
+     */
+    protected function storeImageFromBase64(FortuneContentPost $post, string $b64): ?string
+    {
+        $binary = base64_decode($b64, true);
+        if ($binary === false || $binary === '') {
+            return null;
+        }
+
+        $relativePath = $this->savedImagePath($post);
+        $absolutePath = $this->ensureDir($relativePath);
+        file_put_contents($absolutePath, $binary);
+
+        $post->update(['image_path' => $relativePath]);
+
+        return asset('storage/'.$relativePath);
     }
 
     /**
