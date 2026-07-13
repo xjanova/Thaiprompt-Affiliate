@@ -233,10 +233,21 @@ class BillTrollGuardService
             'strikes' => $strikes,
         ]);
 
+        // 📢 (2026-07-13) ผลลัพธ์ถ้าไม่จ่าย — ต้องตรงกับกลไกที่บังคับใช้จริง (อย่าขู่เกินจริง)
+        //   quiz เปิด → auto-ban = N วัน (ผ่านแบบสอบถาม, หมดอายุเอง) ไม่ใช่ถาวร ตาม consentQuizGatingActive()
+        //   quiz ปิด → แบนถาวร (legacy)
+        if ($this->consentQuizGatingActive()) {
+            $banDays = (int) (FortuneTellingSetting::getSettings()->consent_quiz_ban_days ?? 7);
+            $banDays = $banDays > 0 ? $banDays : 7;
+            $consequenceLine = "และจะ*งดให้บริการจากเพจ {$banDays} วัน*ค่ะ\n";
+        } else {
+            $consequenceLine = "และจะ*ระงับการใช้งานจากเพจถาวร*ค่ะ\n";
+        }
+
         return "⚠️ *ประกาศจากระบบ*\n"
             ."เจ้าชะตาสร้างบิลโดยไม่ชำระมาแล้ว {$strikes} ครั้งภายใน ".self::STRIKE_WINDOW_DAYS." วัน\n"
             ."หากบิลนี้ไม่ชำระให้เสร็จสิ้นภายใน {$timeoutLabel} ระบบจะถือว่ามีเจตนาก่อกวน\n"
-            ."และจะ*ระงับการใช้งานจากเพจถาวร*ค่ะ\n"
+            .$consequenceLine
             .'(ถ้าโอนไม่เป็น/ติดขัด พิมพ์ "ช่วยหน่อย" แม่หมอช่วยได้ — หรือพิมพ์ "ยกเลิก" ก็ถือว่าไม่ชำระเช่นกันนะคะ) 🙏';
     }
 
