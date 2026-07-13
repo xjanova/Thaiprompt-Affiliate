@@ -65,6 +65,24 @@ class BillTrollGuardService
     }
 
     /**
+     * 📋 (2026-07-13) ระบบแบบสอบถาม 5 ข้อ กำลังทำหน้าที่ "ด่านก่อนแบน" อยู่ไหม
+     *
+     * ต้องเปิดทั้ง toggle แบบสอบถาม + consent master (ไม่งั้น quiz ไม่เด้ง → ด่านไม่ทำงานจริง)
+     * ใช้ตัดสินว่าจะข้าม permanent auto-ban หรือไม่ (เจ้าของสั่ง: ต้องผ่าน 5 คำถามก่อนแบนเสมอ)
+     */
+    public function consentQuizGatingActive(): bool
+    {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+
+            return (bool) ($settings->enable_consent_quiz ?? false)
+                && $settings->isConsentEnabled();
+        } catch (\Throwable $e) {
+            return false; // อ่าน setting ไม่ได้ → ถือว่าด่านไม่ทำงาน (คงพฤติกรรม ban เดิม)
+        }
+    }
+
+    /**
      * นับ strike ของ user — บิลที่จบโดยไม่จ่ายใน 3 วันย้อนหลัง (หลังการจ่ายล่าสุด)
      *
      * @param  string  $userId  PSID / LINE userId (match ทั้ง facebook_user_id + platform_user_id)
@@ -256,6 +274,23 @@ class BillTrollGuardService
         //   ไม่ต้องรอ strike ครบ 3 / ไม่ต้องมี troll_warning_shown (เขายอมรับ contract ชัดเจนแล้ว)
         if ((bool) $reading->getConversationState('quiz_gate_accepted')) {
             $this->banForQuizUnpaid($reading, $userId, $platform);
+
+            return;
+        }
+
+        // 🚧 (2026-07-13) เจ้าของสั่ง: "ต้องยิงคำถาม 5 ข้อก่อนแบน ไม่ใช่แบนเลย" — ทุกคน แม้หลอดขาประจำ
+        //   ถ้าเปิดระบบแบบสอบถามอยู่ แต่บิลนี้ไม่ได้ผ่านการยอมรับ quiz (quiz_gate_accepted=false)
+        //   → ห้าม auto-ban ถาวร. ปล่อยให้ consent quiz gate จัดการบิลถัดไป (เด้ง 5 คำถามก่อนออกบิล)
+        //   → คนที่ยอมรับแล้วไม่จ่ายเท่านั้นถึงโดนแบน (7 วัน auto-expire ผ่าน quiz_gate_accepted ด้านบน)
+        //   permanent auto-ban เหลือไว้เฉพาะเพจที่ "ปิด" ระบบแบบสอบถาม (legacy)
+        //   เหตุ: เคสบ่าวหนอม/หลอด หลอด/เชืง ปานหอม โดนแบนถาวรทั้งที่ไม่เคยเห็นคำถาม (2026-07-13)
+        if ($this->consentQuizGatingActive()) {
+            Log::info('BillTrollGuard: ข้าม permanent auto-ban — ระบบแบบสอบถามเปิดอยู่ (ต้องผ่าน 5 คำถามก่อนแบน)', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'user_id' => $userId,
+                'platform' => $platform,
+            ]);
 
             return;
         }
