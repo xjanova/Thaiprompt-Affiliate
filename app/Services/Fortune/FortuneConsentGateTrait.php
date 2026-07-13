@@ -366,7 +366,9 @@ trait FortuneConsentGateTrait
      *
      * - toggle ปิด → false
      * - consent_quiz_min_unpaid_bills = 0 → true (บังคับทุกคน)
-     * - N > 0 → true เฉพาะลูกค้าที่มีประวัติบิลค้างไม่จ่าย >= N (ลูกค้าใหม่/ดี = ไม่บังคับ)
+     * - N > 0 → true เฉพาะลูกค้าที่มีบิลค้างไม่จ่าย >= N "ภายใน 7 วันล่าสุด" (ลูกค้าใหม่/ดี = ไม่บังคับ)
+     *   ⭐ (2026-07-13) นับบิลที่ยัง pending ด้วย (unpaidBillCountRecent) → ดักหลอดที่ยิงบิลรวดรอบเดียว
+     *   เช่น ค้างไม่จ่าย 2 บิล แล้วจะสร้างบิลที่ 3 ภายใน 7 วัน → เข้ารูทแบบสอบถามก่อนออกบิล
      * - นับไม่ได้/ไม่มี uid → false (degrade ปลอดภัย ไม่เพิ่ม friction ให้คนที่ระบุตัวไม่ได้)
      */
     protected function shouldUseConsentQuiz(string $uid): bool
@@ -385,7 +387,7 @@ trait FortuneConsentGateTrait
         }
 
         try {
-            $unpaid = app(\App\Services\Fortune\BillTrollGuardService::class)->unpaidBillCountAllTime($uid);
+            $unpaid = app(\App\Services\Fortune\BillTrollGuardService::class)->unpaidBillCountRecent($uid);
 
             return $unpaid >= $threshold;
         } catch (\Throwable $e) {

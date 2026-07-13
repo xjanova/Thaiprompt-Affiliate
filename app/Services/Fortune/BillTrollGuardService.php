@@ -47,6 +47,12 @@ class BillTrollGuardService
     public const PAID_CUSTOMER_GRACE_DAYS = 30;
 
     /**
+     * 📋 (2026-07-13) หน้าต่างนับบิลค้างสำหรับเกณฑ์ "แบบสอบถาม 5 ข้อ" (วัน)
+     *   เจ้าของสั่ง: "ดูบิลค้างภายใน 7 วันจากปัจจุบัน" — เลย 7 วัน = ล้างการนับ (เริ่มต้นใหม่)
+     */
+    public const QUIZ_UNPAID_WINDOW_DAYS = 7;
+
+    /**
      * เปิดใช้งานระบบหรือไม่ (admin toggle — default เปิด)
      */
     public function isEnabled(): bool
@@ -123,6 +129,55 @@ class BillTrollGuardService
                     ->orWhere('conversation_state->cancellation_reason', '!=', 'package_switch');
             })
             ->count();
+    }
+
+    /**
+     * 📋 (2026-07-13) นับ "บิลค้างไม่จ่าย" ภายใน N วันล่าสุด — ใช้กับ consent quiz gate (แบบสอบถาม 5 ข้อ)
+     *
+     * ต่างจาก unpaidBillCountAllTime() 2 จุด (เจ้าของสั่งให้ดัก "หลอดหน้าใหม่ยิงบิลรวดรอบเดียว"):
+     *   1. จำกัดหน้าต่าง N วันจากปัจจุบัน (default 7) — เลย 7 วัน = ล้างการนับ
+     *   2. ⭐ ไม่บังคับ conversation_status=COMPLETED → นับบิลที่ยัง pending/active ด้วย
+     *      เหตุ: หลอดยิงบิลรวดในไม่กี่นาที บิลก่อนหน้ายังไม่หมดอายุ (ยังไม่ COMPLETED)
+     *      ถ้ารอ COMPLETED เหมือน all-time = นับได้ 0 ตลอด quiz เลยไม่เคยเด้ง (เคสบ่าวหนอม 2026-07-13)
+     *
+     * เงื่อนไข "บิลจริงที่ไม่จ่าย" เหมือนเดิม: is_paid=false + มี unique_payment_amount_id (ออกบิล/QR จริง)
+     *   + ไม่ใช่ package_switch. จ่ายสำเร็จล่าสุด → ล้างการนับ (นับเฉพาะบิลหลังการจ่ายล่าสุด)
+     *
+     * @param  string  $userId  PSID / LINE userId (match ทั้ง facebook_user_id + platform_user_id)
+     * @param  int  $days  หน้าต่างย้อนหลัง (วัน) — default QUIZ_UNPAID_WINDOW_DAYS
+     */
+    public function unpaidBillCountRecent(string $userId, int $days = self::QUIZ_UNPAID_WINDOW_DAYS): int
+    {
+        if ($userId === '') {
+            return 0;
+        }
+
+        // จ่ายสำเร็จล่าสุดเมื่อไหร่ — บิลก่อนหน้านั้นไม่นับ (จ่ายแล้ว = ล้างการนับ)
+        $lastPaidAt = FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->where('is_paid', true)
+            ->max('created_at');
+
+        $query = FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->where('created_at', '>=', now()->subDays($days))
+            ->where('is_paid', false)
+            ->whereNotNull('unique_payment_amount_id')
+            // ⛔ ไม่นับยกเลิกเพื่อเปลี่ยนแพคเกจ — reason อื่น (รวม null = ยัง pending/ปิดโดย sweep) นับหมด
+            ->where(function ($q) {
+                $q->whereNull('conversation_state->cancellation_reason')
+                    ->orWhere('conversation_state->cancellation_reason', '!=', 'package_switch');
+            });
+
+        if ($lastPaidAt) {
+            $query->where('created_at', '>', $lastPaidAt);
+        }
+
+        return $query->count();
     }
 
     /**
