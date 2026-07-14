@@ -391,6 +391,52 @@ class FortuneAffiliateService
                 }
             }
 
+            $member = $this->enrollUserUnderSponsor($user, $sponsor);
+            if (! $member) {
+                return null;
+            }
+
+            // Mark referral as converted
+            if ($referral) {
+                $referral->markAsConverted($user);
+            }
+
+            Log::info('Fortune Affiliate: สร้าง MlmMember สำเร็จ', [
+                'member_id' => $member->id,
+                'member_code' => $member->member_code,
+                'sponsor_id' => $sponsor->id,
+                'from_referral' => $referral !== null,
+            ]);
+
+            return $member;
+
+        } catch (\Exception $e) {
+            Log::error('Fortune Affiliate: สร้าง MlmMember ล้มเหลว', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * ต่อสายงาน: สร้าง MlmMember ให้ $user ใต้ $sponsor ที่ระบุ
+     *
+     * แกนกลางที่ใช้ร่วมกันระหว่าง auto-register (LINE/FB flow ด้านบน) และ
+     * Juntra claim-referral (จันทรา.online/r/{member_code} → juntraweb →
+     * POST /api/v1/juntra/mlm/claim-referral). Idempotent: ถ้า user มี
+     * MlmMember อยู่แล้ว คืนตัวเดิม — ไม่ re-parent เด็ดขาด (unilevel_path
+     * ของทั้ง downline จะพัง + คอมมิชชั่นย้ายสายไม่ได้)
+     */
+    public function enrollUserUnderSponsor(User $user, MlmMember $sponsor): ?MlmMember
+    {
+        try {
+            $existing = MlmMember::where('user_id', $user->id)->first();
+            if ($existing) {
+                return $existing;
+            }
+
             // หา default MLM plan
             $defaultPlan = MlmPlan::where('is_default', true)->first();
             if (! $defaultPlan) {
@@ -460,24 +506,22 @@ class FortuneAffiliateService
                 }
             }
 
-            // Mark referral as converted
-            if ($referral) {
-                $referral->markAsConverted($user);
-            }
+            // สร้าง Wallet รอไว้รับคอมมิชชั่นทันที
+            $this->ensureWalletExists($user);
 
-            Log::info('Fortune Affiliate: สร้าง MlmMember สำเร็จ', [
+            Log::info('Fortune Affiliate: enroll ใต้ sponsor สำเร็จ', [
                 'member_id' => $member->id,
                 'member_code' => $member->member_code,
                 'sponsor_id' => $sponsor->id,
                 'binary_position' => $binaryPosition,
-                'from_referral' => $referral !== null,
             ]);
 
             return $member;
 
         } catch (\Exception $e) {
-            Log::error('Fortune Affiliate: สร้าง MlmMember ล้มเหลว', [
+            Log::error('Fortune Affiliate: enroll ใต้ sponsor ล้มเหลว', [
                 'user_id' => $user->id,
+                'sponsor_id' => $sponsor->id,
                 'error' => $e->getMessage(),
             ]);
 

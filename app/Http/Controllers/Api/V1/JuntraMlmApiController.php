@@ -7,6 +7,7 @@ use App\Models\FortuneCommission;
 use App\Models\FortuneReading;
 use App\Models\MlmMember;
 use App\Models\User;
+use App\Services\FortuneAffiliateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -139,6 +140,73 @@ class JuntraMlmApiController extends Controller
         );
 
         return response()->json($payload);
+    }
+
+    /* =========================================================================
+       POST /api/v1/juntra/mlm/claim-referral   {code: <member_code>}
+
+       จันทรา.online referral attribution: a visitor lands on จันทรา.online/r/{code}
+       (code = the inviter's MlmMember.member_code), juntraweb stores it in a
+       30-day cookie, and after the user links Thaiprompt (OAuth) juntraweb
+       calls this with the NEW user's token to enroll them under the inviter.
+
+       Conservative by design: if the caller already has an MlmMember we NEVER
+       re-parent (unilevel_path of the whole downline would break) — we return
+       409 `already_enrolled` and juntraweb clears its cookie.
+       ========================================================================= */
+    public function claimReferral(Request $request): JsonResponse
+    {
+        $auth = $request->user();
+        if (! $auth) {
+            return response()->json(['error' => 'unauthenticated'], 401);
+        }
+
+        $request->validate(['code' => 'required|string|max:64']);
+        $code = substr(preg_replace('/[^A-Za-z0-9_-]/', '', (string) $request->input('code')), 0, 64);
+        if ($code === '') {
+            return response()->json(['claimed' => false, 'reason_code' => 'invalid_code'], 404);
+        }
+
+        $sponsor = MlmMember::where('member_code', $code)->first();
+        if (! $sponsor) {
+            return response()->json(['claimed' => false, 'reason_code' => 'invalid_code'], 404);
+        }
+        if ((int) $sponsor->user_id === (int) $auth->id) {
+            return response()->json(['claimed' => false, 'reason_code' => 'self_referral'], 422);
+        }
+
+        $existing = MlmMember::where('user_id', $auth->id)->first();
+        if ($existing) {
+            return response()->json([
+                'claimed'     => false,
+                'reason_code' => 'already_enrolled',
+                'member_code' => $existing->member_code,
+            ], 409);
+        }
+
+        $member = app(FortuneAffiliateService::class)->enrollUserUnderSponsor($auth, $sponsor);
+        if (! $member) {
+            return response()->json(['claimed' => false, 'reason_code' => 'enrollment_failed'], 503);
+        }
+
+        // Bust cached stats/trees for everyone whose dashboard just changed:
+        // the new member, the sponsor, and every ancestor up the unilevel path.
+        $this->forgetJuntraCachesFor($auth->id);
+        $this->forgetJuntraCachesFor((int) $sponsor->user_id);
+        $ancestorIds = array_filter(explode('/', (string) $sponsor->unilevel_path));
+        if ($ancestorIds !== []) {
+            MlmMember::whereIn('id', $ancestorIds)->pluck('user_id')
+                ->each(fn ($uid) => $this->forgetJuntraCachesFor((int) $uid));
+        }
+
+        return response()->json([
+            'claimed'     => true,
+            'member_code' => $member->member_code,
+            'sponsor'     => [
+                'name'        => $sponsor->user?->name,
+                'member_code' => $sponsor->member_code,
+            ],
+        ], 201);
     }
 
     /* =========================================================================
@@ -365,6 +433,27 @@ class JuntraMlmApiController extends Controller
     private function slimUser(int $userId): ?array
     {
         $u = User::find($userId);
-        return $u ? ['id' => $u->id, 'name' => $u->name, 'email' => $u->email] : null;
+        if (! $u) {
+            return null;
+        }
+
+        // referral_code = MlmMember.member_code — จันทรา.online builds its
+        // invite link (จันทรา.online/r/{code}) from this; claim-referral
+        // resolves the same code back to the sponsor. Null until enrolled.
+        return [
+            'id'            => $u->id,
+            'name'          => $u->name,
+            'email'         => $u->email,
+            'referral_code' => MlmMember::where('user_id', $u->id)->value('member_code'),
+        ];
+    }
+
+    /** Drop every juntra MLM cache entry for a user (stats + all tree depths). */
+    private function forgetJuntraCachesFor(int $userId): void
+    {
+        Cache::forget("juntra.mlm.stats.{$userId}");
+        for ($d = 1; $d <= self::MAX_TREE_DEPTH; $d++) {
+            Cache::forget("juntra.mlm.tree.{$userId}.d{$d}");
+        }
     }
 }

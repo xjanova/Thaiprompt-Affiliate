@@ -1653,6 +1653,10 @@ Route::prefix('v1/juntra')->middleware('auth:sanctum')->name('api.juntra.')->gro
         Route::get('/commissions', [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'commissions'])->name('commissions');
         Route::get('/stats',       [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'stats'])->name('stats');
         Route::get('/users',       [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'users'])->name('users');
+        // จันทรา.online/r/{member_code} attribution — enroll the caller under
+        // the inviter. Throttled: enrolls are one-shot; 6/min absorbs retries.
+        Route::post('/claim-referral', [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'claimReferral'])
+            ->middleware('throttle:6,1')->name('claim');
     });
 });
 
