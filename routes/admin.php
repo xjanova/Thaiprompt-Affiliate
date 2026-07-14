@@ -4065,6 +4065,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::put('/settings', [FortuneSettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/test-ai', [FortuneSettingsController::class, 'testAI'])->name('settings.test-ai');
     Route::post('/settings/test-slipok', [FortuneSettingsController::class, 'testSlipOk'])->name('settings.test-slipok');
+    Route::post('/settings/test-kbank', [FortuneSettingsController::class, 'testKBank'])->name('settings.test-kbank');
     Route::get('/settings/diagnose', [FortuneSettingsController::class, 'diagnose'])->name('settings.diagnose');
     Route::post('/settings/run-migrations', [FortuneSettingsController::class, 'runMigrations'])->name('settings.run-migrations');
     if (config('app.debug')) {

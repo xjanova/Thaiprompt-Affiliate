@@ -2569,6 +2569,164 @@ Format 2 — JSON array:
                 </div>
             </div>
 
+            {{-- 🏦 (2026-07-14) KBank ตรวจสลิป — provider ตัวที่ 2 (ยิงถาม ledger ของ KBank ตรง) --}}
+            <div class="mt-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-700"
+                 x-data="{
+                     enabled: {{ ($settings->enable_kbank_verify ?? false) ? 'true' : 'false' }},
+                     testing: false, testMsg: '', testOk: false,
+                     testConn() {
+                         this.testing = true; this.testMsg = '';
+                         fetch('{{ route('admin.fortune.settings.test-kbank') }}', {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                             body: JSON.stringify({
+                                 kbank_env: (this.$refs.env?.value || ''),
+                                 kbank_base_url: (this.$refs.baseurl?.value || ''),
+                                 kbank_consumer_id: (this.$refs.cid?.value || ''),
+                                 kbank_consumer_secret: (this.$refs.csecret?.value || '')
+                             })
+                         }).then(r => r.json()).then(d => {
+                             this.testOk = !!d.success;
+                             this.testMsg = (d.success ? '✅ ' : '❌ ') + (d.message || (d.success ? 'สำเร็จ' : 'ไม่สำเร็จ')) + (d.env ? ' (' + d.env + ')' : '');
+                         }).catch(e => { this.testOk = false; this.testMsg = '❌ ' + e.message; })
+                           .finally(() => { this.testing = false; });
+                     }
+                 }">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 dark:text-white">
+                            🏦 ตรวจสลิปด้วย KBank API (provider ตัวที่ 2)
+                        </label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            ยิงถาม ledger ของ KBank โดยตรง (OAuth2 + Two-Way SSL) — เหมาะกับเงินเข้าบัญชี KBank และไม่กินโควตา SlipOK
+                        </p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="hidden" name="enable_kbank_verify" value="0">
+                        <input type="checkbox" name="enable_kbank_verify" value="1"
+                               x-model="enabled"
+                               class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+                    </label>
+                </div>
+
+                {{-- แจ้งสถานะการตั้งค่าที่ "บันทึกแล้ว" จริง --}}
+                @if(($settings->enable_kbank_verify ?? false) && empty($settings->kbank_consumer_secret))
+                    <div class="mb-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-xs text-red-700 dark:text-red-300 font-medium">
+                        ⚠️ เปิดใช้งานแล้ว แต่ <strong>ยังไม่ได้บันทึก Consumer Secret</strong> — กรอกด้านล่าง แล้วกด <strong>"💾 บันทึกการตั้งค่า"</strong> ด้านล่างสุด (การกด "ทดสอบ" อย่างเดียว <u>ไม่ได้บันทึก</u>)
+                    </div>
+                @elseif(! empty($settings->kbank_consumer_secret))
+                    <div class="mb-3 text-xs text-indigo-600 dark:text-indigo-400 font-medium">🔑 Consumer Secret: บันทึกแล้ว ✓ (Consumer ID: {{ $settings->kbank_consumer_id ?: '-' }} · env: {{ $settings->kbank_env ?? 'sandbox' }})</div>
+                @endif
+
+                {{-- 🚧 หมายเหตุ Phase 1 — พร้อมกรอก+ทดสอบ แต่ยังไม่ตัดบิลจริง --}}
+                <div class="mb-3 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-xs text-amber-700 dark:text-amber-300">
+                    🚧 ตอนนี้เปิดให้ <strong>กรอกค่า + ทดสอบการเชื่อมต่อ (ขอ token)</strong> ได้ก่อน — <strong>ยังไม่นำไปตัดบิลจริง</strong>
+                    จนกว่าจะทดสอบ sandbox ผ่าน + ยืนยัน endpoint/field แล้วเปิดใช้งานจริงในขั้นถัดไป
+                </div>
+
+                <div x-show="enabled" x-cloak x-transition class="space-y-3 mt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">สภาพแวดล้อม (Environment)</label>
+                            <select name="kbank_env" x-ref="env"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                                <option value="sandbox" {{ ($settings->kbank_env ?? 'sandbox') === 'sandbox' ? 'selected' : '' }}>Sandbox (ทดสอบ)</option>
+                                <option value="production" {{ ($settings->kbank_env ?? 'sandbox') === 'production' ? 'selected' : '' }}>Production (ใช้งานจริง)</option>
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เริ่มที่ Sandbox ก่อนเสมอ — Production บังคับ Two-Way SSL (cert)</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ยอดขั้นต่ำที่อนุมัติ (บาท)</label>
+                            <input type="number" name="kbank_min_amount" step="0.01" min="0" max="100000"
+                                   value="{{ $settings->kbank_min_amount ?? 99 }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ต้องโอนไม่ต่ำกว่านี้ — default 99</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Consumer ID (Key)</label>
+                            <input type="text" name="kbank_consumer_id" x-ref="cid"
+                                   value="{{ $settings->kbank_consumer_id }}"
+                                   placeholder="Consumer Key จาก KBank API Portal"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Consumer Secret</label>
+                            <input type="password" name="kbank_consumer_secret" x-ref="csecret" value="" autocomplete="new-password"
+                                   placeholder="{{ $settings->kbank_consumer_secret ? '•••••• (เก็บไว้แล้ว — เว้นว่างถ้าไม่เปลี่ยน)' : 'วาง Consumer Secret ที่นี่' }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เก็บแบบเข้ารหัส — ไม่แสดงกลับ</p>
+                        </div>
+                    </div>
+
+                    {{-- 🔐 Two-Way SSL (mTLS) — path ของ client cert / key บนเซิร์ฟเวอร์ --}}
+                    <div class="mt-3 p-3 rounded-lg border border-indigo-200 dark:border-indigo-700/50 bg-indigo-50/50 dark:bg-indigo-900/10">
+                        <p class="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-2">🔐 Two-Way SSL (mTLS) — จำเป็นสำหรับ Production</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Client Cert Path (.pem/.crt)</label>
+                                <input type="text" name="kbank_cert_path"
+                                       value="{{ $settings->kbank_cert_path }}"
+                                       placeholder="เช่น /home/.../storage/app/kbank/client.crt"
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Private Key Path (.key)</label>
+                                <input type="text" name="kbank_cert_key_path"
+                                       value="{{ $settings->kbank_cert_key_path }}"
+                                       placeholder="เช่น /home/.../storage/app/kbank/client.key"
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Private Key Passphrase</label>
+                                <input type="password" name="kbank_cert_password" value="" autocomplete="new-password"
+                                       placeholder="{{ $settings->kbank_cert_password ? '•••••• (เก็บไว้แล้ว — เว้นว่างถ้าไม่เปลี่ยน)' : 'เว้นว่างถ้า key ไม่มีรหัส' }}"
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เก็บแบบเข้ารหัส</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-amber-700 dark:text-amber-300 mt-2">
+                            ⚠️ อัปโหลดไฟล์ cert/key ไว้บนเซิร์ฟเวอร์ (นอก public) แล้วใส่ path เต็มที่นี่ — ไฟล์ต้องอ่านได้โดย user ที่รันเว็บ
+                        </p>
+                    </div>
+
+                    {{-- ⚙️ Advanced — override endpoint (เผื่อ KBank เปลี่ยน) --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Verify Path</label>
+                            <input type="text" name="kbank_verify_path"
+                                   value="{{ $settings->kbank_verify_path ?? '/v1/verslip/kbank/verify' }}"
+                                   placeholder="/v1/verslip/kbank/verify"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">endpoint ตรวจสลิป — ยืนยันกับหน้า exercise จริง</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Base URL (override)</label>
+                            <input type="text" name="kbank_base_url" x-ref="baseurl"
+                                   value="{{ $settings->kbank_base_url }}"
+                                   placeholder="เว้นว่าง = เลือกอัตโนมัติจาก env"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ปกติเว้นว่าง (sandbox/prod ตั้งให้อัตโนมัติ)</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <button type="button" @click="testConn()" :disabled="testing"
+                                class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition disabled:opacity-50">
+                            <span x-show="!testing">🔌 ทดสอบการเชื่อมต่อ (ขอ token)</span>
+                            <span x-show="testing">⏳ กำลังเช็ค...</span>
+                        </button>
+                        <span x-show="testMsg" x-text="testMsg" :class="testOk ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-600 dark:text-red-400'" class="text-sm font-medium"></span>
+                    </div>
+                </div>
+
+                <div x-show="enabled" x-cloak class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+                    💡 <strong>ขั้นตอนเปิดใช้:</strong> (1) สมัคร/ลงทะเบียนแอปที่ <a href="https://apiportal.kasikornbank.com" target="_blank" class="underline">apiportal.kasikornbank.com</a> → ได้ Consumer Key/Secret
+                    (2) ขอ cert Two-Way SSL (สำหรับ production) (3) กรอกค่า + กดทดสอบใน Sandbox ให้ผ่านก่อน
+                    <br>🏦 ต่างจาก SlipOK: KBank ต้องถอด QR จากสลิปเอง (ระบบรองรับผ่าน khanamiryan/zbar) และแม่นสุดเมื่อบัญชีรับเงินเป็น <strong>KBank</strong>
+                </div>
+            </div>
+
             {{-- บัญชีธนาคารสำหรับระบบดูดวง (CRUD) --}}
             <div class="mt-6" x-data="fortuneBankAccounts()">
                 <div class="flex items-center justify-between mb-3">

@@ -283,6 +283,18 @@ class FortuneSettingsController extends Controller
             'slipok_ban_after_rounds' => 'nullable|integer|min:0|max:10',
             // 💎 (2026-06-07) Auto-provision — โอนก่อนสร้างบิล → สร้างบิล Celtic + เปิดไพ่เอง
             'slipok_auto_provision' => 'boolean',
+            // 🏦 (2026-07-14) KBank Slip Verification — provider ตรวจสลิปตัวที่ 2 (คู่ขนาน SlipOK)
+            'enable_kbank_verify' => 'boolean',
+            'kbank_env' => 'nullable|in:sandbox,production',
+            'kbank_base_url' => 'nullable|url|max:255',
+            'kbank_verify_path' => 'nullable|string|max:255',
+            'kbank_consumer_id' => 'nullable|string|max:191',
+            // Consumer Secret เป็น token ยาว — เก็บเป็น text (เข้ารหัส)
+            'kbank_consumer_secret' => 'nullable|string|max:2000',
+            'kbank_cert_path' => 'nullable|string|max:500',
+            'kbank_cert_key_path' => 'nullable|string|max:500',
+            'kbank_cert_password' => 'nullable|string|max:500',
+            'kbank_min_amount' => 'nullable|numeric|min:0|max:100000',
             // ⏰ (2026-06-12) อายุบิลรอชำระ (นาที) — default 180 (3 ชม.)
             'bill_payment_timeout_minutes' => 'nullable|integer|min:10|max:1440',
             // 🛡️ (2026-06-12) แบนถาวรคนสร้างบิลเล่นๆ ไม่ชำระ 3 ครั้งใน 3 วัน
@@ -477,6 +489,8 @@ class FortuneSettingsController extends Controller
             'slipok_use_log',
             // 💎 (2026-06-07) SlipOK auto-provision (โอนก่อนสร้างบิล)
             'slipok_auto_provision',
+            // 🏦 (2026-07-14) KBank Slip Verification
+            'enable_kbank_verify',
             // 🛡️ (2026-06-12) Bill-Troll Guard
             'enable_bill_troll_ban',
         ];
@@ -492,7 +506,11 @@ class FortuneSettingsController extends Controller
         //   🐛 (2026-06-01 FIX) เดิมเช็ค `=== ''` แต่ middleware ConvertEmptyStringsToNull
         //      แปลง '' → null ก่อนถึง validate → guard ไม่ทำงาน → null เขียนทับ key (SlipOK/Stripe หายหลัง save)
         //      ใช้ blank() ครอบทั้ง null + '' + ช่องว่าง → ฟิลด์ที่เว้นว่าง = เก็บค่าเดิมไว้
-        foreach (['stripe_secret_key', 'stripe_webhook_secret', 'slipok_api_key'] as $secretField) {
+        //   🏦 (2026-07-14) เพิ่ม KBank secrets เข้า guard เดียวกัน (กันเว้นว่าง = ทับ secret เดิม)
+        foreach ([
+            'stripe_secret_key', 'stripe_webhook_secret', 'slipok_api_key',
+            'kbank_consumer_secret', 'kbank_cert_password',
+        ] as $secretField) {
             if (array_key_exists($secretField, $validated) && blank($validated[$secretField])) {
                 unset($validated[$secretField]);
             }
@@ -853,6 +871,35 @@ class FortuneSettingsController extends Controller
         }
 
         $result = (new \App\Services\Fortune\SlipOkService($settings))->checkQuota();
+
+        return response()->json($result);
+    }
+
+    /**
+     * 🏦 (2026-07-14) ทดสอบการเชื่อมต่อ KBank Slip Verification (OAuth2)
+     *
+     * ใช้ค่า Consumer ID/Secret + env จาก form ถ้าส่งมา (ทดสอบก่อนบันทึก)
+     * ถ้า secret เว้นว่าง → ใช้ค่าที่เก็บไว้เดิม
+     * ทดสอบแค่ขอ access token (ไม่ยิงตรวจสลิปจริง — ยังไม่ต้องมีสลิป)
+     */
+    public function testKBank(Request $request)
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        if ($request->filled('kbank_env')) {
+            $settings->kbank_env = $request->input('kbank_env');
+        }
+        if ($request->filled('kbank_base_url')) {
+            $settings->kbank_base_url = $request->input('kbank_base_url');
+        }
+        if ($request->filled('kbank_consumer_id')) {
+            $settings->kbank_consumer_id = $request->input('kbank_consumer_id');
+        }
+        if ($request->filled('kbank_consumer_secret')) {
+            $settings->kbank_consumer_secret = $request->input('kbank_consumer_secret');
+        }
+
+        $result = (new \App\Services\Fortune\KBankSlipService($settings))->checkConnection();
 
         return response()->json($result);
     }

@@ -395,6 +395,17 @@ class FortuneTellingSetting extends Model
         'slipok_ban_after_rounds',
         // 💎 (2026-06-07) Auto-provision — ลูกค้าโอนก่อนสร้างบิล/QR → สร้างบิล Celtic + เปิดไพ่เอง
         'slipok_auto_provision',
+        // 🏦 (2026-07-14) KBank Slip Verification — provider ตรวจสลิปตัวที่ 2 (คู่ขนาน SlipOK)
+        'enable_kbank_verify',
+        'kbank_env',
+        'kbank_base_url',
+        'kbank_verify_path',
+        'kbank_consumer_id',
+        'kbank_consumer_secret',
+        'kbank_cert_path',
+        'kbank_cert_key_path',
+        'kbank_cert_password',
+        'kbank_min_amount',
         // ⏰ (2026-06-12) อายุบิลรอชำระ (นาที) — default 180 (3 ชม.) แอดมินปรับได้
         'bill_payment_timeout_minutes',
         // 🛡️ (2026-06-12) แบนถาวรคนสร้างบิลเล่นๆ ไม่ชำระ 3 ครั้งใน 3 วัน
@@ -593,6 +604,11 @@ class FortuneTellingSetting extends Model
         'slipok_ban_after_rounds' => 'integer',
         // 💎 (2026-06-07) Auto-provision จากสลิปที่ไม่มีบิล
         'slipok_auto_provision' => 'boolean',
+        // 🏦 (2026-07-14) KBank Slip Verification — secret เก็บแบบเข้ารหัส
+        'enable_kbank_verify' => 'boolean',
+        'kbank_consumer_secret' => 'encrypted',
+        'kbank_cert_password' => 'encrypted',
+        'kbank_min_amount' => 'decimal:2',
         // ⏰🛡️ (2026-06-12) Bill timeout 3 ชม. + Bill-Troll Guard
         'bill_payment_timeout_minutes' => 'integer',
         'enable_bill_troll_ban' => 'boolean',
@@ -814,6 +830,11 @@ class FortuneTellingSetting extends Model
         'slipok_ban_after_rounds' => 2,
         // 💎 (2026-06-07) Auto-provision — โอนก่อนสร้างบิล → สร้างบิล Celtic + เปิดไพ่เอง (default เปิด)
         'slipok_auto_provision' => true,
+        // 🏦 (2026-07-14) KBank Slip Verification — default ปิด (แอดมินกรอก cred + cert + เปิดสวิตช์ก่อน)
+        'enable_kbank_verify' => false,
+        'kbank_env' => 'sandbox',
+        'kbank_verify_path' => '/v1/verslip/kbank/verify',
+        'kbank_min_amount' => 99.00,
     ];
 
     /**
@@ -830,6 +851,9 @@ class FortuneTellingSetting extends Model
         'line_channel_access_token',
         'tavily_api_key',
         'brave_search_api_key',
+        // 🏦 (2026-07-14) KBank secrets — ห้าม serialize ออกไป
+        'kbank_consumer_secret',
+        'kbank_cert_password',
     ];
 
     /**
