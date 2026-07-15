@@ -77,7 +77,9 @@ class FortuneCommissionService
         }
 
         // ===== Level 2: จ่ายให้ grandparent (ถ้าเปิด) =====
-        if ($settings->isFortuneLevel2Enabled()) {
+        // 📦 (2026-07-15) ส่ง reading_type เข้าไปด้วย — แพคเกจ deep 39฿ ปิดชั้นหลานได้
+        //    แยกจาก celtic 99฿ (ดู FortuneTellingSetting::packageCommissionRate)
+        if ($settings->isFortuneLevel2Enabled($reading->reading_type)) {
             if ($this->levelAlreadyPaid($reading, 2)) {
                 Log::info('FortuneCommission [L2]: บิลนี้จ่าย L2 ไปแล้ว ข้าม', ['reading_id' => $reading->id]);
             } else {
@@ -116,13 +118,20 @@ class FortuneCommissionService
         float $readingPrice
     ): void {
         // คำนวณ amount ก่อน — ใช้ทั้ง path sponsor และ central fallback
-        $commissionAmount = $settings->getFortuneLevel1Amount($readingPrice);
+        // 📦 (2026-07-15) reading_type ตัดสินอัตราเมื่อเปิดโหมดแยกแพคเกจ
+        $readingType = $reading->reading_type;
+        $commissionAmount = $settings->getFortuneLevel1Amount($readingPrice, $readingType);
         if ($commissionAmount <= 0) {
             return;
         }
 
-        $commissionType = $settings->getFortuneLevel1CommissionType();
-        $commissionRate = (float) ($settings->fortune_level1_commission_amount ?? 10);
+        $commissionType = $settings->getFortuneLevel1CommissionType($readingType);
+        // commission_rate = ตัวเลขที่ตั้งไว้ (บันทึกลง DB ไว้ตรวจย้อนหลัง)
+        // โหมดแยกแพคเกจจ่ายเป็นบาทคงที่ → rate = amount
+        $commissionRate = $commissionAmount;
+        if (! $settings->isFortunePackageRatesEnabled()) {
+            $commissionRate = (float) ($settings->fortune_level1_commission_amount ?? 10);
+        }
 
         // หา sponsor (ผู้แนะนำตรง)
         if (! $mlmMember->unilevel_sponsor_id) {
@@ -218,13 +227,18 @@ class FortuneCommissionService
         float $readingPrice
     ): void {
         // คำนวณ amount ก่อน — ใช้ทั้ง path grandparent และ central fallback
-        $commissionAmount = $settings->getFortuneLevel2Amount($readingPrice);
+        // 📦 (2026-07-15) reading_type ตัดสินอัตราเมื่อเปิดโหมดแยกแพคเกจ
+        $readingType = $reading->reading_type;
+        $commissionAmount = $settings->getFortuneLevel2Amount($readingPrice, $readingType);
         if ($commissionAmount <= 0) {
             return;
         }
 
-        $commissionType = $settings->getFortuneLevel2CommissionType();
-        $commissionRate = (float) ($settings->fortune_level2_commission_amount ?? 5);
+        $commissionType = $settings->getFortuneLevel2CommissionType($readingType);
+        $commissionRate = $commissionAmount;
+        if (! $settings->isFortunePackageRatesEnabled()) {
+            $commissionRate = (float) ($settings->fortune_level2_commission_amount ?? 5);
+        }
 
         // helper closure สำหรับ fallback
         $fallback = function (string $reason) use (
@@ -554,12 +568,22 @@ class FortuneCommissionService
             return;
         }
 
+        // 📦 (2026-07-15) รู้จัก reading_type ด้วย — โหมดแยกแพคเกจจ่ายเป็นบาทคงที่
+        // 🐛 เดิม fallback ของ L2 ที่นี่เป็น `?? 1` ขณะที่ payLevel2()/model ใช้ `?? 5`
+        //    → บันทึก commission_rate ไม่ตรงกับ path ปกติ (rate เป็นแค่ข้อมูลบันทึกไว้ตรวจ
+        //      ไม่ได้เอาไปคูณ — $amount ส่งมาจาก caller — แต่ทำให้รายงานย้อนหลังอ่านผิด)
+        $readingType = $reading->reading_type;
         $commissionType = $level === 1
-            ? $settings->getFortuneLevel1CommissionType()
-            : ($settings->fortune_level2_commission_type ?? 'fixed');
-        $commissionRate = $level === 1
-            ? (float) ($settings->fortune_level1_commission_amount ?? 10)
-            : (float) ($settings->fortune_level2_commission_amount ?? 1);
+            ? $settings->getFortuneLevel1CommissionType($readingType)
+            : $settings->getFortuneLevel2CommissionType($readingType);
+
+        if ($settings->isFortunePackageRatesEnabled()) {
+            $commissionRate = $amount;
+        } else {
+            $commissionRate = $level === 1
+                ? (float) ($settings->fortune_level1_commission_amount ?? 10)
+                : (float) ($settings->fortune_level2_commission_amount ?? 5);
+        }
 
         $this->createCommissionAndPay(
             reading: $reading,

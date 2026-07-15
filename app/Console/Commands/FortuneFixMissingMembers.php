@@ -432,7 +432,8 @@ class FortuneFixMissingMembers extends Command
 
             try {
                 // จ่าย L1 ตรง (ข้าม active check — retroactive fix)
-                $l1Amount = $settings->getFortuneLevel1Amount($readingPrice);
+                // 📦 (2026-07-15) ส่ง reading_type ด้วย — ไม่งั้นโหมดแยกแพคเกจจะจ่ายชดเชยผิดอัตรา
+                $l1Amount = $settings->getFortuneLevel1Amount($readingPrice, $reading->reading_type);
                 if ($l1Amount > 0) {
                     $commissionService = app(FortuneCommissionService::class);
                     $commissionService->forceCreateCommission(
@@ -442,11 +443,11 @@ class FortuneFixMissingMembers extends Command
                     $this->info("    ✅ Reading #{$reading->id}: L1 จ่าย {$l1Amount} บาท → {$sponsorName}");
                 }
 
-                // จ่าย L2 (ถ้ามี grandparent)
-                if ($sponsor->unilevel_sponsor_id) {
+                // จ่าย L2 (ถ้ามี grandparent + แพคเกจนี้เปิดชั้นหลาน)
+                if ($sponsor->unilevel_sponsor_id && $settings->isFortuneLevel2Enabled($reading->reading_type)) {
                     $grandparent = MlmMember::with('user')->find($sponsor->unilevel_sponsor_id);
                     if ($grandparent && $grandparent->user) {
-                        $l2Amount = $settings->getFortuneLevel2Amount($readingPrice);
+                        $l2Amount = $settings->getFortuneLevel2Amount($readingPrice, $reading->reading_type);
                         if ($l2Amount > 0) {
                             $commissionService = app(FortuneCommissionService::class);
                             $commissionService->forceCreateCommission(

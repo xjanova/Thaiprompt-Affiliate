@@ -556,7 +556,7 @@ class WalletController extends Controller
      */
     public function storePaymentMethod(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'type' => 'required|in:promptpay,bank_transfer,paypal',
             'name' => 'required|string|max:255',
             'account_name' => 'required_if:type,promptpay,bank_transfer|string|max:255',
@@ -567,7 +567,13 @@ class WalletController extends Controller
         ]);
 
         try {
-            $paymentMethod = auth()->user()->paymentMethods()->create($request->all());
+            // 🔒 (2026-07-15) ใช้ $validated ไม่ใช่ $request->all()
+            //    PaymentMethod::$fillable มี is_verified/verified_at อยู่ด้วย และ validator
+            //    ไม่ตัด key ที่ไม่ได้ประกาศออกจาก all() → เดิมผู้ใช้ยิง is_verified=1 มาเอง
+            //    แล้วรับรองบัญชีธนาคารตัวเองว่าผ่านการตรวจแล้วได้
+            //    (ยังไม่มีโค้ดไหนอ่าน is_verified — แต่ถ้าวันไหนบังคับใช้ตอนถอนเงิน
+            //     ช่องนี้จะกลายเป็นทางข้ามทันที)
+            $paymentMethod = auth()->user()->paymentMethods()->create($validated);
 
             return redirect()->back()->with('success', 'เพิ่มช่องทางการรับเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {

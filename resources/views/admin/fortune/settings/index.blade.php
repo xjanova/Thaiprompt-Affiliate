@@ -3551,6 +3551,18 @@ Format 2 — JSON array:
                 centralUserId: '{{ old('fortune_central_user_id', $settings->fortune_central_user_id ?? '') }}',
                 level2Type: '{{ old('fortune_level2_commission_type', $settings->fortune_level2_commission_type ?? 'fixed') }}',
                 level2Amount: '{{ old('fortune_level2_commission_amount', $settings->fortune_level2_commission_amount ?? 5) }}',
+                {{-- 📦 (2026-07-15) ค่าแนะนำแยกตามแพคเกจ --}}
+                pkgRates: {{ old('fortune_pkg_rates_enabled', $settings->fortune_pkg_rates_enabled ?? false) ? 'true' : 'false' }},
+                deepL1: '{{ old('fortune_deep_l1_amount', $settings->fortune_deep_l1_amount ?? 5) }}',
+                deepL2Enabled: {{ old('fortune_deep_l2_enabled', $settings->fortune_deep_l2_enabled ?? false) ? 'true' : 'false' }},
+                deepL2: '{{ old('fortune_deep_l2_amount', $settings->fortune_deep_l2_amount ?? 0) }}',
+                celticL1: '{{ old('fortune_celtic_l1_amount', $settings->fortune_celtic_l1_amount ?? 10) }}',
+                celticL2Enabled: {{ old('fortune_celtic_l2_enabled', $settings->fortune_celtic_l2_enabled ?? true) ? 'true' : 'false' }},
+                celticL2: '{{ old('fortune_celtic_l2_amount', $settings->fortune_celtic_l2_amount ?? 2) }}',
+                {{-- 🎬 (2026-07-15) คลิปบรรยายแผน --}}
+                planVideoEnabled: {{ old('plan_video_enabled', $settings->plan_video_enabled ?? false) ? 'true' : 'false' }},
+                planVideoUrl: '{{ old('plan_video_url', $settings->plan_video_url ?? '') }}',
+                planVideoWelcome: {{ old('plan_video_send_on_welcome', $settings->plan_video_send_on_welcome ?? false) ? 'true' : 'false' }},
                 preview: null,
                 previewLoading: false,
                 previewError: null,
@@ -3749,6 +3761,146 @@ Format 2 — JSON array:
                         <p x-show="!level2Enabled" class="text-xs text-gray-400 dark:text-gray-500">
                             ปิดการจ่ายคอมมิชชั่นชั้นหลาน — จ่ายเฉพาะ Level 1 (สายตรง) เท่านั้น
                         </p>
+                    </div>
+
+                    {{-- ===== 📦 (2026-07-15) ค่าแนะนำแยกตามแพคเกจ ===== --}}
+                    <div class="p-4 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">📦</span>
+                                <span class="font-bold text-gray-900 dark:text-white">แยกอัตราตามแพคเกจ</span>
+                                <span class="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">ทับค่าด้านบน</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="hidden" name="fortune_pkg_rates_enabled" value="0">
+                                <input type="checkbox" name="fortune_pkg_rates_enabled" value="1" x-model="pkgRates"
+                                       class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-purple-500"></div>
+                                <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300" x-text="pkgRates ? 'เปิด' : 'ปิด'"></span>
+                            </label>
+                        </div>
+
+                        <p x-show="!pkgRates" class="text-xs text-gray-400 dark:text-gray-500">
+                            ปิดอยู่ — ใช้อัตราเดียวจาก Level 1/Level 2 ด้านบน ทุกแพคเกจได้เท่ากัน
+                        </p>
+
+                        <div x-show="pkgRates" x-transition x-cloak class="space-y-3">
+                            <p class="text-xs text-purple-700 dark:text-purple-300 bg-purple-100/60 dark:bg-purple-900/40 rounded-lg p-2">
+                                ⚠️ เปิดแล้วจะ<strong>ทับ</strong>อัตรา Level 1/Level 2 ด้านบนทั้งหมด และจ่ายเป็น<strong>บาทคงที่</strong>เสมอ
+                                (ไม่มีโหมดเปอร์เซ็นต์ เพราะยอดโอนของลูกค้ามีเศษสตางค์สุ่มไว้แยกบิล เช่น 99.47)
+                                — บิลที่ไม่ใช่ ดูพื้นดวง/Celtic จะตกไปใช้อัตราด้านบนตามเดิม
+                            </p>
+
+                            {{-- ดูพื้นดวง (deep) --}}
+                            <div class="p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-bold text-gray-900 dark:text-white">
+                                        🌙 ดูพื้นดวง <span class="font-normal text-gray-500">({{ number_format($settings->deep_reading_price ?? 39, 0) }} บาท)</span>
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">สายตรง (บาท)</label>
+                                        <input type="number" name="fortune_deep_l1_amount" step="0.01" min="0" x-model="deepL1"
+                                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500">
+                                    </div>
+                                    <div class="flex items-end pb-2">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="hidden" name="fortune_deep_l2_enabled" value="0">
+                                            <input type="checkbox" name="fortune_deep_l2_enabled" value="1" x-model="deepL2Enabled" class="sr-only peer">
+                                            <div class="w-9 h-5 bg-gray-200 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+                                            <span class="ml-2 text-xs text-gray-700 dark:text-gray-300" x-text="deepL2Enabled ? 'มีชั้นหลาน' : 'ไม่มีชั้นหลาน'"></span>
+                                        </label>
+                                    </div>
+                                    <div x-show="deepL2Enabled">
+                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ชั้นหลาน (บาท)</label>
+                                        <input type="number" name="fortune_deep_l2_amount" step="0.01" min="0" x-model="deepL2"
+                                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500">
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Celtic Cross --}}
+                            <div class="p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-bold text-gray-900 dark:text-white">
+                                        🔮 Celtic Cross <span class="font-normal text-gray-500">({{ number_format($settings->celtic_cross_price ?? 99, 0) }} บาท)</span>
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">สายตรง (บาท)</label>
+                                        <input type="number" name="fortune_celtic_l1_amount" step="0.01" min="0" x-model="celticL1"
+                                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500">
+                                    </div>
+                                    <div class="flex items-end pb-2">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="hidden" name="fortune_celtic_l2_enabled" value="0">
+                                            <input type="checkbox" name="fortune_celtic_l2_enabled" value="1" x-model="celticL2Enabled" class="sr-only peer">
+                                            <div class="w-9 h-5 bg-gray-200 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+                                            <span class="ml-2 text-xs text-gray-700 dark:text-gray-300" x-text="celticL2Enabled ? 'มีชั้นหลาน' : 'ไม่มีชั้นหลาน'"></span>
+                                        </label>
+                                    </div>
+                                    <div x-show="celticL2Enabled">
+                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ชั้นหลาน (บาท)</label>
+                                        <input type="number" name="fortune_celtic_l2_amount" step="0.01" min="0" x-model="celticL2"
+                                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                ตัวอย่างที่ตั้งไว้: ดูพื้นดวง 39฿ → สายตรง 5฿ ไม่มีชั้นหลาน · Celtic 99฿ → สายตรง 10฿ ชั้นหลาน 2฿
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- ===== 🎬 (2026-07-15) คลิปบรรยายแผน ===== --}}
+                    <div class="p-4 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">🎬</span>
+                                <span class="font-bold text-gray-900 dark:text-white">คลิปบรรยายแผน</span>
+                                <span class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">โฮสต์ที่ จันทรา.online</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="hidden" name="plan_video_enabled" value="0">
+                                <input type="checkbox" name="plan_video_enabled" value="1" x-model="planVideoEnabled" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                                <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300" x-text="planVideoEnabled ? 'เปิด' : 'ปิด'"></span>
+                            </label>
+                        </div>
+
+                        <p x-show="!planVideoEnabled" class="text-xs text-gray-400 dark:text-gray-500">
+                            ปิดอยู่ — บอทจะไม่ส่งลิงก์คลิป และไม่แสดงในข้อความ "แผนการตลาด"
+                        </p>
+
+                        <div x-show="planVideoEnabled" x-transition x-cloak class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ลิงก์คลิป (URL เต็ม)</label>
+                                <input type="url" name="plan_video_url" x-model="planVideoUrl"
+                                       placeholder="https://จันทรา.online/#plan"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    ลิงก์นี้จะถูกส่งใน LINE/Facebook — ลูกค้ากดแล้วไปที่ section คลิปบนหน้าแรกของเว็บ
+                                </p>
+                            </div>
+
+                            <label class="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 cursor-pointer">
+                                <input type="hidden" name="plan_video_send_on_welcome" value="0">
+                                <input type="checkbox" name="plan_video_send_on_welcome" value="1" x-model="planVideoWelcome"
+                                       class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                    ส่งลิงก์คลิปให้ทุกคนที่<strong>แอดไลน์ใหม่</strong> โดยอัตโนมัติ
+                                    <span class="block text-xs text-gray-500 dark:text-gray-400">(ส่งพร้อมข้อความต้อนรับ — LINE เท่านั้น เพราะ Messenger ไม่มี follow event)</span>
+                                </span>
+                            </label>
+
+                            <p class="text-xs text-blue-700 dark:text-blue-300 bg-blue-100/60 dark:bg-blue-900/40 rounded-lg p-2">
+                                ลูกค้าพิมพ์ <strong>"บรรยายแผน"</strong> / <strong>"แผนการตลาด"</strong> / <strong>"แผนการสร้างรายได้"</strong>
+                                เมื่อไหร่ก็ได้ → บอทส่งแผน + ลิงก์คลิปให้ (ทำงานทั้ง LINE และ Facebook)
+                            </p>
+                        </div>
                     </div>
                 </div>
 

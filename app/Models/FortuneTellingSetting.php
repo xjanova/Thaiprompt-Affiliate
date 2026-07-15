@@ -174,6 +174,18 @@ class FortuneTellingSetting extends Model
         'fortune_level2_enabled',
         'fortune_level2_commission_type',
         'fortune_level2_commission_amount',
+        // ค่าแนะนำแยกตามแพคเกจ (deep 39฿ / celtic_cross 99฿) — ปิดไว้ = ใช้อัตราเดียวข้างบน
+        'fortune_pkg_rates_enabled',
+        'fortune_deep_l1_amount',
+        'fortune_deep_l2_enabled',
+        'fortune_deep_l2_amount',
+        'fortune_celtic_l1_amount',
+        'fortune_celtic_l2_enabled',
+        'fortune_celtic_l2_amount',
+        // คลิปบรรยายแผน (โฮสต์ที่ จันทรา.online)
+        'plan_video_enabled',
+        'plan_video_url',
+        'plan_video_send_on_welcome',
         // กระเป๋ากลาง — รับค่าแนะนำเมื่อหา sponsor ไม่ได้
         'fortune_central_user_id',
         'fortune_central_fallback_enabled',
@@ -467,6 +479,15 @@ class FortuneTellingSetting extends Model
         'fortune_level1_commission_amount' => 'decimal:2',
         'fortune_level2_enabled' => 'boolean',
         'fortune_level2_commission_amount' => 'decimal:2',
+        'fortune_pkg_rates_enabled' => 'boolean',
+        'fortune_deep_l1_amount' => 'decimal:2',
+        'fortune_deep_l2_enabled' => 'boolean',
+        'fortune_deep_l2_amount' => 'decimal:2',
+        'fortune_celtic_l1_amount' => 'decimal:2',
+        'fortune_celtic_l2_enabled' => 'boolean',
+        'fortune_celtic_l2_amount' => 'decimal:2',
+        'plan_video_enabled' => 'boolean',
+        'plan_video_send_on_welcome' => 'boolean',
         'fortune_central_user_id' => 'integer',
         'fortune_central_fallback_enabled' => 'boolean',
         'enable_ai_chat' => 'boolean',
@@ -666,6 +687,17 @@ class FortuneTellingSetting extends Model
         'fortune_use_global_commission_rate' => true,
         'fortune_commission_mode' => 'static',  // 'pv' = ใช้ PV ตาม MLM, 'static' = จ่ายตรง
         'fortune_static_commission_amount' => 10,
+        // ค่าแนะนำแยกตามแพคเกจ — ปิดไว้ก่อน (เปิดแล้วใช้อัตราด้านล่างแทนอัตราเดียวข้างบน)
+        'fortune_pkg_rates_enabled' => false,
+        'fortune_deep_l1_amount' => 5,        // ดูพื้นดวง 39฿ → สายตรง 5฿
+        'fortune_deep_l2_enabled' => false,   // ดูพื้นดวง ไม่มีชั้นหลาน
+        'fortune_deep_l2_amount' => 0,
+        'fortune_celtic_l1_amount' => 10,     // Celtic 99฿ → สายตรง 10฿
+        'fortune_celtic_l2_enabled' => true,
+        'fortune_celtic_l2_amount' => 2,      // Celtic 99฿ → ชั้นหลาน 2฿
+        // คลิปบรรยายแผน — ปิดไว้ก่อน เปิดเมื่ออัปคลิปขึ้น จันทรา.online แล้ว
+        'plan_video_enabled' => false,
+        'plan_video_send_on_welcome' => false,
         // กระเป๋ากลาง: เปิด fallback ตามค่าเริ่มต้น (user_id ตั้งภายหลังใน admin)
         'fortune_central_fallback_enabled' => true,
         // Admin Takeover: AI หยุด 1 นาทีเมื่อแอดมินพิมพ์ (เปลี่ยนจาก 15)
@@ -2005,13 +2037,54 @@ PROMPT;
     // ===== Level 1/Level 2 Fortune Commission =====
 
     /**
+     * ดึงอัตราค่าแนะนำเฉพาะแพคเกจ (ถ้าเปิดใช้ + รู้จักแพคเกจนั้น)
+     *
+     * คืน null เมื่อ:
+     *   - ปิด fortune_pkg_rates_enabled (ใช้อัตราเดียวทั้งระบบแบบเดิม)
+     *   - $readingType เป็น null หรือไม่ใช่ deep/celtic_cross (เช่น basic, free_card)
+     *     → ให้ตกไปใช้อัตราเดิม ปลอดภัยกว่าเดาอัตราเอง
+     *
+     * อัตราแยกแพคเกจเป็น "จำนวนบาทคงที่" เสมอ ไม่มีโหมดเปอร์เซ็นต์
+     * (ยอดที่ลูกค้าโอนมีเศษสตางค์สุ่มไว้แยกบิลตอนแมตช์ SMS — เช่น 99.47
+     *  คิดเปอร์เซ็นต์จะได้ค่าแนะนำไม่เท่ากันทุกบิล)
+     *
+     * @param  string|null  $readingType  reading_type ของบิล
+     * @return array{l1: float, l2_enabled: bool, l2: float}|null
+     */
+    protected function packageCommissionRate(?string $readingType): ?array
+    {
+        if (! ($this->fortune_pkg_rates_enabled ?? false)) {
+            return null;
+        }
+
+        return match ($readingType) {
+            FortuneReading::READING_TYPE_DEEP => [
+                'l1' => (float) ($this->fortune_deep_l1_amount ?? 5),
+                'l2_enabled' => (bool) ($this->fortune_deep_l2_enabled ?? false),
+                'l2' => (float) ($this->fortune_deep_l2_amount ?? 0),
+            ],
+            FortuneReading::READING_TYPE_CELTIC_CROSS => [
+                'l1' => (float) ($this->fortune_celtic_l1_amount ?? 10),
+                'l2_enabled' => (bool) ($this->fortune_celtic_l2_enabled ?? true),
+                'l2' => (float) ($this->fortune_celtic_l2_amount ?? 2),
+            ],
+            default => null,
+        };
+    }
+
+    /**
      * คำนวณคอมมิชชั่น Level 1 (สายตรง) จากราคาดูดวง
      *
      * @param  float  $readingPrice  ราคาดูดวง
+     * @param  string|null  $readingType  reading_type ของบิล (deep/celtic_cross) — ส่งมาเพื่อใช้อัตราแยกแพคเกจ
      * @return float จำนวนเงินที่ได้
      */
-    public function getFortuneLevel1Amount(float $readingPrice): float
+    public function getFortuneLevel1Amount(float $readingPrice, ?string $readingType = null): float
     {
+        if ($pkg = $this->packageCommissionRate($readingType)) {
+            return round($pkg['l1'], 2);
+        }
+
         $type = $this->fortune_level1_commission_type ?? 'fixed';
         $amount = (float) ($this->fortune_level1_commission_amount ?? 10);
 
@@ -2026,10 +2099,15 @@ PROMPT;
      * คำนวณคอมมิชชั่น Level 2 (ชั้นหลาน) จากราคาดูดวง
      *
      * @param  float  $readingPrice  ราคาดูดวง
+     * @param  string|null  $readingType  reading_type ของบิล
      * @return float จำนวนเงินที่ได้
      */
-    public function getFortuneLevel2Amount(float $readingPrice): float
+    public function getFortuneLevel2Amount(float $readingPrice, ?string $readingType = null): float
     {
+        if ($pkg = $this->packageCommissionRate($readingType)) {
+            return $pkg['l2_enabled'] ? round($pkg['l2'], 2) : 0.0;
+        }
+
         $type = $this->fortune_level2_commission_type ?? 'fixed';
         $amount = (float) ($this->fortune_level2_commission_amount ?? 5);
 
@@ -2042,26 +2120,97 @@ PROMPT;
 
     /**
      * ตรวจสอบว่าเปิด Level 2 (ชั้นหลาน) หรือไม่
+     *
+     * @param  string|null  $readingType  reading_type ของบิล — deep ปิดชั้นหลานได้แยกจาก celtic
      */
-    public function isFortuneLevel2Enabled(): bool
+    public function isFortuneLevel2Enabled(?string $readingType = null): bool
     {
+        if ($pkg = $this->packageCommissionRate($readingType)) {
+            return $pkg['l2_enabled'];
+        }
+
         return (bool) ($this->fortune_level2_enabled ?? true);
     }
 
     /**
      * ดึงประเภทคอมมิชชั่น Level 1
+     *
+     * @param  string|null  $readingType  ถ้าใช้อัตราแยกแพคเกจ → 'fixed' เสมอ
      */
-    public function getFortuneLevel1CommissionType(): string
+    public function getFortuneLevel1CommissionType(?string $readingType = null): string
     {
+        if ($this->packageCommissionRate($readingType)) {
+            return 'fixed';
+        }
+
         return $this->fortune_level1_commission_type ?? 'fixed';
     }
 
     /**
      * ดึงประเภทคอมมิชชั่น Level 2
      */
-    public function getFortuneLevel2CommissionType(): string
+    public function getFortuneLevel2CommissionType(?string $readingType = null): string
     {
+        if ($this->packageCommissionRate($readingType)) {
+            return 'fixed';
+        }
+
         return $this->fortune_level2_commission_type ?? 'fixed';
+    }
+
+    /**
+     * เปิดใช้อัตราค่าแนะนำแยกตามแพคเกจอยู่หรือไม่
+     *
+     * ปิด = ใช้อัตราเดียวทั้งระบบ (fortune_level1/2_commission_amount) แบบเดิม
+     */
+    public function isFortunePackageRatesEnabled(): bool
+    {
+        return (bool) ($this->fortune_pkg_rates_enabled ?? false);
+    }
+
+    /**
+     * ข้อความ "ค่าแนะนำสายตรงเท่าไหร่" สำหรับโชว์ให้ลูกค้า — จุดเดียวที่ควรใช้ทุกที่
+     *
+     * 📦 (2026-07-15) สร้างขึ้นเพราะมีข้อความชวนที่ฝังเลข "10 บาท" ไว้ตายตัวกระจายอยู่ 10+ จุด
+     *    (FB/LINE controller, affiliate flex) — พอเปิดโหมดแยกแพคเกจ ทุกจุดจะโฆษณาผิดพร้อมกัน
+     *    ทางแก้ที่ยั่งยืนคือให้ทุกจุดเรียกที่นี่ ไม่ใช่ไล่แปะเลขทีละที่
+     *
+     * คืนค่าเช่น "10" (อัตราเดียว) หรือ "5-10" (แยกแพคเกจ)
+     *
+     * @param  bool  $withUnit  ต่อท้ายด้วย " บาท" ให้เลย
+     */
+    public function fortuneLevel1Text(bool $withUnit = false): string
+    {
+        if ($this->isFortunePackageRatesEnabled()) {
+            $deep = $this->getFortuneLevel1Amount(0, FortuneReading::READING_TYPE_DEEP);
+            $celtic = $this->getFortuneLevel1Amount(0, FortuneReading::READING_TYPE_CELTIC_CROSS);
+            $text = $deep == $celtic
+                ? number_format($celtic, 0)
+                : number_format(min($deep, $celtic), 0).'-'.number_format(max($deep, $celtic), 0);
+        } else {
+            $text = number_format(
+                $this->getFortuneLevel1Amount((float) ($this->deep_reading_price ?? 0)),
+                0
+            );
+        }
+
+        return $withUnit ? $text.' บาท' : $text;
+    }
+
+    /**
+     * มีค่าแนะนำชั้นหลาน (Level 2) อย่างน้อย 1 แพคเกจไหม
+     *
+     * ใช้ตัดสินว่าจะพูดถึง "ชั้นหลาน" ในข้อความชวนหรือไม่ —
+     * โหมดแยกแพคเกจ: deep ปิดชั้นหลาน แต่ celtic เปิด → ยังพูดได้ แต่ต้องบอกว่าเฉพาะแพคเกจไหน
+     */
+    public function fortuneHasAnyLevel2(): bool
+    {
+        if ($this->isFortunePackageRatesEnabled()) {
+            return $this->isFortuneLevel2Enabled(FortuneReading::READING_TYPE_DEEP)
+                || $this->isFortuneLevel2Enabled(FortuneReading::READING_TYPE_CELTIC_CROSS);
+        }
+
+        return $this->isFortuneLevel2Enabled();
     }
 
     // ===== กระเป๋ากลาง (Central Wallet Fallback) =====

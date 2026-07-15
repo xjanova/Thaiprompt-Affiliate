@@ -68,6 +68,50 @@
                 ตัวอย่างรายได้จากการแนะนำ
             </h2>
 
+            {{-- 📦 (2026-07-15) โหมดค่าแนะนำแยกตามแพคเกจ — ค่าแนะนำต่างกันตามแพคเกจที่เพื่อนซื้อ --}}
+            @php $packageRates = $packageRates ?? null; @endphp
+            @if($packageRates)
+            <div class="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-5 mb-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    ค่าแนะนำขึ้นกับแพคเกจที่เพื่อนเลือก — เพื่อนจ่ายจริงเมื่อไหร่ คุณได้เมื่อนั้น
+                </p>
+
+                <div class="space-y-4">
+                    @foreach($packageRates as $pkg)
+                    <div class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-purple-800">
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="font-bold text-gray-900 dark:text-white">{{ $pkg['label'] }}</p>
+                            <span class="text-sm font-medium text-purple-600 dark:text-purple-400">
+                                {{ number_format($pkg['price'], 0) }} บาท
+                            </span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">🤝 สายตรง (เพื่อนที่คุณชวนเอง)</span>
+                                <span class="font-bold text-green-600 dark:text-green-400">
+                                    +{{ number_format($pkg['l1'], 0) }} บาท
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">👶 ชั้นหลาน (เพื่อนของเพื่อน)</span>
+                                @if($pkg['l2_enabled'])
+                                <span class="font-bold text-amber-600 dark:text-amber-400">
+                                    +{{ number_format($pkg['l2'], 0) }} บาท
+                                </span>
+                                @else
+                                <span class="font-medium text-gray-400 dark:text-gray-500">แพคเกจนี้ไม่มี</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                    ค่าแนะนำมี 2 ชั้นเท่านั้น · ชวนได้ไม่จำกัดจำนวนคน ไม่มีเพดานรายได้
+                </p>
+            </div>
+            @else
             <div class="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-5 mb-4">
                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
                     ราคาดูดวง: <span class="font-bold text-purple-600 dark:text-purple-400">{{ number_format($readingPrice, 0) }} บาท</span>
@@ -101,29 +145,43 @@
                     @endif
                 </div>
             </div>
+            @endif
 
             {{-- Simulation --}}
+            @php
+                // โหมดแยกแพคเกจ: อ้างอิง Celtic เป็นตัวอย่าง (แพคเกจที่ค่าแนะนำสูงสุด)
+                $simL1 = $packageRates ? $packageRates['celtic_cross']['l1'] : $level1Amount;
+                $simL2Enabled = $packageRates ? $packageRates['celtic_cross']['l2_enabled'] : $level2Enabled;
+                $simL2 = $packageRates ? $packageRates['celtic_cross']['l2'] : $level2Amount;
+                $simLabel = $packageRates ? $packageRates['celtic_cross']['label'] : 'ดูดวง';
+                $monthlyEstimate = ($simL1 * 10 * 3) + ($simL2Enabled ? $simL2 * 10 * 5 * 3 : 0);
+            @endphp
             <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-5">
-                <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">จำลองรายได้</h3>
+                <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">
+                    จำลองรายได้
+                    @if($packageRates)
+                    <span class="font-normal text-gray-500">(ถ้าเพื่อนเลือก {{ $simLabel }})</span>
+                    @endif
+                </h3>
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">ชวน 10 คน × ดูดวง 3 ครั้ง (L1)</span>
-                        <span class="font-bold text-green-600 dark:text-green-400">{{ number_format($level1Amount * 10 * 3, 0) }} บาท</span>
+                        <span class="text-gray-600 dark:text-gray-400">ชวน 10 คน × ดูดวง 3 ครั้ง (สายตรง)</span>
+                        <span class="font-bold text-green-600 dark:text-green-400">{{ number_format($simL1 * 10 * 3, 0) }} บาท</span>
                     </div>
-                    @if($level2Enabled)
+                    @if($simL2Enabled)
                     <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">10 คน × ชวนอีกคนละ 5 หลาน × 3 ครั้ง (L2)</span>
-                        <span class="font-bold text-amber-600 dark:text-amber-400">{{ number_format($level2Amount * 10 * 5 * 3, 0) }} บาท</span>
+                        <span class="text-gray-600 dark:text-gray-400">10 คน × ชวนอีกคนละ 5 หลาน × 3 ครั้ง (ชั้นหลาน)</span>
+                        <span class="font-bold text-amber-600 dark:text-amber-400">{{ number_format($simL2 * 10 * 5 * 3, 0) }} บาท</span>
                     </div>
                     @endif
                     <div class="border-t border-green-200 dark:border-green-700 pt-2 flex justify-between">
                         <span class="font-bold text-gray-900 dark:text-white">รวมต่อเดือน (ประมาณ)</span>
-                        @php
-                            $monthlyEstimate = ($level1Amount * 10 * 3) + ($level2Enabled ? $level2Amount * 10 * 5 * 3 : 0);
-                        @endphp
                         <span class="text-lg font-bold text-purple-600 dark:text-purple-400">{{ number_format($monthlyEstimate, 0) }} บาท</span>
                     </div>
                 </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                    เป็นเพียงตัวอย่างการคำนวณ ไม่ใช่การรับประกันรายได้ — รายได้จริงขึ้นกับจำนวนเพื่อนที่ใช้บริการจริง
+                </p>
             </div>
         </div>
 

@@ -193,7 +193,7 @@
                 <div style="font-weight:700; font-size:13px; margin-bottom:8px;">ระยะเวลาดำเนินการ</div>
                 <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--ink2);">
                     <li>• คำขอจะได้รับการตรวจสอบภายใน 24 ชั่วโมง</li>
-                    <li>• การโอนเงินใช้เวลา 1-3 วันทำการ</li>
+                    <li>• โอนเข้าบัญชีเป็นรอบ วันที่ 2 และ 17 ของทุกเดือน</li>
                     <li>• คุณสามารถยกเลิกคำขอที่ยังรอดำเนินการได้</li>
                     <li>• ติดต่อฝ่ายสนับสนุนหากมีปัญหา</li>
                 </ul>

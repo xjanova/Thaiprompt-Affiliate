@@ -807,23 +807,41 @@ class LineFortuneWebhookController extends Controller
             if (\App\Models\FortuneInviteMessage::shouldSuppressImage($userId, 'line')) {
                 $sent = false;
             } else {
+                // 🐛 (2026-07-15) เดิมเรียก sendImageMessage() ซึ่งไม่มีใน LineFortuneService
+                //    (มีแต่ใน LineService คนละคลาส) → throw ทุกครั้ง → ถูก catch กลืนที่
+                //    FortuneBannerService:264 → $sent=false → รูป welcome ไม่เคยส่งสำเร็จเลย
+                //    แก้ให้เหมือน path ข้อความที่บรรทัด 635 ซึ่งเรียกถูกและใช้งานได้จริง
+                //    (ส่ง platform='line' ด้วย → ลูกค้าเก่าที่กลับมาแอดใหม่จะไม่โดนแบนเนอร์ชวนซ้ำ)
                 $sent = $bannerService->sendBannerOnce(
                     $userId,
-                    fn ($url) => $this->lineService->sendImageMessage($userId, $url, $url),
+                    fn ($url) => $this->lineService->sendImage($userId, $url),
                     'welcome',
-                    24
+                    24,
+                    'line'
                 );
                 if ($sent) {
                     \App\Models\FortuneUserCredit::markImageSent($userId, 'line');
                 }
             }
 
+            // 📨 รวมข้อความ text ทั้งหมดส่งใน replyMessage ครั้งเดียว
+            //    (replyToken ใช้ได้ครั้งเดียว — ห้ามเรียกซ้ำ)
+            $messages = [];
+
             // ถ้า banner ปิดอยู่หรือไม่มี — ส่ง greeting สั้น ๆ แทน (ไม่มี flex card)
             if (! $sent) {
                 $greet = $userName ? "🌙 ยินดีต้อนรับ คุณ{$userName} ค่ะ" : '🌙 ยินดีต้อนรับค่ะ';
-                $this->lineService->replyMessage($replyToken, [
-                    ['type' => 'text', 'text' => $greet],
-                ]);
+                $messages[] = ['type' => 'text', 'text' => $greet];
+            }
+
+            // 🎬 (2026-07-15) คลิปบรรยายแผนสร้างรายได้ — ส่งให้คนแอดใหม่ทุกคน (ถ้าแอดมินเปิด)
+            //    ⚠️ ต้องส่งไม่ว่า $sent จะ true หรือ false — เดิมสาขา $sent=true ไม่ส่ง text เลย
+            if ($planVideoMsg = $this->planVideoWelcomeMessage()) {
+                $messages[] = ['type' => 'text', 'text' => $planVideoMsg];
+            }
+
+            if (! empty($messages)) {
+                $this->lineService->replyMessage($replyToken, $messages);
             }
         } catch (\Throwable $e) {
             Log::warning('LINE Welcome: banner ส่งไม่ได้ — ใช้ text fallback', [
@@ -831,10 +849,37 @@ class LineFortuneWebhookController extends Controller
                 'error' => $e->getMessage(),
             ]);
             $greet = $userName ? "🌙 ยินดีต้อนรับ คุณ{$userName} ค่ะ" : '🌙 ยินดีต้อนรับค่ะ';
-            $this->lineService->replyMessage($replyToken, [
-                ['type' => 'text', 'text' => $greet],
-            ]);
+            $fallback = [['type' => 'text', 'text' => $greet]];
+            if ($planVideoMsg = $this->planVideoWelcomeMessage()) {
+                $fallback[] = ['type' => 'text', 'text' => $planVideoMsg];
+            }
+            $this->lineService->replyMessage($replyToken, $fallback);
         }
+    }
+
+    /**
+     * ข้อความชวนดูคลิปบรรยายแผน (ส่งตอนแอดเพื่อนใหม่)
+     *
+     * คืน null เมื่อแอดมินยังไม่เปิด / ไม่ได้ตั้งลิงก์ / ปิดการส่งตอน welcome
+     * → default ปิดทั้งคู่ ต้องไปเปิดที่หน้าแอดมินก่อน
+     */
+    protected function planVideoWelcomeMessage(): ?string
+    {
+        $s = $this->settings;
+
+        if (! ($s->plan_video_enabled ?? false) || ! ($s->plan_video_send_on_welcome ?? false)) {
+            return null;
+        }
+
+        $url = trim((string) ($s->plan_video_url ?? ''));
+        if ($url === '') {
+            return null;
+        }
+
+        return "🎬 อยากมีรายได้เสริมจากการชวนเพื่อนดูดวงไหมคะ\n"
+            ."ดูคลิปนี้ 5 นาที เข้าใจครบ เริ่มได้เลย\n\n"
+            .$url."\n\n"
+            .'(พิมพ์ "บรรยายแผน" เมื่อไหร่ก็ได้ เพื่อดูอีกครั้งค่ะ)';
     }
 
     /**
@@ -1141,7 +1186,7 @@ class LineFortuneWebhookController extends Controller
                     ['type' => 'text', 'text' => '💰 รายได้', 'weight' => 'bold', 'margin' => 'md', 'size' => 'md'],
                     [
                         'type' => 'text',
-                        'text' => "• ชวนคนมาดูดวง → 10 บาท/คน (Level 1)\n• เพื่อนชวนต่อ → ส่วนแบ่ง Level 2",
+                        'text' => "• ชวนคนมาดูดวง → {$this->settings->fortuneLevel1Text(true)}/คน (Level 1)\n• เพื่อนชวนต่อ → ส่วนแบ่ง Level 2",
                         'wrap' => true,
                         'size' => 'sm',
                         'margin' => 'sm',
@@ -1181,7 +1226,7 @@ class LineFortuneWebhookController extends Controller
             $this->lineService->replyMessage($replyToken, $messages);
         } else {
             // fallback เป็น text เมื่อ reply token หมดอายุ
-            $fallback = "🎉 วิธีเริ่มง่ายๆ 3 ขั้น\n\n1️⃣ ดูดวง {$deepPrice} บาท\n2️⃣ ได้เป็นสมาชิก\n3️⃣ แชร์ลิงก์ได้เลย\n\n💰 ชวนคน → 10 บาท/คน\n\nพิมพ์ \"ดูดวง\" เพื่อเริ่มค่ะ";
+            $fallback = "🎉 วิธีเริ่มง่ายๆ 3 ขั้น\n\n1️⃣ ดูดวง {$deepPrice} บาท\n2️⃣ ได้เป็นสมาชิก\n3️⃣ แชร์ลิงก์ได้เลย\n\n💰 ชวนคน → {$this->settings->fortuneLevel1Text(true)}/คน\n\nพิมพ์ \"ดูดวง\" เพื่อเริ่มค่ะ";
             $this->lineService->sendMessageWithReplyFallback($userId, $fallback, null);
         }
         Log::info('💰 LINE Affiliate YES clicked', ['user_id' => $userId]);
@@ -1217,7 +1262,7 @@ class LineFortuneWebhookController extends Controller
                     ['type' => 'separator', 'margin' => 'md'],
                     [
                         'type' => 'text',
-                        'text' => "แม่หมอมีทางให้ค่ะ\n\nชวนเพื่อนมาดูดวง\nได้ค่าชวน 10 บาท/คน\n\n✨ ไม่ต้องลงทุน\n📌 ชวนได้ไม่จำกัด",
+                        'text' => "แม่หมอมีทางให้ค่ะ\n\nชวนเพื่อนมาดูดวง\nได้ค่าชวน {$this->settings->fortuneLevel1Text(true)}/คน\n\n✨ ไม่ต้องลงทุน\n📌 ชวนได้ไม่จำกัด",
                         'wrap' => true,
                         'size' => 'sm',
                         'margin' => 'md',
@@ -1250,7 +1295,7 @@ class LineFortuneWebhookController extends Controller
 
         $messages = [[
             'type' => 'flex',
-            'altText' => '💰 รายได้เสริม — ชวนเพื่อนได้ 10 บาท/คน',
+            'altText' => '💰 รายได้เสริม — ชวนเพื่อนได้ '.$this->settings->fortuneLevel1Text(true).'/คน',
             'contents' => $flex,
         ]];
 
@@ -1258,7 +1303,7 @@ class LineFortuneWebhookController extends Controller
             $this->lineService->replyMessage($replyToken, $messages);
         } else {
             // fallback: ส่งเป็น text (ไม่ใช่ flex) ถ้าไม่มี reply token
-            $fallbackText = "💰 รายได้เสริม\n\nชวนเพื่อนมาดูดวงกับแม่หมอ ได้ค่าชวน 10 บาท/คน\n\nพิมพ์ \"อยาก\" ถ้าสนใจ หรือ \"ไม่อยาก\" เพื่อข้ามค่ะ";
+            $fallbackText = "💰 รายได้เสริม\n\nชวนเพื่อนมาดูดวงกับแม่หมอ ได้ค่าชวน {$this->settings->fortuneLevel1Text(true)}/คน\n\nพิมพ์ \"อยาก\" ถ้าสนใจ หรือ \"ไม่อยาก\" เพื่อข้ามค่ะ";
             $this->lineService->sendMessageWithReplyFallback($userId, $fallbackText, null);
         }
 

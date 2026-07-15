@@ -315,6 +315,21 @@ class FortuneSettingsController extends Controller
             'fortune_level2_enabled' => 'boolean',
             'fortune_level2_commission_type' => 'nullable|in:fixed,percent',
             'fortune_level2_commission_amount' => 'nullable|numeric|min:0',
+            // 📦 (2026-07-15) ค่าแนะนำแยกตามแพคเกจ (deep 39฿ / celtic 99฿)
+            'fortune_pkg_rates_enabled' => 'boolean',
+            'fortune_deep_l1_amount' => 'nullable|numeric|min:0',
+            'fortune_deep_l2_enabled' => 'boolean',
+            'fortune_deep_l2_amount' => 'nullable|numeric|min:0',
+            'fortune_celtic_l1_amount' => 'nullable|numeric|min:0',
+            'fortune_celtic_l2_enabled' => 'boolean',
+            'fortune_celtic_l2_amount' => 'nullable|numeric|min:0',
+            // 🎬 คลิปบรรยายแผน (โฮสต์ที่ จันทรา.online)
+            'plan_video_enabled' => 'boolean',
+            // ⚠️ ห้ามใช้ rule 'url' — Laravel Str::isUrl ใช้ character class [\pL\pN\pS\-\_\.]
+            //    ซึ่งไม่มี \pM (combining mark) → "จันทรา.online" ตกทันที เพราะ ◌ั (U+0E31) เป็น Mn
+            //    (แปลกแต่จริง: "ไทย.com" ผ่าน เพราะไม่มีสระบน) → แอดมินกรอกโดเมนไทยแล้วทั้งฟอร์มไม่เซฟ
+            'plan_video_url' => ['nullable', 'string', 'max:500', 'regex:/^https?:\/\/\S+$/u'],
+            'plan_video_send_on_welcome' => 'boolean',
             // กระเป๋ากลาง (รับค่าแนะนำเมื่อหา sponsor ไม่ได้)
             'fortune_central_user_id' => 'nullable|integer|exists:users,id',
             'fortune_central_fallback_enabled' => 'boolean',
@@ -458,6 +473,9 @@ class FortuneSettingsController extends Controller
             'enable_image_vision',
             'fortune_affiliate_enabled', 'fortune_auto_register_enabled',
             'fortune_use_global_commission_rate', 'fortune_level2_enabled',
+            // 📦 (2026-07-15) ค่าแนะนำแยกตามแพคเกจ + คลิปบรรยายแผน
+            'fortune_pkg_rates_enabled', 'fortune_deep_l2_enabled', 'fortune_celtic_l2_enabled',
+            'plan_video_enabled', 'plan_video_send_on_welcome',
             'fortune_central_fallback_enabled',
             'enable_ai_chat',
             'admin_handover_enabled', 'takeover_notify_customer',

@@ -1247,7 +1247,7 @@ class FacebookWebhookController extends Controller
         $dmMessage = "{$greeting}\n\n"
             ."เห็นเม้นต์เรื่องเงินแล้ว แม่หมอมีทางสร้างรายได้ง่ายๆ ให้ค่ะ\n\n"
             ."💰 ชวนเพื่อนมาดูดวงกับแม่หมอ\n"
-            ."→ ได้ค่าชวน 10 บาท/คน\n\n"
+            ."→ ได้ค่าชวน {$this->settings->fortuneLevel1Text(true)}/คน\n\n"
             ."✨ ไม่ต้องลงทุน ไม่มีความเสี่ยง\n"
             ."📌 ชวนได้ไม่จำกัดคน\n\n"
             .'สนใจไหมคะ?';
@@ -2572,7 +2572,7 @@ class FacebookWebhookController extends Controller
                         'template_type' => 'button',
                         'text' => "🎉 ดีใจที่อยากร่วมทีมค่ะ!\n\n"
                             ."💰 แชร์ลิงก์ให้เพื่อนดูดวง\n"
-                            ."รับ 10 บาท/บิล เข้ากระเป๋าตลอดไป\n\n"
+                            ."รับ {$this->settings->fortuneLevel1Text(true)}/บิล เข้ากระเป๋าตลอดไป\n\n"
                             ."👇 กดปุ่มด้านล่างเข้าระบบด้วย Facebook\n"
                             .'(ใช้ FB เดียวกันนี้ — เป็นสมาชิกอัตโนมัติ)',
                         'buttons' => [
@@ -2619,7 +2619,7 @@ class FacebookWebhookController extends Controller
                 $this->facebookService->sendMessage(
                     $senderId,
                     "🎉 ดีใจที่อยากร่วมทีมค่ะ!\n\n"
-                    ."💰 แชร์ลิงก์ให้เพื่อนดูดวง รับ 10 บาท/บิล\n\n"
+                    ."💰 แชร์ลิงก์ให้เพื่อนดูดวง รับ {$this->settings->fortuneLevel1Text(true)}/บิล\n\n"
                     ."👇 เข้าระบบด้วย Facebook:\n{$fallbackUrl}"
                 );
             } catch (\Throwable $fallbackErr) {
@@ -2999,7 +2999,7 @@ class FacebookWebhookController extends Controller
             ."2️⃣ หลังดูดวงเสร็จ → ได้เป็นสมาชิกอัตโนมัติ\n"
             ."3️⃣ รับลิงก์แชร์ส่วนตัว → แชร์ให้เพื่อน\n\n"
             ."💰 รายได้:\n"
-            ."• ชวนคนมาดูดวง → ได้ 10 บาท/คน (Level 1)\n"
+            ."• ชวนคนมาดูดวง → ได้ {$this->settings->fortuneLevel1Text(true)}/คน (Level 1)\n"
             ."• เพื่อนชวนต่อ → ได้ส่วนแบ่งอีกชั้น (Level 2)\n\n"
             .'กดปุ่มด้านล่างเพื่อเริ่มเลยค่ะ ✨';
 
@@ -3162,7 +3162,7 @@ class FacebookWebhookController extends Controller
                 ."🎁 *สิทธิ์ที่ได้รับ:*\n"
                 ."• 💎 กระเป๋าเงินส่วนตัวในระบบ\n"
                 ."• 👥 ลิงก์เชิญเพื่อนพิเศษ\n"
-                ."• 💰 ค่าแนะนำ 10 บาท/คนที่เพื่อนของคุณดูดวง (Level 1)\n"
+                ."• 💰 ค่าแนะนำ {$this->settings->fortuneLevel1Text(true)}/คนที่เพื่อนของคุณดูดวง (Level 1)\n"
                 ."• 🌳 ค่าแนะนำชั้นหลาน (Level 2) อีกชั้น\n"
                 ."• 📊 Dashboard ดูรายได้แบบ real-time\n"
                 ."• 💸 ถอนเงินเข้าบัญชีได้ (หลัง KYC)\n\n"

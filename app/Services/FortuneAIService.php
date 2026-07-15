@@ -481,10 +481,10 @@ class FortuneAIService
   * "เหมือนหมอก็ต้องลงแรงครั้งใหม่ทุกครั้ง คำตอบจึงตรงกับสิ่งที่เจ้าชะตาถามจริง ๆ"
 
 [ระบบแชร์รายได้/Affiliate — แผนค่าแนะนำ 2 ชั้น]
-- ชั้น 1 (สายตรง): ได้ {level1Commission} บาท ทุกครั้งที่คนที่คุณแนะนำดูดวงเชิงลึก
-- ชั้น 2 (ชั้นหลาน): ได้ {level2Commission} บาท ทุกครั้งที่คนที่สายตรงแนะนำต่อดูดวงเชิงลึก
+{affiliatePlanLines}
 - วิธีเริ่ม: พิมพ์ "แชร์" เพื่อรับลิงก์เชิญเพื่อน
-- ค่าแนะนำเข้า Wallet อัตโนมัติ ถอนได้ใน 1-3 วันทำการ
+- ค่าแนะนำเข้า Wallet อัตโนมัติทันทีที่เพื่อนจ่าย
+- ถอนเงิน: กดถอนเองที่เว็บ + ยืนยันตัวตน KYC (บัตรประชาชน + บัญชีธนาคาร) — โอนเข้าบัญชีเป็นรอบ วันที่ 2 และ 17 ของทุกเดือน
 - คำสั่ง: "สายงาน" / "รายได้" / "แชร์" / "แผนการตลาด"
 
 [กฎสำคัญ]
@@ -3810,6 +3810,18 @@ PROMPT;
             $commissionText = number_format($commissionAmount, 0).' บาท';
             $level1Commission = number_format($this->settings->getFortuneLevel1Amount((float) ($this->settings->deep_reading_price ?? 0)), 0);
             $level2Commission = number_format($this->settings->getFortuneLevel2Amount((float) ($this->settings->deep_reading_price ?? 0)), 0);
+
+            // 📦 (2026-07-15) โหมดแยกอัตราตามแพคเกจ — commissionText ต้องพูดเป็นช่วง
+            //    ไม่งั้น AI จะบอกลูกค้าเลขเดียวทั้งที่จ่ายไม่เท่ากันตามแพคเกจ
+            if ($this->settings->isFortunePackageRatesEnabled()) {
+                $deepL1 = $this->settings->getFortuneLevel1Amount(0, \App\Models\FortuneReading::READING_TYPE_DEEP);
+                $celticL1 = $this->settings->getFortuneLevel1Amount(0, \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS);
+                $lo = min($deepL1, $celticL1);
+                $hi = max($deepL1, $celticL1);
+                $commissionText = $lo == $hi
+                    ? number_format($hi, 0).' บาท'
+                    : number_format($lo, 0).'-'.number_format($hi, 0).' บาท (ตามแพคเกจ)';
+            }
         } else {
             $preview = $this->settings->calculateFortuneCommissionPreview();
             $level1 = $preview['levels'][0] ?? null;
@@ -3820,14 +3832,18 @@ PROMPT;
             $level2Commission = number_format($level2 ? $level2['amount'] : 0, 0);
         }
 
+        // 📦 (2026-07-15) บล็อกแผนค่าแนะนำที่ AI จะอ่าน — สร้างจากค่าจริง
+        //    ห้าม hardcode ตัวเลข ไม่งั้น AI พูดไม่ตรงกับที่ระบบจ่ายจริง
+        $affiliatePlanLines = $this->buildAffiliatePlanLines($mode, $level1Commission, $level2Commission);
+
         // แทนที่ placeholder ด้วยข้อมูลจริง
         // 🩹 (2026-05-09) เพิ่ม {freeLine} placeholder — ก่อนหน้า: hardcoded "ทำนายฟรี 1 ใบ/platform"
         //    ใน template (line 311) + str_replace ใช้ pattern เก่า "ดูดวงฟรีได้วันละ X ครั้ง" ไม่ตรงกัน
         //    → no-op replacement → AI ถูกบอกว่ามี "ทำนายฟรี" ตลอด แม้ admin ปิด max_free_readings=0
         //    → AI Chat ยังพูด "ฟรี" ทั้งที่ feature ปิดอยู่
         $message = str_replace(
-            ['{freeLine}', '{maxFreeReadings}', '{deepReadingPrice}', '{commissionText}', '{level1Commission}', '{level2Commission}'],
-            [$freeLineForPrompt, $maxFreeReadings, $deepReadingPrice, $commissionText, $level1Commission, $level2Commission],
+            ['{freeLine}', '{maxFreeReadings}', '{deepReadingPrice}', '{commissionText}', '{level1Commission}', '{level2Commission}', '{affiliatePlanLines}'],
+            [$freeLineForPrompt, $maxFreeReadings, $deepReadingPrice, $commissionText, $level1Commission, $level2Commission, $affiliatePlanLines],
             self::CHAT_SYSTEM_MESSAGE_TEMPLATE
         );
 
@@ -3918,6 +3934,46 @@ PROMPT;
         }
 
         return $message;
+    }
+
+    /**
+     * สร้างบล็อกบรรทัด "แผนค่าแนะนำ" ที่ฉีดเข้า system prompt ของ AI Chat
+     *
+     * 📦 (2026-07-15) ต้องสร้างจากค่าจริงเสมอ — ถ้าเปิดโหมดแยกอัตราตามแพคเกจ
+     *    AI ต้องรู้ว่าค่าแนะนำของ 39฿ กับ 99฿ ไม่เท่ากัน ไม่งั้นจะบอกลูกค้าผิด
+     *
+     * @param  string  $mode  โหมดคอมมิชชั่น ('static' / 'pv')
+     * @param  string  $level1Commission  ค่าแนะนำชั้น 1 แบบอัตราเดียว (format แล้ว)
+     * @param  string  $level2Commission  ค่าแนะนำชั้น 2 แบบอัตราเดียว (format แล้ว)
+     */
+    protected function buildAffiliatePlanLines(string $mode, string $level1Commission, string $level2Commission): string
+    {
+        // โหมดแยกอัตราตามแพคเกจ — ใช้ได้เฉพาะ static (pv คิดจาก PV คนละระบบ)
+        if ($mode === 'static' && $this->settings->isFortunePackageRatesEnabled()) {
+            $deepPrice = number_format((float) ($this->settings->deep_reading_price ?? 39), 0);
+            $celticPrice = number_format((float) ($this->settings->celtic_cross_price ?? 99), 0);
+
+            $deepL1 = number_format($this->settings->getFortuneLevel1Amount(0, \App\Models\FortuneReading::READING_TYPE_DEEP), 0);
+            $deepL2On = $this->settings->isFortuneLevel2Enabled(\App\Models\FortuneReading::READING_TYPE_DEEP);
+            $deepL2 = number_format($this->settings->getFortuneLevel2Amount(0, \App\Models\FortuneReading::READING_TYPE_DEEP), 0);
+
+            $celticL1 = number_format($this->settings->getFortuneLevel1Amount(0, \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS), 0);
+            $celticL2On = $this->settings->isFortuneLevel2Enabled(\App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS);
+            $celticL2 = number_format($this->settings->getFortuneLevel2Amount(0, \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS), 0);
+
+            $lines = "- ⚠️ ค่าแนะนำ **ไม่เท่ากันตามแพคเกจ** — ห้ามบอกลูกค้าเป็นตัวเลขเดียว ต้องแยกให้ชัด\n";
+            $lines .= "- ดูพื้นดวง {$deepPrice} บาท → สายตรงได้ {$deepL1} บาท"
+                .($deepL2On ? ", ชั้นหลานได้ {$deepL2} บาท" : ' (แพคเกจนี้ไม่มีค่าแนะนำชั้นหลาน)')."\n";
+            $lines .= "- Celtic Cross {$celticPrice} บาท → สายตรงได้ {$celticL1} บาท"
+                .($celticL2On ? ", ชั้นหลานได้ {$celticL2} บาท" : ' (แพคเกจนี้ไม่มีค่าแนะนำชั้นหลาน)')."\n";
+            $lines .= '- ชั้น 1 (สายตรง) = เพื่อนที่ลูกค้าชวนเอง / ชั้น 2 (ชั้นหลาน) = คนที่สายตรงชวนต่อ — มีแค่ 2 ชั้น';
+
+            return $lines;
+        }
+
+        // โหมดเดิม — อัตราเดียวทุกแพคเกจ
+        return "- ชั้น 1 (สายตรง): ได้ {$level1Commission} บาท ทุกครั้งที่คนที่เธอแนะนำดูดวงเชิงลึก\n"
+            ."- ชั้น 2 (ชั้นหลาน): ได้ {$level2Commission} บาท ทุกครั้งที่คนที่สายตรงแนะนำต่อดูดวงเชิงลึก";
     }
 
     /**

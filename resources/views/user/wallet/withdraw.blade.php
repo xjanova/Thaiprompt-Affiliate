@@ -106,7 +106,7 @@
                     <div style="font-weight:700; font-size:13px; color:#5689b8; margin-bottom:8px;">📋 เงื่อนไขการถอนเงิน</div>
                     <ul style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--ink2);">
                         <li>• จำนวนเงินขั้นต่ำในการถอนคือ 100 บาท</li>
-                        <li>• ระบบจะตรวจสอบและดำเนินการภายใน 1-3 วันทำการ</li>
+                        <li>• ระบบจะตรวจสอบ และโอนเข้าบัญชีเป็นรอบ — วันที่ 2 และ 17 ของทุกเดือน</li>
                         <li>• กรุณาตรวจสอบข้อมูลบัญชีให้ถูกต้อง</li>
                         <li>• หากพบปัญหา กรุณาติดต่อฝ่ายสนับสนุน</li>
                     </ul>

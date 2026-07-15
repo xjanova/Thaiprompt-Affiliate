@@ -676,9 +676,16 @@ class FortuneAffiliateService
         $appUrl = config('app.url', 'https://main.thaiprompt.online');
 
         // ดึงค่าคอมมิชชั่นจาก settings (dynamic)
+        // 🐛 (2026-07-15) เดิมอ่าน getFortuneStaticCommissionAmount() = คอลัมน์ "ประตู"
+        //    ไม่ใช่คอลัมน์ที่จ่ายจริง + ไม่รู้จักอัตราแยกแพคเกจ → ใช้ helper กลางแทน
         if ($mode === 'static') {
-            $commissionAmount = $this->settings->getFortuneStaticCommissionAmount();
-            $commissionText = number_format($commissionAmount, 0).' บาท';
+            $commissionText = $this->settings->fortuneLevel1Text(true);
+            // ตัวเลขที่เอาไปคูณเป็นตัวอย่างรายได้ — อิงเรต Celtic (แพคเกจหลักที่เราเชียร์)
+            // แล้วกำกับไว้ให้ชัดว่าเป็นเคสไหน ห้ามปล่อยให้เข้าใจว่าได้เท่านี้ทุกแพคเกจ
+            $commissionAmount = $this->settings->isFortunePackageRatesEnabled()
+                ? $this->settings->getFortuneLevel1Amount(0, \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS)
+                : $this->settings->getFortuneLevel1Amount((float) ($this->settings->deep_reading_price ?? 0));
+            $exampleNote = $this->settings->isFortunePackageRatesEnabled() ? ' (ถ้าเลือก Celtic)' : '';
         } else {
             $preview = $this->settings->calculateFortuneCommissionPreview();
             $level1 = $preview['levels'][0] ?? null;
@@ -743,7 +750,7 @@ class FortuneAffiliateService
                     ],
                     [
                         'type' => 'text',
-                        'text' => "🎯 ชวน 10 คน × ดูดวง 3 ครั้ง = ".number_format($commissionAmount * 10 * 3, 0).' บาท!',
+                        'text' => "🎯 ชวน 10 คน × ดูดวง 3 ครั้ง = ".number_format($commissionAmount * 10 * 3, 0).' บาท!'.$exampleNote,
                         'size' => 'xs',
                         'color' => '#333333',
                         'margin' => 'sm',
@@ -955,9 +962,15 @@ class FortuneAffiliateService
         $appUrl = config('app.url', 'https://main.thaiprompt.online');
 
         // ดึงค่าคอมมิชชั่นจาก settings (dynamic — แปรผันตามที่ตั้งค่าจริง)
+        // 🐛 (2026-07-15) เดิมอ่านคอลัมน์ "ประตู" + ไม่รู้จักอัตราแยกแพคเกจ → ใช้ helper กลาง
         if ($mode === 'static') {
-            $commissionAmount = $this->settings->getFortuneStaticCommissionAmount();
-            $commissionText = number_format($commissionAmount, 0).' บาท';
+            $commissionText = $this->settings->fortuneLevel1Text(true);
+            // ตัวเลขที่เอาไปคูณเป็นตัวอย่างรายได้ — อิงเรต Celtic (แพคเกจหลักที่เราเชียร์)
+            // แล้วกำกับไว้ให้ชัดว่าเป็นเคสไหน ห้ามปล่อยให้เข้าใจว่าได้เท่านี้ทุกแพคเกจ
+            $commissionAmount = $this->settings->isFortunePackageRatesEnabled()
+                ? $this->settings->getFortuneLevel1Amount(0, \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS)
+                : $this->settings->getFortuneLevel1Amount((float) ($this->settings->deep_reading_price ?? 0));
+            $exampleNote = $this->settings->isFortunePackageRatesEnabled() ? ' (ถ้าเลือก Celtic)' : '';
         } else {
             // PV mode: ใช้ Level 1 amount เป็นตัวอย่าง
             $preview = $this->settings->calculateFortuneCommissionPreview();
@@ -982,7 +995,7 @@ class FortuneAffiliateService
             ],
             [
                 'type' => 'text',
-                'text' => "🎯 ชวน 10 คน × ดูดวง 3 ครั้ง = {$example10Friends} บาท!",
+                'text' => "🎯 ชวน 10 คน × ดูดวง 3 ครั้ง = {$example10Friends} บาท!{$exampleNote}",
                 'size' => 'xs',
                 'color' => '#333333',
                 'margin' => 'sm',

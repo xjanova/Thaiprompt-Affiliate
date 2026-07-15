@@ -87,6 +87,28 @@ class FortuneReferralDashboardController extends Controller
         $level1Amount = $settings->getFortuneLevel1Amount($readingPrice);
         $level2Amount = $settings->isFortuneLevel2Enabled() ? $settings->getFortuneLevel2Amount($readingPrice) : 0;
 
+        // 📦 (2026-07-15) โหมดค่าแนะนำแยกตามแพคเกจ — ส่งอัตรารายแพคเกจไปให้ view
+        //    ถ้าปิดอยู่ $packageRates = null → view แสดงแบบอัตราเดียวเหมือนเดิม
+        $packageRates = null;
+        if ($settings->isFortunePackageRatesEnabled()) {
+            $packageRates = [
+                'deep' => [
+                    'label' => 'ดูพื้นดวง',
+                    'price' => (float) ($settings->deep_reading_price ?? 39),
+                    'l1' => $settings->getFortuneLevel1Amount(0, \App\Models\FortuneReading::READING_TYPE_DEEP),
+                    'l2_enabled' => $settings->isFortuneLevel2Enabled(\App\Models\FortuneReading::READING_TYPE_DEEP),
+                    'l2' => $settings->getFortuneLevel2Amount(0, \App\Models\FortuneReading::READING_TYPE_DEEP),
+                ],
+                'celtic_cross' => [
+                    'label' => 'Celtic Cross',
+                    'price' => (float) ($settings->celtic_cross_price ?? 99),
+                    'l1' => $settings->getFortuneLevel1Amount(0, \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS),
+                    'l2_enabled' => $settings->isFortuneLevel2Enabled(\App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS),
+                    'l2' => $settings->getFortuneLevel2Amount(0, \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS),
+                ],
+            ];
+        }
+
         return view('user.fortune-referral.recruit', [
             'user' => $user,
             'settings' => $settings,
@@ -97,6 +119,7 @@ class FortuneReferralDashboardController extends Controller
             'level1Type' => $settings->getFortuneLevel1CommissionType(),
             'level2Type' => $settings->getFortuneLevel2CommissionType(),
             'level2Enabled' => $settings->isFortuneLevel2Enabled(),
+            'packageRates' => $packageRates,
             'pageTitle' => 'ชวนเพื่อนดูดวง',
         ]);
     }

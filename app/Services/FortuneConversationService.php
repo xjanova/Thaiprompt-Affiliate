@@ -22712,11 +22712,26 @@ PROMPT;
             $referralLink = $affiliateService->generateReferralLink($user);
 
             // ดึงค่าแนะนำจาก settings
+            // 🐛 (2026-07-15) เดิมอ่าน getFortuneStaticCommissionAmount() ซึ่งเป็น
+            //    "คอลัมน์ประตู" (fortune_static_commission_amount) ไม่ใช่คอลัมน์ที่จ่ายจริง
+            //    (fortune_level1_commission_amount) → ถ้าแอดมินตั้งสองค่าไม่ตรงกัน
+            //    บอทจะโฆษณาเลขนึง แต่จ่ายอีกเลขนึง. เปลี่ยนมาอ่านจากตัวที่จ่ายจริง
             $commissionMode = $this->settings->getFortuneCommissionMode();
             $commissionText = '';
             if ($commissionMode === 'static') {
-                $amount = $this->settings->getFortuneStaticCommissionAmount();
-                $commissionText = number_format($amount, 0).' บาท';
+                if ($this->settings->isFortunePackageRatesEnabled()) {
+                    // 📦 อัตราต่างกันตามแพคเกจ → ห้ามพูดเลขเดียว
+                    $deepL1 = $this->settings->getFortuneLevel1Amount(0, FortuneReading::READING_TYPE_DEEP);
+                    $celticL1 = $this->settings->getFortuneLevel1Amount(0, FortuneReading::READING_TYPE_CELTIC_CROSS);
+                    $commissionText = $deepL1 == $celticL1
+                        ? number_format($celticL1, 0).' บาท'
+                        : number_format(min($deepL1, $celticL1), 0).'-'.number_format(max($deepL1, $celticL1), 0).' บาท (ตามแพคเกจที่เพื่อนเลือก)';
+                } else {
+                    $amount = $this->settings->getFortuneLevel1Amount(
+                        (float) ($this->settings->deep_reading_price ?? 0)
+                    );
+                    $commissionText = number_format($amount, 0).' บาท';
+                }
             } else {
                 $preview = $this->settings->calculateFortuneCommissionPreview();
                 $level1 = $preview['levels'][0] ?? null;
@@ -22727,8 +22742,9 @@ PROMPT;
             $message = "🔗 ลิงก์เชิญเพื่อนของคุณ\n\n"
                 ."📢 แชร์ลิงก์นี้ให้เพื่อน:\n"
                 ."{$referralLink}\n\n"
-                ."💰 ทุกครั้งที่เพื่อนดูดวง คุณจะได้รับค่าแนะนำ {$commissionText} เข้า Wallet อัตโนมัติค่ะ ✨\n\n"
-                ."📲 ถอนเงินได้ที่เว็บไซต์ เข้าบัญชีภายใน 1-3 วันทำการ\n\n"
+                ."💰 ทุกครั้งที่เพื่อนดูดวง เธอจะได้รับค่าแนะนำ {$commissionText} เข้า Wallet อัตโนมัติค่ะ ✨\n\n"
+                ."📲 ถอนเงินได้ที่เว็บไซต์ — โอนเข้าบัญชีเป็นรอบ วันที่ 2 และ 17 ของทุกเดือน\n"
+                ."🪪 ถอนครั้งแรกต้องยืนยันตัวตน (บัตรประชาชน + บัญชีธนาคารชื่อเดียวกัน)\n\n"
                 .'กดค้างที่ลิงก์ด้านบนเพื่อคัดลอก แล้วส่งต่อให้เพื่อนได้เลยค่ะ 🎁';
 
             Log::info('Fortune: ส่งลิงก์แชร์ให้ผู้ใช้', [
@@ -23118,6 +23134,15 @@ PROMPT;
 
     /**
      * ตรวจสอบว่าเป็นคำขอดูแผนการตลาดหรือไม่
+     *
+     * มี 2 ชั้น:
+     *   1. exact — คำสั้นที่กำกวมง่าย ต้องพิมพ์มาเป๊ะ (เช่น "ได้เท่าไหร่")
+     *   2. contains — วลียาวที่เฉพาะเจาะจงพอ ไม่มีทางชนคำถามดูดวง
+     *      (เช่น "อยากดูแผนการสร้างรายได้หน่อย" ต้องจับได้)
+     *
+     * ⚠️ ห้ามใส่คำกว้างอย่าง 'แผน' เดี่ยวๆ — ชนกับ "แผนชีวิต" "วางแผน" ที่เป็นคำถามดูดวง
+     * ⚠️ ห้ามใส่วลีที่มี 'หารายได้'/'รายได้เสริม'/'งานเสริม'/'งานออนไลน์' —
+     *    LineFortuneWebhookController::isAffiliateSignalMessage() ดักไว้ก่อนถึงตรงนี้
      */
     protected function isMarketingPlanRequest(string $text): bool
     {
@@ -23136,7 +23161,43 @@ PROMPT;
             }
         }
 
+        // วลีเฉพาะทาง — จับแบบ contains ได้ปลอดภัย
+        // ⚠️ ห้ามใส่ 'แผนการตลาด' หรือ 'อธิบายแผน' ที่นี่ (contains):
+        //    "ดูดวงเรื่องแผนการตลาดบริษัทหนูหน่อยค่ะ" / "ช่วยอธิบายแผนชีวิตหนูหน่อย"
+        //    = คำถามดูดวงปกติ → จะโดนแย่งไปตอบแผน affiliate
+        //    'แผนการตลาด' ยังอยู่ใน $exactKeywords ด้านบน (พิมพ์เป๊ะ = เจตนาชัด) พอแล้ว
+        $phraseKeywords = [
+            'บรรยายแผน',
+            'แผนการสร้างรายได้',
+            'แผนค่าแนะนำ',
+            'ดูแผนรายได้',
+            'อธิบายแผนการตลาด',
+            'อธิบายแผนรายได้',
+            'คลิปแผน',
+            'วิดีโอแผน',
+        ];
+
+        foreach ($phraseKeywords as $keyword) {
+            if (mb_strpos($text, $keyword) !== false) {
+                return true;
+            }
+        }
+
         return false;
+    }
+
+    /**
+     * ลิงก์คลิปบรรยายแผน — คืน null ถ้าแอดมินยังไม่เปิดหรือยังไม่ตั้งลิงก์
+     */
+    protected function planVideoUrl(): ?string
+    {
+        if (! ($this->settings->plan_video_enabled ?? false)) {
+            return null;
+        }
+
+        $url = trim((string) ($this->settings->plan_video_url ?? ''));
+
+        return $url !== '' ? $url : null;
     }
 
     /**
@@ -23161,39 +23222,81 @@ PROMPT;
                     ? "ราคา Celtic Cross: {$celticPriceForMarketing} บาท/ครั้ง"
                     : 'ราคาแพ็คเกจ: -');
 
-            // ดึงค่าคอมมิชชั่น Level 1 + Level 2
-            $readingPrice = (float) ($this->settings->deep_reading_price ?? 0);
-            $level1Amount = number_format($this->settings->getFortuneLevel1Amount($readingPrice), 0);
-            $level2Amount = number_format($this->settings->getFortuneLevel2Amount($readingPrice), 0);
-            $level2Enabled = $this->settings->fortune_level2_enabled ?? true;
-
-            // ตัวอย่างรายได้: 10 คน × 3 ครั้ง/เดือน × level1
-            $level1Raw = $this->settings->getFortuneLevel1Amount($readingPrice);
-            $exampleMonthly = 10 * 3 * $level1Raw;
-
             $message = "💰 แผนค่าแนะนำ {$brandName}\n"
-                ."═══════════════════════\n\n"
-                ."📌 {$packageLabel}\n\n"
-                ."🏆 ค่าแนะนำ 2 ชั้น:\n"
-                ."┌─ ชั้น 1 (สายตรง): {$level1Amount} บาท/ครั้ง\n"
-                ."│  คุณแนะนำเพื่อน → เพื่อนดูดวง → คุณได้ค่าแนะนำ\n"
-                ."│\n";
+                ."═══════════════════════\n\n";
 
-            if ($level2Enabled) {
-                $message .= "└─ ชั้น 2 (ชั้นหลาน): {$level2Amount} บาท/ครั้ง\n"
-                    ."   เพื่อนแนะนำต่อ → คนนั้นดูดวง → คุณยังได้ค่าแนะนำ\n\n";
+            // 📦 (2026-07-15) โหมดแยกอัตราตามแพคเกจ — ต้องพูดให้ตรงกับที่จ่ายจริง
+            //    (เดิมโชว์เลขเดียวโดยอิง deep_reading_price → ถ้าแยกแพคเกจแล้วจะโฆษณาผิด)
+            if ($this->settings->isFortunePackageRatesEnabled()) {
+                $deepPrice = number_format($this->getDeepReadingPrice(), 0);
+                $deepL1 = number_format($this->settings->getFortuneLevel1Amount(0, FortuneReading::READING_TYPE_DEEP), 0);
+                $deepL2On = $this->settings->isFortuneLevel2Enabled(FortuneReading::READING_TYPE_DEEP);
+                $deepL2 = number_format($this->settings->getFortuneLevel2Amount(0, FortuneReading::READING_TYPE_DEEP), 0);
+
+                $celticL1 = number_format($this->settings->getFortuneLevel1Amount(0, FortuneReading::READING_TYPE_CELTIC_CROSS), 0);
+                $celticL2On = $this->settings->isFortuneLevel2Enabled(FortuneReading::READING_TYPE_CELTIC_CROSS);
+                $celticL2 = number_format($this->settings->getFortuneLevel2Amount(0, FortuneReading::READING_TYPE_CELTIC_CROSS), 0);
+
+                $message .= "ชวนเพื่อนมาดูดวง — เพื่อนจ่ายจริงเมื่อไหร่ เธอได้ค่าแนะนำเมื่อนั้น\n"
+                    ."ค่าแนะนำต่างกันตามแพคเกจที่เพื่อนเลือกนะ\n\n";
+
+                if ($deepEnabledForMarketing) {
+                    $message .= "📦 ดูพื้นดวง {$deepPrice} บาท\n"
+                        .($deepL2On
+                            ? "├─ สายตรง: {$deepL1} บาท/ครั้ง\n└─ ชั้นหลาน: {$deepL2} บาท/ครั้ง\n\n"
+                            : "└─ สายตรง: {$deepL1} บาท/ครั้ง (แพคเกจนี้ไม่มีชั้นหลาน)\n\n");
+                }
+
+                if ($celticEnabledForMarketing) {
+                    $message .= "📦 Celtic Cross {$celticPriceForMarketing} บาท\n"
+                        .($celticL2On
+                            ? "├─ สายตรง: {$celticL1} บาท/ครั้ง\n└─ ชั้นหลาน: {$celticL2} บาท/ครั้ง\n\n"
+                            : "└─ สายตรง: {$celticL1} บาท/ครั้ง\n\n");
+                }
+
+                $message .= "🧭 สายตรง = เพื่อนที่เธอชวนเอง\n"
+                    ."🧭 ชั้นหลาน = เพื่อนที่คนของเธอชวนต่อ\n"
+                    ."   (ค่าแนะนำมี 2 ชั้นเท่านั้น ไม่มีชั้นลึกกว่านี้)\n\n";
             } else {
-                $message .= "└─ (ค่าแนะนำชั้นเดียว)\n\n";
+                // โหมดเดิม — อัตราเดียวทุกแพคเกจ
+                $readingPrice = (float) ($this->settings->deep_reading_price ?? 0);
+                $level1Amount = number_format($this->settings->getFortuneLevel1Amount($readingPrice), 0);
+                $level2Amount = number_format($this->settings->getFortuneLevel2Amount($readingPrice), 0);
+                $level2Enabled = $this->settings->fortune_level2_enabled ?? true;
+                $exampleMonthly = 10 * 3 * $this->settings->getFortuneLevel1Amount($readingPrice);
+
+                $message .= "📌 {$packageLabel}\n\n"
+                    ."🏆 ค่าแนะนำ 2 ชั้น:\n"
+                    ."┌─ ชั้น 1 (สายตรง): {$level1Amount} บาท/ครั้ง\n"
+                    ."│  เธอแนะนำเพื่อน → เพื่อนดูดวง → เธอได้ค่าแนะนำ\n"
+                    ."│\n";
+
+                if ($level2Enabled) {
+                    $message .= "└─ ชั้น 2 (ชั้นหลาน): {$level2Amount} บาท/ครั้ง\n"
+                        ."   เพื่อนแนะนำต่อ → คนนั้นดูดวง → เธอยังได้ค่าแนะนำ\n\n";
+                } else {
+                    $message .= "└─ (ค่าแนะนำชั้นเดียว)\n\n";
+                }
+
+                $message .= "📊 ตัวอย่างรายได้:\n"
+                    ."• แนะนำ 10 คน แต่ละคนดูดวง 3 ครั้ง/เดือน\n"
+                    ."  = 10 × 3 × {$level1Amount} = ".number_format($exampleMonthly, 0)." บาท/เดือน\n\n";
             }
 
-            $message .= "📊 ตัวอย่างรายได้:\n"
-                ."• แนะนำ 10 คน แต่ละคนดูดวง 3 ครั้ง/เดือน\n"
-                ."  = 10 × 3 × {$level1Amount} = ".number_format($exampleMonthly, 0)." บาท/เดือน\n\n"
-                ."✅ ค่าแนะนำเข้า Wallet อัตโนมัติทันที\n"
-                ."✅ ถอนเงินได้ที่เว็บไซต์ เข้าบัญชี 1-3 วันทำการ\n"
-                ."✅ ได้ค่าแนะนำตลอดไป ไม่มีหมดอายุ\n\n"
-                // 🌙 (2026-06-18, user) ทำการตลาด/แนะนำเพื่อน → ทำผ่าน LINE (กล่อง/กราฟฟิกสวย) แทน FB referral เดิม
-                .'🚀 เริ่มต้น: พิมพ์ "แชร์" — แม่หมอจะพาไปแอดไลน์เพื่อทำการตลาด/แนะนำเพื่อนผ่าน LINE (สะดวก กล่องสวย) ✨';
+            $message .= "✅ ค่าแนะนำเข้า Wallet อัตโนมัติทันทีที่เพื่อนจ่าย\n"
+                ."✅ ชวนได้ไม่จำกัดจำนวนคน ไม่มีเพดานรายได้\n"
+                ."🗓️ โอนเข้าบัญชีธนาคารเป็นรอบ — วันที่ 2 และ 17 ของทุกเดือน\n"
+                ."🪪 ถอนเงินต้องกดถอนเองที่เว็บ + ยืนยันตัวตน (KYC)\n"
+                ."   ใช้บัตรประชาชน และบัญชีธนาคารชื่อเดียวกับเธอ\n\n";
+
+            // 🎬 คลิปบรรยายแผน (ถ้าแอดมินเปิด + ตั้งลิงก์ไว้)
+            $planVideoUrl = $this->planVideoUrl();
+            if ($planVideoUrl) {
+                $message .= "🎬 ดูคลิปบรรยายแผนแบบเต็ม เข้าใจใน 5 นาที:\n{$planVideoUrl}\n\n";
+            }
+
+            // 🌙 (2026-06-18, user) ทำการตลาด/แนะนำเพื่อน → ทำผ่าน LINE (กล่อง/กราฟฟิกสวย) แทน FB referral เดิม
+            $message .= '🚀 เริ่มต้น: พิมพ์ "แชร์" — แม่หมอจะพาไปแอดไลน์เพื่อทำการตลาด/แนะนำเพื่อนผ่าน LINE (สะดวก กล่องสวย) ✨';
 
             Log::info('Fortune: แสดงแผนการตลาด', ['user_id' => $facebookUserId]);
 
@@ -23257,6 +23360,18 @@ PROMPT;
      */
     protected function getLevel1CommissionText(): string
     {
+        // 📦 (2026-07-15) โหมดแยกอัตราตามแพคเกจ → ห้ามคืนเลขเดียว
+        //    ใช้ในคำสั่ง "สายงาน"/"รายได้" — ถ้าคืน 10 ทั้งที่ deep จ่าย 5
+        //    บอทตัวเดียวกันจะบอกลูกค้าคนละเลขกับตอนพิมพ์ "แชร์"
+        if ($this->settings->isFortunePackageRatesEnabled()) {
+            $deepL1 = $this->settings->getFortuneLevel1Amount(0, FortuneReading::READING_TYPE_DEEP);
+            $celticL1 = $this->settings->getFortuneLevel1Amount(0, FortuneReading::READING_TYPE_CELTIC_CROSS);
+
+            return $deepL1 == $celticL1
+                ? number_format($celticL1, 0)
+                : number_format(min($deepL1, $celticL1), 0).'-'.number_format(max($deepL1, $celticL1), 0);
+        }
+
         $readingPrice = (float) ($this->settings->deep_reading_price ?? 0);
         $amount = $this->settings->getFortuneLevel1Amount($readingPrice);
 
