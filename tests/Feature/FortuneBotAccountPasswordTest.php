@@ -141,6 +141,28 @@ class FortuneBotAccountPasswordTest extends TestCase
     }
 
     /**
+     * --include-unreachable → สุ่มรหัสบัญชีที่ไม่มี OAuth ด้วย
+     *
+     * เคสจริง: บัญชี fb_* 648 ใบบน prod ไม่มี facebook_user_id เลยสักใบ
+     * เจ้าของเข้าไม่ได้อยู่แล้ว (FB OAuth ให้บัญชีใหม่คนละใบ) → รหัสเป็นหนี้ความเสี่ยงล้วนๆ
+     */
+    public function test_include_unreachable_flag_rotates_orphan_accounts(): void
+    {
+        $orphan = User::create([
+            'name' => 'Orphan',
+            'email' => 'fb_ORPHAN2@thaiprompt.local',
+            'password' => Hash::make('12345678'),
+        ]);
+
+        $this->artisan('fortune:rotate-bot-passwords --include-unreachable')->assertExitCode(0);
+
+        $this->assertFalse(
+            Hash::check('12345678', $orphan->fresh()->password),
+            'ใส่ flag แล้วต้องสุ่มบัญชีไร้ OAuth ด้วย'
+        );
+    }
+
+    /**
      * เรียก createUserFromPlatform ผ่าน reflection (เป็น protected)
      */
     private function createViaBot(string $lineUserId): User
