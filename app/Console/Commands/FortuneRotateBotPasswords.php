@@ -1,0 +1,112 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\User;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+/**
+ * 🔒 สุ่มรหัสผ่านใหม่ให้บัญชีที่บอทสมัครให้อัตโนมัติ
+ *
+ * ปัญหา (2026-07-16):
+ *   บัญชีที่ FortuneAffiliateService / FortuneConversationService สมัครให้อัตโนมัติ
+ *   ถูกตั้งรหัสผ่าน '12345678' เหมือนกันทุกใบ + อีเมลเดาได้จากสูตร
+ *   (line_{LINE_UID}@thaiprompt.local / fb_{PSID}@thaiprompt.local)
+ *   + LoginController ใช้ Auth::attempt() ตรงๆ ไม่บล็อกอีเมล .local
+ *   → ใครรู้ UID ของลูกค้า = ล็อกอินเป็นคนนั้นได้ พร้อมเข้าถึงวอลเลต
+ *   ซ้ำร้าย บอทเคยส่ง Flex บอกรหัสผ่านให้ลูกค้าเองด้วย
+ *
+ * ทำไมสุ่มทิ้งได้:
+ *   ลูกค้ากลุ่มนี้เข้าเว็บผ่าน OAuth เสมอ (/auth/line?redirect=... , /auth/facebook?redirect=...)
+ *   ไม่เคยใช้รหัสผ่านล็อกอิน และรีเซ็ตรหัสทางอีเมลก็ไม่ได้อยู่แล้ว
+ *   (@thaiprompt.local ไม่ใช่อีเมลจริง ส่งเมลไม่ถึง)
+ *
+ * 🛡️ ความปลอดภัย:
+ *   - แตะเฉพาะบัญชีที่ Hash::check('12345678') ผ่านจริงเท่านั้น
+ *     → ถ้าลูกค้าเปลี่ยนรหัสเองแล้ว จะไม่โดนแตะ
+ *   - จำกัดเฉพาะอีเมล @thaiprompt.local (บัญชีที่บอทสร้าง)
+ *   - ข้าม user ที่ล็อกอินได้ทางอื่นไม่ได้ (ไม่มีทั้ง line_user_id และ facebook_id)
+ *     → กันล็อกคนออกจากบัญชีตัวเองถาวร
+ *
+ * ใช้:
+ *   php artisan fortune:rotate-bot-passwords --dry-run
+ *   php artisan fortune:rotate-bot-passwords
+ */
+class FortuneRotateBotPasswords extends Command
+{
+    protected $signature = 'fortune:rotate-bot-passwords
+                            {--dry-run : ดูผลก่อน ไม่เขียนจริง}';
+
+    protected $description = '🔒 สุ่มรหัสผ่านใหม่ให้บัญชีที่บอทสมัครให้ (แก้รหัส 12345678 ซ้ำกันทุกใบ)';
+
+    private const WEAK_PASSWORD = '12345678';
+
+    public function handle(): int
+    {
+        $dry = (bool) $this->option('dry-run');
+
+        $this->info('🔒 ตรวจบัญชีที่บอทสมัครให้อัตโนมัติ...');
+        if ($dry) {
+            $this->warn('   [DRY RUN] ไม่เขียนอะไรทั้งสิ้น');
+        }
+
+        $candidates = User::where('email', 'like', '%@thaiprompt.local')->get();
+        $this->line('   พบบัญชี .local ทั้งหมด: '.$candidates->count().' ใบ');
+
+        $weak = 0;
+        $rotated = 0;
+        $skippedStrong = 0;
+        $skippedNoOauth = 0;
+
+        foreach ($candidates as $user) {
+            // แตะเฉพาะใบที่ยังเป็นรหัสอ่อนจริงๆ
+            if (! Hash::check(self::WEAK_PASSWORD, $user->password)) {
+                $skippedStrong++;
+
+                continue;
+            }
+            $weak++;
+
+            // 🛡️ ถ้าไม่มีช่องทาง OAuth เลย → สุ่มรหัสแล้วเขาจะเข้าไม่ได้ตลอดกาล
+            //    (รีเซ็ตทางอีเมลก็ไม่ได้ เพราะ .local ส่งเมลไม่ถึง) → ข้ามไว้ก่อน แล้วรายงาน
+            $hasOauth = ! empty($user->line_user_id)
+                || ! empty($user->facebook_user_id);
+
+            if (! $hasOauth) {
+                $skippedNoOauth++;
+                $this->warn('   ⚠️  ข้าม user#'.$user->id.' ('.$user->email.') — ไม่มี OAuth จะเข้าไม่ได้ถ้าสุ่มรหัส');
+
+                continue;
+            }
+
+            if (! $dry) {
+                // ห้ามผ่าน mass-assignment — password อยู่ใน $guarded/$hidden ได้
+                $user->forceFill(['password' => Hash::make(Str::random(48))])->saveQuietly();
+            }
+            $rotated++;
+        }
+
+        $this->newLine();
+        $this->table(['รายการ', 'จำนวน'], [
+            ['บัญชี .local ทั้งหมด', $candidates->count()],
+            ['ยังใช้รหัส '.self::WEAK_PASSWORD, $weak],
+            [$dry ? 'จะสุ่มใหม่' : '✅ สุ่มรหัสใหม่แล้ว', $rotated],
+            ['ข้าม (เปลี่ยนรหัสเองแล้ว)', $skippedStrong],
+            ['⚠️ ข้าม (ไม่มี OAuth)', $skippedNoOauth],
+        ]);
+
+        if ($skippedNoOauth > 0) {
+            $this->warn('⚠️  มี '.$skippedNoOauth.' บัญชีที่ไม่มีช่องทาง OAuth — ยังใช้รหัสอ่อนอยู่');
+            $this->warn('   ต้องดูเป็นรายกรณี (อาจเป็นบัญชีทดสอบ หรือ data เก่า)');
+        }
+
+        if ($dry) {
+            $this->newLine();
+            $this->info('👉 รันจริง: php artisan fortune:rotate-bot-passwords');
+        }
+
+        return self::SUCCESS;
+    }
+}

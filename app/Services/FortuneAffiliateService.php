@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 /**
  * FortuneAffiliateService
@@ -285,10 +286,15 @@ class FortuneAffiliateService
         $email = $emailPrefix.$platformUserId.'@thaiprompt.local';
 
         // เตรียมข้อมูล base
+        // 🔒 (2026-07-16) เดิม Hash::make('12345678') — บัญชีที่บอทสมัครให้ทุกใบรหัสเดียวกัน
+        //    + อีเมลเดาได้จากสูตร line_{uid}@thaiprompt.local + LoginController ไม่บล็อก .local
+        //    → ใครรู้ LINE UID/FB PSID ของลูกค้า ล็อกอินเป็นคนนั้นได้ พร้อมเข้าถึงวอลเลต
+        //    ลูกค้ากลุ่มนี้เข้าเว็บผ่าน /auth/line?redirect=... (OAuth) เสมอ ไม่เคยใช้รหัสผ่าน
+        //    → สุ่มรหัสยาวทิ้งไว้ ไม่มีใครรู้ รวมถึงเราเอง
         $userData = [
             'name' => $profile['name'] ?? 'User',
             'email' => $email,
-            'password' => Hash::make('12345678'),
+            'password' => Hash::make(Str::random(48)),
         ];
 
         // เพิ่มข้อมูลเฉพาะ platform
@@ -592,22 +598,16 @@ class FortuneAffiliateService
                                     ['type' => 'text', 'text' => 'รหัสสมาชิก: '.($member->member_code ?? '-'), 'size' => 'sm', 'color' => '#333333', 'flex' => 5, 'weight' => 'bold'],
                                 ],
                             ],
-                            [
-                                'type' => 'box',
-                                'layout' => 'baseline',
-                                'spacing' => 'sm',
-                                'contents' => [
-                                    ['type' => 'text', 'text' => '🔒', 'size' => 'sm', 'flex' => 1],
-                                    ['type' => 'text', 'text' => 'รหัสผ่าน: 12345678', 'size' => 'sm', 'color' => '#FF6B6B', 'flex' => 5],
-                                ],
-                            ],
+                            // 🔒 (2026-07-16) เอาบรรทัด "รหัสผ่าน: 12345678" ออก
+                            //    เดิมบอทประกาศรหัสผ่านให้ลูกค้าเอง และทุกบัญชีใช้รหัสเดียวกัน
+                            //    ตอนนี้รหัสถูกสุ่มทิ้ง — เข้าระบบผ่านปุ่ม LINE ด้านล่างอย่างเดียว
                         ],
                     ],
                     [
                         'type' => 'text',
-                        'text' => '⚠️ กรุณาเปลี่ยนรหัสผ่านทันทีเมื่อเข้าระบบ',
+                        'text' => '🔒 เข้าระบบด้วยปุ่มด้านล่างได้เลย ไม่ต้องใช้รหัสผ่าน',
                         'size' => 'xs',
-                        'color' => '#FF6B6B',
+                        'color' => '#888888',
                         'margin' => 'md',
                         'wrap' => true,
                     ],

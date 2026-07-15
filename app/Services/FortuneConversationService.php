@@ -22678,10 +22678,13 @@ PROMPT;
                 if ($paidReading) {
                     // สร้าง User อัตโนมัติ
                     $userName = $paidReading->facebook_user_name ?? 'User';
+                    // 🔒 (2026-07-16) สุ่มรหัสผ่าน — ห้ามใช้ค่าคงที่
+                    //    (เดิม '12345678' เหมือนกันทุกบัญชี + อีเมลเดาได้ = ใครรู้ UID เข้าบัญชีได้)
+                    //    ลูกค้าเข้าเว็บผ่าน /auth/line?redirect=... เท่านั้น ไม่ต้องใช้รหัส
                     $user = \App\Models\User::create([
                         'name' => $userName,
                         'email' => 'line_'.$facebookUserId.'@thaiprompt.local',
-                        'password' => \Illuminate\Support\Facades\Hash::make('12345678'),
+                        'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(48)),
                         'line_user_id' => $facebookUserId,
                     ]);
 
