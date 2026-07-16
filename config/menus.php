@@ -1242,12 +1242,15 @@ return [
             'permissions' => [],
             // 🔮 (2026-07-16) ระบบปันผลดูดวงย้ายไปอยู่เว็บแม่หมอจันทรา (จันทรา.online)
             //    ทั้งหมดแล้ว — ของที่นี่ไม่มี ให้ลิงก์วิ่งไปหน้า MLM ของจันทรา (external)
+            //    ⭐ auto-login: ผ่าน SSO /auth/thaiprompt/redirect?to=<path> — user ที่นั่น
+            //    ใช้บัญชี Thaiprompt (OAuth) และตอนนี้ล็อกอิน Thaiprompt อยู่แล้ว →
+            //    juntraweb เด้ง OAuth → auto-approve → callback redirect()->intended(to)
+            //    ไปหน้า /mlm ที่ถูกต้องเลย (juntraweb redirect() อ่าน ?to= เป็น url.intended)
             //    juntraweb: /mlm (แดชบอร์ด+ผัง) · /mlm/commissions · /mlm/users
-            //    เปิดแท็บใหม่ (external=true) — ล็อกอินด้วย Thaiprompt SSO บนจันทรา
             'submenu' => [
-                ['label' => '💰 คอมมิชชั่นดูดวง', 'url' => 'https://xn--82c4af5bzdj.online/mlm/commissions', 'external' => true, 'icon' => '💰', 'description' => 'รายได้จากการแนะนำดูดวง (เว็บจันทรา)'],
-                ['label' => '🔮 แดชบอร์ด/ผังสายงานดูดวง', 'url' => 'https://xn--82c4af5bzdj.online/mlm', 'external' => true, 'icon' => '🔮', 'description' => 'ภาพรวม+โครงสร้างสายงานดูดวง (เว็บจันทรา)'],
-                ['label' => '👥 ทีมดูดวงของฉัน', 'url' => 'https://xn--82c4af5bzdj.online/mlm/users', 'external' => true, 'icon' => '👥', 'description' => 'สมาชิกในสายงานดูดวง (เว็บจันทรา)'],
+                ['label' => '💰 คอมมิชชั่นดูดวง', 'url' => 'https://xn--82c4af5bzdj.online/auth/thaiprompt/redirect?to=/mlm/commissions', 'external' => true, 'icon' => '💰', 'description' => 'รายได้จากการแนะนำดูดวง (เว็บจันทรา)'],
+                ['label' => '🔮 แดชบอร์ด/ผังสายงานดูดวง', 'url' => 'https://xn--82c4af5bzdj.online/auth/thaiprompt/redirect?to=/mlm', 'external' => true, 'icon' => '🔮', 'description' => 'ภาพรวม+โครงสร้างสายงานดูดวง (เว็บจันทรา)'],
+                ['label' => '👥 ทีมดูดวงของฉัน', 'url' => 'https://xn--82c4af5bzdj.online/auth/thaiprompt/redirect?to=/mlm/users', 'external' => true, 'icon' => '👥', 'description' => 'สมาชิกในสายงานดูดวง (เว็บจันทรา)'],
             ],
         ],
 

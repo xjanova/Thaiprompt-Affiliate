@@ -7,19 +7,20 @@ use App\Http\Controllers\Controller;
 /**
  * User Guide Controller สำหรับ User Dashboard
  *
- * แสดงหน้าคู่มือการใช้งานสำหรับผู้ใช้ทั่วไป
- *
- * @author TP-Affiliate Development Team
+ * 🗑️ (2026-07-16) owner สั่งลบหน้าคู่มือ V3 ของฝั่ง user ทิ้ง (เนื้อหาเก่า
+ *    ธีม arrow-x ไม่แปลงเป็น V4). คง route `user.user-guide.index` ไว้ให้
+ *    resolve ได้ (navbar arrow-x legacy ยังอ้างถึง — ถ้าลบ route จะทำให้
+ *    หน้าฟีเจอร์ที่ยังเป็น arrow-x 500) แต่ redirect ไปแดชบอร์ดแทน
  */
 class UserGuideController extends Controller
 {
     /**
-     * แสดงหน้าคู่มือการใช้งาน (V3)
+     * คู่มือ V3 ถูกลบแล้ว → พาไปแดชบอร์ด
      *
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function index()
     {
-        return view('user.user-guide-v3');
+        return redirect()->route('user.dashboard');
     }
 }
