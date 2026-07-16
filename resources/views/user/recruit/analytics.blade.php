@@ -1,238 +1,111 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'สถิติการตลาด')
 
-@push('styles')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-@endpush
-
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- Premium Hero Header (Green-Teal for Analytics) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-teal-600 to-cyan-600 dark:from-green-800 dark:via-teal-800 dark:to-cyan-800 rounded-2xl shadow-2xl p-8 mb-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-chart-line"></i>
-            </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-chart-bar text-3xl text-white drop-shadow-lg"></i>
-                    </div>
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5aa07e 18%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px; background:#5aa07e;"><i class="fas fa-chart-bar" style="color:#fff;"></i></span>
                     <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            📊 สถิติการตลาด
-                        </h1>
-                        <p class="text-green-100 mt-1">
-                            วิเคราะห์ผลการตลาดหน้า Recruit ของคุณ
-                        </p>
+                        <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">📊 สถิติการตลาด</h1>
+                        <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">วิเคราะห์ผลการตลาดหน้า Recruit ของคุณ</div>
                     </div>
                 </div>
-                <a href="{{ route('user.marketing.recruit.index') }}"
-                   class="glass-fusion px-6 py-3 hover:bg-white/30 rounded-xl transition inline-flex items-center gap-2 text-white font-semibold">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    กลับไปหน้าจัดการ
-                </a>
+                <a href="{{ route('user.marketing.recruit.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-arrow-left"></i> กลับไปหน้าจัดการ</a>
             </div>
         </div>
     </div>
 
-
-        {{-- Time Period Selector --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    ช่วงเวลา
-                </h3>
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('user.marketing.recruit.analytics', ['days' => 7]) }}"
-                       class="px-4 py-2 rounded-lg font-medium transition-all duration-200 {{ $days == 7 ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                        7 วัน
-                    </a>
-                    <a href="{{ route('user.marketing.recruit.analytics', ['days' => 30]) }}"
-                       class="px-4 py-2 rounded-lg font-medium transition-all duration-200 {{ $days == 30 ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                        30 วัน
-                    </a>
-                    <a href="{{ route('user.marketing.recruit.analytics', ['days' => 90]) }}"
-                       class="px-4 py-2 rounded-lg font-medium transition-all duration-200 {{ $days == 90 ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                        90 วัน
-                    </a>
-                </div>
+    {{-- ── เลือกช่วงเวลา ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:18px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="font-weight:800; color:var(--ink);">ช่วงเวลา</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                <a href="{{ route('user.marketing.recruit.analytics', ['days' => 7]) }}" class="tp-btn tp-btn-sm {{ $days == 7 ? 'tp-btn-primary' : '' }}">7 วัน</a>
+                <a href="{{ route('user.marketing.recruit.analytics', ['days' => 30]) }}" class="tp-btn tp-btn-sm {{ $days == 30 ? 'tp-btn-primary' : '' }}">30 วัน</a>
+                <a href="{{ route('user.marketing.recruit.analytics', ['days' => 90]) }}" class="tp-btn tp-btn-sm {{ $days == 90 ? 'tp-btn-primary' : '' }}">90 วัน</a>
             </div>
         </div>
+    </div>
 
-        {{-- Conversion Funnel --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                กระบวนการ Conversion ({{ $days }} วันล่าสุด)
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {{-- Step 1: Visits --}}
-                <div class="relative">
-                    <div class="text-center">
-                        <div class="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg mb-4">
-                            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                            </svg>
-                        </div>
-                        <h4 class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($funnel['visits']) }}</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">การเข้าชม</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">100%</p>
+    {{-- ── Conversion Funnel ─────────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+        <div class="tp-section-h" style="margin-bottom:20px;">กระบวนการ Conversion ({{ $days }} วันล่าสุด)</div>
+        @php
+            $clickRate = $funnel['visits'] > 0 ? ($funnel['clicked_register'] / $funnel['visits'] * 100) : 0;
+            $leadRate = $funnel['visits'] > 0 ? ($funnel['leads'] / $funnel['visits'] * 100) : 0;
+            $conversionRate = $funnel['visits'] > 0 ? ($funnel['conversions'] / $funnel['visits'] * 100) : 0;
+        @endphp
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:18px;">
+            @foreach([
+                ['fa-eye', '#5689b8', number_format($funnel['visits']), 'การเข้าชม', '100%'],
+                ['fa-hand-pointer', '#5aa07e', number_format($funnel['clicked_register']), 'คลิกสมัคร', number_format($clickRate, 1).'%'],
+                ['fa-users', '#7c5cbf', number_format($funnel['leads']), 'ผู้มุ่งหวัง', number_format($leadRate, 1).'%'],
+                ['fa-check-circle', '#c05a8f', number_format($funnel['conversions']), 'สมัครสำเร็จ', number_format($conversionRate, 1).'%'],
+            ] as $step)
+                <div style="text-align:center;">
+                    <div style="width:80px; height:80px; margin:0 auto 14px; border-radius:50%; background:linear-gradient(135deg, {{ $step[1] }}, color-mix(in srgb, {{ $step[1] }} 70%, #000)); display:flex; align-items:center; justify-content:center; box-shadow:var(--raise);">
+                        <i class="fas {{ $step[0] }}" style="font-size:30px; color:#fff;"></i>
                     </div>
-                    <div class="hidden md:block absolute top-1/2 -right-3 transform -translate-y-1/2">
-                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
+                    <div class="tp-num" style="font-size:24px; font-weight:800; color:var(--ink);">{{ $step[2] }}</div>
+                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">{{ $step[3] }}</div>
+                    <div style="font-size:12px; font-weight:600; color:{{ $step[1] }}; margin-top:6px;">{{ $step[4] }}</div>
                 </div>
+            @endforeach
+        </div>
+    </div>
 
-                {{-- Step 2: Clicked Register --}}
-                <div class="relative">
-                    <div class="text-center">
-                        <div class="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg mb-4">
-                            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
-                            </svg>
-                        </div>
-                        <h4 class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($funnel['clicked_register']) }}</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">คลิกสมัคร</p>
-                        @php
-                            $clickRate = $funnel['visits'] > 0 ? ($funnel['clicked_register'] / $funnel['visits'] * 100) : 0;
-                        @endphp
-                        <p class="text-xs text-green-600 dark:text-green-400 font-medium mt-2">{{ number_format($clickRate, 1) }}%</p>
-                    </div>
-                    <div class="hidden md:block absolute top-1/2 -right-3 transform -translate-y-1/2">
-                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </div>
-
-                {{-- Step 3: Leads --}}
-                <div class="relative">
-                    <div class="text-center">
-                        <div class="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg mb-4">
-                            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                            </svg>
-                        </div>
-                        <h4 class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($funnel['leads']) }}</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ผู้มุ่งหวัง</p>
-                        @php
-                            $leadRate = $funnel['visits'] > 0 ? ($funnel['leads'] / $funnel['visits'] * 100) : 0;
-                        @endphp
-                        <p class="text-xs text-purple-600 dark:text-purple-400 font-medium mt-2">{{ number_format($leadRate, 1) }}%</p>
-                    </div>
-                    <div class="hidden md:block absolute top-1/2 -right-3 transform -translate-y-1/2">
-                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </div>
-
-                {{-- Step 4: Conversions --}}
-                <div class="relative">
-                    <div class="text-center">
-                        <div class="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center shadow-lg mb-4">
-                            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <h4 class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($funnel['conversions']) }}</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">สมัครสำเร็จ</p>
-                        @php
-                            $conversionRate = $funnel['visits'] > 0 ? ($funnel['conversions'] / $funnel['visits'] * 100) : 0;
-                        @endphp
-                        <p class="text-xs text-pink-600 dark:text-pink-400 font-medium mt-2">{{ number_format($conversionRate, 1) }}%</p>
-                    </div>
-                </div>
+    {{-- ── กราฟ ─────────────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px;">
+        <div class="tp-card" style="padding:24px;">
+            <div class="tp-section-h" style="margin-bottom:18px;">การเข้าชมและผู้มุ่งหวังรายวัน</div>
+            <canvas id="visitsLeadsChart" style="width:100%; max-height:300px;"></canvas>
+        </div>
+        <div class="tp-card" style="padding:24px;">
+            <div class="tp-section-h" style="margin-bottom:18px;">การเข้าชมตามอุปกรณ์</div>
+            <div style="display:flex; align-items:center; justify-content:center; height:300px;">
+                <canvas id="deviceChart"></canvas>
             </div>
         </div>
+    </div>
 
-        {{-- Charts Row --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {{-- Visits & Leads Chart --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                    การเข้าชมและผู้มุ่งหวังรายวัน
-                </h3>
-                <canvas id="visitsLeadsChart" class="w-full" style="max-height: 300px;"></canvas>
-            </div>
-
-            {{-- Device Breakdown Chart --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                    การเข้าชมตามอุปกรณ์
-                </h3>
-                <div class="flex items-center justify-center" style="height: 300px;">
-                    <canvas id="deviceChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        {{-- Top Referrers --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                แหล่งอ้างอิงยอดนิยม (Top 10)
-            </h3>
-            @if($topReferrers->count() > 0)
-                <div class="space-y-4">
-                    @foreach($topReferrers as $index => $referrer)
-                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                            <div class="flex items-center flex-1 min-w-0">
-                                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm mr-4">
-                                    {{ $index + 1 }}
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                        {{ parse_url($referrer->referrer_url, PHP_URL_HOST) ?? $referrer->referrer_url }}
-                                    </p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                        {{ Str::limit($referrer->referrer_url, 60) }}
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="flex-shrink-0 ml-4">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg">
-                                    {{ number_format($referrer->count) }} ครั้ง
-                                </span>
+    {{-- ── Top Referrers ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+        <div class="tp-section-h" style="margin-bottom:18px;">แหล่งอ้างอิงยอดนิยม (Top 10)</div>
+        @if($topReferrers->count() > 0)
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                @foreach($topReferrers as $index => $referrer)
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px; border-radius:12px; box-shadow:var(--inset-sm);">
+                        <div style="display:flex; align-items:center; gap:14px; flex:1; min-width:0;">
+                            <div style="flex-shrink:0; width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, #5689b8, #7c5cbf); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:13px;">{{ $index + 1 }}</div>
+                            <div style="flex:1; min-width:0;">
+                                <p style="font-weight:600; color:var(--ink); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ parse_url($referrer->referrer_url, PHP_URL_HOST) ?? $referrer->referrer_url }}</p>
+                                <p style="font-size:11px; color:var(--ink2); margin:2px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ Str::limit($referrer->referrer_url, 60) }}</p>
                             </div>
                         </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="text-center py-12">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
-                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                        </svg>
+                        <span style="flex-shrink:0; display:inline-flex; padding:4px 12px; border-radius:999px; font-size:13px; font-weight:600; color:#fff; background:#5689b8;">{{ number_format($referrer->count) }} ครั้ง</span>
                     </div>
-                    <p class="text-gray-500 dark:text-gray-400">
-                        ยังไม่มีข้อมูลแหล่งอ้างอิง
-                    </p>
+                @endforeach
+            </div>
+        @else
+            <div style="text-align:center; padding:48px 20px;">
+                <div style="width:64px; height:64px; margin:0 auto 16px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-link" style="font-size:26px; color:var(--ink2);"></i>
                 </div>
-            @endif
-        </div>
-
+                <p style="color:var(--ink2); margin:0;">ยังไม่มีข้อมูลแหล่งอ้างอิง</p>
+            </div>
+        @endif
     </div>
 </div>
+@endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // สีสำหรับ Dark Mode
@@ -429,19 +302,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-@endpush
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
 @endpush
 @endsection

@@ -1,363 +1,135 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ผู้มุ่งหวัง (Leads)')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- Premium Hero Header (Blue-Indigo for Leads) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8 mb-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-user-clock"></i>
-            </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-users text-3xl text-white drop-shadow-lg"></i>
-                    </div>
+    {{-- ── Hero + สถิติ ──────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5689b8 18%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px; background:#5689b8;"><i class="fas fa-users" style="color:#fff;"></i></span>
                     <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            👥 ผู้มุ่งหวัง (Leads)
-                        </h1>
-                        <p class="text-blue-100 mt-1">
-                            ติดตามและจัดการผู้มุ่งหวังที่เข้าชมหน้า Recruit ของคุณ
-                        </p>
+                        <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">👥 ผู้มุ่งหวัง (Leads)</h1>
+                        <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ติดตามและจัดการผู้มุ่งหวังที่เข้าชมหน้า Recruit ของคุณ</div>
                     </div>
                 </div>
-                <a href="{{ route('user.marketing.recruit.index') }}"
-                   class="glass-fusion px-6 py-3 hover:bg-white/30 rounded-xl transition inline-flex items-center gap-2 text-white font-semibold">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    กลับไปหน้าจัดการ
-                </a>
+                <a href="{{ route('user.marketing.recruit.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-arrow-left"></i> กลับไปหน้าจัดการ</a>
             </div>
 
-            {{-- Stats in Hero --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-blue-100 text-xs mb-1">ผู้มุ่งหวังทั้งหมด</p>
-                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total']) }}</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;">
+                <div class="tp-card" style="padding:14px; text-align:center;">
+                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">ผู้มุ่งหวังทั้งหมด</div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; color:var(--deep1);">{{ number_format($stats['total']) }}</div>
                 </div>
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-blue-100 text-xs mb-1">กำลังติดตาม</p>
-                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['active']) }}</p>
+                <div class="tp-card" style="padding:14px; text-align:center;">
+                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">กำลังติดตาม</div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; color:#5aa07e;">{{ number_format($stats['active']) }}</div>
                 </div>
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-blue-100 text-xs mb-1">สมัครแล้ว</p>
-                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['converted']) }}</p>
+                <div class="tp-card" style="padding:14px; text-align:center;">
+                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">สมัครแล้ว</div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; color:#7c5cbf;">{{ number_format($stats['converted']) }}</div>
                 </div>
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-blue-100 text-xs mb-1">หมดอายุแล้ว</p>
-                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['expired']) }}</p>
+                <div class="tp-card" style="padding:14px; text-align:center;">
+                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">หมดอายุแล้ว</div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; color:var(--ink2);">{{ number_format($stats['expired']) }}</div>
                 </div>
             </div>
         </div>
     </div>
 
+    {{-- ── ตัวกรอง ───────────────────────────────────────────── --}}
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <a href="{{ route('user.marketing.recruit.leads', ['status' => 'all']) }}" class="tp-btn tp-btn-sm {{ $currentStatus === 'all' ? 'tp-btn-primary' : '' }}">ทั้งหมด ({{ number_format($stats['total']) }})</a>
+        <a href="{{ route('user.marketing.recruit.leads', ['status' => 'active']) }}" class="tp-btn tp-btn-sm" style="{{ $currentStatus === 'active' ? 'background:#5aa07e; border-color:#5aa07e; color:#fff;' : '' }}">กำลังติดตาม ({{ number_format($stats['active']) }})</a>
+        <a href="{{ route('user.marketing.recruit.leads', ['status' => 'converted']) }}" class="tp-btn tp-btn-sm" style="{{ $currentStatus === 'converted' ? 'background:#7c5cbf; border-color:#7c5cbf; color:#fff;' : '' }}">สมัครแล้ว ({{ number_format($stats['converted']) }})</a>
+        <a href="{{ route('user.marketing.recruit.leads', ['status' => 'expired']) }}" class="tp-btn tp-btn-sm" style="{{ $currentStatus === 'expired' ? 'background:#8a8a8a; border-color:#8a8a8a; color:#fff;' : '' }}">หมดอายุ ({{ number_format($stats['expired']) }})</a>
+    </div>
 
-        {{-- Filter Tabs --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 mb-8 overflow-hidden">
-            <div class="border-b border-gray-200 dark:border-gray-700">
-                <nav class="flex flex-wrap -mb-px">
-                    <a href="{{ route('user.marketing.recruit.leads', ['status' => 'all']) }}"
-                       class="group inline-flex items-center px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200
-                              {{ $currentStatus === 'all' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }}">
-                        <svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-                        </svg>
-                        ทั้งหมด ({{ number_format($stats['total']) }})
-                    </a>
-                    <a href="{{ route('user.marketing.recruit.leads', ['status' => 'active']) }}"
-                       class="group inline-flex items-center px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200
-                              {{ $currentStatus === 'active' ? 'border-green-500 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }}">
-                        <svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        กำลังติดตาม ({{ number_format($stats['active']) }})
-                    </a>
-                    <a href="{{ route('user.marketing.recruit.leads', ['status' => 'converted']) }}"
-                       class="group inline-flex items-center px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200
-                              {{ $currentStatus === 'converted' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }}">
-                        <svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        สมัครแล้ว ({{ number_format($stats['converted']) }})
-                    </a>
-                    <a href="{{ route('user.marketing.recruit.leads', ['status' => 'expired']) }}"
-                       class="group inline-flex items-center px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200
-                              {{ $currentStatus === 'expired' ? 'border-gray-500 text-gray-600 dark:text-gray-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }}">
-                        <svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        หมดอายุ ({{ number_format($stats['expired']) }})
-                    </a>
-                </nav>
-            </div>
-        </div>
-
-        {{-- Leads Table --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            @if($leads->count() > 0)
-                {{-- Desktop Table --}}
-                <div class="hidden md:block overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800">
-                            <tr>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                    ข้อมูลผู้เข้าชม
-                                </th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                    แหล่งที่มา
-                                </th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                    เวลา
-                                </th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                    สถานะ
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach($leads as $lead)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-start">
-                                            <div class="flex-shrink-0">
-                                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-lg">
-                                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <div class="ml-4">
-                                                @if($lead->status === 'converted' && $lead->mlmMember)
-                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                                        {{ $lead->mlmMember->user->name ?? 'ไม่ระบุ' }}
-                                                    </div>
-                                                    <div class="text-sm text-green-600 dark:text-green-400 font-medium">
-                                                        ✓ สมัครสมาชิกแล้ว
-                                                    </div>
-                                                @else
-                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                                        ผู้เข้าชมที่ {{ $lead->id }}
-                                                    </div>
-                                                @endif
-                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    IP: {{ $lead->ip_address }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        @if($lead->utm_params)
-                                            @php
-                                                $utm = is_string($lead->utm_params) ? json_decode($lead->utm_params, true) : $lead->utm_params;
-                                            @endphp
-                                            <div class="text-sm text-gray-900 dark:text-white">
-                                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                                    {{ $utm['utm_source'] ?? 'ไม่ระบุ' }}
-                                                </span>
-                                            </div>
-                                            @if(isset($utm['utm_campaign']))
-                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    แคมเปญ: {{ $utm['utm_campaign'] }}
-                                                </div>
+    {{-- ── ตาราง Leads ───────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        @if($leads->count() > 0)
+            <div style="overflow-x:auto;">
+                <table style="min-width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="box-shadow:var(--inset-sm);">
+                            <th style="padding:14px 20px; text-align:left; font-size:11px; font-weight:600; color:var(--ink2); text-transform:uppercase;">ข้อมูลผู้เข้าชม</th>
+                            <th style="padding:14px 20px; text-align:left; font-size:11px; font-weight:600; color:var(--ink2); text-transform:uppercase;">แหล่งที่มา</th>
+                            <th style="padding:14px 20px; text-align:left; font-size:11px; font-weight:600; color:var(--ink2); text-transform:uppercase;">เวลา</th>
+                            <th style="padding:14px 20px; text-align:left; font-size:11px; font-weight:600; color:var(--ink2); text-transform:uppercase;">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($leads as $lead)
+                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 12%, transparent);">
+                                <td style="padding:14px 20px;">
+                                    <div style="display:flex; align-items:flex-start; gap:12px;">
+                                        <div style="flex-shrink:0; width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, #5689b8, #7c5cbf); display:flex; align-items:center; justify-content:center; color:#fff;"><i class="fas fa-user"></i></div>
+                                        <div>
+                                            @if($lead->status === 'converted' && $lead->mlmMember)
+                                                <div style="font-weight:600; color:var(--ink);">{{ $lead->mlmMember->user->name ?? 'ไม่ระบุ' }}</div>
+                                                <div style="font-size:12px; color:#5aa07e; font-weight:600;">✓ สมัครสมาชิกแล้ว</div>
+                                            @else
+                                                <div style="font-weight:600; color:var(--ink);">ผู้เข้าชมที่ {{ $lead->id }}</div>
                                             @endif
-                                        @elseif($lead->referrer_url)
-                                            <div class="text-sm text-gray-600 dark:text-gray-400">
-                                                {{ Str::limit(parse_url($lead->referrer_url, PHP_URL_HOST) ?? 'Direct', 30) }}
-                                            </div>
-                                        @else
-                                            <div class="text-sm text-gray-500 dark:text-gray-400">
-                                                Direct
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                                        <div class="flex flex-col">
-                                            <span class="font-medium">{{ $lead->locked_at->format('d/m/Y H:i') }}</span>
-                                            @if($lead->status === 'locked' && $lead->expires_at > now())
-                                                <span class="text-xs text-green-600 dark:text-green-400 mt-1">
-                                                    หมดอายุ: {{ $lead->expires_at->format('d/m/Y H:i') }}
-                                                </span>
-                                                <span class="text-xs text-gray-500 dark:text-gray-400">
-                                                    (เหลือ {{ $lead->getTimeRemaining() }})
-                                                </span>
-                                            @elseif($lead->status === 'converted')
-                                                <span class="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                                                    สมัครเมื่อ: {{ $lead->converted_at?->format('d/m/Y H:i') ?? '-' }}
-                                                </span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        @if($lead->status === 'converted')
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-400 to-purple-600 text-white shadow-lg">
-                                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                                </svg>
-                                                สมัครแล้ว
-                                            </span>
-                                        @elseif($lead->status === 'locked' && $lead->expires_at > now())
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-400 to-green-600 text-white shadow-lg">
-                                                <svg class="w-4 h-4 mr-1 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
-                                                </svg>
-                                                กำลังติดตาม
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-gray-400 to-gray-600 text-white shadow-lg">
-                                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                                                </svg>
-                                                หมดอายุ
-                                            </span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                {{-- Mobile Cards --}}
-                <div class="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-                    @foreach($leads as $lead)
-                        <div class="p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
-                            <div class="flex items-start justify-between mb-4">
-                                <div class="flex items-start">
-                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-lg">
-                                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="ml-3">
-                                        @if($lead->status === 'converted' && $lead->mlmMember)
-                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                                {{ $lead->mlmMember->user->name ?? 'ไม่ระบุ' }}
-                                            </div>
-                                            <div class="text-xs text-green-600 dark:text-green-400 font-medium">
-                                                ✓ สมัครสมาชิกแล้ว
-                                            </div>
-                                        @else
-                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                                ผู้เข้าชมที่ {{ $lead->id }}
-                                            </div>
-                                        @endif
-                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            IP: {{ $lead->ip_address }}
+                                            <div style="font-size:11px; color:var(--ink2); margin-top:2px;">IP: {{ $lead->ip_address }}</div>
                                         </div>
                                     </div>
-                                </div>
-                                @if($lead->status === 'converted')
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-400 to-purple-600 text-white shadow-lg">
-                                        ✓ สมัครแล้ว
-                                    </span>
-                                @elseif($lead->status === 'locked' && $lead->expires_at > now())
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-400 to-green-600 text-white shadow-lg">
-                                        กำลังติดตาม
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-gray-400 to-gray-600 text-white shadow-lg">
-                                        หมดอายุ
-                                    </span>
-                                @endif
-                            </div>
-
-                            <div class="space-y-2">
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-500 dark:text-gray-400">แหล่งที่มา:</span>
+                                </td>
+                                <td style="padding:14px 20px;">
                                     @if($lead->utm_params)
-                                        @php
-                                            $utm = is_string($lead->utm_params) ? json_decode($lead->utm_params, true) : $lead->utm_params;
-                                        @endphp
-                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                            {{ $utm['utm_source'] ?? 'ไม่ระบุ' }}
-                                        </span>
+                                        @php $utm = is_string($lead->utm_params) ? json_decode($lead->utm_params, true) : $lead->utm_params; @endphp
+                                        <span style="display:inline-flex; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; color:#5689b8; background:color-mix(in srgb, #5689b8 16%, transparent);">{{ $utm['utm_source'] ?? 'ไม่ระบุ' }}</span>
+                                        @if(isset($utm['utm_campaign']))
+                                            <div style="font-size:11px; color:var(--ink2); margin-top:4px;">แคมเปญ: {{ $utm['utm_campaign'] }}</div>
+                                        @endif
                                     @elseif($lead->referrer_url)
-                                        <span class="text-gray-900 dark:text-white">
-                                            {{ Str::limit(parse_url($lead->referrer_url, PHP_URL_HOST) ?? 'Direct', 20) }}
-                                        </span>
+                                        <span style="color:var(--ink2);">{{ Str::limit(parse_url($lead->referrer_url, PHP_URL_HOST) ?? 'Direct', 30) }}</span>
                                     @else
-                                        <span class="text-gray-900 dark:text-white">Direct</span>
+                                        <span style="color:var(--ink2);">Direct</span>
                                     @endif
-                                </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-500 dark:text-gray-400">เวลา:</span>
-                                    <span class="text-gray-900 dark:text-white">{{ $lead->locked_at->format('d/m/Y H:i') }}</span>
-                                </div>
-                                @if($lead->status === 'locked' && $lead->expires_at > now())
-                                    <div class="flex justify-between text-sm">
-                                        <span class="text-gray-500 dark:text-gray-400">เหลือเวลา:</span>
-                                        <span class="text-green-600 dark:text-green-400 font-medium">{{ $lead->getTimeRemaining() }}</span>
+                                </td>
+                                <td style="padding:14px 20px; color:var(--ink);">
+                                    <div style="display:flex; flex-direction:column;">
+                                        <span style="font-weight:600;">{{ $lead->locked_at->format('d/m/Y H:i') }}</span>
+                                        @if($lead->status === 'locked' && $lead->expires_at > now())
+                                            <span style="font-size:11px; color:#5aa07e; margin-top:2px;">หมดอายุ: {{ $lead->expires_at->format('d/m/Y H:i') }}</span>
+                                            <span style="font-size:11px; color:var(--ink2);">(เหลือ {{ $lead->getTimeRemaining() }})</span>
+                                        @elseif($lead->status === 'converted')
+                                            <span style="font-size:11px; color:#7c5cbf; margin-top:2px;">สมัครเมื่อ: {{ $lead->converted_at?->format('d/m/Y H:i') ?? '-' }}</span>
+                                        @endif
                                     </div>
-                                @elseif($lead->status === 'converted')
-                                    <div class="flex justify-between text-sm">
-                                        <span class="text-gray-500 dark:text-gray-400">สมัครเมื่อ:</span>
-                                        <span class="text-purple-600 dark:text-purple-400">{{ $lead->converted_at?->format('d/m/Y H:i') ?? '-' }}</span>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+                                </td>
+                                <td style="padding:14px 20px;">
+                                    @if($lead->status === 'converted')
+                                        <span style="display:inline-flex; padding:3px 12px; border-radius:999px; font-size:11px; font-weight:600; color:#fff; background:#7c5cbf;">✓ สมัครแล้ว</span>
+                                    @elseif($lead->status === 'locked' && $lead->expires_at > now())
+                                        <span style="display:inline-flex; padding:3px 12px; border-radius:999px; font-size:11px; font-weight:600; color:#fff; background:#5aa07e;">กำลังติดตาม</span>
+                                    @else
+                                        <span style="display:inline-flex; padding:3px 12px; border-radius:999px; font-size:11px; font-weight:600; color:#fff; background:#8a8a8a;">หมดอายุ</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-                {{-- Pagination --}}
-                <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                    {{ $leads->links() }}
+            <div style="padding:14px 20px; border-top:1px solid color-mix(in srgb, var(--ink2) 12%, transparent);">
+                {{ $leads->links() }}
+            </div>
+        @else
+            <div style="text-align:center; padding:64px 24px;">
+                <div style="width:80px; height:80px; margin:0 auto 20px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-users" style="font-size:32px; color:var(--ink2);"></i>
                 </div>
-            @else
-                {{-- Empty State --}}
-                <div class="text-center py-16 px-6">
-                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 mb-6">
-                        <svg class="w-10 h-10 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        ยังไม่มีผู้มุ่งหวัง
-                    </h3>
-                    <p class="text-gray-600 dark:text-gray-400 mb-6">
-                        เริ่มแชร์ลิงก์ Recruit ของคุณเพื่อเริ่มต้นสร้างรายชื่อผู้มุ่งหวัง
-                    </p>
-                    <a href="{{ route('user.marketing.recruit.index') }}"
-                       class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
-                        </svg>
-                        ดูลิงก์และ QR Code
-                    </a>
-                </div>
-            @endif
-        </div>
-
+                <h3 style="font-size:18px; font-weight:800; color:var(--ink); margin:0 0 8px;">ยังไม่มีผู้มุ่งหวัง</h3>
+                <p style="color:var(--ink2); margin:0 0 20px;">เริ่มแชร์ลิงก์ Recruit ของคุณเพื่อเริ่มต้นสร้างรายชื่อผู้มุ่งหวัง</p>
+                <a href="{{ route('user.marketing.recruit.index') }}" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fas fa-qrcode"></i> ดูลิงก์และ QR Code</a>
+            </div>
+        @endif
     </div>
 </div>
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
