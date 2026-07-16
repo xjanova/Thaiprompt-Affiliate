@@ -1,188 +1,137 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ตั้งค่าการยืนยันตัวตนแบบ 2 ชั้น (2FA)')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-2xl p-8 text-white">
-        <div class="flex items-center gap-4">
-            <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <span class="text-3xl">🔐</span>
-            </div>
-            <div>
-                <h1 class="text-3xl font-bold">ความปลอดภัยบัญชี</h1>
-                <p class="text-blue-100 mt-1">การยืนยันตัวตนแบบ 2 ชั้น (Two-Factor Authentication)</p>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5689b8 18%, transparent), transparent 70%);">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <span class="tp-tile" style="width:54px; height:54px; border-radius:16px; font-size:24px; background:#5689b8;"><span style="color:#fff;">🔐</span></span>
+                <div>
+                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ความปลอดภัยบัญชี</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">การยืนยันตัวตนแบบ 2 ชั้น (Two-Factor Authentication)</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Status Card -->
-    <x-arrow-x.card-v3 class="p-6">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                    <span class="text-2xl">
-                        @if($status['enabled'])
-                            ✅
-                        @else
-                            🔓
-                        @endif
-                    </span>
-                </div>
+    {{-- ── สถานะ 2FA ─────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:20px; background:#5689b8;"><span style="color:#fff;">@if($status['enabled'])✅@else🔓@endif</span></span>
                 <div>
-                    <h2 class="text-xl font-bold text-gray-800 dark:text-white">สถานะ 2FA</h2>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                    <div style="font-size:18px; font-weight:800; color:var(--ink);">สถานะ 2FA</div>
+                    <div style="font-size:13px;">
                         @if($status['enabled'])
-                            <span class="text-green-600 font-semibold">เปิดใช้งานแล้ว</span>
+                            <span style="color:#5aa07e; font-weight:700;">เปิดใช้งานแล้ว</span>
                         @else
-                            <span class="text-orange-600 font-semibold">ยังไม่ได้เปิดใช้งาน</span>
+                            <span style="color:#e08a3c; font-weight:700;">ยังไม่ได้เปิดใช้งาน</span>
                         @endif
-                    </p>
+                    </div>
                 </div>
             </div>
-
             @if($status['enabled'])
                 <form action="{{ route('user.two-factor.disable') }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะปิดการใช้งาน 2FA?')">
                     @csrf
-                    <button type="submit" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors shadow-lg">
-                        ปิดการใช้งาน
-                    </button>
+                    <button type="submit" class="tp-btn" style="background:#d9534f; border-color:#d9534f; color:#fff;">ปิดการใช้งาน</button>
                 </form>
             @endif
         </div>
 
         @if($status['enabled'])
-            <!-- Current Settings -->
-            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-700 dark:text-gray-300 font-medium">วิธีการยืนยันหลัก:</span>
-                        <span class="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg font-semibold text-blue-600 shadow">
-                            @if($status['preferred_method'] === 'authenticator')
-                                🔐 Google Authenticator
-                            @elseif($status['preferred_method'] === 'sms')
-                                📱 SMS
-                            @elseif($status['preferred_method'] === 'line')
-                                💚 LINE
-                            @elseif($status['preferred_method'] === 'email')
-                                📧 Email
+            <div style="border-radius:14px; box-shadow:var(--inset-sm); padding:20px;">
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                        <span style="color:var(--ink); font-weight:600;">วิธีการยืนยันหลัก:</span>
+                        <span style="padding:6px 14px; border-radius:10px; box-shadow:var(--inset-sm); font-weight:700; color:#5689b8;">
+                            @if($status['preferred_method'] === 'authenticator')🔐 Google Authenticator
+                            @elseif($status['preferred_method'] === 'sms')📱 SMS
+                            @elseif($status['preferred_method'] === 'line')💚 LINE
+                            @elseif($status['preferred_method'] === 'email')📧 Email
                             @endif
                         </span>
                     </div>
-
                     @if(!empty($status['backup_methods']))
-                        <div class="flex items-center justify-between">
-                            <span class="text-gray-700 dark:text-gray-300 font-medium">วิธีสำรอง:</span>
-                            <div class="flex gap-2">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                            <span style="color:var(--ink); font-weight:600;">วิธีสำรอง:</span>
+                            <div style="display:flex; gap:8px;">
                                 @foreach($status['backup_methods'] as $method)
-                                    <span class="px-3 py-1 bg-white dark:bg-gray-800 rounded-lg text-sm shadow">
-                                        @if($method === 'sms')
-                                            📱 SMS
-                                        @elseif($method === 'line')
-                                            💚 LINE
-                                        @elseif($method === 'email')
-                                            📧 Email
-                                        @endif
+                                    <span style="padding:4px 10px; border-radius:8px; box-shadow:var(--inset-sm); font-size:13px;">
+                                        @if($method === 'sms')📱 SMS @elseif($method === 'line')💚 LINE @elseif($method === 'email')📧 Email @endif
                                     </span>
                                 @endforeach
                             </div>
                         </div>
                     @endif
-
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-700 dark:text-gray-300 font-medium">การยืนยันทั้งหมด:</span>
-                        <span class="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg font-semibold shadow">
-                            {{ $status['total_verifications'] ?? 0 }} ครั้ง
-                        </span>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                        <span style="color:var(--ink); font-weight:600;">การยืนยันทั้งหมด:</span>
+                        <span style="padding:6px 14px; border-radius:10px; box-shadow:var(--inset-sm); font-weight:700; color:var(--ink);">{{ $status['total_verifications'] ?? 0 }} ครั้ง</span>
                     </div>
-
                     @if($status['last_verified_at'])
-                        <div class="flex items-center justify-between">
-                            <span class="text-gray-700 dark:text-gray-300 font-medium">ยืนยันล่าสุด:</span>
-                            <span class="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg text-sm shadow">
-                                {{ \Carbon\Carbon::parse($status['last_verified_at'])->diffForHumans() }}
-                            </span>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                            <span style="color:var(--ink); font-weight:600;">ยืนยันล่าสุด:</span>
+                            <span style="padding:6px 14px; border-radius:10px; box-shadow:var(--inset-sm); font-size:13px; color:var(--ink);">{{ \Carbon\Carbon::parse($status['last_verified_at'])->diffForHumans() }}</span>
                         </div>
                     @endif
                 </div>
             </div>
         @endif
-    </x-arrow-x.card-v3>
+    </div>
 
     @if(!$status['enabled'])
-        <!-- Enable 2FA Form - Google Authenticator -->
-        <x-arrow-x.card-v3 class="p-6" x-data="authenticatorSetup()">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <span>🚀</span> เปิดใช้งาน 2FA ด้วย Google Authenticator
-            </h2>
-            <p class="text-gray-600 dark:text-gray-400 mb-6">
-                เพิ่มความปลอดภัยให้กับบัญชีของคุณด้วยการยืนยันตัวตนแบบ 2 ชั้น (TOTP) ผ่าน Google Authenticator
-            </p>
+        {{-- ── เปิดใช้งาน 2FA ─────────────────────────────────── --}}
+        <div class="tp-card" style="padding:24px;" x-data="authenticatorSetup()">
+            <div class="tp-section-h" style="margin-bottom:8px;">🚀 เปิดใช้งาน 2FA ด้วย Google Authenticator</div>
+            <p style="color:var(--ink2); margin:0 0 24px;">เพิ่มความปลอดภัยให้กับบัญชีของคุณด้วยการยืนยันตัวตนแบบ 2 ชั้น (TOTP) ผ่าน Google Authenticator</p>
 
-            <!-- Step 1: ดาวน์โหลดแอป -->
-            <div class="mb-8">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white">ดาวน์โหลดแอป Authenticator</h3>
+            {{-- Step 1 --}}
+            <div style="margin-bottom:28px;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                    <div style="width:32px; height:32px; background:#5689b8; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800;">1</div>
+                    <div style="font-size:16px; font-weight:800; color:var(--ink);">ดาวน์โหลดแอป Authenticator</div>
                 </div>
-                <div class="grid md:grid-cols-2 gap-4 ml-11">
-                    <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2"
-                       target="_blank"
-                       class="flex items-center gap-3 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-green-500 transition-colors">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Authenticator_for_Android_icon.svg"
-                             alt="Google Authenticator" class="w-12 h-12">
-                        <div>
-                            <div class="font-bold text-gray-800 dark:text-white">Google Authenticator</div>
-                            <div class="text-sm text-gray-500">Android / iOS</div>
-                        </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-left:44px;">
+                    <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" style="display:flex; align-items:center; gap:12px; padding:16px; border:2px solid color-mix(in srgb, var(--ink2) 25%, transparent); border-radius:12px; text-decoration:none;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Authenticator_for_Android_icon.svg" alt="Google Authenticator" style="width:48px; height:48px;">
+                        <div><div style="font-weight:800; color:var(--ink);">Google Authenticator</div><div style="font-size:12px; color:var(--ink2);">Android / iOS</div></div>
                     </a>
-                    <a href="https://apps.apple.com/app/microsoft-authenticator/id983156458"
-                       target="_blank"
-                       class="flex items-center gap-3 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-500 transition-colors">
-                        <svg class="w-12 h-12 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zm12.6 0H12.6V0H24v11.4z"/>
-                        </svg>
-                        <div>
-                            <div class="font-bold text-gray-800 dark:text-white">Microsoft Authenticator</div>
-                            <div class="text-sm text-gray-500">Android / iOS</div>
-                        </div>
+                    <a href="https://apps.apple.com/app/microsoft-authenticator/id983156458" target="_blank" style="display:flex; align-items:center; gap:12px; padding:16px; border:2px solid color-mix(in srgb, var(--ink2) 25%, transparent); border-radius:12px; text-decoration:none;">
+                        <svg style="width:48px; height:48px; color:#5689b8;" viewBox="0 0 24 24" fill="currentColor"><path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zm12.6 0H12.6V0H24v11.4z"/></svg>
+                        <div><div style="font-weight:800; color:var(--ink);">Microsoft Authenticator</div><div style="font-size:12px; color:var(--ink2);">Android / iOS</div></div>
                     </a>
                 </div>
             </div>
 
-            <!-- Step 2: สแกน QR Code -->
-            <div class="mb-8">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white">สแกน QR Code</h3>
+            {{-- Step 2 --}}
+            <div style="margin-bottom:28px;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                    <div style="width:32px; height:32px; background:#5689b8; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800;">2</div>
+                    <div style="font-size:16px; font-weight:800; color:var(--ink);">สแกน QR Code</div>
                 </div>
-                <div class="ml-11">
-                    <!-- QR Code Container -->
-                    <div class="bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center max-w-sm mx-auto">
+                <div style="margin-left:44px;">
+                    <div style="background:var(--surf1); border-radius:14px; box-shadow:var(--inset-sm); padding:24px; text-align:center; max-width:360px; margin:0 auto;">
                         <template x-if="!qrCode">
-                            <div class="space-y-4">
-                                <div class="w-48 h-48 bg-gray-100 dark:bg-gray-800 rounded-lg mx-auto flex items-center justify-center">
-                                    <span class="text-gray-400">กดปุ่มเพื่อสร้าง QR Code</span>
+                            <div style="display:flex; flex-direction:column; gap:16px;">
+                                <div style="width:192px; height:192px; box-shadow:var(--inset-sm); border-radius:10px; margin:0 auto; display:flex; align-items:center; justify-content:center;">
+                                    <span style="color:var(--ink2);">กดปุ่มเพื่อสร้าง QR Code</span>
                                 </div>
-                                <button @click="generateQRCode()"
-                                        :disabled="loading"
-                                        class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-semibold transition-colors">
+                                <button @click="generateQRCode()" :disabled="loading" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;">
                                     <span x-show="!loading">🔄 สร้าง QR Code</span>
                                     <span x-show="loading">⏳ กำลังสร้าง...</span>
                                 </button>
                             </div>
                         </template>
                         <template x-if="qrCode">
-                            <div class="space-y-4">
-                                <div x-html="qrCode" class="w-48 h-48 mx-auto [&>svg]:w-full [&>svg]:h-full"></div>
-                                <div class="text-sm text-gray-600 dark:text-gray-400">
-                                    หรือกรอก Secret Key ด้านล่างในแอป:
-                                </div>
-                                <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 font-mono text-sm break-all select-all cursor-pointer"
-                                     @click="copySecret()">
+                            <div style="display:flex; flex-direction:column; gap:16px;">
+                                <div x-html="qrCode" style="width:192px; height:192px; margin:0 auto; background:#fff; border-radius:10px; padding:8px;"></div>
+                                <div style="font-size:13px; color:var(--ink2);">หรือกรอก Secret Key ด้านล่างในแอป:</div>
+                                <div style="box-shadow:var(--inset-sm); border-radius:10px; padding:12px; font-family:monospace; font-size:13px; word-break:break-all; user-select:all; cursor:pointer;" @click="copySecret()">
                                     <span x-text="secret"></span>
-                                    <span class="text-xs text-blue-600 block mt-1">คลิกเพื่อคัดลอก</span>
+                                    <span style="font-size:11px; color:#5689b8; display:block; margin-top:4px;">คลิกเพื่อคัดลอก</span>
                                 </div>
                             </div>
                         </template>
@@ -190,68 +139,42 @@
                 </div>
             </div>
 
-            <!-- Step 3: ยืนยันรหัส -->
-            <div class="mb-8">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white">ยืนยันรหัสจากแอป</h3>
+            {{-- Step 3 --}}
+            <div style="margin-bottom:28px;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                    <div style="width:32px; height:32px; background:#5689b8; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800;">3</div>
+                    <div style="font-size:16px; font-weight:800; color:var(--ink);">ยืนยันรหัสจากแอป</div>
                 </div>
-                <div class="ml-11">
-                    <form action="{{ route('user.two-factor.enable') }}" method="POST" class="space-y-4">
+                <div style="margin-left:44px;">
+                    <form action="{{ route('user.two-factor.enable') }}" method="POST" style="display:flex; flex-direction:column; gap:16px;">
                         @csrf
                         <input type="hidden" name="preferred_method" value="authenticator">
-
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                กรอกรหัส 6 หลักจากแอป Authenticator
-                            </label>
-                            <input type="text"
-                                   name="code"
-                                   x-model="verificationCode"
-                                   pattern="[0-9]{6}"
-                                   maxlength="6"
-                                   placeholder="000000"
-                                   required
-                                   :disabled="!qrCode"
-                                   class="w-full px-4 py-4 text-center text-2xl font-mono tracking-[0.5em] border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:bg-gray-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed">
-                            @error('code')
-                                <p class="text-red-600 text-sm mt-2">{{ $message }}</p>
-                            @enderror
+                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:8px;">กรอกรหัส 6 หลักจากแอป Authenticator</label>
+                            <input type="text" name="code" x-model="verificationCode" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required :disabled="!qrCode"
+                                   class="tp-input" style="text-align:center; font-size:24px; font-family:monospace; letter-spacing:0.5em;">
+                            @error('code')<p style="color:#d9534f; font-size:13px; margin-top:8px;">{{ $message }}</p>@enderror
                         </div>
-
-                        <!-- Verify Button -->
-                        <div class="flex gap-3">
-                            <button type="button"
-                                    @click="verifyCode()"
-                                    :disabled="!qrCode || verificationCode.length !== 6 || verifying"
-                                    class="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-700 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            <button type="button" @click="verifyCode()" :disabled="!qrCode || verificationCode.length !== 6 || verifying" class="tp-btn" style="flex:1; min-width:140px; justify-content:center;">
                                 <span x-show="!verifying">ตรวจสอบรหัส</span>
                                 <span x-show="verifying">⏳ กำลังตรวจสอบ...</span>
                             </button>
-                            <button type="submit"
-                                    :disabled="!verified"
-                                    class="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold transition-all disabled:cursor-not-allowed">
-                                🔐 เปิดใช้งาน 2FA
-                            </button>
+                            <button type="submit" :disabled="!verified" class="tp-btn tp-btn-primary" style="flex:1; min-width:140px; justify-content:center; background:#5aa07e; border-color:#5aa07e;">🔐 เปิดใช้งาน 2FA</button>
                         </div>
-
-                        <!-- Verification Status -->
-                        <div x-show="verificationMessage"
-                             :class="verified ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'"
-                             class="p-4 rounded-xl border text-center font-semibold">
+                        <div x-show="verificationMessage" x-cloak :style="verified ? 'color:#5aa07e;' : 'color:#d9534f;'" style="padding:14px; border-radius:12px; box-shadow:var(--inset-sm); text-align:center; font-weight:700;">
                             <span x-text="verificationMessage"></span>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Info Box -->
-            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4">
-                <div class="flex gap-3">
-                    <span class="text-2xl">⚠️</span>
-                    <div class="flex-1">
-                        <h3 class="font-bold text-yellow-800 dark:text-yellow-200 mb-1">ข้อควรทราบ</h3>
-                        <ul class="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+            <div class="tp-card" style="padding:16px; border-left:4px solid #d9a441;">
+                <div style="display:flex; gap:12px;">
+                    <span style="font-size:22px;">⚠️</span>
+                    <div>
+                        <div style="font-weight:800; color:var(--ink); margin-bottom:6px;">ข้อควรทราบ</div>
+                        <ul style="margin:0; padding:0; list-style:none; font-size:13px; color:var(--ink2); display:flex; flex-direction:column; gap:4px;">
                             <li>• รหัสจะเปลี่ยนทุก 30 วินาที</li>
                             <li>• คุณจะได้รับรหัสกู้คืน (Recovery Codes) สำหรับใช้ในกรณีฉุกเฉิน</li>
                             <li>• กรุณาเก็บรหัสกู้คืนไว้ในที่ปลอดภัย</li>
@@ -260,115 +183,78 @@
                     </div>
                 </div>
             </div>
-        </x-arrow-x.card-v3>
+        </div>
     @else
-        <!-- Advanced Settings (When 2FA is Enabled) -->
-        <div class="grid md:grid-cols-2 gap-6">
-            <!-- Recovery Codes -->
-            <x-arrow-x.card-v3 class="p-6">
-                <div class="flex items-center gap-3 mb-4">
-                    <span class="text-3xl">🔑</span>
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">รหัสกู้คืน</h3>
+        {{-- ── ตั้งค่าขั้นสูง (เปิด 2FA แล้ว) ──────────────────── --}}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;">
+            <div class="tp-card" style="padding:24px;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                    <span style="font-size:28px;">🔑</span>
+                    <div style="font-size:18px; font-weight:800; color:var(--ink);">รหัสกู้คืน</div>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-                    ใช้รหัสกู้คืนเมื่อคุณไม่สามารถเข้าถึงวิธีการยืนยันตัวตนหลักได้
-                </p>
-                <div class="flex flex-col gap-2">
-                    <a href="{{ route('user.two-factor.recovery-codes', ['codes' => json_encode($status['recovery_codes'] ?? [])]) }}"
-                       class="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-center transition-colors">
-                        ดูรหัสกู้คืน
-                    </a>
+                <p style="color:var(--ink2); font-size:13px; margin:0 0 16px;">ใช้รหัสกู้คืนเมื่อคุณไม่สามารถเข้าถึงวิธีการยืนยันตัวตนหลักได้</p>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <a href="{{ route('user.two-factor.recovery-codes', ['codes' => json_encode($status['recovery_codes'] ?? [])]) }}" class="tp-btn tp-btn-primary" style="justify-content:center; background:#5689b8; border-color:#5689b8;">ดูรหัสกู้คืน</a>
                     <form action="{{ route('user.two-factor.regenerate-codes') }}" method="POST">
                         @csrf
-                        <button type="submit"
-                                onclick="return confirm('คุณแน่ใจหรือไม่? รหัสเก่าจะใช้ไม่ได้อีกต่อไป')"
-                                class="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition-colors">
-                            สร้างรหัสใหม่
-                        </button>
+                        <button type="submit" onclick="return confirm('คุณแน่ใจหรือไม่? รหัสเก่าจะใช้ไม่ได้อีกต่อไป')" class="tp-btn" style="width:100%; justify-content:center;">สร้างรหัสใหม่</button>
                     </form>
                 </div>
-            </x-arrow-x.card-v3>
+            </div>
 
-            <!-- Trusted Devices -->
-            <x-arrow-x.card-v3 class="p-6">
-                <div class="flex items-center gap-3 mb-4">
-                    <span class="text-3xl">📱</span>
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">อุปกรณ์ที่เชื่อถือ</h3>
+            <div class="tp-card" style="padding:24px;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                    <span style="font-size:28px;">📱</span>
+                    <div style="font-size:18px; font-weight:800; color:var(--ink);">อุปกรณ์ที่เชื่อถือ</div>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-                    อุปกรณ์ที่คุณเลือกให้จำการเข้าสู่ระบบไว้
-                </p>
+                <p style="color:var(--ink2); font-size:13px; margin:0 0 16px;">อุปกรณ์ที่คุณเลือกให้จำการเข้าสู่ระบบไว้</p>
                 @if(!empty($status['trusted_devices']) && count($status['trusted_devices']) > 0)
-                    <div class="space-y-2 mb-4">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            จำนวนอุปกรณ์: <span class="font-bold text-gray-800 dark:text-white">{{ count($status['trusted_devices']) }}</span>
-                        </div>
-                    </div>
+                    <div style="font-size:13px; color:var(--ink2); margin-bottom:14px;">จำนวนอุปกรณ์: <span style="font-weight:800; color:var(--ink);">{{ count($status['trusted_devices']) }}</span></div>
                     <form action="{{ route('user.two-factor.remove-all-devices') }}" method="POST">
                         @csrf
-                        <button type="submit"
-                                onclick="return confirm('ลบอุปกรณ์ที่เชื่อถือทั้งหมด?')"
-                                class="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors">
-                            ลบอุปกรณ์ทั้งหมด
-                        </button>
+                        <button type="submit" onclick="return confirm('ลบอุปกรณ์ที่เชื่อถือทั้งหมด?')" class="tp-btn" style="width:100%; justify-content:center; background:#d9534f; border-color:#d9534f; color:#fff;">ลบอุปกรณ์ทั้งหมด</button>
                     </form>
                 @else
-                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-center">
-                        <span class="text-gray-500 dark:text-gray-400 text-sm">ยังไม่มีอุปกรณ์ที่เชื่อถือ</span>
+                    <div style="border-radius:10px; box-shadow:var(--inset-sm); padding:16px; text-align:center;">
+                        <span style="color:var(--ink2); font-size:13px;">ยังไม่มีอุปกรณ์ที่เชื่อถือ</span>
                     </div>
                 @endif
-            </x-arrow-x.card-v3>
+            </div>
         </div>
     @endif
 
-    <!-- Benefits -->
-    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-xl p-6 border border-indigo-100">
-        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <span>✨</span> ประโยชน์ของ 2FA
-        </h3>
-        <div class="grid md:grid-cols-3 gap-4">
-            <div class="flex gap-3">
-                <span class="text-2xl">🛡️</span>
-                <div>
-                    <div class="font-semibold text-gray-800 dark:text-white">ป้องกันการเข้าถึงโดยไม่ได้รับอนุญาต</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">แม้รหัสผ่านรั่วไหลก็ยังปลอดภัย</div>
-                </div>
+    {{-- ── ประโยชน์ ──────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+        <div class="tp-section-h" style="margin-bottom:16px;">✨ ประโยชน์ของ 2FA</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;">
+            <div style="display:flex; gap:12px;">
+                <span style="font-size:22px;">🛡️</span>
+                <div><div style="font-weight:700; color:var(--ink);">ป้องกันการเข้าถึงโดยไม่ได้รับอนุญาต</div><div style="font-size:13px; color:var(--ink2); margin-top:2px;">แม้รหัสผ่านรั่วไหลก็ยังปลอดภัย</div></div>
             </div>
-            <div class="flex gap-3">
-                <span class="text-2xl">🔔</span>
-                <div>
-                    <div class="font-semibold text-gray-800 dark:text-white">แจ้งเตือนการเข้าสู่ระบบ</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">ทราบทันทีเมื่อมีการเข้าสู่ระบบ</div>
-                </div>
+            <div style="display:flex; gap:12px;">
+                <span style="font-size:22px;">🔔</span>
+                <div><div style="font-weight:700; color:var(--ink);">แจ้งเตือนการเข้าสู่ระบบ</div><div style="font-size:13px; color:var(--ink2); margin-top:2px;">ทราบทันทีเมื่อมีการเข้าสู่ระบบ</div></div>
             </div>
-            <div class="flex gap-3">
-                <span class="text-2xl">💎</span>
-                <div>
-                    <div class="font-semibold text-gray-800 dark:text-white">ปกป้องทรัพย์สินดิจิทัล</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">ความปลอดภัยระดับธนาคาร</div>
-                </div>
+            <div style="display:flex; gap:12px;">
+                <span style="font-size:22px;">💎</span>
+                <div><div style="font-weight:700; color:var(--ink);">ปกป้องทรัพย์สินดิจิทัล</div><div style="font-size:13px; color:var(--ink2); margin-top:2px;">ความปลอดภัยระดับธนาคาร</div></div>
             </div>
         </div>
     </div>
 </div>
 
 @if(session('success'))
-    <div class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">
-        {{ session('success') }}
-    </div>
+    <div style="position:fixed; bottom:16px; right:16px; background:#5aa07e; color:#fff; padding:12px 24px; border-radius:10px; box-shadow:var(--raise); z-index:60;" class="tp-toast">{{ session('success') }}</div>
 @endif
-
 @if(session('error'))
-    <div class="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">
-        {{ session('error') }}
-    </div>
+    <div style="position:fixed; bottom:16px; right:16px; background:#d9534f; color:#fff; padding:12px 24px; border-radius:10px; box-shadow:var(--raise); z-index:60;" class="tp-toast">{{ session('error') }}</div>
 @endif
 
 @push('scripts')
 <script>
     // Auto-hide alerts after 5 seconds
     setTimeout(() => {
-        document.querySelectorAll('.animate-bounce').forEach(el => {
+        document.querySelectorAll('.tp-toast').forEach(el => {
             el.style.transition = 'opacity 0.5s';
             el.style.opacity = '0';
             setTimeout(() => el.remove(), 500);
