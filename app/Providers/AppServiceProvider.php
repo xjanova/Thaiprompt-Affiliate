@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -51,6 +52,24 @@ class AppServiceProvider extends ServiceProvider
         // ✅ ตรวจสอบและสร้าง storage directories ที่จำเป็น
         // แก้ปัญหา session storage error เมื่อ directory ไม่มีอยู่
         $this->ensureStorageDirectoriesExist();
+
+        // 🔐 (2026-07-17) Passport OAuth2 SSO server (สำหรับ juntraweb / จันทรา.online)
+        //   - useClientModel: client model ที่ override skipsAuthorization (auto-login)
+        //   - hashClientSecrets: เก็บ secret เป็น hash ใน DB (SECURITY_REVIEW) —
+        //     plain secret โผล่ครั้งเดียวตอนสร้าง client (ProvisionJuntraOAuthClient)
+        //   - tokensCan: บังคับประกาศ scope 'read profile email' ไม่งั้น juntra
+        //     ขอ scope เหล่านี้แล้วโดน invalid_scope ที่ /oauth/token
+        //   - เป็น runtime config (ไม่ใช่ config file) → ปลอดภัยกับ config:cache
+        Passport::useClientModel(\App\Models\Passport\Client::class);
+        Passport::hashClientSecrets();
+        Passport::tokensCan([
+            'read' => 'อ่านข้อมูลพื้นฐาน',
+            'profile' => 'เข้าถึงชื่อโปรไฟล์',
+            'email' => 'เข้าถึงอีเมล',
+        ]);
+        Passport::setDefaultScope(['read', 'profile', 'email']);
+        Passport::tokensExpireIn(now()->addDays(15));
+        Passport::refreshTokensExpireIn(now()->addDays(30));
 
         // ✅ รัน pending migrations อัตโนมัติ (ตรวจสอบวันละครั้ง)
         $this->autoRunPendingMigrations();

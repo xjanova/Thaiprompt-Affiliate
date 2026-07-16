@@ -93,3 +93,8 @@ thaiprompt web.zip
 # Python cache (tarot generator scripts)
 __pycache__/
 *.pyc
+
+# Passport OAuth signing keys (generated on prod only — never commit)
+/storage/oauth-private.key
+/storage/oauth-public.key
+storage/app/private/juntra-oauth-*.json

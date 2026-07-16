@@ -32,6 +32,14 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// 🔐 (2026-07-17) OAuth2 SSO user profile — GET /api/user (top-level, ไม่อยู่ใน v1)
+//    auth ผ่าน Passport guard 'api-oauth' (ไม่ใช่ sanctum) + scope read,profile,email
+//    juntraweb ThaipromptClient::fetchUser() เรียกที่นี่หลังแลก token
+//    (มี /api/v1/me [sanctum] เป็น fallback ของ juntra อยู่แล้ว — ไม่กระทบ)
+Route::middleware(['auth:api-oauth', 'scopes:read,profile,email'])
+    ->get('/user', [\App\Http\Controllers\Api\OAuthProfileController::class, 'show'])
+    ->name('api.oauth.user');
+
 // Webhooks (no CSRF, no auth)
 // LINE Webhook with rate limiting and signature verification
 Route::post('/webhook/line', [LineWebhookController::class, 'handle'])

@@ -113,6 +113,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'license.owner' => \App\Http\Middleware\CheckLicenseOwnership::class,
             // SMS Payment Checker middleware
             'smschecker' => \App\Http\Middleware\VerifySmsCheckerDevice::class,
+            // 🔐 Passport OAuth scope middleware (ไม่ auto-register บน Laravel 11 —
+            //    ต้องประกาศเอง ไม่งั้น /api/user โยน "middleware [scopes] not found")
+            'scopes' => \Laravel\Passport\Http\Middleware\CheckScopes::class,
+            'scope' => \Laravel\Passport\Http\Middleware\CheckForAnyScope::class,
         ]);
 
         // Global middleware for IP blocking
