@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\FortuneReading;
 use App\Models\FortuneReferral;
 use App\Models\FortuneTellingSetting;
-use App\Models\MlmGlobalSetting;
 use App\Models\MlmMember;
 use App\Models\MlmPlan;
 use App\Models\MlmProspect;
@@ -47,10 +46,10 @@ class FortuneAffiliateService
      * เรียกหลังจากส่งคำทำนายเชิงลึกสำเร็จ
      * ทุกอย่างอยู่ใน try/catch — ห้าม error กระทบคำทำนาย
      *
-     * @param FortuneReading $reading บันทึกการดูดวง
-     * @param string $platformUserId User ID ของ platform (LINE/Facebook/etc.)
-     * @param LineFortuneService|null $lineService LINE service (เฉพาะ LINE platform)
-     * @param string|null $platform ชื่อ platform: 'line', 'facebook', etc.
+     * @param  FortuneReading  $reading  บันทึกการดูดวง
+     * @param  string  $platformUserId  User ID ของ platform (LINE/Facebook/etc.)
+     * @param  LineFortuneService|null  $lineService  LINE service (เฉพาะ LINE platform)
+     * @param  string|null  $platform  ชื่อ platform: 'line', 'facebook', etc.
      */
     public function autoRegisterFromFortune(
         FortuneReading $reading,
@@ -207,6 +206,13 @@ class FortuneAffiliateService
             if ($user) {
                 return $user;
             }
+        } elseif ($platform === 'facebook') {
+            // PSID — ครอบทั้งบัญชีที่บอทสร้าง และบัญชีที่ FB OAuth สร้างแล้ว
+            // map PSID ได้ (สัญญา lookup รวมอยู่ที่ User::findByMessengerPsid ที่เดียว)
+            $user = User::findByMessengerPsid($platformUserId);
+            if ($user) {
+                return $user;
+            }
         }
 
         // 2. ค้นหาจาก email pattern (line_{id}@thaiprompt.local หรือ fb_{id}@thaiprompt.local)
@@ -219,7 +225,7 @@ class FortuneAffiliateService
         // 3. ค้นหาจาก FortuneReading ที่ link กับ user อยู่แล้ว
         $linkedReading = FortuneReading::where(function ($q) use ($platformUserId) {
             $q->where('platform_user_id', $platformUserId)
-              ->orWhere('facebook_user_id', $platformUserId);
+                ->orWhere('facebook_user_id', $platformUserId);
         })
             ->whereNotNull('user_id')
             ->latest()
@@ -312,6 +318,12 @@ class FortuneAffiliateService
             if (Schema::hasColumn('users', 'line_linked_at')) {
                 $userData['line_linked_at'] = now();
             }
+        } elseif ($platform === 'facebook' && ctype_digit($platformUserId) && Schema::hasColumn('users', 'facebook_psid')) {
+            // เก็บ Messenger PSID เป็นคอลัมน์จริง — เดิมฝังอยู่แค่ในอีเมล
+            // fb_{PSID}@thaiprompt.local ทำให้ FB OAuth map กลับมาหาบัญชีนี้ไม่ได้
+            // ctype_digit: PSID เป็นตัวเลขล้วน — กัน id แปลกปลอมหลุดเข้า unique column
+            // (autoRegisterFromFortune default platform เป็น 'facebook' เมื่อ reading ไม่ระบุ)
+            $userData['facebook_psid'] = $platformUserId;
         }
 
         $user = User::create($userData);
@@ -750,7 +762,7 @@ class FortuneAffiliateService
                     ],
                     [
                         'type' => 'text',
-                        'text' => "🎯 ชวน 10 คน × ดูดวง 3 ครั้ง = ".number_format($commissionAmount * 10 * 3, 0).' บาท!'.$exampleNote,
+                        'text' => '🎯 ชวน 10 คน × ดูดวง 3 ครั้ง = '.number_format($commissionAmount * 10 * 3, 0).' บาท!'.$exampleNote,
                         'size' => 'xs',
                         'color' => '#333333',
                         'margin' => 'sm',
@@ -863,10 +875,10 @@ class FortuneAffiliateService
      * - ปุ่มเข้าเว็บ affiliate
      * - ข้อมูลถอนเงินที่เว็บ (KYC)
      *
-     * @param FortuneReading $reading บันทึกการดูดวง
-     * @param string $platformUserId User ID ของ platform
-     * @param LineFortuneService|null $lineService LINE service
-     * @param string|null $platform ชื่อ platform
+     * @param  FortuneReading  $reading  บันทึกการดูดวง
+     * @param  string  $platformUserId  User ID ของ platform
+     * @param  LineFortuneService|null  $lineService  LINE service
+     * @param  string|null  $platform  ชื่อ platform
      */
     public function sendPostReadingAffiliatePromotion(
         FortuneReading $reading,

@@ -27,7 +27,8 @@ use Illuminate\Support\Str;
  *   - แตะเฉพาะบัญชีที่ Hash::check('12345678') ผ่านจริงเท่านั้น
  *     → ถ้าลูกค้าเปลี่ยนรหัสเองแล้ว จะไม่โดนแตะ
  *   - จำกัดเฉพาะอีเมล @thaiprompt.local (บัญชีที่บอทสร้าง)
- *   - ข้าม user ที่ล็อกอินได้ทางอื่นไม่ได้ (ไม่มีทั้ง line_user_id และ facebook_id)
+ *   - ข้าม user ที่ล็อกอินได้ทางอื่นไม่ได้ (ไม่มี line_user_id / facebook_user_id
+ *     / facebook_psid — ตัวหลังนับเป็นทางเข้าเพราะ FB OAuth map PSID ได้แล้ว)
  *     → กันล็อกคนออกจากบัญชีตัวเองถาวร
  *
  * ใช้:
@@ -80,8 +81,13 @@ class FortuneRotateBotPasswords extends Command
             //    ทั้ง Flex ที่เคยบอกรหัสผ่านก็ส่งเฉพาะ LINE → ลูกค้า FB ไม่เคยรู้รหัสด้วยซ้ำ
             //    ⇒ สำหรับบัญชีกลุ่มนี้ รหัสผ่านไม่ใช่ "ทางเข้าที่เขาใช้" แต่เป็นหนี้ความเสี่ยงล้วนๆ
             //    ใช้ --include-unreachable เพื่อสุ่มทิ้ง (เป็นการตัดสินใจที่ต้องเห็นชัด ไม่ซ่อนใน default)
+            //
+            // ✅ (2026-07-16 ภายหลัง) facebook_psid นับเป็นทางเข้า OAuth ด้วย —
+            //    FacebookLoginController map ASID→PSID ผ่าน ids_for_pages แล้ว
+            //    บัญชีที่มี PSID เข้าผ่านปุ่ม FB login ได้ ไม่ต้องพึ่งรหัสผ่าน
             $hasOauth = ! empty($user->line_user_id)
-                || ! empty($user->facebook_user_id);
+                || ! empty($user->facebook_user_id)
+                || ! empty($user->facebook_psid);
 
             if (! $hasOauth && ! $this->option('include-unreachable')) {
                 $skippedNoOauth++;

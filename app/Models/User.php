@@ -48,6 +48,7 @@ class User extends Authenticatable
         'line_verified',
         // Facebook OAuth fields
         'facebook_user_id',
+        'facebook_psid',
         'facebook_email',
         'facebook_name',
         'facebook_picture_url',
@@ -250,6 +251,31 @@ class User extends Authenticatable
     public function isHotelAdmin(): bool
     {
         return $this->is_hotel_admin === true && $this->managed_hotel_id !== null;
+    }
+
+    /**
+     * หา user จาก Messenger PSID (Page-Scoped ID)
+     *
+     * สัญญาเดียวที่ใช้ร่วมกันระหว่างฝั่งบอท (FortuneAffiliateService)
+     * และฝั่ง FB OAuth (FacebookLoginController) — แก้สูตรที่นี่ที่เดียว
+     *
+     * ลำดับ: คอลัมน์ facebook_psid ก่อน (backfill แล้วใน migration)
+     * → fallback อีเมล fb_{PSID}@thaiprompt.local เผื่อแถวช่วงคาบเกี่ยว deploy
+     * เฉพาะแถวที่ไม่เคยผูก OAuth เพราะบัญชีที่ OAuth สร้างใช้สูตรอีเมลเดียวกัน
+     * แต่ข้างในเป็น ASID (คนละ ID space) — กัน match ข้ามคน
+     */
+    public static function findByMessengerPsid(string $psid): ?self
+    {
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'facebook_psid')) {
+            $user = static::where('facebook_psid', $psid)->first();
+            if ($user) {
+                return $user;
+            }
+        }
+
+        return static::where('email', 'fb_'.$psid.'@thaiprompt.local')
+            ->whereNull('facebook_user_id')
+            ->first();
     }
 
     /**

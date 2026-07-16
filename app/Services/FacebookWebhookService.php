@@ -41,7 +41,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * Graph API version
      */
-    protected const GRAPH_API_VERSION = 'v21.0';
+    // public เพื่อให้ผู้เรียก Graph API นอก service นี้ (เช่น FacebookLoginController)
+    // อ้างเวอร์ชันจากจุดเดียว — bump ที่นี่ที่เดียวครบทุก call site
+    public const GRAPH_API_VERSION = 'v21.0';
 
     public function __construct(?FortuneTellingSetting $settings = null)
     {
