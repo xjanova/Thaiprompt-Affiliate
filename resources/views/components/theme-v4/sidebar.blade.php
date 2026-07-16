@@ -108,6 +108,7 @@
                 $subs    = $group['submenu'] ?? [];
                 $hasSubs = is_array($subs) && count($subs) > 0;
                 $gurl    = $group['url'] ?? null;
+                $gExternal = ! empty($group['external']);
                 $gActive = $groupActive($group);
             @endphp
 
@@ -151,13 +152,15 @@
                                 <div style="font-size:10.5px; font-weight:700; color:var(--ink2); padding:7px 11px 3px; letter-spacing:.2px;">{{ $slabel }}</div>
                             @else
                                 {{-- ลิงก์ย่อย + ปุ่มปักหมุด (ปุ่มเป็น sibling ของ <a> เพราะห้าม button ซ้อนใน a) --}}
+                                @php $sExternal = ! empty($sub['external']); @endphp
                                 <div class="tp-mrow" style="position:relative;">
                                     <a href="{{ $surl }}"
-                                       @click="if (isMobile) closeDrawer()"
+                                       @if($sExternal) target="_blank" rel="noopener" @else @click="if (isMobile) closeDrawer()" @endif
                                        class="tp-sub-link" @if($sActive) data-tpactive @endif
                                        style="padding-right:28px; {{ $sActive ? 'box-shadow:var(--inset-sm); color:var(--ink);' : 'color:var(--ink2);' }}">
                                         <span style="width:6px; height:6px; flex:none; border-radius:50%; background:{{ $sActive ? 'linear-gradient(135deg,var(--accent1),var(--accent2))' : 'var(--ink2)' }};"></span>
                                         <span style="font-weight:{{ $sActive ? 700 : 500 }}; font-size:12.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $slabel }}</span>
+                                        @if($sExternal)<i class="fas fa-arrow-up-right-from-square" style="font-size:8.5px; color:var(--ink2); flex:none;" title="เปิดเว็บจันทรา"></i>@endif
                                         @if(!empty($sub['badge']))<span class="tp-pill tp-pill-soft" style="font-size:8.5px; padding:2px 6px;">{{ $sub['badge'] }}</span>@endif
                                     </a>
                                     <button type="button" title="ปักหมุด" class="tp-pin-btn"
@@ -175,7 +178,7 @@
                     @php $gPinData = ['label' => $glabel, 'url' => $gurl, 'icon' => $gicon]; @endphp
                     <div class="tp-mrow" style="position:relative;">
                         <a href="{{ $gurl ?? '#' }}"
-                           @click="if (isMobile) closeDrawer()"
+                           @if($gExternal) target="_blank" rel="noopener" @else @click="if (isMobile) closeDrawer()" @endif
                            class="tp-card" @if($gActive) data-tpactive @endif
                            style="display:flex; align-items:center; gap:12px; padding:10px 34px 10px 12px; border-radius:15px; text-decoration:none; color:var(--ink); {{ $gActive ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);' }}">
                             <span class="tp-tile" style="width:33px; height:33px; border-radius:11px; font-size:15px;">

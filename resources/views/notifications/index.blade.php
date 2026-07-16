@@ -1,79 +1,61 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'การแจ้งเตือน')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
-        <div class="relative z-10">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl md:text-4xl font-bold mb-2">🔔 การแจ้งเตือน</h1>
-                    <p class="text-indigo-100 text-lg">ติดตามข่าวสารและกิจกรรมของคุณ</p>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #7c5cbf 18%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:23px; background:#7c5cbf;"><span style="color:#fff;">🔔</span></span>
+                    <div>
+                        <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">การแจ้งเตือน</h1>
+                        <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ติดตามข่าวสารและกิจกรรมของคุณ</div>
+                    </div>
                 </div>
                 @if($unreadCount > 0)
-                <div class="flex gap-3">
-                    <form action="{{ route('user.notifications.read-all') }}" method="POST" class="inline">
+                    <form action="{{ route('user.notifications.read-all') }}" method="POST" style="display:inline;">
                         @csrf
-                        <button type="submit" class="px-6 py-3 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl font-semibold transition transform hover:scale-105 flex items-center gap-2">
-                            <span>✓</span>
-                            <span>อ่านทั้งหมด ({{ $unreadCount }})</span>
-                        </button>
+                        <button type="submit" class="tp-btn tp-btn-sm"><span>✓</span> อ่านทั้งหมด ({{ $unreadCount }})</button>
                     </form>
-                </div>
                 @endif
             </div>
         </div>
     </div>
 
-    <!-- Stats Summary -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition">
-            <div class="flex items-center gap-3">
-                <div class="text-3xl">📬</div>
-                <div>
-                    <p class="text-xs text-gray-500">ทั้งหมด</p>
-                    <p class="text-xl font-bold text-gray-800">{{ $notifications->total() }}</p>
-                </div>
+    {{-- ── สถิติ ─────────────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px;">
+        <div class="tp-card" style="padding:16px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:26px;">📬</span>
+                <div><p style="font-size:11px; color:var(--ink2); margin:0;">ทั้งหมด</p><p class="tp-num" style="font-size:20px; font-weight:800; color:var(--ink); margin:0;">{{ $notifications->total() }}</p></div>
             </div>
         </div>
-
-        <div class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition">
-            <div class="flex items-center gap-3">
-                <div class="text-3xl">🔵</div>
-                <div>
-                    <p class="text-xs text-gray-500">ยังไม่อ่าน</p>
-                    <p class="text-xl font-bold text-blue-600">{{ $unreadCount }}</p>
-                </div>
+        <div class="tp-card" style="padding:16px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:26px;">🔵</span>
+                <div><p style="font-size:11px; color:var(--ink2); margin:0;">ยังไม่อ่าน</p><p class="tp-num" style="font-size:20px; font-weight:800; color:#5689b8; margin:0;">{{ $unreadCount }}</p></div>
             </div>
         </div>
-
-        <div class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition">
-            <div class="flex items-center gap-3">
-                <div class="text-3xl">💰</div>
-                <div>
-                    <p class="text-xs text-gray-500">การเงิน</p>
-                    <p class="text-xl font-bold text-green-600">{{ $notifications->where('type', 'wallet')->count() + $notifications->where('type', 'withdrawal')->count() + $notifications->where('type', 'deposit')->count() }}</p>
-                </div>
+        <div class="tp-card" style="padding:16px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:26px;">💰</span>
+                <div><p style="font-size:11px; color:var(--ink2); margin:0;">การเงิน</p><p class="tp-num" style="font-size:20px; font-weight:800; color:#5aa07e; margin:0;">{{ $notifications->where('type', 'wallet')->count() + $notifications->where('type', 'withdrawal')->count() + $notifications->where('type', 'deposit')->count() }}</p></div>
             </div>
         </div>
-
-        <div class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition">
-            <div class="flex items-center gap-3">
-                <div class="text-3xl">⭐</div>
-                <div>
-                    <p class="text-xs text-gray-500">สำคัญ</p>
-                    <p class="text-xl font-bold text-orange-600">{{ $notifications->where('is_important', true)->count() }}</p>
-                </div>
+        <div class="tp-card" style="padding:16px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:26px;">⭐</span>
+                <div><p style="font-size:11px; color:var(--ink2); margin:0;">สำคัญ</p><p class="tp-num" style="font-size:20px; font-weight:800; color:#e08a3c; margin:0;">{{ $notifications->where('is_important', true)->count() }}</p></div>
             </div>
         </div>
     </div>
 
-    <!-- Notifications List -->
-    <div class="bg-white rounded-2xl shadow-xl overflow-hidden" x-data="{
+    {{-- ── รายการแจ้งเตือน ───────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;" x-data="{
         selectedIds: [],
         selectAll: false,
         toggleAll() {
@@ -85,176 +67,83 @@
             }
         }
     }">
-        <div class="p-6 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-bold text-gray-900">รายการแจ้งเตือน</h2>
-
-                <!-- Bulk Actions -->
-                <div class="flex items-center gap-2" x-show="selectedIds.length > 0">
-                    <span class="text-sm text-gray-600" x-text="'เลือก ' + selectedIds.length + ' รายการ'"></span>
-
-                    <button @click="bulkMarkAsRead()"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        อ่านแล้ว
-                    </button>
-
-                    <button @click="bulkDelete()"
-                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                        ลบ
-                    </button>
+        <div style="padding:20px 24px; box-shadow:var(--inset-sm);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div class="tp-section-h">รายการแจ้งเตือน</div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;" x-show="selectedIds.length > 0" x-cloak>
+                    <span style="font-size:13px; color:var(--ink2);" x-text="'เลือก ' + selectedIds.length + ' รายการ'"></span>
+                    <button @click="bulkMarkAsRead()" class="tp-btn tp-btn-sm" style="background:#5689b8; border-color:#5689b8; color:#fff;"><i class="fas fa-check"></i> อ่านแล้ว</button>
+                    <button @click="bulkDelete()" class="tp-btn tp-btn-sm" style="background:#d9534f; border-color:#d9534f; color:#fff;"><i class="fas fa-trash"></i> ลบ</button>
                 </div>
             </div>
-
-            <!-- Select All Checkbox -->
             @if($notifications->count() > 0)
-            <div class="mt-4">
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" x-model="selectAll" @change="toggleAll()" class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
-                    <span class="ml-2 text-sm text-gray-600">เลือกทั้งหมด</span>
+                <label style="display:inline-flex; align-items:center; cursor:pointer; margin-top:14px; gap:8px;">
+                    <input type="checkbox" x-model="selectAll" @change="toggleAll()" style="width:16px; height:16px;">
+                    <span style="font-size:13px; color:var(--ink2);">เลือกทั้งหมด</span>
                 </label>
-            </div>
             @endif
         </div>
 
-        <div class="divide-y divide-gray-100">
+        <div>
             @forelse($notifications as $notification)
-                <div class="p-4 hover:bg-gray-50 transition {{ !$notification->is_read ? 'bg-blue-50' : '' }}"
-                     x-data="{ showActions: false }">
-                    <div class="flex gap-4">
-                        <!-- Checkbox -->
-                        <div class="flex-shrink-0 flex items-start pt-2">
-                            <input type="checkbox"
-                                   class="notification-checkbox w-5 h-5 text-indigo-600 border-gray-300 rounded"
-                                   value="{{ $notification->id }}"
-                                   x-model="selectedIds">
+                @php
+                    $icColor = match($notification->color) {
+                        'green' => '#5aa07e', 'blue' => '#5689b8', 'red' => '#d9534f',
+                        'orange' => '#e08a3c', 'purple' => '#7c5cbf', default => '#8a8a8a',
+                    };
+                    $prColor = match($notification->priority_color) {
+                        'green' => '#5aa07e', 'blue' => '#5689b8', 'orange' => '#e08a3c',
+                        'red' => '#d9534f', default => '#8a8a8a',
+                    };
+                @endphp
+                <div style="padding:16px 24px; border-top:1px solid color-mix(in srgb, var(--ink2) 10%, transparent); {{ !$notification->is_read ? 'background:color-mix(in srgb, #5689b8 7%, transparent);' : '' }}" x-data="{ showActions: false }">
+                    <div style="display:flex; gap:14px;">
+                        <div style="flex-shrink:0; padding-top:8px;">
+                            <input type="checkbox" class="notification-checkbox" style="width:18px; height:18px;" value="{{ $notification->id }}" x-model="selectedIds">
                         </div>
-
-                        <!-- Icon -->
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl
-                                {{ $notification->color === 'green' ? 'bg-green-100' : '' }}
-                                {{ $notification->color === 'blue' ? 'bg-blue-100' : '' }}
-                                {{ $notification->color === 'red' ? 'bg-red-100' : '' }}
-                                {{ $notification->color === 'orange' ? 'bg-orange-100' : '' }}
-                                {{ $notification->color === 'purple' ? 'bg-purple-100' : '' }}
-                                {{ $notification->color === 'gray' ? 'bg-gray-100' : '' }}">
-                                {{ $notification->icon }}
-                            </div>
+                        <div style="flex-shrink:0;">
+                            <div style="width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; background:color-mix(in srgb, {{ $icColor }} 16%, transparent);">{{ $notification->icon }}</div>
                         </div>
-
-                        <!-- Content -->
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <h3 class="font-semibold text-gray-900 {{ !$notification->is_read ? 'font-bold' : '' }}">
-                                            {{ $notification->title }}
-                                        </h3>
-                                        @if(!$notification->is_read)
-                                            <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
-                                        @endif
-                                        @if($notification->is_important)
-                                            <span class="px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs font-semibold">สำคัญ</span>
-                                        @endif
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">
+                                <div style="flex:1; min-width:0;">
+                                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+                                        <h3 style="font-weight:{{ !$notification->is_read ? 800 : 600 }}; color:var(--ink); margin:0;">{{ $notification->title }}</h3>
+                                        @if(!$notification->is_read)<span style="width:8px; height:8px; background:#5689b8; border-radius:50%;"></span>@endif
+                                        @if($notification->is_important)<span style="padding:1px 8px; border-radius:6px; font-size:11px; font-weight:600; color:#d9534f; background:color-mix(in srgb, #d9534f 16%, transparent);">สำคัญ</span>@endif
                                     </div>
-
-                                    <p class="text-sm text-gray-600 mb-2">{{ $notification->message }}</p>
-
-                                    <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                                        <span class="flex items-center gap-1">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            {{ $notification->created_at->diffForHumans() }}
-                                        </span>
-
-                                        <span class="px-2 py-0.5 rounded-full text-xs
-                                            {{ $notification->priority_color === 'green' ? 'bg-green-100 text-green-800' : '' }}
-                                            {{ $notification->priority_color === 'blue' ? 'bg-blue-100 text-blue-800' : '' }}
-                                            {{ $notification->priority_color === 'orange' ? 'bg-orange-100 text-orange-800' : '' }}
-                                            {{ $notification->priority_color === 'red' ? 'bg-red-100 text-red-800' : '' }}
-                                            {{ $notification->priority_color === 'gray' ? 'bg-gray-100 text-gray-800' : '' }}">
-                                            {{ $notification->priority_label }}
-                                        </span>
-
-                                        <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs">
-                                            {{ $notification->type_label }}
-                                        </span>
+                                    <p style="font-size:13px; color:var(--ink2); margin:0 0 8px;">{{ $notification->message }}</p>
+                                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:11px; color:var(--ink2);">
+                                        <span><i class="fas fa-clock" style="margin-right:4px;"></i>{{ $notification->created_at->diffForHumans() }}</span>
+                                        <span style="padding:2px 8px; border-radius:999px; color:{{ $prColor }}; background:color-mix(in srgb, {{ $prColor }} 16%, transparent);">{{ $notification->priority_label }}</span>
+                                        <span style="padding:2px 8px; border-radius:999px; box-shadow:var(--inset-sm); color:var(--ink2);">{{ $notification->type_label }}</span>
                                     </div>
-
-                                    <!-- Action Button -->
                                     @if($notification->action_url && $notification->action_text)
-                                        <div class="mt-3">
-                                            <a href="{{ $notification->action_url }}"
-                                               class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition">
-                                                {{ $notification->action_text }}
-                                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                                </svg>
-                                            </a>
+                                        <div style="margin-top:12px;">
+                                            <a href="{{ $notification->action_url }}" class="tp-btn tp-btn-sm tp-btn-primary" style="background:#7c5cbf; border-color:#7c5cbf;">{{ $notification->action_text }} <i class="fas fa-arrow-right" style="margin-left:4px;"></i></a>
                                         </div>
                                     @endif
                                 </div>
-
-                                <!-- Actions Menu -->
-                                <div class="relative" x-data="{ open: false }">
-                                    <button @click="open = !open" class="text-gray-400 hover:text-gray-600 p-1">
-                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                        </svg>
-                                    </button>
-
-                                    <div x-show="open"
-                                         @click.away="open = false"
-                                         x-transition:enter="transition ease-out duration-100"
-                                         x-transition:enter-start="transform opacity-0 scale-95"
-                                         x-transition:enter-end="transform opacity-100 scale-100"
-                                         x-transition:leave="transition ease-in duration-75"
-                                         x-transition:leave-start="transform opacity-100 scale-100"
-                                         x-transition:leave-end="transform opacity-0 scale-95"
-                                         class="absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
-                                         style="display: none;">
-                                        <div class="py-1">
-                                            @if(!$notification->is_read)
-                                                <form action="{{ route('user.notifications.read', $notification->id) }}" method="POST">
-                                                    @csrf
-                                                    <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                        ทำเครื่องหมายว่าอ่านแล้ว
-                                                    </button>
-                                                </form>
-                                            @endif
-
-                                            <form action="{{ route('user.notifications.archive', $notification->id) }}" method="POST">
+                                <div style="position:relative;" x-data="{ open: false }">
+                                    <button @click="open = !open" style="color:var(--ink2); background:none; border:none; padding:4px; cursor:pointer;"><i class="fas fa-ellipsis-v"></i></button>
+                                    <div x-show="open" x-cloak @click.away="open = false"
+                                         x-transition
+                                         style="display:none; position:absolute; right:0; margin-top:8px; width:200px; border-radius:12px; box-shadow:var(--raise); background:var(--surf1); z-index:20; overflow:hidden;">
+                                        @if(!$notification->is_read)
+                                            <form action="{{ route('user.notifications.read', $notification->id) }}" method="POST">
                                                 @csrf
-                                                <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                                                    </svg>
-                                                    เก็บถาวร
-                                                </button>
+                                                <button type="submit" style="display:flex; align-items:center; width:100%; padding:10px 16px; font-size:13px; color:var(--ink); background:none; border:none; cursor:pointer; gap:8px;"><i class="fas fa-check"></i> ทำเครื่องหมายว่าอ่านแล้ว</button>
                                             </form>
-
-                                            <form action="{{ route('user.notifications.destroy', $notification->id) }}" method="POST"
-                                                  onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบการแจ้งเตือนนี้?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50">
-                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                    ลบ
-                                                </button>
-                                            </form>
-                                        </div>
+                                        @endif
+                                        <form action="{{ route('user.notifications.archive', $notification->id) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" style="display:flex; align-items:center; width:100%; padding:10px 16px; font-size:13px; color:var(--ink); background:none; border:none; cursor:pointer; gap:8px;"><i class="fas fa-box-archive"></i> เก็บถาวร</button>
+                                        </form>
+                                        <form action="{{ route('user.notifications.destroy', $notification->id) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบการแจ้งเตือนนี้?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" style="display:flex; align-items:center; width:100%; padding:10px 16px; font-size:13px; color:#d9534f; background:none; border:none; cursor:pointer; gap:8px;"><i class="fas fa-trash"></i> ลบ</button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -262,17 +151,16 @@
                     </div>
                 </div>
             @empty
-                <div class="p-12 text-center">
-                    <div class="text-6xl mb-4">📭</div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2">ไม่มีการแจ้งเตือน</h3>
-                    <p class="text-gray-500">คุณไม่มีการแจ้งเตือนในขณะนี้</p>
+                <div style="padding:48px 24px; text-align:center;">
+                    <div style="font-size:56px; margin-bottom:16px;">📭</div>
+                    <h3 style="font-size:19px; font-weight:800; color:var(--ink); margin:0 0 8px;">ไม่มีการแจ้งเตือน</h3>
+                    <p style="color:var(--ink2); margin:0;">คุณไม่มีการแจ้งเตือนในขณะนี้</p>
                 </div>
             @endforelse
         </div>
 
-        <!-- Pagination -->
         @if($notifications->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200">
+            <div style="padding:14px 24px; border-top:1px solid color-mix(in srgb, var(--ink2) 12%, transparent);">
                 {{ $notifications->links('vendor.pagination.tailwind') }}
             </div>
         @endif

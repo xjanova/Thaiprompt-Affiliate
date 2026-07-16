@@ -1240,10 +1240,14 @@ return [
             'route' => null,
             'order' => 12.5,
             'permissions' => [],
+            // 🔮 (2026-07-16) ระบบปันผลดูดวงย้ายไปอยู่เว็บแม่หมอจันทรา (จันทรา.online)
+            //    ทั้งหมดแล้ว — ของที่นี่ไม่มี ให้ลิงก์วิ่งไปหน้า MLM ของจันทรา (external)
+            //    juntraweb: /mlm (แดชบอร์ด+ผัง) · /mlm/commissions · /mlm/users
+            //    เปิดแท็บใหม่ (external=true) — ล็อกอินด้วย Thaiprompt SSO บนจันทรา
             'submenu' => [
-                ['label' => '💰 คอมมิชชั่นดูดวง', 'route' => 'user.fortune-referral.commissions', 'icon' => '💰', 'description' => 'รายได้จากการแนะนำดูดวง'],
-                ['label' => '📢 ชวนเพื่อนดูดวง', 'route' => 'user.fortune-referral.recruit', 'icon' => '📢', 'description' => 'แชร์ลิงก์เชิญเพื่อน'],
-                ['label' => '🔮 ผังสายงานดูดวง', 'route' => 'user.fortune-referral.tree', 'icon' => '🔮', 'description' => 'ดูโครงสร้างสายงานดูดวง'],
+                ['label' => '💰 คอมมิชชั่นดูดวง', 'url' => 'https://xn--82c4af5bzdj.online/mlm/commissions', 'external' => true, 'icon' => '💰', 'description' => 'รายได้จากการแนะนำดูดวง (เว็บจันทรา)'],
+                ['label' => '🔮 แดชบอร์ด/ผังสายงานดูดวง', 'url' => 'https://xn--82c4af5bzdj.online/mlm', 'external' => true, 'icon' => '🔮', 'description' => 'ภาพรวม+โครงสร้างสายงานดูดวง (เว็บจันทรา)'],
+                ['label' => '👥 ทีมดูดวงของฉัน', 'url' => 'https://xn--82c4af5bzdj.online/mlm/users', 'external' => true, 'icon' => '👥', 'description' => 'สมาชิกในสายงานดูดวง (เว็บจันทรา)'],
             ],
         ],
 
