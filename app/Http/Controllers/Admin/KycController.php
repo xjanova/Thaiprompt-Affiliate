@@ -62,7 +62,12 @@ class KycController extends Controller
 
         $kycVerification->load(['user', 'reviewer']);
 
-        return view('admin.kyc.show', compact('kycVerification'));
+        // 🤖 ตรวจอัตโนมัติชั้นที่ 1 — checksum เลขบัตร / บัตรหมดอายุ /
+        //    ชื่อบัตรเทียบบัญชีธนาคาร / ชื่อบัตรเทียบผู้โอนจากสลิปจริง
+        //    (คำนวณสดทุกครั้งที่เปิดดู — ข้อมูลบัญชี/สลิปเปลี่ยนได้เรื่อยๆ)
+        $autoChecks = app(\App\Services\KycAutoCheckService::class)->run($kycVerification);
+
+        return view('admin.kyc.show', compact('kycVerification', 'autoChecks'));
     }
 
     /**

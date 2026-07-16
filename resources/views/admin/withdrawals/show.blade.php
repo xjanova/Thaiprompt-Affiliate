@@ -130,12 +130,8 @@
                 $latestKyc = $kycOwner?->latestKycVerification;
                 $kycName = trim(($kycOwner->thai_first_name ?? '').' '.($kycOwner->thai_last_name ?? ''));
                 $accName = (string) ($withdrawal->paymentMethod->account_name ?? '');
-                // ตัดคำนำหน้า + ช่องว่าง ก่อนเทียบ (นางสาว ต้องมาก่อน นาง)
-                $normalizeName = function (string $s): string {
-                    $s = preg_replace('/^(นางสาว|นาง|นาย|น\.ส\.|ด\.ญ\.|ด\.ช\.)\s*/u', '', trim($s));
-
-                    return preg_replace('/\s+/u', '', $s);
-                };
+                // ตัดคำนำหน้า/ช่องว่าง ก่อนเทียบ — สูตรกลางเดียวกับ KycAutoCheckService
+                $normalizeName = fn (string $s): string => str_replace(' ', '', \App\Services\KycAutoCheckService::normalizeName($s));
                 $kycNameMatched = $kycName !== '' && $accName !== ''
                     && $normalizeName($kycName) === $normalizeName($accName);
             @endphp

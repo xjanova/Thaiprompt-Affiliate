@@ -124,6 +124,55 @@
         </div>
     </div>
 
+    {{-- 🤖 ผลตรวจอัตโนมัติชั้นที่ 1 (KycAutoCheckService) --}}
+    @if(!empty($autoChecks))
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-clipboard-check mr-2"></i>ผลตรวจอัตโนมัติ
+                </h2>
+                @if($autoChecks['all_green'])
+                    <span class="px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                        ✅ ผ่านทุกข้อ — กดอนุมัติได้เลย
+                    </span>
+                @elseif($autoChecks['fail'] > 0)
+                    <span class="px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                        ⛔ ไม่ผ่าน {{ $autoChecks['fail'] }} ข้อ — ตรวจละเอียดก่อน
+                    </span>
+                @else
+                    <span class="px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                        ⚠️ มีข้อที่ต้องตรวจเอง
+                    </span>
+                @endif
+            </div>
+
+            <div class="space-y-2">
+                @foreach($autoChecks['checks'] as $check)
+                    @php
+                        $style = match ($check['status']) {
+                            'pass' => ['icon' => '✅', 'cls' => 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'],
+                            'warn' => ['icon' => '⚠️', 'cls' => 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'],
+                            'fail' => ['icon' => '⛔', 'cls' => 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'],
+                            default => ['icon' => '❔', 'cls' => 'bg-gray-50 dark:bg-slate-700/40 border-gray-200 dark:border-slate-600'],
+                        };
+                    @endphp
+                    <div class="flex items-start gap-3 border rounded-lg p-3 {{ $style['cls'] }}">
+                        <span class="text-lg leading-none mt-0.5">{{ $style['icon'] }}</span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $check['label'] }}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{{ $check['detail'] }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">
+                ตัวช่วยตัดสินใจเท่านั้น — การอนุมัติสุดท้ายเป็นดุลยพินิจของแอดมิน
+                (ข้อ "ผู้โอนในสลิป" คือชื่อจากธนาคารจริงตอนลูกค้าจ่ายค่าดูดวง ปลอมยากที่สุด)
+            </p>
+        </div>
+    @endif
+
     <!-- Extracted Data Card (OCR) -->
     @if(!empty($kycVerification->extracted_data))
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
