@@ -1,270 +1,145 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'หน้าแนะนำสมาชิก')
 
 @section('content')
-<div class="max-w-7xl mx-auto space-y-6 pb-20 lg:pb-6" x-data="recruitPageManager()">
+<div style="display:flex; flex-direction:column; gap:18px;" x-data="recruitPageManager()">
 
-    {{-- Premium Hero Header (Purple-Pink-Red for Recruit) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8 mb-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-user-friends"></i>
-            </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-bullhorn text-3xl text-white drop-shadow-lg"></i>
-                    </div>
+    {{-- ── Hero + สถิติ ──────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #c05a8f 18%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px; background:#c05a8f;"><i class="fas fa-bullhorn" style="color:#fff;"></i></span>
                     <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            📢 หน้าแนะนำสมาชิก
-                        </h1>
-                        <p class="text-purple-100 mt-1">
-                            จัดการข้อมูลและดูสถิติหน้า Recruit ของคุณ
-                        </p>
+                        <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">📢 หน้าแนะนำสมาชิก</h1>
+                        <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">จัดการข้อมูลและดูสถิติหน้า Recruit ของคุณ</div>
                     </div>
                 </div>
-                <a href="{{ $recruitUrl }}" target="_blank"
-                   class="glass-fusion px-6 py-3 hover:bg-white/30 rounded-xl transition inline-flex items-center gap-2 text-white font-semibold">
-                    <i class="fas fa-external-link-alt"></i>
-                    ดูหน้า Recruit
-                </a>
+                <a href="{{ $recruitUrl }}" target="_blank" class="tp-btn tp-btn-sm"><i class="fas fa-external-link-alt"></i> ดูหน้า Recruit</a>
             </div>
 
-            {{-- Stats in Hero --}}
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-purple-100 text-xs mb-1">การเข้าชม</p>
-                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total_views']) }}</p>
-                    <p class="text-purple-200 text-xs mt-1">+{{ $stats['views_last_7_days'] }} ใน 7 วัน</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;">
+                <div class="tp-card" style="padding:14px; text-align:center;">
+                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">การเข้าชม</div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; color:var(--deep1);">{{ number_format($stats['total_views']) }}</div>
+                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">+{{ $stats['views_last_7_days'] }} ใน 7 วัน</div>
                 </div>
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-purple-100 text-xs mb-1">ผู้มุ่งหวัง</p>
-                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total_leads']) }}</p>
-                    <p class="text-purple-200 text-xs mt-1">+{{ $stats['leads_last_7_days'] }} ใน 7 วัน</p>
+                <div class="tp-card" style="padding:14px; text-align:center;">
+                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">ผู้มุ่งหวัง</div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; color:#c05a8f;">{{ number_format($stats['total_leads']) }}</div>
+                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">+{{ $stats['leads_last_7_days'] }} ใน 7 วัน</div>
                 </div>
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-purple-100 text-xs mb-1">สมาชิกใหม่</p>
-                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total_conversions']) }}</p>
-                    <p class="text-purple-200 text-xs mt-1">คนสมัครสำเร็จ</p>
+                <div class="tp-card" style="padding:14px; text-align:center;">
+                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">สมาชิกใหม่</div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; color:#5aa07e;">{{ number_format($stats['total_conversions']) }}</div>
+                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">คนสมัครสำเร็จ</div>
                 </div>
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-purple-100 text-xs mb-1">อัตราสำเร็จ</p>
-                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['conversion_rate'], 1) }}%</p>
-                    <p class="text-purple-200 text-xs mt-1">Conversion Rate</p>
+                <div class="tp-card" style="padding:14px; text-align:center;">
+                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">อัตราสำเร็จ</div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; color:#5689b8;">{{ number_format($stats['conversion_rate'], 1) }}%</div>
+                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">Conversion Rate</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Edit Form -->
-    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            <i class="fas fa-edit text-purple-600 mr-3"></i>แก้ไขข้อมูลส่วนตัว
-        </h2>
+    {{-- ── ฟอร์มแก้ไขข้อมูล ──────────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+        <div class="tp-section-h" style="margin-bottom:18px;"><i class="fas fa-edit" style="color:#c05a8f; margin-right:8px;"></i>แก้ไขข้อมูลส่วนตัว</div>
 
         <form action="{{ route('user.marketing.recruit.update') }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
-            <div class="grid md:grid-cols-2 gap-6">
-
-                <!-- Custom Name -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        <i class="fas fa-user mr-2 text-purple-600"></i>ชื่อที่แสดง
-                    </label>
-                    <input type="text" name="custom_name"
-                           value="{{ old('custom_name', $customization->custom_name) }}"
-                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-                           placeholder="ชื่อที่ต้องการให้แสดง (ถ้าไม่กรอกจะใช้ชื่อจากโปรไฟล์)">
-                    @error('custom_name')
-                        <p class="mt-1 text-sm text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
-                    @enderror
+                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="fas fa-user" style="color:#c05a8f; margin-right:6px;"></i>ชื่อที่แสดง</label>
+                    <input type="text" name="custom_name" value="{{ old('custom_name', $customization->custom_name) }}" class="tp-input" placeholder="ชื่อที่ต้องการให้แสดง (ถ้าไม่กรอกจะใช้ชื่อจากโปรไฟล์)">
+                    @error('custom_name')<p style="margin-top:6px; font-size:12px; color:#d9534f;">{{ $message }}</p>@enderror
                 </div>
-
-                <!-- Custom Phone -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        <i class="fas fa-phone mr-2 text-blue-600"></i>เบอร์โทรติดต่อ
-                    </label>
-                    <input type="text" name="custom_phone"
-                           value="{{ old('custom_phone', $customization->custom_phone) }}"
-                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-                           placeholder="เบอร์โทรสำหรับให้ผู้สนใจติดต่อ">
-                    @error('custom_phone')
-                        <p class="mt-1 text-sm text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
-                    @enderror
+                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="fas fa-phone" style="color:#5689b8; margin-right:6px;"></i>เบอร์โทรติดต่อ</label>
+                    <input type="text" name="custom_phone" value="{{ old('custom_phone', $customization->custom_phone) }}" class="tp-input" placeholder="เบอร์โทรสำหรับให้ผู้สนใจติดต่อ">
+                    @error('custom_phone')<p style="margin-top:6px; font-size:12px; color:#d9534f;">{{ $message }}</p>@enderror
                 </div>
-
-                <!-- Custom Address -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        <i class="fas fa-map-marker-alt mr-2 text-red-600"></i>ที่อยู่
-                    </label>
-                    <textarea name="custom_address" rows="3"
-                              class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-                              placeholder="ที่อยู่ที่ต้องการแสดง">{{ old('custom_address', $customization->custom_address) }}</textarea>
-                    @error('custom_address')
-                        <p class="mt-1 text-sm text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
-                    @enderror
+                <div style="grid-column:1/-1;">
+                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="fas fa-map-marker-alt" style="color:#d9534f; margin-right:6px;"></i>ที่อยู่</label>
+                    <textarea name="custom_address" rows="3" class="tp-input" style="resize:vertical;" placeholder="ที่อยู่ที่ต้องการแสดง">{{ old('custom_address', $customization->custom_address) }}</textarea>
+                    @error('custom_address')<p style="margin-top:6px; font-size:12px; color:#d9534f;">{{ $message }}</p>@enderror
                 </div>
-
-                <!-- Custom Pitch -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        <i class="fas fa-comment-dots mr-2 text-green-600"></i>คำชักชวนส่วนตัว
-                    </label>
-                    <textarea name="custom_pitch" rows="5"
-                              class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-                              placeholder="เขียนคำชักชวนของคุณเอง (ถ้าไม่กรอกจะใช้ข้อความจากเทมเพลต)">{{ old('custom_pitch', $customization->custom_pitch) }}</textarea>
-                    @error('custom_pitch')
-                        <p class="mt-1 text-sm text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
-                    @enderror
+                <div style="grid-column:1/-1;">
+                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="fas fa-comment-dots" style="color:#5aa07e; margin-right:6px;"></i>คำชักชวนส่วนตัว</label>
+                    <textarea name="custom_pitch" rows="5" class="tp-input" style="resize:vertical;" placeholder="เขียนคำชักชวนของคุณเอง (ถ้าไม่กรอกจะใช้ข้อความจากเทมเพลต)">{{ old('custom_pitch', $customization->custom_pitch) }}</textarea>
+                    @error('custom_pitch')<p style="margin-top:6px; font-size:12px; color:#d9534f;">{{ $message }}</p>@enderror
                 </div>
-
-                <!-- Custom Image -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        <i class="fas fa-image mr-2 text-pink-600"></i>รูปภาพ
-                    </label>
-
+                <div style="grid-column:1/-1;">
+                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="fas fa-image" style="color:#c05a8f; margin-right:6px;"></i>รูปภาพ</label>
                     @if($customization->custom_image)
-                    <div class="mb-3">
-                        <img src="{{ $customization->getDisplayImage() }}"
-                             alt="Current Image"
-                             class="w-32 h-32 rounded-xl object-cover border-2 border-gray-200 dark:border-gray-700">
-                    </div>
+                        <div style="margin-bottom:12px;">
+                            <img src="{{ $customization->getDisplayImage() }}" alt="Current Image" style="width:128px; height:128px; border-radius:12px; object-fit:cover; box-shadow:var(--inset-sm);">
+                        </div>
                     @endif
-
-                    <input type="file" name="custom_image" accept="image/*"
-                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
-                    <p class="mt-1 text-xs text-gray-500">รองรับไฟล์: JPG, PNG, GIF (สูงสุด 2MB)</p>
-                    @error('custom_image')
-                        <p class="mt-1 text-sm text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
-                    @enderror
+                    <input type="file" name="custom_image" accept="image/*" class="tp-input">
+                    <p style="margin-top:6px; font-size:11px; color:var(--ink2);">รองรับไฟล์: JPG, PNG, GIF (สูงสุด 2MB)</p>
+                    @error('custom_image')<p style="margin-top:6px; font-size:12px; color:#d9534f;">{{ $message }}</p>@enderror
                 </div>
-
-                <!-- Is Active -->
-                <div class="md:col-span-2">
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" name="is_active" value="1"
-                               {{ $customization->is_active ? 'checked' : '' }}
-                               class="w-5 h-5 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600">
-                        <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                            <i class="fas fa-toggle-on text-green-600 mr-2"></i>เปิดใช้งานหน้า Recruit
-                        </span>
+                <div style="grid-column:1/-1;">
+                    <label style="display:inline-flex; align-items:center; cursor:pointer; gap:10px;">
+                        <input type="checkbox" name="is_active" value="1" {{ $customization->is_active ? 'checked' : '' }} style="width:18px; height:18px;">
+                        <span style="font-size:13px; font-weight:600; color:var(--ink);"><i class="fas fa-toggle-on" style="color:#5aa07e; margin-right:6px;"></i>เปิดใช้งานหน้า Recruit</span>
                     </label>
                 </div>
-
             </div>
 
-            <!-- Submit Button -->
-            <div class="mt-8 flex gap-4">
-                <button type="submit"
-                        class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-transform hover:scale-[1.02] transition-all duration-300 shadow-lg">
-                    <i class="fas fa-save mr-2"></i>บันทึกการเปลี่ยนแปลง
-                </button>
-
-                <a href="{{ route('user.marketing.recruit.leads') }}"
-                   class="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-bold text-lg hover:from-blue-700 hover:to-cyan-700 transition-transform hover:scale-[1.02] transition-all duration-300 shadow-lg">
-                    <i class="fas fa-users mr-2"></i>ดูผู้มุ่งหวัง
-                </a>
-
-                <a href="{{ route('user.marketing.recruit.analytics') }}"
-                   class="px-8 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-bold text-lg hover:from-green-700 hover:to-teal-700 transition-transform hover:scale-[1.02] transition-all duration-300 shadow-lg">
-                    <i class="fas fa-chart-bar mr-2"></i>สถิติการตลาด
-                </a>
+            <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary" style="background:#c05a8f; border-color:#c05a8f;"><i class="fas fa-save"></i> บันทึกการเปลี่ยนแปลง</button>
+                <a href="{{ route('user.marketing.recruit.leads') }}" class="tp-btn" style="background:#5689b8; border-color:#5689b8; color:#fff;"><i class="fas fa-users"></i> ดูผู้มุ่งหวัง</a>
+                <a href="{{ route('user.marketing.recruit.analytics') }}" class="tp-btn" style="background:#5aa07e; border-color:#5aa07e; color:#fff;"><i class="fas fa-chart-bar"></i> สถิติการตลาด</a>
             </div>
         </form>
     </div>
 
-    <!-- QR Code & Links Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            <i class="fas fa-qrcode text-blue-600 mr-3"></i>QR Code และลิงก์แนะนำ
-        </h2>
+    {{-- ── QR + ลิงก์ ────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+        <div class="tp-section-h" style="margin-bottom:18px;"><i class="fas fa-qrcode" style="color:#5689b8; margin-right:8px;"></i>QR Code และลิงก์แนะนำ</div>
 
-        <div class="grid md:grid-cols-2 gap-8">
-
-            <!-- QR Code -->
-            <div class="text-center">
-                <div class="inline-block bg-white p-6 rounded-2xl shadow-lg mb-4">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:24px;">
+            <div style="text-align:center;">
+                <div style="display:inline-block; background:#fff; padding:24px; border-radius:16px; box-shadow:var(--raise); margin-bottom:16px;">
                     <div id="qrcode"></div>
                 </div>
-                <button @click="downloadQR()"
-                        class="px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white rounded-xl font-semibold transition">
-                    <i class="fas fa-download mr-2"></i>ดาวน์โหลด QR Code
-                </button>
-            </div>
-
-            <!-- Links -->
-            <div class="space-y-4">
-                <!-- Recruit URL -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        ลิงก์หน้า Recruit:
-                    </label>
-                    <div class="flex gap-3">
-                        <input type="text" id="recruitUrl" value="{{ $recruitUrl }}" readonly
-                               class="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-700 dark:text-white font-mono text-sm">
-                        <button @click="copyUrl('recruitUrl')"
-                                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Member Code -->
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        รหัสสมาชิก:
-                    </label>
-                    <div class="flex gap-3">
-                        <input type="text" id="memberCode" value="{{ $mlmMember->member_code }}" readonly
-                               class="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-700 dark:text-white font-mono text-2xl font-bold text-center">
-                        <button @click="copyUrl('memberCode')"
-                                class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Share Buttons -->
-                <div class="pt-4">
-                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">แชร์ผ่าน:</p>
-                    <div class="flex gap-3">
-                        <button @click="shareVia('line')"
-                                class="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition">
-                            <i class="fab fa-line mr-2"></i>LINE
-                        </button>
-                        <button @click="shareVia('facebook')"
-                                class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition">
-                            <i class="fab fa-facebook mr-2"></i>Facebook
-                        </button>
-                        <button @click="shareVia('twitter')"
-                                class="flex-1 px-4 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-semibold transition">
-                            <i class="fab fa-twitter mr-2"></i>Twitter
-                        </button>
-                    </div>
+                    <button @click="downloadQR()" class="tp-btn"><i class="fas fa-download"></i> ดาวน์โหลด QR Code</button>
                 </div>
             </div>
 
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <div>
+                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;">ลิงก์หน้า Recruit:</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="recruitUrl" value="{{ $recruitUrl }}" readonly class="tp-input" style="flex:1; font-family:monospace; font-size:13px;">
+                        <button @click="copyUrl('recruitUrl')" class="tp-btn" style="background:#5689b8; border-color:#5689b8; color:#fff;"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+                <div>
+                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;">รหัสสมาชิก:</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="memberCode" value="{{ $mlmMember->member_code }}" readonly class="tp-input" style="flex:1; font-family:monospace; font-size:20px; font-weight:800; text-align:center;">
+                        <button @click="copyUrl('memberCode')" class="tp-btn" style="background:#c05a8f; border-color:#c05a8f; color:#fff;"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+                <div style="padding-top:8px;">
+                    <p style="font-size:12.5px; font-weight:600; color:var(--ink); margin:0 0 10px;">แชร์ผ่าน:</p>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button @click="shareVia('line')" class="tp-btn" style="flex:1; min-width:100px; justify-content:center; background:#5aa07e; border-color:#5aa07e; color:#fff;"><i class="fab fa-line"></i> LINE</button>
+                        <button @click="shareVia('facebook')" class="tp-btn" style="flex:1; min-width:100px; justify-content:center; background:#3b5998; border-color:#3b5998; color:#fff;"><i class="fab fa-facebook"></i> Facebook</button>
+                        <button @click="shareVia('twitter')" class="tp-btn" style="flex:1; min-width:100px; justify-content:center; background:#4a9fd4; border-color:#4a9fd4; color:#fff;"><i class="fab fa-twitter"></i> Twitter</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
 </div>
 
 @push('scripts')
@@ -323,19 +198,4 @@ function recruitPageManager() {
 }
 </script>
 @endpush
-
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush

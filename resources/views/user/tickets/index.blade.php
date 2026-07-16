@@ -1,191 +1,112 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'Ticket ของฉัน')
 
 @section('content')
-<div class="space-y-6">
-    {{-- Premium Hero Header (Blue-Indigo-Purple for Tickets) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-ticket-alt"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center justify-between mb-6">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-headset text-4xl text-white drop-shadow-lg"></i>
-                    </div>
+    {{-- ── Hero + สถิติ ──────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5689b8 18%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:23px; background:#5689b8;"><i class="fas fa-headset" style="color:#fff;"></i></span>
                     <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">Ticket Support</h1>
-                        <p class="text-blue-100 mt-1">ติดตามและจัดการคำขอความช่วยเหลือของคุณ</p>
+                        <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">Ticket Support</h1>
+                        <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ติดตามและจัดการคำขอความช่วยเหลือของคุณ</div>
                     </div>
                 </div>
-                <a href="{{ route('user.tickets.create') }}" class="glass-fusion px-6 py-3 hover:bg-white/30 text-white font-semibold rounded-lg shadow-lg transition-all">
-                    <i class="fa-solid fa-plus mr-2"></i>สร้าง Ticket ใหม่
-                </a>
+                <a href="{{ route('user.tickets.create') }}" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fa-solid fa-plus"></i> สร้าง Ticket ใหม่</a>
             </div>
 
-            {{-- Stats --}}
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="glass-fusion rounded-xl p-6">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-blue-100 text-sm">ทั้งหมด</span>
-                        <i class="fa-solid fa-ticket text-2xl text-white"></i>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;">
+                <div class="tp-card" style="padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:11px; font-weight:600; color:var(--ink2);">ทั้งหมด</span>
+                        <i class="fa-solid fa-ticket" style="color:#5689b8;"></i>
                     </div>
-                    <p class="text-4xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total']) }}</p>
-                    <p class="text-sm text-blue-100 mt-1">Tickets</p>
+                    <div class="tp-num" style="font-size:28px; font-weight:800; color:var(--deep1);">{{ number_format($stats['total']) }}</div>
                 </div>
-
-                <div class="glass-fusion rounded-xl p-6">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-blue-100 text-sm">เปิดอยู่</span>
-                        <i class="fa-solid fa-folder-open text-2xl text-white"></i>
+                <div class="tp-card" style="padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:11px; font-weight:600; color:var(--ink2);">เปิดอยู่</span>
+                        <i class="fa-solid fa-folder-open" style="color:#5689b8;"></i>
                     </div>
-                    <p class="text-4xl font-bold text-white drop-shadow-lg">{{ number_format($stats['open']) }}</p>
-                    <p class="text-sm text-blue-100 mt-1">Tickets</p>
+                    <div class="tp-num" style="font-size:28px; font-weight:800; color:#5689b8;">{{ number_format($stats['open']) }}</div>
                 </div>
-
-                <div class="glass-fusion rounded-xl p-6">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-blue-100 text-sm">ปิดแล้ว</span>
-                        <i class="fa-solid fa-check-circle text-2xl text-white"></i>
+                <div class="tp-card" style="padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:11px; font-weight:600; color:var(--ink2);">ปิดแล้ว</span>
+                        <i class="fa-solid fa-check-circle" style="color:#5aa07e;"></i>
                     </div>
-                    <p class="text-4xl font-bold text-white drop-shadow-lg">{{ number_format($stats['closed']) }}</p>
-                    <p class="text-sm text-blue-100 mt-1">Tickets</p>
+                    <div class="tp-num" style="font-size:28px; font-weight:800; color:#5aa07e;">{{ number_format($stats['closed']) }}</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Quick Filters -->
-    <div class="flex flex-wrap gap-4">
-        <a href="{{ route('user.tickets.index') }}" class="px-6 py-3 {{ !$filters['status'] ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300' }} {{ !$filters['status'] ? 'text-white' : '' }} font-semibold rounded-lg shadow-lg transition-all">
-            <i class="fa-solid fa-list mr-2"></i>
-            ทั้งหมด
-        </a>
-        <a href="{{ route('user.tickets.index', ['status' => 'open']) }}" class="px-6 py-3 {{ $filters['status'] == 'open' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300' }} font-semibold rounded-lg shadow-lg transition-all">
-            <i class="fa-solid fa-folder-open mr-2"></i>
-            เปิดอยู่
-        </a>
-        <a href="{{ route('user.tickets.index', ['status' => 'in_progress']) }}" class="px-6 py-3 {{ $filters['status'] == 'in_progress' ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300' }} font-semibold rounded-lg shadow-lg transition-all">
-            <i class="fa-solid fa-spinner mr-2"></i>
-            กำลังดำเนินการ
-        </a>
-        <a href="{{ route('user.tickets.index', ['status' => 'resolved']) }}" class="px-6 py-3 {{ $filters['status'] == 'resolved' ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300' }} font-semibold rounded-lg shadow-lg transition-all">
-            <i class="fa-solid fa-check mr-2"></i>
-            แก้ไขแล้ว
-        </a>
+    {{-- ── ตัวกรอง ───────────────────────────────────────────── --}}
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <a href="{{ route('user.tickets.index') }}" class="tp-btn tp-btn-sm {{ !$filters['status'] ? 'tp-btn-primary' : '' }}"><i class="fa-solid fa-list"></i> ทั้งหมด</a>
+        <a href="{{ route('user.tickets.index', ['status' => 'open']) }}" class="tp-btn tp-btn-sm" style="{{ $filters['status'] == 'open' ? 'background:#5689b8; border-color:#5689b8; color:#fff;' : '' }}"><i class="fa-solid fa-folder-open"></i> เปิดอยู่</a>
+        <a href="{{ route('user.tickets.index', ['status' => 'in_progress']) }}" class="tp-btn tp-btn-sm" style="{{ $filters['status'] == 'in_progress' ? 'background:#d9a441; border-color:#d9a441; color:#fff;' : '' }}"><i class="fa-solid fa-spinner"></i> กำลังดำเนินการ</a>
+        <a href="{{ route('user.tickets.index', ['status' => 'resolved']) }}" class="tp-btn tp-btn-sm" style="{{ $filters['status'] == 'resolved' ? 'background:#5aa07e; border-color:#5aa07e; color:#fff;' : '' }}"><i class="fa-solid fa-check"></i> แก้ไขแล้ว</a>
     </div>
 
-    <!-- Tickets List -->
-    <div class="grid grid-cols-1 gap-6">
+    {{-- ── รายการ Ticket ─────────────────────────────────────── --}}
+    <div style="display:flex; flex-direction:column; gap:14px;">
         @forelse($tickets as $ticket)
-            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow">
-                <div class="p-6">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="flex-1">
-                            <div class="flex items-center space-x-3 mb-2">
-                                <span class="text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400">{{ $ticket->ticket_number }}</span>
-                                @if($ticket->category)
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium" style="background-color: {{ $ticket->category->color }}20; color: {{ $ticket->category->color }}">
-                                        @if($ticket->category->icon)
-                                            <i class="{{ $ticket->category->icon }} mr-1"></i>
-                                        @endif
-                                        {{ $ticket->category->name }}
-                                    </span>
-                                @endif
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
-                                    @if($ticket->status == 'open') bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
-                                    @elseif($ticket->status == 'in_progress') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
-                                    @elseif($ticket->status == 'waiting_customer') bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200
-                                    @elseif($ticket->status == 'resolved') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                                    @else bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200
-                                    @endif">
-                                    {{ $ticket->status_label }}
-                                </span>
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
-                                    @if($ticket->priority == 'critical') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                                    @elseif($ticket->priority == 'high') bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
-                                    @elseif($ticket->priority == 'medium') bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
-                                    @else bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200
-                                    @endif">
-                                    {{ $ticket->priority_label }}
-                                </span>
-                            </div>
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ $ticket->subject }}</h3>
-                            <p class="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">{{ $ticket->description }}</p>
-                        </div>
-                    </div>
+            @php
+                $stColor = match($ticket->status) {
+                    'open' => '#5689b8', 'in_progress' => '#d9a441',
+                    'waiting_customer' => '#7c5cbf', 'resolved' => '#5aa07e',
+                    default => '#8a8a8a',
+                };
+                $prColor = match($ticket->priority) {
+                    'critical' => '#d9534f', 'high' => '#e08a3c',
+                    'medium' => '#5689b8', default => '#8a8a8a',
+                };
+            @endphp
+            <div class="tp-card" style="padding:20px;">
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:10px;">
+                    <span style="font-family:monospace; font-weight:800; color:var(--deep1);">{{ $ticket->ticket_number }}</span>
+                    @if($ticket->category)
+                        <span style="display:inline-flex; align-items:center; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:600; background:{{ $ticket->category->color }}20; color:{{ $ticket->category->color }};">
+                            @if($ticket->category->icon)<i class="{{ $ticket->category->icon }}" style="margin-right:4px;"></i>@endif
+                            {{ $ticket->category->name }}
+                        </span>
+                    @endif
+                    <span style="display:inline-flex; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:600; color:{{ $stColor }}; background:color-mix(in srgb, {{ $stColor }} 16%, transparent);">{{ $ticket->status_label }}</span>
+                    <span style="display:inline-flex; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:600; color:{{ $prColor }}; background:color-mix(in srgb, {{ $prColor }} 16%, transparent);">{{ $ticket->priority_label }}</span>
+                </div>
+                <h3 style="font-size:18px; font-weight:800; color:var(--ink); margin:0 0 6px;">{{ $ticket->subject }}</h3>
+                <p style="font-size:13px; color:var(--ink2); margin:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">{{ $ticket->description }}</p>
 
-                    <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-slate-700">
-                        <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                            <span>
-                                <i class="fa-solid fa-clock mr-1"></i>
-                                {{ $ticket->created_at->format('d/m/Y H:i') }}
-                            </span>
-                            @if($ticket->assignedTo)
-                                <span>
-                                    <i class="fa-solid fa-user mr-1"></i>
-                                    มอบหมายให้: {{ $ticket->assignedTo->name }}
-                                </span>
-                            @endif
-                            @if($ticket->last_reply_at)
-                                <span>
-                                    <i class="fa-solid fa-reply mr-1"></i>
-                                    ตอบกลับล่าสุด: {{ $ticket->last_reply_at->diffForHumans() }}
-                                </span>
-                            @endif
-                        </div>
-                        <a href="{{ route('user.tickets.show', $ticket->id) }}" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg transition-all">
-                            <i class="fa-solid fa-eye mr-2"></i>
-                            ดูรายละเอียด
-                        </a>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding-top:14px; margin-top:14px; border-top:1px solid color-mix(in srgb, var(--ink2) 12%, transparent);">
+                    <div style="display:flex; flex-wrap:wrap; gap:16px; font-size:12px; color:var(--ink2);">
+                        <span><i class="fa-solid fa-clock" style="margin-right:4px;"></i>{{ $ticket->created_at->format('d/m/Y H:i') }}</span>
+                        @if($ticket->assignedTo)
+                            <span><i class="fa-solid fa-user" style="margin-right:4px;"></i>มอบหมายให้: {{ $ticket->assignedTo->name }}</span>
+                        @endif
+                        @if($ticket->last_reply_at)
+                            <span><i class="fa-solid fa-reply" style="margin-right:4px;"></i>ตอบกลับล่าสุด: {{ $ticket->last_reply_at->diffForHumans() }}</span>
+                        @endif
                     </div>
+                    <a href="{{ route('user.tickets.show', $ticket->id) }}" class="tp-btn tp-btn-sm tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fa-solid fa-eye"></i> ดูรายละเอียด</a>
                 </div>
             </div>
         @empty
-            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-12 text-center">
-                <i class="fa-solid fa-ticket text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">ยังไม่มี Ticket</h3>
-                <p class="text-gray-600 dark:text-gray-400 mb-6">คุณยังไม่มี Ticket ในระบบ สร้าง Ticket ใหม่เพื่อรับความช่วยเหลือ</p>
-                <a href="{{ route('user.tickets.create') }}" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all transition-transform hover:scale-[1.02]">
-                    <i class="fa-solid fa-plus mr-2"></i>
-                    สร้าง Ticket ใหม่
-                </a>
+            <div class="tp-card" style="padding:48px; text-align:center;">
+                <i class="fa-solid fa-ticket" style="font-size:56px; color:var(--ink2); opacity:.5; margin-bottom:16px;"></i>
+                <h3 style="font-size:20px; font-weight:800; color:var(--ink); margin:0 0 8px;">ยังไม่มี Ticket</h3>
+                <p style="color:var(--ink2); margin:0 0 20px;">คุณยังไม่มี Ticket ในระบบ สร้าง Ticket ใหม่เพื่อรับความช่วยเหลือ</p>
+                <a href="{{ route('user.tickets.create') }}" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fa-solid fa-plus"></i> สร้าง Ticket ใหม่</a>
             </div>
         @endforelse
     </div>
 
-    <!-- Pagination -->
     @if($tickets->hasPages())
-        <div class="flex justify-center">
-            {{ $tickets->links() }}
-        </div>
+        <div style="display:flex; justify-content:center;">{{ $tickets->links() }}</div>
     @endif
 </div>
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
 @endsection

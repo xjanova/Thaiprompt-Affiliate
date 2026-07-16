@@ -1,157 +1,108 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'Ticket #' . $ticket->ticket_number)
 
 @section('content')
-<div class="max-w-5xl mx-auto space-y-6">
-    {{-- Premium Hero Header (Blue-Indigo-Purple for Ticket Detail) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-6">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px; max-width:1000px; margin-inline:auto; width:100%;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-comments"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex-1">
-                    <h1 class="text-2xl md:text-3xl font-bold text-white drop-shadow-lg mb-2">{{ $ticket->subject }}</h1>
-                    <div class="flex items-center space-x-3 flex-wrap">
-                        <span class="text-sm font-mono glass-fusion px-3 py-1 rounded-lg text-white">{{ $ticket->ticket_number }}</span>
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    @php
+        $stColor = match($ticket->status) {
+            'open' => '#5689b8', 'in_progress' => '#d9a441',
+            'waiting_customer' => '#7c5cbf', 'resolved' => '#5aa07e',
+            default => '#8a8a8a',
+        };
+    @endphp
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5689b8 18%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:14px;">
+                <div style="flex:1; min-width:220px;">
+                    <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0 0 10px;">{{ $ticket->subject }}</h1>
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+                        <span style="font-family:monospace; font-size:12px; box-shadow:var(--inset-sm); padding:3px 10px; border-radius:8px; color:var(--ink);">{{ $ticket->ticket_number }}</span>
                         @if($ticket->category)
-                            <span class="inline-flex items-center glass-fusion px-3 py-1 rounded-lg text-sm text-white">
-                                @if($ticket->category->icon)
-                                    <i class="{{ $ticket->category->icon }} mr-2"></i>
-                                @endif
-                                {{ $ticket->category->name }}
+                            <span style="display:inline-flex; align-items:center; padding:3px 10px; border-radius:8px; font-size:12px; background:{{ $ticket->category->color }}20; color:{{ $ticket->category->color }};">
+                                @if($ticket->category->icon)<i class="{{ $ticket->category->icon }}" style="margin-right:5px;"></i>@endif{{ $ticket->category->name }}
                             </span>
                         @endif
-                        <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium text-white
-                            @if($ticket->status == 'open') bg-blue-500/30
-                            @elseif($ticket->status == 'in_progress') bg-yellow-500/30
-                            @elseif($ticket->status == 'waiting_customer') bg-purple-500/30
-                            @elseif($ticket->status == 'resolved') bg-green-500/30
-                            @else bg-gray-500/30
-                            @endif">
-                            {{ $ticket->status_label }}
-                        </span>
+                        <span style="display:inline-flex; padding:3px 10px; border-radius:8px; font-size:12px; font-weight:600; color:{{ $stColor }}; background:color-mix(in srgb, {{ $stColor }} 16%, transparent);">{{ $ticket->status_label }}</span>
                     </div>
                 </div>
-                <div class="flex items-center space-x-3">
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
                     @if(!$ticket->isClosed())
                         <form method="POST" action="{{ route('user.tickets.close', $ticket->id) }}" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปิด Ticket นี้?')">
                             @csrf
-                            <button type="submit" class="glass-fusion px-4 py-2 hover:bg-white/30 text-white rounded-lg transition-all">
-                                <i class="fa-solid fa-times-circle mr-2"></i>ปิด Ticket
-                            </button>
+                            <button type="submit" class="tp-btn tp-btn-sm"><i class="fa-solid fa-times-circle"></i> ปิด Ticket</button>
                         </form>
                     @endif
-                    <a href="{{ route('user.tickets.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/30 text-white rounded-lg transition-all">
-                        <i class="fa-solid fa-arrow-left mr-2"></i>กลับ
-                    </a>
+                    <a href="{{ route('user.tickets.index') }}" class="tp-btn tp-btn-sm"><i class="fa-solid fa-arrow-left"></i> กลับ</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Status Info -->
+    {{-- ── สถานะ ─────────────────────────────────────────────── --}}
     @if($ticket->status == 'resolved')
-        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
-            <div class="flex items-center space-x-4">
-                <i class="fa-solid fa-check-circle text-4xl text-green-600 dark:text-green-400"></i>
-                <div>
-                    <h3 class="text-lg font-bold text-green-900 dark:text-green-300 mb-1">Ticket นี้ได้รับการแก้ไขแล้ว</h3>
-                    <p class="text-green-800 dark:text-green-400">หากคุณยังมีปัญหา สามารถตอบกลับเพื่อเปิด Ticket ใหม่อีกครั้ง</p>
-                </div>
+        <div class="tp-card" style="padding:20px; border-left:4px solid #5aa07e;">
+            <div style="display:flex; align-items:center; gap:16px;">
+                <i class="fa-solid fa-check-circle" style="font-size:32px; color:#5aa07e;"></i>
+                <div><div style="font-weight:800; color:var(--ink); margin-bottom:2px;">Ticket นี้ได้รับการแก้ไขแล้ว</div><div style="font-size:13px; color:var(--ink2);">หากคุณยังมีปัญหา สามารถตอบกลับเพื่อเปิด Ticket ใหม่อีกครั้ง</div></div>
             </div>
         </div>
     @elseif($ticket->status == 'waiting_customer')
-        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-6">
-            <div class="flex items-center space-x-4">
-                <i class="fa-solid fa-hourglass-half text-4xl text-purple-600 dark:text-purple-400"></i>
-                <div>
-                    <h3 class="text-lg font-bold text-purple-900 dark:text-purple-300 mb-1">รอข้อมูลเพิ่มเติมจากคุณ</h3>
-                    <p class="text-purple-800 dark:text-purple-400">ทีมงานกำลังรอคำตอบหรือข้อมูลเพิ่มเติมจากคุณ</p>
-                </div>
+        <div class="tp-card" style="padding:20px; border-left:4px solid #7c5cbf;">
+            <div style="display:flex; align-items:center; gap:16px;">
+                <i class="fa-solid fa-hourglass-half" style="font-size:32px; color:#7c5cbf;"></i>
+                <div><div style="font-weight:800; color:var(--ink); margin-bottom:2px;">รอข้อมูลเพิ่มเติมจากคุณ</div><div style="font-size:13px; color:var(--ink2);">ทีมงานกำลังรอคำตอบหรือข้อมูลเพิ่มเติมจากคุณ</div></div>
             </div>
         </div>
     @elseif($ticket->status == 'in_progress')
-        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
-            <div class="flex items-center space-x-4">
-                <i class="fa-solid fa-spinner fa-spin text-4xl text-yellow-600 dark:text-yellow-400"></i>
-                <div>
-                    <h3 class="text-lg font-bold text-yellow-900 dark:text-yellow-300 mb-1">กำลังดำเนินการ</h3>
-                    <p class="text-yellow-800 dark:text-yellow-400">
-                        ทีมงานกำลังตรวจสอบและแก้ไขปัญหาของคุณ
-                        @if($ticket->assignedTo)
-                            โดย {{ $ticket->assignedTo->name }}
-                        @endif
-                    </p>
-                </div>
+        <div class="tp-card" style="padding:20px; border-left:4px solid #d9a441;">
+            <div style="display:flex; align-items:center; gap:16px;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size:32px; color:#d9a441;"></i>
+                <div><div style="font-weight:800; color:var(--ink); margin-bottom:2px;">กำลังดำเนินการ</div><div style="font-size:13px; color:var(--ink2);">ทีมงานกำลังตรวจสอบและแก้ไขปัญหาของคุณ @if($ticket->assignedTo) โดย {{ $ticket->assignedTo->name }} @endif</div></div>
             </div>
         </div>
     @endif
 
-    <!-- Conversation -->
-    <div class="space-y-6">
-        <!-- Original Message -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-start space-x-4">
-                <div class="flex-shrink-0">
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-lg font-bold">
-                        {{ substr($ticket->user->name, 0, 1) }}
+    {{-- ── บทสนทนา ───────────────────────────────────────────── --}}
+    <div style="display:flex; flex-direction:column; gap:14px;">
+        {{-- ข้อความแรก --}}
+        <div class="tp-card" style="padding:20px;">
+            <div style="display:flex; gap:14px; align-items:flex-start;">
+                <div style="flex-shrink:0; width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg, #5689b8, #7c5cbf); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">{{ substr($ticket->user->name, 0, 1) }}</div>
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
+                        <div style="font-weight:800; color:var(--ink);">{{ $ticket->user->name }} <span style="font-size:12px; font-weight:400; color:var(--ink2);">(คุณ)</span></div>
+                        <span style="font-size:12px; color:var(--ink2);">{{ $ticket->created_at->format('d/m/Y H:i') }}</span>
                     </div>
-                </div>
-                <div class="flex-1">
-                    <div class="flex items-center justify-between mb-2">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $ticket->user->name }} <span class="text-sm font-normal text-gray-500 dark:text-gray-400">(คุณ)</span></h3>
-                        </div>
-                        <span class="text-sm text-gray-500 dark:text-gray-400">{{ $ticket->created_at->format('d/m/Y H:i') }}</span>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
-                        <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ $ticket->description }}</p>
+                    <div style="border-radius:10px; box-shadow:var(--inset-sm); padding:14px;">
+                        <p style="color:var(--ink); white-space:pre-wrap; margin:0;">{{ $ticket->description }}</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Replies -->
+        {{-- ตอบกลับ --}}
         @foreach($ticket->publicReplies as $reply)
-            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-                <div class="flex items-start space-x-4">
-                    <div class="flex-shrink-0">
-                        <div class="w-12 h-12 rounded-full {{ $reply->isFromStaff() ? 'bg-gradient-to-br from-purple-500 to-pink-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600' }} flex items-center justify-center text-white text-lg font-bold">
-                            {{ substr($reply->user->name, 0, 1) }}
-                        </div>
-                    </div>
-                    <div class="flex-1">
-                        <div class="flex items-center justify-between mb-2">
-                            <div>
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                                    {{ $reply->user->name }}
-                                    @if($reply->isFromStaff())
-                                        <span class="ml-2 inline-flex items-center px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs font-medium">
-                                            <i class="fa-solid fa-shield-halved mr-1"></i>
-                                            ทีมงาน
-                                        </span>
-                                    @else
-                                        <span class="text-sm font-normal text-gray-500 dark:text-gray-400">(คุณ)</span>
-                                    @endif
-                                </h3>
+            @php $staff = $reply->isFromStaff(); $accent = $staff ? '#7c5cbf' : '#5689b8'; @endphp
+            <div class="tp-card" style="padding:20px;">
+                <div style="display:flex; gap:14px; align-items:flex-start;">
+                    <div style="flex-shrink:0; width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg, {{ $accent }}, {{ $staff ? '#c05a8f' : '#7c5cbf' }}); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">{{ substr($reply->user->name, 0, 1) }}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
+                            <div style="font-weight:800; color:var(--ink);">
+                                {{ $reply->user->name }}
+                                @if($staff)
+                                    <span style="margin-left:6px; display:inline-flex; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; color:#7c5cbf; background:color-mix(in srgb, #7c5cbf 16%, transparent);"><i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>ทีมงาน</span>
+                                @else
+                                    <span style="font-size:12px; font-weight:400; color:var(--ink2);">(คุณ)</span>
+                                @endif
                             </div>
-                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ $reply->created_at->format('d/m/Y H:i') }}</span>
+                            <span style="font-size:12px; color:var(--ink2);">{{ $reply->created_at->format('d/m/Y H:i') }}</span>
                         </div>
-                        <div class="bg-{{ $reply->isFromStaff() ? 'purple' : 'blue' }}-50 dark:bg-{{ $reply->isFromStaff() ? 'purple' : 'blue' }}-900/20 rounded-lg p-4">
-                            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ $reply->message }}</p>
+                        <div style="border-radius:10px; padding:14px; background:color-mix(in srgb, {{ $accent }} 8%, transparent); box-shadow:var(--inset-sm);">
+                            <p style="color:var(--ink); white-space:pre-wrap; margin:0;">{{ $reply->message }}</p>
                         </div>
                     </div>
                 </div>
@@ -159,54 +110,26 @@
         @endforeach
     </div>
 
-    <!-- Reply Form -->
+    {{-- ── ฟอร์มตอบกลับ ──────────────────────────────────────── --}}
     @if(!$ticket->isClosed())
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 sticky bottom-6">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                <i class="fa-solid fa-reply mr-2"></i>
-                ตอบกลับ
-            </h3>
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h" style="margin-bottom:14px;"><i class="fa-solid fa-reply" style="margin-right:6px;"></i>ตอบกลับ</div>
             <form method="POST" action="{{ route('user.tickets.reply', $ticket->id) }}">
                 @csrf
-                <div class="mb-4">
-                    <textarea name="message" rows="4" required class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none" placeholder="พิมพ์ข้อความของคุณที่นี่..."></textarea>
-                </div>
-                <div class="flex items-center justify-between">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                        <i class="fa-solid fa-info-circle mr-1"></i>
-                        ทีมงานจะตอบกลับโดยเร็วที่สุด
-                    </p>
-                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all transition-transform hover:scale-[1.02]">
-                        <i class="fa-solid fa-paper-plane mr-2"></i>
-                        ส่งข้อความ
-                    </button>
+                <textarea name="message" rows="4" required class="tp-input" style="resize:vertical; margin-bottom:12px;" placeholder="พิมพ์ข้อความของคุณที่นี่..."></textarea>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                    <p style="font-size:13px; color:var(--ink2); margin:0;"><i class="fa-solid fa-info-circle" style="margin-right:4px;"></i>ทีมงานจะตอบกลับโดยเร็วที่สุด</p>
+                    <button type="submit" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fa-solid fa-paper-plane"></i> ส่งข้อความ</button>
                 </div>
             </form>
         </div>
     @else
-        <div class="bg-gray-50 dark:bg-slate-700 rounded-xl p-8 text-center">
-            <i class="fa-solid fa-lock text-5xl text-gray-400 mb-4"></i>
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Ticket นี้ถูกปิดแล้ว</h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-6">หากคุณต้องการความช่วยเหลือเพิ่มเติม กรุณาสร้าง Ticket ใหม่</p>
-            <a href="{{ route('user.tickets.create') }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all">
-                <i class="fa-solid fa-plus mr-2"></i>
-                สร้าง Ticket ใหม่
-            </a>
+        <div class="tp-card" style="padding:32px; text-align:center;">
+            <i class="fa-solid fa-lock" style="font-size:44px; color:var(--ink2); opacity:.5; margin-bottom:16px;"></i>
+            <h3 style="font-size:19px; font-weight:800; color:var(--ink); margin:0 0 8px;">Ticket นี้ถูกปิดแล้ว</h3>
+            <p style="color:var(--ink2); margin:0 0 20px;">หากคุณต้องการความช่วยเหลือเพิ่มเติม กรุณาสร้าง Ticket ใหม่</p>
+            <a href="{{ route('user.tickets.create') }}" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fa-solid fa-plus"></i> สร้าง Ticket ใหม่</a>
         </div>
     @endif
 </div>
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
 @endsection
