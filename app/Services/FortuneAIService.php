@@ -646,7 +646,11 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
         $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
         // 📚 (2026-05-19) RAG Admin Q&A — inject few-shot ตัวอย่างคำตอบของแอดมิน
-        $systemMessage = $this->injectAdminQARagFewShot($systemMessage, $messageText);
+        //   🩹 (2026-07-16) ค้นด้วย "ข้อความดิบของลูกค้า" ($guardText) ไม่ใช่พรอมต์ทั้งก้อน —
+        //     caller สาย funnel (เลือกแพคเกจ/รอโอน/rebuttal) ส่ง meta-prompt ~600 ตัวอักษร
+        //     เป็น $messageText → embedding ถูกเจือจางจน similarity ต่ำกว่า threshold
+        //     → few-shot แอดมินไม่เคยถูก inject ทั้งที่มีคำตอบเดิมๆ ใน DB มหาศาล
+        $systemMessage = $this->injectAdminQARagFewShot($systemMessage, $guardText ?? $messageText);
 
         // 🎼 (2026-06-12) ประสาน persona × few-shot แอดมิน — บอก AI ว่าอันไหนชนะเรื่องอะไร
         $systemMessage = $this->appendPersonaAdminFusionDirective($systemMessage, (string) ($userProfile['_persona_context'] ?? ''));
