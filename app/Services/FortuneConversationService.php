@@ -15965,7 +15965,7 @@ class FortuneConversationService
      * รองรับรูป: "@Meta AI" / "@MetaAI" / "@ meta ai" (case-insensitive)
      *
      * @param  string  $text  ข้อความดิบจากลูกค้า
-     * @return string  ข้อความที่ตัด mention แล้ว (trim)
+     * @return string ข้อความที่ตัด mention แล้ว (trim)
      */
     protected function stripPlatformAiMention(string $text): string
     {
@@ -22649,24 +22649,11 @@ PROMPT;
     protected function handleShareRequest(string $facebookUserId): array
     {
         try {
-            // ✅ ค้นหา User หลายวิธี (ไม่ใช่แค่ line_user_id เดียว)
-            $user = \App\Models\User::where('line_user_id', $facebookUserId)->first();
-
-            // Fallback: ค้นหาจาก email pattern
-            if (! $user) {
-                $user = \App\Models\User::where('email', 'line_'.$facebookUserId.'@thaiprompt.local')->first();
-            }
-
-            // Fallback: ค้นหาจาก FortuneReading ที่ link กับ user
-            if (! $user) {
-                $linkedReading = FortuneReading::where('facebook_user_id', $facebookUserId)
-                    ->whereNotNull('user_id')
-                    ->latest()
-                    ->first();
-                if ($linkedReading && $linkedReading->user_id) {
-                    $user = \App\Models\User::find($linkedReading->user_id);
-                }
-            }
+            // ✅ ค้นหา User หลายวิธี — ใช้ helper กลางที่รู้จักทั้ง LINE และ FB
+            //    (⭐ 2026-07-16 เดิม inline ค้นเฉพาะแบบ LINE ทั้งที่ service นี้
+            //    รับ traffic จาก FacebookWebhookController ด้วย → ลูกค้า FB
+            //    พิมพ์ "แชร์" แล้วหาบัญชีตัวเองไม่เจอ)
+            $user = $this->findUserByPlatformId($facebookUserId);
 
             // ⭐ ถ้ายังไม่มี User → สร้างอัตโนมัติจาก FortuneReading (user เคยจ่ายเงินแล้ว)
             if (! $user) {
@@ -22676,24 +22663,40 @@ PROMPT;
                     ->first();
 
                 if ($paidReading) {
-                    // สร้าง User อัตโนมัติ
+                    // สร้าง User อัตโนมัติ — ตาม platform จริงของลูกค้า
+                    // (⭐ 2026-07-16 เดิม hardcode แบบ LINE → ลูกค้า FB ได้บัญชี
+                    //    ที่ PSID ถูกยัดใส่ line_user_id + อีเมล line_ = identity ปนกัน)
                     $userName = $paidReading->facebook_user_name ?? 'User';
+                    $platform = $paidReading->platform ?? $this->currentPlatform;
+
                     // 🔒 (2026-07-16) สุ่มรหัสผ่าน — ห้ามใช้ค่าคงที่
                     //    (เดิม '12345678' เหมือนกันทุกบัญชี + อีเมลเดาได้ = ใครรู้ UID เข้าบัญชีได้)
-                    //    ลูกค้าเข้าเว็บผ่าน /auth/line?redirect=... เท่านั้น ไม่ต้องใช้รหัส
-                    $user = \App\Models\User::create([
+                    //    ลูกค้าเข้าเว็บผ่าน OAuth (/auth/line, /auth/facebook) เท่านั้น ไม่ต้องใช้รหัส
+                    $userData = [
                         'name' => $userName,
-                        'email' => 'line_'.$facebookUserId.'@thaiprompt.local',
                         'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(48)),
-                        'line_user_id' => $facebookUserId,
-                    ]);
+                    ];
+
+                    if ($platform === 'facebook') {
+                        $userData['email'] = 'fb_'.$facebookUserId.'@thaiprompt.local';
+                        // PSID เป็นตัวเลขล้วน — กัน id แปลกปลอมหลุดเข้า unique column
+                        if (ctype_digit($facebookUserId) && \Illuminate\Support\Facades\Schema::hasColumn('users', 'facebook_psid')) {
+                            $userData['facebook_psid'] = $facebookUserId;
+                        }
+                    } else {
+                        $userData['email'] = 'line_'.$facebookUserId.'@thaiprompt.local';
+                        $userData['line_user_id'] = $facebookUserId;
+                    }
+
+                    $user = \App\Models\User::create($userData);
 
                     // Link reading กับ user
                     $paidReading->update(['user_id' => $user->id]);
 
                     Log::info('Fortune Share: สร้าง User อัตโนมัติจาก paid reading', [
                         'user_id' => $user->id,
-                        'line_user_id' => $facebookUserId,
+                        'platform' => $platform,
+                        'platform_user_id' => $facebookUserId,
                         'reading_id' => $paidReading->id,
                     ]);
                 }
@@ -23339,7 +23342,15 @@ PROMPT;
             return $user;
         }
 
-        // Fallback: ค้นหาจาก email pattern
+        // Facebook Messenger PSID — คอลัมน์ facebook_psid + fallback อีเมล fb_
+        // (⭐ 2026-07-16 เดิมค้นเฉพาะแบบ LINE ทั้งที่ service นี้รับทั้งสอง platform
+        //    → ลูกค้า FB ใช้คำสั่ง "แชร์"/"สายงาน" แล้วหาบัญชีตัวเองไม่เจอ)
+        $user = \App\Models\User::findByMessengerPsid($platformUserId);
+        if ($user) {
+            return $user;
+        }
+
+        // Fallback: ค้นหาจาก email pattern ฝั่ง LINE
         $user = \App\Models\User::where('email', 'line_'.$platformUserId.'@thaiprompt.local')->first();
         if ($user) {
             return $user;

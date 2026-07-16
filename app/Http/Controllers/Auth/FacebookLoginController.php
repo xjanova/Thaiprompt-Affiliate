@@ -381,7 +381,13 @@ class FacebookLoginController extends Controller
      */
     protected function createNewUserFromFacebook($fbUser, ?string $psid = null): User
     {
-        $email = $fbUser->getEmail() ?: 'fb_'.$fbUser->getId().'@thaiprompt.local';
+        // ไม่มีอีเมลจริงจาก FB → placeholder ใช้ prefix "fboauth_" แยก namespace
+        // จากของบอท (fb_{PSID}@) — ข้างในนี้เป็น ASID คนละ ID space กับ PSID
+        // ถ้าใช้สูตรเดียวกันจะแยกไม่ออกว่าเลขข้างในเป็น ID ชนิดไหน
+        // (suffix @thaiprompt.local คงไว้ — เป็น marker "บัญชีสังเคราะห์" ที่
+        // ระบบ PDPA/rotate-passwords ใช้แยกแยะ และลูกค้าเปลี่ยนเป็นอีเมลจริง
+        // ได้เองที่หน้าโปรไฟล์)
+        $email = $fbUser->getEmail() ?: 'fboauth_'.$fbUser->getId().'@thaiprompt.local';
 
         return DB::transaction(function () use ($fbUser, $email, $psid) {
             $userData = [

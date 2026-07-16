@@ -341,6 +341,73 @@ class FacebookOAuthPsidMatchTest extends TestCase
         $this->assertSame($oauthUser->id, $found->id);
     }
 
+    /**
+     * บัญชี OAuth ที่ FB ไม่ส่งอีเมลมา ต้องใช้ namespace แยก (fboauth_)
+     * — ห้ามปนกับ fb_{PSID}@ ของบอท เพราะข้างในเป็น ASID คนละ ID space
+     */
+    public function test_new_oauth_account_without_email_uses_fboauth_namespace(): void
+    {
+        // Graph ตอบสำเร็จแต่ไม่มี mapping (ลูกค้าไม่เคยคุยกับเพจ)
+        $this->fakeIdsForPages([]);
+
+        $created = $this->callFindOrCreateUser($this->socialiteUser());
+
+        $this->assertSame(
+            'fboauth_'.self::ASID.'@thaiprompt.local',
+            $created->email,
+            'ASID ต้องอยู่ namespace แยกจาก PSID — สูตร fb_ สงวนให้บัญชีบอท'
+        );
+        $this->assertNull($created->facebook_psid);
+    }
+
+    // ============================================================
+    // คำสั่งแชท "แชร์" (FortuneConversationService — ใช้ทั้ง LINE และ FB)
+    // ============================================================
+
+    /**
+     * ลูกค้า FB พิมพ์ "แชร์" → helper ค้นบัญชีต้องหาเจอจาก PSID
+     * (เดิมค้นเฉพาะแบบ LINE — ลูกค้า FB หาบัญชีตัวเองไม่เจอ)
+     */
+    public function test_share_lookup_finds_facebook_customer_by_psid(): void
+    {
+        $botUser = $this->createBotUser();
+
+        $svc = new \App\Services\FortuneConversationService(FortuneTellingSetting::getSettings());
+        $m = new \ReflectionMethod($svc, 'findUserByPlatformId');
+        $m->setAccessible(true);
+
+        $found = $m->invoke($svc, self::PSID);
+
+        $this->assertNotNull($found, 'ต้องหาบัญชีลูกค้า FB เจอจาก PSID');
+        $this->assertSame($botUser->id, $found->id);
+    }
+
+    /**
+     * ลูกค้า FB จ่ายแล้วแต่ยังไม่มีบัญชี พิมพ์ "แชร์" → บัญชีที่สร้างต้องเป็น
+     * identity แบบ FB (fb_ email + facebook_psid) ไม่ใช่ยัด PSID ใส่ line_user_id
+     */
+    public function test_share_request_from_facebook_creates_facebook_identity_account(): void
+    {
+        \App\Models\FortuneReading::create([
+            'platform' => 'facebook',
+            'facebook_user_id' => self::PSID,
+            'facebook_user_name' => 'ลูกค้า FB',
+            'questions' => 'การงานจะเป็นอย่างไร',
+            'is_paid' => true,
+        ]);
+
+        $svc = (new \App\Services\FortuneConversationService(FortuneTellingSetting::getSettings()))
+            ->setPlatform('facebook');
+        $m = new \ReflectionMethod($svc, 'handleShareRequest');
+        $m->setAccessible(true);
+        $m->invoke($svc, self::PSID);
+
+        $user = User::where('email', 'fb_'.self::PSID.'@thaiprompt.local')->first();
+        $this->assertNotNull($user, 'ต้องสร้างบัญชีด้วยสูตรอีเมลฝั่ง FB ไม่ใช่ line_');
+        $this->assertSame(self::PSID, $user->facebook_psid);
+        $this->assertNull($user->line_user_id, 'ห้ามยัด PSID ใส่ line_user_id — identity คนละ platform');
+    }
+
     // ============================================================
     // Helpers
     // ============================================================

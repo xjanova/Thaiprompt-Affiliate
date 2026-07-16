@@ -407,10 +407,19 @@ class FortuneDashboardController extends Controller
 
     private function parseQuestions($raw): string
     {
-        if (is_array($raw)) return implode(' · ', $raw);
-        if (is_string($raw) && str_starts_with(trim($raw), '[')) {
-            try { $j = json_decode($raw, true); if (is_array($j)) return implode(' · ', $j); } catch (\Throwable $e) {}
+        if (is_array($raw)) {
+            return implode(' · ', $raw);
         }
+        if (is_string($raw) && str_starts_with(trim($raw), '[')) {
+            try {
+                $j = json_decode($raw, true);
+                if (is_array($j)) {
+                    return implode(' · ', $j);
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+
         return (string) ($raw ?? '');
     }
 
@@ -472,9 +481,9 @@ class FortuneDashboardController extends Controller
                 ->where('created_at', '>=', $cutoff)
                 ->where(function ($q) {
                     $q->where('mood_level', '>=', 4)
-                      ->orWhere(function ($qq) {
-                          $qq->where('is_sensitive', 1)->where('complexity', '>=', 4);
-                      });
+                        ->orWhere(function ($qq) {
+                            $qq->where('is_sensitive', 1)->where('complexity', '>=', 4);
+                        });
                 })
                 ->orderByDesc('created_at')
                 ->limit(100)
@@ -482,15 +491,23 @@ class FortuneDashboardController extends Controller
 
             foreach ($events as $e) {
                 $psid = $e->platform_user_id;
-                if (! $psid) continue;
-                $key = $e->platform . ':' . $psid;
+                if (! $psid) {
+                    continue;
+                }
+                $key = $e->platform.':'.$psid;
                 $reasons = $this->decodeReasons($e->reasons);
-                if ($e->mood_level >= 4) $reasons[] = 'mood-' . $e->mood_level;
-                if ((int) $e->is_offtopic === 1) $reasons[] = 'off-topic';
-                if ((int) $e->complexity >= 4) $reasons[] = 'multi-question';
+                if ($e->mood_level >= 4) {
+                    $reasons[] = 'mood-'.$e->mood_level;
+                }
+                if ((int) $e->is_offtopic === 1) {
+                    $reasons[] = 'off-topic';
+                }
+                if ((int) $e->complexity >= 4) {
+                    $reasons[] = 'multi-question';
+                }
 
                 $cases[$key] = $this->mergeCase($cases[$key] ?? null, [
-                    'case_id' => 'beh-se-' . $e->id,
+                    'case_id' => 'beh-se-'.$e->id,
                     'platform' => $e->platform,
                     'fb_user_id' => $psid,
                     'kind' => 'emotional',
@@ -516,34 +533,42 @@ class FortuneDashboardController extends Controller
 
             foreach ($qaRows as $r) {
                 $text = (string) ($r->q_text ?? '');
-                if ($text === '') continue;
+                if ($text === '') {
+                    continue;
+                }
                 $matchedUrg = [];
                 foreach ($urgencyKeywords as $kw) {
-                    if (mb_stripos($text, $kw) !== false) $matchedUrg[] = $kw;
+                    if (mb_stripos($text, $kw) !== false) {
+                        $matchedUrg[] = $kw;
+                    }
                 }
                 $matchedLead = [];
                 foreach ($leadKeywords as $kw) {
-                    if (mb_stripos($text, $kw) !== false) $matchedLead[] = $kw;
+                    if (mb_stripos($text, $kw) !== false) {
+                        $matchedLead[] = $kw;
+                    }
                 }
-                if (empty($matchedUrg) && empty($matchedLead)) continue;
+                if (empty($matchedUrg) && empty($matchedLead)) {
+                    continue;
+                }
 
                 $psid = $r->source_user_id;
                 $platform = $r->source_platform ?? 'facebook';
-                $key = $platform . ':' . $psid;
+                $key = $platform.':'.$psid;
                 $reasons = array_merge(
-                    array_map(fn ($k) => 'keyword:' . $k, array_slice($matchedUrg, 0, 3)),
-                    array_map(fn ($k) => 'lead:' . $k, array_slice($matchedLead, 0, 3)),
+                    array_map(fn ($k) => 'keyword:'.$k, array_slice($matchedUrg, 0, 3)),
+                    array_map(fn ($k) => 'lead:'.$k, array_slice($matchedLead, 0, 3)),
                 );
 
                 // Urgency takes priority: if there are frustration keywords
                 // this is "frustration"; otherwise it's a fresh "lead".
-                $kind = !empty($matchedUrg) ? 'frustration' : 'lead';
-                $severity = !empty($matchedUrg)
+                $kind = ! empty($matchedUrg) ? 'frustration' : 'lead';
+                $severity = ! empty($matchedUrg)
                     ? (count($matchedUrg) >= 2 ? 'crit' : 'warn')
                     : 'warn'; // lead is always warn — not crit unless paid+stuck
 
                 $cases[$key] = $this->mergeCase($cases[$key] ?? null, [
-                    'case_id' => 'beh-kw-' . $r->id,
+                    'case_id' => 'beh-kw-'.$r->id,
                     'platform' => $platform,
                     'fb_user_id' => $psid,
                     'reading_id' => $r->reading_id,
@@ -571,27 +596,33 @@ class FortuneDashboardController extends Controller
 
             foreach ($leadRows as $r) {
                 $psid = $r->facebook_user_id;
-                if (! $psid) continue;
-                $key = 'facebook:' . $psid;
+                if (! $psid) {
+                    continue;
+                }
+                $key = 'facebook:'.$psid;
                 // Don't downgrade an existing crit/frustration to a fresh lead.
                 $existing = $cases[$key] ?? null;
-                if ($existing && $existing['kind'] === 'frustration') continue;
+                if ($existing && $existing['kind'] === 'frustration') {
+                    continue;
+                }
 
                 $ageSec = max(0, time() - strtotime((string) $r->created_at));
                 // 5min < age < 60min is the sweet spot to ping. Newer = let the
                 // bot do its thing first. Older = customer cooled off.
-                if ($ageSec < 300) continue;
+                if ($ageSec < 300) {
+                    continue;
+                }
 
                 $svc = $r->reading_type === 'celtic_cross' ? 'Celtic Cross' : 'ดูดวง 3 ใบ';
                 $cases[$key] = $this->mergeCase($existing, [
-                    'case_id' => 'beh-lead-' . $r->id,
+                    'case_id' => 'beh-lead-'.$r->id,
                     'platform' => 'facebook',
                     'fb_user_id' => $psid,
                     'reading_id' => $r->id,
                     'kind' => 'lead',
                     'severity' => 'warn',
-                    'reasons' => ['started-not-paid', 'service:' . $svc],
-                    'preview' => 'เริ่มดูดวง ' . $svc . ' แต่ยังไม่จ่าย',
+                    'reasons' => ['started-not-paid', 'service:'.$svc],
+                    'preview' => 'เริ่มดูดวง '.$svc.' แต่ยังไม่จ่าย',
                     'last_at' => (string) $r->created_at,
                     'count' => 1,
                 ]);
@@ -604,13 +635,25 @@ class FortuneDashboardController extends Controller
             // Pull all unique psids
             $psids = array_values(array_unique(array_map(fn ($k) => explode(':', $k, 2)[1] ?? '', $keys)));
 
-            // Lookup users via email pattern (fb_<psid>@thaiprompt.local).
+            // Lookup users จากคอลัมน์ facebook_psid โดยตรง
+            // (⭐ 2026-07-16 เดิมใช้ email pattern fb_<psid>@thaiprompt.local —
+            //    identity ย้ายไปอยู่คอลัมน์แล้ว email เหลือเป็นแค่ placeholder)
             $userMap = [];
             if (! empty($psids)) {
-                $emails = array_map(fn ($p) => 'fb_' . $p . '@thaiprompt.local', $psids);
-                foreach (DB::table('users')->whereIn('email', $emails)->get(['id', 'name', 'email']) as $u) {
-                    if (preg_match('/^fb_(.+)@thaiprompt\.local$/', (string) $u->email, $m)) {
-                        $userMap[$m[1]] = ['id' => $u->id, 'name' => $u->name];
+                if (Schema::hasColumn('users', 'facebook_psid')) {
+                    foreach (DB::table('users')->whereIn('facebook_psid', $psids)->get(['id', 'name', 'facebook_psid']) as $u) {
+                        $userMap[(string) $u->facebook_psid] = ['id' => $u->id, 'name' => $u->name];
+                    }
+                }
+
+                // เผื่อแถวที่ยังไม่ถูก backfill (ช่วงคาบเกี่ยว deploy) — เติมเฉพาะที่ยังหาไม่เจอ
+                $missing = array_values(array_diff($psids, array_keys($userMap)));
+                if (! empty($missing)) {
+                    $emails = array_map(fn ($p) => 'fb_'.$p.'@thaiprompt.local', $missing);
+                    foreach (DB::table('users')->whereIn('email', $emails)->get(['id', 'name', 'email']) as $u) {
+                        if (preg_match('/^fb_(.+)@thaiprompt\.local$/', (string) $u->email, $m)) {
+                            $userMap[$m[1]] = ['id' => $u->id, 'name' => $u->name];
+                        }
                     }
                 }
             }
@@ -637,9 +680,11 @@ class FortuneDashboardController extends Controller
                 $rd = $readingMap[$psid] ?? null;
                 $c['customer'] = $u['name']
                     ?? ($rd->facebook_user_name ?? null)
-                    ?? ('FB ' . substr($psid, -6));
+                    ?? ('FB '.substr($psid, -6));
                 $c['user_id'] = $u['id'] ?? null;
-                if (empty($c['reading_id']) && $rd) $c['reading_id'] = $rd->id;
+                if (empty($c['reading_id']) && $rd) {
+                    $c['reading_id'] = $rd->id;
+                }
                 // Cross-reference: if customer paid but no reading yet, mark stuck-paid signal.
                 if ($rd && (int) $rd->is_paid === 1 && empty($rd->responded_at)) {
                     $c['reasons'][] = 'stuck-paid';
@@ -654,7 +699,10 @@ class FortuneDashboardController extends Controller
         usort($list, function ($a, $b) {
             $sa = $a['severity'] === 'crit' ? 0 : 1;
             $sb = $b['severity'] === 'crit' ? 0 : 1;
-            if ($sa !== $sb) return $sa - $sb;
+            if ($sa !== $sb) {
+                return $sa - $sb;
+            }
+
             return strcmp($b['last_at'] ?? '', $a['last_at'] ?? '');
         });
 
@@ -672,22 +720,31 @@ class FortuneDashboardController extends Controller
 
     private function decodeReasons($raw): array
     {
-        if (is_array($raw)) return array_values(array_filter($raw, fn ($x) => $x !== null));
+        if (is_array($raw)) {
+            return array_values(array_filter($raw, fn ($x) => $x !== null));
+        }
         if (is_string($raw) && str_starts_with(trim($raw), '[')) {
             try {
                 $j = json_decode($raw, true);
-                if (is_array($j)) return array_values(array_filter($j, fn ($x) => $x !== null));
-            } catch (\Throwable $e) {}
+                if (is_array($j)) {
+                    return array_values(array_filter($j, fn ($x) => $x !== null));
+                }
+            } catch (\Throwable $e) {
+            }
         }
+
         return [];
     }
 
     private function mergeCase(?array $existing, array $next): array
     {
-        if (! $existing) return $next;
+        if (! $existing) {
+            return $next;
+        }
         // Keep the more recent last_at and the worse severity.
         $newer = strcmp($next['last_at'] ?? '', $existing['last_at'] ?? '') > 0;
         $worseSev = $next['severity'] === 'crit' || $existing['severity'] !== 'crit';
+
         return [
             'case_id' => $existing['case_id'],
             'platform' => $existing['platform'],
