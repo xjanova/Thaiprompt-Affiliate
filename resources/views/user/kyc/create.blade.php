@@ -1,77 +1,49 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ส่งเอกสารยืนยันตัวตน')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Green-Emerald-Teal for KYC Create) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-file-upload"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <a href="{{ route('user.kyc.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับ
-                </a>
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-upload text-4xl text-white drop-shadow-lg"></i>
-                </div>
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5aa07e 18%, transparent), transparent 70%);">
+            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                <a href="{{ route('user.kyc.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:23px; background:#5aa07e;"><i class="fas fa-upload" style="color:#fff;"></i></span>
                 <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">ส่งเอกสารยืนยันตัวตน</h1>
-                    <p class="text-green-100 text-lg mt-1">กรุณาอัปโหลดเอกสารเพื่อยืนยันตัวตน</p>
+                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ส่งเอกสารยืนยันตัวตน</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">กรุณาอัปโหลดเอกสารเพื่อยืนยันตัวตน</div>
                 </div>
             </div>
         </div>
     </div>
 
     @if(session('error'))
-        <div class="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4">
-            <i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}
+        <div class="tp-card" style="padding:14px 16px; border-left:4px solid #d9534f;">
+            <i class="fas fa-exclamation-circle" style="color:#d9534f; margin-right:8px;"></i>{{ session('error') }}
         </div>
     @endif
 
     @if($errors->any())
-        <div class="bg-red-50 border border-red-200 rounded-xl p-4">
-            <div class="flex items-start">
-                <i class="fas fa-exclamation-circle text-red-600 mt-1 mr-2"></i>
-                <div>
-                    <h3 class="font-semibold text-red-800 mb-2">พบข้อผิดพลาด:</h3>
-                    <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            </div>
+        <div class="tp-card" style="padding:16px; border-left:4px solid #d9534f;">
+            <div style="font-weight:800; color:#d9534f; margin-bottom:8px;"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i>พบข้อผิดพลาด:</div>
+            <ul style="margin:0; padding-left:18px; font-size:13px; color:var(--ink); display:flex; flex-direction:column; gap:4px;">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
     @endif
 
-    <!-- Example Images Card -->
-    <div class="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-6">
-        <h3 class="text-lg font-bold text-indigo-900 mb-4 flex items-center">
-            <i class="fas fa-images mr-2"></i>ตัวอย่างการถ่ายรูป
-        </h3>
-
-        <div class="grid md:grid-cols-2 gap-6">
-            <!-- ID Card Example -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                <h4 class="font-semibold text-indigo-900 mb-3 text-center">
-                    <i class="fas fa-id-card text-indigo-600 mr-2"></i>รูปบัตรประชาชน / ใบขับขี่
-                </h4>
-                <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-6 mb-3 border-2 border-dashed border-gray-300 dark:border-gray-600">
-                    <svg class="w-full h-32" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+    {{-- ── ตัวอย่างการถ่ายรูป ─────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-images" style="margin-right:6px;"></i>ตัวอย่างการถ่ายรูป</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;">
+            <div style="border-radius:12px; box-shadow:var(--inset-sm); padding:16px;">
+                <div style="font-weight:700; color:var(--ink); text-align:center; margin-bottom:12px;"><i class="fas fa-id-card" style="color:#5689b8; margin-right:6px;"></i>รูปบัตรประชาชน / ใบขับขี่</div>
+                <div style="border-radius:10px; padding:16px; margin-bottom:12px; border:2px dashed color-mix(in srgb, var(--ink2) 30%, transparent);">
+                    <svg style="width:100%; height:128px;" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="320" height="180" rx="8" fill="white"/>
                         <rect x="10" y="10" width="300" height="160" rx="4" fill="#E5E7EB"/>
                         <text x="160" y="30" text-anchor="middle" font-size="14" fill="#374151" font-weight="bold">บัตรประจำตัวประชาชน</text>
@@ -85,37 +57,23 @@
                         <text x="160" y="152" text-anchor="middle" font-size="12" fill="#1E40AF">เลขบัตรประชาชน 13 หลัก</text>
                     </svg>
                 </div>
-                <div class="space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                    <div class="flex items-start">
-                        <i class="fas fa-check text-green-600 mr-2 mt-0.5"></i>
-                        <span>ถ่ายทั้งหน้าบัตรให้เห็นชัดเจน</span>
-                    </div>
-                    <div class="flex items-start">
-                        <i class="fas fa-check text-green-600 mr-2 mt-0.5"></i>
-                        <span>ข้อความและตัวเลขต้องอ่านได้</span>
-                    </div>
-                    <div class="flex items-start">
-                        <i class="fas fa-check text-green-600 mr-2 mt-0.5"></i>
-                        <span>แสงสว่างเพียงพอ ไม่มืด ไม่เบลอ</span>
-                    </div>
+                <div style="display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--ink2);">
+                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>ถ่ายทั้งหน้าบัตรให้เห็นชัดเจน</div>
+                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>ข้อความและตัวเลขต้องอ่านได้</div>
+                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>แสงสว่างเพียงพอ ไม่มืด ไม่เบลอ</div>
                 </div>
             </div>
 
-            <!-- Selfie with ID Example -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                <h4 class="font-semibold text-indigo-900 mb-3 text-center">
-                    <i class="fas fa-user-circle text-indigo-600 mr-2"></i>รูปถ่ายตัวเอง + บัตร
-                </h4>
-                <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-6 mb-3 border-2 border-dashed border-gray-300 dark:border-gray-600">
-                    <svg class="w-full h-32" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <div style="border-radius:12px; box-shadow:var(--inset-sm); padding:16px;">
+                <div style="font-weight:700; color:var(--ink); text-align:center; margin-bottom:12px;"><i class="fas fa-user-circle" style="color:#5689b8; margin-right:6px;"></i>รูปถ่ายตัวเอง + บัตร</div>
+                <div style="border-radius:10px; padding:16px; margin-bottom:12px; border:2px dashed color-mix(in srgb, var(--ink2) 30%, transparent);">
+                    <svg style="width:100%; height:128px;" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="320" height="180" rx="8" fill="white"/>
                         <rect x="10" y="10" width="300" height="160" rx="4" fill="#E5E7EB"/>
-                        <!-- Face -->
                         <circle cx="160" cy="70" r="35" fill="#FDE68A"/>
                         <circle cx="150" cy="65" r="3" fill="#374151"/>
                         <circle cx="170" cy="65" r="3" fill="#374151"/>
                         <path d="M 150 80 Q 160 85 170 80" stroke="#374151" stroke-width="2" fill="none"/>
-                        <!-- ID Card in hand -->
                         <rect x="190" y="95" width="90" height="55" rx="3" fill="#BFDBFE" stroke="#3B82F6" stroke-width="2"/>
                         <text x="235" y="115" text-anchor="middle" font-size="8" fill="#1E40AF">บัตรประชาชน</text>
                         <rect x="200" y="120" width="20" height="25" rx="2" fill="#93C5FD"/>
@@ -123,162 +81,96 @@
                         <rect x="225" y="130" width="30" height="3" rx="1" fill="#93C5FD"/>
                     </svg>
                 </div>
-                <div class="space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                    <div class="flex items-start">
-                        <i class="fas fa-check text-green-600 mr-2 mt-0.5"></i>
-                        <span>ถือบัตรไว้ใกล้ใบหน้า</span>
-                    </div>
-                    <div class="flex items-start">
-                        <i class="fas fa-check text-green-600 mr-2 mt-0.5"></i>
-                        <span>ใบหน้าและบัตรต้องชัดเจนทั้งคู่</span>
-                    </div>
-                    <div class="flex items-start">
-                        <i class="fas fa-check text-green-600 mr-2 mt-0.5"></i>
-                        <span>ไม่ปิดบังใบหน้าด้วยหมวกหรือแว่น</span>
-                    </div>
+                <div style="display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--ink2);">
+                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>ถือบัตรไว้ใกล้ใบหน้า</div>
+                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>ใบหน้าและบัตรต้องชัดเจนทั้งคู่</div>
+                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>ไม่ปิดบังใบหน้าด้วยหมวกหรือแว่น</div>
                 </div>
             </div>
         </div>
-
-        <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p class="text-xs text-yellow-800 flex items-start">
-                <i class="fas fa-lightbulb mr-2 mt-0.5 text-yellow-600"></i>
-                <span><strong>เคล็ดลับ:</strong> รูปจะถูกแปลงเป็น WebP อัตโนมัติเพื่อประหยัดพื้นที่และเพิ่มความเร็ว</span>
-            </p>
+        <div style="margin-top:16px; padding:12px; border-radius:10px; box-shadow:var(--inset-sm);">
+            <p style="font-size:12px; color:var(--ink2); margin:0;"><i class="fas fa-lightbulb" style="color:#d9a441; margin-right:6px;"></i><strong>เคล็ดลับ:</strong> รูปจะถูกแปลงเป็น WebP อัตโนมัติเพื่อประหยัดพื้นที่และเพิ่มความเร็ว</p>
         </div>
     </div>
 
-    <!-- Instructions Card -->
-    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
-        <h3 class="text-lg font-bold text-blue-900 mb-4">
-            <i class="fas fa-clipboard-check mr-2"></i>เงื่อนไขและข้อกำหนด
-        </h3>
-        <div class="space-y-3">
-            <div class="flex items-start">
-                <i class="fas fa-check-circle text-blue-600 mr-2 mt-1"></i>
-                <div>
-                    <p class="font-semibold text-blue-900">บัตรประชาชน หรือ ใบขับขี่ ต้องไม่หมดอายุ</p>
-                    <p class="text-sm text-blue-700">ตรวจสอบวันหมดอายุบนบัตร</p>
-                </div>
+    {{-- ── เงื่อนไข ──────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px; border-left:4px solid #5689b8;">
+        <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-clipboard-check" style="margin-right:6px;"></i>เงื่อนไขและข้อกำหนด</div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; gap:8px;">
+                <i class="fas fa-check-circle" style="color:#5689b8; margin-top:3px;"></i>
+                <div><div style="font-weight:700; color:var(--ink);">บัตรประชาชน หรือ ใบขับขี่ ต้องไม่หมดอายุ</div><div style="font-size:12px; color:var(--ink2);">ตรวจสอบวันหมดอายุบนบัตร</div></div>
             </div>
-            <div class="flex items-start">
-                <i class="fas fa-check-circle text-blue-600 mr-2 mt-1"></i>
-                <div>
-                    <p class="font-semibold text-blue-900">รองรับไฟล์: JPEG, JPG, PNG</p>
-                    <p class="text-sm text-blue-700">ขนาดไม่เกิน 5 MB ต่อไฟล์</p>
-                </div>
+            <div style="display:flex; gap:8px;">
+                <i class="fas fa-check-circle" style="color:#5689b8; margin-top:3px;"></i>
+                <div><div style="font-weight:700; color:var(--ink);">รองรับไฟล์: JPEG, JPG, PNG</div><div style="font-size:12px; color:var(--ink2);">ขนาดไม่เกิน 5 MB ต่อไฟล์</div></div>
             </div>
-            <div class="flex items-start">
-                <i class="fas fa-check-circle text-blue-600 mr-2 mt-1"></i>
-                <div>
-                    <p class="font-semibold text-blue-900">รูปถ่ายต้องชัดเจน ไม่มืด ไม่เบลอ</p>
-                    <p class="text-sm text-blue-700">ควรถ่ายในที่แสงสว่างเพียงพอ</p>
-                </div>
+            <div style="display:flex; gap:8px;">
+                <i class="fas fa-check-circle" style="color:#5689b8; margin-top:3px;"></i>
+                <div><div style="font-weight:700; color:var(--ink);">รูปถ่ายต้องชัดเจน ไม่มืด ไม่เบลอ</div><div style="font-size:12px; color:var(--ink2);">ควรถ่ายในที่แสงสว่างเพียงพอ</div></div>
             </div>
         </div>
     </div>
 
-    <!-- Upload Form -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6" x-data="kycUpload()">
-        <form action="{{ route('user.kyc.store') }}" method="POST" enctype="multipart/form-data">
+    {{-- ── ฟอร์มอัปโหลด ──────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px;" x-data="kycUpload()">
+        <form action="{{ route('user.kyc.store') }}" method="POST" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:18px;">
             @csrf
 
-            <!-- ID Card Image -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-id-card mr-1"></i>
-                    รูปบัตรประชาชน / ใบขับขี่ <span class="text-red-500">*</span>
-                </label>
-
-                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition"
-                     @click="$refs.idCardInput.click()">
+            {{-- บัตรประชาชน --}}
+            <div>
+                <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:8px;"><i class="fas fa-id-card" style="margin-right:4px;"></i>รูปบัตรประชาชน / ใบขับขี่ <span style="color:#d9534f;">*</span></label>
+                <div style="border:2px dashed color-mix(in srgb, var(--ink2) 30%, transparent); border-radius:12px; padding:24px; text-align:center; cursor:pointer;" @click="$refs.idCardInput.click()">
                     <template x-if="!idCardPreview">
                         <div>
-                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">คลิกเพื่ออัปโหลดรูปบัตรประชาชน หรือ ใบขับขี่</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
+                            <i class="fas fa-cloud-upload-alt" style="font-size:36px; color:var(--ink2); margin-bottom:10px;"></i>
+                            <p style="font-size:13px; color:var(--ink2); margin:0 0 4px;">คลิกเพื่ออัปโหลดรูปบัตรประชาชน หรือ ใบขับขี่</p>
+                            <p style="font-size:11px; color:var(--ink2); margin:0;">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
                         </div>
                     </template>
-
                     <template x-if="idCardPreview">
                         <div>
-                            <img :src="idCardPreview" class="max-h-64 mx-auto rounded-lg mb-3" alt="ID Card Preview">
-                            <button type="button"
-                                    @click.stop="removeIdCard()"
-                                    class="text-sm text-red-600 hover:text-red-800">
-                                <i class="fas fa-trash mr-1"></i>ลบรูป
-                            </button>
+                            <img :src="idCardPreview" style="max-height:256px; margin:0 auto 12px; border-radius:10px;" alt="ID Card Preview">
+                            <button type="button" @click.stop="removeIdCard()" class="tp-btn tp-btn-sm" style="color:#d9534f;"><i class="fas fa-trash"></i> ลบรูป</button>
                         </div>
                     </template>
                 </div>
-
-                <input type="file"
-                       name="id_card_image"
-                       id="id_card_image"
-                       accept="image/jpeg,image/jpg,image/png"
-                       class="hidden"
-                       x-ref="idCardInput"
-                       @change="previewIdCard($event)"
-                       required>
-
+                <input type="file" name="id_card_image" id="id_card_image" accept="image/jpeg,image/jpg,image/png"
+                       style="display:none;" x-ref="idCardInput" @change="previewIdCard($event)" required>
                 @error('id_card_image')
-                    <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                    <p style="font-size:12px; color:#d9534f; margin-top:6px;">{{ $message }}</p>
                 @enderror
             </div>
 
-            <!-- Selfie Image -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-user-circle mr-1"></i>
-                    รูปถ่ายตัวเองพร้อมบัตรประชาชน <span class="text-red-500">*</span>
-                </label>
-
-                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition"
-                     @click="$refs.selfieInput.click()">
+            {{-- เซลฟี่ --}}
+            <div>
+                <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:8px;"><i class="fas fa-user-circle" style="margin-right:4px;"></i>รูปถ่ายตัวเองพร้อมบัตรประชาชน <span style="color:#d9534f;">*</span></label>
+                <div style="border:2px dashed color-mix(in srgb, var(--ink2) 30%, transparent); border-radius:12px; padding:24px; text-align:center; cursor:pointer;" @click="$refs.selfieInput.click()">
                     <template x-if="!selfiePreview">
                         <div>
-                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">คลิกเพื่ออัปโหลดรูปถ่ายตัวเอง</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
+                            <i class="fas fa-cloud-upload-alt" style="font-size:36px; color:var(--ink2); margin-bottom:10px;"></i>
+                            <p style="font-size:13px; color:var(--ink2); margin:0 0 4px;">คลิกเพื่ออัปโหลดรูปถ่ายตัวเอง</p>
+                            <p style="font-size:11px; color:var(--ink2); margin:0;">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
                         </div>
                     </template>
-
                     <template x-if="selfiePreview">
                         <div>
-                            <img :src="selfiePreview" class="max-h-64 mx-auto rounded-lg mb-3" alt="Selfie Preview">
-                            <button type="button"
-                                    @click.stop="removeSelfie()"
-                                    class="text-sm text-red-600 hover:text-red-800">
-                                <i class="fas fa-trash mr-1"></i>ลบรูป
-                            </button>
+                            <img :src="selfiePreview" style="max-height:256px; margin:0 auto 12px; border-radius:10px;" alt="Selfie Preview">
+                            <button type="button" @click.stop="removeSelfie()" class="tp-btn tp-btn-sm" style="color:#d9534f;"><i class="fas fa-trash"></i> ลบรูป</button>
                         </div>
                     </template>
                 </div>
-
-                <input type="file"
-                       name="selfie_image"
-                       id="selfie_image"
-                       accept="image/jpeg,image/jpg,image/png"
-                       class="hidden"
-                       x-ref="selfieInput"
-                       @change="previewSelfie($event)"
-                       required>
-
+                <input type="file" name="selfie_image" id="selfie_image" accept="image/jpeg,image/jpg,image/png"
+                       style="display:none;" x-ref="selfieInput" @change="previewSelfie($event)" required>
                 @error('selfie_image')
-                    <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                    <p style="font-size:12px; color:#d9534f; margin-top:6px;">{{ $message }}</p>
                 @enderror
             </div>
 
-            <!-- Submit Button -->
-            <div class="flex gap-4">
-                <a href="{{ route('user.kyc.index') }}"
-                   class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition text-center">
-                    <i class="fas fa-times mr-2"></i>ยกเลิก
-                </a>
-                <button type="submit"
-                        class="flex-1 px-6 py-3 bg-gradient-primary text-white rounded-lg hover:opacity-90 transition">
-                    <i class="fas fa-paper-plane mr-2"></i>ส่งเอกสาร
-                </button>
+            {{-- ปุ่ม --}}
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <a href="{{ route('user.kyc.index') }}" class="tp-btn" style="flex:1; min-width:120px; justify-content:center; text-align:center;"><i class="fas fa-times"></i> ยกเลิก</a>
+                <button type="submit" class="tp-btn tp-btn-primary" style="flex:1; min-width:120px; justify-content:center; background:#5aa07e; border-color:#5aa07e;"><i class="fas fa-paper-plane"></i> ส่งเอกสาร</button>
             </div>
         </form>
     </div>
@@ -327,17 +219,3 @@ function kycUpload() {
 </script>
 @endpush
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush

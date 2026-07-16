@@ -1175,153 +1175,12 @@ return [
         ],
 
         [
-            'id' => 'shopping',
-            'label' => 'ช๊อปปิ้ง',
-            'icon' => '🛒',
-            'route' => null,
-            'order' => 4,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'ช๊อปสินค้า', 'route' => 'storefront.index'],
-                ['label' => 'คำสั่งซื้อของฉัน', 'route' => 'orders.index'],
-            ],
-        ],
-
-        [
-            'id' => 'hotels',
-            'label' => 'โรงแรม',
-            'icon' => '🏨',
-            'route' => null,
-            'order' => 5,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'จองโรงแรม', 'route' => 'hotels.index'],
-                ['label' => 'การจองของฉัน', 'route' => 'hotels.bookings.index'],
-            ],
-        ],
-
-        [
-            'id' => 'service-booking',
-            'label' => 'จองบริการ',
-            'icon' => '🔧',
-            'route' => null,
-            'order' => 5.5,
-            'permissions' => [],
-            'badge' => 'NEW',
-            'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500',
-            'submenu' => [
-                ['label' => '🔍 ค้นหาบริการ', 'route' => 'user.services.index', 'description' => 'เลือกบริการที่ต้องการ'],
-                ['label' => '📅 การจองของฉัน', 'route' => 'user.bookings.index', 'description' => 'ดูประวัติการจอง'],
-                ['label' => '⭐ รีวิวบริการ', 'route' => 'user.service-reviews.index', 'description' => 'รีวิวและให้คะแนน'],
-                ['label' => '👷 สมัครเป็นผู้ให้บริการ', 'route' => 'provider.register', 'description' => 'ลงทะเบียนเป็น Provider', 'badge' => '💼', 'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500', 'condition' => 'hideIfProvider'],
-            ],
-        ],
-
-        [
-            'id' => 'provider-panel',
-            'label' => 'งานของฉัน (Provider)',
-            'icon' => '👷',
-            'route' => null,
-            'order' => 5.7,
-            'permissions' => [],
-            'badge' => 'PRO',
-            'badge_color' => 'bg-gradient-to-r from-orange-500 to-red-500',
-            'condition' => 'hasProviderAccess', // ต้องเป็น Provider ถึงจะเห็น
-            'submenu' => [
-                ['label' => '📊 Dashboard งาน', 'route' => 'provider.bookings.index'],
-                ['label' => '🔔 งานใหม่ที่รอ', 'route' => 'provider.bookings.pending', 'badge' => 'count', 'badge_color' => 'bg-red-500'],
-                ['label' => '✅ งานที่รับแล้ว', 'route' => 'provider.bookings.index'],
-                ['label' => '💰 รายได้ของฉัน', 'route' => 'provider.earnings.index'],
-                ['label' => '📈 สถิติและรีวิว', 'route' => 'provider.stats.index'],
-                ['label' => '⚙️ ตั้งค่า Provider', 'route' => 'provider.settings.index'],
-            ],
-        ],
-
-        [
             'id' => 'tickets',
             'label' => 'Ticket Support',
             'icon' => '🎫',
             'route' => 'user.tickets.index',
             'order' => 6,
             'permissions' => [],
-        ],
-
-        [
-            'id' => 'academy',
-            'label' => 'ศูนย์การเรียนรู้',
-            'icon' => '🎓',
-            'route' => null,
-            'order' => 6.1,
-            'permissions' => [],
-            'badge' => 'NEW',
-            'badge_color' => 'bg-gradient-to-r from-indigo-500 to-purple-500',
-            'submenu' => [
-                ['label' => '🏠 หน้าหลัก', 'route' => 'user.academy.index', 'description' => 'ศูนย์การเรียนรู้'],
-                ['label' => '📊 ความก้าวหน้าของฉัน', 'route' => 'user.academy.my-progress', 'description' => 'ติดตามผลการเรียน'],
-            ],
-        ],
-
-        [
-            'id' => 'forum',
-            'label' => 'ฟอรั่มชุมชน',
-            'icon' => '💬',
-            'route' => null,
-            'order' => 6.3,
-            'permissions' => [],
-            'badge' => 'NEW',
-            'badge_color' => 'bg-gradient-to-r from-blue-500 to-purple-500',
-            'submenu' => [
-                ['label' => '🏠 หน้าแรกฟอรั่ม', 'route' => 'forum.index', 'description' => 'เข้าสู่ชุมชน'],
-                ['label' => '📝 กระทู้ของฉัน', 'route' => 'forum.my-threads', 'description' => 'กระทู้ที่สร้างไว้'],
-                ['label' => '💬 ความคิดเห็นของฉัน', 'route' => 'forum.my-posts', 'description' => 'โพสต์ที่ตอบไว้'],
-                ['label' => '🔔 การแจ้งเตือน', 'route' => 'forum.notifications', 'description' => 'แจ้งเตือนจากฟอรั่ม'],
-            ],
-        ],
-
-        [
-            'id' => 'chatbot',
-            'label' => 'ระบบบอทแชท',
-            'icon' => '🤖',
-            'route' => null,
-            'order' => 6.5,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'บอทของฉัน', 'route' => 'chatbot.index'],
-                ['label' => 'สร้างบอทใหม่', 'route' => 'chatbot.create'],
-                ['label' => 'ตลาดบอท', 'route' => 'chatbot.marketplace.index'],
-                ['label' => 'บอทที่เช่า', 'route' => 'chatbot.marketplace.my-rentals'],
-                ['label' => 'รายได้ของฉัน', 'route' => 'chatbot.marketplace.my-earnings'],
-            ],
-        ],
-
-        [
-            'id' => 'games',
-            'label' => 'เกมส์',
-            'icon' => '🎮',
-            'route' => null,
-            'order' => 6.8,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'เกมส์ทั้งหมด', 'route' => 'games.index'],
-                ['label' => 'ทัวร์นาเมนต์', 'route' => 'tournaments.index'],
-                ['label' => 'รางวัลรายวัน', 'route' => 'rewards.daily'],
-                ['label' => 'ภารกิจ', 'route' => 'rewards.missions'],
-            ],
-        ],
-
-        [
-            'id' => 'video-missions',
-            'label' => 'ภารกิจดูคลิป',
-            'icon' => '🎬',
-            'route' => null,
-            'order' => 6.9,
-            'permissions' => [],
-            'badge' => 'NEW',
-            'badge_color' => 'bg-gradient-to-r from-pink-500 to-purple-500',
-            'submenu' => [
-                ['label' => '🎬 ภารกิจทั้งหมด', 'route' => 'user.video-missions.index', 'description' => 'ดูและทำภารกิจ'],
-                ['label' => '📜 ประวัติการทำ', 'route' => 'user.video-missions.history', 'description' => 'ประวัติและรายได้'],
-            ],
         ],
 
         [
@@ -1339,88 +1198,6 @@ return [
                 ['label' => 'ประวัติธุรกรรม', 'route' => 'user.wallet.transactions'],
                 ['label' => '⚠️ หนี้ค้างชำระ', 'route' => 'user.wallet.debts'],
             ],
-        ],
-
-        [
-            'id' => 'wallet-crypto',
-            'label' => 'กระเป๋าคริปโต',
-            'icon' => '₿',
-            'route' => null,
-            'order' => 8,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'กระเป๋าคริปโต', 'route' => 'user.crypto-wallet.index'],
-                ['label' => '💎 TPIX Wallet', 'route' => 'user.tpix.wallet', 'description' => 'กระเป๋า TPIX'],
-                ['label' => '📊 Staking', 'route' => 'user.staking.index', 'badge' => 'NEW', 'description' => 'Stake เหรียญรับผลตอบแทน'],
-                ['label' => '🔄 DEX Trading', 'route' => 'user.dex.index', 'description' => 'เทรดคริปโต'],
-            ],
-        ],
-
-        [
-            'id' => 'tpix-tokens',
-            'label' => 'TPIX Token',
-            'icon' => '🪙',
-            'route' => null,
-            'order' => 8.3,
-            'permissions' => [],
-            'badge' => 'NEW',
-            'badge_color' => 'bg-gradient-to-r from-amber-500 to-orange-500',
-            'submenu' => [
-                ['label' => '📖 คู่มือสร้างเหรียญ', 'route' => 'user.tokens.tutorial', 'description' => 'เรียนรู้การสร้างเหรียญของคุณเอง'],
-                ['label' => '🪙 ตลาด Token', 'route' => 'user.tokens.index', 'description' => 'ดู Token ทั้งหมดในระบบ'],
-                ['label' => '✨ สร้างเหรียญใหม่', 'route' => 'user.tokens.create', 'description' => 'สร้าง Token ของคุณเอง'],
-                ['label' => '📁 เหรียญของฉัน', 'route' => 'user.tokens.my-tokens', 'description' => 'จัดการ Token ที่สร้างไว้'],
-                ['label' => '💰 ยอดคงเหลือ', 'route' => 'user.tokens.my-balances', 'description' => 'ดูยอด Token ที่ถือครอง'],
-            ],
-        ],
-
-        [
-            'id' => 'nfc-cards',
-            'label' => 'บัตร NFC',
-            'icon' => 'fas fa-credit-card',
-            'route' => 'user.nfc.index',
-            'order' => 8.5,
-            'permissions' => [],
-            'badge' => 'NEW',
-            'badge_color' => 'bg-gradient-to-r from-blue-500 to-purple-500',
-        ],
-
-        [
-            'id' => 'investments',
-            'label' => 'การลงทุน ROI',
-            'icon' => '📈',
-            'route' => null,
-            'order' => 9,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'แดชบอร์ด', 'route' => 'user.investments.index'],
-                ['label' => 'แผนการลงทุน', 'route' => 'user.investments.plans'],
-            ],
-        ],
-
-        [
-            'id' => 'ai-bots',
-            'label' => 'AI Bots',
-            'icon' => '🤖',
-            'route' => null,
-            'order' => 10,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'ตลาดบอท', 'route' => 'marketplace.index'],
-                ['label' => '🎨 AI Generation', 'route' => 'user.ai-gen.index', 'badge' => 'NEW', 'description' => 'สร้างภาพด้วย AI'],
-                ['label' => '🛒 Marketplace', 'route' => 'user.marketplace.index', 'description' => 'ซื้อขายบอท'],
-            ],
-        ],
-
-        [
-            'id' => 'coin-shop',
-            'label' => 'ร้านค้าเหรียญ',
-            'icon' => '🪙',
-            'route' => 'user.coin-shop.index',
-            'order' => 10.5,
-            'permissions' => [],
-            'badge' => 'NEW',
-            'badge_color' => 'bg-gradient-to-r from-yellow-500 to-amber-500',
         ],
 
         [
@@ -1481,15 +1258,6 @@ return [
                 ['label' => 'ตั้งค่า 2FA', 'route' => 'user.two-factor.setup'],
                 ['label' => 'การตั้งค่าอีเมล', 'route' => 'user.email.preferences'],
             ],
-        ],
-
-        [
-            'id' => 'themes',
-            'label' => 'ตั้งค่าธีม',
-            'icon' => '🎨',
-            'route' => 'user.themes.index',
-            'order' => 14,
-            'permissions' => [],
         ],
 
         [

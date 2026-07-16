@@ -1,356 +1,191 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ยืนยันตัวตน (KYC)')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Blue-Indigo-Purple for KYC) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-shield-check"></i>
-            </div>
-        </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center gap-4">
-                <div class="glass-fusion p-4 rounded-2xl">
-                    <i class="fas fa-user-shield text-4xl text-white drop-shadow-lg"></i>
-                </div>
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5689b8 18%, transparent), transparent 70%);">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <span class="tp-tile" style="width:54px; height:54px; border-radius:16px; font-size:24px; background:#5689b8;"><i class="fas fa-user-shield" style="color:#fff;"></i></span>
                 <div>
-                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">ยืนยันตัวตน (KYC)</h1>
-                    <p class="text-blue-100 text-lg mt-1">ยืนยันตัวตนเพื่อความปลอดภัยและเพิ่มความน่าเชื่อถือของบัญชี</p>
+                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ยืนยันตัวตน (KYC)</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ยืนยันตัวตนเพื่อความปลอดภัยและเพิ่มความน่าเชื่อถือของบัญชี</div>
                 </div>
             </div>
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="bg-green-50 border border-green-200 text-green-800 rounded-xl p-4">
-            <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
-        </div>
-    @endif
+    {{-- ── ข้อความแจ้งเตือน ──────────────────────────────────── --}}
+    @foreach(['success' => ['#5aa07e','fa-check-circle'], 'error' => ['#d9534f','fa-exclamation-circle'], 'warning' => ['#d9a441','fa-exclamation-triangle'], 'info' => ['#5689b8','fa-info-circle']] as $key => $meta)
+        @if(session($key))
+            <div class="tp-card" style="padding:14px 16px; border-left:4px solid {{ $meta[0] }};">
+                <i class="fas {{ $meta[1] }}" style="color:{{ $meta[0] }}; margin-right:8px;"></i>{{ session($key) }}
+            </div>
+        @endif
+    @endforeach
 
-    @if(session('error'))
-        <div class="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4">
-            <i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}
-        </div>
-    @endif
-
-    @if(session('warning'))
-        <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl p-4">
-            <i class="fas fa-exclamation-triangle mr-2"></i>{{ session('warning') }}
-        </div>
-    @endif
-
-    @if(session('info'))
-        <div class="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-4">
-            <i class="fas fa-info-circle mr-2"></i>{{ session('info') }}
-        </div>
-    @endif
-
-    {{-- OCR Success Message --}}
+    {{-- OCR สำเร็จ --}}
     @if(session('ocr_success'))
-        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4">
-            <div class="flex items-start">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-robot text-2xl text-green-600"></i>
-                </div>
-                <div class="ml-3 flex-1">
-                    <h3 class="text-sm font-bold text-green-900">
-                        <i class="fas fa-check-circle mr-1"></i>{{ session('ocr_success') }}
-                    </h3>
-                    <p class="text-xs text-green-700 mt-1">
-                        ข้อมูลจากบัตรประชาชนถูกอ่านและบันทึกอัตโนมัติแล้ว แอดมินจะตรวจสอบความถูกต้องอีกครั้ง
-                    </p>
+        <div class="tp-card" style="padding:16px; border-left:4px solid #5aa07e;">
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+                <i class="fas fa-robot" style="font-size:22px; color:#5aa07e;"></i>
+                <div>
+                    <div style="font-weight:800; color:var(--ink);"><i class="fas fa-check-circle" style="margin-right:4px;"></i>{{ session('ocr_success') }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">ข้อมูลจากบัตรประชาชนถูกอ่านและบันทึกอัตโนมัติแล้ว แอดมินจะตรวจสอบความถูกต้องอีกครั้ง</div>
                 </div>
             </div>
         </div>
     @endif
 
-    {{-- OCR Error/Warning Message --}}
+    {{-- OCR ผิดพลาด --}}
     @if(session('ocr_error'))
-        <div class="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl p-4">
-            <div class="flex items-start">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-exclamation-triangle text-2xl text-orange-600"></i>
-                </div>
-                <div class="ml-3 flex-1">
-                    <h3 class="text-sm font-bold text-orange-900">
-                        <i class="fas fa-robot mr-1"></i>ระบบ OCR: {{ session('ocr_error') }}
-                    </h3>
+        <div class="tp-card" style="padding:16px; border-left:4px solid #d9a441;">
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+                <i class="fas fa-exclamation-triangle" style="font-size:22px; color:#d9a441;"></i>
+                <div>
+                    <div style="font-weight:800; color:var(--ink);"><i class="fas fa-robot" style="margin-right:4px;"></i>ระบบ OCR: {{ session('ocr_error') }}</div>
                     @if(session('ocr_suggestion'))
-                        <p class="text-xs text-orange-700 mt-2">
-                            <i class="fas fa-lightbulb mr-1"></i><strong>คำแนะนำ:</strong> {{ session('ocr_suggestion') }}
-                        </p>
+                        <div style="font-size:12px; color:var(--ink2); margin-top:8px;"><i class="fas fa-lightbulb" style="margin-right:4px;"></i><strong>คำแนะนำ:</strong> {{ session('ocr_suggestion') }}</div>
                     @endif
-                    <div class="mt-3 p-2 bg-white dark:bg-gray-800 bg-opacity-60 rounded text-xs text-gray-700 dark:text-gray-300">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        <strong>หมายเหตุ:</strong> คำขอของคุณถูกส่งเรียบร้อยแล้ว แต่ระบบไม่สามารถอ่านข้อมูลจากบัตรอัตโนมัติได้
-                        แอดมินจะกรอกข้อมูลด้วยตนเองในขั้นตอนการตรวจสอบ
+                    <div style="margin-top:12px; padding:10px; border-radius:10px; box-shadow:var(--inset-sm); font-size:12px; color:var(--ink2);">
+                        <i class="fas fa-info-circle" style="margin-right:4px;"></i><strong>หมายเหตุ:</strong> คำขอของคุณถูกส่งเรียบร้อยแล้ว แต่ระบบไม่สามารถอ่านข้อมูลจากบัตรอัตโนมัติได้ แอดมินจะกรอกข้อมูลด้วยตนเองในขั้นตอนการตรวจสอบ
                     </div>
                 </div>
             </div>
         </div>
     @endif
 
-    <!-- KYC Status Card -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-        {{-- null หรือ 'not_submitted' = ยังไม่ได้ส่งเอกสาร --}}
-        @if(auth()->user()->kyc_status === 'not_submitted' || auth()->user()->kyc_status === null)
-            <div class="text-center py-8">
-                <div class="w-24 h-24 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                    <i class="fas fa-id-card text-4xl text-gray-400"></i>
-                </div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">คุณยังไม่ได้ยืนยันตัวตน</h2>
-                <p class="text-gray-600 dark:text-gray-400 mb-6">ยืนยันตัวตนเพื่อเพิ่มความปลอดภัยและความน่าเชื่อถือของบัญชีของคุณ</p>
-                <a href="{{ route('user.kyc.create') }}"
-                   class="inline-flex items-center px-6 py-3 bg-gradient-primary text-white rounded-lg hover:opacity-90 transition">
-                    <i class="fas fa-upload mr-2"></i>
-                    เริ่มยืนยันตัวตน
-                </a>
-            </div>
-        @elseif(auth()->user()->kyc_status === 'pending')
-            <div class="text-center py-8">
-                {{-- สถานะ Badge ที่ชัดเจน --}}
-                <div class="mb-6">
-                    <span class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full text-lg font-bold shadow-lg animate-pulse">
-                        <i class="fas fa-hourglass-half mr-3 text-2xl"></i>
-                        กำลังรอตรวจสอบเอกสาร
+    {{-- ── การ์ดสถานะ KYC ────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:28px;">
+        @php $st = auth()->user()->kyc_status; @endphp
+
+        @if($st === 'pending')
+            <div style="text-align:center;">
+                <div style="margin-bottom:20px;">
+                    <span style="display:inline-flex; align-items:center; gap:10px; padding:12px 24px; border-radius:999px; font-size:16px; font-weight:800; color:#fff; background:#d9a441;">
+                        <i class="fas fa-hourglass-half"></i> กำลังรอตรวจสอบเอกสาร
                     </span>
                 </div>
-
-                <div class="w-24 h-24 mx-auto mb-4 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center ring-4 ring-yellow-300 dark:ring-yellow-700">
-                    <i class="fas fa-clock text-4xl text-yellow-600 dark:text-yellow-400 animate-spin" style="animation-duration: 3s;"></i>
+                <div style="width:96px; height:96px; margin:0 auto 16px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-clock" style="font-size:36px; color:#d9a441;"></i>
                 </div>
-
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    <i class="fas fa-file-alt text-yellow-500 mr-2"></i>
-                    เอกสารอยู่ระหว่างการตรวจสอบ
-                </h2>
-                <p class="text-gray-600 dark:text-gray-400 mb-6">
-                    ทีมงานกำลังตรวจสอบเอกสารของคุณ โปรดรอผลการตรวจสอบภายใน <strong class="text-yellow-600">1-3 วันทำการ</strong>
-                </p>
+                <h2 style="font-size:22px; font-weight:800; color:var(--ink); margin:0 0 8px;">เอกสารอยู่ระหว่างการตรวจสอบ</h2>
+                <p style="color:var(--ink2); margin:0 0 20px;">ทีมงานกำลังตรวจสอบเอกสารของคุณ โปรดรอผลการตรวจสอบภายใน <strong style="color:#d9a441;">1-3 วันทำการ</strong></p>
 
                 @if($kycVerification)
-                    <div class="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl p-6 max-w-md mx-auto text-left shadow-md">
-                        <h3 class="font-bold text-yellow-800 dark:text-yellow-300 mb-4 text-center">
-                            <i class="fas fa-clipboard-list mr-2"></i>รายละเอียดการส่งเอกสาร
-                        </h3>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                                <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-                                    <i class="fas fa-calendar-alt mr-2 text-yellow-500"></i>วันที่ส่ง:
-                                </span>
-                                <span class="text-sm font-bold text-gray-900 dark:text-white">
-                                    {{ $kycVerification->submitted_at ? $kycVerification->submitted_at->format('d/m/Y H:i') : '-' }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                                <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-                                    <i class="fas fa-info-circle mr-2 text-yellow-500"></i>สถานะ:
-                                </span>
-                                <span class="inline-flex items-center px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 rounded-full text-xs font-bold">
-                                    <i class="fas fa-spinner fa-spin mr-1"></i>
-                                    รอการตรวจสอบ
-                                </span>
-                            </div>
+                    <div style="max-width:420px; margin:0 auto; border-radius:14px; box-shadow:var(--inset-sm); padding:20px; text-align:left;">
+                        <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:13px;">
+                            <span style="color:var(--ink2);"><i class="fas fa-calendar-alt" style="margin-right:6px; color:#d9a441;"></i>วันที่ส่ง:</span>
+                            <span style="font-weight:700; color:var(--ink);">{{ $kycVerification->submitted_at ? $kycVerification->submitted_at->format('d/m/Y H:i') : '-' }}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:13px;">
+                            <span style="color:var(--ink2);"><i class="fas fa-info-circle" style="margin-right:6px; color:#d9a441;"></i>สถานะ:</span>
+                            <span style="display:inline-flex; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:700; color:#d9a441; background:color-mix(in srgb, #d9a441 16%, transparent);">รอการตรวจสอบ</span>
                         </div>
                     </div>
-
-                    <a href="{{ route('user.kyc.show', $kycVerification) }}"
-                       class="inline-flex items-center px-6 py-3 mt-6 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all">
-                        <i class="fas fa-eye mr-2"></i>
-                        ดูเอกสารที่ส่ง
-                    </a>
+                    <a href="{{ route('user.kyc.show', $kycVerification) }}" class="tp-btn" style="margin-top:20px;"><i class="fas fa-eye"></i> ดูเอกสารที่ส่ง</a>
                 @endif
 
-                {{-- คำแนะนำขณะรอ --}}
-                <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl max-w-md mx-auto">
-                    <p class="text-sm text-blue-800 dark:text-blue-300">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        <strong>หมายเหตุ:</strong> คุณจะได้รับการแจ้งเตือนเมื่อการตรวจสอบเสร็จสิ้น
-                    </p>
+                <div style="margin-top:20px; max-width:420px; margin-inline:auto; padding:14px; border-radius:12px; box-shadow:var(--inset-sm);">
+                    <p style="font-size:13px; color:var(--ink2); margin:0;"><i class="fas fa-info-circle" style="margin-right:6px;"></i><strong>หมายเหตุ:</strong> คุณจะได้รับการแจ้งเตือนเมื่อการตรวจสอบเสร็จสิ้น</p>
                 </div>
             </div>
-        @elseif(auth()->user()->kyc_status === 'approved')
-            <div class="text-center py-8">
-                {{-- สถานะ Badge ที่ชัดเจน --}}
-                <div class="mb-6">
-                    <span class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-lg font-bold shadow-lg">
-                        <i class="fas fa-shield-check mr-3 text-2xl"></i>
-                        ยืนยันตัวตนเรียบร้อยแล้ว
+
+        @elseif($st === 'approved')
+            <div style="text-align:center;">
+                <div style="margin-bottom:20px;">
+                    <span style="display:inline-flex; align-items:center; gap:10px; padding:12px 24px; border-radius:999px; font-size:16px; font-weight:800; color:#fff; background:#5aa07e;">
+                        <i class="fas fa-shield-alt"></i> ยืนยันตัวตนเรียบร้อยแล้ว
                     </span>
                 </div>
-
-                <div class="w-24 h-24 mx-auto mb-4 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center ring-4 ring-green-300 dark:ring-green-700">
-                    <i class="fas fa-check-circle text-4xl text-green-600 dark:text-green-400"></i>
+                <div style="width:96px; height:96px; margin:0 auto 16px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-check-circle" style="font-size:36px; color:#5aa07e;"></i>
                 </div>
-
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    <i class="fas fa-user-check text-green-500 mr-2"></i>
-                    บัญชีได้รับการยืนยันแล้ว
-                </h2>
-                <p class="text-gray-600 dark:text-gray-400 mb-6">
-                    คุณสามารถใช้งานฟีเจอร์ทั้งหมดได้อย่างเต็มรูปแบบ รวมถึงการถอนเงิน
-                </p>
+                <h2 style="font-size:22px; font-weight:800; color:var(--ink); margin:0 0 8px;">บัญชีได้รับการยืนยันแล้ว</h2>
+                <p style="color:var(--ink2); margin:0 0 20px;">คุณสามารถใช้งานฟีเจอร์ทั้งหมดได้อย่างเต็มรูปแบบ รวมถึงการถอนเงิน</p>
 
                 @if($kycVerification)
-                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl p-6 max-w-md mx-auto text-left shadow-md">
-                        <h3 class="font-bold text-green-800 dark:text-green-300 mb-4 text-center">
-                            <i class="fas fa-certificate mr-2"></i>ข้อมูลการยืนยัน
-                        </h3>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                                <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-                                    <i class="fas fa-calendar-check mr-2 text-green-500"></i>วันที่อนุมัติ:
-                                </span>
-                                <span class="text-sm font-bold text-gray-900 dark:text-white">
-                                    {{ auth()->user()->kyc_verified_at ? auth()->user()->kyc_verified_at->format('d/m/Y H:i') : '-' }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                                <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-                                    <i class="fas fa-award mr-2 text-green-500"></i>สถานะ:
-                                </span>
-                                <span class="inline-flex items-center px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 rounded-full text-xs font-bold">
-                                    <i class="fas fa-check-circle mr-1"></i>
-                                    อนุมัติแล้ว
-                                </span>
-                            </div>
+                    <div style="max-width:420px; margin:0 auto; border-radius:14px; box-shadow:var(--inset-sm); padding:20px; text-align:left;">
+                        <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:13px;">
+                            <span style="color:var(--ink2);"><i class="fas fa-calendar-check" style="margin-right:6px; color:#5aa07e;"></i>วันที่อนุมัติ:</span>
+                            <span style="font-weight:700; color:var(--ink);">{{ auth()->user()->kyc_verified_at ? auth()->user()->kyc_verified_at->format('d/m/Y H:i') : '-' }}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:13px;">
+                            <span style="color:var(--ink2);"><i class="fas fa-award" style="margin-right:6px; color:#5aa07e;"></i>สถานะ:</span>
+                            <span style="display:inline-flex; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:700; color:#5aa07e; background:color-mix(in srgb, #5aa07e 16%, transparent);">อนุมัติแล้ว</span>
                         </div>
                     </div>
-
-                    <a href="{{ route('user.kyc.show', $kycVerification) }}"
-                       class="inline-flex items-center px-6 py-3 mt-6 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all">
-                        <i class="fas fa-eye mr-2"></i>
-                        ดูรายละเอียด
-                    </a>
+                    <a href="{{ route('user.kyc.show', $kycVerification) }}" class="tp-btn" style="margin-top:20px;"><i class="fas fa-eye"></i> ดูรายละเอียด</a>
                 @endif
 
-                {{-- สิทธิพิเศษที่ได้รับ --}}
-                <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto">
-                    <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
-                        <i class="fas fa-money-bill-wave text-green-500 text-xl mb-1"></i>
-                        <p class="text-xs text-green-700 dark:text-green-400 font-semibold">ถอนเงินได้</p>
+                <div style="margin-top:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; max-width:520px; margin-inline:auto;">
+                    <div style="padding:14px; border-radius:12px; box-shadow:var(--inset-sm); text-align:center;">
+                        <i class="fas fa-money-bill-wave" style="color:#5aa07e; font-size:18px;"></i>
+                        <p style="font-size:11px; color:var(--ink2); font-weight:600; margin:4px 0 0;">ถอนเงินได้</p>
                     </div>
-                    <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
-                        <i class="fas fa-shield-alt text-green-500 text-xl mb-1"></i>
-                        <p class="text-xs text-green-700 dark:text-green-400 font-semibold">บัญชีปลอดภัย</p>
+                    <div style="padding:14px; border-radius:12px; box-shadow:var(--inset-sm); text-align:center;">
+                        <i class="fas fa-shield-alt" style="color:#5aa07e; font-size:18px;"></i>
+                        <p style="font-size:11px; color:var(--ink2); font-weight:600; margin:4px 0 0;">บัญชีปลอดภัย</p>
                     </div>
-                    <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
-                        <i class="fas fa-star text-green-500 text-xl mb-1"></i>
-                        <p class="text-xs text-green-700 dark:text-green-400 font-semibold">ฟีเจอร์ครบ</p>
+                    <div style="padding:14px; border-radius:12px; box-shadow:var(--inset-sm); text-align:center;">
+                        <i class="fas fa-star" style="color:#5aa07e; font-size:18px;"></i>
+                        <p style="font-size:11px; color:var(--ink2); font-weight:600; margin:4px 0 0;">ฟีเจอร์ครบ</p>
                     </div>
                 </div>
             </div>
-        @elseif(auth()->user()->kyc_status === 'rejected')
-            <div class="text-center py-8">
-                {{-- สถานะ Badge ที่ชัดเจน --}}
-                <div class="mb-6">
-                    <span class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-full text-lg font-bold shadow-lg">
-                        <i class="fas fa-exclamation-triangle mr-3 text-2xl"></i>
-                        ไม่ผ่านการตรวจสอบ
+
+        @elseif($st === 'rejected')
+            <div style="text-align:center;">
+                <div style="margin-bottom:20px;">
+                    <span style="display:inline-flex; align-items:center; gap:10px; padding:12px 24px; border-radius:999px; font-size:16px; font-weight:800; color:#fff; background:#d9534f;">
+                        <i class="fas fa-exclamation-triangle"></i> ไม่ผ่านการตรวจสอบ
                     </span>
                 </div>
-
-                <div class="w-24 h-24 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center ring-4 ring-red-300 dark:ring-red-700">
-                    <i class="fas fa-times-circle text-4xl text-red-600 dark:text-red-400"></i>
+                <div style="width:96px; height:96px; margin:0 auto 16px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-times-circle" style="font-size:36px; color:#d9534f;"></i>
                 </div>
-
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    <i class="fas fa-file-times text-red-500 mr-2"></i>
-                    เอกสารไม่ผ่านการตรวจสอบ
-                </h2>
-                <p class="text-gray-600 dark:text-gray-400 mb-4">กรุณาตรวจสอบเหตุผลด้านล่าง และส่งเอกสารใหม่</p>
+                <h2 style="font-size:22px; font-weight:800; color:var(--ink); margin:0 0 8px;">เอกสารไม่ผ่านการตรวจสอบ</h2>
+                <p style="color:var(--ink2); margin:0 0 16px;">กรุณาตรวจสอบเหตุผลด้านล่าง และส่งเอกสารใหม่</p>
 
                 @if($kycVerification && $kycVerification->rejection_reason)
-                    <div class="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-2 border-red-300 dark:border-red-800 rounded-xl p-6 max-w-md mx-auto text-left mb-6 shadow-md">
-                        <h3 class="font-bold text-red-800 dark:text-red-300 mb-3 flex items-center">
-                            <i class="fas fa-exclamation-circle mr-2"></i>เหตุผลในการปฏิเสธ
-                        </h3>
-                        <p class="text-red-700 dark:text-red-400 bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
-                            {{ $kycVerification->rejection_reason }}
-                        </p>
+                    <div style="max-width:420px; margin:0 auto 20px; border-radius:14px; box-shadow:var(--inset-sm); padding:20px; text-align:left; border-left:4px solid #d9534f;">
+                        <div style="font-weight:800; color:#d9534f; margin-bottom:10px;"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i>เหตุผลในการปฏิเสธ</div>
+                        <p style="color:var(--ink); margin:0;">{{ $kycVerification->rejection_reason }}</p>
                     </div>
                 @endif
 
-                <a href="{{ route('user.kyc.create') }}"
-                   class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-bold text-lg">
-                    <i class="fas fa-redo mr-3"></i>
-                    ส่งเอกสารใหม่
-                </a>
+                <a href="{{ route('user.kyc.create') }}" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fas fa-redo"></i> ส่งเอกสารใหม่</a>
 
-                {{-- คำแนะนำ --}}
-                <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl max-w-md mx-auto">
-                    <p class="text-sm text-yellow-800 dark:text-yellow-300">
-                        <i class="fas fa-lightbulb mr-2"></i>
-                        <strong>คำแนะนำ:</strong> ถ่ายรูปบัตรให้ชัดเจน มีแสงสว่างเพียงพอ และเห็นข้อมูลครบถ้วน
-                    </p>
+                <div style="margin-top:20px; max-width:420px; margin-inline:auto; padding:14px; border-radius:12px; box-shadow:var(--inset-sm);">
+                    <p style="font-size:13px; color:var(--ink2); margin:0;"><i class="fas fa-lightbulb" style="margin-right:6px;"></i><strong>คำแนะนำ:</strong> ถ่ายรูปบัตรให้ชัดเจน มีแสงสว่างเพียงพอ และเห็นข้อมูลครบถ้วน</p>
                 </div>
             </div>
+
         @else
-            {{-- Fallback: กรณี kyc_status เป็น null หรือค่าอื่นที่ไม่รู้จัก ให้แสดงแบบ not_submitted --}}
-            <div class="text-center py-8">
-                <div class="w-24 h-24 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                    <i class="fas fa-id-card text-4xl text-gray-400"></i>
+            {{-- not_submitted / null / ค่าอื่น --}}
+            <div style="text-align:center; padding:12px 0;">
+                <div style="width:96px; height:96px; margin:0 auto 16px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-id-card" style="font-size:36px; color:var(--ink2);"></i>
                 </div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">คุณยังไม่ได้ยืนยันตัวตน</h2>
-                <p class="text-gray-600 dark:text-gray-400 mb-6">ยืนยันตัวตนเพื่อเพิ่มความปลอดภัยและความน่าเชื่อถือของบัญชีของคุณ</p>
-                <a href="{{ route('user.kyc.create') }}"
-                   class="inline-flex items-center px-6 py-3 bg-gradient-primary text-white rounded-lg hover:opacity-90 transition">
-                    <i class="fas fa-upload mr-2"></i>
-                    เริ่มยืนยันตัวตน
-                </a>
+                <h2 style="font-size:20px; font-weight:800; color:var(--ink); margin:0 0 8px;">คุณยังไม่ได้ยืนยันตัวตน</h2>
+                <p style="color:var(--ink2); margin:0 0 20px;">ยืนยันตัวตนเพื่อเพิ่มความปลอดภัยและความน่าเชื่อถือของบัญชีของคุณ</p>
+                <a href="{{ route('user.kyc.create') }}" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fas fa-upload"></i> เริ่มยืนยันตัวตน</a>
             </div>
         @endif
     </div>
 
-    <!-- Information Card -->
-    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
-        <h3 class="text-lg font-bold text-blue-900 mb-4">
-            <i class="fas fa-info-circle mr-2"></i>ข้อมูลเกี่ยวกับการยืนยันตัวตน
-        </h3>
-        <ul class="space-y-2 text-sm text-blue-800">
-            <li class="flex items-start">
-                <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
-                <span>การยืนยันตัวตนช่วยเพิ่มความปลอดภัยและความน่าเชื่อถือของบัญชี</span>
-            </li>
-            <li class="flex items-start">
-                <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
-                <span>คุณจะต้องอัปโหลดรูปบัตรประชาชน หรือ ใบขับขี่ และรูปถ่ายตัวเองพร้อมบัตร</span>
-            </li>
-            <li class="flex items-start">
-                <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
-                <span>ข้อมูลของคุณจะถูกเก็บเป็นความลับและปลอดภัย</span>
-            </li>
-            <li class="flex items-start">
-                <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
-                <span>การตรวจสอบอาจใช้เวลา 1-3 วันทำการ</span>
-            </li>
+    {{-- ── ข้อมูลเกี่ยวกับ KYC ────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px; border-left:4px solid #5689b8;">
+        <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-info-circle" style="margin-right:6px;"></i>ข้อมูลเกี่ยวกับการยืนยันตัวตน</div>
+        <ul style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--ink);">
+            <li style="display:flex; gap:8px;"><i class="fas fa-check-circle" style="color:#5689b8; margin-top:3px;"></i><span>การยืนยันตัวตนช่วยเพิ่มความปลอดภัยและความน่าเชื่อถือของบัญชี</span></li>
+            <li style="display:flex; gap:8px;"><i class="fas fa-check-circle" style="color:#5689b8; margin-top:3px;"></i><span>คุณจะต้องอัปโหลดรูปบัตรประชาชน หรือ ใบขับขี่ และรูปถ่ายตัวเองพร้อมบัตร</span></li>
+            <li style="display:flex; gap:8px;"><i class="fas fa-check-circle" style="color:#5689b8; margin-top:3px;"></i><span>ข้อมูลของคุณจะถูกเก็บเป็นความลับและปลอดภัย</span></li>
+            <li style="display:flex; gap:8px;"><i class="fas fa-check-circle" style="color:#5689b8; margin-top:3px;"></i><span>การตรวจสอบอาจใช้เวลา 1-3 วันทำการ</span></li>
         </ul>
     </div>
 </div>
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
