@@ -124,6 +124,47 @@
             </div>
             @endif
 
+            {{-- เทียบชื่อบัญชีรับเงินกับชื่อจากบัตร (KYC) — กติกา: ต้องชื่อเดียวกัน --}}
+            @php
+                $kycOwner = $withdrawal->user;
+                $latestKyc = $kycOwner?->latestKycVerification;
+                $kycName = trim(($kycOwner->thai_first_name ?? '').' '.($kycOwner->thai_last_name ?? ''));
+                $accName = (string) ($withdrawal->paymentMethod->account_name ?? '');
+                // ตัดคำนำหน้า + ช่องว่าง ก่อนเทียบ (นางสาว ต้องมาก่อน นาง)
+                $normalizeName = function (string $s): string {
+                    $s = preg_replace('/^(นางสาว|นาง|นาย|น\.ส\.|ด\.ญ\.|ด\.ช\.)\s*/u', '', trim($s));
+
+                    return preg_replace('/\s+/u', '', $s);
+                };
+                $kycNameMatched = $kycName !== '' && $accName !== ''
+                    && $normalizeName($kycName) === $normalizeName($accName);
+            @endphp
+            <div class="glass-fusion rounded-xl shadow-lg p-6 border border-white/20 dark:border-white/10">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">ตรวจชื่อบัญชีกับ KYC</h3>
+                <div class="space-y-2">
+                    <div>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">สถานะ KYC</span>
+                        <p class="font-semibold {{ $kycOwner->isKycVerified() ? 'text-green-600' : 'text-red-600' }}">
+                            {{ $kycOwner->isKycVerified() ? '✅ ยืนยันตัวตนแล้ว' : '⚠️ ยังไม่ผ่านการยืนยันตัวตน' }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">ชื่อจากบัตรประชาชน (OCR)</span>
+                        <p class="font-semibold text-gray-900">{{ $kycName !== '' ? $kycName : '— อ่านจากบัตรไม่ได้ กรุณาเปิดดูรูปบัตร —' }}</p>
+                    </div>
+                    @if($kycName !== '' && $accName !== '')
+                        <div class="{{ $kycNameMatched ? 'bg-green-50 border-green-500' : 'bg-amber-50 border-amber-500' }} border-l-4 p-3 rounded">
+                            <p class="font-bold {{ $kycNameMatched ? 'text-green-700' : 'text-amber-700' }}">
+                                {{ $kycNameMatched ? '✅ ชื่อบัญชีตรงกับบัตร' : '⚠️ ชื่อบัญชีไม่ตรงกับบัตร — ตรวจด้วยตนเองก่อนอนุมัติ' }}
+                            </p>
+                        </div>
+                    @endif
+                    @if($latestKyc)
+                        <a href="{{ route('admin.kyc.show', $latestKyc) }}" class="inline-block text-sm text-indigo-600 hover:underline">เปิดดูเอกสาร KYC (บัตร + เซลฟี่) →</a>
+                    @endif
+                </div>
+            </div>
+
             <!-- Notes -->
             @if($withdrawal->user_note)
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>

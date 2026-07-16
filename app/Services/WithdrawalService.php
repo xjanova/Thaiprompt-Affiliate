@@ -45,7 +45,8 @@ class WithdrawalService
         User $user,
         float $amount,
         ?int $paymentMethodId = null,
-        ?string $userNote = null
+        ?string $userNote = null,
+        ?string $pin = null
     ): WithdrawalRequest {
         // ✅ KYC requirement (2026-04-27)
         // ทุก user ต้องผ่าน KYC ก่อนถอน — ป้องกันฟอกเงิน + กฎการเงิน
@@ -53,7 +54,7 @@ class WithdrawalService
         if (! $this->isKycVerified($user)) {
             throw new Exception(
                 'กรุณายืนยันตัวตน (KYC) ก่อนถอนเงิน — '
-                . 'ไปที่หน้า KYC แล้วอัพโหลดเอกสารยืนยัน'
+                .'ไปที่หน้า KYC แล้วอัพโหลดเอกสารยืนยัน'
             );
         }
 
@@ -78,6 +79,14 @@ class WithdrawalService
         // Check balance
         if ($wallet->balance < $amount) {
             throw new Exception('ยอดเงินในกระเป๋าไม่เพียงพอ');
+        }
+
+        // ตรวจ PIN นอก DB transaction — ให้ failed attempts ถูกนับจริง
+        // (ถ้าตรวจข้างในแล้ว throw จะ rollback ตัวนับไปด้วย = brute-force ได้ฟรี)
+        // กระเป๋าที่ไม่ได้ตั้ง PIN ข้ามการตรวจ (ลูกค้าบอทไม่มี PIN)
+        if ($wallet->hasPIN() && ! $wallet->verifyPIN((string) $pin)) {
+            $wallet->incrementFailedAttempts();
+            throw new Exception('PIN ไม่ถูกต้อง กรุณาลองใหม่');
         }
 
         // Get payment method
@@ -105,7 +114,8 @@ class WithdrawalService
             $paymentMethod,
             $paymentType,
             $paymentDetails,
-            $userNote
+            $userNote,
+            $pin
         ) {
             // Create withdrawal request
             $request = WithdrawalRequest::create([
@@ -124,10 +134,14 @@ class WithdrawalService
             ]);
 
             // Reserve balance (deduct from wallet)
+            // 🔒 (2026-07-16) เดิมส่ง PIN ว่างเสมอ — กระเป๋าที่ตั้ง PIN ไว้จะ throw
+            //    'Invalid PIN' ทุกครั้ง (ฟอร์มเก็บ PIN แต่ controller ไม่เคยส่งมา)
+            //    = คนตั้ง PIN ถอนเงินไม่ได้เลย + โดนนับ failed attempts ฟรี
+            //    ตอนนี้ส่ง PIN จริงจากฟอร์ม — WalletService ตรวจเฉพาะกระเป๋าที่มี PIN
             $this->walletService->withdraw(
                 $wallet,
                 $amount,
-                '', // PIN not required for withdrawal request
+                $pin ?? '',
                 "คำขอถอนเงิน #{$request->request_id}",
                 'withdrawal_request',
                 $request->id

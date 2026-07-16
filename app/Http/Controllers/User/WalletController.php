@@ -7,8 +7,8 @@ use App\Models\PaymentGateway;
 use App\Models\PaymentTransaction;
 use App\Models\VendorStore;
 use App\Models\Wallet;
-use App\Models\WalletSetting;
 use App\Models\WalletDebt;
+use App\Models\WalletSetting;
 use App\Services\CashbackService;
 use App\Services\DebtCollectionService;
 use App\Services\Payment\PaymentService;
@@ -433,13 +433,27 @@ class WalletController extends Controller
         if (! $isAdmin && ! $user->isKycVerified()) {
             return redirect()->route('user.kyc.index')
                 ->with('warning', 'กรุณายืนยันตัวตน (KYC) ก่อนถอนเงิน — '
-                    . 'อัพโหลดบัตรประชาชน + เซลฟี่เพื่อยืนยันตัวตนตามกฎการเงิน');
+                    .'อัพโหลดบัตรประชาชน + เซลฟี่เพื่อยืนยันตัวตนตามกฎการเงิน');
         }
 
         $wallet = $this->walletService->getOrCreateWallet($user);
         $paymentMethods = $user->paymentMethods()->active()->get();
 
-        return view('user.wallet.withdraw', compact('wallet', 'paymentMethods'));
+        // นโยบายค่าธรรมเนียม/ภาษี — ส่งให้หน้าเว็บแสดงยอดสุทธิก่อนกดยืนยัน
+        // (เดิมหน้าเว็บไม่บอกค่าธรรมเนียมเลย ลูกค้าจะงงว่าทำไมได้เงินไม่เต็ม)
+        $feePolicy = [
+            'min_amount' => (float) \App\Models\WalletSetting::get('withdrawal_min_amount', 0),
+            'max_amount' => (float) \App\Models\WalletSetting::get('withdrawal_max_amount', 999999999),
+            'fee_type' => \App\Models\WalletSetting::get('withdrawal_fee_type', 'percentage'),
+            'fee_amount' => (float) \App\Models\WalletSetting::get('withdrawal_fee_amount', 0),
+            'fee_min' => (float) \App\Models\WalletSetting::get('withdrawal_fee_min', 0),
+            'fee_max' => (float) \App\Models\WalletSetting::get('withdrawal_fee_max', 999999),
+            'tax_enabled' => (bool) \App\Models\WalletSetting::get('tax_enabled', false),
+            'tax_threshold' => (float) \App\Models\WalletSetting::get('tax_threshold', 0),
+            'tax_percentage' => (float) \App\Models\WalletSetting::get('tax_percentage', 0),
+        ];
+
+        return view('user.wallet.withdraw', compact('wallet', 'paymentMethods', 'feePolicy'));
     }
 
     /**
@@ -447,10 +461,19 @@ class WalletController extends Controller
      */
     public function submitWithdrawal(Request $request)
     {
+        // PIN บังคับเฉพาะกระเป๋าที่ตั้ง PIN ไว้ — ลูกค้าบอท (ไม่มี PIN) ไม่ต้องกรอก
+        // 🔒 (2026-07-16) เดิมฟอร์มบังคับกรอก PIN แต่ controller ทิ้งค่านั้นเลย
+        //    (ไม่ validate ไม่ส่งต่อ) — คนตั้ง PIN จริงกลับถอนไม่ได้เพราะ service
+        //    ได้แต่ค่าว่าง ตอนนี้ส่งต่อไป verify จริงใน WithdrawalService
+        $wallet = $this->walletService->getOrCreateWallet(auth()->user());
+
         $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'payment_method_id' => 'required|exists:payment_methods,id',
             'user_note' => 'nullable|string|max:500',
+            'pin' => $wallet->hasPIN() ? 'required|string' : 'nullable|string',
+        ], [
+            'pin.required' => 'กรุณากรอก PIN กระเป๋าเงิน',
         ]);
 
         try {
@@ -458,7 +481,8 @@ class WalletController extends Controller
                 auth()->user(),
                 $request->amount,
                 $request->payment_method_id,
-                $request->user_note
+                $request->user_note,
+                $request->pin
             );
 
             return redirect()->route('user.wallet.withdrawals')
