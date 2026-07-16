@@ -808,7 +808,10 @@ print_info "Removing untracked files and directories..."
 #   + รูปสลิป archive ให้แอดมินดู audit 30 วัน (fortune/slip_archive). ถ้าไม่ exclude
 #   git clean -fdx จะลบทุก deploy → หน้า admin/fortune/slip-logs รูปเปิดไม่ได้ (เหลือแค่ใบล่าสุด)
 #   ⛔ ห้ามย้ายไป storage/app/public (เหมือน banner) เพราะสลิปมีชื่อผู้โอน/เลขบัญชี = PDPA leak
-git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' || print_warning "Git clean failed (continuing anyway)"
+# 🔐 (2026-07-17) ต้อง exclude 'storage/oauth-*.key' ด้วย — คีย์ signing ของ Passport OAuth
+#   (SSO juntraweb). keys เป็น gitignored (untracked) → -x จะลบทุก deploy ถ้าไม่ exclude
+#   → access/refresh token ทั้งหมด invalid + SSO auto-login พังทุกครั้งที่ deploy. gen ครั้งเดียวด้วย passport:keys แล้วต้องคงอยู่ถาวร
+git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."
