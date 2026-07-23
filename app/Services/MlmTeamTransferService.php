@@ -306,6 +306,18 @@ class MlmTeamTransferService
             throw new \Exception('ไม่สามารถดำเนินการคำขอนี้ได้');
         }
 
+        // 🐛 Fix 2026-07-24: เช็ค cycle ก่อนย้าย (เดิม path workflow ไม่เช็คเลย
+        // ต่างจาก adminDirectTransfer) — ย้ายไปใต้ลูกทีมตัวเอง = ผังเป็นวงจร
+        if ($request->new_unilevel_sponsor_id && $request->newSponsor
+            && $this->isDownline($request->member, $request->newSponsor)) {
+            throw new \Exception('ไม่สามารถย้ายไปหาลูกทีมของตัวเองได้ (Unilevel)');
+        }
+
+        if ($request->new_binary_parent_id && $request->newBinaryParent
+            && $this->isBinaryDownline($request->member, $request->newBinaryParent)) {
+            throw new \Exception('ไม่สามารถย้ายไปหาลูกทีม Binary ของตัวเองได้');
+        }
+
         // ตรวจสอบว่าตำแหน่งใหม่ว่างหรือไม่ (ถ้ามีการระบุ)
         if ($request->new_binary_parent_id && $request->new_binary_position) {
             $this->validateBinaryPosition(
@@ -345,6 +357,16 @@ class MlmTeamTransferService
             if ($request->new_binary_parent_id) {
                 $this->updateBinaryPath($member);
             }
+
+            // 🐛 Fix 2026-07-24: อัพเดท path/level ของลูกทีมทั้ง subtree
+            // (เดิม path workflow แก้เฉพาะตัว member ที่ย้าย → path ของ downline พังทั้งสาย)
+            $this->updateUnilevelDescendantPaths($member);
+            if ($request->new_binary_parent_id) {
+                $this->updateBinaryDescendantPaths($member);
+            }
+
+            // โยกตัวนับทีม (delta ตามขนาด subtree) + rebuild genealogy
+            $this->afterTransferAdjustments($member, $oldData);
 
             // อัพเดทสถานะคำขอ
             $request->update([
@@ -396,10 +418,17 @@ class MlmTeamTransferService
     protected function updateBinaryPath(MlmMember $member): void
     {
         // สร้าง binary path ใหม่
+        // 🐛 Fix 2026-07-24: เพิ่ม visited + depth cap กัน loop ไม่รู้จบถ้าผังมี cycle
+        // และกัน null parent (binary_parent_id ชี้ member ที่ถูกลบ)
         $path = [];
+        $visited = [];
         $current = $member;
 
-        while ($current->binary_parent_id) {
+        while ($current && $current->binary_parent_id && count($path) < 100) {
+            if (isset($visited[$current->binary_parent_id])) {
+                break; // เจอ cycle — หยุดทันที
+            }
+            $visited[$current->binary_parent_id] = true;
             $path[] = $current->binary_parent_id;
             $current = $current->binaryParent;
         }
@@ -407,6 +436,124 @@ class MlmTeamTransferService
         $member->update([
             'binary_path' => implode('/', array_reverse($path)),
         ]);
+    }
+
+    /**
+     * ปรับตัวนับทีม + rebuild genealogy หลังย้ายทีม (ใช้ร่วมทั้ง workflow และ admin direct)
+     *
+     * 🐛 Fix 2026-07-24: เดิมย้ายทีมแล้วไม่โยก total_team_members / left_leg_members /
+     * right_leg_members ออกจากสายเก่าเข้าสายใหม่ และไม่ rebuild mlm_genealogy
+     * → ตัวนับค้างผิดถาวร + closure table ชี้สายเก่า
+     *
+     * หมายเหตุเรื่อง leg PV: PV สะสมในอดีต (left/right_leg_pv) "คงไว้ที่สายเก่า"
+     * โดยเจตนา — เพราะยอดคงเหลือคือ PV ที่ยังไม่จับคู่ซึ่งเกิดขณะอยู่สายเก่า
+     * การถอนย้อนหลังทำไม่ได้แม่นยำ (บางส่วนถูกจับคู่จ่ายไปแล้ว) และเสี่ยงติดลบ
+     * PV ใหม่หลังย้ายจะไหลตามสายใหม่ถูกต้องผ่าน binaryParent chain
+     *
+     * @param  MlmMember  $member  สมาชิกที่ย้ายแล้ว (ข้อมูลใหม่ใน DB แล้ว)
+     * @param  array  $oldData  ข้อมูลก่อนย้าย (binary_parent_id, binary_position, ...)
+     */
+    protected function afterTransferAdjustments(MlmMember $member, array $oldData): void
+    {
+        $binaryMoved = ($oldData['binary_parent_id'] ?? null) != $member->binary_parent_id
+            || ($oldData['binary_position'] ?? null) != $member->binary_position;
+
+        if ($binaryMoved) {
+            // ขนาด subtree (ตัวเอง + downline binary ทั้งหมด)
+            $subtreeSize = $this->countBinarySubtreeSize($member);
+
+            // ─── สายเก่า: ลบออก ───
+            if (! empty($oldData['binary_parent_id'])) {
+                $oldParent = MlmMember::find($oldData['binary_parent_id']);
+
+                if ($oldParent) {
+                    if (in_array($oldData['binary_position'] ?? '', ['left', 'right'], true)) {
+                        $col = $oldData['binary_position'] === 'left' ? 'left_leg_members' : 'right_leg_members';
+                        $oldParent->update([$col => max(0, (int) $oldParent->{$col} - $subtreeSize)]);
+                    }
+
+                    $this->adjustUplineTeamCounts($oldParent, -$subtreeSize);
+                }
+            }
+
+            // ─── สายใหม่: บวกเข้า ───
+            if ($member->binary_parent_id) {
+                $newParent = MlmMember::find($member->binary_parent_id);
+
+                if ($newParent) {
+                    if (in_array($member->binary_position, ['left', 'right'], true)) {
+                        $col = $member->binary_position === 'left' ? 'left_leg_members' : 'right_leg_members';
+                        $newParent->increment($col, $subtreeSize);
+                    }
+
+                    $this->adjustUplineTeamCounts($newParent, $subtreeSize);
+                }
+            }
+        }
+
+        // ─── rebuild genealogy (closure table) ของ subtree ที่ย้าย ───
+        try {
+            app(MlmGenealogyService::class)->rebuildGenealogyForSubtree($member);
+        } catch (\Throwable $e) {
+            // genealogy เป็นตารางรายงาน — ล้มเหลวไม่ควรทำให้การย้ายล้ม
+            Log::error('Rebuild genealogy หลังย้ายทีมล้มเหลว', [
+                'member_id' => $member->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * นับขนาด subtree binary (รวมตัวเอง) ด้วย BFS
+     */
+    protected function countBinarySubtreeSize(MlmMember $member, int $maxNodes = 5000): int
+    {
+        $count = 0;
+        $queue = [$member->id];
+        $visited = [];
+
+        while (! empty($queue) && $count < $maxNodes) {
+            $currentId = array_shift($queue);
+
+            if (isset($visited[$currentId])) {
+                continue;
+            }
+            $visited[$currentId] = true;
+            $count++;
+
+            foreach (MlmMember::where('binary_parent_id', $currentId)->pluck('id') as $childId) {
+                $queue[] = $childId;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * ปรับ total_team_members ของ upline binary ทั้งสาย (เริ่มจาก $start รวมตัวมันเอง)
+     *
+     * @param  MlmMember|null  $start  จุดเริ่ม (parent ตรงของสมาชิกที่ย้าย)
+     * @param  int  $delta  จำนวนที่ปรับ (+/-)
+     */
+    protected function adjustUplineTeamCounts(?MlmMember $start, int $delta): void
+    {
+        $current = $start;
+        $visited = [];
+
+        for ($i = 0; $i < 100 && $current; $i++) {
+            if (isset($visited[$current->id])) {
+                break; // เจอ cycle
+            }
+            $visited[$current->id] = true;
+
+            $current->update([
+                'total_team_members' => max(0, (int) $current->total_team_members + $delta),
+            ]);
+
+            $current = $current->binary_parent_id
+                ? MlmMember::find($current->binary_parent_id)
+                : null;
+        }
     }
 
     /**
@@ -845,6 +992,10 @@ class MlmTeamTransferService
                 $results['binary_transferred'] = true;
             }
 
+            // 🐛 Fix 2026-07-24: โยกตัวนับทีม (delta ตาม subtree) + rebuild genealogy
+            // (เดิม admin direct transfer ก็ไม่โยกตัวนับ/genealogy เช่นกัน)
+            $this->afterTransferAdjustments($member->fresh(), $results['old_data']);
+
             // บันทึกข้อมูลใหม่
             $member->refresh();
             $results['new_data'] = [
@@ -961,26 +1112,35 @@ class MlmTeamTransferService
 
     /**
      * ตรวจสอบว่า $potential_downline เป็นลูกทีม Binary ของ $member หรือไม่
+     *
+     * 🐛 Fix 2026-07-24: ห้ามเชื่อ binary_path อย่างเดียว — path ในระบบมี 2 รูปแบบปนกัน
+     * (แบบ id "12/45/89" จาก transfer และแบบตำแหน่ง "/left/right" จาก registration)
+     * แบบตำแหน่งทำให้เช็ค in_array(id) พลาดเสมอ → cycle check หลุด
+     * จึงใช้ path เป็น fast-path ยืนยัน "ใช่" เท่านั้น ส่วนคำตอบ "ไม่ใช่" ต้องเดินขึ้นจริง
      */
     protected function isBinaryDownline(MlmMember $member, MlmMember $potentialDownline): bool
     {
-        // ตรวจสอบจาก binary_path
-        if ($potentialDownline->binary_path) {
-            $path = explode('/', $potentialDownline->binary_path);
-
-            return in_array($member->id, $path);
+        // fast-path: ถ้า path เป็นแบบ id และเจอ id ใน path → ยืนยันได้ทันที
+        if ($potentialDownline->binary_path
+            && in_array((string) $member->id, explode('/', $potentialDownline->binary_path), true)) {
+            return true;
         }
 
-        // ถ้าไม่มี path ให้ตรวจสอบแบบ recursive
+        // เดินขึ้นตาม binary_parent_id จริง (พร้อม cycle guard + depth cap)
+        $visited = [];
         $current = $potentialDownline;
-        while ($current->binary_parent_id) {
+
+        for ($i = 0; $i < 100 && $current && $current->binary_parent_id; $i++) {
             if ($current->binary_parent_id == $member->id) {
                 return true;
             }
-            $current = $current->binaryParent;
-            if (! $current) {
-                break;
+
+            if (isset($visited[$current->binary_parent_id])) {
+                break; // เจอ cycle
             }
+            $visited[$current->binary_parent_id] = true;
+
+            $current = MlmMember::find($current->binary_parent_id);
         }
 
         return false;

@@ -257,8 +257,9 @@ class MlmUnilevelService
         $retentionData = $commissionService->getMemberRetentionStatus($member);
 
         // ดึงข้อมูลเพิ่มเติมสำหรับ v3 genealogy tree
+        // ⚠️ MlmMember ไม่มี relation rank() — ต้องอ่าน rank ผ่าน user->currentRank เท่านั้น
         $user = $member->user;
-        $rank = $member->rank ?? null;
+        $rank = $user?->currentRank;
 
         // คำนวณ retention วันหมดอายุ
         $retentionExpiresAt = $retentionData['expires_at'] ?? null;
@@ -300,9 +301,10 @@ class MlmUnilevelService
             return $node;
         }
 
-        // โหลด children (eager load user, plan, rank สำหรับ v3)
+        // โหลด children (eager load user+currentRank, plan สำหรับ v3)
+        // ⚠️ ห้ามใส่ 'rank' ตรงๆ — MlmMember ไม่มี relation นี้ จะโยน RelationNotFoundException
         $children = $member->unilevelChildren()
-            ->with(['user', 'plan', 'rank'])
+            ->with(['user.currentRank', 'plan'])
             ->get();
 
         foreach ($children as $child) {

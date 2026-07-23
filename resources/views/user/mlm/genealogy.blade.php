@@ -47,8 +47,9 @@
                         <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:9px;">
                             <span class="tp-pill tp-pill-soft tp-num">รหัส: {{ $member->member_code }}</span>
                             <span class="tp-pill" style="color:#fff; background:#5aa07e;"><i class="fas fa-circle-check" style="font-size:10px;"></i> {{ $member->plan?->name ?? 'Active' }}</span>
-                            @if($member->rank)
-                                <span class="tp-pill" style="color:#fff; background:{{ $member->rank->color ?? 'var(--deep1)' }};">{{ $member->rank->name }}</span>
+                            {{-- rank อ่านผ่าน user->currentRank (MlmMember ไม่มี relation rank) --}}
+                            @if($member->user?->currentRank)
+                                <span class="tp-pill" style="color:#fff; background:{{ $member->user->currentRank->color ?? 'var(--deep1)' }};">{{ $member->user->currentRank->name }}</span>
                             @endif
                         </div>
                     </div>

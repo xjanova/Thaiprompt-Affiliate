@@ -37,6 +37,14 @@ class OrderObserver
     }
 
     /**
+     * ⚠️ หมายเหตุ: ห้ามใส่ handler 'created' เพื่อจับออเดอร์ที่สร้างเป็น paid
+     * เพราะ event ยิงกลาง DB transaction ก่อน OrderItems ถูกสร้าง
+     * → distribution จะเห็น 0 items แล้ว mark ว่า distribute แล้วอย่างผิดๆ
+     * flow ที่สร้างออเดอร์เป็น paid (เช่น mobile wallet checkout) ต้องเรียก
+     * OrderDistributionService เองหลัง DB::commit() — ดู MobileApiController::checkout
+     */
+
+    /**
      * Handle the Order "updated" event.
      *
      * เมื่อ Order ถูกอัพเดท จะตรวจสอบและประมวลผล:

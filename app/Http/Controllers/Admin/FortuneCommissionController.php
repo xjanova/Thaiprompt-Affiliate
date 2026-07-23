@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FortuneCommission;
-use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmMember;
 use App\Models\User;
@@ -30,7 +29,6 @@ class FortuneCommissionController extends Controller
      *
      * แสดงสถิติ + ตารางประวัติคอมมิชชั่นทั้งหมด (filter ได้)
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -60,7 +58,6 @@ class FortuneCommissionController extends Controller
      *
      * แสดง bulk actions + settings + ตารางจัดการ
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function manage(Request $request)
@@ -91,9 +88,6 @@ class FortuneCommissionController extends Controller
 
     /**
      * แสดงรายละเอียดคอมมิชชั่น (JSON สำหรับ modal)
-     *
-     * @param FortuneCommission $commission
-     * @return JsonResponse
      */
     public function show(FortuneCommission $commission): JsonResponse
     {
@@ -138,9 +132,6 @@ class FortuneCommissionController extends Controller
 
     /**
      * อนุมัติคอมมิชชั่น (bulk)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function approve(Request $request): JsonResponse
     {
@@ -172,10 +163,6 @@ class FortuneCommissionController extends Controller
 
     /**
      * ปฏิเสธคอมมิชชั่น
-     *
-     * @param Request $request
-     * @param FortuneCommission $commission
-     * @return JsonResponse
      */
     public function reject(Request $request, FortuneCommission $commission): JsonResponse
     {
@@ -205,10 +192,6 @@ class FortuneCommissionController extends Controller
 
     /**
      * ปรับจำนวนเงินคอมมิชชั่น
-     *
-     * @param Request $request
-     * @param FortuneCommission $commission
-     * @return JsonResponse
      */
     public function adjustAmount(Request $request, FortuneCommission $commission): JsonResponse
     {
@@ -245,9 +228,6 @@ class FortuneCommissionController extends Controller
      *
      * ใช้ pattern เดียวกับ FortuneCommissionService::depositToWallet()
      * (bypass WalletService, สร้าง Wallet + WalletTransaction ตรง)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function payOut(Request $request): JsonResponse
     {
@@ -354,9 +334,6 @@ class FortuneCommissionController extends Controller
 
     /**
      * Export CSV คอมมิชชั่นดูดวง
-     *
-     * @param Request $request
-     * @return StreamedResponse
      */
     public function exportCsv(Request $request): StreamedResponse
     {
@@ -426,9 +403,6 @@ class FortuneCommissionController extends Controller
 
     /**
      * อัพเดทการตั้งค่าคอมมิชชั่น L1/L2
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateSettings(Request $request): JsonResponse
     {
@@ -460,9 +434,6 @@ class FortuneCommissionController extends Controller
 
     /**
      * สร้างคอมมิชชั่นด้วยตนเอง (Manual)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function createManual(Request $request): JsonResponse
     {
@@ -515,7 +486,6 @@ class FortuneCommissionController extends Controller
      * แสดงโครงสร้าง sponsor → ผู้ถูกแนะนำ เฉพาะระบบดูดวง
      * พร้อมข้อมูลคอมมิชชั่น L1/L2 ในแต่ละ node
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function referralTree(Request $request)
@@ -561,10 +531,6 @@ class FortuneCommissionController extends Controller
      * ดึงข้อมูล tree สำหรับแสดงผัง (JSON API)
      *
      * สร้าง tree data จาก MlmMember + fortune commission info
-     *
-     * @param MlmMember $member
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getReferralTreeData(MlmMember $member, Request $request): JsonResponse
     {
@@ -593,14 +559,16 @@ class FortuneCommissionController extends Controller
     /**
      * สร้าง tree data สำหรับผังสายงานดูดวง
      *
-     * @param MlmMember $member root member
-     * @param int $maxDepth ความลึกสูงสุด
-     * @param int $currentDepth ความลึกปัจจุบัน
-     * @return array
+     * @param  MlmMember  $member  root member
+     * @param  int  $maxDepth  ความลึกสูงสุด
+     * @param  int  $currentDepth  ความลึกปัจจุบัน
      */
     private function buildFortuneTree(MlmMember $member, int $maxDepth, int $currentDepth = 0): array
     {
-        $member->loadMissing('user');
+        // 🐛 Fix 2026-07-24: เดิมอ่าน field ที่ไม่มีจริงบน MlmMember
+        // (personal_pv → PV โชว์ 0 เสมอ, rank_name → โชว์ '-' เสมอ)
+        // คอลัมน์จริงคือ total_pv และ rank ต้องอ่านผ่าน user->currentRank
+        $member->loadMissing('user.currentRank');
 
         // ดึงสรุปคอมมิชชั่นดูดวงของสมาชิกคนนี้
         $commissionStats = FortuneCommission::where('user_id', $member->user_id)
@@ -611,10 +579,10 @@ class FortuneCommissionController extends Controller
             'id' => $member->id,
             'name' => $member->user?->name ?? 'Unknown',
             'code' => $member->member_code ?? '-',
-            'avatar' => null,
+            'avatar' => $member->user?->profile_picture_url,
             'status' => $member->status ?? 'active',
-            'rank' => $member->rank_name ?? '-',
-            'pv' => (float) ($member->personal_pv ?? 0),
+            'rank' => $member->user?->currentRank?->name ?? '-',
+            'pv' => (float) ($member->total_pv ?? 0),
             'total_earnings' => (float) ($commissionStats->total_amount ?? 0),
             'commission_count' => (int) ($commissionStats->total_count ?? 0),
             'children' => [],
@@ -622,7 +590,7 @@ class FortuneCommissionController extends Controller
 
         // ดึง children ถ้ายังไม่เกิน depth
         if ($currentDepth < $maxDepth) {
-            $children = MlmMember::with('user')
+            $children = MlmMember::with('user.currentRank')
                 ->where('original_sponsor_id', $member->id)
                 ->orderBy('created_at', 'asc')
                 ->get();
@@ -639,9 +607,6 @@ class FortuneCommissionController extends Controller
 
     /**
      * ดึง filters จาก request
-     *
-     * @param Request $request
-     * @return array
      */
     private function getFilters(Request $request): array
     {
@@ -657,7 +622,6 @@ class FortuneCommissionController extends Controller
     /**
      * สร้าง query จาก filters
      *
-     * @param Request $request
      * @return \Illuminate\Database\Eloquent\Builder
      */
     private function buildQuery(Request $request)
@@ -695,10 +659,10 @@ class FortuneCommissionController extends Controller
                     $userQ->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%");
                 })
-                ->orWhereHas('fromUser', function ($userQ) use ($search) {
-                    $userQ->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                });
+                    ->orWhereHas('fromUser', function ($userQ) use ($search) {
+                        $userQ->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 

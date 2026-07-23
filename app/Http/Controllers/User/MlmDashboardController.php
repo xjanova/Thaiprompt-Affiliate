@@ -157,7 +157,8 @@ class MlmDashboardController extends Controller
         $member = $user->mlmMembers()->where('member_code', $memberCode)->firstOrFail();
 
         $treeType = $request->get('type', 'unilevel');
-        $maxDepth = $request->get('depth', 5);
+        // cap depth ที่ 10 กัน recursion หนักเกิน (เดิมรับค่า depth โดยไม่จำกัด)
+        $maxDepth = min((int) $request->get('depth', 5), 10);
 
         $treeData = $this->genealogyService->getTreeData($member, $treeType, $maxDepth);
 

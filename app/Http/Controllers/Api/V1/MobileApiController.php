@@ -2959,8 +2959,65 @@ class MobileApiController extends Controller
 
     /**
      * สร้างผังทีมแบบ recursive
+     *
+     * ⚠️ ใช้ผัง MLM จริง (mlm_members.unilevel_sponsor_id — สายที่คอมมิชชั่นวิ่งจริง)
+     * เพื่อให้ผังในแอปตรงกับผังบนเว็บและการจ่ายคอม
+     * fallback เป็น users.sponsor_id เฉพาะ user ที่ยังไม่เป็นสมาชิก MLM
      */
     private function buildTeamTree(int $userId, int $depth, int $currentDepth = 0): array
+    {
+        $member = \App\Models\MlmMember::where('user_id', $userId)->first();
+
+        if ($member) {
+            return $this->buildMlmTeamTree($member, $depth, $currentDepth);
+        }
+
+        return $this->buildLegacyTeamTree($userId, $depth, $currentDepth);
+    }
+
+    /**
+     * สร้างผังทีมจากตาราง mlm_members (unilevel tree — แหล่งเดียวกับ engine จ่ายคอม)
+     */
+    private function buildMlmTeamTree(\App\Models\MlmMember $member, int $depth, int $currentDepth = 0): array
+    {
+        if ($currentDepth >= $depth) {
+            return [];
+        }
+
+        // ⚠️ ห้าม eager-load 'rank' บน MlmMember (ไม่มี relation นี้) — ใช้ user.currentRank
+        $children = $member->unilevelChildren()
+            ->with(['user.currentRank:id,name,name_th,icon,color'])
+            ->withCount('unilevelChildren')
+            ->get();
+
+        return $children->map(function ($child) use ($depth, $currentDepth) {
+            $childUser = $child->user;
+            $rank = $childUser?->currentRank;
+
+            return [
+                'id' => $child->user_id,
+                'name' => $childUser->name ?? 'Unknown',
+                'avatar' => $childUser->avatar ?? null,
+                'profile_picture_url' => $childUser->profile_picture_url ?? null,
+                'level' => $currentDepth + 1,
+                'rank' => $rank ? [
+                    'name' => $rank->name,
+                    'nameTh' => $rank->name_th ?? $rank->name,
+                    'icon' => $rank->icon,
+                    'color' => $rank->color,
+                ] : null,
+                'childrenCount' => $child->unilevel_children_count,
+                'isActive' => $child->status === 'active',
+                'joinedAt' => $child->created_at->format('Y-m-d'),
+                'children' => $this->buildMlmTeamTree($child, $depth, $currentDepth + 1),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * สร้างผังทีมจาก users.sponsor_id (legacy — เฉพาะ user ที่ไม่มี mlm_member)
+     */
+    private function buildLegacyTeamTree(int $userId, int $depth, int $currentDepth = 0): array
     {
         if ($currentDepth >= $depth) {
             return [];
@@ -2988,19 +3045,33 @@ class MobileApiController extends Controller
                 'childrenCount' => $childrenCount,
                 'isActive' => $child->created_at >= now()->subDays(30),
                 'joinedAt' => $child->created_at->format('Y-m-d'),
-                'children' => $this->buildTeamTree($child->id, $depth, $currentDepth + 1),
+                'children' => $this->buildLegacyTeamTree($child->id, $depth, $currentDepth + 1),
             ];
         })->toArray();
     }
 
     /**
-     * นับสมาชิกทั้งหมดในทีม
+     * นับสมาชิกทั้งหมดในทีม (ใช้ mlm_members ถ้าเป็นสมาชิก MLM)
      */
     private function countTotalTeam(int $userId, int $maxDepth = 10): int
     {
-        $total = 0;
-        $currentLevel = [$userId];
+        $member = \App\Models\MlmMember::where('user_id', $userId)->first();
 
+        $total = 0;
+
+        if ($member) {
+            // BFS บน mlm_members.unilevel_sponsor_id
+            $currentLevel = [$member->id];
+            for ($i = 0; $i < $maxDepth && ! empty($currentLevel); $i++) {
+                $children = \App\Models\MlmMember::whereIn('unilevel_sponsor_id', $currentLevel)->pluck('id')->toArray();
+                $total += count($children);
+                $currentLevel = $children;
+            }
+
+            return $total;
+        }
+
+        $currentLevel = [$userId];
         for ($i = 0; $i < $maxDepth && ! empty($currentLevel); $i++) {
             $children = \App\Models\User::whereIn('sponsor_id', $currentLevel)->pluck('id')->toArray();
             $total += count($children);
@@ -3008,6 +3079,106 @@ class MobileApiController extends Controller
         }
 
         return $total;
+    }
+
+    /**
+     * เช็คว่า target อยู่ใต้สายงานของ ancestor หรือไม่ (เดินขึ้นจาก target — O(depth))
+     *
+     * 🔐 ใช้กัน IDOR: ผู้เรียกดูข้อมูลได้เฉพาะ downline ของตัวเองเท่านั้น
+     * เดินตาม mlm_members.unilevel_sponsor_id ก่อน (สายจริง) แล้ว fallback users.sponsor_id
+     */
+    private function isInDownline(int $ancestorUserId, int $targetUserId, int $maxDepth = 30): bool
+    {
+        if ($ancestorUserId === $targetUserId) {
+            return true;
+        }
+
+        // ─── เดินขึ้นตามผัง MLM ───
+        $targetMember = \App\Models\MlmMember::where('user_id', $targetUserId)->first();
+
+        if ($targetMember) {
+            $visited = [];
+            $current = $targetMember;
+
+            for ($i = 0; $i < $maxDepth; $i++) {
+                $sponsorId = $current->unilevel_sponsor_id;
+                if (! $sponsorId || isset($visited[$sponsorId])) {
+                    break; // ถึงราก หรือเจอ cycle
+                }
+                $visited[$sponsorId] = true;
+
+                $current = \App\Models\MlmMember::find($sponsorId);
+                if (! $current) {
+                    break;
+                }
+                if ((int) $current->user_id === $ancestorUserId) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // ─── fallback: เดินขึ้นตาม users.sponsor_id ───
+        $visited = [];
+        $currentId = $targetUserId;
+
+        for ($i = 0; $i < $maxDepth; $i++) {
+            $sponsorId = \App\Models\User::where('id', $currentId)->value('sponsor_id');
+            if (! $sponsorId || isset($visited[$sponsorId])) {
+                break;
+            }
+            if ((int) $sponsorId === $ancestorUserId) {
+                return true;
+            }
+            $visited[$sponsorId] = true;
+            $currentId = $sponsorId;
+        }
+
+        return false;
+    }
+
+    /**
+     * รวบรวม user_id ของ downline ทั้งหมดในสายงาน (BFS จำกัดความลึก)
+     *
+     * ใช้สำหรับ scope การค้นหาสมาชิกให้อยู่ในทีมตัวเองเท่านั้น
+     *
+     * @return array<int> รายการ user_id ของ downline (ไม่รวมตัวเอง)
+     */
+    private function collectDownlineUserIds(int $userId, int $maxDepth = 10): array
+    {
+        $member = \App\Models\MlmMember::where('user_id', $userId)->first();
+
+        $userIds = [];
+
+        if ($member) {
+            // BFS บน mlm_members แล้ว map เป็น user_id
+            $currentLevel = [$member->id];
+            for ($i = 0; $i < $maxDepth && ! empty($currentLevel); $i++) {
+                $children = \App\Models\MlmMember::whereIn('unilevel_sponsor_id', $currentLevel)
+                    ->get(['id', 'user_id']);
+                if ($children->isEmpty()) {
+                    break;
+                }
+                $userIds = array_merge($userIds, $children->pluck('user_id')->all());
+                $currentLevel = $children->pluck('id')->all();
+            }
+
+            return array_values(array_unique($userIds));
+        }
+
+        // fallback: BFS บน users.sponsor_id
+        $currentLevel = [$userId];
+        for ($i = 0; $i < $maxDepth && ! empty($currentLevel); $i++) {
+            $children = \App\Models\User::whereIn('sponsor_id', $currentLevel)->pluck('id')->all();
+            if (empty($children)) {
+                break;
+            }
+            $userIds = array_merge($userIds, $children);
+            $currentLevel = $children;
+        }
+
+        return array_values(array_unique($userIds));
     }
 
     /**
@@ -3027,15 +3198,12 @@ class MobileApiController extends Controller
     {
         $user = Auth::user();
 
-        // ตรวจสอบว่า userId เป็นสมาชิกในทีมหรือไม่
-        $isMember = \App\Models\User::where('id', $userId)
-            ->whereNotNull('sponsor_id')
-            ->exists();
-
-        if (! $isMember && $userId !== $user->id) {
+        // 🔐 กัน IDOR: ดูได้เฉพาะ subtree ของตัวเองหรือ downline ในสายตัวเองเท่านั้น
+        // (เดิมเช็คแค่ "target มี sponsor" → ใครก็ดึง subtree ของคนอื่นได้ทั้งระบบ)
+        if (! $this->isInDownline($user->id, $userId)) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่พบสมาชิก',
+                'message' => 'ไม่พบสมาชิกในสายงานของคุณ',
             ], 404);
         }
 
@@ -3065,8 +3233,18 @@ class MobileApiController extends Controller
             ]);
         }
 
-        // ค้นหาสมาชิกในทีม (ทุกระดับ)
-        $members = \App\Models\User::whereNotNull('sponsor_id')
+        // 🔐 กัน IDOR: ค้นหาได้เฉพาะสมาชิกในสายงานของตัวเองเท่านั้น
+        // (เดิมค้น user ทั้งระบบ + คืนอีเมลเต็ม = PII รั่วทั้งฐาน)
+        $downlineUserIds = $this->collectDownlineUserIds($user->id);
+
+        if (empty($downlineUserIds)) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+
+        $members = \App\Models\User::whereIn('id', $downlineUserIds)
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
                     ->orWhere('email', 'like', "%{$query}%")
@@ -3076,10 +3254,15 @@ class MobileApiController extends Controller
             ->limit($limit)
             ->get()
             ->map(function ($member) {
+                // ปกปิดอีเมลบางส่วนในผลค้นหา (ลด PII รั่ว)
+                $maskedEmail = $member->email
+                    ? \Illuminate\Support\Str::mask($member->email, '*', 2, max(1, strpos($member->email, '@') - 4))
+                    : null;
+
                 return [
                     'id' => $member->id,
                     'name' => $member->name,
-                    'email' => $member->email,
+                    'email' => $maskedEmail,
                     'avatar' => $member->avatar,
                     'profile_picture_url' => $member->profile_picture_url,
                     'rank' => $member->currentRank ? [
@@ -3103,6 +3286,17 @@ class MobileApiController extends Controller
      */
     public function getMemberProfile(int $userId): JsonResponse
     {
+        $user = Auth::user();
+
+        // 🔐 กัน IDOR: ดูโปรไฟล์ได้เฉพาะตัวเองหรือสมาชิกในสายงานตัวเองเท่านั้น
+        // (เดิมไม่มีการตรวจสิทธิ์ → ไล่ id ดึงชื่อ+อีเมลของ user ทั้งระบบได้)
+        if (! $this->isInDownline($user->id, $userId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบสมาชิกในสายงานของคุณ',
+            ], 404);
+        }
+
         $member = \App\Models\User::with('currentRank:id,name,name_th,icon,color')
             ->find($userId);
 
@@ -3116,12 +3310,18 @@ class MobileApiController extends Controller
         $directReferrals = \App\Models\User::where('sponsor_id', $userId)->count();
         $totalTeam = $this->countTotalTeam($userId);
 
+        // อีเมลเต็มเห็นได้เฉพาะตัวเอง — ลูกทีมเห็นแบบปกปิดบางส่วน (ลด PII รั่ว)
+        $email = $member->email;
+        if ($userId !== $user->id && $email) {
+            $email = \Illuminate\Support\Str::mask($email, '*', 2, max(1, strpos($email, '@') - 4));
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
                 'id' => $member->id,
                 'name' => $member->name,
-                'email' => $member->email,
+                'email' => $email,
                 'avatar' => $member->avatar,
                 'profile_picture_url' => $member->profile_picture_url,
                 'rank' => $member->currentRank ? [
@@ -3931,6 +4131,30 @@ class MobileApiController extends Controller
             $cart->clear();
 
             DB::commit();
+
+            // 🐛 Fix 2026-07-24: ออเดอร์ wallet ถูกสร้างเป็น paid ตั้งแต่ create
+            // → OrderObserver (จับเฉพาะ 'updated' + wasChanged) ไม่ยิง
+            // → MLM Commission/PV/Cashback/Distribution ไม่ประมวลผลเรียลไทม์
+            // ต้อง trigger ตรงนี้หลัง commit (OrderItems ครบแล้ว) — idempotent ด้วย isOrderDistributed
+            if ($order->payment_status === 'paid') {
+                try {
+                    $distributionService = app(\App\Services\OrderDistributionService::class);
+
+                    if (! $distributionService->isOrderDistributed($order)) {
+                        // จ่าย Cashback ให้ลูกค้า (มี dup-guard ภายใน)
+                        app(\App\Services\CashbackService::class)->processOrderCashback($order);
+
+                        // แบ่งเงิน Seller + เก็บ Fee/VAT/MLM Pool + คำนวณ MLM Commission
+                        $distributionService->processOrderDistribution($order->fresh(['items']));
+                    }
+                } catch (\Throwable $distErr) {
+                    // ไม่ให้ error ฝั่ง distribution ทำ checkout ล้ม — batch ทุก 5 นาทีจะเก็บตก
+                    \Log::error('Mobile checkout: order distribution ล้มเหลว (batch จะ retry)', [
+                        'order_id' => $order->id,
+                        'error' => $distErr->getMessage(),
+                    ]);
+                }
+            }
 
             return response()->json([
                 'success' => true,

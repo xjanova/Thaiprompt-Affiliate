@@ -164,11 +164,17 @@ class MlmGlobalSetting extends Model
     }
 
     /**
-     * Clear all settings cache
+     * ล้าง cache ของ MLM settings ทั้งหมด (เฉพาะคีย์ของ MLM ไม่แตะ cache ส่วนอื่นของแอป)
+     *
+     * ⚠️ เดิมใช้ Cache::flush() ซึ่งล้าง cache ทั้งแอปทุกครั้งที่บันทึก setting เดียว
      */
     public static function clearCache(): void
     {
-        Cache::flush();
+        Cache::forget('mlm_all_settings');
+
+        foreach (static::pluck('key') as $key) {
+            Cache::forget("mlm_setting_{$key}");
+        }
     }
 
     /**

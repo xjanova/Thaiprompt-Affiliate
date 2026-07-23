@@ -305,10 +305,8 @@ class OrderDistributionService
         $totalPvAmount = 0;
 
         foreach ($items as $item) {
-            // ลำดับ 1: ดึงค่า PV จาก MlmProductPv (แอดมินกำหนดต่อสินค้า)
-            $productPv = MlmProductPv::where('product_id', $item->product_id)
-                ->where('mlm_plan_id', $defaultPlanId)
-                ->first();
+            // ลำดับ 1: ดึงค่า PV จาก MlmProductPv (resolver ทนทานต่อ plan-key ไม่ตรง)
+            $productPv = MlmProductPv::resolveForProduct($item->product_id, $defaultPlanId);
 
             $itemPv = 0;
 
@@ -450,10 +448,8 @@ class OrderDistributionService
         $itemsDetail = [];
 
         foreach ($order->items as $item) {
-            // ลำดับ 1: ดึงค่า PV จาก MlmProductPv (แอดมินกำหนดต่อสินค้า)
-            $productPv = MlmProductPv::where('product_id', $item->product_id)
-                ->where('mlm_plan_id', $defaultPlanId)
-                ->first();
+            // ลำดับ 1: ดึงค่า PV จาก MlmProductPv (resolver ทนทานต่อ plan-key ไม่ตรง)
+            $productPv = MlmProductPv::resolveForProduct($item->product_id, $defaultPlanId);
 
             $pvSource = 'none';
             $itemPv = 0;
@@ -673,10 +669,23 @@ class OrderDistributionService
 
     /**
      * ตรวจสอบว่า Order ถูก distribute แล้วหรือยัง
+     *
+     * 🐛 Fix 2026-07-24: ออเดอร์ที่มีแต่สินค้า Official Shop ไม่สร้าง EarningsLedger
+     * (รายได้เข้า PlatformTransaction แทน) → เช็คแค่ ledger ทำให้คืน false ตลอด
+     * → batch ทุก 5 นาทีเก็บ VAT/MLM Pool/รายได้ admin ซ้ำเรื่อยๆ
+     * ต้องเช็ค PlatformTransaction ของออเดอร์ด้วย
      */
     public function isOrderDistributed(Order $order): bool
     {
-        return EarningsLedger::where('source_type', 'Order')
+        // ออเดอร์ที่มี seller → มี EarningsLedger
+        if (EarningsLedger::where('source_type', 'Order')
+            ->where('source_id', $order->id)
+            ->exists()) {
+            return true;
+        }
+
+        // ออเดอร์ Official-Shop-only → รายได้ถูกบันทึกเป็น PlatformTransaction
+        return \App\Models\PlatformTransaction::where('source_type', 'Order')
             ->where('source_id', $order->id)
             ->exists();
     }
@@ -690,6 +699,13 @@ class OrderDistributionService
     {
         return Order::where('payment_status', 'paid')
             ->whereDoesntHave('earningsLedger')
+            // 🐛 Fix 2026-07-24: กันหยิบออเดอร์ Official-Shop-only ที่ distribute แล้วมาซ้ำ
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('platform_transactions')
+                    ->whereColumn('platform_transactions.source_id', 'orders.id')
+                    ->where('platform_transactions.source_type', 'Order');
+            })
             ->latest('paid_at')
             ->limit($limit)
             ->get();

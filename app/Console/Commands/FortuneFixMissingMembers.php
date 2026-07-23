@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Helpers\MlmRetentionHelper;
 use App\Models\FortuneCommission;
 use App\Models\FortuneReading;
 use App\Models\FortuneReferral;
@@ -14,7 +13,6 @@ use App\Models\Wallet;
 use App\Services\FortuneCommissionService;
 use App\Services\MlmBinaryService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -247,17 +245,9 @@ class FortuneFixMissingMembers extends Command
                 return null;
             }
 
-            $binaryService = app(MlmBinaryService::class);
-            $placement = null;
-            try {
-                $placement = $binaryService->findPlacementPosition($sponsor);
-            } catch (\Exception $e) {
-                // binary placement อาจ error — ใช้ fallback
-            }
-
-            $binaryParentId = $placement['parent_id'] ?? $sponsor->id;
-            $binaryPosition = $placement['position'] ?? 'left';
-
+            // สร้าง member ก่อน (ยังไม่วาง binary — placeNewMember จะจัดการ)
+            // 🐛 Fix 2026-07-24: fallback เดิมวางใต้ sponsor ตรงๆ ทั้งที่ slot อาจเต็ม
+            // → ตำแหน่งซ้ำ (และชน unique index ใหม่) — ใช้ placeNewMember ศูนย์กลางแทน
             $member = MlmMember::create([
                 'user_id' => $user->id,
                 'mlm_plan_id' => $defaultPlan->id,
@@ -266,8 +256,6 @@ class FortuneFixMissingMembers extends Command
                 'unilevel_path' => trim(($sponsor->unilevel_path ?? '').'/'.$sponsor->id, '/'),
                 'original_sponsor_id' => $sponsor->id,
                 'binary_sponsor_id' => $sponsor->id,
-                'binary_parent_id' => $binaryParentId,
-                'binary_position' => $binaryPosition,
                 'status' => 'active',
                 'joined_at' => now(),
                 'member_code' => MlmMember::generateMemberCode(),
@@ -276,13 +264,11 @@ class FortuneFixMissingMembers extends Command
 
             $sponsor->increment('total_direct_referrals');
 
-            $binaryParent = MlmMember::find($binaryParentId);
-            if ($binaryParent) {
-                if ($binaryPosition === 'left') {
-                    $binaryParent->increment('left_leg_members');
-                } else {
-                    $binaryParent->increment('right_leg_members');
-                }
+            // วาง binary ผ่านศูนย์กลาง (fallback BFS + retry กัน race + อัพเดทสถิติครบ)
+            $placementResult = app(MlmBinaryService::class)->placeNewMember($member, $sponsor);
+
+            if (! $placementResult) {
+                $this->warn("  ⚠ วาง binary ไม่สำเร็จ: {$user->name} (member ยังอยู่ใน unilevel ปกติ)");
             }
 
             // สร้าง Wallet ทันที
@@ -341,7 +327,7 @@ class FortuneFixMissingMembers extends Command
         // สร้าง member_code ที่ไม่ซ้ำ (ADMIN-0001 อาจถูกใช้ไปแล้ว)
         $memberCode = 'ADMIN-0001';
         if (MlmMember::where('member_code', $memberCode)->exists()) {
-            $memberCode = 'ROOT-ADMIN-' . $superAdmin->id;
+            $memberCode = 'ROOT-ADMIN-'.$superAdmin->id;
         }
 
         $member = MlmMember::create([

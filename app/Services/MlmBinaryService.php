@@ -349,6 +349,191 @@ class MlmBinaryService
     }
 
     /**
+     * วางสมาชิกใหม่ลง Binary tree แบบปลอดภัย — ศูนย์กลางสำหรับทุก join path
+     *
+     * 🐛 Fix 2026-07-24: เดิมแต่ละ join path (เว็บ/แอดมิน/Fortune/FreshMarket/mobile)
+     * เขียน placement + fallback เองคนละแบบ → บางทางไม่มี fallback (สมาชิกหลุดผัง)
+     * บางทาง fallback วางใต้ sponsor ตรงทั้งที่ slot เต็ม (ตำแหน่งซ้ำ)
+     *
+     * ความสามารถ:
+     * - หาตำแหน่งตาม strategy → ถ้าไม่ได้ (null/depth เต็ม/exception) → BFS หา slot ว่างจริง
+     * - อัพเดท member (parent/position/path) + สถิติขา parent + team counts ของ upline
+     * - กัน race: retry สูงสุด 3 ครั้งเมื่อชน unique constraint (สอง registration แย่ง slot เดียวกัน)
+     *
+     * @param  MlmMember  $member  สมาชิกที่ยังไม่ถูกวาง (binary_parent_id ต้องยัง null)
+     * @param  MlmMember  $sponsor  ผู้แนะนำ (จุดเริ่มค้นหาตำแหน่ง)
+     * @param  string|null  $preferredLeg  ขาที่ต้องการ (สำหรับ strategy 'manual')
+     * @return array|null ['parent_id' => int, 'position' => string] ที่วางสำเร็จ หรือ null ถ้าวางไม่ได้
+     */
+    public function placeNewMember(MlmMember $member, MlmMember $sponsor, ?string $preferredLeg = null): ?array
+    {
+        // เมื่อ slot ที่ strategy เลือกถูกแย่ง/เต็ม → รอบถัดไปบังคับใช้ fallback BFS
+        // (สำคัญกับ strategy 'manual' และกรณีปิด auto_placement ที่คืน slot ตายตัวเดิมทุกรอบ)
+        $useFallback = false;
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            // ดึง sponsor สดใหม่ทุกรอบ กัน relation cache ชี้ slot ที่เพิ่งถูกคนอื่นแย่งไป
+            $freshSponsor = $sponsor->fresh();
+            if ($freshSponsor) {
+                $sponsor = $freshSponsor;
+            }
+
+            $placement = null;
+
+            if (! $useFallback) {
+                try {
+                    $placement = $this->findPlacementPosition($sponsor, $preferredLeg);
+                } catch (\Throwable $e) {
+                    Log::warning('Binary placement ล้มเหลว — จะใช้ fallback BFS', [
+                        'member_id' => $member->id,
+                        'sponsor_id' => $sponsor->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Fallback: BFS หา slot ว่างจริงใต้ sponsor (ไม่สน depth cap — กันสมาชิกหลุดผัง)
+            if (! is_array($placement) || ! isset($placement['parent_id'])) {
+                $placement = $this->findFallbackPosition($sponsor);
+            }
+
+            if (! $placement) {
+                return null;
+            }
+
+            $parent = MlmMember::find($placement['parent_id']);
+            if (! $parent) {
+                $useFallback = true;
+
+                continue;
+            }
+
+            $position = $placement['position'] ?? 'left';
+
+            // ตรวจว่า slot ยังว่างจริงก่อนเขียน (unique index เป็น backstop สุดท้าย)
+            $slotTaken = MlmMember::where('binary_parent_id', $parent->id)
+                ->where('binary_position', $position)
+                ->where('id', '!=', $member->id)
+                ->exists();
+
+            if ($slotTaken) {
+                $useFallback = true; // slot จาก strategy ใช้ไม่ได้ — รอบหน้าหา slot ว่างจริงแทน
+
+                continue;
+            }
+
+            try {
+                $member->update([
+                    'binary_parent_id' => $parent->id,
+                    'binary_position' => $position,
+                    'binary_path' => ($parent->binary_path ?? '').'/'.$position,
+                ]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                // 23000 = duplicate key (ชนกับ registration อื่นพร้อมกัน) → หาตำแหน่งใหม่
+                if (($e->errorInfo[0] ?? '') === '23000') {
+                    $useFallback = true;
+
+                    continue;
+                }
+                throw $e;
+            }
+
+            // อัพเดทสถิติขาของ parent + team counts ของ upline ทั้งสาย
+            $parent->increment($position === 'left' ? 'left_leg_members' : 'right_leg_members');
+            $this->incrementUplineTeamCounts($member);
+
+            Log::info('Binary placement สำเร็จ', [
+                'member_id' => $member->id,
+                'parent_id' => $parent->id,
+                'position' => $position,
+                'attempt' => $attempt + 1,
+            ]);
+
+            return ['parent_id' => $parent->id, 'position' => $position];
+        }
+
+        Log::error('Binary placement ล้มเหลวหลัง retry ครบ — member ยังไม่ถูกวางในผัง', [
+            'member_id' => $member->id,
+            'sponsor_id' => $sponsor->id,
+        ]);
+
+        return null;
+    }
+
+    /**
+     * BFS หา slot ว่างจริงใต้ sponsor โดยไม่สน depth cap
+     *
+     * ใช้เป็น fallback เมื่อ strategy ปกติหาตำแหน่งไม่ได้ (เช่น binary_max_depth เต็ม)
+     * หลัก: การให้สมาชิกอยู่ในผังลึกเกิน cap ดีกว่าหลุดผังไปเลย
+     * (ห้าม fallback วางใต้ sponsor ตรงๆ — slot อาจเต็มแล้ว จะได้ตำแหน่งซ้ำ)
+     *
+     * @return array|null ['parent_id' => int, 'position' => string] หรือ null
+     */
+    public function findFallbackPosition(MlmMember $sponsor): ?array
+    {
+        $queue = [$sponsor->id];
+        $visited = [];
+        $scanned = 0;
+
+        while (! empty($queue) && $scanned < 5000) {
+            $currentId = array_shift($queue);
+
+            if (isset($visited[$currentId])) {
+                continue;
+            }
+            $visited[$currentId] = true;
+            $scanned++;
+
+            $children = MlmMember::where('binary_parent_id', $currentId)
+                ->whereIn('binary_position', ['left', 'right'])
+                ->get(['id', 'binary_position']);
+
+            if (! $children->contains(fn ($c) => $c->binary_position === 'left')) {
+                return ['parent_id' => $currentId, 'position' => 'left'];
+            }
+
+            if (! $children->contains(fn ($c) => $c->binary_position === 'right')) {
+                return ['parent_id' => $currentId, 'position' => 'right'];
+            }
+
+            foreach ($children as $child) {
+                $queue[] = $child->id;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * เพิ่ม total_team_members ให้ upline ทั้งสาย binary ของสมาชิกใหม่
+     *
+     * 🐛 แทนที่ updateBinaryUplineTeamCounts เดิมใน RegisterController ที่มีบั๊ก
+     * (safety check เทียบ id หลัง assign ทำให้ break หลังวนแค่รอบเดียว)
+     */
+    protected function incrementUplineTeamCounts(MlmMember $member): void
+    {
+        $visited = [];
+        $current = $member;
+
+        for ($i = 0; $i < 100; $i++) {
+            $parentId = $current->binary_parent_id;
+
+            if (! $parentId || isset($visited[$parentId])) {
+                break; // ถึงราก หรือเจอ cycle
+            }
+            $visited[$parentId] = true;
+
+            $parent = MlmMember::find($parentId);
+            if (! $parent) {
+                break;
+            }
+
+            $parent->increment('total_team_members');
+            $current = $parent;
+        }
+    }
+
+    /**
      * นับ depth ของ member จาก root
      */
     protected function getMemberDepth(MlmMember $member): int
@@ -750,8 +935,9 @@ class MlmBinaryService
         $retentionData = $commissionService->getMemberRetentionStatus($member);
 
         // ดึงข้อมูลเพิ่มเติมสำหรับ v3 genealogy tree
+        // ⚠️ MlmMember ไม่มี relation rank() — ต้องอ่าน rank ผ่าน user->currentRank เท่านั้น
         $user = $member->user;
-        $rank = $member->rank ?? null;
+        $rank = $user?->currentRank;
 
         // คำนวณ retention วันหมดอายุ
         $retentionExpiresAt = $retentionData['expires_at'] ?? null;
@@ -779,8 +965,13 @@ class MlmBinaryService
             // ข้อมูลเดิม
             'total_pv' => $member->total_pv,
             'monthly_pv' => $retentionData['monthly_pv'],
+            // left/right_leg_pv = ยอดคงเหลือหลังจับคู่ (ไม่ใช่ยอดสะสมทั้งหมด)
             'left_leg_pv' => $member->left_leg_pv,
             'right_leg_pv' => $member->right_leg_pv,
+            // carried PV = PV ขาแข็งที่ยกยอดไปรอบถัดไป — ต้องแสดงคู่กันไม่งั้นตัวเลขในผัง
+            // ไม่ตรงกับที่ engine ใช้จับคู่จริง
+            'carried_left_pv' => (float) ($member->carried_left_pv ?? 0),
+            'carried_right_pv' => (float) ($member->carried_right_pv ?? 0),
             'status' => $member->status,
             'retention_status' => $retentionData['status'],
             'direct_referrals' => $member->total_direct_referrals ?? 0,
@@ -788,9 +979,10 @@ class MlmBinaryService
             'right' => null,
         ];
 
-        // Load children (eager load rank สำหรับ v3)
-        $leftChild = $member->binaryLeftChild()->with(['user', 'rank'])->first();
-        $rightChild = $member->binaryRightChild()->with(['user', 'rank'])->first();
+        // โหลด children (eager load user+currentRank สำหรับ v3)
+        // ⚠️ ห้ามใส่ 'rank' ตรงๆ — MlmMember ไม่มี relation นี้ จะโยน RelationNotFoundException
+        $leftChild = $member->binaryLeftChild()->with(['user.currentRank'])->first();
+        $rightChild = $member->binaryRightChild()->with(['user.currentRank'])->first();
 
         if ($leftChild) {
             $node['left'] = $this->buildBinaryTreeRecursive($leftChild, $currentDepth + 1, $maxDepth);

@@ -463,35 +463,10 @@ class FortuneAffiliateService
                 return null;
             }
 
-            // หาตำแหน่ง binary แบบ auto-placement
-            // 🐛 Fix 2026-06-12: placement อาจคืน null (เช่น depth limit เต็ม) — ห้าม access
-            // array offset บน null เพราะ Laravel แปลง warning เป็น ErrorException
-            // → MlmMember ไม่ถูกสร้างเงียบๆ → คอมมิชชั่นดูดวงไม่จ่ายทั้งระบบ (ตายมา 3.5 เดือน)
-            $placement = null;
-            try {
-                $binaryService = app(MlmBinaryService::class);
-                $placement = $binaryService->findPlacementPosition($sponsor);
-            } catch (\Throwable $placementErr) {
-                Log::warning('Fortune Affiliate: binary placement ล้มเหลว — ใช้ fallback วางใต้ sponsor ตรง', [
-                    'user_id' => $user->id,
-                    'sponsor_id' => $sponsor->id,
-                    'error' => $placementErr->getMessage(),
-                ]);
-            }
-
-            if (! is_array($placement) || ! isset($placement['parent_id'])) {
-                Log::warning('Fortune Affiliate: ไม่พบตำแหน่ง binary — fallback วางใต้ sponsor ตรง (ขาซ้าย)', [
-                    'user_id' => $user->id,
-                    'sponsor_id' => $sponsor->id,
-                ]);
-            }
-
-            // Fallback: วางใต้ sponsor ตรงขาซ้าย (unilevel commission ไม่กระทบ —
-            // ค่าแนะนำดูดวงใช้ unilevel_sponsor_id เท่านั้น)
-            $binaryParentId = $placement['parent_id'] ?? $sponsor->id;
-            $binaryPosition = $placement['position'] ?? 'left';
-
-            // สร้าง MLM member
+            // สร้าง MLM member ก่อน (ยังไม่วาง binary — placeNewMember จะจัดการ)
+            // 🐛 Fix 2026-06-12 + 2026-07-24: placement ย้ายไปรวมศูนย์ที่
+            // MlmBinaryService::placeNewMember (fallback BFS หา slot ว่างจริง + retry กัน race)
+            // — เดิม fallback วางใต้ sponsor ตรงๆ ซึ่ง slot อาจเต็ม → ตำแหน่งซ้ำในผัง
             $member = MlmMember::create([
                 'user_id' => $user->id,
                 'mlm_plan_id' => $defaultPlan->id,
@@ -500,10 +475,8 @@ class FortuneAffiliateService
                 'unilevel_level' => $sponsor->unilevel_level + 1,
                 'unilevel_path' => $sponsor->unilevel_path.'/'.$sponsor->id,
                 'original_sponsor_id' => $sponsor->id,
-                // Binary structure (auto-placement)
+                // Binary sponsor (ตำแหน่ง parent/position จะถูกวางโดย placeNewMember)
                 'binary_sponsor_id' => $sponsor->id,
-                'binary_parent_id' => $binaryParentId,
-                'binary_position' => $binaryPosition,
                 // Status
                 'status' => 'active',
                 'joined_at' => now(),
@@ -514,14 +487,14 @@ class FortuneAffiliateService
             // Update sponsor stats
             $sponsor->increment('total_direct_referrals');
 
-            // Update binary parent stats
-            $binaryParent = MlmMember::find($binaryParentId);
-            if ($binaryParent) {
-                if ($binaryPosition === 'left') {
-                    $binaryParent->increment('left_leg_members');
-                } else {
-                    $binaryParent->increment('right_leg_members');
-                }
+            // วาง binary ผ่านศูนย์กลาง (อัพเดทสถิติ parent/upline ให้ครบในตัว)
+            $placementResult = app(MlmBinaryService::class)->placeNewMember($member, $sponsor);
+
+            if (! $placementResult) {
+                Log::warning('Fortune Affiliate: วาง binary ไม่สำเร็จ (member ยังอยู่ใน unilevel ปกติ)', [
+                    'member_id' => $member->id,
+                    'sponsor_id' => $sponsor->id,
+                ]);
             }
 
             // สร้าง Wallet รอไว้รับคอมมิชชั่นทันที
@@ -531,7 +504,7 @@ class FortuneAffiliateService
                 'member_id' => $member->id,
                 'member_code' => $member->member_code,
                 'sponsor_id' => $sponsor->id,
-                'binary_position' => $binaryPosition,
+                'binary_position' => $placementResult['position'] ?? null,
             ]);
 
             return $member;

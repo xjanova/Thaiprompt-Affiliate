@@ -264,25 +264,36 @@ class MlmGlobalSettingController extends Controller
      */
     public function updatePlacement(Request $request)
     {
-        // แก้ Bug #6-7: ใช้ค่าที่ตรงกับ MlmBinaryService match statement
+        // รับค่าจากหน้าตั้งค่า MLM + Theme Customizer MLM Tab
+        // รองรับ 'left_to_right' เป็น alias ของ 'left_first' (ค่าที่ MlmBinaryService รู้จักจริง)
         $validated = $request->validate([
-            'auto_placement_type' => 'required|in:left_first,right_first,balanced,weak_leg,strong_leg,fill_level,fill_by_level,manual',
+            'auto_placement_type' => 'required|in:left_first,right_first,left_to_right,balanced,weak_leg,strong_leg,fill_level,fill_by_level,manual',
             'auto_placement' => 'required|boolean',
             'binary_enabled' => 'required|boolean',
             'unilevel_enabled' => 'required|boolean',
             'genealogy_enabled' => 'nullable|boolean',
             'binary_match_commission' => 'nullable|numeric|min:0|max:100',
+            'binary_pair_commission' => 'nullable|numeric|min:0|max:100000',
+            'global_pv_rate' => 'nullable|numeric|min:0.01|max:1000',
             'unilevel_levels' => 'nullable|integer|min:1|max:10',
             'unilevel_max_width' => 'nullable|integer|min:0|max:100',
             'unilevel_percentages' => 'nullable|string',
             'direct_referral_commission' => 'nullable|numeric|min:0|max:100',
+            'direct_referral_bonus_type' => 'nullable|in:fixed,percentage',
+            'direct_referral_bonus_amount' => 'nullable|numeric|min:0|max:100000',
             'min_pv_for_commission' => 'nullable|numeric|min:0',
             'commission_per_pv' => 'nullable|numeric|min:0|max:1000',
+            'volume_retention_enabled' => 'nullable|boolean',
+            'volume_retention_monthly_pv' => 'nullable|numeric|min:0|max:1000000',
+            'volume_retention_grace_days' => 'nullable|integer|min:0|max:90',
         ]);
 
         // อัพเดทการตั้งค่า 3 ระบบหลัก
-        // แก้ Bug #6-7: ใช้ key ที่ตรงกับ MlmBinaryService ที่อ่านค่า auto_placement_strategy และ auto_placement_enabled
-        MlmGlobalSetting::set('auto_placement_strategy', $validated['auto_placement_type']);
+        // ใช้ key ที่ MlmBinaryService อ่านจริง: auto_placement_strategy / auto_placement_enabled
+        $strategy = $validated['auto_placement_type'] === 'left_to_right'
+            ? 'left_first'
+            : $validated['auto_placement_type'];
+        MlmGlobalSetting::set('auto_placement_strategy', $strategy);
         MlmGlobalSetting::set('auto_placement_enabled', $validated['auto_placement']);
         MlmGlobalSetting::set('binary_enabled', $validated['binary_enabled']);
         MlmGlobalSetting::set('unilevel_enabled', $validated['unilevel_enabled']);
@@ -303,16 +314,23 @@ class MlmGlobalSettingController extends Controller
             }
         }
 
-        // ⚠️ ตรวจสอบ unilevel_percentages ว่าจะ overpay หรือไม่
+        // แปลง unilevel_percentages เป็น array of {level, percentage}
+        // รองรับทั้ง JSON array string "[5,3,2,1,1]" (จาก JSON.stringify ฝั่ง UI)
+        // และ comma-separated "5,3,2,1,1" (จาก Theme Customizer เดิม)
+        $parsedLevels = null;
         if (isset($validated['unilevel_percentages'])) {
-            $percentages = explode(',', $validated['unilevel_percentages']);
-            $levels = [];
-            foreach ($percentages as $i => $pct) {
-                $levels[] = ['level' => $i + 1, 'percentage' => (float) trim($pct)];
+            $parsedLevels = $this->parseUnilevelPercentages($validated['unilevel_percentages']);
+
+            if ($parsedLevels === null) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'รูปแบบเปอร์เซ็นต์ Unilevel ไม่ถูกต้อง',
+                ], 422);
             }
 
+            // ⚠️ ตรวจสอบว่าจะ overpay หรือไม่
             $levelResult = OverpayProtectionService::validateLevelConfiguration(
-                $levels,
+                $parsedLevels,
                 isset($validated['commission_per_pv']) ? (float) $validated['commission_per_pv'] : null
             );
 
@@ -325,22 +343,69 @@ class MlmGlobalSettingController extends Controller
             }
         }
 
-        // อัพเดทค่าคอมมิชชั่นเพิ่มเติม
+        // ═══ บันทึก unilevel_levels ═══
+        // 🚨 CRITICAL: engine (MlmCommissionService/MlmUnilevelService/MlmPvService) อ่าน
+        //    unilevel_levels เป็น array [{level, percentage}] เท่านั้น
+        //    ห้ามบันทึกเป็นตัวเลขจำนวนชั้น (int) เด็ดขาด — จะทำให้คอมมิชชั่น Unilevel เป็น 0 ทั้งระบบ
+        $levelCount = $validated['unilevel_levels'] ?? null;
+        if ($parsedLevels !== null) {
+            // ปรับจำนวนชั้นตามที่แอดมินเลือก (ตัดส่วนเกิน / เติม 0% ให้ครบ)
+            if ($levelCount !== null) {
+                $parsedLevels = array_slice($parsedLevels, 0, $levelCount);
+                while (count($parsedLevels) < $levelCount) {
+                    $parsedLevels[] = ['level' => count($parsedLevels) + 1, 'percentage' => 0.0];
+                }
+            }
+            MlmGlobalSetting::set('unilevel_levels', $parsedLevels);
+            MlmGlobalSetting::set('unilevel_percentages', $validated['unilevel_percentages']);
+        } elseif ($levelCount !== null) {
+            // มีแต่จำนวนชั้น ไม่มีเปอร์เซ็นต์ → ปรับความยาว array ปัจจุบัน (ห้ามทับด้วย int!)
+            $current = MlmGlobalSetting::get('unilevel_levels', []);
+            $current = is_array($current) ? array_values($current) : [];
+            $levels = array_slice($current, 0, $levelCount);
+            while (count($levels) < $levelCount) {
+                $levels[] = ['level' => count($levels) + 1, 'percentage' => 0.0];
+            }
+            MlmGlobalSetting::set('unilevel_levels', $levels);
+        }
+
+        // ═══ ค่าคอมมิชชั่น Binary ═══
+        // binary_pair_commission (บาท/คู่) = คีย์ที่ MlmBinaryService ใช้จ่ายจริง
+        if (isset($validated['binary_pair_commission'])) {
+            MlmGlobalSetting::set('binary_pair_commission', $validated['binary_pair_commission']);
+        }
+        // binary_match_percentage = ใช้โดย overpay estimate + legacy engine (slider % ใน UI)
         if (isset($validated['binary_match_commission'])) {
+            MlmGlobalSetting::set('binary_match_percentage', $validated['binary_match_commission']);
             MlmGlobalSetting::set('binary_match_commission', $validated['binary_match_commission']);
         }
-        if (isset($validated['unilevel_levels'])) {
-            MlmGlobalSetting::set('unilevel_levels', $validated['unilevel_levels']);
+
+        // ═══ อัตราแปลงยอดขายเป็น PV (คีย์ที่ engine ใช้จริงทุกจุด) ═══
+        if (isset($validated['global_pv_rate'])) {
+            MlmGlobalSetting::set('global_pv_rate', $validated['global_pv_rate']);
         }
+
         if (isset($validated['unilevel_max_width'])) {
             MlmGlobalSetting::set('unilevel_max_width', $validated['unilevel_max_width']);
         }
-        if (isset($validated['unilevel_percentages'])) {
-            MlmGlobalSetting::set('unilevel_percentages', $validated['unilevel_percentages']);
+
+        // ═══ ค่าแนะนำตรง — wire เข้าคีย์ที่ MlmReferralBonusService ใช้จริง ═══
+        if (isset($validated['direct_referral_bonus_type'])) {
+            MlmGlobalSetting::set('direct_referral_bonus_type', $validated['direct_referral_bonus_type']);
+        }
+        if (isset($validated['direct_referral_bonus_amount'])) {
+            MlmGlobalSetting::set('direct_referral_bonus_amount', $validated['direct_referral_bonus_amount']);
         }
         if (isset($validated['direct_referral_commission'])) {
+            // slider % ใน UI → คีย์จริงคือ direct_referral_bonus_percentage
+            MlmGlobalSetting::set('direct_referral_bonus_percentage', $validated['direct_referral_commission']);
             MlmGlobalSetting::set('direct_referral_commission', $validated['direct_referral_commission']);
         }
+        if (isset($validated['genealogy_enabled'])) {
+            // เปิด/ปิดค่าแนะนำตรงให้สอดคล้องกับ toggle ผังสายเลือด
+            MlmGlobalSetting::set('direct_referral_bonus_enabled', $validated['genealogy_enabled']);
+        }
+
         if (isset($validated['min_pv_for_commission'])) {
             MlmGlobalSetting::set('min_pv_for_commission', $validated['min_pv_for_commission']);
         }
@@ -348,11 +413,61 @@ class MlmGlobalSettingController extends Controller
             MlmGlobalSetting::set('commission_per_pv', $validated['commission_per_pv']);
         }
 
+        // ═══ ระบบรักษายอด (Volume Retention) — คีย์ที่ MlmRetentionHelper ใช้จริง ═══
+        // เดิมฟิลด์พวกนี้ถูก validation ตัดทิ้งเงียบๆ ทำให้การ์ดรักษายอดใน UI ไม่มีผลจริง
+        if (array_key_exists('volume_retention_enabled', $validated) && $validated['volume_retention_enabled'] !== null) {
+            MlmGlobalSetting::set('volume_retention_enabled', (bool) $validated['volume_retention_enabled']);
+        }
+        if (isset($validated['volume_retention_monthly_pv'])) {
+            MlmGlobalSetting::set('volume_retention_monthly_pv', $validated['volume_retention_monthly_pv']);
+        }
+        if (isset($validated['volume_retention_grace_days'])) {
+            MlmGlobalSetting::set('volume_retention_grace_days', $validated['volume_retention_grace_days']);
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'MLM settings updated successfully',
+            'message' => 'บันทึกการตั้งค่า MLM เรียบร้อย',
             'settings' => $validated,
         ]);
+    }
+
+    /**
+     * แปลง string เปอร์เซ็นต์ Unilevel เป็น array [{level, percentage}]
+     *
+     * รองรับ 2 รูปแบบ:
+     * - JSON array string: "[5,3,2,1,1]"
+     * - Comma-separated: "5,3,2,1,1"
+     *
+     * @param  string  $raw  ค่าดิบจาก request
+     * @return array|null null ถ้า parse ไม่ได้
+     */
+    protected function parseUnilevelPercentages(string $raw): ?array
+    {
+        $raw = trim($raw);
+
+        if ($raw === '') {
+            return null;
+        }
+
+        if (str_starts_with($raw, '[')) {
+            $values = json_decode($raw, true);
+            if (! is_array($values)) {
+                return null;
+            }
+        } else {
+            $values = array_map('trim', explode(',', $raw));
+        }
+
+        $levels = [];
+        foreach (array_values($values) as $i => $pct) {
+            if (! is_numeric($pct)) {
+                return null;
+            }
+            $levels[] = ['level' => $i + 1, 'percentage' => max(0.0, (float) $pct)];
+        }
+
+        return $levels === [] ? null : $levels;
     }
 
     /**

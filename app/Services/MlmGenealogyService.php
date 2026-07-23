@@ -68,6 +68,63 @@ class MlmGenealogyService
     }
 
     /**
+     * Rebuild genealogy (closure table) ของ member + downline ทั้ง subtree
+     *
+     * ใช้หลังย้ายทีม (team transfer) — ลบ genealogy เดิมของแต่ละ node แล้วสร้างใหม่
+     * ตาม pointer ปัจจุบัน (unilevel_sponsor_id / binary_parent_id)
+     *
+     * @param  MlmMember  $member  รากของ subtree ที่ย้าย
+     * @param  int  $maxNodes  เพดานจำนวน node กัน runaway
+     * @return int จำนวน node ที่ rebuild แล้ว
+     */
+    public function rebuildGenealogyForSubtree(MlmMember $member, int $maxNodes = 2000): int
+    {
+        $processed = 0;
+        $queue = [$member->id];
+        $visited = [];
+
+        while (! empty($queue) && $processed < $maxNodes) {
+            $currentId = array_shift($queue);
+
+            if (isset($visited[$currentId])) {
+                continue;
+            }
+            $visited[$currentId] = true;
+
+            $node = MlmMember::find($currentId);
+            if (! $node) {
+                continue;
+            }
+
+            // ลบ genealogy เดิมของ node นี้ (ทั้ง unilevel และ binary)
+            MlmGenealogy::where('mlm_member_id', $node->id)->delete();
+
+            // สร้างใหม่ตาม pointer ปัจจุบัน (ล้าง relation cache ก่อน กันชี้ค่าเก่า)
+            $node->unsetRelation('unilevelSponsor');
+            $node->unsetRelation('binaryParent');
+
+            if ($node->unilevel_sponsor_id) {
+                $this->buildUnilevelGenealogy($node);
+            }
+            if ($node->binary_parent_id) {
+                $this->buildBinaryGenealogy($node);
+            }
+
+            $processed++;
+
+            // เดินต่อทั้งลูก unilevel และลูก binary (union กันตกหล่น)
+            foreach (MlmMember::where('unilevel_sponsor_id', $node->id)->pluck('id') as $childId) {
+                $queue[] = $childId;
+            }
+            foreach (MlmMember::where('binary_parent_id', $node->id)->pluck('id') as $childId) {
+                $queue[] = $childId;
+            }
+        }
+
+        return $processed;
+    }
+
+    /**
      * Build unilevel genealogy records
      */
     protected function buildUnilevelGenealogy(MlmMember $member)
@@ -110,12 +167,13 @@ class MlmGenealogyService
      */
     protected function placeBinaryMember(MlmMember $member, MlmMember $sponsor, $preferredPosition = null)
     {
+        // 🐛 Fix 2026-07-24: ใช้ placeNewMember (ศูนย์กลาง — มี fallback BFS + retry กัน race
+        // + อัพเดทสถิติ parent/upline ครบในตัว) แทนโค้ด placement เดิมที่ไม่มี fallback
         $binaryService = new MlmBinaryService;
-        $placement = $binaryService->findPlacementPosition($sponsor, $preferredPosition);
+        $result = $binaryService->placeNewMember($member, $sponsor, $preferredPosition);
 
-        // ตรวจสอบว่าหาตำแหน่งได้หรือไม่
-        if (! $placement || ! isset($placement['parent_id'])) {
-            Log::warning('Binary placement failed - no position found', [
+        if (! $result) {
+            Log::warning('Binary placement failed - no position found (หลัง fallback)', [
                 'member_id' => $member->id,
                 'sponsor_id' => $sponsor->id,
                 'max_depth' => MlmGlobalSetting::get('binary_max_depth'),
@@ -125,42 +183,9 @@ class MlmGenealogyService
             return $member;
         }
 
-        $parent = MlmMember::find($placement['parent_id']);
-
-        if (! $parent) {
-            Log::warning('Binary placement failed - parent not found', [
-                'member_id' => $member->id,
-                'parent_id' => $placement['parent_id'],
-            ]);
-
-            return $member;
-        }
-
-        $position = $placement['position'];
-
-        // Update member
-        $member->update([
-            'binary_parent_id' => $parent->id,
-            'binary_position' => $position,
-            'binary_path' => ($parent->binary_path ?? '').'/'.$position,
-        ]);
-
-        // Build binary genealogy
+        // Build binary genealogy (closure table) หลังวางสำเร็จ
+        $member->refresh();
         $this->buildBinaryGenealogy($member);
-
-        // Update parent's leg count
-        if ($position === 'left') {
-            $parent->increment('left_leg_members');
-        } else {
-            $parent->increment('right_leg_members');
-        }
-
-        Log::info('Binary placement successful', [
-            'member_id' => $member->id,
-            'parent_id' => $parent->id,
-            'position' => $position,
-            'binary_path' => $member->binary_path,
-        ]);
 
         return $member;
     }

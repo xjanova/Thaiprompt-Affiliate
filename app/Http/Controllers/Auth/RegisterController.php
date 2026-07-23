@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\LeadLock;
 use App\Models\LineLoginLog;
 use App\Models\LineOaSetting;
-
 use App\Models\MlmGlobalSetting;
 use App\Models\MlmMember;
 use App\Models\RecruitCustomization;
@@ -168,108 +167,108 @@ class RegisterController extends Controller
         // Create MLM member account (ครอบด้วย transaction เพื่อความถูกต้องของข้อมูล)
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {
-        $parentMember = null;
-        $referralCode = $validated['referral_code'] ?? null;
+            $parentMember = null;
+            $referralCode = $validated['referral_code'] ?? null;
 
-        // If no referral code provided, use default sponsor from settings
-        if (empty($referralCode)) {
-            $referralCode = Setting::get('default_sponsor_member_code');
-        }
-
-        if (! empty($referralCode)) {
-            $parentMember = MlmMember::where('member_code', $referralCode)->first();
-        }
-
-        // Get default MLM plan
-        $defaultPlan = \App\Models\MlmPlan::where('is_default', true)->first();
-        if (! $defaultPlan) {
-            $defaultPlan = \App\Models\MlmPlan::first(); // Fallback to any plan
-        }
-
-        // ⚠️ CRITICAL: ถ้าไม่มี MlmPlan ให้สร้างอันใหม่
-        // เพราะ mlm_members.mlm_plan_id เป็น NOT NULL
-        if (! $defaultPlan) {
-            $defaultPlan = \App\Models\MlmPlan::create([
-                'name' => 'Default Plan',
-                'name_th' => 'แผนมาตรฐาน',
-                'slug' => 'default-plan',
-                'description' => 'Default commission plan',
-                'description_th' => 'แผนคอมมิชชันมาตรฐาน',
-                'type' => 'hybrid',
-                'is_active' => true,
-                'is_default' => true,
-                'color' => '#6366f1',
-                'icon' => 'fa-crown',
-                'sort_order' => 1,
-                'joining_fee' => 0,
-                'requires_joining_fee' => false,
-            ]);
-            \Log::info('Created default MlmPlan automatically during registration');
-        }
-
-        // หาตำแหน่งใน Unilevel Tree (รองรับ width/depth limits และ spillover)
-        $unilevelPlacement = $this->findUnilevelPlacementForMember($parentMember);
-
-        $mlmMember = MlmMember::create([
-            'user_id' => $user->id,
-            'mlm_plan_id' => $defaultPlan?->id,
-            // original_sponsor_id: ผู้แนะนำตรงจริงๆ (ใช้รหัสของใคร) → ใช้สำหรับค่าแนะนำตรง
-            'original_sponsor_id' => $parentMember?->id,
-            // unilevel_sponsor_id: parent ใน Unilevel tree (อาจ spillover ไปคนอื่น)
-            'unilevel_sponsor_id' => $unilevelPlacement['sponsor_id'] ?? $parentMember?->id,
-            'unilevel_level' => $unilevelPlacement['level'] ?? ($parentMember ? $parentMember->unilevel_level + 1 : 1),
-            'unilevel_path' => $unilevelPlacement['path'] ?? ($parentMember ? $parentMember->unilevel_path.'/'.$parentMember->id : '/'.$user->id),
-            // binary_sponsor_id: parent ใน Binary tree (ตามกลยุทธ์ที่ตั้งค่า)
-            'binary_sponsor_id' => $parentMember?->id,
-            'member_code' => MlmMember::generateMemberCode(),
-            'status' => 'active',
-            'is_qualified' => true,
-            'joined_at' => now(),
-        ]);
-
-        // Update original sponsor's direct referral count (ผู้แนะนำตรงจริงๆ)
-        // total_direct_referrals นับจากผู้ที่ใช้รหัสแนะนำจริงๆ (original_sponsor)
-        // ไม่ใช่ unilevel_sponsor ซึ่งอาจเปลี่ยนไปจากการ spillover
-        if ($parentMember) {
-            $parentMember->increment('total_direct_referrals');
-        }
-
-        // จัดวางใน Binary Tree (ใช้การจัดวางที่ตั้งค่าได้แบบเดิม)
-        $this->placeMemberInBinaryTree($mlmMember, $parentMember);
-
-        // Handle Recruit Page Lead Conversion Tracking
-        $this->handleLeadConversion($request, $parentMember, $mlmMember);
-
-        // Log LINE registration if applicable
-        if ($lineProfile) {
-            LineLoginLog::logAction(
-                $lineProfile['line_user_id'],
-                'register',
-                $user->id,
-                [
-                    'display_name' => $lineProfile['line_display_name'],
-                    'member_code' => $mlmMember->member_code,
-                    'sponsor_id' => $parentMember?->id,
-                ]
-            );
-
-            // Send LINE welcome message
-            try {
-                $lineService = app(LineService::class);
-                $lineService->sendRegistrationSuccessMessage($user);
-            } catch (\Exception $e) {
-                \Log::error('Failed to send LINE registration message', [
-                    'user_id' => $user->id,
-                    'error' => $e->getMessage(),
-                ]);
+            // If no referral code provided, use default sponsor from settings
+            if (empty($referralCode)) {
+                $referralCode = Setting::get('default_sponsor_member_code');
             }
 
-            // Clear LINE temp profile from session
-            Session::forget('line_temp_profile');
-            Session::forget('line_login_referral');
-        }
+            if (! empty($referralCode)) {
+                $parentMember = MlmMember::where('member_code', $referralCode)->first();
+            }
 
-        \Illuminate\Support\Facades\DB::commit();
+            // Get default MLM plan
+            $defaultPlan = \App\Models\MlmPlan::where('is_default', true)->first();
+            if (! $defaultPlan) {
+                $defaultPlan = \App\Models\MlmPlan::first(); // Fallback to any plan
+            }
+
+            // ⚠️ CRITICAL: ถ้าไม่มี MlmPlan ให้สร้างอันใหม่
+            // เพราะ mlm_members.mlm_plan_id เป็น NOT NULL
+            if (! $defaultPlan) {
+                $defaultPlan = \App\Models\MlmPlan::create([
+                    'name' => 'Default Plan',
+                    'name_th' => 'แผนมาตรฐาน',
+                    'slug' => 'default-plan',
+                    'description' => 'Default commission plan',
+                    'description_th' => 'แผนคอมมิชชันมาตรฐาน',
+                    'type' => 'hybrid',
+                    'is_active' => true,
+                    'is_default' => true,
+                    'color' => '#6366f1',
+                    'icon' => 'fa-crown',
+                    'sort_order' => 1,
+                    'joining_fee' => 0,
+                    'requires_joining_fee' => false,
+                ]);
+                \Log::info('Created default MlmPlan automatically during registration');
+            }
+
+            // หาตำแหน่งใน Unilevel Tree (รองรับ width/depth limits และ spillover)
+            $unilevelPlacement = $this->findUnilevelPlacementForMember($parentMember);
+
+            $mlmMember = MlmMember::create([
+                'user_id' => $user->id,
+                'mlm_plan_id' => $defaultPlan?->id,
+                // original_sponsor_id: ผู้แนะนำตรงจริงๆ (ใช้รหัสของใคร) → ใช้สำหรับค่าแนะนำตรง
+                'original_sponsor_id' => $parentMember?->id,
+                // unilevel_sponsor_id: parent ใน Unilevel tree (อาจ spillover ไปคนอื่น)
+                'unilevel_sponsor_id' => $unilevelPlacement['sponsor_id'] ?? $parentMember?->id,
+                'unilevel_level' => $unilevelPlacement['level'] ?? ($parentMember ? $parentMember->unilevel_level + 1 : 1),
+                'unilevel_path' => $unilevelPlacement['path'] ?? ($parentMember ? $parentMember->unilevel_path.'/'.$parentMember->id : '/'.$user->id),
+                // binary_sponsor_id: parent ใน Binary tree (ตามกลยุทธ์ที่ตั้งค่า)
+                'binary_sponsor_id' => $parentMember?->id,
+                'member_code' => MlmMember::generateMemberCode(),
+                'status' => 'active',
+                'is_qualified' => true,
+                'joined_at' => now(),
+            ]);
+
+            // Update original sponsor's direct referral count (ผู้แนะนำตรงจริงๆ)
+            // total_direct_referrals นับจากผู้ที่ใช้รหัสแนะนำจริงๆ (original_sponsor)
+            // ไม่ใช่ unilevel_sponsor ซึ่งอาจเปลี่ยนไปจากการ spillover
+            if ($parentMember) {
+                $parentMember->increment('total_direct_referrals');
+            }
+
+            // จัดวางใน Binary Tree (ใช้การจัดวางที่ตั้งค่าได้แบบเดิม)
+            $this->placeMemberInBinaryTree($mlmMember, $parentMember);
+
+            // Handle Recruit Page Lead Conversion Tracking
+            $this->handleLeadConversion($request, $parentMember, $mlmMember);
+
+            // Log LINE registration if applicable
+            if ($lineProfile) {
+                LineLoginLog::logAction(
+                    $lineProfile['line_user_id'],
+                    'register',
+                    $user->id,
+                    [
+                        'display_name' => $lineProfile['line_display_name'],
+                        'member_code' => $mlmMember->member_code,
+                        'sponsor_id' => $parentMember?->id,
+                    ]
+                );
+
+                // Send LINE welcome message
+                try {
+                    $lineService = app(LineService::class);
+                    $lineService->sendRegistrationSuccessMessage($user);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send LINE registration message', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                // Clear LINE temp profile from session
+                Session::forget('line_temp_profile');
+                Session::forget('line_login_referral');
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
             \Log::error('Registration MLM member creation failed', [
@@ -372,51 +371,18 @@ class RegisterController extends Controller
         }
 
         try {
+            // 🐛 Fix 2026-07-24: ใช้ placeNewMember (ศูนย์กลาง) แทนโค้ด placement เดิม
+            // เดิมถ้า placement คืน null (depth เต็ม) จะ return เฉยๆ → สมาชิกหลุดผัง binary
+            // placeNewMember มี fallback BFS + retry กัน race + อัพเดทสถิติครบในตัว
             $binaryService = new MlmBinaryService;
+            $result = $binaryService->placeNewMember($newMember, $sponsor);
 
-            // หาตำแหน่งที่จะวาง (ใช้ strategy ที่ตั้งค่าไว้)
-            $placement = $binaryService->findPlacementPosition($sponsor, null);
-
-            if (! $placement || ! isset($placement['parent_id'])) {
-                \Log::warning('Binary placement failed - no position found', [
+            if (! $result) {
+                \Log::warning('Binary placement failed - no position found (หลัง fallback)', [
                     'member_id' => $newMember->id,
                     'sponsor_id' => $sponsor->id,
                 ]);
-
-                return;
             }
-
-            $parent = MlmMember::find($placement['parent_id']);
-            $position = $placement['position'];
-
-            if (! $parent) {
-                return;
-            }
-
-            // อัพเดทข้อมูล Binary Tree ของสมาชิกใหม่
-            $newMember->update([
-                'binary_parent_id' => $parent->id,
-                'binary_position' => $position,
-                'binary_path' => ($parent->binary_path ?? '').'/'.$position,
-            ]);
-
-            // อัพเดทจำนวนสมาชิกในแต่ละขาของ parent
-            if ($position === 'left') {
-                $parent->increment('left_leg_members');
-            } else {
-                $parent->increment('right_leg_members');
-            }
-
-            // อัพเดท total_team_members ของ upline ทั้งหมดใน Binary Tree
-            $this->updateBinaryUplineTeamCounts($newMember);
-
-            \Log::info('Binary placement successful', [
-                'member_id' => $newMember->id,
-                'parent_id' => $parent->id,
-                'position' => $position,
-                'binary_path' => $newMember->binary_path,
-            ]);
-
         } catch (\Exception $e) {
             // Log error แต่ไม่ให้กระทบการสมัครสมาชิก
             \Log::error('Binary placement error', [
@@ -424,28 +390,6 @@ class RegisterController extends Controller
                 'sponsor_id' => $sponsor->id,
                 'error' => $e->getMessage(),
             ]);
-        }
-    }
-
-    /**
-     * อัพเดทจำนวนสมาชิกทีมของ upline ทั้งหมดใน Binary Tree
-     *
-     * @param  MlmMember  $member  สมาชิกใหม่
-     */
-    protected function updateBinaryUplineTeamCounts(MlmMember $member): void
-    {
-        $currentMember = $member;
-
-        // Traverse up the binary tree and update team counts
-        while ($currentMember->binaryParent) {
-            $parent = $currentMember->binaryParent;
-            $parent->increment('total_team_members');
-            $currentMember = $parent;
-
-            // Safety limit เพื่อป้องกัน infinite loop
-            if ($parent->id === $currentMember->id) {
-                break;
-            }
         }
     }
 
@@ -502,7 +446,6 @@ class RegisterController extends Controller
     /**
      * ดึง URL เพิ่มเพื่อน LINE OA ตามที่มาของการสมัคร
      *
-     * @param Request $request
      * @return string|null URL สำหรับ redirect ไปเพิ่มเพื่อน LINE หรือ null ถ้าไม่มี
      */
     private function getAddFriendRedirectUrl(Request $request): ?string
@@ -511,6 +454,7 @@ class RegisterController extends Controller
         $origin = $request->session()->pull('register_origin', null);
         if ($origin === 'taladsod') {
             $url = config('services.line.fresh_market_add_friend_url');
+
             return $url ?: null;
         }
 

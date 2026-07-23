@@ -159,9 +159,6 @@ class FortuneReferralDashboardController extends Controller
      *
      * สร้าง tree data จาก MlmMember ของ user ปัจจุบัน
      * พร้อมข้อมูลคอมมิชชั่นดูดวง
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getTreeData(Request $request): JsonResponse
     {
@@ -201,14 +198,16 @@ class FortuneReferralDashboardController extends Controller
     /**
      * สร้าง tree data สำหรับผังสายงานดูดวง (User)
      *
-     * @param MlmMember $member root member
-     * @param int $maxDepth ความลึกสูงสุด
-     * @param int $currentDepth ความลึกปัจจุบัน
-     * @return array
+     * @param  MlmMember  $member  root member
+     * @param  int  $maxDepth  ความลึกสูงสุด
+     * @param  int  $currentDepth  ความลึกปัจจุบัน
      */
     private function buildFortuneTree(MlmMember $member, int $maxDepth, int $currentDepth = 0): array
     {
-        $member->loadMissing('user');
+        // 🐛 Fix 2026-07-24: เดิมอ่าน field ที่ไม่มีจริงบน MlmMember
+        // (personal_pv → PV โชว์ 0 เสมอ, rank_name → โชว์ '-' เสมอ)
+        // คอลัมน์จริงคือ total_pv และ rank ต้องอ่านผ่าน user->currentRank
+        $member->loadMissing('user.currentRank');
 
         // ดึงสรุปคอมมิชชั่นดูดวงของสมาชิกคนนี้
         $commissionStats = FortuneCommission::where('user_id', $member->user_id)
@@ -219,10 +218,10 @@ class FortuneReferralDashboardController extends Controller
             'id' => $member->id,
             'name' => $member->user?->name ?? 'Unknown',
             'code' => $member->member_code ?? '-',
-            'avatar' => null,
+            'avatar' => $member->user?->profile_picture_url,
             'status' => $member->status ?? 'active',
-            'rank' => $member->rank_name ?? '-',
-            'pv' => (float) ($member->personal_pv ?? 0),
+            'rank' => $member->user?->currentRank?->name ?? '-',
+            'pv' => (float) ($member->total_pv ?? 0),
             'total_earnings' => (float) ($commissionStats->total_amount ?? 0),
             'commission_count' => (int) ($commissionStats->total_count ?? 0),
             'children' => [],
@@ -230,7 +229,7 @@ class FortuneReferralDashboardController extends Controller
 
         // ดึง children ถ้ายังไม่เกิน depth
         if ($currentDepth < $maxDepth) {
-            $children = MlmMember::with('user')
+            $children = MlmMember::with('user.currentRank')
                 ->where('original_sponsor_id', $member->id)
                 ->orderBy('created_at', 'asc')
                 ->get();

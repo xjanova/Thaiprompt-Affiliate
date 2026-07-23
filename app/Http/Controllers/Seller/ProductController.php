@@ -161,12 +161,17 @@ class ProductController extends Controller
 
             // Create PV for default MLM plan if specified
             if ($request->filled('pv_value') && $request->pv_value > 0) {
-                // Get default or first active MLM plan
-                $defaultPlan = \App\Models\MlmPlan::where('is_active', true)->first();
-                if ($defaultPlan) {
+                // 🐛 Fix 2026-07-24: เก็บที่ default plan (settings/is_default) ให้ตรงกับ
+                // ที่ checkout อ่าน (default_mlm_plan_id) — เดิมเก็บที่ first-active plan
+                // ซึ่งอาจคนละตัว → PV ที่ผู้ขายตั้งถูกมองข้าม
+                $defaultPlanId = (int) \App\Models\MlmGlobalSetting::get('default_mlm_plan_id', 0)
+                    ?: \App\Models\MlmPlan::where('is_default', true)->value('id')
+                    ?: \App\Models\MlmPlan::where('is_active', true)->value('id');
+
+                if ($defaultPlanId) {
                     \App\Models\MlmProductPv::create([
                         'product_id' => $product->id,
-                        'mlm_plan_id' => $defaultPlan->id,
+                        'mlm_plan_id' => $defaultPlanId,
                         'pv_value' => $request->pv_value,
                         'use_global_rate' => true,
                         'show_pv_on_product_page' => true,
@@ -305,10 +310,16 @@ class ProductController extends Controller
             ]);
 
             // Update or create PV for default MLM plan if specified
+            // 🐛 Fix 2026-07-24: ใช้ default plan (settings/is_default) ให้ตรงกับที่ checkout
+            // อ่าน — เดิมใช้ first-active plan ซึ่งอาจคนละตัว → PV ที่ตั้งถูกมองข้าม
+            $pvPlanId = (int) \App\Models\MlmGlobalSetting::get('default_mlm_plan_id', 0)
+                ?: \App\Models\MlmPlan::where('is_default', true)->value('id')
+                ?: \App\Models\MlmPlan::where('is_active', true)->value('id');
+
             if ($request->filled('pv_value')) {
-                $defaultPlan = \App\Models\MlmPlan::where('is_active', true)->first();
-                if ($defaultPlan) {
-                    $existingPv = $product->getMlmPv($defaultPlan->id);
+                if ($pvPlanId) {
+                    // ใช้ resolver — เจอแถวเดิมแม้เก็บไว้ใต้ plan อื่น (ข้อมูลเก่าก่อน fix)
+                    $existingPv = \App\Models\MlmProductPv::resolveForProduct($product->id, $pvPlanId);
 
                     if ($existingPv) {
                         // Update existing PV
@@ -319,7 +330,7 @@ class ProductController extends Controller
                         // Create new PV
                         \App\Models\MlmProductPv::create([
                             'product_id' => $product->id,
-                            'mlm_plan_id' => $defaultPlan->id,
+                            'mlm_plan_id' => $pvPlanId,
                             'pv_value' => $request->pv_value,
                             'use_global_rate' => true,
                             'show_pv_on_product_page' => true,
@@ -328,13 +339,10 @@ class ProductController extends Controller
                     }
                 }
             } elseif ($request->has('pv_value') && $request->pv_value == 0) {
-                // Delete PV if value is 0
-                $defaultPlan = \App\Models\MlmPlan::where('is_active', true)->first();
-                if ($defaultPlan) {
-                    $existingPv = $product->getMlmPv($defaultPlan->id);
-                    if ($existingPv) {
-                        $existingPv->delete();
-                    }
+                // Delete PV if value is 0 (resolver — ลบเจอแม้เก็บไว้ใต้ plan อื่น)
+                $existingPv = \App\Models\MlmProductPv::resolveForProduct($product->id, $pvPlanId ?: null);
+                if ($existingPv) {
+                    $existingPv->delete();
                 }
             }
 

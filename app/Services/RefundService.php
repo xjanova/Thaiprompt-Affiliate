@@ -639,7 +639,10 @@ class RefundService
         }
 
         // เรียกคืน MLM Commission ที่เกี่ยวกับ Item นี้
-        $mlmCommissions = MlmCommission::where('source_type', 'OrderItem')
+        // ⚠️ ปัจจุบันระบบบันทึก MLM commission เป็นระดับ Order (FQCN) เท่านั้น ไม่มีระดับ OrderItem
+        //    query นี้จึงเจอเฉพาะกรณีที่มีการบันทึก per-item ในอนาคต — การเรียกคืนระดับ Order
+        //    ทำที่ MlmCommissionClawbackService::clawbackOrderCommissions (full refund)
+        $mlmCommissions = MlmCommission::whereIn('source_type', [\App\Models\OrderItem::class, 'OrderItem'])
             ->where('source_id', $item->id)
             ->where('status', 'paid')
             ->get();

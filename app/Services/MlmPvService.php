@@ -35,10 +35,8 @@ class MlmPvService
             $product = $orderItem->product;
             $quantity = $orderItem->quantity;
 
-            // Get PV configuration for this product
-            $productPv = MlmProductPv::where('product_id', $product->id)
-                ->where('mlm_plan_id', $plan->id)
-                ->first();
+            // Get PV configuration for this product (resolver ทนทานต่อ plan-key ไม่ตรง)
+            $productPv = MlmProductPv::resolveForProduct($product->id, $plan->id);
 
             if ($productPv) {
                 $itemPv = $productPv->pv_value * $quantity;

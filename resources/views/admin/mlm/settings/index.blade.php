@@ -192,7 +192,27 @@
                                 <span x-text="(settings.binary_match_commission || 0) + '%'"></span>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">คอมมิชชั่นจากการจับคู่ขา Binary (แนะนำ: 5-15%)</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">ใช้สำหรับประมาณการเพดานจ่ายรวม (Overpay Protection)</p>
+                    </div>
+
+                    {{-- ค่าคอมต่อคู่ Binary (คีย์ที่ engine จ่ายจริง: binary_pair_commission) --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                            <i class="fas fa-hand-holding-usd text-purple-500 mr-2"></i>
+                            ค่าคอมมิชชั่นต่อคู่ (บาท/คู่)
+                        </label>
+                        <div class="relative">
+                            <input type="number"
+                                   x-model.number="settings.binary_pair_commission"
+                                   min="0" step="1"
+                                   :disabled="!settings.binary_enabled"
+                                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl pr-20">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">บาท/คู่</span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            เงินที่จ่ายจริงเมื่อ PV ขาซ้าย-ขวาจับคู่กันได้ 1 คู่ (ค่านี้คือค่าที่ระบบใช้จ่ายคอม Binary จริง)
+                        </p>
                     </div>
 
                     {{-- Auto Placement Strategy --}}
@@ -201,15 +221,16 @@
                             กลยุทธ์การจัดเรียงอัตโนมัติ
                         </label>
                         <div class="grid grid-cols-2 gap-3">
+                            {{-- ⚠️ ค่าต้องเป็น 'left_first' ให้ตรงกับ MlmBinaryService (เดิมเป็น 'left_to_right' ทำให้ save ล้มเหลว 422) --}}
                             <button type="button"
-                                    @click="settings.auto_placement_type = 'left_to_right'"
+                                    @click="settings.auto_placement_type = 'left_first'"
                                     :disabled="!settings.auto_placement"
                                     class="p-4 rounded-xl border-2 transition-all text-left"
-                                    :class="settings.auto_placement_type === 'left_to_right'
+                                    :class="settings.auto_placement_type === 'left_first'
                                         ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
                                         : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'">
                                 <div class="flex items-center gap-3">
-                                    <i class="fas fa-arrow-right text-2xl" :class="settings.auto_placement_type === 'left_to_right' ? 'text-purple-600' : 'text-gray-400'"></i>
+                                    <i class="fas fa-arrow-right text-2xl" :class="settings.auto_placement_type === 'left_first' ? 'text-purple-600' : 'text-gray-400'"></i>
                                     <div>
                                         <p class="font-semibold text-gray-900 dark:text-white text-sm">Left to Right</p>
                                         <p class="text-xs text-gray-600 dark:text-gray-400">เรียงซ้ายไปขวา</p>
@@ -522,6 +543,25 @@
                         </p>
                     </div>
 
+                    {{-- Global PV Rate (คีย์จริงที่ engine ใช้แปลงยอดขาย → PV) --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                            <i class="fas fa-percent text-orange-500 mr-2"></i>
+                            อัตราแปลงยอดขายเป็น PV (PV/บาท)
+                        </label>
+                        <div class="relative">
+                            <input type="number"
+                                   x-model.number="settings.global_pv_rate"
+                                   min="0.01" max="1000" step="0.01"
+                                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl pr-20">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">PV/บาท</span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            ใช้กับสินค้าที่ไม่ได้กำหนด PV เอง: PV = ยอดขาย × อัตรานี้ (เช่น 1 = ขาย 100 บาทได้ 100 PV)
+                        </p>
+                    </div>
+
                     {{-- Example Calculation --}}
                     <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
                         <h4 class="text-sm font-semibold text-orange-800 dark:text-orange-300 mb-3 flex items-center gap-2">
@@ -556,7 +596,7 @@
                         </h4>
                         <ul class="text-xs text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
                             <li>PV ของสินค้า/บริการ กำหนดโดยผู้ขายในหน้าจัดการสินค้า</li>
-                            <li>สินค้าที่ไม่มี PV จะไม่เข้าระบบ MLM (เช่น การเติมเงิน Wallet)</li>
+                            <li>สินค้าที่ไม่ได้กำหนด PV จะใช้อัตราแปลงกลางอัตโนมัติ (ยอดขาย × อัตราแปลงยอดขายเป็น PV)</li>
                             <li>คอมมิชชั่นจะถูกหักจากยอดขายก่อนโอนให้ร้านค้า</li>
                         </ul>
                     </div>
@@ -586,8 +626,37 @@
                         </label>
                     </div>
 
-                    {{-- Direct Referral Commission --}}
+                    {{-- ประเภทค่าแนะนำตรง (คีย์จริง: direct_referral_bonus_type) --}}
                     <div x-show="settings.genealogy_enabled" x-transition>
+                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-3">
+                            รูปแบบค่าแนะนำตรง
+                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button"
+                                    @click="settings.direct_referral_bonus_type = 'percentage'"
+                                    class="p-3 rounded-xl border-2 transition-all text-center"
+                                    :class="settings.direct_referral_bonus_type === 'percentage'
+                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'">
+                                <i class="fas fa-percent text-lg" :class="settings.direct_referral_bonus_type === 'percentage' ? 'text-blue-600' : 'text-gray-400'"></i>
+                                <p class="font-semibold text-gray-900 dark:text-white text-sm mt-1">เปอร์เซ็นต์</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">% ของยอดสั่งซื้อ</p>
+                            </button>
+                            <button type="button"
+                                    @click="settings.direct_referral_bonus_type = 'fixed'"
+                                    class="p-3 rounded-xl border-2 transition-all text-center"
+                                    :class="settings.direct_referral_bonus_type === 'fixed'
+                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'">
+                                <i class="fas fa-money-bill-wave text-lg" :class="settings.direct_referral_bonus_type === 'fixed' ? 'text-blue-600' : 'text-gray-400'"></i>
+                                <p class="font-semibold text-gray-900 dark:text-white text-sm mt-1">จำนวนคงที่</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">บาท/ออเดอร์</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Direct Referral Commission (%) --}}
+                    <div x-show="settings.genealogy_enabled && settings.direct_referral_bonus_type === 'percentage'" x-transition>
                         <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                             ค่าแนะนำตรง (%)
                         </label>
@@ -603,6 +672,21 @@
                             </div>
                         </div>
                         <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">คอมมิชชั่นจากการแนะนำโดยตรง (แนะนำ: 5-10%)</p>
+                    </div>
+
+                    {{-- Direct Referral Fixed Amount (คีย์จริง: direct_referral_bonus_amount) --}}
+                    <div x-show="settings.genealogy_enabled && settings.direct_referral_bonus_type === 'fixed'" x-transition>
+                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                            ค่าแนะนำตรง (บาท/ออเดอร์)
+                        </label>
+                        <div class="relative">
+                            <input type="number"
+                                   x-model.number="settings.direct_referral_bonus_amount"
+                                   min="0" step="1"
+                                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl pr-14">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">บาท</span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">จ่ายจำนวนคงที่ต่อออเดอร์ที่ชำระเงินแล้ว</p>
                     </div>
 
                     {{-- Info Box --}}
@@ -857,6 +941,7 @@ function mlmSettings() {
         settings: {
             binary_enabled: true,
             binary_match_commission: 10,
+            binary_pair_commission: 100,
             auto_placement_type: 'balanced',
             auto_placement: true,
             unilevel_enabled: true,
@@ -864,8 +949,11 @@ function mlmSettings() {
             unilevel_max_width: 0,
             genealogy_enabled: true,
             direct_referral_commission: 5,
+            direct_referral_bonus_type: 'fixed',
+            direct_referral_bonus_amount: 100,
             min_pv_for_commission: 100,
             commission_per_pv: 1,
+            global_pv_rate: 1,
             volume_retention_enabled: true,
             volume_retention_monthly_pv: 100,
             volume_retention_grace_days: 7,
@@ -894,27 +982,51 @@ function mlmSettings() {
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.settings) {
+                        // ⚠️ ค่าจริงเก็บที่ auto_placement_strategy (auto_placement_type คือคีย์เก่า)
+                        //    และ map ค่า legacy 'left_to_right' → 'left_first'
+                        let strategy = data.settings.auto_placement_strategy
+                            || data.settings.auto_placement_type
+                            || 'balanced';
+                        if (strategy === 'left_to_right') strategy = 'left_first';
+
+                        // unilevel_levels ใน DB เป็น array [{level, percentage}] — นับจำนวนชั้นจาก array
+                        let levelCount = 5;
+                        if (Array.isArray(data.settings.unilevel_levels)) {
+                            levelCount = data.settings.unilevel_levels.length || 5;
+                        } else if (parseInt(data.settings.unilevel_levels)) {
+                            levelCount = parseInt(data.settings.unilevel_levels);
+                        }
+
                         this.settings = {
                             binary_enabled: data.settings.binary_enabled ?? true,
-                            binary_match_commission: parseFloat(data.settings.binary_match_commission) || 10,
-                            auto_placement_type: data.settings.auto_placement_type || 'balanced',
-                            auto_placement: data.settings.auto_placement ?? true,
+                            binary_match_commission: parseFloat(data.settings.binary_match_percentage ?? data.settings.binary_match_commission) || 10,
+                            binary_pair_commission: parseFloat(data.settings.binary_pair_commission) || 100,
+                            auto_placement_type: strategy,
+                            auto_placement: (data.settings.auto_placement_enabled ?? data.settings.auto_placement) ?? true,
                             unilevel_enabled: data.settings.unilevel_enabled ?? true,
-                            unilevel_levels: parseInt(data.settings.unilevel_levels) || 5,
+                            unilevel_levels: levelCount,
                             unilevel_max_width: parseInt(data.settings.unilevel_max_width) || 0,
                             genealogy_enabled: data.settings.genealogy_enabled ?? true,
-                            direct_referral_commission: parseFloat(data.settings.direct_referral_commission) || 5,
+                            direct_referral_commission: parseFloat(data.settings.direct_referral_bonus_percentage ?? data.settings.direct_referral_commission) || 5,
+                            direct_referral_bonus_type: data.settings.direct_referral_bonus_type || 'fixed',
+                            direct_referral_bonus_amount: parseFloat(data.settings.direct_referral_bonus_amount) || 100,
                             min_pv_for_commission: parseFloat(data.settings.min_pv_for_commission) || 100,
                             commission_per_pv: parseFloat(data.settings.commission_per_pv) || 1,
+                            global_pv_rate: parseFloat(data.settings.global_pv_rate) || 1,
                             volume_retention_enabled: data.settings.volume_retention_enabled ?? true,
                             volume_retention_monthly_pv: parseFloat(data.settings.volume_retention_monthly_pv) || 100,
                             volume_retention_grace_days: parseInt(data.settings.volume_retention_grace_days) || 7,
                         };
 
-                        // Load unilevel percentages
-                        if (data.settings.unilevel_percentages) {
+                        // โหลดเปอร์เซ็นต์แต่ละชั้น — ใช้จาก unilevel_levels array ก่อน (source of truth ของ engine)
+                        if (Array.isArray(data.settings.unilevel_levels) && data.settings.unilevel_levels.length) {
+                            this.unilevelPercentages = data.settings.unilevel_levels.map(l => parseFloat(l.percentage) || 0);
+                        } else if (data.settings.unilevel_percentages) {
                             try {
-                                this.unilevelPercentages = JSON.parse(data.settings.unilevel_percentages);
+                                const parsed = typeof data.settings.unilevel_percentages === 'string'
+                                    ? JSON.parse(data.settings.unilevel_percentages)
+                                    : data.settings.unilevel_percentages;
+                                if (Array.isArray(parsed)) this.unilevelPercentages = parsed;
                             } catch (e) {
                                 this.updateUnilevelPercentages();
                             }
@@ -988,10 +1100,14 @@ function mlmSettings() {
                         unilevel_enabled: this.settings.unilevel_enabled,
                         genealogy_enabled: this.settings.genealogy_enabled,
                         binary_match_commission: this.settings.binary_match_commission,
+                        binary_pair_commission: this.settings.binary_pair_commission,
+                        global_pv_rate: this.settings.global_pv_rate,
                         unilevel_levels: this.settings.unilevel_levels,
                         unilevel_max_width: this.settings.unilevel_max_width,
                         unilevel_percentages: JSON.stringify(this.unilevelPercentages),
                         direct_referral_commission: this.settings.direct_referral_commission,
+                        direct_referral_bonus_type: this.settings.direct_referral_bonus_type,
+                        direct_referral_bonus_amount: this.settings.direct_referral_bonus_amount,
                         min_pv_for_commission: this.settings.min_pv_for_commission,
                         commission_per_pv: this.settings.commission_per_pv,
                         volume_retention_enabled: this.settings.volume_retention_enabled,

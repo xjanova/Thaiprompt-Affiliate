@@ -135,7 +135,8 @@ class MlmMemberController extends Controller
     public function genealogy(MlmMember $member, Request $request)
     {
         $treeType = $request->get('type', 'unilevel');
-        $maxDepth = $request->get('depth', 5);
+        // cap depth ที่ 10 กัน recursion หนักเกิน
+        $maxDepth = min((int) $request->get('depth', 5), 10);
 
         try {
             $treeData = $this->genealogyService->getTreeData($member, $treeType, $maxDepth);
@@ -150,7 +151,8 @@ class MlmMemberController extends Controller
     public function getTreeData(MlmMember $member, Request $request)
     {
         $treeType = $request->get('type', 'unilevel');
-        $maxDepth = $request->get('depth', 5);
+        // cap depth ที่ 10 กัน recursion หนักเกิน (เดิมรับค่า depth โดยไม่จำกัด)
+        $maxDepth = min((int) $request->get('depth', 5), 10);
 
         try {
             $treeData = $this->genealogyService->getTreeData($member, $treeType, $maxDepth);

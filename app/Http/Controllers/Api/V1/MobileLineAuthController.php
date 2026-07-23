@@ -282,10 +282,20 @@ class MobileLineAuthController extends Controller
 
     /**
      * สร้าง MLM Member สำหรับ user ใหม่
+     *
+     * 🐛 Fix 2026-07-24: เดิม path นี้ตั้งแค่ unilevel_sponsor_id แต่ไม่จัดวาง binary tree เลย
+     * → สมาชิกจากแอปมือถือหายจากผัง binary + PV ไม่ไหลขึ้น leg ของ upline
+     * (อาการเดียวกับ incident มิ.ย. 2026 ฝั่งดูดวง) — ตอนนี้จัดวาง binary พร้อม fallback
+     * วางใต้ sponsor ตรง แบบเดียวกับ FortuneAffiliateService::enrollUserUnderSponsor
      */
     protected function createMlmMember(User $user, ?string $referralCode): void
     {
         try {
+            // Idempotent: ถ้ามี member อยู่แล้ว ห้ามสร้างซ้ำ/ห้าม re-parent
+            if (MlmMember::where('user_id', $user->id)->exists()) {
+                return;
+            }
+
             $parentMember = null;
 
             // หา sponsor จาก referral code
@@ -316,8 +326,8 @@ class MobileLineAuthController extends Controller
                 ]);
             }
 
-            // สร้าง MLM Member
-            MlmMember::create([
+            // สร้าง MLM Member (ยังไม่วาง binary — placeNewMember จะจัดการ)
+            $member = MlmMember::create([
                 'user_id' => $user->id,
                 'mlm_plan_id' => $defaultPlan->id,
                 'original_sponsor_id' => $parentMember?->id,
@@ -325,16 +335,33 @@ class MobileLineAuthController extends Controller
                 'unilevel_level' => $parentMember ? $parentMember->unilevel_level + 1 : 1,
                 'unilevel_path' => $parentMember
                     ? $parentMember->unilevel_path.'/'.$parentMember->id
-                    : '/'.$user->id,
+                    : null,
+                'binary_sponsor_id' => $parentMember?->id,
                 'member_code' => MlmMember::generateMemberCode(),
                 'status' => 'active',
                 'is_qualified' => true,
                 'joined_at' => now(),
             ]);
 
+            // root member (ไม่มี sponsor) — path ต้องอ้าง member id ของตัวเอง ไม่ใช่ user id
+            if (! $parentMember) {
+                $member->update(['unilevel_path' => '/'.$member->id]);
+            }
+
             // อัพเดท direct referral count
             if ($parentMember) {
                 $parentMember->increment('total_direct_referrals');
+
+                // วาง binary ผ่านศูนย์กลาง (fallback BFS + retry กัน race + อัพเดทสถิติครบ)
+                $placementResult = app(\App\Services\MlmBinaryService::class)
+                    ->placeNewMember($member, $parentMember);
+
+                if (! $placementResult) {
+                    Log::warning('Mobile LINE: วาง binary ไม่สำเร็จ (member ยังอยู่ใน unilevel ปกติ)', [
+                        'member_id' => $member->id,
+                        'sponsor_member_id' => $parentMember->id,
+                    ]);
+                }
             }
 
         } catch (\Exception $e) {

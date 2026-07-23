@@ -29,10 +29,17 @@
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    this.mlmSettings.binaryPlacementStrategy = data.settings.auto_placement_type || 'balanced';
-                    this.mlmSettings.binaryEnabled = data.settings.binary_enabled || false;
-                    this.mlmSettings.unilevelEnabled = data.settings.unilevel_enabled || false;
-                    this.mlmSettings.autoPlacement = data.settings.auto_placement || true;
+                    // ⚠️ ค่าจริงเก็บที่ auto_placement_strategy — radio ของ tab นี้ใช้ 'left_to_right'
+                    //    แทน 'left_first' จึงต้อง map กลับตอนแสดงผล
+                    let strategy = data.settings.auto_placement_strategy
+                        || data.settings.auto_placement_type
+                        || 'balanced';
+                    if (strategy === 'left_first') strategy = 'left_to_right';
+                    this.mlmSettings.binaryPlacementStrategy = strategy;
+                    this.mlmSettings.binaryEnabled = data.settings.binary_enabled ?? false;
+                    this.mlmSettings.unilevelEnabled = data.settings.unilevel_enabled ?? false;
+                    // ⚠️ ต้องใช้ ?? ไม่ใช่ || ไม่งั้นค่า false จะเด้งกลับเป็น true เสมอ (ปิดไม่ได้)
+                    this.mlmSettings.autoPlacement = (data.settings.auto_placement_enabled ?? data.settings.auto_placement) ?? true;
                 }
             }
         } catch (error) {

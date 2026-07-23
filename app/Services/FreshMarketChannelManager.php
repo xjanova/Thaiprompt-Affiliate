@@ -41,7 +41,7 @@ class FreshMarketChannelManager
     {
         $this->settings = $settings ?? FreshMarketSetting::getSettings();
         $this->aiService = new FreshMarketAIService($this->settings);
-        $this->marketService = new FreshMarketService();
+        $this->marketService = new FreshMarketService;
         $this->lineService = new FreshMarketLineService($this->settings);
     }
 
@@ -74,7 +74,7 @@ class FreshMarketChannelManager
             $result = [
                 'text' => $wasInFlow
                     ? "❌ ยกเลิกแล้วค่ะ\n\nมีอะไรให้พี่ตลาดช่วยพิมพ์มาได้เลยนะคะ 😊"
-                    : "มีอะไรให้พี่ตลาดช่วยค่ะ? 😊",
+                    : 'มีอะไรให้พี่ตลาดช่วยค่ะ? 😊',
             ];
             if ($replyToken) {
                 $this->sendReply($replyToken, $result);
@@ -389,21 +389,21 @@ class FreshMarketChannelManager
                 return null;
             }
 
-            // หาตำแหน่งใน binary tree
-            $placement = $this->findBinaryPlacement($sponsor);
-
             // หา default MLM plan
             $defaultPlan = MlmPlan::where('is_default', true)->first();
 
+            // สร้าง member ก่อน (ยังไม่วาง binary — placeNewMember จะจัดการ)
+            // 🐛 Fix 2026-07-24: เพิ่ม original_sponsor_id (เดิมหาย → ค่าแนะนำตรงไม่จ่าย
+            // เพราะ MlmReferralBonusService ใช้ originalSponsor) + ใช้ placeNewMember
+            // ศูนย์กลางแทน findBinaryPlacement เดิม (fallback วางใต้ sponsor ซ้ำ slot ได้)
             $member = MlmMember::create([
                 'user_id' => $user->id,
                 'mlm_plan_id' => $defaultPlan?->id,
+                'original_sponsor_id' => $sponsor->id,
                 'unilevel_sponsor_id' => $sponsor->id,
                 'unilevel_level' => ($sponsor->unilevel_level ?? 0) + 1,
-                'unilevel_path' => ($sponsor->unilevel_path ?? '') . '/' . $sponsor->id,
+                'unilevel_path' => ($sponsor->unilevel_path ?? '').'/'.$sponsor->id,
                 'binary_sponsor_id' => $sponsor->id,
-                'binary_parent_id' => $placement['parent_id'],
-                'binary_position' => $placement['position'],
                 'status' => 'active',
                 'joined_at' => now(),
                 'member_code' => MlmMember::generateMemberCode(),
@@ -412,6 +412,16 @@ class FreshMarketChannelManager
 
             // อัพเดทสถิติ sponsor
             $sponsor->increment('total_direct_referrals');
+
+            // วาง binary ผ่านศูนย์กลาง (fallback BFS + retry กัน race + อัพเดทสถิติครบ)
+            $placementResult = app(\App\Services\MlmBinaryService::class)->placeNewMember($member, $sponsor);
+
+            if (! $placementResult) {
+                Log::warning('FreshMarket: วาง binary ไม่สำเร็จ (member ยังอยู่ใน unilevel ปกติ)', [
+                    'member_id' => $member->id,
+                    'sponsor_id' => $sponsor->id,
+                ]);
+            }
 
             return $member;
         } catch (\Exception $e) {
@@ -422,48 +432,6 @@ class FreshMarketChannelManager
 
             return null;
         }
-    }
-
-    /**
-     * หาตำแหน่งว่างใน binary tree (ซ้าย-ขวา)
-     */
-    protected function findBinaryPlacement(MlmMember $sponsor): array
-    {
-        // ใช้ MlmBinaryService ถ้ามี
-        if (class_exists(\App\Services\MlmBinaryService::class)) {
-            try {
-                $binaryService = app(\App\Services\MlmBinaryService::class);
-
-                // 🐛 Fix 2026-06-12: placement อาจคืน null — return type ของ method นี้
-                // คือ array → คืน null ตรงๆ จะ TypeError (\Error ไม่ใช่ \Exception จับไม่ติด)
-                $placement = $binaryService->findPlacementPosition($sponsor);
-                if (is_array($placement) && isset($placement['parent_id'])) {
-                    return $placement;
-                }
-            } catch (\Throwable $e) {
-                // Fallback
-            }
-        }
-
-        // Fallback: หาตำแหน่งว่างง่ายๆ
-        $leftChild = MlmMember::where('binary_parent_id', $sponsor->id)
-            ->where('binary_position', 'left')
-            ->first();
-
-        if (! $leftChild) {
-            return ['parent_id' => $sponsor->id, 'position' => 'left'];
-        }
-
-        $rightChild = MlmMember::where('binary_parent_id', $sponsor->id)
-            ->where('binary_position', 'right')
-            ->first();
-
-        if (! $rightChild) {
-            return ['parent_id' => $sponsor->id, 'position' => 'right'];
-        }
-
-        // ทั้ง 2 ฝั่งเต็ม → ลงซ้ายสุด (spillover)
-        return $this->findBinaryPlacement($leftChild);
     }
 
     /**
@@ -878,7 +846,7 @@ class FreshMarketChannelManager
             // ไป seller_otp state
             $conversation->transitionTo(FreshMarketConversation::STATE_SELLER_OTP);
 
-            $formatted = substr($phone, 0, 3) . '-' . substr($phone, 3, 3) . '-' . substr($phone, 6);
+            $formatted = substr($phone, 0, 3).'-'.substr($phone, 3, 3).'-'.substr($phone, 6);
 
             return [
                 'text' => "📤 ส่งรหัส OTP ไปที่ {$formatted} แล้วค่ะ\n\nกรุณาพิมพ์รหัส 6 หลักที่ได้รับทาง SMS\n\nพิมพ์ \"ส่งใหม่\" ถ้าไม่ได้รับ\nพิมพ์ \"เปลี่ยนเบอร์\" ถ้าต้องการเปลี่ยน\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
@@ -917,7 +885,7 @@ class FreshMarketChannelManager
                 $result = $otpService->sendOTP($phone, 'phone_verification');
 
                 if ($result['success']) {
-                    $formatted = substr($phone, 0, 3) . '-' . substr($phone, 3, 3) . '-' . substr($phone, 6);
+                    $formatted = substr($phone, 0, 3).'-'.substr($phone, 3, 3).'-'.substr($phone, 6);
 
                     return [
                         'text' => "📤 ส่งรหัส OTP ใหม่ไปที่ {$formatted} แล้วค่ะ\n\nกรุณาพิมพ์รหัส 6 หลักที่ได้รับ",
@@ -929,7 +897,7 @@ class FreshMarketChannelManager
                 ];
             } catch (\Exception $e) {
                 return [
-                    'text' => "⚠️ ส่ง OTP ไม่สำเร็จค่ะ กรุณาลองใหม่อีกครั้ง",
+                    'text' => '⚠️ ส่ง OTP ไม่สำเร็จค่ะ กรุณาลองใหม่อีกครั้ง',
                 ];
             }
         }
@@ -995,7 +963,7 @@ class FreshMarketChannelManager
             Log::error('FreshMarket: OTP verify error', ['error' => $e->getMessage()]);
 
             return [
-                'text' => "⚠️ เกิดข้อผิดพลาดค่ะ กรุณาลองใหม่อีกครั้ง",
+                'text' => '⚠️ เกิดข้อผิดพลาดค่ะ กรุณาลองใหม่อีกครั้ง',
             ];
         }
     }
@@ -1333,7 +1301,7 @@ class FreshMarketChannelManager
                     $progress = $conversation->getProgressText();
 
                     return [
-                        'text' => "{$progress}\n\n🛒 {$listing->title}\n💰 ฿" . number_format($listing->price, 0) . " / {$listing->unit}\n\nจะสั่งกี่ {$listing->unit} คะ?\nนัดรับเองหรือให้ส่ง?",
+                        'text' => "{$progress}\n\n🛒 {$listing->title}\n💰 ฿".number_format($listing->price, 0)." / {$listing->unit}\n\nจะสั่งกี่ {$listing->unit} คะ?\nนัดรับเองหรือให้ส่ง?",
                     ];
                 }
             }
@@ -1511,7 +1479,7 @@ class FreshMarketChannelManager
         } else {
             // ออเดอร์ยังไม่จบ → ให้เช็คสถานะอีกได้
             $quickReplies = [
-                ['label' => '🔄 เช็คสถานะ', 'postback' => 'action=track_order&order_id=' . ($orderId ?? ''), 'display_text' => 'สถานะ'],
+                ['label' => '🔄 เช็คสถานะ', 'postback' => 'action=track_order&order_id='.($orderId ?? ''), 'display_text' => 'สถานะ'],
                 ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
             ];
         }
@@ -1719,11 +1687,11 @@ class FreshMarketChannelManager
         if (! $riderType) {
             return [
                 'text' => "{$progress}\n\n🏍️ กรุณาเลือกประเภทไรเดอร์ค่ะ:\n\n"
-                    . "1️⃣ ส่งของ — รับส่งสินค้าจากตลาดสด\n"
-                    . "2️⃣ บริการ — ช่างซ่อม/บริการต่างๆ\n"
-                    . "3️⃣ ทั้งสอง — ส่งของ + บริการ\n\n"
-                    . "พิมพ์ตัวเลข 1, 2 หรือ 3 ค่ะ\n"
-                    . "พิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+                    ."1️⃣ ส่งของ — รับส่งสินค้าจากตลาดสด\n"
+                    ."2️⃣ บริการ — ช่างซ่อม/บริการต่างๆ\n"
+                    ."3️⃣ ทั้งสอง — ส่งของ + บริการ\n\n"
+                    ."พิมพ์ตัวเลข 1, 2 หรือ 3 ค่ะ\n"
+                    .'พิมพ์ "ยกเลิก" ถ้าต้องการเริ่มใหม่',
                 'quick_replies' => [
                     ['label' => '🚚 ส่งของ', 'postback' => 'action=menu&choice=rider_type_delivery', 'display_text' => '1'],
                     ['label' => '🔧 บริการ', 'postback' => 'action=menu&choice=rider_type_service', 'display_text' => '2'],
@@ -1751,12 +1719,12 @@ class FreshMarketChannelManager
 
         return [
             'text' => "{$newProgress}\n\n✅ เลือก: {$riderTypeLabel}\n\n"
-                . "📋 กรุณาเลือกหมวดหมู่ที่ต้องการรับงาน:\n\n"
-                . "1️⃣ ตลาดสด — ส่งสินค้าจากตลาด\n"
-                . "2️⃣ อาหาร — ส่งอาหาร\n"
-                . "3️⃣ เอกสาร — ส่งเอกสาร\n"
-                . "4️⃣ ทั่วไป — ทุกประเภท\n\n"
-                . "พิมพ์ตัวเลข หรือชื่อหมวดหมู่ค่ะ",
+                ."📋 กรุณาเลือกหมวดหมู่ที่ต้องการรับงาน:\n\n"
+                ."1️⃣ ตลาดสด — ส่งสินค้าจากตลาด\n"
+                ."2️⃣ อาหาร — ส่งอาหาร\n"
+                ."3️⃣ เอกสาร — ส่งเอกสาร\n"
+                ."4️⃣ ทั่วไป — ทุกประเภท\n\n"
+                .'พิมพ์ตัวเลข หรือชื่อหมวดหมู่ค่ะ',
             'quick_replies' => [
                 ['label' => '🥬 ตลาดสด', 'postback' => 'action=menu&choice=rider_cat_fresh', 'display_text' => '1'],
                 ['label' => '🍜 อาหาร', 'postback' => 'action=menu&choice=rider_cat_food', 'display_text' => '2'],
@@ -1790,9 +1758,9 @@ class FreshMarketChannelManager
 
             return [
                 'text' => "{$progress}\n\n"
-                    . "กรุณาเลือกหมวดหมู่ค่ะ:\n"
-                    . "1️⃣ ตลาดสด  2️⃣ อาหาร  3️⃣ เอกสาร  4️⃣ ทั่วไป\n\n"
-                    . "พิมพ์ตัวเลขค่ะ",
+                    ."กรุณาเลือกหมวดหมู่ค่ะ:\n"
+                    ."1️⃣ ตลาดสด  2️⃣ อาหาร  3️⃣ เอกสาร  4️⃣ ทั่วไป\n\n"
+                    .'พิมพ์ตัวเลขค่ะ',
             ];
         }
 
@@ -1818,17 +1786,17 @@ class FreshMarketChannelManager
 
                 return [
                     'text' => "🎉 ลงทะเบียนไรเดอร์สำเร็จค่ะ!\n\n"
-                        . "📋 ข้อมูลไรเดอร์:\n"
-                        . "━━━━━━━━━━━━━━━\n"
-                        . "🏍️ ประเภท: " . match ($riderType) {
+                        ."📋 ข้อมูลไรเดอร์:\n"
+                        ."━━━━━━━━━━━━━━━\n"
+                        .'🏍️ ประเภท: '.match ($riderType) {
                             'delivery' => 'ส่งของ',
                             'service' => 'บริการ',
                             'both' => 'ส่งของ + บริการ',
-                        } . "\n"
-                        . "📦 หมวดหมู่: " . implode(', ', $categoryLabels) . "\n"
-                        . "━━━━━━━━━━━━━━━\n\n"
-                        . "⚠️ ต้องรอ Admin อนุมัติและวางมัดจำก่อนรับงานนะคะ\n"
-                        . "ระบบจะแจ้งเตือนเมื่อพร้อมค่ะ 🙏",
+                        }."\n"
+                        .'📦 หมวดหมู่: '.implode(', ', $categoryLabels)."\n"
+                        ."━━━━━━━━━━━━━━━\n\n"
+                        ."⚠️ ต้องรอ Admin อนุมัติและวางมัดจำก่อนรับงานนะคะ\n"
+                        .'ระบบจะแจ้งเตือนเมื่อพร้อมค่ะ 🙏',
                     'quick_replies' => [
                         ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
                     ],
@@ -1836,7 +1804,7 @@ class FreshMarketChannelManager
             }
 
             return [
-                'text' => "⚠️ ไม่สามารถลงทะเบียนไรเดอร์ได้ค่ะ กรุณาลองใหม่",
+                'text' => '⚠️ ไม่สามารถลงทะเบียนไรเดอร์ได้ค่ะ กรุณาลองใหม่',
                 'quick_replies' => [
                     ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
                 ],
@@ -1937,7 +1905,7 @@ class FreshMarketChannelManager
             return ['text' => '⚠️ งานนี้มีไรเดอร์รับไปแล้ว ขอบคุณที่สนใจค่ะ!'];
         }
 
-        $dispatchService = new RiderDispatchService();
+        $dispatchService = new RiderDispatchService;
         $accepted = $dispatchService->handleRiderAccept($job, $rider);
 
         if (! $accepted) {
@@ -1949,11 +1917,11 @@ class FreshMarketChannelManager
 
         return [
             'text' => "✅ รับงานสำเร็จ!\n\n"
-                . "📦 งาน: {$job->title}\n"
-                . "📍 รับ: " . mb_substr($job->pickup_address, 0, 30) . "\n"
-                . "📦 ส่ง: " . mb_substr($job->delivery_address, 0, 30) . "\n"
-                . "💰 รายได้: ฿" . number_format($job->rider_earnings) . "\n\n"
-                . "🗺️ กรุณาเดินทางไปรับสินค้าที่ร้านค้า",
+                ."📦 งาน: {$job->title}\n"
+                .'📍 รับ: '.mb_substr($job->pickup_address, 0, 30)."\n"
+                .'📦 ส่ง: '.mb_substr($job->delivery_address, 0, 30)."\n"
+                .'💰 รายได้: ฿'.number_format($job->rider_earnings)."\n\n"
+                .'🗺️ กรุณาเดินทางไปรับสินค้าที่ร้านค้า',
         ];
     }
 
@@ -1987,7 +1955,7 @@ class FreshMarketChannelManager
             return ['text' => 'ℹ️ งานนี้ถูกเสนอให้ไรเดอร์คนอื่นแล้ว'];
         }
 
-        $dispatchService = new RiderDispatchService();
+        $dispatchService = new RiderDispatchService;
         $dispatchService->handleRiderReject($job, $rider);
 
         return [
@@ -2053,7 +2021,7 @@ class FreshMarketChannelManager
         $text .= "━━━━━━━━━━━━━━━\n\n";
         $text .= "พิมพ์ \"ยืนยัน\" เพื่อลงขาย\n";
         $text .= "พิมพ์ \"แก้ไข\" เพื่อแก้ข้อมูล\n";
-        $text .= "พิมพ์ \"ยกเลิก\" เพื่อยกเลิก";
+        $text .= 'พิมพ์ "ยกเลิก" เพื่อยกเลิก';
 
         // สร้าง Flex message (ถ้า LINE Service รองรับ)
         $flex = $this->lineService->buildListingReviewFlex($ctx);
@@ -2113,7 +2081,7 @@ class FreshMarketChannelManager
             $conversation->resetToIdle();
 
             return [
-                'text' => "{$progress}\n\n🎉 ลงขายสินค้าเรียบร้อยแล้วค่ะ!\n\n📦 {$ctx['title']}\n💰 ฿" . number_format($ctx['price'], 0) . "/{$ctx['unit']}\n\nดูรายการสินค้าของคุณได้ที่ แผงควบคุมผู้ขายค่ะ 😊",
+                'text' => "{$progress}\n\n🎉 ลงขายสินค้าเรียบร้อยแล้วค่ะ!\n\n📦 {$ctx['title']}\n💰 ฿".number_format($ctx['price'], 0)."/{$ctx['unit']}\n\nดูรายการสินค้าของคุณได้ที่ แผงควบคุมผู้ขายค่ะ 😊",
                 'quick_replies' => [
                     ['label' => '🏷️ ลงขายเพิ่ม', 'postback' => 'action=sell_more', 'display_text' => 'ลงขาย'],
                     ['label' => '🛒 ซื้อของ', 'postback' => 'action=menu&choice=buy', 'display_text' => 'อยากซื้อ'],
@@ -2131,7 +2099,7 @@ class FreshMarketChannelManager
             $conversation->resetToIdle();
 
             return [
-                'text' => "⚠️ เกิดข้อผิดพลาดในการลงขายค่ะ กรุณาลองใหม่นะคะ 🙏",
+                'text' => '⚠️ เกิดข้อผิดพลาดในการลงขายค่ะ กรุณาลองใหม่นะคะ 🙏',
                 'quick_replies' => [
                     ['label' => '🏷️ ลองใหม่', 'postback' => 'action=sell_more', 'display_text' => 'ลงขาย'],
                     ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
@@ -2199,16 +2167,16 @@ class FreshMarketChannelManager
         $text .= "🧾 สรุปคำสั่งซื้อ:\n";
         $text .= "━━━━━━━━━━━━━━━\n";
         $text .= "📦 {$title} x{$quantity} {$unit}\n";
-        $text .= "💰 ฿".number_format($unitPrice, 0)." x {$quantity} = ฿".number_format($total, 0)."\n";
+        $text .= '💰 ฿'.number_format($unitPrice, 0)." x {$quantity} = ฿".number_format($total, 0)."\n";
         if ($deliveryFee > 0) {
-            $text .= "🚗 ค่าส่ง: ฿".number_format($deliveryFee, 0)."\n";
-            $text .= "💵 รวมทั้งหมด: ฿".number_format($total + $deliveryFee, 0)."\n";
+            $text .= '🚗 ค่าส่ง: ฿'.number_format($deliveryFee, 0)."\n";
+            $text .= '💵 รวมทั้งหมด: ฿'.number_format($total + $deliveryFee, 0)."\n";
         }
         $text .= "📍 {$deliveryLabel}\n";
         $text .= "━━━━━━━━━━━━━━━\n\n";
         $text .= "พิมพ์ \"ยืนยัน\" เพื่อสั่งซื้อ\n";
         $text .= "พิมพ์ \"แก้ไข\" เพื่อเปลี่ยนจำนวน\n";
-        $text .= "พิมพ์ \"ยกเลิก\" เพื่อยกเลิก";
+        $text .= 'พิมพ์ "ยกเลิก" เพื่อยกเลิก';
 
         // Flex message พร้อมรายละเอียดราคาครบถ้วน
         $flex = $this->lineService->buildOrderSummaryFlex([
@@ -2297,7 +2265,7 @@ class FreshMarketChannelManager
                 'flex' => $flex,
                 'flex_alt_text' => "สั่งซื้อสำเร็จ: {$listing->title}",
                 'quick_replies' => [
-                    ['label' => '📦 เช็คสถานะ', 'postback' => 'action=track_order&order_id=' . $order->id, 'display_text' => 'สถานะ'],
+                    ['label' => '📦 เช็คสถานะ', 'postback' => 'action=track_order&order_id='.$order->id, 'display_text' => 'สถานะ'],
                     ['label' => '🛒 สั่งเพิ่ม', 'postback' => 'action=menu&choice=buy', 'display_text' => 'อยากซื้อ'],
                     ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
                 ],
@@ -2315,7 +2283,7 @@ class FreshMarketChannelManager
             $conversation->resetToIdle();
 
             return [
-                'text' => "⚠️ ขอโทษค่ะ ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่นะคะ 🙏",
+                'text' => '⚠️ ขอโทษค่ะ ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่นะคะ 🙏',
                 'quick_replies' => [
                     ['label' => '🛒 ลองใหม่', 'postback' => 'action=menu&choice=buy', 'display_text' => 'อยากซื้อ'],
                     ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
@@ -2477,12 +2445,12 @@ class FreshMarketChannelManager
 
                 return [
                     'text' => "🏍️ สมัครไรเดอร์\n\n{$progress}\n\n"
-                        . "กรุณาเลือกประเภทไรเดอร์ที่ต้องการค่ะ:\n\n"
-                        . "1️⃣ ส่งของ — รับส่งสินค้าจากตลาดสด\n"
-                        . "2️⃣ บริการ — ช่างซ่อม/บริการต่างๆ\n"
-                        . "3️⃣ ทั้งสอง — ส่งของ + บริการ\n\n"
-                        . "พิมพ์ตัวเลข 1, 2 หรือ 3 ค่ะ\n"
-                        . "พิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+                        ."กรุณาเลือกประเภทไรเดอร์ที่ต้องการค่ะ:\n\n"
+                        ."1️⃣ ส่งของ — รับส่งสินค้าจากตลาดสด\n"
+                        ."2️⃣ บริการ — ช่างซ่อม/บริการต่างๆ\n"
+                        ."3️⃣ ทั้งสอง — ส่งของ + บริการ\n\n"
+                        ."พิมพ์ตัวเลข 1, 2 หรือ 3 ค่ะ\n"
+                        .'พิมพ์ "ยกเลิก" ถ้าต้องการเริ่มใหม่',
                     'quick_replies' => [
                         ['label' => '🚚 ส่งของ', 'postback' => 'action=menu&choice=rider_type_delivery', 'display_text' => '1'],
                         ['label' => '🔧 บริการ', 'postback' => 'action=menu&choice=rider_type_service', 'display_text' => '2'],
@@ -2594,7 +2562,7 @@ class FreshMarketChannelManager
             'search_browsing' => "ได้รับ{$inputLabel}ค่ะ แต่ตอนนี้กำลังดูรายการสินค้าค่ะ\n\nพิมพ์ชื่อสินค้าเพื่อค้นหา หรือส่งตำแหน่งมาใหม่ค่ะ",
             'rider_register' => "ได้รับ{$inputLabel}ค่ะ แต่ตอนนี้รอเลือกประเภทไรเดอร์ค่ะ\n\nพิมพ์ 1 (ส่งของ), 2 (บริการ) หรือ 3 (ทั้งสอง) ค่ะ",
             'rider_category' => "ได้รับ{$inputLabel}ค่ะ แต่ตอนนี้รอเลือกหมวดหมู่งานค่ะ\n\nพิมพ์ 1 (ตลาดสด), 2 (อาหาร), 3 (เอกสาร) หรือ 4 (ทั่วไป) ค่ะ",
-            default => "ขอโทษค่ะ พี่ตลาดไม่เข้าใจค่ะ 🤔",
+            default => 'ขอโทษค่ะ พี่ตลาดไม่เข้าใจค่ะ 🤔',
         };
 
         // Quick replies ตาม state เพื่อช่วยนำทาง

@@ -47,14 +47,16 @@ class MlmCommissionClawbackService
             ];
 
             // ค้นหา Commission ทั้งหมดที่เกี่ยวข้องกับ Order นี้
-            $commissions = MlmCommission::where('source_type', 'Order')
+            // ⚠️ ข้อมูลจริงบันทึก source_type เป็น FQCN (App\Models\Order) ผ่าน Order::class
+            //    ต้อง match ทั้ง FQCN และ short name เดิม ไม่งั้น clawback หาไม่เจอเลย
+            $commissions = MlmCommission::whereIn('source_type', [Order::class, 'Order'])
                 ->where('source_id', $order->id)
                 ->get();
 
             if ($commissions->isEmpty()) {
                 // ลองค้นหาจาก OrderItem
                 $orderItemIds = $order->items()->pluck('id');
-                $commissions = MlmCommission::where('source_type', 'OrderItem')
+                $commissions = MlmCommission::whereIn('source_type', [\App\Models\OrderItem::class, 'OrderItem'])
                     ->whereIn('source_id', $orderItemIds)
                     ->get();
             }
