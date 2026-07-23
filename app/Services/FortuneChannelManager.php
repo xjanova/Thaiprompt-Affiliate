@@ -395,6 +395,16 @@ class FortuneChannelManager
         $action = $result['action'] ?? 'unknown';
         $message = $result['message'] ?? '';
 
+        // 🛡️ (2026-07-24) ตั้ง platform ให้ conversationService ก่อนเสมอ
+        //   ราก (reading 10179, FTU-260723-P5836): sendResponse เป็น entry point แยกจาก
+        //   processMessage (ProcessBufferedChatMessageJob เรียกตรง). เดิมมีแต่ processMessage
+        //   ที่ setPlatform → พอ chat redirect (ai_redirect_deep_reading) วิ่งผ่าน sendResponse
+        //   → sendFacebookDeepReadingRedirect เรียก startDeepReadingFlowPublic บน conversationService
+        //   ที่ยังเป็น default $currentPlatform='line' → สร้าง reading platform='line' + FB PSID
+        //   → FortuneFlowNudge ยิง LINE push ไป id ตัวเลขล้วน → 400 ซ้ำทุกนาที.
+        //   ตั้งตรงนี้ = ครอบทุก reading ที่ถูกสร้างจาก redirect helper ให้ platform ตรงกับ id จริง
+        $this->conversationService->setPlatform($platform);
+
         // ✅ Silent skip actions — ข้ามเงียบๆ ไม่ส่งข้อความตอบใดๆ
         // 🩹 (2026-05-08) เพิ่ม smart_skip / silent_skip / silent_warning
         //   เดิม fall through ไป default ทำให้ส่ง "ระบบกำลังดำเนินการ 🙏" — ตรงข้ามกับ intent

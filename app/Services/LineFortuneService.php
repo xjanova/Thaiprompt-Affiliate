@@ -3570,6 +3570,17 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     protected function pushMessagePriority(string $to, array $messages): bool
     {
+        // 🛡️ (2026-07-24) กัน recipient ตัวเลขล้วน (FB PSID) เหมือน pushMessage —
+        //   ยิง LINE ไม่ได้อยู่แล้ว (400) + priority push retry 2 ครั้ง = เปลืองเปล่า
+        if (ctype_digit($to)) {
+            Log::warning('LINE pushMessagePriority: ปฏิเสธ recipient ที่ไม่ใช่ LINE userId (น่าจะเป็น FB PSID) — ข้ามไม่ยิง API', [
+                'to' => $to,
+                'msg_count' => count($messages),
+            ]);
+
+            return false;
+        }
+
         // ✅ Priority push: retry แค่ 2 ครั้ง ด้วย delay สั้น (ไม่ block นาน)
         $maxRetries = 2;
 
@@ -3636,6 +3647,19 @@ class LineFortuneService implements MessagingPlatformInterface
 
     protected function pushMessage(string $to, array $messages): bool
     {
+        // 🛡️ (2026-07-24) กัน recipient ที่ไม่ใช่ LINE userId (ตัวเลขล้วน = FB PSID)
+        //   LINE userId/groupId/roomId ขึ้นต้น U/C/R + hex เสมอ — ตัวเลขล้วนยิงไปได้ 400
+        //   "invalid to" อย่างเดียว (เคส reading platform เพี้ยน). ตัดตั้งแต่ต้น → ไม่เปลือง
+        //   LINE quota + ไม่เกิด log error ซ้ำทุกนาทีเมื่อ path ใดสร้าง reading platform ผิด
+        if (ctype_digit($to)) {
+            Log::warning('LINE pushMessage: ปฏิเสธ recipient ที่ไม่ใช่ LINE userId (น่าจะเป็น FB PSID) — ข้ามไม่ยิง API', [
+                'to' => $to,
+                'msg_count' => count($messages),
+            ]);
+
+            return false;
+        }
+
         // ✅ V2: ส่งทันที ไม่ block ไม่ retry (เพื่อไม่ให้ webhook ช้า)
         // ถ้าโดน 429 → return false → fortune:check-pending จะ retry ทีหลัง
         LineGatekeeperService::recordLinePush();

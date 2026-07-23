@@ -186,6 +186,29 @@ class FortuneFlowNudge extends Command
             return;
         }
 
+        // 🛡️ (2026-07-24) Guard: platform=line แต่ userId ไม่ใช่รูปแบบ LINE userId (^U + 32 hex)
+        //   = ข้อมูล platform เพี้ยน (เคส reading 10179: chat redirect สร้าง reading platform='line'
+        //   ทั้งที่ id เป็น FB PSID ตัวเลขล้วน). ถ้า nudge ต่อ → LineFortuneService.pushMessage
+        //   ยิง LINE API ด้วย 'to' เป็นตัวเลข → 400 "invalid to" ซ้ำทุกนาที (push fail → ไม่เซ็ต
+        //   flow_nudge_sent_at → cron หยิบซ้ำทุกรอบ). แก้: ข้าม nudge + log ครั้งเดียว ไม่ retry
+        //   (EXIT 30 นาทีด้านบนยังทำงาน → ปิด reading เพี้ยนนี้เองในที่สุด)
+        if ($platform === 'line' && ! preg_match('/^U[0-9a-f]{32}$/i', $userId)) {
+            if (empty($reading->getConversationState('flow_platform_mismatch_logged'))) {
+                Log::warning('⚠️ FortuneFlowNudge: platform=line แต่ userId ไม่ใช่รูปแบบ LINE — ข้าม nudge (ข้อมูล platform เพี้ยน, ไม่ retry)', [
+                    'reading_id' => $reading->id,
+                    'step' => $step,
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                ]);
+                if (! $dry) {
+                    $reading->setConversationState('flow_platform_mismatch_logged', now()->toIso8601String());
+                }
+            }
+            $stats['skip']++;
+
+            return;
+        }
+
         // 💸 (2026-06-26) toggle กระตุ้นจ่ายบิล ปิด → ไม่ส่ง nudge (กดพร้อมบูชาครู) — แต่ exit-cleanup ด้านบนยังทำงาน
         if (! (bool) ($settings->enable_bill_payment_nudge ?? true)) {
             $stats['skip']++;
