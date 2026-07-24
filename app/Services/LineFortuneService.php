@@ -375,6 +375,42 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * สร้าง LINE text message object (+ quick reply ถ้ามี) — helper สำหรับรวมหลายข้อความใน call เดียว
+     *
+     * @param  string  $text  ข้อความ
+     * @param  array  $quickReplies  [['label'=>..., 'text'=>...], ...] (optional)
+     */
+    public function buildTextObject(string $text, array $quickReplies = []): array
+    {
+        $obj = [
+            'type' => 'text',
+            'text' => mb_substr($text, 0, 4900),
+        ];
+        if (! empty($quickReplies)) {
+            $obj['quickReply'] = [
+                'items' => $this->buildQuickReplyItems($quickReplies),
+            ];
+        }
+
+        return $obj;
+    }
+
+    /**
+     * สร้าง LINE audio message object — helper สำหรับรวมกับ text ใน call เดียว
+     *
+     * @param  string  $audioUrl  URL ไฟล์เสียง (m4a — HTTPS)
+     * @param  int  $durationMs  ความยาว (มิลลิวินาที)
+     */
+    public function buildAudioObject(string $audioUrl, int $durationMs = 180000): array
+    {
+        return [
+            'type' => 'audio',
+            'originalContentUrl' => $this->ensureHttps($audioUrl),
+            'duration' => max(1000, min($durationMs, 600000)),  // 1s - 10 min (ตรงกับ sendAudio)
+        ];
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool

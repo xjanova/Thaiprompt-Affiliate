@@ -276,12 +276,14 @@ class ProcessVoiceSummaryJob implements ShouldQueue
             $lineService = new LineFortuneService($settings);
             $duration = (int) ($result['audio_duration_ms'] ?? 60000);
 
-            $sent = $lineService->sendMessage($this->userId, $intro);
+            // 💸 (2026-07-24) ประหยัด push: รวม intro (text) + audio เป็น push เดียว (เดิม 2 push)
+            //   async job → ไม่มี replyToken → push (เลี่ยงไม่ได้) แต่รวม 2→1 ได้
+            $msgs = [$lineService->buildTextObject($intro)];
             if (! empty($result['audio_url'])) {
-                $sent = $lineService->sendAudio($this->userId, $result['audio_url'], $duration) || $sent;
+                $msgs[] = $lineService->buildAudioObject($result['audio_url'], $duration);
             }
 
-            return $sent;
+            return $lineService->sendMessagesWithReplyFallback($this->userId, $msgs, null);
         } catch (\Throwable $e) {
             Log::warning('ProcessVoiceSummaryJob: LINE push exception', [
                 'error' => $e->getMessage(),

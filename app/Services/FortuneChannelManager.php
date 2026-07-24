@@ -2755,18 +2755,25 @@ class FortuneChannelManager
 
                     $textOk = false;
                     // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
-                    //   ส่ง plain (sendMessage guard quick_replies ว่าง) — ลูกค้าจบเองด้วยการ "พิมพ์ เลิก"
-                    $lineQr = [];
+                    //   ลูกค้าจบเองด้วยการ "พิมพ์ เลิก"
+                    // 💸 (2026-07-24) ประหยัด push: รวมคำตอบ + กล่องคำถามแนะนำ (suggestion box + ปุ่มเลข)
+                    //   เป็น push เดียว (เดิม 2 push แยก). post-AI-generate → token หมด → push (เลี่ยงไม่ได้)
+                    //   แต่รวม 2→1 ได้. ปุ่มเลข (label/text) ไม่มี "ดูดวง" → ไม่โดน stripFortuneStartQuickReplies
+                    $celticMsgs = [$lineService->buildTextObject($message)];
+                    if (! empty($result['suggestion_box']) && ! empty($result['quick_replies'])) {
+                        $celticMsgs[] = $lineService->buildTextObject($result['suggestion_box'], $result['quick_replies']);
+                    }
                     try {
-                        $textOk = $lineService->sendMessage($userId, $message, $lineQr);
-                        \Log::info('LINE Celtic Q&A: sendMessage (push) result', [
+                        $textOk = $lineService->sendMessagesWithReplyFallback($userId, $celticMsgs, null);
+                        \Log::info('LINE Celtic Q&A: push (combined answer+suggestion) result', [
                             'user_id' => $userId,
                             'reading_id' => $reading?->id,
                             'success' => $textOk,
+                            'objects' => count($celticMsgs),
                             'msg_preview' => mb_substr($message, 0, 100),
                         ]);
                     } catch (\Throwable $e) {
-                        \Log::error('LINE Celtic Q&A: sendMessage (push) exception', [
+                        \Log::error('LINE Celtic Q&A: push (combined) exception', [
                             'user_id' => $userId,
                             'reading_id' => $reading?->id,
                             'error' => $e->getMessage(),
@@ -2777,7 +2784,7 @@ class FortuneChannelManager
                     if (! $textOk) {
                         try {
                             usleep(800000);
-                            $textOk = $lineService->sendMessage($userId, $message, $lineQr);
+                            $textOk = $lineService->sendMessagesWithReplyFallback($userId, $celticMsgs, null);
                         } catch (\Throwable $e) {
                             // ignore — critical log + cron re-deliver จัดการต่อ
                         }
@@ -2805,15 +2812,8 @@ class FortuneChannelManager
                         ]);
                     }
 
-                    // 🔢 (2026-06-05) กล่องที่ 2 — คำถามแนะนำต่อยอด + ปุ่มเลข 1️⃣2️⃣ (best-effort)
-                    //   ปุ่มเลข (label/text) ไม่มีคำว่า "ดูดวง" → ไม่โดน stripFortuneStartQuickReplies
-                    if ($textOk && ! empty($result['suggestion_box']) && ! empty($result['quick_replies'])) {
-                        try {
-                            $lineService->sendMessage($userId, $result['suggestion_box'], ['quick_replies' => $result['quick_replies']]);
-                        } catch (\Throwable $e) {
-                            \Log::debug('LINE Celtic: suggestion box send fail (non-blocking)', ['error' => $e->getMessage()]);
-                        }
-                    }
+                    // 💸 (2026-07-24) กล่องคำถามแนะนำ (suggestion box) รวมเข้า push เดียวกับคำตอบด้านบนแล้ว
+                    //   (เดิมยิงแยกอีก 1 push) — ดูการรวมที่ $celticMsgs ด้านบน
 
                     return $textOk;
                 })(),
@@ -2835,36 +2835,24 @@ class FortuneChannelManager
                 // 🎙️ (2026-05-08) celtic_session_ended (LINE) — ภาพ + closing
                 //                 Voice ส่งผ่าน ProcessVoiceSummaryJob async (push หลัง 5-15s)
                 'celtic_session_ended' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
-                    // 🗺️ (2026-06-08) แผนที่ดาวชะตา (พื้นดวง) ส่งก่อนภาพไพ่ — ตอนสรุป (user spec)
+                    // 💸 (2026-07-24) ประหยัด push: รวมแผนที่ดาว + ภาพไพ่ + ข้อความปิด ใน reply/push เดียว
+                    //   เดิม sendImage×2 (2 push) + text = 2 push; ตอนนี้รวม → 0 push (reply) หรือ 1 push
+                    //   🗺️ (2026-06-08) แผนที่ดาวชะตา (พื้นดวง) ส่งก่อนภาพไพ่ — ตอนสรุป (user spec)
+                    $endMsgs = [];
                     if (! empty($result['chart_image_url'])) {
-                        try {
-                            $lineService->sendImage($userId, $result['chart_image_url']);
-                        } catch (\Throwable $e) {
-                            // ignore
-                        }
+                        $endMsgs[] = $lineService->buildImageObject($result['chart_image_url']);
                     }
                     if (! empty($result['celtic_summary_image_url'])) {
-                        try {
-                            $lineService->sendImage($userId, $result['celtic_summary_image_url']);
-                        } catch (\Throwable $e) {
-                            // ignore
-                        }
+                        $endMsgs[] = $lineService->buildImageObject($result['celtic_summary_image_url']);
                     }
-
                     // 🎧 (2026-06-25) มีบทสรุปพร้อมอ่านเสียง → แนบปุ่ม "🎧 อ่านให้ฟัง" (กดแทนพิมพ์)
-                    //   เดิม LINE branch ส่ง text เปล่า ทั้งที่ข้อความปิดบอก "กดปุ่มด้านล่าง" → ปุ่มไม่เคยโผล่
-                    //   (FB มีปุ่มอยู่แล้วที่ celtic_session_ended:1261 — branch LINE ตกหล่นตอน wire voice 20-21 มิ.ย.)
-                    //   owner 2026-06-25: เพิ่ม "ปุ่มอย่างเดียว" — ไม่ auto-push เสียง (กัน LINE OA push quota)
-                    //   กดปุ่ม → ส่ง text "อ่านให้ฟัง" → looksLikeVoiceReadRequest → handleCelticVoiceReadRequest (throttle 60s)
-                    $sent = ! empty($result['voice_on_demand_ready'])
-                        ? $this->sendLineMessageWithQuickReply(
-                            $lineService,
-                            $userId,
-                            $message,
-                            $replyToken,
-                            [['label' => '🎧 อ่านให้ฟัง', 'text' => 'อ่านให้ฟัง']]
-                        )
-                        : $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                    //   owner 2026-06-25: ปุ่มอย่างเดียว — ไม่ auto-push เสียง (กัน push quota)
+                    //   กดปุ่ม → ส่ง text "อ่านให้ฟัง" → handleCelticVoiceReadRequest (throttle 60s)
+                    $endMsgs[] = ! empty($result['voice_on_demand_ready'])
+                        ? $lineService->buildTextObject($message, [['label' => '🎧 อ่านให้ฟัง', 'text' => 'อ่านให้ฟัง']])
+                        : $lineService->buildTextObject($message);
+
+                    $sent = $lineService->sendMessagesWithReplyFallback($userId, $endMsgs, $replyToken);
 
                     // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — push bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
                     $this->sendReviewInviteLine($lineService, $userId, $result);
