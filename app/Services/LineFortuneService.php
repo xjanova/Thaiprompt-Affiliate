@@ -287,6 +287,94 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * 💸 (2026-07-24) ส่ง image + text + quick replies โดย "reply ก่อน (ฟรี)" → fallback push
+     *
+     * ประหยัด LINE push quota: 1 reply call ใส่ image+text ได้ (สูงสุด 5 objects) = ฟรี
+     *   ใช้ตอน replyToken ยังสด (มาจาก webhook ที่ลูกค้าเพิ่งพิมพ์) + รูปสร้าง sync ทันที
+     *   เช่น Celtic เปิดไพ่ทีละใบ, ทำนายฟรี (free card)
+     * ⚠️ ต้องมี push fallback เสมอ — ถ้า reply timeout/token หมด → push (sendImageAndText)
+     *   เพื่อคงความเชื่อถือได้ (ลูกค้าจ่ายแล้วต้องเห็นไพ่)
+     *
+     * @param  string  $recipientId  LINE user ID
+     * @param  string  $imageUrl  รูปภาพ (HTTPS — auto convert)
+     * @param  string  $text  ข้อความ
+     * @param  array  $quickReplies  [['label'=>..., 'text'=>...], ...] (optional)
+     * @param  string|null  $replyToken  Reply token (ถ้ามี → ลอง reply ฟรีก่อน)
+     */
+    public function sendImageAndTextWithReplyFallback(string $recipientId, string $imageUrl, string $text, array $quickReplies = [], ?string $replyToken = null): bool
+    {
+        // ลอง reply ก่อน (ฟรี — รวม image + text ใน call เดียว)
+        if ($replyToken) {
+            $imageHttps = $this->ensureHttps($imageUrl);
+            $messages = [
+                [
+                    'type' => 'image',
+                    'originalContentUrl' => $imageHttps,
+                    'previewImageUrl' => $imageHttps,
+                ],
+                [
+                    'type' => 'text',
+                    'text' => mb_substr($text, 0, 4900),
+                ],
+            ];
+            if (! empty($quickReplies)) {
+                $messages[1]['quickReply'] = [
+                    'items' => $this->buildQuickReplyItems($quickReplies),
+                ];
+            }
+
+            if ($this->replyMessage($replyToken, $messages)) {
+                return true; // ✅ reply สำเร็จ = ฟรี (0 push)
+            }
+            // reply ล้มเหลว/timeout → fallback push
+        }
+
+        // Fallback: push (reliability — ลูกค้าต้องเห็นรูปเสมอ)
+        return $this->sendImageAndText($recipientId, $imageUrl, $text, $quickReplies);
+    }
+
+    /**
+     * 💸 (2026-07-24) ส่งหลาย message object ใน call เดียว — reply ก่อน (ฟรี) → fallback push
+     *
+     * ประหยัด push: เดิมยิงทีละชิ้น (รูป1 push + รูป2 push + ข้อความ push/reply) = หลาย call
+     *   รวมเป็น 1 call (LINE รับสูงสุด 5 objects) → reply ฟรี หรือ push 1 ครั้ง
+     * ใช้ตอนส่งรูปหลายใบ + ข้อความปิด (เช่น celtic_all_picked, session_ended, voice intro+audio)
+     *
+     * @param  string  $recipientId  LINE user ID
+     * @param  array  $messages  LINE message objects (สูงสุด 5) — ['type'=>'image'|'text'|'audio', ...]
+     * @param  string|null  $replyToken  Reply token (ถ้ามี → ลอง reply ฟรีก่อน)
+     */
+    public function sendMessagesWithReplyFallback(string $recipientId, array $messages, ?string $replyToken = null): bool
+    {
+        if (empty($messages)) {
+            return true;
+        }
+
+        // LINE รับสูงสุด 5 objects/call
+        $messages = array_slice($messages, 0, 5);
+
+        if ($replyToken && $this->replyMessage($replyToken, $messages)) {
+            return true; // ✅ reply สำเร็จ = ฟรี
+        }
+
+        return $this->pushMessage($recipientId, $messages);
+    }
+
+    /**
+     * สร้าง LINE image message object (helper สำหรับรวมหลายข้อความใน call เดียว)
+     */
+    public function buildImageObject(string $imageUrl): array
+    {
+        $imageUrl = $this->ensureHttps($imageUrl);
+
+        return [
+            'type' => 'image',
+            'originalContentUrl' => $imageUrl,
+            'previewImageUrl' => $imageUrl,
+        ];
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool

@@ -2513,13 +2513,6 @@ class FortuneChannelManager
 
                 // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + คำทำนาย + Quick Reply [39][99][ไม่สนใจ]
                 'free_card_drawn' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
-                    if (! empty($result['tarot_image_url'])) {
-                        try {
-                            $lineService->sendImage($userId, $result['tarot_image_url']);
-                        } catch (\Throwable $e) {
-                        }
-                    }
-
                     $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $deepPrice = (int) (FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
@@ -2545,6 +2538,12 @@ class FortuneChannelManager
                         'text' => FortuneLocaleService::lo('ไม่สนใจ', 'ບໍ່ສົນໃຈ'),
                     ];
 
+                    // 💸 (2026-07-24) ประหยัด push: มีรูปไพ่ → รวม image+text+QR ใน reply เดียว (ฟรี)
+                    //   เดิม sendImage (push) + reply แยก = 1 push; ตอนนี้ reply-first = 0 push (fallback push ถ้า token หมด)
+                    if (! empty($result['tarot_image_url'])) {
+                        return $lineService->sendImageAndTextWithReplyFallback($userId, $result['tarot_image_url'], $message, $quickReplies, $replyToken);
+                    }
+
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
                 })(),
 
@@ -2554,13 +2553,14 @@ class FortuneChannelManager
                 // 🎁 (2026-05-03) free flow chitchat / fail — text + tier menu QR
                 'free_card_chitchat', 'free_card_draw_failed', 'free_card_ai_failed' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
-                // 🎁 (2026-05-03) ดูคำทำนายฟรีย้อนหลัง — ส่งภาพไพ่ก่อน + ข้อความ
+                // 🎁 (2026-05-03) ดูคำทำนายฟรีย้อนหลัง — ส่งภาพไพ่ + ข้อความ
                 'view_reading_free' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    // 💸 (2026-07-24) ประหยัด push: รวมรูป+ข้อความใน reply เดียว (เดิม image push + reply แยก)
                     if (! empty($result['tarot_image_url'])) {
-                        try {
-                            $lineService->sendImage($userId, $result['tarot_image_url']);
-                        } catch (\Throwable $e) {
-                        }
+                        return $lineService->sendMessagesWithReplyFallback($userId, [
+                            $lineService->buildImageObject($result['tarot_image_url']),
+                            ['type' => 'text', 'text' => mb_substr($message, 0, 4900)],
+                        ], $replyToken);
                     }
 
                     return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
@@ -2653,31 +2653,27 @@ class FortuneChannelManager
                         'msg_len' => mb_strlen($message),
                     ]);
 
-                    // 🛡️ (2026-05-21) Force push for picking — replyMessage ไม่เสถียร
-                    //   เคสจริง: ลูกค้าเลือกใบต่อไป → DB ขยับ แต่ LINE ไม่เด้ง
-                    //   ROOT CAUSE 2026-05-21 (commit f7442a914 first attempt):
-                    //     ensureHttps() เป็น protected → เรียกจาก channel manager throw 500
-                    //     → silent error → ลูกค้าไม่เห็นอะไรเลย
-                    //   Fix: ลบ messages array (ไม่ใช้แล้ว) — push ตรง sendImage handle HTTPS เอง
-                    // 🚀 (2026-05-21) Combine image + text เป็น 1 push call เดียว
-                    //   user spec: 'ยอมจ่าย push เลย' — no throttle, push ทันที
-                    //   ใช้ sendImageAndText (atomic — 1 call ส่งทั้ง image+text+quickReply)
-                    \Log::info('LINE Celtic: push (combined, no throttle)', [
+                    // 💸 (2026-07-24) ประหยัด push: reply ก่อน (ฟรี) → fallback push
+                    //   เดิม force push ทุกใบ (9 ใบ = 9 push/Celtic) เพราะกลัว reply ไม่เสถียร
+                    //   แต่ replyToken ที่นี่ "สด" (มาจาก webhook ที่ลูกค้าเพิ่งพิมพ์ 'พร้อม')
+                    //   + รูป composite ไพ่สร้าง sync (GD sub-second) → reply ทันใน 60s แน่นอน
+                    //   ⚠️ คง push fallback เสมอ (reliability — ลูกค้าจ่าย 99฿ ต้องเห็นไพ่)
+                    //   sendImageAndTextWithReplyFallback / sendLineMessageWithQuickReply = reply-first + push fallback ในตัว
+                    \Log::info('LINE Celtic: send (reply-first, push fallback)', [
                         'user_id' => $userId,
                         'reading_id' => $reading?->id,
+                        'has_reply_token' => ! empty($replyToken),
                     ]);
 
                     $pushOk = false;
                     $imageUrl = $result['tarot_image_url'] ?? null;
                     try {
                         if (! empty($imageUrl)) {
-                            // มีรูป → ใช้ combined push (1 call)
-                            $pushOk = $lineService->sendImageAndText($userId, $imageUrl, $message, $quickReplies);
+                            // มีรูป → reply รวม image+text (ฟรี) → fallback combined push
+                            $pushOk = $lineService->sendImageAndTextWithReplyFallback($userId, $imageUrl, $message, $quickReplies, $replyToken);
                         } else {
-                            // ไม่มีรูป → text only
-                            $pushOk = $lineService->sendMessage($userId, $message, [
-                                'quick_replies' => $quickReplies,
-                            ]);
+                            // ไม่มีรูป → text + quick reply (reply-first + push fallback)
+                            $pushOk = $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
                         }
                         \Log::info('LINE Celtic: combined push result', [
                             'user_id' => $userId,
@@ -2710,21 +2706,20 @@ class FortuneChannelManager
                 // celtic_all_picked → ส่งภาพ composite + ขอ Q1 + ปุ่ม "เริ่มถามคำถาม"
                 // 🆕 (2026-05-06) เพิ่ม Quick Reply ปุ่ม "เริ่มถามคำถาม" ให้ user รู้ว่าทำอะไรต่อ
                 'celtic_all_picked' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    // 💸 (2026-07-24) ประหยัด push: รวมภาพ spread + summary + ข้อความ ใน reply เดียว (ฟรี)
+                    //   เดิม sendImage×2 (2 push) + reply = 2 push; ตอนนี้ reply-first รวม = 0 push (fallback push 1 ครั้ง)
+                    //   replyToken สด (มาจาก webhook เปิดไพ่ใบที่ 10) — reply ทันเวลา
+                    $msgObjs = [];
                     if (! empty($result['tarot_image_url'])) {
-                        try {
-                            $lineService->sendImage($userId, $result['tarot_image_url']);
-                        } catch (\Throwable $e) {
-                        }
+                        $msgObjs[] = $lineService->buildImageObject($result['tarot_image_url']);
                     }
                     if (! empty($result['celtic_summary_image_url'])) {
-                        try {
-                            $lineService->sendImage($userId, $result['celtic_summary_image_url']);
-                        } catch (\Throwable $e) {
-                        }
+                        $msgObjs[] = $lineService->buildImageObject($result['celtic_summary_image_url']);
                     }
-
                     // 🛑 (2026-05-14 v2) ลบ "พอแค่นี้" ออกจาก opening — AI ทักเองแล้ว
-                    $ok = $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                    $msgObjs[] = ['type' => 'text', 'text' => mb_substr($message, 0, 4900)];
+
+                    $ok = $lineService->sendMessagesWithReplyFallback($userId, $msgObjs, $replyToken);
 
                     // 🐛 (2026-06-21) mark พื้นดวง (seq=1) delivered เมื่อส่งสำเร็จ — กัน fortune:celtic-redeliver
                     //   cron จับ delivered_at=null แล้ว re-push ซ้ำ (base-chart path ตกหล่นจาก fix 2026-05-28/29
