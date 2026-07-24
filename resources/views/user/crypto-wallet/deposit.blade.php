@@ -1,56 +1,30 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ฝากเหรียญคริปโต')
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
-    {{-- Premium Hero Header (Green-Emerald for Deposit) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8 mb-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-download"></i>
-            </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-arrow-down text-3xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            📥 ฝากเหรียญคริปโต
-                        </h1>
-                        <p class="text-green-100 mt-1">
-                            เลือกสกุลเงินที่ต้องการฝาก
-                        </p>
-                    </div>
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--deep1);"><i class="fas fa-arrow-down"></i></span>
+                <div>
+                    <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">📥 ฝากเหรียญคริปโต</h1>
+                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">เลือกสกุลเงินที่ต้องการฝาก</div>
                 </div>
-                <a href="{{ route('user.crypto-wallet.index') }}"
-                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2">
-                    <i class="fas fa-arrow-left"></i>
-                    <span class="hidden md:inline">กลับหน้าหลัก</span>
-                </a>
             </div>
+            <a href="{{ route('user.crypto-wallet.index') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
+                <i class="fas fa-arrow-left"></i> <span>กลับหน้าหลัก</span>
+            </a>
         </div>
     </div>
 
-    <!-- Instructions -->
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6">
-        <h3 class="font-bold text-blue-900 dark:text-blue-300 mb-3 flex items-center">
-            <span class="text-2xl mr-2">ℹ️</span>
-            วิธีการฝากเหรียญ
-        </h3>
-        <ol class="list-decimal list-inside space-y-2 text-blue-800 dark:text-blue-300 text-sm">
+    {{-- ── วิธีการฝาก ─────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px 22px; box-shadow:var(--inset-sm);">
+        <h3 style="font-weight:800; color:var(--ink); margin:0 0 12px; font-size:14.5px; display:flex; align-items:center; gap:8px;"><span>ℹ️</span> วิธีการฝากเหรียญ</h3>
+        <ol style="margin:0; padding-left:20px; color:var(--ink2); font-size:13.5px; display:flex; flex-direction:column; gap:6px;">
             <li>เลือกสกุลเงินที่ต้องการฝาก</li>
             <li>คัดลอกที่อยู่กระเป๋า (Wallet Address) หรือสแกน QR Code</li>
             <li>โอนเหรียญจากกระเป๋าภายนอก (Exchange, MetaMask, ฯลฯ)</li>
@@ -59,75 +33,50 @@
         </ol>
     </div>
 
-    <!-- Currency Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {{-- ── เลือกสกุลเงิน ─────────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px;">
         @foreach($currencies as $currency)
-            <a href="{{ route('user.crypto-wallet.deposit.currency', $currency->code) }}"
-               class="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-6 border-2 border-transparent hover:border-amber-500">
-                <div class="flex items-center mb-4">
-                    @php
-                        $iconPath = public_path('icons/cryptocurrency/' . strtolower($currency->code) . '.svg');
-                    @endphp
+            @php $iconPath = public_path('icons/cryptocurrency/' . strtolower($currency->code) . '.svg'); @endphp
+            <a href="{{ route('user.crypto-wallet.deposit.currency', $currency->code) }}" class="tp-card" style="padding:20px 22px; text-decoration:none;">
+                <div style="display:flex; align-items:center; gap:14px; margin-bottom:14px;">
                     @if(file_exists($iconPath))
-                        <img src="{{ asset('icons/cryptocurrency/' . strtolower($currency->code) . '.svg') }}"
-                             alt="{{ $currency->code }}"
-                             class="w-14 h-14 mr-4">
+                        <img src="{{ asset('icons/cryptocurrency/' . strtolower($currency->code) . '.svg') }}" alt="{{ $currency->code }}" style="width:52px; height:52px; flex-shrink:0;">
                     @else
-                        <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl mr-4"
-                             style="background: {{ $currency->color ?? 'linear-gradient(135deg, #F59E0B, #D97706)' }};">
-                            <span class="text-white font-bold">{{ substr($currency->code, 0, 1) }}</span>
-                        </div>
+                        <span class="tp-tile" style="width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px; color:var(--deep1); flex-shrink:0;">{{ substr($currency->code, 0, 1) }}</span>
                     @endif
                     <div>
-                        <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ $currency->code }}</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ $currency->name }}</p>
+                        <h3 style="font-size:18px; font-weight:800; color:var(--ink); margin:0;">{{ $currency->code }}</h3>
+                        <p style="font-size:12.5px; color:var(--ink2); margin:2px 0 0;">{{ $currency->name }}</p>
                     </div>
                 </div>
-
-                <div class="space-y-2 mb-4">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600 dark:text-gray-400">เครือข่าย:</span>
-                        <span class="font-medium text-gray-800 dark:text-gray-100 uppercase">{{ $currency->network }}</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600 dark:text-gray-400">ฝากขั้นต่ำ:</span>
-                        <span class="font-medium text-gray-800 dark:text-gray-100">{{ number_format($currency->min_deposit, 8) }} {{ $currency->code }}</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600 dark:text-gray-400">การยืนยัน:</span>
-                        <span class="font-medium text-gray-800 dark:text-gray-100">{{ $currency->confirmations_required }} blocks</span>
-                    </div>
+                <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px; font-size:13px;">
+                    <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">เครือข่าย:</span><span style="font-weight:600; color:var(--ink); text-transform:uppercase;">{{ $currency->network }}</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">ฝากขั้นต่ำ:</span><span style="font-weight:600; color:var(--ink);">{{ number_format($currency->min_deposit, 8) }} {{ $currency->code }}</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">การยืนยัน:</span><span style="font-weight:600; color:var(--ink);">{{ $currency->confirmations_required }} blocks</span></div>
                 </div>
-
-                <div class="flex items-center justify-between">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
                     @if($currency->deposit_enabled)
-                        <span class="text-green-600 dark:text-green-400 text-sm font-medium">✓ พร้อมใช้งาน</span>
+                        <span style="color:#5aa07e; font-size:13px; font-weight:600;">✓ พร้อมใช้งาน</span>
                     @else
-                        <span class="text-red-600 dark:text-red-400 text-sm font-medium">✕ ปิดใช้งานชั่วคราว</span>
+                        <span style="color:#d9534f; font-size:13px; font-weight:600;">✕ ปิดใช้งานชั่วคราว</span>
                     @endif
-
-                    <span class="text-amber-600 group-hover:text-amber-700 font-medium">
-                        เลือก →
-                    </span>
+                    <span style="color:var(--deep1); font-weight:700; font-size:13.5px;">เลือก →</span>
                 </div>
             </a>
         @endforeach
     </div>
 
     @if($currencies->isEmpty())
-        <div class="text-center py-12">
-            <div class="text-6xl mb-4">🚫</div>
-            <p class="text-gray-500 dark:text-gray-400">ไม่มีสกุลเงินที่สามารถฝากได้ในขณะนี้</p>
+        <div class="tp-card" style="padding:52px 24px; text-align:center;">
+            <div style="font-size:56px; margin-bottom:14px;">🚫</div>
+            <p style="color:var(--ink2); font-size:14px; margin:0;">ไม่มีสกุลเงินที่สามารถฝากได้ในขณะนี้</p>
         </div>
     @endif
 
-    <!-- Warning -->
-    <div class="mt-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
-        <h4 class="font-bold text-yellow-900 dark:text-yellow-300 mb-2 flex items-center">
-            <span class="text-xl mr-2">⚠️</span>
-            ข้อควรระวัง
-        </h4>
-        <ul class="list-disc list-inside space-y-1 text-yellow-800 dark:text-yellow-300 text-sm">
+    {{-- ── ข้อควรระวัง ───────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px 22px; box-shadow:var(--inset-sm); background:color-mix(in srgb, #e0a52e 8%, transparent);">
+        <h4 style="font-weight:800; color:#c98a1e; margin:0 0 10px; font-size:14.5px; display:flex; align-items:center; gap:8px;"><span>⚠️</span> ข้อควรระวัง</h4>
+        <ul style="margin:0; padding-left:18px; color:#a9741a; font-size:13px; display:flex; flex-direction:column; gap:5px;">
             <li>โปรดตรวจสอบเครือข่าย (Network) ให้ถูกต้องก่อนโอน มิฉะนั้นเหรียญอาจสูญหาย</li>
             <li>ส่งเฉพาะสกุลเงินที่ตรงกันเท่านั้น เช่น ที่อยู่ BTC รับได้เฉพาะ BTC</li>
             <li>ระบบจะเริ่มนับการยืนยันหลังจากธุรกรรมปรากฏบน Blockchain</li>
@@ -136,17 +85,3 @@
     </div>
 </div>
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
