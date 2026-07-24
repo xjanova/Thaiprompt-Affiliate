@@ -1,119 +1,93 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ถอนเหรียญคริปโต')
 
 @section('content')
-<div class="container mx-auto px-4 py-6 max-w-2xl">
-    {{-- Premium Hero Header (Red-Orange for Withdrawal) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-red-600 via-orange-600 to-amber-600 dark:from-red-800 dark:via-orange-800 dark:to-amber-800 rounded-2xl shadow-2xl p-8 mb-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px; max-width:720px; margin-inline:auto; width:100%;">
 
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-upload"></i>
-            </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-arrow-up text-3xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            📤 ถอนเหรียญคริปโต
-                        </h1>
-                        <p class="text-red-100 mt-1">
-                            โอนเหรียญไปยังกระเป๋าภายนอก
-                        </p>
-                    </div>
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--deep1);"><i class="fas fa-arrow-up"></i></span>
+                <div>
+                    <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">📤 ถอนเหรียญคริปโต</h1>
+                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">โอนเหรียญไปยังกระเป๋าภายนอก</div>
                 </div>
-                <a href="{{ route('user.crypto-wallet.index') }}"
-                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2">
-                    <i class="fas fa-arrow-left"></i>
-                    <span class="hidden md:inline">กลับหน้าหลัก</span>
-                </a>
             </div>
+            <a href="{{ route('user.crypto-wallet.index') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
+                <i class="fas fa-arrow-left"></i> <span>กลับหน้าหลัก</span>
+            </a>
         </div>
     </div>
 
     @if(session('success'))
-        <div class="mb-4 p-4 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-400 rounded-lg">
-            {{ session('success') }}
-        </div>
+        <div class="tp-card" style="padding:14px 18px; background:color-mix(in srgb, #5aa07e 12%, transparent); border:1px solid color-mix(in srgb, #5aa07e 30%, transparent); color:var(--ink); font-size:14px;">{{ session('success') }}</div>
     @endif
-
     @if(session('error'))
-        <div class="mb-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg">
-            {{ session('error') }}
-        </div>
+        <div class="tp-card" style="padding:14px 18px; background:color-mix(in srgb, #d9534f 10%, transparent); border:1px solid color-mix(in srgb, #d9534f 30%, transparent); color:#d9534f; font-size:14px;">{{ session('error') }}</div>
     @endif
 
-    <!-- Balances Overview -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
-        <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">ยอดคงเหลือของคุณ</h3>
-
+    {{-- ── ยอดคงเหลือ ─────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:22px 24px;">
+        <h3 style="font-weight:800; color:var(--ink); margin:0 0 14px; font-size:15px;">ยอดคงเหลือของคุณ</h3>
         @if(count($balances) > 0)
-            <div class="grid gap-3">
+            <div style="display:flex; flex-direction:column; gap:10px;">
                 @foreach($balances as $code => $balance)
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div class="flex items-center">
-                            @php
-                                $iconPath = public_path('icons/cryptocurrency/' . strtolower($code) . '.svg');
-                            @endphp
-                            @if(file_exists($iconPath))
-                                <img src="{{ asset('icons/cryptocurrency/' . strtolower($code) . '.svg') }}"
-                                     alt="{{ $code }}"
-                                     class="w-10 h-10 mr-3">
+                    @php $wIconPath = public_path('icons/cryptocurrency/' . strtolower($code) . '.svg'); @endphp
+                    <div class="tp-card" style="padding:13px 15px; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                        <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+                            @if(file_exists($wIconPath))
+                                <img src="{{ asset('icons/cryptocurrency/' . strtolower($code) . '.svg') }}" alt="{{ $code }}" style="width:40px; height:40px; flex-shrink:0;">
                             @else
-                                <div class="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                                    {{ substr($code, 0, 1) }}
-                                </div>
+                                <span class="tp-tile" style="width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--deep1); flex-shrink:0;">{{ substr($code, 0, 1) }}</span>
                             @endif
                             <div>
-                                <div class="font-semibold text-gray-800 dark:text-gray-100">{{ $balance['currency']->name }}</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $code }}</div>
+                                <div style="font-weight:700; color:var(--ink); font-size:14px;">{{ $balance['currency']->name }}</div>
+                                <div style="font-size:12.5px; color:var(--ink2);">{{ $code }}</div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ number_format($balance['balance'], 8) }}</div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">≈ ฿{{ number_format($balance['balance_thb'], 2) }}</div>
+                        <div style="text-align:right;">
+                            <div class="tp-num" style="font-weight:800; color:var(--ink); font-size:14px;">{{ number_format($balance['balance'], 8) }}</div>
+                            <div style="font-size:12px; color:var(--ink2);">≈ ฿{{ number_format($balance['balance_thb'], 2) }}</div>
                         </div>
                     </div>
                 @endforeach
             </div>
         @else
-            <div class="text-center py-6">
-                <div class="text-5xl mb-3">💰</div>
-                <p class="text-gray-500 dark:text-gray-400">ไม่มียอดคงเหลือ</p>
+            <div style="text-align:center; padding:24px 0;">
+                <div style="font-size:44px; margin-bottom:10px;">💰</div>
+                <p style="color:var(--ink2); font-size:14px; margin:0;">ไม่มียอดคงเหลือ</p>
             </div>
         @endif
     </div>
 
-    <!-- Withdrawal Form -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8">
-        <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">ฟอร์มถอนเหรียญ</h3>
+    {{-- ── ฟอร์มถอน (Alpine — preserve logic) ─────────────────── --}}
+    <div class="tp-card" style="padding:26px 24px;">
+        <h3 style="font-size:16px; font-weight:800; color:var(--ink); margin:0 0 20px;">ฟอร์มถอนเหรียญ</h3>
 
         <form action="{{ route('user.crypto-wallet.withdraw.submit') }}" method="POST" x-data="{ selectedCurrency: null, amount: '', fee: 0, netAmount: 0 }">
             @csrf
 
-            <!-- Select Currency -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เลือกสกุลเงิน</label>
+            {{-- เลือกสกุลเงิน --}}
+            <div style="margin-bottom:18px;">
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">เลือกสกุลเงิน</label>
                 <select name="currency_id" required
                         @change="selectedCurrency = $event.target.options[$event.target.selectedIndex].dataset.currency ? JSON.parse($event.target.options[$event.target.selectedIndex].dataset.currency) : null; fee = selectedCurrency ? parseFloat(selectedCurrency.withdrawal_fee) : 0; calculateNet()"
-                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-100">
+                        style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;">
                     <option value="">-- เลือกสกุลเงิน --</option>
                     @foreach($currencies as $curr)
-                        <option value="{{ $curr->id }}"
-                                data-currency='@json(["code" => $curr->code, "min_withdrawal" => $curr->min_withdrawal, "max_withdrawal" => $curr->max_withdrawal, "withdrawal_fee" => $curr->withdrawal_fee, "network" => $curr->network])'>
+                        @php
+                            // สร้าง JSON สำหรับ data attribute (แทน @json เพื่อเลี่ยง nested-directive edge case)
+                            $currData = json_encode([
+                                'code' => $curr->code,
+                                'min_withdrawal' => $curr->min_withdrawal,
+                                'max_withdrawal' => $curr->max_withdrawal,
+                                'withdrawal_fee' => $curr->withdrawal_fee,
+                                'network' => $curr->network,
+                            ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+                        @endphp
+                        <option value="{{ $curr->id }}" data-currency='{!! $currData !!}'>
                             {{ $curr->code }} ({{ strtoupper($curr->network) }})
                             @if(isset($balances[$curr->code]))
                                 - มี {{ number_format($balances[$curr->code]['balance'], 8) }}
@@ -123,95 +97,77 @@
                 </select>
             </div>
 
-            <!-- Destination Address -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ที่อยู่ปลายทาง (Destination Address)</label>
+            {{-- ที่อยู่ปลายทาง --}}
+            <div style="margin-bottom:18px;">
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">ที่อยู่ปลายทาง (Destination Address)</label>
                 <input type="text" name="to_address" required
-                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-100 font-mono text-sm"
+                       style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-family:monospace; font-size:13px;"
                        placeholder="0x...">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">กรุณาตรวจสอบที่อยู่ให้ถูกต้อง การถอนไปที่อยู่ผิดจะไม่สามารถกู้คืนได้</p>
+                <p style="font-size:11.5px; color:var(--ink2); margin:7px 0 0;">กรุณาตรวจสอบที่อยู่ให้ถูกต้อง การถอนไปที่อยู่ผิดจะไม่สามารถกู้คืนได้</p>
             </div>
 
-            <!-- Amount -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนที่ต้องการถอน</label>
+            {{-- จำนวน --}}
+            <div style="margin-bottom:18px;">
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">จำนวนที่ต้องการถอน</label>
                 <input type="number" name="amount" step="0.00000001" required x-model="amount" @input="calculateNet()"
-                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-100"
+                       style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;"
                        placeholder="0.00000000">
-
                 <template x-if="selectedCurrency">
-                    <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    <div style="margin-top:8px; font-size:12.5px; color:var(--ink2);">
                         <div>ขั้นต่ำ: <span x-text="selectedCurrency.min_withdrawal"></span> <span x-text="selectedCurrency.code"></span></div>
                         <div x-show="selectedCurrency.max_withdrawal">สูงสุด: <span x-text="selectedCurrency.max_withdrawal"></span> <span x-text="selectedCurrency.code"></span></div>
                     </div>
                 </template>
             </div>
 
-            <!-- Fee Display -->
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6" x-show="selectedCurrency && amount > 0">
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">จำนวนถอน:</span>
-                        <span class="font-semibold text-gray-800 dark:text-gray-100">
-                            <span x-text="parseFloat(amount).toFixed(8)"></span> <span x-text="selectedCurrency ? selectedCurrency.code : ''"></span>
-                        </span>
+            {{-- แสดงค่าธรรมเนียม --}}
+            <div class="tp-card" style="padding:16px 18px; box-shadow:var(--inset-sm); margin-bottom:18px;" x-show="selectedCurrency && amount > 0">
+                <div style="display:flex; flex-direction:column; gap:8px; font-size:13.5px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:var(--ink2);">จำนวนถอน:</span>
+                        <span style="font-weight:700; color:var(--ink);"><span x-text="parseFloat(amount).toFixed(8)"></span> <span x-text="selectedCurrency ? selectedCurrency.code : ''"></span></span>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">ค่าธรรมเนียมเครือข่าย:</span>
-                        <span class="font-semibold text-red-600 dark:text-red-400">
-                            - <span x-text="fee.toFixed(8)"></span> <span x-text="selectedCurrency ? selectedCurrency.code : ''"></span>
-                        </span>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:var(--ink2);">ค่าธรรมเนียมเครือข่าย:</span>
+                        <span style="font-weight:700; color:#d9534f;">- <span x-text="fee.toFixed(8)"></span> <span x-text="selectedCurrency ? selectedCurrency.code : ''"></span></span>
                     </div>
-                    <div class="border-t border-gray-300 dark:border-gray-600 pt-2 flex justify-between">
-                        <span class="font-bold text-gray-800 dark:text-gray-100">จำนวนที่จะได้รับ:</span>
-                        <span class="font-bold text-green-600 dark:text-green-400">
-                            <span x-text="netAmount.toFixed(8)"></span> <span x-text="selectedCurrency ? selectedCurrency.code : ''"></span>
-                        </span>
+                    <div style="border-top:1px solid color-mix(in srgb, var(--ink2) 15%, transparent); padding-top:8px; display:flex; justify-content:space-between;">
+                        <span style="font-weight:800; color:var(--ink);">จำนวนที่จะได้รับ:</span>
+                        <span style="font-weight:800; color:#5aa07e;"><span x-text="netAmount.toFixed(8)"></span> <span x-text="selectedCurrency ? selectedCurrency.code : ''"></span></span>
                     </div>
                 </div>
             </div>
 
-            <!-- PIN -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PIN กระเป๋า</label>
+            {{-- PIN --}}
+            <div style="margin-bottom:18px;">
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">PIN กระเป๋า</label>
                 <input type="password" name="pin" required minlength="4" maxlength="6"
-                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-100"
+                       style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;"
                        placeholder="กรอก PIN ของคุณ">
             </div>
 
-            <!-- Note (Optional) -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">หมายเหตุ (ถ้ามี)</label>
+            {{-- หมายเหตุ --}}
+            <div style="margin-bottom:18px;">
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">หมายเหตุ (ถ้ามี)</label>
                 <textarea name="note" rows="2"
-                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-100"
+                          style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px; resize:vertical;"
                           placeholder="หมายเหตุส่วนตัว..."></textarea>
             </div>
 
-            <!-- Terms -->
-            <div class="mb-6">
-                <label class="flex items-start">
-                    <input type="checkbox" required class="mt-1 mr-2">
-                    <span class="text-sm text-gray-700 dark:text-gray-300">
-                        ฉันยืนยันว่าได้ตรวจสอบที่อยู่ปลายทางและเครือข่ายแล้ว และเข้าใจว่าการส่งไปที่อยู่ผิดจะไม่สามารถกู้คืนได้
-                    </span>
-                </label>
-            </div>
+            {{-- ยืนยันเงื่อนไข --}}
+            <label style="display:flex; align-items:flex-start; gap:10px; margin-bottom:20px; cursor:pointer;">
+                <input type="checkbox" required style="margin-top:3px; width:18px; height:18px; accent-color:var(--accent1); flex-shrink:0;">
+                <span style="font-size:13px; color:var(--ink2);">ฉันยืนยันว่าได้ตรวจสอบที่อยู่ปลายทางและเครือข่ายแล้ว และเข้าใจว่าการส่งไปที่อยู่ผิดจะไม่สามารถกู้คืนได้</span>
+            </label>
 
-            <!-- Submit Button -->
-            <button type="submit"
-                    class="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-4 rounded-lg font-bold text-lg hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg">
-                ส่งคำขอถอนเงิน
-            </button>
+            <button type="submit" class="tp-btn" style="width:100%; padding:15px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:800; font-size:16px; box-shadow:var(--raise); border:none; cursor:pointer;">ส่งคำขอถอนเงิน</button>
         </form>
     </div>
 
-    <!-- Warning -->
-    <div class="mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
-        <h4 class="font-bold text-red-900 dark:text-red-300 mb-2 flex items-center">
-            <span class="text-xl mr-2">⚠️</span>
-            คำเตือนสำคัญ!
-        </h4>
-        <ul class="list-disc list-inside space-y-1 text-red-800 dark:text-red-300 text-sm">
+    {{-- ── คำเตือน ───────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px 22px; box-shadow:var(--inset-sm); background:color-mix(in srgb, #d9534f 8%, transparent);">
+        <h4 style="font-weight:800; color:#d9534f; margin:0 0 10px; font-size:14.5px; display:flex; align-items:center; gap:8px;"><span>⚠️</span> คำเตือนสำคัญ!</h4>
+        <ul style="margin:0; padding-left:18px; color:#d9534f; font-size:13px; display:flex; flex-direction:column; gap:5px;">
             <li>ตรวจสอบที่อยู่ปลายทางและเครือข่ายให้ถูกต้องก่อนยืนยัน</li>
             <li>การถอนไปที่อยู่ผิดหรือเครือข่ายผิดจะทำให้เหรียญสูญหายถาวร</li>
             <li>คำขอถอนจำนวนมากอาจต้องใช้เวลาตรวจสอบเพิ่มเติม</li>
@@ -228,17 +184,3 @@ function calculateNet() {
 }
 </script>
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
