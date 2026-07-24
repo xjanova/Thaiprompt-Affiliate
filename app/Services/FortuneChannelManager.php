@@ -3032,6 +3032,18 @@ class FortuneChannelManager
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineReplies);
                 })(),
 
+                // 🔮 (2026-07-24) Pro Session (Deep 39 / Celtic 99) — คำทำนาย/ไดอะล็อกระหว่างเซสชันที่จ่ายแล้ว
+                //   ⚠️ ต้องส่งเป็น "text เปล่า ไม่มีปุ่ม" — ห้ามตกไป default (sendLineFallbackResponse)
+                //   เพราะ default จะแปะปุ่ม "🔮 ดูดวง" ที่ footer ทุกกล่องคำทำนาย → ลูกค้ากดกลางการทำนาย
+                //   = สับสน/รบกวนโฟลว์/เสี่ยงเริ่ม reading+บิลใหม่ (ตรงกับที่เจ้าของสั่ง "เอาปุ่มที่ไม่เกี่ยวกับการทำนายออก")
+                //   ข้อความพวกนี้บอกวิธีตอบในตัวอยู่แล้ว (พิมพ์คำถามต่อ / พิมพ์ "ใช่" เพื่อยุติ) ไม่ต้องมีปุ่ม
+                'pro_session_answer',
+                'pro_session_closed',
+                'pro_session_exit_confirm',
+                'pro_session_celtic_generating',
+                'pro_session_ai_fail',
+                'pro_session_nudge' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };
 
