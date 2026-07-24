@@ -7,7 +7,6 @@ use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneUserCredit;
-use App\Models\PaymentBankAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
@@ -3205,16 +3204,11 @@ class FortuneChannelManager
         $showPromptpay = $this->settings->shouldShowPromptpay();
 
         // ดึงบัญชีธนาคารตามโหมด
-        $accounts = PaymentBankAccount::active()
-            ->smsCheckerEnabled()
-            ->ordered()
-            ->get();
-
-        if ($accounts->isEmpty()) {
-            $accounts = PaymentBankAccount::active()
-                ->ordered()
-                ->get();
-        }
+        // 🏦 (2026-07-24 FIX) เดิมดึง PaymentBankAccount::active()->smsCheckerEnabled() ทั้งระบบ
+        //   → ไม่สน fortune_bank_account_ids ที่แอดมินเลือกไว้ → LINE โชว์บัญชี default ของระบบ
+        //   (บุญณราช/SCB) แทนบัญชีดูดวง (จันทราพยากรณ์/กสิกร) ทั้งที่ QR ในภาพเป็นบัญชีดูดวง
+        //   → ใช้ getFortuneBankAccounts() ตัวเดียวกับฝั่ง FB (มี fallback SMS-checker ในตัวแล้ว)
+        $accounts = $this->settings->getFortuneBankAccounts();
 
         // 🆕 (2026-05-31) โชว์บัญชีหลักบัญชีเดียว (is_default ก่อน → ไม่มีก็ตัวแรก) — เป็นมิตรกับผู้สูงอายุ
         $primaryAccount = $accounts->firstWhere('is_default', true) ?? $accounts->first();
