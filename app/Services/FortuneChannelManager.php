@@ -993,29 +993,11 @@ class FortuneChannelManager
                     return $fbService->sendQuickReplies($userId, $message, $qrs, $extra);
                 })(),
 
-                // 💎 (2026-05-03) Request-Before-Pay — confirmation prompt + 2 buttons
-                'delivery_confirm_prompt' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '✅ รับคำทำนาย', 'payload' => 'DELIVERY_CONFIRM_YES'],
-                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'DELIVERY_CONFIRM_NO'],
-                ], $extra),
-
-                // 🆕 (2026-05-04) Pay-later reconfirm — Quick Reply ยืนยันก่อน AI gen
-                'pay_later_reconfirm', 'pay_later_reconfirm_invalid' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '✅ ใช่ เริ่มเลย', 'payload' => 'PAY_LATER_ACK_YES'],
-                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'PAY_LATER_ACK_NO'],
-                ], $extra),
-
-                // 🆕 (2026-05-04) Pay-later declined — text only
-                'pay_later_declined' => $fbService->sendMessage($userId, $message, $extra),
-
-                // 💎 ลูกค้ายกเลิกการรับคำทำนาย — ปิด conversation (text only)
-                'delivery_cancelled' => $fbService->sendMessage($userId, $message, $extra),
-
-                // 💎 invalid response → re-prompt with same buttons
-                'delivery_confirm_invalid' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '✅ รับคำทำนาย', 'payload' => 'DELIVERY_CONFIRM_YES'],
-                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'DELIVERY_CONFIRM_NO'],
-                ], $extra),
+                // 🗑️ (2026-07-24) ลบ dead render cases: Request-Before-Pay / Pay-Later
+                //   ระบบจ่ายทีหลังถูกลบแล้ว (is_request_before_pay คืน false เสมอ)
+                //   → action delivery_confirm_prompt/invalid, pay_later_reconfirm/invalid/declined,
+                //     delivery_cancelled ไม่ถูกสร้างอีก (มีแต่ pay_later_removed no-op) จึงลบ arm ทิ้ง
+                //   ปุ่ม "✅ รับคำทำนาย" ที่เจ้าของถามถึงอยู่ในกลุ่มนี้ (dead แต่ลบให้สะอาด)
 
                 // 💎 deliver_with_qr — ส่งคำทำนาย + QR (ใช้ payment template)
                 'deliver_with_qr' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
@@ -2608,23 +2590,9 @@ class FortuneChannelManager
                 // 🔒 (2026-05-03) reach revive limit — admin only (text-only)
                 'payment_lock_admin' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
-                // 💎 (2026-05-03) Request-Before-Pay confirmation (LINE Quick Reply)
-                'delivery_confirm_prompt', 'delivery_confirm_invalid' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                    ['label' => '✅ รับคำทำนาย', 'text' => 'รับคำทำนาย'],
-                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
-                ]),
-
-                // 🆕 (2026-05-04) Pay-later reconfirm (LINE Quick Reply)
-                'pay_later_reconfirm', 'pay_later_reconfirm_invalid' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                    ['label' => '✅ ใช่ เริ่มเลย', 'text' => 'ใช่'],
-                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
-                ]),
-
-                // 🆕 (2026-05-04) Pay-later declined — text only
-                'pay_later_declined' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
-
-                // 💎 ยกเลิกการรับคำทำนาย — text only
-                'delivery_cancelled' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                // 🗑️ (2026-07-24) ลบ dead render cases (LINE): delivery_confirm_prompt/invalid,
+                //   pay_later_reconfirm/invalid/declined, delivery_cancelled — ระบบจ่ายทีหลังถูกลบแล้ว
+                //   action พวกนี้ไม่ถูกสร้างอีก (ตกไป pay_later_removed no-op) — รวมปุ่ม "✅ รับคำทำนาย"
 
                 // 💎 deliver_with_qr — ใช้ payment template (LINE)
                 'deliver_with_qr' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
