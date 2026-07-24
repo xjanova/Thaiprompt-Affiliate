@@ -1,173 +1,109 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
+
+@section('title', 'เพิ่มที่อยู่จัดส่ง')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900/50 py-8">
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="space-y-6 pb-20 lg:pb-6">
-    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-plus-circle"></i></div>
-        </div>
-        <div class="relative z-10"><div class="flex items-center gap-4">
-            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-plus-circle text-4xl text-white drop-shadow-lg"></i></div>
-            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">เพิ่มที่อยู่</h1>
-            <p class="text-white/80 text-lg mt-1">เพิ่มที่อยู่จัดส่งใหม่</p></div>
-        </div></div>
-    </div>
-        <div class="mb-8">
-            <h1 class="text-3xl font-black text-gray-900 dark:text-white mb-2">📍 เพิ่มที่อยู่จัดส่งใหม่</h1>
-            <p class="text-gray-600 dark:text-gray-400">กรุณากรอกข้อมูลที่อยู่จัดส่งของคุณ</p>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px; max-width:760px; margin-inline:auto; width:100%;">
 
-        @if(session('error'))
-        <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
-                </div>
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--deep1);">
+                <i class="fas fa-plus-circle"></i>
+            </span>
+            <div>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">เพิ่มที่อยู่ · NEW ADDRESS</div>
+                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:3px 0 0; color:var(--ink);">เพิ่มที่อยู่จัดส่งใหม่</h1>
+                <div style="font-size:13px; color:var(--ink2); margin-top:2px;">กรุณากรอกข้อมูลที่อยู่จัดส่งของคุณ</div>
             </div>
         </div>
-        @endif
+    </div>
 
-        <!-- Form -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-            <form action="{{ route('shipping-addresses.store') }}" method="POST">
-                @csrf
+    {{-- ── ฟอร์ม ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px;">
+        <form action="{{ route('shipping-addresses.store') }}" method="POST">
+            @csrf
 
-                <div class="space-y-6">
-                    <!-- Recipient Name -->
-                    <div>
-                        <label for="recipient_name" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
-                            ชื่อผู้รับ <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text"
-                               id="recipient_name"
-                               name="recipient_name"
-                               value="{{ old('recipient_name') }}"
-                               required
-                               class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-indigo-600 focus:outline-none transition @error('recipient_name') border-red-500 @enderror"
-                               placeholder="ชื่อ-นามสกุล ผู้รับสินค้า">
-                        @error('recipient_name')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Phone Number -->
-                    <div>
-                        <label for="phone_number" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
-                            เบอร์โทรศัพท์ <span class="text-red-500">*</span>
-                        </label>
-                        <input type="tel"
-                               id="phone_number"
-                               name="phone_number"
-                               value="{{ old('phone_number') }}"
-                               required
-                               class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-indigo-600 focus:outline-none transition @error('phone_number') border-red-500 @enderror"
-                               placeholder="0812345678">
-                        @error('phone_number')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Address Line 1 -->
-                    <div>
-                        <label for="address_line_1" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
-                            ที่อยู่ (บ้านเลขที่ ถนน) <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text"
-                               id="address_line_1"
-                               name="address_line_1"
-                               value="{{ old('address_line_1') }}"
-                               required
-                               class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-indigo-600 focus:outline-none transition @error('address_line_1') border-red-500 @enderror"
-                               placeholder="บ้านเลขที่ ซอย ถนน">
-                        @error('address_line_1')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Address Line 2 -->
-                    <div>
-                        <label for="address_line_2" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
-                            ที่อยู่เพิ่มเติม (ถ้ามี)
-                        </label>
-                        <input type="text"
-                               id="address_line_2"
-                               name="address_line_2"
-                               value="{{ old('address_line_2') }}"
-                               class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-indigo-600 focus:outline-none transition @error('address_line_2') border-red-500 @enderror"
-                               placeholder="หมู่บ้าน คอนโด อพาร์ทเมนท์">
-                        @error('address_line_2')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- ระบบเลือกที่อยู่อัจฉริยะ (จังหวัด → อำเภอ → ตำบล → รหัสไปรษณีย์) -->
-                    <x-thai-address-picker
-                        province-field="province"
-                        district-field="district"
-                        sub-district-field="sub_district"
-                        postal-code-field="postal_code"
-                        :province-value="old('province', '')"
-                        :district-value="old('district', '')"
-                        :sub-district-value="old('sub_district', '')"
-                        :postal-code-value="old('postal_code', '')"
-                    />
-
-                    <!-- Country (Hidden, defaults to Thailand) -->
-                    <input type="hidden" name="country" value="ประเทศไทย">
-
-                    <!-- Notes -->
-                    <div>
-                        <label for="notes" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
-                            หมายเหตุ (ถ้ามี)
-                        </label>
-                        <textarea id="notes"
-                                  name="notes"
-                                  rows="3"
-                                  class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-indigo-600 focus:outline-none transition @error('notes') border-red-500 @enderror"
-                                  placeholder="เช่น สถานที่ใกล้เคียง หรือข้อความเพิ่มเติม">{{ old('notes') }}</textarea>
-                        @error('notes')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Is Default -->
-                    <div class="flex items-center">
-                        <input type="checkbox"
-                               id="is_default"
-                               name="is_default"
-                               value="1"
-                               {{ old('is_default') ? 'checked' : '' }}
-                               class="w-5 h-5 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500">
-                        <label for="is_default" class="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                            ตั้งเป็นที่อยู่เริ่มต้น
-                        </label>
-                    </div>
+            <div style="display:flex; flex-direction:column; gap:18px;">
+                {{-- ชื่อผู้รับ --}}
+                <div>
+                    <label for="recipient_name" style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">ชื่อผู้รับ <span style="color:#d9534f;">*</span></label>
+                    <input type="text" id="recipient_name" name="recipient_name" value="{{ old('recipient_name') }}" required
+                           style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;"
+                           placeholder="ชื่อ-นามสกุล ผู้รับสินค้า">
+                    @error('recipient_name')<p style="color:#d9534f; font-size:12.5px; margin-top:6px;">{{ $message }}</p>@enderror
                 </div>
 
-                <!-- Form Actions -->
-                <div class="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <button type="submit"
-                            class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-center rounded-xl shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] transition-all duration-200">
-                        ✅ บันทึกที่อยู่
-                    </button>
-                    <a href="{{ route('shipping-addresses.index') }}"
-                       class="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-600 text-gray-700 dark:text-gray-300 hover:text-indigo-600 font-semibold text-center rounded-xl transition">
-                        ← ยกเลิก
-                    </a>
+                {{-- เบอร์โทร --}}
+                <div>
+                    <label for="phone_number" style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">เบอร์โทรศัพท์ <span style="color:#d9534f;">*</span></label>
+                    <input type="tel" id="phone_number" name="phone_number" value="{{ old('phone_number') }}" required
+                           style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;"
+                           placeholder="0812345678">
+                    @error('phone_number')<p style="color:#d9534f; font-size:12.5px; margin-top:6px;">{{ $message }}</p>@enderror
                 </div>
-            </form>
-        </div>
+
+                {{-- ที่อยู่บรรทัด 1 --}}
+                <div>
+                    <label for="address_line_1" style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">ที่อยู่ (บ้านเลขที่ ถนน) <span style="color:#d9534f;">*</span></label>
+                    <input type="text" id="address_line_1" name="address_line_1" value="{{ old('address_line_1') }}" required
+                           style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;"
+                           placeholder="บ้านเลขที่ ซอย ถนน">
+                    @error('address_line_1')<p style="color:#d9534f; font-size:12.5px; margin-top:6px;">{{ $message }}</p>@enderror
+                </div>
+
+                {{-- ที่อยู่บรรทัด 2 --}}
+                <div>
+                    <label for="address_line_2" style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">ที่อยู่เพิ่มเติม (ถ้ามี)</label>
+                    <input type="text" id="address_line_2" name="address_line_2" value="{{ old('address_line_2') }}"
+                           style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;"
+                           placeholder="หมู่บ้าน คอนโด อพาร์ทเมนท์">
+                    @error('address_line_2')<p style="color:#d9534f; font-size:12.5px; margin-top:6px;">{{ $message }}</p>@enderror
+                </div>
+
+                {{-- ระบบเลือกที่อยู่อัจฉริยะ (จังหวัด → อำเภอ → ตำบล → รหัสไปรษณีย์) --}}
+                <x-thai-address-picker
+                    province-field="province"
+                    district-field="district"
+                    sub-district-field="sub_district"
+                    postal-code-field="postal_code"
+                    :province-value="old('province', '')"
+                    :district-value="old('district', '')"
+                    :sub-district-value="old('sub_district', '')"
+                    :postal-code-value="old('postal_code', '')"
+                />
+
+                <input type="hidden" name="country" value="ประเทศไทย">
+
+                {{-- หมายเหตุ --}}
+                <div>
+                    <label for="notes" style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">หมายเหตุ (ถ้ามี)</label>
+                    <textarea id="notes" name="notes" rows="3"
+                              style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px; resize:vertical;"
+                              placeholder="เช่น สถานที่ใกล้เคียง หรือข้อความเพิ่มเติม">{{ old('notes') }}</textarea>
+                    @error('notes')<p style="color:#d9534f; font-size:12.5px; margin-top:6px;">{{ $message }}</p>@enderror
+                </div>
+
+                {{-- ตั้งเป็นค่าเริ่มต้น --}}
+                <label for="is_default" style="display:flex; align-items:center; gap:11px; cursor:pointer;">
+                    <input type="checkbox" id="is_default" name="is_default" value="1" {{ old('is_default') ? 'checked' : '' }}
+                           style="width:19px; height:19px; accent-color:var(--accent1);">
+                    <span style="font-size:14px; font-weight:600; color:var(--ink);">ตั้งเป็นที่อยู่เริ่มต้น</span>
+                </label>
+            </div>
+
+            {{-- ปุ่ม --}}
+            <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:26px; padding-top:20px; border-top:1px solid color-mix(in srgb, var(--ink2) 18%, transparent);">
+                <button type="submit"
+                        class="tp-btn" style="flex:1; min-width:180px; padding:13px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:14.5px; box-shadow:var(--raise);">
+                    <i class="fas fa-check"></i> บันทึกที่อยู่
+                </button>
+                <a href="{{ route('shipping-addresses.index') }}"
+                   class="tp-btn" style="flex:1; min-width:140px; padding:13px; border-radius:14px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:14px; text-align:center;">
+                    ← ยกเลิก
+                </a>
+            </div>
+        </form>
     </div>
 </div>
 @endsection
