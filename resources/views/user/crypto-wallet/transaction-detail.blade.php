@@ -1,225 +1,104 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'รายละเอียดธุรกรรม Crypto')
 
 @section('content')
-<div class="max-w-4xl mx-auto space-y-6 pb-20 lg:pb-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-white">
-        <div class="flex items-center gap-4">
-            <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <span class="text-3xl">🔍</span>
-            </div>
+<div style="display:flex; flex-direction:column; gap:18px; max-width:860px; margin-inline:auto; width:100%;">
+
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:26px;">🔍</span>
             <div>
-                <h1 class="text-3xl font-bold">รายละเอียดธุรกรรม</h1>
-                <p class="text-cyan-100 mt-1">ข้อมูลครบถ้วนของธุรกรรม Crypto</p>
+                <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">รายละเอียดธุรกรรม</h1>
+                <div style="font-size:13px; color:var(--ink2); margin-top:2px;">ข้อมูลครบถ้วนของธุรกรรม Crypto</div>
             </div>
         </div>
     </div>
 
     @if(isset($transaction))
-        <!-- Transaction Status Banner -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-            <div class="text-center">
-                <!-- Status Icon -->
-                <div class="w-24 h-24 mx-auto mb-4
-                    @if($transaction->status === 'completed') bg-gradient-to-br from-green-400 to-emerald-600
-                    @elseif($transaction->status === 'pending') bg-gradient-to-br from-yellow-400 to-orange-600
-                    @elseif($transaction->status === 'failed') bg-gradient-to-br from-red-400 to-rose-600
-                    @else bg-gradient-to-br from-gray-400 to-slate-600
-                    @endif
-                    rounded-full flex items-center justify-center shadow-2xl">
-                    <span class="text-5xl">
-                        @if($transaction->status === 'completed') ✅
-                        @elseif($transaction->status === 'pending') ⏳
-                        @elseif($transaction->status === 'failed') ❌
-                        @else 📋
-                        @endif
-                    </span>
-                </div>
+        @php
+            $st = $transaction->status;
+            $stColor = ['completed' => '#5aa07e', 'pending' => '#e0a52e', 'failed' => '#d9534f'][$st] ?? '#9a8f7c';
+            $stIcon = ['completed' => '✅', 'pending' => '⏳', 'failed' => '❌'][$st] ?? '📋';
+            $stTitle = ['completed' => 'ธุรกรรมสำเร็จ', 'pending' => 'กำลังดำเนินการ', 'failed' => 'ธุรกรรมล้มเหลว'][$st] ?? 'ธุรกรรม';
+        @endphp
 
-                <!-- Status Text -->
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-                    @if($transaction->status === 'completed') ธุรกรรมสำเร็จ
-                    @elseif($transaction->status === 'pending') กำลังดำเนินการ
-                    @elseif($transaction->status === 'failed') ธุรกรรมล้มเหลว
-                    @else ธุรกรรม
-                    @endif
-                </h2>
-                <p class="text-gray-600 dark:text-gray-400">{{ $transaction->created_at->format('d/m/Y H:i:s') }}</p>
-            </div>
+        {{-- ── สถานะ ─────────────────────────────────────────── --}}
+        <div class="tp-card" style="padding:28px 24px; text-align:center;">
+            <span class="tp-tile" style="width:88px; height:88px; margin:0 auto 16px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:44px; background:color-mix(in srgb, {{ $stColor }} 18%, transparent);">{{ $stIcon }}</span>
+            <h2 style="font-size:22px; font-weight:800; color:var(--ink); margin:0 0 5px;">{{ $stTitle }}</h2>
+            <p style="font-size:13.5px; color:var(--ink2); margin:0;">{{ $transaction->created_at->format('d/m/Y H:i:s') }}</p>
         </div>
 
-        <!-- Transaction Details -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-                <span>📋</span> ข้อมูลธุรกรรม
-            </h3>
-
-            <div class="space-y-4">
-                <!-- Transaction ID -->
-                <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                    <span class="text-gray-600 dark:text-gray-400">รหัสธุรกรรม:</span>
-                    <code class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded font-mono text-sm">
-                        {{ $transaction->transaction_hash ?? $transaction->id }}
-                    </code>
-                </div>
-
-                <!-- Type -->
-                <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                    <span class="text-gray-600 dark:text-gray-400">ประเภท:</span>
-                    <span class="font-bold
-                        @if($transaction->type === 'deposit') text-green-600
-                        @elseif($transaction->type === 'withdraw') text-red-600
-                        @else text-blue-600
-                        @endif">
+        {{-- ── ข้อมูลธุรกรรม ─────────────────────────────────── --}}
+        <div class="tp-card" style="padding:22px 24px;">
+            <h3 style="font-size:16px; font-weight:800; color:var(--ink); margin:0 0 18px; display:flex; align-items:center; gap:8px;"><span>📋</span> ข้อมูลธุรกรรม</h3>
+            @php
+                $rowStyle = 'display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 14%, transparent);';
+                $codeStyle = 'padding:5px 10px; background:var(--surf); box-shadow:var(--inset-sm); border-radius:8px; font-family:monospace; font-size:12.5px; color:var(--ink);';
+            @endphp
+            <div>
+                <div style="{{ $rowStyle }}"><span style="color:var(--ink2); font-size:13.5px;">รหัสธุรกรรม:</span><code style="{{ $codeStyle }}">{{ $transaction->transaction_hash ?? $transaction->id }}</code></div>
+                <div style="{{ $rowStyle }}"><span style="color:var(--ink2); font-size:13.5px;">ประเภท:</span>
+                    <span style="font-weight:700; font-size:14px; color:{{ $transaction->type === 'deposit' ? '#5aa07e' : ($transaction->type === 'withdraw' ? '#d9534f' : '#5689b8') }};">
                         @if($transaction->type === 'deposit') 💰 ฝาก
                         @elseif($transaction->type === 'withdraw') 📤 ถอน
                         @elseif($transaction->type === 'transfer') 🔄 โอน
                         @elseif($transaction->type === 'exchange') 💱 แลกเปลี่ยน
-                        @else {{ ucfirst($transaction->type) }}
-                        @endif
+                        @else {{ ucfirst($transaction->type) }} @endif
                     </span>
                 </div>
-
-                <!-- Currency -->
-                <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                    <span class="text-gray-600 dark:text-gray-400">สกุลเงิน:</span>
-                    <span class="font-bold text-gray-800 dark:text-white">{{ strtoupper($transaction->currency ?? 'N/A') }}</span>
-                </div>
-
-                <!-- Amount -->
-                <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                    <span class="text-gray-600 dark:text-gray-400">จำนวน:</span>
-                    <span class="text-2xl font-bold text-gray-800 dark:text-white">
-                        {{ number_format($transaction->amount ?? 0, 8) }} {{ strtoupper($transaction->currency ?? '') }}
+                <div style="{{ $rowStyle }}"><span style="color:var(--ink2); font-size:13.5px;">สกุลเงิน:</span><span style="font-weight:700; color:var(--ink); font-size:14px;">{{ strtoupper($transaction->currency ?? 'N/A') }}</span></div>
+                <div style="{{ $rowStyle }}"><span style="color:var(--ink2); font-size:13.5px;">จำนวน:</span><span class="tp-num" style="font-size:20px; font-weight:800; color:var(--ink);">{{ number_format($transaction->amount ?? 0, 8) }} {{ strtoupper($transaction->currency ?? '') }}</span></div>
+                @if(isset($transaction->fee))<div style="{{ $rowStyle }}"><span style="color:var(--ink2); font-size:13.5px;">ค่าธรรมเนียม:</span><span style="font-weight:700; color:#e0a52e; font-size:14px;">{{ number_format($transaction->fee, 8) }} {{ strtoupper($transaction->currency ?? '') }}</span></div>@endif
+                @if(isset($transaction->net_amount))<div style="{{ $rowStyle }}"><span style="color:var(--ink2); font-size:13.5px;">จำนวนสุทธิ:</span><span class="tp-num" style="font-size:17px; font-weight:800; color:#5aa07e;">{{ number_format($transaction->net_amount, 8) }} {{ strtoupper($transaction->currency ?? '') }}</span></div>@endif
+                @if(isset($transaction->from_address))<div style="{{ $rowStyle }} align-items:flex-start;"><span style="color:var(--ink2); font-size:13.5px;">จาก:</span><code style="{{ $codeStyle }} word-break:break-all; max-width:60%; text-align:right;">{{ $transaction->from_address }}</code></div>@endif
+                @if(isset($transaction->to_address))<div style="{{ $rowStyle }} align-items:flex-start;"><span style="color:var(--ink2); font-size:13.5px;">ถึง:</span><code style="{{ $codeStyle }} word-break:break-all; max-width:60%; text-align:right;">{{ $transaction->to_address }}</code></div>@endif
+                <div style="{{ $rowStyle }}"><span style="color:var(--ink2); font-size:13.5px;">สถานะ:</span>
+                    <span class="tp-pill" style="background:color-mix(in srgb, {{ $stColor }} 18%, transparent); color:{{ $stColor }}; font-size:12.5px; font-weight:700;">
+                        @if($st === 'completed') ✅ สำเร็จ @elseif($st === 'pending') ⏳ รอดำเนินการ @elseif($st === 'failed') ❌ ล้มเหลว @else {{ $st }} @endif
                     </span>
                 </div>
-
-                <!-- Fee -->
-                @if(isset($transaction->fee))
-                    <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-gray-600 dark:text-gray-400">ค่าธรรมเนียม:</span>
-                        <span class="font-bold text-orange-600">
-                            {{ number_format($transaction->fee, 8) }} {{ strtoupper($transaction->currency ?? '') }}
-                        </span>
-                    </div>
-                @endif
-
-                <!-- Net Amount -->
-                @if(isset($transaction->net_amount))
-                    <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-gray-600 dark:text-gray-400">จำนวนสุทธิ:</span>
-                        <span class="text-xl font-bold text-green-600">
-                            {{ number_format($transaction->net_amount, 8) }} {{ strtoupper($transaction->currency ?? '') }}
-                        </span>
-                    </div>
-                @endif
-
-                <!-- From/To Address -->
-                @if(isset($transaction->from_address))
-                    <div class="flex justify-between items-start py-3 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-gray-600 dark:text-gray-400">จาก:</span>
-                        <code class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded font-mono text-xs break-all max-w-md text-right">
-                            {{ $transaction->from_address }}
-                        </code>
-                    </div>
-                @endif
-
-                @if(isset($transaction->to_address))
-                    <div class="flex justify-between items-start py-3 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-gray-600 dark:text-gray-400">ถึง:</span>
-                        <code class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded font-mono text-xs break-all max-w-md text-right">
-                            {{ $transaction->to_address }}
-                        </code>
-                    </div>
-                @endif
-
-                <!-- Status -->
-                <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                    <span class="text-gray-600 dark:text-gray-400">สถานะ:</span>
-                    <span class="px-4 py-2 rounded-full font-bold
-                        @if($transaction->status === 'completed') bg-green-100 text-green-800
-                        @elseif($transaction->status === 'pending') bg-yellow-100 text-yellow-800
-                        @elseif($transaction->status === 'failed') bg-red-100 text-red-800
-                        @else bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white
-                        @endif">
-                        @if($transaction->status === 'completed') ✅ สำเร็จ
-                        @elseif($transaction->status === 'pending') ⏳ รอดำเนินการ
-                        @elseif($transaction->status === 'failed') ❌ ล้มเหลว
-                        @else {{ $transaction->status }}
-                        @endif
-                    </span>
-                </div>
-
-                <!-- Confirmations -->
-                @if(isset($transaction->confirmations))
-                    <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-gray-600 dark:text-gray-400">Confirmations:</span>
-                        <span class="font-bold text-gray-800 dark:text-white">{{ $transaction->confirmations }} / {{ $transaction->required_confirmations ?? 6 }}</span>
-                    </div>
-                @endif
-
-                <!-- Created At -->
-                <div class="flex justify-between items-center py-3">
-                    <span class="text-gray-600 dark:text-gray-400">วันที่ทำรายการ:</span>
-                    <div class="text-right">
-                        <div class="font-bold text-gray-800 dark:text-white">{{ $transaction->created_at->format('d/m/Y') }}</div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">{{ $transaction->created_at->format('H:i:s') }}</div>
-                    </div>
+                @if(isset($transaction->confirmations))<div style="{{ $rowStyle }}"><span style="color:var(--ink2); font-size:13.5px;">Confirmations:</span><span style="font-weight:700; color:var(--ink); font-size:14px;">{{ $transaction->confirmations }} / {{ $transaction->required_confirmations ?? 6 }}</span></div>@endif
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 0;">
+                    <span style="color:var(--ink2); font-size:13.5px;">วันที่ทำรายการ:</span>
+                    <div style="text-align:right;"><div style="font-weight:700; color:var(--ink); font-size:14px;">{{ $transaction->created_at->format('d/m/Y') }}</div><div style="font-size:12px; color:var(--ink2);">{{ $transaction->created_at->format('H:i:s') }}</div></div>
                 </div>
             </div>
         </div>
 
-        <!-- Notes -->
+        {{-- ── หมายเหตุ ─────────────────────────────────────── --}}
         @if(isset($transaction->notes) && $transaction->notes)
-            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 border border-blue-200">
-                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
-                    <span>📝</span> หมายเหตุ
-                </h3>
-                <p class="text-gray-700 dark:text-gray-300">{{ $transaction->notes }}</p>
+            <div class="tp-card" style="padding:20px 22px; box-shadow:var(--inset-sm);">
+                <h3 style="font-size:15px; font-weight:800; color:var(--ink); margin:0 0 10px; display:flex; align-items:center; gap:8px;"><span>📝</span> หมายเหตุ</h3>
+                <p style="color:var(--ink2); font-size:14px; margin:0;">{{ $transaction->notes }}</p>
             </div>
         @endif
 
-        <!-- Blockchain Explorer Link -->
+        {{-- ── Explorer ─────────────────────────────────────── --}}
         @if(isset($transaction->transaction_hash))
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                    <span>🔗</span> Blockchain Explorer
-                </h3>
-                <a href="https://etherscan.io/tx/{{ $transaction->transaction_hash }}"
-                   target="_blank"
-                   class="block px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold text-center transition-all shadow-lg hover:shadow-xl">
-                    🔍 ดูบน Blockchain Explorer →
-                </a>
-                <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">ตรวจสอบรายละเอียดบน Blockchain</p>
+            <div class="tp-card" style="padding:20px 22px;">
+                <h3 style="font-size:15px; font-weight:800; color:var(--ink); margin:0 0 14px; display:flex; align-items:center; gap:8px;"><span>🔗</span> Blockchain Explorer</h3>
+                <a href="https://etherscan.io/tx/{{ $transaction->transaction_hash }}" target="_blank"
+                   class="tp-btn" style="display:block; padding:14px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; text-align:center; text-decoration:none; box-shadow:var(--raise);">🔍 ดูบน Blockchain Explorer →</a>
+                <p style="font-size:11.5px; color:var(--ink2); text-align:center; margin:8px 0 0;">ตรวจสอบรายละเอียดบน Blockchain</p>
             </div>
         @endif
 
-        <!-- Actions -->
-        <div class="flex gap-4">
-            <a href="{{ route('user.crypto-wallet.transactions') }}"
-               class="flex-1 px-6 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-center transition-colors">
-                ← กลับไปรายการธุรกรรม
-            </a>
-
+        {{-- ── Actions ──────────────────────────────────────── --}}
+        <div style="display:flex; flex-wrap:wrap; gap:12px;">
+            <a href="{{ route('user.crypto-wallet.transactions') }}" class="tp-btn" style="flex:1; min-width:180px; padding:14px; border-radius:14px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; text-align:center; text-decoration:none;">← กลับไปรายการธุรกรรม</a>
             @if($transaction->status === 'pending')
-                <button onclick="refreshTransaction()"
-                        class="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors">
-                    🔄 รีเฟรชสถานะ
-                </button>
+                <button type="button" onclick="refreshTransaction()" class="tp-btn" style="flex:1; min-width:160px; padding:14px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; box-shadow:var(--raise); border:none; cursor:pointer;">🔄 รีเฟรชสถานะ</button>
             @endif
         </div>
     @else
-        <!-- No Transaction Found -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-12 text-center">
-            <span class="text-6xl mb-4 block">❌</span>
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">ไม่พบข้อมูลธุรกรรม</h2>
-            <p class="text-gray-600 dark:text-gray-400 mb-6">ไม่สามารถโหลดข้อมูลธุรกรรมได้</p>
-            <a href="{{ route('user.crypto-wallet.transactions') }}"
-               class="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors">
-                ← กลับไปรายการธุรกรรม
-            </a>
+        <div class="tp-card" style="padding:52px 24px; text-align:center;">
+            <span style="font-size:56px; display:block; margin-bottom:14px;">❌</span>
+            <h2 style="font-size:20px; font-weight:800; color:var(--ink); margin:0 0 6px;">ไม่พบข้อมูลธุรกรรม</h2>
+            <p style="color:var(--ink2); font-size:14px; margin:0 0 22px;">ไม่สามารถโหลดข้อมูลธุรกรรมได้</p>
+            <a href="{{ route('user.crypto-wallet.transactions') }}" class="tp-btn" style="display:inline-block; padding:11px 24px; border-radius:13px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:14px; box-shadow:var(--raise);">← กลับไปรายการธุรกรรม</a>
         </div>
     @endif
 </div>

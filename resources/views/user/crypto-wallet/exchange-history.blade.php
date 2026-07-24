@@ -1,277 +1,136 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ประวัติการแลกเปลี่ยน')
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
-    {{-- Premium Hero Header (Pink-Fuchsia for Exchange History) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 dark:from-pink-800 dark:via-fuchsia-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8 mb-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-repeat"></i>
-            </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-exchange-alt text-3xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            💱 ประวัติการแลกเปลี่ยน
-                        </h1>
-                        <p class="text-pink-100 mt-1">
-                            ธุรกรรมแลกเปลี่ยน THB ↔ Crypto ทั้งหมด
-                        </p>
-                    </div>
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--deep1);"><i class="fas fa-exchange-alt"></i></span>
+                <div>
+                    <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">💱 ประวัติการแลกเปลี่ยน</h1>
+                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">ธุรกรรมแลกเปลี่ยน THB ↔ Crypto ทั้งหมด</div>
                 </div>
-                <a href="{{ route('user.crypto-wallet.exchange') }}"
-                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2">
-                    <i class="fas fa-arrow-left"></i>
-                    <span class="hidden md:inline">กลับหน้าแลกเปลี่ยน</span>
-                </a>
             </div>
+            <a href="{{ route('user.crypto-wallet.exchange') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
+                <i class="fas fa-arrow-left"></i> <span>กลับหน้าแลกเปลี่ยน</span>
+            </a>
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
-        <form method="GET" action="{{ route('user.crypto-wallet.exchange.history') }}" class="grid md:grid-cols-4 gap-4">
+    {{-- ── ตัวกรอง ───────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px 22px;">
+        <form method="GET" action="{{ route('user.crypto-wallet.exchange.history') }}" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; align-items:end;">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ประเภท</label>
-                <select name="type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100">
+                <label style="display:block; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px;">ประเภท</label>
+                <select name="type" style="width:100%; padding:10px 12px; border-radius:11px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:13.5px;">
                     <option value="">ทั้งหมด</option>
                     <option value="buy" {{ request('type') === 'buy' ? 'selected' : '' }}>ซื้อ Crypto</option>
                     <option value="sell" {{ request('type') === 'sell' ? 'selected' : '' }}>ขาย Crypto</option>
                 </select>
             </div>
-
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สกุลเงิน</label>
-                <select name="currency" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100">
+                <label style="display:block; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px;">สกุลเงิน</label>
+                <select name="currency" style="width:100%; padding:10px 12px; border-radius:11px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:13.5px;">
                     <option value="">ทั้งหมด</option>
                     @foreach($currencies as $curr)
                         <option value="{{ $curr->code }}" {{ request('currency') === $curr->code ? 'selected' : '' }}>{{ $curr->code }}</option>
                     @endforeach
                 </select>
             </div>
-
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สถานะ</label>
-                <select name="status" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100">
+                <label style="display:block; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px;">สถานะ</label>
+                <select name="status" style="width:100%; padding:10px 12px; border-radius:11px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:13.5px;">
                     <option value="">ทั้งหมด</option>
                     <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>สำเร็จ</option>
                     <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>รอดำเนินการ</option>
                     <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>ล้มเหลว</option>
                 </select>
             </div>
-
-            <div class="flex items-end">
-                <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-2 rounded-lg font-medium hover:from-amber-600 hover:to-orange-700 transition-all">
-                    🔍 กรอง
-                </button>
-            </div>
+            <button type="submit" class="tp-btn" style="padding:11px; border-radius:12px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:14px; box-shadow:var(--raise);">🔍 กรอง</button>
         </form>
     </div>
 
-    <!-- Exchange History List -->
-    <div class="space-y-4">
-        @forelse($exchanges as $exchange)
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="flex items-center gap-3">
-                        @if($exchange->type === 'buy')
-                            <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white text-xl">
-                                🛒
-                            </div>
-                        @else
-                            <div class="w-12 h-12 bg-gradient-to-br from-red-400 to-rose-500 rounded-full flex items-center justify-center text-white text-xl">
-                                💰
-                            </div>
-                        @endif
-
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">
-                                @if($exchange->type === 'buy')
-                                    ซื้อ {{ $exchange->to_currency_code }}
-                                @else
-                                    ขาย {{ $exchange->from_currency_code }}
-                                @endif
-                            </h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                {{ $exchange->created_at->format('d/m/Y H:i') }}
-                            </p>
-                        </div>
-                    </div>
-
+    {{-- ── รายการ ─────────────────────────────────────────────── --}}
+    @forelse($exchanges as $exchange)
+        @php
+            $isBuy = $exchange->type === 'buy';
+            $exStatusColor = ['completed' => '#5aa07e', 'pending' => '#e0a52e', 'failed' => '#d9534f'];
+            $exc = $exStatusColor[$exchange->status] ?? '#9a8f7c';
+            $exLabel = ['completed' => '✓ สำเร็จ', 'pending' => '⏳ รอดำเนินการ', 'failed' => '✕ ล้มเหลว'][$exchange->status] ?? $exchange->status;
+        @endphp
+        <div class="tp-card" style="padding:22px 24px;">
+            {{-- head --}}
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="tp-tile" style="width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px;">{{ $isBuy ? '🛒' : '💰' }}</span>
                     <div>
-                        @if($exchange->status === 'completed')
-                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
-                                ✓ สำเร็จ
-                            </span>
-                        @elseif($exchange->status === 'pending')
-                            <span class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-sm font-medium">
-                                ⏳ รอดำเนินการ
-                            </span>
-                        @elseif($exchange->status === 'failed')
-                            <span class="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-sm font-medium">
-                                ✕ ล้มเหลว
-                            </span>
-                        @endif
+                        <h3 style="font-size:16px; font-weight:800; color:var(--ink); margin:0;">{{ $isBuy ? 'ซื้อ ' . $exchange->to_currency_code : 'ขาย ' . $exchange->from_currency_code }}</h3>
+                        <p style="font-size:12.5px; color:var(--ink2); margin:2px 0 0;">{{ $exchange->created_at->format('d/m/Y H:i') }}</p>
                     </div>
                 </div>
-
-                <!-- Exchange Summary -->
-                <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4 mb-4">
-                    <div class="flex items-center justify-between">
-                        <div class="text-center flex-1">
-                            <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">จาก</div>
-                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                                {{ number_format($exchange->from_amount, $exchange->from_currency_type === 'crypto' ? 8 : 2) }}
-                            </div>
-                            <div class="flex items-center justify-center gap-2 mt-2">
-                                @php
-                                    $fromCode = strtolower($exchange->from_currency_code);
-                                    $fromIconPath = public_path('icons/cryptocurrency/' . $fromCode . '.svg');
-                                @endphp
-                                @if($exchange->from_currency_type === 'crypto' && file_exists($fromIconPath))
-                                    <img src="{{ asset('icons/cryptocurrency/' . $fromCode . '.svg') }}"
-                                         alt="{{ $exchange->from_currency_code }}"
-                                         class="w-5 h-5">
-                                @endif
-                                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {{ $exchange->from_currency_code }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="px-4">
-                            <div class="text-2xl">→</div>
-                        </div>
-
-                        <div class="text-center flex-1">
-                            <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">ไปยัง</div>
-                            <div class="text-2xl font-bold {{ $exchange->type === 'buy' ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400' }}">
-                                {{ number_format($exchange->to_amount, $exchange->to_currency_type === 'crypto' ? 8 : 2) }}
-                            </div>
-                            <div class="flex items-center justify-center gap-2 mt-2">
-                                @php
-                                    $toCode = strtolower($exchange->to_currency_code);
-                                    $toIconPath = public_path('icons/cryptocurrency/' . $toCode . '.svg');
-                                @endphp
-                                @if($exchange->to_currency_type === 'crypto' && file_exists($toIconPath))
-                                    <img src="{{ asset('icons/cryptocurrency/' . $toCode . '.svg') }}"
-                                         alt="{{ $exchange->to_currency_code }}"
-                                         class="w-5 h-5">
-                                @endif
-                                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {{ $exchange->to_currency_code }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Details -->
-                <div class="grid md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <div class="flex justify-between mb-2">
-                            <span class="text-gray-600 dark:text-gray-400">อัตราแลกเปลี่ยน:</span>
-                            <span class="font-semibold text-gray-800 dark:text-gray-100">
-                                1 {{ $exchange->to_currency_type === 'crypto' ? $exchange->to_currency_code : $exchange->from_currency_code }}
-                                = ฿{{ number_format($exchange->exchange_rate, 2) }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">ค่าธรรมเนียม:</span>
-                            <span class="text-red-600 dark:text-red-400">
-                                {{ number_format($exchange->fee_amount, 2) }} {{ $exchange->fee_currency }}
-                                ({{ number_format($exchange->fee_percentage, 2) }}%)
-                            </span>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between mb-2">
-                            <span class="text-gray-600 dark:text-gray-400">Exchange ID:</span>
-                            <span class="font-mono text-xs text-gray-800 dark:text-gray-100">
-                                {{ substr($exchange->exchange_id, 0, 16) }}...
-                            </span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">เวลาทำรายการ:</span>
-                            <span class="text-gray-800 dark:text-gray-100">
-                                {{ $exchange->created_at->diffForHumans() }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Final Amount -->
-                <div class="mt-4 pt-4 border-t dark:border-gray-700">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-700 dark:text-gray-300 font-medium">
-                            @if($exchange->type === 'buy')
-                                จำนวนที่ได้รับ:
-                            @else
-                                จำนวนที่ได้รับ (หลังหักค่าธรรมเนียม):
-                            @endif
-                        </span>
-                        <span class="text-xl font-bold {{ $exchange->type === 'buy' ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400' }}">
-                            {{ number_format($exchange->final_to_amount, $exchange->to_currency_type === 'crypto' ? 8 : 2) }}
-                            {{ $exchange->to_currency_code }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Error Message -->
-                @if($exchange->status === 'failed' && $exchange->error_message)
-                    <div class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                        <div class="text-sm font-medium text-red-900 dark:text-red-300 mb-1">ข้อผิดพลาด:</div>
-                        <div class="text-sm text-red-800 dark:text-red-400">{{ $exchange->error_message }}</div>
-                    </div>
-                @endif
+                <span class="tp-pill" style="background:color-mix(in srgb, {{ $exc }} 18%, transparent); color:{{ $exc }}; font-size:12px; font-weight:700;">{{ $exLabel }}</span>
             </div>
-        @empty
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-12 text-center">
-                <div class="text-6xl mb-4">💱</div>
-                <p class="text-gray-500 dark:text-gray-400 mb-4">ยังไม่มีประวัติการแลกเปลี่ยน</p>
-                <a href="{{ route('user.crypto-wallet.exchange') }}"
-                   class="inline-block bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:from-amber-600 hover:to-orange-700 transition-all">
-                    เริ่มแลกเปลี่ยน
-                </a>
-            </div>
-        @endforelse
-    </div>
 
-    <!-- Pagination -->
-    @if($exchanges->hasPages())
-        <div class="mt-6">
-            {{ $exchanges->links() }}
+            {{-- from → to --}}
+            <div class="tp-card" style="padding:16px 18px; box-shadow:var(--inset-sm); margin-bottom:14px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <div style="text-align:center; flex:1;">
+                        <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">จาก</div>
+                        <div class="tp-num" style="font-size:20px; font-weight:800; color:var(--ink);">{{ number_format($exchange->from_amount, $exchange->from_currency_type === 'crypto' ? 8 : 2) }}</div>
+                        <div style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px;">
+                            @php $fromCode = strtolower($exchange->from_currency_code); $fromIconPath = public_path('icons/cryptocurrency/' . $fromCode . '.svg'); @endphp
+                            @if($exchange->from_currency_type === 'crypto' && file_exists($fromIconPath))<img src="{{ asset('icons/cryptocurrency/' . $fromCode . '.svg') }}" alt="{{ $exchange->from_currency_code }}" style="width:20px; height:20px;">@endif
+                            <span style="font-size:13px; font-weight:600; color:var(--ink2);">{{ $exchange->from_currency_code }}</span>
+                        </div>
+                    </div>
+                    <div style="font-size:22px; color:var(--accent1); padding:0 12px;">→</div>
+                    <div style="text-align:center; flex:1;">
+                        <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">ไปยัง</div>
+                        <div class="tp-num" style="font-size:20px; font-weight:800; color:{{ $isBuy ? '#5aa07e' : '#5689b8' }};">{{ number_format($exchange->to_amount, $exchange->to_currency_type === 'crypto' ? 8 : 2) }}</div>
+                        <div style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px;">
+                            @php $toCode = strtolower($exchange->to_currency_code); $toIconPath = public_path('icons/cryptocurrency/' . $toCode . '.svg'); @endphp
+                            @if($exchange->to_currency_type === 'crypto' && file_exists($toIconPath))<img src="{{ asset('icons/cryptocurrency/' . $toCode . '.svg') }}" alt="{{ $exchange->to_currency_code }}" style="width:20px; height:20px;">@endif
+                            <span style="font-size:13px; font-weight:600; color:var(--ink2);">{{ $exchange->to_currency_code }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- details --}}
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px 20px; font-size:13px;">
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">อัตราแลกเปลี่ยน:</span><span style="font-weight:700; color:var(--ink);">1 {{ $exchange->to_currency_type === 'crypto' ? $exchange->to_currency_code : $exchange->from_currency_code }} = ฿{{ number_format($exchange->exchange_rate, 2) }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">Exchange ID:</span><span style="font-family:monospace; font-size:11.5px; color:var(--ink);">{{ substr($exchange->exchange_id, 0, 16) }}...</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">ค่าธรรมเนียม:</span><span style="color:#d9534f;">{{ number_format($exchange->fee_amount, 2) }} {{ $exchange->fee_currency }} ({{ number_format($exchange->fee_percentage, 2) }}%)</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">เวลาทำรายการ:</span><span style="color:var(--ink);">{{ $exchange->created_at->diffForHumans() }}</span></div>
+            </div>
+
+            {{-- final --}}
+            <div style="margin-top:14px; padding-top:14px; border-top:1px solid color-mix(in srgb, var(--ink2) 15%, transparent); display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                <span style="color:var(--ink2); font-weight:600; font-size:13.5px;">{{ $isBuy ? 'จำนวนที่ได้รับ:' : 'จำนวนที่ได้รับ (หลังหักค่าธรรมเนียม):' }}</span>
+                <span class="tp-num" style="font-size:18px; font-weight:800; color:{{ $isBuy ? '#5aa07e' : '#5689b8' }};">{{ number_format($exchange->final_to_amount, $exchange->to_currency_type === 'crypto' ? 8 : 2) }} {{ $exchange->to_currency_code }}</span>
+            </div>
+
+            @if($exchange->status === 'failed' && $exchange->error_message)
+                <div class="tp-card" style="margin-top:14px; padding:12px 14px; box-shadow:var(--inset-sm); background:color-mix(in srgb, #d9534f 8%, transparent);">
+                    <div style="font-size:13px; font-weight:700; color:#d9534f; margin-bottom:3px;">ข้อผิดพลาด:</div>
+                    <div style="font-size:13px; color:#d9534f;">{{ $exchange->error_message }}</div>
+                </div>
+            @endif
         </div>
+    @empty
+        <div class="tp-card" style="padding:52px 24px; text-align:center;">
+            <div style="font-size:56px; margin-bottom:14px;">💱</div>
+            <p style="color:var(--ink2); font-size:14px; margin:0 0 20px;">ยังไม่มีประวัติการแลกเปลี่ยน</p>
+            <a href="{{ route('user.crypto-wallet.exchange') }}" class="tp-btn" style="display:inline-block; padding:11px 24px; border-radius:13px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:14px; box-shadow:var(--raise);">เริ่มแลกเปลี่ยน</a>
+        </div>
+    @endforelse
+
+    @if($exchanges->hasPages())
+        <div>{{ $exchanges->links() }}</div>
     @endif
 </div>
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush

@@ -1,183 +1,113 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ฝาก ' . $currency->code)
 
 @section('content')
-<div class="container mx-auto px-4 py-6 max-w-2xl">
-    {{-- Premium Hero Header (Teal-Cyan for Deposit Currency) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 dark:from-teal-800 dark:via-cyan-800 dark:to-blue-800 rounded-2xl shadow-2xl p-8 mb-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px; max-width:720px; margin-inline:auto; width:100%;">
 
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-qrcode"></i>
-            </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                <div class="flex items-center gap-4">
-                    @php
-                        $iconPath = public_path('icons/cryptocurrency/' . strtolower($currency->code) . '.svg');
-                    @endphp
-                    @if(file_exists($iconPath))
-                        <div class="glass-fusion p-3 rounded-2xl">
-                            <img src="{{ asset('icons/cryptocurrency/' . strtolower($currency->code) . '.svg') }}"
-                                 alt="{{ $currency->code }}"
-                                 class="w-14 h-14">
-                        </div>
-                    @else
-                        <div class="glass-fusion p-4 rounded-2xl">
-                            <i class="fas fa-coins text-3xl text-white drop-shadow-lg"></i>
-                        </div>
-                    @endif
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            📥 ฝาก {{ $currency->code }}
-                        </h1>
-                        <p class="text-teal-100 mt-1">
-                            {{ $currency->name }} ({{ strtoupper($currency->network) }})
-                        </p>
-                    </div>
-                </div>
-                <a href="{{ route('user.crypto-wallet.deposit') }}"
-                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2 justify-center lg:justify-start">
-                    <i class="fas fa-arrow-left"></i>
-                    <span class="hidden md:inline">เลือกสกุลเงินอื่น</span>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Deposit Address Card -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 mb-6">
-        <div class="text-center mb-6">
-            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">ที่อยู่กระเป๋าสำหรับฝาก</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">สแกน QR Code หรือคัดลอกที่อยู่ด้านล่าง</p>
-        </div>
-
-        <!-- QR Code -->
-        <div class="flex justify-center mb-6">
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-                @if($depositAddress && $depositAddress->qr_code)
-                    <img src="{{ $depositAddress->qr_code }}" alt="QR Code" class="w-64 h-64">
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    @php $iconPath = public_path('icons/cryptocurrency/' . strtolower($currency->code) . '.svg'); @endphp
+    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                @if(file_exists($iconPath))
+                    <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center;"><img src="{{ asset('icons/cryptocurrency/' . strtolower($currency->code) . '.svg') }}" alt="{{ $currency->code }}" style="width:38px; height:38px;"></span>
                 @else
-                    <div class="w-64 h-64 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded-lg">
-                        <div class="text-center">
-                            <div class="text-4xl mb-2">📱</div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">QR Code จะสร้างเร็วๆ นี้</p>
-                        </div>
+                    <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--deep1);"><i class="fas fa-coins"></i></span>
+                @endif
+                <div>
+                    <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">📥 ฝาก {{ $currency->code }}</h1>
+                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">{{ $currency->name }} ({{ strtoupper($currency->network) }})</div>
+                </div>
+            </div>
+            <a href="{{ route('user.crypto-wallet.deposit') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
+                <i class="fas fa-arrow-left"></i> <span>เลือกสกุลเงินอื่น</span>
+            </a>
+        </div>
+    </div>
+
+    {{-- ── ที่อยู่ + QR ───────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:28px 24px;">
+        <div style="text-align:center; margin-bottom:22px;">
+            <h3 style="font-size:17px; font-weight:800; color:var(--ink); margin:0 0 5px;">ที่อยู่กระเป๋าสำหรับฝาก</h3>
+            <p style="font-size:13px; color:var(--ink2); margin:0;">สแกน QR Code หรือคัดลอกที่อยู่ด้านล่าง</p>
+        </div>
+
+        <div style="display:flex; justify-content:center; margin-bottom:22px;">
+            <div class="tp-card" style="padding:20px; box-shadow:var(--inset-sm);">
+                @if($depositAddress && $depositAddress->qr_code)
+                    <img src="{{ $depositAddress->qr_code }}" alt="QR Code" style="width:240px; height:240px; display:block;">
+                @else
+                    <div style="width:240px; height:240px; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--ink2) 10%, transparent); border-radius:12px;">
+                        <div style="text-align:center;"><div style="font-size:36px; margin-bottom:8px;">📱</div><p style="font-size:13px; color:var(--ink2); margin:0;">QR Code จะสร้างเร็วๆ นี้</p></div>
                     </div>
                 @endif
             </div>
         </div>
 
-        <!-- Address -->
-        <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ที่อยู่กระเป๋า (Wallet Address)</label>
-            <div class="flex gap-2">
-                <input type="text"
-                       id="depositAddress"
-                       value="{{ $depositAddress->address }}"
-                       readonly
-                       class="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-mono text-sm text-gray-800 dark:text-gray-100">
-                <button onclick="copyAddress()"
-                        class="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg font-medium hover:from-amber-600 hover:to-orange-700 transition-all whitespace-nowrap">
-                    📋 คัดลอก
-                </button>
+        <div style="margin-bottom:20px;">
+            <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">ที่อยู่กระเป๋า (Wallet Address)</label>
+            <div style="display:flex; gap:9px; flex-wrap:wrap;">
+                <input type="text" id="depositAddress" value="{{ $depositAddress->address }}" readonly
+                       style="flex:1; min-width:200px; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-family:monospace; font-size:13px;">
+                <button type="button" onclick="copyAddress()" class="tp-btn" style="padding:12px 20px; border-radius:12px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:14px; box-shadow:var(--raise); border:none; cursor:pointer; white-space:nowrap;">📋 คัดลอก</button>
             </div>
-            <p id="copySuccess" class="text-green-600 dark:text-green-400 text-sm mt-2 hidden">✓ คัดลอกแล้ว!</p>
+            <p id="copySuccess" class="hidden" style="color:#5aa07e; font-size:13px; margin:8px 0 0;">✓ คัดลอกแล้ว!</p>
         </div>
 
-        <!-- Network Info -->
-        <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
-            <div class="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                    <span class="text-gray-600 dark:text-gray-400">เครือข่าย:</span>
-                    <span class="font-bold text-gray-800 dark:text-gray-100 ml-2 uppercase">{{ $currency->network }}</span>
-                </div>
-                <div>
-                    <span class="text-gray-600 dark:text-gray-400">Token Standard:</span>
-                    <span class="font-bold text-gray-800 dark:text-gray-100 ml-2">{{ $currency->token_standard }}</span>
-                </div>
+        <div class="tp-card" style="padding:16px 18px; box-shadow:var(--inset-sm);">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; font-size:13px;">
+                <div><span style="color:var(--ink2);">เครือข่าย:</span> <span style="font-weight:700; color:var(--ink); text-transform:uppercase;">{{ $currency->network }}</span></div>
+                <div><span style="color:var(--ink2);">Token Standard:</span> <span style="font-weight:700; color:var(--ink);">{{ $currency->token_standard }}</span></div>
                 @if($currency->contract_address)
-                <div class="col-span-2">
-                    <span class="text-gray-600 dark:text-gray-400">Contract Address:</span>
-                    <div class="font-mono text-xs text-gray-800 dark:text-gray-100 mt-1 break-all">{{ $currency->contract_address }}</div>
-                </div>
+                    <div style="grid-column:1/-1;"><span style="color:var(--ink2);">Contract Address:</span><div style="font-family:monospace; font-size:11.5px; color:var(--ink); margin-top:3px; word-break:break-all;">{{ $currency->contract_address }}</div></div>
                 @endif
             </div>
         </div>
     </div>
 
-    <!-- Deposit Info -->
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6">
-        <h4 class="font-bold text-blue-900 dark:text-blue-300 mb-3">ข้อมูลการฝาก</h4>
-        <div class="space-y-2 text-sm text-blue-800 dark:text-blue-300">
-            <div class="flex justify-between">
-                <span>ฝากขั้นต่ำ:</span>
-                <span class="font-semibold">{{ number_format($currency->min_deposit, 8) }} {{ $currency->code }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span>การยืนยันที่ต้องการ:</span>
-                <span class="font-semibold">{{ $currency->confirmations_required }} confirmations</span>
-            </div>
-            <div class="flex justify-between">
-                <span>เวลาโดยประมาณ:</span>
-                <span class="font-semibold">
-                    @if($currency->network === 'bitcoin')
-                        ~60 นาที
-                    @elseif($currency->network === 'ethereum')
-                        ~15-30 นาที
-                    @elseif($currency->network === 'bsc')
-                        ~3-5 นาที
-                    @elseif($currency->network === 'polygon')
-                        ~5-10 นาที
-                    @else
-                        ขึ้นอยู่กับเครือข่าย
-                    @endif
-                </span>
-            </div>
+    {{-- ── ข้อมูลการฝาก ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px 22px; box-shadow:var(--inset-sm);">
+        <h4 style="font-weight:800; color:var(--ink); margin:0 0 12px; font-size:14.5px;">ข้อมูลการฝาก</h4>
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:13.5px;">
+            <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">ฝากขั้นต่ำ:</span><span style="font-weight:700; color:var(--ink);">{{ number_format($currency->min_deposit, 8) }} {{ $currency->code }}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">การยืนยันที่ต้องการ:</span><span style="font-weight:700; color:var(--ink);">{{ $currency->confirmations_required }} confirmations</span></div>
+            <div style="display:flex; justify-content:space-between;"><span style="color:var(--ink2);">เวลาโดยประมาณ:</span><span style="font-weight:700; color:var(--ink);">
+                @if($currency->network === 'bitcoin') ~60 นาที
+                @elseif($currency->network === 'ethereum') ~15-30 นาที
+                @elseif($currency->network === 'bsc') ~3-5 นาที
+                @elseif($currency->network === 'polygon') ~5-10 นาที
+                @else ขึ้นอยู่กับเครือข่าย @endif
+            </span></div>
         </div>
     </div>
 
-    <!-- Statistics -->
+    {{-- ── สถิติการฝาก ─────────────────────────────────────── --}}
     @if($depositAddress->total_deposits > 0)
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
-        <h4 class="font-bold text-gray-800 dark:text-gray-100 mb-3">สถิติการฝาก</h4>
-        <div class="grid grid-cols-2 gap-4 text-center">
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div class="text-2xl font-bold text-amber-600">{{ $depositAddress->total_deposits }}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">จำนวนครั้ง</div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div class="text-2xl font-bold text-amber-600">{{ number_format($depositAddress->total_amount_received, 8) }}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">ยอดรวม {{ $currency->code }}</div>
+        <div class="tp-card" style="padding:20px 22px;">
+            <h4 style="font-weight:800; color:var(--ink); margin:0 0 12px; font-size:14.5px;">สถิติการฝาก</h4>
+            <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:12px; text-align:center;">
+                <div class="tp-card" style="padding:16px; box-shadow:var(--inset-sm);">
+                    <div class="tp-num" style="font-size:22px; font-weight:800; color:var(--deep1);">{{ $depositAddress->total_deposits }}</div>
+                    <div style="font-size:12.5px; color:var(--ink2);">จำนวนครั้ง</div>
+                </div>
+                <div class="tp-card" style="padding:16px; box-shadow:var(--inset-sm);">
+                    <div class="tp-num" style="font-size:22px; font-weight:800; color:var(--deep1);">{{ number_format($depositAddress->total_amount_received, 8) }}</div>
+                    <div style="font-size:12.5px; color:var(--ink2);">ยอดรวม {{ $currency->code }}</div>
+                </div>
             </div>
         </div>
-    </div>
     @endif
 
-    <!-- Important Warning -->
-    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
-        <h4 class="font-bold text-red-900 dark:text-red-300 mb-3 flex items-center">
-            <span class="text-xl mr-2">⚠️</span>
-            คำเตือนสำคัญ!
-        </h4>
-        <ul class="list-disc list-inside space-y-2 text-red-800 dark:text-red-300 text-sm">
-            <li><strong>ส่งเฉพาะ {{ $currency->code }}</strong> บนเครือข่าย <strong>{{ strtoupper($currency->network) }}</strong> เท่านั้น</li>
+    {{-- ── คำเตือน ───────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:20px 22px; box-shadow:var(--inset-sm); background:color-mix(in srgb, #d9534f 8%, transparent);">
+        <h4 style="font-weight:800; color:#d9534f; margin:0 0 12px; font-size:14.5px; display:flex; align-items:center; gap:8px;"><span>⚠️</span> คำเตือนสำคัญ!</h4>
+        <ul style="margin:0; padding-left:18px; color:#d9534f; font-size:13px; display:flex; flex-direction:column; gap:6px;">
+            <li>ส่งเฉพาะ <strong>{{ $currency->code }}</strong> บนเครือข่าย <strong>{{ strtoupper($currency->network) }}</strong> เท่านั้น</li>
             <li>การส่งเหรียญอื่นหรือใช้เครือข่ายผิด จะทำให้<strong>สูญหายถาวร</strong></li>
             <li>ต้องส่งมากกว่า <strong>{{ number_format($currency->min_deposit, 8) }} {{ $currency->code }}</strong> ขึ้นไป</li>
             <li>เหรียญจะเข้าอัตโนมัติหลังได้รับการยืนยันครบ</li>
-            @if($currency->explorer_url)
-            <li>ตรวจสอบสถานะได้ที่: <a href="{{ $currency->explorer_url }}" target="_blank" class="underline">Block Explorer</a></li>
-            @endif
+            @if($currency->explorer_url)<li>ตรวจสอบสถานะได้ที่: <a href="{{ $currency->explorer_url }}" target="_blank" style="text-decoration:underline; color:#d9534f;">Block Explorer</a></li>@endif
         </ul>
     </div>
 </div>
@@ -187,27 +117,9 @@ function copyAddress() {
     const addressInput = document.getElementById('depositAddress');
     addressInput.select();
     document.execCommand('copy');
-
     const successMsg = document.getElementById('copySuccess');
     successMsg.classList.remove('hidden');
-
-    setTimeout(() => {
-        successMsg.classList.add('hidden');
-    }, 3000);
+    setTimeout(() => { successMsg.classList.add('hidden'); }, 3000);
 }
 </script>
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
