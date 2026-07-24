@@ -1,155 +1,118 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
 @section('title', 'ประวัติการถอนเงิน')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="relative z-10">
-            <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('seller.wallet.index') }}" class="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
-                    ← กลับ
-                </a>
-                <h1 class="text-3xl md:text-4xl font-bold">📋 ประวัติการถอนเงิน</h1>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <a href="{{ route('seller.wallet.index') }}" class="tp-btn" style="width:40px; height:40px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); text-decoration:none; flex-shrink:0;">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 style="font-size:clamp(19px,3.5vw,24px); font-weight:800; margin:0; color:var(--ink);">📋 ประวัติการถอนเงิน</h1>
+                <div style="font-size:13px; color:var(--ink2); margin-top:2px;">ดูรายการคำขอถอนเงินทั้งหมดของร้านค้า</div>
             </div>
-            <p class="text-indigo-100">ดูรายการคำขอถอนเงินทั้งหมดของร้านค้า</p>
         </div>
     </div>
 
-    <!-- Success Message -->
+    {{-- ── Success / Error ───────────────────────────────────── --}}
     @if(session('success'))
-    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-        <div class="flex gap-3">
-            <span class="text-xl">✅</span>
-            <div>
-                <p class="text-green-800 font-medium">{{ session('success') }}</p>
-            </div>
+        <div class="tp-card" style="padding:16px 20px; background:color-mix(in srgb, #5aa07e 12%, transparent); border:1px solid color-mix(in srgb, #5aa07e 32%, transparent);">
+            <div style="display:flex; gap:12px; align-items:center;"><span style="font-size:20px;">✅</span><p style="color:var(--ink); font-weight:600; font-size:14px; margin:0;">{{ session('success') }}</p></div>
         </div>
-    </div>
     @endif
-
-    <!-- Error Message -->
     @if($errors->any())
-    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-        <div class="flex gap-3">
-            <span class="text-xl">⚠️</span>
-            <div>
-                @foreach($errors->all() as $error)
-                    <p class="text-red-800 font-medium">{{ $error }}</p>
-                @endforeach
+        <div class="tp-card" style="padding:16px 20px; background:color-mix(in srgb, #d9534f 10%, transparent); border:1px solid color-mix(in srgb, #d9534f 32%, transparent);">
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+                <span style="font-size:20px;">⚠️</span>
+                <div>@foreach($errors->all() as $error)<p style="color:#d9534f; font-weight:600; font-size:13.5px; margin:0 0 3px;">{{ $error }}</p>@endforeach</div>
             </div>
         </div>
-    </div>
     @endif
 
-    <!-- Quick Actions -->
-    <div class="flex gap-4">
-        <a href="{{ route('seller.wallet.withdraw') }}"
-           class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
+    {{-- ── ปุ่มถอนเงินใหม่ ───────────────────────────────────── --}}
+    <div>
+        <a href="{{ route('seller.wallet.withdraw') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:14px; box-shadow:var(--raise);">
             💸 ถอนเงินใหม่
         </a>
     </div>
 
-    <!-- Withdrawals Table -->
-    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+    {{-- ── ตารางประวัติ ─────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
         @if($withdrawals->isEmpty())
-            <div class="text-center py-16">
-                <span class="text-6xl block mb-4">📭</span>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">ยังไม่มีประวัติการถอนเงิน</h3>
-                <p class="text-gray-500 mb-6">คุณยังไม่เคยทำการถอนเงิน</p>
-                <a href="{{ route('seller.wallet.withdraw') }}"
-                   class="inline-block px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
-                    ถอนเงินเลย
-                </a>
+            <div style="text-align:center; padding:60px 24px;">
+                <span style="font-size:56px; display:block; margin-bottom:14px;">📭</span>
+                <h3 style="font-size:18px; font-weight:800; color:var(--ink); margin:0 0 6px;">ยังไม่มีประวัติการถอนเงิน</h3>
+                <p style="color:var(--ink2); font-size:14px; margin:0 0 22px;">คุณยังไม่เคยทำการถอนเงิน</p>
+                <a href="{{ route('seller.wallet.withdraw') }}" class="tp-btn" style="display:inline-block; padding:11px 22px; border-radius:13px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:14px; box-shadow:var(--raise);">ถอนเงินเลย</a>
             </div>
         @else
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">หมายเลขคำขอ</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">วันที่</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">ช่องทางรับเงิน</th>
-                            <th class="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase">จำนวนเงิน</th>
-                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">สถานะ</th>
-                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">จัดการ</th>
+            @php
+                $wStatusColor = ['pending' => '#e0a52e', 'processing' => '#5689b8', 'completed' => '#5aa07e', 'approved' => '#5aa07e', 'rejected' => '#d9534f', 'cancelled' => '#9a8f7c'];
+            @endphp
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; min-width:760px;">
+                    <thead>
+                        <tr style="background:color-mix(in srgb, var(--ink2) 8%, transparent);">
+                            <th style="padding:14px 20px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">หมายเลขคำขอ</th>
+                            <th style="padding:14px 20px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">วันที่</th>
+                            <th style="padding:14px 20px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">ช่องทางรับเงิน</th>
+                            <th style="padding:14px 20px; text-align:right; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">จำนวนเงิน</th>
+                            <th style="padding:14px 20px; text-align:center; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">สถานะ</th>
+                            <th style="padding:14px 20px; text-align:center; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">จัดการ</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200">
+                    <tbody>
                         @foreach($withdrawals as $withdrawal)
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4">
-                                <p class="font-medium text-gray-900">{{ $withdrawal->request_id }}</p>
-                                @if($withdrawal->user_note)
-                                    <p class="text-xs text-gray-500 mt-1">{{ Str::limit($withdrawal->user_note, 30) }}</p>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4">
-                                <p class="text-gray-900">{{ $withdrawal->created_at->format('d/m/Y') }}</p>
-                                <p class="text-xs text-gray-500">{{ $withdrawal->created_at->format('H:i') }} น.</p>
-                            </td>
-                            <td class="px-6 py-4">
-                                @if($withdrawal->paymentMethod)
-                                    <p class="text-gray-900">{{ $withdrawal->paymentMethod->bank_name ?? $withdrawal->payment_type_label }}</p>
-                                    <p class="text-xs text-gray-500">{{ $withdrawal->paymentMethod->account_name ?? '-' }}</p>
-                                @else
-                                    <p class="text-gray-500">{{ $withdrawal->payment_type_label }}</p>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <p class="font-bold text-gray-900">฿{{ number_format($withdrawal->amount, 2) }}</p>
-                                @if($withdrawal->fee > 0)
-                                    <p class="text-xs text-gray-500">ค่าธรรมเนียม: ฿{{ number_format($withdrawal->fee, 2) }}</p>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full
-                                    @if($withdrawal->status === 'pending') bg-yellow-100 text-yellow-800
-                                    @elseif($withdrawal->status === 'processing') bg-blue-100 text-blue-800
-                                    @elseif($withdrawal->status === 'completed') bg-green-100 text-green-800
-                                    @elseif($withdrawal->status === 'approved') bg-green-100 text-green-800
-                                    @elseif($withdrawal->status === 'rejected') bg-red-100 text-red-800
-                                    @elseif($withdrawal->status === 'cancelled') bg-gray-100 text-gray-800
-                                    @else bg-gray-100 text-gray-800
-                                    @endif">
-                                    {{ $withdrawal->status_label }}
-                                </span>
-                                @if($withdrawal->status === 'rejected' && $withdrawal->rejection_reason)
-                                    <p class="text-xs text-red-600 mt-1">{{ Str::limit($withdrawal->rejection_reason, 30) }}</p>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                @if($withdrawal->status === 'pending')
-                                    <form action="{{ route('seller.wallet.withdrawal.cancel', $withdrawal->id) }}"
-                                          method="POST"
-                                          onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกคำขอนี้?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="text-red-600 hover:text-red-800 text-sm font-medium">
-                                            ยกเลิก
-                                        </button>
-                                    </form>
-                                @elseif($withdrawal->status === 'completed' && $withdrawal->transfer_slip)
-                                    <a href="{{ $withdrawal->transfer_slip_url }}"
-                                       target="_blank"
-                                       class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                                        ดูสลิป
-                                    </a>
-                                @else
-                                    <span class="text-gray-400 text-sm">-</span>
-                                @endif
-                            </td>
-                        </tr>
+                            @php $wc = $wStatusColor[$withdrawal->status] ?? '#9a8f7c'; @endphp
+                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                                <td style="padding:15px 20px;">
+                                    <p style="font-weight:700; color:var(--ink); margin:0; font-size:13.5px;">{{ $withdrawal->request_id }}</p>
+                                    @if($withdrawal->user_note)<p style="font-size:11.5px; color:var(--ink2); margin:3px 0 0;">{{ Str::limit($withdrawal->user_note, 30) }}</p>@endif
+                                </td>
+                                <td style="padding:15px 20px;">
+                                    <p style="color:var(--ink); margin:0; font-size:13.5px;">{{ $withdrawal->created_at->format('d/m/Y') }}</p>
+                                    <p style="font-size:11.5px; color:var(--ink2); margin:2px 0 0;">{{ $withdrawal->created_at->format('H:i') }} น.</p>
+                                </td>
+                                <td style="padding:15px 20px;">
+                                    @if($withdrawal->paymentMethod)
+                                        <p style="color:var(--ink); margin:0; font-size:13.5px;">{{ $withdrawal->paymentMethod->bank_name ?? $withdrawal->payment_type_label }}</p>
+                                        <p style="font-size:11.5px; color:var(--ink2); margin:2px 0 0;">{{ $withdrawal->paymentMethod->account_name ?? '-' }}</p>
+                                    @else
+                                        <p style="color:var(--ink2); margin:0; font-size:13.5px;">{{ $withdrawal->payment_type_label }}</p>
+                                    @endif
+                                </td>
+                                <td style="padding:15px 20px; text-align:right;">
+                                    <p class="tp-num" style="font-weight:800; color:var(--ink); margin:0; font-size:14.5px;">฿{{ number_format($withdrawal->amount, 2) }}</p>
+                                    @if($withdrawal->fee > 0)<p style="font-size:11.5px; color:var(--ink2); margin:2px 0 0;">ค่าธรรมเนียม: ฿{{ number_format($withdrawal->fee, 2) }}</p>@endif
+                                </td>
+                                <td style="padding:15px 20px; text-align:center;">
+                                    <span class="tp-pill" style="background:color-mix(in srgb, {{ $wc }} 18%, transparent); color:{{ $wc }}; font-size:11px; font-weight:700;">{{ $withdrawal->status_label }}</span>
+                                    @if($withdrawal->status === 'rejected' && $withdrawal->rejection_reason)<p style="font-size:11px; color:#d9534f; margin:4px 0 0;">{{ Str::limit($withdrawal->rejection_reason, 30) }}</p>@endif
+                                </td>
+                                <td style="padding:15px 20px; text-align:center;">
+                                    @if($withdrawal->status === 'pending')
+                                        <form action="{{ route('seller.wallet.withdrawal.cancel', $withdrawal->id) }}" method="POST" style="display:inline;"
+                                              onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกคำขอนี้?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" style="background:none; border:none; cursor:pointer; color:#d9534f; font-size:13px; font-weight:700;">ยกเลิก</button>
+                                        </form>
+                                    @elseif($withdrawal->status === 'completed' && $withdrawal->transfer_slip)
+                                        <a href="{{ $withdrawal->transfer_slip_url }}" target="_blank" style="color:var(--deep1); font-size:13px; font-weight:700; text-decoration:none;">ดูสลิป</a>
+                                    @else
+                                        <span style="color:var(--ink2); font-size:13px;">-</span>
+                                    @endif
+                                </td>
+                            </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
-
-            <!-- Pagination -->
-            <div class="px-6 py-4 border-t border-gray-200">
+            <div style="padding:16px 20px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
                 {{ $withdrawals->links() }}
             </div>
         @endif
