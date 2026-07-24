@@ -1,287 +1,190 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'จัดการกระเป๋าคริปโต')
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
-    {{-- Premium Hero Header (Indigo-Violet for Wallets Management) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 dark:from-indigo-800 dark:via-violet-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8 mb-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Floating Icon Background --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-wallet"></i>
-            </div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-briefcase text-3xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-                            👛 จัดการกระเป๋าคริปโต
-                        </h1>
-                        <p class="text-indigo-100 mt-1">
-                            กระเป๋าทั้งหมดของคุณ
-                        </p>
-                    </div>
+    {{-- ── Hero ─────────────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--deep1);"><i class="fas fa-briefcase"></i></span>
+                <div>
+                    <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">👛 จัดการกระเป๋าคริปโต</h1>
+                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">กระเป๋าทั้งหมดของคุณ</div>
                 </div>
-                <a href="{{ route('user.crypto-wallet.index') }}"
-                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2">
-                    <i class="fas fa-arrow-left"></i>
-                    <span class="hidden md:inline">กลับหน้าหลัก</span>
-                </a>
             </div>
+            <a href="{{ route('user.crypto-wallet.index') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
+                <i class="fas fa-arrow-left"></i> <span>กลับหน้าหลัก</span>
+            </a>
         </div>
     </div>
 
+    {{-- ── Flash ─────────────────────────────────────────────── --}}
     @if(session('success'))
-        <div class="mb-4 p-4 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-400 rounded-lg">
-            {{ session('success') }}
-        </div>
+        <div class="tp-card" style="padding:14px 18px; background:color-mix(in srgb, #5aa07e 12%, transparent); border:1px solid color-mix(in srgb, #5aa07e 30%, transparent); color:var(--ink); font-size:14px;">{{ session('success') }}</div>
     @endif
-
     @if(session('error'))
-        <div class="mb-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg">
-            {{ session('error') }}
-        </div>
+        <div class="tp-card" style="padding:14px 18px; background:color-mix(in srgb, #d9534f 10%, transparent); border:1px solid color-mix(in srgb, #d9534f 30%, transparent); color:#d9534f; font-size:14px;">{{ session('error') }}</div>
     @endif
 
-    <!-- Add New Wallet -->
-    <div class="grid md:grid-cols-2 gap-4 mb-6">
-        <button onclick="document.getElementById('createWalletModal').classList.remove('hidden')"
-                class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl shadow-lg p-6 transition-all text-left">
-            <div class="flex items-center">
-                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-3xl mr-4">
-                    🆕
-                </div>
+    {{-- ── ปุ่มเพิ่มกระเป๋า ───────────────────────────────────── --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;">
+        <button type="button" onclick="document.getElementById('createWalletModal').classList.remove('hidden')"
+                class="tp-card" style="padding:20px 22px; text-align:left; border:none; cursor:pointer; box-shadow:var(--raise); background:linear-gradient(120deg, color-mix(in srgb, #5aa07e 18%, transparent), transparent 70%);">
+            <div style="display:flex; align-items:center; gap:16px;">
+                <span class="tp-tile" style="width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:28px;">🆕</span>
                 <div>
-                    <h3 class="text-xl font-bold mb-1">สร้างกระเป๋าใหม่</h3>
-                    <p class="text-sm text-green-100">Custodial Wallet - ระบบจัดการให้</p>
+                    <h3 style="font-size:17px; font-weight:800; color:var(--ink); margin:0 0 3px;">สร้างกระเป๋าใหม่</h3>
+                    <p style="font-size:12.5px; color:var(--ink2); margin:0;">Custodial Wallet - ระบบจัดการให้</p>
                 </div>
             </div>
         </button>
-
-        <button onclick="alert('ฟีเจอร์นี้จะพร้อมใช้งานเร็วๆ นี้')"
-                class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl shadow-lg p-6 transition-all text-left">
-            <div class="flex items-center">
-                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-3xl mr-4">
-                    🦊
-                </div>
+        <button type="button" onclick="alert('ฟีเจอร์นี้จะพร้อมใช้งานเร็วๆ นี้')"
+                class="tp-card" style="padding:20px 22px; text-align:left; border:none; cursor:pointer; box-shadow:var(--inset-sm);">
+            <div style="display:flex; align-items:center; gap:16px;">
+                <span class="tp-tile" style="width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:28px;">🦊</span>
                 <div>
-                    <h3 class="text-xl font-bold mb-1">เชื่อมต่อกระเป๋า</h3>
-                    <p class="text-sm text-blue-100">MetaMask, WalletConnect</p>
+                    <h3 style="font-size:17px; font-weight:800; color:var(--ink); margin:0 0 3px;">เชื่อมต่อกระเป๋า</h3>
+                    <p style="font-size:12.5px; color:var(--ink2); margin:0;">MetaMask, WalletConnect</p>
                 </div>
             </div>
         </button>
     </div>
 
-    <!-- Wallets List -->
-    <div class="grid gap-6">
-        @forelse($wallets as $wallet)
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-                <!-- Header -->
-                <div class="bg-gradient-to-r {{ $wallet->is_default ? 'from-amber-500 to-orange-600' : 'from-gray-500 to-gray-600' }} p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="flex items-center gap-2 mb-2">
-                                <h3 class="text-2xl font-bold">{{ $wallet->name }}</h3>
-                                @if($wallet->is_default)
-                                    <span class="px-2 py-1 bg-white/20 rounded text-xs font-medium">กระเป๋าหลัก</span>
-                                @endif
-                            </div>
-                            <p class="text-sm opacity-90">
-                                {{ $wallet->wallet_type === 'custodial' ? '🔐 Custodial Wallet' : '🦊 External Wallet' }}
-                            </p>
+    {{-- ── รายการกระเป๋า ─────────────────────────────────────── --}}
+    @forelse($wallets as $wallet)
+        <div class="tp-card" style="padding:0; overflow:hidden;">
+            {{-- header --}}
+            <div style="padding:20px 22px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) {{ $wallet->is_default ? '22' : '10' }}%, transparent), transparent 72%);">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:9px; margin-bottom:5px;">
+                            <h3 style="font-size:20px; font-weight:800; color:var(--ink); margin:0;">{{ $wallet->name }}</h3>
+                            @if($wallet->is_default)<span class="tp-pill" style="background:color-mix(in srgb, var(--accent1) 22%, transparent); color:var(--deep1); font-size:11px; font-weight:700;">กระเป๋าหลัก</span>@endif
                         </div>
-                        <div class="text-right">
-                            <div class="text-sm opacity-90 mb-1">สถานะ</div>
-                            @if($wallet->status === 'active')
-                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">✓ ใช้งาน</span>
-                            @elseif($wallet->status === 'locked')
-                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">🔒 ล็อค</span>
-                            @else
-                                <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full text-sm font-medium">{{ $wallet->status }}</span>
-                            @endif
-                        </div>
+                        <p style="font-size:13px; color:var(--ink2); margin:0;">{{ $wallet->wallet_type === 'custodial' ? '🔐 Custodial Wallet' : '🦊 External Wallet' }}</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">สถานะ</div>
+                        @if($wallet->status === 'active')
+                            <span class="tp-pill" style="background:color-mix(in srgb, #5aa07e 18%, transparent); color:#5aa07e; font-size:12px; font-weight:700;">✓ ใช้งาน</span>
+                        @elseif($wallet->status === 'locked')
+                            <span class="tp-pill" style="background:color-mix(in srgb, #d9534f 18%, transparent); color:#d9534f; font-size:12px; font-weight:700;">🔒 ล็อค</span>
+                        @else
+                            <span class="tp-pill" style="background:color-mix(in srgb, var(--ink2) 14%, transparent); color:var(--ink2); font-size:12px; font-weight:700;">{{ $wallet->status }}</span>
+                        @endif
                     </div>
                 </div>
+            </div>
 
-                <!-- Body -->
-                <div class="p-6">
-                    <!-- Addresses -->
-                    <h4 class="font-bold text-gray-800 dark:text-gray-100 mb-3">ที่อยู่กระเป๋า (Addresses)</h4>
-
-                    @if($wallet->cryptoAddresses->count() > 0)
-                        <div class="space-y-2 mb-4">
-                            @foreach($wallet->cryptoAddresses->take(5) as $address)
-                                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                    <div class="flex items-center flex-1 mr-4">
-                                        @php
-                                            $iconPath = public_path('icons/cryptocurrency/' . strtolower($address->currency->code) . '.svg');
-                                        @endphp
-                                        @if(file_exists($iconPath))
-                                            <img src="{{ asset('icons/cryptocurrency/' . strtolower($address->currency->code) . '.svg') }}"
-                                                 alt="{{ $address->currency->code }}"
-                                                 class="w-10 h-10 mr-3">
-                                        @else
-                                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3"
-                                                 style="background: {{ $address->currency->color ?? 'linear-gradient(135deg, #F59E0B, #D97706)' }};">
-                                                {{ substr($address->currency->code, 0, 1) }}
-                                            </div>
-                                        @endif
-                                        <div class="flex-1 min-w-0">
-                                            <div class="font-semibold text-gray-800 dark:text-gray-100">{{ $address->currency->code }}</div>
-                                            <div class="font-mono text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                {{ $address->address }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="font-bold text-gray-800 dark:text-gray-100">{{ number_format($address->balance, 8) }}</div>
-                                        @if($address->balance > 0)
-                                            <div class="text-xs text-gray-500 dark:text-gray-400">≈ ฿{{ number_format($address->balance_in_thb, 2) }}</div>
-                                        @endif
+            {{-- body --}}
+            <div style="padding:22px;">
+                <h4 style="font-weight:800; color:var(--ink); margin:0 0 12px; font-size:14.5px;">ที่อยู่กระเป๋า (Addresses)</h4>
+                @if($wallet->cryptoAddresses->count() > 0)
+                    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+                        @foreach($wallet->cryptoAddresses->take(5) as $address)
+                            @php $addrIconPath = public_path('icons/cryptocurrency/' . strtolower($address->currency->code) . '.svg'); @endphp
+                            <div class="tp-card" style="padding:12px 14px; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                                <div style="display:flex; align-items:center; gap:12px; min-width:0; flex:1;">
+                                    @if(file_exists($addrIconPath))
+                                        <img src="{{ asset('icons/cryptocurrency/' . strtolower($address->currency->code) . '.svg') }}" alt="{{ $address->currency->code }}" style="width:40px; height:40px; flex-shrink:0;">
+                                    @else
+                                        <span class="tp-tile" style="width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--deep1); flex-shrink:0;">{{ substr($address->currency->code, 0, 1) }}</span>
+                                    @endif
+                                    <div style="min-width:0; flex:1;">
+                                        <div style="font-weight:700; color:var(--ink); font-size:14px;">{{ $address->currency->code }}</div>
+                                        <div style="font-family:monospace; font-size:11.5px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $address->address }}</div>
                                     </div>
                                 </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-center py-6 mb-4">
-                            <div class="text-4xl mb-2">📭</div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">ยังไม่มีที่อยู่ในกระเป๋านี้</p>
-                        </div>
-                    @endif
-
-                    <!-- Stats -->
-                    <div class="grid grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $wallet->cryptoAddresses->count() }}</div>
-                            <div class="text-xs text-gray-600 dark:text-gray-400">Addresses</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $wallet->total_transactions }}</div>
-                            <div class="text-xs text-gray-600 dark:text-gray-400">Transactions</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                                {{ $wallet->last_activity_at ? $wallet->last_activity_at->diffForHumans() : '-' }}
+                                <div style="text-align:right; flex-shrink:0;">
+                                    <div class="tp-num" style="font-weight:800; color:var(--ink); font-size:14px;">{{ number_format($address->balance, 8) }}</div>
+                                    @if($address->balance > 0)<div style="font-size:11.5px; color:var(--ink2);">≈ ฿{{ number_format($address->balance_in_thb, 2) }}</div>@endif
+                                </div>
                             </div>
-                            <div class="text-xs text-gray-600 dark:text-gray-400">Last Activity</div>
-                        </div>
+                        @endforeach
                     </div>
+                @else
+                    <div style="text-align:center; padding:24px 0; margin-bottom:16px;">
+                        <div style="font-size:36px; margin-bottom:8px;">📭</div>
+                        <p style="font-size:13px; color:var(--ink2); margin:0;">ยังไม่มีที่อยู่ในกระเป๋านี้</p>
+                    </div>
+                @endif
 
-                    <!-- Actions -->
-                    <div class="flex gap-2">
-                        @if(!$wallet->is_default)
-                            <form action="{{ route('user.crypto-wallet.wallet.set-default', $wallet->id) }}" method="POST" class="flex-1">
-                                @csrf
-                                <button type="submit" class="w-full px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-all">
-                                    ⭐ ตั้งเป็นกระเป๋าหลัก
-                                </button>
-                            </form>
-                        @endif
-
-                        @if($wallet->wallet_type === 'custodial')
-                            <button onclick="alert('ฟีเจอร์ Export Private Key จะพร้อมใช้งานเร็วๆ นี้')"
-                                    class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">
-                                🔑 Export Key
-                            </button>
-                        @endif
-
-                        <form action="{{ route('user.crypto-wallet.wallet.delete', $wallet->id) }}" method="POST"
-                              onsubmit="return confirm('คุณแน่ใจที่จะลบกระเป๋านี้? (ต้องไม่มียอดเงิน)')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit"
-                                    class="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-all">
-                                🗑️ ลบ
-                            </button>
-                        </form>
+                {{-- stats --}}
+                <div class="tp-card" style="padding:14px; box-shadow:var(--inset-sm); display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px;">
+                    <div style="text-align:center;">
+                        <div class="tp-num" style="font-size:20px; font-weight:800; color:var(--ink);">{{ $wallet->cryptoAddresses->count() }}</div>
+                        <div style="font-size:11.5px; color:var(--ink2);">Addresses</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div class="tp-num" style="font-size:20px; font-weight:800; color:var(--ink);">{{ $wallet->total_transactions }}</div>
+                        <div style="font-size:11.5px; color:var(--ink2);">Transactions</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:13px; font-weight:700; color:var(--ink); line-height:1.3; padding-top:4px;">{{ $wallet->last_activity_at ? $wallet->last_activity_at->diffForHumans() : '-' }}</div>
+                        <div style="font-size:11.5px; color:var(--ink2);">Last Activity</div>
                     </div>
                 </div>
+
+                {{-- actions --}}
+                <div style="display:flex; flex-wrap:wrap; gap:9px;">
+                    @if(!$wallet->is_default)
+                        <form action="{{ route('user.crypto-wallet.wallet.set-default', $wallet->id) }}" method="POST" style="flex:1; min-width:160px;">
+                            @csrf
+                            <button type="submit" class="tp-btn" style="width:100%; padding:10px; border-radius:12px; background:color-mix(in srgb, var(--accent1) 16%, transparent); color:var(--deep1); font-weight:600; font-size:13px; border:none; cursor:pointer;">⭐ ตั้งเป็นกระเป๋าหลัก</button>
+                        </form>
+                    @endif
+                    @if($wallet->wallet_type === 'custodial')
+                        <button type="button" onclick="alert('ฟีเจอร์ Export Private Key จะพร้อมใช้งานเร็วๆ นี้')" class="tp-btn" style="flex:1; min-width:130px; padding:10px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13px; border:none; cursor:pointer;">🔑 Export Key</button>
+                    @endif
+                    <form action="{{ route('user.crypto-wallet.wallet.delete', $wallet->id) }}" method="POST"
+                          onsubmit="return confirm('คุณแน่ใจที่จะลบกระเป๋านี้? (ต้องไม่มียอดเงิน)')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="tp-btn" style="padding:10px 15px; border-radius:12px; background:color-mix(in srgb, #d9534f 16%, transparent); color:#d9534f; font-weight:600; font-size:13px; border:none; cursor:pointer;">🗑️ ลบ</button>
+                    </form>
+                </div>
             </div>
-        @empty
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-12 text-center">
-                <div class="text-6xl mb-4">👛</div>
-                <p class="text-gray-500 dark:text-gray-400 mb-4">คุณยังไม่มีกระเป๋าคริปโต</p>
-                <button onclick="document.getElementById('createWalletModal').classList.remove('hidden')"
-                        class="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:from-amber-600 hover:to-orange-700 transition-all">
-                    สร้างกระเป๋าใหม่
-                </button>
-            </div>
-        @endforelse
-    </div>
+        </div>
+    @empty
+        <div class="tp-card" style="padding:52px 24px; text-align:center;">
+            <div style="font-size:56px; margin-bottom:14px;">👛</div>
+            <p style="color:var(--ink2); font-size:14px; margin:0 0 20px;">คุณยังไม่มีกระเป๋าคริปโต</p>
+            <button type="button" onclick="document.getElementById('createWalletModal').classList.remove('hidden')"
+                    class="tp-btn" style="padding:11px 24px; border-radius:13px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:14px; box-shadow:var(--raise); border:none; cursor:pointer;">สร้างกระเป๋าใหม่</button>
+        </div>
+    @endforelse
 </div>
 
-<!-- Create Wallet Modal -->
-<div id="createWalletModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target === this) this.classList.add('hidden')">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4" onclick="event.stopPropagation()">
-        <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">สร้างกระเป๋าคริปโต</h3>
-
+{{-- ── Modal สร้างกระเป๋า ────────────────────────────────────── --}}
+<div id="createWalletModal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:120; padding:16px;"
+     onclick="if(event.target === this) this.classList.add('hidden')">
+    <div class="tp-card" style="max-width:440px; width:100%; padding:26px;" onclick="event.stopPropagation()">
+        <h3 style="font-size:19px; font-weight:800; color:var(--ink); margin:0 0 18px;">สร้างกระเป๋าคริปโต</h3>
         <form action="{{ route('user.crypto-wallet.create-wallet') }}" method="POST">
             @csrf
-
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ชื่อกระเป๋า</label>
-                <input type="text" name="name" value="My Crypto Wallet" required
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-100">
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">ชื่อกระเป๋า</label>
+                <input type="text" name="name" value="My Crypto Wallet" required style="width:100%; padding:11px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;">
             </div>
-
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PIN (4-6 หลัก)</label>
-                <input type="password" name="pin" required minlength="4" maxlength="6"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-100"
-                       placeholder="ตั้ง PIN สำหรับกระเป๋านี้">
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">PIN (4-6 หลัก)</label>
+                <input type="password" name="pin" required minlength="4" maxlength="6" style="width:100%; padding:11px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;" placeholder="ตั้ง PIN สำหรับกระเป๋านี้">
             </div>
-
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ยืนยัน PIN</label>
-                <input type="password" name="pin_confirmation" required minlength="4" maxlength="6"
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-100"
-                       placeholder="ยืนยัน PIN อีกครั้ง">
+            <div style="margin-bottom:18px;">
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">ยืนยัน PIN</label>
+                <input type="password" name="pin_confirmation" required minlength="4" maxlength="6" style="width:100%; padding:11px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;" placeholder="ยืนยัน PIN อีกครั้ง">
             </div>
-
-            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
-                <p class="text-sm text-yellow-800 dark:text-yellow-300">
-                    ⚠️ กรุณาจดจำ PIN ของคุณ จะต้องใช้ทุกครั้งที่ทำธุรกรรม
-                </p>
+            <div class="tp-card" style="padding:12px 14px; box-shadow:var(--inset-sm); margin-bottom:16px;">
+                <p style="font-size:13px; color:var(--ink2); margin:0;">⚠️ กรุณาจดจำ PIN ของคุณ จะต้องใช้ทุกครั้งที่ทำธุรกรรม</p>
             </div>
-
-            <div class="flex gap-2">
-                <button type="button" onclick="document.getElementById('createWalletModal').classList.add('hidden')"
-                        class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
-                    ยกเลิก
-                </button>
-                <button type="submit"
-                        class="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all">
-                    สร้างกระเป๋า
-                </button>
+            <div style="display:flex; gap:10px;">
+                <button type="button" onclick="document.getElementById('createWalletModal').classList.add('hidden')" class="tp-btn" style="flex:1; padding:11px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:14px; border:none; cursor:pointer;">ยกเลิก</button>
+                <button type="submit" class="tp-btn" style="flex:1; padding:11px; border-radius:13px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:14px; box-shadow:var(--raise); border:none; cursor:pointer;">สร้างกระเป๋า</button>
             </div>
         </form>
     </div>
 </div>
 @endsection
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
