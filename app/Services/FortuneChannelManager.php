@@ -2872,40 +2872,37 @@ class FortuneChannelManager
                 // 💬 (2026-05-14) Celtic chat-style conversation log — LINE
                 //   ส่งภาพไพ่ + บทสนทนา (อาจหลายข้อความ) + quick reply
                 'celtic_review_log' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
-                    if (! empty($result['celtic_summary_image_url'])) {
-                        try {
-                            $lineService->sendImage($userId, $result['celtic_summary_image_url']);
-                        } catch (\Throwable $e) {
-                            // ignore
-                        }
-                    }
-
-                    $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
-
-                    foreach ((array) ($result['celtic_conversation_overflow'] ?? []) as $segment) {
-                        try {
-                            $lineService->sendMessage($userId, $segment);
-                        } catch (\Throwable $e) {
-                            // ignore segment fail
-                        }
-                    }
-
+                    // 💸 (2026-07-24) ประหยัด push: รวมภาพ + บทสนทนา + overflow + prompt เป็น chunk ละ 5 objects
+                    //   chunk แรกใช้ reply (ฟรี) ที่เหลือ push — เคสปกติ (≤5 objects) = 0 push (เดิมยิงทีละชิ้นหลาย push)
                     $canAskMore = (bool) ($result['celtic_can_ask_more'] ?? false);
                     // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
                     //   คุยต่อ → ไม่มีปุ่ม (พิมพ์ "เลิก" จบเอง) / จบรอบแล้ว → เหลือ "ดูดวงใหม่"
                     $replies = $canAskMore
                         ? []
                         : [['label' => '🔮 ดูดวงใหม่', 'text' => 'ดูดวง']];
+                    $promptText = $canAskMore
+                        ? '💬 คุยต่อได้เลย — หรือพิมพ์ *"เลิก"* เมื่อพร้อมจบและรับสรุป 🙏'
+                        : '🙏 ขอบคุณที่ใช้บริการแม่หมอจันทรานะคะ ✨';
 
-                    return $this->sendLineMessageWithQuickReply(
-                        $lineService,
-                        $userId,
-                        $canAskMore
-                            ? '💬 คุยต่อได้เลย — หรือพิมพ์ *"เลิก"* เมื่อพร้อมจบและรับสรุป 🙏'
-                            : '🙏 ขอบคุณที่ใช้บริการแม่หมอจันทรานะคะ ✨',
-                        null,
-                        $replies
-                    );
+                    $objs = [];
+                    if (! empty($result['celtic_summary_image_url'])) {
+                        $objs[] = $lineService->buildImageObject($result['celtic_summary_image_url']);
+                    }
+                    $objs[] = $lineService->buildTextObject($message);
+                    foreach ((array) ($result['celtic_conversation_overflow'] ?? []) as $segment) {
+                        $objs[] = $lineService->buildTextObject((string) $segment);
+                    }
+                    // prompt สุดท้าย (แนบ quick reply — LINE โชว์ quickReply ของ message ตัวสุดท้าย)
+                    $objs[] = $lineService->buildTextObject($promptText, $replies);
+
+                    $ok = true;
+                    $firstChunk = true;
+                    foreach (array_chunk($objs, 5) as $chunk) {
+                        $ok = $lineService->sendMessagesWithReplyFallback($userId, $chunk, $firstChunk ? $replyToken : null) && $ok;
+                        $firstChunk = false;
+                    }
+
+                    return $ok;
                 })(),
 
                 // Celtic actions ที่เป็น text-only
@@ -4197,23 +4194,23 @@ class FortuneChannelManager
                 Log::info('LINE view_reading_deep: ส่งคำทำนายสำเร็จ', ['reading_id' => $reading->id ?? null]);
             }
 
-            // ส่ง chart image ทีหลัง (ไม่สำคัญเท่าคำทำนาย)
-            if ($chartUrl) {
-                try {
-                    usleep(500_000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
-                    $lineService->sendImage($userId, $chartUrl);
-                } catch (\Exception $e) {
-                    Log::warning('FortuneChannelManager: ส่ง chart image ไม่สำเร็จ (view_reading)', ['error' => $e->getMessage()]);
-                }
-            }
-
-            // ส่ง Thank You ทีหลัง (ไม่สำคัญ)
+            // 💸 (2026-07-24) ประหยัด push: รวม chart image + Thank You flex เป็น push เดียว (เดิม 2 push แยก)
+            //   ทั้งคู่เป็นของแถมท้าย (ไม่สำคัญเท่าคำทำนาย) — main reading ส่งไปแล้วด้านบน (token ถูก consume)
             try {
-                usleep(500_000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
-                $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
-                $lineService->sendRichMessage($userId, ['alt_text' => '🙏 ขอบคุณค่ะ', 'contents' => $thankYouFlex]);
+                $trailing = [];
+                if ($chartUrl) {
+                    $trailing[] = $lineService->buildImageObject($chartUrl);
+                }
+                $trailing[] = [
+                    'type' => 'flex',
+                    'altText' => '🙏 ขอบคุณค่ะ',
+                    'contents' => $lineService->buildThankYouFlexMessage($userName),
+                ];
+                usleep(500_000); // 0.5s — กัน LINE 429 (ห้ามต่ำกว่า 0.5s)
+                $lineService->sendMessagesWithReplyFallback($userId, $trailing, null);
             } catch (\Exception $e) {
                 // ไม่สำคัญ ข้ามได้
+                Log::warning('FortuneChannelManager: ส่ง chart+thankyou ไม่สำเร็จ (view_reading)', ['error' => $e->getMessage()]);
             }
 
             return $sent;
