@@ -1178,6 +1178,29 @@ class LineFortuneService implements MessagingPlatformInterface
             ];
         }
 
+        // 🌐 (2026-07-24) ปุ่ม "ดูดวงฟรีบนเว็บ" — Magic Link (เฉพาะเมื่อเปิด enable_web_fortune_button)
+        //   null = ไม่แสดงปุ่ม (สวิตช์ปิด/ไม่มี lineUserId/สร้างลิงก์ไม่ได้) → พฤติกรรมเดิม 100%
+        $webFortuneButton = null;
+        if ($lineUserId) {
+            try {
+                $webLinkService = app(\App\Services\FortuneWebLinkService::class);
+                if ($webLinkService->isEnabled()) {
+                    $webFortuneButton = [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'uri',
+                            'label' => '🌐 ดูดวงฟรีบนเว็บ',
+                            'uri' => $webLinkService->generateChatLink('line', $lineUserId),
+                        ],
+                    ];
+                }
+            } catch (\Throwable $e) {
+                // สร้างลิงก์ไม่ได้ → ข้ามปุ่ม (ไม่กระทบ welcome)
+            }
+        }
+
         // การ์ด "ดูดวงละเอียด" — แสดงเสมอ
         $serviceCards[] = [
             'type' => 'box',
@@ -1304,7 +1327,8 @@ class LineFortuneService implements MessagingPlatformInterface
                 'layout' => 'vertical',
                 'spacing' => 'sm',
                 'paddingAll' => 'lg',
-                'contents' => [
+                // 🌐 ปุ่มเว็บ (ถ้าเปิดสวิตช์) แทรกระหว่างปุ่มหลักกับปุ่มคำทำนายล่าสุด
+                'contents' => array_values(array_filter([
                     [
                         'type' => 'button',
                         'style' => 'primary',
@@ -1316,6 +1340,7 @@ class LineFortuneService implements MessagingPlatformInterface
                             'text' => 'ดูดวง',
                         ],
                     ],
+                    $webFortuneButton,
                     [
                         'type' => 'button',
                         'style' => 'secondary',
@@ -1326,7 +1351,7 @@ class LineFortuneService implements MessagingPlatformInterface
                             'text' => 'ดูคำทำนายล่าสุด',
                         ],
                     ],
-                ],
+                ])),
             ],
         ];
     }
