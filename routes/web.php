@@ -1343,6 +1343,14 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
         ]);
 });
 
+// 🌐 (2026-07-24) Web Fortune Gateway — Magic Link "ดูดวงฟรีบนเว็บ" จากบอท FB/LINE
+//   ตรวจ token → หา/สร้างบัญชี → login อัตโนมัติ → ส่งต่อ SSO juntraweb (Passport)
+//   ทั้งระบบอยู่หลังสวิตช์ enable_web_fortune_button (default OFF)
+//   ต้องอยู่ใน web group ปกติ (ใช้ session สำหรับ Auth::login) + throttle กัน brute-force
+Route::get('/web-fortune/go', [\App\Http\Controllers\WebFortuneGatewayController::class, 'go'])
+    ->name('web-fortune.go')
+    ->middleware('throttle:30,1');
+
 // 🗑️ (2026-07-07) หน้าเช็คสถานะการลบข้อมูล (PDPA) — ลิงก์ที่ตอบกลับ Facebook ชี้มาที่นี่
 Route::get('/privacy/data-deletion-status/{code}', [FacebookDataDeletionController::class, 'status'])
     ->name('fortune.data-deletion.status');

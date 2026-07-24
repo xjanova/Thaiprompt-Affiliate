@@ -189,6 +189,31 @@ class FortuneAffiliateService
         }
     }
 
+    /**
+     * 🌐 (2026-07-24) หา/สร้าง User สำหรับทางเข้า "ดูดวงฟรีบนเว็บ" (Magic Link)
+     *
+     * ใช้โดย WebFortuneGatewayController — ลูกค้ากดลิงก์จากบอทโดยยังไม่มี FortuneReading
+     * reuse ระบบ lookup + creation เดิมทั้งหมด (email pattern, facebook_psid, line_user_id)
+     *
+     * หมายเหตุ: ไม่สร้าง MlmMember ที่นี่ — สิทธิ์รับรายได้เปิดผ่าน flow ปกติ
+     * (autoRegisterFromFortune หลังดูดวง หรือหน้า affiliate บนเว็บ)
+     *
+     * @param  string  $platform  'facebook' | 'line'
+     * @param  string  $platformUserId  PSID (FB) หรือ LINE user id
+     */
+    public function resolveOrCreateWebUser(string $platform, string $platformUserId): ?User
+    {
+        $existing = $this->findExistingUser($platformUserId, $platform);
+        if ($existing) {
+            return $existing;
+        }
+
+        return $this->createUserFromPlatform($platformUserId, $platform, [
+            'name' => null,
+            'picture_url' => null,
+        ]);
+    }
+
     // ============================================================
     // Platform User Lookup & Profile
     // ============================================================
@@ -197,8 +222,10 @@ class FortuneAffiliateService
      * ค้นหา User ที่มีอยู่แล้วจาก platform user ID
      *
      * ค้นหาหลายช่องทาง: line_user_id, facebook_user_id, platform_user_id ใน FortuneReading
+     *
+     * @param  FortuneReading|null  $reading  ไม่บังคับ — ทางเข้าเว็บ (Magic Link) ไม่มี reading
      */
-    protected function findExistingUser(string $platformUserId, string $platform, FortuneReading $reading): ?User
+    protected function findExistingUser(string $platformUserId, string $platform, ?FortuneReading $reading = null): ?User
     {
         // 1. ค้นหาตาม platform-specific column
         if ($platform === 'line') {

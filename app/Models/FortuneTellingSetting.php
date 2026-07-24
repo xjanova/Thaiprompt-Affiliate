@@ -407,6 +407,9 @@ class FortuneTellingSetting extends Model
         'slipok_ban_after_rounds',
         // 💎 (2026-06-07) Auto-provision — ลูกค้าโอนก่อนสร้างบิล/QR → สร้างบิล Celtic + เปิดไพ่เอง
         'slipok_auto_provision',
+        // 🌐 (2026-07-24) ปุ่มดูดวงฟรีบนเว็บ (Magic Link → จันทรา.online)
+        'enable_web_fortune_button',
+        'web_fortune_sso_url',
         // 🏦 (2026-07-14) KBank Slip Verification — provider ตรวจสลิปตัวที่ 2 (คู่ขนาน SlipOK)
         'enable_kbank_verify',
         'kbank_env',
@@ -625,6 +628,8 @@ class FortuneTellingSetting extends Model
         'slipok_ban_after_rounds' => 'integer',
         // 💎 (2026-06-07) Auto-provision จากสลิปที่ไม่มีบิล
         'slipok_auto_provision' => 'boolean',
+        // 🌐 (2026-07-24) ปุ่มดูดวงฟรีบนเว็บ (Magic Link → จันทรา.online)
+        'enable_web_fortune_button' => 'boolean',
         // 🏦 (2026-07-14) KBank Slip Verification — secret เก็บแบบเข้ารหัส
         'enable_kbank_verify' => 'boolean',
         'kbank_consumer_secret' => 'encrypted',
@@ -862,6 +867,8 @@ class FortuneTellingSetting extends Model
         'slipok_ban_after_rounds' => 2,
         // 💎 (2026-06-07) Auto-provision — โอนก่อนสร้างบิล → สร้างบิล Celtic + เปิดไพ่เอง (default เปิด)
         'slipok_auto_provision' => true,
+        // 🌐 (2026-07-24) ปุ่มดูดวงฟรีบนเว็บ — default ปิด (โค้ดพร้อม รอเปิดสวิตช์)
+        'enable_web_fortune_button' => false,
         // 🏦 (2026-07-14) KBank Slip Verification — default ปิด (แอดมินกรอก cred + cert + เปิดสวิตช์ก่อน)
         'enable_kbank_verify' => false,
         'kbank_env' => 'sandbox',

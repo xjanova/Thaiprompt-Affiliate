@@ -105,6 +105,16 @@ class FacebookRichMessageService
             'payload' => 'MENU_FORTUNE',
         ];
 
+        // 🌐 ปุ่ม 2: ดูดวงฟรีบนเว็บ (Magic Link — เฉพาะเมื่อเปิด enable_web_fortune_button)
+        $webUrl = $this->getWebFortuneUrl($facebookUserId);
+        if ($webUrl && count($buttons) < 3) {
+            $buttons[] = [
+                'type' => 'web_url',
+                'title' => '🌐 ดูดวงฟรีบนเว็บ',
+                'url' => $webUrl,
+            ];
+        }
+
         // ปุ่ม 3: LINE (เฉพาะเมื่อตั้งค่า URL ไว้)
         $lineUrl = $this->getLineAddFriendUrl();
         if ($lineUrl && count($buttons) < 3) {
@@ -925,6 +935,32 @@ class FacebookRichMessageService
      *
      * @return string|null URL สำหรับเพิ่มเพื่อน LINE
      */
+    /**
+     * 🌐 (2026-07-24) สร้าง Magic Link "ดูดวงฟรีบนเว็บ" ต่อลูกค้าคนหนึ่ง
+     *
+     * คืน null เมื่อ: ไม่มี PSID / สวิตช์ enable_web_fortune_button ปิด / service error
+     * — ทุกจุดที่เรียกจะข้ามปุ่มไปเฉยๆ (พฤติกรรมเดิม 100% เมื่อปิดสวิตช์)
+     *
+     * @param  string|null  $psid  Facebook PSID ของลูกค้า
+     */
+    public function getWebFortuneUrl(?string $psid): ?string
+    {
+        if (empty($psid)) {
+            return null;
+        }
+
+        try {
+            $svc = app(\App\Services\FortuneWebLinkService::class);
+            if (! $svc->isEnabled()) {
+                return null;
+            }
+
+            return $svc->generateChatLink('facebook', $psid);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public function getLineAddFriendUrl(): ?string
     {
         // ⚠️ ใช้ line_bot_basic_id (@xxx) ไม่ใช่ line_channel_id (ตัวเลข)
