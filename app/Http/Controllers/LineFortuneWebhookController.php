@@ -1172,10 +1172,12 @@ class LineFortuneWebhookController extends Controller
                 'footer' => [
                     'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'lg', 'backgroundColor' => '#160A26',
                     'contents' => [
-                        [
-                            'type' => 'button', 'style' => 'primary', 'height' => 'md', 'color' => '#E7C97A',
-                            'action' => ['type' => 'uri', 'label' => '🌳 เปิดผังงานของฉัน', 'uri' => $magicLink],
-                        ],
+                        // 🔘 (2026-07-25) box+action — ตัวหนังสือเข้มบนพื้นทอง (component button บังคับสีขาว = จาง)
+                        $this->lineService->buildFlexTapButton(
+                            '🌳 เปิดผังงานของฉัน',
+                            ['type' => 'uri', 'label' => '🌳 เปิดผังงาน', 'uri' => $magicLink],
+                            'gold'
+                        ),
                     ],
                 ],
             ];

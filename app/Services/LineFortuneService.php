@@ -436,6 +436,51 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * 🔘 (2026-07-25) ปุ่มกดใน Flex ที่ "คุมสีตัวอักษรได้เอง"
+     *
+     * 🐛 ทำไมไม่ใช้ component `button`: LINE บังคับสีตัวอักษรตาม style
+     *   - style=primary → ตัวอักษรขาวเสมอ (บนพื้นทองอ่อน = จาง อ่านยาก)
+     *   - style=secondary → ตัวอักษรเข้ม #111111 เสมอ (บนพื้นม่วงเข้ม = มองไม่เห็น!)
+     *   เคสจริง: ปุ่ม "🪬 ดูคุณไสย" (secondary + พื้น #3A2360) ตัวหนังสือกลืนหายทั้งปุ่ม
+     *
+     * FIX: ใช้ box + action (LINE ให้ box มี action ได้) → กำหนด backgroundColor + สีตัวอักษรคู่กันเอง
+     *   คู่สีตามปุ่มจริงบนเว็บจันทรา: พื้นทอง #E7C97A + ตัวหนังสือเข้ม #1A0E2E
+     *
+     * @param  string  $label  ข้อความบนปุ่ม
+     * @param  array  $action  LINE action object (message/uri/postback)
+     * @param  string  $variant  'gold' (CTA หลัก) | 'violet' (ปุ่มรอง) | 'ghost' (ปุ่มเบา)
+     */
+    public function buildFlexTapButton(string $label, array $action, string $variant = 'gold'): array
+    {
+        // [พื้นหลัง, สีตัวอักษร] — ทุกคู่ผ่านเกณฑ์ contrast อ่านชัด (ลูกค้าส่วนมากสูงอายุ)
+        [$bg, $fg] = match ($variant) {
+            'violet' => ['#7A3DF0', '#FFFFFF'],
+            'ghost' => ['#2E1548', '#F6E3A8'],
+            default => ['#E7C97A', '#1A0E2E'],
+        };
+
+        return [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'backgroundColor' => $bg,
+            'cornerRadius' => 'md',
+            'paddingAll' => 'md',
+            'action' => $action,
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => $label,
+                    'color' => $fg,
+                    'size' => 'md',
+                    'weight' => 'bold',
+                    'align' => 'center',
+                    'wrap' => true,
+                ],
+            ],
+        ];
+    }
+
+    /**
      * 🃏 (2026-07-25) Flex bubble "เปิดไพ่ Celtic" — รูปไพ่ + คำแนะนำในกล่องเดียว
      *
      * user spec: "รูปและคำแนะนำเป็นกราฟฟิคอยู่กล่องเดียวกัน เพื่อประหยัดพุช"
@@ -548,15 +593,14 @@ class LineFortuneService implements MessagingPlatformInterface
         $makeBubble = function (string $badge, string $title, string $price, array $rules, array $buttons, bool $highlight = false) use ($ruleRow): array {
             $ruleBoxes = array_map($ruleRow, $rules);
 
+            // 🔘 (2026-07-25) ปุ่ม box+action — คุมสีตัวอักษรเอง (component button บังคับสีจนกลืนพื้น)
             $footerButtons = [];
             foreach ($buttons as $btn) {
-                $footerButtons[] = [
-                    'type' => 'button',
-                    'style' => $btn['primary'] ? 'primary' : 'secondary',
-                    'height' => 'md',
-                    'color' => $btn['primary'] ? '#E7C97A' : '#3A2360',
-                    'action' => ['type' => 'message', 'label' => $btn['label'], 'text' => $btn['text']],
-                ];
+                $footerButtons[] = $this->buildFlexTapButton(
+                    $btn['label'],
+                    ['type' => 'message', 'label' => mb_substr($btn['label'], 0, 20), 'text' => $btn['text']],
+                    $btn['primary'] ? 'gold' : 'violet'
+                );
             }
 
             return [
@@ -668,14 +712,14 @@ class LineFortuneService implements MessagingPlatformInterface
             if (! empty($bill['question_preview'])) {
                 $detail[] = ['type' => 'text', 'text' => '❓ '.$bill['question_preview'], 'color' => '#8A7AA8', 'size' => 'sm', 'wrap' => true, 'margin' => 'sm'];
             }
-            $detail[] = [
-                'type' => 'button',
-                'style' => 'primary',
-                'height' => 'sm',
-                'color' => '#E7C97A',
-                'margin' => 'md',
-                'action' => ['type' => 'message', 'label' => '📖 อ่านคำทำนายบิลนี้', 'text' => 'ดูบิล '.($bill['ref'] ?? '')],
-            ];
+            // 🔘 ปุ่ม box+action — ตัวหนังสือเข้มบนพื้นทอง (อ่านชัดกว่าขาวบนทอง)
+            $readButton = $this->buildFlexTapButton(
+                '📖 อ่านคำทำนายบิลนี้',
+                ['type' => 'message', 'label' => '📖 อ่านบิลนี้', 'text' => 'ดูบิล '.($bill['ref'] ?? '')],
+                'gold'
+            );
+            $readButton['margin'] = 'md';
+            $detail[] = $readButton;
 
             $rows[] = [
                 'type' => 'box',
