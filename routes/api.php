@@ -142,11 +142,11 @@ Route::prefix('v1')->group(function () {
         // unbreaks `php artisan route:list`.
 
         // Mobile app control plane (public; private keys filtered server-side)
-        Route::get('/config',         [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'config'])->name('api.v1.app.config');
-        Route::get('/flags',          [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'flags'])->name('api.v1.app.flags');
-        Route::get('/menus',          [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'menus'])->name('api.v1.app.menus');
-        Route::get('/sliders',        [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'sliders'])->name('api.v1.app.sliders');
-        Route::get('/promotions',     [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'promotions'])->name('api.v1.app.promotions');
+        Route::get('/config', [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'config'])->name('api.v1.app.config');
+        Route::get('/flags', [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'flags'])->name('api.v1.app.flags');
+        Route::get('/menus', [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'menus'])->name('api.v1.app.menus');
+        Route::get('/sliders', [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'sliders'])->name('api.v1.app.sliders');
+        Route::get('/promotions', [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'promotions'])->name('api.v1.app.promotions');
         Route::get('/latest-version', [\App\Http\Controllers\Api\V1\AppReleaseApiController::class, 'latest'])->name('api.v1.app.latest-version');
     });
 
@@ -1616,15 +1616,23 @@ require __DIR__.'/sms_payment_api.php';
 // pipeline and MLM downline returned empty. The Flutter app talks only to
 // juntraweb, never here directly, so no mobile path depended on the old prefix.)
 // All AI calls reuse the FortuneAIService key pool — Juntra holds NO provider keys.
-Route::prefix('v1/juntra')->middleware('auth:sanctum')->name('api.juntra.')->group(function () {
+//
+// 🔐 (2026-07-26) guard เปิดรับสองแบบ: Sanctum (แอป Flutter/สคริปต์เดิม) และ
+//    Passport 'api-oauth' (ผู้ใช้ที่ล็อกอินเว็บจันทราผ่าน SSO ของเรา)
+//    เดิมมีแต่ sanctum → token จาก SSO เป็น Passport JWT ยิงไม่ผ่านเลยสักเส้น
+//    (ยืนยันบน prod 2026-07-26: credits = 401 แต่ /api/user = 200 ด้วย token เดียวกัน)
+//    → เว็บจันทราถูกตัดขาดจากคลังความรู้+คีย์พูล แล้วตกไป Gemini ในเครื่องที่ไม่มีคีย์
+//    middleware 'juntra.user' แปลงผู้ใช้จาก guard ไหนก็ตามให้เป็น App\Models\User
+//    ก่อนถึงคอนโทรลเลอร์ (ทุกตัวเรียก $request->user() แล้วใช้ relation ของ User)
+Route::prefix('v1/juntra')->middleware(['auth:sanctum,api-oauth', 'juntra.user'])->name('api.juntra.')->group(function () {
 
     Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/categories', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'categories'])->name('categories');
-        Route::get('/spreads',    [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'spreads'])->name('spreads');
-        Route::get('/credits',    [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'credits'])->name('credits');
-        Route::get('/history',    [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'history'])->name('history');
-        Route::post('/draw',      [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'draw'])->name('draw');
-        Route::post('/read',      [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'read'])->name('read');
+        Route::get('/spreads', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'spreads'])->name('spreads');
+        Route::get('/credits', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'credits'])->name('credits');
+        Route::get('/history', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'history'])->name('history');
+        Route::post('/draw', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'draw'])->name('draw');
+        Route::post('/read', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'read'])->name('read');
         Route::get('/readings/{id}', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'show'])->name('show');
 
         // คำทำนายไพ่ให้เว็บ จันทรา.online — juntraweb เปิดไพ่เองแล้วส่งไพ่มาให้
@@ -1634,6 +1642,12 @@ Route::prefix('v1/juntra')->middleware('auth:sanctum')->name('api.juntra.')->gro
         Route::post('/tarot/interpret', \App\Http\Controllers\Api\Juntra\TarotInterpretController::class)
             ->middleware('throttle:20,1')->name('tarot.interpret');
 
+        // 🎁 (2026-07-26) ดูดวงฟรี 1 ใบ สั้น — ปลายทางของปุ่ม "ดูดวงฟรี" จากบอท FB
+        //    juntraweb คุมโควตาเอง (1 ครั้ง/คน + เพดานต่อวัน) ที่นี่แค่ทำนายให้
+        //    throttle ต่ำกว่าตัวเต็มไม่ได้เพราะฟรี = โดนยิงถี่กว่า แต่กิน token น้อยกว่ามาก
+        Route::post('/tarot/free', \App\Http\Controllers\Api\Juntra\FreeTarotController::class)
+            ->middleware('throttle:30,1')->name('tarot.free');
+
         // ดูดวงเชิงลึก 39฿ ให้เว็บจันทรา — ตัวเดียวกับ READING_TYPE_DEEP ของบอท
         // (juntraweb หักเครดิตแล้วก่อนเรียก ที่นี่ไม่คิดเงินซ้ำ)
         Route::post('/deep', \App\Http\Controllers\Api\Juntra\DeepReadingController::class)
@@ -1641,26 +1655,26 @@ Route::prefix('v1/juntra')->middleware('auth:sanctum')->name('api.juntra.')->gro
     });
 
     Route::prefix('chat/mae-mor')->name('chat.')->group(function () {
-        Route::post('/start',        [\App\Http\Controllers\Api\Juntra\ChatController::class, 'start'])->name('start');
-        Route::post('/send',         [\App\Http\Controllers\Api\Juntra\ChatController::class, 'send'])->name('send');
+        Route::post('/start', [\App\Http\Controllers\Api\Juntra\ChatController::class, 'start'])->name('start');
+        Route::post('/send', [\App\Http\Controllers\Api\Juntra\ChatController::class, 'send'])->name('send');
         Route::get('/sessions/{id}', [\App\Http\Controllers\Api\Juntra\ChatController::class, 'show'])->name('show');
     });
 
     Route::prefix('natal')->name('natal.')->group(function () {
-        Route::post('/compute',      [\App\Http\Controllers\Api\Juntra\NatalController::class, 'compute'])->name('compute');
+        Route::post('/compute', [\App\Http\Controllers\Api\Juntra\NatalController::class, 'compute'])->name('compute');
         Route::get('/daily-transit', [\App\Http\Controllers\Api\Juntra\NatalController::class, 'dailyTransit'])->name('transit');
     });
 
     Route::prefix('affiliate')->name('affiliate.')->group(function () {
-        Route::get('/dashboard',   [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'dashboard'])->name('dashboard');
-        Route::get('/downline',    [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'downline'])->name('downline');
+        Route::get('/dashboard', [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'dashboard'])->name('dashboard');
+        Route::get('/downline', [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'downline'])->name('downline');
         Route::get('/commissions', [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'commissions'])->name('commissions');
-        Route::get('/link',        [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'link'])->name('link');
+        Route::get('/link', [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'link'])->name('link');
     });
 
     Route::prefix('payment')->name('payment.')->group(function () {
-        Route::get('/methods',     [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'methods'])->name('methods');
-        Route::post('/initiate',   [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'initiate'])->name('initiate');
+        Route::get('/methods', [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'methods'])->name('methods');
+        Route::post('/initiate', [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'initiate'])->name('initiate');
         Route::get('/{id}/status', [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'status'])->name('status');
 
         // ตรวจสลิปให้เว็บ จันทรา.online ด้วย SlipOK ตัวเดียวกับบอท (โควตา +
@@ -1682,10 +1696,10 @@ Route::prefix('v1/juntra')->middleware('auth:sanctum')->name('api.juntra.')->gro
     // mlm_members.unilevel_path for the full downline, not just direct
     // invitees. Admin role may pass ?user_id= to view any user's tree.
     Route::prefix('mlm')->name('mlm.')->group(function () {
-        Route::get('/tree',        [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'tree'])->name('tree');
+        Route::get('/tree', [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'tree'])->name('tree');
         Route::get('/commissions', [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'commissions'])->name('commissions');
-        Route::get('/stats',       [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'stats'])->name('stats');
-        Route::get('/users',       [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'users'])->name('users');
+        Route::get('/stats', [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'stats'])->name('stats');
+        Route::get('/users', [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'users'])->name('users');
         // จันทรา.online/r/{member_code} attribution — enroll the caller under
         // the inviter. Throttled: enrolls are one-shot; 6/min absorbs retries.
         Route::post('/claim-referral', [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'claimReferral'])

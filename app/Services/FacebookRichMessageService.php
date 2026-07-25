@@ -942,8 +942,13 @@ class FacebookRichMessageService
      * — ทุกจุดที่เรียกจะข้ามปุ่มไปเฉยๆ (พฤติกรรมเดิม 100% เมื่อปิดสวิตช์)
      *
      * @param  string|null  $psid  Facebook PSID ของลูกค้า
+     * @param  string|null  $to  🎁 (2026-07-26) path ปลายทางบนเว็บจันทรา
+     *                           default = '/tarot/free' (หน้าดูดวงฟรี 1 ใบ)
+     *                           — เดิมไม่ส่งเลย ลูกค้าจึงไปโผล่ /dashboard ที่ไม่มีอะไรให้ทำ
+     *                           ⚠️ ต้องผ่าน regex `#^/[A-Za-z0-9/_\-]*$#` ของ
+     *                           FortuneWebLinkService (ห้ามมี query string/จุด/ภาษาไทย)
      */
-    public function getWebFortuneUrl(?string $psid): ?string
+    public function getWebFortuneUrl(?string $psid, ?string $to = '/tarot/free'): ?string
     {
         if (empty($psid)) {
             return null;
@@ -955,7 +960,7 @@ class FacebookRichMessageService
                 return null;
             }
 
-            return $svc->generateChatLink('facebook', $psid);
+            return $svc->generateChatLink('facebook', $psid, $to);
         } catch (\Throwable $e) {
             return null;
         }

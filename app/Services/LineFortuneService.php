@@ -1745,7 +1745,8 @@ class LineFortuneService implements MessagingPlatformInterface
                         'action' => [
                             'type' => 'uri',
                             'label' => '🌐 ดูดวงฟรีบนเว็บ',
-                            'uri' => $webLinkService->generateChatLink('line', $lineUserId),
+                            // 🎁 (2026-07-26) พาไปหน้าดูดวงฟรี 1 ใบ ไม่ใช่ /dashboard เปล่าๆ
+                            'uri' => $webLinkService->generateChatLink('line', $lineUserId, '/tarot/free'),
                         ],
                     ];
                 }

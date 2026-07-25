@@ -117,6 +117,9 @@ return Application::configure(basePath: dirname(__DIR__))
             //    ต้องประกาศเอง ไม่งั้น /api/user โยน "middleware [scopes] not found")
             'scopes' => \Laravel\Passport\Http\Middleware\CheckScopes::class,
             'scope' => \Laravel\Passport\Http\Middleware\CheckForAnyScope::class,
+            // 🌐 (2026-07-26) normalize ผู้ใช้ของ /api/v1/juntra/* ให้เป็น App\Models\User
+            //    เสมอ ไม่ว่าจะเข้ามาด้วย Sanctum (แอป) หรือ Passport (SSO เว็บจันทรา)
+            'juntra.user' => \App\Http\Middleware\ResolveJuntraUser::class,
         ]);
 
         // Global middleware for IP blocking
