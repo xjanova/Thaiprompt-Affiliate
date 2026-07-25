@@ -1669,6 +1669,12 @@ Route::prefix('v1/juntra')->middleware('auth:sanctum')->name('api.juntra.')->gro
         // throttle ต่ำเพราะแต่ละครั้งกินโควตา SlipOK จริง
         Route::post('/verify-slip', \App\Http\Controllers\Api\Juntra\SlipVerifyController::class)
             ->middleware('throttle:10,1')->name('verify-slip');
+
+        // บัญชีรับเงินของแม่หมอ — เว็บ จันทรา.online ดึงไปสร้าง QR ให้ลูกค้า
+        // จะได้ใช้บัญชีเดียวกับบอท FB/LINE เสมอ (ตั้งค่าที่เดียว) และตัวตรวจสลิป
+        // อัตโนมัติจับคู่ปลายทางได้ถูก
+        Route::get('/account', \App\Http\Controllers\Api\Juntra\PayoutAccountController::class)
+            ->middleware('throttle:60,1')->name('account');
     });
 
     // ─── Admin/full-tree MLM read API (consumed by จันทรา.online website) ──
