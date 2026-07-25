@@ -4579,7 +4579,8 @@ class CelticCrossService
 
             // 🃏 (2026-06-07) ต่อท้าย "รายการไพ่ 10 ใบ" (เลข + ชื่อ + ตั้งตรง/กลับหัว) — user spec "บางคนต้องการ"
             //   ใส่หลัง length-check (เช็คเฉพาะเนื้อ AI prose) + ก่อน save → เก็บถาวรใน summary (อ่านซ้ำได้)
-            //   sendMessage (FB/LINE) แบ่ง chunk เองถ้ายาวเกิน 2000 → รายการไพ่ไม่โดนตัด
+            //   FB: sendMessage แบ่ง chunk เองที่ 2000 / LINE: channel manager แบ่งด้วย splitTextForFlexPublic
+            //   (🐛 2026-07-25 เดิม LINE ไม่แบ่ง — โดน mb_substr ตัดที่ 4900 รายการไพ่+ย่อหน้าท้ายหาย)
             $summary .= $this->buildCelticCardListBlock($cards);
 
             // อัพเดต token tracking

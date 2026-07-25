@@ -287,6 +287,8 @@
                                             style="width:100%;background:transparent;border:0;outline:0;padding:11px 14px;color:var(--ink);font-size:14px;cursor:pointer;">
                                         <option value="message">Message (ส่งข้อความ)</option>
                                         <option value="postback">Postback (ส่ง data)</option>
+                                        {{-- 🌐 (2026-07-25) V3 — ปุ่มเปิดลิงก์ (เว็บไซต์/โหลดแอพ/วิดีโอแผน): Action Data = URL เต็ม --}}
+                                        <option value="uri">URI (เปิดลิงก์ — ใส่ URL ใน Action Data)</option>
                                     </select>
                                 </div>
                             </div>

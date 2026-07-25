@@ -2407,6 +2407,44 @@ class FortuneChannelManager
                     $celticOnlyIntro = (bool) ($result['celtic_only_intro'] ?? false);
                     $quickReplies = [];
 
+                    // 💎 (2026-07-25) เมนูแพคเกจแบบ Flex สวยๆ + กติกา — เฉพาะ tier_choice ครั้งแรก
+                    //   (invalid/chitchat = ข้อความ AI/ย้ำสั้น → คงเป็น text เดิม)
+                    //   ปุ่มในกล่องส่ง text "39"/"99"/"เริ่มเลย" → handleTierChoice/tier-direct เดิมจับ
+                    //   Flex ล้มเหลว → fallback text+quick reply แบบเดิมด้านล่าง (ลูกค้าไม่ค้างแน่นอน)
+                    $tierMeta = $result['tier_meta'] ?? null;
+                    if (($result['action'] ?? '') === 'tier_choice' && is_array($tierMeta)) {
+                        try {
+                            $tierFlex = $lineService->buildTierChoiceFlexMessage(
+                                $tierMeta,
+                                (string) ($result['deep_price'] ?? '39'),
+                                (string) ($result['celtic_price'] ?? '99'),
+                                $celticOnlyIntro,
+                                (bool) ($result['black_magic_enabled'] ?? false)
+                            );
+                            $declineQr = $celticOnlyIntro
+                                ? [['label' => '🙏 ไว้คราวหน้า', 'text' => 'ไว้คราวหน้า']]
+                                : [['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']];
+                            $welcome = trim((string) ($tierMeta['welcome_line'] ?? ''));
+                            $flexMsgs = [];
+                            if ($welcome !== '') {
+                                $flexMsgs[] = $lineService->buildTextObject(
+                                    $welcome."\n\nเลือกแพคเกจที่ถูกใจ กดปุ่มในกล่องได้เลยค่ะ 👇\nยังไม่แน่ใจ พิมพ์ถามแม่หมอก่อนได้ ไม่คิดค่าใช้จ่ายค่ะ"
+                                );
+                            }
+                            $flexMsgs[] = $lineService->buildFlexObject($tierFlex, '💎 เลือกแพคเกจดูดวงกับแม่หมอจันทรา', $declineQr);
+
+                            if ($lineService->sendMessagesWithReplyFallback($userId, $flexMsgs, $replyToken)) {
+                                return true;
+                            }
+                            \Log::warning('LINE tier_choice: Flex ล้มเหลว — fallback text menu', ['user_id' => $userId]);
+                        } catch (\Throwable $e) {
+                            \Log::warning('LINE tier_choice: Flex exception — fallback text menu', [
+                                'user_id' => $userId,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
                     // 🆕 (2026-05-27) Celtic-only intro — ปุ่ม "เริ่มเลย / ไว้คราวหน้า"
                     //   ลูกค้าเห็น intro แล้วเลือก: ยินยอม=เริ่มเลย / ปฏิเสธ=ไว้คราวหน้า
                     if ($celticOnlyIntro) {
@@ -2667,8 +2705,27 @@ class FortuneChannelManager
 
                     $pushOk = false;
                     $imageUrl = $result['tarot_image_url'] ?? null;
+                    $celticCard = $result['celtic_card'] ?? null;
                     try {
-                        if (! empty($imageUrl)) {
+                        if (! empty($imageUrl) && is_array($celticCard) && ($result['action'] ?? '') === 'celtic_card_picked') {
+                            // 🎨 (2026-07-25) เปิดไพ่ → Flex กล่องเดียว (รูปไพ่ + ชื่อ + ความหมาย + ขั้นตอนถัดไป)
+                            //   user spec: "รูปและคำแนะนำเป็นกราฟฟิคอยู่กล่องเดียวกัน" — สวยขึ้น + เหลือช่อง object ใน call
+                            //   reply-first (ฟรี) → push fallback; ถ้า Flex ส่งไม่ผ่าน (400/content) → fallback รูป+ข้อความแบบเดิม
+                            $cardFlex = $lineService->buildFlexObject(
+                                $lineService->buildCelticCardFlexBubble($imageUrl, $celticCard),
+                                "🃏 ไพ่ใบที่ {$picked}/10 — ".($celticCard['card_name_th'] ?? 'เปิดไพ่'),
+                                $quickReplies
+                            );
+                            $pushOk = $lineService->sendMessagesWithReplyFallback($userId, [$cardFlex], $replyToken);
+                            if (! $pushOk) {
+                                // 🛡️ Flex ล้มเหลว → รูป+ข้อความธรรมดา (push) — ลูกค้าจ่าย 99฿ ต้องเห็นไพ่เสมอ
+                                \Log::warning('LINE Celtic: card Flex ล้มเหลว — fallback image+text', [
+                                    'user_id' => $userId,
+                                    'reading_id' => $reading?->id,
+                                ]);
+                                $pushOk = $lineService->sendImageAndText($userId, $imageUrl, $message, $quickReplies);
+                            }
+                        } elseif (! empty($imageUrl)) {
                             // มีรูป → reply รวม image+text (ฟรี) → fallback combined push
                             $pushOk = $lineService->sendImageAndTextWithReplyFallback($userId, $imageUrl, $message, $quickReplies, $replyToken);
                         } else {
@@ -2759,12 +2816,29 @@ class FortuneChannelManager
                     // 💸 (2026-07-24) ประหยัด push: รวมคำตอบ + กล่องคำถามแนะนำ (suggestion box + ปุ่มเลข)
                     //   เป็น push เดียว (เดิม 2 push แยก). post-AI-generate → token หมด → push (เลี่ยงไม่ได้)
                     //   แต่รวม 2→1 ได้. ปุ่มเลข (label/text) ไม่มี "ดูดวง" → ไม่โดน stripFortuneStartQuickReplies
-                    $celticMsgs = [$lineService->buildTextObject($message)];
+                    // 🐛 (2026-07-25) คำตอบยาวเกิน 4900 → แบ่งหลายกล่อง (เดิม mb_substr ตัดทิ้งเงียบๆ)
+                    //   เคสปกติ (1,500-3,000 ตัวอักษร) = กล่องเดียวเหมือนเดิม — ไม่มี behavior change
+                    $celticMsgs = [];
+                    foreach ($lineService->splitTextForFlexPublic($message, 4500) as $chunk) {
+                        $celticMsgs[] = $lineService->buildTextObject($chunk);
+                    }
                     if (! empty($result['suggestion_box']) && ! empty($result['quick_replies'])) {
                         $celticMsgs[] = $lineService->buildTextObject($result['suggestion_box'], $result['quick_replies']);
                     }
+                    // ปกติ ≤5 objects = call เดียว (sendMessagesWithReplyFallback slice ที่ 5 — เกินให้แบ่ง batch)
+                    // 🐛 (2026-05-28 → 2026-07-25) retry เฉพาะ batch ที่พัง — ห้าม resend ทั้งชุด
+                    //   (เดิม retry ยิงใหม่หมด → batch ที่สำเร็จแล้วถูกส่งซ้ำ ลูกค้าเห็นคำตอบ 2 รอบ)
+                    $celticBatches = array_chunk($celticMsgs, 5);
                     try {
-                        $textOk = $lineService->sendMessagesWithReplyFallback($userId, $celticMsgs, null);
+                        $textOk = true;
+                        foreach ($celticBatches as $batch) {
+                            $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, null);
+                            if (! $batchOk) {
+                                usleep(800000); // กัน transient LINE blip
+                                $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, null);
+                            }
+                            $textOk = $batchOk && $textOk;
+                        }
                         \Log::info('LINE Celtic Q&A: push (combined answer+suggestion) result', [
                             'user_id' => $userId,
                             'reading_id' => $reading?->id,
@@ -2773,21 +2847,12 @@ class FortuneChannelManager
                             'msg_preview' => mb_substr($message, 0, 100),
                         ]);
                     } catch (\Throwable $e) {
+                        $textOk = false;
                         \Log::error('LINE Celtic Q&A: push (combined) exception', [
                             'user_id' => $userId,
                             'reading_id' => $reading?->id,
                             'error' => $e->getMessage(),
                         ]);
-                    }
-
-                    // 🐛 (2026-05-28) sync retry 1 ครั้งถ้า fail — กัน transient LINE blip
-                    if (! $textOk) {
-                        try {
-                            usleep(800000);
-                            $textOk = $lineService->sendMessagesWithReplyFallback($userId, $celticMsgs, null);
-                        } catch (\Throwable $e) {
-                            // ignore — critical log + cron re-deliver จัดการต่อ
-                        }
                     }
 
                     // 🐛 (2026-05-28) mark delivered เมื่อส่งสำเร็จ — กัน cron re-deliver ซ้ำ
@@ -2845,14 +2910,37 @@ class FortuneChannelManager
                     if (! empty($result['celtic_summary_image_url'])) {
                         $endMsgs[] = $lineService->buildImageObject($result['celtic_summary_image_url']);
                     }
-                    // 🎧 (2026-06-25) มีบทสรุปพร้อมอ่านเสียง → แนบปุ่ม "🎧 อ่านให้ฟัง" (กดแทนพิมพ์)
+
+                    // 🐛 (2026-07-25) FIX สรุป Grand Finale "ส่งไม่หมด" — เดิมยัด text ก้อนเดียว
+                    //   → buildTextObject ตัดที่ 4900 ตัวอักษร (สรุปจริงยาว 6,000-10,000)
+                    //   ย่อหน้าท้าย (ผลลัพธ์/คำแนะนำ/ฤกษ์) + รายการไพ่ 10 ใบ หายเงียบ
+                    //   FIX: แบ่งหลายกล่องตามย่อหน้า (แบบเดียวกับ Deep 39) — ลูกค้าได้ครบทุกตัวอักษร
+                    //   💸 ยังประหยัด push: chunk ละ 5 objects, ก้อนแรกใช้ reply (ฟรี)
+                    //   เคสปกติ (สรุป ≤3 กล่อง + รูป 2) = 5 objects = reply เดียวจบ (0 push)
+                    $textChunks = $lineService->splitTextForFlexPublic($message, 4500);
+                    // 🎧 (2026-06-25) มีบทสรุปพร้อมอ่านเสียง → แนบปุ่ม "🎧 อ่านให้ฟัง" ที่กล่องสุดท้าย
                     //   owner 2026-06-25: ปุ่มอย่างเดียว — ไม่ auto-push เสียง (กัน push quota)
                     //   กดปุ่ม → ส่ง text "อ่านให้ฟัง" → handleCelticVoiceReadRequest (throttle 60s)
-                    $endMsgs[] = ! empty($result['voice_on_demand_ready'])
-                        ? $lineService->buildTextObject($message, [['label' => '🎧 อ่านให้ฟัง', 'text' => 'อ่านให้ฟัง']])
-                        : $lineService->buildTextObject($message);
+                    $lastIdx = count($textChunks) - 1;
+                    foreach ($textChunks as $i => $chunk) {
+                        $endMsgs[] = ($i === $lastIdx && ! empty($result['voice_on_demand_ready']))
+                            ? $lineService->buildTextObject($chunk, [['label' => '🎧 อ่านให้ฟัง', 'text' => 'อ่านให้ฟัง']])
+                            : $lineService->buildTextObject($chunk);
+                    }
 
-                    $sent = $lineService->sendMessagesWithReplyFallback($userId, $endMsgs, $replyToken);
+                    // ส่งทีละ batch (≤5 objects) — batch แรก reply (ฟรี) + retry เฉพาะ batch ที่พัง
+                    //   (ห้าม resend ทั้งชุด — batch ที่ถึงลูกค้าแล้วจะซ้ำ)
+                    $sent = true;
+                    $firstChunk = true;
+                    foreach (array_chunk($endMsgs, 5) as $batch) {
+                        $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, $firstChunk ? $replyToken : null);
+                        if (! $batchOk) {
+                            usleep(500000); // กัน transient LINE blip
+                            $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, null);
+                        }
+                        $sent = $batchOk && $sent;
+                        $firstChunk = false;
+                    }
 
                     // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — push bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
                     $this->sendReviewInviteLine($lineService, $userId, $result);
@@ -2938,6 +3026,29 @@ class FortuneChannelManager
                 //   handleMyBills คืน quick_replies = [['title','text','payload']] (FB format)
                 //   convert title → label สำหรับ LINE Quick Reply
                 'my_bills_list' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
+                    // 🎨 (2026-07-25) รายการบิลเป็น Flex — ปุ่ม "อ่านคำทำนายบิลนี้" ใหญ่ กดง่าย (ผู้สูงอายุ)
+                    //   ปุ่มส่ง text "ดูบิล FTU-..." → handleViewBill เดิม (ownership check ในตัว)
+                    //   Flex ล้มเหลว → fallback text + quick reply แบบเดิม
+                    $billsData = $result['bills_data'] ?? [];
+                    if (! empty($billsData)) {
+                        try {
+                            $billsFlex = $lineService->buildFlexObject(
+                                $lineService->buildMyBillsFlexMessage($billsData),
+                                '📚 คำทำนายย้อนหลังของคุณ',
+                                [['label' => '🔮 ดูดวงใหม่', 'text' => 'ดูดวง']]
+                            );
+                            if ($lineService->sendMessagesWithReplyFallback($userId, [$billsFlex], $replyToken)) {
+                                return true;
+                            }
+                            \Log::warning('LINE my_bills_list: Flex ล้มเหลว — fallback text', ['user_id' => $userId]);
+                        } catch (\Throwable $e) {
+                            \Log::warning('LINE my_bills_list: Flex exception — fallback text', [
+                                'user_id' => $userId,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
                     $rawReplies = $result['quick_replies'] ?? [];
                     if (empty($rawReplies)) {
                         return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
@@ -5235,6 +5346,24 @@ class FortuneChannelManager
         // ถ้าข้อความสั้นมาก → ส่ง text ปกติ
         if (mb_strlen($message) < 50) {
             return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+        }
+
+        // 🛡️ (2026-07-25) ยาวมาก → ห้ามห่อ Flex (body ไม่มี truncate → JSON ใหญ่เกิน → LINE 400
+        //   แล้วไม่มี fallback = ลูกค้าไม่ได้ข้อความเลย) → แบ่งหลายกล่อง text ตามย่อหน้าแทน
+        //   ก้อนแรกใช้ reply (ฟรี) — 3500 ตัวอักษรไทย ≈ 10.5KB ยังปลอดภัยสำหรับ Flex
+        if (mb_strlen($message) > 3500) {
+            $objs = [];
+            foreach ($lineService->splitTextForFlexPublic($message, 3500) as $chunk) {
+                $objs[] = $lineService->buildTextObject($chunk);
+            }
+            $ok = true;
+            $firstChunk = true;
+            foreach (array_chunk($objs, 5) as $batch) {
+                $ok = $lineService->sendMessagesWithReplyFallback($userId, $batch, $firstChunk ? $replyToken : null) && $ok;
+                $firstChunk = false;
+            }
+
+            return $ok;
         }
 
         // ถ้ายาว → ส่ง Flex สวยๆ

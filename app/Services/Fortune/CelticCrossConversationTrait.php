@@ -397,6 +397,17 @@ trait CelticCrossConversationTrait
             'offer_free' => $offerFree, // 🎁 (2026-05-03) flag ให้ ChannelManager เพิ่มปุ่ม "🎁 ทำนายฟรี"
             'celtic_only_intro' => $isCelticOnlyIntro, // 🆕 (2026-05-27) flag ให้ ChannelManager เปลี่ยน label ปุ่ม
             'black_magic_enabled' => $blackMagicEnabled, // 🪬 (2026-06-24) flag ให้ ChannelManager เพิ่มปุ่ม "ดูคุณไสย"
+            // 🎨 (2026-07-25) meta กติกาแพคเกจแบบ structured — LINE ใช้ประกอบ Flex เมนูเลือกแพคเกจ
+            //   (FB ใช้ $message เดิม — ไม่กระทบ). field นี้ไม่มี → LINE fallback text+ปุ่มแบบเดิม
+            'tier_meta' => [
+                'welcome_line' => $welcomeLine,
+                'deep_enabled' => $deepEnabled,
+                'celtic_enabled' => $celticEnabled,
+                'deep_window' => $deepWindow,
+                'qa_window' => $qaWindow,
+                'q_limit_text' => $qLimitText,
+                'voice_enabled' => (bool) ($this->settings->voice_summary_enabled ?? false),
+            ],
         ];
     }
 
@@ -1416,6 +1427,18 @@ trait CelticCrossConversationTrait
             'tarot_image_url' => $imageUrl,
             'celtic_picked_count' => $count,
             'celtic_total' => 10,
+            // 🎨 (2026-07-25) ข้อมูลไพ่แบบ structured — LINE ใช้ประกอบ Flex "รูป+คำแนะนำในกล่องเดียว"
+            //   (FB ใช้ message เดิม — ไม่กระทบ). ถ้า field นี้ไม่มี → LINE fallback รูป+ข้อความแบบเดิม
+            'celtic_card' => [
+                'position' => $position,
+                'position_name' => $positionName,
+                'card_name_th' => $cardNameTh,
+                'card_name_en' => $cardNameEn,
+                'reversed_label' => $reversed,
+                'meaning' => $meaning,
+                'next_prompt' => $nextPrompt,
+                'picked_count' => $count,
+            ],
         ];
     }
 

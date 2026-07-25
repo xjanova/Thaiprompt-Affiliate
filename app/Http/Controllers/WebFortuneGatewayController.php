@@ -81,7 +81,16 @@ class WebFortuneGatewayController extends Controller
         Log::info('WebFortune: ล็อกอินอัตโนมัติสำเร็จ → ส่งต่อ SSO', [
             'user_id' => $user->id,
             'platform' => $payload['p'],
+            'to' => $payload['to'] ?? null,
         ]);
+
+        // 🌳 (2026-07-25) path ปลายทางจาก token (เช่น /mlm = ผังงาน) — ผ่าน HMAC + whitelist regex แล้ว
+        //   ส่งต่อเป็น ?to= ให้ SSO ของ juntraweb พาลูกค้าลงหน้าที่ต้องการหลังล็อกอิน
+        if (! empty($payload['to'])) {
+            $sep = str_contains($ssoUrl, '?') ? '&' : '?';
+
+            return redirect()->away($ssoUrl.$sep.'to='.urlencode($payload['to']));
+        }
 
         return redirect()->away($ssoUrl);
     }

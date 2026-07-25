@@ -60,15 +60,21 @@ class FortuneWebLinkService
      *
      * @param  string  $platform  'facebook' | 'line'
      * @param  string  $platformUserId  PSID (FB) หรือ LINE user id
+     * @param  string|null  $to  🌳 (2026-07-25) path ปลายทางบนเว็บจันทรา (เช่น '/mlm' = ผังงาน)
+     *                           — ฝังใน token (HMAC ครอบ ปลอมไม่ได้) gateway ส่งต่อเป็น ?to= ของ SSO
      * @return string URL เต็มของ gateway
      */
-    public function generateChatLink(string $platform, string $platformUserId): string
+    public function generateChatLink(string $platform, string $platformUserId, ?string $to = null): string
     {
         $payload = [
             'p' => $platform,
             'u' => $platformUserId,
             'exp' => now()->addHours(self::TOKEN_TTL_HOURS)->timestamp,
         ];
+        // เฉพาะ path ภายใน (ขึ้นต้น / ไม่มี scheme/host) — กัน open redirect ตั้งแต่ตอนสร้าง
+        if ($to !== null && preg_match('#^/[A-Za-z0-9/_\-]*$#', $to)) {
+            $payload['t'] = $to;
+        }
 
         $encoded = $this->base64UrlEncode(json_encode($payload, JSON_UNESCAPED_SLASHES));
         $signature = $this->sign($encoded);
@@ -115,7 +121,15 @@ class FortuneWebLinkService
             return null;
         }
 
-        return ['p' => (string) $payload['p'], 'u' => (string) $payload['u']];
+        $result = ['p' => (string) $payload['p'], 'u' => (string) $payload['u']];
+
+        // 🌳 (2026-07-25) path ปลายทาง (optional) — ตรวจซ้ำอีกชั้นตอน verify (defense-in-depth)
+        $to = (string) ($payload['t'] ?? '');
+        if ($to !== '' && preg_match('#^/[A-Za-z0-9/_\-]*$#', $to)) {
+            $result['to'] = $to;
+        }
+
+        return $result;
     }
 
     /**

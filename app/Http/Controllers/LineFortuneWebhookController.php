@@ -1104,12 +1104,94 @@ class LineFortuneWebhookController extends Controller
             'affiliate_pitch' => $this->handleAffiliatePitchPostback($userId, $replyToken),
             'affiliate_yes' => $this->handleAffiliateYesPostback($userId, $replyToken),
             'affiliate_no' => $this->handleAffiliateNoPostback($userId, $replyToken),
+            // 📚 (2026-07-25) Rich Menu v3 — คำทำนายย้อนหลัง (เลือกได้ 3 บิลล่าสุด)
+            'view_history' => $this->handleSimulateTextPostback($userId, $replyToken, 'บิลของฉัน'),
+            // 🌳 (2026-07-25) Rich Menu v3 — ผังงาน (Magic Link เข้าเว็บจันทราแบบล็อกอินอัตโนมัติ)
+            'view_network' => $this->handleViewNetworkPostback($userId, $replyToken),
+            // 🐛 (2026-07-25) ปุ่มเก่าบน Rich Menu ที่ deploy อยู่ — เดิมไม่มี handler กดแล้วเงียบ
+            //   celtic_cross → "99" เข้า tier-direct (มี paid-active guard ในตัว)
+            //   affiliate_share → "แชร์" (isShareRequest → ลิงก์ชวนเพื่อน)
+            'celtic_cross' => $this->handleSimulateTextPostback($userId, $replyToken, '99'),
+            'affiliate_share' => $this->handleSimulateTextPostback($userId, $replyToken, 'แชร์'),
+            'talk_human' => $this->lineService->sendMessageWithReplyFallback(
+                $userId,
+                "💬 พิมพ์ข้อความถึงแม่หมอได้เลยนะคะ เดี๋ยวแม่หมอตอบให้ค่ะ\n\nหากต้องการคุยกับแอดมินคนจริง พิมพ์แจ้งไว้ได้เลย ทีมงานจะเข้ามาตอบเร็วที่สุดค่ะ 🙏",
+                $replyToken
+            ),
             default => Log::warning('LINE Webhook: Unknown postback action', [
                 'user_id' => $userId,
                 'action' => $action,
                 'data' => $data,
             ]),
         };
+    }
+
+    /**
+     * 🌳 (2026-07-25) Rich Menu "ผังงาน" — ส่ง Magic Link เข้าเว็บจันทรา (หน้า /mlm) แบบล็อกอินอัตโนมัติ
+     *
+     * reply Flex ปุ่มลิงก์ (ฟรี — ไม่กิน push quota) / ลิงก์ผูกลูกค้ารายคน อายุ 72 ชม.
+     * ระบบ Magic Link อยู่หลังสวิตช์ enable_web_fortune_button — ปิดอยู่ = แจ้งลูกค้าอย่างสุภาพ
+     */
+    protected function handleViewNetworkPostback(string $userId, ?string $replyToken): void
+    {
+        try {
+            $linkService = app(\App\Services\FortuneWebLinkService::class);
+
+            if (! $linkService->isEnabled()) {
+                Log::warning('LINE view_network: enable_web_fortune_button ปิดอยู่ — แจ้งลูกค้าแทนส่งลิงก์', [
+                    'user_id' => $userId,
+                ]);
+                $this->lineService->sendMessageWithReplyFallback(
+                    $userId,
+                    "🌳 ระบบดูผังงานบนเว็บกำลังเตรียมเปิดให้ใช้งานเร็วๆ นี้ค่ะ 🙏\n\nระหว่างนี้พิมพ์ \"สายงาน\" เพื่อดูรายชื่อคนที่แนะนำได้เลยนะคะ",
+                    $replyToken
+                );
+
+                return;
+            }
+
+            $magicLink = $linkService->generateChatLink('line', $userId, '/mlm');
+
+            $flex = [
+                'type' => 'bubble',
+                'size' => 'mega',
+                'header' => [
+                    'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'backgroundColor' => '#241038',
+                    'contents' => [
+                        ['type' => 'text', 'text' => '🌳 ผังงานของฉัน', 'color' => '#E7C97A', 'size' => 'xl', 'weight' => 'bold'],
+                        ['type' => 'text', 'text' => 'ดูสายงาน รายได้ และค่าแนะนำของคุณบนเว็บจันทรา', 'color' => '#C8B8DE', 'size' => 'sm', 'wrap' => true, 'margin' => 'sm'],
+                    ],
+                ],
+                'body' => [
+                    'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'backgroundColor' => '#160A26', 'spacing' => 'md',
+                    'contents' => [
+                        ['type' => 'text', 'text' => '✦ กดปุ่มด้านล่าง เข้าเว็บได้ทันที ไม่ต้องกรอกรหัสผ่าน', 'color' => '#F3E9FF', 'size' => 'md', 'wrap' => true],
+                        ['type' => 'text', 'text' => '✦ ลิงก์เป็นของคุณคนเดียว ใช้ได้ 3 วัน', 'color' => '#F3E9FF', 'size' => 'md', 'wrap' => true],
+                    ],
+                ],
+                'footer' => [
+                    'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'lg', 'backgroundColor' => '#160A26',
+                    'contents' => [
+                        [
+                            'type' => 'button', 'style' => 'primary', 'height' => 'md', 'color' => '#E7C97A',
+                            'action' => ['type' => 'uri', 'label' => '🌳 เปิดผังงานของฉัน', 'uri' => $magicLink],
+                        ],
+                    ],
+                ],
+            ];
+
+            $this->lineService->sendFlexWithReplyFallback($userId, $flex, '🌳 ผังงานของฉัน — กดเปิดได้เลย', $replyToken);
+        } catch (\Throwable $e) {
+            Log::error('LINE view_network postback ล้มเหลว', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId,
+                '🙏 ขออภัยค่ะ ระบบผังงานขัดข้องชั่วคราว ลองใหม่อีกครั้งนะคะ',
+                $replyToken
+            );
+        }
     }
 
     /**

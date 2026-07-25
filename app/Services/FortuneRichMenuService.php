@@ -11,9 +11,9 @@ use Illuminate\Support\Str;
 /**
  * FortuneRichMenuService — สร้างภาพ Rich Menu + deploy ไป LINE API
  *
- * สร้างเมนูหมอจันทรา 6 ปุ่ม (V2 ตัวหนังสือใหญ่ขึ้น):
- * 🔮 ดูดวง | ✨ ดูดวงละเอียด | 📖 ดูคำทำนายล่าสุด
- * 📊 สถานะ/สิทธิ์ | ⚠️ แจ้งปัญหาโอน | ℹ️ วิธีใช้งาน
+ * 🎨 (2026-07-25) เมนูหมอจันทรา V3 — พื้นหลังรูปจากเว็บจันทรา + ตัวหนังสือใหญ่ (ผู้สูงอายุ):
+ * 🔮 ดูดวง (เลือกแพคเกจในแชท) | 📚 ดูย้อนหลัง (3 บิลล่าสุด) | 📲 โหลดแอพ
+ * 🌐 เว็บไซต์ จันทรา.online | 🌳 ผังงาน | 🎬 วิดีโอแผนรายได้
  */
 class FortuneRichMenuService
 {
@@ -29,6 +29,9 @@ class FortuneRichMenuService
 
     protected const COL_WIDTH_3 = 833;
 
+    /** 🌐 เว็บจันทรา (จันทรา.online = xn--82c4af5bzdj.online) — ปลายทางปุ่ม เว็บไซต์/โหลดแอพ/วิดีโอแผน */
+    protected const JUNTRA_BASE_URL = 'https://xn--82c4af5bzdj.online';
+
     protected FortuneTellingSetting $settings;
 
     protected LineFortuneService $lineService;
@@ -41,8 +44,6 @@ class FortuneRichMenuService
 
     /**
      * ดึง LineFortuneService instance
-     *
-     * @return LineFortuneService
      */
     public function getLineService(): LineFortuneService
     {
@@ -84,7 +85,7 @@ class FortuneRichMenuService
             $richMenuData = [
                 'size' => ['width' => self::WIDTH, 'height' => self::HEIGHT],
                 'selected' => true,
-                'name' => 'หมอจันทรา - เมนูดูดวง v2',
+                'name' => 'หมอจันทรา - เมนูดูดวง v3',
                 'chatBarText' => '🔮 เมนูดูดวง',
                 'areas' => $areas,
             ];
@@ -153,21 +154,20 @@ class FortuneRichMenuService
     }
 
     /**
-     * คืน default editor config สำหรับ Rich Menu 6 ปุ่ม
+     * คืน default editor config สำหรับ Rich Menu 6 ปุ่ม (V3 — 2026-07-25)
      *
-     * ใช้เมื่อ: โหลด editor ครั้งแรก / ไม่มี config ใน DB
+     * ใช้เมื่อ: โหลด editor ครั้งแรก / ไม่มี config ใน DB / กด Deploy จากหน้า admin
+     *
+     * V3 layout (user spec):
+     * แถวบน:  🔮 ดูดวง (เลือกแพคเกจ 39/99 ในแชท — กล่อง Flex กติกา) | 📚 ดูย้อนหลัง (3 บิล) | 📲 โหลดแอพ
+     * แถวล่าง: 🌐 เว็บไซต์ จันทรา.online | 🌳 ผังงาน | 🎬 วิดีโอแผนรายได้
+     * พื้นหลัง = รูป hero จากเว็บจันทรา + ตัวหนังสือใหญ่ (ลูกค้าส่วนมากสูงอายุ)
      *
      * @return array Editor config
      */
     public function getDefaultEditorConfig(): array
     {
         $price = number_format($this->lineService->getDeepReadingPrice(), 0);
-        // 🌙 (2026-05-23) Deep ปิด — default config ตั้งปุ่มแรกเป็น Celtic แทน
-        //   admin โหลด editor ครั้งแรก / fresh install จะไม่เห็น "ดูดวงเชิงลึก 39 บาท" ที่ทำให้ลูกค้าสับสน
-        //   ⚠️ ปุ่มจริงบน Rich Menu ปัจจุบัน = เก่า — ต้อง redeploy หลัง toggle เปลี่ยน
-        $settings = \App\Models\FortuneTellingSetting::getSettings();
-        $deepEnabled = $settings->isDeepReadingEnabled();
-        $celticEnabled = (bool) ($settings->enable_celtic_cross ?? false);
         $celticPrice = 99;
         try {
             $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
@@ -175,137 +175,117 @@ class FortuneRichMenuService
             // default 99
         }
 
-        $secondButton = $deepEnabled
-            ? [
-                'label' => 'ดูดวงเชิงลึก',
-                'subtitle' => "{$price} บาท",
-                'extra_text' => 'วิเคราะห์เจาะลึก + ดวงชะตา',
-                'icon' => 'star',
-                'bg_color' => '#8C6400',
-                'text_color' => '#FFFFFF',
-                'subtitle_color' => '#FFD700',
-                'font_size' => 56,
-                'subtitle_size' => 44,
-                'action_type' => 'postback',
-                'action_data' => 'action=deep_reading',
-                'display_text' => 'ดูดวง',
-                'glow' => false,
-            ]
-            : ($celticEnabled ? [
-                // 🌙 (2026-05-23) Deep ปิด แต่ Celtic เปิด — โชว์ Celtic Cross แทน
-                'label' => 'ไพ่ยิปซี 10 ใบ',
-                'subtitle' => "{$celticPrice} บาท",
-                'extra_text' => 'Celtic Cross โบราณดั้งเดิม',
-                'icon' => 'star',
-                'bg_color' => '#8C6400',
-                'text_color' => '#FFFFFF',
-                'subtitle_color' => '#FFD700',
-                'font_size' => 56,
-                'subtitle_size' => 44,
-                'action_type' => 'postback',
-                'action_data' => 'action=celtic_cross',
-                'display_text' => 'celtic',
-                'glow' => false,
-            ] : [
-                // Deep + Celtic ปิดทั้งคู่ — ปุ่มสำรอง "ดูคำทำนาย"
-                'label' => 'ดูคำทำนาย',
-                'subtitle' => 'ของฉัน',
-                'extra_text' => '',
-                'icon' => 'scroll',
-                'bg_color' => '#8C6400',
-                'text_color' => '#FFFFFF',
-                'subtitle_color' => '#FFD700',
-                'font_size' => 56,
-                'subtitle_size' => 44,
-                'action_type' => 'postback',
-                'action_data' => 'action=view_last_reading',
-                'display_text' => 'ดูคำทำนายล่าสุด',
-                'glow' => false,
-            ]);
+        $settings = \App\Models\FortuneTellingSetting::getSettings();
+        $deepEnabled = $settings->isDeepReadingEnabled();
+        $celticEnabled = (bool) ($settings->enable_celtic_cross ?? false);
+
+        // 💬 subtitle ปุ่มดูดวง — บอกราคาตามแพคเกจที่เปิดจริง (กดแล้วไปเลือกในแชท)
+        $fortuneSubtitle = match (true) {
+            $deepEnabled && $celticEnabled => "เลือกแพคเกจ {$price} / {$celticPrice} บาท",
+            $celticEnabled => "ไพ่ Celtic {$celticPrice} บาท",
+            $deepEnabled => "พื้นดวง {$price} บาท",
+            default => 'แตะเพื่อเริ่ม',
+        };
 
         return [
             'theme' => [
-                'bg_gradient_start' => '#0d0521',
-                'bg_gradient_end' => '#1a0a3e',
-                'grid_line_color' => '#4C1D95',
-                'branding_text' => '~~ หมอจันทราพยากรณ์ ~~',
-                'branding_color' => '#FFD700',
+                'bg_gradient_start' => '#0a0612',
+                'bg_gradient_end' => '#241038',
+                // 🖼️ พื้นหลังรูปจากเว็บจันทรา (relative จาก resource_path) — ไม่มีไฟล์ = fallback gradient
+                'bg_image' => 'images/fortune/richmenu-bg.jpg',
+                // ความทึบ overlay ดำทับรูป (GD alpha 0=ทึบสุด..127=ใส) — ให้ตัวหนังสืออ่านชัด
+                'overlay_alpha' => 58,
+                'grid_line_color' => '#A8854A',
+                'branding_text' => '~ หมอจันทราพยากรณ์ · จันทรา.online ~',
+                'branding_color' => '#F6E3A8',
                 'show_stars' => true,
-                'show_moon' => true,
+                'show_moon' => false,
             ],
             'buttons' => [
+                // แถวบน ─────────────────────────────
                 [
                     'label' => 'ดูดวง',
-                    'subtitle' => 'ฟรี! ถามได้เลย',
+                    'subtitle' => $fortuneSubtitle,
                     'icon' => 'crystal_ball',
                     'bg_color' => null,
-                    'text_color' => '#FFD700',
-                    'subtitle_color' => '#C4B5FD',
-                    'font_size' => 72,
-                    'subtitle_size' => 32,
+                    'text_color' => '#F6E3A8',
+                    'subtitle_color' => '#FFFFFF',
+                    'font_size' => 92,
+                    'subtitle_size' => 40,
                     'action_type' => 'message',
                     'action_data' => 'ดูดวง',
                     'display_text' => '',
                     'glow' => true,
                 ],
-                $secondButton,
                 [
-                    'label' => 'ดูคำทำนาย',
-                    'subtitle' => 'ล่าสุด',
+                    'label' => 'ดูย้อนหลัง',
+                    'subtitle' => 'คำทำนาย 3 ครั้งล่าสุด',
                     'icon' => 'scroll',
                     'bg_color' => null,
                     'text_color' => '#FFFFFF',
-                    'subtitle_color' => '#FFFFFF',
-                    'font_size' => 48,
-                    'subtitle_size' => 48,
+                    'subtitle_color' => '#E7C97A',
+                    'font_size' => 68,
+                    'subtitle_size' => 38,
                     'action_type' => 'postback',
-                    'action_data' => 'action=view_last_reading',
-                    'display_text' => 'ดูคำทำนายล่าสุด',
-                    'glow' => false,
-                ],
-                // 🎯 Phase M — แทน "สิทธิ์/Wallet" ด้วย "ชวนเพื่อน" (useful + actionable)
-                [
-                    'label' => 'ชวนเพื่อน',
-                    'subtitle' => 'รับส่วนแบ่ง',
-                    'icon' => 'status',
-                    'bg_color' => '#00605B',
-                    'text_color' => '#FFFFFF',
-                    'subtitle_color' => '#C4B5FD',
-                    'font_size' => 48,
-                    'subtitle_size' => 28,
-                    'action_type' => 'postback',
-                    'action_data' => 'action=affiliate_share',
-                    'display_text' => 'ชวนเพื่อน/รับส่วนแบ่ง',
+                    'action_data' => 'action=view_history',
+                    'display_text' => 'บิลของฉัน',
                     'glow' => false,
                 ],
                 [
-                    'label' => 'แจ้งปัญหา',
-                    'subtitle' => 'การโอนเงิน',
-                    'extra_text' => 'โอนแล้วไม่ได้คำทำนาย?',
-                    'icon' => 'warning',
-                    'bg_color' => '#8B1A00',
-                    'text_color' => '#FFA726',
-                    'subtitle_color' => '#FFA726',
-                    'font_size' => 44,
-                    'subtitle_size' => 44,
-                    'action_type' => 'postback',
-                    'action_data' => 'action=report_payment',
-                    'display_text' => 'แจ้งปัญหาโอน',
-                    'glow' => false,
-                ],
-                // 🎯 Phase M — แทน "วิธีใช้งาน" ด้วย "คุยกับแม่หมอ" (ติดต่อแอดมิน)
-                [
-                    'label' => 'คุยกับแม่หมอ',
-                    'subtitle' => 'ติดต่อแอดมิน',
-                    'icon' => 'info',
+                    'label' => 'โหลดแอพ',
+                    'subtitle' => 'Juntra App ฟรี',
+                    'icon' => 'phone',
                     'bg_color' => null,
                     'text_color' => '#FFFFFF',
-                    'subtitle_color' => '#C4B5FD',
-                    'font_size' => 44,
-                    'subtitle_size' => 28,
+                    'subtitle_color' => '#E7C97A',
+                    'font_size' => 68,
+                    'subtitle_size' => 38,
+                    'action_type' => 'uri',
+                    'action_data' => self::JUNTRA_BASE_URL.'/app',
+                    'display_text' => '',
+                    'glow' => false,
+                ],
+                // แถวล่าง ─────────────────────────────
+                [
+                    'label' => 'เว็บไซต์',
+                    'subtitle' => 'จันทรา.online',
+                    'icon' => 'globe',
+                    'bg_color' => null,
+                    'text_color' => '#FFFFFF',
+                    'subtitle_color' => '#E7C97A',
+                    'font_size' => 68,
+                    'subtitle_size' => 40,
+                    'action_type' => 'uri',
+                    'action_data' => self::JUNTRA_BASE_URL,
+                    'display_text' => '',
+                    'glow' => false,
+                ],
+                [
+                    'label' => 'ผังงาน',
+                    'subtitle' => 'สายงาน · รายได้ของฉัน',
+                    'icon' => 'network',
+                    'bg_color' => null,
+                    'text_color' => '#F6E3A8',
+                    'subtitle_color' => '#FFFFFF',
+                    'font_size' => 76,
+                    'subtitle_size' => 38,
                     'action_type' => 'postback',
-                    'action_data' => 'action=talk_human',
-                    'display_text' => 'คุยกับแม่หมอ',
+                    'action_data' => 'action=view_network',
+                    'display_text' => 'ผังงานของฉัน',
+                    'glow' => false,
+                ],
+                [
+                    'label' => 'วิดีโอแผน',
+                    'subtitle' => 'แนะนำเพื่อน มีรายได้',
+                    'icon' => 'play',
+                    'bg_color' => null,
+                    'text_color' => '#FFFFFF',
+                    'subtitle_color' => '#E7C97A',
+                    'font_size' => 68,
+                    'subtitle_size' => 38,
+                    'action_type' => 'uri',
+                    'action_data' => self::JUNTRA_BASE_URL.'/#plan',
+                    'display_text' => '',
                     'glow' => false,
                 ],
             ],
@@ -337,6 +317,12 @@ class FortuneRichMenuService
                 'message' => [
                     'type' => 'message',
                     'text' => $btn['action_data'] ?? $btn['label'],
+                ],
+                // 🌐 (2026-07-25) ปุ่มลิงก์ — เว็บไซต์/โหลดแอพ/วิดีโอแผน (เปิด browser ใน LINE)
+                'uri' => [
+                    'type' => 'uri',
+                    'label' => mb_substr($btn['label'] ?? 'เปิดลิงก์', 0, 20),
+                    'uri' => $btn['action_data'] ?? self::JUNTRA_BASE_URL,
                 ],
                 default => [
                     'type' => 'postback',
@@ -375,16 +361,48 @@ class FortuneRichMenuService
         $theme = $config['theme'] ?? [];
         $buttons = $config['buttons'] ?? [];
 
-        // === พื้นหลัง gradient ===
-        $bgStart = $this->parseHex($theme['bg_gradient_start'] ?? '#0d0521');
-        $bgEnd = $this->parseHex($theme['bg_gradient_end'] ?? '#1a0a3e');
-        for ($y = 0; $y < self::HEIGHT; $y++) {
-            $ratio = $y / self::HEIGHT;
-            $r = (int) ($bgStart[0] + ($bgEnd[0] - $bgStart[0]) * $ratio);
-            $g = (int) ($bgStart[1] + ($bgEnd[1] - $bgStart[1]) * $ratio);
-            $b = (int) ($bgStart[2] + ($bgEnd[2] - $bgStart[2]) * $ratio);
-            $lineColor = imagecolorallocate($img, $r, $g, $b);
-            imageline($img, 0, $y, self::WIDTH, $y, $lineColor);
+        // === พื้นหลัง ===
+        // 🖼️ (2026-07-25) โหมดรูปภาพ — ใช้รูป hero จากเว็บจันทรา (2500×1686 เตรียมไว้แล้ว)
+        //   + overlay ดำโปร่งให้ตัวหนังสืออ่านชัด / ไม่มีไฟล์หรือโหลดพัง → fallback gradient เดิม
+        $usedBgImage = false;
+        $bgImageRel = trim((string) ($theme['bg_image'] ?? ''));
+        if ($bgImageRel !== '') {
+            $bgImagePath = resource_path($bgImageRel);
+            if (@is_file($bgImagePath)) {
+                $bgImg = @imagecreatefromstring((string) @file_get_contents($bgImagePath));
+                if ($bgImg !== false) {
+                    // cover-crop ให้เต็ม 2500×1686 (รูปเตรียมมาพอดีอยู่แล้ว — สเกลเผื่อกรณีขนาดอื่น)
+                    $srcW = imagesx($bgImg);
+                    $srcH = imagesy($bgImg);
+                    $scale = max(self::WIDTH / $srcW, self::HEIGHT / $srcH);
+                    $scaledW = (int) ceil($srcW * $scale);
+                    $scaledH = (int) ceil($srcH * $scale);
+                    $offX = (int) (($scaledW - self::WIDTH) / 2);
+                    $offY = (int) (($scaledH - self::HEIGHT) / 2);
+                    imagecopyresampled($img, $bgImg, -$offX, -$offY, 0, 0, $scaledW, $scaledH, $srcW, $srcH);
+                    imagedestroy($bgImg);
+
+                    // overlay ดำม่วงโปร่ง — ยิ่ง alpha น้อยยิ่งทึบ (default 58 ≈ อ่านตัวหนังสือชัด)
+                    $overlayAlpha = max(0, min(127, (int) ($theme['overlay_alpha'] ?? 58)));
+                    $overlay = imagecolorallocatealpha($img, 10, 6, 18, $overlayAlpha);
+                    imagefilledrectangle($img, 0, 0, self::WIDTH, self::HEIGHT, $overlay);
+                    $usedBgImage = true;
+                }
+            }
+        }
+
+        if (! $usedBgImage) {
+            // fallback: gradient เดิม
+            $bgStart = $this->parseHex($theme['bg_gradient_start'] ?? '#0d0521');
+            $bgEnd = $this->parseHex($theme['bg_gradient_end'] ?? '#1a0a3e');
+            for ($y = 0; $y < self::HEIGHT; $y++) {
+                $ratio = $y / self::HEIGHT;
+                $r = (int) ($bgStart[0] + ($bgEnd[0] - $bgStart[0]) * $ratio);
+                $g = (int) ($bgStart[1] + ($bgEnd[1] - $bgStart[1]) * $ratio);
+                $b = (int) ($bgStart[2] + ($bgEnd[2] - $bgStart[2]) * $ratio);
+                $lineColor = imagecolorallocate($img, $r, $g, $b);
+                imageline($img, 0, $y, self::WIDTH, $y, $lineColor);
+            }
         }
 
         // === ดาวตกแต่ง ===
@@ -484,10 +502,32 @@ class FortuneRichMenuService
         $brandColor = $this->hexColor($img, $theme['branding_color'] ?? '#FFD700');
         $this->drawCenteredText($img, $font, 32, self::WIDTH / 2, 50, $brandText, $brandColor);
 
-        // === Export PNG ===
+        // === Export ===
+        // 🖼️ (2026-07-25) พื้นหลังรูปถ่าย → JPEG q85 (PNG photo จะเกิน 1MB — LINE limit)
+        //   gradient ล้วน → PNG เหมือนเดิม (คมกว่า เล็กพอ)
         ob_start();
-        imagepng($img, null, 7);
+        if ($usedBgImage) {
+            imagejpeg($img, null, 85);
+        } else {
+            imagepng($img, null, 7);
+        }
         $pngData = ob_get_clean();
+
+        // 🛡️ เกิน 1MB (LINE limit) → ลด quality ลงจนกว่าจะผ่าน (รูป noisy + ดาว 200 ดวงอาจดันขนาด)
+        if ($usedBgImage && strlen($pngData) >= 1000000) {
+            foreach ([70, 55] as $quality) {
+                ob_start();
+                imagejpeg($img, null, $quality);
+                $pngData = ob_get_clean();
+                if (strlen($pngData) < 1000000) {
+                    break;
+                }
+            }
+            Log::warning('FortuneRichMenu: ภาพเกิน 1MB — ลด JPEG quality อัตโนมัติ', [
+                'final_size_kb' => (int) (strlen($pngData) / 1024),
+            ]);
+        }
+
         imagedestroy($img);
 
         return $pngData;
@@ -504,55 +544,16 @@ class FortuneRichMenuService
     }
 
     /**
-     * กำหนดพื้นที่คลิก 6 ปุ่มของ Rich Menu
+     * กำหนดพื้นที่คลิก 6 ปุ่มของ Rich Menu (V3 fallback)
+     *
+     * 🎨 (2026-07-25) ใช้ตอน admin deploy custom mode โดยไม่ส่ง customAreas (rare fallback)
+     *   — สร้างจาก default config เดียวกับปุ่มที่วาด เพื่อกัน areas/ภาพไม่ตรงกัน
      *
      * @return array LINE Rich Menu areas format
      */
     public function getRichMenuAreas(): array
     {
-        // 🌙 (2026-05-23) Row 1 Col 2 action ตาม toggle — Deep ปิด = redirect Celtic หรือ view_last
-        //   ใช้ตอน admin deploy custom mode โดยไม่ส่ง customAreas เข้ามา (rare fallback)
-        $settings = \App\Models\FortuneTellingSetting::getSettings();
-        $deepEnabled = $settings->isDeepReadingEnabled();
-        $celticEnabled = (bool) ($settings->enable_celtic_cross ?? false);
-        $secondAction = $deepEnabled
-            ? ['type' => 'postback', 'data' => 'action=deep_reading', 'displayText' => 'ดูดวง']
-            : ($celticEnabled
-                ? ['type' => 'postback', 'data' => 'action=celtic_cross', 'displayText' => 'celtic']
-                : ['type' => 'postback', 'data' => 'action=view_last_reading', 'displayText' => 'ดูคำทำนายล่าสุด']);
-
-        return [
-            // Row 1, Col 1: 🔮 ดูดวง
-            [
-                'bounds' => ['x' => 0, 'y' => 0, 'width' => self::COL_WIDTH_1, 'height' => self::ROW_HEIGHT],
-                'action' => ['type' => 'message', 'text' => 'ดูดวง'],
-            ],
-            // Row 1, Col 2: ✨ ดูดวงละเอียด (dynamic ตาม toggle)
-            [
-                'bounds' => ['x' => self::COL_WIDTH_1, 'y' => 0, 'width' => self::COL_WIDTH_2, 'height' => self::ROW_HEIGHT],
-                'action' => $secondAction,
-            ],
-            // Row 1, Col 3: 📖 ดูคำทำนายล่าสุด
-            [
-                'bounds' => ['x' => self::COL_WIDTH_1 + self::COL_WIDTH_2, 'y' => 0, 'width' => self::COL_WIDTH_3, 'height' => self::ROW_HEIGHT],
-                'action' => ['type' => 'postback', 'data' => 'action=view_last_reading', 'displayText' => 'ดูคำทำนายล่าสุด'],
-            ],
-            // 🎯 Phase M — Row 2, Col 1: 📢 ชวนเพื่อน (แทน "เช็คสิทธิ์")
-            [
-                'bounds' => ['x' => 0, 'y' => self::ROW_HEIGHT, 'width' => self::COL_WIDTH_1, 'height' => self::ROW_HEIGHT],
-                'action' => ['type' => 'postback', 'data' => 'action=affiliate_share', 'displayText' => 'ชวนเพื่อน/รับส่วนแบ่ง'],
-            ],
-            // Row 2, Col 2: ⚠️ แจ้งปัญหาโอน
-            [
-                'bounds' => ['x' => self::COL_WIDTH_1, 'y' => self::ROW_HEIGHT, 'width' => self::COL_WIDTH_2, 'height' => self::ROW_HEIGHT],
-                'action' => ['type' => 'postback', 'data' => 'action=report_payment', 'displayText' => 'แจ้งปัญหาโอน'],
-            ],
-            // 🎯 Phase M — Row 2, Col 3: 💬 คุยกับแม่หมอ (แทน "วิธีใช้งาน")
-            [
-                'bounds' => ['x' => self::COL_WIDTH_1 + self::COL_WIDTH_2, 'y' => self::ROW_HEIGHT, 'width' => self::COL_WIDTH_3, 'height' => self::ROW_HEIGHT],
-                'action' => ['type' => 'postback', 'data' => 'action=talk_human', 'displayText' => 'คุยกับแม่หมอ'],
-            ],
-        ];
+        return $this->getAreasFromConfig($this->getDefaultEditorConfig());
     }
 
     // === Private Helper Methods ===
@@ -563,7 +564,9 @@ class FortuneRichMenuService
     protected function saveImageToStorage(string $pngData): ?string
     {
         try {
-            $filename = 'fortune-rich-menu-'.Str::random(8).'.png';
+            // 🖼️ (2026-07-25) นามสกุลตาม magic bytes — JPEG (พื้นหลังรูป) หรือ PNG (gradient)
+            $ext = str_starts_with($pngData, "\xFF\xD8") ? 'jpg' : 'png';
+            $filename = 'fortune-rich-menu-'.Str::random(8).'.'.$ext;
             $path = "rich-menus/{$filename}";
             Storage::disk('public')->put($path, $pngData);
 
@@ -750,6 +753,53 @@ class FortuneRichMenuService
                 imagesetthickness($img, 1);
                 // ดาวเล็กๆ ด้านบนขวา
                 imagefilledellipse($img, $x + 50, $y - 40, 16, 16, $color2);
+                break;
+
+                // 🎨 (2026-07-25) ไอคอนชุด V3 — โหลดแอพ / เว็บไซต์ / ผังงาน / วิดีโอแผน
+            case 'phone':
+                // มือถือ: กรอบมน + จอ + ปุ่ม home + ลูกศรดาวน์โหลด
+                imagefilledrectangle($img, $x - 42, $y - 68, $x + 42, $y + 68, $color1);
+                $screen = imagecolorallocatealpha($img, 10, 6, 18, 30);
+                imagefilledrectangle($img, $x - 32, $y - 52, $x + 32, $y + 44, $screen);
+                imagefilledellipse($img, $x, $y + 56, 14, 14, $white);
+                // ลูกศรดาวน์โหลดกลางจอ
+                imagesetthickness($img, 6);
+                imageline($img, $x, $y - 30, $x, $y + 14, $color2);
+                imagesetthickness($img, 1);
+                imagefilledpolygon($img, [$x - 16, $y + 6, $x + 16, $y + 6, $x, $y + 28], $color2);
+                break;
+
+            case 'globe':
+                // ลูกโลก: วงกลม + เส้นศูนย์สูตร/เมริเดียน
+                imagesetthickness($img, 5);
+                imageellipse($img, $x, $y, 120, 120, $color1);
+                imageellipse($img, $x, $y, 60, 120, $color1);
+                imageline($img, $x - 60, $y, $x + 60, $y, $color1);
+                imagearc($img, $x, $y - 78, 150, 90, 35, 145, $color1);
+                imagearc($img, $x, $y + 78, 150, 90, 215, 325, $color1);
+                imagesetthickness($img, 1);
+                imagefilledellipse($img, $x + 42, $y - 42, 14, 14, $color2);
+                break;
+
+            case 'network':
+                // ผังสายงาน: โหนดบน 1 → ล่าง 3 (โครงสร้าง MLM)
+                imagesetthickness($img, 5);
+                imageline($img, $x, $y - 35, $x - 55, $y + 35, $color2);
+                imageline($img, $x, $y - 35, $x, $y + 35, $color2);
+                imageline($img, $x, $y - 35, $x + 55, $y + 35, $color2);
+                imagesetthickness($img, 1);
+                imagefilledellipse($img, $x, $y - 50, 46, 46, $color1);
+                imagefilledellipse($img, $x - 55, $y + 50, 36, 36, $color1);
+                imagefilledellipse($img, $x, $y + 50, 36, 36, $color1);
+                imagefilledellipse($img, $x + 55, $y + 50, 36, 36, $color1);
+                break;
+
+            case 'play':
+                // ปุ่มเล่นวิดีโอ: วงกลม + สามเหลี่ยม play
+                imagefilledellipse($img, $x, $y, 130, 130, $color1);
+                $innerPlay = imagecolorallocatealpha($img, 10, 6, 18, 40);
+                imagefilledellipse($img, $x, $y, 106, 106, $innerPlay);
+                imagefilledpolygon($img, [$x - 18, $y - 30, $x - 18, $y + 30, $x + 34, $y], $color2);
                 break;
         }
     }

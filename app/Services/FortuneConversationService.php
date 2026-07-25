@@ -793,6 +793,18 @@ class FortuneConversationService
                         }
                     }
 
+                    // 📚 (2026-07-25) ปุ่ม Rich Menu "ดูย้อนหลัง" / ปุ่ม Flex "ดูบิล FTU-..."
+                    //   ระหว่างรอ input (CELTIC_PICKING/AWAITING_QUESTION) — read-only ไม่แตะ state
+                    //   🚨 ห้ามปล่อยไหลเข้า state handler: "บิลของฉัน" จะกลายเป็นคำถาม Celtic
+                    //   (เผาสิทธิ์ 1 ใน 5 ข้อของลูกค้าที่จ่าย 99฿) หรือถูกตีความว่า "พร้อม" เปิดไพ่
+                    //   ตอบรายการบิล/บิลที่ขอแล้วจบ — flow ทำนายเดินต่อเหมือนเดิม
+                    if ($this->isMyBillsRequest($messageText)) {
+                        return $this->handleMyBills($facebookUserId);
+                    }
+                    if ($this->isExplicitViewBillCommand($messageText)) {
+                        return $this->handleViewBill($facebookUserId, $messageText);
+                    }
+
                     // รอ user input (Celtic flow) → ส่งตรงไป state handler
                     // ข้ามทุก hook ระหว่างนี้ (force_tier / smart_skip / chat AI / etc.)
                     //
@@ -1021,6 +1033,20 @@ class FortuneConversationService
                 ]);
 
                 return $this->handleMyBills($facebookUserId);
+            }
+
+            // 📜 (2026-07-25) "ดูบิล FTU-..." (ปุ่ม Flex รายการบิล) — read-only ต้อง early route ด้วย
+            //   🐛 เดิมไหลเข้า state machine: ตอน TIER_CHOICE โดน handleTierChoice จับ substring
+            //   "99"/"39" ที่บังเอิญอยู่ในหางรหัสบิล (เช่น FTU-xxxx-T9939) → เปิด flow สร้างบิลใหม่
+            //   ทั้งที่ลูกค้าแค่อยากอ่านบิลเก่า
+            //   ใช้ isExplicitViewBillCommand (เข้ม) — "โอนแล้ว FTU-xxx" ตอนรอจ่ายต้องไป flow โอนเหมือนเดิม
+            if ($this->isExplicitViewBillCommand($messageText)) {
+                Log::info('Fortune: ลูกค้าขอดูบิลตามรหัส (early route — bypass guards)', [
+                    'facebook_user_id' => $facebookUserId,
+                    'text_preview' => mb_substr($messageText, 0, 40),
+                ]);
+
+                return $this->handleViewBill($facebookUserId, $messageText);
             }
 
             if ($this->isViewLastReadingRequest($messageText)) {
@@ -3224,12 +3250,27 @@ class FortuneConversationService
      */
     protected function handleMyBills(string $facebookUserId): array
     {
-        // ดึง 3 readings ล่าสุดที่ paid + มี deep_response (ทำนายสำเร็จ)
-        $bills = FortuneReading::where('facebook_user_id', $facebookUserId)
+        // ดึง 3 readings ล่าสุดที่ paid + ทำนายสำเร็จ
+        // 🐛 (2026-07-25) เดิมกรองเฉพาะ deep_response → บิล Celtic 99 หายจากประวัติ
+        //   (Celtic เก็บคำทำนายใน fortune_celtic_questions ไม่ใช่ deep_response)
+        //   + เช็คทั้ง facebook_user_id/platform_user_id (LINE ใช้ platform_user_id — เดิมบิล LINE บางส่วนไม่ขึ้น)
+        $bills = FortuneReading::where(function ($q) use ($facebookUserId) {
+            $q->where('facebook_user_id', $facebookUserId)
+                ->orWhere('platform_user_id', $facebookUserId);
+        })
             ->where('is_paid', true)
-            ->whereNotNull('deep_response')
-            ->where('deep_response', '!=', '')
             ->whereNotNull('bill_reference')
+            ->where(function ($q) {
+                // Deep 39 ที่มีคำทำนายแล้ว
+                $q->where(function ($q2) {
+                    $q2->whereNotNull('deep_response')->where('deep_response', '!=', '');
+                })
+                    // 👑 Celtic 99 ที่เริ่มถาม-ตอบแล้ว (ดูย้อนหลังผ่าน buildCelticReadingSummary ได้)
+                    ->orWhere(function ($q2) {
+                        $q2->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                            ->where('celtic_questions_used', '>=', 1);
+                    });
+            })
             ->orderByDesc('paid_at')
             ->limit(3)
             ->get();
@@ -3248,21 +3289,33 @@ class FortuneConversationService
         $message .= "═══════════════════════\n\n";
 
         $quickReplies = [];
+        $billsData = [];
         foreach ($bills as $idx => $bill) {
             $num = $idx + 1;
             $date = $bill->paid_at?->format('d/m/Y H:i') ?? $bill->created_at->format('d/m/Y H:i');
             $billRef = $bill->bill_reference;
             $amount = number_format((float) ($bill->amount_paid ?? 0), 2);
+            // 🏷️ แยกประเภทด้วย reading_type เท่านั้น (ห้ามใช้ยอดเงิน — มีเศษสตางค์สุ่มแยกบิล)
+            $isCeltic = $bill->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+            $typeLabel = $isCeltic ? '👑 ไพ่เต็มสำรับ Celtic' : '🔹 ดูพื้นดวงเชิงลึก';
 
-            $message .= "{$num}. 🧾 *{$billRef}*\n";
+            $message .= "{$num}. 🧾 *{$billRef}* — {$typeLabel}\n";
             $message .= "   📅 {$date}\n";
             $message .= "   💰 ฿{$amount}\n";
 
-            // คำถามแรก preview (สั้น ๆ)
+            // คำถามแรก preview (สั้น ๆ) — Celtic อยู่ในตาราง fortune_celtic_questions
             $questions = $bill->questions ?? [];
-            if (! empty($questions[0])) {
-                $preview = mb_substr((string) $questions[0], 0, 40);
-                $message .= "   ❓ {$preview}".(mb_strlen((string) $questions[0]) > 40 ? '...' : '')."\n";
+            $firstQuestion = ! empty($questions[0]) ? (string) $questions[0] : '';
+            if ($firstQuestion === '' && $isCeltic) {
+                try {
+                    $firstQuestion = (string) ($bill->celticQuestions()->orderBy('sequence')->value('question') ?? '');
+                } catch (\Throwable $e) {
+                    $firstQuestion = '';
+                }
+            }
+            if ($firstQuestion !== '') {
+                $preview = mb_substr($firstQuestion, 0, 40);
+                $message .= "   ❓ {$preview}".(mb_strlen($firstQuestion) > 40 ? '...' : '')."\n";
             }
             $message .= "\n";
 
@@ -3271,6 +3324,15 @@ class FortuneConversationService
                 'title' => "📜 บิล {$num}",
                 'text' => "ดูบิล {$billRef}",
                 'payload' => "ดูบิล {$billRef}",
+            ];
+
+            // 🎨 (2026-07-25) ข้อมูล structured — LINE ใช้ประกอบ Flex รายการบิล (ปุ่มใหญ่ กดง่าย)
+            $billsData[] = [
+                'ref' => $billRef,
+                'date' => $date,
+                'amount' => $amount,
+                'type_label' => $typeLabel,
+                'question_preview' => $firstQuestion !== '' ? mb_substr($firstQuestion, 0, 60) : '',
             ];
         }
 
@@ -3282,6 +3344,7 @@ class FortuneConversationService
             'reading' => null,
             'show_quick_replies' => true,
             'quick_replies' => $quickReplies,
+            'bills_data' => $billsData,
         ];
     }
 
@@ -3297,6 +3360,18 @@ class FortuneConversationService
     protected function isViewBillRequest(string $text): bool
     {
         return (bool) preg_match('/(?:FTU|FR)-[A-Z0-9-]+/i', trim($text));
+    }
+
+    /**
+     * 📜 (2026-07-25) คำสั่ง "ดูบิล" แบบชัดเจนเท่านั้น — ใช้กับ early route / in-prediction bypass
+     *
+     * เข้มกว่า isViewBillRequest (ซึ่งจับ substring หลวมๆ): รับเฉพาะข้อความที่เป็น
+     * "ดูบิล FTU-..." หรือรหัสบิลเดี่ยวๆ ไม่มีคำอื่นปน — กันเคสลูกค้าพิมพ์
+     * "โอนแล้วนะ FTU-xxx" ตอนรอจ่าย แล้วโดน route ไปดูบิลแทน flow ยืนยันโอน
+     */
+    protected function isExplicitViewBillCommand(string $text): bool
+    {
+        return (bool) preg_match('/^\s*(?:ดู\s*บิล\s*)?(?:FTU|FR)-[A-Z0-9-]+\s*$/iu', trim($text));
     }
 
     /**

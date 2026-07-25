@@ -411,6 +411,304 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * 🎨 (2026-07-25) สร้าง LINE flex message object (+ quick reply ถ้ามี)
+     *
+     * helper สำหรับรวม Flex กับ message อื่นใน call เดียว (reply/push ผ่าน sendMessagesWithReplyFallback)
+     *
+     * @param  array  $flexContent  Flex bubble/carousel contents
+     * @param  string  $altText  ข้อความ preview บน notification
+     * @param  array  $quickReplies  [['label'=>..., 'text'=>...], ...] (optional)
+     */
+    public function buildFlexObject(array $flexContent, string $altText, array $quickReplies = []): array
+    {
+        $obj = [
+            'type' => 'flex',
+            'altText' => mb_substr($altText, 0, 400),
+            'contents' => $flexContent,
+        ];
+        if (! empty($quickReplies)) {
+            $obj['quickReply'] = [
+                'items' => $this->buildQuickReplyItems($quickReplies),
+            ];
+        }
+
+        return $obj;
+    }
+
+    /**
+     * 🃏 (2026-07-25) Flex bubble "เปิดไพ่ Celtic" — รูปไพ่ + คำแนะนำในกล่องเดียว
+     *
+     * user spec: "รูปและคำแนะนำเป็นกราฟฟิคอยู่กล่องเดียวกัน เพื่อประหยัดพุช"
+     * โทนสีตามธีมเว็บจันทรา (juntra-payakorn): ม่วงเข้ม + ทอง
+     *
+     * @param  string  $imageUrl  รูปไพ่ (portrait ~9:16)
+     * @param  array  $card  ['position_name','card_name_th','card_name_en','reversed_label','meaning','next_prompt','picked_count']
+     */
+    public function buildCelticCardFlexBubble(string $imageUrl, array $card): array
+    {
+        $count = (int) ($card['picked_count'] ?? 0);
+        $positionName = (string) ($card['position_name'] ?? '');
+        $nextPrompt = trim((string) ($card['next_prompt'] ?? ''));
+
+        $bodyContents = [
+            // ซ้าย: รูปไพ่ (สัดส่วนไพ่ทาโรต์ 9:16)
+            [
+                'type' => 'image',
+                'url' => $this->ensureHttps($imageUrl),
+                'aspectRatio' => '9:16',
+                'aspectMode' => 'cover',
+                'size' => 'full',
+                'flex' => 4,
+                'gravity' => 'top',
+            ],
+            // ขวา: ชื่อไพ่ + ความหมาย
+            [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'flex' => 6,
+                'spacing' => 'sm',
+                'contents' => [
+                    ['type' => 'text', 'text' => (string) ($card['card_name_th'] ?? 'ไพ่'), 'weight' => 'bold', 'size' => 'lg', 'color' => '#F6E3A8', 'wrap' => true],
+                    ['type' => 'text', 'text' => trim(($card['card_name_en'] ?? '').' '.($card['reversed_label'] ?? '')), 'size' => 'xs', 'color' => '#C8B8DE', 'wrap' => true],
+                    ['type' => 'separator', 'margin' => 'md', 'color' => '#4C1D95'],
+                    ['type' => 'text', 'text' => '📖 '.(string) ($card['meaning'] ?? ''), 'size' => 'sm', 'color' => '#F3E9FF', 'wrap' => true, 'margin' => 'md', 'lineSpacing' => '4px'],
+                ],
+            ],
+        ];
+
+        $bubble = [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'header' => [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'paddingAll' => 'lg',
+                'backgroundColor' => '#241038',
+                'contents' => [
+                    ['type' => 'text', 'text' => "🃏 ไพ่ใบที่ {$count}/10", 'color' => '#E7C97A', 'size' => 'md', 'weight' => 'bold', 'flex' => 0],
+                    ['type' => 'text', 'text' => $positionName, 'color' => '#F3E9FF', 'size' => 'sm', 'align' => 'end', 'gravity' => 'center', 'wrap' => true],
+                ],
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'spacing' => 'lg',
+                'paddingAll' => 'lg',
+                'backgroundColor' => '#160A26',
+                'contents' => $bodyContents,
+            ],
+        ];
+
+        // แถบล่าง: ขั้นตอนถัดไป (เชิญเปิดไพ่ใบต่อไป)
+        if ($nextPrompt !== '') {
+            $bubble['footer'] = [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'lg',
+                'backgroundColor' => '#0F081C',
+                'contents' => [
+                    ['type' => 'text', 'text' => $nextPrompt, 'size' => 'sm', 'color' => '#C8B8DE', 'wrap' => true, 'lineSpacing' => '4px'],
+                ],
+            ];
+        }
+
+        return $bubble;
+    }
+
+    /**
+     * 💎 (2026-07-25) Flex เมนูเลือกแพคเกจดูดวง (tier choice) — กล่องสวยพร้อมกติกา
+     *
+     * user spec: "กดปุ่มดูดวงแล้วให้เลือกอีกทีในแชท เป็นกล่องสวยๆ และระบุรายละเอียดกติกา"
+     * ปุ่มส่ง text "39"/"99"/"เริ่มเลย" → tier-direct logic เดิมจับ (ไม่แตะ state machine)
+     * โทนสีธีมเว็บจันทรา (juntra-payakorn): ม่วงเข้ม + ทอง — ตัวหนังสือใหญ่เพื่อผู้สูงอายุ
+     *
+     * @param  array  $m  ['welcome_line','deep_enabled','celtic_enabled','deep_window','qa_window','q_limit_text','voice_enabled']
+     * @param  string  $deepPrice  ราคา 39 (formatted)
+     * @param  string  $celticPrice  ราคา 99 (formatted)
+     * @param  bool  $celticOnlyIntro  โหมด Celtic-only (ปุ่ม "เริ่มเลย")
+     * @param  bool  $blackMagicEnabled  เพิ่มปุ่มดูคุณไสย
+     * @return array Flex bubble หรือ carousel
+     */
+    public function buildTierChoiceFlexMessage(array $m, string $deepPrice, string $celticPrice, bool $celticOnlyIntro = false, bool $blackMagicEnabled = false): array
+    {
+        // แถวกติกา 1 รายการ (✦ ทอง + ข้อความ)
+        $ruleRow = function (string $text): array {
+            return [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'spacing' => 'sm',
+                'contents' => [
+                    ['type' => 'text', 'text' => '✦', 'color' => '#E7C97A', 'size' => 'md', 'flex' => 0],
+                    ['type' => 'text', 'text' => $text, 'color' => '#F3E9FF', 'size' => 'md', 'wrap' => true, 'flex' => 1, 'lineSpacing' => '4px'],
+                ],
+            ];
+        };
+
+        // สร้าง bubble ต่อแพคเกจ
+        $makeBubble = function (string $badge, string $title, string $price, array $rules, array $buttons, bool $highlight = false) use ($ruleRow): array {
+            $ruleBoxes = array_map($ruleRow, $rules);
+
+            $footerButtons = [];
+            foreach ($buttons as $btn) {
+                $footerButtons[] = [
+                    'type' => 'button',
+                    'style' => $btn['primary'] ? 'primary' : 'secondary',
+                    'height' => 'md',
+                    'color' => $btn['primary'] ? '#E7C97A' : '#3A2360',
+                    'action' => ['type' => 'message', 'label' => $btn['label'], 'text' => $btn['text']],
+                ];
+            }
+
+            return [
+                'type' => 'bubble',
+                'size' => 'mega',
+                'header' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'paddingAll' => 'xl',
+                    'backgroundColor' => $highlight ? '#2E1548' : '#241038',
+                    'contents' => [
+                        ['type' => 'text', 'text' => $badge, 'color' => '#E7C97A', 'size' => 'sm', 'weight' => 'bold'],
+                        ['type' => 'text', 'text' => $title, 'color' => '#FFFFFF', 'size' => 'xl', 'weight' => 'bold', 'wrap' => true, 'margin' => 'sm'],
+                        [
+                            'type' => 'box',
+                            'layout' => 'baseline',
+                            'margin' => 'md',
+                            'contents' => [
+                                ['type' => 'text', 'text' => "฿{$price}", 'color' => '#F6E3A8', 'size' => '3xl', 'weight' => 'bold', 'flex' => 0],
+                                ['type' => 'text', 'text' => ' ค่าครู/ครั้ง', 'color' => '#C8B8DE', 'size' => 'sm', 'margin' => 'sm'],
+                            ],
+                        ],
+                    ],
+                ],
+                'body' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'spacing' => 'md',
+                    'paddingAll' => 'xl',
+                    'backgroundColor' => '#160A26',
+                    'contents' => $ruleBoxes,
+                ],
+                'footer' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'spacing' => 'sm',
+                    'paddingAll' => 'lg',
+                    'backgroundColor' => '#160A26',
+                    'contents' => $footerButtons,
+                ],
+            ];
+        };
+
+        $deepWindow = (int) ($m['deep_window'] ?? 7);
+        $qaWindow = (int) ($m['qa_window'] ?? 15);
+        $qLimitText = (string) ($m['q_limit_text'] ?? 'ไม่จำกัด');
+
+        // 👑 Bubble Celtic 99
+        $celticRules = [
+            'เปิดไพ่โบราณ Celtic Cross ครบ 10 ใบ ฟันธงทีละใบ',
+            "ถามแม่หมอได้ {$qLimitText} ภายใน {$qaWindow} นาที ตอบสดไม่มีรอ",
+            'พร้อมภาพไพ่สวยๆ เก็บเป็นที่ระลึก ดูย้อนหลังได้',
+        ];
+        if (! empty($m['voice_enabled'])) {
+            $celticRules[] = 'ฟังเสียงสรุปคำทำนายท้ายรอบได้';
+        }
+        $celticButtons = $celticOnlyIntro
+            ? [['label' => "✨ เริ่มเลย {$celticPrice} บาท", 'text' => 'เริ่มเลย', 'primary' => true]]
+            : [['label' => "👑 เลือกแพคเกจ {$celticPrice} บาท", 'text' => '99', 'primary' => true]];
+        if ($blackMagicEnabled) {
+            $celticButtons[] = ['label' => '🪬 ดูคุณไสย', 'text' => 'ดูคุณไสย', 'primary' => false];
+        }
+        $celticBubble = $makeBubble('👑 VIP ยอดนิยม', 'ไพ่เต็มสำรับ Celtic', $celticPrice, $celticRules, $celticButtons, true);
+
+        // 🔹 Bubble Deep 39
+        $deepBubble = $makeBubble('🔹 เริ่มต้น', 'ดูพื้นดวง', $deepPrice, [
+            'ใช้วันเดือนปีเกิด คำนวณดาวประจำตัว ราศี ลัคนา ผสมกับไพ่',
+            'อ่านภาพรวมชีวิตให้ทันที',
+            "คุยถามแม่หมอต่อได้ {$deepWindow} นาที",
+        ], [
+            ['label' => "🔹 เลือกแพคเกจ {$deepPrice} บาท", 'text' => '39', 'primary' => true],
+        ]);
+
+        // Celtic-only → bubble เดียว / มีทั้งคู่ → carousel (Celtic นำ — ยอดนิยม)
+        if ($celticOnlyIntro || empty($m['deep_enabled'])) {
+            return $celticBubble;
+        }
+        if (empty($m['celtic_enabled'])) {
+            return $deepBubble;
+        }
+
+        return [
+            'type' => 'carousel',
+            'contents' => [$celticBubble, $deepBubble],
+        ];
+    }
+
+    /**
+     * 📚 (2026-07-25) Flex รายการคำทำนายย้อนหลัง (สูงสุด 3 บิลล่าสุด) — เลือกอ่านได้
+     *
+     * user spec: "ระบบอ่านคำทำนายย้อนหลังจะล้ำกว่าเดิม เลือกย้อนหลังได้ถึง 3 บิลล่าสุด"
+     * ปุ่มส่ง text "ดูบิล FTU-..." → handleViewBill เดิม (มี ownership check แล้ว)
+     *
+     * @param  array  $bills  [['ref','date','amount','type_label','question_preview'], ...]
+     */
+    public function buildMyBillsFlexMessage(array $bills): array
+    {
+        $rows = [];
+        foreach ($bills as $i => $bill) {
+            if ($i > 0) {
+                $rows[] = ['type' => 'separator', 'margin' => 'lg', 'color' => '#3A2360'];
+            }
+
+            $detail = [
+                ['type' => 'text', 'text' => (string) ($bill['type_label'] ?? 'คำทำนาย'), 'color' => '#F6E3A8', 'size' => 'lg', 'weight' => 'bold', 'wrap' => true],
+                ['type' => 'text', 'text' => '🧾 '.($bill['ref'] ?? '').'  ·  ฿'.($bill['amount'] ?? ''), 'color' => '#C8B8DE', 'size' => 'sm', 'margin' => 'sm'],
+                ['type' => 'text', 'text' => '📅 '.($bill['date'] ?? ''), 'color' => '#C8B8DE', 'size' => 'sm'],
+            ];
+            if (! empty($bill['question_preview'])) {
+                $detail[] = ['type' => 'text', 'text' => '❓ '.$bill['question_preview'], 'color' => '#8A7AA8', 'size' => 'sm', 'wrap' => true, 'margin' => 'sm'];
+            }
+            $detail[] = [
+                'type' => 'button',
+                'style' => 'primary',
+                'height' => 'sm',
+                'color' => '#E7C97A',
+                'margin' => 'md',
+                'action' => ['type' => 'message', 'label' => '📖 อ่านคำทำนายบิลนี้', 'text' => 'ดูบิล '.($bill['ref'] ?? '')],
+            ];
+
+            $rows[] = [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'margin' => $i > 0 ? 'lg' : 'none',
+                'contents' => $detail,
+            ];
+        }
+
+        return [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'header' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'xl',
+                'backgroundColor' => '#241038',
+                'contents' => [
+                    ['type' => 'text', 'text' => '📚 คำทำนายย้อนหลัง', 'color' => '#E7C97A', 'size' => 'xl', 'weight' => 'bold'],
+                    ['type' => 'text', 'text' => 'เลือกอ่านได้ 3 ครั้งล่าสุด — กดปุ่มบิลที่ต้องการ', 'color' => '#C8B8DE', 'size' => 'sm', 'margin' => 'sm', 'wrap' => true],
+                ],
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'xl',
+                'backgroundColor' => '#160A26',
+                'contents' => $rows,
+            ],
+        ];
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool
@@ -4423,19 +4721,25 @@ class LineFortuneService implements MessagingPlatformInterface
     /**
      * อัปโหลดภาพ Rich Menu (PNG/JPEG, max 1MB)
      *
+     * 🖼️ (2026-07-25) รองรับ JPEG — พื้นหลังรูปถ่าย (richmenu-bg) export PNG จะเกิน 1MB
+     *   ตรวจ magic bytes อัตโนมัติ: \xFF\xD8 = JPEG, อื่น = PNG
+     *
      * @param  string  $richMenuId  Rich Menu ID ที่สร้างไว้
-     * @param  string  $pngBinary  ข้อมูลไบนารีของภาพ PNG
+     * @param  string  $pngBinary  ข้อมูลไบนารีของภาพ (PNG หรือ JPEG)
      * @return bool สำเร็จหรือไม่
      */
     public function uploadRichMenuImage(string $richMenuId, string $pngBinary): bool
     {
         try {
+            // ตรวจชนิดภาพจาก magic bytes
+            $contentType = str_starts_with($pngBinary, "\xFF\xD8") ? 'image/jpeg' : 'image/png';
+
             // ใช้ api-data.line.me (ไม่ใช่ api.line.me) สำหรับอัปโหลดไฟล์
             $response = Http::withToken($this->channelAccessToken)
-                ->withHeaders(['Content-Type' => 'image/png'])
+                ->withHeaders(['Content-Type' => $contentType])
                 ->timeout(30)
                 ->connectTimeout(10)
-                ->withBody($pngBinary, 'image/png')
+                ->withBody($pngBinary, $contentType)
                 ->post("https://api-data.line.me/v2/bot/richmenu/{$richMenuId}/content");
 
             if ($response->successful()) {
