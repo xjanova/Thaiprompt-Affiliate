@@ -68,7 +68,14 @@ class FreeTarotController extends Controller
         ]);
 
         $maxChars = (int) ($data['max_chars'] ?? self::DEFAULT_MAX_CHARS);
-        $minChars = max(self::MIN_ALLOWED_CHARS, (int) round($maxChars * 0.6));
+
+        // 🎯 (2026-07-26) ปรับเทียบจากของจริงบน prod: สั่งเท่าไรโมเดลเขียนเกิน
+        //    ~25-30% เสมอ (สั่ง 500 ได้ 562-659 จาก 3 ใบที่ลอง)
+        //    จึงบอกโมเดลด้วยเป้าที่ต่ำกว่าโควตาจริง เพื่อให้ผลลัพธ์ลงมาใกล้
+        //    ตัวเลขที่แอดมินตั้งไว้ — ไม่งั้นช่อง "ความยาวคำทำนาย" โกหก
+        //    (เพดานจริงยังเป็น $maxChars และมี trimToLimit เป็นตาข่ายอีกชั้น)
+        $promptTarget = max(self::MIN_ALLOWED_CHARS, (int) round($maxChars * 0.8));
+        $minChars = max(150, (int) round($promptTarget * 0.7));
 
         $nameEn = trim((string) $data['card']['name_en']);
         $nameTh = trim((string) ($data['card']['name_th'] ?? '')) ?: $nameEn;
@@ -91,7 +98,7 @@ class FreeTarotController extends Controller
 
         try {
             $result = $ai->chatWithCustomSystemPrompt(
-                $this->systemPrompt($minChars, $maxChars),
+                $this->systemPrompt($minChars, $promptTarget),
                 $this->userMessage($cards[1], $knowledge, (string) ($data['customer_name'] ?? '')),
                 // +150 เผื่อบล็อก NEXTQ ที่อยู่ในคำตอบเดียวกัน · ×1.2 เผื่อ
                 // ภาษาไทย (~1 token ต่อ 1 ตัวอักษรบนโมเดลส่วนใหญ่)
@@ -157,11 +164,14 @@ class FreeTarotController extends Controller
 
         $paragraphs = preg_split('/\n{2,}/u', $text) ?: [];
         if (count($paragraphs) < 3) {
-            // ย่อหน้าเดียว/สองย่อหน้า — ตัดยังไงก็เสียเนื้อความ ปล่อยผ่าน
+            // 2 ย่อหน้า = ย่อหน้าแรก (ฟันธง) + ย่อหน้าท้าย (ปลายเปิด/ชวนซื้อ)
+            // ตัดตัวไหนออกก็เสียของ — ปล่อยยาวเกินดีกว่าส่งของกุด
+            // (เกิดบ่อยเพราะพร็อมต์สั่งให้เขียนสั้น 2-3 ย่อหน้าอยู่แล้ว)
             Log::info('Juntra free tarot: ยาวเกินโควตาแต่ตัดไม่ได้', [
                 'card' => $cardName,
                 'chars' => mb_strlen($text),
                 'limit' => $maxChars,
+                'paragraphs' => count($paragraphs),
             ]);
 
             return $text;
