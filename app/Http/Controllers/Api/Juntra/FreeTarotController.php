@@ -93,9 +93,11 @@ class FreeTarotController extends Controller
             $result = $ai->chatWithCustomSystemPrompt(
                 $this->systemPrompt($minChars, $maxChars),
                 $this->userMessage($cards[1], $knowledge, (string) ($data['customer_name'] ?? '')),
-                // เผื่อ token ให้เกินเป้าเล็กน้อย — ตัดกลางประโยคแล้วอ่านไม่รู้เรื่อง
-                // แย่กว่ายาวเกินนิดหน่อย (ภาษาไทย 1 ตัวอักษร ≈ 0.5-1 token)
-                ['temperature' => 0.85, 'max_tokens' => max(400, (int) ceil($maxChars * 1.8))],
+                // +150 เผื่อบล็อก NEXTQ ที่อยู่ในคำตอบเดียวกัน · ×1.2 เผื่อ
+                // ภาษาไทย (~1 token ต่อ 1 ตัวอักษรบนโมเดลส่วนใหญ่)
+                // ตั้งชิดเป้าไว้ก่อน แล้วมี trimToLimit() เก็บส่วนเกินอีกชั้น —
+                // ตัดกลางประโยคอ่านไม่รู้เรื่อง แย่กว่ายาวเกินนิดหน่อย
+                ['temperature' => 0.85, 'max_tokens' => max(400, (int) ceil(($maxChars + 150) * 1.2))],
             );
         } catch (\Throwable $e) {
             Log::warning('Juntra free tarot failed', [
@@ -124,6 +126,8 @@ class FreeTarotController extends Controller
             return response()->json(['message' => 'คำทำนายว่างเปล่า'], 503);
         }
 
+        $text = $this->trimToLimit($text, $maxChars, $nameEn);
+
         return response()->json(['data' => [
             'interpretation' => $text,
             'next_questions' => $nextQuestions,
@@ -136,6 +140,66 @@ class FreeTarotController extends Controller
     }
 
     /**
+     * บีบคำทำนายให้อยู่ในโควตาความยาว โดยไม่ตัดกลางประโยค
+     *
+     * โมเดลชอบเขียนยาวเกินที่สั่ง (ทดสอบจริงบน prod: สั่ง 500 ได้ 1,007 ตัว)
+     * วิธีตัด: ทิ้ง "ย่อหน้ากลาง" แล้วเก็บย่อหน้าแรกกับย่อหน้าสุดท้ายไว้เสมอ
+     *   - ย่อหน้าแรก = คำฟันธง (สิ่งที่ลูกค้ามาเพื่ออ่าน)
+     *   - ย่อหน้าสุดท้าย = ประเด็นปลายเปิด + ชวนเปิดไพ่ชุดเต็ม (ตัวทำเงิน)
+     * ถ้าตัดแล้วสั้นเกินครึ่งของโควตา = คำทำนายจะกุด → คืนของเดิมไปเลย
+     * ยาวเกินนิดหน่อยยังดีกว่าส่งของกุดให้ลูกค้าคนแรกที่มาจากบอท
+     */
+    private function trimToLimit(string $text, int $maxChars, string $cardName): string
+    {
+        if (mb_strlen($text) <= $maxChars) {
+            return $text;
+        }
+
+        $paragraphs = preg_split('/\n{2,}/u', $text) ?: [];
+        if (count($paragraphs) < 3) {
+            // ย่อหน้าเดียว/สองย่อหน้า — ตัดยังไงก็เสียเนื้อความ ปล่อยผ่าน
+            Log::info('Juntra free tarot: ยาวเกินโควตาแต่ตัดไม่ได้', [
+                'card' => $cardName,
+                'chars' => mb_strlen($text),
+                'limit' => $maxChars,
+            ]);
+
+            return $text;
+        }
+
+        $last = trim((string) array_pop($paragraphs));
+        $kept = '';
+
+        foreach ($paragraphs as $paragraph) {
+            $paragraph = trim((string) $paragraph);
+            if ($paragraph === '') {
+                continue;
+            }
+
+            $candidate = $kept === '' ? $paragraph : $kept."\n\n".$paragraph;
+            if ($kept !== '' && mb_strlen($candidate."\n\n".$last) > $maxChars) {
+                break;
+            }
+            $kept = $candidate;
+        }
+
+        $trimmed = trim($kept."\n\n".$last);
+
+        if (mb_strlen($trimmed) < (int) ($maxChars * 0.5)) {
+            return $text;
+        }
+
+        Log::info('Juntra free tarot: บีบความยาวลงตามโควตา', [
+            'card' => $cardName,
+            'from' => mb_strlen($text),
+            'to' => mb_strlen($trimmed),
+            'limit' => $maxChars,
+        ]);
+
+        return $trimmed;
+    }
+
+    /**
      * คลังความรู้ที่ใช้ได้จริงกับไพ่ใบเดียว
      *
      * ตัวที่ผูกกับ Celtic 10 ใบ (spreadPattern / elementalDignity /
@@ -145,9 +209,13 @@ class FreeTarotController extends Controller
     {
         $blocks = [];
 
+        // 🩹 (2026-07-26 หลังทดสอบบน prod) ตัด healthLinesForCards +
+        //    physiognomyLinesForCards ออกจากเส้นฟรี — ตำราสองตัวนี้ละเอียดมาก
+        //    (เขียนไว้สำหรับดวงที่จ่ายเงิน) พอยัดเข้าคำทำนาย 500 ตัวอักษร
+        //    โมเดลจะเทน้ำหนักไปที่ "สุขภาพ/อุบัติเหตุ" เป็นประเด็นหลักทุกใบ
+        //    ทั้งที่ลูกค้าขอ "ภาพรวมชีวิตช่วงนี้" — ทดสอบจริงด้วย The Tower
+        //    ได้คำทำนายที่พูดเรื่องไมเกรน/การอักเสบเกือบทั้งบท
         foreach ([
-            'healthLinesForCards',
-            'physiognomyLinesForCards',
             'personRoleLinesForCards',
         ] as $method) {
             try {
@@ -173,7 +241,10 @@ class FreeTarotController extends Controller
             return '';
         }
 
-        return "📚 ตำราแม่หมอสำหรับไพ่ใบนี้ (ใช้เป็นฐานการอ่าน ห้ามลอกมาตรง ๆ):\n".implode("\n\n", $blocks);
+        return "📚 ตำราแม่หมอสำหรับไพ่ใบนี้ — เป็น *วัตถุดิบ* เท่านั้น:\n"
+            ."• เลือกหยิบเฉพาะบรรทัดที่ตรงกับสิ่งที่หน้าไพ่ชี้จริง ไม่ต้องใช้ครบ\n"
+            ."• ห้ามลอกมาตรง ๆ และห้ามยกทุกหมวดมาพูดในบทเดียว\n\n"
+            .implode("\n\n", $blocks);
     }
 
     /**
@@ -242,11 +313,14 @@ class FreeTarotController extends Controller
 → ห้ามอ้างถึงสิ่งเหล่านี้เด็ดขาด และ **ห้ามถามกลับก่อนทำนาย** ให้อ่านไพ่ทันที
 
 ━━━━━━━━━━━━━━━━━
-📜 โครงคำทำนาย (รวม {$minChars}-{$maxChars} ตัวอักษร)
+📜 โครงคำทำนาย — **3 ย่อหน้าสั้น รวมทั้งบท {$minChars}-{$maxChars} ตัวอักษร**
 ━━━━━━━━━━━━━━━━━
 1) ฟันธงทันทีว่าไพ่ใบนี้บอกอะไรถึง "ชีวิตช่วงนี้" ของเจ้าชะตา — ห้ามเกริ่นยาว
 2) ขยายเรื่องที่ไพ่ชี้ชัดที่สุดเพียงเรื่องเดียว (การเงิน/ความรัก/การงาน/จิตใจ — เลือกตามหน้าไพ่ ไม่ใช่เดา)
-3) ปิดด้วยสิ่งที่ควรทำ 1-2 ข้อ ที่ลงมือได้จริง + สิ่งที่ต้องระวัง 1 ข้อ
+3) ปิดด้วยสิ่งที่ควรทำ 1 ข้อ ที่ลงมือได้จริง + สิ่งที่ต้องระวัง 1 ข้อ (เขียนรวมในย่อหน้าเดียว)
+
+⚠️ รูปแบบ: **ห้ามใส่หัวข้อ ห้ามใช้บุลเล็ต ห้ามขึ้นรายการเลข** — เขียนเป็นย่อหน้าเล่าต่อเนื่อง
+   ใช้ **ตัวหนา** ได้ครั้งเดียวตอนเอ่ยชื่อไพ่เท่านั้น (หัวข้อ/รายการทำให้บทยาวเกินโดยใช่เหตุ)
 
 ━━━━━━━━━━━━━━━━━
 ✅ "ปลายเปิด" หมายถึงอะไร (สำคัญมาก)
@@ -262,8 +336,9 @@ class FreeTarotController extends Controller
 ━━━━━━━━━━━━━━━━━
 • ห้ามทำนายความตาย การฆ่าตัวตาย หรือโรคร้ายแบบชี้ชัด → ให้แนะนำดูแลตัวเอง/พบแพทย์แทน
 • ห้ามใช้คำกั๊กทั้งบท เช่น "อาจจะ...ก็ได้", "แล้วแต่ตัวคุณ", "ก็ขึ้นอยู่กับ"
-• ห้ามเขียนเกิน {$maxChars} ตัวอักษร
-• ตอบภาษาไทยล้วน ย่อหน้าสั้น อ่านง่ายบนมือถือ (ใช้ **ตัวหนา** ได้บ้าง อย่ารก)
+• 🚨 **ห้ามเขียนเกิน {$maxChars} ตัวอักษรเด็ดขาด** (นับรวมทุกตัวอักษรและช่องว่าง)
+  ถ้าเขียนไปแล้วรู้สึกว่าจะเกิน ให้ตัดรายละเอียดออก ไม่ใช่เขียนต่อจนจบแล้วค่อยยาว
+• ตอบภาษาไทยล้วน ย่อหน้าสั้น อ่านง่ายบนมือถือ
 
 ━━━━━━━━━━━━━━━━━
 🔢 คำถามที่ควรถามต่อ
