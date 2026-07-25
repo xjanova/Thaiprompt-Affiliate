@@ -131,16 +131,32 @@ class FortuneRichMenuService
                 'created_by' => auth()->id(),
             ]);
 
+            // 8. 🔗 (2026-07-25) ผลักเมนูใหม่ให้ลูกค้าที่ "ถูกผูกเมนูรายคน" ไว้ด้วย
+            //   setDefaultRichMenu (ข้อ 4) เป็นแค่เมนูสำรองของ OA — คนที่มี per-user link
+            //   จะค้างเมนูเก่าตลอดไป (เจ้าของ: "บางคนเมนูไม่เปลี่ยนเป็นที่เราเพิ่งทำใหม่")
+            //   non-blocking: ล้มเหลว = deploy ยังถือว่าสำเร็จ (รัน fortune:rich-menu-sync ซ้ำได้)
+            $syncedUsers = 0;
+            try {
+                $syncedUsers = $this->pushMenuToLinkedUsers($richMenuId);
+            } catch (\Throwable $syncErr) {
+                Log::warning('FortuneRichMenu: sync เมนูให้ผู้ใช้รายคนล้มเหลว (non-blocking)', [
+                    'rich_menu_id' => $richMenuId,
+                    'error' => $syncErr->getMessage(),
+                ]);
+            }
+
             Log::info('FortuneRichMenu: Deploy สำเร็จ', [
                 'rich_menu_id' => $richMenuId,
                 'menu_id' => $menu->id,
                 'editor_mode' => $editorMode,
+                'synced_users' => $syncedUsers,
             ]);
 
             return [
                 'success' => true,
                 'rich_menu_id' => $richMenuId,
                 'menu' => $menu,
+                'synced_users' => $syncedUsers,
             ];
 
         } catch (\Throwable $e) {
@@ -557,6 +573,61 @@ class FortuneRichMenuService
     }
 
     // === Private Helper Methods ===
+
+    /**
+     * 🔗 (2026-07-25) ผลักเมนูใหม่ให้ลูกค้า LINE ทุกคน (ทับ per-user link เดิม)
+     *
+     * ใช้ `richmenu/bulk/link` ทีละ 500 คน — จำเป็นเพราะ `setDefaultRichMenu` ไม่ทับคนที่
+     * ถูกผูกเมนูรายคนไว้ (จาก LINE OA Manager / ระบบเก่า) → เมนูเก่าค้างถาวร
+     *
+     * @return int จำนวนผู้ใช้ที่ผลักสำเร็จ (โดยประมาณ — นับเป็นชุด)
+     */
+    public function pushMenuToLinkedUsers(string $richMenuId): int
+    {
+        $ids = [];
+
+        // ลูกค้า LINE ทั้งหมดที่เคยทักบอท (แหล่งใหญ่สุด)
+        try {
+            $ids = \Illuminate\Support\Facades\DB::table('line_bot_conversations')
+                ->whereNotNull('line_user_id')
+                ->distinct()
+                ->pluck('line_user_id')
+                ->all();
+        } catch (\Throwable $e) {
+            Log::warning('FortuneRichMenu: อ่าน line_bot_conversations ไม่ได้', ['error' => $e->getMessage()]);
+        }
+
+        // + คนที่มีบิลดูดวง (เผื่อไม่มีใน conversations)
+        try {
+            $ids = array_merge($ids, \App\Models\FortuneReading::where('platform', 'line')
+                ->whereNotNull('platform_user_id')
+                ->distinct()
+                ->pluck('platform_user_id')
+                ->all());
+        } catch (\Throwable $e) {
+            // ข้ามได้
+        }
+
+        // เฉพาะ LINE userId จริง (U + hex 32) — กัน PSID ของ FB ปนมา
+        $ids = array_values(array_unique(array_filter(
+            $ids,
+            fn ($id) => is_string($id) && preg_match('/^U[0-9a-f]{32}$/i', $id)
+        )));
+
+        if (empty($ids)) {
+            return 0;
+        }
+
+        $synced = 0;
+        foreach (array_chunk($ids, 500) as $batch) {
+            if ($this->lineService->bulkLinkRichMenu($batch, $richMenuId)) {
+                $synced += count($batch);
+            }
+            usleep(200000); // 0.2s — กัน rate limit
+        }
+
+        return $synced;
+    }
 
     /**
      * บันทึกภาพลง storage

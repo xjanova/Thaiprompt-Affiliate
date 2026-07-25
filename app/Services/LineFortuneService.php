@@ -4903,6 +4903,86 @@ class LineFortuneService implements MessagingPlatformInterface
      * @param  string  $richMenuId  Rich Menu ID
      * @return bool สำเร็จหรือไม่
      */
+    /**
+     * 🔗 (2026-07-25) ผูก Rich Menu ให้ผู้ใช้หลายคนพร้อมกัน (สูงสุด 500 คน/ครั้ง)
+     *
+     * ทำไมต้องมี: `setDefaultRichMenu` (user/all) มีผลกับคนที่ **ไม่มีเมนูผูกรายคน** เท่านั้น
+     *   ใครเคยถูกผูกเมนูไว้ (จาก LINE OA Manager / ระบบเก่า) จะไม่เปลี่ยนตาม default เลย
+     *   → เจ้าของรายงาน "บางคนเมนูไม่เปลี่ยนเป็นที่เราเพิ่งทำใหม่"
+     *   bulk/link เขียนทับ per-user link เดิม = ทุกคนได้เมนูใหม่แน่นอน
+     *
+     * @param  array<string>  $userIds  LINE userId (สูงสุด 500 — เกินจะถูกตัด)
+     * @param  string  $richMenuId  Rich Menu ID ปลายทาง
+     * @return bool สำเร็จหรือไม่
+     */
+    public function bulkLinkRichMenu(array $userIds, string $richMenuId): bool
+    {
+        $userIds = array_values(array_slice(array_filter(array_unique($userIds)), 0, 500));
+        if (empty($userIds)) {
+            return true;
+        }
+
+        try {
+            $response = Http::withToken($this->channelAccessToken)
+                ->timeout(30)
+                ->connectTimeout(10)
+                ->post(self::API_ENDPOINT.'/richmenu/bulk/link', [
+                    'richMenuId' => $richMenuId,
+                    'userIds' => $userIds,
+                ]);
+
+            if ($response->successful()) {
+                return true;
+            }
+
+            Log::error('LINE Rich Menu: bulk link ไม่สำเร็จ', [
+                'rich_menu_id' => $richMenuId,
+                'count' => count($userIds),
+                'status' => $response->status(),
+                'body' => mb_substr($response->body(), 0, 300),
+            ]);
+
+            return false;
+        } catch (\Throwable $e) {
+            Log::error('LINE Rich Menu: bulk link exception', [
+                'rich_menu_id' => $richMenuId,
+                'count' => count($userIds),
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 🔍 (2026-07-25) ดูว่าผู้ใช้คนนี้ผูก Rich Menu ตัวไหนอยู่ (ใช้ตรวจสอบ/debug)
+     *
+     * @return string|null rich menu id ที่ผูกรายคน / null = ใช้ default ของ OA
+     */
+    public function getUserRichMenuId(string $userId): ?string
+    {
+        try {
+            $response = Http::withToken($this->channelAccessToken)
+                ->timeout(10)
+                ->connectTimeout(5)
+                ->get(self::API_ENDPOINT."/user/{$userId}/richmenu");
+
+            if ($response->successful()) {
+                return $response->json('richMenuId');
+            }
+
+            // 404 = ไม่มี per-user link (ใช้ default) — ไม่ใช่ error
+            return null;
+        } catch (\Throwable $e) {
+            Log::debug('LINE Rich Menu: getUserRichMenuId fail', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     public function setDefaultRichMenu(string $richMenuId): bool
     {
         try {

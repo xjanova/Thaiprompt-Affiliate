@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\FortuneTellingSetting;
 use App\Models\LineRichMenu;
 use App\Services\FortuneRichMenuService;
-use App\Models\FortuneTellingSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -85,10 +85,15 @@ class FortuneRichMenuDeployController extends Controller
             $result = $service->generateAndDeploy();
 
             if ($result['success']) {
+                // 🔗 (2026-07-25) แจ้งจำนวนคนที่ถูกผลักเมนูใหม่ให้ (ทับ per-user link เดิม)
+                $synced = (int) ($result['synced_users'] ?? 0);
+
                 return response()->json([
                     'success' => true,
-                    'message' => 'Deploy Rich Menu สำเร็จ!',
+                    'message' => 'Deploy Rich Menu สำเร็จ!'
+                        .($synced > 0 ? " · อัปเดตให้ลูกค้า {$synced} คนแล้ว" : ''),
                     'rich_menu_id' => $result['rich_menu_id'],
+                    'synced_users' => $synced,
                 ]);
             }
 
@@ -147,7 +152,7 @@ class FortuneRichMenuDeployController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error' => "Re-set default ไม่สำเร็จ — LINE API อาจมีปัญหา",
+                'error' => 'Re-set default ไม่สำเร็จ — LINE API อาจมีปัญหา',
             ], 500);
 
         } catch (\Throwable $e) {
