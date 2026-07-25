@@ -35,6 +35,7 @@ class FortuneConversationService
     use \App\Services\Fortune\CelticCrossConversationTrait;
     use \App\Services\Fortune\FortuneConsentGateTrait;
     use \App\Services\Fortune\FortunePdpaDeletionTrait;
+    use \App\Services\Fortune\FortunePersonalDataTrait;
     use \App\Services\Fortune\FreeCardConversationTrait;
     use \App\Services\Fortune\PayFirstGateTrait;
     use \App\Services\Fortune\ProSessionTrait;
@@ -877,6 +878,18 @@ class FortuneConversationService
             $pdpaResult = $this->handlePdpaDeletionFlow($facebookUserId, $messageText, $userProfile);
             if ($pdpaResult !== null) {
                 return $pdpaResult;
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // 👤 (2026-07-25) ศูนย์ข้อมูลของฉัน — ดู/แก้ข้อมูลส่วนตัวในแชท
+            // ═══════════════════════════════════════════════════════════════
+            //   owner: "ลูกค้าถามข้อมูลตัวเองต้องตอบได้ / จะเปลี่ยนอะไรบอทต้องเปลี่ยนให้ได้
+            //   เช่นข้อมูลส่วนตัว วันเดือนปีเกิด แต่ข้อมูลการเงินหรืออีเมล บอททำไม่ได้"
+            //   วางถัดจาก PDPA (สิทธิ์ชุดเดียวกัน: เข้าถึง/แก้ไข/ลบ) และก่อน guard เวิ่นเว้อ
+            //   — คำขอสิทธิ์ PDPA ห้ามถูก silence กลืน
+            $personalDataResult = $this->handlePersonalDataFlow($facebookUserId, $messageText);
+            if ($personalDataResult !== null) {
+                return $personalDataResult;
             }
 
             // ═══════════════════════════════════════════════════════════════

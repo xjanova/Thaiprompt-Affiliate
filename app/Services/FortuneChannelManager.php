@@ -168,6 +168,19 @@ class FortuneChannelManager
             }
         }
 
+        // 👤 (2026-07-25) ชื่อที่ "ลูกค้าตั้งเอง" ต้องชนะชื่อโปรไฟล์ LINE/FB เสมอ
+        //   ไม่งั้นชื่อที่แก้ผ่าน "เปลี่ยนชื่อ" จะหายทันทีที่เปิดบิลใหม่
+        //   (reading ใหม่ถูกสร้างด้วย $userProfile['name'] = ชื่อโปรไฟล์)
+        try {
+            $customName = \Illuminate\Support\Facades\Cache::get("fortune:custom_name:{$platform}:{$userId}");
+            if (! empty($customName)) {
+                $userProfile = is_array($userProfile) ? $userProfile : [];
+                $userProfile['name'] = $customName;
+            }
+        } catch (\Throwable $e) {
+            // cache อ่านไม่ได้ → ใช้ชื่อโปรไฟล์ตามเดิม
+        }
+
         // ✅ ตั้ง platform ก่อน processMessage เพื่อให้ saveQuestionForAdmin() เก็บค่าถูก
         $this->conversationService->setPlatform($platform);
 
@@ -245,8 +258,11 @@ class FortuneChannelManager
     {
         $action = $result['action'] ?? '';
         // 🗑️ PDPA actions — ห้ามแทรกโฆษณาคอมมิชชั่นในข้อความลบข้อมูล (ผิดบริบท legal)
+        // 👤 (2026-07-25) ศูนย์ข้อมูลของฉัน — เป็นคำขอสิทธิ์ PDPA เช่นกัน ห้ามแทรกโฆษณา
         if (in_array($action, ['skipped_takeover', 'dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'abuse_auto_banned',
-            'pdpa_delete_confirm', 'pdpa_deleted', 'pdpa_delete_cancelled'], true)) {
+            'pdpa_delete_confirm', 'pdpa_deleted', 'pdpa_delete_cancelled',
+            'personal_data_summary', 'personal_data_restricted', 'personal_data_empty', 'personal_data_error',
+            'personal_name_ask', 'personal_name_updated', 'personal_name_cancelled', 'personal_name_failed'], true)) {
             return;
         }
 
@@ -806,6 +822,12 @@ class FortuneChannelManager
                 // 🗑️ (2026-07-07) PDPA ลบข้อมูล — กล่องยืนยัน (คำเตือน + ปุ่มยืนยัน/ยกเลิก) / ผลลัพธ์ (text ล้วน)
                 'pdpa_delete_confirm' => $fbService->sendQuickReplies($userId, $message, $result['quick_replies'] ?? [], $extra),
                 'pdpa_deleted', 'pdpa_delete_cancelled' => $fbService->sendMessage($userId, $message, $extra),
+
+                // 👤 (2026-07-25) ศูนย์ข้อมูลของฉัน — สรุป + ปุ่มแก้/ลบ (FB)
+                'personal_data_summary' => $fbService->sendQuickReplies($userId, $message, $result['quick_replies'] ?? [], $extra),
+                'personal_name_ask', 'personal_name_updated', 'personal_name_cancelled',
+                'personal_name_failed', 'personal_data_restricted', 'personal_data_empty',
+                'personal_data_error' => $fbService->sendMessage($userId, $message, $extra),
 
                 // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมบูชาครู/ยกเลิก)
                 'consent_gate' => (function () use ($fbService, $userId, $message, $result, $extra) {
@@ -2259,6 +2281,21 @@ class FortuneChannelManager
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
                 })(),
                 'pdpa_deleted', 'pdpa_delete_cancelled' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // 👤 (2026-07-25) ศูนย์ข้อมูลของฉัน — สรุปข้อมูล + ปุ่มแก้/ลบ (reply ฟรี ไม่กิน push)
+                'personal_data_summary' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $lineQr = array_map(fn ($b) => [
+                        'label' => mb_substr($b['title'] ?? '', 0, 20),
+                        'text' => $b['text'] ?? ($b['title'] ?? ''),
+                    ], $result['quick_replies'] ?? []);
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
+                })(),
+
+                // ข้อมูลส่วนตัว: ถามชื่อใหม่ / บันทึกแล้ว / ยกเลิก / เรื่องที่บอทแก้ไม่ได้ — text ล้วน
+                'personal_name_ask', 'personal_name_updated', 'personal_name_cancelled',
+                'personal_name_failed', 'personal_data_restricted', 'personal_data_empty',
+                'personal_data_error' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมบูชาครู/ยกเลิก)
                 'consent_gate' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
