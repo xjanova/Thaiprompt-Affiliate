@@ -8,9 +8,14 @@ use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Http\Controllers\AccessTokenController;
+use Laravel\Passport\Http\Controllers\ApproveAuthorizationController;
+use Laravel\Passport\Http\Controllers\AuthorizationController;
+use Laravel\Passport\Http\Controllers\DenyAuthorizationController;
 use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
@@ -42,6 +47,31 @@ class AppServiceProvider extends ServiceProvider
             \App\Models\FortuneTellingSetting::class,
             fn () => \App\Models\FortuneTellingSetting::getSettings()
         );
+
+        // 🔐 (2026-07-26 SECURITY) ปิด route ชุด "จัดการ client เอง" ของ Passport
+        //
+        //   ปัญหาเดิม (ติดมาตั้งแต่เปิด Passport 2026-07-17):
+        //   Passport ลงทะเบียน route ให้ครบชุดโดยอัตโนมัติ 18 เส้น ซึ่งรวม
+        //   POST /oauth/clients (middleware แค่ 'web','auth') → **ผู้ใช้ที่ล็อกอิน
+        //   main.thaiprompt.online คนไหนก็สร้าง OAuth client ของตัวเองได้**
+        //   พร้อม client_id + secret แล้วเอาไปหลอกลูกค้าที่ล็อกอินค้างอยู่
+        //   (magic link ใช้ Auth::login remember=true) ให้กดหน้า consent ที่เขียนว่า
+        //   "อ่านโปรไฟล์" → ได้ token ของเหยื่อไปยิง GET /api/user
+        //   → หลุด id / email / name / line_user_id
+        //
+        //   ซ้ำร้าย ClientController::store() ของ vendor ตั้ง provider = null และ
+        //   TokenGuard เช็คแบบ ($client->provider && ...) → null = falsy = ข้ามการเช็ค
+        //   → token ของ client เถื่อนผ่าน guard 'api-oauth' ได้
+        //   (ชั้นที่ 2 ปิดไปแล้วที่ ResolveJuntraUser — บังคับ provider='oauth_users'
+        //    สำหรับ /api/v1/juntra/* ; ตรงนี้คือปิดที่ต้นทาง)
+        //
+        //   วิธีแก้: ปิด auto-register ทั้งชุด แล้วประกาศเองเฉพาะเส้นที่ SSO ใช้จริง
+        //   ที่ registerPassportRoutes() ใน boot()
+        //
+        //   ⚠️ ต้องเรียกใน register() เท่านั้น — PassportServiceProvider::boot()
+        //      เป็นคนลงทะเบียน route และ package provider boot ก่อน AppServiceProvider
+        //      (register() ของทุก provider จบก่อน boot() ตัวแรกเสมอ จึงทัน)
+        Passport::ignoreRoutes();
     }
 
     /**
@@ -70,6 +100,9 @@ class AppServiceProvider extends ServiceProvider
         Passport::setDefaultScope(['read', 'profile', 'email']);
         Passport::tokensExpireIn(now()->addDays(15));
         Passport::refreshTokensExpireIn(now()->addDays(30));
+
+        // 🔐 คู่กับ Passport::ignoreRoutes() ใน register() — ประกาศเองเฉพาะเส้นที่ใช้
+        $this->registerPassportRoutes();
 
         // ✅ รัน pending migrations อัตโนมัติ (ตรวจสอบวันละครั้ง)
         $this->autoRunPendingMigrations();
@@ -172,6 +205,65 @@ class AppServiceProvider extends ServiceProvider
                 // ถ้ายังไม่ได้ migrate หรือ DB ไม่พร้อม → ให้แสดงฟรีเป็น default
                 $view->with('freeFortuneEnabled', true);
             }
+        });
+    }
+
+    /**
+     * ประกาศ route ของ Passport เองเฉพาะเส้นที่ SSO เว็บจันทราใช้จริง
+     *
+     * 🔐 (2026-07-26 SECURITY) แทนที่ชุด 18 เส้นที่ Passport ลงทะเบียนให้เอง
+     *    (ดูเหตุผลเต็มที่ Passport::ignoreRoutes() ใน register())
+     *
+     * เก็บไว้ 4 เส้น:
+     *   - POST   /oauth/token     juntraweb แลก authorization_code → access token
+     *                             (server-to-server ไม่ผ่าน 'web' จึงไม่โดน CSRF —
+     *                              เหมือน vendor เป๊ะ ห้ามใส่ 'web' เด็ดขาด)
+     *   - GET    /oauth/authorize เริ่ม flow (ต้องมี session ของ Thaiprompt)
+     *   - POST   /oauth/authorize ปุ่ม "อนุญาต" บนหน้า consent
+     *   - DELETE /oauth/authorize ปุ่ม "ไม่อนุญาต" บนหน้า consent
+     *
+     * ทำไมยังเก็บ approve/deny ทั้งที่ client ของจันทราตั้ง skip_authorization=true:
+     *   view `passport::authorize` ของ vendor ยิงไปที่ route ชื่อ
+     *   passport.authorizations.{approve,deny} ตรงๆ — ถ้าไม่ประกาศไว้ แล้ววันหน้า
+     *   แอดมิน provision client ที่ไม่ skip consent จะ RouteNotFoundException
+     *   (เก็บไว้ไม่เพิ่มความเสี่ยง เพราะจะกดได้ต้องมี client อยู่ก่อน ซึ่งตอนนี้
+     *    สร้างเองไม่ได้แล้ว — ต้องผ่าน artisan oauth:provision-juntra-client)
+     *
+     * ที่ตัดทิ้ง (ไม่มีโค้ดในระบบเรียกใช้ — grep แล้ว 0 จุด):
+     *   /oauth/clients*, /oauth/personal-access-tokens*, /oauth/tokens*,
+     *   /oauth/scopes, /oauth/token/refresh
+     *   (token/refresh เป็นของ SPA cookie auth ที่ต้องมี session บนโดเมนเดียวกัน
+     *    — juntra อยู่คนละโดเมน ใช้ grant_type=refresh_token ที่ POST /oauth/token แทน)
+     *
+     * ⚠️ middleware + ชื่อ route ต้องตรงกับ vendor/laravel/passport/routes/web.php
+     *    ห้ามแก้ชื่อ ไม่งั้น SSO ของ จันทรา.online พัง
+     */
+    protected function registerPassportRoutes(): void
+    {
+        Route::group([
+            'prefix' => config('passport.path', 'oauth'),
+            'as' => 'passport.',
+        ], function () {
+            Route::post('/token', [AccessTokenController::class, 'issueToken'])
+                ->middleware('throttle')
+                ->name('token');
+
+            Route::get('/authorize', [AuthorizationController::class, 'authorize'])
+                ->middleware('web')
+                ->name('authorizations.authorize');
+
+            // ลอกนิพจน์นี้จาก vendor ตรงๆ ห้ามย่อ — โปรเจกต์ไม่มี config/passport.php
+            // แต่ PassportServiceProvider mergeConfigFrom config ของตัวเองที่ตั้ง
+            // 'guard' => 'web' ไว้ → ผลลัพธ์จริงคือ 'auth:web' (ไม่ใช่ 'auth' เฉยๆ)
+            $guard = config('passport.guard');
+
+            Route::middleware(['web', $guard ? 'auth:'.$guard : 'auth'])->group(function () {
+                Route::post('/authorize', [ApproveAuthorizationController::class, 'approve'])
+                    ->name('authorizations.approve');
+
+                Route::delete('/authorize', [DenyAuthorizationController::class, 'deny'])
+                    ->name('authorizations.deny');
+            });
         });
     }
 
