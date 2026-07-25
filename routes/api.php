@@ -1657,6 +1657,13 @@ Route::prefix('v1/juntra')->middleware('auth:sanctum')->name('api.juntra.')->gro
         Route::get('/methods',     [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'methods'])->name('methods');
         Route::post('/initiate',   [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'initiate'])->name('initiate');
         Route::get('/{id}/status', [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'status'])->name('status');
+
+        // ตรวจสลิปให้เว็บ จันทรา.online ด้วย SlipOK ตัวเดียวกับบอท (โควตา +
+        // flood guard ก้อนเดียวกัน) — ตรวจอย่างเดียว juntraweb ตัดสินใจเรื่อง
+        // เงินเอง เพราะบิลของเว็บอยู่ในวอลเลตของเว็บ ไม่ใช่ FortuneReading
+        // throttle ต่ำเพราะแต่ละครั้งกินโควตา SlipOK จริง
+        Route::post('/verify-slip', \App\Http\Controllers\Api\Juntra\SlipVerifyController::class)
+            ->middleware('throttle:10,1')->name('verify-slip');
     });
 
     // ─── Admin/full-tree MLM read API (consumed by จันทรา.online website) ──
