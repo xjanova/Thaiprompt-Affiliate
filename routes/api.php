@@ -1626,6 +1626,13 @@ Route::prefix('v1/juntra')->middleware('auth:sanctum')->name('api.juntra.')->gro
         Route::post('/draw',      [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'draw'])->name('draw');
         Route::post('/read',      [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'read'])->name('read');
         Route::get('/readings/{id}', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'show'])->name('show');
+
+        // คำทำนายไพ่ให้เว็บ จันทรา.online — juntraweb เปิดไพ่เองแล้วส่งไพ่มาให้
+        // อ่านด้วย "คลังความรู้ไพ่ + คีย์พูล" ชุดเดียวกับบอท FB/LINE
+        // (juntraweb หักเครดิตลูกค้าไปแล้ว ที่นี่ไม่คิดเงินซ้ำ)
+        // throttle: อ่านไพ่หนึ่งครั้งกิน token เยอะ — กันยิงรัว
+        Route::post('/tarot/interpret', \App\Http\Controllers\Api\Juntra\TarotInterpretController::class)
+            ->middleware('throttle:20,1')->name('tarot.interpret');
     });
 
     Route::prefix('chat/mae-mor')->name('chat.')->group(function () {
