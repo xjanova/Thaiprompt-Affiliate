@@ -7535,7 +7535,11 @@ class FortuneConversationService
                         $reading->platform ?? $this->currentPlatform ?? 'facebook',
                         $reading->facebook_user_id ?? $reading->platform_user_id,
                         [
-                            'action' => 'processing',
+                            // 🃏 (2026-07-25) action เฉพาะกิจ (เดิมใช้ 'processing' ร่วมกับ "AI กำลังทำงาน")
+                            //   บั๊กที่เกิด: LINE arm ของ 'processing' ส่ง Flex "กำลังสร้างคำทำนาย"
+                            //   แล้ว **ทิ้งข้อความ "ได้ไพ่ X ความหมาย..." ทั้งก้อน** → ลูกค้า LINE
+                            //   ไม่รู้เลยว่าจับไพ่อะไรได้ (ฝั่ง FB ส่งข้อความนี้ปกติมาตลอด)
+                            'action' => 'deep_card_drawn',
                             'message' => trim($prefixMessage),
                             'reading' => $reading,
                         ],

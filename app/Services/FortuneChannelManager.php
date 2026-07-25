@@ -678,6 +678,9 @@ class FortuneChannelManager
                 // keyword matched, AI chat, throttle, busy ฯลฯ → ส่ง text + Quick Replies
                 'keyword_matched', 'ai_chat_response', 'fortune_throttled', 'busy', 'busy_processing',
                 'bank_account_info', 'partial', 'processing', 'queued',
+                // 🃏 (2026-07-25) กล่อง "ได้ไพ่ X ความหมาย..." ตอนเปิดไพ่ Deep 39
+                //   (แยก action ออกจาก 'processing' — LINE ต้องส่งข้อความนี้ ไม่ใช่ Flex "กำลังสร้าง")
+                'deep_card_drawn',
                 'share_no_user', 'share_error',
                 'deep_reading_disabled',
                 'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty',
@@ -1825,7 +1828,8 @@ class FortuneChannelManager
         //    ส่งรูป "ไพ่ + ดวงดาว" ครั้งเดียวพร้อมคำทำนาย ตอน delivery (view_reading_deep)
         //    user 2026-06-08: "ส่งครั้งเดียวพร้อมกันกับคำทำนาย ทั้งไพ่ทั้งแผนที่ดวงดาว"
         //    เดิม: รูปไพ่ออกตอนเปิด (processing) + ออกซ้ำตอนส่งคำทำนาย (view_reading_deep) + ดวงดาว = เยอะ
-        $skipDrawImages = ($action === 'processing');
+        //   🃏 (2026-07-25) 'deep_card_drawn' = action ใหม่ที่แยกออกจาก 'processing' — ต้อง skip เหมือนกัน
+        $skipDrawImages = in_array($action, ['processing', 'deep_card_drawn'], true);
         $tarotImageUrls = $skipDrawImages ? [] : $this->normalizeTarotImageUrls($result);
         foreach ($tarotImageUrls as $imgUrl) {
             try {
@@ -2388,6 +2392,12 @@ class FortuneChannelManager
 
                 // กำลังประมวลผล (AI ทำงานอยู่ / PAID status) → Flex แจ้งสถานะ ไม่มีปุ่มดูดวงใหม่
                 'processing' => $this->sendLineProcessingResponse($lineService, $userId, $result, $replyToken),
+
+                // 🃏 (2026-07-25) "ได้ไพ่ X ความหมาย..." ตอนเปิดไพ่ Deep 39 — ต้องส่งข้อความจริง
+                //   เดิมใช้ action 'processing' ร่วมกัน → LINE ส่ง Flex "กำลังสร้างคำทำนาย" แทน
+                //   ทำให้ลูกค้า LINE ไม่เห็นชื่อไพ่ที่จับได้เลย (FB เห็นมาตลอด)
+                //   รูปไพ่ไม่ส่งตรงนี้ — ส่งพร้อมคำทำนายทีเดียว (owner spec 2026-06-08) ที่ view_reading_deep
+                'deep_card_drawn' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // ข้อความซ้ำซ้อน (mutex lock) / กำลังประมวลผลอยู่ → ส่ง text สั้นๆ
                 'busy' => $lineService->sendMessageWithReplyFallback($userId, $message ?: '🌙 แม่หมอจันทรากำลังพิมพ์... กรุณารอสักครู่ ✨', $replyToken),
@@ -4346,6 +4356,19 @@ class FortuneChannelManager
             //   ทั้งคู่เป็นของแถมท้าย (ไม่สำคัญเท่าคำทำนาย) — main reading ส่งไปแล้วด้านบน (token ถูก consume)
             try {
                 $trailing = [];
+
+                // 🃏 (2026-07-25) FIX: รูปไพ่ที่ลูกค้าจับ — LINE ไม่เคยส่งเลย (FB ส่งมาตลอด)
+                //   เจ้าของรายงาน: "ไพ่รายใบของ 99 แสดง แต่ 39 ไม่แสดง"
+                //   ROOT CAUSE: Deep 39 มี 2 จุดที่ควรส่งรูป — ตอนเปิดไพ่ (action=processing →
+                //   sendLineProcessingResponse ส่งแค่ Flex "กำลังสร้าง") และตอนส่งคำทำนาย (ตรงนี้)
+                //   ฝั่ง FB จุดที่ 2 เรียก normalizeTarotImageUrls() ส่งรูปครบ แต่ LINE ตกหล่นทั้งคู่
+                //   (Celtic 99 ไม่โดนเพราะมี handler celtic_card_picked ส่งรูปเฉพาะของตัวเอง)
+                //   ⚠️ ไม่ใช่ปัญหา .webp — Celtic แสดงไพ่ .webp บน LINE ได้ปกติ
+                //   ส่งรวมชุดเดียวกับ chart+thankyou = ไม่เพิ่ม push (LINE รับ 5 objects/call)
+                foreach (array_slice($this->normalizeTarotImageUrls($result), 0, 3) as $cardUrl) {
+                    $trailing[] = $lineService->buildImageObject($cardUrl);
+                }
+
                 if ($chartUrl) {
                     $trailing[] = $lineService->buildImageObject($chartUrl);
                 }
