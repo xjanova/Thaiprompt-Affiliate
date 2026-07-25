@@ -1633,6 +1633,11 @@ Route::prefix('v1/juntra')->middleware('auth:sanctum')->name('api.juntra.')->gro
         // throttle: อ่านไพ่หนึ่งครั้งกิน token เยอะ — กันยิงรัว
         Route::post('/tarot/interpret', \App\Http\Controllers\Api\Juntra\TarotInterpretController::class)
             ->middleware('throttle:20,1')->name('tarot.interpret');
+
+        // ดูดวงเชิงลึก 39฿ ให้เว็บจันทรา — ตัวเดียวกับ READING_TYPE_DEEP ของบอท
+        // (juntraweb หักเครดิตแล้วก่อนเรียก ที่นี่ไม่คิดเงินซ้ำ)
+        Route::post('/deep', \App\Http\Controllers\Api\Juntra\DeepReadingController::class)
+            ->middleware('throttle:20,1')->name('deep');
     });
 
     Route::prefix('chat/mae-mor')->name('chat.')->group(function () {
