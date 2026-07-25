@@ -454,132 +454,83 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                     $reading->setConversationState('reading_notification_attempted', true);
                     $reading->setConversationState('reading_notification_retry_count', $retryCount + 1);
 
-                    if ($this->platform === 'line') {
-                        // 💎 LINE: push Flex แจ้งเตือนสั้นๆ (1 quota), คำทำนายเต็มส่งฟรีตอนตอบกลับ
-                        try {
-                            $lineService = new \App\Services\LineFortuneService($settings);
-                            $readyMessage = "🔮✨ คุณ{$name}คะ คำทำนายพร้อมแล้วค่ะ!\n\n"
-                                ."อ่านเลยไหมคะ? 💎\n\n"
-                                ."💡 กด 'อ่านคำทำนาย' ด้านล่างเลยค่ะ ✨";
+                    // 📱 (2026-05-22 → 2026-07-25) push **คำทำนายเต็มทันที** ทั้ง FB และ LINE
+                    //    User spec 2026-05-22: "กล่องข้อความให้อ่านคำทำนายพร้อมแล้ว ใน fb ไม่ต้องมี
+                    //                          เมื่อคำทำนายเสร็จแล้ว ส่งให้ลูกค้าทันทีเลย"
+                    //    2026-07-25: LINE ก็เลิกใช้กล่อง "คำทำนายพร้อมแล้ว" เช่นกัน (sync กับ
+                    //      fortune:process-deep + check-pending) — ไม่งั้น path นี้เอากล่องเก่ากลับมา
+                    //    push view_reading_deep — ส่งภาพไพ่ + chart + คำทำนายเต็ม (POST_PURCHASE_UPDATE tag)
+                    try {
+                        $headerMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
+                        $headerMessage .= '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n";
+                        $headerMessage .= '📅 วันที่: '.$reading->created_at->format('d/m/Y H:i')."\n";
+                        $headerMessage .= "═══════════════════════\n\n";
+                        $headerMessage .= $reading->deep_response;
 
-                            Log::info('ProcessDeepFortuneReadingJob: LINE — push Flex แจ้งเตือนสั้นๆ (1 quota)', [
-                                'reading_id' => $this->readingId,
-                                'user_id' => $this->userId,
-                            ]);
+                        Log::info('ProcessDeepFortuneReadingJob: push คำทำนายเต็มทันที (view_reading_deep)', [
+                            'reading_id' => $this->readingId,
+                            'platform' => $this->platform,
+                            'user_id' => $this->userId,
+                            'retry_count' => $retryCount,
+                            'response_length' => mb_strlen($reading->deep_response ?? ''),
+                        ]);
 
-                            // ลอง Flex สวยๆ ก่อน
-                            $flex = $lineService->buildFortuneReadyFlexMessage(
-                                $name,
-                                $reading->bill_reference
-                            );
-                            $notifySent = $lineService->sendRichMessagePriority($this->userId, [
-                                'alt_text' => '🔮 คำทำนายเชิงลึกพร้อมแล้ว! กดอ่านได้เลยค่ะ',
-                                'contents' => $flex,
-                            ]);
+                        $sent = $channelManager->sendResponse($this->platform, $this->userId, [
+                            'action' => 'view_reading_deep',
+                            'message' => $headerMessage,
+                            'reading' => $reading,
+                            'chart_image_url' => $reading->reading_image_url,
+                            // 🃏 ส่งรูปไพ่ยิปซีที่ลูกค้าจับได้ด้วย
+                            'tarot_image_urls' => collect($reading->getCollectedTarotCards())
+                                ->pluck('image_url')->filter()->values()->all(),
+                            // 🌙 (2026-05-22) ส่งกล่อง follow-up "หมออยู่ตอบเพิ่ม 10 นาที" หลังคำทำนาย
+                            'send_pro_session_followup' => true,
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
-                            // Fallback: text + quick replies ถ้า Flex ล้มเหลว
-                            if (! $notifySent) {
-                                Log::warning('ProcessDeepFortuneReadingJob: LINE Flex push ล้มเหลว → fallback text', [
+                        // 🛡️ ตั้ง reading_sent_directly=true เมื่อส่งสำเร็จ (กัน duplicate delivery จาก reply path)
+                        //    flag reading_notification_sent ตั้งด้วยเพื่อ skip Phase 2 ของ check-pending command
+                        if ($sent) {
+                            $reading->setConversationState('reading_sent_directly', true);
+                            $reading->setConversationState('reading_ready_sent', true);
+                            $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                            $reading->setConversationState('reading_notification_sent', true);
+                            $reading->setConversationState('delivered_by_push', true);
+
+                            // 📢 (2026-07-25) ชวนแนะนำเพื่อน — หลังคำทำนายถึงลูกค้าแล้ว
+                            //   ต้องอยู่หลัง setConversationState ทุกตัว (กัน flag ที่ flush ล้างไปถูกเขียนกลับ)
+                            try {
+                                $reading->refresh();
+                                (new \App\Services\FortuneConversationService($settings))
+                                    ->flushPendingAffiliatePromo($reading);
+                            } catch (\Throwable $promoErr) {
+                                Log::warning('ProcessDeepFortuneReadingJob: ส่งข้อความชวนแนะนำเพื่อนล้มเหลว (non-blocking)', [
                                     'reading_id' => $this->readingId,
-                                ]);
-                                $notifySent = $lineService->sendMessagePriority($this->userId, $readyMessage, [
-                                    'quick_replies' => [
-                                        ['label' => '📖 อ่านคำทำนาย', 'text' => 'อ่านคำทำนาย'],
-                                        ['label' => '⏰ ไว้ดูทีหลัง', 'text' => 'ไว้ดูทีหลัง'],
-                                    ],
+                                    'error' => $promoErr->getMessage(),
                                 ]);
                             }
-
-                            // 🛡️ (2026-05-03) เขียน flag เฉพาะ true — กัน transient lock
-                            //    เคสเดิม: $notifySent=false → flag เขียน false → retry counter ขึ้น → 3 fail = lock
-                            //    ตอนนี้: false → ไม่เขียน → reply path ตอน user ทักกลับยังทำงาน
-                            if ($notifySent) {
-                                $reading->setConversationState('reading_notification_sent', true);
-                                $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
-                            } else {
-                                // 🔓 push ล้ม → ปล่อย delivery lock เพื่อให้ retry/ทักกลับ deliver ได้
-                                \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
-                                Log::warning('ProcessDeepFortuneReadingJob: LINE push fail (transient) — ไม่ lock, fallback ตอน user ทักกลับ', [
-                                    'reading_id' => $this->readingId,
-                                    'retry_count' => $retryCount,
-                                ]);
-                            }
-
-                            Log::info('ProcessDeepFortuneReadingJob: LINE push แจ้งเตือนสั้น ผลลัพธ์', [
-                                'reading_id' => $this->readingId,
-                                'sent' => $notifySent,
-                            ]);
-                        } catch (\Exception $notifyErr) {
-                            Log::warning('ProcessDeepFortuneReadingJob: LINE push แจ้งเตือนล้มเหลว', [
-                                'reading_id' => $this->readingId,
-                                'error' => $notifyErr->getMessage(),
-                            ]);
-                            // notification_attempted=true แล้ว → FCS:794 จะส่งคำทำนายเต็มทันทีตอนทักกลับ
-                        }
-                    } else {
-                        // 📱 (2026-05-22) Facebook: push **คำทำนายเต็มทันที** (ไม่ถาม "พร้อมไหม?")
-                        //    User spec 2026-05-22: "กล่องข้อความให้อ่านคำทำนายพร้อมแล้ว ใน fb ไม่ต้องมี
-                        //                          เมื่อคำทำนายเสร็จแล้ว ส่งให้ลูกค้าทันทีเลย"
-                        //
-                        //    เดิม (2026-05-19 Batch 7): push fortune_ready_notification (button 2 ปุ่ม)
-                        //    ใหม่: push view_reading_deep — ส่งภาพไพ่ + chart + คำทำนายเต็ม ด้วย POST_PURCHASE_UPDATE tag (ฟรี)
-                        try {
-                            $headerMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
-                            $headerMessage .= '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n";
-                            $headerMessage .= '📅 วันที่: '.$reading->created_at->format('d/m/Y H:i')."\n";
-                            $headerMessage .= "═══════════════════════\n\n";
-                            $headerMessage .= $reading->deep_response;
-
-                            Log::info('ProcessDeepFortuneReadingJob: Facebook — push คำทำนายเต็มทันที (view_reading_deep)', [
-                                'reading_id' => $this->readingId,
-                                'user_id' => $this->userId,
-                                'retry_count' => $retryCount,
-                                'response_length' => mb_strlen($reading->deep_response ?? ''),
-                            ]);
-
-                            $sent = $channelManager->sendResponse($this->platform, $this->userId, [
-                                'action' => 'view_reading_deep',
-                                'message' => $headerMessage,
-                                'reading' => $reading,
-                                'chart_image_url' => $reading->reading_image_url,
-                                // 🃏 ส่งรูปไพ่ยิปซีที่ลูกค้าจับได้ด้วย
-                                'tarot_image_urls' => collect($reading->getCollectedTarotCards())
-                                    ->pluck('image_url')->filter()->values()->all(),
-                                // 🌙 (2026-05-22) ส่งกล่อง follow-up "หมออยู่ตอบเพิ่ม 10 นาที" หลังคำทำนาย
-                                'send_pro_session_followup' => true,
-                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-
-                            // 🛡️ ตั้ง reading_sent_directly=true เมื่อส่งสำเร็จ (กัน duplicate delivery จาก reply path)
-                            //    flag reading_notification_sent ตั้งด้วยเพื่อ skip Phase 2 ของ check-pending command
-                            if ($sent) {
-                                $reading->setConversationState('reading_sent_directly', true);
-                                $reading->setConversationState('reading_ready_sent', true);
-                                $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
-                                $reading->setConversationState('reading_notification_sent', true);
-                                $reading->setConversationState('delivered_by_push', true);
-                            } else {
-                                // 🔓 push ล้ม → ปล่อย delivery lock เพื่อให้ retry/ทักกลับ deliver ได้
-                                \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
-                                Log::warning('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม fail (transient) — fallback ตอน user ทักกลับ', [
-                                    'reading_id' => $this->readingId,
-                                    'retry_count' => $retryCount,
-                                ]);
-                            }
-
-                            Log::info('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม ผลลัพธ์', [
-                                'reading_id' => $this->readingId,
-                                'sent' => $sent,
-                            ]);
-                        } catch (\Exception $notifyErr) {
-                            // 🔓 push exception → ปล่อย delivery lock เพื่อให้ retry/ทักกลับ deliver ได้
+                        } else {
+                            // 🔓 push ล้ม → ปล่อย delivery lock เพื่อให้ retry/ทักกลับ deliver ได้
                             \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
-                            Log::warning('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม ล้มเหลว (จะ fallback ตอน user ทักกลับมา)', [
+                            Log::warning('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม fail (transient) — fallback ตอน user ทักกลับ', [
                                 'reading_id' => $this->readingId,
-                                'error' => $notifyErr->getMessage(),
+                                'retry_count' => $retryCount,
                             ]);
-                            // notification_attempted=true แล้ว → FCS:1287 จะส่งคำทำนายเต็มตอนทักกลับ
                         }
+
+                        Log::info('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม ผลลัพธ์', [
+                            'reading_id' => $this->readingId,
+                            'sent' => $sent,
+                        ]);
+                    } catch (\Exception $notifyErr) {
+                        // 🔓 push exception → ปล่อย delivery lock เพื่อให้ retry/ทักกลับ deliver ได้
+                        \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
+                        Log::warning('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม ล้มเหลว (จะ fallback ตอน user ทักกลับมา)', [
+                            'reading_id' => $this->readingId,
+                            'error' => $notifyErr->getMessage(),
+                        ]);
+                        // notification_attempted=true แล้ว → FCS:1287 จะส่งคำทำนายเต็มตอนทักกลับ
                     }
+
                 }
             }
 

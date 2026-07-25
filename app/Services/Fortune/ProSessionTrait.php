@@ -1096,6 +1096,17 @@ trait ProSessionTrait
         if ($elapsedMin >= $standby) {
             return false;
         }
+
+        // 🔔 (2026-07-25) ตามครั้งเดียวพอ — ลดกล่องซ้ำ (เจ้าของ: "ส่งกล่องข้อความซ้ำหลายกล่าย")
+        //   เดิมตามทุก 10 นาทีตลอดสแตนบาย 30 นาที = ลูกค้าที่อ่านจบแล้วไม่อยากถามต่อ โดนตาม 3 รอบ
+        //   ⚠️ ห้ามใช้ pro_session_window_minutes มาตัด — window นับจาก pro_session_started_at
+        //      ซึ่งตั้งตอน "ถามคำถามแรก" เท่านั้น แต่ nudge มีไว้สำหรับคนที่ยังไม่ถามเลย
+        //      (started_at ยังว่าง = เวลายังไม่เริ่มเดิน ลูกค้ายังถามได้เต็มเวลา) → ถ้าเอา window
+        //      มาเทียบกับ elapsed (ซึ่งนับจาก ready_at) = คนละเรือนนาฬิกา และ Deep (7 < interval 10)
+        //      จะไม่ถูกตามเลยแม้แต่ครั้งเดียว
+        if ((int) $reading->getConversationState('pro_session_nudge_count', 0) >= 1) {
+            return false;
+        }
         // ยังไม่ถึงรอบตามครั้งแรก (นับจากพร้อมให้ถาม)
         if ($elapsedMin < $interval) {
             return false;

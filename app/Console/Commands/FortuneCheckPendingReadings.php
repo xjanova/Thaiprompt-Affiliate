@@ -396,9 +396,12 @@ class FortuneCheckPendingReadings extends Command
                             //   (ไม่ตกไป chat upsell/OOM = อาการ K3440) + nudge/auto-finalize ทำงานกับ path นี้
                             //   K3440 fix เดิมใส่เฉพาะ command path — check-pending P2 ตกหล่น. idempotent.
                             try {
-                                (new FortuneConversationService($settings))->enterDeepProSessionFor($reading->fresh());
+                                $fcsAfterSend = new FortuneConversationService($settings);
+                                $fcsAfterSend->enterDeepProSessionFor($reading->fresh());
+                                // 📢 (2026-07-25) ชวนแนะนำเพื่อน — ส่งหลังคำทำนายถึงลูกค้าแล้ว (ดู flushPendingAffiliatePromo)
+                                $fcsAfterSend->flushPendingAffiliatePromo($reading->fresh());
                             } catch (\Throwable $psErr) {
-                                \Illuminate\Support\Facades\Log::warning('check-pending P2: enter Deep Pro Session fail (non-blocking)', [
+                                \Illuminate\Support\Facades\Log::warning('check-pending P2: enter Deep Pro Session/promo fail (non-blocking)', [
                                     'reading_id' => $reading->id, 'error' => $psErr->getMessage(),
                                 ]);
                             }
@@ -422,6 +425,23 @@ class FortuneCheckPendingReadings extends Command
                 }
             } elseif ($notificationSent || $readingSentDirectly) {
                 $this->info("  📌 {$billRef} — ".($readingSentDirectly ? 'ส่งคำทำนายเต็มแล้ว' : 'แจ้งแล้ว รอ user ส่งข้อความมา')." (รอ {$waitMinutes} นาที)");
+
+                // 📢 (2026-07-25) late-flush ข้อความชวนแนะนำเพื่อนที่ค้าง
+                //   เคสที่ต้องมี: push คำทำนายรอบแรกล้ม → ลูกค้าทักกลับแล้วได้คำทำนายผ่าน reply path
+                //   ซึ่งไม่ได้ flush promo → flag ค้างถาวร (promo ส่งเฉพาะ LINE ซึ่งเป็นช่องที่ quota
+                //   หมดบ่อยสุด = กระทบรายได้ affiliate จริง)
+                //   cron ตัวนี้รันทุกนาที + เข้าสาขานี้เมื่อคำทำนายถึงลูกค้าแล้วเท่านั้น → ลำดับถูกเสมอ
+                if ($readingSentDirectly) {
+                    try {
+                        $settings = $settings ?? FortuneTellingSetting::getSettings();
+                        (new FortuneConversationService($settings))->flushPendingAffiliatePromo($reading);
+                    } catch (\Throwable $promoErr) {
+                        Log::warning('fortune:check-pending: late-flush promo ล้มเหลว (non-blocking)', [
+                            'reading_id' => $reading->id,
+                            'error' => $promoErr->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             $flagged++;

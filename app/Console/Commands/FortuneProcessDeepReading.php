@@ -332,6 +332,24 @@ class FortuneProcessDeepReading extends Command
                         $reading->setConversationState('reading_notification_sent', $notifySent);
                         $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
 
+                        // 📢 (2026-07-25) ชวนแนะนำเพื่อน — ส่ง "หลัง" ลูกค้าได้อ่านคำทำนายแล้ว
+                        //   (เดิมส่งใน processPaymentConfirmed = แทรกคั่นก่อนคำทำนายถึงมือลูกค้า)
+                        //   ⚠️ ต้องอยู่ "หลัง" setConversationState ทุกตัวด้านบน — ไม่งั้น flag ที่ flush
+                        //      ล้างไปแล้วจะถูกเขียนกลับ (setConversationState = read-modify-write ทั้งคอลัมน์
+                        //      จาก instance ที่ยังถือ array เก่าอยู่ในหน่วยความจำ)
+                        if ($notifySent) {
+                            try {
+                                $reading->refresh();
+                                (new \App\Services\FortuneConversationService($settings))
+                                    ->flushPendingAffiliatePromo($reading);
+                            } catch (\Throwable $promoErr) {
+                                Log::warning('fortune:process-deep: ส่งข้อความชวนแนะนำเพื่อนล้มเหลว (non-blocking)', [
+                                    'reading_id' => $readingId,
+                                    'error' => $promoErr->getMessage(),
+                                ]);
+                            }
+                        }
+
                         Log::info('fortune:process-deep: push แจ้ง "คำทำนายพร้อมแล้ว" ผลลัพธ์', [
                             'reading_id' => $readingId,
                             'sent' => $notifySent,

@@ -6399,6 +6399,40 @@ class FortuneConversationService
     }
 
     /**
+     * 📢 (2026-07-25) ส่งข้อความชวนแนะนำเพื่อนที่ค้างไว้ — เรียกหลังคำทำนายถึงลูกค้าแล้วเท่านั้น
+     *
+     * processPaymentConfirmed ทำงานก่อนคำทำนายถูก push (Job/cron path) จึงฝาก flag ไว้
+     * ให้ command เรียกเมธอดนี้ต่อท้าย — ลูกค้าจะได้อ่านดวงก่อน แล้วค่อยเห็นข้อความชวน
+     * idempotent: ล้าง flag ทันทีที่หยิบมาใช้ (ส่งซ้ำไม่ได้)
+     */
+    public function flushPendingAffiliatePromo(FortuneReading $reading): void
+    {
+        $pending = $reading->getConversationState('pending_affiliate_promo');
+        if (empty($pending['user_id'])) {
+            return;
+        }
+
+        $reading->setConversationState('pending_affiliate_promo', null);
+
+        try {
+            $platform = (string) ($pending['platform'] ?? 'facebook');
+            $lineService = $platform === 'line' ? new LineFortuneService($this->settings) : null;
+
+            app(FortuneAffiliateService::class)->sendPostReadingAffiliatePromotion(
+                $reading,
+                (string) $pending['user_id'],
+                $lineService,
+                $platform
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Fortune Affiliate Promo: ส่งข้อความโปรโมทล้มเหลว (ไม่กระทบ)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Public wrapper — ให้ SmsPaymentService ใช้ปุ่มยืนยันวันเกิดชุดเดียวกัน
      */
     public function buildReusedBirthdateQuickRepliesPublic(FortuneReading $reading): array
@@ -9756,22 +9790,30 @@ class FortuneConversationService
             $isBirthdateRerun = (int) $reading->getConversationState('birthdate_correction_count', 0) > 0;
 
             if ($affiliateUserId && ! $isBirthdateRerun) {
-                try {
-                    $affiliateServiceForPromo = app(FortuneAffiliateService::class);
-
-                    // ดึง LINE service สำหรับส่ง promo (ใช้ instance ที่สร้างไว้ข้างบน)
-                    $lineServiceForPromo = $lineServiceInstance ?? null;
-
-                    $affiliateServiceForPromo->sendPostReadingAffiliatePromotion(
-                        $reading,
-                        $affiliateUserId,
-                        $lineServiceForPromo,
-                        $affiliatePlatform
-                    );
-                } catch (\Exception $promoErr) {
-                    Log::warning('Fortune Affiliate Promo: ส่งข้อความโปรโมทล้มเหลว (ไม่กระทบ)', [
-                        'reading_id' => $reading->id,
-                        'error' => $promoErr->getMessage(),
+                if ($streaming) {
+                    // streaming = คำทำนายถูกส่งไปแล้วในรอบนี้ → ส่ง promo ต่อท้ายได้เลย
+                    try {
+                        app(FortuneAffiliateService::class)->sendPostReadingAffiliatePromotion(
+                            $reading,
+                            $affiliateUserId,
+                            $lineServiceInstance ?? null,
+                            $affiliatePlatform
+                        );
+                    } catch (\Exception $promoErr) {
+                        Log::warning('Fortune Affiliate Promo: ส่งข้อความโปรโมทล้มเหลว (ไม่กระทบ)', [
+                            'reading_id' => $reading->id,
+                            'error' => $promoErr->getMessage(),
+                        ]);
+                    }
+                } elseif ($affiliatePlatform === 'line') {
+                    // 📌 (2026-07-25) Job/cron path: เมธอดนี้ทำงาน **ก่อน** คำทำนายถูกส่งถึงลูกค้า
+                    //   → เดิม promo ไปแทรกคั่นระหว่าง "ได้ไพ่..." กับคำทำนาย (ลูกค้ายังไม่ได้อ่านดวงเลย
+                    //     แต่โดนชวนแนะนำเพื่อนก่อน) — ฝากไว้ให้ command ส่งหลัง push คำทำนายสำเร็จแทน
+                    //   (เจ้าของ 2026-07-25: "ทำไมมีการส่งกล่องข้อความซ้ำหลายกล่อง เราต้องทำให้ดี")
+                    //   เก็บ flag เฉพาะ LINE — promo ส่งได้เฉพาะ LINE อยู่แล้ว (ไม่เขียน key ทิ้งในบิล FB)
+                    $reading->setConversationState('pending_affiliate_promo', [
+                        'user_id' => $affiliateUserId,
+                        'platform' => $affiliatePlatform,
                     ]);
                 }
             }
