@@ -211,15 +211,11 @@ class FortuneAiFailureRecovery
                             'layout' => 'vertical',
                             'spacing' => 'sm',
                             'contents' => [
+                                // 🧹 (2026-07-25, owner) ลบปุ่ม "คุยกับแม่หมอ" ทุกจุด — ใช้ keyword detection แทน
                                 [
                                     'type' => 'button',
                                     'style' => 'primary',
                                     'color' => '#7C3AED',
-                                    'action' => ['type' => 'message', 'label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
-                                ],
-                                [
-                                    'type' => 'button',
-                                    'style' => 'secondary',
                                     'action' => ['type' => 'message', 'label' => '🔍 เช็คสถานะ', 'text' => 'เช็คสถานะ'],
                                 ],
                             ],

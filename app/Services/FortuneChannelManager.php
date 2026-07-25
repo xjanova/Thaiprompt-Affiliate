@@ -644,7 +644,7 @@ class FortuneChannelManager
                 // 🛑 (2026-05-15) ถามก่อนยกเลิก — กันลูกค้าหายเพราะติดปัญหาเล็กน้อย (legacy pattern)
                 'cancel_reason_prompt' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🆘 โอนไม่เป็น', 'payload' => 'CANCEL_HELP_TRANSFER'],
-                    ['content_type' => 'text', 'title' => '💬 คุยกับแอดมิน', 'payload' => 'CANCEL_HELP_ADMIN'],
+                    // 🧹 (2026-07-25, owner) ลบปุ่ม "คุยกับแอดมิน/แม่หมอ" ทุกจุด — ใช้ keyword detection แทน
                     ['content_type' => 'text', 'title' => '❌ ยกเลิกจริง', 'payload' => 'CANCEL_CONFIRM_REAL'],
                 ], $extra),
 
@@ -656,7 +656,7 @@ class FortuneChannelManager
                 // 🛑 (2026-05-15 v2) ยกเลิก + กลับเข้า normal chat
                 'cancelled_to_chat' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'START_FORTUNE'],
-                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_ADMIN'],
+                    // 🧹 (2026-07-25, owner) ลบปุ่ม "คุยกับแม่หมอ" ทุกจุด — ใช้ keyword detection แทน
                 ], $extra),
 
                 'fuzzy_admin_alert', 'fuzzy_rejected_by_customer', 'fuzzy_approve_race_lost' => $fbService->sendQuickReplies($userId, $message, [
@@ -2198,7 +2198,6 @@ class FortuneChannelManager
                     [
                         ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
                         ['label' => '💎 ดูดวง', 'text' => 'ดูดวง'],
-                        ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                     ]
                 ),
 
@@ -2223,16 +2222,13 @@ class FortuneChannelManager
                 // 🔍 เช็คสถานะบิล (ผู้ใช้กด "เช็คสถานะ") — ตอบสถานะจริง + ปุ่มเช็คอีกครั้ง
                 'payment_check_processing' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🔄 เช็คอีกครั้ง', 'text' => 'เช็คสถานะ'],
-                    ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                 ]),
                 'payment_check_pending' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🔄 เช็คอีกครั้ง', 'text' => 'เช็คสถานะ'],
-                    ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                     ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
                 ]),
                 'payment_check_expired' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
-                    ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                 ]),
 
                 // 🔍 (2026-05-15) Fuzzy Payment Match — auto-approve flow
@@ -2250,7 +2246,7 @@ class FortuneChannelManager
                     $lineService, $userId, $message, $replyToken,
                     $result['quick_reply_options'] ?? [
                         ['label' => '🆘 โอนไม่เป็น', 'text' => 'ขอเลขบัญชี'],
-                        ['label' => '💬 คุยกับแอดมิน', 'text' => 'คุยกับแม่หมอ'],
+                        // 🧹 (2026-07-25, owner) ลบปุ่ม "คุยกับแอดมิน/แม่หมอ" ทุกจุด — ใช้ keyword detection แทน
                         ['label' => '❌ ยกเลิกจริง', 'text' => 'ยืนยันยกเลิก'],
                     ]
                 ),
@@ -2263,13 +2259,11 @@ class FortuneChannelManager
                     $lineService, $userId, $message, $replyToken,
                     [
                         ['label' => '🔮 ดูดวงใหม่', 'text' => 'ดูดวง'],
-                        ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                     ]
                 ),
 
                 'fuzzy_admin_alert', 'fuzzy_rejected_by_customer', 'fuzzy_approve_race_lost' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🔄 เช็คอีกครั้ง', 'text' => 'เช็คสถานะ'],
-                    ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                 ]),
 
                 // 🗑️ (2026-07-07) PDPA ลบข้อมูล — กล่องยืนยัน (คำเตือน + ปุ่มยืนยัน/ยกเลิก) / ผลลัพธ์ (text ล้วน)
@@ -4045,7 +4039,7 @@ class FortuneChannelManager
         return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
             ['label' => '🔄 เริ่มใหม่', 'text' => 'เริ่มใหม่'],
             ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
-            ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+            // 🧹 (2026-07-25, owner) ลบปุ่ม "คุยกับแม่หมอ" ทุกจุด — ใช้ keyword detection แทน
         ]);
     }
 
@@ -4174,7 +4168,7 @@ class FortuneChannelManager
 
             return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                 ['label' => '🔍 เช็คสถานะ', 'text' => 'เช็คสถานะ'],
-                ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+                // 🧹 (2026-07-25, owner) ลบปุ่ม "คุยกับแม่หมอ" ทุกจุด — ใช้ keyword detection แทน
             ]);
         }
 
@@ -4862,11 +4856,11 @@ class FortuneChannelManager
      */
     protected function getDefaultQuickReplies(bool $offerFortune = false): array
     {
+        // 🧹 (2026-07-25, owner) ลบปุ่ม "คุยกับแม่หมอ" ทุกจุด — ใช้ keyword detection แทน
         if ($offerFortune) {
             return [
                 ['label' => '🔮 เริ่มดูดวง', 'text' => 'ดูดวง'],
                 ['label' => '💎 ดูดวง', 'text' => 'ดูดวง'],
-                ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                 ['label' => '💬 คุยต่อ', 'text' => 'ขอคำแนะนำเพิ่ม'],
             ];
         }
@@ -4874,7 +4868,6 @@ class FortuneChannelManager
         return [
             ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
             ['label' => '💎 ดูดวง', 'text' => 'ดูดวง'],
-            ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
             ['label' => '📖 อ่านคำทำนาย', 'text' => 'ดูคำทำนาย'],
         ];
     }
