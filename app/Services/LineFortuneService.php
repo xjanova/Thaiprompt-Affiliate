@@ -262,7 +262,7 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function sendImageAndText(string $recipientId, string $imageUrl, string $text, array $quickReplies = []): bool
     {
-        $imageUrl = $this->ensureHttps($imageUrl);
+        $imageUrl = $this->lineSafeImageUrl($imageUrl);
 
         $messages = [
             [
@@ -305,7 +305,7 @@ class LineFortuneService implements MessagingPlatformInterface
     {
         // ลอง reply ก่อน (ฟรี — รวม image + text ใน call เดียว)
         if ($replyToken) {
-            $imageHttps = $this->ensureHttps($imageUrl);
+            $imageHttps = $this->lineSafeImageUrl($imageUrl);
             $messages = [
                 [
                     'type' => 'image',
@@ -365,7 +365,8 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildImageObject(string $imageUrl): array
     {
-        $imageUrl = $this->ensureHttps($imageUrl);
+        // 🖼️ (2026-07-25) WebP → JPEG (LINE ไม่รองรับ webp — รูปไพ่หายทั้งหมด)
+        $imageUrl = $this->lineSafeImageUrl($imageUrl);
 
         return [
             'type' => 'image',
@@ -496,10 +497,10 @@ class LineFortuneService implements MessagingPlatformInterface
         $nextPrompt = trim((string) ($card['next_prompt'] ?? ''));
 
         $bodyContents = [
-            // ซ้าย: รูปไพ่ (สัดส่วนไพ่ทาโรต์ 9:16)
+            // ซ้าย: รูปไพ่ (สัดส่วนไพ่ทาโรต์ 9:16) — WebP ต้องแปลงก่อน LINE ถึงแสดง
             [
                 'type' => 'image',
-                'url' => $this->ensureHttps($imageUrl),
+                'url' => $this->lineSafeImageUrl($imageUrl),
                 'aspectRatio' => '9:16',
                 'aspectMode' => 'cover',
                 'size' => 'full',
@@ -757,9 +758,9 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool
     {
-        // ✅ LINE Messaging API ต้องใช้ HTTPS เท่านั้น
-        $imageUrl = $this->ensureHttps($imageUrl);
-        $previewUrl = $previewUrl ? $this->ensureHttps($previewUrl) : $imageUrl;
+        // ✅ LINE Messaging API ต้องใช้ HTTPS เท่านั้น + 🖼️ WebP ต้องแปลงเป็น JPEG ก่อน (LINE ไม่รองรับ)
+        $imageUrl = $this->lineSafeImageUrl($imageUrl);
+        $previewUrl = $previewUrl ? $this->lineSafeImageUrl($previewUrl) : $imageUrl;
 
         $messages = [
             [
@@ -782,6 +783,92 @@ class LineFortuneService implements MessagingPlatformInterface
         }
 
         return $url;
+    }
+
+    /**
+     * 🖼️ (2026-07-25) แปลง URL รูปให้ LINE แสดงได้ (WebP → JPEG + cache)
+     *
+     * 🐛 เคสจริงที่เจ้าของรายงาน: "รูปไพ่ที่เลือกไม่ขึ้นสำหรับ LINE แต่ FB ขึ้น"
+     *   ROOT CAUSE: ไพ่ทั้ง 78 ใบบน prod เก็บเป็น .webp (/storage/tarot/cards/*.webp)
+     *   → **LINE ไม่รองรับ WebP เลย** (image message + Flex image รับแค่ JPEG/PNG)
+     *   → ลูกค้า LINE ที่จ่าย 99฿ ไม่เห็นหน้าไพ่มาตลอด ส่วน FB รองรับ webp เลยขึ้นปกติ
+     *
+     * วิธีแก้: แปลงเป็น JPEG ครั้งแรกที่ใช้ แล้ว cache ถาวร (ไพ่ซ้ำ ๆ = แปลงครั้งเดียว)
+     *   - รับเฉพาะไฟล์ใน /storage/ (public disk) — URL ภายนอกไม่แตะ
+     *   - ทุก failure path คืน URL เดิม (ไม่มีทางทำให้ flow พังกว่าเดิม)
+     *
+     * @param  string  $url  URL รูปต้นทาง
+     * @return string URL ที่ LINE แสดงได้ (หรือ URL เดิมถ้าแปลงไม่ได้)
+     */
+    public function lineSafeImageUrl(string $url): string
+    {
+        $https = $this->ensureHttps($url);
+
+        $path = (string) (parse_url($https, PHP_URL_PATH) ?? '');
+        // ไม่ใช่ webp → ใช้ได้อยู่แล้ว (jpg/png/chart/spread)
+        if (! preg_match('/\.webp$/i', $path)) {
+            return $https;
+        }
+        // เฉพาะไฟล์ที่เราโฮสต์เองใน public disk
+        if (! str_starts_with($path, '/storage/')) {
+            return $https;
+        }
+
+        $relative = rawurldecode(substr($path, strlen('/storage/')));
+        $cacheRelative = 'line-jpg/'.sha1($relative).'.jpg';
+
+        try {
+            $disk = \Illuminate\Support\Facades\Storage::disk('public');
+
+            // แปลงแล้ว → ใช้ของเดิม
+            if ($disk->exists($cacheRelative)) {
+                return $this->ensureHttps(asset('storage/'.$cacheRelative));
+            }
+
+            if (! $disk->exists($relative) || ! function_exists('imagecreatefromwebp')) {
+                return $https;
+            }
+
+            $src = @imagecreatefromwebp($disk->path($relative));
+            if ($src === false) {
+                return $https;
+            }
+
+            // JPEG ไม่มี alpha → วางบนพื้นขาวก่อน (กันขอบดำในไพ่ที่มีความโปร่งใส)
+            $w = imagesx($src);
+            $h = imagesy($src);
+            $canvas = imagecreatetruecolor($w, $h);
+            imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
+            imagecopy($canvas, $src, 0, 0, 0, 0, $w, $h);
+
+            ob_start();
+            imagejpeg($canvas, null, 88);
+            $jpeg = (string) ob_get_clean();
+
+            imagedestroy($src);
+            imagedestroy($canvas);
+
+            if ($jpeg === '') {
+                return $https;
+            }
+
+            $disk->put($cacheRelative, $jpeg);
+
+            Log::info('LINE: แปลงรูป WebP → JPEG สำเร็จ (cache ถาวร)', [
+                'source' => $relative,
+                'cache' => $cacheRelative,
+                'size_kb' => (int) (strlen($jpeg) / 1024),
+            ]);
+
+            return $this->ensureHttps(asset('storage/'.$cacheRelative));
+        } catch (\Throwable $e) {
+            Log::warning('LINE: แปลง WebP → JPEG ล้มเหลว (ใช้ URL เดิม)', [
+                'url' => $https,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $https;
+        }
     }
 
     /**
