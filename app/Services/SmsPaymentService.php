@@ -1248,11 +1248,14 @@ class SmsPaymentService
             if ($reuseResult !== null) {
                 // ✅ มีวันเกิดเดิม → ตัดบิล + ตั้งจิตเปิดไพ่ทันที
                 //   (beginDeepGeneralReading ตั้ง status = COLLECTING_TAROT + ใส่คำถามพื้นดวงให้แล้ว)
+                // 🎂 (2026-07-25, owner) "ต้องถามก่อนทำนายว่าจะใช้วันเกิดเก่าไหม"
+                //   path นี้คือทางหลัก (SMS/สลิปตัดบิลอัตโนมัติ) — เดิม hardcode ข้อความ "จำได้แล้ว
+                //   ไม่ต้องบอกใหม่" ทำให้ลูกค้าส่วนใหญ่ไม่เคยเห็นขั้นยืนยัน → ดวงผิดวันเกิดโดยไม่รู้ตัว
+                //   ใช้ข้อความ + ปุ่มชุดเดียวกับ processPaymentConfirmed (helper กลาง)
                 $thanksMessage = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
                     ."🔖 เลขที่บิล: {$billRef}\n"
                     ."💰 ค่าครู: ฿{$payAmountStr}\n\n"
-                    ."🎂 แม่หมอจำวันเกิดของเจ้าชะตาได้แล้ว ไม่ต้องบอกใหม่นะคะ ✨\n"
-                    ."_(ถ้าไม่ใช่ — พิมพ์วันเกิดใหม่ได้เลยค่ะ)_\n\n"
+                    .$fcsForReuse->buildReusedBirthdateNotePublic($reading)
                     .($reuseResult['message'] ?? '');
             } else {
                 // ไม่เคยมีวันเกิด → ขอวันเกิด (ตามเดิม)
@@ -1289,8 +1292,10 @@ class SmsPaymentService
                     'message' => $thanksMessage,
                     'reading' => $reading,
                 ];
-                if ($reuseResult !== null && ! empty($reuseResult['quick_replies'])) {
-                    $pushPayload['quick_replies'] = $reuseResult['quick_replies'];
+                if ($reuseResult !== null) {
+                    // 🎂 (2026-07-25) ใช้วันเกิดเดิม → ปุ่ม "✅ ใช่ ใช้วันเกิดนี้ / 📅 เปลี่ยนวันเกิด"
+                    //   (ถ้าไม่ได้ reuse helper คืนปุ่ม "พร้อมเปิดไพ่" ตามเดิม)
+                    $pushPayload['quick_replies'] = $fcsForReuse->buildReusedBirthdateQuickRepliesPublic($reading);
                     $pushPayload['show_quick_replies'] = true;
                 }
 

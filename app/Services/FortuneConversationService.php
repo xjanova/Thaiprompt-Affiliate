@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Log;
  */
 class FortuneConversationService
 {
+    use \App\Services\Fortune\BirthdateCorrectionTrait;
     use \App\Services\Fortune\CelticCrossConversationTrait;
     use \App\Services\Fortune\FortuneConsentGateTrait;
     use \App\Services\Fortune\FortunePdpaDeletionTrait;
@@ -2550,6 +2551,19 @@ class FortuneConversationService
                 $autoFree = $this->tryAutoFreeCardForFirstReply($facebookUserId, $userProfile, $messageText);
                 if ($autoFree !== null) {
                     return $autoFree;
+                }
+
+                // 🎂 (2026-07-25, owner) แย้งว่าวันเกิดผิด หลัง Pro Session หมดเวลา (status = COMPLETED)
+                //   🐛 เดิมตกลงมาที่ parseStandaloneBirthdate ด้านล่าง → บอท "ขายซ้ำ 39 บาท"
+                //      ทั้งที่ลูกค้าเพิ่งจ่ายไปและกำลังบอกว่าดวงผิด (เคสร้องเรียนแน่นอน)
+                //   ตอนนี้: หาบิล Deep ที่ทำนายเสร็จภายใน 48 ชม. → เข้า flow แก้วันเกิด (1 ครั้ง/บิล)
+                //   หมายเหตุ: ระหว่างอยู่ใน Pro Session ดักที่ ProSessionTrait::handleProSession แทน
+                $correctionTarget = $this->resolveBirthdateCorrectionTarget($facebookUserId, $messageText);
+                if ($correctionTarget !== null) {
+                    $correction = $this->handleBirthdateCorrection($correctionTarget, $messageText);
+                    if ($correction !== null) {
+                        return $correction;
+                    }
                 }
 
                 // 🎯 Phase C — ลูกค้าพิมพ์วันเกิด standalone มาก่อน (เช่น "15/8/1990")
@@ -6318,8 +6332,51 @@ class FortuneConversationService
             return '';
         }
 
-        return '🎂 แม่หมอใช้ *วันเกิดเดิม* ที่เจ้าชะตาเคยให้ไว้: *'.$this->formatThaiDate($reused)."*\n"
-            ."_(ถ้าไม่ใช่ — พิมพ์วันเกิดใหม่ได้เลยค่ะ)_\n\n";
+        // 🎂 (2026-07-25, owner) "ต้องถามก่อนทำนายว่าจะใช้วันเกิดเก่าไหม"
+        //   เดิมแจ้งเฉยๆ แล้วไปตั้งจิตเลย — ลูกค้าหลายคนไม่ทันอ่าน แล้วได้ดวงจากวันเกิดผิด
+        //   ตอนนี้ถามยืนยันชัดเจน + มีปุ่มให้กด (ปุ่มจริงใส่โดย caller)
+        return '🎂 *ขอยืนยันวันเกิดก่อนนะคะ*'."\n"
+            .'แม่หมอมีวันเกิดเดิมของเจ้าชะตาอยู่: *'.$this->formatThaiDate($reused)."*\n\n"
+            ."✅ ถ้าถูกต้อง — พิมพ์ *\"ใช่\"* หรือกดปุ่มด้านล่างได้เลย\n"
+            .'📅 ถ้าไม่ใช่ — พิมพ์วันเกิดที่ถูกต้องมาได้เลยค่ะ'."\n\n";
+    }
+
+    /**
+     * 🎂 (2026-07-25) ปุ่มยืนยันวันเกิดเดิม (ใช้ตอนระบบเติมวันเกิดจากประวัติให้)
+     *
+     * คืน [] ถ้าไม่ได้เติมอัตโนมัติ — caller จะใช้ปุ่ม "พร้อมเปิดไพ่" ปกติ
+     */
+    public function buildReusedBirthdateNotePublic(FortuneReading $reading): string
+    {
+        return $this->buildReusedBirthdateNote($reading);
+    }
+
+    /**
+     * Public wrapper — ให้ SmsPaymentService ใช้ปุ่มยืนยันวันเกิดชุดเดียวกัน
+     */
+    public function buildReusedBirthdateQuickRepliesPublic(FortuneReading $reading): array
+    {
+        return $this->buildReusedBirthdateQuickReplies($reading);
+    }
+
+    /**
+     * 🎂 (2026-07-25) ปุ่มยืนยันวันเกิดเดิม (ใช้ตอนระบบเติมวันเกิดจากประวัติให้)
+     *
+     * คืนปุ่ม "พร้อมเปิดไพ่" ปกติ ถ้าไม่ได้เติมอัตโนมัติ
+     */
+    protected function buildReusedBirthdateQuickReplies(FortuneReading $reading): array
+    {
+        if (! $reading->getConversationState('birthdate_auto_filled', false)
+            || empty($reading->getConversationState('birthdate_reused_from_history'))) {
+            return [
+                ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
+            ];
+        }
+
+        return [
+            ['title' => '✅ ใช่ ใช้วันเกิดนี้', 'text' => 'ใช่ ใช้วันเกิดนี้'],
+            ['title' => '📅 เปลี่ยนวันเกิด', 'text' => 'เปลี่ยนวันเกิด'],
+        ];
     }
 
     /**
@@ -6341,8 +6398,12 @@ class FortuneConversationService
             return false;
         }
 
+        // 🐛 (2026-07-25) [ก-ฮ] = \x{0E01}-\x{0E2E} **ไม่รวมสระ** → "15 มีนาคม 2538" / "12 พฤษภาคม 2515"
+        //   จับไม่ได้ (สระ ี = \x{0E35}, า = \x{0E32}) — ทั้งที่ระบบบอกตัวอย่างนี้ให้ลูกค้าพิมพ์เอง
+        //   ผลเดิม: ลูกค้าพิมพ์วันเกิดใหม่แบบชื่อเดือน → ไม่ถือว่าแก้วันเกิด → ทำนายด้วยดวงเก่า
+        //   แก้เป็นช่วงเต็ม \x{0E01}-\x{0E4E} (พยัญชนะ+สระ+วรรณยุกต์)
         return (bool) (preg_match('/\d{1,2}\s*[\/\-.]\s*\d{1,2}\s*[\/\-.]\s*\d{2,4}/u', $text)
-            || preg_match('/\d{1,2}\s*[ก-ฮ]{2,12}\s*\d{2,4}/u', $text));
+            || preg_match('/\d{1,2}\s*[\x{0E01}-\x{0E4E}]{2,14}\s*\d{2,4}/u', $text));
     }
 
     /**
@@ -7164,6 +7225,27 @@ class FortuneConversationService
         //          (เปลือง token + หน่วง path เปิดไพ่ — เคสนี้เดิมเปิดไพ่ได้เลยไม่ต้องเรียก AI)
         //      (2) เลขวันเกิด "คนอื่น" ฝังในประโยคคำถาม ("แฟนเกิด 12/3/2535 จะไปกันรอดไหม")
         //          → ทับ birth_date ของบิลเป็นของคนอื่น (ทำนายผิดคนทั้งดวง)
+        // 🎂 (2026-07-25, owner) ปุ่ม "📅 เปลี่ยนวันเกิด" ตอนยืนยันวันเกิดเดิม (ก่อนเปิดไพ่)
+        //   ยังไม่ทำนาย = ไม่กินโควต้าแก้วันเกิด 1 ครั้ง/บิล (โควต้านั้นใช้หลังทำนายเสร็จแล้วเท่านั้น)
+        if ($reading->getConversationState('birthdate_auto_filled', false)
+            && $this->looksLikeBirthdateCorrectionRequest($messageText)
+            && ! $this->messageLooksLikeBirthdate($messageText)) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE]);
+            $reading->setConversationState('birthdate_auto_filled', false);
+            $reading->setConversationState('birthdate_reused_from_history', null);
+
+            Log::info('Fortune Deep39: ลูกค้าขอเปลี่ยนวันเกิดก่อนเปิดไพ่ (ยังไม่กินโควต้า)', [
+                'reading_id' => $reading->id,
+            ]);
+
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => "🎂 ได้ค่ะ — ขอ*วันเดือนปีเกิดที่ถูกต้อง*นะคะ\n\n"
+                    .'📝 *ตัวอย่าง:* 15 มีนาคม 2538 หรือ 15/3/2538',
+                'reading' => $reading,
+            ];
+        }
+
         if ($reading->getConversationState('birthdate_auto_filled', false)
             && $this->messageLooksLikeBirthdate($messageText)) {
             $overrideBirthdate = $this->parseBirthDate($messageText);
@@ -8919,9 +9001,8 @@ class FortuneConversationService
                                 .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ทันทีค่ะ',
                             'reading' => $reading,
                             'show_quick_replies' => true,
-                            'quick_replies' => [
-                                ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
-                            ],
+                            // 🎂 (2026-07-25) ใช้วันเกิดเดิม → ปุ่ม "ใช่/เปลี่ยนวันเกิด" แทน "พร้อมเปิดไพ่"
+                            'quick_replies' => $this->buildReusedBirthdateQuickReplies($reading),
                         ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                     } catch (\Throwable $pushErr) {
                         Log::warning('Fortune: Pay-First guard — push ตั้งจิตเปิดไพ่ ล้ม (non-blocking)', [
@@ -9619,7 +9700,11 @@ class FortuneConversationService
             // ส่งทุกครั้ง (repeat user ก็ส่ง) เพื่อจูงใจให้แชร์
             // แสดง: ค่าแนะนำ (จาก settings) + ตัวอย่างรายได้ + ลิงก์แชร์ + ลิงก์เว็บ
             // ============================================================
-            if ($affiliateUserId) {
+            // 🎂 (2026-07-25) ทำนายใหม่จากการแก้วันเกิด → ไม่ต้องชวนแนะนำเพื่อนซ้ำ
+            //   (ลูกค้าเพิ่งได้รับตอนทำนายรอบแรกแล้ว — ส่งอีกรอบ = รบกวน + เปลือง push)
+            $isBirthdateRerun = (int) $reading->getConversationState('birthdate_correction_count', 0) > 0;
+
+            if ($affiliateUserId && ! $isBirthdateRerun) {
                 try {
                     $affiliateServiceForPromo = app(FortuneAffiliateService::class);
 

@@ -926,6 +926,18 @@ trait ProSessionTrait
             ];
         }
 
+        // 🎂 (2026-07-25, owner) "เจ้าชะตาแย้งว่าวันเกิดผิด ควรทำนายให้ใหม่ (1 ครั้ง/บิล)"
+        //   ต้องดักก่อน AI Pro chat — ไม่งั้น AI ตอบคุยเฉยๆ โดยยังทำนายจากดวงเดิม (ลูกค้าเสียเงินฟรี)
+        //   เฉพาะ Deep 39 (Celtic ทำนายจากไพ่เป็นหลัก + มีระบบสับไพ่ใหม่ของตัวเองอยู่แล้ว)
+        if ($proType !== 'celtic'
+            && $reading->reading_type === FortuneReading::READING_TYPE_DEEP
+            && method_exists($this, 'handleBirthdateCorrection')) {
+            $correction = $this->handleBirthdateCorrection($reading, $messageText);
+            if ($correction !== null) {
+                return $correction;
+            }
+        }
+
         // 🆕 (2026-06-23, owner) Deep 39 — เริ่มจับเวลา "หลังคำถามแรก" (ข้อความนี้ผ่าน exit-check แล้ว = คำถามจริง)
         //   เปิด session ค้างไว้ตั้งแต่ส่งคำทำนาย → ตอนนี้ลูกค้าถามจริง → เริ่มนับ 7 นาที
         if ((string) $reading->getConversationState('pro_session_type', 'deep') === 'deep'
