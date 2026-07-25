@@ -243,55 +243,52 @@ class FortuneProcessDeepReading extends Command
                         $reading->setConversationState('reading_notification_attempted', true);
                         $reading->setConversationState('reading_notification_retry_count', $retryCount + 1);
 
-                        // 📱 (2026-05-22) แยก branch FB / LINE
-                        //    FB: ส่งคำทำนายเต็มทันที (view_reading_deep) — ตาม user spec "ไม่ต้องมีกล่องอ่านพร้อมแล้ว"
-                        //    LINE: คงเดิม — push Flex notification (เพราะ quota จำกัด ต้องรอ user ทักกลับ)
-                        if ($platform === 'facebook') {
-                            $fullMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
-                            $fullMessage .= '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n";
-                            $fullMessage .= '📅 วันที่: '.$reading->created_at->format('d/m/Y H:i')."\n";
-                            $fullMessage .= "═══════════════════════\n\n";
-                            $fullMessage .= $reading->deep_response;
+                        // 📱 (2026-05-22 → 2026-07-25) ส่งคำทำนายเต็มทันที ทั้ง FB และ LINE
+                        //   เดิม LINE ต้อง push กล่อง "🔮 คำทำนายพร้อมแล้ว กดอ่าน" ก่อน แล้วรอลูกค้าทักกลับ
+                        //   ค่อย reply คำทำนาย (คิดว่าประหยัด quota) — แต่จริงๆ **ไม่ประหยัดเลย**:
+                        //     เดิม = push แจ้งเตือน (1) + reply คำทำนาย (0) + push ไพ่/chart/ขอบคุณ (1) = 2 push
+                        //     ใหม่ = push คำทำนาย (1) + push ไพ่/chart/ขอบคุณ (1) = 2 push เท่ากัน
+                        //   แต่ตัดกล่องแจ้งเตือนทิ้ง 1 กล่อง + ลูกค้าได้อ่านทันทีไม่ต้องกดอะไร
+                        //   (เจ้าของ 2026-07-25: "ทำไมมีการส่งกล่องข้อความซ้ำหลายกล่อง เราต้องทำให้ดี")
+                        //   ⚠️ reliability คงเดิม: push ล้ม → ปล่อย delivery lock (:330) → reply path
+                        //      ตอนลูกค้าทักกลับ + cron check-pending ยังส่งให้ได้เหมือนเดิม
+                        $fullMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
+                        $fullMessage .= '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n";
+                        $fullMessage .= '📅 วันที่: '.$reading->created_at->format('d/m/Y H:i')."\n";
+                        $fullMessage .= "═══════════════════════\n\n";
+                        $fullMessage .= $reading->deep_response;
 
-                            $notifySent = $channelManager->sendResponse($platform, $userId, [
-                                'action' => 'view_reading_deep',
-                                'message' => $fullMessage,
-                                'reading' => $reading,
-                                'chart_image_url' => $reading->reading_image_url,
-                                'tarot_image_urls' => collect($reading->getCollectedTarotCards())
-                                    ->pluck('image_url')->filter()->values()->all(),
-                                // 🌙 (2026-05-22) ส่งกล่อง follow-up "หมออยู่ตอบเพิ่ม 10 นาที" หลังคำทำนาย
-                                'send_pro_session_followup' => true,
-                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                        $notifySent = $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'view_reading_deep',
+                            'message' => $fullMessage,
+                            'reading' => $reading,
+                            'chart_image_url' => $reading->reading_image_url,
+                            'tarot_image_urls' => collect($reading->getCollectedTarotCards())
+                                ->pluck('image_url')->filter()->values()->all(),
+                            // 🌙 (2026-05-22) ส่งกล่อง follow-up "หมออยู่ตอบเพิ่ม 10 นาที" หลังคำทำนาย
+                            'send_pro_session_followup' => true,
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
-                            // FB ส่งคำทำนายเต็มแล้ว → ตั้ง flag delivered
-                            if ($notifySent) {
-                                $reading->setConversationState('reading_sent_directly', true);
-                                $reading->setConversationState('reading_ready_sent', true);
-                                $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
-                                $reading->setConversationState('delivered_by_push', true);
+                        // ส่งคำทำนายเต็มแล้ว → ตั้ง flag delivered (กัน cron/reply path ส่งซ้ำ)
+                        if ($notifySent) {
+                            $reading->setConversationState('reading_sent_directly', true);
+                            $reading->setConversationState('reading_ready_sent', true);
+                            $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                            $reading->setConversationState('delivered_by_push', true);
 
-                                // 🆕 (2026-06-22 FTU-260622-K3440) เปิด Deep Pro Session หลังส่งคำทำนาย FB
-                                //   command path เดิมไม่เคย enterProSession → pro_session_active=null
-                                //   → follow-up ตกไป chat path (upsell + heavy/OOM) แทน Q&A เฉพาะทาง
-                                //   non-blocking: fail = คำทำนายส่งไปแล้ว ไม่ revert
-                                try {
-                                    (new \App\Services\FortuneConversationService($settings))
-                                        ->enterDeepProSessionFor($reading);
-                                } catch (\Throwable $proErr) {
-                                    Log::warning('fortune:process-deep: enterDeepProSession ล้มเหลว (non-blocking)', [
-                                        'reading_id' => $readingId,
-                                        'error' => $proErr->getMessage(),
-                                    ]);
-                                }
+                            // 🆕 (2026-06-22 FTU-260622-K3440) เปิด Deep Pro Session หลังส่งคำทำนาย
+                            //   command path เดิมไม่เคย enterProSession → pro_session_active=null
+                            //   → follow-up ตกไป chat path (upsell + heavy/OOM) แทน Q&A เฉพาะทาง
+                            //   non-blocking: fail = คำทำนายส่งไปแล้ว ไม่ revert
+                            try {
+                                (new \App\Services\FortuneConversationService($settings))
+                                    ->enterDeepProSessionFor($reading);
+                            } catch (\Throwable $proErr) {
+                                Log::warning('fortune:process-deep: enterDeepProSession ล้มเหลว (non-blocking)', [
+                                    'reading_id' => $readingId,
+                                    'error' => $proErr->getMessage(),
+                                ]);
                             }
-                        } else {
-                            $notifySent = $channelManager->sendResponse($platform, $userId, [
-                                'action' => 'fortune_ready_notification',
-                                'message' => $readyMessage,
-                                'reading' => $reading,
-                                'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
-                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                         }
 
                         // ✅ Fallback: ถ้า sendResponse ล้มเหลว → ลอง Flex push ตรงด้วย LineFortuneService

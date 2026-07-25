@@ -412,6 +412,7 @@ trait BirthdateCorrectionTrait
             'reading_notification_attempted' => false,
             'reading_notification_retry_count' => 0,
             'reading_ready_sent' => false,
+            'reading_ready_sent_at' => null,   // ⭐ ไม่ล้าง = guard กันส่งซ้ำอ่าน timestamp เก่า
             'reading_ready_for_reply' => false,
             'delivered_by_push' => false,
             'delivered_by_reply_message' => false,

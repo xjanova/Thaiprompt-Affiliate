@@ -2301,6 +2301,10 @@ class FortuneChannelManager
                 'personal_name_failed', 'personal_data_restricted', 'personal_data_empty',
                 'personal_data_error' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
+                // 📖 (2026-07-25) "คำทำนายเพิ่งส่งไปแล้ว เลื่อนขึ้นไปอ่าน" — text ล้วน
+                //   (ห้ามตกไป default ที่ห่อ Flex + ปุ่ม "🔮 ดูดวง" — กดแล้วสับสนระหว่าง Pro Session)
+                'view_reading_recent' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
                 // 📜 (2026-06-06) Consent Gate — รูปกติกา (ถ้ามี) + คำเตือน + ปุ่มยืนยัน (พร้อมบูชาครู/ยกเลิก)
                 'consent_gate' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
                     $imageUrl = $result['consent_image_url'] ?? null;
@@ -2998,6 +3002,26 @@ class FortuneChannelManager
                 // 🌙 (2026-06-17) Deep 39 หมดเวลาทำนาย — ข้อความขอบคุณ + ชวนรีวิว (ถ้าเข้าเงื่อนไข)
                 //   ใช้ sendLineFallbackResponse เดิม (คงการห่อ Flex สวยเหมือนตอนตก default) แล้วต่อด้วยรีวิว
                 'deep_pro_session_timeout' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
+                    // 💸 (2026-07-25) รวมข้อความปิด + กล่องชวนรีวิว เป็น call เดียว (เดิม 2 push แยก)
+                    //   ทั้งคู่มาพร้อมกันตอนหมดเวลาอยู่แล้ว — ไม่มีเหตุผลต้องแยกกล่อง
+                    $invite = $result['review_invite'] ?? null;
+                    if (! empty($invite['url'])) {
+                        try {
+                            $objs = [$lineService->buildTextObject($message)];
+                            $objs[] = $lineService->buildFlexObject(
+                                $this->buildLineReviewInviteFlex($invite),
+                                '⭐ ฝากรีวิวให้แม่หมอด้วยนะคะ'
+                            );
+
+                            return $lineService->sendMessagesWithReplyFallback($userId, $objs, $replyToken);
+                        } catch (\Throwable $e) {
+                            Log::warning('LINE deep timeout+review รวมกล่องล้มเหลว → แยกส่งแบบเดิม', [
+                                'user_id' => $userId,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
                     $sent = $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken);
                     $this->sendReviewInviteLine($lineService, $userId, $result);
 
@@ -4281,7 +4305,10 @@ class FortuneChannelManager
                 $carousel = ['type' => 'carousel', 'contents' => array_slice($fortuneBubbles, 0, 12)];
                 $carouselJson = json_encode($carousel, JSON_UNESCAPED_UNICODE);
 
-                if (strlen($carouselJson) < 45000) {
+                // 🐛 (2026-07-25) carousel รับได้สูงสุด 12 bubbles — เกินกว่านั้น array_slice ตัดท่อนท้ายทิ้ง
+                //   เงียบๆ (bubble ละ ~800 ตัวอักษร → คำทำนาย > ~9,600 ตัวอักษรหายท้าย โดยไม่มี log)
+                //   และ JSON ก็ไม่โตพอจะเข้าสาขา ">45KB" ที่ส่งครบทีละใบ → ต้องบังคับเอง
+                if (count($fortuneBubbles) <= 12 && strlen($carouselJson) < 45000) {
                     // Carousel ขนาดพอดี → ส่ง carousel เดียว
                     if ($replyToken) {
                         $sent = $lineService->replyWithFlex($replyToken, $carousel, '🌟 คำทำนายเชิงลึก');
@@ -4338,14 +4365,20 @@ class FortuneChannelManager
                 ]);
                 // ตัดเป็น chunks ≤ 5000 ตัวอักษร แล้วส่งทีละ chunk
                 $textChunks = $lineService->splitTextForFlexPublic($reading->deep_response, 4800);
+                // 🚨 (2026-07-25) ต้องเช็คผลส่งจริง — ห้าม hardcode true
+                //   เดิม `$sent = true` เสมอ: ตอนที่ path นี้ถูกเรียกผ่าน reply (ฟรี) แทบไม่ล้มเลยไม่มีใครเห็น
+                //   แต่ตอนนี้ command push คำทำนายตรง (ไม่มี replyToken) → เจอ quota หมด/429/token พังได้จริง
+                //   ถ้ายังโกหกว่าส่งสำเร็จ → ระบบตั้ง reading_sent_directly=true → reply path + cron
+                //   check-pending ข้ามทั้งคู่ → **ลูกค้าจ่าย 39฿ ไม่ได้อ่านคำทำนายเลย ต้องให้แอดมินส่งมือ**
+                $chunkOk = ! empty($textChunks);
                 foreach ($textChunks as $idx => $chunk) {
                     $header = $idx === 0 ? "🌟 คำทำนายเชิงลึกของคุณ{$userName}\n📋 {$reading->bill_reference}\n═══════════════════════\n\n" : "(ต่อ)\n\n";
-                    $lineService->sendMessagePriority($userId, mb_substr($header.$chunk, 0, 5000));
+                    $chunkOk = $lineService->sendMessagePriority($userId, mb_substr($header.$chunk, 0, 5000)) && $chunkOk;
                     if ($idx < count($textChunks) - 1) {
                         usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                     }
                 }
-                $sent = true; // ถือว่าส่งแล้ว (อย่างน้อย text)
+                $sent = $chunkOk;
             }
 
             if ($sent) {
@@ -4372,11 +4405,32 @@ class FortuneChannelManager
                 if ($chartUrl) {
                     $trailing[] = $lineService->buildImageObject($chartUrl);
                 }
-                $trailing[] = [
-                    'type' => 'flex',
-                    'altText' => '🙏 ขอบคุณค่ะ',
-                    'contents' => $lineService->buildThankYouFlexMessage($userName),
-                ];
+                // 🌙 (2026-07-25) กล่อง "แม่หมออยู่ตอบเพิ่ม N นาที" — เดิมมีแต่ FB (LINE ขาดหายทั้งก้อน)
+                //   ลูกค้า LINE เลยไม่รู้ว่าถามต่อได้ + ไม่ได้ปุ่ม 🎧 อ่านให้ฟัง แล้วมาโดน nudge ตามทีหลัง
+                //   ใส่เป็น object ในชุดเดิม = ได้ฟีเจอร์เพิ่มโดย **ไม่เพิ่ม push**
+                //   (แทนที่กล่อง "ขอบคุณ" ซึ่งเนื้อหาทับกับข้อความปิดตอนหมดเวลาอยู่แล้ว)
+                if (! empty($result['send_pro_session_followup'])) {
+                    // ตั้ง 0 = ใช้ค่า default 7 (ให้ตรงกับ ProSessionTrait + ฝั่ง FB — ไม่ใช่ clamp เป็น 1)
+                    $windowMinutes = (int) ($this->settings->deep_reading_qa_window_minutes ?? 7);
+                    if ($windowMinutes < 1) {
+                        $windowMinutes = 7;
+                    }
+                    $rawName = $reading?->facebook_user_name ?? '';
+                    $greet = ($rawName !== '' && $rawName !== 'คุณ') ? " คุณ{$rawName}" : '';
+                    $followUp = "🌙✨ *แม่หมอจันทราอยู่ตอบเพิ่มอีก {$windowMinutes} นาที{$greet}* ✨\n\n"
+                        ."💬 สงสัยตรงไหน หรืออยากให้ขยายความ — ถามได้เลยค่ะ\n"
+                        .'🔚 พอใจแล้วพิมพ์ *"พอแค่นี้"* แม่หมอจะปิดให้ค่ะ';
+                    $voiceCta = $this->settings->buildVoiceCtaSnippet($reading);
+                    $trailing[] = $voiceCta !== ''
+                        ? $lineService->buildTextObject($followUp.$voiceCta, [['label' => '🎧 อ่านให้ฟัง', 'text' => 'อ่านให้ฟัง']])
+                        : $lineService->buildTextObject($followUp);
+                } else {
+                    $trailing[] = [
+                        'type' => 'flex',
+                        'altText' => '🙏 ขอบคุณค่ะ',
+                        'contents' => $lineService->buildThankYouFlexMessage($userName),
+                    ];
+                }
                 usleep(500_000); // 0.5s — กัน LINE 429 (ห้ามต่ำกว่า 0.5s)
                 $lineService->sendMessagesWithReplyFallback($userId, $trailing, null);
             } catch (\Exception $e) {
@@ -5101,49 +5155,9 @@ class FortuneChannelManager
         }
 
         try {
-            $primaryColor = $this->settings->getLineFlexPrimaryColor();
-            $text = mb_substr((string) ($invite['text'] ?? ''), 0, 1000);
-            $label = mb_substr((string) ($invite['button_title'] ?? '⭐ เขียนรีวิว'), 0, 20);
-
-            $flex = [
-                'type' => 'bubble',
-                'body' => [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'spacing' => 'md',
-                    'contents' => [
-                        [
-                            'type' => 'text',
-                            'text' => $text !== '' ? $text : '🌟 ฝากรีวิวให้แม่หมอด้วยนะคะ 🙏',
-                            'wrap' => true,
-                            'size' => 'sm',
-                            'color' => '#333333',
-                        ],
-                    ],
-                ],
-                'footer' => [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'spacing' => 'sm',
-                    'contents' => [
-                        [
-                            'type' => 'button',
-                            'style' => 'primary',
-                            'color' => $primaryColor,
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'uri',
-                                'label' => $label,
-                                'uri' => $invite['url'],
-                            ],
-                        ],
-                    ],
-                ],
-            ];
-
             $lineService->sendRichMessage($userId, [
                 'alt_text' => '⭐ ฝากรีวิวให้แม่หมอด้วยนะคะ',
-                'contents' => $flex,
+                'contents' => $this->buildLineReviewInviteFlex($invite),
             ]);
         } catch (\Throwable $e) {
             Log::warning('Review invite LINE send fail (non-blocking)', [
@@ -5151,6 +5165,54 @@ class FortuneChannelManager
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * 🌟 (2026-07-25) สร้าง Flex bubble ชวนรีวิว — แยกออกมาให้รวมกับกล่องอื่นได้ (ประหยัด push)
+     *
+     * @param  array  $invite  ['url', 'text', 'button_title']
+     */
+    protected function buildLineReviewInviteFlex(array $invite): array
+    {
+        $primaryColor = $this->settings->getLineFlexPrimaryColor();
+        $text = mb_substr((string) ($invite['text'] ?? ''), 0, 1000);
+        $label = mb_substr((string) ($invite['button_title'] ?? '⭐ เขียนรีวิว'), 0, 20);
+
+        return [
+            'type' => 'bubble',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'md',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => $text !== '' ? $text : '🌟 ฝากรีวิวให้แม่หมอด้วยนะคะ 🙏',
+                        'wrap' => true,
+                        'size' => 'sm',
+                        'color' => '#333333',
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => $primaryColor,
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'uri',
+                            'label' => $label,
+                            'uri' => $invite['url'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 
     /**

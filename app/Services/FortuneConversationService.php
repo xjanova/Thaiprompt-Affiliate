@@ -1077,7 +1077,7 @@ class FortuneConversationService
                         'text_preview' => mb_substr($messageText, 0, 30),
                     ]);
 
-                    return $this->handleViewLastReading($facebookUserId);
+                    return $this->handleViewLastReading($facebookUserId, $messageText);
                 }
             }
 
@@ -3233,6 +3233,9 @@ class FortuneConversationService
             'ดูผลล่าสุด', 'ขอดูผล', 'ขอดูคำทำนาย',
             // ✅ เพิ่ม: รองรับปุ่ม quick reply "อ่านคำทำนาย" และคำขอ "อ่านเลย"
             'อ่านคำทำนาย', 'อ่านเลย', 'อ่านผล', 'ขออ่าน',
+            // 🔁 (2026-07-25) คำขอส่งซ้ำ — ต้องอยู่ในลิสต์นี้ ไม่งั้นข้อความที่บอทบอกให้พิมพ์
+            //   ("พิมพ์ ส่งอีกครั้ง") จะไม่เข้า handleViewLastReading เลย = ทางออกตาย
+            'ส่งอีกครั้ง', 'ส่งใหม่', 'ส่งซ้ำ', 'ขอใหม่', 'ขออีกครั้ง', 'ส่งมาใหม่',
         ];
         $text = mb_strtolower(trim($text));
 
@@ -3812,7 +3815,10 @@ class FortuneConversationService
         return $this->handleViewLastReading($facebookUserId);
     }
 
-    protected function handleViewLastReading(string $facebookUserId): array
+    /**
+     * @param  string|null  $messageText  ข้อความต้นทาง — ใช้ตรวจ "ส่งอีกครั้ง" (bypass guard กันส่งซ้ำ)
+     */
+    protected function handleViewLastReading(string $facebookUserId, ?string $messageText = null): array
     {
         // 🎯 (2026-05-06) Rewrite — รับเฉพาะบิลที่ "จ่ายเงิน + มีคำทำนายเสร็จแล้ว" เท่านั้น
         //   user spec: "ตรวจบิลล่าสุดที่ชำระเสร็จแล้ว นำคำทำนายออกมา ยกเว้นไม่เคยดู ก็จะบอกไม่มีประวัติ"
@@ -3903,10 +3909,38 @@ class FortuneConversationService
         if ($latestReading->reading_type === FortuneReading::READING_TYPE_DEEP) {
             $name = $latestReading->facebook_user_name ?? 'คุณ';
 
+            // 🛡️ (2026-07-25) กันส่งคำทำนายชุดเต็มซ้ำรัวๆ
+            //   path นี้ bypass ทุก guard + keyword จับหลวม ("ดูผล"/"ขออ่าน") → ลูกค้าพิมพ์อะไร
+            //   ที่มีคำเหล่านี้ระหว่าง Pro Session = ได้คำทำนาย+ไพ่+chart+ขอบคุณ ซ้ำทั้งชุด ไม่จำกัดครั้ง
+            //   (เจ้าของ 2026-07-25: "ทำไมมีการส่งกล่องข้อความซ้ำหลายกล่อง")
+            //   ถ้าเพิ่งส่งไปไม่เกิน 3 นาที → ตอบสั้นๆ แทน (ยังขอซ้ำได้ด้วยการพิมพ์ "ส่งอีกครั้ง")
+            $lastSentAt = $latestReading->getConversationState('reading_ready_sent_at');
+            // ⚠️ ต้องเช็ค reading_sent_directly ด้วย — timestamp อย่างเดียวไม่พอ
+            //   เคสที่พัง: ทำนายใหม่จากการแก้วันเกิด → flag delivered ถูกล้างแต่ timestamp ค้าง
+            //   → ลูกค้าที่ยังไม่ได้รับคำทำนายรอบใหม่ โดนบอก "เลื่อนขึ้นไปอ่านด้านบน" (ไม่มีให้อ่าน)
+            $deliveredOk = (bool) $latestReading->getConversationState('reading_sent_directly', false);
+            $wantsResend = (bool) preg_match('/(อีกครั้ง|อีกที|อีกรอบ|ซ้ำ|ส่งใหม่|ขอใหม่)/u', $messageText ?? '');
+            if ($deliveredOk && ! empty($lastSentAt) && ! $wantsResend) {
+                try {
+                    if (\Carbon\Carbon::parse($lastSentAt)->diffInSeconds(now(), true) < 180) {
+                        return [
+                            'action' => 'view_reading_recent',
+                            'message' => "📖 คำทำนายเพิ่งส่งไปให้แล้วนะคะ เลื่อนขึ้นไปอ่านด้านบนได้เลยค่ะ ✨\n\n"
+                                .'ถ้าหาไม่เจอ พิมพ์ *"ส่งอีกครั้ง"* แม่หมอจะส่งให้ใหม่ค่ะ',
+                            'reading' => $latestReading,
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    // parse ไม่ได้ → ส่งตามปกติ
+                }
+            }
+
             // ตั้ง flag ว่าส่งแล้ว — กันแจ้งซ้ำ
             $latestReading->setConversationState('reading_sent_directly', true);
             $latestReading->setConversationState('reading_ready_sent', true);
             $latestReading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+            // ให้ flag ครบชุดเหมือน path อื่น — downstream ที่แยกด้วย delivered_by_* จะได้อ่านถูก
+            $latestReading->setConversationState('delivered_by_reply_message', true);
 
             $headerLabel = \App\Services\FortuneLocaleService::lo(
                 "🌟 *คำทำนายเชิงลึกล่าสุดของคุณ{$name}*",

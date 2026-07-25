@@ -94,6 +94,15 @@ class FortuneAiPingJob implements ShouldQueue
      */
     private function getMessageForStage(): ?string
     {
+        // 💸 (2026-07-25) LINE: ตัด ping ที่ 10 วินาทีทิ้ง — มันมาติดกับกล่อง "🃏 ได้ไพ่..."
+        //   ที่เพิ่งส่งไปไม่กี่วินาที (ลูกค้าเห็น 2 กล่องซ้อนโดยไม่ได้ข้อมูลใหม่)
+        //   คงไว้ที่ 30s + 60s เพราะ Deep 39 ใช้เวลา gen 30-90 วิ (มี completeness-gate retry)
+        //   ถ้าตัดเหลือกล่องเดียวลูกค้าจะเงียบยาวเกินไปจนคิดว่าบอทค้าง
+        //   (เจ้าของ 2026-07-25: "ทำไมมีการส่งกล่องข้อความซ้ำหลายกล่อง")
+        if ($this->platform === 'line' && ! in_array($this->stageSeconds, [30, 60], true)) {
+            return null;
+        }
+
         return match ($this->stageSeconds) {
             10 => "🌙 *แม่หมอกำลังเปิดตำราดู...*\n"
                 .'ขอเวลาอีกสักครู่นะคะ ✨',

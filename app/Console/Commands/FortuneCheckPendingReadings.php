@@ -363,76 +363,51 @@ class FortuneCheckPendingReadings extends Command
                         $channelManager = $channelManager ?? new FortuneChannelManager($settings);
                         $name = $reading->facebook_user_name ?? 'คุณ';
 
-                        if ($platform === 'facebook') {
-                            // 📱 FB: ส่งคำทำนายเต็มทันที (view_reading_deep)
-                            $fullMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
-                            $fullMessage .= '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n";
-                            $fullMessage .= '📅 วันที่: '.$reading->created_at->format('d/m/Y H:i')."\n";
-                            $fullMessage .= "═══════════════════════\n\n";
-                            $fullMessage .= $reading->deep_response;
+                        // 📱 (2026-07-25) ส่งคำทำนายเต็มทันที ทั้ง FB และ LINE
+                        //   เดิม LINE แยก branch ส่งกล่อง "คำทำนายพร้อมแล้ว กดอ่าน" — ตอนนี้ command หลัก
+                        //   (fortune:process-deep) เลิกใช้กล่องนั้นแล้ว safety net ตัวนี้ต้อง sync ตาม
+                        //   ไม่งั้นเคส push รอบแรกล้ม ลูกค้าจะเจอกล่องที่เจ้าของสั่งให้เอาออกกลับมาอีก
+                        $fullMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
+                        $fullMessage .= '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n";
+                        $fullMessage .= '📅 วันที่: '.$reading->created_at->format('d/m/Y H:i')."\n";
+                        $fullMessage .= "═══════════════════════\n\n";
+                        $fullMessage .= $reading->deep_response;
 
-                            $pushSent = $channelManager->sendResponse($platform, $userId, [
-                                'action' => 'view_reading_deep',
-                                'message' => $fullMessage,
-                                'reading' => $reading,
-                                'chart_image_url' => $reading->reading_image_url,
-                                'tarot_image_urls' => collect($reading->getCollectedTarotCards())
-                                    ->pluck('image_url')->filter()->values()->all(),
-                                // 🌙 (2026-05-22) ส่งกล่อง follow-up "หมออยู่ตอบเพิ่ม 10 นาที" หลังคำทำนาย
-                                'send_pro_session_followup' => true,
-                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                        $pushSent = $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'view_reading_deep',
+                            'message' => $fullMessage,
+                            'reading' => $reading,
+                            'chart_image_url' => $reading->reading_image_url,
+                            'tarot_image_urls' => collect($reading->getCollectedTarotCards())
+                                ->pluck('image_url')->filter()->values()->all(),
+                            // 🌙 (2026-05-22) ส่งกล่อง follow-up "หมออยู่ตอบเพิ่ม N นาที" หลังคำทำนาย
+                            'send_pro_session_followup' => true,
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
-                            $reading->setConversationState('phase2_notify_retry_count', $notifyRetryCount + 1);
+                        $reading->setConversationState('phase2_notify_retry_count', $notifyRetryCount + 1);
 
-                            if ($pushSent) {
-                                $reading->setConversationState('reading_sent_directly', true);
-                                $reading->setConversationState('reading_ready_sent', true);
-                                $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
-                                $reading->setConversationState('reading_notification_sent', true);
-                                $reading->setConversationState('delivered_by_push', true);
-                                // 🔔 (2026-06-23 bug-hunt) เข้า Deep Pro Session — ให้ follow-up Q&A เข้า Pro path
-                                //   (ไม่ตกไป chat upsell/OOM = อาการ K3440) + nudge/auto-finalize ทำงานกับ path นี้
-                                //   K3440 fix เดิมใส่เฉพาะ command path — check-pending P2 ตกหล่น. idempotent.
-                                try {
-                                    (new FortuneConversationService($settings))->enterDeepProSessionFor($reading->fresh());
-                                } catch (\Throwable $psErr) {
-                                    \Illuminate\Support\Facades\Log::warning('check-pending P2: enter Deep Pro Session fail (non-blocking)', [
-                                        'reading_id' => $reading->id, 'error' => $psErr->getMessage(),
-                                    ]);
-                                }
-                                $this->info("  📨 {$billRef} — push คำทำนายเต็มสำเร็จ (FB)");
-                            } else {
-                                // 🔓 push ล้ม → ปล่อย delivery lock ให้รอบหน้า/ทักกลับ deliver ได้
-                                \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
-                                $reading->setConversationState('reading_notification_attempted', true);
-                                $this->warn("  ⚠️ {$billRef} — push คำทำนายเต็มไม่สำเร็จ (FB) — ลูกค้าจะได้รับเมื่อทักกลับมา");
+                        if ($pushSent) {
+                            $reading->setConversationState('reading_sent_directly', true);
+                            $reading->setConversationState('reading_ready_sent', true);
+                            $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                            $reading->setConversationState('reading_notification_sent', true);
+                            $reading->setConversationState('delivered_by_push', true);
+                            // 🔔 (2026-06-23 bug-hunt) เข้า Deep Pro Session — ให้ follow-up Q&A เข้า Pro path
+                            //   (ไม่ตกไป chat upsell/OOM = อาการ K3440) + nudge/auto-finalize ทำงานกับ path นี้
+                            //   K3440 fix เดิมใส่เฉพาะ command path — check-pending P2 ตกหล่น. idempotent.
+                            try {
+                                (new FortuneConversationService($settings))->enterDeepProSessionFor($reading->fresh());
+                            } catch (\Throwable $psErr) {
+                                \Illuminate\Support\Facades\Log::warning('check-pending P2: enter Deep Pro Session fail (non-blocking)', [
+                                    'reading_id' => $reading->id, 'error' => $psErr->getMessage(),
+                                ]);
                             }
+                            $this->info("  📨 {$billRef} — push คำทำนายเต็มสำเร็จ ({$platform})");
                         } else {
-                            // 💎 LINE: คงเดิม push Flex notification (quota จำกัด)
-                            $readyMessage = "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
-                                .'📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n\n"
-                                ."🔮 พร้อมอ่านเลยไหมคะ?\n"
-                                ."💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
-
-                            $pushSent = $channelManager->sendResponse($platform, $userId, [
-                                'action' => 'fortune_ready_notification',
-                                'message' => $readyMessage,
-                                'reading' => $reading,
-                                'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
-                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-
-                            $reading->setConversationState('phase2_notify_retry_count', $notifyRetryCount + 1);
-
-                            if ($pushSent) {
-                                $reading->setConversationState('reading_notification_sent', true);
-                                $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
-                                $this->info("  📨 {$billRef} — push แจ้ง 'คำทำนายพร้อมแล้ว' สำเร็จ (LINE)");
-                            } else {
-                                // 🔓 push ล้ม → ปล่อย delivery lock ให้รอบหน้า/ทักกลับ deliver ได้
-                                \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
-                                $reading->setConversationState('reading_notification_attempted', true);
-                                $this->warn("  ⚠️ {$billRef} — push แจ้งไม่สำเร็จ (LINE) — user พิมพ์มาก็จะได้รับผ่าน replyMessage");
-                            }
+                            // 🔓 push ล้ม → ปล่อย delivery lock ให้รอบหน้า/ทักกลับ deliver ได้
+                            \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
+                            $reading->setConversationState('reading_notification_attempted', true);
+                            $this->warn("  ⚠️ {$billRef} — push คำทำนายเต็มไม่สำเร็จ ({$platform}) — ลูกค้าจะได้รับเมื่อทักกลับมา");
                         }
                     } catch (\Exception $notifyErr) {
                         // 🔓 push exception → ปล่อย delivery lock
