@@ -86,9 +86,197 @@
         </div>
     </div>
 
+    @php
+        // ── หลักฐานจากลาซาด้า ─────────────────────────────────────────────
+        // order_data ถูกเขียนโดย LazadaConversionSyncService ทุกครั้งที่ซิงก์
+        //   - lazada_raw = แถวดิบจาก /marketing/conversion/report (ไม่แก้ไข)
+        //   - _sync_meta = ผลด่านตรวจ 7 ข้อ + ค่าที่ map ได้ + เหตุผล
+        // นี่คือสิ่งที่คนต้องอ่านก่อนกดอนุมัติ/จ่ายเงิน
+        $orderData = is_array($order->order_data) ? $order->order_data : [];
+        $syncMeta = is_array($orderData['_sync_meta'] ?? null) ? $orderData['_sync_meta'] : [];
+        $lazadaRaw = $orderData['lazada_raw'] ?? null;
+        $gateChecks = is_array($syncMeta['gate'] ?? null) ? $syncMeta['gate'] : [];
+        $mappedValues = is_array($syncMeta['mapped'] ?? null) ? $syncMeta['mapped'] : [];
+
+        // ผ่านครบทุกข้อหรือไม่ (ไม่มีผลตรวจเลย = ยังไม่ผ่าน)
+        $gatePassed = $gateChecks !== [] && count(array_filter($gateChecks)) === count($gateChecks);
+
+        $gateLabels = [
+            'mapping_verified' => 'แอดมินยืนยันชื่อฟิลด์ของรายงานแล้ว',
+            'settled' => 'ลาซาด้าเคลียร์ค่าคอมให้เราแล้ว',
+            'payout_positive' => 'มียอดค่าคอมมากกว่า 0',
+            'attributed' => 'ระบุตัวผู้แนะนำได้จาก click log',
+            'real_order_id' => 'มีเลขออเดอร์จริงจากลาซาด้า',
+            'order_time_known' => 'อ่านเวลาออเดอร์ได้',
+            'currency_ok' => 'สกุลเงินเป็นบาท (THB)',
+        ];
+
+        $mappedLabels = [
+            'orderId' => 'เลขออเดอร์',
+            'productId' => 'รหัสสินค้า',
+            'payout' => 'ค่าคอมที่เคลียร์แล้ว',
+            'amount' => 'ยอดออเดอร์',
+            'status' => 'สถานะจากลาซาด้า',
+            'time' => 'เวลาออเดอร์',
+            'currency' => 'สกุลเงิน',
+        ];
+
+        // แปลงค่าเป็นข้อความอ่านง่าย (null = ยังไม่รู้ค่า ห้ามแสดงเป็น 0)
+        $mappedRows = [];
+        foreach ($mappedValues as $mKey => $mVal) {
+            if ($mVal === null || $mVal === '') {
+                $mText = '— (ไม่รู้ค่า)';
+            } elseif (is_bool($mVal)) {
+                $mText = $mVal ? 'ใช่' : 'ไม่ใช่';
+            } elseif (is_scalar($mVal)) {
+                $mText = (string) $mVal;
+            } else {
+                $mText = (string) json_encode($mVal, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+            $mappedRows[] = ['label' => $mappedLabels[$mKey] ?? $mKey, 'text' => $mText];
+        }
+
+        $rawJson = $lazadaRaw === null
+            ? null
+            : (string) json_encode($lazadaRaw, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $metaJson = $syncMeta === []
+            ? null
+            : (string) json_encode($syncMeta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $hasEvidence = $syncMeta !== [] || $lazadaRaw !== null;
+    @endphp
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Main Content --}}
         <div class="lg:col-span-2 space-y-6">
+            {{-- ══════════════════════════════════════════════════════════
+                 หลักฐานจากลาซาด้า — อ่านก่อนอนุมัติ/จ่ายเงินทุกครั้ง
+                 ══════════════════════════════════════════════════════════ --}}
+            @if($hasEvidence)
+                <div class="glass-card rounded-2xl overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-shield-halved text-amber-500"></i>
+                            หลักฐานจากลาซาด้า
+                        </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            ค่าคอมจ่ายได้ต่อเมื่อลูกค้าชำระเงินเสร็จ และลาซาด้าโอนค่าคอมให้เราจริงเท่านั้น
+                        </p>
+                    </div>
+
+                    <div class="p-6 space-y-5">
+                        {{-- สรุปผลด่านตรวจ --}}
+                        @if($gatePassed)
+                            <div class="flex items-start gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/60">
+                                <i class="fas fa-circle-check text-emerald-500 mt-0.5"></i>
+                                <div class="text-sm text-emerald-800 dark:text-emerald-200">
+                                    <p class="font-semibold">ผ่านด่านตรวจครบทุกข้อ</p>
+                                    <p>{{ $syncMeta['gate_reason'] ?? 'ผ่านครบทุกข้อ' }}</p>
+                                </div>
+                            </div>
+                        @else
+                            <div class="flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/60">
+                                <i class="fas fa-triangle-exclamation text-red-500 mt-0.5"></i>
+                                <div class="text-sm text-red-800 dark:text-red-200">
+                                    <p class="font-semibold">ยังไม่ผ่านด่านตรวจ — ยังจ่ายค่าคอมไม่ได้</p>
+                                    <p>{{ $syncMeta['gate_reason'] ?? 'ไม่พบผลด่านตรวจในออเดอร์นี้' }}</p>
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- เตือนเรื่องชื่อฟิลด์ที่ยังเป็นการเดา --}}
+                        @if(!empty($syncMeta['mapping_fields_are_guessed']))
+                            <div class="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/60">
+                                <i class="fas fa-circle-question text-amber-500 mt-0.5"></i>
+                                <div class="text-sm text-amber-800 dark:text-amber-200">
+                                    <p class="font-semibold">ชื่อฟิลด์ของรายงานยังไม่ได้ยืนยัน</p>
+                                    <p>ตัวเลขทั้งหมดด้านล่างมาจากการ “เดาชื่อฟิลด์” — ต้องเทียบกับแถวดิบก่อนเชื่อ</p>
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- รายการผลตรวจทีละข้อ --}}
+                        @if($gateChecks !== [])
+                            <div>
+                                <p class="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-3">ผลตรวจทีละข้อ</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    @foreach($gateChecks as $checkKey => $checkOk)
+                                        <div class="flex items-start gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                                            <span class="mt-0.5">{{ $checkOk ? '✅' : '❌' }}</span>
+                                            <span class="text-sm {{ $checkOk ? 'text-gray-700 dark:text-gray-200' : 'text-red-600 dark:text-red-400 font-medium' }}">
+                                                {{ $gateLabels[$checkKey] ?? $checkKey }}
+                                            </span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- ค่าที่ map ได้จากแถวดิบ --}}
+                        @if($mappedRows !== [])
+                            <div>
+                                <p class="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-3">ค่าที่อ่านได้จากแถวดิบ</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    @foreach($mappedRows as $row)
+                                        <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ $row['label'] }}</span>
+                                            <span class="text-sm font-semibold text-gray-900 dark:text-white break-all text-right">{{ $row['text'] }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- เหตุผลการจับคู่ผู้แนะนำ + ร่องรอยการซิงก์ --}}
+                        <div class="grid grid-cols-1 gap-2">
+                            @if(!empty($syncMeta['attribution_reason']))
+                                <div class="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">การจับคู่ผู้แนะนำ</p>
+                                    <p class="text-sm text-gray-900 dark:text-white">{{ $syncMeta['attribution_reason'] }}</p>
+                                </div>
+                            @endif
+                            @if(!empty($syncMeta['synced_at']) || !empty($syncMeta['source']))
+                                <div class="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">ที่มาของข้อมูล</p>
+                                    <p class="text-sm font-mono text-gray-900 dark:text-white break-all">{{ $syncMeta['source'] ?? '-' }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ซิงก์เมื่อ {{ $syncMeta['synced_at'] ?? '-' }}</p>
+                                </div>
+                            @endif
+                            @if(!empty($syncMeta['synthetic_order_id']))
+                                <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-800 dark:text-amber-200">
+                                    <i class="fas fa-triangle-exclamation mr-1"></i>
+                                    เลขออเดอร์นี้ระบบสร้างขึ้นเอง (ลาซาด้าไม่ได้ส่งเลขออเดอร์มา) — ห้ามอนุมัติอัตโนมัติ
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- แถวดิบ / ผลตรวจฉบับเต็ม --}}
+                        @if($rawJson !== null)
+                            <details class="group rounded-xl bg-gray-50 dark:bg-gray-700/50 overflow-hidden">
+                                <summary class="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                                    <i class="fas fa-chevron-right transition-transform group-open:rotate-90"></i>
+                                    แถวดิบจากลาซาด้า (lazada_raw)
+                                </summary>
+                                <div class="px-4 pb-4">
+                                    <pre class="overflow-x-auto text-xs leading-relaxed p-4 rounded-lg bg-gray-900 text-gray-100">{{ $rawJson }}</pre>
+                                </div>
+                            </details>
+                        @endif
+
+                        @if($metaJson !== null)
+                            <details class="group rounded-xl bg-gray-50 dark:bg-gray-700/50 overflow-hidden">
+                                <summary class="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                                    <i class="fas fa-chevron-right transition-transform group-open:rotate-90"></i>
+                                    ผลตรวจฉบับเต็ม (_sync_meta)
+                                </summary>
+                                <div class="px-4 pb-4">
+                                    <pre class="overflow-x-auto text-xs leading-relaxed p-4 rounded-lg bg-gray-900 text-gray-100">{{ $metaJson }}</pre>
+                                </div>
+                            </details>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
             {{-- Customer Info Card --}}
             <div class="glass-card rounded-2xl overflow-hidden">
                 <div class="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 dark:from-blue-500/20 dark:to-indigo-500/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">

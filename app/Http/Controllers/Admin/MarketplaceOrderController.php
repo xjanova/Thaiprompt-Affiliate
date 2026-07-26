@@ -118,6 +118,21 @@ class MarketplaceOrderController extends Controller
      */
     public function calculateCommission(MarketplaceOrder $order)
     {
+        // 🚨 ด่านตรวจต้องอยู่ที่ "จุดผลิตแถวค่าคอม" ด้วย ไม่ใช่แค่ปุ่มอนุมัติ/จ่าย
+        //
+        //    ช่องโหว่ที่เจอตอนรีวิว: ออเดอร์ลาซาด้าที่ยังไม่ผ่านด่าน (commission_status='pending')
+        //    หน้ารายละเอียดยังโชว์ปุ่ม "คำนวณคอมมิชชั่น" ซึ่งสร้างแถว marketplace_commissions ได้เลย
+        //    พอมีแถวแล้วก็ไปโผล่ในคิวอนุมัติ = เงินไหลออกได้โดยไม่ต้องผ่านด่านสักข้อ
+        //    → ต้องกันตั้งแต่ยังไม่ให้ "สร้างแถว" สำหรับออเดอร์ affiliate ที่ลาซาด้ายังไม่เคลียร์
+        $guard = new \App\Services\Marketplace\AffiliateSettlementGuard;
+        $verdict = $guard->checkOrder($order);
+        if (! ($verdict['allowed'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ยังคำนวณค่าคอมไม่ได้: '.($verdict['reason'] ?? 'ลาซาด้ายังไม่ยืนยันการเคลียร์เงิน'),
+            ], 422);
+        }
+
         try {
             $commissionService = new MarketplaceCommissionService;
             $commissions = $commissionService->calculateCommissions($order);

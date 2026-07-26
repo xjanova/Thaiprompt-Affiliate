@@ -272,6 +272,8 @@ return [
                 ['label' => '🗂️ แคตตาล็อก', 'route' => 'admin.lazada-hub.catalog.index', 'icon' => 'fas fa-layer-group'],
                 ['label' => '⬇️ นำเข้าสินค้า', 'route' => 'admin.lazada-hub.catalog.import', 'icon' => 'fas fa-cloud-download-alt'],
                 ['label' => '🤖 นำเข้าอัตโนมัติ', 'route' => 'admin.lazada-hub.auto-import.index', 'icon' => 'fas fa-robot', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-violet-500 to-purple-500'],
+                ['label' => '📈 อนาไลติก', 'route' => 'admin.lazada-hub.analytics.index', 'icon' => 'fas fa-chart-line'],
+                ['label' => '🖱️ บันทึกการคลิก', 'route' => 'admin.lazada-hub.analytics.clicks', 'icon' => 'fas fa-hand-pointer'],
             ],
         ],
 

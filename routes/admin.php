@@ -3777,6 +3777,13 @@ Route::prefix('lazada-hub')->name('lazada-hub.')->group(function () {
         Route::delete('/{item}', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'destroy'])->name('destroy');
     });
     Route::post('/wishes/{wish}/status', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'wishStatus'])->name('wishes.status');
+
+    // อนาไลติกสายเงิน affiliate (อ่านอย่างเดียว — ไม่แตะเงิน ไม่อนุมัติอะไร)
+    // กรวยการแปลง · KPI · สาเหตุที่ยังไม่อนุมัติ · สุขภาพการ sync · บันทึกการคลิก
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LazadaHub\AnalyticsController::class, 'index'])->name('index');
+        Route::get('/clicks', [\App\Http\Controllers\Admin\LazadaHub\AnalyticsController::class, 'clicks'])->name('clicks');
+    });
 });
 
 // ========================================

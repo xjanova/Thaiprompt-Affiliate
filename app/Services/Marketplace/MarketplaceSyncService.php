@@ -155,6 +155,16 @@ class MarketplaceSyncService
                         ->first();
 
                     if ($existingOrder) {
+                        // 🔒 ห้ามทับ order_data ทั้งก้อน — ช่องนี้เก็บ "หลักฐานจากลาซาด้า" ไว้ด้วย
+                        //    (lazada_raw = แถวดิบจากรายงาน conversion, _sync_meta = ผลด่านตรวจ 7 ข้อ)
+                        //    ถ้าทับทิ้ง: พาเนลหลักฐานในหน้าแอดมินหายทั้งใบ และด่านตรวจอ่านผลเดิมไม่ได้
+                        //    → ผสานแบบเก็บคีย์เดิมไว้ ทับเฉพาะส่วนของ sync ตัวนี้
+                        $existingRaw = $existingOrder->order_data;
+                        if (is_array($existingRaw) && $existingRaw !== []) {
+                            $incoming = is_array($orderData['order_data'] ?? null) ? $orderData['order_data'] : [];
+                            $orderData['order_data'] = array_merge($existingRaw, $incoming);
+                        }
+
                         $existingOrder->update($orderData);
                         $order = $existingOrder;
                         $updated++;

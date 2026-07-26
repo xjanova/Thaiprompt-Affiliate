@@ -3,6 +3,11 @@
 @section('title', 'คอมมิชชั่น Marketplace')
 
 @section('content')
+@php
+    // 🚨 ด่านตรวจ "ลาซาด้าเคลียร์เงินให้เราหรือยัง" — ใช้ตัวเดียวกับที่ Controller ใช้ตอนกดปุ่ม
+    //    หน้าจอกับหลังบ้านจึงตัดสินตรงกันเสมอ (ปุ่มที่กดไม่ได้ = หลังบ้านก็ปฏิเสธ)
+    $settlementGuard = new \App\Services\Marketplace\AffiliateSettlementGuard;
+@endphp
 <div class="space-y-6">
     {{-- Premium Hero Header --}}
     <div class="relative overflow-hidden bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 dark:from-emerald-700 dark:via-teal-700 dark:to-cyan-800 rounded-2xl shadow-2xl p-8">
@@ -180,6 +185,21 @@
                 เลือก 0 รายการ
             </span>
         </div>
+
+        {{-- 🚨 คำเตือนกฎการจ่ายเงิน — ให้แอดมินเห็นก่อนกดทุกครั้ง --}}
+        <div class="mt-4 flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/60">
+            <i class="fas fa-shield-halved text-amber-500 mt-0.5"></i>
+            <div class="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">
+                <p class="font-semibold">กฎการจ่ายค่าคอม Lazada</p>
+                <p>
+                    จ่ายได้เฉพาะรายการที่ขึ้นว่า
+                    <span class="font-semibold">“ลาซาด้ายืนยันแล้ว”</span> เท่านั้น —
+                    รายการที่ขึ้นว่า <span class="font-semibold">“รอลาซาด้ายืนยัน”</span>
+                    แปลว่าลาซาด้ายังไม่โอนค่าคอมงวดนั้นมาให้เรา ปุ่มจึงถูกปิดไว้
+                    และจะถูกข้ามอัตโนมัติเมื่อกดแบบกลุ่ม
+                </p>
+            </div>
+        </div>
     </div>
 
     {{-- Commissions Table --}}
@@ -219,6 +239,9 @@
                         <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">
                             <i class="fas fa-info-circle mr-1 text-indigo-500"></i> สถานะ
                         </th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 dark:text-gray-300 uppercase whitespace-nowrap">
+                            <i class="fas fa-shield-halved mr-1 text-amber-500"></i> ลาซาด้ายืนยัน
+                        </th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">
                             <i class="fas fa-calendar mr-1 text-gray-500"></i> วันที่
                         </th>
@@ -229,10 +252,31 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($commissions ?? [] as $commission)
-                        <tr class="hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-transparent dark:hover:from-gray-700/50 transition-all duration-200">
+                        @php
+                            // ผลด่านตรวจของแถวนี้ (settled | warn | blocked | na)
+                            $settle = $settlementGuard->settlementBadge($commission);
+                            $settleTone = [
+                                'settled' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+                                'warn' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                                'blocked' => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+                                'na' => 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+                            ][$settle['state']] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+                            $settleIcon = [
+                                'settled' => 'fa-circle-check',
+                                'warn' => 'fa-triangle-exclamation',
+                                'blocked' => 'fa-lock',
+                                'na' => 'fa-minus',
+                            ][$settle['state']] ?? 'fa-minus';
+                        @endphp
+                        <tr class="hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-transparent dark:hover:from-gray-700/50 transition-all duration-200 {{ $settle['blocked'] ? 'opacity-70' : '' }}">
                             <td class="px-6 py-4">
-                                <input type="checkbox" class="commission-checkbox w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                                       value="{{ $commission->id }}" data-status="{{ $commission->status }}">
+                                {{-- แถวที่ด่านตรวจไม่ผ่าน = เลือกไม่ได้ กันไปโผล่ในคำสั่งแบบกลุ่ม --}}
+                                <input type="checkbox"
+                                       class="commission-checkbox w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                       value="{{ $commission->id }}"
+                                       data-status="{{ $commission->status }}"
+                                       data-blocked="{{ $settle['blocked'] ? '1' : '0' }}"
+                                       @if($settle['blocked']) disabled title="{{ $settle['tooltip'] }}" @endif>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
@@ -298,26 +342,51 @@
                                     {{ $sConfig['label'] }}
                                 </span>
                             </td>
+                            {{-- สถานะการเคลียร์เงินจากลาซาด้า — ตัวชี้ขาดว่าจ่ายได้หรือยัง --}}
+                            <td class="px-6 py-4 text-center">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold {{ $settleTone }}"
+                                      title="{{ $settle['tooltip'] }}">
+                                    <i class="fas {{ $settleIcon }}"></i>
+                                    {{ $settle['label'] }}
+                                </span>
+                            </td>
                             <td class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                 {{ $commission->created_at->format('d/m/Y') }}
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-2">
                                     @if($commission->status === 'pending')
-                                        <button type="button"
-                                                onclick="approveCommission({{ $commission->id }})"
-                                                class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-800 transition-all hover:scale-110"
-                                                title="อนุมัติ">
-                                            <i class="fas fa-check"></i>
-                                        </button>
+                                        @if($settle['blocked'])
+                                            {{-- ด่านตรวจไม่ผ่าน = ปุ่มต้องกดไม่ได้ (หลังบ้านก็ปฏิเสธเช่นกัน) --}}
+                                            <button type="button" disabled
+                                                    class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center cursor-not-allowed"
+                                                    title="อนุมัติไม่ได้: {{ $settle['tooltip'] }}">
+                                                <i class="fas fa-lock"></i>
+                                            </button>
+                                        @else
+                                            <button type="button"
+                                                    onclick="approveCommission({{ $commission->id }})"
+                                                    class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-800 transition-all hover:scale-110"
+                                                    title="อนุมัติ">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        @endif
                                     @endif
                                     @if($commission->status === 'approved')
-                                        <button type="button"
-                                                onclick="payCommission({{ $commission->id }})"
-                                                class="w-9 h-9 rounded-xl bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-800 transition-all hover:scale-110"
-                                                title="จ่ายเงิน">
-                                            <i class="fas fa-money-bill"></i>
-                                        </button>
+                                        @if($settle['blocked'])
+                                            <button type="button" disabled
+                                                    class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center cursor-not-allowed"
+                                                    title="จ่ายไม่ได้: {{ $settle['tooltip'] }}">
+                                                <i class="fas fa-lock"></i>
+                                            </button>
+                                        @else
+                                            <button type="button"
+                                                    onclick="payCommission({{ $commission->id }})"
+                                                    class="w-9 h-9 rounded-xl bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-800 transition-all hover:scale-110"
+                                                    title="จ่ายเงิน">
+                                                <i class="fas fa-money-bill"></i>
+                                            </button>
+                                        @endif
                                     @endif
                                     <a href="{{ route('admin.marketplace.commissions.show', $commission) }}"
                                        class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-all hover:scale-110"
@@ -329,7 +398,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-20 text-center">
+                            <td colspan="9" class="px-6 py-20 text-center">
                                 <div class="flex flex-col items-center justify-center">
                                     <div class="w-24 h-24 bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 rounded-full flex items-center justify-center mb-6">
                                         <i class="fas fa-coins text-5xl text-emerald-500"></i>
@@ -370,9 +439,13 @@
 
 @push('scripts')
 <script>
+    // 🚨 แถวที่ด่านตรวจไม่ผ่านจะถูก disabled ไว้ตั้งแต่ฝั่ง Blade
+    //    ทุกที่ที่อ่านรายการที่เลือก ต้องใช้ :not(:disabled) เสมอ
+    //    (input ที่ disabled ยังถูกตั้ง .checked = true ได้ด้วย JS → ถ้าไม่กรอง จะหลุดไปกับคำสั่งกลุ่ม)
+
     // Select All Checkbox
     document.getElementById('select-all').addEventListener('change', function() {
-        document.querySelectorAll('.commission-checkbox').forEach(cb => {
+        document.querySelectorAll('.commission-checkbox:not(:disabled)').forEach(cb => {
             cb.checked = this.checked;
         });
         updateBulkButtons();
@@ -384,7 +457,7 @@
     });
 
     function updateBulkButtons() {
-        const checked = document.querySelectorAll('.commission-checkbox:checked');
+        const checked = document.querySelectorAll('.commission-checkbox:checked:not(:disabled)');
         const pendingCount = Array.from(checked).filter(cb => cb.dataset.status === 'pending').length;
         const approvedCount = Array.from(checked).filter(cb => cb.dataset.status === 'approved').length;
 
@@ -394,7 +467,7 @@
     }
 
     function getSelectedIds(status = null) {
-        const checkboxes = document.querySelectorAll('.commission-checkbox:checked');
+        const checkboxes = document.querySelectorAll('.commission-checkbox:checked:not(:disabled)');
         if (status) {
             return Array.from(checkboxes)
                 .filter(cb => cb.dataset.status === status)
