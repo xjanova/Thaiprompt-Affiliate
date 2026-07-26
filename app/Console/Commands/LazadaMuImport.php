@@ -278,7 +278,10 @@ class LazadaMuImport extends Command
                     'category_l1_id' => $it['category_l1'] ?: null,
                     'price' => $it['price'],
                     'currency' => $it['currency'] ?: 'THB',
-                    'stock_quantity' => $it['stock'],
+                    // ⚠️ คอลัมน์เป็น int(11) (สูงสุด ~2.1 พันล้าน) แต่ Lazada เคยส่งค่ามากกว่านั้นมา
+                    //    ทำให้ตกด้วย SQLSTATE[22003] Out of range แล้วสินค้าชิ้นนั้นหายไปเงียบๆ
+                    //    สต็อกของร้านนอกเป็นแค่ข้อมูลอ้างอิง ไม่ได้ใช้ตัดสต็อกจริง → clamp ได้ปลอดภัย
+                    'stock_quantity' => max(0, min((int) $it['stock'], 2147483647)),
                     'is_available' => ! $it['out_of_stock'],
                     'main_image_url' => $it['image'] ?: null,
                     'images' => $it['images'],
