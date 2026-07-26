@@ -98,3 +98,6 @@ __pycache__/
 /storage/oauth-private.key
 /storage/oauth-public.key
 storage/app/private/juntra-oauth-*.json
+
+# แคชไฟล์เสียงพูดของน้อง Eve (สร้างใหม่จาก Google TTS ได้เอง — ไม่ต้องเก็บใน git)
+/storage/app/eve-tts/

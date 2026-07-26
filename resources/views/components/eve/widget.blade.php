@@ -151,8 +151,12 @@ function eveWidget() {
         dots: '',
         _dotTimer: null,
         _audio: null,
-        _ttsQueue: [],
+        _ttsQueue: [],          // ข้อความที่รอพูด (ท่อนละ ≤170 ตัว)
+        _preload: null,         // {text, audio} ท่อนถัดไปที่โหลดรออยู่
+        _native: null,          // utterance ของเสียงสำรองในเครื่อง (Web Speech)
         _speakSeq: 0,
+        // 🔊 พร็อกซีเสียงฝั่งเรา — ห้ามยิง translate.google.com ตรงๆ (Referer เว็บเรา = Google ตอบ 404)
+        TTS_ENDPOINT: {{ Js::from(route('eve.tts')) }},
         floats: [],          // อีโมจิที่กำลังลอยอยู่ {id,char,type,x}
         _fid: 0,             // running id กัน key ซ้ำใน x-for
         _ambient: null,      // timer เด้งอีโมจิเบาๆ ตอนว่าง
@@ -199,6 +203,8 @@ function eveWidget() {
         toggle() {
             this.open = !this.open;
             if (this.open) {
+                // อุ่นรายชื่อเสียงในเครื่องไว้ก่อน (Chrome โหลดแบบ async — เรียกครั้งแรกมักได้ลิสต์ว่าง)
+                try { window.speechSynthesis && window.speechSynthesis.getVoices(); } catch (e) {}
                 if (this.messages.length === 0) {
                     this.messages.push({ role: 'assistant', content: 'สวัสดีค่ะ น้อง Eve เองค่ะ 🌸 อยากได้สินค้าแบบไหน หรือมีอะไรให้ช่วยไหมคะ?' });
                     this.emotion = 'happy';
@@ -284,19 +290,37 @@ function eveWidget() {
             }
         },
 
-        // ── Google Translate TTS (ฟรี ไทย) — chunk + คิวเล่นต่อเนื่อง + no-referrer ──
+        // ── Google Translate TTS (ฟรี ไทย) — chunk + คิวเล่นต่อเนื่อง ผ่านพร็อกซีของเรา ──
+        //    ⚠️ ห้ามยิง translate.google.com ตรงจากเบราว์เซอร์: Audio() ไม่รองรับ referrerPolicy
+        //    เบราว์เซอร์แนบ Referer เว็บเราไปด้วยเสมอ → Google ตอบ 404 → เงียบสนิท (บั๊กเดิม)
         chunkForTts(text) {
             const clean = (text || '').replace(/\[[^\]]*\]/g, '').replace(/[*_#`>]/g, '').trim();
             if (!clean) return [];
             const out = []; let buf = '';
             // แยกประโยคหลังคำลงท้าย (ค่ะ/คะ/ครับ) หรือเครื่องหมาย — ใช้ alternation ไม่ใช่ char-class (กันตัดกลางคำ) + คงเว้นวรรค
-            const parts = clean.split(/(?<=(?:ค่ะ|คะ|ครับ|[.!?\n]))/);
+            // ⚠️ lookbehind ใช้ไม่ได้บน Safari เก่า (< 16.4) และถ้าเขียนเป็น "regex literal" เบราว์เซอร์จะ
+            //    SyntaxError ตั้งแต่ตอน parse สคริปต์ = วิดเจ็ตทั้งตัวตายเงียบ (try/catch ไม่ทัน)
+            //    จึงต้องสร้างด้วย new RegExp เพื่อให้ error เกิดตอนรัน แล้วถอยไปใช้ตัวแบ่งธรรมดาแทนได้
+            let parts;
+            try {
+                parts = clean.split(new RegExp('(?<=(?:ค่ะ|คะ|ครับ|[.!?\\n]))'));
+            } catch (e) {
+                parts = clean.split(/([.!?\n])/).filter(Boolean);
+            }
             for (const p of parts) {
                 if ((buf + p).length > 170) { if (buf.trim()) out.push(buf.trim()); buf = p; }
                 else buf += p;
             }
             if (buf.trim()) out.push(buf.trim());
-            return out.filter(Boolean);
+
+            // ประโยคยาวที่ไม่มีจุดตัดเลย (เช่น สเปกสินค้ายาวๆ) จะโตเกินเพดานของ endpoint (300 ตัว)
+            // แล้วโดนตีกลับ 422 → ต้องหั่นดิบๆ ให้อยู่ในพิสัยก่อนส่ง
+            const capped = [];
+            for (const c of out.filter(Boolean)) {
+                if (c.length <= 170) { capped.push(c); continue; }
+                for (let i = 0; i < c.length; i += 170) capped.push(c.slice(i, i + 170));
+            }
+            return capped.filter(c => c.trim());
         },
 
         speak(text) {
@@ -305,25 +329,98 @@ function eveWidget() {
             const chunks = this.chunkForTts(text);
             if (!chunks.length) return;
             const seq = this._speakSeq; // stopSpeak() เพิ่ง ++ ให้แล้ว = เซสชันพูดปัจจุบัน
-            this._ttsQueue = chunks.map((c, i) =>
-                `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=th&q=${encodeURIComponent(c)}&total=${chunks.length}&idx=${i}&textlen=${c.length}`);
+            this._ttsQueue = chunks.slice();   // เก็บ "ข้อความ" ไว้ด้วย เผื่อต้องถอยไปใช้เสียงในเครื่อง
             this.speaking = true;
             const prev = this.emotion;
             this.emotion = 'talking';
             this._playNext(seq, () => { if (seq !== this._speakSeq) return; this.speaking = false; this.emotion = (prev === 'happy' ? 'happy' : 'idle'); });
         },
 
+        _ttsUrl(text) { return this.TTS_ENDPOINT + '?q=' + encodeURIComponent(text); },
+
+        _makeAudio(text) {
+            const a = new Audio();
+            a.preload = 'auto';
+            a.src = this._ttsUrl(text);
+            return a;
+        },
+
         _playNext(seq, done) {
             if (seq !== this._speakSeq) return;        // เซสชันเก่า (ถูก stopSpeak ไปแล้ว) — ทิ้ง ไม่ให้ stomp อารมณ์ใหม่
             if (!this._ttsQueue.length) { done && done(); return; }
-            const url = this._ttsQueue.shift();
-            const a = new Audio();
-            a.referrerPolicy = 'no-referrer';
-            a.src = url;
+            const text = this._ttsQueue.shift();
+
+            // ใช้ท่อนที่พรีโหลดไว้ตอนกำลังเล่นท่อนก่อนหน้า — ต่อประโยคได้ไม่มีช่องว่างรอโหลด
+            const a = (this._preload && this._preload.text === text) ? this._preload.audio : this._makeAudio(text);
+            this._preload = null;
             this._audio = a;
-            a.onended = () => this._playNext(seq, done);
-            a.onerror = () => this._playNext(seq, done);
-            a.play().catch(() => this._playNext(seq, done));
+
+            // พรีโหลดท่อนถัดไประหว่างที่ท่อนนี้กำลังเล่น
+            if (this._ttsQueue.length) {
+                this._preload = { text: this._ttsQueue[0], audio: this._makeAudio(this._ttsQueue[0]) };
+            }
+
+            let settled = false;
+            const advance = () => { if (settled) return; settled = true; this._playNext(seq, done); };
+            // เซิร์ฟเวอร์ล่ม / โดน throttle / Google ไม่ตอบ → ถอยไปใช้เสียงในเครื่องท่อนนี้ แล้วไปต่อ
+            const fallback = () => {
+                if (settled) return;
+                settled = true;
+                this._speakNative(text, seq, () => this._playNext(seq, done));
+            };
+
+            a.onended = advance;
+            a.onerror = fallback;
+            a.play().catch(err => {
+                // เบราว์เซอร์บล็อกเสียงอัตโนมัติ (ยังไม่มี user gesture) — Web Speech ก็จะโดนบล็อกเหมือนกัน
+                // จึงหยุดเงียบๆ ดีกว่าไล่ยิงทั้งคิวให้ error รัวๆ
+                if (err && err.name === 'NotAllowedError') { this.stopSpeak(); return; }
+                fallback();
+            });
+        },
+
+        // สำรอง: เสียงสังเคราะห์ในเครื่อง (Web Speech) — เลือกเสียงไทยของ Google ก่อนถ้ามี
+        _speakNative(text, seq, done) {
+            const synth = window.speechSynthesis;
+            const fin = () => { if (seq === this._speakSeq) done && done(); };
+            if (!synth || seq !== this._speakSeq) { fin(); return; }
+            try {
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'th-TH';
+                const voices = synth.getVoices() || [];
+                const v = voices.find(x => /^th/i.test(x.lang) && /google/i.test(x.name))
+                       || voices.find(x => /^th/i.test(x.lang));
+                if (v) u.voice = v;
+
+                let settled = false;
+                let started = false;
+                let ticks = 0;
+                let poll = null;
+                const end = () => {
+                    if (poll) { clearInterval(poll); poll = null; }
+                    if (settled) return;
+                    settled = true;
+                    fin();
+                };
+                u.onstart = () => { started = true; };
+                u.onend = end;
+                u.onerror = end;
+                this._native = u;
+                synth.speak(u);
+
+                // เครื่องที่ไม่มีเสียงไทยเลย บางเบราว์เซอร์ไม่ยิง onend/onerror → เฝ้าดูสถานะเอง ไม่ให้คิวค้าง
+                if (!settled) {
+                    poll = setInterval(() => {
+                        if (settled) { clearInterval(poll); poll = null; return; }
+                        ticks++;
+                        if (seq !== this._speakSeq) { end(); return; }
+                        // ต้องรอให้ "เริ่มพูดแล้วจริง" ก่อน ถึงจะเชื่อค่า speaking/pending ได้
+                        // (ช่วงแรกบางเบราว์เซอร์รายงานว่าไม่ได้พูดและไม่ได้รอ ทั้งที่กำลังจะพูด)
+                        if (started && !synth.speaking && !synth.pending) { end(); return; }
+                        if (!started && ticks >= 6) end();   // ~4 วิยังไม่เริ่ม = เครื่องนี้พูดไทยไม่ได้ ไปท่อนต่อไป
+                    }, 700);
+                }
+            } catch (e) { fin(); }
         },
 
         stopSpeak() {
@@ -332,6 +429,14 @@ function eveWidget() {
             if (this._audio) {
                 try { this._audio.onended = null; this._audio.onerror = null; this._audio.pause(); } catch (e) {}
                 this._audio = null;
+            }
+            if (this._preload) {
+                try { this._preload.audio.src = ''; } catch (e) {}   // ยกเลิกท่อนที่พรีโหลดค้าง
+                this._preload = null;
+            }
+            if (this._native) {
+                try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+                this._native = null;
             }
             this.speaking = false;
             if (this.emotion === 'talking') this.emotion = 'idle';

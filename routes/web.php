@@ -474,6 +474,12 @@ Route::get('/platform-wiki', function () {
 Route::post('/eve/chat', [\App\Http\Controllers\EveAssistantController::class, 'chat'])
     ->middleware('throttle:30,1')->name('eve.chat');
 
+// 🔊 เสียงพูดน้อง Eve — พร็อกซี Google Translate TTS (ฟรี) ผ่านเซิร์ฟเวอร์เรา
+//    ยิงจากเบราว์เซอร์ตรงๆ ไม่ได้: <audio> ไม่รองรับ referrerpolicy → Google เห็น Referer เว็บเรา แล้วตอบ 404
+//    throttle สูงกว่า chat เพราะ 1 คำตอบถูกแบ่งเป็นหลายท่อน (ท่อนละ 1 คำขอ) และส่วนใหญ่เป็นแคชฮิต
+Route::get('/eve/tts', [\App\Http\Controllers\EveAssistantController::class, 'tts'])
+    ->middleware('throttle:120,1')->name('eve.tts');
+
 // Dynamic Page Routes (Privacy Policy, Terms, etc.)
 // ⚠️ Legal Critical: Privacy Policy, Terms of Service ต้องเข้าถึงได้ตลอดเวลา
 Route::match(['GET', 'HEAD'], '/page/{slug}', [PageController::class, 'show'])->name('page.show');
