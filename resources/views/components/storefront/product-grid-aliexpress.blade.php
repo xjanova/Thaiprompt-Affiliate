@@ -81,15 +81,13 @@
     @endphp
 
     <div class="group">
+        {{-- การ์ดสินค้า: ผิวกระจก (tp-glass) + ความหนา 3D (tp-3d) + แสงวิ่งตอน hover (tp-sheen)
+             พื้นหลังลาวาแลมป์อยู่หลังกริดนี้ ทำให้กระจกมีสีให้สะท้อนจริง ไม่ใช่กระจกบนพื้นขาว --}}
         <a href="{{ $targetUrl }}"
            @if($isAffiliate) target="_blank" rel="noopener nofollow sponsored" @endif
-           class="block bg-white dark:bg-gray-800
-                 rounded-xl md:rounded-2xl overflow-hidden
-                 shadow hover:shadow-xl
-                 transform hover:-translate-y-1
-                 transition-all duration-300
-                 border border-gray-100 dark:border-gray-700
-                 hover:border-orange-200 dark:hover:border-orange-700">
+           class="tp-glass tp-3d tp-sheen
+                 block rounded-xl md:rounded-2xl overflow-hidden
+                 hover:border-orange-300/70 dark:hover:border-orange-500/40">
 
             {{-- Product Image --}}
             <div class="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">

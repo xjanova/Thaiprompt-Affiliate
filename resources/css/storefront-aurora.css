@@ -1,0 +1,279 @@
+/**
+ * 🫧 Storefront Aurora — กระจก + 3D หนา + พื้นหลังลาวาแลมป์
+ *
+ * ใช้เฉพาะหน้าร้าน (layouts/storefront.blade.php) เท่านั้น
+ * ไม่โหลดในหลังบ้าน เพราะ backdrop-filter กิน GPU และหลังบ้านไม่ได้ใช้
+ *
+ * แนวทางตาม .claude/V3_UI_DESIGN_SYSTEM.md:
+ *   สีสันสดใส (gradient) · มีมิติ (depth/3D) · Glassmorphism (backdrop blur) · Premium feel
+ *
+ * ⚠️ บทเรียนจากงานเก่า (SmsChecker Millennium 3D): "รีดีไซน์" ที่ทำแค่เปลี่ยนสี
+ *    แต่ไม่ได้สร้างมิติจริง = ไม่ได้อะไรขึ้นมา → ไฟล์นี้จึงสร้าง "ความหนา" ด้วย
+ *    เงาซ้อนหลายชั้น + ขอบไฮไลต์ ไม่ใช่แค่ใส่ gradient ทับ
+ */
+
+/* ══════════════════════════════════════════
+   1) พื้นหลังลาวาแลมป์ (ก้อนสีลอยช้าๆ)
+   ══════════════════════════════════════════ */
+
+.tp-lava-wrap {
+    position: relative;
+    isolation: isolate; /* กัน blend/ z-index รั่วออกไปกวน element อื่น */
+}
+
+/* ชั้นลาวา — อยู่หลังเนื้อหาเสมอ และคลิกทะลุได้
+   ⚠️ ต้องเป็น z-index:-1 ไม่ใช่ 0
+      เพราะ element ที่ "ไม่ได้ position" (เช่นบล็อกสปินเนอร์ 'กำลังโหลดสินค้าเพิ่มเติม...')
+      จะถูกวาดต่ำกว่า element ที่ position + z-index:0 → ลาวาจะไปฉาบทับข้อความนั้น
+      ใช้ -1 คู่กับ isolation:isolate ที่ตัวหุ้ม → ลาวาอยู่ล่างสุด "ภายในกล่องนี้เท่านั้น"
+      ไม่ทะลุไปหลังพื้นขาวของพาเนลแม่ (ถ้าทะลุจะมองไม่เห็นลาวาเลย) */
+.tp-lava {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+/* เนื้อหาที่ต้องลอยเหนือลาวา */
+.tp-lava-content {
+    position: relative;
+    z-index: 1;
+}
+
+.tp-lava__blob {
+    position: absolute;
+    width: 42vw;
+    height: 42vw;
+    max-width: 620px;
+    max-height: 620px;
+    border-radius: 50%;
+    filter: blur(64px);
+    opacity: 0.5;
+    will-change: transform;
+}
+
+/* จานสี — สดใสแต่ไม่แสบตา (ใช้ radial ให้ขอบก้อนนุ่ม ไม่เป็นวงกลมแข็ง) */
+.tp-lava__blob--1 {
+    background: radial-gradient(circle at 30% 30%, #22d3ee, transparent 70%);
+    top: -8%;
+    left: -6%;
+    animation: tp-lava-drift-1 26s ease-in-out infinite;
+}
+.tp-lava__blob--2 {
+    background: radial-gradient(circle at 30% 30%, #a855f7, transparent 70%);
+    top: 10%;
+    right: -10%;
+    animation: tp-lava-drift-2 32s ease-in-out infinite;
+}
+.tp-lava__blob--3 {
+    background: radial-gradient(circle at 30% 30%, #f472b6, transparent 70%);
+    bottom: -12%;
+    left: 18%;
+    animation: tp-lava-drift-3 29s ease-in-out infinite;
+}
+.tp-lava__blob--4 {
+    background: radial-gradient(circle at 30% 30%, #fbbf24, transparent 70%);
+    bottom: 4%;
+    right: 12%;
+    opacity: 0.38;
+    animation: tp-lava-drift-4 35s ease-in-out infinite;
+}
+.tp-lava__blob--5 {
+    background: radial-gradient(circle at 30% 30%, #34d399, transparent 70%);
+    top: 38%;
+    left: 38%;
+    opacity: 0.32;
+    animation: tp-lava-drift-2 38s ease-in-out infinite reverse;
+}
+
+/* โหมดมืด: เร่งความสด ลดความสว่างรวม เพื่อให้การ์ดกระจกเด่นขึ้น */
+.dark .tp-lava__blob {
+    opacity: 0.42;
+    filter: blur(72px) saturate(135%);
+}
+
+@keyframes tp-lava-drift-1 {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    33%      { transform: translate3d(6vw, 8vh, 0) scale(1.18); }
+    66%      { transform: translate3d(-4vw, 4vh, 0) scale(0.9); }
+}
+@keyframes tp-lava-drift-2 {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
+    40%      { transform: translate3d(-7vw, 10vh, 0) scale(0.88); }
+    70%      { transform: translate3d(3vw, -6vh, 0) scale(1.2); }
+}
+@keyframes tp-lava-drift-3 {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(0.95); }
+    50%      { transform: translate3d(8vw, -9vh, 0) scale(1.22); }
+}
+@keyframes tp-lava-drift-4 {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1.1); }
+    45%      { transform: translate3d(-6vw, -7vh, 0) scale(0.92); }
+}
+
+/* ══════════════════════════════════════════
+   2) การ์ดกระจก (Glassmorphism)
+   ══════════════════════════════════════════ */
+
+.tp-glass {
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    /* ไฮไลต์ด้านในขอบบน = ทำให้ดูเหมือนผิวกระจกจริง ไม่ใช่แค่พื้นโปร่ง */
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.dark .tp-glass {
+    background: rgba(17, 24, 39, 0.55);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* เบลอฉากหลัง — แยก @supports เพราะ Safari เก่า/บางเบราว์เซอร์ไม่รองรับ
+   ถ้าไม่รองรับ จะได้พื้นทึบขึ้นแทน (ยังอ่านออก ไม่โปร่งจนตัวหนังสือจม) */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .tp-glass {
+        background: rgba(255, 255, 255, 0.45);
+        -webkit-backdrop-filter: blur(14px) saturate(180%);
+        backdrop-filter: blur(14px) saturate(180%);
+    }
+    .dark .tp-glass {
+        background: rgba(17, 24, 39, 0.42);
+    }
+}
+
+/* ══════════════════════════════════════════
+   3) 3D หนา (ความหนาแบบวัตถุจริง)
+   ══════════════════════════════════════════ */
+
+.tp-3d {
+    /* ความหนา = เงาทึบซ้อนกันหลายชั้น (ไม่ใช่ blur) + เงาฟุ้งรับด้านล่าง */
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 2px 0 rgba(15, 23, 42, 0.06),
+        0 4px 0 rgba(15, 23, 42, 0.05),
+        0 6px 0 rgba(15, 23, 42, 0.04),
+        0 10px 20px -6px rgba(15, 23, 42, 0.28),
+        0 24px 40px -18px rgba(15, 23, 42, 0.35);
+    transform: translate3d(0, 0, 0);
+    transition:
+        transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark .tp-3d {
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.12) inset,
+        0 2px 0 rgba(0, 0, 0, 0.45),
+        0 4px 0 rgba(0, 0, 0, 0.4),
+        0 6px 0 rgba(0, 0, 0, 0.34),
+        0 12px 24px -8px rgba(0, 0, 0, 0.7),
+        0 28px 48px -20px rgba(0, 0, 0, 0.8);
+}
+
+/* ยกลอยตอน hover — ยกขึ้น + เงาลึกขึ้น = รู้สึกว่าหนาจริง */
+@media (hover: hover) and (pointer: fine) {
+    .tp-3d:hover {
+        transform: translate3d(0, -8px, 0) scale(1.015);
+        box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.95) inset,
+            0 3px 0 rgba(15, 23, 42, 0.07),
+            0 6px 0 rgba(15, 23, 42, 0.06),
+            0 9px 0 rgba(15, 23, 42, 0.05),
+            0 18px 30px -8px rgba(15, 23, 42, 0.34),
+            0 36px 60px -22px rgba(15, 23, 42, 0.45);
+    }
+    .dark .tp-3d:hover {
+        box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.16) inset,
+            0 3px 0 rgba(0, 0, 0, 0.5),
+            0 6px 0 rgba(0, 0, 0, 0.45),
+            0 9px 0 rgba(0, 0, 0, 0.4),
+            0 20px 34px -10px rgba(0, 0, 0, 0.75),
+            0 40px 64px -24px rgba(0, 0, 0, 0.85);
+    }
+}
+
+/* แสงวิ่งผ่านผิวกระจกตอน hover (เหมือนแสงสะท้อนบนกระจกจริง) */
+.tp-sheen {
+    position: relative;
+    overflow: hidden;
+}
+.tp-sheen::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+        100deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.42) 50%,
+        transparent 100%
+    );
+    transform: skewX(-18deg);
+    pointer-events: none;
+    transition: left 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+    .group:hover .tp-sheen::after {
+        left: 130%;
+    }
+}
+.dark .tp-sheen::after {
+    background: linear-gradient(
+        100deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.16) 50%,
+        transparent 100%
+    );
+}
+
+/* ══════════════════════════════════════════
+   4) ประหยัดเครื่อง / เข้าถึงได้
+   ══════════════════════════════════════════ */
+
+/* ผู้ใช้ที่ตั้งค่า "ลดการเคลื่อนไหว" — หยุดลาวาและแสงวิ่งทั้งหมด
+   (บางคนเวียนหัวกับภาพเคลื่อนไหวต่อเนื่อง — ต้องเคารพเสมอ) */
+@media (prefers-reduced-motion: reduce) {
+    .tp-lava__blob {
+        animation: none !important;
+    }
+    .tp-3d,
+    .tp-sheen::after {
+        transition: none !important;
+    }
+    .tp-3d:hover {
+        transform: none !important;
+    }
+}
+
+/* จอเล็ก: ลดจำนวนก้อน + ลดรัศมีเบลอ เพื่อไม่ให้มือถือรุ่นเก่าอืด */
+@media (max-width: 640px) {
+    .tp-lava__blob {
+        filter: blur(46px);
+        width: 70vw;
+        height: 70vw;
+    }
+    .tp-lava__blob--4,
+    .tp-lava__blob--5 {
+        display: none;
+    }
+    /* เบลอฉากหลังบนมือถือกิน GPU มากเมื่อมีการ์ดหลายสิบใบ → ใช้พื้นทึบขึ้นแทน */
+    @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .tp-glass {
+            -webkit-backdrop-filter: blur(8px) saturate(150%);
+            backdrop-filter: blur(8px) saturate(150%);
+            background: rgba(255, 255, 255, 0.72);
+        }
+        .dark .tp-glass {
+            background: rgba(17, 24, 39, 0.66);
+        }
+    }
+}

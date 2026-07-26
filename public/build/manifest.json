@@ -20,8 +20,13 @@
     "name": "threejs"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CLQazlJU.css",
+    "file": "assets/app-pgqAOm5g.css",
     "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/storefront-aurora.css": {
+    "file": "assets/storefront-aurora-3LofxFrm.css",
+    "src": "resources/css/storefront-aurora.css",
     "isEntry": true
   },
   "resources/css/theme-v4.css": {

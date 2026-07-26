@@ -47,7 +47,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     {{-- Vite Assets --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- storefront-aurora = กระจก + 3D หนา + ลาวาแลมป์ (เฉพาะหน้าร้าน ไม่โหลดในหลังบ้าน) --}}
+    @vite(['resources/css/app.css', 'resources/css/storefront-aurora.css', 'resources/js/app.js'])
 
     {{-- Alpine.js x-cloak --}}
     <style>

@@ -7,6 +7,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/css/theme-v4.css', // ธีมนวลทองคำ V4 (หลังบ้านธีมเดียว)
+                'resources/css/storefront-aurora.css', // กระจก + 3D หนา + ลาวาแลมป์ (โหลดเฉพาะหน้าร้าน)
                 'resources/js/app.js',
                 'resources/js/crypto/app.js',
                 'resources/js/wealth-guide-pro.js',

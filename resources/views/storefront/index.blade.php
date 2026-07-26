@@ -543,12 +543,22 @@
             </div>
 
             {{-- Products Content with Infinite Scroll --}}
-            <div class="p-4 md:p-6"
+            {{-- tp-lava-wrap = ฉากหลังลาวาแลมป์สีสด ทำให้การ์ดกระจกมีสีให้สะท้อน --}}
+            <div class="tp-lava-wrap p-4 md:p-6"
                  x-data="infiniteProducts()"
                  x-init="init()">
 
+                {{-- ก้อนสีลอยช้าๆ (ตกแต่งล้วน คลิกทะลุได้ ไม่กินอีเวนต์) --}}
+                <div class="tp-lava" aria-hidden="true">
+                    <span class="tp-lava__blob tp-lava__blob--1"></span>
+                    <span class="tp-lava__blob tp-lava__blob--2"></span>
+                    <span class="tp-lava__blob tp-lava__blob--3"></span>
+                    <span class="tp-lava__blob tp-lava__blob--4"></span>
+                    <span class="tp-lava__blob tp-lava__blob--5"></span>
+                </div>
+
                 {{-- Initial Products Grid --}}
-                <div id="products-container">
+                <div id="products-container" class="tp-lava-content">
                     <x-storefront.product-grid-aliexpress
                         :products="$products"
                         columns="auto"
@@ -558,17 +568,17 @@
 
                 {{-- Additional Products (loaded via infinite scroll) --}}
                 <div id="additional-products"
-                     class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 mt-4">
+                     class="tp-lava-content grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 mt-4">
                     <template x-for="product in additionalProducts" :key="product.id">
                         <div class="group">
+                            {{-- ต้องใช้คลาสชุดเดียวกับการ์ดหน้าแรก (tp-glass/tp-3d/tp-sheen)
+                                 ไม่งั้นสินค้าที่โหลดเพิ่มจะหน้าตาคนละแบบกับของเดิม --}}
                             <a :href="product.url"
-                               class="block bg-white dark:bg-gray-800
-                                     rounded-xl md:rounded-2xl overflow-hidden
-                                     shadow hover:shadow-xl
-                                     transform hover:-translate-y-1
-                                     transition-all duration-300
-                                     border border-gray-100 dark:border-gray-700
-                                     hover:border-orange-200 dark:hover:border-orange-700">
+                               :target="product.is_affiliate ? '_blank' : null"
+                               :rel="product.is_affiliate ? 'noopener nofollow sponsored' : null"
+                               class="tp-glass tp-3d tp-sheen
+                                     block rounded-xl md:rounded-2xl overflow-hidden
+                                     hover:border-orange-300/70 dark:hover:border-orange-500/40">
 
                                 {{-- Product Image --}}
                                 <div class="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
