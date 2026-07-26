@@ -55,6 +55,39 @@ class LazadaMuImport extends Command
     /** ดึงข้อมูลทีละกี่รหัสต่อการยิง feed 1 ครั้ง (กัน URL ยาวเกิน) */
     private const ENRICH_BATCH = 40;
 
+    /**
+     * คำที่บ่งชี้ว่า "ไม่ใช่ของสายมู" — กันของอุปโภคบริโภคหลุดเข้าหมวดสายมู
+     *
+     * ⚠️ บทเรียนจริง (2026-07-26): ตอนคัดรายการด้วยคำค้น "ถุงเงินถุงทอง" มีสินค้าที่ชื่อ
+     *    มีคำว่า "ถุงทอง" แต่เป็นคนละเรื่องหลุดมาเพียบ — ทรีตเมนต์ผม LPP, ครีมนวด Shiseido,
+     *    ปุ๋ยเกล็ด, เมล็ดฟักทอง — รวมถึงแม่พิมพ์เค้กรูป 12 นักษัตร, ขนตาปลอม, ปากกาเมจิก
+     *    → ห้ามเชื่อคำค้นอย่างเดียว ต้องกรองชื่อจริงจาก API อีกชั้นก่อนขึ้นร้าน
+     *
+     * @var array<int,string>
+     */
+    private const NON_MU_KEYWORDS = [
+        'treatment', 'conditioner', 'shampoo', 'hair', 'เส้นผม', 'ปุ๋ย', 'fertilizer', 'humic',
+        'เมล็ดพันธุ์', 'เมล็ดฟักทอง', 'marker', 'ปากกา', 'สมุนไพร', 'ลดระดับน้ำตาล', 'อาหารเสริม',
+        'วิตามิน', 'serum', 'เซรั่ม', 'ครีม', 'ผงซักฟอก', 'refill', 'นมผง', 'ขนม', 'กาแฟ', 'coffee',
+        'โลชั่น', 'สบู่', 'soap', 'tsubaki', 'artline', 'lpp', 'เสื้อ', 'shirt', 'กางเกง', 'รองเท้า',
+        'หมวก', 'ถุงเท้า', 'แม่พิมพ์', 'mold', 'powder', 'snack', 'drink', 'เครื่องดื่ม', 'ขนตา',
+        'eyelash', 'cake', 'silicone', 'ถุงสังฆทาน',
+    ];
+
+    /**
+     * ชื่อสินค้านี้ "ไม่ใช่ของสายมู" ใช่ไหม (เทียบแบบไม่สนตัวพิมพ์)
+     */
+    private function isNotMuProduct(string $name): bool
+    {
+        foreach (self::NON_MU_KEYWORDS as $kw) {
+            if (mb_stripos($name, $kw) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function handle(): int
     {
         $account = MarketplaceAccount::find((int) $this->argument('account'));
@@ -157,9 +190,19 @@ class LazadaMuImport extends Command
         $skipped = 0;
         $linked = 0;
         $byGroup = [];
+        /** @var array<int,string> รายการที่ถูกตีกลับเพราะไม่ใช่ของสายมู (รายงานท้ายสุด) */
+        $rejected = [];
 
         foreach ($items as $pid => $it) {
             $group = $wanted[$pid] ?? 'charm';
+
+            // ข้ามของที่ "ไม่ใช่สายมู" (ชื่อไปพ้องกับสินค้าอุปโภคบริโภค) — กันขึ้นร้านผิดหมวด
+            if ($this->isNotMuProduct($it['name'])) {
+                $skipped++;
+                $rejected[] = $pid.' | '.mb_substr($it['name'], 0, 46);
+
+                continue;
+            }
 
             // ข้ามของหมด/ราคาผิดปกติ/เกินเพดาน
             if ((float) $it['price'] <= 0 || ! empty($it['out_of_stock'])) {
@@ -310,6 +353,14 @@ class LazadaMuImport extends Command
                 $this->line(sprintf('  %-28s %d ชิ้น', $name, $byGroup[$g]));
             }
         }
+        if ($rejected) {
+            $this->newLine();
+            $this->warn('🚫 ตีกลับ '.count($rejected).' ชิ้น (ชื่อบ่งชี้ว่าไม่ใช่ของสายมู — ลบออกจากไฟล์ลิสต์ได้เลย):');
+            foreach ($rejected as $r) {
+                $this->line('   '.$r);
+            }
+        }
+
         $this->newLine();
         $this->info(sprintf(
             '✅ เสร็จ — สร้าง %d, อัพเดท %d, ข้าม %d, ได้ลิงก์ค่าคอม %d %s',
