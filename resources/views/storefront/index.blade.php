@@ -23,6 +23,19 @@
 <meta name="keywords" content="ร้านค้าออนไลน์,ช้อปปิ้ง,สินค้าราคาถูก,ส่งฟรี,flash deals">
 @endsection
 
+{{-- 🌈 ลาวาแลมป์ระดับทั้งหน้า — ใช้ slot ที่ layout เตรียมไว้ให้แล้ว
+     วางตรึงหน้าจอ (fixed) หลังเนื้อหาทั้งหมด → เห็นตั้งแต่เปิดหน้ามาวินาทีแรก
+     (ของเดิมใส่ไว้แค่หลังกริดสินค้าซึ่งอยู่ลึกลงไป ~1,500px จึงไม่เห็นถ้าไม่เลื่อน) --}}
+@section('lava-background')
+<div class="tp-lava-page" aria-hidden="true">
+    <span class="tp-lava__blob tp-lava__blob--1"></span>
+    <span class="tp-lava__blob tp-lava__blob--2"></span>
+    <span class="tp-lava__blob tp-lava__blob--3"></span>
+    <span class="tp-lava__blob tp-lava__blob--4"></span>
+    <span class="tp-lava__blob tp-lava__blob--5"></span>
+</div>
+@endsection
+
 @section('content')
 <div x-data="storefrontManager()"
      x-init="init()"
