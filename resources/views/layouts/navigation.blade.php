@@ -286,11 +286,11 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                             </a>
                         @endif
                     @endauth
-                    <a href="{{ route('about.professional') }}"
+                    <a href="{{ route('about') }}"
                        class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-slate-50 hover:to-gray-50 dark:hover:from-slate-900/30 dark:hover:to-gray-900/30"
                        style="color: {{ $headerTextColor }};">
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300">ℹ️</span>
-                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">เกี่ยวกับเรา</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">รู้จักเรา</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-slate-600 to-gray-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
                     <a href="{{ route('demo.audio-spectrum') }}"
@@ -491,10 +491,10 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         </a>
                     @endif
                 @endauth
-                <a href="{{ route('about.professional') }}"
+                <a href="{{ route('about') }}"
                    class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
                    style="color: {{ $headerTextColor }};">
-                    เกี่ยวกับเรา
+                    รู้จักเรา
                 </a>
                 <a href="{{ route('wiki.index') }}"
                    class="block mx-3 my-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl text-base font-bold text-center shadow-lg relative overflow-hidden"

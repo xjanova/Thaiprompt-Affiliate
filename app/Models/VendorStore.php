@@ -126,6 +126,20 @@ class VendorStore extends Model
                 $store->store_slug = Str::slug($store->store_name);
             }
         });
+
+        // ล้างแคช "ร้านแนะนำ" ของหน้าร้านเมื่อข้อมูลร้านเปลี่ยน
+        // (StorefrontController::getFeaturedStores แคชไว้ 10 นาที — ถ้าไม่ล้าง
+        //  แอดมินติ๊ก/ปลดร้านแนะนำแล้วหน้าแรกยังเป็นของเก่า)
+        $forgetFeatured = function () {
+            try {
+                \Illuminate\Support\Facades\Cache::forget('storefront_featured_stores_v2');
+            } catch (\Throwable $e) {
+                // cache store อาจใช้ไม่ได้ตอน migrate/seed — ห้ามทำให้การบันทึกล้ม
+            }
+        };
+
+        static::saved($forgetFeatured);
+        static::deleted($forgetFeatured);
     }
 
     // ========================================

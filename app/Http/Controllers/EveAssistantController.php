@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Services\FortuneAIService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
@@ -25,6 +26,38 @@ use Throwable;
  */
 class EveAssistantController extends Controller
 {
+    /** จำนวนเทิร์นสูงสุดของประวัติสนทนาที่เก็บฝั่งเซิร์ฟเวอร์ (นับรวมทั้งลูกค้าและ Eve) */
+    private const TRANSCRIPT_MAX_TURNS = 12;
+
+    /** อายุประวัติสนทนาในแคช (วินาที) — ประมาณ 2 ชั่วโมง */
+    private const TRANSCRIPT_TTL = 7200;
+
+    /** ความยาวสูงสุดต่อ 1 เทิร์นที่เก็บลงแคช (กันแคชบวม) */
+    private const TRANSCRIPT_MAX_CHARS = 600;
+
+    /** เพดานจำนวนข้อความต่อวัน — ผู้ที่ไม่ได้ล็อกอิน (นับตาม IP) */
+    private const DAILY_CAP_GUEST = 60;
+
+    /** เพดานจำนวนข้อความต่อวัน — สมาชิกที่ล็อกอินแล้ว (นับตาม user id) */
+    private const DAILY_CAP_MEMBER = 200;
+
+    /**
+     * 🚫 บัญชีดำ "ป้ายความเสี่ยงภายใน" ที่ห้ามหลุดถึงลูกค้าเด็ดขาด
+     *
+     * ป้ายเหล่านี้เป็นผลการประเมินลูกค้าของระบบ persona (ใช้ภายในเท่านั้น)
+     * ถ้าโมเดลเผลอพ่นออกมาแม้แต่คำเดียว = ลูกค้าเห็นว่าเราแปะป้ายเขาไว้ = เหตุละเมิดความเป็นส่วนตัว
+     */
+    private const INTERNAL_LABELS = [
+        'MENTAL_FRAGILE',
+        'SCAM_VICTIM',
+        'HOSTILE_SUPERIOR',
+        'DISRUPTIVE_TROLL',
+        'ABUSIVE_TONE',
+        'TIME_WASTER',
+        'COMPLAINT_PRONE',
+        'DECLINE_PUSHER',
+    ];
+
     /**
      * POST /eve/chat
      */
@@ -37,15 +70,40 @@ class EveAssistantController extends Controller
             'history.*.content' => 'required_with:history|string|max:1000',
         ]);
 
-        $userName = $request->user()?->name;
+        $user = $request->user();
+
+        // 💸 เพดานการใช้งานต่อวัน (ซ้อนบน throttle รายนาทีของ route)
+        //    endpoint นี้ใช้ AI key pool "ก้อนเดียวกับการดูดวงที่ลูกค้าจ่ายเงิน"
+        //    ถ้าปล่อยให้คนนอกยิงฟรีไม่จำกัด คีย์จะถูกเผา/ติด rate limit จนสินค้าที่มีคนจ่ายเงินเสียหาย
+        if (! $this->consumeDailyQuota($request, $user?->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'วันนี้น้อง Eve คุยครบโควตาแล้วค่ะ 🙏 พรุ่งนี้มาคุยกันใหม่นะคะ หรือทักแอดมินได้เลยค่ะ',
+                'data' => ['mood' => 'concerned'],
+            ], 200);
+        }
+
+        $userName = $user?->name;
         $systemPrompt = $this->buildSystemPrompt($userName);
-        $userMessage = $this->buildUserMessage($data['history'] ?? [], $data['message']);
+
+        // 🔒 กัน Prompt Injection: ประวัติสนทนาต้องมาจาก "ฝั่งเซิร์ฟเวอร์" เท่านั้น
+        //    เดิมรับ history จากไคลเอนต์ตรงๆ แล้วต่อเข้า prompt → ผู้โจมตี POST เทิร์นปลอมของ Eve
+        //    (role=assistant) เข้ามาเพื่อ "เขียนทับ" กฎความปลอดภัยใน system prompt ได้
+        $transcriptKey = $this->transcriptKey($request, $user?->id);
+        $history = $this->loadTranscript($transcriptKey, $data['history'] ?? []);
+        $userMessage = $this->buildUserMessage($history, $data['message']);
 
         $config = ['temperature' => 0.6, 'max_tokens' => 320];
 
         try {
             try {
                 // ใช้ gemini (pool มีหลายคีย์ ราคาถูก) — re-resolve คีย์ตาม provider
+                //
+                // ⚠️ ตรงนี้ override เฉพาะ "provider" แต่ model id ยังมาจากตั้งค่า Chat AI ของแอดมิน
+                //    ถ้าแอดมินตั้ง model ของ groq/openai ไว้ ระบบจะประกอบ URL ของ gemini ด้วย model
+                //    ที่ไม่ใช่ของ gemini → ตอบ 404 ทุกครั้ง
+                //    ห้าม hardcode model id ใหม่ตรงนี้ — กฎภายในบังคับให้ "ยิงทดสอบ model id กับ API จริง"
+                //    ก่อนนำไปตั้งค่าเสมอ จึงแก้ด้วยการทำ fallback ให้ทนทานแทน (ดู catch ด้านล่าง)
                 $result = $aiService->chatWithCustomSystemPrompt(
                     systemMessage: $systemPrompt,
                     userMessage: $userMessage,
@@ -53,10 +111,13 @@ class EveAssistantController extends Controller
                     providerOverride: 'gemini',
                 );
             } catch (Throwable $inner) {
-                // provider ที่ขอไม่มีคีย์ → fall back ไป default pool (เหมือน Eve แอดมิน)
-                if (stripos($inner->getMessage(), 'API Key') === false) {
-                    throw $inner;
-                }
+                // ❗ ข้อผิดพลาด "ทุกชนิด" ของ provider ที่ override ไว้ → ถอยไปใช้ default pool ตามตั้งค่าแอดมิน
+                //    (ไม่มีคีย์ / model ผิด provider / 404 / rate limit / เครือข่ายล่ม)
+                //    เดิมเช็กแค่ข้อความ 'API Key' ทำให้เคส model mismatch ตกลงไป error หมดเลย
+                Log::warning('Eve (storefront): gemini override ล้มเหลว → fallback default pool', [
+                    'error' => mb_substr($inner->getMessage(), 0, 200),
+                ]);
+
                 $result = $aiService->chatWithCustomSystemPrompt(
                     systemMessage: $systemPrompt,
                     userMessage: $userMessage,
@@ -74,7 +135,16 @@ class EveAssistantController extends Controller
 
             // 🔎 ค้นหาสินค้า: ใช้แท็ก [FIND:] จาก AI ถ้ามี — ไม่งั้นดึงเจตนาจาก "ข้อความลูกค้า" เอง
             //    (กันเคสโมเดลเล็กไม่ปล่อยแท็ก → เดิมตอบ "หาให้ค่ะ" แต่ไม่เคยค้นจริง = ลูกค้าเห็นเป็นค้าง)
-            [$reply, $products, $mood] = $this->runProductSearch($reply, $data['message'], $request->user()?->id);
+            [$reply, $products, $mood] = $this->runProductSearch($reply, $data['message'], $user?->id);
+
+            // 🧼 ล้างเศษแท็กเครื่องมือ + ป้ายความเสี่ยงภายใน ก่อนส่งถึงลูกค้าเสมอ (ด่านสุดท้าย)
+            $reply = $this->scrubInternalArtifacts($reply);
+            if ($reply === '') {
+                $reply = 'ได้เลยค่ะ 😊';
+            }
+
+            // 💾 บันทึกเทิร์นล่าสุดลงประวัติฝั่งเซิร์ฟเวอร์ (เก็บเฉพาะข้อความที่ผ่านการล้างแล้ว)
+            $this->appendTranscript($transcriptKey, $history, $data['message'], $reply);
 
             return response()->json([
                 'success' => true,
@@ -126,21 +196,201 @@ class EveAssistantController extends Controller
 
     /**
      * รวมประวัติสนทนา + ข้อความล่าสุด เป็น user message เดียว
+     *
+     * ⚠️ $history ต้องมาจากประวัติฝั่งเซิร์ฟเวอร์เท่านั้น (loadTranscript) ห้ามรับ role=assistant
+     *    จากไคลเอนต์ตรงๆ ไม่งั้นผู้โจมตีจะปลอมคำพูดของ Eve เพื่อล้มกฎใน system prompt ได้
      */
     private function buildUserMessage(array $history, string $latest): string
     {
+        $latest = $this->sanitizeTurnContent($latest);
+
         if (empty($history)) {
             return $latest;
         }
         $lines = [];
         foreach ($history as $turn) {
             $role = ($turn['role'] ?? 'user') === 'assistant' ? 'Eve' : 'ลูกค้า';
-            $lines[] = $role.': '.($turn['content'] ?? '');
+            $lines[] = $role.': '.$this->sanitizeTurnContent((string) ($turn['content'] ?? ''));
         }
         $lines[] = 'ลูกค้า: '.$latest;
         $lines[] = 'Eve:';
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * คีย์แคชประวัติสนทนา — ผูกกับ session id เสมอ + user id เมื่อล็อกอิน
+     *
+     * ที่ต้องมี user id ด้วย: เครื่องเดียวกัน/เซสชันเดียวกันแต่สลับบัญชี ต้องไม่เห็นประวัติของอีกคน
+     */
+    private function transcriptKey(Request $request, ?int $userId): string
+    {
+        $sessionId = '';
+        try {
+            $sessionId = (string) $request->session()->getId();
+        } catch (Throwable $e) {
+            $sessionId = '';
+        }
+
+        // ไม่มี session (เช่นถูกเรียกนอก middleware web) → ใช้ IP แทนแบบ hash
+        if ($sessionId === '') {
+            $sessionId = 'ip-'.(string) $request->ip();
+        }
+
+        return 'eve:chat:transcript:'.($userId ? 'u'.$userId.':' : 'g:').sha1($sessionId);
+    }
+
+    /**
+     * โหลดประวัติสนทนาฝั่งเซิร์ฟเวอร์
+     *
+     * ถ้าแคชว่าง (หมดอายุ/เพิ่งเปิดแชท) จะยอมรับประวัติจากไคลเอนต์ได้ "เฉพาะ role=user" เท่านั้น
+     * เพราะข้อความของลูกค้าเองไม่มีอำนาจสั่งงานอยู่แล้ว (เท่ากับพิมพ์เข้ามาใหม่) —
+     * แต่เทิร์นของ Eve (assistant) ห้ามรับจากไคลเอนต์เด็ดขาด
+     *
+     * @param  array<int,array>  $clientHistory
+     * @return array<int,array{role:string,content:string}>
+     */
+    private function loadTranscript(string $key, array $clientHistory): array
+    {
+        try {
+            $stored = Cache::get($key);
+            if (is_array($stored) && ! empty($stored)) {
+                return $this->boundTranscript($stored);
+            }
+        } catch (Throwable $e) {
+            // แคชล่ม → ถือว่าไม่มีประวัติ (ไม่บล็อกการคุย)
+        }
+
+        $seed = [];
+        foreach ($clientHistory as $turn) {
+            if (! is_array($turn) || ($turn['role'] ?? '') !== 'user') {
+                continue;   // 🔒 ทิ้งเทิร์น assistant ที่ไคลเอนต์ส่งมาทั้งหมด
+            }
+            $content = $this->sanitizeTurnContent((string) ($turn['content'] ?? ''));
+            if ($content === '') {
+                continue;
+            }
+            $seed[] = ['role' => 'user', 'content' => $content];
+        }
+
+        return $this->boundTranscript($seed);
+    }
+
+    /**
+     * บันทึกเทิร์นล่าสุด (ลูกค้า + Eve) ลงประวัติฝั่งเซิร์ฟเวอร์ แบบจำกัดขนาด
+     */
+    private function appendTranscript(string $key, array $history, string $userMessage, string $reply): void
+    {
+        try {
+            $history[] = ['role' => 'user', 'content' => $this->sanitizeTurnContent($userMessage)];
+            $history[] = ['role' => 'assistant', 'content' => $this->sanitizeTurnContent($reply)];
+
+            Cache::put($key, $this->boundTranscript($history), self::TRANSCRIPT_TTL);
+        } catch (Throwable $e) {
+            // best-effort — ประวัติหายได้ แต่ห้ามทำให้การตอบลูกค้าล้ม
+        }
+    }
+
+    /**
+     * ตัดประวัติให้เหลือไม่เกิน TRANSCRIPT_MAX_TURNS เทิร์นล่าสุด + ล้างรูปแบบให้ปลอดภัย
+     *
+     * @return array<int,array{role:string,content:string}>
+     */
+    private function boundTranscript(array $history): array
+    {
+        $clean = [];
+        foreach ($history as $turn) {
+            if (! is_array($turn)) {
+                continue;
+            }
+            $content = $this->sanitizeTurnContent((string) ($turn['content'] ?? ''));
+            if ($content === '') {
+                continue;
+            }
+            $clean[] = [
+                'role' => ($turn['role'] ?? 'user') === 'assistant' ? 'assistant' : 'user',
+                'content' => $content,
+            ];
+        }
+
+        return array_slice($clean, -self::TRANSCRIPT_MAX_TURNS);
+    }
+
+    /**
+     * ล้างเนื้อความ 1 เทิร์นก่อนนำไปต่อ prompt/เก็บแคช
+     *
+     * 🔒 ยุบขึ้นบรรทัดใหม่ให้เป็นช่องว่าง: กันลูกค้าพิมพ์ข้อความหลายบรรทัดในรูปแบบ
+     *    "\nEve: (คำพูดปลอม)\nลูกค้า: ..." เพื่อปลอมบทสนทนาซ้อนเข้าไปใน prompt
+     */
+    private function sanitizeTurnContent(string $content): string
+    {
+        // ⚠️ ใช้หลักเดียวกับ scrubInternalArtifacts(): preg_replace ที่มี /u
+        //    จะคืน null ถ้าเจอ UTF-8 เพี้ยน (เช่นลูกค้าวางข้อความจากที่อื่นมา)
+        //    ถ้า cast เป็น (string) ตรงๆ จะกลายเป็น '' = ข้อความลูกค้าหายทั้งเทิร์น
+        //    → เก็บของเดิมไว้ดีกว่าทำหาย
+        $collapsed = preg_replace('/\s+/u', ' ', $content);
+        $content = is_string($collapsed) ? $collapsed : $content;
+        $content = trim($content);
+
+        return mb_substr($content, 0, self::TRANSCRIPT_MAX_CHARS);
+    }
+
+    /**
+     * 🧼 ล้างข้อความก่อนส่งถึงลูกค้า — เศษแท็กเครื่องมือ + ป้ายความเสี่ยงภายใน
+     *
+     * ทำไมต้องมี: ป้ายอย่าง MENTAL_FRAGILE / SCAM_VICTIM / DISRUPTIVE_TROLL ฯลฯ
+     * เป็น "ป้ายประเมินความเสี่ยงภายใน" ของระบบ persona ไม่ใช่ข้อความสำหรับลูกค้า
+     * ถ้าหลุดออกไปแม้แต่คำเดียว ลูกค้าจะเห็นว่าเราแปะป้ายตัดสินเขาไว้ = เหตุละเมิดความเป็นส่วนตัวทันที
+     * เช่นเดียวกับแท็ก [FIND: ...] / [REMEMBER: ...] ที่เป็นกลไกภายใน ลูกค้าไม่ควรเห็น
+     */
+    private function scrubInternalArtifacts(string $reply): string
+    {
+        // ถ้า regex ล้ม (เช่นข้อความจากโมเดลมี UTF-8 เพี้ยน) preg_replace คืน null →
+        // ต้องคงข้อความเดิมไว้ ห้าม cast เป็น '' ไม่งั้นคำตอบของลูกค้าหายทั้งก้อน
+        $apply = static function (string $pattern, string $replacement, string $subject): string {
+            $out = preg_replace($pattern, $replacement, $subject);
+
+            return is_string($out) ? $out : $subject;
+        };
+
+        // 1) แท็กเครื่องมือแบบปิดวงเล็บครบ
+        $reply = $apply('/\[\s*(?:FIND|REMEMBER)\s*:[^\]]*\]/iu', ' ', $reply);
+        // 2) เศษแท็กที่ปิดวงเล็บไม่ครบ — ลบเฉพาะ "หัวแท็ก" พอ (ไม่กินเนื้อความที่เหลือ)
+        $reply = $apply('/\[\s*(?:FIND|REMEMBER)\s*:?\s*/iu', ' ', $reply);
+
+        // 3) ป้ายความเสี่ยงภายใน (ห้ามหลุดถึงลูกค้า)
+        foreach (self::INTERNAL_LABELS as $label) {
+            $reply = $apply('/\b'.preg_quote($label, '/').'\b/i', ' ', $reply);
+        }
+
+        // 4) เก็บกวาดวงเล็บ/ช่องว่างที่เหลือค้าง
+        $reply = $apply('/\[\s*\]/u', ' ', $reply);
+        $reply = $apply('/[ \t]{2,}/u', ' ', $reply);
+        $reply = $apply('/\n{3,}/u', "\n\n", $reply);
+
+        return trim($reply);
+    }
+
+    /**
+     * นับ/ตรวจโควตาการใช้งานต่อวัน — คืน false เมื่อใช้ครบแล้ว
+     *
+     * นับตาม user id เมื่อล็อกอิน ไม่งั้นนับตาม IP (hash) · หมดอายุอัตโนมัติสิ้นวัน
+     */
+    private function consumeDailyQuota(Request $request, ?int $userId): bool
+    {
+        $limit = $userId ? self::DAILY_CAP_MEMBER : self::DAILY_CAP_GUEST;
+        $who = $userId ? 'u'.$userId : 'ip-'.sha1((string) $request->ip());
+        $key = 'eve:chat:daily:'.$who.':'.now()->format('Ymd');
+
+        try {
+            Cache::add($key, 0, now()->endOfDay());
+            $used = (int) Cache::increment($key);
+
+            return $used <= $limit;
+        } catch (Throwable $e) {
+            // แคชล่ม = ไม่บล็อกลูกค้า (throttle รายนาทีของ route ยังทำงานอยู่)
+            return true;
+        }
     }
 
     /**
@@ -291,13 +541,12 @@ class EveAssistantController extends Controller
         }
 
         try {
+            // ใช้ scope กลาง publicVisible() (active + visible + notBlocked) ให้ตรงกับหน้าร้านอื่นๆ
+            // ⚠️ คง is_public_approved ไว้ต่างหาก — เป็นด่านอนุมัติสินค้าของผู้ขาย (VendorPublicProduct)
+            //    ซึ่งไม่ได้อยู่ใน publicVisible() ถ้าตัดทิ้งสินค้าที่ยังไม่อนุมัติจะโผล่ให้ลูกค้าเห็น
             $q = Product::query()
-                ->where('is_active', true)
-                ->where('is_hidden', false)
-                ->where('is_public_approved', true)
-                ->where(function ($w) {
-                    $w->whereNull('is_blocked')->orWhere('is_blocked', false);
-                });
+                ->publicVisible()
+                ->where('is_public_approved', true);
 
             if ($budget && $budget > 0) {
                 $q->where('price', '<=', $budget);
@@ -314,13 +563,29 @@ class EveAssistantController extends Controller
             return $q->orderByDesc('is_featured')
                 ->orderByDesc('sales_count')
                 ->limit(6)
-                ->get(['id', 'name', 'slug', 'price', 'main_image_url'])
-                ->map(fn (Product $p) => [
-                    'name' => $p->name,
-                    'price' => (float) $p->price,
-                    'image' => $p->main_image_url,
-                    'url' => $p->slug ? route('shop.show', $p->slug) : url('/storefront'),
-                ])
+                ->get(['id', 'name', 'slug', 'price', 'main_image_url', 'is_affiliate', 'affiliate_url', 'external_platform'])
+                ->map(function (Product $p) {
+                    // 💰 สินค้าแอฟฟิลิเอต (เช่น Lazada) เราไม่ได้ส่งของเอง —
+                    //    ถ้าลิงก์เข้าหน้าตะกร้าภายในจะ "ไม่ได้ค่าคอมเลย" และลูกค้าสั่งซื้อไม่ได้จริง
+                    //    จึงต้องส่งลิงก์แอฟฟิลิเอตออกไปข้างนอกแทน
+                    $affiliateUrl = trim((string) $p->affiliate_url);
+
+                    // รับเฉพาะ http/https (กันค่าแปลกปลอมในคอลัมน์กลายเป็นลิงก์อันตราย เช่น javascript:)
+                    $isExternal = (bool) $p->is_affiliate
+                        && $affiliateUrl !== ''
+                        && preg_match('#^https?://#i', $affiliateUrl) === 1;
+
+                    return [
+                        'name' => $p->name,
+                        'price' => (float) $p->price,
+                        'image' => $p->main_image_url,
+                        'url' => $isExternal
+                            ? $affiliateUrl
+                            : ($p->slug ? route('shop.show', $p->slug) : url('/storefront')),
+                        'external' => $isExternal,
+                        'platform' => $isExternal ? ($p->external_platform ?: 'affiliate') : null,
+                    ];
+                })
                 ->all();
         } catch (Throwable $e) {
             Log::warning('Eve: searchCatalog failed', ['error' => $e->getMessage()]);

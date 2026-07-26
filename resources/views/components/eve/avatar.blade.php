@@ -14,11 +14,15 @@
 .eve-ava .eve-body{width:100%;height:100%;display:block;pointer-events:none}
 .eve-ava .eve-face{position:absolute;left:38.3%;top:17.5%;width:25.4%;height:21%;pointer-events:none}
 .eve-ava .eve-brow{position:absolute;height:3.4%;width:19%;background:#5a4a52;border-radius:50%}
-.eve-ava .eve-brow.l{left:9%;top:16%;transform:rotate(-7deg)}
-.eve-ava .eve-brow.r{right:9%;top:16%;transform:rotate(7deg)}
+/* ⬇️ ระยะห่างตา: ยิ่ง inset มาก = ตายิ่งชิดกัน
+   ช่องว่างระหว่างตา = 100% − (inset×2) − (width×2)
+   เดิม inset 17% → ห่าง 32% · ปัจจุบัน inset 20% → ห่าง 26% (owner ขอ "ใกล้อีกนิด")
+   คิ้วขยับตามด้วยระยะเท่ากัน (9%→12%) เพื่อรักษาสัดส่วนคิ้ว-ตาเดิมไว้ */
+.eve-ava .eve-brow.l{left:12%;top:16%;transform:rotate(-7deg)}
+.eve-ava .eve-brow.r{right:12%;top:16%;transform:rotate(7deg)}
 .eve-ava .eve-eye{position:absolute;top:38%;width:17%;height:25%;background:#3a2d3a;border-radius:48%;overflow:hidden;transform-origin:center}
-.eve-ava .eve-eye.l{left:17%}
-.eve-ava .eve-eye.r{right:17%}
+.eve-ava .eve-eye.l{left:20%}
+.eve-ava .eve-eye.r{right:20%}
 .eve-ava .eve-hi{position:absolute;top:12%;left:44%;width:34%;height:30%;background:#fff;border-radius:50%}
 .eve-ava .eve-hi2{position:absolute;bottom:16%;left:16%;width:20%;height:18%;background:#fff;opacity:.7;border-radius:50%}
 .eve-ava .eve-nose{position:absolute;left:47.5%;top:55%;width:5%;height:6%;background:#e3a890;border-radius:50%;opacity:.7}

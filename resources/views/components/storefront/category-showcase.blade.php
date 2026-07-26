@@ -13,6 +13,16 @@
     'limit' => 8,
 ])
 
+@php
+    /**
+     * บริการแก้ภาพปกหมวดหมู่ 3 ชั้น (ภาพแอดมิน → โมเสกสินค้าจริง → gradient + ไอคอน)
+     *
+     * ⚡ ดึงข้อมูลทุกหมวดพร้อมกันครั้งเดียว (batch + cache 1 ชม.)
+     *    เรียก cover() ในลูปกี่รอบก็ไม่เกิด N+1
+     */
+    $coverService = app(\App\Services\CategoryImageService::class);
+@endphp
+
 <div class="py-8">
     {{-- Section Header --}}
     <div class="flex items-center justify-between mb-6">
@@ -64,146 +74,13 @@
             ];
             $gradient = $gradients[$index % count($gradients)];
 
-            // Mapping ไอคอนตามชื่อหมวดหมู่ (ใช้ Font Awesome 6)
-            $categoryIcons = [
-                // อิเล็กทรอนิกส์
-                'อิเล็กทรอนิกส์' => 'fa-solid fa-microchip',
-                'electronics' => 'fa-solid fa-microchip',
-                'คอมพิวเตอร์' => 'fa-solid fa-desktop',
-                'computer' => 'fa-solid fa-desktop',
-                'โทรศัพท์' => 'fa-solid fa-mobile-screen-button',
-                'phone' => 'fa-solid fa-mobile-screen-button',
-                'มือถือ' => 'fa-solid fa-mobile-screen-button',
-                'mobile' => 'fa-solid fa-mobile-screen-button',
-                'แล็ปท็อป' => 'fa-solid fa-laptop',
-                'laptop' => 'fa-solid fa-laptop',
-                'กล้อง' => 'fa-solid fa-camera-retro',
-                'camera' => 'fa-solid fa-camera-retro',
-                'เครื่องเสียง' => 'fa-solid fa-headphones',
-                'audio' => 'fa-solid fa-headphones',
-                'หูฟัง' => 'fa-solid fa-headphones',
-                'headphone' => 'fa-solid fa-headphones',
-                'เกม' => 'fa-solid fa-gamepad',
-                'game' => 'fa-solid fa-gamepad',
-                'gaming' => 'fa-solid fa-gamepad',
-
-                // แฟชั่น
-                'แฟชั่น' => 'fa-solid fa-shirt',
-                'fashion' => 'fa-solid fa-shirt',
-                'เสื้อผ้า' => 'fa-solid fa-shirt',
-                'clothing' => 'fa-solid fa-shirt',
-                'รองเท้า' => 'fa-solid fa-shoe-prints',
-                'shoes' => 'fa-solid fa-shoe-prints',
-                'กระเป๋า' => 'fa-solid fa-bag-shopping',
-                'bags' => 'fa-solid fa-bag-shopping',
-                'เครื่องประดับ' => 'fa-solid fa-gem',
-                'jewelry' => 'fa-solid fa-gem',
-                'นาฬิกา' => 'fa-solid fa-clock',
-                'watches' => 'fa-solid fa-clock',
-                'แว่นตา' => 'fa-solid fa-glasses',
-                'glasses' => 'fa-solid fa-glasses',
-
-                // บ้านและสวน
-                'บ้านและสวน' => 'fa-solid fa-house',
-                'home' => 'fa-solid fa-house',
-                'เฟอร์นิเจอร์' => 'fa-solid fa-couch',
-                'furniture' => 'fa-solid fa-couch',
-                'ห้องครัว' => 'fa-solid fa-utensils',
-                'kitchen' => 'fa-solid fa-utensils',
-                'ตกแต่งบ้าน' => 'fa-solid fa-lamp',
-                'decor' => 'fa-solid fa-paintbrush',
-                'สวน' => 'fa-solid fa-seedling',
-                'garden' => 'fa-solid fa-seedling',
-
-                // ความงาม
-                'ความงาม' => 'fa-solid fa-spa',
-                'beauty' => 'fa-solid fa-spa',
-                'เครื่องสำอาง' => 'fa-solid fa-spray-can-sparkles',
-                'cosmetics' => 'fa-solid fa-spray-can-sparkles',
-                'สกินแคร์' => 'fa-solid fa-bottle-droplet',
-                'skincare' => 'fa-solid fa-bottle-droplet',
-                'น้ำหอม' => 'fa-solid fa-bottle-droplet',
-                'perfume' => 'fa-solid fa-bottle-droplet',
-
-                // สุขภาพ
-                'สุขภาพ' => 'fa-solid fa-heart-pulse',
-                'health' => 'fa-solid fa-heart-pulse',
-                'กีฬา' => 'fa-solid fa-dumbbell',
-                'sport' => 'fa-solid fa-dumbbell',
-                'sports' => 'fa-solid fa-dumbbell',
-                'ออกกำลังกาย' => 'fa-solid fa-person-running',
-                'fitness' => 'fa-solid fa-person-running',
-                'ยา' => 'fa-solid fa-pills',
-                'medicine' => 'fa-solid fa-pills',
-                'อาหารเสริม' => 'fa-solid fa-capsules',
-                'supplements' => 'fa-solid fa-capsules',
-
-                // อาหาร
-                'อาหาร' => 'fa-solid fa-burger',
-                'food' => 'fa-solid fa-burger',
-                'เครื่องดื่ม' => 'fa-solid fa-mug-hot',
-                'beverages' => 'fa-solid fa-mug-hot',
-                'drinks' => 'fa-solid fa-mug-hot',
-                'ขนม' => 'fa-solid fa-cookie',
-                'snacks' => 'fa-solid fa-cookie',
-
-                // แม่และเด็ก
-                'แม่และเด็ก' => 'fa-solid fa-baby-carriage',
-                'mom' => 'fa-solid fa-baby-carriage',
-                'baby' => 'fa-solid fa-baby',
-                'เด็ก' => 'fa-solid fa-baby',
-                'ของเล่น' => 'fa-solid fa-puzzle-piece',
-                'toys' => 'fa-solid fa-puzzle-piece',
-
-                // ยานยนต์
-                'ยานยนต์' => 'fa-solid fa-car',
-                'automotive' => 'fa-solid fa-car',
-                'รถยนต์' => 'fa-solid fa-car',
-                'car' => 'fa-solid fa-car',
-                'มอเตอร์ไซค์' => 'fa-solid fa-motorcycle',
-                'motorcycle' => 'fa-solid fa-motorcycle',
-
-                // หนังสือ
-                'หนังสือ' => 'fa-solid fa-book',
-                'books' => 'fa-solid fa-book',
-                'สื่อการเรียน' => 'fa-solid fa-graduation-cap',
-                'education' => 'fa-solid fa-graduation-cap',
-
-                // สัตว์เลี้ยง
-                'สัตว์เลี้ยง' => 'fa-solid fa-paw',
-                'pets' => 'fa-solid fa-paw',
-
-                // อื่นๆ
-                'อื่นๆ' => 'fa-solid fa-ellipsis',
-                'others' => 'fa-solid fa-ellipsis',
-                'other' => 'fa-solid fa-ellipsis',
-                'ทั้งหมด' => 'fa-solid fa-grip',
-                'all' => 'fa-solid fa-grip',
-
-                // บริการ
-                'บริการ' => 'fa-solid fa-handshake',
-                'services' => 'fa-solid fa-handshake',
-
-                // ดิจิทัล
-                'ดิจิทัล' => 'fa-solid fa-cloud',
-                'digital' => 'fa-solid fa-cloud',
-                'ซอฟต์แวร์' => 'fa-solid fa-code',
-                'software' => 'fa-solid fa-code',
-            ];
-
-            // หา icon ที่ตรงกับชื่อหมวดหมู่
-            $categoryNameLower = strtolower($category->name);
-            $categorySlugLower = strtolower($category->slug);
-            $defaultIcon = null;
-
-            // ค้นหาไอคอนที่ตรงกับชื่อหรือ slug
-            foreach ($categoryIcons as $key => $icon) {
-                if (str_contains($categoryNameLower, strtolower($key)) ||
-                    str_contains($categorySlugLower, strtolower($key))) {
-                    $defaultIcon = $icon;
-                    break;
-                }
-            }
+            // ภาพปกหมวดหมู่แบบ 3 ชั้น (แก้ปัญหา "หมวดหมู่ไม่ควรมีภาพตาย")
+            //   1) ภาพที่แอดมินอัปโหลด  2) โมเสกภาพสินค้าจริงในหมวด/หมวดลูก  3) gradient + ไอคอน
+            // ดูรายละเอียดที่ app/Services/CategoryImageService.php
+            $cover = $coverService->cover($category);
+            $coverUrls = $cover['urls'] ?? [];
+            $coverCount = count($coverUrls);
+            $isMosaic = $coverCount > 1;
 
             // ถ้าไม่เจอไอคอนที่ตรง ใช้ไอคอน default ตามลำดับ
             $fallbackIcons = [
@@ -217,8 +94,8 @@
                 'fa-solid fa-gift',
             ];
 
-            // ใช้ไอคอนที่กำหนดไว้ใน category, default mapping หรือ fallback
-            $categoryIcon = $category->icon ?? $defaultIcon ?? $fallbackIcons[$index % count($fallbackIcons)];
+            // ไอคอน: คอลัมน์ icon ที่แอดมินตั้ง > จับคู่ชื่อ/slug แบบตรงตัว > substring > ไอคอนสำรองตามลำดับ
+            $categoryIcon = $cover['icon'] ?? $fallbackIcons[$index % count($fallbackIcons)];
         @endphp
 
         <a href="{{ route('storefront.index', ['category' => $category->slug]) }}"
@@ -239,17 +116,43 @@
             <div class="relative p-4 text-center">
                 {{-- Category Image/Icon --}}
                 <div class="relative mb-3">
-                    @if($category->image_url)
-                    <div class="w-16 h-16 mx-auto rounded-xl overflow-hidden
-                               ring-4 ring-gray-100 dark:ring-gray-700
-                               group-hover:ring-white/30
-                               transition-all">
-                        <img src="{{ $category->image_url }}"
-                             alt="{{ $category->name }}"
-                             class="w-full h-full object-cover
-                                   group-hover:scale-110 transition-transform duration-300">
+                    @if($coverCount > 0)
+                    {{-- ชั้น 1/2: ภาพจริง — ภาพที่แอดมินอัปโหลด หรือโมเสกภาพสินค้าที่ยังขายอยู่ --}}
+                    <div x-data="{ failed: [] }" class="relative w-16 h-16 mx-auto">
+                        <div x-show="failed.length < {{ $coverCount }}"
+                             class="w-16 h-16 rounded-xl overflow-hidden
+                                   ring-4 ring-gray-100 dark:ring-gray-700
+                                   group-hover:ring-white/30 transition-all
+                                   bg-gradient-to-br {{ $gradient }}
+                                   @if($isMosaic) grid grid-cols-2 {{ $coverCount > 2 ? 'grid-rows-2' : 'grid-rows-1' }} gap-px @endif">
+                            @foreach($coverUrls as $coverIndex => $coverUrl)
+                            {{-- ระบุขนาดชัดเจน + lazy load เพื่อไม่ให้เกิด layout shift --}}
+                            <img src="{{ $coverUrl }}"
+                                 alt="{{ $category->name }}"
+                                 loading="lazy"
+                                 decoding="async"
+                                 width="{{ $isMosaic ? 32 : 64 }}"
+                                 height="{{ $isMosaic ? 32 : 64 }}"
+                                 x-show="!failed.includes({{ $coverIndex }})"
+                                 x-on:error="failed.push({{ $coverIndex }})"
+                                 class="w-full h-full object-cover
+                                       group-hover:scale-110 transition-transform duration-300">
+                            @endforeach
+                        </div>
+
+                        {{-- ถ้าภาพเจ๊งหมดทุกใบ ตกไปใช้ไอคอนแทน (ห้ามปล่อยให้เห็นรูปแตก) --}}
+                        <div x-show="failed.length >= {{ $coverCount }}" x-cloak
+                             class="absolute inset-0 rounded-xl
+                                   bg-gradient-to-br {{ $gradient }}
+                                   group-hover:bg-white/20
+                                   flex items-center justify-center
+                                   shadow-lg group-hover:shadow-xl
+                                   transition-all">
+                            <i class="{{ $categoryIcon }} text-2xl text-white drop-shadow-lg"></i>
+                        </div>
                     </div>
                     @else
+                    {{-- ชั้น 3: ไม่มีทั้งภาพแอดมินและสินค้าในหมวด → gradient + ไอคอน --}}
                     <div class="w-16 h-16 mx-auto rounded-xl
                                bg-gradient-to-br {{ $gradient }}
                                group-hover:bg-white/20
@@ -270,7 +173,7 @@
                                text-gray-600 dark:text-gray-400
                                group-hover:text-gray-900
                                transition-all">
-                        {{ number_format($category->products_count) }}+
+                        {{ number_format($category->products_count) }}
                     </div>
                     @endif
                 </div>

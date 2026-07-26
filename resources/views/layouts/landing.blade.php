@@ -310,7 +310,7 @@
                         เครือข่าย
                     </a>
                     <a href="{{ route('about') }}" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
-                        เกี่ยวกับ
+                        รู้จักเรา
                     </a>
                     <a href="{{ route('contact') }}" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
                         ติดต่อ
@@ -436,7 +436,7 @@
                 <a href="{{ route('about') }}" @click="mobileMenuOpen = false"
                    class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('about') ? 'bg-blue-900/30 text-white' : 'hover:bg-white/10 text-slate-200' }} transition-colors">
                     <i class="fas fa-info-circle w-5 text-center"></i>
-                    เกี่ยวกับเรา
+                    รู้จักเรา
                 </a>
                 <a href="{{ route('contact') }}" @click="mobileMenuOpen = false"
                    class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('contact') ? 'bg-blue-900/30 text-white' : 'hover:bg-white/10 text-slate-200' }} transition-colors">

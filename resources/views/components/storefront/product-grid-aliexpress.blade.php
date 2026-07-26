@@ -25,6 +25,29 @@
         '6' => 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6',
         default => 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
     };
+
+    // รูปสำรองเมื่อสินค้าไม่มีรูป หรือรูปปลายทาง (Lazada CDN) โหลดไม่ขึ้น
+    $fallbackImage = asset('images/no-image.png');
+
+    // รายการโปรดของผู้ใช้ปัจจุบัน — ดึงครั้งเดียวต่อการ render (query เดียว)
+    // ใช้ตั้งสถานะหัวใจให้ตรงกับฐานข้อมูล ไม่ให้ "ลืม" หลังรีเฟรชหน้า
+    $favoritedProductIds = [];
+    if (auth()->check()) {
+        // ⚠️ $products มักเป็น LengthAwarePaginator (getProducts ใช้ ->paginate())
+        //    collect($paginator) จะได้ "เมทาดาทาของ paginator" (current_page/data/...) ไม่ใช่ตัวสินค้า
+        //    → pluck('id') ได้ค่าว่าง หัวใจเลยไม่เคยติดสถานะถูกใจเลย ต้องดึง collection จริงออกมาก่อน
+        $productItems = method_exists($products, 'getCollection')
+            ? $products->getCollection()
+            : collect($products);
+        $productIds = $productItems->pluck('id')->filter()->values()->all();
+        if (! empty($productIds)) {
+            $favoritedProductIds = \App\Models\ProductFavorite::query()
+                ->where('user_id', auth()->id())
+                ->whereIn('product_id', $productIds)
+                ->pluck('product_id')
+                ->all();
+        }
+    }
 @endphp
 
 <div class="grid {{ $gridClasses }} gap-3 md:gap-4">
@@ -53,6 +76,8 @@
         $platform = (string) ($product->external_platform ?? '');
         $platformLabel = $platform === 'aliexpress' ? 'AliExpress' : 'Lazada';
         $targetUrl = $isAffiliate ? $affiliateUrl : route('shop.show', $product->slug ?: $product->id);
+        // สินค้านี้อยู่ในรายการโปรดของผู้ใช้แล้วหรือยัง
+        $isFavorited = in_array($product->id, $favoritedProductIds);
     @endphp
 
     <div class="group">
@@ -68,10 +93,14 @@
 
             {{-- Product Image --}}
             <div class="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
-                <img src="{{ $product->main_image_url ?? 'https://via.placeholder.com/300' }}"
-                     alt="{{ $product->name }}"
+                <img src="{{ $product->main_image_url ?: $fallbackImage }}"
+                     alt="รูปสินค้า {{ $product->name }}"
+                     width="300"
+                     height="300"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                     loading="lazy">
+                     loading="lazy"
+                     decoding="async"
+                     onerror="this.onerror=null; this.src='{{ $fallbackImage }}';">
 
                 {{-- Top Badges --}}
                 <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
@@ -111,8 +140,13 @@
                     @endif
                 </div>
 
-                {{-- Wishlist Button --}}
+                {{-- Wishlist Button (ผูกกับ user.interactions.products.favorite จริง) --}}
+                {{-- บนมือถือไม่มี hover → แสดงตลอด, เดสก์ท็อปค่อยโผล่ตอน hover (ยกเว้นที่ถูกใจแล้ว) --}}
                 <button type="button"
+                        data-favorited="{{ $isFavorited ? '1' : '0' }}"
+                        aria-pressed="{{ $isFavorited ? 'true' : 'false' }}"
+                        aria-label="{{ $isFavorited ? 'นำออกจากรายการโปรด' : 'เพิ่มในรายการโปรด' }}"
+                        title="{{ $isFavorited ? 'นำออกจากรายการโปรด' : 'เพิ่มในรายการโปรด' }}"
                         onclick="event.preventDefault(); event.stopPropagation(); toggleWishlistAli({{ $product->id }}, this)"
                         class="absolute top-2 right-2 z-10
                               w-8 h-8 rounded-full
@@ -120,10 +154,11 @@
                               dark:bg-gray-900/80 dark:hover:bg-gray-900
                               flex items-center justify-center
                               shadow-md hover:shadow-lg
-                              opacity-0 group-hover:opacity-100
-                              transform translate-y-2 group-hover:translate-y-0
-                              transition-all duration-300">
-                    <svg class="w-4 h-4 text-gray-600 dark:text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              opacity-100 md:group-hover:opacity-100
+                              transition-all duration-300
+                              {{ $isFavorited ? 'md:opacity-100' : 'md:opacity-0' }}">
+                    <svg class="w-4 h-4 {{ $isFavorited ? 'text-red-500' : 'text-gray-600 dark:text-gray-400' }} hover:text-red-500"
+                         fill="{{ $isFavorited ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                     </svg>
                 </button>
@@ -208,7 +243,7 @@
                     @endif
 
                     @if($product->sales_count > 0)
-                    <span>{{ number_format($product->sales_count) }}+ ขายแล้ว</span>
+                    <span>{{ number_format($product->sales_count) }} ขายแล้ว</span>
                     @endif
                 </div>
 
@@ -236,9 +271,9 @@
             </div>
         </a>
 
-        {{-- Quick action (appears on hover) --}}
-        <div class="mt-2 opacity-0 group-hover:opacity-100
-                   transform translate-y-2 group-hover:translate-y-0
+        {{-- Quick action — มือถือแสดงตลอด (ไม่มี hover ให้กด), เดสก์ท็อปโผล่ตอน hover --}}
+        <div class="mt-2 opacity-100 md:opacity-0 md:group-hover:opacity-100
+                   transform translate-y-0 md:translate-y-2 md:group-hover:translate-y-0
                    transition-all duration-300">
             @if($isAffiliate)
             {{-- สินค้า affiliate → วิ่งไปซื้อที่แพลตฟอร์มต้นทาง (ได้ค่าคอม/PV) --}}
@@ -335,12 +370,9 @@ function addToCartAli(productId) {
                 detail: { message: 'เพิ่มสินค้าลงตะกร้าสำเร็จ!', type: 'success' }
             }));
 
-            // อัพเดท cart count
-            const cartCount = document.getElementById('cart-count');
-            if (cartCount && data.cart_count) {
-                cartCount.textContent = data.cart_count;
-                cartCount.classList.remove('hidden');
-            }
+            // แจ้ง component ที่ฟังอยู่ (cart-drawer) ให้โหลดจำนวน/รายการใหม่
+            // ⚠️ หน้านี้ไม่มี element #cart-count จริง การเขียน DOM ตรง ๆ จึงไม่มีผลอะไรเลย
+            window.dispatchEvent(new CustomEvent('cart-updated'));
         } else {
             throw new Error(data.message || 'เกิดข้อผิดพลาด');
         }
@@ -352,7 +384,41 @@ function addToCartAli(productId) {
 }
 
 /**
- * Toggle wishlist (AliExpress style)
+ * ตั้งสถานะหน้าตาของปุ่มหัวใจ (รายการโปรด)
+ *
+ * @param {HTMLElement} button - ปุ่มหัวใจ
+ * @param {boolean} favorited - อยู่ในรายการโปรดหรือไม่
+ */
+function applyWishlistStateAli(button, favorited) {
+    const label = favorited ? 'นำออกจากรายการโปรด' : 'เพิ่มในรายการโปรด';
+
+    button.dataset.favorited = favorited ? '1' : '0';
+    button.setAttribute('aria-pressed', favorited ? 'true' : 'false');
+    button.setAttribute('aria-label', label);
+    button.setAttribute('title', label);
+
+    // ที่ถูกใจแล้วต้องเห็นตลอดบนเดสก์ท็อป ไม่ซ่อนรอ hover
+    button.classList.toggle('md:opacity-100', favorited);
+    button.classList.toggle('md:opacity-0', !favorited);
+
+    const svg = button.querySelector('svg');
+    if (!svg) {
+        return;
+    }
+
+    if (favorited) {
+        svg.setAttribute('fill', 'currentColor');
+        svg.classList.add('text-red-500');
+        svg.classList.remove('text-gray-600', 'dark:text-gray-400');
+    } else {
+        svg.setAttribute('fill', 'none');
+        svg.classList.remove('text-red-500');
+        svg.classList.add('text-gray-600', 'dark:text-gray-400');
+    }
+}
+
+/**
+ * Toggle รายการโปรด (wishlist) — บันทึกลงตาราง product_favorites จริง
  *
  * @param {number} productId - ID ของสินค้า
  * @param {HTMLElement} button - ปุ่มที่กด
@@ -365,20 +431,60 @@ function toggleWishlistAli(productId, button) {
     return;
     @endguest
 
-    const svg = button.querySelector('svg');
-
-    // Toggle visual state
-    if (svg.getAttribute('fill') === 'none') {
-        svg.setAttribute('fill', 'currentColor');
-        svg.classList.add('text-red-500');
-        svg.classList.remove('text-gray-600', 'dark:text-gray-400');
-    } else {
-        svg.setAttribute('fill', 'none');
-        svg.classList.remove('text-red-500');
-        svg.classList.add('text-gray-600', 'dark:text-gray-400');
+    // กันกดรัว (double-tap) ไม่ให้ยิงซ้อนกันจนสถานะสลับมั่ว
+    if (button.dataset.busy === '1') {
+        return;
     }
+    button.dataset.busy = '1';
 
-    // TODO: API call to save wishlist
-    console.log('Toggle wishlist:', productId);
+    const wasFavorited = button.dataset.favorited === '1';
+
+    // อัพเดทหน้าจอทันที (optimistic) แล้วค่อยยืนยันกับเซิร์ฟเวอร์
+    applyWishlistStateAli(button, !wasFavorited);
+
+    const url = '{{ route('user.interactions.products.favorite', ['product' => '__PRODUCT_ID__']) }}'
+        .replace('__PRODUCT_ID__', productId);
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => {
+        // บัญชีที่ไม่มีสิทธิ์ (เช่น seller) จะโดน redirect เป็น HTML ไม่ใช่ JSON
+        const contentType = response.headers.get('content-type') || '';
+        if (!response.ok || !contentType.includes('application/json')) {
+            throw new Error('ไม่สามารถบันทึกรายการโปรดได้');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // ยึดสถานะจากเซิร์ฟเวอร์เป็นหลัก
+        const favorited = !!data.favorited;
+        applyWishlistStateAli(button, favorited);
+
+        window.dispatchEvent(new CustomEvent('notify', {
+            detail: {
+                message: data.message || (favorited ? 'เพิ่มในรายการโปรดแล้ว' : 'นำออกจากรายการโปรดแล้ว'),
+                type: 'success'
+            }
+        }));
+    })
+    .catch(error => {
+        // ล้มเหลว → ย้อนสถานะกลับ ไม่หลอกว่าบันทึกสำเร็จ
+        applyWishlistStateAli(button, wasFavorited);
+
+        window.dispatchEvent(new CustomEvent('notify', {
+            detail: { message: error.message || 'ไม่สามารถบันทึกรายการโปรดได้', type: 'error' }
+        }));
+    })
+    .finally(() => {
+        button.dataset.busy = '0';
+    });
 }
 </script>

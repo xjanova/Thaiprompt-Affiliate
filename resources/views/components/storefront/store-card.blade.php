@@ -12,7 +12,20 @@
     'store' => null,
     'isOfficial' => false,
     'products' => collect(),
+    // จำนวนสินค้าจริงของร้าน (ถ้าผู้เรียกส่งมา) — ห้ามเดาจาก $products เพราะเป็นแค่ตัวอย่างไม่กี่ชิ้น
+    'productCount' => null,
 ])
+
+@php
+    // รูปสำรองเมื่อไม่มีรูป หรือรูปปลายทางโหลดไม่ขึ้น
+    $fallbackImage = asset('images/no-image.png');
+    $storeName = $store->store_name ?? ($isOfficial ? 'Official Store' : 'ร้านค้า');
+
+    // นับสินค้าแบบซื่อสัตย์:
+    // - ใช้ค่าที่ผู้เรียกส่งมา หรือ products_count จาก withCount() เท่านั้น
+    // - $products ที่ส่งเข้ามาเป็นชุด "ตัวอย่าง" (มักถูก take(3)) จึงนับไม่ได้ → ซ่อนสถิติไปเลย
+    $realProductCount = $productCount ?? ($store->products_count ?? null);
+@endphp
 
 <div class="group relative bg-white dark:bg-gray-800
            rounded-3xl overflow-hidden
@@ -26,8 +39,13 @@
     <div class="relative h-32 overflow-hidden">
         @if($store && $store->store_banner)
         <img src="{{ $store->store_banner }}"
-             alt="{{ $store->store_name ?? 'Store' }}"
+             alt="แบนเนอร์ร้าน {{ $storeName }}"
+             width="400"
+             height="128"
              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+             loading="lazy"
+             decoding="async"
+             onerror="this.onerror=null; this.src='{{ $fallbackImage }}';"
              style="object-position: center {{ ($store->banner_position_y ?? 50) }}%;">
         @else
         <div class="w-full h-full bg-gradient-to-br
@@ -93,8 +111,13 @@
                            transition-shadow">
                     @if($store && $store->store_logo)
                     <img src="{{ $store->store_logo }}"
-                         alt="{{ $store->store_name ?? 'Store' }}"
-                         class="w-full h-full object-cover">
+                         alt="โลโก้ร้าน {{ $storeName }}"
+                         width="80"
+                         height="80"
+                         class="w-full h-full object-cover"
+                         loading="lazy"
+                         decoding="async"
+                         onerror="this.onerror=null; this.src='{{ $fallbackImage }}';">
                     @else
                     <div class="w-full h-full bg-gradient-to-br
                                {{ $isOfficial ? 'from-purple-500 to-pink-500' : 'from-blue-500 to-indigo-500' }}
@@ -124,17 +147,19 @@
         <h3 class="text-lg font-bold text-gray-900 dark:text-white text-center mb-1
                   group-hover:text-purple-600 dark:group-hover:text-purple-400
                   transition-colors">
-            {{ $store->store_name ?? ($isOfficial ? 'Official Store' : 'ร้านค้า') }}
+            {{ $storeName }}
         </h3>
 
         {{-- Store Stats --}}
         <div class="flex items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-4">
+            @if(! is_null($realProductCount))
             <div class="flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                 </svg>
-                <span>{{ $products->count() }}+ สินค้า</span>
+                <span>{{ number_format($realProductCount) }} สินค้า</span>
             </div>
+            @endif
             @if($store && $store->rating_count > 0)
             <div class="flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,10 +178,14 @@
                class="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700
                        ring-2 ring-transparent hover:ring-purple-400
                        transition-all block">
-                <img src="{{ $product->main_image_url ?? 'https://via.placeholder.com/100' }}"
-                     alt="{{ $product->name }}"
+                <img src="{{ $product->main_image_url ?: $fallbackImage }}"
+                     alt="รูปสินค้า {{ $product->name }}"
+                     width="100"
+                     height="100"
                      class="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                     loading="lazy">
+                     loading="lazy"
+                     decoding="async"
+                     onerror="this.onerror=null; this.src='{{ $fallbackImage }}';">
             </a>
             @endforeach
         </div>

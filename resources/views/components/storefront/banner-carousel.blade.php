@@ -31,10 +31,17 @@
              class="absolute inset-0">
 
             {{-- Background Image --}}
+            {{-- สไลด์แรกเป็น LCP ของหน้า → โหลดทันที ที่เหลือค่อย lazy --}}
             @if($banner['image'] ?? null)
             <img src="{{ $banner['image'] }}"
-                 alt="{{ $banner['title'] ?? 'Banner' }}"
-                 class="w-full h-full object-cover">
+                 alt="{{ $banner['title'] ?? 'แบนเนอร์โปรโมชัน' }}"
+                 width="1600"
+                 height="500"
+                 class="w-full h-full object-cover"
+                 loading="{{ $loop->first ? 'eager' : 'lazy' }}"
+                 fetchpriority="{{ $loop->first ? 'high' : 'auto' }}"
+                 decoding="async"
+                 onerror="this.onerror=null; this.src='{{ asset('images/no-image.png') }}';">
             @else
             {{-- Gradient Background Fallback --}}
             <div class="w-full h-full bg-gradient-to-br {{ $banner['gradient'] ?? 'from-orange-500 via-red-500 to-pink-600' }}">

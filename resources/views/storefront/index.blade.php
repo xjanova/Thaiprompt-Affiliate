@@ -99,14 +99,16 @@
                                class="flex items-center gap-3 px-4 py-3
                                      hover:bg-gray-50 dark:hover:bg-gray-700
                                      transition-colors">
-                                <img :src="suggestion.main_image_url || 'https://via.placeholder.com/50'"
+                                {{-- รูปสำรองใช้ไฟล์ในเครื่อง (via.placeholder.com ใช้งานไม่ได้แล้ว) --}}
+                                <img :src="suggestion.main_image_url || '{{ asset('images/no-image.png') }}'"
                                      :alt="suggestion.name"
                                      class="w-10 h-10 rounded-lg object-cover">
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-medium text-gray-900 dark:text-white truncate"
                                        x-text="suggestion.name"></p>
+                                    {{-- ราคาที่ส่งมาจาก API เป็น decimal string ต้องแปลงเป็นตัวเลขก่อนจัดรูปแบบ --}}
                                     <p class="text-sm text-orange-600 dark:text-orange-400 font-bold"
-                                       x-text="`฿${suggestion.price.toLocaleString()}`"></p>
+                                       x-text="`฿${Number(suggestion.price ?? 0).toLocaleString()}`"></p>
                                 </div>
                             </a>
                         </template>
@@ -321,12 +323,17 @@
                         </svg>
                         <span class="font-bold">คูปองส่วนลด</span>
                     </div>
-                    <p class="text-3xl font-black mb-1">฿100</p>
-                    <p class="text-sm text-white/80 mb-3">เมื่อซื้อครบ ฿1,000</p>
-                    <button class="w-full py-2 bg-white text-purple-600 rounded-lg font-bold text-sm
-                                 hover:bg-purple-100 transition-colors">
-                        รับคูปอง
-                    </button>
+                    {{--
+                        ไม่ประกาศมูลค่า/เงื่อนไขคูปองตายตัวที่หน้านี้
+                        เพราะคอนโทรลเลอร์ไม่ได้ส่งข้อมูลคูปองมา (ตัวเลขเดิม ฿100/฿1,000 เป็นข้อความหลอก)
+                        ลิงก์ไปหน้าคูปองจริงของระบบแทนปุ่มที่ไม่มี handler
+                    --}}
+                    <p class="text-sm text-white/80 mb-3">เก็บคูปองส่วนลดจากร้านค้าที่ร่วมรายการ</p>
+                    <a href="{{ auth()->check() ? route('user.coupons.available') : route('login') }}"
+                       class="block w-full py-2 bg-white text-purple-600 rounded-lg font-bold text-sm text-center
+                             hover:bg-purple-100 transition-colors">
+                        ดูคูปองที่รับได้
+                    </a>
                 </div>
 
                 {{-- Quick Stats --}}
@@ -378,14 +385,16 @@
     {{-- ========================================
          FEATURED STORES SECTION
          ======================================== --}}
-    @if(($featuredStores && $featuredStores->count() > 0) || true)
+    {{--
+        ไม่ต้องมีเงื่อนไขครอบ: คอมโพเนนต์ featured-stores แสดงการ์ด "ร้านทางการ" เสมอเมื่อ showOfficial=true
+        (เงื่อนไขเดิม `... || true` เป็นเงื่อนไขตายที่เป็นจริงตลอด จึงตัดทิ้ง)
+    --}}
     <div class="container mx-auto px-4">
         <x-storefront.featured-stores
             :stores="$featuredStores ?? collect()"
             :showOfficial="true"
             title="ร้านค้าแนะนำ" />
     </div>
-    @endif
 
     {{-- ========================================
          ACTIVE FILTERS INDICATOR
@@ -403,7 +412,7 @@
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
                 </svg>
-                แท็ก: {{ request('tag') }}
+                แท็ก: {{ is_scalar(request('tag')) ? request('tag') : '' }}
                 <a href="{{ route('storefront.index', array_filter(request()->except('tag'))) }}"
                    class="ml-1 hover:text-red-600 transition-colors">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -421,7 +430,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                ค้นหา: "{{ request('search') }}"
+                ค้นหา: "{{ is_scalar(request('search')) ? request('search') : '' }}"
                 <a href="{{ route('storefront.index', array_filter(request()->except('search'))) }}"
                    class="ml-1 hover:text-red-600 transition-colors">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -439,7 +448,7 @@
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6z"/>
                 </svg>
-                หมวดหมู่: {{ request('category') }}
+                หมวดหมู่: {{ is_scalar(request('category')) ? request('category') : '' }}
                 <a href="{{ route('storefront.index', array_filter(request()->except('category'))) }}"
                    class="ml-1 hover:text-red-600 transition-colors">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -507,7 +516,8 @@
                         <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                         </svg>
-                        ร้าน 5 ดาว
+                        {{-- สถิติ premium นับ "สินค้า" ที่ rating_average >= 4.5 ไม่ใช่จำนวนร้าน จึงใช้ป้ายตามความจริง --}}
+                        สินค้าเรตติ้งสูง
                         <span class="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-full text-xs">
                             {{ number_format($stats['premium'] ?? 0) }}
                         </span>
@@ -612,12 +622,16 @@
                                               transition-colors leading-tight"
                                         x-text="product.name"></h3>
 
+                                    {{--
+                                        ราคาจาก API เป็น decimal string ("1250.00") ต้องแปลงด้วย Number() ก่อน
+                                        ทั้งตอนจัดรูปแบบและตอนเปรียบเทียบ (ไม่งั้น "9.00" > "10.00" จะเป็นจริงแบบผิด ๆ)
+                                    --}}
                                     <div class="flex items-baseline gap-1.5 mb-1.5">
                                         <span class="text-sm md:text-lg font-bold text-red-600 dark:text-red-500"
-                                              x-text="`฿${product.price.toLocaleString()}`"></span>
-                                        <template x-if="product.compare_at_price && product.compare_at_price > product.price">
+                                              x-text="`฿${Number(product.price ?? 0).toLocaleString()}`"></span>
+                                        <template x-if="product.compare_at_price && Number(product.compare_at_price) > Number(product.price ?? 0)">
                                             <span class="text-xs text-gray-400 line-through"
-                                                  x-text="`฿${product.compare_at_price.toLocaleString()}`"></span>
+                                                  x-text="`฿${Number(product.compare_at_price).toLocaleString()}`"></span>
                                         </template>
                                     </div>
 
@@ -627,11 +641,12 @@
                                                 <svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                                 </svg>
-                                                <span x-text="product.rating_average.toFixed(1)"></span>
+                                                {{-- rating_average เป็น decimal string จึงต้อง Number() ก่อนเรียก toFixed --}}
+                                                <span x-text="Number(product.rating_average ?? 0).toFixed(1)"></span>
                                             </div>
                                         </template>
                                         <template x-if="product.sales_count > 0">
-                                            <span x-text="`${product.sales_count.toLocaleString()}+ ขายแล้ว`"></span>
+                                            <span x-text="`${Number(product.sales_count ?? 0).toLocaleString()}+ ขายแล้ว`"></span>
                                         </template>
                                     </div>
 
@@ -641,7 +656,7 @@
                                             <span class="px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30
                                                        text-yellow-700 dark:text-yellow-400
                                                        rounded font-semibold"
-                                                  x-text="`PV: ${product.pv.toLocaleString()}`"></span>
+                                                  x-text="`PV: ${Number(product.pv ?? 0).toLocaleString()}`"></span>
                                         </div>
                                     </template>
                                 </div>
@@ -806,6 +821,17 @@
                         สมัครรับข่าวสาร
                     </button>
                 </form>
+
+                {{-- ข้อความแจ้งสถานะตามจริง (ยังไม่มีปลายทางรับอีเมล จึงไม่แสดงว่าสมัครสำเร็จ) --}}
+                <p x-show="newsletterMessage"
+                   x-cloak
+                   x-transition
+                   x-text="newsletterMessage"
+                   role="status"
+                   aria-live="polite"
+                   class="mt-4 text-sm font-medium text-white/95
+                         bg-black/20 dark:bg-black/30 backdrop-blur-sm
+                         rounded-xl px-4 py-3 max-w-lg mx-auto"></p>
             </div>
         </div>
     </div>
@@ -815,6 +841,13 @@
      Alpine.js Component
      ======================================== --}}
 @push('scripts')
+@php
+    // ค่าตั้งต้นจาก query string — บังคับให้เป็น string เสมอ
+    // กันกรณีส่งมาเป็น array (เช่น ?search[]=a) ซึ่งจะทำให้ชนิดข้อมูลใน Alpine เพี้ยน
+    $initialSearchQuery = is_scalar(request('search')) ? (string) request('search') : '';
+    $initialShopType = is_scalar(request('shop_type')) ? (string) request('shop_type') : 'all';
+    $initialSortBy = is_scalar(request('sort_by')) ? (string) request('sort_by') : 'newest';
+@endphp
 <script>
 /**
  * Storefront Manager - จัดการหน้าร้านค้าหลัก
@@ -824,12 +857,15 @@
 function storefrontManager() {
     return {
         // State
-        searchQuery: '{{ request("search") }}',
+        // ⚠️ ต้องใช้ Js::from() ทุกค่าที่มาจาก request()
+        // ถ้าฝัง string ตรง ๆ ใน '...' แล้วมี ' หรือ \ ในคิวรี จะทำให้ JS syntax error
+        // และ x-data ทั้งก้อนพัง (ค้นหา/แท็บ/เรียงลำดับ/โหมดมืด/สมัครข่าวสาร ตายทั้งหมด)
+        searchQuery: {{ Js::from($initialSearchQuery) }},
         suggestions: [],
-        activeTab: '{{ request("shop_type", "all") }}',
-        sortBy: '{{ request("sort_by", "newest") }}',
+        activeTab: {{ Js::from($initialShopType) }},
+        sortBy: {{ Js::from($initialSortBy) }},
         newsletterEmail: '',
-        cartCount: {{ auth()->check() ? (auth()->user()->cart?->items?->count() ?? 0) : 0 }},
+        newsletterMessage: '',
 
         /**
          * เริ่มต้น component
@@ -915,21 +951,27 @@ function storefrontManager() {
 
         /**
          * สมัครรับข่าวสาร
+         *
+         * ⚠️ ในระบบยังไม่มี route/ตารางสำหรับเก็บอีเมลรับข่าวสาร
+         * จึงไม่ยิง API มั่ว และไม่แจ้งว่า "สมัครสำเร็จ" ทั้งที่ไม่ได้บันทึกอะไรเลย
+         * แจ้งสถานะตามจริงแบบ inline แทน alert() และไม่ล้างช่องกรอกทิ้ง
          */
-        async subscribeNewsletter() {
-            if (!this.newsletterEmail) {
-                alert('กรุณากรอกอีเมล');
+        subscribeNewsletter() {
+            const email = (this.newsletterEmail || '').trim();
+
+            if (!email) {
+                this.newsletterMessage = 'กรุณากรอกอีเมลของคุณ';
                 return;
             }
 
-            try {
-                // TODO: API call to subscribe
-                alert('ขอบคุณที่สมัครรับข่าวสาร!');
-                this.newsletterEmail = '';
-            } catch (error) {
-                console.error('Error:', error);
-                alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+            // ตรวจรูปแบบอีเมลอย่างง่ายก่อนแจ้งสถานะ
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                this.newsletterMessage = 'รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
+                return;
             }
+
+            this.newsletterMessage = 'ขออภัย ระบบรับข่าวสารทางอีเมลยังไม่เปิดให้บริการ ' +
+                'ระหว่างนี้ติดตามโปรโมชั่นและ Flash Deals ได้ที่หน้าร้านค้าโดยตรง';
         }
     };
 }

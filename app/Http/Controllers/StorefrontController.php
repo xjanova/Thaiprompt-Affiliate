@@ -30,30 +30,14 @@ class StorefrontController extends Controller
         $banners = $this->getBanners();
 
         // ดึงข้อมูล Categories พร้อม children และ products count
-        $categories = ProductCategory::active()
-            ->root()
-            ->with(['children' => function ($query) {
-                $query->active()->orderBy('sort_order');
-            }])
-            ->withCount(['products' => function ($query) {
-                $query->active()->visible()->inStock();
-            }])
-            ->orderBy('sort_order')
-            ->get();
+        $categories = $this->getCategories();
 
         // ดึง Flash Deals (สินค้าลดราคา หรือ featured)
         $flashDeals = $this->getFlashDeals();
         $flashDealEndTime = now()->endOfDay()->toIso8601String();
 
         // ดึง Featured Stores
-        $featuredStores = VendorStore::where('is_active', true)
-            ->where('is_featured_home', true)
-            ->with(['products' => function ($query) {
-                $query->active()->visible()->inStock()->latest()->take(3);
-            }])
-            ->orderBy('rating_average', 'desc')
-            ->take(7) // 1 for official + 6 vendor stores
-            ->get();
+        $featuredStores = $this->getFeaturedStores();
 
         // ดึงสินค้าตามตัวกรอง
         $products = $this->getFilteredProducts($request);
@@ -73,99 +57,194 @@ class StorefrontController extends Controller
     }
 
     /**
-     * ดึงข้อมูล Banners สำหรับ Carousel
+     * ดึงหมวดหมู่ระดับบนสุด พร้อมจำนวนสินค้า (แคช 10 นาที)
+     *
+     * ⚠️ หมายเหตุเรื่องการนับสินค้า (สำคัญมาก):
+     * ProductCategory::products() เป็นความสัมพันธ์ hasMany(Product, 'category_id')
+     * ซึ่งผูก "โดยตรง" เท่านั้น ดังนั้น withCount(['products']) บนหมวดแม่
+     * จะนับเฉพาะสินค้าที่ตั้ง category_id = หมวดแม่ตรง ๆ
+     * ถ้าสินค้าทั้งหมดถูกผูกไว้กับหมวดลูก หมวดแม่จะแสดงเลข 0 เสมอ
+     *
+     * แก้โดย: นับสินค้าของหมวดลูกไปพร้อมกัน (eager count ใน closure ของ children)
+     * แล้วเพิ่มแอตทริบิวต์ใหม่ total_products_count = หมวดตัวเอง + หมวดลูกทุกหมวด
+     * (คง products_count เดิมไว้ไม่แตะต้อง เพื่อไม่ให้ Blade เดิมพัง)
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getCategories()
+    {
+        return Cache::remember('storefront_categories_v2', 600, function () {
+            $categories = ProductCategory::active()
+                ->root()
+                ->with(['children' => function ($query) {
+                    // นับสินค้าของหมวดลูกไปด้วย เพื่อนำมารวมเป็นยอดรวมของหมวดแม่
+                    $query->active()
+                        ->orderBy('sort_order')
+                        ->withCount(['products' => function ($q) {
+                            $q->publicVisible()->inStock();
+                        }]);
+                }])
+                ->withCount(['products' => function ($query) {
+                    // นับเฉพาะสินค้าที่ผูกกับหมวดนี้โดยตรง (ของเดิม - ห้ามลบ)
+                    $query->publicVisible()->inStock();
+                }])
+                ->orderBy('sort_order')
+                ->get();
+
+            // รวมยอดสินค้าทั้งสาขา = ของหมวดตัวเอง + ของหมวดลูกทั้งหมด
+            $categories->each(function ($category) {
+                $childrenTotal = $category->relationLoaded('children')
+                    ? (int) $category->children->sum('products_count')
+                    : 0;
+
+                $category->setAttribute(
+                    'total_products_count',
+                    (int) ($category->products_count ?? 0) + $childrenTotal
+                );
+            });
+
+            return $categories;
+        });
+    }
+
+    /**
+     * ดึงร้านค้าแนะนำสำหรับหน้าแรก (แคช 10 นาที)
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getFeaturedStores()
+    {
+        return Cache::remember('storefront_featured_stores_v2', 600, function () {
+            return VendorStore::where('is_active', true)
+                ->where('is_featured_home', true)
+                ->with(['products' => function ($query) {
+                    $query->publicVisible()->inStock()->latest()->take(3);
+                }])
+                // ⚠️ ต้องมี withCount ด้วย — การ์ดร้าน (store-card) อ่าน $store->products_count
+                //    เพื่อโชว์ "N สินค้า" ถ้าไม่นับมาให้ ตัวเลขจะหายไปจากหน้าแรกทั้งแถบ
+                //    (with(['products' => take(3)]) ให้มาแค่ 3 ชิ้นสำหรับรูปตัวอย่าง ไม่ใช่จำนวนจริง)
+                ->withCount(['products' => function ($query) {
+                    $query->publicVisible()->inStock();
+                }])
+                ->orderBy('rating_average', 'desc')
+                ->take(7) // 1 for official + 6 vendor stores
+                ->get();
+        });
+    }
+
+    /**
+     * ดึงข้อมูล Banners สำหรับ Carousel (แคช 10 นาที)
+     *
+     * ใช้ scope ที่มีอยู่แล้วของ StoreBanner:
+     * - forHomepage()        → location = 'homepage' และ store_id เป็น null
+     *                          (กัน banner ของร้านค้าหลุดมาโผล่หน้าแรก)
+     * - currentlyDisplaying() → is_active = true และอยู่ในช่วง start_at / end_at
+     *                          (กัน banner หมดอายุ หรือยังไม่ถึงเวลาแสดง)
+     * - ordered()            → เรียงตาม sort_order
      *
      * @return \Illuminate\Support\Collection
      */
     private function getBanners()
     {
-        // ลองดึงจาก database ก่อน
-        $dbBanners = collect();
+        // แคชได้ปลอดภัยเพราะไม่ขึ้นกับ request ใด ๆ
+        // ⚠️ ห้ามเปลี่ยนชื่อคีย์นี้ — Admin\StorefrontSettingsController เรียก
+        //    Cache::forget('storefront_banners') อยู่ 5 จุด (เพิ่ม/แก้/สลับ/ลบแบนเนอร์)
+        //    ถ้าใช้คีย์อื่น แอดมินแก้แบนเนอร์แล้วหน้าร้านจะไม่เปลี่ยนนาน 10 นาที
+        return Cache::remember('storefront_banners', 600, function () {
+            // ลองดึงจาก database ก่อน
+            $dbBanners = collect();
 
-        if (class_exists('App\Models\StoreBanner')) {
-            $dbBanners = StoreBanner::where('is_active', true)
-                ->where('location', 'homepage')
-                ->orderBy('sort_order')
-                ->get()
-                ->map(function ($banner) {
-                    return [
-                        'image' => $banner->image_url,
-                        'title' => $banner->title,
-                        'subtitle' => $banner->subtitle,
-                        'badge' => $banner->badge,
-                        'highlight' => $banner->highlight_text,
-                        'highlight_label' => $banner->highlight_label,
-                        'cta_text' => $banner->cta_text,
-                        'cta_url' => $banner->cta_url,
-                        'gradient' => $banner->gradient,
-                    ];
-                });
-        }
+            if (class_exists('App\Models\StoreBanner')) {
+                $dbBanners = StoreBanner::forHomepage()
+                    ->currentlyDisplaying()
+                    ->ordered()
+                    ->get()
+                    ->map(function ($banner) {
+                        return [
+                            'image' => $banner->image_url,
+                            'title' => $banner->title,
+                            'subtitle' => $banner->subtitle,
+                            'badge' => $banner->badge,
+                            'highlight' => $banner->highlight_text,
+                            'highlight_label' => $banner->highlight_label,
+                            'cta_text' => $banner->cta_text,
+                            'cta_url' => $banner->cta_url,
+                            'gradient' => $banner->gradient,
+                        ];
+                    });
+            }
 
-        // ถ้าไม่มี banners ใน database ใช้ default
-        if ($dbBanners->isEmpty()) {
-            return collect([
-                [
-                    'image' => null,
-                    'gradient' => 'from-orange-500 via-red-500 to-pink-600',
-                    'badge' => 'Flash Sale',
-                    'title' => 'ลดกระหน่ำสุดพิเศษ',
-                    'subtitle' => 'ช้อปสินค้าคุณภาพ ราคาดีที่สุด ส่งฟรีทั่วไทย',
-                    'highlight' => 'สูงสุด 70%',
-                    'highlight_label' => 'ส่วนลด',
-                    'cta_text' => 'ช้อปเลย',
-                    'cta_url' => route('storefront.index'),
-                ],
-                [
-                    'image' => null,
-                    'gradient' => 'from-purple-600 via-pink-500 to-red-500',
-                    'badge' => 'สินค้าใหม่',
-                    'title' => 'คอลเลคชั่นใหม่ประจำเดือน',
-                    'subtitle' => 'สินค้ามาใหม่ล่าสุด อัพเดททุกสัปดาห์',
-                    'highlight' => '500+',
-                    'highlight_label' => 'รายการใหม่',
-                    'cta_text' => 'ดูสินค้าใหม่',
-                    'cta_url' => route('storefront.index', ['sort_by' => 'newest']),
-                ],
-                [
-                    'image' => null,
-                    'gradient' => 'from-blue-600 via-indigo-500 to-purple-600',
-                    'badge' => 'Official Store',
-                    'title' => 'สินค้าจากทางการ',
-                    'subtitle' => 'รับประกันคุณภาพ 100% พร้อมบริการหลังการขาย',
-                    'highlight' => '100%',
-                    'highlight_label' => 'ของแท้',
-                    'cta_text' => 'เข้าชม Official Store',
-                    'cta_url' => route('official-shop.index'),
-                ],
-            ]);
-        }
+            // ถ้าไม่มี banners ใน database ใช้ default (ติดตั้งใหม่ต้องมี hero เสมอ)
+            if ($dbBanners->isEmpty()) {
+                return collect([
+                    [
+                        'image' => null,
+                        'gradient' => 'from-orange-500 via-red-500 to-pink-600',
+                        'badge' => 'Flash Sale',
+                        'title' => 'ลดกระหน่ำสุดพิเศษ',
+                        'subtitle' => 'ช้อปสินค้าคุณภาพ ราคาดีที่สุด ส่งฟรีทั่วไทย',
+                        'highlight' => 'สูงสุด 70%',
+                        'highlight_label' => 'ส่วนลด',
+                        'cta_text' => 'ช้อปเลย',
+                        'cta_url' => route('storefront.index'),
+                    ],
+                    [
+                        'image' => null,
+                        'gradient' => 'from-purple-600 via-pink-500 to-red-500',
+                        'badge' => 'สินค้าใหม่',
+                        'title' => 'คอลเลคชั่นใหม่ประจำเดือน',
+                        'subtitle' => 'สินค้ามาใหม่ล่าสุด อัพเดททุกสัปดาห์',
+                        'highlight' => '500+',
+                        'highlight_label' => 'รายการใหม่',
+                        'cta_text' => 'ดูสินค้าใหม่',
+                        'cta_url' => route('storefront.index', ['sort_by' => 'newest']),
+                    ],
+                    [
+                        'image' => null,
+                        'gradient' => 'from-blue-600 via-indigo-500 to-purple-600',
+                        'badge' => 'Official Store',
+                        'title' => 'สินค้าจากทางการ',
+                        'subtitle' => 'รับประกันคุณภาพ 100% พร้อมบริการหลังการขาย',
+                        'highlight' => '100%',
+                        'highlight_label' => 'ของแท้',
+                        'cta_text' => 'เข้าชม Official Store',
+                        'cta_url' => route('official-shop.index'),
+                    ],
+                ]);
+            }
 
-        return $dbBanners;
+            return $dbBanners;
+        });
     }
 
     /**
      * ดึงสินค้า Flash Deals
      *
+     * ⚠️ แก้บั๊กลำดับความสำคัญของ OR:
+     * เดิมเขียน ->where(ลดราคา)->orWhere(featured) โดยไม่ครอบวงเล็บรวม
+     * ทำให้ SQL กลายเป็น "(เงื่อนไขพื้นฐาน AND ลดราคา) OR (featured)"
+     * ส่งผลให้สินค้าที่ถูกลบ (soft delete) / ซ่อน / ถูกบล็อก / ของหมด
+     * หลุดเข้ามาผ่านสาขา featured
+     * แก้โดยครอบทั้งสองสาขาไว้ใน where() ก้อนเดียว เพื่อให้เงื่อนไขพื้นฐาน
+     * (publicVisible + inStock) บังคับใช้กับทั้งสองสาขา
+     *
      * @return \Illuminate\Database\Eloquent\Collection
      */
     private function getFlashDeals()
     {
-        return Cache::remember('storefront_flash_deals', 300, function () {
+        // bump เป็น v2 เพื่อทิ้ง cache เก่าที่มีสินค้าหลุดเงื่อนไขค้างอยู่
+        return Cache::remember('storefront_flash_deals_v2', 300, function () {
             return Product::with(['category', 'mlmProductPv'])
-                ->active()
-                ->visible()
+                ->publicVisible()
                 ->inStock()
                 ->where(function ($query) {
                     // สินค้าลดราคา
-                    $query->whereNotNull('compare_at_price')
-                        ->whereColumn('compare_at_price', '>', 'price');
-                })
-                ->orWhere(function ($query) {
-                    // หรือสินค้า featured
-                    $query->where('is_featured', true)
-                        ->active()
-                        ->inStock();
+                    $query->where(function ($q) {
+                        $q->whereNotNull('compare_at_price')
+                            ->whereColumn('compare_at_price', '>', 'price');
+                    })
+                        // หรือสินค้า featured
+                        ->orWhere('is_featured', true);
                 })
                 ->orderByRaw('CASE WHEN compare_at_price > price THEN (compare_at_price - price) / compare_at_price ELSE 0 END DESC')
                 ->take(12)
@@ -181,8 +260,7 @@ class StorefrontController extends Controller
     private function getFilteredProducts(Request $request)
     {
         $query = Product::with(['category', 'seller', 'mlmProductPv'])
-            ->active()
-            ->visible()
+            ->publicVisible()
             ->inStock();
 
         // กรองตามประเภทร้าน
@@ -195,9 +273,12 @@ class StorefrontController extends Controller
                 ->where('rating_count', '>', 0);
         }
 
-        // ค้นหา
-        if ($request->filled('search')) {
-            $search = $request->search;
+        // ค้นหา - รองรับทั้ง ?search= (ของหน้านี้) และ ?q= (ที่หน้าอื่นส่งมา)
+        $search = $request->filled('search') ? $request->get('search') : $request->get('q');
+        // กัน input เป็น array (เช่น ?q[]=x) ไม่ให้หลุดไปแคสต์เป็น string
+        $search = is_scalar($search) ? trim((string) $search) : '';
+
+        if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
@@ -206,10 +287,22 @@ class StorefrontController extends Controller
         }
 
         // กรองตามหมวดหมู่
+        // ⚠️ เดิมใช้ whereHas('category', slug) ซึ่งจับได้เฉพาะสินค้าที่ผูกกับหมวดนั้นโดยตรง
+        // ถ้า slug เป็นหมวดแม่ (สินค้าจริงอยู่ในหมวดลูก) จะได้ผลลัพธ์ 0 รายการ
+        // แก้โดยแปลง slug → id ของหมวดนั้น + id ของหมวดลูกหลานทั้งหมด แล้วกรองด้วย whereIn
         if ($request->filled('category')) {
-            $query->whereHas('category', function ($q) use ($request) {
-                $q->where('slug', $request->category);
-            });
+            // กัน input เป็น array (เช่น ?category[]=x) ไม่ให้หลุดไปแคสต์เป็น string
+            $categorySlug = $request->get('category');
+            $categoryIds = is_scalar($categorySlug)
+                ? $this->resolveCategoryTreeIds((string) $categorySlug)
+                : [];
+
+            if (! empty($categoryIds)) {
+                $query->whereIn('category_id', $categoryIds);
+            } else {
+                // ไม่พบหมวดหมู่ตาม slug → ไม่คืนสินค้าใด ๆ (พฤติกรรมเดิม)
+                $query->whereRaw('1 = 0');
+            }
         }
 
         // กรองตาม tag
@@ -255,6 +348,76 @@ class StorefrontController extends Controller
     }
 
     /**
+     * แปลง slug ของหมวดหมู่ → รายการ id ของหมวดนั้นเอง + หมวดลูกหลานทุกชั้น
+     *
+     * ใช้กับตัวกรอง ?category=<slug> ซึ่งเป็น CTA หลักของ mega menu
+     * (หมวดแม่ต้องแสดงสินค้าของหมวดลูกด้วย ไม่ใช่คืน 0 รายการ)
+     *
+     * @param  string  $slug  slug ของหมวดหมู่
+     * @return array<int> รายการ id ทั้งสาขา (ว่าง = ไม่พบหมวดหมู่)
+     */
+    private function resolveCategoryTreeIds(string $slug): array
+    {
+        $slug = trim($slug);
+
+        if ($slug === '') {
+            return [];
+        }
+
+        // ⚠️ $slug มาจาก ?category= ของผู้ใช้โดยตรง → ถ้าแคชทุกค่าที่ส่งมา
+        //    คนยิง /storefront?category=<สุ่ม> รัวๆ จะเขียนคีย์ใหม่ไม่จำกัด (cache flooding)
+        //    กัน 2 ชั้น: (1) รับเฉพาะรูปแบบ slug ที่เป็นไปได้จริง (2) ไม่แคช "ผลลัพธ์ว่าง"
+        if (! preg_match('/^[\pL\pN._-]{1,120}$/u', $slug)) {
+            return [];
+        }
+
+        $cacheKey = 'storefront_category_tree_'.md5($slug);
+        if (($cached = Cache::get($cacheKey)) !== null) {
+            return $cached;
+        }
+
+        $resolve = function () use ($slug) {
+            $rootId = ProductCategory::where('slug', $slug)->value('id');
+
+            if (! $rootId) {
+                return [];
+            }
+
+            $ids = [(int) $rootId];
+            $frontier = [(int) $rootId];
+            $depth = 0;
+
+            // เดินลงหมวดลูกทีละชั้น (BFS) - จำกัดความลึก 10 ชั้น กันข้อมูลวนลูป
+            while (! empty($frontier) && $depth < 10) {
+                $childIds = ProductCategory::whereIn('parent_id', $frontier)
+                    ->whereNotIn('id', $ids)
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->all();
+
+                if (empty($childIds)) {
+                    break;
+                }
+
+                $ids = array_merge($ids, $childIds);
+                $frontier = $childIds;
+                $depth++;
+            }
+
+            return $ids;
+        };
+
+        $ids = $resolve();
+
+        // แคชเฉพาะกรณีเจอหมวดจริง (10 นาที) — หมวดที่ไม่มีอยู่จะไม่กินพื้นที่แคช
+        if (! empty($ids)) {
+            Cache::put($cacheKey, $ids, 600);
+        }
+
+        return $ids;
+    }
+
+    /**
      * ดึงสถิติสำหรับแสดงผล
      *
      * @return array
@@ -293,8 +456,7 @@ class StorefrontController extends Controller
         // ดึงสินค้าของร้าน
         $products = Product::with(['category', 'mlmProductPv'])
             ->where('seller_id', $store->user_id)
-            ->active()
-            ->visible()
+            ->publicVisible()
             ->inStock()
             ->latest()
             ->paginate(24);
@@ -302,14 +464,12 @@ class StorefrontController extends Controller
         // ดึงหมวดหมู่ที่มีสินค้าในร้าน
         $storeCategories = ProductCategory::whereHas('products', function ($query) use ($store) {
             $query->where('seller_id', $store->user_id)
-                ->active()
-                ->visible()
+                ->publicVisible()
                 ->inStock();
         })
             ->withCount(['products' => function ($query) use ($store) {
                 $query->where('seller_id', $store->user_id)
-                    ->active()
-                    ->visible()
+                    ->publicVisible()
                     ->inStock();
             }])
             ->get();
@@ -376,14 +536,16 @@ class StorefrontController extends Controller
      */
     public function quickSearch(Request $request)
     {
+        // ⚠️ endpoint สาธารณะ ไม่ต้องล็อกอิน — ถ้ายิง ?q[]=a มาจะได้ array
+        //    แล้ว strlen(array) = TypeError → 500 ทั้งหน้า ต้องกันไว้ก่อนเสมอ
         $search = $request->get('q', '');
+        $search = is_scalar($search) ? (string) $search : '';
 
         if (strlen($search) < 2) {
             return response()->json([]);
         }
 
-        $products = Product::active()
-            ->visible()
+        $products = Product::publicVisible()
             ->inStock()
             ->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -421,23 +583,37 @@ class StorefrontController extends Controller
                 $totalPv = $totalPv / $product->mlmProductPv->count();
             }
 
+            // สินค้า affiliate ต้องลิงก์ออกไปยัง affiliate_url เท่านั้น
+            // ถ้าลิงก์เข้าหน้าตะกร้าภายใน = ไม่ได้ค่าคอมมิชชั่นเลย (บั๊กเสียรายได้จริง)
+            $isAffiliate = (bool) $product->is_affiliate;
+            $affiliateUrl = $product->affiliate_url;
+
             return [
                 'id' => $product->id,
                 'name' => $product->name,
                 'slug' => $product->slug,
-                'price' => $product->price,
-                'compare_at_price' => $product->compare_at_price,
-                'main_image_url' => $product->main_image_url ?? 'https://via.placeholder.com/300',
+                // ⚠️ price / compare_at_price / rating_average เป็น decimal:2
+                // ถ้าไม่ cast จะกลายเป็น string ใน JSON → .toFixed() ฝั่ง JS พัง
+                'price' => (float) $product->price,
+                'compare_at_price' => $product->compare_at_price !== null
+                    ? (float) $product->compare_at_price
+                    : null,
+                'main_image_url' => $product->main_image_url ?: asset('images/no-image.png'),
                 'discount' => $discount,
-                'is_featured' => $product->is_featured,
+                'is_featured' => (bool) $product->is_featured,
                 'is_official' => ! $product->seller_id,
-                'rating_average' => $product->rating_average ?? 0,
-                'rating_count' => $product->rating_count ?? 0,
-                'sales_count' => $product->sales_count ?? 0,
+                'rating_average' => (float) ($product->rating_average ?? 0),
+                'rating_count' => (int) ($product->rating_count ?? 0),
+                'sales_count' => (int) ($product->sales_count ?? 0),
                 'pv' => $totalPv,
-                'commission_rate' => $product->commission_rate ?? 0,
+                'commission_rate' => (float) ($product->commission_rate ?? 0),
                 'free_shipping' => $product->price >= 500,
-                'url' => route('shop.show', $product->slug ?: $product->id),
+                'is_affiliate' => $isAffiliate,
+                'affiliate_url' => $affiliateUrl,
+                'external_platform' => $product->external_platform,
+                'url' => ($isAffiliate && $affiliateUrl)
+                    ? $affiliateUrl
+                    : route('shop.show', $product->slug ?: $product->id),
             ];
         });
 
@@ -460,10 +636,10 @@ class StorefrontController extends Controller
         // ดึงร้านค้าทั้งหมดพร้อม filter
         $query = VendorStore::where('is_active', true)
             ->with(['products' => function ($query) {
-                $query->active()->visible()->inStock()->latest()->take(4);
+                $query->publicVisible()->inStock()->latest()->take(4);
             }])
             ->withCount(['products' => function ($query) {
-                $query->active()->visible()->inStock();
+                $query->publicVisible()->inStock();
             }]);
 
         // Filter by search
@@ -509,7 +685,7 @@ class StorefrontController extends Controller
         $stats = [
             'total_stores' => VendorStore::where('is_active', true)->count(),
             'featured_stores' => VendorStore::where('is_active', true)->where('is_featured_home', true)->count(),
-            'total_products' => Product::active()->visible()->inStock()->count(),
+            'total_products' => Product::publicVisible()->inStock()->count(),
         ];
 
         return view('storefront.stores', compact(

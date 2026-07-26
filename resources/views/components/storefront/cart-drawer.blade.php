@@ -61,15 +61,25 @@ function cartDrawerButton() {
          * เริ่มต้น component
          */
         init() {
+            @auth
             this.loadCartCount();
-            // Polling ทุก 30 วินาที
+            // Polling ทุก 30 วินาที (เฉพาะผู้ที่ล็อกอินแล้วเท่านั้น)
             setInterval(() => this.loadCartCount(), 30000);
+            @endauth
         },
 
         /**
          * โหลดจำนวนสินค้าในตะกร้า
+         *
+         * ⚠️ route cart.count อยู่ใน middleware 'auth' — ผู้เยี่ยมชมที่ยังไม่ล็อกอิน
+         * จะโดน redirect 302 ไปหน้า login แล้วได้ HTML กลับมา ทำให้ JSON.parse พังทุกครั้ง
+         * จึงต้องตัดจบตั้งแต่ต้นทาง ไม่ยิง request เลย
          */
         async loadCartCount() {
+            @guest
+            return;
+            @endguest
+
             try {
                 const response = await fetch('{{ route("cart.count") }}', {
                     headers: {
@@ -77,7 +87,10 @@ function cartDrawerButton() {
                         'Accept': 'application/json'
                     }
                 });
-                if (response.ok) {
+                // session หมดอายุกลางคัน → โดน redirect เป็น HTML หน้า login
+                // ถ้าไม่เช็ค content-type จะ parse พังซ้ำทุก 30 วินาทีไม่รู้จบ
+                const contentType = response.headers.get('content-type') || '';
+                if (response.ok && contentType.includes('application/json')) {
                     const data = await response.json();
                     this.cartCount = data.count || 0;
                 }
@@ -197,10 +210,14 @@ function cartDrawerButton() {
                         <div class="flex gap-4">
                             {{-- Product Image --}}
                             <div class="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700">
-                                <img :src="item.image || '/images/no-image.png'"
-                                     :alt="item.name"
+                                <img :src="item.image || '{{ asset('images/no-image.png') }}'"
+                                     :alt="'รูปสินค้า ' + (item.name || '')"
+                                     width="80"
+                                     height="80"
                                      class="w-full h-full object-cover"
-                                     onerror="this.src='/images/no-image.png'">
+                                     loading="lazy"
+                                     decoding="async"
+                                     onerror="this.onerror=null; this.src='{{ asset('images/no-image.png') }}';">
                             </div>
 
                             {{-- Product Info --}}
@@ -328,6 +345,16 @@ function cartDrawerPanel() {
          * โหลดข้อมูลตะกร้าทั้งหมด
          */
         async loadCart() {
+            @guest
+            // route cart.mini เป็น auth-only เช่นกัน — ผู้เยี่ยมชมไม่มีตะกร้าอยู่แล้ว
+            // ยิงไปก็ได้ HTML หน้า login กลับมาแล้ว parse พัง จึงแสดงสถานะ "ตะกร้าว่าง" ไปเลย
+            this.items = [];
+            this.cartCount = 0;
+            this.cartTotal = 0;
+            this.loading = false;
+            return;
+            @endguest
+
             this.loading = true;
             try {
                 const response = await fetch('{{ route("cart.mini") }}', {

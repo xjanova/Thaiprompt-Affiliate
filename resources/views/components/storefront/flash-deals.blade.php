@@ -115,6 +115,8 @@
                         $discount = round((($product->compare_at_price - $product->price) / $product->compare_at_price) * 100);
                     }
                     $soldPercent = min(100, ($product->sales_count / max(1, $product->stock_quantity + $product->sales_count)) * 100);
+                    // รูปสำรองเมื่อสินค้าไม่มีรูป หรือรูปปลายทาง (Lazada CDN) โหลดไม่ขึ้น
+                    $fallbackImage = asset('images/no-image.png');
                 @endphp
 
                 <div class="flex-shrink-0 w-48 md:w-56 snap-start group">
@@ -126,10 +128,14 @@
 
                             {{-- Image Container --}}
                             <div class="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
-                                <img src="{{ $product->main_image_url ?? 'https://via.placeholder.com/200' }}"
-                                     alt="{{ $product->name }}"
+                                <img src="{{ $product->main_image_url ?: $fallbackImage }}"
+                                     alt="รูปสินค้า {{ $product->name }}"
+                                     width="224"
+                                     height="224"
                                      class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                     loading="lazy">
+                                     loading="lazy"
+                                     decoding="async"
+                                     onerror="this.onerror=null; this.src='{{ $fallbackImage }}';">
 
                                 {{-- Discount Badge --}}
                                 @if($discount > 0)
@@ -414,12 +420,9 @@ function addToCartFlash(productId) {
                 detail: { message: 'เพิ่มสินค้าลงตะกร้าสำเร็จ!', type: 'success' }
             }));
 
-            // อัพเดท cart count
-            const cartCount = document.getElementById('cart-count');
-            if (cartCount && data.cart_count) {
-                cartCount.textContent = data.cart_count;
-                cartCount.classList.remove('hidden');
-            }
+            // แจ้ง component ที่ฟังอยู่ (cart-drawer) ให้โหลดจำนวน/รายการใหม่
+            // ⚠️ หน้านี้ไม่มี element #cart-count จริง การเขียน DOM ตรง ๆ จึงไม่มีผลอะไรเลย
+            window.dispatchEvent(new CustomEvent('cart-updated'));
         } else {
             throw new Error(data.message || 'เกิดข้อผิดพลาด');
         }
