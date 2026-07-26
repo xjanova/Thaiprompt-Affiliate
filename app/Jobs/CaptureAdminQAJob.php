@@ -143,8 +143,10 @@ class CaptureAdminQAJob implements ShouldQueue
             'captured_at' => now()->toIso8601String(),
         ];
         // merge metadata เดิม (app_id, echo) แต่ไม่ทับ field ใหม่
+        // 🧹 (2026-07-26) เพิ่ม is_human_typed — ถ้าไม่ใส่ใน whitelist ตรงนี้
+        //    ค่าที่ webhook ส่งมาจะถูกทิ้งเงียบ ๆ (บั๊กที่เจอตอนรีวิว)
         if (is_array($this->contextMeta)) {
-            foreach (['app_id', 'echo'] as $passthrough) {
+            foreach (['app_id', 'echo', 'is_human_typed'] as $passthrough) {
                 if (array_key_exists($passthrough, $this->contextMeta)) {
                     $contextJson[$passthrough] = $this->contextMeta[$passthrough];
                 }

@@ -43,6 +43,15 @@ use Illuminate\Support\Facades\Log;
  */
 class FacebookWebhookController extends Controller
 {
+    /**
+     * app_id ของ Meta Business Suite ที่ติดมากับ echo
+     *
+     * ⚠️ ค่านี้ใช้ได้ทั้งกรณี "แอดมินคนพิมพ์ในกล่องข้อความ Business Suite"
+     *    และ "automation/Meta AI ยิงเอง" — payload ของ FB แยกสองอย่างนี้ไม่ได้
+     *    ใช้เพื่อ "อธิบาย log" เท่านั้น ห้ามเอาไปเป็นเงื่อนไขว่าเป็นคนจริง
+     */
+    protected const META_BUSINESS_SUITE_APP_ID = '263902037430900';
+
     protected $facebookService;
 
     protected $aiService;
@@ -1331,9 +1340,10 @@ class FacebookWebhookController extends Controller
         //   ปัญหา: แอดมินตอบใน Meta Business Suite → echo มี app_id=263902037430900
         //          (= Business Suite's app_id) → ถูก skip ผิด เป็น Q&A ไม่เคยถูกจับ
         //   ใหม่: เปรียบเทียบ app_id กับ bot's app_id เฉพาะตัวเรา
-        //          → bot's own echo (app_id=our_app) → skip
-        //          → admin via Meta Business Suite (app_id=263902037430900) → capture
-        //          → admin via Page Inbox classic (app_id=null) → capture
+        //          → bot's own echo (app_id=our_app) → หยุดตรงนี้ ไม่ทำอะไรต่อ
+        //          → echo อื่นทั้งหมด → ไปต่อ (ต้องผ่านเพื่อให้ /aistop /aistart ยังใช้ได้)
+        //   ⚠️ (2026-07-26) "ไปต่อ" ≠ "เก็บลง RAG" — การเก็บ RAG ย้ายไปคุมด้วย
+        //      $isHumanTyped ข้างล่างแล้ว (Business Suite ไม่ถูกเก็บอีกต่อไป)
         //   Fallback: ถ้า settings->facebook_app_id ว่าง → ใช้ behavior เก่า (safe default)
         $ourBotAppId = (string) ($this->settings->facebook_app_id ?? '');
         $echoAppId = $appId !== null ? (string) $appId : '';
@@ -1361,8 +1371,33 @@ class FacebookWebhookController extends Controller
         //                          admin ต้องเรียนรู้สไตล์ได้ไม่ว่า handover จะ ON/OFF
         //   admin คนตอบลูกค้าใน Page Inbox → เก็บเป็นคู่ Q&A + category
         //   ถ้า settings ปิด admin_qa_capture ก็ skip (default เปิด)
+        //
+        // 🧹 (2026-07-26) เก็บเฉพาะ "แอดมินคนพิมพ์เอง" เท่านั้น (เจ้าของสั่ง)
+        //   ที่มา: automation ฝั่ง Meta (ตอบกลับคอมเมนต์เป็นข้อความส่วนตัว) ยิงข้อความ
+        //          โฆษณาไล่ลูกค้าไป LINE 274 ครั้ง/244 คน แล้วถูกเก็บเป็น "คำตอบแอดมิน"
+        //          ปนลง RAG — เคสจริง: ลูกค้าถาม "ผมแอบชอบผู้หญิงคนนึง เขาชื่อคิม"
+        //          แต่คำตอบที่ระบบจำไว้กลายเป็นลิงก์ LINE เปล่า ๆ
+        //   กติกา: echo ที่ "ไม่มี app_id" = คนพิมพ์มือ (Page Inbox / แอป Messenger) → เก็บ
+        //          echo ที่ "มี app_id" = เครื่องส่ง (automation / Meta AI / third-party) → ไม่เก็บ
+        //   ⚠️ ผลข้างเคียงที่รับรู้แล้ว: แอดมินที่พิมพ์ในกล่องข้อความ Meta Business Suite
+        //      จะติด app_id เดียวกับ automation → ถูกข้ามไปด้วย (payload FB แยกไม่ได้)
+        //      ดู log '📚 AdminQA: ข้าม' เพื่อวัดว่าของแอดมินจริงตกหล่นเยอะแค่ไหน
+        //      ถ้าตกหล่นเยอะ ค่อยยกระดับเป็นตัวจับ "ข้อความสำเร็จรูปซ้ำหลายคน" แทน
+        $isHumanTyped = ($echoAppId === '');
         $captureEnabled = (bool) ($this->settings->admin_qa_capture_enabled ?? true);
-        if ($captureEnabled && trim($messageText) !== '') {
+
+        if ($captureEnabled && ! $isHumanTyped && trim($messageText) !== '') {
+            \Illuminate\Support\Facades\Log::info('📚 AdminQA: ข้าม ไม่ใช่แอดมินคนพิมพ์', [
+                'app_id' => $echoAppId,
+                'source' => $echoAppId === self::META_BUSINESS_SUITE_APP_ID
+                    ? 'meta_business_suite (คนพิมพ์ หรือ automation — แยกไม่ได้)'
+                    : 'app อื่นที่ต่อกับเพจ',
+                'recipient_id' => $recipientId,
+                'text_preview' => mb_substr($messageText, 0, 60),
+            ]);
+        }
+
+        if ($captureEnabled && $isHumanTyped && trim($messageText) !== '') {
             try {
                 // 🔍 หา reading ที่ลูกค้ามี active ณ ขณะนี้ (7 วันล่าสุด)
                 //    ใช้ classify category — รู้ว่า admin ตอบลูกค้าที่อยู่ใน state ไหน
@@ -1384,6 +1419,9 @@ class FacebookWebhookController extends Controller
                     null, // admin_user_id ไม่รู้ (FB Page Inbox ไม่บอก)
                     [
                         'app_id' => null,
+                        // 🧹 (2026-07-26) ปั๊มไว้ในแถวเลย — ถ้าอนาคตมีขยะปนอีก
+                        //    จะได้รู้ว่าแถวไหนมาจากตัวกรอง "คนพิมพ์" รุ่นนี้
+                        'is_human_typed' => true,
                         'echo' => true,
                         'page_id' => $pageId,
                         'reading_id' => $activeReading?->id,
