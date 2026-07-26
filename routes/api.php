@@ -1624,7 +1624,11 @@ require __DIR__.'/sms_payment_api.php';
 //    → เว็บจันทราถูกตัดขาดจากคลังความรู้+คีย์พูล แล้วตกไป Gemini ในเครื่องที่ไม่มีคีย์
 //    middleware 'juntra.user' แปลงผู้ใช้จาก guard ไหนก็ตามให้เป็น App\Models\User
 //    ก่อนถึงคอนโทรลเลอร์ (ทุกตัวเรียก $request->user() แล้วใช้ relation ของ User)
-Route::prefix('v1/juntra')->middleware(['auth:sanctum,api-oauth', 'juntra.user'])->name('api.juntra.')->group(function () {
+//    ⚠️ ไม่ใช้ `auth:sanctum,api-oauth` เพราะเวลา request ไม่มี token middleware
+//       `auth` จะไล่ลองทุก guard รวม Passport ซึ่งถ้าสภาพแวดล้อมยังไม่มีคีย์จะโยน
+//       exception → ได้ 500 แทน 401 (เจอบน CI จริง) → 'juntra.user' ยืนยันตัวตนเอง
+//       แล้วคืน 401 JSON ให้ครบทุกกรณี
+Route::prefix('v1/juntra')->middleware(['juntra.user'])->name('api.juntra.')->group(function () {
 
     Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/categories', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'categories'])->name('categories');

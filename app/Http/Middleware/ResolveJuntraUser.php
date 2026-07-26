@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -43,14 +44,36 @@ class ResolveJuntraUser
     private const REQUIRED_CLIENT_PROVIDER = 'oauth_users';
 
     /**
-     * แปลงผู้ใช้จาก guard ใดก็ตามให้เป็น App\Models\User ตัวจริง
+     * guard ที่ยอมรับ เรียงตามลำดับที่ลอง
+     *
+     * sanctum = แอป Flutter / สคริปต์เดิม · api-oauth = ผู้ใช้เว็บจันทราผ่าน SSO
+     *
+     * @var array<int,string>
+     */
+    private const GUARDS = ['sanctum', 'api-oauth'];
+
+    /**
+     * ยืนยันตัวตนเอง แล้วแปลงผู้ใช้ให้เป็น App\Models\User ตัวจริง
+     *
+     * ⚠️ ทำไมไม่ใช้ `auth:sanctum,api-oauth` ของ Laravel:
+     *    เวลา request ไม่มี token เลย middleware `auth` จะไล่ลอง **ทุก** guard
+     *    รวม Passport ซึ่งบนสภาพแวดล้อมที่ยังไม่ได้วางคีย์ (เช่น CI/เครื่อง dev)
+     *    จะโยน exception ออกมา → ลูกค้า/เทสต์ได้ 500 แทน 401
+     *    (เจอจริงบน CI 2026-07-26: เทสต์ "Requires authentication" 3 ตัวล้มทันที
+     *     ที่เปลี่ยน guard เป็นสองตัว) — จัดการเองจึงคุมคำตอบได้ครบทุกกรณี
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $authenticated = $request->user();
+        $authenticated = $this->resolveAuthenticated($request);
 
-        // ไม่ได้ล็อกอิน (route สาธารณะ) หรือเป็น User อยู่แล้ว → ปล่อยผ่าน
-        if ($authenticated === null || $authenticated instanceof User) {
+        if ($authenticated === null) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        // มาจาก Sanctum (แอป/สคริปต์เดิม) → เป็น App\Models\User อยู่แล้ว
+        if ($authenticated instanceof User) {
+            $request->setUserResolver(fn () => $authenticated);
+
             return $next($request);
         }
 
@@ -102,5 +125,30 @@ class ResolveJuntraUser
         $request->setUserResolver(fn () => $realUser);
 
         return $next($request);
+    }
+
+    /**
+     * ไล่ลอง guard ที่ยอมรับ — guard ที่ยังไม่พร้อมให้ข้ามไป ไม่ให้ระเบิดเป็น 500
+     */
+    private function resolveAuthenticated(Request $request): mixed
+    {
+        foreach (self::GUARDS as $guard) {
+            try {
+                $user = Auth::guard($guard)->user();
+            } catch (\Throwable $e) {
+                // guard ตัวนี้ใช้ไม่ได้ในสภาพแวดล้อมนี้ (เช่น Passport ยังไม่มีคีย์)
+                Log::debug("ResolveJuntraUser: guard {$guard} ใช้ไม่ได้ — ข้าม", [
+                    'err' => $e->getMessage(),
+                ]);
+
+                continue;
+            }
+
+            if ($user !== null) {
+                return $user;
+            }
+        }
+
+        return null;
     }
 }
