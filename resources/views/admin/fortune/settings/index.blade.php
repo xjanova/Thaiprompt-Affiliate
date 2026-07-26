@@ -2235,6 +2235,151 @@ Format 2 — JSON array:
                     @endif
                 </div>
 
+                {{-- 🔀 (2026-07-26) โหมดบอท — ดักหน้าแชท FB พาไปดูดวงฟรีที่เว็บ/LINE --}}
+                @php
+                    $tpMode = old('fortune_bot_mode', $settings->fortune_bot_mode ?? 'classic');
+                    $tpIsTransfer = $tpMode === 'transfer';
+                @endphp
+                <div class="md:col-span-2 rounded-xl border-2 {{ $tpIsTransfer ? 'border-purple-400 dark:border-purple-500' : 'border-gray-300 dark:border-gray-600' }} bg-white dark:bg-gray-800 p-4">
+                    <label class="block text-sm font-bold text-gray-900 dark:text-white mb-1">
+                        🔀 โหมดบอท (ช่องทางให้บริการ)
+                    </label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                        เลือกว่าลูกค้าที่ทักเข้ามาทาง Facebook จะได้รับบริการที่ไหน
+                        <br>⚠️ ลูกค้าที่มีบิลค้าง / จ่ายแล้วรอคำทำนาย / กำลังเปิดไพ่ จะไม่ถูกดักทุกกรณี
+                    </p>
+
+                    <select name="fortune_bot_mode"
+                            class="w-full md:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                        <option value="classic" {{ $tpMode === 'classic' ? 'selected' : '' }}>
+                            classic — ให้บริการในแชท FB เหมือนเดิมทุกอย่าง
+                        </option>
+                        <option value="transfer" {{ $tpIsTransfer ? 'selected' : '' }}>
+                            transfer — พาลูกค้าไปดูดวงฟรีที่เว็บจันทรา / LINE
+                        </option>
+                    </select>
+
+                    @if($tpIsTransfer)
+                        <p class="mt-2 text-xs text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded px-2 py-1">
+                            🔀 โหมด transfer ทำงานอยู่ — ลูกค้า FB ที่ขอดูดวงจะได้กล่องพาไปเว็บ/LINE
+                            แทนการทำนายในแชท (คนที่ทำไม่เป็นจริง ๆ ยังได้ดูในแชทตามจำนวนครั้งที่ตั้งไว้)
+                        </p>
+                    @else
+                        <p class="mt-2 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 rounded px-2 py-1">
+                            โหมดปกติ — ยังไม่มีอะไรเปลี่ยน ทุกอย่างทำงานในแชท FB เหมือนเดิม
+                        </p>
+                    @endif
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                ส่งกล่องพาไปซ้ำได้ทุกกี่ชั่วโมง
+                            </label>
+                            <input type="number" name="transfer_box_cooldown_hours" min="0" max="720"
+                                   value="{{ old('transfer_box_cooldown_hours', $settings->transfer_box_cooldown_hours ?? 24) }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">กันลูกค้าประจำที่ทักบ่อยรำคาญ (0 = ส่งได้ทุกครั้ง)</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                พยายามพาไปกี่ครั้ง ก่อนยอมให้ดูในแชท FB
+                            </label>
+                            <input type="number" name="transfer_fallback_attempts" min="0" max="20"
+                                   value="{{ old('transfer_fallback_attempts', $settings->transfer_fallback_attempts ?? 3) }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                ลูกค้าที่ทำเว็บ/ไลน์ไม่เป็น จะถูกถามความสมัครใจแล้วเปิดบิลให้ในแชท (0 = ไม่ยอมเลย)
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                จำ "ขอดูในแชท FB" กี่วัน
+                            </label>
+                            <input type="number" name="transfer_fallback_days" min="1" max="365"
+                                   value="{{ old('transfer_fallback_days', $settings->transfer_fallback_days ?? 30) }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">ยืนยันครั้งเดียวแล้วไม่ต้องถามซ้ำ</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                เปิดให้ลูกค้ากี่ % (ทดลองทีละกลุ่ม)
+                            </label>
+                            <input type="number" name="transfer_rollout_percent" min="0" max="100"
+                                   value="{{ old('transfer_rollout_percent', $settings->transfer_rollout_percent ?? 100) }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                100 = ทุกคน · ใส่ 10 เพื่อลองกับ 10% ก่อนแล้วเทียบยอดขาย (คนเดิมได้ผลเดิมทุกครั้ง)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 🌐 ปลายทาง: ปุ่มดูดวงฟรีบนเว็บ (magic link → จันทรา.online) --}}
+                <div class="md:col-span-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-4">
+                    <label class="block text-sm font-bold text-gray-900 dark:text-white mb-1">
+                        🌐 ปุ่มดูดวงฟรีบนเว็บจันทรา
+                    </label>
+                    {{-- hidden 0 ต้องมาก่อน checkbox — ไม่งั้นเอาติ๊กออกแล้วค่าไม่ถูกบันทึก --}}
+                    <input type="hidden" name="enable_web_fortune_button" value="0">
+                    <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 cursor-pointer hover:border-amber-400 transition">
+                        <input type="checkbox" name="enable_web_fortune_button" value="1"
+                               {{ old('enable_web_fortune_button', $settings->enable_web_fortune_button ?? false) ? 'checked' : '' }}
+                               class="w-5 h-5 text-amber-600 rounded focus:ring-amber-500">
+                        <span class="text-sm text-gray-900 dark:text-white">เปิดปุ่ม/ลิงก์พาไปดูดวงฟรีบนเว็บ</span>
+                    </label>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        ลูกค้ากดปุ่ม → ระบบล็อกอินให้อัตโนมัติด้วยบัญชีเดิม (ไม่ต้องสมัคร ไม่ต้องกรอกอะไร)
+                        → เปิดไพ่ 1 ใบ ทำนายสั้น ๆ ให้ฟรีที่เว็บ แล้วชวนเปิดไพ่ชุดเต็ม
+                        <br>ปิดอยู่ = ปุ่มไม่โผล่ และลิงก์ที่ส่งไปแล้วจะพาไปหน้าเข้าสู่ระบบเฉย ๆ (ไม่ dead-end)
+                    </p>
+
+                    <div class="mt-3">
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            URL ปลายทาง (เว้นว่างไว้ = ใช้ค่าปกติของเว็บจันทรา)
+                        </label>
+                        <input type="url" name="web_fortune_sso_url" placeholder="https://xn--82c4af5bzdj.online/auth/thaiprompt/redirect"
+                               value="{{ old('web_fortune_sso_url', $settings->web_fortune_sso_url ?? '') }}"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                </div>
+
+                {{-- 🎁 คำทำนายฟรีของบอท: ความยาว + รอบแจกใหม่ --}}
+                <div class="md:col-span-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-4">
+                    <label class="block text-sm font-bold text-gray-900 dark:text-white mb-3">
+                        🎁 คำทำนายฟรีของบอท (FB / LINE)
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                ความยาวคำทำนายฟรี (ตัวอักษร)
+                            </label>
+                            <input type="number" name="free_card_max_chars" min="0" max="2000"
+                                   value="{{ old('free_card_max_chars', $settings->free_card_max_chars ?? 0) }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                0 = ยาวแบบเดิม (1,500-2,000 ตัว) · ใส่ 500 = สั้นแบบเดียวกับดูดวงฟรีบนเว็บ
+                                <br>สั้นกว่า = ค่า AI ถูกกว่า และลูกค้าอยากดูต่อมากกว่า
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                แจกสิทธิ์ดูฟรีใหม่ทุกคน ตั้งแต่เวลา
+                            </label>
+                            <input type="datetime-local" name="free_card_regrant_at"
+                                   value="{{ old('free_card_regrant_at', optional($settings->free_card_regrant_at)->format('Y-m-d\TH:i')) }}"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                ตั้งเวลาปัจจุบัน = ลูกค้าที่เคยใช้สิทธิ์ฟรีไปแล้ว <strong>ได้สิทธิ์ใหม่ทุกคนทันที</strong>
+                                <br>เว้นว่าง = ใช้กติกาเดิม (ฟรีครั้งเดียวตลอดชีพต่อช่องทาง)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         ราคาดูดวงพื้นฐาน/ครั้ง (บาท)

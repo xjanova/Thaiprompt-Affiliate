@@ -2765,6 +2765,29 @@ class FacebookWebhookController extends Controller
             'payload' => $payload,
         ]);
 
+        // 🔀 (2026-07-26) โหมด transfer — ปุ่มที่ "เริ่มดูดวง" ทุกตัวต้องวิ่งเข้า
+        //    ทางข้อความจุดเดียว เพื่อให้ตัวดักหน้า (TransferModeTrait) ทำงาน
+        //    รวมปุ่มเก่าที่ค้างอยู่ในประวัติแชทของลูกค้าด้วย
+        if ($this->transferShouldRoute($senderId, $payload)) {
+            $this->processConversationalMessage($senderId, 'ดูดวง');
+
+            return;
+        }
+
+        // ทางถอย: ลูกค้าบอกว่าทำเว็บ/ไลน์ไม่เป็น (กดจากกล่องพาไป)
+        if ($payload === 'TRANSFER_STAY_FB') {
+            $this->processConversationalMessage($senderId, 'ทำไม่เป็น');
+
+            return;
+        }
+
+        // ทางถอย: ลูกค้ายืนยันขอดูในแชทนี้ → จำไว้แล้วเข้าโฟลเดิมทันที
+        if ($payload === 'TRANSFER_STAY_FB_CONFIRM') {
+            $this->transferGrantStayOnFb($senderId);
+
+            return;
+        }
+
         // จัดการ postback ตาม payload
         match ($payload) {
             // ปุ่ม Get Started - ผู้ใช้เข้ามาใช้งานครั้งแรก
@@ -4101,6 +4124,65 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * 🔀 (2026-07-26) ปุ่มนี้ควรถูกพาเข้าตัวดักหน้าของโหมด transfer ไหม
+     *
+     * ปุ่มส่วนใหญ่ถูกแปลงเป็นข้อความอยู่แล้ว (MENU_FORTUNE → 'ดูดวง') จึงผ่าน
+     * ตัวดักโดยอัตโนมัติ — แต่บางตัว match ตรงแล้วไปทำงานเองทันที เช่น
+     * FORTUNE_FREE → picker หมวด, TIER_* → เริ่มบิลเลย จึงต้องพาเข้าทางเดียวกัน
+     *
+     * ⚠️ ลิสต์นี้มีแต่ปุ่มที่ "เริ่มดูดวงรอบใหม่" เท่านั้น
+     *    ปุ่มของโฟลที่กำลังทำอยู่ (ชำระเงิน/ยกเลิก/เปิดไพ่/อ่านคำทำนาย/ปฏิเสธ)
+     *    ห้ามอยู่ในลิสต์นี้เด็ดขาด — ลูกค้าที่จ่ายเงินแล้วต้องได้ของ
+     */
+    protected function transferShouldRoute(string $senderId, string $payload): bool
+    {
+        static $startPayloads = [
+            'FORTUNE_FREE', 'FREE_CARD_START',
+            'TIER_DEEP_39', 'TIER_CELTIC_99', 'TIER_CELTIC_BLACKMAGIC',
+            'FORTUNE_BASIC', 'FORTUNE_DEEP', 'START_FORTUNE', 'DEEP_FORTUNE',
+            'NEW_FORTUNE', 'DEEP_READING_ACCEPT', 'DEEP_WITH_BIRTHDATE',
+            'INVITE_READ_NOW',
+            'FORTUNE_LOVE', 'FORTUNE_WORK', 'FORTUNE_MONEY', 'FORTUNE_HEALTH', 'FORTUNE_OVERVIEW',
+        ];
+
+        if (! in_array($payload, $startPayloads, true)) {
+            return false;
+        }
+
+        try {
+            $mode = new \App\Services\Fortune\FortuneBotMode;
+
+            return $mode->appliesTo('facebook', $senderId)
+                && ! $mode->hasFbFallback('facebook', $senderId);
+        } catch (\Throwable $e) {
+            // fail-safe: โหมดใหม่พังต้องไม่บล็อกปุ่มเดิมของลูกค้า
+            return false;
+        }
+    }
+
+    /**
+     * 🙏 (2026-07-26) ลูกค้ายืนยันขอดูดวงในแชท FB (ทำเว็บ/ไลน์ไม่เป็นจริง ๆ)
+     *
+     * จำไว้ตามจำนวนวันที่ตั้งไว้ แล้วพาเข้าโฟลเดิมทันที — ไม่ถามซ้ำ
+     * (กลุ่มนี้คือคนที่ยอมจ่ายแต่ทำไม่เป็น ถามซ้ำ = ไล่ลูกค้าออกจากร้าน)
+     */
+    protected function transferGrantStayOnFb(string $senderId): void
+    {
+        try {
+            (new \App\Services\Fortune\FortuneBotMode)->grantFbFallback('facebook', $senderId);
+        } catch (\Throwable $e) {
+            Log::warning('Transfer: grantFbFallback ล้มเหลว', ['err' => $e->getMessage()]);
+        }
+
+        $this->facebookService->sendMessage(
+            $senderId,
+            "ได้เลยค่ะ 🙏 แม่หมอดูให้ในแชทนี้เองนะคะ\n\nรอสักครู่ แม่หมอจะเปิดรายการให้เลือกให้ค่ะ"
+        );
+
+        $this->processConversationalMessage($senderId, 'ดูดวง');
+    }
+
+    /**
      * 🔕 (2026-06-06) ปุ่ม "พัก 7 วัน" — พัก DM ตาม comment/reaction 7 วัน
      */
     protected function handleInviteSnooze(string $senderId): void
@@ -4130,6 +4212,32 @@ class FacebookWebhookController extends Controller
      */
     protected function handleQuickReply(string $senderId, string $payload): void
     {
+        // 🔀 (2026-07-26) โหมด transfer — quick reply ที่เริ่มดูดวงต้องเข้าตัวดักหน้า
+        //    (ปุ่มพวกนี้ไม่ผ่าน processPostback เพราะเป็น quick_reply ของข้อความ)
+        if ($this->transferShouldRoute($senderId, $payload)) {
+            $this->processConversationalMessage($senderId, 'ดูดวง');
+
+            return;
+        }
+
+        if ($payload === 'TRANSFER_GO' || $payload === 'TRANSFER_GO_LINE') {
+            $this->processConversationalMessage($senderId, 'ดูดวง');
+
+            return;
+        }
+
+        if ($payload === 'TRANSFER_STAY_FB') {
+            $this->processConversationalMessage($senderId, 'ทำไม่เป็น');
+
+            return;
+        }
+
+        if ($payload === 'TRANSFER_STAY_FB_CONFIRM') {
+            $this->transferGrantStayOnFb($senderId);
+
+            return;
+        }
+
         match ($payload) {
             // Quick Replies ใหม่สำหรับ conversational flow
             'DEEP_READING_ACCEPT' => $this->processConversationalMessage($senderId, 'ดูดวง'),

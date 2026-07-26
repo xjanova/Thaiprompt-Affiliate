@@ -222,6 +222,16 @@ class FortuneSettingsController extends Controller
             // 🎁 (2026-05-03) ระบบทำนายฟรี 1 ใบ ครั้งแรก/ลูกค้า
             'enable_free_card_reading' => 'boolean',
             'free_card_news_context' => 'nullable|string|max:1000',
+            // 🔀 (2026-07-26) โหมด TRANSFER — ดักหน้าแชท FB พาไปดูดวงฟรีที่เว็บ/LINE
+            'fortune_bot_mode' => 'nullable|in:classic,transfer',
+            'transfer_box_cooldown_hours' => 'nullable|integer|min:0|max:720',
+            'transfer_fallback_attempts' => 'nullable|integer|min:0|max:20',
+            'transfer_fallback_days' => 'nullable|integer|min:1|max:365',
+            'transfer_rollout_percent' => 'nullable|integer|min:0|max:100',
+            'free_card_max_chars' => 'nullable|integer|min:0|max:2000',
+            'free_card_regrant_at' => 'nullable|date',
+            'enable_web_fortune_button' => 'boolean',
+            'web_fortune_sso_url' => 'nullable|url|max:500',
             'is_enabled' => 'boolean',
             'respond_in_comment' => 'boolean',
             'require_registration' => 'boolean',

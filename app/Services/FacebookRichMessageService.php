@@ -930,6 +930,144 @@ class FacebookRichMessageService
     // Helpers
     // ============================================================
 
+    // ============================================================
+    // 🔀 (2026-07-26) โหมด TRANSFER — กล่องพาลูกค้าไปดูดวงฟรีที่เว็บ/LINE
+    // ============================================================
+
+    /**
+     * กล่อง "ดูดวงฟรี" ที่พาออกจากแชท FB
+     *
+     * คืน null เมื่อ **ไม่มีปลายทางให้ไปเลย** (ปุ่มเว็บปิด + ไม่ได้ตั้ง LINE OA)
+     * → ผู้เรียกต้องตกไปโฟลเดิม ห้ามส่งกล่องที่กดแล้วไม่มีอะไรเกิดขึ้น
+     *
+     * @param  string|null  $psid  PSID ของลูกค้า (ใช้สร้าง magic link ต่อคน)
+     * @param  bool  $freeAvailable  ลูกค้าคนนี้ยังมีสิทธิ์ดูฟรีในรอบนี้ไหม
+     * @return array|null Facebook Messenger payload
+     */
+    public function buildTransferBox(?string $psid, bool $freeAvailable = true): ?array
+    {
+        $webUrl = $this->getWebFortuneUrl($psid);
+        $lineUrl = $this->getLineAddFriendUrl();
+
+        if (! $webUrl && ! $lineUrl) {
+            return null;
+        }
+
+        $buttons = [];
+
+        if ($webUrl) {
+            $buttons[] = [
+                'type' => 'web_url',
+                'title' => $freeAvailable ? '🎁 ดูดวงฟรีเลย' : '🔮 ไปดูที่เว็บ',
+                'url' => $webUrl,
+            ];
+        }
+
+        if ($lineUrl && count($buttons) < 3) {
+            $buttons[] = [
+                'type' => 'web_url',
+                'title' => '💚 ดูทาง LINE',
+                'url' => $lineUrl,
+            ];
+        }
+
+        // ทางถอย: ลูกค้าที่ทำไม่เป็นจริง ๆ กดบอกได้ตรงนี้ ไม่ต้องพิมพ์อธิบาย
+        if (count($buttons) < 3) {
+            $buttons[] = [
+                'type' => 'postback',
+                'title' => '🙏 ทำไม่เป็น ขอดูที่นี่',
+                'payload' => 'TRANSFER_STAY_FB',
+            ];
+        }
+
+        $text = $freeAvailable
+            ? "🌙 แม่หมอเปิดไพ่ให้ฟรี 1 ใบค่ะ\n\n"
+                ."กดปุ่มด้านล่าง แม่หมอจะเปิดไพ่ให้ทันที\n"
+                ."✅ ไม่ต้องสมัคร ไม่ต้องกรอกอะไร เข้าให้เองเลย\n"
+                ."✅ คำทำนายเก็บไว้ ย้อนดูได้ทุกเมื่อ\n\n"
+                .'เลือกทางที่ถนัดได้เลยค่ะ 👇'
+            : "🌙 ตอนนี้แม่หมอย้ายไปดูให้ที่เว็บกับ LINE แล้วนะคะ\n\n"
+                ."ที่นั่นแม่หมอเปิดไพ่ได้เต็มที่ เก็บคำทำนายให้ย้อนดูได้\n"
+                ."และมีผังสายงานสำหรับคนที่อยากแนะนำเพื่อนด้วยค่ะ\n\n"
+                .'กดปุ่มด้านล่างได้เลย 👇';
+
+        return [
+            'attachment' => [
+                'type' => 'template',
+                'payload' => [
+                    'template_type' => 'button',
+                    'text' => mb_substr($text, 0, 630),
+                    'buttons' => $buttons,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * กล่องถามความสมัครใจ ก่อนยอมเปิดบิลให้ในแชท FB (ทางถอย)
+     *
+     * บอก "ความจริง" ว่าเสียอะไร — ห้ามขู่ลอย ๆ เพราะจะย้อนกลับมาเป็นเรื่องร้องเรียน
+     * ถามครั้งเดียว ยืนยันแล้วจำไว้ ไม่ตื๊อซ้ำ
+     */
+    public function buildStayOnFbConfirmBox(?string $psid): array
+    {
+        $buttons = [
+            [
+                'type' => 'postback',
+                'title' => '✅ ดูในแชทนี้',
+                'payload' => 'TRANSFER_STAY_FB_CONFIRM',
+            ],
+        ];
+
+        $webUrl = $this->getWebFortuneUrl($psid);
+        if ($webUrl) {
+            $buttons[] = [
+                'type' => 'web_url',
+                'title' => '🌐 ลองอีกครั้ง',
+                'url' => $webUrl,
+            ];
+        }
+
+        $text = "ได้ค่ะ แม่หมอดูให้ในแชทนี้ก็ได้ 🙏\n\n"
+            ."บอกไว้ก่อนนะคะว่าถ้าดูที่นี่ เจ้าชะตาจะไม่ได้:\n"
+            ."• ประวัติคำทำนายย้อนดูภายหลัง\n"
+            ."• กระเป๋าเงินสำหรับดูครั้งต่อไป\n"
+            ."• ผังสายงาน/ค่าแนะนำเพื่อน\n"
+            ."และถ้าเพจถูกจำกัด ข้อความอาจส่งไม่ถึงกันค่ะ\n\n"
+            .'ยืนยันดูในแชทนี้ไหมคะ?';
+
+        return [
+            'attachment' => [
+                'type' => 'template',
+                'payload' => [
+                    'template_type' => 'button',
+                    'text' => mb_substr($text, 0, 630),
+                    'buttons' => $buttons,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * quick reply ท้ายข้อความ AI ในโหมด transfer — ชวนเบา ๆ ไม่ยัดกล่องซ้ำ
+     *
+     * @return array|null null = ไม่มีปลายทาง (ไม่ต้องแนบปุ่ม)
+     */
+    public function buildTransferQuickReplies(?string $psid): ?array
+    {
+        $items = [];
+
+        if ($this->getWebFortuneUrl($psid)) {
+            $items[] = ['content_type' => 'text', 'title' => '🎁 ดูดวงฟรี', 'payload' => 'TRANSFER_GO'];
+        }
+
+        if ($this->getLineAddFriendUrl()) {
+            $items[] = ['content_type' => 'text', 'title' => '💚 ดูทาง LINE', 'payload' => 'TRANSFER_GO_LINE'];
+        }
+
+        return empty($items) ? null : $items;
+    }
+
     /**
      * ดึง LINE Add Friend URL จากการตั้งค่า
      *

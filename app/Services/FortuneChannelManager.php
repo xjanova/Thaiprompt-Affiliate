@@ -610,6 +610,12 @@ class FortuneChannelManager
                 // Help → Welcome Template
                 'help', 'filtered' => $this->sendFacebookHelpResponse($fbService, $richService, $userId, $result),
 
+                // 🔀 (2026-07-26) โหมด transfer — กล่องพาไปเว็บ/LINE + กล่องถามความสมัครใจ
+                //   template ถูกประกอบมาแล้วใน TransferModeTrait (คีย์ fb_template)
+                'transfer_box', 'transfer_stay_confirm' => ! empty($result['fb_template'])
+                    ? $fbService->sendButtonTemplate($userId, $result['fb_template'])
+                    : $fbService->sendMessage($userId, $message ?: '🌙 แม่หมอย้ายไปดูให้ที่เว็บกับ LINE แล้วนะคะ'),
+
                 // รอชำระเงิน (เตือนซ้ำ) → Waiting Payment Template
                 'waiting_payment' => $this->sendFacebookWaitingPaymentResponse($fbService, $richService, $userId, $result),
 

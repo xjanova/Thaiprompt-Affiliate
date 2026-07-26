@@ -410,6 +410,14 @@ class FortuneTellingSetting extends Model
         // 🌐 (2026-07-24) ปุ่มดูดวงฟรีบนเว็บ (Magic Link → จันทรา.online)
         'enable_web_fortune_button',
         'web_fortune_sso_url',
+        // 🔀 (2026-07-26) โหมด TRANSFER — ดักหน้าแชท FB พาไปดูดวงฟรีที่เว็บ/LINE
+        'fortune_bot_mode',
+        'transfer_box_cooldown_hours',
+        'transfer_fallback_attempts',
+        'transfer_fallback_days',
+        'transfer_rollout_percent',
+        'free_card_max_chars',
+        'free_card_regrant_at',
         // 🏦 (2026-07-14) KBank Slip Verification — provider ตรวจสลิปตัวที่ 2 (คู่ขนาน SlipOK)
         'enable_kbank_verify',
         'kbank_env',
@@ -630,6 +638,13 @@ class FortuneTellingSetting extends Model
         'slipok_auto_provision' => 'boolean',
         // 🌐 (2026-07-24) ปุ่มดูดวงฟรีบนเว็บ (Magic Link → จันทรา.online)
         'enable_web_fortune_button' => 'boolean',
+        // 🔀 (2026-07-26) โหมด TRANSFER
+        'transfer_box_cooldown_hours' => 'integer',
+        'transfer_fallback_attempts' => 'integer',
+        'transfer_fallback_days' => 'integer',
+        'transfer_rollout_percent' => 'integer',
+        'free_card_max_chars' => 'integer',
+        'free_card_regrant_at' => 'datetime',
         // 🏦 (2026-07-14) KBank Slip Verification — secret เก็บแบบเข้ารหัส
         'enable_kbank_verify' => 'boolean',
         'kbank_consumer_secret' => 'encrypted',
@@ -869,6 +884,13 @@ class FortuneTellingSetting extends Model
         'slipok_auto_provision' => true,
         // 🌐 (2026-07-24) ปุ่มดูดวงฟรีบนเว็บ — default ปิด (โค้ดพร้อม รอเปิดสวิตช์)
         'enable_web_fortune_button' => false,
+        // 🔀 (2026-07-26) โหมด TRANSFER — default 'classic' = พฤติกรรมเดิม 100%
+        'fortune_bot_mode' => 'classic',
+        'transfer_box_cooldown_hours' => 24,
+        'transfer_fallback_attempts' => 3,
+        'transfer_fallback_days' => 30,
+        'transfer_rollout_percent' => 100,
+        'free_card_max_chars' => 0,   // 0 = คำทำนายฟรียาวแบบเดิม
         // 🏦 (2026-07-14) KBank Slip Verification — default ปิด (แอดมินกรอก cred + cert + เปิดสวิตช์ก่อน)
         'enable_kbank_verify' => false,
         'kbank_env' => 'sandbox',

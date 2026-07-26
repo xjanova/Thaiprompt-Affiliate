@@ -221,7 +221,12 @@ trait FreeCardConversationTrait
         }
 
         // 🔒 First-timer check — ถ้าใช้สิทธิ์แล้ว → ไป tier menu ตรง (ไม่กล่าวถึงฟรีอีก)
-        if (FortuneReading::hasUsedFreeCard($platform, $platformUserId)) {
+        // 🔀 (2026-07-26) ผ่าน FortuneBotMode เพื่อให้ "รอบแจกสิทธิ์ใหม่"
+        //    (free_card_regrant_at) มีผลด้วย — เจ้าของสั่งว่าเวลาย้ายช่องทาง
+        //    ต้องแจกสิทธิ์ดูฟรีใหม่ให้ "ทุกคน" รวมคนที่เคยใช้ไปแล้ว
+        //    ไม่ตั้งค่านั้น = เหมือนเดิม 100% (ฟรีครั้งเดียวต่อช่องทาง)
+        if (! app(\App\Services\Fortune\FortuneBotMode::class, ['settings' => $this->settings])
+            ->freeCardAvailable($platform, $platformUserId)) {
             Log::info('FreeCard: ลูกค้าใช้สิทธิ์ฟรีไปแล้ว — fallback tier menu', [
                 'platform' => $platform,
                 'platform_user_id' => $platformUserId,
@@ -339,6 +344,11 @@ trait FreeCardConversationTrait
             $celticPrice = (int) app(CelticCrossService::class)->getPrice();
             $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
 
+            // 🔀 (2026-07-26) ความยาวคำทำนายฟรี — 0 = ยาวแบบเดิม (พฤติกรรมเดิม 100%)
+            //    ตั้ง 500 ในหน้าแอดมิน = โหมดสั้นแบบเดียวกับดูดวงฟรีบนเว็บ
+            $freeCardMaxChars = app(\App\Services\Fortune\FortuneBotMode::class, ['settings' => $this->settings])
+                ->freeCardMaxChars();
+
             // 🆕 (2026-05-07) Free Card → request 'free_card' purpose ตอน acquire key
             //   admin ตั้ง key purpose='free_card' = สงวนเฉพาะทำนายฟรี (ไม่ปนกับ paid prediction)
             $aiService = new FortuneAIService($this->settings, 'free_card');
@@ -351,13 +361,18 @@ trait FreeCardConversationTrait
                 userContext: "free_card:{$reading->id}",
                 // 💬 (2026-05-04) pass customer message → AI ใช้เป็น context ในการทำนาย
                 customerMessage: $customerMessage,
+                // 🔀 (2026-07-26) โหมดสั้น — แอดมินตั้ง free_card_max_chars (0 = ยาวแบบเดิม)
+                maxChars: $freeCardMaxChars > 0 ? $freeCardMaxChars : null,
             );
 
             $response = trim($result['response'] ?? '');
             // 🩹 (2026-05-05) ขั้นต่ำ 600 ตัวอักษร — prompt ใหม่ขอ 1500-2000 chars
             //   user spec: "ทำนายฟรีสั้นไป" → reject ถ้า AI ตอบสั้นเกิน
-            if ($response === '' || mb_strlen($response) < 600) {
-                throw new Exception('AI ตอบกลับสั้นเกินไป ('.mb_strlen($response).' ตัวอักษร — ต้อง ≥ 600)');
+            // 🔀 (2026-07-26) โหมดสั้นต้องลดเพดานนี้ตามด้วย ไม่งั้นคำทำนายที่สั้น
+            //    ตามสเปกจะถูกโยนทิ้งเป็น error ทุกครั้ง (เป้า 500 → ขั้นต่ำ 250)
+            $minChars = $freeCardMaxChars > 0 ? max(150, (int) round($freeCardMaxChars * 0.5)) : 600;
+            if ($response === '' || mb_strlen($response) < $minChars) {
+                throw new Exception('AI ตอบกลับสั้นเกินไป ('.mb_strlen($response).' ตัวอักษร — ต้อง ≥ '.$minChars.')');
             }
         } catch (\Throwable $e) {
             Log::error('FreeCard: AI ทำนายล้มเหลว', [

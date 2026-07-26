@@ -39,6 +39,7 @@ class FortuneConversationService
     use \App\Services\Fortune\FreeCardConversationTrait;
     use \App\Services\Fortune\PayFirstGateTrait;
     use \App\Services\Fortune\ProSessionTrait;
+    use \App\Services\Fortune\TransferModeTrait;
 
     /**
      * 🔔 Per-request warning prefix — set by payFirstGate, applied by FortuneChannelManager
@@ -2374,6 +2375,14 @@ class FortuneConversationService
                             return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
                         }
 
+                        // 🔀 (2026-07-26) โหมด transfer — ประตูที่ 2: ลูกค้าเก่าที่ดูจบแล้ว
+                        //    กลับมาทักใหม่ (สถานะ basic_done/completed)
+                        //    ถ้าไม่ดักตรงนี้ ลูกค้าเก่าหลายร้อยคนจะไม่มีวันเห็นกล่องใหม่
+                        //    เพราะแถว reading เก่ายังอยู่ = ระบบดูเหมือนไม่ทำงาน
+                        if ($transfer = $this->maybeTransferIntercept($facebookUserId, $messageText)) {
+                            return $transfer;
+                        }
+
                         // ✅ ตรวจสอบ keywords จากฐานข้อมูล (auto-reply อัจฉริยะ)
                         $matchedKeyword = $this->checkDatabaseKeywords($messageText);
                         if ($matchedKeyword) {
@@ -2460,6 +2469,22 @@ class FortuneConversationService
                 //
                 // เก็บ findRecentCompletedDeepReading + handlePostReadingDiscussion ไว้เป็น
                 //   internal helpers สำหรับ unit tests / admin tools — แต่ไม่เรียกใน main flow แล้ว
+
+                // 🔀 (2026-07-26) โหมด transfer — ประตูที่ 1: ลูกค้าที่ไม่มีบิล/ไม่มีโฟลค้าง
+                //    ต้องอยู่ **ก่อน** บันไดคัดคำทั้งหมด (ฟรี/39/99/ราคา/generic) ไม่งั้น
+                //    ข้อความอย่าง "39" จะถูก gate อื่นชิงไปก่อนแล้วสร้างบิลบน FB
+                //    คืน null = ปล่อยเข้าโฟลเดิมทุกกรณี (โหมด classic / ไม่ใช่ FB /
+                //    ลูกค้ายืนยันขอดูในแชท / ไม่มีปลายทางให้ไป / เกิด error)
+                if ($transfer = $this->maybeTransferIntercept($facebookUserId, $messageText)) {
+                    return $transfer;
+                }
+
+                // 💚 (2026-07-26) LINE ไม่ถูกดัก — แต่แจกคำทำนายฟรีอัตโนมัติทั้งเก่าใหม่
+                //    (เจ้าของสั่ง: LINE คือช่องทางที่อยากให้ลูกค้าใช้ ต้องได้ฟรีเลย
+                //     ไม่ต้องให้พิมพ์ "ดูดวง" ก่อน) — ทำงานเฉพาะโหมด transfer
+                if ($autoFreeLine = $this->maybeAutoFreeCardOnLine($facebookUserId, $userProfile, $messageText)) {
+                    return $autoFreeLine;
+                }
 
                 // 🎁 (2026-05-03) ตรวจสอบว่าลูกค้าขอ "ทำนายฟรี" — explicit keyword หรือกดปุ่ม FREE_CARD_START
                 //    มาก่อน isExplicitDeepReadingRequest เพื่อจับ keyword ฟรีให้ถูก
