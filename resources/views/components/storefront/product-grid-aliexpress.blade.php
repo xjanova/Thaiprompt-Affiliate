@@ -32,6 +32,11 @@
     // รายการโปรดของผู้ใช้ปัจจุบัน — ดึงครั้งเดียวต่อการ render (query เดียว)
     // ใช้ตั้งสถานะหัวใจให้ตรงกับฐานข้อมูล ไม่ให้ "ลืม" หลังรีเฟรชหน้า
     $favoritedProductIds = [];
+
+    // map: products.id => short_code ของลิงก์ติดตามรายบุคคล (/go/{code})
+    // ว่างไว้ = ไม่มี attribution → การ์ดจะใช้ affiliate_url ดิบตามเดิม
+    $affiliateGoCodes = [];
+
     if (auth()->check()) {
         // ⚠️ $products มักเป็น LengthAwarePaginator (getProducts ใช้ ->paginate())
         //    collect($paginator) จะได้ "เมทาดาทาของ paginator" (current_page/data/...) ไม่ใช่ตัวสินค้า
@@ -46,6 +51,20 @@
                 ->whereIn('product_id', $productIds)
                 ->pluck('product_id')
                 ->all();
+        }
+
+        // ── ลิงก์ติดตามรายบุคคล (batched) ──
+        // Lazada ไม่ยอมรับ subId → ต้องรู้ "ใครกด" จาก click log ของเราเอง
+        // 🚀 เรียก "ครั้งเดียว" ทั้งกริด: สภาวะปกติ = 1 query ไม่ว่าจะ 30 หรือ 300 ชิ้น
+        //    (ห้ามย้ายไปเรียกในลูป @forelse เด็ดขาด — จะกลายเป็น N+1 ทันที)
+        // เช็ค instanceof เพราะ guard อื่น (Passport/OAuthUser) คืนโมเดลคนละตัว
+        // → ถ้าส่งเข้าไปตรง ๆ จะ TypeError แล้วหน้าร้านพังทั้งหน้า
+        $authUser = auth()->user();
+        if ($authUser instanceof \App\Models\User) {
+            $affiliateGoCodes = \App\Models\MarketplaceAffiliateLink::shortCodesForProducts(
+                $authUser,
+                $productItems
+            );
         }
     }
 @endphp
@@ -75,7 +94,14 @@
         $affiliateUrl = (string) ($product->affiliate_url ?? '');
         $platform = (string) ($product->external_platform ?? '');
         $platformLabel = $platform === 'aliexpress' ? 'AliExpress' : 'Lazada';
-        $targetUrl = $isAffiliate ? $affiliateUrl : route('shop.show', $product->slug ?: $product->id);
+
+        // ลิงก์ขาออกจริง — ถ้ามี short_code ให้วิ่งผ่าน /go/{code} เพื่อบันทึกว่าใครเป็นคนกด
+        // ผู้ที่ไม่ได้ล็อกอิน (หรือสินค้าที่ผูก attribution ไม่ได้) ใช้ลิงก์ดิบตามเดิม
+        // — เราไม่รู้ว่าเป็นใครอยู่ดี จึงไม่มีอะไรให้บันทึก
+        $goCode = $affiliateGoCodes[$product->id] ?? null;
+        $outboundUrl = $goCode ? route('affiliate.go', $goCode) : $affiliateUrl;
+
+        $targetUrl = $isAffiliate ? $outboundUrl : route('shop.show', $product->slug ?: $product->id);
         // สินค้านี้อยู่ในรายการโปรดของผู้ใช้แล้วหรือยัง
         $isFavorited = in_array($product->id, $favoritedProductIds);
     @endphp
@@ -274,8 +300,9 @@
                    transform translate-y-0 md:translate-y-2 md:group-hover:translate-y-0
                    transition-all duration-300">
             @if($isAffiliate)
-            {{-- สินค้า affiliate → วิ่งไปซื้อที่แพลตฟอร์มต้นทาง (ได้ค่าคอม/PV) --}}
-            <a href="{{ $affiliateUrl }}" target="_blank" rel="noopener nofollow sponsored"
+            {{-- สินค้า affiliate → วิ่งไปซื้อที่แพลตฟอร์มต้นทาง (ได้ค่าคอม/PV)
+                 ใช้ $outboundUrl ตัวเดียวกับการ์ด เพื่อให้กดตรงไหนก็นับคลิกเหมือนกัน --}}
+            <a href="{{ $outboundUrl }}" target="_blank" rel="noopener nofollow sponsored"
                class="block w-full py-2 text-center text-white text-sm font-semibold rounded-lg shadow hover:shadow-lg transition-all"
                style="background: {{ $platform === 'aliexpress' ? '#e62e04' : '#0f146d' }};">
                 <span class="flex items-center justify-center gap-1">

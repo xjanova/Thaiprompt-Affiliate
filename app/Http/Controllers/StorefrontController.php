@@ -567,8 +567,24 @@ class StorefrontController extends Controller
     {
         $products = $this->getFilteredProducts($request);
 
+        // 🔗 ลิงก์ติดตามรายบุคคลสำหรับสินค้าที่โหลดเพิ่ม (infinite scroll)
+        //    ⚠️ ถ้าไม่ทำตรงนี้ จะติดตามได้แค่ 30 ชิ้นแรกที่เรนเดอร์จากเบลด
+        //       ทุกชิ้นที่ลูกค้าเลื่อนลงไปเจอจะใช้ลิงก์ Lazada ดิบ = ไม่รู้ว่าใครกด
+        //       → พอเงินเข้าจริงก็จับคู่ไม่ได้ว่าใครควรได้ค่าคอม (เสียสิทธิ์ลูกค้า)
+        //    ทำเป็น batch ครั้งเดียวเหมือนฝั่งเบลด ไม่วนใน map()
+        $goCodes = [];
+        $authUser = $request->user();
+        if ($authUser instanceof \App\Models\User) {
+            $goCodes = \App\Models\MarketplaceAffiliateLink::shortCodesForProducts(
+                $authUser,
+                $products instanceof \Illuminate\Contracts\Pagination\Paginator || method_exists($products, 'getCollection')
+                    ? $products->getCollection()
+                    : collect($products)
+            );
+        }
+
         // เตรียมข้อมูลสินค้าสำหรับ JSON response
-        $productData = $products->map(function ($product) {
+        $productData = $products->map(function ($product) use ($goCodes) {
             $discount = 0;
             if ($product->compare_at_price && $product->compare_at_price > $product->price) {
                 $discount = round((($product->compare_at_price - $product->price) / $product->compare_at_price) * 100);
@@ -611,8 +627,12 @@ class StorefrontController extends Controller
                 'is_affiliate' => $isAffiliate,
                 'affiliate_url' => $affiliateUrl,
                 'external_platform' => $product->external_platform,
+                // มี short_code = วิ่งผ่าน /go/{code} เพื่อบันทึกว่าใครกด แล้วค่อยเด้งไป Lazada
+                // ไม่มี (เช่น ไม่ได้ล็อกอิน) = ใช้ลิงก์ดิบตามเดิม — ยังได้ค่าคอมเข้าร้าน แค่ระบุตัวคนไม่ได้
                 'url' => ($isAffiliate && $affiliateUrl)
-                    ? $affiliateUrl
+                    ? (isset($goCodes[$product->id])
+                        ? route('affiliate.go', $goCodes[$product->id])
+                        : $affiliateUrl)
                     : route('shop.show', $product->slug ?: $product->id),
             ];
         });

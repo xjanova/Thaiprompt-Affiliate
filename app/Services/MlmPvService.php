@@ -35,6 +35,32 @@ class MlmPvService
             $product = $orderItem->product;
             $quantity = $orderItem->quantity;
 
+            // 🚨 สินค้า affiliate (ของร้านอื่น เช่น Lazada) — PV ต้องเป็น 0 เสมอในขั้นนี้
+            //
+            // เหตุผล (สำคัญมาก ห้ามเอาออกโดยไม่อ่านให้จบ):
+            //   เราไม่ได้ขายของชิ้นนี้เอง เราแค่ส่งลูกค้าไปซื้อที่ Lazada
+            //   รายได้จริงของเรา = "ค่าคอม" ไม่กี่เปอร์เซ็นต์ และจะได้ก็ต่อเมื่อ
+            //   ลูกค้าจ่ายเงินสำเร็จ + Lazada ยืนยันจ่ายค่าคอมให้เราแล้วเท่านั้น
+            //
+            //   ถ้าปล่อยให้ตกไป fallback ข้างล่าง (subtotal × global_pv_rate)
+            //   ระบบจะคิด PV เท่ากับ "ราคาเต็มของสินค้า" เช่น จี้ 1,859 บาท → 1,859 PV
+            //   ทั้งที่เราได้ค่าคอมจริงแค่ ~221 บาท = จ่ายคอม MLM เกินจริงราว 8 เท่า
+            //
+            //   PV ของสินค้า affiliate จะถูกให้เครดิตผ่านเส้นทางแยก (MarketplaceOrder)
+            //   หลังยืนยันยอดกับรายงาน conversion ของ Lazada แล้วเท่านั้น
+            if ($product && $product->is_affiliate) {
+                $items[] = [
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'quantity' => $quantity,
+                    'subtotal' => $orderItem->subtotal,
+                    'pv' => 0,
+                    'pv_skipped_reason' => 'affiliate_product_awaiting_settlement',
+                ];
+
+                continue;
+            }
+
             // Get PV configuration for this product (resolver ทนทานต่อ plan-key ไม่ตรง)
             $productPv = MlmProductPv::resolveForProduct($product->id, $plan->id);
 
@@ -141,6 +167,24 @@ class MlmPvService
         // ใช้ Global Settings แทน per-plan settings
         $globalPvRate = MlmGlobalSetting::get('global_pv_rate', 1);
         $commissionPerPv = MlmGlobalSetting::get('commission_per_pv', 1);
+
+        // 🔗 สินค้า affiliate — PV มาจาก "ค่าคอมที่เราจะได้จริง" ไม่ใช่ราคาสินค้า
+        //    (products.pv_value ถูกคำนวณตอนนำเข้า = ค่าคอม × ปันผล% ÷ commission_per_pv)
+        //    ห้ามใช้ fallback ราคาเต็ม × global_pv_rate เพราะเราไม่ได้รับเงินเต็มราคา
+        //    และเป็นยอด "รอยืนยัน" เสมอ จนกว่า Lazada จะยืนยันว่าจ่ายค่าคอมให้เราแล้ว
+        if ($product->is_affiliate) {
+            $pv = (float) ($product->pv_value ?? 0);
+
+            return [
+                'pv_value' => $pv,
+                'use_global_rate' => false,
+                'commission_preview' => $pv * $commissionPerPv,
+                'show_pv' => true,
+                'show_commission' => true,
+                'is_affiliate' => true,
+                'pending_settlement' => true, // ได้รับจริงหลัง Lazada ยืนยันยอดเท่านั้น
+            ];
+        }
 
         $config = MlmProductPv::where('product_id', $product->id)
             ->where('mlm_plan_id', $plan->id)

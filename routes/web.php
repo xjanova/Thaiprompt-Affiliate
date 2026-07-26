@@ -38,7 +38,7 @@ Route::get('/manifest.json', function () {
     $logo = $site->logo_url;
 
     return response()->json([
-        'name' => $appName . ' - ระบบ Affiliate Marketing',
+        'name' => $appName.' - ระบบ Affiliate Marketing',
         'short_name' => $appName,
         'description' => $site->app_description ?: ($site->site_description ?: 'ระบบ Affiliate Marketing ครบวงจร'),
         'start_url' => '/user/dashboard?standalone=true',
@@ -526,6 +526,14 @@ Route::prefix('storefront')->name('storefront.')->group(function () {
     Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\StorefrontController::class, 'quickSearch'])->name('search');
     Route::match(['GET', 'HEAD'], '/products', [\App\Http\Controllers\StorefrontController::class, 'loadMoreProducts'])->name('products');
 });
+
+// ตัวกลางนับคลิกลิงก์ affiliate → ส่งต่อไป Lazada (302)
+// ⚠️ นี่คือหลักฐานชิ้นเดียวที่บอกได้ว่า "ลูกค้าคนไหนของเราเป็นคนพาไปซื้อ"
+//    เพราะ Lazada ไม่ยอมรับ subId ในลิงก์ (ทดสอบแล้ว — ได้ token เดียวกันหมด)
+// throttle กันยิงถล่มปั่นยอดคลิก
+Route::get('/go/{shortCode}', [\App\Http\Controllers\AffiliateRedirectController::class, 'go'])
+    ->name('affiliate.go')
+    ->middleware('throttle:120,1');
 
 // หน้าร้าน affiliate เฉพาะแพลตฟอร์ม (Lazada / AliExpress)
 // ใช้ StorefrontController::showStore + view storefront.store (การ์ด affiliate + แบรนด์ร้าน/สีของร้าน)
@@ -1396,7 +1404,7 @@ Route::get('/fortune/track/fb-group/{psid}', [\App\Http\Controllers\Frontend\For
 // `throttle:60,1` caps a compromised or scripted admin account at 60
 // admin-panel requests/min — legitimate UI work never touches this
 // (saving one form = 1 req; even rapid typing is well under the cap).
-Route::middleware(['auth','role:admin,super_admin','throttle:60,1'])
+Route::middleware(['auth', 'role:admin,super_admin', 'throttle:60,1'])
     ->prefix('admin/thaiapp')->name('admin.thaiapp.')
     ->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'hub'])->name('hub');

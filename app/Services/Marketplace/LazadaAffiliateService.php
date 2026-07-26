@@ -361,6 +361,71 @@ class LazadaAffiliateService
     }
 
     /**
+     * ดึงรายงาน Conversion (ออเดอร์ที่เกิดจากลิงก์ affiliate ของเรา) — endpoint จริง `/marketing/conversion/report`
+     *
+     * ✅ ยืนยันแล้วจากการยิงจริง: endpoint มีอยู่จริง ตอบ code=0
+     *    envelope = { result: { data: [...], success: true }, code, request_id }
+     *    พารามิเตอร์บังคับ: userToken, dateStart (Y-m-d), dateEnd (Y-m-d) | ตัวเลือก: page, limit
+     *
+     * 🚨 ข้อจำกัดสำคัญ — ช่วงวันที่ต้องอยู่ "ภายในเดือนปฏิทินเดียวกัน" เท่านั้น
+     *    (เอกสาร Lazada ระบุ "only support fetch single month data")
+     *    → ผู้เรียกต้องหั่นช่วงเวลาเป็นรายเดือนเอง ห้ามส่งช่วงคร่อมเดือน
+     *    (ตัวหั่นเดือนอยู่ที่ LazadaConversionSyncService::syncMonth)
+     *
+     * ⚠️ ชื่อฟิลด์ของ "แต่ละแถว" ยังไม่ยืนยัน — ทุกเดือนที่เคยยิงจริงคืน rows = 0
+     *    (ยังไม่มีลูกค้าซื้อผ่านลิงก์เรา) → เมธอดนี้จึงคืน "แถวดิบ" ตามที่ Lazada ส่งมา ไม่ normalize ให้
+     *    ห้ามผู้เรียกเชื่อชื่อฟิลด์ใด ๆ ว่ายืนยันแล้ว ต้อง map แบบเผื่อหลายชื่อ + เก็บแถวดิบไว้ตรวจย้อนหลังเสมอ
+     *
+     * @param  string  $dateStart  วันเริ่ม รูปแบบ Y-m-d
+     * @param  string  $dateEnd  วันสิ้นสุด รูปแบบ Y-m-d (ต้องอยู่เดือนเดียวกับ $dateStart)
+     * @param  int  $page  หน้า (เริ่มที่ 1)
+     * @param  int  $limit  จำนวนต่อหน้า
+     * @return array{ok:bool, rows:array<int,array<string,mixed>>, error:?string, raw:mixed}
+     */
+    public function getConversionReport(string $dateStart, string $dateEnd, int $page = 1, int $limit = 50): array
+    {
+        $userToken = $this->resolveUserToken();
+        if ($userToken === '') {
+            return ['ok' => false, 'rows' => [], 'error' => 'ยังไม่มี User Token — กด "Acquire User Token" ในพอร์ทัล Lazada Affiliate → Open API แล้วกรอกในหน้าแก้ไขบัญชี', 'raw' => null];
+        }
+
+        // includeAccessToken:false — API ชุด /marketing/* auth ด้วย userToken (แนบ seller access_token เก่า = IllegalAccessToken)
+        $data = $this->signedGet('/marketing/conversion/report', [
+            'userToken' => $userToken,
+            'dateStart' => $dateStart,
+            'dateEnd' => $dateEnd,
+            'page' => (string) max(1, $page),
+            'limit' => (string) max(1, min(500, $limit)),
+        ], includeAccessToken: false);
+
+        if ($data === null) {
+            return ['ok' => false, 'rows' => [], 'error' => 'ยิง API ไม่ถึง/timeout', 'raw' => null];
+        }
+
+        $code = (string) ($data['code'] ?? '');
+        if ($code !== '' && $code !== '0') {
+            return [
+                'ok' => false,
+                'rows' => [],
+                'error' => trim($code.' '.(string) ($data['message'] ?? $data['type'] ?? '')),
+                'raw' => $data,
+            ];
+        }
+
+        // ✅ ยืนยันจาก response จริง: result.data — path อื่นใส่เผื่อ Lazada ปรับ schema (mirror extractFeedRows)
+        $rows = [];
+        foreach (['result.data', 'result.list', 'result.records', 'result.conversions', 'result.orders', 'data.data', 'data.list', 'data.records', 'data'] as $path) {
+            $v = data_get($data, $path);
+            if (is_array($v) && array_is_list($v) && ! empty($v) && is_array($v[0])) {
+                $rows = $v;
+                break;
+            }
+        }
+
+        return ['ok' => true, 'rows' => $rows, 'error' => null, 'raw' => $data];
+    }
+
+    /**
      * หา "แถวสินค้า" ในผลลัพธ์ feed — เผื่อหลายรูปแบบ path (ยืนยัน exact จาก dump raw ครั้งแรก)
      *
      * @param  array<string,mixed>  $data
