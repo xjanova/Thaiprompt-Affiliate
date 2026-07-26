@@ -256,7 +256,11 @@
 
 /* จอเล็ก: ลดจำนวนก้อน + ลดรัศมีเบลอ เพื่อไม่ให้มือถือรุ่นเก่าอืด */
 @media (max-width: 640px) {
-    .tp-lava__blob {
+    /* ⚠️ ต้องเขียน .dark ซ้ำด้วย — media query ไม่เพิ่ม specificity
+       ถ้าเขียนแค่ .tp-lava__blob (0,1,0) จะแพ้ .dark .tp-lava__blob (0,2,0) ด้านบน
+       ผลคือมือถือโหมดมืดยังเบลอ 72px = การ์ดเยอะๆ แล้ว GPU มือถืออืด (ตรวจเจอบนเครื่องจริง) */
+    .tp-lava__blob,
+    .dark .tp-lava__blob {
         filter: blur(46px);
         width: 70vw;
         height: 70vw;
