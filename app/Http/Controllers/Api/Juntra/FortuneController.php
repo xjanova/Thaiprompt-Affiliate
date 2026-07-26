@@ -10,8 +10,9 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 /**
  * FortuneController — Mobile API for the Juntra app
@@ -38,7 +39,7 @@ class FortuneController extends Controller
             ['id' => 'family',  'name' => 'ครอบครัว',   'en' => 'Family',   'icon' => '⌂', 'color' => '#FF8A65'],
             ['id' => 'fortune', 'name' => 'โชคลาภ',     'en' => 'Luck',     'icon' => '✧', 'color' => '#FFAB00'],
             ['id' => 'general', 'name' => 'ภาพรวม',     'en' => 'Overall',  'icon' => '☾', 'color' => '#C39BD3'],
-            ['id' => 'past',    'name' => 'อดีตชาติ',   'en' => 'Past Life','icon' => '꩜', 'color' => '#9575CD'],
+            ['id' => 'past',    'name' => 'อดีตชาติ',   'en' => 'Past Life', 'icon' => '꩜', 'color' => '#9575CD'],
         ]]);
     }
 
@@ -51,9 +52,9 @@ class FortuneController extends Controller
             ['id' => '3card',     'name' => '3 ใบ',       'desc' => 'อดีต · ปัจจุบัน · อนาคต', 'cards' => 3,  'price' => 0,   'badge' => 'ฟรี', 'popular' => true],
             ['id' => 'love',      'name' => 'ผังคู่รัก',  'desc' => 'ใจฉัน · ใจเขา · ความสัมพันธ์ · ผลลัพธ์', 'cards' => 4, 'price' => 49],
             ['id' => 'celtic',    'name' => 'เซลติกครอส', 'desc' => 'การวิเคราะห์เชิงลึก 10 ใบ', 'cards' => 10, 'price' => 199, 'badge' => 'ลึกซึ้ง'],
-            ['id' => 'year',      'name' => 'ดวง 12 เดือน','desc' => 'พยากรณ์รายเดือนตลอดปี',     'cards' => 12, 'price' => 299, 'badge' => 'ใหม่'],
+            ['id' => 'year',      'name' => 'ดวง 12 เดือน', 'desc' => 'พยากรณ์รายเดือนตลอดปี',     'cards' => 12, 'price' => 299, 'badge' => 'ใหม่'],
             ['id' => 'horseshoe', 'name' => 'เกือกม้า',   'desc' => '7 ใบ ครอบคลุมทุกแง่มุม',    'cards' => 7,  'price' => 99],
-            ['id' => 'yes-no',    'name' => 'ใช่ / ไม่ใช่','desc' => 'ใบเดียว ตอบคำถามเร่งด่วน', 'cards' => 1,  'price' => 19],
+            ['id' => 'yes-no',    'name' => 'ใช่ / ไม่ใช่', 'desc' => 'ใบเดียว ตอบคำถามเร่งด่วน', 'cards' => 1,  'price' => 19],
         ]]);
     }
 
@@ -63,16 +64,60 @@ class FortuneController extends Controller
     public function credits(Request $request): JsonResponse
     {
         $user = $request->user();
-        $credit = FortuneUserCredit::firstOrCreate(['user_id' => $user->id], [
-            'free_credits' => 3,
-            'paid_credits' => 0,
-        ]);
+
+        // 🐛 (2026-07-26) แก้ 500 ที่ซ่อนอยู่หลัง 401 มาตลอด
+        //    เดิมเรียก FortuneUserCredit::firstOrCreate(['user_id' => ...]) และอ่าน
+        //    free_credits / paid_credits — **ไม่มีคอลัมน์พวกนี้จริงทั้ง 3 ตัว**
+        //    ตาราง fortune_user_credits ของบอทผูกกับคู่ (platform, facebook_user_id)
+        //    → ทุก request ตกด้วย SQLSTATE[42S22] Unknown column 'user_id'
+        //    (เพิ่งเห็นเพราะก่อนหน้านี้ guard ตีกลับ 401 ก่อนถึงคอนโทรลเลอร์)
+        //
+        //    สิทธิ์ฟรีของบอทนับ "ต่อ platform_user_id" จึงต้องไล่จากช่องทางที่
+        //    บัญชีนี้ผูกไว้ ส่วนยอดเงินอยู่ที่วอลเลตของเว็บจันทรา ไม่ใช่ที่นี่
+        $freeUsed = false;
+        $bonusRemaining = 0;
+        $unlimited = false;
+
+        foreach ($this->platformIdentities($user) as [$platform, $platformUserId]) {
+            if (FortuneReading::hasUsedFreeCard($platform, $platformUserId)) {
+                $freeUsed = true;
+            }
+
+            $credit = FortuneUserCredit::findByUser($platformUserId, $platform);
+            if ($credit) {
+                $bonusRemaining += max(0, $credit->getRemainingCredits());
+                if ($credit->isCurrentlyUnlimited()) {
+                    $unlimited = true;
+                }
+            }
+        }
 
         return response()->json(['data' => [
-            'free_remaining' => (int) ($credit->free_credits ?? 0),
-            'paid_balance' => (int) ($credit->paid_credits ?? 0),
+            'free_remaining' => $unlimited ? 999 : ($freeUsed ? $bonusRemaining : $bonusRemaining + 1),
+            'paid_balance' => 0,   // ยอดเงินจริงอยู่ที่วอลเลตของเว็บจันทรา
+            'unlimited' => $unlimited,
             'total_readings' => FortuneReading::where('user_id', $user->id)->count(),
         ]]);
+    }
+
+    /**
+     * ช่องทางที่บัญชีนี้ผูกไว้ — ใช้เทียบสิทธิ์ฟรีของบอทที่นับต่อ platform_user_id
+     *
+     * @return array<int,array{0:string,1:string}> [[platform, platform_user_id], ...]
+     */
+    private function platformIdentities($user): array
+    {
+        $identities = [];
+
+        if (! empty($user->line_user_id)) {
+            $identities[] = ['line', (string) $user->line_user_id];
+        }
+
+        if (Schema::hasColumn('users', 'facebook_psid') && ! empty($user->facebook_psid)) {
+            $identities[] = ['facebook', (string) $user->facebook_psid];
+        }
+
+        return $identities;
     }
 
     /**
@@ -143,7 +188,7 @@ class FortuneController extends Controller
         foreach ($picked as $i => $tarotId) {
             $cards[] = [
                 'tarot_id' => $tarotId,
-                'position' => $positions[$i] ?? "ใบที่ " . ($i + 1),
+                'position' => $positions[$i] ?? 'ใบที่ '.($i + 1),
                 // ~20% reversed. The previous one-liner was broken — operator
                 // precedence made it always false. Use plain int comparison.
                 'reversed' => random_int(0, 4) === 0,
@@ -151,11 +196,11 @@ class FortuneController extends Controller
         }
 
         $reading = FortuneReading::create([
-            'bill_reference' => 'JUN-' . Str::upper(Str::random(10)),
+            'bill_reference' => 'JUN-'.Str::upper(Str::random(10)),
             'user_id' => $user->id,
             'platform' => 'juntra',
-            'platform_user_id' => 'mobile-' . $user->id,
-            'facebook_user_id' => 'juntra-' . $user->id,  // schema requires non-null
+            'platform_user_id' => 'mobile-'.$user->id,
+            'facebook_user_id' => 'juntra-'.$user->id,  // schema requires non-null
             'questions' => [$request->input('question', '')],
             'categories' => $request->input('category') ? [$request->input('category')] : null,
             'ai_response' => '',  // Filled by /read
@@ -201,12 +246,12 @@ class FortuneController extends Controller
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
-        if (!$reading->is_paid && $this->priceForSpread($this->spreadFromReading($reading)) > 0) {
+        if (! $reading->is_paid && $this->priceForSpread($this->spreadFromReading($reading)) > 0) {
             return response()->json(['message' => 'กรุณาชำระเงินก่อน'], 402);
         }
 
         try {
-            $aiService = new FortuneAIService();
+            $aiService = new FortuneAIService;
             $info = json_decode($reading->sender_info ?? '{}', true);
             $cards = $info['cards'] ?? [];
             $spread = $info['spread'] ?? '3card';
@@ -233,7 +278,7 @@ class FortuneController extends Controller
                 userPosts: null,
                 promptTemplate: $this->buildJuntraPrompt($spread, $cards),
                 readingType: $reading->reading_type ?? 'basic',
-                userContext: 'juntra-user-' . $request->user()->id,
+                userContext: 'juntra-user-'.$request->user()->id,
             );
 
             $reading->update([
@@ -258,6 +303,7 @@ class FortuneController extends Controller
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json([
                 'message' => 'ขออภัย ระบบดูดวงไม่พร้อมในขณะนี้ กรุณาลองใหม่อีกครู่',
             ], 503);
@@ -283,6 +329,7 @@ class FortuneController extends Controller
             $base['question'] = is_array($r->questions) ? ($r->questions[0] ?? '') : '';
             $base['ai_provider'] = $r->ai_provider;
         }
+
         return $base;
     }
 
@@ -321,6 +368,7 @@ class FortuneController extends Controller
     private function spreadFromReading(FortuneReading $r): string
     {
         $info = json_decode($r->sender_info ?? '{}', true);
+
         return $info['spread'] ?? '3card';
     }
 
@@ -328,6 +376,7 @@ class FortuneController extends Controller
     {
         // First sentence ending with . / ! / ? / Thai เ ๆ
         $first = preg_split('/(?<=[\.\!\?\n])/u', trim($response), 2);
+
         return Str::limit(trim($first[0] ?? $response), 240, '...');
     }
 
@@ -335,13 +384,14 @@ class FortuneController extends Controller
     {
         $cardLines = array_map(function ($c, $i) {
             $rev = ($c['reversed'] ?? false) ? ' (ย้อน)' : '';
-            return ($i + 1) . ". ตำแหน่ง '{$c['position']}' — ไพ่ id={$c['tarot_id']}$rev";
+
+            return ($i + 1).". ตำแหน่ง '{$c['position']}' — ไพ่ id={$c['tarot_id']}$rev";
         }, $cards, array_keys($cards));
 
-        return "คุณคือแม่หมอจันทรา ผู้พยากรณ์ทาโรต์ที่อ่อนโยนและขลัง พูดกับลูก (ผู้ใช้) ด้วยน้ำเสียงอบอุ่นแต่หนักแน่น "
-            . "อ่านไพ่ทาโรต์รูปแบบ '$spread' ที่ลูกสุ่มได้:\n"
-            . implode("\n", $cardLines)
-            . "\n\nให้คำทำนายแยกเป็นแต่ละตำแหน่ง สรุปภาพรวม และแนะนำการปฏิบัติ "
-            . "(สีมงคล วันสำคัญ หินมงคล ฯลฯ) — ใช้ภาษาไทยที่ขลังและจริงใจ.";
+        return 'คุณคือแม่หมอจันทรา ผู้พยากรณ์ทาโรต์ที่อ่อนโยนและขลัง พูดกับลูก (ผู้ใช้) ด้วยน้ำเสียงอบอุ่นแต่หนักแน่น '
+            ."อ่านไพ่ทาโรต์รูปแบบ '$spread' ที่ลูกสุ่มได้:\n"
+            .implode("\n", $cardLines)
+            ."\n\nให้คำทำนายแยกเป็นแต่ละตำแหน่ง สรุปภาพรวม และแนะนำการปฏิบัติ "
+            .'(สีมงคล วันสำคัญ หินมงคล ฯลฯ) — ใช้ภาษาไทยที่ขลังและจริงใจ.';
     }
 }
