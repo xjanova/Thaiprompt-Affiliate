@@ -32,6 +32,14 @@ class FortuneTransferModeTest extends TestCase
 
     private function settings(array $override = []): FortuneTellingSetting
     {
+        // ⚠️ ต้องล้าง static memo **ก่อน** อ่านครั้งแรก
+        //    getSettings() จำ instance ไว้ใน static property ซึ่ง **ค้างข้ามเทสต์**
+        //    (RefreshDatabase ย้อน DB แต่ไม่ล้าง static) → ได้ instance ของแถวที่
+        //    ถูกย้อนไปแล้ว → forceFill()->save() ยิง UPDATE แถวที่ไม่มีอยู่
+        //    = 0 rows affected โดยไม่ error → ค่าที่ตั้งหายเงียบ ๆ กลับไปใช้ default
+        //    (เจอจริงบน CI: เทสต์ที่คาด array ล้มหมด เพราะโหมดกลับเป็น classic)
+        FortuneTellingSetting::clearSettingsCache();
+
         $settings = FortuneTellingSetting::getSettings();
         $settings->forceFill(array_merge([
             'fortune_bot_mode' => FortuneBotMode::MODE_TRANSFER,
@@ -45,7 +53,21 @@ class FortuneTransferModeTest extends TestCase
 
         FortuneTellingSetting::clearSettingsCache();
 
-        return FortuneTellingSetting::getSettings();
+        $fresh = FortuneTellingSetting::getSettings();
+
+        // fail fast ถ้าค่าไม่ลง DB จริง — กันเทสต์ที่ "ผ่านเพราะอ่านค่า default"
+        // (เช็คเฉพาะค่า scalar ที่ไม่ใช่ null — null/Carbon เทียบตรง ๆ ไม่ได้)
+        foreach ($override as $key => $expected) {
+            if (is_scalar($expected)) {
+                $this->assertSame(
+                    (string) $expected,
+                    (string) $fresh->{$key},
+                    "ตั้งค่า {$key} ไม่ลง DB — เทสต์จะอ่านค่า default แล้วผลลวง"
+                );
+            }
+        }
+
+        return $fresh;
     }
 
     /**
