@@ -326,7 +326,12 @@ class LazadaMuImport extends Command
                     'seller_id' => $store->user_id,
                     'store_id' => $store->id,
                     'category_id' => $categoryIds[$group],
-                    'name' => $it['name'],
+                    // ⚠️ ตัดที่ 255 — สองตารางนี้ความยาวไม่เท่ากัน
+                    //    marketplace_products.name = varchar(500) (normalizeFeedItem ตัดที่ 500)
+                    //    products.name             = varchar(255)
+                    //    ชื่อสินค้า Lazada ยาวเกิน 255 บ่อยมาก (ยัดคีย์เวิร์ดท้ายชื่อ)
+                    //    ถ้าไม่ตัด จะตกด้วย SQLSTATE[22001] Data too long แล้วสินค้านั้นไม่ขึ้นร้าน
+                    'name' => mb_substr((string) $it['name'], 0, 255),
                     'sku' => 'LZDMU-'.$pid,
                     'brand' => $it['brand'] ?: null,
                     'price' => (float) $it['price'],
