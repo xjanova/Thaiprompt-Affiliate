@@ -1,0 +1,3188 @@
+{
+  "_readme": "สินค้า Lazada Affiliate คัดสรรต่อหมวด (หมวดละ 50) — ใช้กับ `php artisan lazada:mu-import {account} --file=database/data/lazada-catalog-products.json`. id = productId ของ Lazada, category = slug ของหมวดใน product_categories. ชื่อ/ราคา/รูป/ค่าคอม ดึงจาก Open API ทางการทุกครั้งที่รัน (ไม่เก็บค้างไว้ที่นี่).",
+  "_curated_at": "2026-07-26",
+  "_price_range_thb": "20 - 3000",
+  "_quality_note": "คัดจากการค้นคำในพอร์ทัล affiliate (searchSkuOffer) 96 คำค้น -> ผู้สมัคร 7,017 ชิ้น. เงื่อนไข: ราคา 20-3,000 บาท + สร้างลิงก์ค่าคอมได้ + มีค่าคอม > 0. คัดหมวดละ 50 โดยกระจาย 4 ช่วงราคา + กันชื่อซ้ำ + ตัดคำพ้องข้ามหมวดออก 39 ชิ้น (เช่น เลื่อยจิ๊กซอว์ไฟฟ้าหลุดเข้าหมวดของเล่น, พัดลม CPU หลุดเข้าหมวดกล้อง). ⚠️ ขนาด 800 ชิ้น ตรวจด้วยตาทุกชิ้นไม่ไหว อาจมีหลุดหมวดบ้าง — แอดมินย้ายหมวดภายหลังได้",
+  "products": [
+    {
+      "id": "4392476758",
+      "category": "electronics"
+    },
+    {
+      "id": "5347663656",
+      "category": "electronics"
+    },
+    {
+      "id": "5811749120",
+      "category": "electronics"
+    },
+    {
+      "id": "264141837",
+      "category": "electronics"
+    },
+    {
+      "id": "4822287897",
+      "category": "electronics"
+    },
+    {
+      "id": "4168526242",
+      "category": "electronics"
+    },
+    {
+      "id": "5741673234",
+      "category": "electronics"
+    },
+    {
+      "id": "2388635745",
+      "category": "electronics"
+    },
+    {
+      "id": "5359703068",
+      "category": "electronics"
+    },
+    {
+      "id": "5519717666",
+      "category": "electronics"
+    },
+    {
+      "id": "2134918054",
+      "category": "electronics"
+    },
+    {
+      "id": "2725804956",
+      "category": "electronics"
+    },
+    {
+      "id": "5802667303",
+      "category": "electronics"
+    },
+    {
+      "id": "1840360345",
+      "category": "electronics"
+    },
+    {
+      "id": "251869736",
+      "category": "electronics"
+    },
+    {
+      "id": "4067565230",
+      "category": "electronics"
+    },
+    {
+      "id": "510660345",
+      "category": "electronics"
+    },
+    {
+      "id": "3605362392",
+      "category": "electronics"
+    },
+    {
+      "id": "4950863084",
+      "category": "electronics"
+    },
+    {
+      "id": "5055836064",
+      "category": "electronics"
+    },
+    {
+      "id": "4963609957",
+      "category": "electronics"
+    },
+    {
+      "id": "2942811919",
+      "category": "electronics"
+    },
+    {
+      "id": "5253750565",
+      "category": "electronics"
+    },
+    {
+      "id": "794946008",
+      "category": "electronics"
+    },
+    {
+      "id": "5716484132",
+      "category": "electronics"
+    },
+    {
+      "id": "4195219509",
+      "category": "electronics"
+    },
+    {
+      "id": "202931914",
+      "category": "electronics"
+    },
+    {
+      "id": "4144413602",
+      "category": "electronics"
+    },
+    {
+      "id": "5340038165",
+      "category": "electronics"
+    },
+    {
+      "id": "4896275243",
+      "category": "electronics"
+    },
+    {
+      "id": "267697949",
+      "category": "electronics"
+    },
+    {
+      "id": "4578419599",
+      "category": "electronics"
+    },
+    {
+      "id": "5292651838",
+      "category": "electronics"
+    },
+    {
+      "id": "4960462388",
+      "category": "electronics"
+    },
+    {
+      "id": "5469173715",
+      "category": "electronics"
+    },
+    {
+      "id": "4080510735",
+      "category": "electronics"
+    },
+    {
+      "id": "4746610653",
+      "category": "electronics"
+    },
+    {
+      "id": "5278680016",
+      "category": "electronics"
+    },
+    {
+      "id": "5303956488",
+      "category": "electronics"
+    },
+    {
+      "id": "2678062266",
+      "category": "electronics"
+    },
+    {
+      "id": "1841254191",
+      "category": "electronics"
+    },
+    {
+      "id": "2880588762",
+      "category": "electronics"
+    },
+    {
+      "id": "5711345044",
+      "category": "electronics"
+    },
+    {
+      "id": "5388203211",
+      "category": "electronics"
+    },
+    {
+      "id": "5788499310",
+      "category": "electronics"
+    },
+    {
+      "id": "6042051213",
+      "category": "electronics"
+    },
+    {
+      "id": "5991572294",
+      "category": "electronics"
+    },
+    {
+      "id": "5111784632",
+      "category": "electronics"
+    },
+    {
+      "id": "4820925836",
+      "category": "electronics"
+    },
+    {
+      "id": "5594211986",
+      "category": "electronics"
+    },
+    {
+      "id": "1584062829",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "3720334148",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4963642243",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "1758230120",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "3332726466",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5165099620",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "224588057",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4061597091",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4485506913",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4876770867",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "3587884633",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "2203884441",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5230968732",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "257634177",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "1575816949",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5853886056",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "280370244",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "2053950852",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "3776687385",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "3442390098",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "2216538048",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "1788674259",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "1182616217",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5366092110",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "3952445800",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "3994879465",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4979096823",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5979458808",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5104161015",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4177010879",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5712208922",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4270737918",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "3987320123",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5898443799",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5111156566",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "3331262379",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5928912340",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "16144208320",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5774428757",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4967786372",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4715302500",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5421303222",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5685051425",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4224543390",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "5723421710",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "16112670728",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "16098145376",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "6035359089",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "4273651407",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "6002957539",
+      "category": "fashion-and-apparel"
+    },
+    {
+      "id": "204896902",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "3680239817",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "254854327",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "4865081529",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "4878162488",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "3463928149",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "4369721032",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "4984080683",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "270318500",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "3052273854",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "5737066773",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "1042736349",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "5200959079",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "268151522",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "2514553889",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "4301450183",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "2514661724",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "5732586368",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "224469593",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "16091793245",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "261276810",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "261282095",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "4471062513",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "132924614",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "2023622060",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "168947170",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "208166006",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "3827008221",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "4664738760",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "467168",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "2965381",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "221849025",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "2407587661",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "3079768472",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "2456259401",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "1827148717",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "721772502",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "4705416940",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "5589869050",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "110033887",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "279909132",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "5985391372",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "5736537982",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "475071",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "4656591335",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "110345692",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "5639163263",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "5663699306",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "4495221183",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "5698428486",
+      "category": "beauty-and-personal-care"
+    },
+    {
+      "id": "2016036825",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4986723913",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "3332455021",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4338278511",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "2646431678",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "3558990588",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5671213199",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4609211062",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "2668385349",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "1140076366",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "3096260394",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "2905198561",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5694632131",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "2880915241",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5108191442",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "265793628",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "7266789",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4050164477",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4872320540",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "3959190299",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5797608627",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4735892445",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "267371765",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4650013839",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5042600999",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4425266349",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "717566014",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "311832222",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4530635172",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "288368437",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4991692546",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "3469121376",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5529523885",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "3552118123",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5081378844",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4607161101",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4209462124",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "2066430919",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4456264356",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "2037400091",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4056295465",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "939982552",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5607169495",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5591327395",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4996832906",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "4650258351",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5695808649",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "2492185698",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "1737910349",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "5879774018",
+      "category": "home-and-garden"
+    },
+    {
+      "id": "2759705741",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5067675946",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "3982737193",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4573267003",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "1042732285",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "1972668066",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "1936858103",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "1753338479",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5182109259",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "756466962",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "2405174140",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5168080395",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5149675065",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4077059808",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4065847956",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4103974659",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4822663033",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "1046642331",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "136754174",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "714714221",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4216254689",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "2901533158",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4795170708",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "421540451",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5747344277",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4648237610",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5132165713",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4557376082",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5041000577",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5713409157",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "270885730",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5007064627",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "1543574303",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "2792558956",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5321492133",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "698560048",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5183770881",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "1583440398",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5827860695",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4489541130",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "958248799",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "2677394584",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "11501418",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "16123359945",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "958184039",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "1647840674",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "3015095427",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "16123431773",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "16163466813",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "4471416477",
+      "category": "sports-and-outdoors"
+    },
+    {
+      "id": "5433053630",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "3131387957",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "340316712",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4826369274",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5702739715",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4206817850",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "3460493584",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "2635238303",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "2634977703",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "487422991",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4759196786",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "2829710629",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4434504915",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "113660239",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "1302656805",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "235324003",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "3644692324",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "2717789915",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5285547986",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4630785912",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4799136378",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5796593899",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5655616201",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5466036645",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4192858116",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5309717201",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5253009007",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "3715914051",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "2607933387",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "16077872110",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "3970727110",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5318538662",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4825051996",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4840279002",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "2897543860",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5462985732",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5248126141",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5167104367",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "2149848105",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "5339848816",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "3634313331",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "3189141899",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "505916134",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "2342072624",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4870159613",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4673496013",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "233891211",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "2751480540",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "3382023431",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "3401497667",
+      "category": "books-and-stationery"
+    },
+    {
+      "id": "4544866277",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "4988764043",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "2613056373",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "453866453",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "357956795",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "4840418061",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3397711504",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "4456785361",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "580150243",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "1469090630",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5762546798",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5283245541",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "808690435",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "4247682251",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "4247560942",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "2069884317",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3082951591",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "1159284609",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5721456064",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "2688758288",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3551997766",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3473951429",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "4873471762",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "323286271",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3105543450",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5053914546",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "222322083",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5139283759",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3786210022",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5820087462",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5089380841",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "2890549296",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3886976727",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "4606230552",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "4452358629",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "4441759652",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5886402266",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5107875500",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5178489687",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3794447972",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3790529823",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3980549637",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "16097288025",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5751550188",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5830002154",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5746147077",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3455006595",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5866800830",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "5915676279",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "16175219030",
+      "category": "toys-and-hobbies"
+    },
+    {
+      "id": "3815192180",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "709260415",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "4158305519",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "2466729054",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "1332336496",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "843532245",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5166999036",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "4784930628",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "350418273",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "4209096287",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "2739836785",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "2090498481",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "4306949308",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "852086397",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "341868284",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5513627240",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5364731425",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "4314643709",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "3719862181",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "2583935226",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "3910495250",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "2063902946",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "1894740176",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "3910388759",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5720343190",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5444148754",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5001243973",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "3073553913",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "1615290601",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "4746987108",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "4492271203",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5355809292",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "2547394073",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5788005719",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "1614488592",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5304286024",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5771368939",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5811704891",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "522002417",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "3950840477",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "4445073366",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "1454844213",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "2828528072",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "3873366170",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "4826332537",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "1454858010",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5741102085",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "5757356180",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "2561135612",
+      "category": "food-and-beverages"
+    },
+    {
+      "id": "3129277542",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "3880223146",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "1812976726",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "2605822579",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4664245158",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "3902453540",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "2062572084",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "2967279948",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4649289013",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "3765693267",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "1784604150",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "273699630",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4386348827",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "3451001388",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "775250945",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4542387686",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "2524717526",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4338520172",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "5169029924",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "5381033961",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4711152962",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "3994117528",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4218134811",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "2496526063",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "3689954912",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "5048714837",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "343726461",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "1717902549",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "5579964195",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4399736331",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4741035858",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "261930951",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "5253385930",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "122492939",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "135934488",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4897330742",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4063955182",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4741100153",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "5407870408",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4986335094",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "3771103681",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "2413784219",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "2657285408",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "350340770",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "1700948291",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "165174139",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "4664569566",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "1205423",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "6065089345",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "5403134653",
+      "category": "health-and-supplements"
+    },
+    {
+      "id": "2283136656",
+      "category": "pets"
+    },
+    {
+      "id": "5188224426",
+      "category": "pets"
+    },
+    {
+      "id": "2260113964",
+      "category": "pets"
+    },
+    {
+      "id": "1897864012",
+      "category": "pets"
+    },
+    {
+      "id": "5014840142",
+      "category": "pets"
+    },
+    {
+      "id": "4642305965",
+      "category": "pets"
+    },
+    {
+      "id": "5707782478",
+      "category": "pets"
+    },
+    {
+      "id": "333660552",
+      "category": "pets"
+    },
+    {
+      "id": "455192508",
+      "category": "pets"
+    },
+    {
+      "id": "3578703131",
+      "category": "pets"
+    },
+    {
+      "id": "4457096143",
+      "category": "pets"
+    },
+    {
+      "id": "5605896387",
+      "category": "pets"
+    },
+    {
+      "id": "4966030686",
+      "category": "pets"
+    },
+    {
+      "id": "5368682117",
+      "category": "pets"
+    },
+    {
+      "id": "5441077144",
+      "category": "pets"
+    },
+    {
+      "id": "774668763",
+      "category": "pets"
+    },
+    {
+      "id": "5368671414",
+      "category": "pets"
+    },
+    {
+      "id": "786908884",
+      "category": "pets"
+    },
+    {
+      "id": "5686992265",
+      "category": "pets"
+    },
+    {
+      "id": "5465736551",
+      "category": "pets"
+    },
+    {
+      "id": "912764452",
+      "category": "pets"
+    },
+    {
+      "id": "1802942896",
+      "category": "pets"
+    },
+    {
+      "id": "5275947204",
+      "category": "pets"
+    },
+    {
+      "id": "2299248513",
+      "category": "pets"
+    },
+    {
+      "id": "5587041110",
+      "category": "pets"
+    },
+    {
+      "id": "4529151718",
+      "category": "pets"
+    },
+    {
+      "id": "4861632354",
+      "category": "pets"
+    },
+    {
+      "id": "3924499438",
+      "category": "pets"
+    },
+    {
+      "id": "4434817331",
+      "category": "pets"
+    },
+    {
+      "id": "4585002959",
+      "category": "pets"
+    },
+    {
+      "id": "2397105513",
+      "category": "pets"
+    },
+    {
+      "id": "4591353675",
+      "category": "pets"
+    },
+    {
+      "id": "5406240494",
+      "category": "pets"
+    },
+    {
+      "id": "4812542123",
+      "category": "pets"
+    },
+    {
+      "id": "4529238972",
+      "category": "pets"
+    },
+    {
+      "id": "4585151095",
+      "category": "pets"
+    },
+    {
+      "id": "5322031890",
+      "category": "pets"
+    },
+    {
+      "id": "497764085",
+      "category": "pets"
+    },
+    {
+      "id": "4163706714",
+      "category": "pets"
+    },
+    {
+      "id": "4218788302",
+      "category": "pets"
+    },
+    {
+      "id": "240923174",
+      "category": "pets"
+    },
+    {
+      "id": "391636253",
+      "category": "pets"
+    },
+    {
+      "id": "243330401",
+      "category": "pets"
+    },
+    {
+      "id": "261461836",
+      "category": "pets"
+    },
+    {
+      "id": "570502538",
+      "category": "pets"
+    },
+    {
+      "id": "245080356",
+      "category": "pets"
+    },
+    {
+      "id": "2215162201",
+      "category": "pets"
+    },
+    {
+      "id": "286868517",
+      "category": "pets"
+    },
+    {
+      "id": "4792576809",
+      "category": "pets"
+    },
+    {
+      "id": "5520266892",
+      "category": "pets"
+    },
+    {
+      "id": "5289607591",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "4646770594",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5696829327",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5862985318",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5174274479",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "3788025317",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "4103316017",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "4162071093",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "3797542014",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "2709372467",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "2693592948",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "2792317708",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "1761296983",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "1632822601",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "3980034802",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5010455673",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "1941374803",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "1903246258",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5029653747",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "6051841245",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "444828607",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "3926569178",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "2696439629",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "3333799994",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "4646297944",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "1595754495",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "118402416",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "4381282213",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "2068826404",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5474123313",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "1424634522",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "102967962",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "4828786521",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "3448552320",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "3302073202",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "4607694799",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5108880442",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5749630145",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "4647938828",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "3966587278",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "4924848539",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "3934459634",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5475859520",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5412967682",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5475516337",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "800856860",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5029755134",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5241530248",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5475515178",
+      "category": "mother-and-baby"
+    },
+    {
+      "id": "5736897142",
+      "category": "home-appliances"
+    },
+    {
+      "id": "2268047337",
+      "category": "home-appliances"
+    },
+    {
+      "id": "2175790703",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5463241025",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5183108961",
+      "category": "home-appliances"
+    },
+    {
+      "id": "2175778849",
+      "category": "home-appliances"
+    },
+    {
+      "id": "3388610728",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5027791760",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4879899101",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5066610010",
+      "category": "home-appliances"
+    },
+    {
+      "id": "3984086198",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4968663087",
+      "category": "home-appliances"
+    },
+    {
+      "id": "2411631802",
+      "category": "home-appliances"
+    },
+    {
+      "id": "2806079192",
+      "category": "home-appliances"
+    },
+    {
+      "id": "2802796587",
+      "category": "home-appliances"
+    },
+    {
+      "id": "311532348",
+      "category": "home-appliances"
+    },
+    {
+      "id": "2698622600",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4900271072",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4771024018",
+      "category": "home-appliances"
+    },
+    {
+      "id": "259941076",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5450682960",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5143571891",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4379705618",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5043815174",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4717933440",
+      "category": "home-appliances"
+    },
+    {
+      "id": "3958798489",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5090926107",
+      "category": "home-appliances"
+    },
+    {
+      "id": "2434218104",
+      "category": "home-appliances"
+    },
+    {
+      "id": "1038626571",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4992612564",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4299645537",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4388471167",
+      "category": "home-appliances"
+    },
+    {
+      "id": "2127086141",
+      "category": "home-appliances"
+    },
+    {
+      "id": "100169497",
+      "category": "home-appliances"
+    },
+    {
+      "id": "242209091",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4781555800",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4695785421",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4684535043",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5590520094",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4694327587",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5586841266",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4838777962",
+      "category": "home-appliances"
+    },
+    {
+      "id": "114071210",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4631882341",
+      "category": "home-appliances"
+    },
+    {
+      "id": "341410239",
+      "category": "home-appliances"
+    },
+    {
+      "id": "1604428871",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5655186590",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5594897022",
+      "category": "home-appliances"
+    },
+    {
+      "id": "621116598",
+      "category": "home-appliances"
+    },
+    {
+      "id": "4384454635",
+      "category": "home-appliances"
+    },
+    {
+      "id": "5772003449",
+      "category": "automotive"
+    },
+    {
+      "id": "4239502148",
+      "category": "automotive"
+    },
+    {
+      "id": "3843202942",
+      "category": "automotive"
+    },
+    {
+      "id": "1541354292",
+      "category": "automotive"
+    },
+    {
+      "id": "4947186167",
+      "category": "automotive"
+    },
+    {
+      "id": "5274137864",
+      "category": "automotive"
+    },
+    {
+      "id": "601176",
+      "category": "automotive"
+    },
+    {
+      "id": "5353231601",
+      "category": "automotive"
+    },
+    {
+      "id": "4746054168",
+      "category": "automotive"
+    },
+    {
+      "id": "3432327691",
+      "category": "automotive"
+    },
+    {
+      "id": "2698566566",
+      "category": "automotive"
+    },
+    {
+      "id": "5483834783",
+      "category": "automotive"
+    },
+    {
+      "id": "2612637038",
+      "category": "automotive"
+    },
+    {
+      "id": "5148364096",
+      "category": "automotive"
+    },
+    {
+      "id": "248642629",
+      "category": "automotive"
+    },
+    {
+      "id": "717706097",
+      "category": "automotive"
+    },
+    {
+      "id": "1106276905",
+      "category": "automotive"
+    },
+    {
+      "id": "3745155044",
+      "category": "automotive"
+    },
+    {
+      "id": "595240512",
+      "category": "automotive"
+    },
+    {
+      "id": "4572651723",
+      "category": "automotive"
+    },
+    {
+      "id": "4730650131",
+      "category": "automotive"
+    },
+    {
+      "id": "4138701761",
+      "category": "automotive"
+    },
+    {
+      "id": "2823732940",
+      "category": "automotive"
+    },
+    {
+      "id": "248642920",
+      "category": "automotive"
+    },
+    {
+      "id": "2446969130",
+      "category": "automotive"
+    },
+    {
+      "id": "5217312854",
+      "category": "automotive"
+    },
+    {
+      "id": "4387305577",
+      "category": "automotive"
+    },
+    {
+      "id": "1452428205",
+      "category": "automotive"
+    },
+    {
+      "id": "2600847325",
+      "category": "automotive"
+    },
+    {
+      "id": "5789853878",
+      "category": "automotive"
+    },
+    {
+      "id": "6059175961",
+      "category": "automotive"
+    },
+    {
+      "id": "1931898383",
+      "category": "automotive"
+    },
+    {
+      "id": "2420476630",
+      "category": "automotive"
+    },
+    {
+      "id": "3774377819",
+      "category": "automotive"
+    },
+    {
+      "id": "3301375314",
+      "category": "automotive"
+    },
+    {
+      "id": "2582495955",
+      "category": "automotive"
+    },
+    {
+      "id": "4200017248",
+      "category": "automotive"
+    },
+    {
+      "id": "5379390479",
+      "category": "automotive"
+    },
+    {
+      "id": "5379582034",
+      "category": "automotive"
+    },
+    {
+      "id": "368368010",
+      "category": "automotive"
+    },
+    {
+      "id": "2201401389",
+      "category": "automotive"
+    },
+    {
+      "id": "5861969888",
+      "category": "automotive"
+    },
+    {
+      "id": "2268885204",
+      "category": "automotive"
+    },
+    {
+      "id": "5700185783",
+      "category": "automotive"
+    },
+    {
+      "id": "1776388515",
+      "category": "automotive"
+    },
+    {
+      "id": "5261492295",
+      "category": "automotive"
+    },
+    {
+      "id": "5537552788",
+      "category": "automotive"
+    },
+    {
+      "id": "2102344049",
+      "category": "automotive"
+    },
+    {
+      "id": "1738278758",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5542850693",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4017589753",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "3621657797",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5597766422",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5032153188",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "1477052720",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5103901824",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5630369420",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4048037409",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5868982382",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5995761593",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "1489976781",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "6052912676",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4684825021",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5021285747",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4904939135",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "2588687498",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5039372142",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5663532386",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5736678014",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5275756415",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4885253277",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4364867933",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "3587238086",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "2128060796",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5596465342",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4657643322",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "232620333",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5383961407",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4799180561",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5775815581",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4385256099",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "3344662711",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4840229639",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5546302051",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "16165283681",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4688554437",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5962173652",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5120127178",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4106877195",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5859110359",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "2392844574",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5663482487",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4877254673",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5353312246",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4057518302",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "1626706831",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "5852384718",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "16049672512",
+      "category": "cameras-and-photography"
+    },
+    {
+      "id": "4802470538",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "1517544825",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "263081924",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4870908097",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5143579834",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4340147957",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "513626321",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4452041672",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4192326311",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5603134653",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "2154064558",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5719912318",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4567191351",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "1681866839",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5025854328",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "380980625",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4155435602",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "402722860",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "1974480060",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "275994658",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "2465128991",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4530255638",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "3348102242",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "365032293",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5548199710",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "2627346383",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "6074058160",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4883861460",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5805599711",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "1066954897",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4593784011",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4186135587",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "932394024",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "2130486420",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "1258018212",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5329749633",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5233885192",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5566346132",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5076710212",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "4497896375",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5173893634",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5309222101",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "897170669",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5130075832",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5657609390",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5703470885",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5148381293",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "411134",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "5990143632",
+      "category": "watches-and-eyewear"
+    },
+    {
+      "id": "1775764062",
+      "category": "it-computer"
+    },
+    {
+      "id": "4342301561",
+      "category": "it-computer"
+    },
+    {
+      "id": "4898996178",
+      "category": "it-computer"
+    },
+    {
+      "id": "4388873919",
+      "category": "it-computer"
+    },
+    {
+      "id": "4689920982",
+      "category": "it-computer"
+    },
+    {
+      "id": "2029454492",
+      "category": "it-computer"
+    },
+    {
+      "id": "5032104416",
+      "category": "it-computer"
+    },
+    {
+      "id": "1700618239",
+      "category": "it-computer"
+    },
+    {
+      "id": "2569622537",
+      "category": "it-computer"
+    },
+    {
+      "id": "912074561",
+      "category": "it-computer"
+    },
+    {
+      "id": "5595258180",
+      "category": "it-computer"
+    },
+    {
+      "id": "4054233444",
+      "category": "it-computer"
+    },
+    {
+      "id": "306242316",
+      "category": "it-computer"
+    },
+    {
+      "id": "305538423",
+      "category": "it-computer"
+    },
+    {
+      "id": "3013150363",
+      "category": "it-computer"
+    },
+    {
+      "id": "878496139",
+      "category": "it-computer"
+    },
+    {
+      "id": "1994146052",
+      "category": "it-computer"
+    },
+    {
+      "id": "4880737875",
+      "category": "it-computer"
+    },
+    {
+      "id": "2635600236",
+      "category": "it-computer"
+    },
+    {
+      "id": "5858093719",
+      "category": "it-computer"
+    },
+    {
+      "id": "4821619334",
+      "category": "it-computer"
+    },
+    {
+      "id": "427130542",
+      "category": "it-computer"
+    },
+    {
+      "id": "4181993369",
+      "category": "it-computer"
+    },
+    {
+      "id": "268151874",
+      "category": "it-computer"
+    },
+    {
+      "id": "4456981976",
+      "category": "it-computer"
+    },
+    {
+      "id": "3822770910",
+      "category": "it-computer"
+    },
+    {
+      "id": "2872862581",
+      "category": "it-computer"
+    },
+    {
+      "id": "5251712474",
+      "category": "it-computer"
+    },
+    {
+      "id": "5128250773",
+      "category": "it-computer"
+    },
+    {
+      "id": "4512838380",
+      "category": "it-computer"
+    },
+    {
+      "id": "3171701143",
+      "category": "it-computer"
+    },
+    {
+      "id": "919532128",
+      "category": "it-computer"
+    },
+    {
+      "id": "4740638297",
+      "category": "it-computer"
+    },
+    {
+      "id": "5283145692",
+      "category": "it-computer"
+    },
+    {
+      "id": "5153411695",
+      "category": "it-computer"
+    },
+    {
+      "id": "4495080418",
+      "category": "it-computer"
+    },
+    {
+      "id": "4875606686",
+      "category": "it-computer"
+    },
+    {
+      "id": "5100273952",
+      "category": "it-computer"
+    },
+    {
+      "id": "3468679278",
+      "category": "it-computer"
+    },
+    {
+      "id": "1719560429",
+      "category": "it-computer"
+    },
+    {
+      "id": "5277175225",
+      "category": "it-computer"
+    },
+    {
+      "id": "266181539",
+      "category": "it-computer"
+    },
+    {
+      "id": "384934034",
+      "category": "it-computer"
+    },
+    {
+      "id": "4939977988",
+      "category": "it-computer"
+    },
+    {
+      "id": "5914749545",
+      "category": "it-computer"
+    },
+    {
+      "id": "5692138358",
+      "category": "it-computer"
+    },
+    {
+      "id": "4645458329",
+      "category": "it-computer"
+    },
+    {
+      "id": "3313614765",
+      "category": "it-computer"
+    },
+    {
+      "id": "16127056482",
+      "category": "it-computer"
+    },
+    {
+      "id": "4755231829",
+      "category": "it-computer"
+    }
+  ]
+}

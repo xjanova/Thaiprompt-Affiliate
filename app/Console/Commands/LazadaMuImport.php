@@ -125,14 +125,33 @@ class LazadaMuImport extends Command
         $wanted = [];
         foreach ($json['products'] as $row) {
             $id = (string) ($row['id'] ?? '');
+            if ($id === '') {
+                continue;
+            }
+
+            // รองรับ 2 รูปแบบ:
+            //   1) {"id": "...", "group": "pixiu"}      — ชุดสายมูเดิม (map ผ่าน MuCategorySeeder)
+            //   2) {"id": "...", "category": "slug"}    — หมวดทั่วไป ระบุ slug ของหมวดตรงๆ
             $group = (string) ($row['group'] ?? '');
-            if ($id === '' || ! isset(MuCategorySeeder::GROUPS[$group])) {
+            $categorySlug = (string) ($row['category'] ?? '');
+
+            if ($group !== '' && isset(MuCategorySeeder::GROUPS[$group])) {
+                $key = $group;
+                $slug = MuCategorySeeder::GROUPS[$group][1];
+                $isMu = true;
+            } elseif ($categorySlug !== '') {
+                $key = $categorySlug;
+                $slug = $categorySlug;
+                $isMu = false;
+            } else {
+                continue; // ไม่ระบุหมวด = ไม่รู้จะเอาไปไว้ไหน ข้าม
+            }
+
+            if ($only && ! in_array($key, $only, true)) {
                 continue;
             }
-            if ($only && ! in_array($group, $only, true)) {
-                continue;
-            }
-            $wanted[$id] = $group;
+
+            $wanted[$id] = ['key' => $key, 'slug' => $slug, 'is_mu' => $isMu];
         }
 
         if (empty($wanted)) {
@@ -178,7 +197,7 @@ class LazadaMuImport extends Command
             : (float) MlmGlobalSetting::get('lazada_affiliate_dividend_percent', 50);
 
         $store = $this->ensureLazadaStore($account);
-        $categoryIds = $dry ? [] : $this->ensureMuCategories();
+        $categoryIds = $dry ? [] : $this->ensureCategories($wanted);
         $platformId = MarketplacePlatform::firstOrCreate(['slug' => 'lazada'], ['name' => 'Lazada', 'is_active' => true])->id;
 
         $this->info("🏪 ร้าน: {$store->store_name} (id={$store->id}) | PV = ค่าคอม × {$dividendPercent}% ÷ {$commissionPerPv}");
@@ -194,10 +213,14 @@ class LazadaMuImport extends Command
         $rejected = [];
 
         foreach ($items as $pid => $it) {
-            $group = $wanted[$pid] ?? 'charm';
+            $meta = $wanted[$pid] ?? ['key' => 'charm', 'slug' => 'sai-mu-charm', 'is_mu' => true];
+            $group = $meta['key'];
 
             // ข้ามของที่ "ไม่ใช่สายมู" (ชื่อไปพ้องกับสินค้าอุปโภคบริโภค) — กันขึ้นร้านผิดหมวด
-            if ($this->isNotMuProduct($it['name'])) {
+            // ⚠️ บล็อกลิสต์นี้ใช้กับ "หมวดสายมู" เท่านั้น
+            //    คำอย่าง ครีม/ปุ๋ย/กาแฟ/เสื้อ เป็นของที่ "ถูกต้อง" สำหรับหมวด
+            //    ความงาม/บ้านสวน/อาหาร/แฟชั่น — ถ้าเอาไปกรองด้วยจะตัดสินค้าดีๆทิ้งหมด
+            if ($meta['is_mu'] && $this->isNotMuProduct($it['name'])) {
                 $skipped++;
                 $rejected[] = $pid.' | '.mb_substr($it['name'], 0, 46);
 
@@ -219,6 +242,14 @@ class LazadaMuImport extends Command
             if ($dry) {
                 $byGroup[$group] = ($byGroup[$group] ?? 0) + 1;
                 $this->line(sprintf('  [%s] %sB คอม %.0f%% | %s', $group, round((float) $it['price']), ($it['commission_rate'] ?? 0) * 100, mb_substr($it['name'], 0, 52)));
+
+                continue;
+            }
+
+            // หมวดปลายทางหาไม่เจอ (slug ในไฟล์ผิด/หมวดถูกลบ) → ข้าม ไม่ล้มทั้งรอบ
+            if (! isset($categoryIds[$group])) {
+                $skipped++;
+                $this->warn("  ⚠️  {$pid}: ไม่พบหมวด '{$meta['slug']}' — ข้าม");
 
                 continue;
             }
@@ -405,21 +436,43 @@ class LazadaMuImport extends Command
      *
      * @return array<string,int>
      */
-    private function ensureMuCategories(): array
+    /**
+     * เตรียมหมวดปลายทางให้ครบ แล้วคืน map key => category_id
+     *
+     * @param  array<string,array{key:string,slug:string,is_mu:bool}>  $wanted
+     * @return array<string,int>
+     */
+    private function ensureCategories(array $wanted): array
     {
-        $slugs = array_map(fn ($g) => $g[1], MuCategorySeeder::GROUPS);
-        if (ProductCategory::whereIn('slug', $slugs)->count() < count($slugs)) {
-            $this->warn('🔮 ยังไม่มีหมวดสายมูครบ — กำลังสร้างให้อัตโนมัติ...');
-            (new MuCategorySeeder)->setCommand($this)->run();
+        // ถ้าลิสต์มีของสายมู → ให้แน่ใจว่าหมวดสายมูถูกสร้างแล้ว
+        $needsMu = collect($wanted)->contains(fn ($w) => $w['is_mu']);
+        if ($needsMu) {
+            $slugs = array_map(fn ($g) => $g[1], MuCategorySeeder::GROUPS);
+            if (ProductCategory::whereIn('slug', $slugs)->count() < count($slugs)) {
+                $this->warn('🔮 ยังไม่มีหมวดสายมูครบ — กำลังสร้างให้อัตโนมัติ...');
+                (new MuCategorySeeder)->setCommand($this)->run();
+            }
         }
 
         $map = [];
-        foreach (MuCategorySeeder::GROUPS as $group => [$name, $slug]) {
-            $cat = ProductCategory::where('slug', $slug)->first();
-            if (! $cat) {
-                throw new \RuntimeException("สร้างหมวด {$slug} ไม่สำเร็จ");
+        $missing = [];
+        foreach ($wanted as $w) {
+            if (isset($map[$w['key']])) {
+                continue;
             }
-            $map[$group] = $cat->id;
+            $cat = ProductCategory::where('slug', $w['slug'])->first();
+            if (! $cat) {
+                // ⚠️ ไม่สร้างหมวดใหม่เองโดยพลการ — หมวดเป็นโครงสร้างที่แอดมินดูแล
+                //    ถ้า slug ผิด ให้ฟ้องแล้วข้าม ดีกว่าไปสร้างหมวดขยะทิ้งไว้
+                $missing[] = $w['slug'];
+
+                continue;
+            }
+            $map[$w['key']] = $cat->id;
+        }
+
+        if ($missing) {
+            $this->error('❌ ไม่พบหมวดเหล่านี้ในระบบ (ข้ามสินค้าของหมวดนั้น): '.implode(', ', array_unique($missing)));
         }
 
         return $map;
