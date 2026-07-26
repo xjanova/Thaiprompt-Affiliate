@@ -3347,7 +3347,8 @@ class FortuneChannelManager
         $accounts = $this->settings->getFortuneBankAccounts();
 
         // 🆕 (2026-05-31) โชว์บัญชีหลักบัญชีเดียว (is_default ก่อน → ไม่มีก็ตัวแรก) — เป็นมิตรกับผู้สูงอายุ
-        $primaryAccount = $accounts->firstWhere('is_default', true) ?? $accounts->first();
+        // (2026-07-26) ใช้ helper กลาง — กฎเดียวกับ FB และ API ของเว็บ จันทรา.online
+        $primaryAccount = $this->settings->getFortunePrimaryBankAccount();
         if ($primaryAccount) {
             $accounts = collect([$primaryAccount]);
         }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Juntra;
 
 use App\Http\Controllers\Controller;
+use App\Models\FortuneTellingSetting;
 use App\Models\PaymentBankAccount;
 use Illuminate\Http\JsonResponse;
 
@@ -21,18 +22,27 @@ use Illuminate\Http\JsonResponse;
  *
  * ส่งเลขบัญชีเต็ม (ไม่ mask) เพราะปลายทางคือ juntraweb ซึ่งเป็นระบบของเราเอง
  * และต้องเอาไปสร้าง QR ให้ลูกค้าสแกนจ่ายจริง — ไม่ใช่ข้อมูลที่ส่งให้ third party
+ *
+ * 🔴 (2026-07-26 FIX) เดิมดึง "บัญชี active ตัวแรกของทั้งระบบ" (is_default →
+ * sort_order → id) ซึ่งไม่สนว่าแอดมินติ๊กบัญชีไหนไว้ในหน้าตั้งค่าดูดวง
+ * (fortune_bank_account_ids) → เว็บสร้าง QR เป็นบัญชีร้าน แต่บอท FB/LINE รับเงิน
+ * เข้าบัญชีดูดวง = ลูกค้าเว็บโอนผิดบัญชี ตัวตรวจสลิปตีกลับทั้งที่โอนถูก
+ * (บั๊กชุดเดียวกับที่เคยเกิดกับ LINE เมื่อ 2026-07-24)
+ * ตอนนี้เรียกผ่าน FortuneTellingSetting ตัวเดียวกับบอท → ติ๊กตัวไหนได้ตัวนั้น
  */
 class PayoutAccountController extends Controller
 {
     public function __invoke(): JsonResponse
     {
+        $settings = FortuneTellingSetting::getSettings();
+
+        // เอาบัญชีที่บอทใช้สร้าง QR เป็นหลัก เพราะเว็บก็เอาไปสร้าง QR เหมือนกัน
+        // (ต้องเป็นใบเดียวกันเป๊ะ ๆ ไม่งั้น SlipOK จับปลายทางไม่ตรง)
+        // ถ้าไม่มีบัญชีไหนตั้งพร้อมเพย์ไว้เลย ยังส่งบัญชีหลักไป เว็บจะได้มีเลขบัญชี
+        // ให้ลูกค้าโอนแบบธนาคาร แล้วค่อย fallback ไปใช้พร้อมเพย์ที่ตั้งไว้ในเว็บเอง
         /** @var PaymentBankAccount|null $account */
-        $account = PaymentBankAccount::query()
-            ->where('is_active', true)
-            ->orderByDesc('is_default')
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->first();
+        $account = $settings->getFortunePromptpayAccount()
+            ?? $settings->getFortunePrimaryBankAccount();
 
         if (! $account) {
             return response()->json([

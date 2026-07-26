@@ -558,19 +558,10 @@ class FortuneConversationService
      */
     protected function getPromptPayId(): string
     {
-        // 1. เช็คบัญชีธนาคารดูดวง
-        $accounts = $this->settings->getFortuneBankAccounts();
-        foreach ($accounts as $account) {
-            if (method_exists($account, 'hasPromptpay') && $account->hasPromptpay()) {
-                return $account->promptpay_id;
-            }
-        }
-
-        // 2. เช็คบัญชี active ที่มี PromptPay
-        $bankAccount = \App\Models\PaymentBankAccount::active()
-            ->hasPromptpay()
-            ->orderByDesc('is_default')
-            ->first();
+        // 1-2. บัญชีที่ติ๊กไว้ในหน้าตั้งค่าดูดวง → ไม่มีค่อยตกไปบัญชี active ที่มีพร้อมเพย์
+        //      (2026-07-26) ย้ายกฎไป FortuneTellingSetting เพื่อให้เว็บ จันทรา.online
+        //      ที่ดึงบัญชีผ่าน API ใช้สูตรเดียวกัน — QR ต้องเป็นใบเดียวกันเสมอ
+        $bankAccount = $this->settings->getFortunePromptpayAccount();
 
         if ($bankAccount) {
             return $bankAccount->promptpay_id;
@@ -593,17 +584,9 @@ class FortuneConversationService
      */
     protected function getPromptPayType(): string
     {
-        $accounts = $this->settings->getFortuneBankAccounts();
-        foreach ($accounts as $account) {
-            if (method_exists($account, 'hasPromptpay') && $account->hasPromptpay()) {
-                return $account->promptpay_type ?? 'phone';
-            }
-        }
-
-        $bankAccount = \App\Models\PaymentBankAccount::active()
-            ->hasPromptpay()
-            ->orderByDesc('is_default')
-            ->first();
+        // ต้องเป็นบัญชีใบเดียวกับ getPromptPayId เสมอ — ถ้า type ไม่ตรงกับเลข
+        // พร้อมเพย์ QR ที่สร้างจะสแกนไม่ได้ (format ผิดชนิด)
+        $bankAccount = $this->settings->getFortunePromptpayAccount();
 
         if ($bankAccount) {
             return $bankAccount->promptpay_type ?? 'phone';
@@ -10792,14 +10775,9 @@ class FortuneConversationService
      */
     protected function getPrimaryFortuneBankAccount(): ?\App\Models\PaymentBankAccount
     {
-        $accounts = $this->settings->getFortuneBankAccounts();
-
-        if ($accounts->isEmpty()) {
-            return null;
-        }
-
-        // บัญชีหลัก (is_default=true) มาก่อน — ถ้าไม่มีก็เอาตัวแรกที่เรียงตาม sort_order แล้ว
-        return $accounts->firstWhere('is_default', true) ?? $accounts->first();
+        // (2026-07-26) กฎอยู่ใน FortuneTellingSetting ที่เดียว — LINE กับ API ของเว็บ
+        // ใช้ตัวเดียวกัน จะได้ไม่มีช่องทางไหนหลุดไปโชว์บัญชี default ของทั้งระบบอีก
+        return $this->settings->getFortunePrimaryBankAccount();
     }
 
     /**

@@ -1102,6 +1102,51 @@ TXT;
     }
 
     /**
+     * 🏦 (2026-07-26) บัญชีหลักของระบบดูดวง — บัญชีเดียวที่โชว์ให้ลูกค้าโอน
+     *
+     * กฎเดิม (is_default ก่อน → ไม่มีก็ตัวแรกตาม sort_order) ถูกก๊อปไว้หลายที่
+     * (FB ใน FortuneConversationService, LINE ใน FortuneChannelManager, API ของเว็บ)
+     * พอที่ไหนลืมเรียก getFortuneBankAccounts() ช่องทางนั้นจะไปโชว์บัญชี default
+     * ของ "ทั้งระบบ" แทนบัญชีที่แอดมินติ๊กไว้ในหน้าตั้งค่าดูดวง — เกิดจริงกับ LINE
+     * เมื่อ 2026-07-24 (โชว์บัญชี SCB ของร้าน ทั้งที่ QR เป็นบัญชีกสิกรของดูดวง)
+     * จึงย้ายกฎมาไว้ที่เดียวตรงนี้
+     */
+    public function getFortunePrimaryBankAccount(): ?PaymentBankAccount
+    {
+        $accounts = $this->getFortuneBankAccounts();
+
+        return $accounts->firstWhere('is_default', true) ?? $accounts->first();
+    }
+
+    /**
+     * 📱 (2026-07-26) บัญชีที่ใช้สร้าง QR พร้อมเพย์ให้ลูกค้าสแกนจ่าย
+     *
+     * ต้องเป็นบัญชีที่ "ติ๊กไว้ในหน้าตั้งค่าดูดวง" เท่านั้น ไม่ใช่บัญชี active ตัวแรก
+     * ของทั้งระบบ เพราะ SlipOK/ตัวจับ SMS ผูกกับบัญชีที่ติ๊กไว้ ถ้าลูกค้าสแกนจ่าย
+     * เข้าอีกบัญชี ตัวตรวจสลิปจะเห็นว่า "ปลายทางไม่ใช่บัญชีเรา" แล้วตีกลับทั้งที่
+     * ลูกค้าโอนถูก → ต้องให้แอดมินไล่ตรวจมือทุกใบ
+     *
+     * ลำดับตรงกับที่บอทใช้สร้าง QR เป๊ะ ๆ (getPromptPayId) — ห้ามใส่เงื่อนไข
+     * is_default มาแทรก ไม่งั้น QR ของเว็บกับของบอทจะชี้คนละบัญชีเมื่อติ๊กไว้
+     * หลายบัญชี
+     */
+    public function getFortunePromptpayAccount(): ?PaymentBankAccount
+    {
+        $selected = $this->getFortuneBankAccounts()
+            ->first(fn (PaymentBankAccount $account) => $account->hasPromptpay());
+
+        if ($selected) {
+            return $selected;
+        }
+
+        // กันเหนียว: บัญชีที่ติ๊กไว้ไม่มีพร้อมเพย์เลย — ยังต้องมี QR ให้ลูกค้าจ่ายได้
+        return PaymentBankAccount::active()
+            ->hasPromptpay()
+            ->orderByDesc('is_default')
+            ->first();
+    }
+
+    /**
      * ดึงโหมดแสดงช่องทางชำระเงิน
      *
      * @return string 'both', 'bank_only', 'promptpay_only'
