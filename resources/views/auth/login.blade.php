@@ -24,7 +24,12 @@
         // ดึงข้อมูลจาก SiteSetting (ที่แอดมินตั้งค่า)
         $siteSettings = \App\Models\SiteSetting::getSetting();
         $appName = $siteSettings->site_name ?? 'TP-Affiliate Pro';
-        $logo = $siteSettings->logo;
+
+        // 🔖 โลโก้ต้องเป็นตัวเดียวกับทั้งเว็บ (ธีมปัจจุบัน) มาก่อนเสมอ
+        //    เดิมอ่านจาก SiteSetting อย่างเดียว → หน้า login โชว์โลโก้เก่าที่ค้างอยู่ในตั้งค่านั้น
+        //    ส่วนหน้าอื่นๆ (storefront/admin V4) ใช้ ThemeSetting.logo_path = คนละรูปกัน
+        //    ลำดับ: โลโก้ธีม → โลโก้ใน SiteSetting → public/images/logo.png (สาขา @else ด้านล่าง)
+        $logo = optional(\App\Models\ThemeSetting::active())->logo_path ?: $siteSettings->logo;
         $favicon = $siteSettings->favicon;
     @endphp
 

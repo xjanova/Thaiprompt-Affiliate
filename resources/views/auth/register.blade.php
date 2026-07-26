@@ -23,7 +23,10 @@
         // ดึงข้อมูลจาก SiteSetting (ที่แอดมินตั้งค่า)
         $siteSettings = \App\Models\SiteSetting::getSetting();
         $appName = $siteSettings->site_name ?? 'TP-Affiliate Pro';
-        $logo = $siteSettings->logo;
+
+        // 🔖 โลโก้ตัวเดียวกับทั้งเว็บ (ธีมปัจจุบัน) มาก่อน แล้วค่อยถอยไป SiteSetting
+        //    เหตุผลเดียวกับหน้า login — ดูคอมเมนต์ใน auth/login.blade.php
+        $logo = optional(\App\Models\ThemeSetting::active())->logo_path ?: $siteSettings->logo;
         $favicon = $siteSettings->favicon;
     @endphp
 
