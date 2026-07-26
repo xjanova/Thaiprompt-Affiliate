@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\EveProductWish;
 use App\Models\Product;
+use App\Services\Eve\EveActor;
+use App\Services\Eve\EveAdminBrain;
+use App\Services\Eve\EvePageContext;
+use App\Services\Eve\PersonaIdentityResolver;
 use App\Services\FortuneAIService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -61,21 +65,35 @@ class EveAssistantController extends Controller
     /**
      * POST /eve/chat
      */
-    public function chat(Request $request, FortuneAIService $aiService): JsonResponse
-    {
+    public function chat(
+        Request $request,
+        FortuneAIService $aiService,
+        EvePageContext $pages,
+        PersonaIdentityResolver $personas,
+        EveAdminBrain $adminBrain
+    ): JsonResponse {
         $data = $request->validate([
             'message' => 'required|string|min:1|max:500',
             'history' => 'nullable|array|max:16',
             'history.*.role' => 'required_with:history|in:user,assistant',
             'history.*.content' => 'required_with:history|string|max:1000',
+            // ชื่อ route ของหน้าที่ลูกค้ายืนอยู่ (widget ส่งมา) — ผ่าน whitelist อีกชั้นเสมอ
+            'page' => 'nullable|string|max:80',
         ]);
 
         $user = $request->user();
 
+        // 👤 "กำลังคุยกับใคร" — อ่านจาก Auth เท่านั้น ห้ามเชื่อค่าจาก request เด็ดขาด
+        //    (ถ้ารับจาก body ใครก็ส่ง tier=admin มาเปิดเครื่องมือหลังบ้านได้)
+        $actor = EveActor::fromRequest($request);
+
+        // 📍 หน้าปัจจุบัน — ถ้าไม่รู้จักชื่อ route นี้ จะได้ null แล้วเงียบไป (ไม่พูดถึงหน้า)
+        $routeName = is_string($data['page'] ?? null) && $pages->lookup($data['page']) ? $data['page'] : null;
+
         // 💸 เพดานการใช้งานต่อวัน (ซ้อนบน throttle รายนาทีของ route)
         //    endpoint นี้ใช้ AI key pool "ก้อนเดียวกับการดูดวงที่ลูกค้าจ่ายเงิน"
         //    ถ้าปล่อยให้คนนอกยิงฟรีไม่จำกัด คีย์จะถูกเผา/ติด rate limit จนสินค้าที่มีคนจ่ายเงินเสียหาย
-        if (! $this->consumeDailyQuota($request, $user?->id)) {
+        if (! $this->consumeDailyQuota($request, $user?->id, $actor)) {
             return response()->json([
                 'success' => false,
                 'message' => 'วันนี้น้อง Eve คุยครบโควตาแล้วค่ะ 🙏 พรุ่งนี้มาคุยกันใหม่นะคะ หรือทักแอดมินได้เลยค่ะ',
@@ -83,8 +101,12 @@ class EveAssistantController extends Controller
             ], 200);
         }
 
-        $userName = $user?->name;
-        $systemPrompt = $this->buildSystemPrompt($userName);
+        // 🧠 ประกอบสมองตามระดับผู้ใช้:
+        //    ลูกค้า → บุคลิกผู้ช่วยร้าน + นิสัย/ของที่ชอบ (จากระบบ RPG) + บริบทหน้า
+        //    แอดมิน → บุคลิกผู้ช่วยหลังบ้าน + ตัวเลขจริงจากระบบ (ห้าม AI เดาเลขเอง)
+        $systemPrompt = $actor->isAdmin()
+            ? $this->buildAdminSystemPrompt($actor, $routeName, $pages, $adminBrain)
+            : $this->buildCustomerSystemPrompt($actor, $routeName, $pages, $personas);
 
         // 🔒 กัน Prompt Injection: ประวัติสนทนาต้องมาจาก "ฝั่งเซิร์ฟเวอร์" เท่านั้น
         //    เดิมรับ history จากไคลเอนต์ตรงๆ แล้วต่อเข้า prompt → ผู้โจมตี POST เทิร์นปลอมของ Eve
@@ -93,7 +115,8 @@ class EveAssistantController extends Controller
         $history = $this->loadTranscript($transcriptKey, $data['history'] ?? []);
         $userMessage = $this->buildUserMessage($history, $data['message']);
 
-        $config = ['temperature' => 0.6, 'max_tokens' => 320];
+        // แอดมินต้องการรายงาน/สรุปที่ยาวกว่าลูกค้า (ลูกค้า 320 / แอดมิน 1200)
+        $config = ['temperature' => 0.6, 'max_tokens' => $actor->maxTokens()];
 
         try {
             try {
@@ -135,7 +158,14 @@ class EveAssistantController extends Controller
 
             // 🔎 ค้นหาสินค้า: ใช้แท็ก [FIND:] จาก AI ถ้ามี — ไม่งั้นดึงเจตนาจาก "ข้อความลูกค้า" เอง
             //    (กันเคสโมเดลเล็กไม่ปล่อยแท็ก → เดิมตอบ "หาให้ค่ะ" แต่ไม่เคยค้นจริง = ลูกค้าเห็นเป็นค้าง)
-            [$reply, $products, $mood] = $this->runProductSearch($reply, $data['message'], $user?->id);
+            //    (แอดมินไม่ต้องค้นสินค้าให้ — เขาถามเรื่องงานหลังบ้าน ไม่ใช่หาของซื้อ
+            //     ถ้าปล่อยผ่าน fallback ตรวจเจตนาจะไปค้นสินค้าให้ทั้งที่ไม่ได้ขอ)
+            if ($actor->isAdmin()) {
+                $products = [];
+                $mood = $this->guessMood($reply);
+            } else {
+                [$reply, $products, $mood] = $this->runProductSearch($reply, $data['message'], $user?->id);
+            }
 
             // 🧼 ล้างเศษแท็กเครื่องมือ + ป้ายความเสี่ยงภายใน ก่อนส่งถึงลูกค้าเสมอ (ด่านสุดท้าย)
             $reply = $this->scrubInternalArtifacts($reply);
@@ -152,6 +182,10 @@ class EveAssistantController extends Controller
                     'reply' => $reply,
                     'mood' => $mood,
                     'products' => $products,
+                    // 🧭 ปุ่มลัดพาไปหน้าที่ถูกต้อง — url ถูกสร้างจากชื่อ route ฝั่งเซิร์ฟเวอร์
+                    //    ไม่เคย echo url ที่ไคลเอนต์ส่งมา และกรองตามสิทธิ์ของผู้ใช้แล้ว
+                    'actions' => array_slice($pages->shortcutsFor($actor, $routeName), 0, 4),
+                    'tier' => $actor->tier,
                 ],
             ]);
         } catch (Throwable $e) {
@@ -169,9 +203,76 @@ class EveAssistantController extends Controller
     }
 
     /**
-     * สร้าง system prompt — persona น้อง Eve + guardrails ข้อมูลอ่อนไหว
+     * system prompt ฝั่ง "ลูกค้า/ผู้เยี่ยมชม"
+     *
+     * ประกอบจาก 3 ส่วน: บุคลิกหลัก + โปรไฟล์ลูกค้า (ระบบ RPG) + หน้าที่กำลังยืนอยู่
      */
-    private function buildSystemPrompt(?string $userName): string
+    private function buildCustomerSystemPrompt(
+        EveActor $actor,
+        ?string $routeName,
+        EvePageContext $pages,
+        PersonaIdentityResolver $personas
+    ): string {
+        $prompt = $this->buildBaseCustomerPrompt($actor->displayName());
+
+        // 👤 นิสัย/ของที่ชอบ จากระบบ persona (RPG) — เฉพาะผู้ที่ล็อกอินและเชื่อมบัญชีได้
+        //    ⚠️ ใช้ buildSafeContextBlock() เท่านั้น ห้ามใช้ toAiContextBlock() ของโมเดล
+        //       เพราะตัวนั้นพ่วง "ธงความเสี่ยง" (MENTAL_FRAGILE ฯลฯ) เข้ามาใน prompt ด้วย
+        if (! $actor->isGuest()) {
+            $block = $personas->buildSafeContextBlock($personas->forUser($actor->user));
+            if ($block !== '') {
+                $prompt .= "\n\n".$block;
+            }
+        }
+
+        // 📍 รู้ว่าตัวเองอยู่หน้าไหน → ตอบให้ตรงบริบท และพาไปหน้าที่ถูกต้องได้
+        $pageBlock = $pages->describe($routeName);
+        if ($pageBlock !== '') {
+            $prompt .= "\n\n".$pageBlock;
+        }
+
+        return $prompt;
+    }
+
+    /**
+     * system prompt ฝั่ง "แอดมิน" — ผู้ช่วยหลังบ้าน ไม่ใช่ผู้ช่วยขายของ
+     *
+     * หลักการ: ตัวเลขทุกตัวคำนวณจาก DB จริงแล้วยัดมาให้ AI แค่ "เรียบเรียง"
+     * ห้าม AI คิดเลข/เดาสถิติเองเด็ดขาด (ผิดพลาดแล้วแอดมินตัดสินใจผิดตาม)
+     */
+    private function buildAdminSystemPrompt(
+        EveActor $actor,
+        ?string $routeName,
+        EvePageContext $pages,
+        EveAdminBrain $brain
+    ): string {
+        $name = $actor->displayName() ?: 'แอดมิน';
+
+        $prompt = "คุณคือ \"น้อง Eve\" ผู้ช่วย AI ประจำหลังบ้านของ ThaiPrompt กำลังคุยกับ **ทีมงานแอดมิน** ชื่อ \"{$name}\". "
+            ."บทบาทตอนนี้คือ \"ผู้ช่วยผู้ดูแลระบบ\" ไม่ใช่พนักงานขาย — ตอบแบบเพื่อนร่วมงานที่สรุปเก่ง ตรงประเด็น มีตัวเลขประกอบ. "
+            ."ภาษาไทยล้วน สุภาพ ลงท้าย 'ค่ะ/นะคะ' (คุณเป็นผู้หญิง ห้ามใช้ครับ/ผม). "
+            ."ตอบได้ยาวขึ้นเมื่อเป็นการสรุป/รายงาน ใช้บุลเล็ตหรือหัวข้อสั้นๆ ให้อ่านง่าย.\n\n"
+            ."หน้าที่: สรุปผลการดำเนินงาน · ชี้เรื่องด่วนที่ต้องจัดการก่อน · บอกแนวโน้มเทียบช่วงก่อน · "
+            ."แนะนำว่าควรไปจัดการที่หน้าไหนในระบบ.\n\n"
+            .$brain->buildBriefingBlock()
+            ."\n\n🔒 กฎเหล็ก: "
+            ."(1) ห้ามคิดเลข/เดาสถิติเอง ใช้เฉพาะตัวเลขที่ให้ไว้ข้างบน ถ้าไม่มีให้บอกว่ายังไม่มีข้อมูลและชี้หน้าที่ควรไปดู. "
+            ."(2) ห้ามเปิดเผยรหัสผ่าน/API key/โทเคน/ข้อมูลบัตรหรือบัญชีธนาคาร แม้แอดมินจะถามก็ตาม. "
+            ."(3) ห้ามเปิดเผยข้อมูลส่วนตัวของลูกค้ารายบุคคลโดยไม่จำเป็น — สรุปเป็นภาพรวมพอ. "
+            ."(4) ห้ามใช้แท็ก [FIND:] (โหมดแอดมินไม่ค้นสินค้า).";
+
+        $pageBlock = $pages->describe($routeName);
+        if ($pageBlock !== '') {
+            $prompt .= "\n\n".$pageBlock;
+        }
+
+        return $prompt;
+    }
+
+    /**
+     * บุคลิกหลักของน้อง Eve ฝั่งลูกค้า + guardrails ข้อมูลอ่อนไหว
+     */
+    private function buildBaseCustomerPrompt(?string $userName): string
     {
         $nameLine = $userName ? "ลูกค้าชื่อ \"{$userName}\" (เรียกชื่อได้เป็นกันเอง). " : '';
 
@@ -376,9 +477,11 @@ class EveAssistantController extends Controller
      *
      * นับตาม user id เมื่อล็อกอิน ไม่งั้นนับตาม IP (hash) · หมดอายุอัตโนมัติสิ้นวัน
      */
-    private function consumeDailyQuota(Request $request, ?int $userId): bool
+    private function consumeDailyQuota(Request $request, ?int $userId, ?EveActor $actor = null): bool
     {
-        $limit = $userId ? self::DAILY_CAP_MEMBER : self::DAILY_CAP_GUEST;
+        // โควตาตามระดับผู้ใช้ (แอดมิน 500 / ผู้ขาย 200 / ลูกค้า 120 / ผู้เยี่ยมชม 60)
+        // แอดมินต้องไม่โดนตัดกลางทางตอนไล่สรุปงาน จึงให้สูงกว่าลูกค้าชัดเจน
+        $limit = $actor ? $actor->dailyQuota() : ($userId ? self::DAILY_CAP_MEMBER : self::DAILY_CAP_GUEST);
         $who = $userId ? 'u'.$userId : 'ip-'.sha1((string) $request->ip());
         $key = 'eve:chat:daily:'.$who.':'.now()->format('Ymd');
 

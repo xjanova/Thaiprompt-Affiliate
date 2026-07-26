@@ -109,9 +109,23 @@
                             </template>
                         </div>
                     </template>
+
+                    {{-- 🧭 ปุ่มลัดพาไปหน้าที่ถูกต้อง — url มาจากเซิร์ฟเวอร์ (resolve จากชื่อ route)
+                         ไม่ใช่ลิงก์ที่ AI แต่งเอง จึงไม่มีทางพาไปหน้าที่ไม่มีอยู่จริง --}}
+                    <template x-if="m.actions && m.actions.length">
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">
+                            <template x-for="(a,ai) in m.actions" :key="ai">
+                                <a :href="a.url"
+                                   style="font-size:12px;padding:5px 10px;border-radius:999px;text-decoration:none;
+                                          border:1px solid rgba(122,92,255,.35);color:#6d4dff;background:rgba(122,92,255,.08);
+                                          white-space:nowrap"
+                                   x-text="a.label"></a>
+                            </template>
+                        </div>
+                    </template>
                 </div>
             </template>
-            <div class="eve-typing" x-show="busy">น้อง Eve กำลังพิมพ์<span x-text="dots"></span></div>
+            <div class="eve-typing" x-show="busy" role="status" aria-live="polite">น้อง Eve กำลังพิมพ์<span x-text="dots"></span></div>
             </div>
         </div>
 
@@ -143,6 +157,9 @@ function eveWidget() {
         _fid: 0,             // running id กัน key ซ้ำใน x-for
         _ambient: null,      // timer เด้งอีโมจิเบาๆ ตอนว่าง
         csrf: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        // ชื่อ route ของหน้าปัจจุบัน — ส่งให้ Eve รู้ว่าลูกค้ายืนอยู่หน้าไหน
+        // ใช้ Js::from ตามกฎโปรเจกต์ (เลี่ยง @directive ที่มีวงเล็บซ้อน)
+        pageRoute: {{ Js::from(Route::currentRouteName()) }},
 
         // ชุดอีโมจิตามอารมณ์ — สุ่มหยิบมาลอย
         EMOJI: {
@@ -223,13 +240,35 @@ function eveWidget() {
             try {
                 const res = await fetch('{{ route('eve.chat') }}', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrf, 'X-Requested-With': 'XMLHttpRequest' },
-                    body: JSON.stringify({ message: text, history })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        // อ่าน token ใหม่ทุกครั้ง — หน้าที่เปิดค้างนานแล้ว session ถูก regenerate
+                        // จะทำให้ token ที่แคชไว้ตอน init หมดอายุ แล้ว 419 ทุกครั้ง
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || this.csrf,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    // page = ชื่อ route ปัจจุบัน → Eve รู้ว่าลูกค้ายืนอยู่หน้าไหน (เซิร์ฟเวอร์ตรวจ whitelist อีกชั้น)
+                    body: JSON.stringify({ message: text, history, page: this.pageRoute })
                 });
+
+                // ⚠️ ต้องเช็ค res.ok ก่อน — ไม่งั้น 429 จะเอาข้อความ "Too Many Attempts."
+                //    มาแสดงเป็นคำพูดของ Eve แล้ว TTS ก็อ่านออกเสียงเป็นภาษาไทยด้วย
+                if (!res.ok) {
+                    const msg = res.status === 429 ? 'ช่วงนี้มีคนคุยเยอะค่ะ 🙏 รอสักครู่แล้วลองใหม่นะคะ'
+                              : res.status === 419 ? 'เซสชันหมดอายุค่ะ รบกวนรีเฟรชหน้าแล้วคุยต่อนะคะ 🙏'
+                              : res.status >= 500  ? 'ระบบขัดข้องชั่วคราวค่ะ ลองใหม่อีกครั้งนะคะ 🙏'
+                              : 'ตอนนี้น้อง Eve ตอบไม่ได้ค่ะ ลองใหม่อีกครั้งนะคะ 🙏';
+                    this.messages.push({ role: 'assistant', content: msg });
+                    this.emotion = 'idle'; this.pop('🙏'); this.scroll();
+                    return;
+                }
+
                 const data = await res.json();
                 const reply = data?.data?.reply || data?.message || 'ขออภัยค่ะ ตอนนี้น้อง Eve ตอบไม่ได้ ลองใหม่อีกครั้งนะคะ';
                 const prods = data?.data?.products || [];
-                this.messages.push({ role: 'assistant', content: reply, products: prods });
+                const acts  = data?.data?.actions || [];
+                this.messages.push({ role: 'assistant', content: reply, products: prods, actions: acts });
                 this.emotion = this.moodToEmotion(data?.data?.mood);
                 this.scroll();
                 this.speak(reply);
