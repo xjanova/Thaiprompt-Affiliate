@@ -45,6 +45,27 @@ class StorefrontController extends Controller
         // สถิติ
         $stats = $this->getStats();
 
+        // ── โหมดการแสดงผลของหน้า ─────────────────────────────────────────────
+        // 'home'   = ยังไม่เลือกอะไร → โชว์เต็มรูปแบบ (แบนเนอร์ใหญ่/ดีลเด็ด/หมวดหมู่/สิทธิประโยชน์)
+        // 'browse' = กำลังเลือกดูอะไรอยู่ (หมวด/ค้นหา/แท็ก/ประเภทร้าน)
+        //            → ตัดของตกแต่งหน้าแรกออกให้หมด เหลือ "ของที่เขากำลังหา" เต็มหน้า
+        //
+        // เหตุผล: แบนเนอร์ใหญ่ + ดีลเด็ด + โชว์เคสหมวด ซ้ำอยู่ทุกหน้าทำให้
+        // คนเลือกหมวดแล้วต้องเลื่อนผ่านของเดิม ~1,500px กว่าจะเจอสินค้าที่ขอดู
+        $activeCategory = $this->resolveActiveCategory($request);
+        $browseMode = ($activeCategory
+            || $request->filled('search')
+            || $request->filled('q')
+            || $request->filled('tag')
+            || ($request->filled('shop_type') && $request->get('shop_type') !== 'all'))
+            ? 'browse'
+            : 'home';
+
+        // ภาพปกหมวด (3 ชั้น: รูปแอดมิน → โมเสกจากสินค้าจริง → ไอคอน)
+        $categoryCover = $activeCategory
+            ? app(\App\Services\CategoryImageService::class)->cover($activeCategory)
+            : null;
+
         return view('storefront.index', compact(
             'banners',
             'categories',
@@ -52,7 +73,10 @@ class StorefrontController extends Controller
             'flashDealEndTime',
             'featuredStores',
             'products',
-            'stats'
+            'stats',
+            'browseMode',
+            'activeCategory',
+            'categoryCover'
         ));
     }
 
@@ -356,6 +380,37 @@ class StorefrontController extends Controller
      * @param  string  $slug  slug ของหมวดหมู่
      * @return array<int> รายการ id ทั้งสาขา (ว่าง = ไม่พบหมวดหมู่)
      */
+    /**
+     * หาหมวดที่กำลังเลือกดูอยู่ (จาก ?category=slug) พร้อมหมวดลูกและหมวดแม่
+     *
+     * ใช้ทำ "หัวหมวด" บนหน้าเลือกดู — ต้องมี children ไว้ทำชิปหมวดย่อย
+     * และ parent ไว้ทำ breadcrumb
+     *
+     * @return \App\Models\ProductCategory|null  null = ไม่ได้เลือกหมวด หรือ slug ไม่ตรงกับหมวดไหน
+     */
+    private function resolveActiveCategory(Request $request): ?ProductCategory
+    {
+        $slug = $request->get('category');
+
+        // กัน ?category[]=x (array) และ slug ที่หน้าตาเป็นไปไม่ได้ — เหมือนที่ทำใน resolveCategoryTreeIds
+        if (! is_scalar($slug)) {
+            return null;
+        }
+        $slug = trim((string) $slug);
+        if ($slug === '' || ! preg_match('/^[\pL\pN._-]{1,120}$/u', $slug)) {
+            return null;
+        }
+
+        return ProductCategory::query()
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->with([
+                'parent:id,name,slug',
+                'children' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')->select('id', 'name', 'slug', 'parent_id'),
+            ])
+            ->first();
+    }
+
     private function resolveCategoryTreeIds(string $slug): array
     {
         $slug = trim($slug);

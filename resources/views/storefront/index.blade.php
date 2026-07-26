@@ -269,7 +269,10 @@
 
     {{-- ========================================
          HERO SECTION - Banner + Side Panels
+         ⚠️ โชว์เฉพาะ "หน้าแรก" เท่านั้น
+         พอเลือกหมวด/ค้นหา แบนเนอร์ใหญ่ 350-450px จะดันสินค้าที่ลูกค้าขอดูลงไปนอกจอ
          ======================================== --}}
+    @if($browseMode === 'home')
     <div class="container mx-auto px-4 py-6">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {{-- Main Banner Carousel --}}
@@ -370,11 +373,30 @@
             </div>
         </div>
     </div>
+    @endif
+
+    {{-- หัวหมวด — แทนที่แบนเนอร์ใหญ่เมื่อเลือกดูหมวด --}}
+    @if($browseMode === 'browse' && $activeCategory)
+        <x-storefront.category-hero
+            :category="$activeCategory"
+            :cover="$categoryCover"
+            :total="method_exists($products, 'total') ? $products->total() : $products->count()" />
+    @endif
+
+    {{-- แบนเนอร์โปรโมทรงเตี้ย — โหมดเลือกดูยังโปรโมได้ แต่ไม่แย่งที่สินค้า --}}
+    @if($browseMode === 'browse' && $banners && count($banners) > 0)
+    <div class="container mx-auto px-4 pb-2">
+        <x-storefront.banner-carousel
+            :banners="$banners"
+            :autoPlayInterval="7000"
+            height="h-[110px] md:h-[140px]" />
+    </div>
+    @endif
 
     {{-- ========================================
          FLASH DEALS SECTION
          ======================================== --}}
-    @if($flashDeals && $flashDeals->count() > 0)
+    @if($browseMode === 'home' && $flashDeals && $flashDeals->count() > 0)
     <div class="container mx-auto px-4 py-6">
         <x-storefront.flash-deals
             :products="$flashDeals"
@@ -385,8 +407,9 @@
 
     {{-- ========================================
          CATEGORY SHOWCASE SECTION
+         โชว์เฉพาะหน้าแรก — ตอนเลือกหมวดแล้วมีชิปหมวดย่อยในหัวหมวดแทนแล้ว
          ======================================== --}}
-    @if($categories && $categories->count() > 0)
+    @if($browseMode === 'home' && $categories && $categories->count() > 0)
     <div class="container mx-auto px-4">
         <x-storefront.category-showcase
             :categories="$categories"
@@ -741,7 +764,9 @@
 
     {{-- ========================================
          BENEFITS SECTION
+         โชว์เฉพาะหน้าแรก — คนที่กำลังเลือกสินค้าไม่ต้องอ่านข้อดีเว็บซ้ำทุกหน้า
          ======================================== --}}
+    @if($browseMode === 'home')
     <div class="container mx-auto px-4 py-8">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             {{-- Free Shipping --}}
@@ -805,10 +830,12 @@
             </div>
         </div>
     </div>
+    @endif
 
     {{-- ========================================
          NEWSLETTER SECTION
          ======================================== --}}
+    @if($browseMode === 'home')
     <div class="container mx-auto px-4 py-8">
         <div class="relative overflow-hidden rounded-3xl
                    bg-gradient-to-br from-orange-500 via-red-500 to-pink-600
@@ -858,6 +885,7 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
 
 {{-- ========================================
