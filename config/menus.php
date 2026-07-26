@@ -274,6 +274,7 @@ return [
                 ['label' => '🤖 นำเข้าอัตโนมัติ', 'route' => 'admin.lazada-hub.auto-import.index', 'icon' => 'fas fa-robot', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-violet-500 to-purple-500'],
                 ['label' => '📈 อนาไลติก', 'route' => 'admin.lazada-hub.analytics.index', 'icon' => 'fas fa-chart-line'],
                 ['label' => '🖱️ บันทึกการคลิก', 'route' => 'admin.lazada-hub.analytics.clicks', 'icon' => 'fas fa-hand-pointer'],
+                ['label' => '🎯 ของที่ลูกค้าอยากได้', 'route' => 'admin.lazada-hub.wishes.index', 'icon' => 'fas fa-lightbulb', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-emerald-500 to-teal-500'],
             ],
         ],
 

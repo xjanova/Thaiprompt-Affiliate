@@ -3784,6 +3784,14 @@ Route::prefix('lazada-hub')->name('lazada-hub.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\LazadaHub\AnalyticsController::class, 'index'])->name('index');
         Route::get('/clicks', [\App\Http\Controllers\Admin\LazadaHub\AnalyticsController::class, 'clicks'])->name('clicks');
     });
+
+    // คิว "ของที่ลูกค้าอยากได้" (หน้าเฉพาะ — จัดกลุ่มคำซ้ำ + ส่งออก CSV)
+    // ⚠️ ชื่อ route ห้ามชน wishes.status ของเดิม (AutoImportController — อัปเดตทีละรายการ)
+    Route::prefix('wishes')->name('wishes.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LazadaHub\ProductWishController::class, 'index'])->name('index');
+        Route::post('/update-status', [\App\Http\Controllers\Admin\LazadaHub\ProductWishController::class, 'updateStatus'])->name('update');
+        Route::get('/export', [\App\Http\Controllers\Admin\LazadaHub\ProductWishController::class, 'export'])->name('export');
+    });
 });
 
 // ========================================

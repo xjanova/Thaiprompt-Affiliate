@@ -25,4 +25,12 @@ class EveProductWish extends Model
         'budget' => 'decimal:2',
         'results_found' => 'integer',
     ];
+
+    /**
+     * ลูกค้าที่ขอ (null = ยังไม่ล็อกอินตอนคุยกับ Eve)
+     */
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }
