@@ -107,7 +107,13 @@ class MarketplaceCommissionController extends Controller
     {
         $commission->load(['user', 'order.platform', 'order.account', 'order.items']);
 
-        return view('admin.marketplace.commissions.show', compact('commission'));
+        // สถานะการเคลียร์เงินของลาซาด้า — คำนวณที่นี่ ไม่ใช่ใน Blade
+        // (หน้าจอกับด่านตรวจฝั่งเซิร์ฟเวอร์ต้องใช้ตรรกะตัวเดียวกันเสมอ ไม่งั้นจะเริ่มไม่ตรงกัน)
+        $guard = new AffiliateSettlementGuard;
+        $settle = $guard->settlementBadge($commission);
+        $verdict = $guard->check($commission);
+
+        return view('admin.marketplace.commissions.show', compact('commission', 'settle', 'verdict'));
     }
 
     /**

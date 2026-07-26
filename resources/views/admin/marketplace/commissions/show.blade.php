@@ -218,9 +218,29 @@
                     </h3>
                 </div>
                 <div class="p-6 space-y-3">
+                    {{-- 🚨 สถานะการเคลียร์เงินของลาซาด้า — ต้องเห็นก่อนกดอนุมัติ/จ่ายเสมอ
+                         (เดิมหน้านี้โชว์ปุ่มเขียวเต็มที่ กดแล้วเด้ง 422 โดยไม่รู้สาเหตุ) --}}
+                    @php $blocked = ! ($verdict['allowed'] ?? false); @endphp
+
+                    <div class="rounded-xl px-4 py-3 text-sm
+                                {{ $blocked ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300' }}">
+                        <div class="font-semibold flex items-center gap-2">
+                            <i class="fas {{ $blocked ? 'fa-triangle-exclamation' : 'fa-circle-check' }}"></i>
+                            <span>{{ $settle['label'] ?? ($blocked ? 'รอลาซาด้ายืนยัน' : 'ลาซาด้ายืนยันแล้ว') }}</span>
+                        </div>
+                        @if($blocked && ! empty($verdict['reason']))
+                            <p class="mt-1 leading-relaxed">{{ $verdict['reason'] }}</p>
+                        @endif
+                    </div>
+
                     @if($commission->status === 'pending')
                         <button type="button" onclick="approveCommission()"
-                                class="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all font-medium flex items-center justify-center gap-2">
+                                @disabled($blocked)
+                                title="{{ $blocked ? ($verdict['reason'] ?? '') : 'อนุมัติค่าคอม' }}"
+                                class="w-full px-4 py-3 rounded-xl transition-all font-medium flex items-center justify-center gap-2
+                                       {{ $blocked
+                                          ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                          : 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:shadow-lg hover:shadow-blue-500/25' }}">
                             <i class="fas fa-check"></i>
                             <span>อนุมัติ</span>
                         </button>
@@ -234,7 +254,12 @@
 
                     @if($commission->status === 'approved')
                         <button type="button" onclick="payCommission()"
-                                class="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all font-medium flex items-center justify-center gap-2">
+                                @disabled($blocked)
+                                title="{{ $blocked ? ($verdict['reason'] ?? '') : 'จ่ายเข้าวอลเลต' }}"
+                                class="w-full px-4 py-3 rounded-xl transition-all font-medium flex items-center justify-center gap-2
+                                       {{ $blocked
+                                          ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                          : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-500/25' }}">
                             <i class="fas fa-money-bill-wave"></i>
                             <span>จ่ายเงิน</span>
                         </button>

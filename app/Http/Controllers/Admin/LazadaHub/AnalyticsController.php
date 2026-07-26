@@ -92,7 +92,12 @@ class AnalyticsController extends Controller
             ->selectRaw("COALESCE(SUM(CASE WHEN o.commission_status IN ({$settledIn}) THEN o.net_commission ELSE 0 END), 0) as commission_settled")
             ->selectRaw("COALESCE(SUM(CASE WHEN o.commission_status IN ({$unconfirmedIn}) THEN o.net_commission ELSE 0 END), 0) as commission_unconfirmed")
             ->selectRaw("SUM(CASE WHEN o.commission_status IN ({$settledIn}) THEN 1 ELSE 0 END) as settled_orders")
-            ->selectRaw("SUM(CASE WHEN o.commission_status = 'pending' THEN 1 ELSE 0 END) as pending_orders")
+            // ⚠️ ต้องนับ 'calculated' รวมกับ 'pending' ด้วย
+            //    enum มี 5 ค่า แต่เดิมนับแค่ settled/pending/cancelled → ออเดอร์ที่แอดมินกด
+            //    "คำนวณคอมมิชชั่น" (กลายเป็น calculated) จะหายไปจากทุกตัวนับ
+            //    ผลคือ ยอดรวม 12 แต่ ยืนยันแล้ว 0 + รออนุมัติ 0 + ยกเลิก 0 = ตัวเลขไม่ตรงกันเอง
+            //    ทั้งที่ยอดเงินฝั่ง commission_unconfirmed นับ calculated อยู่แล้ว
+            ->selectRaw("SUM(CASE WHEN o.commission_status IN ({$unconfirmedIn}) THEN 1 ELSE 0 END) as pending_orders")
             ->selectRaw("SUM(CASE WHEN o.commission_status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_orders")
             ->first();
 
@@ -123,7 +128,7 @@ class AnalyticsController extends Controller
         // 🚨 ตัวเลขที่เจ้าของระบบต้องเห็น: ลาซาด้าบอกว่าเคลียร์แล้ว แต่ด่านอื่นยังไม่ผ่าน
         $settledButBlocked = (int) $this->ordersBaseQuery($platformId, $from, $to)
             ->whereIn('o.order_status', LazadaConversionSyncService::SETTLED_STATUSES)
-            ->where('o.commission_status', 'pending')
+            ->whereIn('o.commission_status', self::UNCONFIRMED_COMMISSION_STATUSES)
             ->count();
 
         // ── 4) กรวยการแปลง ──
@@ -533,7 +538,7 @@ class AnalyticsController extends Controller
 
         try {
             $query = $this->ordersBaseQuery($platformId, $from, $to)
-                ->where('o.commission_status', 'pending')
+                ->whereIn('o.commission_status', self::UNCONFIRMED_COMMISSION_STATUSES)
                 ->selectRaw('COUNT(*) as pending_total');
 
             foreach ($keys as $key) {
@@ -589,7 +594,7 @@ class AnalyticsController extends Controller
 
         $query = MarketplaceOrder::query()
             ->where('platform_id', $platformId)
-            ->where('commission_status', 'pending');
+            ->whereIn('commission_status', self::UNCONFIRMED_COMMISSION_STATUSES);
 
         $this->applyOrderDateRange($query, $from, $to, '');
 

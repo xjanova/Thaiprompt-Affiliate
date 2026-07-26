@@ -176,7 +176,12 @@
             <span class="tp-muted" style="font-size:.72rem;">ขั้น 1–2 นับเป็น "คลิก" · ขั้น 3–4 นับเป็น "ออเดอร์"</span>
         </div>
 
-        @if($funnel[0]['count'] === 0)
+        {{-- ⚠️ ซ่อนกรวยได้ก็ต่อเมื่อ "ไม่มีอะไรเลย" จริงๆ
+             เดิมเช็คแค่จำนวนคลิก → ถ้ามีออเดอร์เข้ามาแล้วแต่ยังจับคู่คลิกไม่ได้
+             (ซึ่งเป็นสภาพที่เป็นไปได้มากที่สุดตอนนี้) กรวยจะหายทั้งอัน
+             ทั้งที่ขั้น 3-4 นับจาก "ออเดอร์" ซึ่งไม่ได้ขึ้นกับ click log เลย --}}
+        @php $funnelAllZero = collect($funnel)->every(fn ($s) => ($s['count'] ?? 0) === 0); @endphp
+        @if($funnelAllZero)
             <div style="text-align:center;padding:28px 16px;color:var(--ink2);">
                 <i class="fas fa-hand-pointer" style="font-size:2rem;opacity:.35;"></i>
                 <p style="margin:12px 0 0;font-size:.9rem;">ยังไม่มีคลิกในช่วงวันที่ที่เลือก</p>
