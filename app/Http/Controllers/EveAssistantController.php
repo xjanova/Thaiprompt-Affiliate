@@ -6,6 +6,7 @@ use App\Models\EveProductWish;
 use App\Models\Product;
 use App\Services\Eve\EveActor;
 use App\Services\Eve\EveAdminBrain;
+use App\Services\Eve\EveMemberBrain;
 use App\Services\Eve\EvePageContext;
 use App\Services\Eve\PersonaIdentityResolver;
 use App\Services\FortuneAIService;
@@ -80,7 +81,8 @@ class EveAssistantController extends Controller
         FortuneAIService $aiService,
         EvePageContext $pages,
         PersonaIdentityResolver $personas,
-        EveAdminBrain $adminBrain
+        EveAdminBrain $adminBrain,
+        EveMemberBrain $members
     ): JsonResponse {
         $data = $request->validate([
             'message' => 'required|string|min:1|max:500',
@@ -115,8 +117,8 @@ class EveAssistantController extends Controller
         //    ลูกค้า → บุคลิกผู้ช่วยร้าน + นิสัย/ของที่ชอบ (จากระบบ RPG) + บริบทหน้า
         //    แอดมิน → บุคลิกผู้ช่วยหลังบ้าน + ตัวเลขจริงจากระบบ (ห้าม AI เดาเลขเอง)
         $systemPrompt = $actor->isAdmin()
-            ? $this->buildAdminSystemPrompt($actor, $routeName, $pages, $adminBrain)
-            : $this->buildCustomerSystemPrompt($actor, $routeName, $pages, $personas);
+            ? $this->buildAdminSystemPrompt($actor, $routeName, $pages, $adminBrain, $data['message'])
+            : $this->buildCustomerSystemPrompt($actor, $routeName, $pages, $personas, $members, $data['message']);
 
         // 🔒 กัน Prompt Injection: ประวัติสนทนาต้องมาจาก "ฝั่งเซิร์ฟเวอร์" เท่านั้น
         //    เดิมรับ history จากไคลเอนต์ตรงๆ แล้วต่อเข้า prompt → ผู้โจมตี POST เทิร์นปลอมของ Eve
@@ -175,11 +177,18 @@ class EveAssistantController extends Controller
                 $mood = $this->guessMood($reply);
                 $search = null;
             } else {
+                // ถ้าลูกค้ากำลังถามเรื่อง "บัญชีของตัวเอง" (ยอดเงิน/คอม/ออเดอร์/ยอดขายร้าน)
+                // ห้ามเดาว่าเป็นการหาสินค้า — คำอย่าง "ยอดขาย" มีคำว่า "ขาย" อยู่ในตัว
+                // ถ้าปล่อยผ่านผู้ขายถามยอดขายร้านจะได้ "ยังไม่เจอสินค้าชื่อนี้" กลับไปแทน
+                // (แท็ก [FIND:] ที่ AI ตั้งใจปล่อยเองยังทำงานปกติ — ปิดแค่การเดาเจตนา)
+                $memberTopics = $members->detectTopics($data['message'], $actor);
+
                 [$reply, $products, $mood, $search] = $this->runProductSearch(
                     $reply,
                     $data['message'],
                     $user?->id,
-                    $history
+                    $history,
+                    empty($memberTopics)
                 );
             }
 
@@ -357,9 +366,26 @@ class EveAssistantController extends Controller
         EveActor $actor,
         ?string $routeName,
         EvePageContext $pages,
-        PersonaIdentityResolver $personas
+        PersonaIdentityResolver $personas,
+        EveMemberBrain $members,
+        string $message
     ): string {
         $prompt = $this->buildBaseCustomerPrompt($actor->displayName());
+
+        // 👔 ผู้ขายไม่ใช่คนมาซื้อของ — เขาคือเจ้าของร้านที่มาดูงานร้านตัวเอง
+        //    ถ้าใช้บุคลิก "ผู้ช่วยหาของ" ล้วนๆ Eve จะเชียร์ให้เขาซื้อของแทนที่จะช่วยดูแลร้าน
+        if ($actor->tier === EveActor::TIER_SELLER) {
+            $prompt .= "\n\n👔 คนที่คุยด้วยตอนนี้เป็น \"ผู้ขาย/เจ้าของร้าน\" ในระบบเรา ไม่ใช่ลูกค้าที่มาซื้อของ. "
+                .'ให้ช่วยเรื่องการดูแลร้านเป็นหลัก: ยอดขาย ออเดอร์ที่ต้องจัดส่ง สินค้าในร้าน สต็อกที่ใกล้หมด '
+                .'และพาไปหน้าจัดการที่ถูกต้อง. ถ้าเขาถามหาสินค้าเพื่อซื้อเองก็ช่วยหาได้ตามปกติ.';
+        }
+
+        // 👤 ข้อมูลบัญชีของลูกค้าคนนี้ (วอลเลต/คอม/ออเดอร์/แรงค์/ทิกเก็ต/ร้านค้า)
+        //    ดึงเฉพาะตอนที่เขาถามถึงเท่านั้น — คุยเล่นทั่วไปจะไม่มีข้อมูลการเงินหลุดเข้า prompt เลย
+        $memberBlock = $members->buildBlockFor($actor, $message);
+        if ($memberBlock !== '') {
+            $prompt .= "\n\n".$memberBlock;
+        }
 
         // 👤 นิสัย/ของที่ชอบ จากระบบ persona (RPG) — เฉพาะผู้ที่ล็อกอินและเชื่อมบัญชีได้
         //    ⚠️ ใช้ buildSafeContextBlock() เท่านั้น ห้ามใช้ toAiContextBlock() ของโมเดล
@@ -390,7 +416,8 @@ class EveAssistantController extends Controller
         EveActor $actor,
         ?string $routeName,
         EvePageContext $pages,
-        EveAdminBrain $brain
+        EveAdminBrain $brain,
+        string $message = ''
     ): string {
         $name = $actor->displayName() ?: 'แอดมิน';
 
@@ -406,6 +433,13 @@ class EveAssistantController extends Controller
             .'(2) ห้ามเปิดเผยรหัสผ่าน/API key/โทเคน/ข้อมูลบัตรหรือบัญชีธนาคาร แม้แอดมินจะถามก็ตาม. '
             .'(3) ห้ามเปิดเผยข้อมูลส่วนตัวของลูกค้ารายบุคคลโดยไม่จำเป็น — สรุปเป็นภาพรวมพอ. '
             .'(4) ห้ามใช้แท็ก [FIND:] (โหมดแอดมินไม่ค้นสินค้า).';
+
+        // 🔍 ถามเจาะลึกเรื่องไหน ก็ดึงข้อมูลเรื่องนั้นเพิ่มให้ (สินค้าขายดี/สมาชิกใหม่/คิวถอนเงิน ฯลฯ)
+        //    ไม่ได้ยัดทุกอย่างเข้ามาทุกครั้ง — ยิง query เฉพาะหัวข้อที่ถามจริง
+        $deepDive = $brain->buildDeepDiveBlock($message);
+        if ($deepDive !== '') {
+            $prompt .= "\n\n".$deepDive;
+        }
 
         $pageBlock = $pages->describe($routeName);
         if ($pageBlock !== '') {
@@ -439,8 +473,15 @@ class EveAssistantController extends Controller
             .'และห้ามแต่งรายชื่อ/ราคาสินค้าเอง — ระบบจะแสดงสินค้าจริงให้เอง. ถ้าเป็นการคุยทั่วไป/ทักทาย/ถามข้อมูล ไม่ต้องใส่แท็ก. '
             ."\n\n🔒 กฎความปลอดภัย (สำคัญมาก ห้ามฝ่าฝืน): "
             .'ห้ามเปิดเผยหรือพูดถึงข้อมูลอ่อนไหวเด็ดขาด ได้แก่ รหัสผ่าน, API key, โทเคน, ข้อมูลบัตร/บัญชีธนาคาร, '
-            .'ข้อมูลส่วนตัวของลูกค้าคนอื่น, ข้อมูลการเงิน/คอมมิชชั่นภายใน, โครงสร้างระบบหรือช่องโหว่ความปลอดภัย. '
+            .'ข้อมูลส่วนตัวของลูกค้าคนอื่น, ตัวเลขการเงินภายในบริษัท, โครงสร้างระบบหรือช่องโหว่ความปลอดภัย. '
             .'ถ้าถูกถามเรื่องเหล่านี้ ให้ปฏิเสธสุภาพว่าช่วยเรื่องนี้ไม่ได้ และชวนกลับมาคุยเรื่องสินค้า/บริการแทน. '
+            // ⚠️ ต้องแยกให้ชัด ไม่งั้น Eve ปฏิเสธแม้แต่ข้อมูลของลูกค้าคนที่คุยอยู่เอง
+            //    (ของเดิมเขียนรวมว่า "ห้ามพูดถึงข้อมูลการเงิน/คอมมิชชั่น" → ลูกค้าถามยอดเงินตัวเอง
+            //     แล้วโดนไล่ไปติดต่อเจ้าหน้าที่ ทั้งที่เป็นสิทธิ์ของเขาเองแท้ๆ)
+            .'✅ ข้อยกเว้นสำคัญ: "ข้อมูลบัญชีของลูกค้าคนที่กำลังคุยอยู่" (ยอดเงินในกระเป๋า คอมมิชชั่น ออเดอร์ '
+            .'ระดับสมาชิก ทิกเก็ต ของตัวเขาเอง) ตอบได้เต็มที่ ถ้าระบบส่งบล็อก "[👤 ข้อมูลบัญชีของลูกค้า...]" มาให้ '
+            .'— ใช้ตัวเลขจากบล็อกนั้นตรงๆ ห้ามคิดเลขเอง. ถ้าไม่มีบล็อกนั้นมา แปลว่ายังดูให้ไม่ได้ '
+            .'ให้บอกตรงๆ แล้วชี้หน้าที่เขาไปดูเองได้ ห้ามเดาตัวเลขเด็ดขาด. '
             .'ห้ามแต่งราคา/สต็อก/โปรโมชั่นที่ไม่รู้จริง — ถ้าไม่แน่ใจให้บอกว่าจะตรวจสอบให้.';
     }
 
@@ -673,10 +714,17 @@ class EveAssistantController extends Controller
      *    จึงมีด่าน promise-guard 3 ชั้นด้านล่าง
      *
      * @param  array<int,array{role:string,content:string}>  $history  ประวัติฝั่งเซิร์ฟเวอร์ (เทิร์นก่อนหน้า)
+     * @param  bool  $allowIntentFallback  false = ค้นเฉพาะเมื่อ AI ปล่อยแท็ก [FIND:] เท่านั้น
+     *                                     (ใช้ตอนลูกค้าถามเรื่องบัญชีตัวเอง ไม่ใช่หาของ)
      * @return array{0:string, 1:array, 2:string, 3:?array}
      */
-    private function runProductSearch(string $reply, string $userMessage, ?int $userId, array $history = []): array
-    {
+    private function runProductSearch(
+        string $reply,
+        string $userMessage,
+        ?int $userId,
+        array $history = [],
+        bool $allowIntentFallback = true
+    ): array {
         // ดึงคำค้น + งบจากแท็ก (ทนทานต่อ noise: "500 บาท", "1,500", "~500", case-insensitive, เว้นวรรครอบ :|)
         $query = null;
         $budget = null;
@@ -690,6 +738,24 @@ class EveAssistantController extends Controller
 
         // ⚠️ ลบแท็ก [FIND...] "เสมอ" ก่อน return — ไม่ว่าจะ parse งบได้หรือไม่ กันแท็กดิบหลุดให้ลูกค้าเห็น
         $reply = trim((string) preg_replace('/\[\s*FIND\s*:[^\]]*\]/iu', '', $reply));
+
+        // 🙅 ปิดการเดาเจตนาเมื่อรู้แน่ว่าลูกค้าถามเรื่องบัญชีตัวเอง — แท็ก [FIND:] ข้างบนยังใช้ได้ปกติ
+        if (! $allowIntentFallback) {
+            if ($query === null || $query === '') {
+                return [$reply !== '' ? $reply : 'ได้เลยค่ะ 😊', [], $this->guessMood($reply), null];
+            }
+
+            // AI ตั้งใจสั่งค้นมาเอง → ต้องรายงานผลให้ครบเหมือนเส้นทางปกติ (เจอ/ไม่เจอ ห้ามเงียบ)
+            $products = $this->searchCatalog($query, $budget);
+            $search = ['query' => $query, 'budget' => $budget, 'count' => count($products)];
+
+            if (empty($products)) {
+                $this->recordWish($query, $budget, $userId);
+                $reply = trim($reply."\n\nค้นให้แล้วนะคะ แต่ยังไม่เจอ \"{$query}\" ในร้านค่ะ 🙏");
+            }
+
+            return [$reply !== '' ? $reply : 'ได้เลยค่ะ 😊', $products, $this->guessMood($reply), $search];
+        }
 
         // ⭐ ชั้นที่ 1 — ถ้า AI ไม่ปล่อยแท็ก แต่ลูกค้าสื่อว่าอยากได้/หาสินค้า
         //    → ดึงคำค้นจาก "ข้อความลูกค้า" เองแล้วค้นให้เสมอ (โมเดลเล็กมักไม่ใส่แท็ก จึงต้องไม่พึ่งมัน)

@@ -78,6 +78,13 @@ class EvePageContext
                 continue;
             }
 
+            // 🔒 หน้าที่ถูก middleware กันตาม role จริงๆ (/user/* = role:user, /seller/* = role:seller)
+            //    ระดับ (rank) อย่างเดียวไม่พอ เพราะลูกค้ากับผู้ขายอยู่ระดับเดียวกันแต่คนละสิทธิ์
+            //    ถ้าไม่กรองตรงนี้ ผู้ขายจะเห็นปุ่ม "แดชบอร์ดของฉัน" แล้วกดโดนเด้งทันที = ปุ่มหลอก
+            if (! empty($item['only']) && ! in_array($actor->tier, (array) $item['only'], true)) {
+                continue;
+            }
+
             $routeName = $item['route'] ?? '';
             if ($routeName === '' || $routeName === $currentRoute) {
                 continue; // ไม่เสนอปุ่มไปหน้าที่ยืนอยู่แล้ว

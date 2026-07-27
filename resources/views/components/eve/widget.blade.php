@@ -4,7 +4,13 @@
   - พูดด้วย Google Translate TTS ฟรี (ไทย)
   - หน้าเปลี่ยนอารมณ์ตามสถานะ (thinking ระหว่างคิด / talking ระหว่างพูด / happy)
   สไตล์ self-contained — ใช้ได้ทั้ง storefront (ลูกค้า) และ admin-v4
+
+  mobileOffset = ระยะห่างจากขอบล่างบนจอมือถือ (px)
+    หน้าที่มีแถบเมนูล่างแบบ fixed (user-arrow-x / seller) ต้องส่ง 88 ขึ้นไป
+    ไม่งั้นปุ่ม Eve (z-index สูงกว่า) จะไปทับแถบเมนูจนกดเมนูไม่ได้
 --}}
+@props(['mobileOffset' => 18])
+
 @once
 <style>
 .eve-w{position:fixed;right:18px;bottom:18px;z-index:99990;font-family:inherit}
@@ -13,6 +19,12 @@
 .eve-fab .eve-fab-txt{font-weight:700;font-size:13.5px;white-space:nowrap}
 .eve-fab .eve-fab-sub{font-size:10px;opacity:.85;font-weight:400}
 .eve-panel{position:absolute;right:0;bottom:0;width:min(392px,calc(100vw - 24px));height:min(560px,calc(100vh - 90px));background:#fffdf9;border-radius:20px;box-shadow:0 24px 60px rgba(40,30,90,.34);display:flex;flex-direction:column;overflow:hidden;border:1px solid #efe6d6}
+/* 📱 จอมือถือ: หน้าที่มีแถบเมนูล่างแบบ fixed ต้องยก Eve ขึ้นไม่ให้ทับ (ส่ง mobileOffset มา)
+   ต้องหดความสูงแผงลงเท่าที่ยกขึ้นด้วย ไม่งั้นหัวแผงจะทะลุพ้นจอด้านบน */
+@media (max-width:1023px){
+  .eve-w{bottom:var(--eve-b-mobile,18px)}
+  .eve-panel{height:min(560px,calc(100vh - 72px - var(--eve-b-mobile,18px)))}
+}
 .eve-head{display:flex;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(135deg,#7a5cff,#9b7bff);color:#fff}
 .eve-head .nm{font-weight:800;font-size:15px;line-height:1.1}
 .eve-head .st{font-size:11px;opacity:.9}
@@ -79,7 +91,7 @@
 </style>
 @endonce
 
-<div class="eve-w" x-data="eveWidget()" x-cloak>
+<div class="eve-w" x-data="eveWidget()" x-cloak style="--eve-b-mobile:{{ (int) $mobileOffset }}px">
     {{-- ปุ่มลอย --}}
     <button class="eve-fab" x-show="!open" @click="toggle()" type="button">
         <x-eve.avatar :size="46" crop />

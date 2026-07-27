@@ -168,6 +168,11 @@
     {{-- Mobile Quick Actions - FAB --}}
     <x-mobile-quick-actions type="seller" />
 
+    {{-- 🤖 น้อง Eve ผู้ช่วย AI (โหมดผู้ขาย — ถามยอดขาย/ออเดอร์ร้าน/สต็อกได้)
+         ต้องวางก่อน @stack('scripts') เสมอ ไม่งั้นสคริปต์ของวิดเจ็ตจะไม่ถูก render --}}
+    {{-- mobileOffset=88 เพราะหน้านี้มีแถบเมนูล่าง (mobile-bottom-navigation) ลอยอยู่ --}}
+    <x-eve.widget :mobile-offset="88" />
+
     @stack('scripts')
 
     <script>
