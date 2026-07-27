@@ -11,6 +11,7 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TPIXWhitepaperController;
+use App\Http\Middleware\CheckRole;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -731,7 +732,12 @@ Route::prefix('sliders')->name('sliders.')->group(function () {
 });
 
 // User Routes (Protected by auth middleware and role check)
-Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
+// 🚨 (2026-07-27) เดิมหุ้มด้วย 'role:user' เฉยๆ → affiliate/provider/manager (55 บัญชีบน prod)
+//    โดนบล็อก แล้ว CheckRole เด้งกลับไป route('user.home') ซึ่งอยู่ใน group นี้เอง
+//    = โดนบล็อกซ้ำ วนลูปไม่รู้จบ (ERR_TOO_MANY_REDIRECTS) ตั้งแต่ล็อกอินเสร็จ
+//    ตอนนี้อ่าน role ที่เข้าได้จาก CheckRole::MEMBER_ROLES (แหล่งความจริงเดียว)
+//    → เพิ่ม role ใหม่ให้แก้ที่ constant ตัวนั้นที่เดียว ห้าม hardcode ซ้ำตรงนี้
+Route::middleware(['auth', 'role:'.implode(',', CheckRole::MEMBER_ROLES)])->prefix('user')->name('user.')->group(function () {
     require __DIR__.'/user.php';
 });
 
