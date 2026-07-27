@@ -30,6 +30,25 @@
 .eve-msg.a{align-self:flex-start;background:#f1ecff;color:#3a2b5e;border-bottom-left-radius:3px}
 .eve-msg.a::after{content:'';position:absolute;bottom:0;left:-6px;width:12px;height:14px;background:#f1ecff;clip-path:polygon(100% 0,100% 100%,0 100%)}
 .eve-typing{align-self:flex-start;color:#9b8fc0;font-size:13px;padding:4px 8px}
+
+/* ── สถานะ "กำลังค้นหาสินค้า" — บอกให้ลูกค้าเห็นชัดว่าระบบกำลังทำอะไรอยู่ ──
+   ต่างจาก "กำลังพิมพ์" ตรงที่มีโครงการ์ดสินค้ารออยู่ = สื่อว่าผลลัพธ์จะมาโผล่ตรงนี้ */
+.eve-search{align-self:stretch;display:flex;flex-direction:column;gap:8px;padding:10px 11px;border-radius:14px;background:linear-gradient(135deg,#f6f1ff,#efe8ff);border:1px solid #e6dcfa}
+.eve-search-hd{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#5b4a8c;font-weight:700}
+.eve-search-lens{width:23px;height:23px;flex:0 0 23px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 8px rgba(90,60,180,.18);animation:eve-scan 1.7s ease-in-out infinite}
+@keyframes eve-scan{0%,100%{transform:translateX(0) rotate(-14deg)}50%{transform:translateX(10px) rotate(14deg)}}
+.eve-search-bar{height:3px;border-radius:3px;background:#e2d7f7;overflow:hidden}
+.eve-search-bar i{display:block;height:100%;width:36%;border-radius:3px;background:linear-gradient(90deg,#7a5cff,#c9a7ff);animation:eve-sweep 1.3s ease-in-out infinite}
+@keyframes eve-sweep{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}
+/* โครงการ์ดสินค้าเปล่า (skeleton) วิบวับระหว่างรอ */
+.eve-skel{display:flex;gap:8px;overflow:hidden}
+.eve-skel-c{flex:0 0 86px;height:100px;border-radius:10px;background:linear-gradient(100deg,#eae2fa 30%,#fbf8ff 50%,#eae2fa 70%);background-size:220% 100%;animation:eve-shim 1.4s linear infinite}
+.eve-skel-c:nth-child(2){animation-delay:.18s}
+.eve-skel-c:nth-child(3){animation-delay:.36s}
+@keyframes eve-shim{0%{background-position:120% 0}100%{background-position:-120% 0}}
+/* ชิปบอก "คำที่ระบบใช้ค้นจริง" — ค้นผิดคำลูกค้าเห็นทันที แก้เองได้ ไม่ต้องเดาว่าระบบพัง */
+.eve-qchip{align-self:flex-start;font-size:11px;color:#6d4dff;background:rgba(122,92,255,.09);border:1px solid rgba(122,92,255,.28);border-radius:999px;padding:3px 9px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.eve-search-lens,.eve-search-bar i,.eve-skel-c{animation:none}}
 .eve-cards{display:flex;gap:8px;overflow-x:auto;padding:2px 1px 6px;max-width:100%;scrollbar-width:thin}
 .eve-card{flex:0 0 128px;width:128px;background:#fff;border:1px solid #ece4f7;border-radius:12px;overflow:hidden;text-decoration:none;color:#3a2b5e;box-shadow:0 3px 10px rgba(90,60,180,.08);transition:transform .12s}
 .eve-card:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(90,60,180,.16)}
@@ -75,7 +94,7 @@
         <div class="eve-head">
             <div>
                 <div class="nm">น้อง Eve</div>
-                <div class="st" x-text="busy ? 'กำลังคิด...' : (speaking ? 'กำลังพูด...' : 'พร้อมช่วยค่ะ')"></div>
+                <div class="st" x-text="busy ? (searching ? 'กำลังค้นหาสินค้า...' : 'กำลังคิด...') : (speaking ? 'กำลังพูด...' : 'พร้อมช่วยค่ะ')"></div>
             </div>
             <div class="eve-ic">
                 <button type="button" @click="ttsEnabled=!ttsEnabled; if(!ttsEnabled) stopSpeak()" :title="ttsEnabled ? 'ปิดเสียง' : 'เปิดเสียง'" x-text="ttsEnabled ? '🔊' : '🔇'"></button>
@@ -97,6 +116,15 @@
             <template x-for="(m,i) in messages" :key="i">
                 <div style="display:flex;flex-direction:column;gap:6px;max-width:100%" :style="m.role==='user' ? 'align-items:flex-end' : 'align-items:flex-start'">
                     <div class="eve-msg" :class="m.role==='user' ? 'u' : 'a'" x-text="m.content"></div>
+
+                    {{-- 🔎 บอกตรงๆ ว่าค้นด้วยคำว่าอะไร เจอกี่ชิ้น — ลูกค้าเห็นแล้วแก้คำค้นเองได้เลย --}}
+                    <template x-if="m.search && m.search.query">
+                        <div class="eve-qchip"
+                             x-text="'🔎 ค้นหา: ' + m.search.query
+                                     + (m.search.budget ? ' · งบ ฿' + Number(m.search.budget).toLocaleString('th-TH') : '')
+                                     + ' · ' + (m.search.count ? 'เจอ ' + m.search.count + ' รายการ' : 'ยังไม่เจอในร้าน')"></div>
+                    </template>
+
                     <template x-if="m.products && m.products.length">
                         <div class="eve-cards">
                             <template x-for="(p,pi) in m.products" :key="pi">
@@ -125,7 +153,18 @@
                     </template>
                 </div>
             </template>
-            <div class="eve-typing" x-show="busy" role="status" aria-live="polite">น้อง Eve กำลังพิมพ์<span x-text="dots"></span></div>
+            {{-- คุยทั่วไป = "กำลังพิมพ์" · หาของ = แผงค้นหาพร้อมโครงการ์ดสินค้า (รู้ทันทีว่ากำลังค้นให้อยู่) --}}
+            <div class="eve-typing" x-show="busy && !searching" role="status" aria-live="polite">น้อง Eve กำลังพิมพ์<span x-text="dots"></span></div>
+            <div class="eve-search" x-show="busy && searching" role="status" aria-live="polite">
+                <div class="eve-search-hd">
+                    <span class="eve-search-lens" aria-hidden="true">🔎</span>
+                    <span x-text="searchLabel + dots"></span>
+                </div>
+                <div class="eve-search-bar" aria-hidden="true"><i></i></div>
+                <div class="eve-skel" aria-hidden="true">
+                    <div class="eve-skel-c"></div><div class="eve-skel-c"></div><div class="eve-skel-c"></div>
+                </div>
+            </div>
             </div>
         </div>
 
@@ -145,6 +184,9 @@ function eveWidget() {
         input: '',
         messages: [],
         busy: false,
+        searching: false,       // กำลังค้นหาสินค้าอยู่ (โชว์แผงค้นหาแทน "กำลังพิมพ์")
+        searchLabel: '',        // ข้อความสถานะที่ไล่เปลี่ยนระหว่างค้น
+        _searchTimer: null,
         speaking: false,
         emotion: 'idle',
         ttsEnabled: true,
@@ -231,6 +273,35 @@ function eveWidget() {
         },
         stopDots() { clearInterval(this._dotTimer); this.dots = ''; },
 
+        // ── สถานะ "กำลังค้นหาสินค้า" ─────────────────────────────────────────
+        // ข้อความคาดเดาฝั่งไคลเอนต์เพื่อ "โชว์อนิเมชั่นให้ทันที" ระหว่างรอเซิร์ฟเวอร์
+        // (ฝั่งเซิร์ฟเวอร์ตัดสินจริงอีกที — ถ้าเดาพลาดก็แค่เห็นแอนิเมชั่นค้นหา ไม่มีผลกับคำตอบ)
+        looksLikeProductRequest(text) {
+            const t = (text || '').trim();
+            if (!t) return false;
+            // ทักทาย/ขอบคุณ/ถามเรื่องระบบ = ไม่ใช่การหาของ (ตรงกับ blocklist ฝั่งเซิร์ฟเวอร์)
+            if (/(สวัสดี|หวัดดี|ฮัลโหล|ขอบคุณ|ขอบใจ|บาย|เก่งมาก|น่ารัก|สมัคร|สมาชิก|เข้าสู่ระบบ|รหัสผ่าน|ค่าส่ง|กี่วัน|ติดตามพัสดุ|คือใคร|ชื่ออะไร)/.test(t)) return false;
+            if (/(หา|อยากได้|อยากซื้อ|อยากดู|ซื้อ|ขาย|สนใจ|ต้องการ|มองหา|ตามหา|แนะนำ|ขอดู|เอา|สั่ง|ยี่ห้อ|รุ่น|ราคา|งบ|บาท)/.test(t)) return true;
+            // พิมพ์ชื่อของเปล่าๆ สั้นๆ ("หูฟัง") — ไม่ใช่คำถามเชิงวิธีใช้ = ถือว่ากำลังหาของ
+            return t.length <= 28 && !/[?？]/.test(t) && !/(ยังไง|อย่างไร|ทำไม|เมื่อไหร่|ที่ไหน)/.test(t);
+        },
+
+        startSearchStatus() {
+            const L = [
+                'กำลังค้นหาสินค้าให้อยู่ค่ะ',
+                'ไล่ดูของในร้านทีละชิ้น',
+                'กำลังคัดตัวที่น่าจะถูกใจ',
+                'เกือบเสร็จแล้วค่ะ รออีกนิดนะคะ',
+            ];
+            let i = 0;
+            this.searchLabel = L[0];
+            clearInterval(this._searchTimer);
+            this._searchTimer = setInterval(() => {
+                if (i < L.length - 1) this.searchLabel = L[++i];   // ค้างที่ข้อความสุดท้าย ไม่วนซ้ำให้ดูปลอม
+            }, 1800);
+        },
+        stopSearchStatus() { clearInterval(this._searchTimer); this._searchTimer = null; this.searching = false; this.searchLabel = ''; },
+
         scroll() { this.$nextTick(() => { const l = this.$refs.list; if (l) l.scrollTop = l.scrollHeight; }); },
 
         async send() {
@@ -240,12 +311,22 @@ function eveWidget() {
             this.stopSpeak();
             this.messages.push({ role: 'user', content: text });
             this.busy = true; this.emotion = 'thinking'; this.startDots(); this.scroll();
-            this.popMood('thinking');   // บัลลูนความคิด 💭 ระหว่างค้นหา
+
+            // ขอหาของ → แผงค้นหา + แว่นขยาย 🔎 / คุยทั่วไป → บัลลูนความคิด 💭
+            this.searching = this.looksLikeProductRequest(text);
+            if (this.searching) { this.startSearchStatus(); this.pop('🔎', 'bub'); this.scroll(); }
+            else { this.popMood('thinking'); }
+
+            // ⏱️ กันค้างไม่มีที่สิ้นสุด: AI ฝั่งเซิร์ฟเวอร์ใช้เวลาสูงสุด ~30s (15s × 2 provider)
+            //    ถ้าเน็ตลูกค้าหลุดกลางทาง fetch จะไม่ reject เอง → บอทค้างที่ "กำลังค้นหา" ตลอดกาล
+            const ctrl = new AbortController();
+            const abortTimer = setTimeout(() => ctrl.abort(), 40000);
 
             const history = this.messages.slice(-13, -1).map(m => ({ role: m.role, content: m.content }));
             try {
                 const res = await fetch('{{ route('eve.chat') }}', {
                     method: 'POST',
+                    signal: ctrl.signal,
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
@@ -274,7 +355,9 @@ function eveWidget() {
                 const reply = data?.data?.reply || data?.message || 'ขออภัยค่ะ ตอนนี้น้อง Eve ตอบไม่ได้ ลองใหม่อีกครั้งนะคะ';
                 const prods = data?.data?.products || [];
                 const acts  = data?.data?.actions || [];
-                this.messages.push({ role: 'assistant', content: reply, products: prods, actions: acts });
+                // meta การค้น (คำค้นที่ใช้จริง/งบ/จำนวนที่เจอ) — null เมื่อรอบนี้ไม่ได้ค้น
+                const srch  = data?.data?.search || null;
+                this.messages.push({ role: 'assistant', content: reply, products: prods, actions: acts, search: srch });
                 this.emotion = this.moodToEmotion(data?.data?.mood);
                 this.scroll();
                 this.speak(reply);
@@ -282,11 +365,19 @@ function eveWidget() {
                 if (prods.length) { this.pop('💡', 'idea'); setTimeout(() => this.popMood('found'), 440); }
                 else { this.popMood(({ happy: 'happy', surprise: 'found', talking: 'talking' })[data?.data?.mood] || 'happy'); }
             } catch (e) {
-                this.messages.push({ role: 'assistant', content: 'ขออภัยค่ะ การเชื่อมต่อมีปัญหา ลองใหม่อีกครั้งนะคะ 🙏' });
+                // หมดเวลา (abort) ต้องบอกให้ชัดว่า "ค้นไม่สำเร็จ" ไม่ใช่ปล่อยให้รอต่อแบบไม่รู้อะไร
+                const timedOut = e && e.name === 'AbortError';
+                this.messages.push({
+                    role: 'assistant',
+                    content: timedOut
+                        ? 'ขออภัยค่ะ รอบนี้ค้นนานผิดปกติจนต้องหยุดก่อน 🙏 รบกวนพิมพ์คำค้นอีกครั้งนะคะ เดี๋ยว Eve ลองใหม่ให้ค่ะ'
+                        : 'ขออภัยค่ะ การเชื่อมต่อมีปัญหา ลองใหม่อีกครั้งนะคะ 🙏',
+                });
                 this.emotion = 'idle';
                 this.pop('🙏');
             } finally {
-                this.busy = false; this.stopDots(); this.scroll();
+                clearTimeout(abortTimer);
+                this.busy = false; this.stopDots(); this.stopSearchStatus(); this.scroll();
             }
         },
 
