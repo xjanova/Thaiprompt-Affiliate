@@ -100,9 +100,17 @@ class EvePageContext
                 //    ⚠️ สำคัญมาก: ผู้เรียกตัดด้วย array_slice(...,0,4) ถ้าปล่อยเรียงตาม config
                 //    ปุ่มของ guest (ที่อยู่บนสุด) จะกินครบ 4 ช่องเสมอ → แอดมินไม่เคยเห็นปุ่ม
                 //    "หลังบ้าน" และลูกค้าไม่เคยเห็น "กระเป๋าเงิน" เลยสักครั้ง
-                $priority = self::TIER_RANK[$item['tier'] ?? EveActor::TIER_GUEST] ?? 0;
+                $itemTier = $item['tier'] ?? EveActor::TIER_GUEST;
+                $priority = self::TIER_RANK[$itemTier] ?? 0;
+
+                // ⚠️ "ตรง tier เป๊ะ" ต้องชนะขาด ห้ามให้โบนัสเล็กๆ ทำให้คะแนนไปเสมอกัน
+                //    (เคยตั้งโบนัส only=+1 แล้วปุ่มแอดมิน p=2 เท่ากับปุ่มลูกค้า p=1+1
+                //     → เรียงตาม config ปุ่มลูกค้าขึ้นก่อน แอดมินเลยไม่เห็น "หลังบ้าน" อยู่ดี)
+                if ($itemTier === $actor->tier) {
+                    $priority += 10;
+                }
                 if (! empty($item['only'])) {
-                    $priority++;   // ปุ่มที่เจาะจง role นี้โดยเฉพาะ = ตรงที่สุด ขึ้นก่อน
+                    $priority++;   // เจาะจง role = ตรงกว่าปุ่มทั่วไปใน tier เดียวกัน
                 }
 
                 $out[] = ['label' => $item['label'], 'url' => route($routeName), '_p' => $priority];
