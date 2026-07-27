@@ -96,12 +96,24 @@ class EvePageContext
             }
 
             try {
-                $out[] = ['label' => $item['label'], 'url' => route($routeName)];
+                // 🎯 คะแนนความ "ตรงกับคนคนนี้" — ใช้จัดลำดับก่อนถูกตัดเหลือ 4 ปุ่ม
+                //    ⚠️ สำคัญมาก: ผู้เรียกตัดด้วย array_slice(...,0,4) ถ้าปล่อยเรียงตาม config
+                //    ปุ่มของ guest (ที่อยู่บนสุด) จะกินครบ 4 ช่องเสมอ → แอดมินไม่เคยเห็นปุ่ม
+                //    "หลังบ้าน" และลูกค้าไม่เคยเห็น "กระเป๋าเงิน" เลยสักครั้ง
+                $priority = self::TIER_RANK[$item['tier'] ?? EveActor::TIER_GUEST] ?? 0;
+                if (! empty($item['only'])) {
+                    $priority++;   // ปุ่มที่เจาะจง role นี้โดยเฉพาะ = ตรงที่สุด ขึ้นก่อน
+                }
+
+                $out[] = ['label' => $item['label'], 'url' => route($routeName), '_p' => $priority];
             } catch (\Throwable $e) {
                 // route ต้องการพารามิเตอร์ → ข้าม (ปุ่มลัดต้องกดได้ทันทีเท่านั้น)
             }
         }
 
-        return $out;
+        // เรียงจาก "ตรงกับ role นี้ที่สุด" ลงมา — PHP 8 sort เสถียร ของที่คะแนนเท่ากันจึงคงลำดับใน config
+        usort($out, fn ($a, $b) => $b['_p'] <=> $a['_p']);
+
+        return array_map(fn ($x) => ['label' => $x['label'], 'url' => $x['url']], $out);
     }
 }
