@@ -1086,7 +1086,10 @@ class SmsPaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        if (! $this->deviceCanAccessFortuneReading($device)) {
+        // ⚠️ ใช้ isAdminDevice() ไม่ใช่ deviceCanAccessFortuneReading() (ตัวนั้น return true เสมอ
+        //    เพราะบิลดูดวงต้องให้ทุกเครื่อง auto-approve ได้) — รูปสลิปมีชื่อผู้โอน/เลขบัญชี = PDPA
+        //    เครื่องร้านค้า (seller device) ต้องไม่เห็น
+        if (! $device->isAdminDevice()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only admin devices can view fortune slip images',
@@ -2576,6 +2579,15 @@ class SmsPaymentController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Only admin devices can manage fortune reading bills',
+                ], 403);
+            }
+
+            // 🚫 void = ถอยเงิน/ดึงคอมมิชชั่นคืน — จำกัดเครื่องแอดมินเท่านั้น
+            //    (deviceCanAccessFortuneReading return true เสมอ จึงต้องเช็ค isAdminDevice() เพิ่ม)
+            if ($action === 'void' && ! $device->isAdminDevice()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only admin devices can void fortune approvals',
                 ], 403);
             }
 
