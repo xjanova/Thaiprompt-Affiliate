@@ -205,13 +205,16 @@ trait FreeCardConversationTrait
      *   5. เรียก AI generateFreeCardReading() → ส่งคืน 'free_card_drawn' action
      *   6. ChannelManager จะส่งภาพไพ่ + ข้อความ + Quick Reply [39][99][ไม่สนใจ]
      */
-    protected function startFreeCardFlow(string $platformUserId, ?array $userProfile = null, ?string $customerMessage = null): array
+    protected function startFreeCardFlow(string $platformUserId, ?array $userProfile = null, ?string $customerMessage = null, bool $skipQuestionGate = false): array
     {
         $platform = $this->currentPlatform;
         $name = ! empty($userProfile['name']) ? $userProfile['name'] : 'คุณ';
+        $botMode = app(\App\Services\Fortune\FortuneBotMode::class, ['settings' => $this->settings]);
 
         // 🔒 Feature toggle
-        if (! $this->settings->isFreeReadingEnabled()) {
+        // 🔀 (2026-07-27) ผ่าน FortuneBotMode — โหมด transfer เปิดฟรีบน LINE ให้เอง
+        //    (สวิตช์หลักอยู่คนละการ์ดในหน้าแอดมิน เคยลืมเปิดจนขา LINE ตายเงียบ)
+        if (! $botMode->freeCardEnabledFor($platform)) {
             Log::info('FreeCard: ระบบฟรีปิดอยู่ — fallback tier menu', [
                 'platform' => $platform,
                 'platform_user_id' => $platformUserId,
@@ -225,8 +228,7 @@ trait FreeCardConversationTrait
         //    (free_card_regrant_at) มีผลด้วย — เจ้าของสั่งว่าเวลาย้ายช่องทาง
         //    ต้องแจกสิทธิ์ดูฟรีใหม่ให้ "ทุกคน" รวมคนที่เคยใช้ไปแล้ว
         //    ไม่ตั้งค่านั้น = เหมือนเดิม 100% (ฟรีครั้งเดียวต่อช่องทาง)
-        if (! app(\App\Services\Fortune\FortuneBotMode::class, ['settings' => $this->settings])
-            ->freeCardAvailable($platform, $platformUserId)) {
+        if (! $botMode->freeCardAvailable($platform, $platformUserId)) {
             Log::info('FreeCard: ลูกค้าใช้สิทธิ์ฟรีไปแล้ว — fallback tier menu', [
                 'platform' => $platform,
                 'platform_user_id' => $platformUserId,
@@ -244,7 +246,9 @@ trait FreeCardConversationTrait
         $pendingCacheKey = "fortune:free_card_ask:{$platform}:{$platformUserId}";
         $askedCount = (int) Cache::get($pendingCacheKey, 0);
 
-        if (! $this->isSubstantiveQuestion($customerMessage) && $askedCount < 2) {
+        // 🔀 (2026-07-27) โหมด transfer บน LINE = "เปิดไพ่ให้เลย ไม่ถามอะไร" (สเปกเจ้าของ)
+        //    ลูกค้าไม่ได้พิมพ์ขอดูดวงด้วยซ้ำ — ถามกลับ = งงว่าทำไมบอทถาม แล้วหลุดไปเลย
+        if (! $skipQuestionGate && ! $this->isSubstantiveQuestion($customerMessage) && $askedCount < 2) {
             Cache::put($pendingCacheKey, $askedCount + 1, now()->addMinutes(30));
 
             Log::info('FreeCard: ขอ customer พิมพ์คำถามก่อนทำนาย', [

@@ -248,7 +248,8 @@ class ProcessCommentEngagement implements ShouldQueue
             $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook', 'comment');
             $useInviteText = $inviteMessage !== null;
             if ($useInviteText) {
-                $dmMessage = $inviteMessage->render($name);
+                // 🔗 (2026-07-28) ส่ง psid ด้วย — ข้อความชุด transfer ใช้ {{web_link}} ที่สร้างต่อคน
+                $dmMessage = $inviteMessage->render($name, $userId, 'facebook');
                 Log::info('💬 Comment Engagement: สลับเป็นข้อความชวน (ได้รูปสัปดาห์นี้แล้ว)', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,

@@ -2310,6 +2310,17 @@ class FortuneConversationService
                         // ปิด conversation เก่า
                         $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
+                        // 🔀 (2026-07-26) โหมด transfer — ประตูที่ 2: ลูกค้าเก่าที่ดูจบแล้ว
+                        //    กลับมาทักใหม่ (สถานะ basic_done ภายใน 30 นาที ก่อน expire)
+                        // 🩹 (2026-07-27) ย้ายขึ้นมาจากใต้บันไดคัดคำ — เดิมอยู่ *หลัง*
+                        //    looksLikePricingQuestion + isGenericFortuneRequest ทำให้คำที่ลูกค้า
+                        //    พิมพ์บ่อยที่สุด ("ดูดวง" / "เท่าไหร่") ชิงเข้าโฟลเดิมก่อน
+                        //    → สร้างบิลบน FB ทั้งที่โหมดสั่งให้ย้ายช่องทาง (รูรั่วที่ทำให้โหมดดูเหมือนไม่ทำงาน)
+                        //    ต้องอยู่ *หลัง* isDeepReadingAccepted (คนที่เพิ่งตอบรับข้อเสนอ = โฟลที่ทำอยู่ ห้ามขัด)
+                        if ($transfer = $this->maybeTransferIntercept($facebookUserId, $messageText)) {
+                            return $transfer;
+                        }
+
                         // 🎯 Phase G — basic_done + พิมพ์วันเกิดเดี่ยวๆ → offer deep reading เลย
                         //   (extension ของ Phase C ที่เดิมทำในเฉพาะ no-active-reading)
                         $standaloneBirthdate = $this->parseStandaloneBirthdate($messageText);
@@ -2373,14 +2384,6 @@ class FortuneConversationService
                             }
 
                             return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
-                        }
-
-                        // 🔀 (2026-07-26) โหมด transfer — ประตูที่ 2: ลูกค้าเก่าที่ดูจบแล้ว
-                        //    กลับมาทักใหม่ (สถานะ basic_done/completed)
-                        //    ถ้าไม่ดักตรงนี้ ลูกค้าเก่าหลายร้อยคนจะไม่มีวันเห็นกล่องใหม่
-                        //    เพราะแถว reading เก่ายังอยู่ = ระบบดูเหมือนไม่ทำงาน
-                        if ($transfer = $this->maybeTransferIntercept($facebookUserId, $messageText)) {
-                            return $transfer;
                         }
 
                         // ✅ ตรวจสอบ keywords จากฐานข้อมูล (auto-reply อัจฉริยะ)
@@ -19126,6 +19129,19 @@ PROMPT;
                 } catch (\Throwable $e) {
                     Log::debug('Fortune: bot-initiated outreach detect ล้มเหลว (non-blocking): '.$e->getMessage());
                 }
+            }
+
+            // 🔀 (2026-07-27) โหมด transfer — ห้าม AI พูดสวนกล่องที่เพิ่งชวนไปเว็บ/LINE
+            //    persona เดิม soft-sell "พิมพ์ ดูดวง 99" ในแชท → ลูกค้าสับสนว่าตกลงต้องไปไหน
+            //    ฉีดผ่าน _persona_context เหมือน outreach directive (เห็นเป็น role:system)
+            $transferDirective = $this->buildTransferChatDirective($platformDetected, $userId);
+            if ($transferDirective !== '') {
+                if (! is_array($userProfile)) {
+                    $userProfile = ['name' => 'คุณ'];
+                }
+                $userProfile['_persona_context'] = trim(
+                    ($userProfile['_persona_context'] ?? '')."\n\n".$transferDirective
+                );
             }
 
             // 🎯 Phase B.1 — สร้าง context prefix สำหรับ AI

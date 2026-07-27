@@ -88,6 +88,63 @@ class FortuneBotMode
     }
 
     /**
+     * 🔘 (2026-07-28) ควร "ชวนไปเว็บ/LINE" กับลูกค้าคนนี้ตอนนี้ไหม
+     *
+     * ใช้กับสิ่งที่ **แทรกเข้าไปในบทสนทนาที่กำลังดำเนินอยู่** — ปุ่มท้ายข้อความ AI
+     * และ directive ที่ฉีดให้ AI — ซึ่งต่างจากตัวดักหน้า (`maybeTransferIntercept`)
+     * ตรงที่ตัวดักถูกเรียกหลังผ่านกำแพง activeReading มาแล้ว แต่สองอย่างนี้ไม่ผ่าน
+     *
+     * 🚨 กติกาที่ห้ามพลาด: ลูกค้าที่ **มีบิล/จ่ายเงินแล้ว/กำลังคุยหลังคำทำนาย** ห้ามโดนแตะ
+     *    ไม่งั้นคนที่จ่าย 99 ไปแล้วถามต่อใน Pro Session จะโดน AI ตอบว่า
+     *    "แม่หมอไม่ทำนายในแชทนี้แล้ว ไปที่เว็บนะคะ" = ลูกค้าเสียเงินแล้วไม่ได้ของ
+     *    (rule_paid_customer_bypass_all_guards · feedback_never_interrupt_payment_to_prediction_flow)
+     *
+     * @param  string  $platform  'facebook' | 'line'
+     */
+    public function shouldNudgeToTransfer(string $platform, string $platformUserId): bool
+    {
+        if (! $this->appliesTo($platform, $platformUserId)) {
+            return false;
+        }
+
+        // ลูกค้ายืนยันขอดูในแชทนี้แล้ว → เคารพการตัดสินใจ ห้ามตื๊อ
+        if ($this->hasFbFallback($platform, $platformUserId)) {
+            return false;
+        }
+
+        try {
+            // ⚠️ ใช้ scope ตรง ๆ (read-only) ไม่ใช่ findActiveConversation()
+            //    เพราะตัวนั้นเขียน DB (expireOldConversations) — ไม่ควรมี side effect ในเส้นส่งข้อความ
+            if (FortuneReading::activeConversation($platformUserId)->exists()) {
+                return false;
+            }
+
+            // 🚨 Pro Session (คุยต่อหลังคำทำนาย) — reading เป็น "completed" แล้ว
+            //    จึงไม่ติดกำแพงข้างบน แต่ลูกค้ายังจ่ายเงินแล้วและกำลังถามต่ออยู่
+            //    ถ้าไม่กันตรงนี้ คนที่จ่าย 99 ถามต่อจะโดน AI ตอบว่า "ไปดูที่เว็บนะคะ"
+            $latest = FortuneReading::where('facebook_user_id', $platformUserId)
+                ->latest('id')
+                ->first(['id', 'is_paid', 'conversation_state', 'updated_at']);
+
+            if ($latest && $latest->is_paid) {
+                if ($latest->getConversationState('pro_session_active', false)) {
+                    return false;
+                }
+
+                // เผื่อช่วงสั้น ๆ หลังส่งคำทำนายที่ธง pro session ยังไม่ถูกตั้ง
+                if ($latest->updated_at && $latest->updated_at->gt(now()->subMinutes(30))) {
+                    return false;
+                }
+            }
+        } catch (\Throwable $e) {
+            // เช็คไม่ได้ → เลือกทางปลอดภัย ไม่แทรกอะไรเลย
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * แฮชจาก psid → เปิดทีละกลุ่มได้ (100 = ทุกคน)
      *
      * ใช้ crc32 เพื่อให้ "คนเดิมได้ผลเดิมทุกครั้ง" — ถ้าสุ่มใหม่ทุก request
@@ -126,6 +183,29 @@ class FortuneBotMode
     public function fallbackDays(): int
     {
         return max(1, (int) ($this->settings->transfer_fallback_days ?? 30));
+    }
+
+    /**
+     * 🎁 คำทำนายฟรีของบอทเปิดให้ช่องทางนี้ไหม
+     *
+     * ⚠️ (2026-07-27) จุดที่เคยทำให้ "เปิดโหมดแล้วขา LINE ตายเงียบ":
+     *   สวิตช์หลัก `enable_free_card_reading` เป็นคนละหมวดกับการ์ดโหมดใหม่ในหน้าแอดมิน
+     *   เปิดโหมด transfer แต่ลืมเปิดตัวนี้ → กล่องบน FB โฆษณา "ดูดวงฟรี" + ปุ่มไป LINE
+     *   → ลูกค้าแอด LINE แล้วไม่ได้อะไร (โฆษณาของที่ให้ไม่ได้ = เสียลูกค้าฟรี ๆ)
+     *
+     * → โหมด transfer ถือว่า "ฟรีบน LINE" เป็นหัวใจของโหมด จึงเปิดให้เองโดยไม่ต้องมีสวิตช์เพิ่ม
+     *   (ยิ่งมีลูกบิดให้ลืม ยิ่งพัง — บทเรียนเดียวกับสวิตช์ตัวนี้)
+     *   ส่วนโหมด classic ยังเคารพสวิตช์หลัก 100% เหมือนเดิม
+     *
+     * @param  string  $platform  'facebook' | 'line'
+     */
+    public function freeCardEnabledFor(string $platform): bool
+    {
+        if ((bool) ($this->settings->enable_free_card_reading ?? false)) {
+            return true;
+        }
+
+        return $platform === 'line' && $this->isTransfer();
     }
 
     /**

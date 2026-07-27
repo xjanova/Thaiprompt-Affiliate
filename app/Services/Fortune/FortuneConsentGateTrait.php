@@ -303,6 +303,53 @@ trait FortuneConsentGateTrait
     }
 
     /**
+     * 🙏 (2026-07-27) ลูกค้าคนนี้เป็นกลุ่ม "ทำเว็บ/ไลน์ไม่เป็น" ที่เพิ่งขอดูในแชท FB หรือเปล่า
+     *
+     * ทำไมต้องผ่อนเกตให้กลุ่มนี้:
+     *   โหมด transfer พาทุกคนไปเว็บ/LINE — คนที่ยัง**ตกค้าง**อยู่บน FB คือคนที่ทำไม่เป็นจริง ๆ
+     *   (ส่วนใหญ่ผู้สูงอายุ) เขาผ่านด่าน "ยืนยันขอดูในแชทนี้" มาแล้ว 1 ด่าน
+     *   ถ้ายังเจอ กล่องกติกา → ฟังเสียงพิมพ์รหัส → ตอบคำถาม 5 ข้อ = **4 ด่านซ้อน**
+     *   เคสจริงที่เสียลูกค้าไปแล้ว: PSID 26341241742179291 (ชายเกิด 2498)
+     *   "ทำไม่ถูกครับ ยังไม่เข้าใจ" → วนกล่องกติกาจนเลิก
+     *
+     * เหลือกล่องกติกาเดิมไว้ 1 ด่าน (ต้องมีเพื่อความยินยอม) — ตัดเฉพาะ 2 ด่านที่เป็น
+     * "ข้อสอบ" ซึ่งดักคนกลุ่มนี้หนักที่สุด. เกตพวกนี้มีไว้กันคนสร้างบิลไม่จ่าย
+     * ซึ่งเป็นคนละกลุ่มกับคนที่พยายามจ่ายแต่กดไม่เป็น
+     *
+     * ⚠️ ผูกกับโหมด transfer เท่านั้น — โหมด classic ไม่มีใครได้ธงนี้ = พฤติกรรมเดิม 100%
+     */
+    protected function transferFallbackRelaxesGates(string $uid): bool
+    {
+        if (empty($uid)) {
+            return false;
+        }
+
+        try {
+            $mode = new \App\Services\Fortune\FortuneBotMode($this->settings);
+
+            if (! $mode->isTransfer()) {
+                return false;
+            }
+
+            $platform = $this->currentPlatform ?? 'facebook';
+
+            if (! $mode->hasFbFallback($platform, $uid)) {
+                return false;
+            }
+
+            Log::info('🙏 Consent: ผ่อนเกตให้กลุ่ม "ทำเว็บ/ไลน์ไม่เป็น" (โหมด transfer)', [
+                'platform' => $platform,
+                'user_id' => $uid,
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            // fail-safe: เช็คไม่ได้ → คงเกตเดิมไว้ (ไม่ผ่อนให้มั่ว)
+            return false;
+        }
+    }
+
+    /**
      * 🔊 (2026-06-26) เปิดโหมดบังคับฟังเสียงกติกา + รหัสยืนยันหรือไม่ (toggle + consent ต้องเปิด)
      */
     protected function consentAudioCodeEnabled(): bool
@@ -322,6 +369,11 @@ trait FortuneConsentGateTrait
     protected function shouldUseAudioCode(string $uid): bool
     {
         if (! $this->consentAudioCodeEnabled()) {
+            return false;
+        }
+
+        // 🙏 (2026-07-27) กลุ่ม "ทำเว็บ/ไลน์ไม่เป็น" → ผ่อนเกตเสียง+รหัส
+        if ($this->transferFallbackRelaxesGates($uid)) {
             return false;
         }
 
@@ -374,6 +426,11 @@ trait FortuneConsentGateTrait
     protected function shouldUseConsentQuiz(string $uid): bool
     {
         if (! $this->consentQuizEnabled()) {
+            return false;
+        }
+
+        // 🙏 (2026-07-27) กลุ่ม "ทำเว็บ/ไลน์ไม่เป็น" → ผ่อนแบบสอบถาม 5 ข้อ
+        if ($this->transferFallbackRelaxesGates($uid)) {
             return false;
         }
 
@@ -432,7 +489,7 @@ trait FortuneConsentGateTrait
             '📌 ข้อ 2/5 — เจ้าชะตาเข้าใจว่าการดูดวงครั้งนี้มี "ค่าครู" ที่ต้องชำระเงินจริง (ไม่ใช่ของฟรี) ใช่ไหมคะ?',
             '📌 ข้อ 3/5 — เจ้าชะตายืนยันว่าจะโอนชำระค่าครูหลังสร้างบิล ไม่ได้กดสร้างเล่น ๆ ใช่ไหมคะ?',
             '📌 ข้อ 4/5 — เจ้าชะตาเข้าใจว่า การสร้างบิลแล้วไม่ชำระ ถือเป็นการรบกวนแม่หมอและระบบ ใช่ไหมคะ?',
-            "📌 ข้อ 5/5 (ข้อสำคัญ) — เจ้าชะตายอมรับว่า ถ้าสร้างบิลรอบนี้แล้ว \"ไม่ชำระ\" ภายในเวลาที่กำหนด "
+            '📌 ข้อ 5/5 (ข้อสำคัญ) — เจ้าชะตายอมรับว่า ถ้าสร้างบิลรอบนี้แล้ว "ไม่ชำระ" ภายในเวลาที่กำหนด '
                 ."จะถูก*งดใช้งานเพจเป็นเวลา {$days} วัน* ใช่ไหมคะ?",
         ];
     }

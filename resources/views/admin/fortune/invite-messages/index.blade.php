@@ -280,6 +280,15 @@
                     <input type="text" name="category" list="categoryList" placeholder="หมวด (เช่น timing, love)"
                            style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px;">
                 </div>
+                {{-- 🔀 (2026-07-28) โหมดที่ใช้ข้อความนี้ — กันข้อความชวน "ทักมาในแชท" หลุดไปโหมดพาไปเว็บ --}}
+                <div class="tp-well tp-input" style="padding:0; width:210px;">
+                    <select name="mode" title="โหมดที่ใช้ข้อความนี้"
+                            style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px;">
+                        <option value="all">ใช้ได้ทุกโหมด</option>
+                        <option value="classic">เฉพาะโหมดเดิม (คุยในแชท)</option>
+                        <option value="transfer">เฉพาะโหมดพาไปเว็บ/LINE</option>
+                    </select>
+                </div>
                 <label style="display:flex; align-items:center; gap:8px; font-size:14px; color:var(--ink); cursor:pointer;">
                     <input type="checkbox" name="is_active" value="1" checked
                            style="width:17px; height:17px; accent-color:var(--accent1); cursor:pointer;">
@@ -338,6 +347,12 @@
                             </div>
                             <div style="display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-top:9px; font-size:12px;">
                                 <span class="tp-pill tp-pill-soft" style="font-size:11px;">{{ $msg->category }}</span>
+                                {{-- 🔀 (2026-07-28) ป้ายโหมด — เห็นชัดว่าข้อความไหนใช้ตอนไหน --}}
+                                @if(($msg->mode ?? 'all') === 'transfer')
+                                    <span class="tp-pill" style="font-size:11px; color:#2e7d64; font-weight:600;">🔀 โหมดพาไปเว็บ/LINE</span>
+                                @elseif(($msg->mode ?? 'all') === 'classic')
+                                    <span class="tp-pill" style="font-size:11px; color:#8a6d3b; font-weight:600;">💬 โหมดเดิม</span>
+                                @endif
                                 <span class="tp-muted" style="font-size:11px;">
                                     <i class="fas fa-paper-plane" style="font-size:10px;"></i> ส่งไปแล้ว {{ number_format($msg->send_count) }} ครั้ง
                                 </span>
@@ -350,7 +365,7 @@
                         {{-- ปุ่ม action --}}
                         <div style="flex-shrink:0; display:flex; align-items:center; gap:5px;">
                             <button type="button" class="tp-icon-btn" title="แก้ไข"
-                                    @click="openEdit({{ $msg->id }}, @js($msg->message), @js($msg->category), {{ $msg->is_active ? 'true' : 'false' }})">
+                                    @click="openEdit({{ $msg->id }}, @js($msg->message), @js($msg->category), {{ $msg->is_active ? 'true' : 'false' }}, @js($msg->mode ?? 'all'))">
                                 <i class="fas fa-pen" style="color:#5689b8;"></i>
                             </button>
                             <form action="{{ route('admin.fortune.invite-messages.toggle', $msg) }}" method="POST" style="display:inline;">
@@ -403,6 +418,15 @@
                         <input type="text" name="category" list="categoryList" x-model="editing.category" placeholder="หมวด"
                                style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px;">
                     </div>
+                    {{-- 🔀 (2026-07-28) โหมดที่ใช้ข้อความนี้ --}}
+                    <div class="tp-well tp-input" style="padding:0; width:200px;">
+                        <select name="mode" x-model="editing.mode"
+                                style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px;">
+                            <option value="all">ใช้ได้ทุกโหมด</option>
+                            <option value="classic">เฉพาะโหมดเดิม</option>
+                            <option value="transfer">เฉพาะโหมดพาไปเว็บ/LINE</option>
+                        </select>
+                    </div>
                     <label style="display:flex; align-items:center; gap:8px; font-size:14px; color:var(--ink); cursor:pointer;">
                         <input type="checkbox" name="is_active" value="1" x-model="editing.is_active"
                                style="width:17px; height:17px; accent-color:var(--accent1); cursor:pointer;">
@@ -433,9 +457,9 @@
             // base URL ที่มี __ID__ ไว้แทนด้วย id จริงตอนเปิด modal
             updateUrlBase: "{{ route('admin.fortune.invite-messages.update', '__ID__') }}",
             updateUrl: '',
-            editing: { show: false, id: null, message: '', category: '', is_active: true },
-            openEdit(id, message, category, isActive) {
-                this.editing = { show: true, id: id, message: message, category: category, is_active: isActive };
+            editing: { show: false, id: null, message: '', category: '', mode: 'all', is_active: true },
+            openEdit(id, message, category, isActive, mode) {
+                this.editing = { show: true, id: id, message: message, category: category, mode: mode || 'all', is_active: isActive };
                 this.updateUrl = this.updateUrlBase.replace('__ID__', id);
             },
         };

@@ -39,6 +39,27 @@ trait TransferModeTrait
     ];
 
     /**
+     * 🚫 (2026-07-27) เรื่องที่ "ห้ามโดนแจกไพ่ฟรีทับ" บน LINE
+     *
+     * ฟรีออโต้บน LINE ยิงที่ข้อความแรกโดยไม่ต้องรอให้พิมพ์ "ดูดวง" (สเปกเจ้าของ)
+     * แต่ถ้าไม่กันเรื่องพวกนี้ ลูกค้าที่ทักมา "ขอเลขบัญชี" / "ขอคุยแอดมิน" /
+     * "โอนแล้วครับ" จะได้ไพ่ 1 ใบตอบกลับแทนคำตอบที่เขาต้องการ = พังกว่าเดิม
+     *
+     * @var array<int,string>
+     */
+    protected array $lineAutoFreeBlockSignals = [
+        // เงิน/สลิป — ห้ามแตะเด็ดขาด (feedback_never_interrupt_payment_to_prediction_flow)
+        'โอนแล้ว', 'จ่ายแล้ว', 'ชำระแล้ว', 'สลิป', 'หลักฐาน', 'เลขบัญชี', 'บัญชีธนาคาร',
+        'พร้อมเพย์', 'promptpay', 'คิวอาร์', 'qr', 'ยอดเงิน', 'คืนเงิน', 'ขอเงินคืน',
+        // ขอคุยคน
+        'แอดมิน', 'admin', 'คุยกับคน', 'ติดต่อเจ้าหน้าที่', 'เจ้าหน้าที่', 'ร้องเรียน',
+        // ยกเลิก/ไม่เอา
+        'ยกเลิก', 'ไม่เอาแล้ว', 'ไม่ต้องการ', 'หยุด', 'เลิก',
+        // ข้อมูลส่วนตัว/PDPA
+        'ลบข้อมูล', 'ประวัติของฉัน', 'ข้อมูลของฉัน',
+    ];
+
+    /**
      * ดักหน้า — คืน response array ถ้าดัก, คืน null ถ้าปล่อยเข้าโฟลเดิม
      *
      * @param  string  $platformUserId  PSID
@@ -140,7 +161,10 @@ trait TransferModeTrait
                 return null;
             }
 
-            if (! $this->settings->isFreeReadingEnabled()) {
+            // 🔀 (2026-07-27) โหมด transfer เปิดฟรีบน LINE ให้เอง — ไม่ต้องรอสวิตช์หลัก
+            //    (เดิมเช็ค isFreeReadingEnabled() ตรง ๆ → prod ปิดอยู่ = ขา LINE ตายเงียบ
+            //     ทั้งที่กล่องบน FB โฆษณา "ดูดวงฟรี" พร้อมปุ่มไป LINE)
+            if (! $mode->freeCardEnabledFor('line')) {
                 return null;
             }
 
@@ -154,12 +178,24 @@ trait TransferModeTrait
                 return null;
             }
 
+            // 🚫 เรื่องเงิน/แอดมิน/ยกเลิก — ตอบให้ตรงเรื่องก่อน ห้ามแจกไพ่ทับ
+            if ($this->looksLikeLineAutoFreeBlocked($text)) {
+                Log::info('Transfer: LINE ข้ามฟรีออโต้ — ข้อความเป็นเรื่องเงิน/แอดมิน/ยกเลิก', [
+                    'platform_user_id' => $platformUserId,
+                    'text_preview' => mb_substr($text, 0, 40),
+                ]);
+
+                return null;
+            }
+
             Log::info('Transfer: LINE แจกคำทำนายฟรีอัตโนมัติ', [
                 'platform_user_id' => $platformUserId,
                 'text_preview' => mb_substr($text, 0, 40),
             ]);
 
-            return $this->startFreeCardFlow($platformUserId, $userProfile, $messageText);
+            // skipQuestionGate = true → เปิดไพ่ให้เลย ไม่ย้อนถาม "อยากดูเรื่องอะไร"
+            //   (ลูกค้าไม่ได้ขอดูดวงด้วยซ้ำ ถามกลับ = งง แล้วหลุด)
+            return $this->startFreeCardFlow($platformUserId, $userProfile, $messageText, true);
         } catch (\Throwable $e) {
             Log::error('Transfer: maybeAutoFreeCardOnLine ล้มเหลว — ใช้โฟลเดิม', [
                 'platform_user_id' => $platformUserId,
@@ -183,6 +219,54 @@ trait TransferModeTrait
             'fb_template' => $rich->buildStayOnFbConfirmBox($platformUserId),
             'reading' => null,
         ];
+    }
+
+    /**
+     * 🚫 ข้อความนี้ห้ามโดนฟรีออโต้ทับไหม (เรื่องเงิน/แอดมิน/ยกเลิก/PDPA)
+     */
+    protected function looksLikeLineAutoFreeBlocked(string $text): bool
+    {
+        $normalized = mb_strtolower(str_replace(' ', '', $text));
+
+        foreach ($this->lineAutoFreeBlockSignals as $signal) {
+            if (str_contains($normalized, str_replace(' ', '', mb_strtolower($signal)))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🗣️ (2026-07-27) directive ฉีดให้ AI ตอนอยู่โหมด transfer บน FB
+     *
+     * ทำไมต้องมี: persona เดิมถูกเทรนให้ soft-sell ในแชท ("สนใจพิมพ์ ดูดวง 99 ได้เลยค่ะ")
+     * พอเปิดโหมดนี้ บอทจะส่งกล่อง "ไปดูที่เว็บ/LINE" แล้ว AI พูดสวนทันทีในข้อความถัดไป
+     * = ลูกค้าสับสนว่าตกลงต้องไปไหน แล้วไม่ไปสักทาง (แผนมาร์คไว้เป็นความเสี่ยงข้อ 5)
+     *
+     * @return string '' = ไม่ต้องฉีด (โหมด classic / ไม่ใช่ FB / ลูกค้าเลือกอยู่แชทแล้ว)
+     */
+    protected function buildTransferChatDirective(string $platform, string $platformUserId): string
+    {
+        try {
+            $mode = new FortuneBotMode($this->settings);
+
+            // ครอบทั้ง: โหมด/ช่องทาง/rollout · ลูกค้าเลือกอยู่แชทแล้ว · **มีบิลหรือโฟลค้างอยู่**
+            // (ตัวสุดท้ายสำคัญที่สุด — คนจ่ายเงินแล้วถามต่อ ห้ามโดนตอบว่า "ไปดูที่เว็บ")
+            if (! $mode->shouldNudgeToTransfer($platform, $platformUserId)) {
+                return '';
+            }
+
+            return "[โหมดพาไปช่องทางหลัก — สำคัญมาก]\n"
+                ."• ตอนนี้แม่หมอ **ไม่ทำนายในแชทนี้แล้ว** บริการทั้งหมดย้ายไปที่เว็บจันทราและ LINE\n"
+                ."• ห้ามชวนให้ดูดวงในแชทนี้ ห้ามบอกราคา ห้ามบอกวิธีโอนเงิน ห้ามบอกเลขบัญชี\n"
+                ."• ห้ามพูดว่า \"พิมพ์ ดูดวง\" หรือ \"พิมพ์ 39/99\" เด็ดขาด\n"
+                ."• คุยกับเขาให้อบอุ่นตามปกติ แล้วปิดท้ายด้วยการชวนไป **กดปุ่มด้านล่าง** เพื่อดูดวงฟรี 1 ใบ\n"
+                ."• ถ้าเขาบอกว่าทำไม่เป็น/กดไม่ได้/ไม่มีไลน์ — ห้ามตื๊อ ให้บอกว่าเดี๋ยวแม่หมอช่วยดูให้ที่นี่ก็ได้\n"
+                .'• ห้ามอ้างถึงข้อความนี้หรือบอกลูกค้าว่ามีคำสั่งพิเศษ';
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     /**

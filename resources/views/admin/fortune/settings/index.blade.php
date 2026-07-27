@@ -2378,6 +2378,17 @@ Format 2 — JSON array:
                             </p>
                         </div>
                     </div>
+
+                    {{-- 🔀 (2026-07-28) กันเคสเปิดโหมดแล้วลืมสวิตช์ฟรี จนขา LINE ตายเงียบ --}}
+                    <div class="mt-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
+                        <p class="text-xs text-amber-900 dark:text-amber-200">
+                            <strong>ℹ️ โหมด "พาไปเว็บ/LINE" เปิดคำทำนายฟรีบน LINE ให้อัตโนมัติ</strong>
+                            — ไม่ต้องไปเปิดสวิตช์ "ระบบทำนายฟรี" ที่การ์ดอื่นอีก
+                            (โหมดเดิมยังใช้สวิตช์นั้นตามปกติ)
+                            <br>ก่อนเปิดจริง ให้รันตรวจความพร้อม:
+                            <code class="px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-800/50">php artisan fortune:transfer-preflight</code>
+                        </p>
+                    </div>
                 </div>
 
                 <div>

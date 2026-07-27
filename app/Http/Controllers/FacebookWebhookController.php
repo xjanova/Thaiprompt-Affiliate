@@ -637,7 +637,8 @@ class FacebookWebhookController extends Controller
             $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook', 'reaction');
             $useInviteText = $inviteMessage !== null;
             if ($useInviteText) {
-                $message = $inviteMessage->render($userName ?? 'คุณ');
+                // 🔗 (2026-07-28) ส่ง psid ด้วย — ข้อความชุด transfer ใช้ {{web_link}} ที่สร้างต่อคน
+                $message = $inviteMessage->render($userName ?? 'คุณ', $userId, 'facebook');
                 // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
                 $quickReplies = \App\Models\FortuneInviteMessage::quickReplies();
             }
@@ -1088,7 +1089,8 @@ class FacebookWebhookController extends Controller
         // 💬 (2026-06-06) ได้รูปสัปดาห์นี้แล้ว → สลับเป็นข้อความชวน (USER SPEC) ไม่ส่งรูปซ้ำ
         $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($fromId, 'facebook', 'comment');
         if ($inviteMessage) {
-            $dmMessage = $inviteMessage->render($name);
+            // 🔗 (2026-07-28) ส่ง psid ด้วย — ข้อความชุด transfer ใช้ {{web_link}} ที่สร้างต่อคน
+            $dmMessage = $inviteMessage->render($name, $fromId, 'facebook');
             // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
             $quickReplies = \App\Models\FortuneInviteMessage::quickReplies();
         } elseif ($this->bannerService) {
@@ -3340,7 +3342,8 @@ class FacebookWebhookController extends Controller
                 // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
                 $this->facebookService->sendQuickReplies(
                     $senderId,
-                    $inviteMessage->render($userName),
+                    // 🔗 (2026-07-28) ส่ง psid ด้วย — ข้อความชุด transfer ใช้ {{web_link}} ที่สร้างต่อคน
+                    $inviteMessage->render($userName, $senderId, 'facebook'),
                     \App\Models\FortuneInviteMessage::quickReplies(),
                     ['messaging_type' => 'RESPONSE']
                 );

@@ -84,6 +84,7 @@ class FortuneInviteMessageController extends Controller
         $validated = $request->validate([
             'message' => 'required|string|max:1000',
             'category' => 'nullable|string|max:50',
+            'mode' => 'nullable|in:all,classic,transfer',
             'is_active' => 'nullable|boolean',
         ], [
             'message.required' => 'กรุณากรอกข้อความ',
@@ -96,6 +97,8 @@ class FortuneInviteMessageController extends Controller
         FortuneInviteMessage::create([
             'message' => trim($validated['message']),
             'category' => $category !== '' ? $category : 'general',
+            // 🔀 (2026-07-28) all = ใช้ได้ทุกโหมด (ค่าเริ่มต้นเดิม) · transfer = เฉพาะโหมดพาไปเว็บ/LINE
+            'mode' => $validated['mode'] ?? FortuneInviteMessage::MODE_ALL,
             'is_active' => (bool) ($validated['is_active'] ?? true),
             'sort_order' => (int) (FortuneInviteMessage::max('sort_order') + 1),
             'created_by' => auth()->id(),
@@ -117,6 +120,7 @@ class FortuneInviteMessageController extends Controller
         $validated = $request->validate([
             'message' => 'required|string|max:1000',
             'category' => 'nullable|string|max:50',
+            'mode' => 'nullable|in:all,classic,transfer',
             'is_active' => 'nullable|boolean',
         ], [
             'message.required' => 'กรุณากรอกข้อความ',
@@ -129,6 +133,7 @@ class FortuneInviteMessageController extends Controller
         $inviteMessage->update([
             'message' => trim($validated['message']),
             'category' => $category !== '' ? $category : ($inviteMessage->category ?: 'general'),
+            'mode' => $validated['mode'] ?? ($inviteMessage->mode ?: FortuneInviteMessage::MODE_ALL),
             'is_active' => (bool) ($validated['is_active'] ?? false),
         ]);
 

@@ -1889,6 +1889,16 @@ class FortuneChannelManager
             $quickReplies = $this->getFacebookFallbackQuickReplies($action, $result, $offerFortune);
         }
 
+        // 🔀 (2026-07-27) โหมด transfer — แนบปุ่มไปเว็บ/LINE ท้ายข้อความคุยเล่นของ AI
+        //    เจ้าของเคาะข้อ 6: "ไม่กดปุ่ม → AI คุยปกติ + ปุ่มท้าย" — เดิมสร้างปุ่มไว้แล้ว
+        //    (buildTransferQuickReplies) แต่ไม่มีใครเรียก = ลูกค้าที่คุยเรื่อยเปื่อย
+        //    ไม่มีทางไปเว็บ/LINE เลยจนกว่าจะพิมพ์คำที่เข้าเกณฑ์ "ขอดูดวง"
+        //    ทับของเดิมโดยตั้งใจ — ในโหมดนี้ปุ่มเดิมชวนดูดวงในแชท = พูดสวนกล่อง
+        $transferQr = $this->buildTransferQuickRepliesFor($action, $userId, $richService);
+        if ($transferQr !== null) {
+            $quickReplies = $transferQr;
+        }
+
         $sent = ! empty($quickReplies)
             ? $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra)
             : $fbService->sendMessage($userId, $message, $extra);
@@ -1902,6 +1912,40 @@ class FortuneChannelManager
         }
 
         return $sent;
+    }
+
+    /**
+     * 🔀 (2026-07-27) ปุ่ม "ไปดูดวงฟรีที่เว็บ/LINE" ท้ายข้อความ AI (โหมด transfer เท่านั้น)
+     *
+     * คืน null = ไม่ต้องแทน (โหมด classic / ไม่ใช่ FB / action ที่ไม่ควรแนบ /
+     * ลูกค้ายืนยันขอดูในแชทนี้แล้ว = เคารพการตัดสินใจ ไม่ตื๊อต่อ)
+     *
+     * @param  string  $userId  PSID
+     * @return array<int,array<string,string>>|null
+     */
+    protected function buildTransferQuickRepliesFor(string $action, string $userId, FacebookRichMessageService $richService): ?array
+    {
+        // เฉพาะข้อความคุยทั่วไป — ห้ามแตะ action ที่เป็นเงิน/โฟลที่ทำอยู่
+        if (! in_array($action, ['ai_chat_response', 'keyword_matched'], true)) {
+            return null;
+        }
+
+        try {
+            $mode = new \App\Services\Fortune\FortuneBotMode($this->settings);
+
+            // ครอบทั้ง: โหมด/ช่องทาง/rollout · ลูกค้าเลือกอยู่แชทแล้ว · มีบิลหรือโฟลค้างอยู่
+            // (คนที่จ่ายเงินแล้วคุยต่อใน Pro Session ต้องได้ปุ่มเดิม ไม่ใช่ปุ่ม "ดูดวงฟรี")
+            if (! $mode->shouldNudgeToTransfer('facebook', $userId)) {
+                return null;
+            }
+
+            return $richService->buildTransferQuickReplies($userId);
+        } catch (\Throwable $e) {
+            // fail-safe: ปุ่มพังต้องไม่ทำให้ข้อความไม่ถูกส่ง
+            Log::warning('Transfer: สร้างปุ่มท้ายข้อความไม่สำเร็จ', ['err' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     /**
