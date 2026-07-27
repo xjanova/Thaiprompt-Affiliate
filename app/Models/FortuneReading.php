@@ -1167,6 +1167,8 @@ class FortuneReading extends Model
         return match ($reason) {
             'auto_expired', 'auto_expired_grace' => 'ยกเลิกโดยระบบ',
             'user_cancelled' => 'ยกเลิกโดยลูกค้า',
+            // 🚫 (2026-07-27) แอดมินกด "ยกเลิกการอนุมัติ" (voidApproval) — อนุมัติผิดบิล/ผิดคน
+            'approval_voided' => 'ยกเลิกการอนุมัติโดยแอดมิน',
             default => 'ยกเลิก (ไม่ทราบสาเหตุ)',
         };
     }
@@ -2657,6 +2659,9 @@ class FortuneReading extends Model
             $state['approval_voided_at'] = now()->toIso8601String();
             $state['approval_void_reason'] = $reason;
             $state['approval_voided_by_admin_id'] = $adminId;
+            // 🏷️ (2026-07-27) ระบุสาเหตุยกเลิกให้ชัด — เดิมบิลที่ void แล้วไม่มี cancellation_reason
+            //   ทำให้ isCancelled() = false + แอพ/แอดมินขึ้น "ยกเลิก (ไม่ทราบสาเหตุ)"
+            $state['cancellation_reason'] = 'approval_voided';
             // เคลียร์ flag ค้างที่ cron expire-stuck-paid ตั้งไว้ (ไม่งั้นโผล่ใน admin review ซ้ำ)
             $state['admin_review_needed'] = false;
 

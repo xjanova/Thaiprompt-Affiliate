@@ -61,6 +61,10 @@ Route::prefix('v1/sms-payment')->group(function () {
             Route::get('/orders/match', [SmsPaymentController::class, 'matchOrderByAmount']);
             Route::post('/orders/{id}/approve', [SmsPaymentController::class, 'approveOrder']);
             Route::post('/orders/{id}/reject', [SmsPaymentController::class, 'rejectOrder']);
+
+            // 🧾 (2026-07-27) รูปสลิปที่ทำให้บิลผ่าน — แอดมินเปิดดูตรวจซ้ำในแอพ
+            //   PDPA: device auth เท่านั้น (admin device) + no-store, รูป archive 30 วัน
+            Route::get('/orders/{id}/slip-image', [SmsPaymentController::class, 'slipImage']);
             Route::post('/orders/bulk-approve', [SmsPaymentController::class, 'bulkApproveOrders']);
             Route::get('/orders/sync', [SmsPaymentController::class, 'syncOrders']);
 

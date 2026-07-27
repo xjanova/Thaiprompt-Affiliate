@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -212,6 +213,79 @@ class SmsPaymentController extends Controller
      */
     private const FORTUNE_READING_ID_OFFSET = 10000000;
 
+    /**
+     * 🧾 (2026-07-27) แคชผลค้นสลิปต่อ 1 request — reading_id => SlipVerificationLog|null
+     *
+     * transformFortuneReadingToOrderApproval ถูกเรียกทีละบิลใน orders()/syncOrders()
+     * ถ้าค้น log ทีละบิล = N+1 query → preloadSlipLogsFor() ยิงครั้งเดียวแล้วเก็บที่นี่
+     *
+     * @var array<int, \App\Models\SlipVerificationLog|null>
+     */
+    private array $slipLogCache = [];
+
+    /**
+     * 🧾 (2026-07-27) โหลด "สลิปที่ตรวจผ่าน" ของหลายบิลในคิวรีเดียว (กัน N+1)
+     *
+     * @param  \Illuminate\Support\Collection<int, FortuneReading>  $readings
+     */
+    private function preloadSlipLogsFor($readings): void
+    {
+        $ids = collect($readings)->pluck('id')->filter()->unique()->values();
+        if ($ids->isEmpty()) {
+            return;
+        }
+
+        try {
+            // เอาแถวล่าสุดของแต่ละบิลที่ "ผ่าน + ยังมีไฟล์รูป" (รูป archive 30 วัน)
+            $logs = \App\Models\SlipVerificationLog::query()
+                ->whereIn('fortune_reading_id', $ids)
+                ->whereNotNull('slip_image_path')
+                ->where('decision', 'approve')
+                ->orderBy('id', 'desc')
+                ->get();
+        } catch (\Throwable $e) {
+            Log::debug('preloadSlipLogsFor ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+
+            return;
+        }
+
+        foreach ($ids as $id) {
+            $this->slipLogCache[(int) $id] = null;
+        }
+        foreach ($logs as $log) {
+            $rid = (int) $log->fortune_reading_id;
+            // เรียง id DESC → แถวแรกที่เจอคือล่าสุด
+            if (($this->slipLogCache[$rid] ?? null) === null) {
+                $this->slipLogCache[$rid] = $log;
+            }
+        }
+    }
+
+    /**
+     * 🧾 (2026-07-27) สลิปที่ทำให้บิลนี้ผ่าน (ล่าสุด) — คืน null ถ้าไม่มี/รูปถูก purge แล้ว
+     */
+    private function slipLogFor(FortuneReading $reading): ?\App\Models\SlipVerificationLog
+    {
+        $rid = (int) $reading->id;
+        if (array_key_exists($rid, $this->slipLogCache)) {
+            return $this->slipLogCache[$rid];
+        }
+
+        try {
+            $log = \App\Models\SlipVerificationLog::query()
+                ->where('fortune_reading_id', $rid)
+                ->whereNotNull('slip_image_path')
+                ->where('decision', 'approve')
+                ->orderBy('id', 'desc')
+                ->first();
+        } catch (\Throwable $e) {
+            Log::debug('slipLogFor ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+            $log = null;
+        }
+
+        return $this->slipLogCache[$rid] = $log;
+    }
+
     private function transformFortuneReadingToOrderApproval(FortuneReading $reading): array
     {
         // แปลง conversation_status → approval_status ที่ Android เข้าใจ
@@ -337,7 +411,27 @@ class SmsPaymentController extends Controller
             'customer_name' => $customerName,
             'amount' => $displayAmount,
             'platform' => $platform,
+            // 🚫 (2026-07-27) บิลดูดวงยกเลิกการอนุมัติได้จากแอพ (voidApproval engine)
+            //    แอพจะโชว์ปุ่ม "ยกเลิกการอนุมัติ" เฉพาะบิลที่ค่านี้ = true และอนุมัติแล้ว
+            'can_void' => true,
         ];
+
+        // 🧾 (2026-07-27) สลิปที่ทำให้บิลนี้ผ่าน — ส่ง metadata + path รูปให้แอพเปิดดูตรวจซ้ำได้
+        //   PDPA: ส่งแค่ "เส้นทาง" ไม่ส่งไฟล์/base64 — แอพต้องยิงพร้อม X-Api-Key + X-Device-Id
+        //   รูป archive 30 วัน (fortune:purge-slip-archive) → บิลเก่ากว่านั้น slip = null
+        $slipLog = $this->slipLogFor($reading);
+        if ($slipLog) {
+            $orderDetails['slip'] = [
+                'log_id' => (int) $slipLog->id,
+                // relative path — แอพต่อกับ baseUrl ของ server ตัวเอง (กัน APP_URL ตั้งผิด)
+                'image_path' => 'api/v1/sms-payment/orders/'.rawurlencode((string) $reading->bill_reference).'/slip-image',
+                'trans_ref' => $slipLog->trans_ref,
+                'sender_name' => $slipLog->sender_name,
+                'receiver_account' => $slipLog->receiver_account,
+                'amount' => $slipLog->amount !== null ? (float) $slipLog->amount : null,
+                'checked_at' => $slipLog->created_at?->toIso8601String(),
+            ];
+        }
 
         // ดึง matched notification ถ้ามี
         $notification = null;
@@ -908,6 +1002,9 @@ class SmsPaymentController extends Controller
                 ->limit(20)
                 ->get();
 
+            // 🧾 โหลดสลิปของทุกบิลในคิวรีเดียวก่อน transform (กัน N+1)
+            $this->preloadSlipLogsFor($fortuneReadings);
+
             $fortuneOrders = $fortuneReadings->map(function ($reading) {
                 return $this->transformFortuneReadingToOrderApproval($reading);
             });
@@ -967,6 +1064,63 @@ class SmsPaymentController extends Controller
                 'last_page' => $paginated->lastPage(),
                 'total' => $paginated->total() + $fortuneReadings->count(),
             ],
+        ]);
+    }
+
+    /**
+     * 🧾 (2026-07-27) สตรีมรูปสลิปที่ทำให้บิลนี้ผ่าน — ให้แอดมินตรวจซ้ำในแอพ SMS Checker
+     *
+     * GET /api/v1/sms-payment/orders/{identifier}/slip-image
+     *
+     * PDPA: รูปมีชื่อผู้โอน/เลขบัญชี → เสิร์ฟผ่าน device auth (X-Api-Key + X-Device-Id) เท่านั้น
+     *       เฉพาะ admin device (deviceCanAccessFortuneReading) และไม่ตั้ง public cache
+     * รูป archive 30 วัน (fortune:purge-slip-archive) → เกินนั้นได้ 404
+     *
+     * @param  mixed  $identifier  bill_reference (FTU-...) หรือ numeric ID (มี/ไม่มี offset)
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
+     */
+    public function slipImage(Request $request, $identifier)
+    {
+        $device = $request->attributes->get('sms_checker_device');
+        if (! $device instanceof SmsCheckerDevice) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        if (! $this->deviceCanAccessFortuneReading($device)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only admin devices can view fortune slip images',
+            ], 403);
+        }
+
+        $resolved = $this->resolveOrderByIdentifier($identifier);
+        if (! $resolved || $resolved['type'] !== 'fortune') {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบบิลดูดวงนี้: '.$identifier,
+            ], 404);
+        }
+
+        /** @var FortuneReading $reading */
+        $reading = $resolved['model'];
+        $slipLog = $this->slipLogFor($reading);
+        $path = (string) ($slipLog?->slip_image_path ?? '');
+
+        if ($path === '' || ! Storage::disk('local')->exists($path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบรูปสลิปของบิลนี้ (อาจถูกลบตามรอบ 30 วัน)',
+            ], 404);
+        }
+
+        $device->update([
+            'last_active_at' => now(),
+            'ip_address' => $request->ip(),
+        ]);
+
+        return Storage::disk('local')->response($path, null, [
+            'Content-Type' => Storage::disk('local')->mimeType($path) ?: 'image/jpeg',
+            'Cache-Control' => 'private, no-store',
         ]);
     }
 
@@ -1791,6 +1945,9 @@ class SmsPaymentController extends Controller
                 ->limit(50)
                 ->get();
 
+            // 🧾 โหลดสลิปของทุกบิลในคิวรีเดียวก่อน transform (กัน N+1)
+            $this->preloadSlipLogsFor($fortuneReadings);
+
             $fortuneOrders = $fortuneReadings->map(function ($reading) {
                 return $this->transformFortuneReadingToOrderApproval($reading);
             });
@@ -2352,7 +2509,8 @@ class SmsPaymentController extends Controller
 
         // ตรวจสอบ payload fields
         $validator = Validator::make($payload, [
-            'action' => 'required|in:approve,reject',
+            // 🚫 (2026-07-27) void = ยกเลิกการอนุมัติที่ทำไปแล้ว (บิลดูดวงเท่านั้น)
+            'action' => 'required|in:approve,reject,void',
             'order_identifier' => 'required|string|max:100',
             'amount' => 'required|numeric|min:0.01',
             'bank' => 'nullable|string|max:20',
@@ -2421,9 +2579,11 @@ class SmsPaymentController extends Controller
                 ], 403);
             }
 
-            return $action === 'approve'
-                ? $this->executeFortuneApproveAction($payload, $model, $device, $request->ip())
-                : $this->executeFortuneRejectAction($payload, $model, $device, $request->ip());
+            return match ($action) {
+                'approve' => $this->executeFortuneApproveAction($payload, $model, $device, $request->ip()),
+                'void' => $this->executeFortuneVoidAction($payload, $model, $device, $request->ip()),
+                default => $this->executeFortuneRejectAction($payload, $model, $device, $request->ip()),
+            };
         }
 
         // === PaymentTransaction ===
@@ -2433,6 +2593,14 @@ class SmsPaymentController extends Controller
                 'success' => false,
                 'message' => 'You do not have permission to manage this transaction',
             ], 403);
+        }
+
+        // 🚫 void รองรับเฉพาะบิลดูดวง — บิลร้านค้ามี order/commission/stock ผูกอยู่ ต้องแก้ที่หลังบ้าน
+        if ($action === 'void') {
+            return response()->json([
+                'success' => false,
+                'message' => 'ยกเลิกการอนุมัติได้เฉพาะบิลดูดวง — บิลร้านค้าต้องยกเลิกที่หน้าเว็บแอดมิน',
+            ], 422);
         }
 
         return $action === 'approve'
@@ -2802,6 +2970,88 @@ class SmsPaymentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Fortune reading rejected',
+            'data' => ['order' => $this->transformFortuneReadingToOrderApproval($reading)],
+        ]);
+    }
+
+    /**
+     * 🚫 (2026-07-27) ยกเลิกการอนุมัติบิลดูดวงจากแอพ (Void Approval)
+     *
+     * Use case: SlipOK อนุมัติผิด (สลิปปลอม/สลิปเก่า) หรือแอดมินกด Force ผิดบิล
+     *   → บิลขึ้น "จ่ายแล้ว ✓" ทั้งที่ไม่ได้เงิน → ต้องถอยกลับเป็น "ยังไม่ได้ชำระ"
+     *
+     * ใช้ engine เดียวกับหน้าเว็บแอดมิน: FortuneReading::voidApproval()
+     *   คืน UPA → cancelled, ปลด SMS notification, ดึง commission คืน,
+     *   is_paid=false + status=COMPLETED + cancellation_reason='approval_voided'
+     *   → แอพจะเห็นบิลเป็น "ยกเลิกการอนุมัติโดยแอดมิน" และกด Force อนุมัติใหม่ได้
+     *
+     * Guard: บิลที่ลูกค้าใช้บริการไปแล้ว (เปิดไพ่/ได้คำทำนาย) ต้องส่ง force=true
+     *        (แอพจะถามยืนยันรอบสองก่อน) — ตรงกับ FortuneCelticCrossController::voidApproval
+     */
+    private function executeFortuneVoidAction(array $payload, FortuneReading $reading, SmsCheckerDevice $device, string $ipAddress): JsonResponse
+    {
+        $reason = trim((string) ($payload['reason'] ?? '')) ?: 'ยกเลิกการอนุมัติจากแอพ SMS Checker';
+        $force = (bool) ($payload['force'] ?? false);
+
+        // Idempotent: ยังไม่จ่าย = ไม่มีอะไรให้ถอย (เช่นกดซ้ำ / response timeout แล้ว retry)
+        if (! $reading->is_paid) {
+            return response()->json([
+                'success' => true,
+                'message' => 'บิลนี้อยู่ในสถานะยังไม่ได้ชำระอยู่แล้ว',
+                'data' => ['order' => $this->transformFortuneReadingToOrderApproval($reading)],
+            ]);
+        }
+
+        // ⚠️ ลูกค้าใช้บริการไปแล้ว → ต้องยืนยันซ้ำ (แอพส่ง force=true รอบสอง)
+        $consumed = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+            ? ($reading->getCelticPickedCount() > 0 || (int) ($reading->celtic_questions_used ?? 0) > 0)
+            : ! empty($reading->deep_response);
+
+        if ($consumed && ! $force) {
+            return response()->json([
+                'success' => false,
+                'message' => 'บิลนี้ลูกค้าใช้บริการไปแล้ว (เปิดไพ่/ได้คำทำนาย) — ยืนยันอีกครั้งถ้าแน่ใจว่าอนุมัติผิด',
+                'error_code' => 'BILL_CONSUMED',
+                'data' => ['consumed' => true],
+            ], 422);
+        }
+
+        $result = $reading->voidApproval($reason, null);
+
+        if (! ($result['ok'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'ยกเลิกการอนุมัติไม่สำเร็จ',
+            ], 422);
+        }
+
+        $device->update([
+            'last_active_at' => now(),
+            'ip_address' => $ipAddress,
+        ]);
+
+        $reading = $reading->fresh();
+
+        Log::critical('⛔ SMS Payment: Fortune approval VOIDED via app', [
+            'fortune_reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'device_id' => $device->device_id,
+            'reason' => $reason,
+            'consumed' => $consumed,
+            'force_used' => $force,
+            'reverted' => $result['reverted'] ?? [],
+            'warnings' => $result['warnings'] ?? [],
+            'admin_action' => 'void_approval_from_app',
+        ]);
+
+        $message = 'ยกเลิกการอนุมัติแล้ว — คืนเป็น "ยังไม่ได้ชำระ"';
+        if (! empty($result['warnings'])) {
+            $message .= ' ⚠️ '.implode('; ', $result['warnings']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
             'data' => ['order' => $this->transformFortuneReadingToOrderApproval($reading)],
         ]);
     }
