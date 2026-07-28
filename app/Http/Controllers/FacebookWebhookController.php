@@ -4224,6 +4224,68 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * 🎁 (2026-07-28) ปุ่ม "ดูฟรีที่เว็บ" — พาไปห้องแชทแม่หมอบนเว็บจันทรา
+     *
+     * ⚠️ ทำไมต้องส่งเป็น "กล่องปุ่ม" ไม่ใช่ให้ปุ่มแรกเป็นลิงก์เลย:
+     *    quick reply ของ Facebook เป็นลิงก์ไม่ได้ (API รองรับแค่ text/phone/email)
+     *    ส่วน template ที่ใส่ URL ได้จำกัด 3 ปุ่ม — ถ้าจะยัดลิงก์ในแถวเดิม
+     *    ต้องตัด "ไม่ต้องส่งอีก" ทิ้ง ซึ่งเป็นปุ่มที่ลูกค้าต้องมีสิทธิ์กด
+     *    → ยอมให้กด 2 ครั้ง (กดปุ่ม → กดลิงก์) ดีกว่าตัดสิทธิ์ opt-out
+     *
+     * ลิงก์สร้างใหม่ทุกครั้งที่กด (magic link ผูก PSID + มีวันหมดอายุ)
+     * ปลายทาง /chat = ห้องแชทแม่หมอ ซึ่งเป็นหน้าหลักที่กระจายไปบริการอื่นของจันทรา
+     * ลูกค้าจะถูก **สมัคร + ล็อกอินให้อัตโนมัติ** ระหว่างทาง (ไม่ต้องกรอกอะไร)
+     */
+    protected function handleInviteFreeWeb(string $senderId): void
+    {
+        $webUrl = null;
+
+        try {
+            $svc = app(\App\Services\FortuneWebLinkService::class);
+            if ($svc->isEnabled()) {
+                $webUrl = $svc->generateChatLink('facebook', $senderId, '/chat');
+            }
+        } catch (\Throwable $e) {
+            Log::warning('🎁 InviteFreeWeb: สร้าง magic link ไม่สำเร็จ', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // สร้างลิงก์ไม่ได้ (สวิตช์เพิ่งถูกปิด / service พัง) → อย่าปล่อยให้เงียบ
+        //   พาเข้าโฟลดูดวงในแชทแทน ลูกค้าจะได้ไม่รู้สึกว่ากดแล้วไม่มีอะไรเกิดขึ้น
+        if (! $webUrl) {
+            Log::info('🎁 InviteFreeWeb: ไม่มีลิงก์ → ตกไปโฟลดูดวงในแชท', ['user_id' => $senderId]);
+            $this->handleInviteReadNow($senderId);
+
+            return;
+        }
+
+        Log::info('🎁 InviteFreeWeb: ส่งลิงก์ห้องแชทบนเว็บ', ['user_id' => $senderId]);
+
+        $this->facebookService->sendButtonTemplate($senderId, [
+            'attachment' => [
+                'type' => 'template',
+                'payload' => [
+                    'template_type' => 'button',
+                    'text' => "🌙 แม่หมอรออยู่ที่ห้องแชทบนเว็บแล้วค่ะ\n\n"
+                        ."✅ กดปุ่มเดียว เข้าให้เองเลย ไม่ต้องสมัคร ไม่ต้องกรอกอะไร\n"
+                        ."✅ คุยกับแม่หมอได้ฟรีตามโควตาของแต่ละวัน\n"
+                        ."✅ บทสนทนาเก็บไว้ให้ ย้อนอ่านได้ทุกเมื่อ\n\n"
+                        .'กดด้านล่างได้เลยค่ะ 👇',
+                    'buttons' => [
+                        [
+                            'type' => 'web_url',
+                            'title' => '🎁 เข้าห้องแชทแม่หมอ',
+                            'url' => $webUrl,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * 🔕 (2026-06-06) ปุ่ม "พัก 7 วัน" — พัก DM ตาม comment/reaction 7 วัน
      */
     protected function handleInviteSnooze(string $senderId): void
@@ -4313,6 +4375,8 @@ class FacebookWebhookController extends Controller
             'AFFILIATE_RECRUIT_NO' => $this->handleAffiliateRecruitNo($senderId),
 
             // 🔕 (2026-06-06) ปุ่มในข้อความชวน (invite) — ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
+            // 🎁 (2026-07-28) + ดูฟรีที่เว็บ — พาไปห้องแชทแม่หมอบนเว็บจันทรา
+            'INVITE_FREE_WEB' => $this->handleInviteFreeWeb($senderId),
             'INVITE_READ_NOW' => $this->handleInviteReadNow($senderId),
             'INVITE_SNOOZE_7D' => $this->handleInviteSnooze($senderId),
             'INVITE_OPTOUT' => $this->handleInviteOptOut($senderId),

@@ -22,21 +22,29 @@ class OAuthProfileController extends Controller
 {
     /**
      * คืนโปรไฟล์ผู้ใช้ที่ authorize ผ่าน OAuth token
-     *
-     * @return JsonResponse
      */
     public function show(Request $request): JsonResponse
     {
         /** @var \App\Models\OAuthUser $user */
         $user = $request->user();
 
-        // PSID ล่าสุดจาก fortune_readings = facebook_user_id ที่ใช้จริงกับบอท
-        // (ไม่มี PSID = ไม่เคยมาทาง FB → juntra ถือว่าไม่ผูก FB)
-        $fbPsid = FortuneReading::query()
-            ->where('user_id', $user->id)
-            ->whereNotNull('facebook_user_id')
-            ->orderByDesc('created_at')
-            ->value('facebook_user_id');
+        // PSID ของลูกค้าคนนี้ = ตัวที่บอก juntra ว่า "ผูก Facebook แล้ว"
+        //
+        // 🎁 (2026-07-28) ยึดคอลัมน์ `users.facebook_psid` เป็นอันดับแรก
+        //    เดิมดูจาก fortune_readings อย่างเดียว → ลูกค้าที่กด Magic Link เข้าเว็บ
+        //    **โดยยังไม่เคยดูดวง** (ซึ่งคือกลุ่มหลักของเส้น FB→ห้องแชท) ไม่มีแถว reading
+        //    → juntra ได้ facebook_user_id = null → ถือว่า "ยังไม่เชื่อม Facebook"
+        //    → พอห้องแชทเข้าโหมดคิดเงิน ลูกค้ากลุ่มนี้โดน 403 ทั้งที่มาจาก FB แท้ ๆ
+        //    (คอลัมน์นี้ถูกเติมตอนบัญชีถูกสร้าง + backfill 648 คนเมื่อ 2026-07-16)
+        $fbPsid = $user->facebook_psid ?: null;
+
+        if (! $fbPsid) {
+            $fbPsid = FortuneReading::query()
+                ->where('user_id', $user->id)
+                ->whereNotNull('facebook_user_id')
+                ->orderByDesc('created_at')
+                ->value('facebook_user_id');
+        }
 
         $signupVia = $user->line_user_id ? 'line'
                    : ($fbPsid ? 'facebook'

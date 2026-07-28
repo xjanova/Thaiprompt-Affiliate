@@ -226,11 +226,17 @@ class FortuneInviteMessage extends Model
     }
 
     /**
-     * 🔘 Quick Replies 3 ปุ่ม ที่แนบไปกับข้อความชวน (Facebook)
+     * 🔘 Quick Replies ที่แนบไปกับข้อความชวน (Facebook)
      *
-     * 1. 🔮 ดูดวงเลย      → INVITE_READ_NOW  (เข้า flow ดูดวง + เคลียร์ opt-out)
-     * 2. 🔕 พัก 7 วัน      → INVITE_SNOOZE_7D (พัก DM 7 วัน)
-     * 3. 🚫 ไม่ต้องส่งอีก   → INVITE_OPTOUT    (หยุด DM ตาม comment/reaction ถาวร)
+     * 1. 🎁 ดูฟรีที่เว็บ    → INVITE_FREE_WEB  (ห้องแชทแม่หมอบนเว็บจันทรา — ฟรีตามโควตา)
+     * 2. 🔮 ดูดวงเลย       → INVITE_READ_NOW  (เข้า flow ดูดวงในแชท + เคลียร์ opt-out)
+     * 3. 🔕 พัก 7 วัน      → INVITE_SNOOZE_7D (พัก DM 7 วัน)
+     * 4. 🚫 ไม่ต้องส่งอีก   → INVITE_OPTOUT    (หยุด DM ตาม comment/reaction ถาวร)
+     *
+     * 🎁 (2026-07-28) ปุ่มเว็บอยู่ตัวแรกโดยตั้งใจ — quick reply บนมือถือเลื่อนแนวนอน
+     *    ปุ่มที่ 4 มักตกขอบจอ ถ้าอยากให้คนไปเว็บต้องอยู่หน้าสุด
+     *    ขึ้นเฉพาะเมื่อเปิด `enable_web_fortune_button` — ปิดอยู่ = ปุ่มเดิม 3 ตัวเป๊ะ
+     *    (ปุ่มที่กดแล้วไม่มีอะไรเกิดขึ้น แย่กว่าไม่มีปุ่ม)
      *
      * payload เป็น namespace ใหม่ (INVITE_*) ไม่ชนกับปุ่มเดิมในระบบ
      * route ผ่าน FacebookWebhookController::handleQuickReply()
@@ -239,11 +245,21 @@ class FortuneInviteMessage extends Model
      */
     public static function quickReplies(): array
     {
-        return [
+        $buttons = [];
+
+        try {
+            if (app(\App\Services\FortuneWebLinkService::class)->isEnabled()) {
+                $buttons[] = ['content_type' => 'text', 'title' => '🎁 ดูฟรีที่เว็บ', 'payload' => 'INVITE_FREE_WEB'];
+            }
+        } catch (\Throwable $e) {
+            // เช็คสวิตช์ไม่ได้ → ไม่ใส่ปุ่ม (พฤติกรรมเดิม)
+        }
+
+        return array_merge($buttons, [
             ['content_type' => 'text', 'title' => '🔮 ดูดวงเลย', 'payload' => 'INVITE_READ_NOW'],
             ['content_type' => 'text', 'title' => '🔕 พัก 7 วัน', 'payload' => 'INVITE_SNOOZE_7D'],
             ['content_type' => 'text', 'title' => '🚫 ไม่ต้องส่งอีก', 'payload' => 'INVITE_OPTOUT'],
-        ];
+        ]);
     }
 
     /**

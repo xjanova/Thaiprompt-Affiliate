@@ -127,6 +127,43 @@ class FortuneInviteMessageModeTest extends TestCase
         $this->assertStringContainsString('แม่หมอเปิดไพ่ให้ฟรี', $rendered, 'เนื้อหาหลักต้องยังอยู่');
     }
 
+    /**
+     * 🎁 ปุ่ม "ดูฟรีที่เว็บ" ใน DM ชวน — ต้องขึ้นเฉพาะตอนเปิดสวิตช์ปุ่มเว็บ
+     *    ปุ่มที่กดแล้วไม่มีอะไรเกิดขึ้น แย่กว่าไม่มีปุ่ม
+     */
+    public function test_ปุ่มดูฟรีที่เว็บขึ้นเฉพาะตอนเปิดสวิตช์(): void
+    {
+        // ปิดสวิตช์ = ปุ่มเดิม 3 ตัวเป๊ะ (พฤติกรรมเดิม 100%)
+        $this->settings(['enable_web_fortune_button' => false]);
+
+        $off = FortuneInviteMessage::quickReplies();
+        $this->assertCount(3, $off);
+        $this->assertSame(
+            ['INVITE_READ_NOW', 'INVITE_SNOOZE_7D', 'INVITE_OPTOUT'],
+            array_column($off, 'payload')
+        );
+
+        // เปิดสวิตช์ = เพิ่มปุ่มเว็บ **เป็นตัวแรก** (quick reply บนมือถือเลื่อนแนวนอน
+        // ตัวท้ายมักตกขอบจอ — ปุ่มที่อยากให้คนกดต้องอยู่หน้าสุด)
+        $this->settings(['enable_web_fortune_button' => true]);
+
+        $on = FortuneInviteMessage::quickReplies();
+        $this->assertCount(4, $on);
+        $this->assertSame('INVITE_FREE_WEB', $on[0]['payload']);
+        $this->assertSame('🎁 ดูฟรีที่เว็บ', $on[0]['title']);
+
+        // ปุ่มเดิมต้องอยู่ครบ ห้ามหายไปตัวไหน (โดยเฉพาะ opt-out)
+        $this->assertSame(
+            ['INVITE_READ_NOW', 'INVITE_SNOOZE_7D', 'INVITE_OPTOUT'],
+            array_values(array_slice(array_column($on, 'payload'), 1))
+        );
+
+        // ทุก label ต้องไม่เกินลิมิต 20 ตัวอักษรของ Facebook
+        foreach ($on as $qr) {
+            $this->assertLessThanOrEqual(20, mb_strlen($qr['title']), "label ยาวเกิน: {$qr['title']}");
+        }
+    }
+
     public function test_ข้อความเดิมที่ไม่มี_placeholder_ต้องไม่เปลี่ยนพฤติกรรม(): void
     {
         $this->settings(['fortune_bot_mode' => FortuneBotMode::MODE_CLASSIC]);
