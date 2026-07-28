@@ -31,6 +31,10 @@ class FacebookOAuthPsidMatchTest extends TestCase
 
     private const PAGE_ID = '107173337600346';
 
+    private const APP_ID = '664172615253513';
+
+    private const APP_SECRET = 'test-app-secret';
+
     private const PSID = '9876543210987654';
 
     private const ASID = '1234567890123456';
@@ -54,6 +58,16 @@ class FacebookOAuthPsidMatchTest extends TestCase
             'facebook_page_token' => 'test-page-token',
             'is_enabled' => true,
         ]);
+
+        // 🔑 (2026-07-28) ids_for_pages ใช้ App Access Token (app_id|app_secret)
+        //    ไม่ใช่ page token — ต้องมีแถวนี้ ไม่งั้น resolve ไม่ได้เลย
+        \App\Models\FacebookOAuthSetting::create([
+            'app_id' => self::APP_ID,
+            'app_secret' => self::APP_SECRET,
+            'redirect_uri' => '/auth/facebook/callback',
+            'is_enabled' => true,
+        ]);
+        \App\Models\FacebookOAuthSetting::clearCache();
     }
 
     // ============================================================
@@ -134,6 +148,92 @@ class FacebookOAuthPsidMatchTest extends TestCase
         $this->assertSame($botUser->id, $matched->id, 'ต้องได้บัญชีที่บอทสมัครให้ ไม่ใช่บัญชีใหม่');
         $this->assertSame(self::ASID, $matched->fresh()->facebook_user_id, 'ต้อง link ASID ให้บัญชีเดิม');
         $this->assertSame(1, User::count(), 'ห้ามสร้างบัญชีซ้ำ');
+    }
+
+    /**
+     * 🔑 (2026-07-28) คำตอบจริงของ Facebook คือ {"data":[{"id":"<PSID>"}]} — **ไม่มี page**
+     *
+     * ขอ fields=id,page ไม่ได้ Facebook ต้องการสิทธิ์ pages_read_engagement ซึ่ง
+     * app token ไม่มี → เทสต์เดิมทุกตัว fake โดยใส่ page เข้าไปเอง จึงเขียวมาตลอด
+     * ทั้งที่ prod ล้ม 100% (โค้ดกรอง $row['page']['id'] ที่ไม่มีวันมี)
+     */
+    public function test_oauth_matches_when_facebook_returns_psid_without_page_field(): void
+    {
+        $botUser = $this->createBotUser();
+        $this->fakeIdsForPages([
+            ['id' => self::PSID],
+        ]);
+
+        $matched = $this->callFindOrCreateUser($this->socialiteUser());
+
+        $this->assertSame($botUser->id, $matched->id, 'ต้อง match บัญชีเดิมแม้ Facebook ไม่ส่ง page มาด้วย');
+        $this->assertSame(1, User::count(), 'ห้ามสร้างบัญชีซ้ำ');
+    }
+
+    /**
+     * 🔑 ต้องยิงด้วย **App Access Token** (app_id|app_secret) เท่านั้น
+     *
+     * เดิมส่ง page token → Facebook ตอบ "(#100) Invalid Access Token used" ทุกครั้ง
+     * = ขั้น map ASID→PSID ล้มเหลว 100% ตั้งแต่วันแรก ไม่มีใครเคย match ได้เลย
+     */
+    public function test_ids_for_pages_uses_app_access_token_not_page_token(): void
+    {
+        $this->createBotUser();
+        $this->fakeIdsForPages([['id' => self::PSID]]);
+
+        $this->callFindOrCreateUser($this->socialiteUser());
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), 'ids_for_pages')) {
+                return true; // ไม่ใช่ call ที่สนใจ
+            }
+
+            $token = $request['access_token'] ?? '';
+
+            $this->assertSame(
+                self::APP_ID.'|'.self::APP_SECRET,
+                $token,
+                'ต้องใช้ App Access Token — page token จะได้ (#100) Invalid Access Token'
+            );
+            $this->assertStringNotContainsString('test-page-token', $token);
+
+            return true;
+        });
+    }
+
+    /**
+     * มีหลาย PSID ตอบกลับมาและไม่มี page ให้กรอง → ต้องเลือกใบที่ระบบเรารู้จัก
+     * ห้ามหยิบมั่ว เพราะจะพาลูกค้าเข้าบัญชีของคนอื่น
+     */
+    public function test_picks_the_psid_that_exists_in_our_database(): void
+    {
+        $botUser = $this->createBotUser();
+        $this->fakeIdsForPages([
+            ['id' => '1111111111111111'],   // เพจอื่นของธุรกิจเดียวกัน
+            ['id' => self::PSID],           // ของเพจเรา
+            ['id' => '2222222222222222'],
+        ]);
+
+        $matched = $this->callFindOrCreateUser($this->socialiteUser());
+
+        $this->assertSame($botUser->id, $matched->id, 'ต้องเลือก PSID ที่ตรงกับบัญชีในระบบเรา');
+    }
+
+    /**
+     * หลาย PSID + ไม่มีใบไหนอยู่ในระบบเรา → ห้ามเดา ให้สร้างบัญชีใหม่ตามปกติ
+     */
+    public function test_does_not_guess_when_multiple_unknown_psids(): void
+    {
+        $this->createBotUser();
+        $this->fakeIdsForPages([
+            ['id' => '1111111111111111'],
+            ['id' => '2222222222222222'],
+        ]);
+
+        $matched = $this->callFindOrCreateUser($this->socialiteUser());
+
+        $this->assertSame(2, User::count(), 'เดาไม่ได้ → สร้างใหม่ ห้ามจับคู่มั่ว');
+        $this->assertNotSame('fb_'.self::PSID.'@thaiprompt.local', $matched->email);
     }
 
     /**

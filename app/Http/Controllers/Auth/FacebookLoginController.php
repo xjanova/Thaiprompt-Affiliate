@@ -238,17 +238,25 @@ class FacebookLoginController extends Controller
         try {
             $fortune = FortuneTellingSetting::getSettings();
             $pageId = trim((string) ($fortune->facebook_page_id ?? ''));
-            $pageToken = $fortune->facebook_page_token ?? null;
 
-            if ($pageId === '' || ! $pageToken) {
-                Log::info('Facebook OAuth: ข้าม ids_for_pages — ไม่มี page_id/page_token ใน FortuneTellingSetting');
+            // 🔑 (2026-07-28) ต้องใช้ **App Access Token** (app_id|app_secret) เท่านั้น
+            //    เดิมส่ง page token → Facebook ตอบ "(#100) Invalid Access Token used" ทุกครั้ง
+            //    = ขั้นนี้ล้มเหลว 100% ตั้งแต่วันแรก ลูกค้าที่บอทสมัครให้จึงไม่เคยถูก match เลย
+            //    (ยืนยันกับ Graph จริง: page token → 100 Invalid · app token → คืน PSID ถูกต้อง)
+            $oauth = FacebookOAuthSetting::getActive();
+            $appToken = ($oauth && $oauth->app_id && $oauth->app_secret)
+                ? $oauth->app_id.'|'.$oauth->app_secret
+                : null;
+
+            if ($pageId === '' || ! $appToken) {
+                Log::info('Facebook OAuth: ข้าม ids_for_pages — ไม่มี page_id หรือ app_id/app_secret');
 
                 return null;
             }
 
             $response = Http::timeout(5)->get(
                 'https://graph.facebook.com/'.FacebookWebhookService::GRAPH_API_VERSION."/{$appScopedId}/ids_for_pages",
-                ['access_token' => $pageToken, 'limit' => 100]
+                ['access_token' => $appToken, 'limit' => 100]
             );
 
             if (! $response->successful()) {
@@ -260,16 +268,45 @@ class FacebookLoginController extends Controller
                 return null;
             }
 
-            // ตอบกลับ: {"data":[{"id":"<PSID>","page":{"id":"<page_id>",...}},...]}
+            // ⚠️ (2026-07-28) คำตอบจริงมีแค่ {"data":[{"id":"<PSID>"}]} — **ไม่มี page ติดมาด้วย**
+            //    ขอ fields=id,page ไม่ได้: Facebook ต้องการสิทธิ์ pages_read_engagement
+            //    ซึ่ง app token ไม่มี → เดิมโค้ดกรอง $row['page']['id'] จึงไม่มีวัน match
+            //    (บั๊กที่ 2 — ต่อให้ token ถูกก็ยังคืน null อยู่ดี)
+            $candidates = [];
+
             foreach ($response->json('data', []) as $row) {
-                if ((string) ($row['page']['id'] ?? '') === $pageId && ! empty($row['id'])) {
-                    return (string) $row['id'];
+                if (empty($row['id'])) {
+                    continue;
                 }
+
+                // ถ้าวันหนึ่ง Facebook ส่ง page กลับมาด้วย → ใช้ระบุเพจให้ตรงเป๊ะ (แม่นที่สุด)
+                if (isset($row['page']['id'])) {
+                    if ((string) $row['page']['id'] === $pageId) {
+                        return (string) $row['id'];
+                    }
+
+                    continue;
+                }
+
+                $candidates[] = (string) $row['id'];
+            }
+
+            // ไม่มีข้อมูลเพจให้กรอง → ยืนยันด้วยข้อมูลฝั่งเรา (PSID ที่รู้จักคือของเพจเราแน่นอน)
+            foreach ($candidates as $candidate) {
+                if (User::findByMessengerPsid($candidate)) {
+                    return $candidate;
+                }
+            }
+
+            // เหลือตัวเดียว = ไม่มีอะไรให้สับสน (ลูกค้าที่ยังไม่มีบัญชีในระบบก็เข้าทางนี้)
+            if (count($candidates) === 1) {
+                return $candidates[0];
             }
 
             Log::info('Facebook OAuth: ids_for_pages ไม่พบ PSID ของเพจนี้', [
                 'fb_user_id' => $appScopedId,
                 'pages_returned' => count($response->json('data', [])),
+                'candidates' => count($candidates),
             ]);
             Cache::put($noneKey, true, now()->addDay());
 
