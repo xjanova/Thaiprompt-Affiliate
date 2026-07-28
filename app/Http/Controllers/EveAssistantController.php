@@ -1136,12 +1136,13 @@ class EveAssistantController extends Controller
      */
     private function fetchCandidates(\Illuminate\Support\Collection $primary, array $synonyms, ?float $budget): \Illuminate\Support\Collection
     {
-        // ใช้ scope กลาง publicVisible() (active + visible + notBlocked) ให้ตรงกับหน้าร้านอื่นๆ
-        // ⚠️ คง is_public_approved ไว้ต่างหาก — เป็นด่านอนุมัติสินค้าของผู้ขาย (VendorPublicProduct)
-        //    ซึ่งไม่ได้อยู่ใน publicVisible() ถ้าตัดทิ้งสินค้าที่ยังไม่อนุมัติจะโผล่ให้ลูกค้าเห็น
+        // 🏪 เงื่อนไข "ต้องเหมือนหน้าร้านเป๊ะ": publicVisible() + inStock() ตาม StorefrontController
+        //    ⚠️ ห้ามเติม is_public_approved — คอลัมน์นั้นเป็นด่านของตลาดสมาชิก (User\MarketplaceController)
+        //    ไม่ใช่หน้าร้านสาธารณะ เคยใส่แล้วทำให้ Eve บอก "ไม่มี" ทั้งที่ลูกค้าเห็นของบนหน้าร้าน 76 ชิ้น
+        //    (รวมสินค้าขายดีอันดับ 1 "น้ำมันเครื่อง Fully Synthetic" ที่ is_public_approved=0)
         $q = Product::query()
             ->publicVisible()
-            ->where('is_public_approved', true);
+            ->inStock();
 
         if ($budget && $budget > 0) {
             $q->where('price', '<=', $budget);
