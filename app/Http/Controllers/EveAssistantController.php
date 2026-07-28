@@ -751,7 +751,7 @@ class EveAssistantController extends Controller
 
             if (empty($products)) {
                 $this->recordWish($query, $budget, $userId);
-                $reply = trim($reply."\n\nค้นให้แล้วนะคะ แต่ยังไม่เจอ \"{$query}\" ในร้านค่ะ 🙏");
+                $reply = trim($reply."\n\nค้นให้แล้วนะคะ แต่ยังไม่เจอ \"{$query}\" ในร้านค่ะ 🙏 Eve จดไว้ให้ทีมงานหามาเพิ่มแล้วนะคะ");
             }
 
             return [$reply !== '' ? $reply : 'ได้เลยค่ะ 😊', $products, $this->guessMood($reply), $search];
@@ -803,8 +803,9 @@ class EveAssistantController extends Controller
 
             if (empty($products)) {
                 $this->recordWish($query, $budget, $userId);
-                // 🙏 จริงใจ + ชวนปรับคำค้น (เลี่ยงสัญญา "รอ 10 นาที" ที่ยังไม่มีระบบส่งผลกลับจริง = ค้าง)
-                $reply = trim($reply."\n\nค้นให้แล้วนะคะ แต่ตอนนี้ยังไม่เจอ \"{$query}\" ในร้านค่ะ 🙏 ลองบอกยี่ห้อ/รุ่น หรือพิมพ์คำค้นอื่นดูได้นะคะ เดี๋ยว Eve ค้นให้ใหม่ทันทีค่ะ");
+                // 🙏 จริงใจ + บอกชัดว่า "จดให้ทีมงานแล้ว" (wish มีผลจริง — แอดมินเห็นในเมนูของที่ลูกค้าอยากได้)
+                //    แต่ไม่สัญญากรอบเวลา เพราะยังไม่มีระบบแจ้งกลับอัตโนมัติเมื่อของเข้า
+                $reply = trim($reply."\n\nค้นให้แล้วนะคะ แต่ตอนนี้ยังไม่เจอ \"{$query}\" ในร้านค่ะ 🙏 Eve จดรายการนี้ส่งให้ทีมงานหามาเพิ่มแล้วนะคะ ระหว่างนี้ลองบอกยี่ห้อ/รุ่น หรือพิมพ์คำค้นอื่นดูได้ค่ะ");
                 $mood = 'thinking';
             } else {
                 $reply = trim($reply."\n\nเจอ ".count($products).' รายการที่น่าจะใช่ค่ะ 😊 ลองดูเลยนะคะ — ถ้าใช่กด "ดูสินค้า" ได้เลย หรืออยากให้หาแบบอื่นก็บอกได้ค่ะ');
@@ -969,7 +970,8 @@ class EveAssistantController extends Controller
         // ตัดคำลงท้าย/คำถาม "ท้ายประโยค" (anchored $)
         // หมายเหตุ: "อีก/อย่างอื่น/อื่นๆ" ต้องตัดด้วย — "มีอย่างอื่นอีกไหม" คือขอดูตัวอื่นของ "สินค้าเดิม"
         //          เหลือคำเปล่าแล้วจะไปหยิบคำค้นเดิมจากประวัติมาค้นต่อ ตรงใจกว่าค้นคำว่า "อย่างอื่น"
-        $q = preg_replace('/\s*(ราคาถูกๆ|ราคาถูก|ราคาประหยัด|เท่าไหร่|เท่าไร|ถูกๆ|ถูก|ดีๆ|สวยๆ|หน่อยค่ะ|หน่อยครับ|หน่อย|ด้วยค่ะ|ด้วยครับ|ด้วย|ให้หน่อย|ให้ที|ทีนะ|นะคะ|นะครับ|จ้า|ค่ะ|คะ|ครับ|มีไหม|มีมั้ย|ไหม|มั้ย|ป่าว|รึเปล่า|บ้าง|อย่างอื่น|อื่นๆ|อื่น|อีก|อะ|อ่ะ)+\s*$/u', '', (string) $q);
+        // "ล่ะ/ขาย" มาจากคำขอจริงในตาราง wishes: "กระบอกใส่น้ำล่ะ" / "มีน้ำขาย" — เศษพวกนี้ทำให้ค้นไม่เจอ
+        $q = preg_replace('/\s*(ราคาถูกๆ|ราคาถูก|ราคาประหยัด|เท่าไหร่|เท่าไร|ถูกๆ|ถูก|ดีๆ|สวยๆ|หน่อยค่ะ|หน่อยครับ|หน่อย|ด้วยค่ะ|ด้วยครับ|ด้วย|ให้หน่อย|ให้ที|ทีนะ|นะคะ|นะครับ|จ้า|ค่ะ|คะ|ครับ|มีขายไหม|มีขายมั้ย|มีขาย|ขายไหม|ขายมั้ย|ขาย|มีไหม|มีมั้ย|ไหม|มั้ย|ป่าว|รึเปล่า|บ้าง|อย่างอื่น|อื่นๆ|อื่น|อีก|ล่ะ|หละ|เลยสิ|เลย|สิ|อะ|อ่ะ)+\s*$/u', '', (string) $q);
 
         // ตัดเครื่องหมายวรรคตอนหัว-ท้าย ("เอ่อ..." → "เอ่อ") ก่อนตัดสินว่าเป็นคำค้นได้ไหม
         $q = trim((string) preg_replace('/^[\p{P}\p{S}\s]+|[\p{P}\p{S}\s]+$/u', '', (string) $q));
@@ -999,69 +1001,60 @@ class EveAssistantController extends Controller
     /**
      * ค้นสินค้าใน catalog ของเรา (ตาราง products ที่เผยแพร่ขายได้จริง) — ข้อมูลสาธารณะเท่านั้น
      *
+     * 🔤 ค้นข้ามภาษาไทย↔อังกฤษ: สินค้ากว่าครึ่งชื่ออังกฤษล้วน (586/1052 ณ 2026-07-27)
+     *    ลูกค้าพิมพ์ "เคสมือถือ" เดิมได้ 0 ชิ้นทั้งที่ Phone Case มีขายเต็มร้าน
+     *    → ขยายคำค้นด้วยพจนานุกรมคำพ้อง (config/eve_search_synonyms.php) ทั้งสองทาง
+     *
+     * 🎯 เรียงตามความตรง: ดึงผู้เข้ารอบมากว้างๆ แล้วให้คะแนนใน PHP —
+     *    วลีเต็มในชื่อ > คำของลูกค้าในชื่อ > คำพ้องในชื่อ > ยี่ห้อ > คำอธิบาย
+     *    (เดิมเรียงแค่ featured/ยอดขาย ทำให้ของที่ชื่อตรงเป๊ะจมอยู่ท้ายรายการ)
+     *
      * @return array<int,array>
      */
     private function searchCatalog(string $query, ?float $budget): array
     {
-        $tokens = collect(preg_split('/\s+/u', trim($query)) ?: [])
-            ->map(fn ($t) => trim($t))
-            ->filter(fn ($t) => mb_strlen($t) >= 2)
-            ->take(6)
-            ->values();
-
-        if ($tokens->isEmpty()) {
+        $query = trim($query);
+        $primary = $this->tokenize($query);
+        if ($primary->isEmpty()) {
             return [];
         }
 
         try {
-            // ใช้ scope กลาง publicVisible() (active + visible + notBlocked) ให้ตรงกับหน้าร้านอื่นๆ
-            // ⚠️ คง is_public_approved ไว้ต่างหาก — เป็นด่านอนุมัติสินค้าของผู้ขาย (VendorPublicProduct)
-            //    ซึ่งไม่ได้อยู่ใน publicVisible() ถ้าตัดทิ้งสินค้าที่ยังไม่อนุมัติจะโผล่ให้ลูกค้าเห็น
-            $q = Product::query()
-                ->publicVisible()
-                ->where('is_public_approved', true);
+            $synonyms = $this->expandSynonyms($query, $primary);
+            $rows = $this->fetchCandidates($primary, $synonyms, $budget);
 
-            if ($budget && $budget > 0) {
-                $q->where('price', '<=', $budget);
+            // 🔁 ไม่เจอเลย → ลองตัดคำนำหน้า "มี/ดู/ขอ" แล้วค้นใหม่
+            //    ตัดตรงๆ ตั้งแต่แรกไม่ได้ (บทเรียนภาษาไทย: "มี"∈มีด "ดู"∈ดูดวง)
+            //    แต่ตัดเฉพาะตอน "ค้นเต็มแล้วศูนย์" ปลอดภัย — "มีดทำครัว" เจอตั้งแต่รอบแรกไม่มาถึงตรงนี้
+            //    ส่วน "มีดินสอ" รอบแรกศูนย์ → ตัดเหลือ "ดินสอ" → เจอ (เคสจริงจากตาราง wishes)
+            if ($rows->isEmpty() && preg_match('/^(มี|ดู|ขอ)(.{3,})$/u', $query, $m)) {
+                $retry = trim($m[2]);
+                if (! preg_match('/^(ดวง|อะไร|ไร)/u', $retry)) {
+                    $retryPrimary = $this->tokenize($retry);
+                    if ($retryPrimary->isNotEmpty()) {
+                        $retrySynonyms = $this->expandSynonyms($retry, $retryPrimary);
+                        $rows = $this->fetchCandidates($retryPrimary, $retrySynonyms, $budget);
+                        if ($rows->isNotEmpty()) {
+                            // ใช้ชุดคำที่ตัดแล้วในการให้คะแนน — คะแนนจะได้สะท้อนคำที่เจอจริง
+                            $query = $retry;
+                            $primary = $retryPrimary;
+                            $synonyms = $retrySynonyms;
+                        }
+                    }
+                }
             }
 
-            $q->where(function ($w) use ($tokens) {
-                foreach ($tokens as $t) {
-                    // 🔒 escape ไวลด์การ์ดของ LIKE — ลูกค้าพิมพ์ "%" หรือ "_" ต้องหมายถึงตัวอักษรนั้นจริงๆ
-                    //    ไม่งั้น "%%" = ตรงกับสินค้าทุกชิ้น (ผลลัพธ์มั่วไม่เกี่ยวกับที่ขอ)
-                    $t = addcslashes($t, '%_\\');
-                    $w->orWhere('name', 'like', "%{$t}%")
-                        ->orWhere('brand', 'like', "%{$t}%")
-                        ->orWhere('short_description', 'like', "%{$t}%");
-                }
-            });
+            if ($rows->isEmpty()) {
+                return [];
+            }
 
-            return $q->orderByDesc('is_featured')
-                ->orderByDesc('sales_count')
-                ->limit(6)
-                ->get(['id', 'name', 'slug', 'price', 'main_image_url', 'is_affiliate', 'affiliate_url', 'external_platform'])
-                ->map(function (Product $p) {
-                    // 💰 สินค้าแอฟฟิลิเอต (เช่น Lazada) เราไม่ได้ส่งของเอง —
-                    //    ถ้าลิงก์เข้าหน้าตะกร้าภายในจะ "ไม่ได้ค่าคอมเลย" และลูกค้าสั่งซื้อไม่ได้จริง
-                    //    จึงต้องส่งลิงก์แอฟฟิลิเอตออกไปข้างนอกแทน
-                    $affiliateUrl = trim((string) $p->affiliate_url);
-
-                    // รับเฉพาะ http/https (กันค่าแปลกปลอมในคอลัมน์กลายเป็นลิงก์อันตราย เช่น javascript:)
-                    $isExternal = (bool) $p->is_affiliate
-                        && $affiliateUrl !== ''
-                        && preg_match('#^https?://#i', $affiliateUrl) === 1;
-
-                    return [
-                        'name' => $p->name,
-                        'price' => (float) $p->price,
-                        'image' => $p->main_image_url,
-                        'url' => $isExternal
-                            ? $affiliateUrl
-                            : ($p->slug ? route('shop.show', $p->slug) : url('/storefront')),
-                        'external' => $isExternal,
-                        'platform' => $isExternal ? ($p->external_platform ?: 'affiliate') : null,
-                    ];
-                })
+            // ── ให้คะแนนความตรง แล้วหยิบ 6 อันดับแรก ──
+            return $rows
+                ->map(fn (Product $p) => [$this->scoreProduct($p, $query, $primary, $synonyms), $p])
+                ->sortByDesc(fn ($pair) => $pair[0])
+                ->take(6)
+                ->map(fn ($pair) => $this->toProductCard($pair[1]))
+                ->values()
                 ->all();
         } catch (Throwable $e) {
             Log::warning('Eve: searchCatalog failed', ['error' => $e->getMessage()]);
@@ -1071,21 +1064,231 @@ class EveAssistantController extends Controller
     }
 
     /**
+     * แตกคำค้นเป็น token (เว้นวรรคเป็นตัวคั่น — ภาษาไทยส่วนใหญ่มาเป็นก้อนเดียว)
+     *
+     * @return \Illuminate\Support\Collection<int,string>
+     */
+    private function tokenize(string $query): \Illuminate\Support\Collection
+    {
+        return collect(preg_split('/\s+/u', trim($query)) ?: [])
+            ->map(fn ($t) => trim($t))
+            ->filter(fn ($t) => mb_strlen($t) >= 2)
+            ->take(6)
+            ->values();
+    }
+
+    /**
+     * 🔤 ขยายคำค้นด้วยพจนานุกรมคำพ้อง (ไทย↔อังกฤษ + สะกดหลายแบบ)
+     *
+     * วิธีจับ: คำในกลุ่มเป็น "substring" ของคำค้นลูกค้า → หยิบคำที่เหลือทั้งกลุ่มมาช่วยค้น
+     * ต้องเป็น substring ไม่ใช่ token-equality เพราะภาษาไทยไม่เว้นวรรค —
+     * "หูฟังบลูทูธ" เป็น token ก้อนเดียว จะเทียบเท่ากับ "หูฟัง" ตรงๆ ไม่ได้
+     *
+     * คำที่จับได้เอง (เช่น "หูฟัง" ใน "หูฟังบลูทูธ") ก็ถูกเพิ่มเป็นคำค้นด้วย
+     * เพื่อให้เจอ "หูฟังไร้สาย" ที่ทั้งก้อน "หูฟังบลูทูธ" ไป match ไม่ได้
+     *
+     * @param  \Illuminate\Support\Collection<int,string>  $primary
+     * @return array<int,string> คำค้นเสริม (ไม่ซ้ำกับ primary)
+     */
+    private function expandSynonyms(string $query, \Illuminate\Support\Collection $primary): array
+    {
+        $q = mb_strtolower($query);
+        $extras = [];
+
+        foreach ((array) config('eve_search_synonyms', []) as $group) {
+            if (! is_array($group)) {
+                continue;
+            }
+
+            $hit = false;
+            foreach ($group as $word) {
+                $w = mb_strtolower(trim((string) $word));
+                if (mb_strlen($w) >= 3 && mb_strpos($q, $w) !== false) {
+                    $hit = true;
+                    break;
+                }
+            }
+
+            if ($hit) {
+                foreach ($group as $word) {
+                    $extras[] = mb_strtolower(trim((string) $word));
+                }
+            }
+        }
+
+        $primaryLower = $primary->map(fn ($t) => mb_strtolower($t))->all();
+
+        // จำกัดจำนวน — กลุ่มใหญ่หลายกลุ่มพร้อมกันจะทำ WHERE บวมเกินจำเป็น
+        return collect($extras)
+            ->unique()
+            ->reject(fn ($w) => $w === '' || in_array($w, $primaryLower, true))
+            ->take(12)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * ดึงสินค้า "ผู้เข้ารอบ" กว้างๆ ตามคำค้นทั้งหมด (ยังไม่เรียงความตรง — ไปให้คะแนนใน PHP)
+     *
+     * @param  \Illuminate\Support\Collection<int,string>  $primary
+     * @param  array<int,string>  $synonyms
+     * @return \Illuminate\Support\Collection<int,Product>
+     */
+    private function fetchCandidates(\Illuminate\Support\Collection $primary, array $synonyms, ?float $budget): \Illuminate\Support\Collection
+    {
+        // ใช้ scope กลาง publicVisible() (active + visible + notBlocked) ให้ตรงกับหน้าร้านอื่นๆ
+        // ⚠️ คง is_public_approved ไว้ต่างหาก — เป็นด่านอนุมัติสินค้าของผู้ขาย (VendorPublicProduct)
+        //    ซึ่งไม่ได้อยู่ใน publicVisible() ถ้าตัดทิ้งสินค้าที่ยังไม่อนุมัติจะโผล่ให้ลูกค้าเห็น
+        $q = Product::query()
+            ->publicVisible()
+            ->where('is_public_approved', true);
+
+        if ($budget && $budget > 0) {
+            $q->where('price', '<=', $budget);
+        }
+
+        $all = $primary->merge($synonyms);
+
+        $q->where(function ($w) use ($all) {
+            foreach ($all as $t) {
+                // 🔒 escape ไวลด์การ์ดของ LIKE — ลูกค้าพิมพ์ "%" หรือ "_" ต้องหมายถึงตัวอักษรนั้นจริงๆ
+                //    ไม่งั้น "%%" = ตรงกับสินค้าทุกชิ้น (ผลลัพธ์มั่วไม่เกี่ยวกับที่ขอ)
+                $t = addcslashes($t, '%_\\');
+                $w->orWhere('name', 'like', "%{$t}%")
+                    ->orWhere('brand', 'like', "%{$t}%")
+                    ->orWhere('short_description', 'like', "%{$t}%");
+            }
+        });
+
+        // featured/ยอดขายเป็นแค่ตัวคัดเข้ารอบ (กันของดีหลุดตอนเกิน 60) ไม่ใช่ตัวตัดสินอันดับ
+        return $q->orderByDesc('is_featured')
+            ->orderByDesc('sales_count')
+            ->limit(60)
+            ->get([
+                'id', 'name', 'slug', 'price', 'main_image_url', 'is_affiliate',
+                'affiliate_url', 'external_platform', 'brand', 'short_description',
+                'is_featured', 'sales_count',
+            ]);
+    }
+
+    /**
+     * 🎯 คะแนนความตรงของสินค้า 1 ชิ้นกับคำค้น
+     *
+     * หลัก: คำที่ "ลูกค้าพิมพ์เอง" หนักกว่าคำพ้องที่ระบบเติมให้ · ชื่อ > ยี่ห้อ > คำอธิบาย
+     * featured/ยอดขายเป็นแค่ตัวตัดเชือกท้ายๆ ห้ามชนะความตรงของชื่อ
+     *
+     * @param  \Illuminate\Support\Collection<int,string>  $primary
+     * @param  array<int,string>  $synonyms
+     */
+    private function scoreProduct(Product $p, string $query, \Illuminate\Support\Collection $primary, array $synonyms): float
+    {
+        $name = mb_strtolower((string) $p->name);
+        $brand = mb_strtolower((string) $p->brand);
+        $desc = mb_strtolower((string) $p->short_description);
+
+        $score = 0.0;
+
+        // วลีเต็มที่ลูกค้าพิมพ์อยู่ในชื่อ = ตรงที่สุด
+        if (mb_strpos($name, mb_strtolower($query)) !== false) {
+            $score += 100;
+        }
+
+        foreach ($primary as $t) {
+            $t = mb_strtolower($t);
+            if (mb_strpos($name, $t) !== false) {
+                $score += 40;
+            } elseif (mb_strpos($brand, $t) !== false) {
+                $score += 15;
+            } elseif (mb_strpos($desc, $t) !== false) {
+                $score += 8;
+            }
+        }
+
+        foreach ($synonyms as $t) {
+            if (mb_strpos($name, $t) !== false) {
+                $score += 22;
+            } elseif (mb_strpos($brand, $t) !== false) {
+                $score += 8;
+            } elseif (mb_strpos($desc, $t) !== false) {
+                $score += 4;
+            }
+        }
+
+        // ตัวตัดเชือก: ของแนะนำ +6 · ยอดขายสูงสุด +10 (เพดานกันไม่ให้ชนะความตรงของชื่อ)
+        if ($p->is_featured) {
+            $score += 6;
+        }
+        $score += min((int) $p->sales_count, 100) / 10;
+
+        return $score;
+    }
+
+    /**
+     * แปลงสินค้าเป็นการ์ดสำหรับวิดเจ็ต
+     *
+     * @return array<string,mixed>
+     */
+    private function toProductCard(Product $p): array
+    {
+        // 💰 สินค้าแอฟฟิลิเอต (เช่น Lazada) เราไม่ได้ส่งของเอง —
+        //    ถ้าลิงก์เข้าหน้าตะกร้าภายในจะ "ไม่ได้ค่าคอมเลย" และลูกค้าสั่งซื้อไม่ได้จริง
+        //    จึงต้องส่งลิงก์แอฟฟิลิเอตออกไปข้างนอกแทน
+        $affiliateUrl = trim((string) $p->affiliate_url);
+
+        // รับเฉพาะ http/https (กันค่าแปลกปลอมในคอลัมน์กลายเป็นลิงก์อันตราย เช่น javascript:)
+        $isExternal = (bool) $p->is_affiliate
+            && $affiliateUrl !== ''
+            && preg_match('#^https?://#i', $affiliateUrl) === 1;
+
+        return [
+            'name' => $p->name,
+            'price' => (float) $p->price,
+            'image' => $p->main_image_url,
+            'url' => $isExternal
+                ? $affiliateUrl
+                : ($p->slug ? route('shop.show', $p->slug) : url('/storefront')),
+            'external' => $isExternal,
+            'platform' => $isExternal ? ($p->external_platform ?: 'affiliate') : null,
+        ];
+    }
+
+    /**
      * บันทึก "ของที่ลูกค้าอยากได้แต่ยังไม่มี" — best-effort (ตารางอาจยังไม่ migrate)
+     *
+     * แอดมินตามดูได้ที่เมนู "🎯 ของที่ลูกค้าอยากได้" (admin.lazada-hub.wishes.index)
+     * → หาของมาเติมร้านแล้วกดปิดรายการ
      */
     private function recordWish(string $query, ?float $budget, ?int $userId): void
     {
         try {
-            if (Schema::hasTable('eve_product_wishes')) {
-                EveProductWish::create([
-                    'user_id' => $userId,
-                    'query' => mb_substr($query, 0, 255),
-                    'budget' => $budget,
-                    'results_found' => 0,
-                    'status' => 'pending',
-                    'source' => 'eve_chat',
-                ]);
+            if (! Schema::hasTable('eve_product_wishes')) {
+                return;
             }
+
+            $clean = mb_substr(trim($query), 0, 255);
+            if ($clean === '') {
+                return;
+            }
+
+            // 🔁 กันซ้ำ: คำเดิมที่ยัง pending อยู่ใน 7 วัน ไม่เพิ่มแถวใหม่
+            //    (ลูกค้าถามซ้ำหลายรอบ/หลายคน = ตารางบวมจนแอดมินไล่ไม่ไหว)
+            $exists = EveProductWish::where('status', 'pending')
+                ->where('query', $clean)
+                ->where('created_at', '>=', now()->subDays(7))
+                ->exists();
+
+            if ($exists) {
+                return;
+            }
+
+            EveProductWish::create([
+                'user_id' => $userId,
+                'query' => $clean,
+                'budget' => $budget,
+                'results_found' => 0,
+                'status' => 'pending',
+                'source' => 'eve_chat',
+            ]);
         } catch (Throwable $e) {
             // best-effort — ไม่บล็อกการตอบ
         }
