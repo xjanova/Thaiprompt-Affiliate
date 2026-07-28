@@ -3795,6 +3795,17 @@ Route::prefix('lazada-hub')->name('lazada-hub.')->group(function () {
 });
 
 // ========================================
+// 🤖 ตั้งค่าน้อง Eve (ผู้ช่วย AI หน้าเว็บ)
+// ========================================
+Route::prefix('eve')->name('eve.')->group(function () {
+    Route::get('/settings', [\App\Http\Controllers\Admin\EveSettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [\App\Http\Controllers\Admin\EveSettingsController::class, 'update'])->name('settings.update');
+    // ทดสอบคุยจริงก่อนบันทึก — throttle กันแอดมินกดรัวเผาคีย์
+    Route::post('/settings/test', [\App\Http\Controllers\Admin\EveSettingsController::class, 'test'])
+        ->middleware('throttle:15,1')->name('settings.test');
+});
+
+// ========================================
 // CLOUDFLARE MANAGEMENT SYSTEM
 // ========================================
 

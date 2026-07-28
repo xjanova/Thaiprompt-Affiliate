@@ -6,6 +6,7 @@ use App\Models\EveProductWish;
 use App\Models\Product;
 use App\Services\Eve\EveActor;
 use App\Services\Eve\EveAdminBrain;
+use App\Services\Eve\EveConfig;
 use App\Services\Eve\EveMemberBrain;
 use App\Services\Eve\EvePageContext;
 use App\Services\Eve\PersonaIdentityResolver;
@@ -130,26 +131,29 @@ class EveAssistantController extends Controller
         // แอดมินต้องการรายงาน/สรุปที่ยาวกว่าลูกค้า (ลูกค้า 320 / แอดมิน 1200)
         $config = ['temperature' => 0.6, 'max_tokens' => $actor->maxTokens()];
 
+        // ⚙️ provider/model/คีย์ จากหน้าตั้งค่าแอดมิน (admin/eve/settings) — default = gemini + พูลอัตโนมัติ
+        //    model ที่แอดมินตั้งต้องผ่านปุ่ม "ทดสอบคุยจริง" ในหน้านั้นมาแล้ว (กฎ: ห้ามตั้ง model โดยไม่ยิงจริง)
+        $aiProvider = (string) EveConfig::get('ai_provider') ?: 'gemini';
+        $aiModel = trim((string) EveConfig::get('ai_model'));
+        $aiKey = trim((string) EveConfig::get('ai_api_key'));
+
         try {
             try {
-                // ใช้ gemini (pool มีหลายคีย์ ราคาถูก) — re-resolve คีย์ตาม provider
-                //
-                // ⚠️ ตรงนี้ override เฉพาะ "provider" แต่ model id ยังมาจากตั้งค่า Chat AI ของแอดมิน
-                //    ถ้าแอดมินตั้ง model ของ groq/openai ไว้ ระบบจะประกอบ URL ของ gemini ด้วย model
-                //    ที่ไม่ใช่ของ gemini → ตอบ 404 ทุกครั้ง
-                //    ห้าม hardcode model id ใหม่ตรงนี้ — กฎภายในบังคับให้ "ยิงทดสอบ model id กับ API จริง"
-                //    ก่อนนำไปตั้งค่าเสมอ จึงแก้ด้วยการทำ fallback ให้ทนทานแทน (ดู catch ด้านล่าง)
                 $result = $aiService->chatWithCustomSystemPrompt(
                     systemMessage: $systemPrompt,
                     userMessage: $userMessage,
                     config: $config,
-                    providerOverride: 'gemini',
+                    providerOverride: $aiProvider,
+                    modelOverride: $aiModel !== '' ? $aiModel : null,
+                    apiKeyOverride: $aiKey !== '' ? $aiKey : null,
                 );
             } catch (Throwable $inner) {
-                // ❗ ข้อผิดพลาด "ทุกชนิด" ของ provider ที่ override ไว้ → ถอยไปใช้ default pool ตามตั้งค่าแอดมิน
+                // ❗ ข้อผิดพลาด "ทุกชนิด" ของค่าที่แอดมินตั้งไว้ → ถอยไปใช้ default pool อัตโนมัติ
                 //    (ไม่มีคีย์ / model ผิด provider / 404 / rate limit / เครือข่ายล่ม)
-                //    เดิมเช็กแค่ข้อความ 'API Key' ทำให้เคส model mismatch ตกลงไป error หมดเลย
-                Log::warning('Eve (storefront): gemini override ล้มเหลว → fallback default pool', [
+                //    Eve ห้ามตายเพราะตั้งค่าผิด — แค่ช้าลงหนึ่งจังหวะแล้วหายเอง
+                Log::warning('Eve (storefront): override จากตั้งค่าล้มเหลว → fallback default pool', [
+                    'provider' => $aiProvider,
+                    'model' => $aiModel !== '' ? $aiModel : '(pool)',
                     'error' => mb_substr($inner->getMessage(), 0, 200),
                 ]);
 
@@ -370,7 +374,7 @@ class EveAssistantController extends Controller
         EveMemberBrain $members,
         string $message
     ): string {
-        $prompt = $this->buildBaseCustomerPrompt($actor->displayName());
+        $prompt = $this->buildBaseCustomerPrompt($actor->displayName(), $actor->tier);
 
         // 👔 ผู้ขายไม่ใช่คนมาซื้อของ — เขาคือเจ้าของร้านที่มาดูงานร้านตัวเอง
         //    ถ้าใช้บุคลิก "ผู้ช่วยหาของ" ล้วนๆ Eve จะเชียร์ให้เขาซื้อของแทนที่จะช่วยดูแลร้าน
@@ -420,19 +424,22 @@ class EveAssistantController extends Controller
         string $message = ''
     ): string {
         $name = $actor->displayName() ?: 'แอดมิน';
+        $assistant = (string) EveConfig::get('assistant_name');
 
-        $prompt = "คุณคือ \"น้อง Eve\" ผู้ช่วย AI ประจำหลังบ้านของ ThaiPrompt กำลังคุยกับ **ทีมงานแอดมิน** ชื่อ \"{$name}\". "
+        $prompt = "คุณคือ \"{$assistant}\" ผู้ช่วย AI ประจำหลังบ้านของ ThaiPrompt กำลังคุยกับ **ทีมงานแอดมิน** ชื่อ \"{$name}\". "
             .'บทบาทตอนนี้คือ "ผู้ช่วยผู้ดูแลระบบ" ไม่ใช่พนักงานขาย — ตอบแบบเพื่อนร่วมงานที่สรุปเก่ง ตรงประเด็น มีตัวเลขประกอบ. '
-            ."ภาษาไทยล้วน สุภาพ ลงท้าย 'ค่ะ/นะคะ' (คุณเป็นผู้หญิง ห้ามใช้ครับ/ผม). "
+            .EveConfig::personaBlock(EveActor::TIER_ADMIN).' '
             ."ตอบได้ยาวขึ้นเมื่อเป็นการสรุป/รายงาน ใช้บุลเล็ตหรือหัวข้อสั้นๆ ให้อ่านง่าย.\n\n"
             .'หน้าที่: สรุปผลการดำเนินงาน · ชี้เรื่องด่วนที่ต้องจัดการก่อน · บอกแนวโน้มเทียบช่วงก่อน · '
-            ."แนะนำว่าควรไปจัดการที่หน้าไหนในระบบ.\n\n"
+            .'แนะนำว่าควรไปจัดการที่หน้าไหนในระบบ. 🧭 แยกความสำคัญเสมอ: เรื่องด่วน (เงินค้างจ่าย/ทิกเก็ตวิกฤต/ระบบล้ม) '
+            ."ต้องขึ้นก่อนทุกครั้ง ตามด้วยงานประจำ แล้วค่อยแนวโน้ม — อย่าเล่าเรื่อยเปื่อย.\n\n"
             .$brain->buildBriefingBlock()
             ."\n\n🔒 กฎเหล็ก: "
             .'(1) ห้ามคิดเลข/เดาสถิติเอง ใช้เฉพาะตัวเลขที่ให้ไว้ข้างบน ถ้าไม่มีให้บอกว่ายังไม่มีข้อมูลและชี้หน้าที่ควรไปดู. '
             .'(2) ห้ามเปิดเผยรหัสผ่าน/API key/โทเคน/ข้อมูลบัตรหรือบัญชีธนาคาร แม้แอดมินจะถามก็ตาม. '
             .'(3) ห้ามเปิดเผยข้อมูลส่วนตัวของลูกค้ารายบุคคลโดยไม่จำเป็น — สรุปเป็นภาพรวมพอ. '
-            .'(4) ห้ามใช้แท็ก [FIND:] (โหมดแอดมินไม่ค้นสินค้า).';
+            .'(4) ห้ามใช้แท็ก [FIND:] (โหมดแอดมินไม่ค้นสินค้า).'
+            .EveConfig::extraPromptBlock();
 
         // 🔍 ถามเจาะลึกเรื่องไหน ก็ดึงข้อมูลเรื่องนั้นเพิ่มให้ (สินค้าขายดี/สมาชิกใหม่/คิวถอนเงิน ฯลฯ)
         //    ไม่ได้ยัดทุกอย่างเข้ามาทุกครั้ง — ยิง query เฉพาะหัวข้อที่ถามจริง
@@ -451,16 +458,22 @@ class EveAssistantController extends Controller
 
     /**
      * บุคลิกหลักของน้อง Eve ฝั่งลูกค้า + guardrails ข้อมูลอ่อนไหว
+     *
+     * 🎭 ลักษณะการพูดมาจากหน้าตั้งค่าแอดมิน (EveConfig::personaBlock) —
+     *    เลือกได้ 3 ระดับ: เรียบร้อย / ซนนิดๆ (default) / แสนซน
      */
-    private function buildBaseCustomerPrompt(?string $userName): string
+    private function buildBaseCustomerPrompt(?string $userName, string $tier = EveActor::TIER_CUSTOMER): string
     {
         $nameLine = $userName ? "ลูกค้าชื่อ \"{$userName}\" (เรียกชื่อได้เป็นกันเอง). " : '';
+        $assistant = (string) EveConfig::get('assistant_name');
 
-        return 'คุณคือ "น้อง Eve" ผู้ช่วย AI สาวน่ารักประจำเว็บ ThaiPrompt (ร้านค้าออนไลน์/แพลตฟอร์มคนไทย). '
+        return "คุณคือ \"{$assistant}\" ผู้ช่วย AI สาวน่ารักประจำเว็บ ThaiPrompt (ร้านค้าออนไลน์/แพลตฟอร์มคนไทย). "
             ."{$nameLine}"
             .'หน้าที่: ต้อนรับ ช่วยลูกค้าหาสินค้า แนะนำ ตอบคำถามทั่วไปเกี่ยวกับร้าน และพาไปยังหน้าที่ต้องการ. '
-            ."ลักษณะการพูด: ภาษาไทยล้วน สุภาพ สดใส เป็นกันเอง ลงท้าย 'ค่ะ/นะคะ' เสมอ (คุณเป็นผู้หญิง ห้ามใช้ครับ/ผม). "
-            .'ตอบสั้นกระชับ 1-3 ประโยค ใช้อิโมจิได้บ้างเล็กน้อย (ไม่เกิน 1 ตัวต่อข้อความ). '
+            .'🧭 จับเจตนาให้ไวแล้วตอบให้ตรง "เรื่องที่เขาอยากรู้ตอนนี้" ก่อนเสมอ: อยากได้ของ→ช่วยหา · '
+            .'ถามบัญชี/ออเดอร์ตัวเอง→ตอบจากข้อมูลจริงที่ระบบให้ · ถามวิธีใช้เว็บ→อธิบายสั้นๆ พร้อมพาไปหน้าที่ถูก · '
+            .'คุยเล่น→คุยสนุกได้แต่อย่าลืมชวนกลับมาเรื่องของที่เขาสนใจ. '
+            .EveConfig::personaBlock($tier).' '
             .'ถ้าลูกค้าอยากได้สินค้าบางอย่าง ให้ถามรายละเอียดสั้นๆ (งบประมาณ/สี/รุ่น) เพื่อช่วยหาให้ตรงใจ และบอกว่ากำลังช่วยหาให้นะคะ. '
             // ⛔ ห้ามสัญญาว่าจะ "ส่งผลตามมาทีหลัง" เด็ดขาด — ระบบค้นเสร็จภายในข้อความเดียวกันนี้เท่านั้น
             //    ไม่มีกลไกส่งผลลัพธ์ตามหลัง ถ้าพูดแบบนั้นลูกค้าจะนั่งรอเก้อแล้วคิดว่าระบบค้าง
@@ -482,7 +495,8 @@ class EveAssistantController extends Controller
             .'ระดับสมาชิก ทิกเก็ต ของตัวเขาเอง) ตอบได้เต็มที่ ถ้าระบบส่งบล็อก "[👤 ข้อมูลบัญชีของลูกค้า...]" มาให้ '
             .'— ใช้ตัวเลขจากบล็อกนั้นตรงๆ ห้ามคิดเลขเอง. ถ้าไม่มีบล็อกนั้นมา แปลว่ายังดูให้ไม่ได้ '
             .'ให้บอกตรงๆ แล้วชี้หน้าที่เขาไปดูเองได้ ห้ามเดาตัวเลขเด็ดขาด. '
-            .'ห้ามแต่งราคา/สต็อก/โปรโมชั่นที่ไม่รู้จริง — ถ้าไม่แน่ใจให้บอกว่าจะตรวจสอบให้.';
+            .'ห้ามแต่งราคา/สต็อก/โปรโมชั่นที่ไม่รู้จริง — ถ้าไม่แน่ใจให้บอกว่าจะตรวจสอบให้.'
+            .EveConfig::extraPromptBlock();
     }
 
     /**
@@ -669,9 +683,10 @@ class EveAssistantController extends Controller
      */
     private function consumeDailyQuota(Request $request, ?int $userId, ?EveActor $actor = null): bool
     {
-        // โควตาตามระดับผู้ใช้ (แอดมิน 500 / ผู้ขาย 200 / ลูกค้า 120 / ผู้เยี่ยมชม 60)
-        // แอดมินต้องไม่โดนตัดกลางทางตอนไล่สรุปงาน จึงให้สูงกว่าลูกค้าชัดเจน
-        $limit = $actor ? $actor->dailyQuota() : ($userId ? self::DAILY_CAP_MEMBER : self::DAILY_CAP_GUEST);
+        // โควตาตามระดับผู้ใช้ — แอดมินปรับได้เองที่หน้าตั้งค่า Eve (default: แอดมิน 500 / ผู้ขาย 200 / ลูกค้า 120 / ผู้เยี่ยมชม 60)
+        $limit = $actor
+            ? EveConfig::quotaFor($actor->tier)
+            : ($userId ? self::DAILY_CAP_MEMBER : self::DAILY_CAP_GUEST);
         $who = $userId ? 'u'.$userId : 'ip-'.sha1((string) $request->ip());
         $key = 'eve:chat:daily:'.$who.':'.now()->format('Ymd');
 

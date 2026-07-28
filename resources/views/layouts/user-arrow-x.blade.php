@@ -224,7 +224,7 @@
     {{-- 🤖 น้อง Eve ผู้ช่วย AI — ต้องวางก่อน @stack('scripts') เสมอ
          (วิดเจ็ตส่งสคริปต์ตัวเองผ่าน @push('scripts') ถ้าวางทีหลัง stack จะไม่ถูก render = ปุ่มขึ้นแต่กดไม่ทำงาน) --}}
     {{-- mobileOffset=88 เพราะหน้านี้มีแถบเมนูล่าง (mobile-bottom-navigation) ลอยอยู่ --}}
-    <x-eve.widget :mobile-offset="88" />
+    <x-eve.widget surface="user" :mobile-offset="88" />
 
     @stack('scripts')
 

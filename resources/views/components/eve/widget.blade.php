@@ -8,9 +8,20 @@
   mobileOffset = ระยะห่างจากขอบล่างบนจอมือถือ (px)
     หน้าที่มีแถบเมนูล่างแบบ fixed (user-arrow-x / seller) ต้องส่ง 88 ขึ้นไป
     ไม่งั้นปุ่ม Eve (z-index สูงกว่า) จะไปทับแถบเมนูจนกดเมนูไม่ได้
---}}
-@props(['mobileOffset' => 18])
 
+  surface = พื้นที่ที่วิดเจ็ตถูกฝัง (storefront|user|seller|admin)
+    แอดมินเปิด/ปิด Eve รายพื้นที่ได้ที่หน้า "ตั้งค่าน้อง Eve" — ปิด = ไม่ render เลย
+--}}
+@props(['mobileOffset' => 18, 'surface' => 'storefront'])
+
+@php
+    // ⚙️ อ่านตั้งค่าจากหลังบ้าน (แคช 60 วิ — ห้าม query หนักใน view)
+    $eveEnabled = \App\Services\Eve\EveConfig::enabledFor($surface);
+    $eveName = (string) \App\Services\Eve\EveConfig::get('assistant_name');
+    $eveGreeting = trim((string) \App\Services\Eve\EveConfig::get('greeting'));
+@endphp
+
+@if ($eveEnabled)
 @once
 <style>
 .eve-w{position:fixed;right:18px;bottom:18px;z-index:99990;font-family:inherit}
@@ -96,7 +107,7 @@
     <button class="eve-fab" x-show="!open" @click="toggle()" type="button">
         <x-eve.avatar :size="46" crop />
         <span style="text-align:left">
-            <span class="eve-fab-txt">น้อง Eve</span><br>
+            <span class="eve-fab-txt">{{ $eveName }}</span><br>
             <span class="eve-fab-sub">ผู้ช่วยหาของให้ค่ะ</span>
         </span>
     </button>
@@ -105,7 +116,7 @@
     <div class="eve-panel" x-show="open" x-transition.scale.origin.bottom.right>
         <div class="eve-head">
             <div>
-                <div class="nm">น้อง Eve</div>
+                <div class="nm">{{ $eveName }}</div>
                 <div class="st" x-text="busy ? (searching ? 'กำลังค้นหาสินค้า...' : 'กำลังคิด...') : (speaking ? 'กำลังพูด...' : 'พร้อมช่วยค่ะ')"></div>
             </div>
             <div class="eve-ic">
@@ -166,7 +177,7 @@
                 </div>
             </template>
             {{-- คุยทั่วไป = "กำลังพิมพ์" · หาของ = แผงค้นหาพร้อมโครงการ์ดสินค้า (รู้ทันทีว่ากำลังค้นให้อยู่) --}}
-            <div class="eve-typing" x-show="busy && !searching" role="status" aria-live="polite">น้อง Eve กำลังพิมพ์<span x-text="dots"></span></div>
+            <div class="eve-typing" x-show="busy && !searching" role="status" aria-live="polite">{{ $eveName }} กำลังพิมพ์<span x-text="dots"></span></div>
             <div class="eve-search" x-show="busy && searching" role="status" aria-live="polite">
                 <div class="eve-search-hd">
                     <span class="eve-search-lens" aria-hidden="true">🔎</span>
@@ -260,9 +271,11 @@ function eveWidget() {
                 // อุ่นรายชื่อเสียงในเครื่องไว้ก่อน (Chrome โหลดแบบ async — เรียกครั้งแรกมักได้ลิสต์ว่าง)
                 try { window.speechSynthesis && window.speechSynthesis.getVoices(); } catch (e) {}
                 if (this.messages.length === 0) {
-                    this.messages.push({ role: 'assistant', content: 'สวัสดีค่ะ น้อง Eve เองค่ะ 🌸 อยากได้สินค้าแบบไหน หรือมีอะไรให้ช่วยไหมคะ?' });
+                    // ข้อความทักทาย — แอดมินตั้งเองได้ที่หน้า "ตั้งค่าน้อง Eve" (ว่าง = ใช้มาตรฐาน)
+                    const greeting = {{ Js::from($eveGreeting !== '' ? $eveGreeting : 'สวัสดีค่ะ '.$eveName.' เองค่ะ 🌸 อยากได้สินค้าแบบไหน หรือมีอะไรให้ช่วยไหมคะ?') }};
+                    this.messages.push({ role: 'assistant', content: greeting });
                     this.emotion = 'happy';
-                    this.speak('สวัสดีค่ะ น้อง Eve เองค่ะ อยากได้สินค้าแบบไหนคะ');
+                    this.speak(greeting.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim());
                     this.pop('👋'); setTimeout(() => this.pop('🌸'), 480);
                     setTimeout(() => { if (!this.speaking) this.emotion = 'idle'; }, 2600);
                 }
@@ -548,3 +561,4 @@ function eveWidget() {
 }
 </script>
 @endpush
+@endif

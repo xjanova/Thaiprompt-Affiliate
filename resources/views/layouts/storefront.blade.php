@@ -434,7 +434,7 @@
     </footer>
 
     {{-- 🌸 น้อง Eve — ผู้ช่วย AI หน้าร้าน (ลูกค้า) --}}
-    <x-eve.widget />
+    <x-eve.widget surface="storefront" />
 
     {{-- Toast Notifications --}}
     <div class="fixed bottom-4 right-4 z-[9999] space-y-2 max-w-md"

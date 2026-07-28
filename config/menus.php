@@ -279,6 +279,18 @@ return [
         ],
 
         [
+            'id' => 'eve-assistant',
+            'label' => 'น้อง Eve ผู้ช่วย AI',
+            'icon' => '🤖',
+            'route' => null,
+            'order' => 6.6,
+            'permissions' => [],
+            'submenu' => [
+                ['label' => '⚙️ ตั้งค่าน้อง Eve', 'route' => 'admin.eve.settings.index', 'icon' => 'fas fa-sliders', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500'],
+            ],
+        ],
+
+        [
             'id' => 'pos',
             'label' => 'ระบบ POS',
             'icon' => '🏪',

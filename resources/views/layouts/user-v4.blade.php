@@ -273,7 +273,7 @@
 
     {{-- 🤖 น้อง Eve ผู้ช่วย AI — ต้องวางก่อน @stack('scripts') เสมอ
          (วิดเจ็ตส่งสคริปต์ตัวเองผ่าน @push('scripts') ถ้าวางทีหลัง stack จะไม่ถูก render = ปุ่มขึ้นแต่กดไม่ทำงาน) --}}
-    <x-eve.widget />
+    <x-eve.widget surface="user" />
 
     @stack('scripts')
 </body>

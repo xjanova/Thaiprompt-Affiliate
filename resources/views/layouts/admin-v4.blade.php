@@ -236,7 +236,7 @@
     @if(session('info'))<div x-data x-init="$dispatch('notify',{type:'info',message:@js(session('info'))})"></div>@endif
 
     {{-- 🌸 น้อง Eve — ผู้ช่วย AI (หลังบ้านแอดมิน) --}}
-    <x-eve.widget />
+    <x-eve.widget surface="admin" />
 
     @stack('scripts')
 </body>

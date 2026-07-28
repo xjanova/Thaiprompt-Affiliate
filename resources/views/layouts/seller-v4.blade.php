@@ -270,7 +270,7 @@
 
     {{-- 🤖 น้อง Eve ผู้ช่วย AI (โหมดผู้ขาย — ถามยอดขาย/ออเดอร์ร้าน/สต็อกได้)
          ต้องวางก่อน @stack('scripts') เสมอ ไม่งั้นสคริปต์ของวิดเจ็ตจะไม่ถูก render --}}
-    <x-eve.widget />
+    <x-eve.widget surface="seller" />
 
     @stack('scripts')
 </body>
