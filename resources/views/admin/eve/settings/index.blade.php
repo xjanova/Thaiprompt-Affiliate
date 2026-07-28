@@ -25,7 +25,8 @@
         </div>
     @endif
 
-    @if ($errors->any())
+    {{-- isset() กันไว้ — render นอก web middleware (เช่น render-test ใน tinker) จะไม่มี $errors --}}
+    @if (isset($errors) && $errors->any())
         <div class="tp-card" style="padding:12px 16px;border-left:4px solid #c0392b;">
             ❌ {{ $errors->first() }}
         </div>
