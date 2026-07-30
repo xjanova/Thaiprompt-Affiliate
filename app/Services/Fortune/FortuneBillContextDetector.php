@@ -82,8 +82,14 @@ class FortuneBillContextDetector
             default => 'การทำนาย',
         };
 
-        $amount = $reading->uniquePaymentAmount->amount ?? $reading->amount_paid ?? 0;
-        $billRef = $reading->uniquePaymentAmount->bill_reference ?? null;
+        // 💰 (2026-07-30) คอลัมน์จริงคือ `unique_amount` — ของเดิมเขียน `->amount` ที่ไม่มีจริง
+        //   ทำให้ตกไปใช้ amount_paid เสมอ → เคสที่ยอดสองตัวไม่ตรงกัน (เช่น 99.00 vs 99.03)
+        //   AI จะบอกยอดผิด ลูกค้าโอนไม่ตรงทศนิยม → ระบบจับคู่สลิปอัตโนมัติไม่ได้
+        $amount = $reading->uniquePaymentAmount->unique_amount ?? $reading->amount_paid ?? 0;
+
+        // 🔖 (2026-07-30) bill_reference อยู่บน fortune_readings ไม่ใช่ unique_payment_amounts
+        //   ของเดิมอ่านผิดตาราง → bill_ref เป็น null ตลอด (AI ไม่เคยรู้เลขบิลจริง)
+        $billRef = $reading->bill_reference ?? null;
 
         $hoursSince = $reading->updated_at ? $reading->updated_at->diffInHours(now()) : 0;
         $minutesSince = $reading->updated_at ? $reading->updated_at->diffInMinutes(now()) : 0;

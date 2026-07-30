@@ -17139,6 +17139,9 @@ class FortuneConversationService
             $tag = $this->parseCancelDialogueTag($aiReply);
             $cleanMessage = $this->stripCancelDialogueTags($aiReply);
 
+            // 🛡️ (2026-07-30) ด่านกัน AI มั่วราคา — บังคับตัวเลขเงินให้ตรงยอดบิลจริงก่อนส่งออก
+            $cleanMessage = $this->enforceCancelDialogueAmount($cleanMessage, $reading);
+
             $state['reasons'][] = "R{$round}: ".mb_substr($messageText, 0, 80);
             $state['rounds'] = $round + 1;
 
@@ -17283,6 +17286,20 @@ class FortuneConversationService
         $reasonsText = empty($pastReasons) ? '(เพิ่งเริ่มสนทนา)' : implode("\n", $pastReasons);
         $stripeEnabled = (bool) ($this->settings->enable_stripe_payment ?? false);
 
+        // 💰 (2026-07-30 FTU-260730-M8468) ยอดค่าครูจริงของบิลนี้ — ต้องฉีดเข้า prompt เสมอ
+        //   เคสจริง: prompt เดิมมีแต่ชื่อ+เลขบิล ไม่มียอด → ลูกค้าถามราคาระหว่าง cancel dialogue
+        //   AI มั่วเป็น "299 บาท" ทั้งที่บิลจริง 39.21 (ไม่มี 299 ใน knowledge/admin_qa เลย = hallucination ล้วน)
+        $realAmount = $this->getCancelDialogueRealAmount($reading);
+        $amountBlock = $realAmount !== ''
+            ? "ยอดค่าครูของบิลนี้: {$realAmount} บาท  ← ยอดจริงยอดเดียว\n\n"
+                ."🚨 กฎเหล็กเรื่องตัวเลขเงิน (ห้ามฝ่าฝืน):\n"
+                ."- ถ้าลูกค้าถามราคา/ยอดที่ต้องโอน/ค่าครูเท่าไหร่ → ตอบ \"{$realAmount} บาท\" เท่านั้น\n"
+                ."- ห้ามเดา ห้ามคิดยอดใหม่ ห้ามพูดถึงตัวเลขเงินอื่นที่ไม่ใช่ {$realAmount} บาท เด็ดขาด\n"
+                ."- ถ้าไม่แน่ใจเรื่องตัวเลข → ไม่ต้องพูดตัวเลขเลย พูดว่า \"ตามยอดในบิลค่ะ\"\n"
+            : "🚨 กฎเหล็กเรื่องตัวเลขเงิน (ห้ามฝ่าฝืน):\n"
+                ."- ระบบยังไม่มียอดของบิลนี้ → ห้ามพูดตัวเลขเงินใดๆ ทั้งสิ้น\n"
+                ."- ถ้าลูกค้าถามราคา ให้ตอบว่า \"ตามยอดในบิลค่ะ\"\n";
+
         // 💳 (2026-05-15) International card section — เพิ่ม [USE_STRIPE] tag ถ้า Stripe เปิด
         $stripeBlock = '';
         $stripeExample = '';
@@ -17298,7 +17315,7 @@ class FortuneConversationService
 คุณคือ "แม่หมอจันทรา" หมอดูที่ empathy + อบอุ่น
 ลูกค้าชื่อ: {$name}
 บิล: {$bill}
-
+{$amountBlock}
 ลูกค้าจะยกเลิกบิล — ตอนนี้รอบที่ {$round}/3 ของการสนทนา
 
 เหตุผลที่ลูกค้าให้มาก่อนหน้า:
@@ -17375,6 +17392,95 @@ PROMPT;
 
             return '';
         }
+    }
+
+    /**
+     * 💰 (2026-07-30) ยอดค่าครูจริงของบิล — ใช้ยอดทศนิยม unique ถ้ามี (ยอดที่ลูกค้าต้องโอนจริง)
+     *
+     * @param  FortuneReading  $reading  บิลที่กำลังคุยอยู่
+     * @return string ยอดเงินรูปแบบ "39.21" — คืน '' ถ้ายังไม่มียอด (กันบอกลูกค้าว่า "0.00 บาท")
+     */
+    protected function getCancelDialogueRealAmount(FortuneReading $reading): string
+    {
+        $uniqueAmount = $reading->uniquePaymentAmount;
+        $value = $uniqueAmount
+            ? (float) $uniqueAmount->unique_amount
+            : (float) $reading->amount_paid;
+
+        return $value > 0 ? number_format($value, 2) : '';
+    }
+
+    /**
+     * 🛡️ (2026-07-30 FTU-260730-M8468) ด่านกัน AI มั่วราคาใน cancel dialogue
+     *
+     * ชั้นที่ 2 ของการกัน hallucination (ชั้นแรก = ฉีดยอดจริง + กฎเหล็กเข้า prompt)
+     * ถ้า AI พ่นตัวเลขเงินที่ไม่ตรงยอดจริง → เขียนทับด้วยยอดจริง + log ไว้ตรวจ
+     *
+     * @param  string  $text  ข้อความที่ AI ตอบ (strip tag แล้ว)
+     * @param  FortuneReading  $reading  บิลที่กำลังคุยอยู่
+     * @return string ข้อความที่ตัวเลขเงินถูกบังคับให้ตรงยอดจริง
+     *
+     * @example
+     * // AI ตอบ "ค่าครู 299 บาทค่ะ" แต่บิลจริง 39.21
+     * $this->enforceCancelDialogueAmount('ค่าครู 299 บาทค่ะ', $reading);
+     * // ผลลัพธ์: "ค่าครู 39.21 บาทค่ะ"
+     */
+    protected function enforceCancelDialogueAmount(string $text, FortuneReading $reading): string
+    {
+        if (trim($text) === '') {
+            return $text;
+        }
+
+        $real = $this->getCancelDialogueRealAmount($reading);
+        $realFloat = (float) str_replace(',', '', $real);
+        $hallucinated = [];
+
+        // เทียบยอด: ตัด comma ออกก่อนแล้วเทียบเป็นตัวเลข (39.21 == 39.21, แต่ 39 != 39.21)
+        //   ยอดว่าง ('') = ยังไม่รู้ยอด → ทุกตัวเลขเงินถือว่ามั่วหมด แทนด้วย "ตามยอดในบิล"
+        $isSameAmount = function (string $raw) use ($real, $realFloat): bool {
+            return $real !== '' && abs(((float) str_replace(',', '', $raw)) - $realFloat) < 0.005;
+        };
+
+        $numberPattern = '\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?';
+
+        // รูปแบบ "299 บาท" / "299บาท"
+        $text = preg_replace_callback(
+            '/(?<![\d.,])('.$numberPattern.')\s*บาท/u',
+            function ($m) use ($isSameAmount, $real, &$hallucinated) {
+                if ($isSameAmount($m[1])) {
+                    return $m[0];
+                }
+                $hallucinated[] = $m[1];
+
+                return $real !== '' ? $real.' บาท' : 'ตามยอดในบิล';
+            },
+            $text
+        ) ?? $text;
+
+        // รูปแบบ "฿299"
+        $text = preg_replace_callback(
+            '/฿\s*('.$numberPattern.')/u',
+            function ($m) use ($isSameAmount, $real, &$hallucinated) {
+                if ($isSameAmount($m[1])) {
+                    return $m[0];
+                }
+                $hallucinated[] = $m[1];
+
+                return $real !== '' ? '฿'.$real : 'ตามยอดในบิล';
+            },
+            $text
+        ) ?? $text;
+
+        if (! empty($hallucinated)) {
+            Log::warning('Fortune: cancel dialogue AI มั่วยอดเงิน — เขียนทับด้วยยอดจริง', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'real_amount' => $real,
+                'hallucinated' => $hallucinated,
+            ]);
+        }
+
+        return $text;
     }
 
     /**
