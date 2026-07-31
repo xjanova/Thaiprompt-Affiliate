@@ -512,6 +512,53 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * 🌙 (2026-07-31) ส่ง "กล่องดวงรายวัน" นำหน้าข้อความ DM ปกติ
+     *
+     * USER SPEC: DM กลับหาลูกค้า = กล่องดวงรายวัน (บทความ AI 06:00 ของวันเดียวกัน)
+     *   แล้วค่อยต่อด้วยข้อความ DM ปกติอีกหนึ่งกล่อง
+     *   ถ้าไม่มีข้อมูลบทความ → เหลือแค่ข้อความ DM ปกติ
+     *
+     * best-effort ทั้งหมด — กล่องนี้ล้มต้องไม่กระทบ DM ปกติที่ตามมา
+     *
+     * @param  string  $userId  PSID ปลายทาง
+     * @param  string  $name  ชื่อลูกค้า
+     * @return bool ส่งกล่องดวงไปจริงหรือไม่
+     */
+    protected function sendDailyHoroscopeBox(
+        \App\Services\Fortune\FortuneGreetingService $greetingService,
+        string $userId,
+        string $name
+    ): bool {
+        try {
+            $box = $greetingService->buildDailyHoroscopeBox($userId, $name, 'facebook');
+            if ($box === null) {
+                return false;
+            }
+
+            // no_default_qr — ห้ามให้ปุ่มแพคเกจลอยมาเกาะกล่องดวง
+            $sent = (bool) $this->facebookService->sendMessage($userId, $box, [
+                'messaging_type' => 'RESPONSE',
+                'no_default_qr' => true,
+            ]);
+
+            Log::info('🌙 DM: ส่งกล่องดวงรายวันแล้ว', [
+                'user_id' => $userId,
+                'sent' => $sent,
+                'length' => mb_strlen($box),
+            ]);
+
+            return $sent;
+        } catch (\Throwable $e) {
+            Log::warning('🌙 DM: ส่งกล่องดวงรายวันล้ม (ข้าม — DM ปกติยังส่งต่อ)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * ลองส่ง DM ให้ user ที่กด reaction (เฉพาะถ้าอยู่ใน 24hr conversation window)
      *
      * ใช้ Send API RESPONSE — ถ้าล้มเหลวด้วย error 551 (user not available)
@@ -628,6 +675,11 @@ class FacebookWebhookController extends Controller
 
             $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
             $message = $greetingService->buildDailyHoroscopeGreeting($userId, $userName ?? 'คุณ');
+
+            // 🌙 (2026-07-31) กล่องดวงรายวันนำหน้า (บทความ AI 06:00 ของวันเดียวกัน)
+            //   คืน null เมื่อ: สวิตช์ปิด / ส่งไปแล้ววันนี้ / วันนี้ยังไม่มีบทความ
+            //   → เหลือแค่ข้อความ DM ปกติด้านล่างตามเดิม
+            $this->sendDailyHoroscopeBox($greetingService, $userId, $userName ?? 'คุณ');
 
             // ⚠️ ไม่ใส่ Quick Reply ปุ่มขาย/ดูดวง — ให้ลูกค้าพิมพ์ตอบเอง (ตอบอะไรก็ทำนายฟรี)
             $quickReplies = [];
@@ -1059,6 +1111,9 @@ class FacebookWebhookController extends Controller
         //   ไม่มี → ทักทาย + ชวนดูดวง + promise ส่งดวงฟรีหลังจากนั้น
         $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
         $dmMessage = $greetingService->buildDailyHoroscopeGreeting($fromId, $name);
+
+        // 🌙 (2026-07-31) กล่องดวงรายวันนำหน้า — ดูหมายเหตุใน tryReactionDm
+        $this->sendDailyHoroscopeBox($greetingService, $fromId, $name);
 
         // 1. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
         try {

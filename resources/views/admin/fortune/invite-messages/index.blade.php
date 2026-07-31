@@ -93,6 +93,26 @@
                     </div>
                 </div>
             </label>
+
+            {{-- 🌙 (2026-07-31) แนบกล่องดวงรายวันนำหน้า DM --}}
+            <label style="display:flex; align-items:flex-start; gap:12px; cursor:pointer; margin-top:16px; padding-top:16px; border-top:1px solid var(--line);">
+                <input type="checkbox" name="dm_daily_horoscope_enabled" value="1"
+                       @checked($settings->dm_daily_horoscope_enabled ?? false)
+                       style="width:20px; height:20px; margin-top:2px; accent-color:var(--accent1); cursor:pointer;">
+                <div>
+                    <div style="font-weight:700; color:var(--ink);">🌙 ส่งดวงรายวันไปกับ DM ด้วย</div>
+                    <div class="tp-muted" style="font-size:12px; margin-top:3px; line-height:1.6;">
+                        เปิด = DM กลับหาลูกค้าจะมี<strong style="color:var(--ink);">กล่องดวงรายวัน</strong>นำหน้า
+                        แล้วค่อยต่อด้วยข้อความ DM ปกติอีกหนึ่งกล่อง<br>
+                        • ใช้บทความที่ AI สร้างทุกวัน <strong style="color:var(--ink);">06:00</strong> —
+                        ส่งเฉพาะบทความ<strong style="color:var(--ink);">ของวันเดียวกัน</strong>เท่านั้น<br>
+                        • ลูกค้าที่ระบบ<strong style="color:var(--ink);">ไม่มีวันเกิด</strong> → ส่งครบทั้ง 7 วันเกิด ให้เลือกอ่านเอง<br>
+                        • ส่ง<strong style="color:var(--ink);">ครั้งแรกของวัน</strong>ครั้งเดียวต่อลูกค้า<br>
+                        • วันไหนยังไม่มีบทความ → เหลือแค่ข้อความ DM ปกติ (ไม่มีกล่องดวง)
+                    </div>
+                </div>
+            </label>
+
             <button type="submit" class="tp-btn tp-btn-primary tp-btn-sm" style="margin-top:16px;">
                 <i class="fas fa-floppy-disk"></i> บันทึกการตั้งค่า
             </button>

@@ -240,6 +240,30 @@ class ProcessCommentEngagement implements ShouldQueue
             $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
             $dmMessage = $greetingService->buildDailyHoroscopeGreeting($userId, $name);
 
+            // 🌙 (2026-07-31) กล่องดวงรายวันนำหน้า (บทความ AI 06:00 ของวันเดียวกัน)
+            //   USER SPEC: กล่องดวง → แล้วค่อยข้อความ DM ปกติอีกกล่อง
+            //   คืน null เมื่อ: สวิตช์ปิด / ส่งไปแล้ววันนี้ / วันนี้ยังไม่มีบทความ
+            //   best-effort — ล้มแล้ว DM ปกติต้องยังส่งต่อได้
+            try {
+                $horoscopeBox = $greetingService->buildDailyHoroscopeBox($userId, $name, 'facebook');
+                if ($horoscopeBox !== null) {
+                    $facebookService->sendMessage($userId, $horoscopeBox, [
+                        'messaging_type' => 'RESPONSE',
+                        'no_default_qr' => true,
+                    ]);
+                    Log::info('🌙 Comment Engagement: ส่งกล่องดวงรายวันแล้ว', [
+                        'user_id' => $userId,
+                        'comment_id' => $commentId,
+                        'length' => mb_strlen($horoscopeBox),
+                    ]);
+                }
+            } catch (Throwable $e) {
+                Log::warning('🌙 Comment Engagement: กล่องดวงรายวันล้ม (ข้าม)', [
+                    'user_id' => $userId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             // 💬 (2026-06-06) WEEKLY IMAGE DEDUP → TEXT INVITE ROTATION
             //   USER SPEC: "ใครเคยส่งรูปแล้วในสัปดาห์นั้นก็ไม่ต้องส่งอีก แต่ส่งเป็นคำพูดไป"
             //   คนที่ได้รูปแบนเนอร์ไปแล้วในสัปดาห์นี้ → ไม่ส่งรูปซ้ำ ส่งข้อความชวนแบบเนียน

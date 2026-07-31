@@ -256,6 +256,8 @@ class FortuneTellingSetting extends Model
         'discovery_chat_max_turns',
         // 🔮 Daily Horoscope Per Day (toggle ระบบเดิม)
         'daily_horoscope_per_day_enabled',
+        // 🌙 (2026-07-31) DM: แนบกล่องดวงรายวันนำหน้าข้อความ DM ปกติ
+        'dm_daily_horoscope_enabled',
         // 🌙 Mystic Content Auto-Post (2026-04-29)
         'mystic_content_enabled',
         'mystic_content_schedule',
@@ -538,6 +540,8 @@ class FortuneTellingSetting extends Model
         'fortune_consent_expire_enabled' => 'boolean',
         // 🔮 Daily Horoscope Per Day toggle
         'daily_horoscope_per_day_enabled' => 'boolean',
+        // 🌙 DM daily horoscope box toggle
+        'dm_daily_horoscope_enabled' => 'boolean',
         // 🌙 Mystic Content
         'mystic_content_enabled' => 'boolean',
         'mystic_content_schedule' => 'array',
@@ -745,6 +749,8 @@ class FortuneTellingSetting extends Model
         // fortune_consent_text / *_cancel_text / *_expire_text → null = ใช้ default*() ใน model
         // 🔮 Daily Horoscope Per Day — ปิดเป็น default หลัง deploy v3 (2026-04-29)
         'daily_horoscope_per_day_enabled' => false,
+        // 🌙 (2026-07-31) DM ดวงรายวัน — ปิดเป็น default (แอดมินเปิดเองเมื่อพร้อม)
+        'dm_daily_horoscope_enabled' => false,
         // 🌙 Mystic Content — ค่าเริ่มต้น (admin ต้องเปิด toggle ก่อนใช้งาน)
         'mystic_content_enabled' => false,
         'mystic_content_caption_min' => 400,

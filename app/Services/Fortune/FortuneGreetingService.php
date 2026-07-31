@@ -4,7 +4,11 @@ namespace App\Services\Fortune;
 
 use App\Models\FortuneDailyHoroscopePost;
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
+use App\Models\HoroscopeDailyPrediction;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 🌙 บริการสร้างคำทักทาย DM แบบ "ดวงประจำวันสั้นๆ"
@@ -30,7 +34,7 @@ class FortuneGreetingService
      *
      * @param  string  $userId  facebook_user_id หรือ platform_user_id
      * @param  string  $name  ชื่อลูกค้า (placeholder substitution)
-     * @return string  ข้อความ DM พร้อมส่ง (ใส่ {name} แทนที่แล้ว)
+     * @return string ข้อความ DM พร้อมส่ง (ใส่ {name} แทนที่แล้ว)
      */
     public function buildDailyHoroscopeGreeting(string $userId, string $name): string
     {
@@ -43,6 +47,186 @@ class FortuneGreetingService
 
         return $this->buildInviteForNewUser($displayName);
     }
+
+    /**
+     * 🌙 (2026-07-31) กล่อง "ดวงรายวัน" สำหรับแนบนำหน้าข้อความ DM ปกติ
+     *
+     * USER SPEC:
+     *   1. ใช้บทความที่ AI สร้างทุกวัน 06:00 — **ต้องเป็นบทความของวันเดียวกันเท่านั้น**
+     *   2. ส่งเป็นกล่องแยก แล้วค่อยต่อด้วยข้อความ DM ปกติอีกกล่อง
+     *   3. ไม่มีบทความของวันนี้ → คืน null (เหลือแค่ข้อความ DM ปกติ)
+     *   4. ส่งเพียงครั้งแรกของวัน (ต่อลูกค้า)
+     *   5. ลูกค้าที่ระบบไม่มีวันเกิด → ส่งไปทั้ง 7 วันเกิด ให้เลือกอ่านเอง
+     *   6. มีสวิตช์เปิด/ปิดในส่วน DM (`dm_daily_horoscope_enabled`, default ปิด)
+     *
+     * ⚠️ อ่านจาก `horoscope_daily_predictions` (ตารางที่ `horoscope:generate-daily` 06:00 เขียน)
+     *   ไม่ใช่ `fortune_daily_horoscope_posts` ของระบบเก่าที่ถูกปิดสวิตช์ไว้ตั้งแต่ 2026-04-29
+     *
+     * @param  string  $userId  facebook_user_id / platform_user_id
+     * @param  string  $name  ชื่อลูกค้า
+     * @param  string  $platform  ใช้แยก key กันส่งซ้ำข้ามช่องทาง
+     * @return string|null ข้อความกล่องดวงรายวัน หรือ null ถ้าไม่ต้องส่ง
+     */
+    public function buildDailyHoroscopeBox(string $userId, string $name, string $platform = 'facebook'): ?string
+    {
+        try {
+            // 1️⃣ สวิตช์ในส่วน DM — ปิดอยู่ → ไม่แนบกล่องนี้ (พฤติกรรมเดิม 100%)
+            if (! (bool) FortuneTellingSetting::query()->value('dm_daily_horoscope_enabled')) {
+                return null;
+            }
+
+            $displayName = $this->normalizeName($name);
+            $birthdate = FortuneReading::findLatestBirthdate($userId);
+
+            // 2️⃣ มีวันเกิด → ดวงเฉพาะวันเกิดนั้น / ไม่มี → ส่งทั้ง 7 วันให้เลือกอ่านเอง
+            $box = $birthdate instanceof Carbon
+                ? $this->buildTodayBoxForBirthday($displayName, $birthdate)
+                : $this->buildTodayBoxAllDays($displayName);
+
+            // 3️⃣ วันนี้ยังไม่มีบทความ → ไม่ต้องมีกล่องนี้ (ไม่ใส่ generic แทน ตาม spec)
+            if ($box === null) {
+                return null;
+            }
+
+            // 4️⃣ ครั้งแรกของวันเท่านั้น — Cache::add เป็น atomic (กัน DM ซ้อนจาก webhook พร้อมกัน)
+            //    มาร์คหลังสร้างข้อความสำเร็จ เพื่อไม่ให้ "วันที่ยังไม่มีบทความ" มาเผาสิทธิ์ของวันนั้น
+            $key = "fortune:dm_horoscope_sent:{$platform}:{$userId}:".now()->toDateString();
+            $ttl = max(60, (int) now()->endOfDay()->diffInSeconds(now(), true));
+            if (! Cache::add($key, true, $ttl)) {
+                return null;
+            }
+
+            return $box;
+        } catch (\Throwable $e) {
+            // กล่องเสริม — ล้มแล้วต้องไม่ทำให้ DM ปกติไม่ถูกส่ง
+            Log::warning('FortuneGreetingService: buildDailyHoroscopeBox ล้ม (ข้ามกล่องดวง)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * กล่องดวงรายวันของ "วันเกิดที่รู้" — บทความวันนี้เท่านั้น
+     */
+    protected function buildTodayBoxForBirthday(string $name, Carbon $birthdate): ?string
+    {
+        // ⚠️ ต้องใช้ dayOfWeek (0=อาทิตย์ … 6=เสาร์) ให้ตรงกับคอลัมน์ birth_day
+        //    ห้ามใช้ dayOfWeekIso (1–7) เพราะคนเกิดวันอาทิตย์จะได้ 7 = ไม่มีในตาราง
+        $dayIndex = $birthdate->dayOfWeek;
+
+        $prediction = $this->findTodayPrediction($dayIndex);
+        if ($prediction === null) {
+            return null;
+        }
+
+        $body = trim((string) $prediction->overall_prediction_th);
+        if ($body === '') {
+            return null;
+        }
+
+        return "🌙 ดวงวันนี้ของคุณ {$name}\n"
+            .'คนเกิดวัน'.self::DAY_NAMES[$dayIndex].' '.self::DAY_EMOJIS[$dayIndex]."\n\n"
+            .$body
+            .$this->buildLuckyLine($prediction);
+    }
+
+    /**
+     * กล่องดวงรายวัน "ครบ 7 วันเกิด" — สำหรับลูกค้าที่ระบบยังไม่มีวันเกิด
+     *
+     * USER SPEC: "บางคนไม่มีวันเกิด ให้ส่งไปทั้งบทความเลยให้ลูกค้าเลือกอ่านเอง"
+     */
+    protected function buildTodayBoxAllDays(string $name): ?string
+    {
+        $predictions = HoroscopeDailyPrediction::query()
+            ->where('target_date', now()->toDateString())
+            ->where('prediction_type', 'birth_day')
+            ->where('status', 'generated')
+            ->whereNotNull('overall_prediction_th')
+            ->get()
+            ->keyBy('birth_day');
+
+        if ($predictions->isEmpty()) {
+            return null;
+        }
+
+        $lines = ["🌙 ดวงวันนี้ทั้ง 7 วันเกิดค่ะคุณ {$name}", 'เลื่อนหาวันเกิดของเจ้าชะตาได้เลยนะคะ ✨', ''];
+
+        foreach (self::DAY_NAMES as $index => $dayName) {
+            $prediction = $predictions->get($index);
+            if ($prediction === null) {
+                continue;
+            }
+
+            $teaser = trim((string) $prediction->overall_prediction_th);
+            if ($teaser === '') {
+                continue;
+            }
+
+            // ตัดสั้นต่อวัน — 7 วันรวมกันต้องไม่บวมจนโดน FB ตัด
+            $teaser = trim(preg_replace('/\s+/', ' ', $teaser));
+            if (mb_strlen($teaser) > 110) {
+                $teaser = mb_substr($teaser, 0, 109).'…';
+            }
+
+            $lines[] = self::DAY_EMOJIS[$index].' *วัน'.$dayName."*\n".$teaser;
+            $lines[] = '';
+        }
+
+        // มีแต่หัวข้อ ไม่มีเนื้อสักวัน → ไม่ต้องส่งกล่องนี้
+        if (count($lines) <= 3) {
+            return null;
+        }
+
+        $lines[] = '💫 อยากให้แม่หมอเปิดเชิงลึกให้ ทักมาบอกวันเกิดได้เลยค่ะ';
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * หาบทความดวงรายวันของ "วันนี้" ตาม index วันเกิด (0–6)
+     */
+    protected function findTodayPrediction(int $dayIndex): ?HoroscopeDailyPrediction
+    {
+        if ($dayIndex < 0 || $dayIndex > 6) {
+            return null;
+        }
+
+        return HoroscopeDailyPrediction::query()
+            ->where('target_date', now()->toDateString())
+            ->where('prediction_type', 'birth_day')
+            ->where('birth_day', $dayIndex)
+            ->where('status', 'generated')
+            ->whereNotNull('overall_prediction_th')
+            ->latest('generated_at')
+            ->first();
+    }
+
+    /**
+     * บรรทัดของนำโชค — ใส่เฉพาะที่มีข้อมูลจริง
+     */
+    protected function buildLuckyLine(HoroscopeDailyPrediction $prediction): string
+    {
+        $parts = [];
+
+        if (! empty($prediction->lucky_number)) {
+            $parts[] = 'เลขนำโชค '.$prediction->lucky_number;
+        }
+        if (! empty($prediction->lucky_color_th)) {
+            $parts[] = 'สีมงคล '.$prediction->lucky_color_th;
+        }
+
+        return $parts === [] ? '' : "\n\n🍀 ".implode(' · ', $parts);
+    }
+
+    /**
+     * ชื่อวัน/อีโมจิ index 0=อาทิตย์ … 6=เสาร์ — ตรงกับคอลัมน์ birth_day
+     */
+    protected const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+
+    protected const DAY_EMOJIS = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
 
     /**
      * คำทักทายสำหรับลูกค้าเก่า — มีวันเกิดใน DB
@@ -76,7 +260,7 @@ class FortuneGreetingService
     {
         return "🌙 สวัสดีคุณ {$name}\n"
             ."คนเกิดวัน{$dayName} {$dayEmoji} วันนี้พลังดวงดาวกำลังหมุนเวียนค่ะ\n\n"
-            ."🔮 อยากรู้ดวงเชิงลึกวันนี้ ทักมาคุยกับหมอจันทราได้เลยนะคะ ✨";
+            .'🔮 อยากรู้ดวงเชิงลึกวันนี้ ทักมาคุยกับหมอจันทราได้เลยนะคะ ✨';
     }
 
     /**
@@ -88,7 +272,7 @@ class FortuneGreetingService
     {
         return "🌙 สวัสดีค่ะคุณ {$name}\n\n"
             ."ยินดีที่ได้เจอกันค่ะ ✨\n"
-            ."หมอจันทราเปิดดูดวงไพ่ยิปซีอยู่ ถ้าสนใจทักมาคุยกันได้นะคะ";
+            .'หมอจันทราเปิดดูดวงไพ่ยิปซีอยู่ ถ้าสนใจทักมาคุยกันได้นะคะ';
     }
 
     /**

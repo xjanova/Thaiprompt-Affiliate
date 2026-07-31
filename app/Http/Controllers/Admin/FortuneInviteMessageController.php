@@ -196,11 +196,14 @@ class FortuneInviteMessageController extends Controller
     {
         $request->validate([
             'enable_invite_rotation' => 'nullable|boolean',
+            // 🌙 (2026-07-31) แนบกล่องดวงรายวันนำหน้าข้อความ DM ปกติ
+            'dm_daily_horoscope_enabled' => 'nullable|boolean',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
         $settings->update([
             'enable_invite_rotation' => (bool) $request->boolean('enable_invite_rotation'),
+            'dm_daily_horoscope_enabled' => (bool) $request->boolean('dm_daily_horoscope_enabled'),
         ]);
         FortuneTellingSetting::clearSettingsCache();
 
