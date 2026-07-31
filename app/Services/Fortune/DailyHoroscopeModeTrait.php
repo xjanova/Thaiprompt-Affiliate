@@ -86,11 +86,13 @@ trait DailyHoroscopeModeTrait
             }
 
             // 5️⃣ ตีความคำตอบ — วันในสัปดาห์ หรือ วันเดือนปีเกิดเต็ม
-            $dayIndex = $this->resolveDayIndexFromReply($messageText);
+            $resolved = $this->resolveDayIndexFromReply($messageText);
 
-            if ($dayIndex === null) {
+            if ($resolved === null) {
                 return null;   // ไม่ใช่คำตอบวันเกิด → คุยปกติ (ไม่ตื๊อ)
             }
+
+            [$dayIndex, $fullDate] = $resolved;
 
             // 6️⃣ กันกดรัว/พิมพ์ซ้อน — 1 คำตอบต่อ 8 วินาที
             if (! Cache::add("fortune:daily_answer_lock:{$platform}:{$userId}", true, 8)) {
@@ -101,7 +103,7 @@ trait DailyHoroscopeModeTrait
                 ];
             }
 
-            return $this->buildDailyHoroscopeReply($platform, $userId, $dayIndex, $userProfile);
+            return $this->buildDailyHoroscopeReply($platform, $userId, $dayIndex, $fullDate, $userProfile);
         } catch (\Throwable $e) {
             // fail-open — ด่านเสริมพังต้องไม่บล็อกลูกค้า
             Log::warning('🌙 Daily: ด่านขาเข้าล้ม (ปล่อย flow เดิม)', [
@@ -120,6 +122,7 @@ trait DailyHoroscopeModeTrait
         string $platform,
         string $userId,
         int $dayIndex,
+        ?string $fullDate,
         ?array $userProfile
     ): array {
         $name = (string) ($userProfile['first_name'] ?? $userProfile['name'] ?? 'คุณ');
@@ -130,6 +133,15 @@ trait DailyHoroscopeModeTrait
         // ❗ ห้ามเงียบใส่คนที่เพิ่งตอบเรา — ไม่มีบทความก็ต้องมีคำตอบ
         $message = $box['text'] ?? $greeting->buildDailyUnavailableMessage($name, $dayIndex);
 
+        // 💾 เก็บวันเกิดถาวร — ครั้งเดียวได้ใช้ยาวทั้ง Deep/Celtic ทีหลัง
+        $this->rememberDailyBirthInfo($platform, $userId, $dayIndex, $fullDate);
+
+        // 🌱 เนียนชวนดูเชิงลึกต่อ — ต่างกันตามว่าเรารู้วันเกิดครบหรือยัง
+        //    ห้ามฮาร์ดเซล ห้ามบอกราคา (rule_listen_dont_pitch_when_declining)
+        $message .= $fullDate !== null
+            ? "\n\n———\n💫 แม่หมอจดวันเกิดของเจ้าชะตาไว้แล้วนะคะ\nถ้าอยากให้เปิดดูเชิงลึกว่าช่วงนี้ดวงพาไปทางไหน ทักมาบอกได้เลยค่ะ"
+            : "\n\n———\n💫 ถ้าบอกวัน/เดือน/ปีเกิดเต็ม ๆ มาด้วย แม่หมอจะดูให้ละเอียดกว่านี้ได้อีกเยอะเลยค่ะ";
+
         // ตอบแล้วปิดธง — ไม่ให้ข้อความถัดไปถูกตีเป็นวันเกิดอีก
         $this->clearDailyPending($platform, $userId);
 
@@ -137,6 +149,7 @@ trait DailyHoroscopeModeTrait
             'user_id' => $userId,
             'day_index' => $dayIndex,
             'day' => self::DAILY_DAY_NAMES[$dayIndex] ?? '?',
+            'has_full_date' => $fullDate !== null,
             'has_article' => $box !== null,
             'stale_days' => $box['stale_days'] ?? null,
         ]);
@@ -150,6 +163,45 @@ trait DailyHoroscopeModeTrait
     }
 
     /**
+     * 💾 เก็บวันเกิดที่ได้จากโหมด daily ลง fortune_user_credits
+     *
+     * 🚨 กติกาที่ห้ามพลาด: **ห้ามทับข้อมูลที่มาจาก reading ที่จ่ายเงินแล้ว**
+     *   ลูกค้าที่เคยกรอกวันเกิดตอนซื้อ Deep/Celtic = ข้อมูลที่เชื่อถือได้กว่า
+     *   ถ้า parser ตีความคำตอบฟรีผิด แล้วไปทับ = ทำลายข้อมูลลูกค้าจ่ายเงิน
+     *   (findLatestBirthdate อ่าน readings ก่อนอยู่แล้ว แต่กันไว้อีกชั้นที่ต้นทาง)
+     */
+    protected function rememberDailyBirthInfo(
+        string $platform,
+        string $userId,
+        int $dayIndex,
+        ?string $fullDate
+    ): void {
+        try {
+            $row = \App\Models\FortuneUserCredit::getOrCreate($userId, $platform);
+
+            $payload = [
+                'birth_day' => $dayIndex,
+                'birth_date_at' => now(),
+                'daily_dm_answered_at' => now(),
+                'birth_date_source' => $fullDate !== null ? 'daily_dm_text' : 'daily_dm_button',
+            ];
+
+            // เก็บวันเกิดเต็มเฉพาะเมื่อ (ก) ได้มาจริง และ (ข) ยังไม่เคยมีของเดิม
+            if ($fullDate !== null && empty($row->birth_date)) {
+                $payload['birth_date'] = $fullDate;
+            }
+
+            $row->forceFill($payload)->save();
+        } catch (\Throwable $e) {
+            // เก็บไม่ได้ก็ไม่เป็นไร — ลูกค้าต้องได้คำทำนายก่อนเสมอ
+            Log::warning('🌙 Daily: เก็บวันเกิดไม่สำเร็จ', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * ตีความคำตอบของลูกค้าเป็น index วันเกิด (0-6)
      *
      * รับ 2 แบบ:
@@ -159,7 +211,7 @@ trait DailyHoroscopeModeTrait
      * ⚠️ ลองแบบวันในสัปดาห์ก่อนเสมอ เพราะถูกและไม่เรียก AI
      *    (parseBirthDate มี AI fallback ที่กินเวลา 0.7-7.5 วิ ถ้า regex ไม่เจอ)
      */
-    protected function resolveDayIndexFromReply(string $text): ?int
+    protected function resolveDayIndexFromReply(string $text): ?array
     {
         $trimmed = trim($text);
 
@@ -167,28 +219,28 @@ trait DailyHoroscopeModeTrait
             return null;
         }
 
-        // ── แบบที่ 1: ชื่อวันในสัปดาห์
+        // ── แบบที่ 2 ก่อน: วันเดือนปีเกิดเต็ม (มีค่ากว่า — เก็บถาวรได้)
+        //    เรียก parser ตัวเต็มเฉพาะตอนที่ "หน้าตาเป็นวันที่" เท่านั้น
+        //    กันข้อความทั่วไปไปโดน AI fallback (0.7-7.5 วิ บนเส้น webhook)
+        if ($this->looksLikeDateInput($trimmed)) {
+            $parsed = $this->parseBirthDate($trimmed);
+
+            if ($parsed !== null) {
+                try {
+                    return [\Carbon\Carbon::parse($parsed)->dayOfWeek, $parsed];
+                } catch (\Throwable $e) {
+                    // parse วันที่ไม่ได้ → ตกไปลองชื่อวันด้านล่าง
+                }
+            }
+        }
+
+        // ── แบบที่ 1: ชื่อวันในสัปดาห์ (ไม่มีวันเดือนปี = เก็บถาวรไม่ได้)
         $dayIndex = $this->detectThaiDayName($trimmed);
         if ($dayIndex !== null) {
-            return $dayIndex;
+            return [$dayIndex, null];
         }
 
-        // ── แบบที่ 2: วันเดือนปีเกิดเต็ม — เรียกตัวเต็มเฉพาะตอนที่ "หน้าตาเป็นวันที่"
-        //    กันข้อความทั่วไปไปโดน AI fallback (แพงและช้าบนเส้น webhook)
-        if (! $this->looksLikeDateInput($trimmed)) {
-            return null;
-        }
-
-        $parsed = $this->parseBirthDate($trimmed);
-        if ($parsed === null) {
-            return null;
-        }
-
-        try {
-            return \Carbon\Carbon::parse($parsed)->dayOfWeek;
-        } catch (\Throwable $e) {
-            return null;
-        }
+        return null;
     }
 
     /**

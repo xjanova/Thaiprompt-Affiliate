@@ -47,6 +47,13 @@ class FortuneUserCredit extends Model
         'daily_reset_date',
         'note',
         'updated_by',
+        // 🌙 (2026-07-31) วันเกิดที่ได้จากโหมด DM ดูดวงรายวัน
+        'birth_date',
+        'birth_day',
+        'birth_date_source',
+        'birth_date_at',
+        'daily_dm_asked_at',
+        'daily_dm_answered_at',
         // 🎯 Phase B.1 — DM tracking
         'first_dm_at',
         'last_dm_at',
@@ -74,6 +81,12 @@ class FortuneUserCredit extends Model
         'unlimited_until' => 'date',
         'is_daily_reset' => 'boolean',
         'daily_reset_date' => 'date',
+        // 🌙 (2026-07-31) วันเกิดจากโหมด DM ดูดวงรายวัน
+        'birth_date' => 'date',
+        'birth_day' => 'integer',
+        'birth_date_at' => 'datetime',
+        'daily_dm_asked_at' => 'datetime',
+        'daily_dm_answered_at' => 'datetime',
         // 🎯 Phase B.1 — DM tracking
         'first_dm_at' => 'datetime',
         'last_dm_at' => 'datetime',

@@ -320,7 +320,28 @@ class FortuneReading extends Model
             ->latest('updated_at')
             ->first(['birth_date']);
 
-        return $reading?->birth_date;
+        if ($reading?->birth_date) {
+            return $reading->birth_date;
+        }
+
+        // 🌙 (2026-07-31) fallback — วันเกิดที่เก็บจากโหมด DM ดูดวงรายวัน
+        //   ลูกค้าที่ให้วันเกิดทาง DM แล้วมาซื้อ Deep/Celtic ทีหลัง จะไม่ถูกถามซ้ำ
+        //   ⚠️ อ่านทีหลังเสมอ — ข้อมูลจาก reading (โดยเฉพาะบิลที่จ่ายเงินแล้ว)
+        //      ต้องชนะข้อมูลจากช่องทางฟรีเสมอ
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasColumn('fortune_user_credits', 'birth_date')) {
+                return null;   // ช่วง deploy ที่โค้ดขึ้นก่อน migrate
+            }
+
+            $credit = \App\Models\FortuneUserCredit::where('facebook_user_id', $userId)
+                ->whereNotNull('birth_date')
+                ->latest('birth_date_at')
+                ->first(['birth_date']);
+
+            return $credit?->birth_date;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
