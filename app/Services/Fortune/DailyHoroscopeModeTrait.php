@@ -136,6 +136,12 @@ trait DailyHoroscopeModeTrait
         // 💾 เก็บวันเกิดถาวร — ครั้งเดียวได้ใช้ยาวทั้ง Deep/Celtic ทีหลัง
         $this->rememberDailyBirthInfo($platform, $userId, $dayIndex, $fullDate);
 
+        // 🙏 คำอวยพรปิดท้าย — seed ด้วย uid+วันที่ ให้คนเดิมวันเดิมได้คำเดิม
+        //    (ไม่สลับไปมาถ้าลูกค้าขอดูซ้ำในวันเดียวกัน)
+        if ($blessing = $greeting->pickBlessing($userId.':'.now()->toDateString())) {
+            $message .= "\n\n".$blessing;
+        }
+
         // 🌱 เนียนชวนดูเชิงลึกต่อ — ต่างกันตามว่าเรารู้วันเกิดครบหรือยัง
         //    ห้ามฮาร์ดเซล ห้ามบอกราคา (rule_listen_dont_pitch_when_declining)
         $message .= $fullDate !== null
@@ -382,11 +388,15 @@ trait DailyHoroscopeModeTrait
             $dayIndex = \Carbon\Carbon::parse($birthDate)->dayOfWeek;
             $name = (string) ($userProfile['first_name'] ?? $userProfile['name'] ?? 'คุณ');
 
-            $box = app(FortuneGreetingService::class)->buildDailyBoxForDayIndex($dayIndex, $name);
+            $greeting = app(FortuneGreetingService::class);
+            $box = $greeting->buildDailyBoxForDayIndex($dayIndex, $name);
 
             if ($box === null) {
                 return null;   // วันนี้ยังไม่มีบทความ → ปล่อยข้อความเดิมทำงาน
             }
+
+            // 🙏 คำอวยพรปิดท้าย — seed ด้วยวันเกิด+วันที่ ให้คงที่ในวันเดียวกัน
+            $blessing = $greeting->pickBlessing($birthDate.':'.now()->toDateString());
 
             Log::info('🎂 Daily: ลูกค้าพิมพ์วันเกิดมาเอง → ส่งดวงรายวันให้ก่อน', [
                 'day_index' => $dayIndex,
@@ -395,6 +405,7 @@ trait DailyHoroscopeModeTrait
 
             // เนียนชวนต่อ — ไม่บอกราคา ไม่กดดัน ปุ่มเลือกยังอยู่ให้กดเอง
             return $box['text']
+                .($blessing !== '' ? "\n\n".$blessing : '')
                 ."\n\n———\n"
                 .'💫 นี่คือดวงประจำวันของเจ้าชะตานะคะ'."\n"
                 .'ถ้าอยากให้แม่หมอเปิดเชิงลึกจากวันเกิดนี้ กดดูด้านล่างได้เลยค่ะ';

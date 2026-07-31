@@ -462,6 +462,40 @@ class FortuneGreetingService
     }
 
     /**
+     * 🙏 (2026-07-31) สุ่มคำอวยพรปิดท้ายคำทำนาย
+     *
+     * owner: "เพิ่มรูปแบบคำอวยพรให้หลากหลาย ดูศักดิ์สิทธิ์ อบอุ่นมากขึ้นสัก 60 แบบ"
+     *
+     * เก็บใน config/fortune-blessings.php (แพทเทิร์นเดียวกับ fortune-philosophies)
+     * แอดมินแก้/เพิ่มได้เลยโดยไม่ต้อง migrate
+     *
+     * @param  string|null  $seed  ใส่เพื่อให้คนเดิม+วันเดิมได้คำเดิม (ไม่สุ่มใหม่ทุกข้อความ)
+     * @return string '' ถ้าไม่มีคำอวยพรเลย (ผู้เรียกต้องรับมือได้)
+     */
+    public function pickBlessing(?string $seed = null): string
+    {
+        try {
+            $list = (array) config('fortune-blessings', []);
+            $list = array_values(array_filter($list, fn ($b) => is_string($b) && trim($b) !== ''));
+
+            if ($list === []) {
+                return '';
+            }
+
+            // มี seed → เลือกแบบคงที่ (คนเดิม วันเดิม ได้คำเดิม ไม่สลับไปมาในบทสนทนาเดียว)
+            $index = $seed !== null
+                ? crc32($seed) % count($list)
+                : array_rand($list);
+
+            return trim($list[$index]);
+        } catch (\Throwable $e) {
+            Log::warning('FortuneGreetingService: สุ่มคำอวยพรล้ม', ['error' => $e->getMessage()]);
+
+            return '';
+        }
+    }
+
+    /**
      * 🩺 ตรวจความพร้อมของโหมดดูดวงรายวัน (ใช้โดย fortune:daily-preflight)
      *
      * @return array{ready: bool, today: string, found: int, missing: array<int, string>}
