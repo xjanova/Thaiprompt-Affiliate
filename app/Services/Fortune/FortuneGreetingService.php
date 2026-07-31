@@ -496,6 +496,37 @@ class FortuneGreetingService
     }
 
     /**
+     * ⏰ (2026-07-31) วันนี้มีบทความดวงรายวันพร้อมเสิร์ฟหรือยัง
+     *
+     * owner: "หลังเที่ยงคืน ต้องสลับกลับไปเป็น DM แบบเก่า จนกว่าจะ 6 โมง"
+     *
+     * ⚠️ ตัดสินจาก **ข้อมูลจริง ไม่ใช่นาฬิกา** — เช็คว่ามีบทความของวันนี้ไหม
+     *   ดีกว่าเช็ค "เลย 6 โมงหรือยัง" เพราะครอบเคสที่ job สร้างบทความพัง/ช้าด้วย
+     *   (ถ้าเช็คแต่เวลา พอ job ล่มตอน 6 โมง บอทจะชวนลูกค้าทั้งวันแล้วส่งของไม่ได้)
+     *
+     * cache 5 นาที — เมธอดนี้ถูกเรียกทุก DM ขาออก ยิง DB ทุกครั้งไม่ไหว
+     * และ 5 นาทีคือความหน่วงที่รับได้สำหรับการสลับโหมดตอนเช้า
+     */
+    public function dailyArticlesReadyToday(): bool
+    {
+        try {
+            return (bool) Cache::remember(
+                'fortune:daily_articles_ready:'.now()->toDateString(),
+                300,
+                fn () => HoroscopeDailyPrediction::query()
+                    ->where('target_date', now()->toDateString())
+                    ->where('prediction_type', 'birth_day')
+                    ->where('status', 'generated')
+                    ->whereNotNull('overall_prediction_th')
+                    ->exists()
+            );
+        } catch (\Throwable $e) {
+            // เช็คไม่ได้ → ถือว่ายังไม่พร้อม (ปลอดภัยกว่าชวนแล้วส่งของไม่ได้)
+            return false;
+        }
+    }
+
+    /**
      * 🩺 ตรวจความพร้อมของโหมดดูดวงรายวัน (ใช้โดย fortune:daily-preflight)
      *
      * @return array{ready: bool, today: string, found: int, missing: array<int, string>}

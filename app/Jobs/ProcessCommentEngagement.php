@@ -368,7 +368,9 @@ class ProcessCommentEngagement implements ShouldQueue
             //   ถ้ายังใช้ปุ่มเดิม (ดูดวงเลย/พัก 7 วัน) ลูกค้าจะกดแทนพิมพ์ ฟีเจอร์ไม่เคยถูกใช้
             $isDailyMode = false;
             try {
-                $isDailyMode = (new \App\Services\Fortune\FortuneBotMode($settings))->isDaily();
+                // ⏰ ต้องมีบทความของวันนี้ก่อน ไม่งั้นชวนแล้วส่งของไม่ได้
+                //    (ช่วงหลังเที่ยงคืนถึง 6 โมง → DM กลับไปแบบ classic เอง)
+                $isDailyMode = (new \App\Services\Fortune\FortuneBotMode($settings))->isDailyServing();
 
                 if ($isDailyMode) {
                     // รู้วันเกิดแล้ว → ชวนกดดูของตัวเอง / ยังไม่รู้ → ชวนบอกวันเกิด + ปุ่ม 7 วัน

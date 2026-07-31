@@ -91,6 +91,32 @@ class FortuneBotMode
     }
 
     /**
+     * ⏰ (2026-07-31) โหมด daily "พร้อมเสิร์ฟ" ไหม — ใช้กับ **DM ขาออก** เท่านั้น
+     *
+     * owner: "หลังเที่ยงคืน ต้องสลับกลับไปเป็น DM แบบเก่า จนกว่าจะ 6 โมง"
+     *
+     * โหมดเปิดอยู่ก็จริง แต่ถ้ายังไม่มีบทความของวันนี้ (ก่อน 06:00 หรือ job พัง)
+     * การชวนลูกค้า "บอกวันเกิดรับคำทำนายฟรี" = สัญญาแล้วส่งของไม่ได้
+     * → ช่วงนั้นให้ DM กลับไปใช้ชุดข้อความ/ปุ่มแบบ classic ก่อน
+     *
+     * ⚠️ **ห้ามใช้ตัวนี้กับด่านขาเข้า** — ลูกค้าที่ตอบวันเกิดมาแล้วต้องได้คำตอบเสมอ
+     *    (buildDailyBoxForDayIndex ย้อนหลังได้ 2 วันพร้อมบอกตามตรง / ไม่มีจริง ๆ
+     *     ก็ยังมี buildDailyUnavailableMessage) — ห้ามเงียบใส่คนที่ตอบเรามาแล้ว
+     */
+    public function isDailyServing(): bool
+    {
+        if (! $this->isDaily()) {
+            return false;
+        }
+
+        try {
+            return app(FortuneGreetingService::class)->dailyArticlesReadyToday();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
      * 🌙 ลูกค้าคนนี้อยู่ในขอบเขตของโหมดดูดวงรายวันไหม
      *
      * ⚠️ ต้องเช็ค platform ทุกครั้ง — LINE ใช้ FortuneConversationService::processMessage

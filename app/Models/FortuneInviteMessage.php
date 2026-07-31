@@ -128,7 +128,18 @@ class FortuneInviteMessage extends Model
         // 🔀 (2026-07-28) โหมด transfer — ใช้ชุดข้อความของโหมดนี้ก่อนเสมอ
         //    ข้อความชุดเดิมชวน "ทักมาดูดวงในแชท" = สวนทางกับกล่องที่พาไปเว็บ/LINE
         //    แต่ถ้ายังไม่มีใครเขียนชุด transfer ไว้เลย → ตกไปใช้ชุดเดิม (ห้ามเงียบ)
-        $mode = (new \App\Services\Fortune\FortuneBotMode($settings))->mode();
+        $botMode = new \App\Services\Fortune\FortuneBotMode($settings);
+        $mode = $botMode->mode();
+
+        // ⏰ (2026-07-31) โหมด daily แต่วันนี้ยังไม่มีบทความ (ก่อน 06:00 / job พัง)
+        //   → ใช้ชุดข้อความ classic ไปก่อน ไม่งั้นจะชวน "บอกวันเกิดรับดวงฟรี"
+        //     ทั้งที่ยังส่งของให้ไม่ได้ (owner: "หลังเที่ยงคืน ต้องสลับกลับไปเป็น DM
+        //     แบบเก่า จนกว่าจะ 6 โมง")
+        //   ต้องสลับพร้อมกับปุ่มที่ FacebookWebhookController/ProcessCommentEngagement
+        //   ไม่งั้นได้ข้อความชวนวันเกิด + ปุ่มแบบเก่า = สวนทางกันเอง
+        if ($mode === \App\Services\Fortune\FortuneBotMode::MODE_DAILY && ! $botMode->isDailyServing()) {
+            $mode = \App\Services\Fortune\FortuneBotMode::MODE_CLASSIC;
+        }
 
         // 🌙 (2026-07-31) โหมด daily — ชุดข้อความชวน "บอกวันเกิดรับทำนายฟรี"
         //    ชุดเดิมชวน "ทักมาดูดวง" คนละเจตนากับโหมดนี้ (เราต้องการให้ลูกค้า *พิมพ์วันเกิด*)

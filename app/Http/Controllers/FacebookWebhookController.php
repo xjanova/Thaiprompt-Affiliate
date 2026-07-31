@@ -591,7 +591,9 @@ class FacebookWebhookController extends Controller
     protected function dailyModeDmOverride(string $userId, string $name): ?array
     {
         try {
-            if (! (new \App\Services\Fortune\FortuneBotMode($this->settings))->isDaily()) {
+            // ⏰ ยังไม่มีบทความของวันนี้ (ก่อน 06:00 / job พัง) → DM กลับไปแบบ classic
+            //    ชวน "บอกวันเกิดรับดวงฟรี" ตอนที่ยังไม่มีของ = สัญญาแล้วส่งไม่ได้
+            if (! (new \App\Services\Fortune\FortuneBotMode($this->settings))->isDailyServing()) {
                 return null;
             }
 
@@ -628,7 +630,9 @@ class FacebookWebhookController extends Controller
         }
 
         try {
-            if (! (new \App\Services\Fortune\FortuneBotMode($this->settings))->isDaily()) {
+            // ⏰ ต้องเป็น isDailyServing ไม่ใช่ isDaily — ช่วงก่อน 06:00 DM ส่งแบบ classic
+            //    (ไม่ได้ถามวันเกิด) ถ้าตั้งธง ข้อความถัดไปของลูกค้าจะถูกตีเป็นคำตอบวันเกิด
+            if (! (new \App\Services\Fortune\FortuneBotMode($this->settings))->isDailyServing()) {
                 return;
             }
 
