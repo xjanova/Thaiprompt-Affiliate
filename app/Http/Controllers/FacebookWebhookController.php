@@ -541,7 +541,13 @@ class FacebookWebhookController extends Controller
                 'no_default_qr' => true,
             ]);
 
-            Log::info('🌙 DM: ส่งกล่องดวงรายวันแล้ว', [
+            // 🔓 FB ปฏิเสธ (นอก 24 ชม. error 10/2018278 หรือ 551) → คืนสิทธิ์ของวันนั้น
+            //    ไม่งั้นลูกค้าเสียสิทธิ์ฟรี ทั้งที่ยังไม่เคยได้รับกล่องดวงเลย
+            if (! $sent) {
+                $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
+            }
+
+            Log::info($sent ? '🌙 DM: ส่งกล่องดวงรายวันสำเร็จ' : '🌙 DM: กล่องดวงรายวันส่งไม่ผ่าน (คืนสิทธิ์แล้ว)', [
                 'user_id' => $userId,
                 'sent' => $sent,
                 'length' => mb_strlen($box),
@@ -549,6 +555,9 @@ class FacebookWebhookController extends Controller
 
             return $sent;
         } catch (\Throwable $e) {
+            // อาจ throw หลังจองสิทธิ์ไปแล้ว → คืนสิทธิ์กันเหนียว
+            $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
+
             Log::warning('🌙 DM: ส่งกล่องดวงรายวันล้ม (ข้าม — DM ปกติยังส่งต่อ)', [
                 'user_id' => $userId,
                 'error' => $e->getMessage(),

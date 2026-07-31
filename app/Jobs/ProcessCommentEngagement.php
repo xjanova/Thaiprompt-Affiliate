@@ -247,17 +247,29 @@ class ProcessCommentEngagement implements ShouldQueue
             try {
                 $horoscopeBox = $greetingService->buildDailyHoroscopeBox($userId, $name, 'facebook');
                 if ($horoscopeBox !== null) {
-                    $facebookService->sendMessage($userId, $horoscopeBox, [
+                    $boxSent = (bool) $facebookService->sendMessage($userId, $horoscopeBox, [
                         'messaging_type' => 'RESPONSE',
                         'no_default_qr' => true,
                     ]);
-                    Log::info('🌙 Comment Engagement: ส่งกล่องดวงรายวันแล้ว', [
-                        'user_id' => $userId,
-                        'comment_id' => $commentId,
-                        'length' => mb_strlen($horoscopeBox),
-                    ]);
+
+                    // 🔓 FB ปฏิเสธ (นอก 24 ชม. / 551) → คืนสิทธิ์ของวันนั้น ไม่ให้ลูกค้าเสียฟรี
+                    if (! $boxSent) {
+                        $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
+                    }
+
+                    Log::info($boxSent
+                        ? '🌙 Comment Engagement: ส่งกล่องดวงรายวันสำเร็จ'
+                        : '🌙 Comment Engagement: กล่องดวงรายวันส่งไม่ผ่าน (คืนสิทธิ์แล้ว)', [
+                            'user_id' => $userId,
+                            'comment_id' => $commentId,
+                            'sent' => $boxSent,
+                            'length' => mb_strlen($horoscopeBox),
+                        ]);
                 }
             } catch (Throwable $e) {
+                // อาจ throw หลังจองสิทธิ์ไปแล้ว → คืนสิทธิ์กันเหนียว
+                $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
+
                 Log::warning('🌙 Comment Engagement: กล่องดวงรายวันล้ม (ข้าม)', [
                     'user_id' => $userId,
                     'error' => $e->getMessage(),

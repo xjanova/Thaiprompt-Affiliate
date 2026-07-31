@@ -90,9 +90,10 @@ class FortuneGreetingService
 
             // 4️⃣ ครั้งแรกของวันเท่านั้น — Cache::add เป็น atomic (กัน DM ซ้อนจาก webhook พร้อมกัน)
             //    มาร์คหลังสร้างข้อความสำเร็จ เพื่อไม่ให้ "วันที่ยังไม่มีบทความ" มาเผาสิทธิ์ของวันนั้น
-            $key = "fortune:dm_horoscope_sent:{$platform}:{$userId}:".now()->toDateString();
+            //    ⚠️ ผู้เรียก **ต้อง** เรียก releaseDailyHoroscopeBoxSlot() ถ้าส่งไม่สำเร็จ
+            //       ไม่งั้นลูกค้าที่ FB ปฏิเสธ (นอก 24 ชม. / 551) จะเสียสิทธิ์ของวันนั้นฟรีๆ
             $ttl = max(60, (int) now()->endOfDay()->diffInSeconds(now(), true));
-            if (! Cache::add($key, true, $ttl)) {
+            if (! Cache::add($this->dailyBoxSlotKey($userId, $platform), true, $ttl)) {
                 return null;
             }
 
@@ -106,6 +107,33 @@ class FortuneGreetingService
 
             return null;
         }
+    }
+
+    /**
+     * 🔓 คืนสิทธิ์ "ครั้งแรกของวัน" เมื่อส่งกล่องดวงไม่สำเร็จ
+     *
+     * เคสจริง 2026-07-31: FB ปฏิเสธด้วย error 10/2018278 (นอก 24 ชม.) และ 551
+     * → ถ้าไม่คืนสิทธิ์ ลูกค้าจะไม่มีวันได้กล่องดวงของวันนั้นอีกเลย แม้ภายหลัง
+     *   จะทักเข้ามาเองจนเปิดหน้าต่าง 24 ชม.แล้วก็ตาม
+     */
+    public function releaseDailyHoroscopeBoxSlot(string $userId, string $platform = 'facebook'): void
+    {
+        try {
+            Cache::forget($this->dailyBoxSlotKey($userId, $platform));
+        } catch (\Throwable $e) {
+            Log::warning('FortuneGreetingService: คืนสิทธิ์กล่องดวงรายวันล้ม', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * cache key ของสิทธิ์ "ส่งกล่องดวงรายวันแล้ววันนี้"
+     */
+    protected function dailyBoxSlotKey(string $userId, string $platform): string
+    {
+        return "fortune:dm_horoscope_sent:{$platform}:{$userId}:".now()->toDateString();
     }
 
     /**
