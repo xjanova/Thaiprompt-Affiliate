@@ -3817,6 +3817,35 @@ class FortuneChannelManager
                 }
             }
 
+            // 🌙 (2026-07-31 FTU-260731-N0948) Rule 1.5: จ่ายแล้ว + ระบบกำลัง "รอ input จากลูกค้า"
+            //   (Deep-39 collecting_* / Celtic 99 picking-awaiting) → ห้ามส่งกล่องทักทายเด็ดขาด
+            //   เดิม Rule 2 เช็กแค่ paid/completed และ Rule 3 ต้องมี deep_response แล้ว
+            //   → state พวกนี้หลุดทุก rule → คืน null → sendFacebookHelpResponse ส่ง Welcome Template
+            //   = กล่องทักทายโผล่กลางการทำนายของคนที่จ่ายเงินแล้ว
+            $awaitingCustomerInput = $reading->is_paid && in_array(
+                $reading->conversation_status,
+                array_merge(
+                    FortuneReading::DEEP_ACTIVE_STATUSES,
+                    FortuneReading::CELTIC_ACTIVE_STATUSES,
+                ),
+                true
+            );
+            if ($awaitingCustomerInput) {
+                $stepHint = match ($reading->conversation_status) {
+                    FortuneReading::STATUS_COLLECTING_BIRTHDATE => '👉 พิมพ์ วัน/เดือน/ปีเกิด ได้เลยค่ะ (เช่น 16/05/2517)',
+                    FortuneReading::STATUS_COLLECTING_QUESTIONS => '👉 พิมพ์คำถามที่อยากให้แม่หมอดูให้ค่ะ',
+                    FortuneReading::STATUS_COLLECTING_TAROT => '👉 พิมพ์ "เปิดไพ่" เมื่อตั้งจิตพร้อมแล้วค่ะ',
+                    default => '👉 ทำตามขั้นตอนที่แม่หมอถามไว้ล่าสุดได้เลยค่ะ',
+                };
+
+                return [
+                    'message' => "🌙 คุณ{$name} แม่หมอกำลังดูดวงให้อยู่นะคะ\n\n"
+                        ."📋 เลขบิล: {$billRef}\n\n"
+                        .$stepHint,
+                    'quick_replies' => [],
+                ];
+            }
+
             // Rule 2: PAID / processing → "แม่หมอกำลังพยากรณ์"
             $isProcessing = $reading->is_paid && empty($reading->deep_response)
                 && (

@@ -1483,6 +1483,23 @@ class FortuneConversationService
 
             // Pre-filter พร้อม Rate Limiting: ตรวจจับ spam รุนแรงเท่านั้น
             $filterResult = $this->preFilterWithRateLimit($facebookUserId, $messageText);
+
+            // 🛡️ (2026-07-31 FTU-260731-N0948) PAID BYPASS — ลูกค้าจ่ายแล้วห้ามโดน filter บล็อก
+            //   User rule: "ลูกค้าจ่ายตังแล้ว อย่าเอาอะไรไปขวาง บายพาสให้หมด จบการทำนายค่อยว่ากันใหม่"
+            //   เคสจริง: จ่าย 39฿ อยู่ state collecting_birthdate → พิมพ์ ", 40\n0872804575"
+            //   (แจ้งยอด+เบอร์โทร) → ติด spam rule "ไม่มีตัวอักษรไทย/อังกฤษ" → action=filtered
+            //   → FortuneChannelManager ส่ง Welcome Template = กล่องทักทายกลางการทำนาย
+            //   หมายเหตุ: ยังเรียก preFilterWithRateLimit ตามเดิม (ต้องการ side-effect recordMessage)
+            //   แค่ "ไม่บล็อก" — ปล่อยข้อความไหลไป active-conversation handler ตามปกติ
+            if (! $filterResult['valid'] && $hasPaidActiveReading) {
+                Log::info('Fortune Filter: bypass — ลูกค้าจ่ายเงินแล้ว (paid active)', [
+                    'user_id' => $facebookUserId,
+                    'reason' => $filterResult['reason'],
+                    'text_preview' => mb_substr($messageText, 0, 50),
+                ]);
+                $filterResult['valid'] = true;
+            }
+
             if (! $filterResult['valid']) {
                 Log::info('Fortune Filter: Message blocked', [
                     'user_id' => $facebookUserId,
@@ -11138,6 +11155,20 @@ class FortuneConversationService
         // 1. ตัวอักษรซ้ำๆ มากเกินไป (เช่น "aaaaaa", "5555555555")
         if (preg_match('/(.)\1{9,}/', $text)) {
             return true;
+        }
+
+        // 🔢 (2026-07-31 FTU-260731-N0948) ข้อมูลตัวเลขที่ลูกค้าส่งจริง — ไม่ใช่ spam
+        //   เบอร์โทร / วันเกิด / เลขบัญชี / ยอดโอน / เวลา ล้วนไม่มีตัวอักษรไทย-อังกฤษเลย
+        //   → เดิมตกกฎข้อ 3 (ตัวเลข > 80%) และข้อ 5 (ไม่มีตัวอักษร) → ถูกตีเป็น spam
+        //   เคสจริง: ", 40\n0872804575" (แจ้งยอด+เบอร์) และร้ายกว่านั้นคือ "16/05/2517 08:30"
+        //   ที่ลูกค้าพิมพ์ตอบตอน collecting_birthdate → ถูกบล็อกทั้งที่ตอบถูก = flow ค้าง
+        //   เงื่อนไข: สั้น (≤ 60) + มีแต่ตัวเลขกับเครื่องหมายคั่นปกติ + ต้องมีตัวเลขจริงอย่างน้อย 1 ตัว
+        //   (บังคับให้มีตัวเลข กัน "((()))...." หลุดกฎข้อ 4 เพราะเครื่องหมายอยู่ใน class เดียวกัน)
+        //   (กฎข้อ 1 ยังทำงานก่อนหน้านี้ → "0000000000" ยังถูกจับเป็น spam เหมือนเดิม)
+        if (mb_strlen($text) <= 60
+            && preg_match('/\d/', $text)
+            && preg_match('/^[\d\s.,:\/\-()+฿]+$/u', $text)) {
+            return false;
         }
 
         // 2. มี emoji มากเกินไป (มากกว่า 50% ของข้อความ)

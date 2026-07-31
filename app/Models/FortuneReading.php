@@ -265,7 +265,22 @@ class FortuneReading extends Model
      * - CELTIC_QA_PROMPT = 99฿ รอคำถามถัดไป
      *
      * แตกต่างจาก LOCKED_FLOW_STATUSES — ไม่รวม pending_payment (ยังไม่จ่าย)
-     * หรือ COLLECTING_* (กรอกข้อมูล pre-payment)
+     *
+     * ⚠️ (2026-07-31 FTU-260731-N0948) **ลิสต์นี้ไม่ครอบ Deep-39 ที่จ่ายแล้ว**
+     *   Deep-39 เป็น Pay-First — จ่ายเงิน → state PAID อยู่แค่ ~1 วินาที → ย้ายเข้า
+     *   collecting_birthdate/questions/tarot (= DEEP_ACTIVE_STATUSES) ทันที
+     *   ⇒ IN-PREDICTION Hard Guard (FortuneConversationService::processMessage) "มองไม่เห็น"
+     *      Deep-39 เกือบตลอด flow ทำนาย
+     *
+     *   จงใจไม่เพิ่ม DEEP_ACTIVE_STATUSES เข้ามาที่นี่ เพราะ Hard Guard จะ short-circuit
+     *   ข้าม hook ~1300 บรรทัด (เช็คสถานะ / โอนแล้ว / สลิป / payment handler) ที่ flow Deep
+     *   ใช้งานจริงอยู่ — เปลี่ยนแล้วเสี่ยงพังกว้างกว่าที่แก้
+     *
+     *   ✅ การกัน "อะไรก็ตามแทรกระหว่างทำนาย Deep" ทำที่ปลายทางแทน:
+     *      1. paid bypass ของ pre-filter (processMessage) — ลูกค้าจ่ายแล้วห้ามโดน filter บล็อก
+     *      2. FortuneChannelManager::buildActiveBillContextMessage() — กันกล่องทักทาย
+     *         โผล่ตอน DEEP_ACTIVE_STATUSES / CELTIC_ACTIVE_STATUSES
+     *   ถ้าจะย้ายมากันที่ Hard Guard จริง ๆ ต้องยกมาเป็นงานแยก + ทดสอบ flow Deep ครบทุก state
      */
     public const IN_PREDICTION_STATUSES = [
         self::STATUS_PAID,
