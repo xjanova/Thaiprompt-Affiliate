@@ -578,28 +578,40 @@ class FacebookWebhookController extends Controller
     }
 
     /**
-     * 🌙 (2026-07-31) โหมด daily — ปุ่ม 7 วันเกิดสำหรับแปะท้าย DM ชวน
+     * 🌙 (2026-07-31) โหมด daily — เนื้อ DM + ปุ่ม แยกตามว่า "รู้วันเกิดลูกค้าหรือยัง"
      *
-     * คืน [] เมื่อไม่ได้อยู่โหมด daily → ผู้เรียกใช้ปุ่มชุดเดิมตามปกติ
+     * รู้แล้ว   → "คำทำนายประจำวัน... ของคุณพร้อมแล้ว จะดูไหม" + ปุ่มเดียว [ดูดวงวันนี้เลย]
+     * ยังไม่รู้ → ใช้ข้อความชวนเดิม (จาก pickActive ชุด mode=daily) + ปุ่ม 7 วันเกิด
      *
-     * เหตุผลที่ใช้ปุ่มแทนให้ลูกค้าพิมพ์เอง:
-     *   - ไม่ต้องพึ่ง parser เลยสำหรับเคสส่วนใหญ่
-     *   - **กดปุ่มเปิดหน้าต่าง 24 ชม. ของ FB ให้เอง** → ตอบคำทำนายเต็มกลับได้ทันที
-     *   - ปุ่มชุดเดิม (ดูดวงเลย/พัก 7 วัน/ไม่ต้องส่งอีก) ทำให้ลูกค้ากดแทนพิมพ์
-     *     ฟีเจอร์นี้ก็จะไม่เคยถูกใช้เลย
+     * ทั้งสองทางส่งแค่ข้อความสั้น ๆ — คำทำนายฉบับเต็มรอให้กดปุ่มก่อนเสมอ
+     * เพราะการกดปุ่มเปิดหน้าต่าง 24 ชม. ของ FB ให้เอง = ข้อความไม่ถูกตัด
      *
-     * @return array<int, array{content_type: string, title: string, payload: string}>
+     * @return array{message: string|null, quick_replies: array}|null null = ไม่ใช่โหมด daily
      */
-    protected function dailyModeQuickReplies(): array
+    protected function dailyModeDmOverride(string $userId, string $name): ?array
     {
         try {
             if (! (new \App\Services\Fortune\FortuneBotMode($this->settings))->isDaily()) {
-                return [];
+                return null;
             }
 
-            return FortuneConversationService::dailyBirthdayQuickReplies();
+            $teaser = app(\App\Services\Fortune\FortuneGreetingService::class)
+                ->buildDailyReadyTeaser($userId, $name);
+
+            if ($teaser !== null) {
+                return [
+                    'message' => $teaser,
+                    'quick_replies' => FortuneConversationService::dailyShowMineQuickReplies(),
+                ];
+            }
+
+            // ยังไม่รู้วันเกิด (หรือวันนี้ยังไม่มีบทความ) → คงข้อความชวนเดิมไว้
+            return [
+                'message' => null,
+                'quick_replies' => FortuneConversationService::dailyBirthdayQuickReplies(),
+            ];
         } catch (\Throwable $e) {
-            return [];
+            return null;
         }
     }
 
@@ -662,6 +674,44 @@ class FacebookWebhookController extends Controller
         }
 
         $this->processConversationalMessage($senderId, 'วัน'.$dayNames[$dayIndex]);
+    }
+
+    /**
+     * 🔔 (2026-07-31) ลูกค้าที่เรารู้วันเกิดแล้ว กดปุ่ม "ดูดวงวันนี้เลย"
+     *
+     * ตอนนี้หน้าต่าง 24 ชม. เปิดแล้ว (เพราะเพิ่งกดปุ่ม) → ส่งฉบับเต็มได้ครบไม่ถูกตัด
+     *
+     * ⚠️ ไม่เขียน logic เอง — แปลงเป็นชื่อวันแล้วส่งเข้าด่านเดียวกับปุ่ม 7 วันเกิด
+     *    เพื่อให้ผ่าน guard ครบชุด (จ่ายเงินแล้ว/บิลค้าง/กดรัว) ที่เดียว
+     */
+    protected function handleDailyShowMine(string $senderId): void
+    {
+        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+
+        try {
+            $birthdate = \App\Models\FortuneReading::findLatestBirthdate($senderId);
+
+            if (! $birthdate) {
+                // ไม่ควรเกิด (ปุ่มนี้ขึ้นเฉพาะคนที่เรารู้วันเกิด) — แต่ถ้าเกิดต้องไม่เงียบ
+                $this->conversationService?->markDailyPending('facebook', $senderId);
+                $this->facebookService?->sendQuickReplies(
+                    $senderId,
+                    '🌙 ขอทราบวันเกิดอีกครั้งได้ไหมคะ เดี๋ยวแม่หมอเปิดดวงวันนี้ให้ฟรีเลย',
+                    FortuneConversationService::dailyBirthdayQuickReplies(),
+                    ['messaging_type' => 'RESPONSE']
+                );
+
+                return;
+            }
+
+            $this->conversationService?->markDailyPending('facebook', $senderId);
+            $this->processConversationalMessage($senderId, 'วัน'.$dayNames[$birthdate->dayOfWeek]);
+        } catch (\Throwable $e) {
+            Log::warning('🔔 Daily: ปุ่มดูดวงวันนี้ล้ม', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -801,10 +851,12 @@ class FacebookWebhookController extends Controller
                 $quickReplies = \App\Models\FortuneInviteMessage::quickReplies();
             }
 
-            // 🌙 (2026-07-31) โหมด daily — สลับเป็นปุ่ม 7 วันเกิด (ทับปุ่มชุดเดิม)
-            //   ข้อความชวนมาจาก pickActive() ที่หยิบชุด mode='daily' ให้แล้ว
-            if ($dailyQr = $this->dailyModeQuickReplies()) {
-                $quickReplies = $dailyQr;
+            // 🌙 (2026-07-31) โหมด daily — เนื้อ DM + ปุ่ม แยกตามว่ารู้วันเกิดลูกค้าหรือยัง
+            if ($daily = $this->dailyModeDmOverride($userId, $userName ?? 'คุณ')) {
+                $quickReplies = $daily['quick_replies'];
+                if ($daily['message'] !== null) {
+                    $message = $daily['message'];
+                }
             }
 
             // 🌙 (2026-07-31) แยกกล่องไม่ผ่าน → รวมเนื้อดวงไว้หน้าข้อความ DM ปกติ
@@ -1307,9 +1359,12 @@ class FacebookWebhookController extends Controller
             ]);
         }
 
-        // 🌙 (2026-07-31) โหมด daily — สลับเป็นปุ่ม 7 วันเกิด
-        if ($dailyQr = $this->dailyModeQuickReplies()) {
-            $quickReplies = $dailyQr;
+        // 🌙 (2026-07-31) โหมด daily — เนื้อ DM + ปุ่ม แยกตามว่ารู้วันเกิดลูกค้าหรือยัง
+        if ($daily = $this->dailyModeDmOverride($fromId, $name)) {
+            $quickReplies = $daily['quick_replies'];
+            if ($daily['message'] !== null) {
+                $dmMessage = $daily['message'];
+            }
         }
 
         $dmSent = $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies, [
@@ -4599,6 +4654,9 @@ class FacebookWebhookController extends Controller
             //      เข้า processMessage แล้วบอทตอบมั่ว
             'DAILY_BDAY_0', 'DAILY_BDAY_1', 'DAILY_BDAY_2', 'DAILY_BDAY_3',
             'DAILY_BDAY_4', 'DAILY_BDAY_5', 'DAILY_BDAY_6' => $this->handleDailyBirthdayPick($senderId, $payload),
+
+            // 🔔 (2026-07-31) คนที่เรารู้วันเกิดแล้วกด "ดูดวงวันนี้เลย"
+            'DAILY_SHOW_MINE' => $this->handleDailyShowMine($senderId),
 
             // Quick Replies ที่ mirror Postback payloads จาก Rich Templates
             // ผู้สูงอายุงง → ทั้ง 2 ปุ่มเข้า deep flow ตรงๆ (→ tier menu 39 vs 99)

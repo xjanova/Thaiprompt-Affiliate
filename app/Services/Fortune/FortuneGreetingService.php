@@ -415,6 +415,53 @@ class FortuneGreetingService
     }
 
     /**
+     * 🔔 (2026-07-31) ข้อความ "ดวงของคุณพร้อมแล้ว จะดูไหม" สำหรับคนที่เรารู้วันเกิดแล้ว
+     *
+     * owner: "คนที่มีข้อมูลอยู่แล้วให้ส่งเป็น คำทำนายประจำวันเกิด วันที่... ของคุณ
+     *         พร้อมแล้วจะดูไหม แล้วก็รอให้กดปุ่มเพื่อส่งเต็ม ข้อความไม่ขาด"
+     *
+     * ทำไมต้องรอให้กดปุ่มก่อน:
+     *   ลูกค้าที่ไม่ได้ทักเพจใน 24 ชม. อยู่นอกหน้าต่างของ FB → ส่งคำทำนายเต็มไปเลย
+     *   จะถูกยุบรวมเป็น Private Reply เดียวแล้วตัดจนอ่านไม่รู้เรื่อง
+     *   **การกดปุ่มเปิดหน้าต่าง 24 ชม. ให้เอง** → ตอบฉบับเต็มกลับได้ครบทุกตัวอักษร
+     *   ข้อความเชิญนี้สั้น (~120 ตัวอักษร) จึงส่งผ่านได้สบาย
+     *
+     * @return string|null null = ยังไม่รู้วันเกิด หรือวันนี้ยังไม่มีบทความ
+     *                     (ผู้เรียกจะกลับไปใช้คำเชิญบอกวันเกิด + ปุ่ม 7 วัน)
+     */
+    public function buildDailyReadyTeaser(string $userId, string $name): ?string
+    {
+        try {
+            $birthdate = FortuneReading::findLatestBirthdate($userId);
+
+            if (! $birthdate instanceof Carbon) {
+                return null;   // ยังไม่รู้วันเกิด → ไปทางคำเชิญ
+            }
+
+            $dayIndex = $birthdate->dayOfWeek;
+
+            // มีบทความของวันนี้จริงไหม — ห้ามชวนดูของที่ยังไม่มี
+            // (ช่วงหลังเที่ยงคืนถึง 6 โมงจะยังไม่มี → คืน null ใช้ระบบเดิม)
+            if ($this->findTodayPrediction($dayIndex) === null) {
+                return null;
+            }
+
+            $displayName = $this->normalizeName($name);
+
+            return "🌙 คุณ {$displayName} คำทำนายประจำวัน".self::DAY_NAMES[$dayIndex].' '.self::DAY_EMOJIS[$dayIndex]."\n"
+                .'ประจำ'.$this->thaiFullDate()." พร้อมแล้วค่ะ\n\n"
+                .'อยากดูไหมคะ กดปุ่มด้านล่างได้เลย ✨';
+        } catch (\Throwable $e) {
+            Log::warning('FortuneGreetingService: buildDailyReadyTeaser ล้ม', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * 🩺 ตรวจความพร้อมของโหมดดูดวงรายวัน (ใช้โดย fortune:daily-preflight)
      *
      * @return array{ready: bool, today: string, found: int, missing: array<int, string>}

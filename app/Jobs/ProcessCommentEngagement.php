@@ -369,8 +369,18 @@ class ProcessCommentEngagement implements ShouldQueue
             $isDailyMode = false;
             try {
                 $isDailyMode = (new \App\Services\Fortune\FortuneBotMode($settings))->isDaily();
+
                 if ($isDailyMode) {
-                    $quickReplies = \App\Services\FortuneConversationService::dailyBirthdayQuickReplies();
+                    // รู้วันเกิดแล้ว → ชวนกดดูของตัวเอง / ยังไม่รู้ → ชวนบอกวันเกิด + ปุ่ม 7 วัน
+                    $teaser = app(\App\Services\Fortune\FortuneGreetingService::class)
+                        ->buildDailyReadyTeaser($userId, $name);
+
+                    if ($teaser !== null) {
+                        $dmMessage = $teaser;
+                        $quickReplies = \App\Services\FortuneConversationService::dailyShowMineQuickReplies();
+                    } else {
+                        $quickReplies = \App\Services\FortuneConversationService::dailyBirthdayQuickReplies();
+                    }
                 }
             } catch (Throwable $e) {
                 // เช็คโหมดไม่ได้ → ใช้ปุ่มเดิม (พฤติกรรมเดิม)

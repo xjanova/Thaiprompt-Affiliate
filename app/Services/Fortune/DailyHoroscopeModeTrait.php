@@ -351,6 +351,21 @@ trait DailyHoroscopeModeTrait
      *
      * @return array<int, array{content_type: string, title: string, payload: string}>
      */
+    /**
+     * 🔔 (2026-07-31) ปุ่มเดียว "ดูดวงวันนี้" สำหรับคนที่เรารู้วันเกิดแล้ว
+     *
+     * ไม่ต้องถามวันเกิดซ้ำ — แค่รอให้กด แล้วส่งฉบับเต็มตอบกลับ
+     * (การกดเปิดหน้าต่าง 24 ชม. ของ FB ให้เอง → ข้อความไม่ถูกตัด)
+     *
+     * @return array<int, array{content_type: string, title: string, payload: string}>
+     */
+    public static function dailyShowMineQuickReplies(): array
+    {
+        return [
+            ['content_type' => 'text', 'title' => '🔮 ดูดวงวันนี้เลย', 'payload' => 'DAILY_SHOW_MINE'],
+        ];
+    }
+
     public static function dailyBirthdayQuickReplies(): array
     {
         $emojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
