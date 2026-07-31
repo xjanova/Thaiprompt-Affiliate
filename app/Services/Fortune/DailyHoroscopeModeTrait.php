@@ -358,6 +358,94 @@ trait DailyHoroscopeModeTrait
      * @return array<int, array{content_type: string, title: string, payload: string}>
      */
     /**
+     * 🙏 (2026-07-31) ลูกค้าขอบคุณมา → ตอบด้วยคำอวยพร
+     *
+     * owner: "คำอวยพร...ไว้ใช้ตอนลูกค้าขอบคุณด้วย"
+     *
+     * ทำงานทุกโหมด (ไม่ใช่แค่ daily) เพราะเป็นมารยาทพื้นฐานของแม่หมอ
+     *
+     * 🚨 ห้ามแทรกลูกค้าที่จ่ายเงินแล้ว/กำลังทำนาย — flow พวกนั้นมีคำตอบของตัวเอง
+     *    (Celtic มี ack handler ของตัวเองอยู่แล้วที่ CelticCrossConversationTrait:3873)
+     *
+     * @return array|null null = ไม่ใช่คำขอบคุณล้วน หรือไม่ควรตอบตอนนี้
+     */
+    protected function maybeBlessOnThanks(string $userId, string $messageText): ?array
+    {
+        try {
+            if (! $this->looksLikePureThanks($messageText)) {
+                return null;
+            }
+
+            $platform = $this->currentPlatform ?? 'facebook';
+
+            // มีบิล/กำลังทำนาย → ปล่อย flow เดิมตอบเอง
+            if ($this->hasPaidActiveReading($userId)
+                || FortuneReading::hasActiveReading($platform, $userId)
+                || $this->hasPendingUnpaidBill($userId)) {
+                return null;
+            }
+
+            // ตอบคำอวยพรครั้งเดียวต่อ 6 ชม. — ลูกค้าขอบคุณรัว ๆ ไม่ควรได้พรรัว ๆ
+            if (! Cache::add("fortune:bless_thanks:{$platform}:{$userId}", true, 6 * 3600)) {
+                return null;
+            }
+
+            $blessing = app(FortuneGreetingService::class)
+                ->pickBlessing($userId.':'.now()->toDateString());
+
+            if ($blessing === '') {
+                return null;
+            }
+
+            Log::info('🙏 Daily: ลูกค้าขอบคุณ → ตอบคำอวยพร', ['user_id' => $userId]);
+
+            return [
+                'action' => 'daily_horoscope_sent',
+                'message' => "🙏 ด้วยความยินดีค่ะ\n\n".$blessing,
+                'reading' => null,
+            ];
+        } catch (\Throwable $e) {
+            return null;   // fail-open
+        }
+    }
+
+    /**
+     * "ขอบคุณ" ล้วน ๆ ไหม (ไม่มีคำถามตามหลัง)
+     *
+     * ⚠️ ตัดคำลงท้าย/intensifier ออกก่อนตัดสิน — "ขอบคุณค่ะ แล้วเรื่องงานล่ะ"
+     *    ต้องไม่ถูกกินเป็นคำขอบคุณล้วน (บทเรียนเคส R4543 ใน Celtic ack handler)
+     */
+    protected function looksLikePureThanks(string $text): bool
+    {
+        $clean = mb_strtolower(trim($text));
+
+        if ($clean === '' || mb_strlen($clean) > 40) {
+            return false;
+        }
+
+        foreach (['ขอบพระคุณ', 'ขอบคุณ', 'ขอบคุน', 'ขอบใจ', 'thank you', 'thankyou', 'thanks', 'thx'] as $thx) {
+            if (! str_starts_with($clean, mb_strtolower($thx))) {
+                continue;
+            }
+
+            $rest = trim(mb_substr($clean, mb_strlen($thx)));
+            $rest = trim((string) preg_replace('/^(?:มากมาย|มาก|จริง|หลาย|เด้อ|งับ|ฮะ|ค้าบ|ๆ)+/u', '', $rest));
+
+            for ($i = 0; $i < 3; $i++) {
+                $rest = trim((string) preg_replace(
+                    '/\s*(ค่ะ|คะ|ค่า|ครับ|คับ|จ้า|จ้ะ|จ๊ะ|จ๋า|นะ|น่ะ|เลย|ละ|ล่ะ|ฮะ|แม่หมอ|แม่|หมอ|ๆ|!|\.)\s*$/u',
+                    '',
+                    $rest
+                ));
+            }
+
+            return $rest === '' || mb_strlen($rest) <= 2;
+        }
+
+        return false;
+    }
+
+    /**
      * 🎂 (2026-07-31) ลูกค้าพิมพ์วันเกิดมาเองนอก flow จ่ายเงิน → ให้ดวงรายวันก่อน แล้วค่อยชวน
      *
      * owner: "ถ้าลูกค้าพิมพ์วันที่มา นอกการชำระเงินเพื่อทำนาย ให้ส่งดวงรายวันให้

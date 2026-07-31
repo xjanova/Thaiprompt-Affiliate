@@ -1248,6 +1248,13 @@ class FortuneConversationService
                 return $dailyReply;
             }
 
+            // 🙏 (2026-07-31) ลูกค้าขอบคุณมา → ตอบด้วยคำอวยพร (ทุกโหมด)
+            //   คืน null ทันทีถ้าไม่ใช่คำขอบคุณล้วน / มีบิลค้าง / ตอบไปแล้วใน 6 ชม.
+            $blessReply = $this->maybeBlessOnThanks($facebookUserId, $messageText);
+            if ($blessReply !== null) {
+                return $blessReply;
+            }
+
             // 🎯 (2026-05-08) Smart skip — ข้ามข้อความที่ไม่จำเป็นต้องตอบ (ประหยัด token)
             //   user feedback: "ส่งอะไรที่ไม่เกี่ยวเลยก็ไม่ตอบ เสียโทเค็น"
             //

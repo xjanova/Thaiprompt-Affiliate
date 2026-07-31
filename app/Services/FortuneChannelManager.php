@@ -5448,6 +5448,30 @@ class FortuneChannelManager
      * แยกจากข้อความทำนาย (reading_complete ถูกส่งหลัง view_reading_deep)
      * รวม: ขอบคุณ + อวยพร + ลิงก์ชวนเพื่อนได้เงิน + ลิงก์แชร์เพจ
      */
+    /**
+     * 🙏 (2026-07-31) คำอวยพรปิดท้ายคำทำนาย — สุ่มจาก config/fortune-blessings.php (60 แบบ)
+     *
+     * เดิมเป็นประโยคตายตัวประโยคเดียวใช้กับทุกบิล ลูกค้าประจำเห็นซ้ำทุกครั้ง
+     *
+     * seed ด้วย uid+วันที่ → คนเดิมวันเดิมได้คำเดิม (กดอ่านซ้ำไม่สลับคำให้ดูแปลก)
+     * fallback เป็นประโยคเดิมถ้า config หาย — ห้ามให้ข้อความปิดท้ายว่างเปล่า
+     */
+    protected function pickReadingBlessing(string $userId): string
+    {
+        try {
+            $blessing = app(\App\Services\Fortune\FortuneGreetingService::class)
+                ->pickBlessing($userId.':'.now()->toDateString());
+
+            if ($blessing !== '') {
+                return $blessing;
+            }
+        } catch (\Throwable $e) {
+            // เงียบ — ใช้ประโยคสำรองด้านล่าง
+        }
+
+        return '✨ ขอให้โชคดี สุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ';
+    }
+
     protected function sendFacebookReadingCompleteResponse(FacebookWebhookService $fbService, string $userId, array $result): bool
     {
         $reading = $result['reading'] ?? null;
@@ -5470,8 +5494,13 @@ class FortuneChannelManager
             ? "🙏 ขอบคุณที่ไว้วางใจหมอจันทรา {$greet}"
             : '🙏 ขอบคุณที่ไว้วางใจหมอจันทรา';
 
+        // 🙏 (2026-07-31) สุ่มคำอวยพรจาก 60 แบบ แทนประโยคตายตัวเดิม
+        //   owner: "คำอวยพร...ไว้ใช้ตอนลูกค้าขอบคุณด้วย หรือจบคำทำนายด้วย"
+        //   seed = uid+วันที่ → ลูกค้าที่ดูซ้ำในวันเดียวกันได้คำเดิม ไม่สลับให้ดูแปลก
+        $blessing = $this->pickReadingBlessing($userId);
+
         $text = "{$thankYouLine}\n\n"
-            ."✨ ขอให้โชคดี สุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ\n\n"
+            .$blessing."\n\n"
             ."📖 อยากอ่านคำทำนายอีกรอบ → พิมพ์ \"อ่านคำทำนายล่าสุด\"\n\n"
             .'📢 อยากแนะนำเพื่อนรับค่าแนะนำ — แอดไลน์แม่หมอ ทำการตลาดผ่าน LINE สะดวกกว่า (กล่อง/กราฟฟิกสวย)!';
 

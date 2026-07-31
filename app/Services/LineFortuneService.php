@@ -2281,6 +2281,28 @@ class LineFortuneService implements MessagingPlatformInterface
      * @param  string  $userName  ชื่อผู้ใช้
      * @return array Flex Message bubble
      */
+    /**
+     * 🙏 (2026-07-31) คำอวยพรปิดท้าย — สุ่มจาก config/fortune-blessings.php (60 แบบ)
+     *
+     * เดิมเป็นประโยคตายตัวประโยคเดียว ลูกค้าประจำเห็นซ้ำทุกครั้ง
+     * fallback เป็นประโยคเดิมถ้า config หาย — Flex ต้องไม่มีข้อความว่าง
+     */
+    protected function pickThankYouBlessing(string $seed): string
+    {
+        try {
+            $blessing = app(\App\Services\Fortune\FortuneGreetingService::class)
+                ->pickBlessing($seed.':'.now()->toDateString());
+
+            if ($blessing !== '') {
+                return $blessing;
+            }
+        } catch (\Throwable $e) {
+            // เงียบ — ใช้ประโยคสำรอง
+        }
+
+        return 'ขอให้โชคดี มีสุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ ✨';
+    }
+
     public function buildThankYouFlexMessage(string $userName = 'คุณ'): array
     {
         $userName = $this->sanitizeUserName($userName);
@@ -2327,7 +2349,9 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'text',
-                        'text' => 'ขอให้โชคดี มีสุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ ✨',
+                        // 🙏 (2026-07-31) สุ่มคำอวยพรจาก 60 แบบ แทนประโยคตายตัวเดิม
+                        //   seed = ชื่อ+วันที่ ให้คงที่ในวันเดียวกัน (Flex ตัวนี้ไม่มี uid ส่งมา)
+                        'text' => $this->pickThankYouBlessing($userName),
                         'wrap' => true,
                         'size' => 'md',
                         'color' => '#555555',
