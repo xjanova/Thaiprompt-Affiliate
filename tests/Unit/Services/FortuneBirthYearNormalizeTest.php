@@ -155,6 +155,36 @@ class FortuneBirthYearNormalizeTest extends TestCase
     }
 
     /**
+     * ด่านรับ/ไม่รับปีเกิด — วันเกิดที่เป็นไปไม่ได้ต้องถูกปฏิเสธ ไม่ใช่เอาไปทำนาย
+     *
+     * เดิมกว้าง 1-120 ปี ทำให้ผลลัพธ์ที่ parse ผิดเป็นอายุ 1 ขวบ / 100 ปี
+     * ผ่านไปทำนายจริงทั้ง Deep 39 และ Celtic 99 (พบ 53 บิลที่จ่ายเงินแล้วบน prod)
+     *
+     * @test
+     */
+    public function ด่านรับปีเกิดต้องปฏิเสธอายุที่เป็นไปไม่ได้(): void
+    {
+        $isValid = new ReflectionMethod($this->service, 'isValidBirthYear');
+        $isValid->setAccessible(true);
+        $check = fn (int $y) => $isValid->invoke($this->service, $y);
+
+        // ❌ ต้องปฏิเสธ (เคสจริงจาก prod)
+        $this->assertFalse($check(2025), 'อายุ 1 ขวบ — FTU-260728-N2238 celtic 99฿');
+        $this->assertFalse($check(2022), 'อายุ 4 ขวบ');
+        $this->assertFalse($check(1926), 'อายุ 100 ปี — FTU-260728-W7531 deep 39฿');
+        $this->assertFalse($check(2026), 'ปีนี้ = อายุ 0');
+        $this->assertFalse($check(2027), 'อนาคต');
+
+        // ✅ ต้องรับ (ช่วงลูกค้าจริง)
+        $this->assertTrue($check(2019), 'อายุ 7 — ขอบล่างพอดี');
+        $this->assertTrue($check(1974), 'อายุ 52 — กลุ่มลูกค้าหลัก');
+        $this->assertTrue($check(1978), 'อายุ 48 — ปีเกิดที่พบบ่อยสุด');
+        $this->assertTrue($check(1995), 'อายุ 31');
+        $this->assertTrue($check(1946), 'อายุ 80');
+        $this->assertTrue($check(1927), 'อายุ 99 — ขอบบนยังรับ');
+    }
+
+    /**
      * ตรรกะเดิมก่อนแก้ (2026-07-31) — ใช้เทียบเฉพาะในเทสต์เท่านั้น
      */
     protected function legacyNormalize(int $year): ?int
