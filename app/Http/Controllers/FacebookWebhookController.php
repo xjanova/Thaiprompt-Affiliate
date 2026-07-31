@@ -522,17 +522,21 @@ class FacebookWebhookController extends Controller
      *
      * @param  string  $userId  PSID ปลายทาง
      * @param  string  $name  ชื่อลูกค้า
-     * @return bool ส่งกล่องดวงไปจริงหรือไม่
+     *                        ⚠️ ข้อจำกัด FB: ส่งแยกกล่องต้องใช้ messaging_type=RESPONSE ซึ่งติดกฎ 24 ชม.
+     *                        (error 10/2018278 "นอกช่วงเวลาที่อนุญาต" และ 551) — คนคอมเมนต์/กดไลก์ส่วนใหญ่
+     *                        ไม่เคยทักเพจมาก่อน จึงส่งไม่ผ่าน → ทางเดียวที่ถึงคือรวมไปกับข้อความ DM ปกติ
+     * @return string|null ข้อความดวงที่ "ยังไม่ถึงลูกค้า" → ผู้เรียกต้องเอาไปรวมกับ DM ปกติ
+     *                     (null = ไม่มีอะไรต้องส่ง หรือส่งแยกกล่องสำเร็จแล้ว)
      */
     protected function sendDailyHoroscopeBox(
         \App\Services\Fortune\FortuneGreetingService $greetingService,
         string $userId,
         string $name
-    ): bool {
+    ): ?string {
         try {
             $box = $greetingService->buildDailyHoroscopeBox($userId, $name, 'facebook');
             if ($box === null) {
-                return false;
+                return null;
             }
 
             // no_default_qr — ห้ามให้ปุ่มแพคเกจลอยมาเกาะกล่องดวง
@@ -541,19 +545,22 @@ class FacebookWebhookController extends Controller
                 'no_default_qr' => true,
             ]);
 
-            // 🔓 FB ปฏิเสธ (นอก 24 ชม. error 10/2018278 หรือ 551) → คืนสิทธิ์ของวันนั้น
-            //    ไม่งั้นลูกค้าเสียสิทธิ์ฟรี ทั้งที่ยังไม่เคยได้รับกล่องดวงเลย
-            if (! $sent) {
-                $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
+            if ($sent) {
+                Log::info('🌙 DM: ส่งกล่องดวงรายวันสำเร็จ (แยกกล่อง)', [
+                    'user_id' => $userId,
+                    'length' => mb_strlen($box),
+                ]);
+
+                return null;
             }
 
-            Log::info($sent ? '🌙 DM: ส่งกล่องดวงรายวันสำเร็จ' : '🌙 DM: กล่องดวงรายวันส่งไม่ผ่าน (คืนสิทธิ์แล้ว)', [
+            // ยังไม่คืนสิทธิ์ตรงนี้ — เนื้อหาจะถูกส่งต่อผ่าน DM ปกติ (ผู้เรียกรวมให้)
+            Log::info('🌙 DM: แยกกล่องไม่ผ่าน (นอก 24 ชม.) → ส่งคืนให้รวมกับ DM ปกติ', [
                 'user_id' => $userId,
-                'sent' => $sent,
                 'length' => mb_strlen($box),
             ]);
 
-            return $sent;
+            return $box;
         } catch (\Throwable $e) {
             // อาจ throw หลังจองสิทธิ์ไปแล้ว → คืนสิทธิ์กันเหนียว
             $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
@@ -563,7 +570,7 @@ class FacebookWebhookController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return false;
+            return null;
         }
     }
 
@@ -686,9 +693,9 @@ class FacebookWebhookController extends Controller
             $message = $greetingService->buildDailyHoroscopeGreeting($userId, $userName ?? 'คุณ');
 
             // 🌙 (2026-07-31) กล่องดวงรายวันนำหน้า (บทความ AI 06:00 ของวันเดียวกัน)
-            //   คืน null เมื่อ: สวิตช์ปิด / ส่งไปแล้ววันนี้ / วันนี้ยังไม่มีบทความ
-            //   → เหลือแค่ข้อความ DM ปกติด้านล่างตามเดิม
-            $this->sendDailyHoroscopeBox($greetingService, $userId, $userName ?? 'คุณ');
+            //   คืน null เมื่อ: สวิตช์ปิด / ส่งไปแล้ววันนี้ / วันนี้ยังไม่มีบทความ / ส่งแยกกล่องสำเร็จ
+            //   คืนข้อความ = แยกกล่องไม่ผ่าน (นอก 24 ชม.) → รวมเข้ากับ DM ปกติด้านล่าง
+            $pendingHoroscope = $this->sendDailyHoroscopeBox($greetingService, $userId, $userName ?? 'คุณ');
 
             // ⚠️ ไม่ใส่ Quick Reply ปุ่มขาย/ดูดวง — ให้ลูกค้าพิมพ์ตอบเอง (ตอบอะไรก็ทำนายฟรี)
             $quickReplies = [];
@@ -702,6 +709,16 @@ class FacebookWebhookController extends Controller
                 $message = $inviteMessage->render($userName ?? 'คุณ', $userId, 'facebook');
                 // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
                 $quickReplies = \App\Models\FortuneInviteMessage::quickReplies();
+            }
+
+            // 🌙 (2026-07-31) แยกกล่องไม่ผ่าน → รวมเนื้อดวงไว้หน้าข้อความ DM ปกติ
+            //   reaction path ส่ง text เสมอ (แบนเนอร์เป็นภาพแยก) จึงรวมได้ทุกกรณี
+            if ($pendingHoroscope !== null) {
+                $message = $pendingHoroscope."\n\n———\n\n".$message;
+                Log::info('🌙 DM: รวมดวงรายวันเข้ากับ DM ปกติ (reaction)', [
+                    'user_id' => $userId,
+                    'merged_length' => mb_strlen($message),
+                ]);
             }
 
             // 🖼️ ส่งแบนเนอร์ก่อน text (ถ้าเปิดใน admin) — ข้ามถ้าได้รูปสัปดาห์นี้แล้ว
@@ -725,6 +742,11 @@ class FacebookWebhookController extends Controller
                 $quickReplies,
                 ['messaging_type' => 'RESPONSE']
             );
+
+            // 🔓 รวมดวงไปแล้วแต่ DM ปกติก็ยังส่งไม่ผ่าน → คืนสิทธิ์ ไม่ให้ลูกค้าเสียฟรี
+            if (! $success && $pendingHoroscope !== null) {
+                $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
+            }
 
             // 💬 บันทึกสถิติข้อความชวน เมื่อ DM ส่งสำเร็จ
             if ($success && $useInviteText && $inviteMessage) {
@@ -1121,8 +1143,9 @@ class FacebookWebhookController extends Controller
         $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
         $dmMessage = $greetingService->buildDailyHoroscopeGreeting($fromId, $name);
 
-        // 🌙 (2026-07-31) กล่องดวงรายวันนำหน้า — ดูหมายเหตุใน tryReactionDm
-        $this->sendDailyHoroscopeBox($greetingService, $fromId, $name);
+        // 🌙 (2026-07-31) กล่องดวงรายวันนำหน้า — ดูหมายเหตุใน sendDailyHoroscopeBox
+        //   คืนข้อความ = แยกกล่องไม่ผ่าน (นอก 24 ชม.) → รวมเข้ากับ DM ปกติก่อนส่งด้านล่าง
+        $pendingHoroscope = $this->sendDailyHoroscopeBox($greetingService, $fromId, $name);
 
         // 1. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
         try {
@@ -1173,10 +1196,26 @@ class FacebookWebhookController extends Controller
             }
         }
 
+        // 🌙 (2026-07-31) แยกกล่องไม่ผ่าน → รวมเนื้อดวงไว้หน้าข้อความ DM ปกติ
+        //   ข้อความนี้ยิงผ่าน Private Reply (comment_id) ที่ข้ามกฎ 24 ชม. ได้ → ถึงลูกค้าแน่นอน
+        if ($pendingHoroscope !== null) {
+            $dmMessage = $pendingHoroscope."\n\n———\n\n".$dmMessage;
+            Log::info('🌙 DM: รวมดวงรายวันเข้ากับ DM ปกติ (comment)', [
+                'user_id' => $fromId,
+                'comment_id' => $commentId,
+                'merged_length' => mb_strlen($dmMessage),
+            ]);
+        }
+
         $dmSent = $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies, [
             'from_comment_engagement' => true,
             'comment_id' => $commentId,
         ]);
+
+        // 🔓 รวมดวงไปแล้วแต่ DM ปกติก็ยังส่งไม่ผ่าน → คืนสิทธิ์ ไม่ให้ลูกค้าเสียฟรี
+        if (! $dmSent && $pendingHoroscope !== null) {
+            $greetingService->releaseDailyHoroscopeBoxSlot($fromId, 'facebook');
+        }
 
         // 💬 บันทึกสถิติข้อความชวน เมื่อ DM ส่งสำเร็จ
         if ($dmSent && $inviteMessage) {

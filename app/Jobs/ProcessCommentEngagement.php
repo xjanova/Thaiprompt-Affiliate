@@ -240,37 +240,18 @@ class ProcessCommentEngagement implements ShouldQueue
             $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
             $dmMessage = $greetingService->buildDailyHoroscopeGreeting($userId, $name);
 
-            // 🌙 (2026-07-31) กล่องดวงรายวันนำหน้า (บทความ AI 06:00 ของวันเดียวกัน)
+            // 🌙 (2026-07-31) กล่องดวงรายวัน (บทความ AI 06:00 ของวันเดียวกัน)
             //   USER SPEC: กล่องดวง → แล้วค่อยข้อความ DM ปกติอีกกล่อง
             //   คืน null เมื่อ: สวิตช์ปิด / ส่งไปแล้ววันนี้ / วันนี้ยังไม่มีบทความ
-            //   best-effort — ล้มแล้ว DM ปกติต้องยังส่งต่อได้
+            //   ⚠️ ยังไม่ส่งตรงนี้ — ต้องรู้ก่อนว่าจะไปทาง text (Stage 2) หรือ banner (Stage 1)
+            //      เพราะถ้าลูกค้าอยู่นอก 24 ชม. การส่งแยกกล่องจะโดน FB ปฏิเสธ (error 10/2018278, 551)
+            //      ทางเดียวที่ถึงคือรวมไปกับข้อความที่ยิงผ่าน Private Reply
+            $horoscopeBox = null;
+            $horoscopeMerged = false;   // รวมเนื้อดวงเข้ากับ DM ปกติแล้วหรือยัง (ใช้ตัดสินใจคืนสิทธิ์)
             try {
                 $horoscopeBox = $greetingService->buildDailyHoroscopeBox($userId, $name, 'facebook');
-                if ($horoscopeBox !== null) {
-                    $boxSent = (bool) $facebookService->sendMessage($userId, $horoscopeBox, [
-                        'messaging_type' => 'RESPONSE',
-                        'no_default_qr' => true,
-                    ]);
-
-                    // 🔓 FB ปฏิเสธ (นอก 24 ชม. / 551) → คืนสิทธิ์ของวันนั้น ไม่ให้ลูกค้าเสียฟรี
-                    if (! $boxSent) {
-                        $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
-                    }
-
-                    Log::info($boxSent
-                        ? '🌙 Comment Engagement: ส่งกล่องดวงรายวันสำเร็จ'
-                        : '🌙 Comment Engagement: กล่องดวงรายวันส่งไม่ผ่าน (คืนสิทธิ์แล้ว)', [
-                            'user_id' => $userId,
-                            'comment_id' => $commentId,
-                            'sent' => $boxSent,
-                            'length' => mb_strlen($horoscopeBox),
-                        ]);
-                }
             } catch (Throwable $e) {
-                // อาจ throw หลังจองสิทธิ์ไปแล้ว → คืนสิทธิ์กันเหนียว
-                $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
-
-                Log::warning('🌙 Comment Engagement: กล่องดวงรายวันล้ม (ข้าม)', [
+                Log::warning('🌙 Comment Engagement: สร้างกล่องดวงรายวันล้ม (ข้าม)', [
                     'user_id' => $userId,
                     'error' => $e->getMessage(),
                 ]);
@@ -291,6 +272,50 @@ class ProcessCommentEngagement implements ShouldQueue
                     'comment_id' => $commentId,
                     'invite_id' => $inviteMessage->id,
                 ]);
+            }
+
+            // 🌙 (2026-07-31) ส่งกล่องดวงรายวัน — ลองแยกกล่องก่อน ถ้าไม่ผ่านค่อยรวมกับ DM ปกติ
+            //   ข้อจำกัด FB: Private Reply (recipient.comment_id) ข้ามกฎ 24 ชม. ได้ แต่ใช้ได้
+            //   **ครั้งเดียวต่อ 1 คอมเมนต์** และ slot นั้นเป็นของ DM ปกติ (funnel หลัก — ห้ามแย่ง)
+            //   → คนที่อยู่ใน 24 ชม. ได้ 2 กล่องตาม spec / คนที่อยู่นอกได้เนื้อดวงรวมมากับ DM ปกติ
+            //   ⚠️ Stage 1 (banner atomic) เป็น attachment ล้วน แนบ text ไม่ได้ → รวมไม่ได้ คืนสิทธิ์แทน
+            if ($horoscopeBox !== null) {
+                try {
+                    $boxSent = (bool) $facebookService->sendMessage($userId, $horoscopeBox, [
+                        'messaging_type' => 'RESPONSE',
+                        'no_default_qr' => true,
+                    ]);
+
+                    if ($boxSent) {
+                        Log::info('🌙 Comment Engagement: ส่งกล่องดวงรายวันสำเร็จ (แยกกล่อง)', [
+                            'user_id' => $userId,
+                            'comment_id' => $commentId,
+                            'length' => mb_strlen($horoscopeBox),
+                        ]);
+                    } elseif ($useInviteText) {
+                        // รวมไปกับข้อความชวน (Stage 2) ที่ยิงผ่าน Private Reply → ถึงแน่นอน
+                        $horoscopeMerged = true;
+                        $dmMessage = $horoscopeBox."\n\n———\n\n".$dmMessage;
+                        Log::info('🌙 Comment Engagement: แยกกล่องไม่ผ่าน → รวมดวงเข้ากับ DM ปกติ', [
+                            'user_id' => $userId,
+                            'comment_id' => $commentId,
+                            'merged_length' => mb_strlen($dmMessage),
+                        ]);
+                    } else {
+                        // ทาง banner (attachment ล้วน) แนบ text ไม่ได้ → คืนสิทธิ์ไว้ให้วันนี้ยังมีโอกาส
+                        $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
+                        Log::info('🌙 Comment Engagement: กล่องดวงส่งไม่ผ่าน + ทาง banner รวมไม่ได้ (คืนสิทธิ์)', [
+                            'user_id' => $userId,
+                            'comment_id' => $commentId,
+                        ]);
+                    }
+                } catch (Throwable $e) {
+                    $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
+                    Log::warning('🌙 Comment Engagement: ส่งกล่องดวงรายวันล้ม (ข้าม)', [
+                        'user_id' => $userId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             // 3. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
@@ -366,6 +391,11 @@ class ProcessCommentEngagement implements ShouldQueue
                 ]);
                 if ($stage2TextSent && $inviteMessage) {
                     $inviteMessage->recordSend();
+                }
+
+                // 🔓 รวมดวงไปแล้วแต่ Stage 2 ก็ยังส่งไม่ผ่าน → คืนสิทธิ์ ไม่ให้ลูกค้าเสียฟรี
+                if (! $stage2TextSent && $horoscopeMerged) {
+                    $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
                 }
             } else {
 
