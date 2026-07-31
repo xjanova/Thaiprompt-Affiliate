@@ -363,6 +363,19 @@ class ProcessCommentEngagement implements ShouldQueue
                 $quickReplies[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPriceQR}฿", 'payload' => 'TIER_CELTIC_99'];
             }
 
+            // 🌙 (2026-07-31) โหมด daily — สลับทั้ง Stage 1 (banner+QR) และ Stage 2 (text+QR)
+            //   เป็นปุ่ม 7 วันเกิด เพราะข้อความชวนของโหมดนี้ขอให้ "บอกวันเกิด"
+            //   ถ้ายังใช้ปุ่มเดิม (ดูดวงเลย/พัก 7 วัน) ลูกค้าจะกดแทนพิมพ์ ฟีเจอร์ไม่เคยถูกใช้
+            $isDailyMode = false;
+            try {
+                $isDailyMode = (new \App\Services\Fortune\FortuneBotMode($settings))->isDaily();
+                if ($isDailyMode) {
+                    $quickReplies = \App\Services\FortuneConversationService::dailyBirthdayQuickReplies();
+                }
+            } catch (Throwable $e) {
+                // เช็คโหมดไม่ได้ → ใช้ปุ่มเดิม (พฤติกรรมเดิม)
+            }
+
             // 🎯 (2026-05-26 v3) BANNER-FIRST Strategy — Atomic image+QR เป็น PRIMARY
             //   USER SPEC: "ลูกค้าใหม่ก็ไม่ได้แบนเนอร์ภาพอยู่ดี" — ต้องส่ง banner ครบ
             //
@@ -388,10 +401,15 @@ class ProcessCommentEngagement implements ShouldQueue
                 // 💬 (2026-06-06) ได้รูปสัปดาห์นี้แล้ว → ส่งข้อความชวน + QR ผ่าน Private Reply (ไม่มีรูป)
                 //    text+QR atomic ใน 1 call — ไม่มี race, CTA (ปุ่มดูดวง) ครบ
                 // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
-                $stage2TextSent = $facebookService->sendQuickReplies($userId, $dmMessage, \App\Models\FortuneInviteMessage::quickReplies(), [
-                    'from_comment_engagement' => true,
-                    'comment_id' => $commentId,
-                ]);
+                $stage2TextSent = $facebookService->sendQuickReplies(
+                    $userId,
+                    $dmMessage,
+                    $isDailyMode ? $quickReplies : \App\Models\FortuneInviteMessage::quickReplies(),
+                    [
+                        'from_comment_engagement' => true,
+                        'comment_id' => $commentId,
+                    ]
+                );
                 if ($stage2TextSent && $inviteMessage) {
                     $inviteMessage->recordSend();
                 }
@@ -526,10 +544,26 @@ class ProcessCommentEngagement implements ShouldQueue
                 'engaged_at' => now(),
             ]);
 
+            // 🌙 (2026-07-31) โหมด daily — ถามวันเกิดไปแล้ว ตั้งธงรอคำตอบ
+            //   ตั้งเฉพาะเมื่อ DM ถึงลูกค้าจริง (Stage ใดก็ได้) — ตั้งทั้งที่ส่งไม่ถึง
+            //   จะทำให้ข้อความถัดไปที่ลูกค้าพิมพ์ถูกตีเป็นคำตอบวันเกิดทั้งที่ไม่เคยเห็นคำถาม
+            if ($isDailyMode && ($stage1AtomicSent || $stage2TextSent || $stage3ImageOnlySent)) {
+                try {
+                    app(\App\Services\FortuneConversationService::class)
+                        ->markDailyPending('facebook', $userId);
+                } catch (Throwable $e) {
+                    Log::warning('🌙 Daily: ตั้งธงหลัง Comment Engagement ไม่สำเร็จ', [
+                        'user_id' => $userId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             Log::info('✅ Comment Engagement สำเร็จ', [
                 'user_id' => $userId,
                 'post_id' => $postId,
                 'comment_id' => $commentId,
+                'daily_mode' => $isDailyMode,
             ]);
 
         } catch (Throwable $e) {

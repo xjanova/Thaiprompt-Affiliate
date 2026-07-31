@@ -578,6 +578,58 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * 🌙 (2026-07-31) โหมด daily — ปุ่ม 7 วันเกิดสำหรับแปะท้าย DM ชวน
+     *
+     * คืน [] เมื่อไม่ได้อยู่โหมด daily → ผู้เรียกใช้ปุ่มชุดเดิมตามปกติ
+     *
+     * เหตุผลที่ใช้ปุ่มแทนให้ลูกค้าพิมพ์เอง:
+     *   - ไม่ต้องพึ่ง parser เลยสำหรับเคสส่วนใหญ่
+     *   - **กดปุ่มเปิดหน้าต่าง 24 ชม. ของ FB ให้เอง** → ตอบคำทำนายเต็มกลับได้ทันที
+     *   - ปุ่มชุดเดิม (ดูดวงเลย/พัก 7 วัน/ไม่ต้องส่งอีก) ทำให้ลูกค้ากดแทนพิมพ์
+     *     ฟีเจอร์นี้ก็จะไม่เคยถูกใช้เลย
+     *
+     * @return array<int, array{content_type: string, title: string, payload: string}>
+     */
+    protected function dailyModeQuickReplies(): array
+    {
+        try {
+            if (! (new \App\Services\Fortune\FortuneBotMode($this->settings))->isDaily()) {
+                return [];
+            }
+
+            return FortuneConversationService::dailyBirthdayQuickReplies();
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * 🌙 ตั้งธง "ถามวันเกิดไปแล้ว" หลัง DM ชวนส่งสำเร็จ
+     *
+     * ต้องตั้ง**หลังส่งสำเร็จ**เท่านั้น — ตั้งก่อนแล้ว FB ปฏิเสธ (นอก 24 ชม.)
+     * ลูกค้าจะไม่เคยเห็นคำถาม แต่ข้อความถัดไปที่เขาพิมพ์จะถูกตีเป็นคำตอบวันเกิด
+     */
+    protected function markDailyAskedIfDailyMode(string $userId, bool $sent): void
+    {
+        if (! $sent) {
+            return;
+        }
+
+        try {
+            if (! (new \App\Services\Fortune\FortuneBotMode($this->settings))->isDaily()) {
+                return;
+            }
+
+            $this->conversationService?->markDailyPending('facebook', $userId);
+        } catch (\Throwable $e) {
+            Log::warning('🌙 Daily: ตั้งธงหลังส่ง DM ไม่สำเร็จ', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * 🌙 (2026-07-31) ลูกค้ากดปุ่มวันเกิด (DAILY_BDAY_0..6) ในโหมด daily
      *
      * ทางหลักของโหมดนี้ — ไม่ต้องพึ่ง parser และการกดปุ่ม**เปิดหน้าต่าง 24 ชม.
@@ -749,6 +801,12 @@ class FacebookWebhookController extends Controller
                 $quickReplies = \App\Models\FortuneInviteMessage::quickReplies();
             }
 
+            // 🌙 (2026-07-31) โหมด daily — สลับเป็นปุ่ม 7 วันเกิด (ทับปุ่มชุดเดิม)
+            //   ข้อความชวนมาจาก pickActive() ที่หยิบชุด mode='daily' ให้แล้ว
+            if ($dailyQr = $this->dailyModeQuickReplies()) {
+                $quickReplies = $dailyQr;
+            }
+
             // 🌙 (2026-07-31) แยกกล่องไม่ผ่าน → รวมเนื้อดวงไว้หน้าข้อความ DM ปกติ
             //   reaction path ส่ง text เสมอ (แบนเนอร์เป็นภาพแยก) จึงรวมได้ทุกกรณี
             if ($pendingHoroscope !== null) {
@@ -785,6 +843,9 @@ class FacebookWebhookController extends Controller
             if (! $success && $pendingHoroscope !== null) {
                 $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');
             }
+
+            // 🌙 โหมด daily — ถามวันเกิดไปแล้ว ตั้งธงรอคำตอบ (เฉพาะเมื่อส่งถึงจริง)
+            $this->markDailyAskedIfDailyMode($userId, (bool) $success);
 
             // 💬 บันทึกสถิติข้อความชวน เมื่อ DM ส่งสำเร็จ
             if ($success && $useInviteText && $inviteMessage) {
@@ -1219,6 +1280,7 @@ class FacebookWebhookController extends Controller
             // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
             $quickReplies = \App\Models\FortuneInviteMessage::quickReplies();
         } elseif ($this->bannerService) {
+            // (โหมด daily ทับปุ่มอีกทีด้านล่าง — ปล่อยให้ banner ทำงานปกติก่อน)
             // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
             // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)
             // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — skip ลูกค้าเก่า
@@ -1245,6 +1307,11 @@ class FacebookWebhookController extends Controller
             ]);
         }
 
+        // 🌙 (2026-07-31) โหมด daily — สลับเป็นปุ่ม 7 วันเกิด
+        if ($dailyQr = $this->dailyModeQuickReplies()) {
+            $quickReplies = $dailyQr;
+        }
+
         $dmSent = $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies, [
             'from_comment_engagement' => true,
             'comment_id' => $commentId,
@@ -1254,6 +1321,9 @@ class FacebookWebhookController extends Controller
         if (! $dmSent && $pendingHoroscope !== null) {
             $greetingService->releaseDailyHoroscopeBoxSlot($fromId, 'facebook');
         }
+
+        // 🌙 ถามวันเกิดไปแล้ว ตั้งธงรอคำตอบ (เฉพาะเมื่อส่งถึงจริง)
+        $this->markDailyAskedIfDailyMode($fromId, (bool) $dmSent);
 
         // 💬 บันทึกสถิติข้อความชวน เมื่อ DM ส่งสำเร็จ
         if ($dmSent && $inviteMessage) {
