@@ -247,17 +247,183 @@ class FortuneGreetingService
      */
     protected function thaiFullDate(): string
     {
-        $now = now();
+        return $this->thaiDateOf(now());
+    }
 
-        $months = [
-            1 => 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+    /**
+     * ชื่อเดือนไทย index 1-12
+     */
+    protected const THAI_MONTHS = [
+        1 => 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+    ];
+
+    /**
+     * 🌙 (2026-07-31) กล่องดวงรายวัน "ตามคำขอของลูกค้า" — ใช้ในโหมด daily
+     *
+     * ต่างจาก buildDailyHoroscopeBox() ตรงที่:
+     *   1. **ไม่จอง Cache slot รายวัน** — ลูกค้าเป็นฝ่ายขอเอง ห้ามติดลิมิต "ครั้งแรกของวัน"
+     *      ของ DM อัตโนมัติ ไม่งั้นคนที่ได้กล่อง 7 วันไปแล้วตอนเช้า พอตอบวันเกิดกลับมา
+     *      จะได้ null = บอทเงียบใส่คนที่เพิ่งตอบเรา (แย่ที่สุด)
+     *      ⚠️ ห้ามเรียก releaseDailyHoroscopeBoxSlot() ที่นี่ด้วย — จะไปล้างสิทธิ์ของ DM
+     *         อัตโนมัติ ทำให้ลูกค้าได้กล่องซ้ำ 2 รอบในวันเดียว
+     *   2. รู้ index วันเกิดมาแล้ว (จากปุ่มหรือจากที่ลูกค้าพิมพ์) ไม่ต้องเดาจาก DB
+     *   3. ถ้าวันนี้ยังไม่มีบทความ → ย้อนหลังได้ถึง 2 วัน **พร้อมบอกลูกค้าตามตรง**
+     *      (job สร้างบทความรัน 06:00 — คนทักตี 2-5 หรือ job fail จะไม่มีของวันนี้)
+     *
+     * @param  int  $dayIndex  0=อาทิตย์ … 6=เสาร์ (ตรงกับคอลัมน์ birth_day)
+     * @return array{text: string, stale_days: int}|null null = ไม่มีบทความเลยแม้ย้อนหลัง
+     */
+    public function buildDailyBoxForDayIndex(int $dayIndex, string $name): ?array
+    {
+        try {
+            if ($dayIndex < 0 || $dayIndex > 6) {
+                return null;
+            }
+
+            $displayName = $this->normalizeName($name);
+
+            [$prediction, $staleDays] = $this->findPredictionWithinDays($dayIndex, self::DAILY_FALLBACK_DAYS);
+
+            if ($prediction === null) {
+                return null;
+            }
+
+            $body = trim((string) $prediction->overall_prediction_th);
+            if ($body === '') {
+                return null;
+            }
+
+            // บอกตามตรงเมื่อใช้ของย้อนหลัง — ห้ามแอบส่งของเก่าเป็นของวันนี้
+            $header = $staleDays === 0
+                ? "🌙 ดวงประจำ{$this->thaiFullDate()}"
+                : '🌙 ดวงของคนเกิดวัน'.self::DAY_NAMES[$dayIndex]." (ฉบับล่าสุดที่แม่หมอเปิดไว้)\n"
+                    .'📅 '.$this->thaiDateOf($prediction->target_date);
+
+            $text = $header."\n"
+                .($staleDays === 0
+                    ? 'สำหรับคุณ '.$displayName.' — คนเกิดวัน'.self::DAY_NAMES[$dayIndex].' '.self::DAY_EMOJIS[$dayIndex]
+                    : 'สำหรับคุณ '.$displayName.' '.self::DAY_EMOJIS[$dayIndex])
+                ."\n\n".$body
+                .$this->buildLuckyLine($prediction);
+
+            if ($staleDays > 0) {
+                $text .= "\n\n(ของวันนี้แม่หมอกำลังเปิดตำราอยู่ค่ะ เดี๋ยวพร้อมแล้วทักมาถามใหม่ได้นะคะ)";
+                Log::info('🌙 Daily: ใช้บทความย้อนหลังแทนของวันนี้', [
+                    'day_index' => $dayIndex,
+                    'stale_days' => $staleDays,
+                ]);
+            }
+
+            return ['text' => $text, 'stale_days' => $staleDays];
+        } catch (\Throwable $e) {
+            Log::warning('FortuneGreetingService: buildDailyBoxForDayIndex ล้ม', [
+                'day_index' => $dayIndex,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🌙 ข้อความสำรองเมื่อ "ไม่มีบทความเลย" — ห้ามให้ลูกค้าที่ตอบเรามาแล้วเจอความเงียบ
+     *
+     * ผู้เรียกต้องใช้ข้อความนี้เสมอเมื่อ buildDailyBoxForDayIndex() คืน null
+     */
+    public function buildDailyUnavailableMessage(string $name, ?int $dayIndex = null): string
+    {
+        $displayName = $this->normalizeName($name);
+
+        $dayPart = ($dayIndex !== null && isset(self::DAY_NAMES[$dayIndex]))
+            ? 'คนเกิดวัน'.self::DAY_NAMES[$dayIndex].' '
+            : '';
+
+        return "🙏 ขออภัยค่ะคุณ {$displayName}\n"
+            ."ดวงรายวันของ{$dayPart}วันนี้แม่หมอยังเปิดตำราไม่เสร็จค่ะ\n\n"
+            .'เดี๋ยวพร้อมแล้วทักมาถามใหม่ได้เลยนะคะ 🌙';
+    }
+
+    /**
+     * จำนวนวันย้อนหลังสูงสุดที่ยอมใช้บทความเก่าแทน (บอกลูกค้าตามตรงทุกครั้ง)
+     */
+    protected const DAILY_FALLBACK_DAYS = 2;
+
+    /**
+     * หาบทความของวันเกิดนี้ ย้อนหลังได้ไม่เกิน N วัน
+     *
+     * @return array{0: HoroscopeDailyPrediction|null, 1: int} [บทความ, เก่ากี่วัน]
+     */
+    protected function findPredictionWithinDays(int $dayIndex, int $maxBackDays): array
+    {
+        for ($back = 0; $back <= $maxBackDays; $back++) {
+            $date = now()->subDays($back)->toDateString();
+
+            $prediction = HoroscopeDailyPrediction::query()
+                ->where('target_date', $date)
+                ->where('prediction_type', 'birth_day')
+                ->where('birth_day', $dayIndex)
+                ->where('status', 'generated')
+                ->whereNotNull('overall_prediction_th')
+                ->latest('generated_at')
+                ->first();
+
+            if ($prediction !== null) {
+                return [$prediction, $back];
+            }
+        }
+
+        return [null, 0];
+    }
+
+    /**
+     * แปลงวันที่เป็นข้อความไทย (ใช้กับบทความย้อนหลัง)
+     */
+    protected function thaiDateOf(mixed $date): string
+    {
+        try {
+            $c = $date instanceof Carbon ? $date : Carbon::parse((string) $date);
+        } catch (\Throwable $e) {
+            return '-';
+        }
+
+        return 'วัน'.(self::DAY_NAMES[$c->dayOfWeek] ?? '')
+            .'ที่ '.$c->day
+            .' '.(self::THAI_MONTHS[(int) $c->month] ?? '')
+            .' '.($c->year + 543);
+    }
+
+    /**
+     * 🩺 ตรวจความพร้อมของโหมดดูดวงรายวัน (ใช้โดย fortune:daily-preflight)
+     *
+     * @return array{ready: bool, today: string, found: int, missing: array<int, string>}
+     */
+    public function dailyPreflight(): array
+    {
+        $today = now()->toDateString();
+
+        $have = HoroscopeDailyPrediction::query()
+            ->where('target_date', $today)
+            ->where('prediction_type', 'birth_day')
+            ->where('status', 'generated')
+            ->whereNotNull('overall_prediction_th')
+            ->pluck('birth_day')
+            ->map(fn ($d) => (int) $d)
+            ->all();
+
+        $missing = [];
+        foreach (self::DAY_NAMES as $index => $dayName) {
+            if (! in_array($index, $have, true)) {
+                $missing[$index] = $dayName;
+            }
+        }
+
+        return [
+            'ready' => $missing === [],
+            'today' => $today,
+            'found' => count($have),
+            'missing' => $missing,
         ];
-
-        return 'วัน'.(self::DAY_NAMES[$now->dayOfWeek] ?? '')
-            .'ที่ '.$now->day
-            .' '.($months[(int) $now->month] ?? '')
-            .' '.($now->year + 543);
     }
 
     /**
