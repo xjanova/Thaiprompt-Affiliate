@@ -281,22 +281,25 @@ class ProcessCommentEngagement implements ShouldQueue
             //   ⚠️ Stage 1 (banner atomic) เป็น attachment ล้วน แนบ text ไม่ได้ → รวมไม่ได้ คืนสิทธิ์แทน
             if ($horoscopeBox !== null) {
                 try {
-                    $boxSent = (bool) $facebookService->sendMessage($userId, $horoscopeBox, [
+                    // ส่งแยกกล่อง = ฉบับเต็ม (อยู่ใน 24 ชม. FB หั่นท่อนให้เองได้ ไม่หาย)
+                    $boxSent = (bool) $facebookService->sendMessage($userId, $horoscopeBox['text'], [
                         'messaging_type' => 'RESPONSE',
                         'no_default_qr' => true,
                     ]);
 
                     if ($boxSent) {
-                        Log::info('🌙 Comment Engagement: ส่งกล่องดวงรายวันสำเร็จ (แยกกล่อง)', [
+                        Log::info('🌙 Comment Engagement: ส่งกล่องดวงรายวันสำเร็จ (แยกกล่อง ฉบับเต็ม)', [
                             'user_id' => $userId,
                             'comment_id' => $commentId,
-                            'length' => mb_strlen($horoscopeBox),
+                            'length' => mb_strlen($horoscopeBox['text']),
                         ]);
                     } elseif ($useInviteText) {
                         // รวมไปกับข้อความชวน (Stage 2) ที่ยิงผ่าน Private Reply → ถึงแน่นอน
+                        // ใช้ฉบับย่อ — ต้องอยู่ใน Private Reply เดียว ไม่งั้นท่อนแรกๆ ถูกยิงด้วย
+                        // RESPONSE แล้วตกกฎ 24 ชม. (ลูกค้าได้ไม่ครบ)
                         $horoscopeMerged = true;
-                        $dmMessage = $horoscopeBox."\n\n———\n\n".$dmMessage;
-                        Log::info('🌙 Comment Engagement: แยกกล่องไม่ผ่าน → รวมดวงเข้ากับ DM ปกติ', [
+                        $dmMessage = $horoscopeBox['merge_text']."\n\n———\n\n".$dmMessage;
+                        Log::info('🌙 Comment Engagement: แยกกล่องไม่ผ่าน → รวมดวงฉบับย่อเข้ากับ DM ปกติ', [
                             'user_id' => $userId,
                             'comment_id' => $commentId,
                             'merged_length' => mb_strlen($dmMessage),

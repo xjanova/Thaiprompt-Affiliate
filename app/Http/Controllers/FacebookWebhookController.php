@@ -540,27 +540,30 @@ class FacebookWebhookController extends Controller
             }
 
             // no_default_qr — ห้ามให้ปุ่มแพคเกจลอยมาเกาะกล่องดวง
-            $sent = (bool) $this->facebookService->sendMessage($userId, $box, [
+            // ส่งแยกกล่อง = ใช้ "ฉบับเต็ม" (อยู่ใน 24 ชม. FB หั่นท่อนให้เองได้ ไม่หาย)
+            $sent = (bool) $this->facebookService->sendMessage($userId, $box['text'], [
                 'messaging_type' => 'RESPONSE',
                 'no_default_qr' => true,
             ]);
 
             if ($sent) {
-                Log::info('🌙 DM: ส่งกล่องดวงรายวันสำเร็จ (แยกกล่อง)', [
+                Log::info('🌙 DM: ส่งกล่องดวงรายวันสำเร็จ (แยกกล่อง ฉบับเต็ม)', [
                     'user_id' => $userId,
-                    'length' => mb_strlen($box),
+                    'length' => mb_strlen($box['text']),
                 ]);
 
                 return null;
             }
 
             // ยังไม่คืนสิทธิ์ตรงนี้ — เนื้อหาจะถูกส่งต่อผ่าน DM ปกติ (ผู้เรียกรวมให้)
-            Log::info('🌙 DM: แยกกล่องไม่ผ่าน (นอก 24 ชม.) → ส่งคืนให้รวมกับ DM ปกติ', [
+            // คืน "ฉบับย่อ" เพราะต้องอยู่ใน Private Reply เดียว
+            Log::info('🌙 DM: แยกกล่องไม่ผ่าน (นอก 24 ชม.) → ส่งคืนฉบับย่อให้รวมกับ DM ปกติ', [
                 'user_id' => $userId,
-                'length' => mb_strlen($box),
+                'full_length' => mb_strlen($box['text']),
+                'merge_length' => mb_strlen($box['merge_text']),
             ]);
 
-            return $box;
+            return $box['merge_text'];
         } catch (\Throwable $e) {
             // อาจ throw หลังจองสิทธิ์ไปแล้ว → คืนสิทธิ์กันเหนียว
             $greetingService->releaseDailyHoroscopeBoxSlot($userId, 'facebook');

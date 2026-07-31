@@ -65,9 +65,12 @@ class FortuneGreetingService
      * @param  string  $userId  facebook_user_id / platform_user_id
      * @param  string  $name  ชื่อลูกค้า
      * @param  string  $platform  ใช้แยก key กันส่งซ้ำข้ามช่องทาง
-     * @return string|null ข้อความกล่องดวงรายวัน หรือ null ถ้าไม่ต้องส่ง
+     * @return array{text: string, merge_text: string}|null
+     *                                                      text       = ฉบับเต็ม ใช้ตอนส่งแยกกล่อง (อยู่ใน 24 ชม. — FB ตัดท่อนให้เองได้)
+     *                                                      merge_text = ฉบับย่อ ใช้ตอนรวมกับ DM ปกติ (ต้องอยู่ใน 1 Private Reply ไม่งั้น
+     *                                                      ท่อนแรกๆ จะถูกยิงด้วย RESPONSE แล้วตกกฎ 24 ชม. = ไม่ถึงลูกค้า)
      */
-    public function buildDailyHoroscopeBox(string $userId, string $name, string $platform = 'facebook'): ?string
+    public function buildDailyHoroscopeBox(string $userId, string $name, string $platform = 'facebook'): ?array
     {
         try {
             // 1️⃣ สวิตช์ในส่วน DM — ปิดอยู่ → ไม่แนบกล่องนี้ (พฤติกรรมเดิม 100%)
@@ -79,12 +82,12 @@ class FortuneGreetingService
             $birthdate = FortuneReading::findLatestBirthdate($userId);
 
             // 2️⃣ มีวันเกิด → ดวงเฉพาะวันเกิดนั้น / ไม่มี → ส่งทั้ง 7 วันให้เลือกอ่านเอง
-            $box = $birthdate instanceof Carbon
+            $boxes = $birthdate instanceof Carbon
                 ? $this->buildTodayBoxForBirthday($displayName, $birthdate)
                 : $this->buildTodayBoxAllDays($displayName);
 
             // 3️⃣ วันนี้ยังไม่มีบทความ → ไม่ต้องมีกล่องนี้ (ไม่ใส่ generic แทน ตาม spec)
-            if ($box === null) {
+            if ($boxes === null) {
                 return null;
             }
 
@@ -97,7 +100,7 @@ class FortuneGreetingService
                 return null;
             }
 
-            return $box;
+            return $boxes;
         } catch (\Throwable $e) {
             // กล่องเสริม — ล้มแล้วต้องไม่ทำให้ DM ปกติไม่ถูกส่ง
             Log::warning('FortuneGreetingService: buildDailyHoroscopeBox ล้ม (ข้ามกล่องดวง)', [
@@ -138,8 +141,12 @@ class FortuneGreetingService
 
     /**
      * กล่องดวงรายวันของ "วันเกิดที่รู้" — บทความวันนี้เท่านั้น
+     *
+     * บทความเดียว ~300 ตัวอักษร → ใช้ฉบับเต็มได้ทั้งตอนส่งแยกและตอนรวมกับ DM ปกติ
+     *
+     * @return array{text: string, merge_text: string}|null
      */
-    protected function buildTodayBoxForBirthday(string $name, Carbon $birthdate): ?string
+    protected function buildTodayBoxForBirthday(string $name, Carbon $birthdate): ?array
     {
         // ⚠️ ต้องใช้ dayOfWeek (0=อาทิตย์ … 6=เสาร์) ให้ตรงกับคอลัมน์ birth_day
         //    ห้ามใช้ dayOfWeekIso (1–7) เพราะคนเกิดวันอาทิตย์จะได้ 7 = ไม่มีในตาราง
@@ -155,18 +162,22 @@ class FortuneGreetingService
             return null;
         }
 
-        return "🌙 ดวงวันนี้ของคุณ {$name}\n"
-            .'คนเกิดวัน'.self::DAY_NAMES[$dayIndex].' '.self::DAY_EMOJIS[$dayIndex]."\n\n"
+        $text = "🌙 ดวงประจำ{$this->thaiFullDate()}\n"
+            ."สำหรับคุณ {$name} — คนเกิดวัน".self::DAY_NAMES[$dayIndex].' '.self::DAY_EMOJIS[$dayIndex]."\n\n"
             .$body
             .$this->buildLuckyLine($prediction);
+
+        return ['text' => $text, 'merge_text' => $text];
     }
 
     /**
      * กล่องดวงรายวัน "ครบ 7 วันเกิด" — สำหรับลูกค้าที่ระบบยังไม่มีวันเกิด
      *
      * USER SPEC: "บางคนไม่มีวันเกิด ให้ส่งไปทั้งบทความเลยให้ลูกค้าเลือกอ่านเอง"
+     *
+     * @return array{text: string, merge_text: string}|null
      */
-    protected function buildTodayBoxAllDays(string $name): ?string
+    protected function buildTodayBoxAllDays(string $name): ?array
     {
         $predictions = HoroscopeDailyPrediction::query()
             ->where('target_date', now()->toDateString())
@@ -180,7 +191,15 @@ class FortuneGreetingService
             return null;
         }
 
-        $lines = ["🌙 ดวงวันนี้ทั้ง 7 วันเกิดค่ะคุณ {$name}", 'เลื่อนหาวันเกิดของเจ้าชะตาได้เลยนะคะ ✨', ''];
+        $header = [
+            "🌙 ดวงประจำ{$this->thaiFullDate()}",
+            "ทั้ง 7 วันเกิดค่ะคุณ {$name} — เลื่อนหาวันเกิดของเจ้าชะตาได้เลยนะคะ ✨",
+            '',
+        ];
+
+        $full = $header;      // ฉบับเต็ม (USER SPEC: "ส่งไปทั้งบทความเลยให้ลูกค้าเลือกอ่านเอง")
+        $compact = $header;   // ฉบับย่อ ใช้เฉพาะตอนรวมกับ DM ปกติ
+        $found = 0;
 
         foreach (self::DAY_NAMES as $index => $dayName) {
             $prediction = $predictions->get($index);
@@ -188,29 +207,57 @@ class FortuneGreetingService
                 continue;
             }
 
-            $teaser = trim((string) $prediction->overall_prediction_th);
-            if ($teaser === '') {
+            $body = trim(preg_replace('/\s+/', ' ', (string) $prediction->overall_prediction_th));
+            if ($body === '') {
                 continue;
             }
 
-            // ตัดสั้นต่อวัน — 7 วันรวมกันต้องไม่บวมจนโดน FB ตัด
-            $teaser = trim(preg_replace('/\s+/', ' ', $teaser));
-            if (mb_strlen($teaser) > 110) {
-                $teaser = mb_substr($teaser, 0, 109).'…';
-            }
+            $found++;
+            $title = self::DAY_EMOJIS[$index].' *วัน'.$dayName.'*';
 
-            $lines[] = self::DAY_EMOJIS[$index].' *วัน'.$dayName."*\n".$teaser;
-            $lines[] = '';
+            // เต็ม — ไม่ตัดคำทำนาย + แถมของนำโชคของวันนั้น
+            $full[] = $title."\n".$body.ltrim($this->buildLuckyLine($prediction), "\n");
+            $full[] = '';
+
+            // ย่อ — 7 วันรวมกันต้องอยู่ใน Private Reply เดียว ไม่งั้นถูกหั่นแล้วท่อนแรกหาย
+            $compact[] = $title."\n".(mb_strlen($body) > 110 ? mb_substr($body, 0, 109).'…' : $body);
+            $compact[] = '';
         }
 
         // มีแต่หัวข้อ ไม่มีเนื้อสักวัน → ไม่ต้องส่งกล่องนี้
-        if (count($lines) <= 3) {
+        if ($found === 0) {
             return null;
         }
 
-        $lines[] = '💫 อยากให้แม่หมอเปิดเชิงลึกให้ ทักมาบอกวันเกิดได้เลยค่ะ';
+        $footer = '💫 อยากให้แม่หมอเปิดเชิงลึกให้ ทักมาบอกวันเกิดได้เลยค่ะ';
+        $full[] = $footer;
+        $compact[] = $footer;
 
-        return implode("\n", $lines);
+        return [
+            'text' => implode("\n", $full),
+            'merge_text' => implode("\n", $compact),
+        ];
+    }
+
+    /**
+     * วันที่ไทยเต็มของวันนี้ เช่น "วันศุกร์ที่ 31 กรกฎาคม 2569"
+     *
+     * USER SPEC 2026-07-31: "ควรบอกด้วยเป็นดวงประจำวันที่เท่าไหร่"
+     * ใช้ พ.ศ. (ค.ศ. + 543) ตามที่ลูกค้าไทยคุ้นเคย
+     */
+    protected function thaiFullDate(): string
+    {
+        $now = now();
+
+        $months = [
+            1 => 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+        ];
+
+        return 'วัน'.(self::DAY_NAMES[$now->dayOfWeek] ?? '')
+            .'ที่ '.$now->day
+            .' '.($months[(int) $now->month] ?? '')
+            .' '.($now->year + 543);
     }
 
     /**
