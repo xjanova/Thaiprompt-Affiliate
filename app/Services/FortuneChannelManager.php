@@ -1369,6 +1369,16 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '💎 ดู Celtic 99฿', 'payload' => 'PREPAY_CELTIC'],
                 ], $extra),
 
+                // 🌙 (2026-07-31) โหมด daily — ส่งดวงรายวันที่ลูกค้าขอ
+                //   quick_replies ว่าง → FacebookWebhookService fallback เป็น sendMessage
+                //   พร้อม no_default_qr ให้เอง = ไม่มีปุ่มแพคเกจลอยมาเกาะดวงฟรี
+                'daily_horoscope_sent' => $fbService->sendQuickReplies(
+                    $userId,
+                    $message,
+                    $result['quick_replies'] ?? [],
+                    $extra
+                ),
+
                 default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏', $extra),
             };
 
@@ -3217,6 +3227,10 @@ class FortuneChannelManager
                 'pro_session_celtic_generating',
                 'pro_session_ai_fail',
                 'pro_session_nudge' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // 🌙 (2026-07-31) โหมด daily — โหมดนี้ดักเฉพาะ Facebook แต่ต้องมี arm ไว้
+                //   เผื่อมีใครส่ง action นี้มาทาง LINE จะได้ไม่ตกไป Flex ที่ผิดบริบท
+                'daily_horoscope_sent' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };

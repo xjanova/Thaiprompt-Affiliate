@@ -578,6 +578,41 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * 🌙 (2026-07-31) ลูกค้ากดปุ่มวันเกิด (DAILY_BDAY_0..6) ในโหมด daily
+     *
+     * ทางหลักของโหมดนี้ — ไม่ต้องพึ่ง parser และการกดปุ่ม**เปิดหน้าต่าง 24 ชม.
+     * ของ Facebook ให้เอง** จึงส่งคำทำนายเต็มกลับได้ทันที (ต่างจากการยิง DM
+     * หาคนเงียบที่โดน error 10/2018278)
+     *
+     * ⚠️ จงใจไม่เขียน logic เอง แต่แปลงเป็น "ข้อความชื่อวัน" แล้วส่งเข้า
+     *    processConversationalMessage → ผ่านด่าน maybeHandleDailyHoroscopeReply
+     *    ที่มี guard ครบ 6 ชั้น (โหมด/ช่องทาง/ธง/จ่ายเงินแล้ว/บิลค้าง/กดรัว)
+     *    เขียนแยกที่นี่ = ต้อง copy guard มาทั้งชุด แล้วมันจะหลุดกันในอนาคต
+     */
+    protected function handleDailyBirthdayPick(string $senderId, string $payload): void
+    {
+        $dayIndex = (int) substr($payload, -1);
+
+        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+
+        if (! isset($dayNames[$dayIndex])) {
+            return;
+        }
+
+        try {
+            // กดปุ่ม = ถือว่า "เราถามไปแล้ว" → ตั้งธงให้ด่านขาเข้ารับช่วงต่อ
+            $this->conversationService?->markDailyPending('facebook', $senderId);
+        } catch (\Throwable $e) {
+            Log::warning('🌙 Daily: ตั้งธงจากปุ่มไม่สำเร็จ', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $this->processConversationalMessage($senderId, 'วัน'.$dayNames[$dayIndex]);
+    }
+
+    /**
      * ลองส่ง DM ให้ user ที่กด reaction (เฉพาะถ้าอยู่ใน 24hr conversation window)
      *
      * ใช้ Send API RESPONSE — ถ้าล้มเหลวด้วย error 551 (user not available)
@@ -4486,6 +4521,14 @@ class FacebookWebhookController extends Controller
             'INVITE_READ_NOW' => $this->handleInviteReadNow($senderId),
             'INVITE_SNOOZE_7D' => $this->handleInviteSnooze($senderId),
             'INVITE_OPTOUT' => $this->handleInviteOptOut($senderId),
+
+            // 🌙 (2026-07-31) โหมด daily — ปุ่ม 7 วันเกิด (DAILY_BDAY_0..6)
+            //   ทางหลักของโหมดนี้: ไม่ต้องพึ่ง parser เลย และการกดปุ่มเปิดหน้าต่าง 24 ชม.
+            //   ให้เอง → ส่งคำทำนายเต็มกลับได้ทันที
+            //   ⚠️ ต้องมี case ที่นี่ ไม่งั้น default จะส่ง payload ดิบเป็น "ข้อความลูกค้า"
+            //      เข้า processMessage แล้วบอทตอบมั่ว
+            'DAILY_BDAY_0', 'DAILY_BDAY_1', 'DAILY_BDAY_2', 'DAILY_BDAY_3',
+            'DAILY_BDAY_4', 'DAILY_BDAY_5', 'DAILY_BDAY_6' => $this->handleDailyBirthdayPick($senderId, $payload),
 
             // Quick Replies ที่ mirror Postback payloads จาก Rich Templates
             // ผู้สูงอายุงง → ทั้ง 2 ปุ่มเข้า deep flow ตรงๆ (→ tier menu 39 vs 99)

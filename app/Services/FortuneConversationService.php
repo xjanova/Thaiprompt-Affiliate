@@ -33,6 +33,7 @@ class FortuneConversationService
 {
     use \App\Services\Fortune\BirthdateCorrectionTrait;
     use \App\Services\Fortune\CelticCrossConversationTrait;
+    use \App\Services\Fortune\DailyHoroscopeModeTrait;
     use \App\Services\Fortune\FortuneConsentGateTrait;
     use \App\Services\Fortune\FortunePdpaDeletionTrait;
     use \App\Services\Fortune\FortunePersonalDataTrait;
@@ -1229,6 +1230,22 @@ class FortuneConversationService
                         Cache::forget($lockKey);
                     }
                 }
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // 🌙 (2026-07-31) โหมด daily — ลูกค้าตอบวันเกิดกลับมาหลัง DM ชวน
+            // ═══════════════════════════════════════════════════════════════
+            //   ตำแหน่งนี้เลือกมาแล้ว ห้ามย้าย:
+            //   - **หลัง** tier-direct 39/99 (ข้างบน) ไม่งั้นคนพิมพ์ "39"/"99" จะได้
+            //     ดวงฟรีแทนบิล = ตัดยอดขายเงียบ ๆ
+            //   - **ก่อน** shouldSkipReply (ข้างล่าง) ไม่งั้นวันเกิดที่เป็นตัวเลขล้วน
+            //     เช่น "12/05/2530" จะถูกตีเป็น sticker_or_emoji_only แล้วหายเงียบ
+            //
+            //   ด่านนี้คืน null ทันทีเมื่อไม่ใช่เคสของตัวเอง (โหมดไม่ใช่ daily / ไม่มีธง /
+            //   มีบิลค้าง / กำลังทำนาย) — ค่าใช้จ่ายกับข้อความทั่วไปจึงเกือบเป็นศูนย์
+            $dailyReply = $this->maybeHandleDailyHoroscopeReply($facebookUserId, $messageText, $userProfile);
+            if ($dailyReply !== null) {
+                return $dailyReply;
             }
 
             // 🎯 (2026-05-08) Smart skip — ข้ามข้อความที่ไม่จำเป็นต้องตอบ (ประหยัด token)
