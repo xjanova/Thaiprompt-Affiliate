@@ -352,6 +352,62 @@ trait DailyHoroscopeModeTrait
      * @return array<int, array{content_type: string, title: string, payload: string}>
      */
     /**
+     * 🎂 (2026-07-31) ลูกค้าพิมพ์วันเกิดมาเองนอก flow จ่ายเงิน → ให้ดวงรายวันก่อน แล้วค่อยชวน
+     *
+     * owner: "ถ้าลูกค้าพิมพ์วันที่มา นอกการชำระเงินเพื่อทำนาย ให้ส่งดวงรายวันให้
+     *         และชวนดูดวงเนียน ๆ ได้ไหม"
+     *
+     * เดิม: เจอวันเกิด → เด้งขาย "ดูเชิงลึกไหม 39 บาท" ทันที = ขอแล้วขายเลย
+     * ใหม่: ให้ของฟรีที่เขาควรได้ก่อน (ดวงวันนี้ของวันเกิดนั้น) แล้วค่อยชวนแบบเบา ๆ
+     *
+     * ⚠️ ผู้เรียกต้องอยู่ในบริบท "นอก flow จ่ายเงิน" อยู่แล้ว (จุดเรียกทั้ง 2 จุด
+     *    อยู่หลังกำแพง active reading/บิลค้างมาแล้ว) เมธอดนี้จึงไม่เช็คซ้ำ
+     *
+     * @param  string  $birthDate  Y-m-d ที่ parse ได้แล้ว
+     * @return string|null null = ไม่ใช่โหมด daily หรือวันนี้ยังไม่มีบทความ → ใช้ข้อความเดิม
+     */
+    protected function buildDailyReadingForDetectedBirthdate(string $birthDate, ?array $userProfile = null): ?string
+    {
+        try {
+            $platform = $this->currentPlatform ?? 'facebook';
+
+            if (! (new FortuneBotMode($this->settings))->isDaily()) {
+                return null;
+            }
+
+            if ($platform !== FortuneBotMode::INTERCEPT_PLATFORM) {
+                return null;
+            }
+
+            $dayIndex = \Carbon\Carbon::parse($birthDate)->dayOfWeek;
+            $name = (string) ($userProfile['first_name'] ?? $userProfile['name'] ?? 'คุณ');
+
+            $box = app(FortuneGreetingService::class)->buildDailyBoxForDayIndex($dayIndex, $name);
+
+            if ($box === null) {
+                return null;   // วันนี้ยังไม่มีบทความ → ปล่อยข้อความเดิมทำงาน
+            }
+
+            Log::info('🎂 Daily: ลูกค้าพิมพ์วันเกิดมาเอง → ส่งดวงรายวันให้ก่อน', [
+                'day_index' => $dayIndex,
+                'birth_date' => $birthDate,
+            ]);
+
+            // เนียนชวนต่อ — ไม่บอกราคา ไม่กดดัน ปุ่มเลือกยังอยู่ให้กดเอง
+            return $box['text']
+                ."\n\n———\n"
+                .'💫 นี่คือดวงประจำวันของเจ้าชะตานะคะ'."\n"
+                .'ถ้าอยากให้แม่หมอเปิดเชิงลึกจากวันเกิดนี้ กดดูด้านล่างได้เลยค่ะ';
+        } catch (\Throwable $e) {
+            Log::warning('🎂 Daily: สร้างดวงจากวันเกิดที่ลูกค้าพิมพ์ล้ม', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * 🔔 (2026-07-31) ปุ่มเดียว "ดูดวงวันนี้" สำหรับคนที่เรารู้วันเกิดแล้ว
      *
      * ไม่ต้องถามวันเกิดซ้ำ — แค่รอให้กด แล้วส่งฉบับเต็มตอบกลับ

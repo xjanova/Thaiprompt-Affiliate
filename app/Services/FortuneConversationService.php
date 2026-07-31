@@ -2368,8 +2368,22 @@ class FortuneConversationService
                             $deepEnabled = $this->settings->isDeepReadingEnabled();
                             $freeEnabled = $this->settings->isFreeReadingEnabled();
 
-                            $msg = "🎂 เห็นวันเกิด {$formattedDate} แล้วนะ\n\n";
                             $celticEnabledBd = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+                            // 🎂 (2026-07-31) โหมด daily — ให้ดวงรายวันฟรีก่อน แล้วค่อยชวนเนียน ๆ
+                            //   (เดิมเจอวันเกิดแล้วเด้งขายทันที = ขอแล้วขายเลย)
+                            $dailyFirst = $this->buildDailyReadingForDetectedBirthdate($standaloneBirthdate, $userProfile);
+                            if ($dailyFirst !== null) {
+                                return [
+                                    'action' => 'birthdate_detected',
+                                    'message' => $dailyFirst,
+                                    'reading' => null,
+                                    'show_quick_replies' => ($deepEnabled || $celticEnabledBd || $freeEnabled),
+                                    'pending_birthdate' => $standaloneBirthdate,
+                                ];
+                            }
+
+                            $msg = "🎂 เห็นวันเกิด {$formattedDate} แล้วนะ\n\n";
                             if ($deepEnabled) {
                                 $price = (int) $this->getDeepReadingPrice();
                                 $msg .= "💎 อยากให้หมอดูดวงเชิงลึกให้ไหม? (ค่าครู {$price} บาท)\n\n"
@@ -2639,6 +2653,23 @@ class FortuneConversationService
                     $formattedDate = $this->formatThaiDate($standaloneBirthdate);
                     $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+                    // 🎂 (2026-07-31) โหมด daily — ให้ดวงรายวันฟรีก่อน แล้วค่อยชวนเนียน ๆ
+                    $dailyFirst = $this->buildDailyReadingForDetectedBirthdate($standaloneBirthdate, $userProfile);
+                    if ($dailyFirst !== null) {
+                        Log::info('Fortune: วันเกิดจากข้อความแรก → ส่งดวงรายวันก่อน (โหมด daily)', [
+                            'facebook_user_id' => $facebookUserId,
+                            'birth_date' => $standaloneBirthdate,
+                        ]);
+
+                        return [
+                            'action' => 'birthdate_detected',
+                            'message' => $dailyFirst,
+                            'reading' => null,
+                            'show_quick_replies' => ($deepEnabled || $freeEnabled),
+                            'pending_birthdate' => $standaloneBirthdate,
+                        ];
+                    }
 
                     $message = "🎂 เห็นวันเกิด {$formattedDate} แล้วนะ\n\n";
 
