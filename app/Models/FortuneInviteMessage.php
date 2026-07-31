@@ -42,6 +42,9 @@ class FortuneInviteMessage extends Model
 
     public const MODE_TRANSFER = 'transfer';
 
+    /** 🌙 (2026-07-31) ชุดข้อความของโหมด DM ดูดวงรายวัน — ชวนบอกวันเกิดแลกคำทำนายฟรี */
+    public const MODE_DAILY = 'daily';
+
     protected $fillable = [
         'message',
         'category',
@@ -127,21 +130,29 @@ class FortuneInviteMessage extends Model
         //    แต่ถ้ายังไม่มีใครเขียนชุด transfer ไว้เลย → ตกไปใช้ชุดเดิม (ห้ามเงียบ)
         $mode = (new \App\Services\Fortune\FortuneBotMode($settings))->mode();
 
-        if ($mode === \App\Services\Fortune\FortuneBotMode::MODE_TRANSFER) {
-            $preferred = $base([self::MODE_TRANSFER])->inRandomOrder()->first();
+        // 🌙 (2026-07-31) โหมด daily — ชุดข้อความชวน "บอกวันเกิดรับทำนายฟรี"
+        //    ชุดเดิมชวน "ทักมาดูดวง" คนละเจตนากับโหมดนี้ (เราต้องการให้ลูกค้า *พิมพ์วันเกิด*)
+        $dedicated = [
+            \App\Services\Fortune\FortuneBotMode::MODE_TRANSFER => self::MODE_TRANSFER,
+            \App\Services\Fortune\FortuneBotMode::MODE_DAILY => self::MODE_DAILY,
+        ];
+
+        if (isset($dedicated[$mode])) {
+            $preferred = $base([$dedicated[$mode]])->inRandomOrder()->first();
 
             if ($preferred) {
                 return $preferred;
             }
 
             \Illuminate\Support\Facades\Log::warning(
-                '💬 InviteMessage: โหมด transfer แต่ไม่มีข้อความชุด transfer เลย → ใช้ชุดกลาง (ข้อความอาจสวนทางกับกล่อง)'
+                '💬 InviteMessage: ไม่มีข้อความชุดของโหมดนี้เลย → ใช้ชุดกลาง (ข้อความอาจสวนทางกับโหมด)',
+                ['mode' => $mode]
             );
 
             return $base([self::MODE_ALL])->inRandomOrder()->first();
         }
 
-        // โหมด classic — ใช้ชุดกลาง + ชุดที่ทำไว้เฉพาะ classic (ตัดชุด transfer ออก)
+        // โหมด classic — ใช้ชุดกลาง + ชุดที่ทำไว้เฉพาะ classic (ตัดชุดของโหมดอื่นออก)
         return $base([self::MODE_ALL, self::MODE_CLASSIC])->inRandomOrder()->first();
     }
 

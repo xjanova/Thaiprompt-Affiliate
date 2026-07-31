@@ -2239,8 +2239,10 @@ Format 2 — JSON array:
                 @php
                     $tpMode = old('fortune_bot_mode', $settings->fortune_bot_mode ?? 'classic');
                     $tpIsTransfer = $tpMode === 'transfer';
+                    // 🌙 (2026-07-31) โหมด DM ดูดวงรายวัน
+                    $tpIsDaily = $tpMode === 'daily';
                 @endphp
-                <div class="md:col-span-2 rounded-xl border-2 {{ $tpIsTransfer ? 'border-purple-400 dark:border-purple-500' : 'border-gray-300 dark:border-gray-600' }} bg-white dark:bg-gray-800 p-4">
+                <div class="md:col-span-2 rounded-xl border-2 {{ $tpIsTransfer ? 'border-purple-400 dark:border-purple-500' : ($tpIsDaily ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600') }} bg-white dark:bg-gray-800 p-4">
                     <label class="block text-sm font-bold text-gray-900 dark:text-white mb-1">
                         🔀 โหมดบอท (ช่องทางให้บริการ)
                     </label>
@@ -2257,9 +2259,18 @@ Format 2 — JSON array:
                         <option value="transfer" {{ $tpIsTransfer ? 'selected' : '' }}>
                             transfer — พาลูกค้าไปดูดวงฟรีที่เว็บจันทรา / LINE
                         </option>
+                        <option value="daily" {{ $tpIsDaily ? 'selected' : '' }}>
+                            daily — DM ชวนบอกวันเกิด รับคำทำนายรายวันฟรี
+                        </option>
                     </select>
 
-                    @if($tpIsTransfer)
+                    @if($tpIsDaily)
+                        <p class="mt-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded px-2 py-1">
+                            🌙 โหมดดูดวงรายวันทำงานอยู่ — DM จะชวนลูกค้าบอกวันเกิดเพื่อรับคำทำนายวันนี้ฟรี
+                            พอลูกค้าตอบกลับ ระบบจะแยกเองว่าเป็นวันในสัปดาห์หรือวันเดือนปีเต็ม แล้วส่งดวงของวันนั้นให้
+                            <br>ใช้เฉพาะช่องทาง Facebook — ฝั่ง LINE ทำงานเหมือนโหมดปกติทุกอย่าง
+                        </p>
+                    @elseif($tpIsTransfer)
                         <p class="mt-2 text-xs text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded px-2 py-1">
                             🔀 โหมด transfer ทำงานอยู่ — ลูกค้า FB ที่ขอดูดวงจะได้กล่องพาไปเว็บ/LINE
                             แทนการทำนายในแชท (คนที่ทำไม่เป็นจริง ๆ ยังได้ดูในแชทตามจำนวนครั้งที่ตั้งไว้)

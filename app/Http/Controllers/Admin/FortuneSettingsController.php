@@ -223,7 +223,8 @@ class FortuneSettingsController extends Controller
             'enable_free_card_reading' => 'boolean',
             'free_card_news_context' => 'nullable|string|max:1000',
             // 🔀 (2026-07-26) โหมด TRANSFER — ดักหน้าแชท FB พาไปดูดวงฟรีที่เว็บ/LINE
-            'fortune_bot_mode' => 'nullable|in:classic,transfer',
+            // 🌙 (2026-07-31) เพิ่ม daily — ถ้าไม่เติมที่นี่ แอดมินกดบันทึกแล้วเด้ง validation error
+            'fortune_bot_mode' => 'nullable|in:classic,transfer,daily',
             'transfer_box_cooldown_hours' => 'nullable|integer|min:0|max:720',
             'transfer_fallback_attempts' => 'nullable|integer|min:0|max:20',
             'transfer_fallback_days' => 'nullable|integer|min:1|max:365',

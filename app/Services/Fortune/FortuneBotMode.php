@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Log;
  * โหมด `classic`  = พฤติกรรมเดิมทุกอย่าง (default)
  * โหมด `transfer` = ลูกค้า Facebook ที่ทักเข้ามาจะถูก **ดักหน้า** แล้วได้กล่อง
  *                   "ดูดวงฟรี" ที่มีปุ่มไปเว็บจันทรา/LINE แทนการทำนายในแชท FB
+ * โหมด `daily`    = (2026-07-31) DM ชวนลูกค้าบอกวันเกิด "รับทำนายวันนี้ฟรี"
+ *                   ลูกค้าตอบ → ส่งดวงรายวันของวันเกิดนั้น → เก็บวันเกิด → ชวนเชิงลึกต่อ
+ *                   ข้อดีเชิงเทคนิค: ลูกค้า "ตอบก่อน" = เปิดหน้าต่าง 24 ชม. ของ FB เอง
+ *                   จึงส่งคำทำนายเต็มได้ ไม่ติด error 10/2018278 เหมือนการยิง DM หาคนเงียบ
  *
  * ที่มา (เจ้าของสั่ง 2026-07-25/26): FB แบนแอดมินมั่ว + สลิปเยอะโดนกล่าวหาว่า
  * หลอกลวง → ใช้ FB ตักปลาเหมือนเดิม แต่ย้ายการให้บริการไปช่องทางที่เราคุมได้
@@ -37,6 +41,16 @@ class FortuneBotMode
 
     public const MODE_TRANSFER = 'transfer';
 
+    /** 🌙 (2026-07-31) โหมด DM ดูดวงรายวัน — ชวนบอกวันเกิดแลกคำทำนายวันนี้ฟรี */
+    public const MODE_DAILY = 'daily';
+
+    /** โหมดทั้งหมดที่ระบบรู้จัก — ค่าอื่นทั้งหมดตกเป็น classic (fail-safe) */
+    public const MODES = [
+        self::MODE_CLASSIC,
+        self::MODE_TRANSFER,
+        self::MODE_DAILY,
+    ];
+
     /** ช่องทางที่โหมดนี้ดัก — LINE ไม่ดักโดยเจตนา (เป็นปลายทางที่เราอยากให้ใช้) */
     public const INTERCEPT_PLATFORM = 'facebook';
 
@@ -56,12 +70,46 @@ class FortuneBotMode
     {
         $mode = trim((string) ($this->settings->fortune_bot_mode ?? self::MODE_CLASSIC));
 
-        return $mode === self::MODE_TRANSFER ? self::MODE_TRANSFER : self::MODE_CLASSIC;
+        // ⚠️ (2026-07-31) เดิมเขียนเป็น ternary เทียบกับ transfer ตัวเดียว —
+        //    เพิ่มโหมดใหม่แล้วลืมแก้ตรงนี้ = ค่าใหม่ถูกกลืนเป็น classic เงียบ ๆ
+        //    (แอดมินกดบันทึกสำเร็จแต่ไม่มีอะไรเกิดขึ้น = บั๊กที่หาสาเหตุยากที่สุดแบบหนึ่ง)
+        //    เปลี่ยนเป็น whitelist เพื่อให้เพิ่มโหมดถัดไปแล้วทำงานทันที
+        return in_array($mode, self::MODES, true) ? $mode : self::MODE_CLASSIC;
     }
 
     public function isTransfer(): bool
     {
         return $this->mode() === self::MODE_TRANSFER;
+    }
+
+    /**
+     * 🌙 อยู่ในโหมด DM ดูดวงรายวันหรือไม่
+     */
+    public function isDaily(): bool
+    {
+        return $this->mode() === self::MODE_DAILY;
+    }
+
+    /**
+     * 🌙 ลูกค้าคนนี้อยู่ในขอบเขตของโหมดดูดวงรายวันไหม
+     *
+     * ⚠️ ต้องเช็ค platform ทุกครั้ง — LINE ใช้ FortuneConversationService::processMessage
+     *    ตัวเดียวกับ Facebook ถ้าไม่กันไว้ ด่านดักวันเกิดจะไปแย่งข้อความลูกค้า LINE
+     *    ที่พิมพ์วันเกิดในบริบทอื่น (โหมดนี้ไม่มี DM ชวนฝั่ง LINE เลย)
+     *
+     * @param  string  $platform  'facebook' | 'line'
+     */
+    public function dailyAppliesTo(string $platform, ?string $platformUserId): bool
+    {
+        if (! $this->isDaily()) {
+            return false;
+        }
+
+        if ($platform !== self::INTERCEPT_PLATFORM) {
+            return false;
+        }
+
+        return ! empty($platformUserId);
     }
 
     /**
