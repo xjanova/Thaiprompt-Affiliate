@@ -153,6 +153,41 @@ class FortuneDailyModeGateTest extends TestCase
     }
 
     /**
+     * 💎 ปุ่มทางลัดจ่ายเงิน — ต้องไม่ติดไปกับ DM ขาออก
+     *
+     * 🚨 นี่คือด่านกันถอยหลัง: ถ้าวันหนึ่งมีคนย้ายปุ่มนี้เข้าไปใน builder ที่ DM ใช้
+     *    DM เย็น ๆ จะกลายเป็นสแปมขายของอีกครั้ง (เจ้าของสั่งไว้ว่า DM ส่งแต่คำเชิญฟรี)
+     *
+     * @test
+     */
+    public function ปุ่มจ่ายเงินต้องอยู่เฉพาะในแชทไม่ติดไปกับdm(): void
+    {
+        $upgrade = FortuneConversationService::dailyUpgradeQuickReply();
+
+        // ไม่ใส่ตัวเลขราคา — ราคาแอดมินแก้ได้ ให้ tier menu เป็นคนบอก
+        $this->assertDoesNotMatchRegularExpression('/\d/u', $upgrade['title']);
+        $this->assertLessThanOrEqual(20, mb_strlen($upgrade['title']));
+        $this->assertSame('ดูดวง', $upgrade['payload'], 'payload ต้องพาไป tier menu ผ่าน isGenericFortuneRequest');
+
+        // ❌ builder ที่ DM ใช้ ต้องไม่มีปุ่มจ่ายเงินปนอยู่
+        foreach ([
+            'dailyBirthdayQuickReplies' => FortuneConversationService::dailyBirthdayQuickReplies(),
+            'dailyShowMineQuickReplies' => FortuneConversationService::dailyShowMineQuickReplies(),
+        ] as $name => $buttons) {
+            $payloads = array_column($buttons, 'payload');
+            $this->assertNotContains($upgrade['payload'], $payloads, "{$name} ต้องไม่มีปุ่มจ่ายเงิน (DM ใช้ตัวนี้)");
+        }
+
+        // ✅ ต่อท้ายได้เฉพาะตอนเรียก withDailyUpgrade เท่านั้น
+        $m = new ReflectionMethod(FortuneConversationService::class, 'withDailyUpgrade');
+        $m->setAccessible(true);
+        $withUpgrade = $m->invoke(null, FortuneConversationService::dailyBirthdayQuickReplies());
+
+        $this->assertCount(8, $withUpgrade);
+        $this->assertSame($upgrade['payload'], end($withUpgrade)['payload']);
+    }
+
+    /**
      * 🎁 (2026-08-01) ด่านขาเข้าต้องเปิดในโหมด classic ด้วย
      *
      * เพราะปุ่มรับดวงประจำวันเกิดถูกยื่นให้ตอนลูกค้าขอดูฟรีแต่สิทธิ์หมด — ซึ่งเกิดได้

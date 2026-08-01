@@ -190,11 +190,14 @@ trait DailyHoroscopeModeTrait
             'stale_days' => $box['stale_days'] ?? null,
         ]);
 
+        // 💎 ได้ของฟรีไปแล้ว = จังหวะที่ลูกค้าสนใจที่สุด — ต้องมีปุ่มให้กดต่อทันที
+        //    ไม่งั้นคำชวน "ทักมาบอกได้เลยค่ะ" บังคับให้ลูกค้าพิมพ์เอง = เสียคนที่พร้อมจ่าย
         return [
             'action' => 'daily_horoscope_sent',
             'message' => $message,
             'reading' => null,
             'daily_day_index' => $dayIndex,
+            'quick_replies' => [static::dailyUpgradeQuickReply()],
         ];
     }
 
@@ -496,10 +499,13 @@ trait DailyHoroscopeModeTrait
 
             Log::info('🙏 Daily: ลูกค้าขอบคุณ → คำอวยพร + เปิดทางคุยต่อ', ['user_id' => $userId]);
 
+            // 💎 มีปุ่มให้กดคู่กับประโยคชวน — ลูกค้าที่พร้อมจ่ายไม่ต้องพิมพ์เอง
+            //    (LINE ไม่มีปุ่ม → ChannelManager ส่งเป็นข้อความล้วน ประโยคชวนยังอยู่ครบ)
             return [
                 'action' => 'daily_horoscope_sent',
                 'message' => $message,
                 'reading' => null,
+                'quick_replies' => [static::dailyUpgradeQuickReply()],
             ];
         } catch (\Throwable $e) {
             return null;   // fail-open
@@ -683,7 +689,7 @@ trait DailyHoroscopeModeTrait
                     'action' => 'daily_horoscope_sent',
                     'message' => $teaser,
                     'reading' => null,
-                    'quick_replies' => static::dailyShowMineQuickReplies(),
+                    'quick_replies' => static::withDailyUpgrade(static::dailyShowMineQuickReplies()),
                 ];
             }
 
@@ -693,7 +699,7 @@ trait DailyHoroscopeModeTrait
                 'action' => 'daily_horoscope_sent',
                 'message' => $this->pickDailyFreeOffer($userId),
                 'reading' => null,
-                'quick_replies' => static::dailyBirthdayQuickReplies(),
+                'quick_replies' => static::withDailyUpgrade(static::dailyBirthdayQuickReplies()),
             ];
         } catch (\Throwable $e) {
             // fail-open — ทางเสริมพังต้องไม่ทำให้ลูกค้าไม่ได้คำตอบ
@@ -737,6 +743,50 @@ trait DailyHoroscopeModeTrait
         return [
             ['content_type' => 'text', 'title' => '🔮 ดูดวงวันนี้เลย', 'payload' => 'DAILY_SHOW_MINE'],
         ];
+    }
+
+    /**
+     * 💎 ต่อท้ายทางลัดจ่ายเงินให้ชุดปุ่ม — ใช้เฉพาะ**ในแชท**เท่านั้น
+     *
+     * 🚨 ห้ามยัดเข้าไปใน dailyBirthdayQuickReplies()/dailyShowMineQuickReplies() ตรง ๆ
+     *    เพราะ 2 ตัวนั้นถูกใช้กับ **DM ขาออก** ด้วย ซึ่งเจ้าของสั่งไว้ชัดว่า
+     *    "ให้ส่งแต่คำเชิญชวนดูดวงให้บอกวันเดือนปีเกิดเพื่อรับคำทำนายรายวันฟรี" —
+     *    ติดปุ่มขายไปกับ DM เย็น ๆ = กลับไปเป็นสแปมที่เพิ่งแก้ไป
+     *
+     *    ในแชทต่างกัน: ลูกค้าทักมาเอง/เพิ่งได้ของฟรีจากเรา = จังหวะที่ยื่นทางเลือกได้
+     *
+     * @param  array<int, array>  $buttons
+     * @return array<int, array>
+     */
+    protected static function withDailyUpgrade(array $buttons): array
+    {
+        $buttons[] = static::dailyUpgradeQuickReply();
+
+        return $buttons;
+    }
+
+    /**
+     * 💎 (2026-08-01) ทางลัดสำหรับคนที่อยากจ่ายเงินดูเลย ไม่รอของฟรี
+     *
+     * owner: "สำหรับผู้ต้องการดูดวงแบบจ่ายเงินทันที มีทางเลือกให้ไหม จะได้ไม่เสียลูกค้า"
+     *
+     * ทุกข้อความในเส้นดวงฟรีจบด้วยคำชวน "ทักมาบอกได้เลยค่ะ" ซึ่งบังคับให้ลูกค้าพิมพ์เอง
+     * = แรงเสียดทานตรงจังหวะที่ลูกค้าอยากจ่ายที่สุด → ให้ปุ่มกดทันทีไปเลย
+     *
+     * ⚠️ **ปุ่มเดียว ไม่ใส่ตัวเลขราคา**:
+     *   - ไม่ใช่แผงปุ่มขายท้ายทุกข้อความแบบเดิมที่เจ้าของสั่งปิด ("vending machine ฮาร์ดเซล")
+     *   - ราคาแอดมินแก้ได้จากหน้าตั้งค่า ฝังเลขในปุ่มไว้ = เพี้ยนทันทีที่แก้
+     *     ให้ tier menu (เจ้าของราคาตัวจริง) เป็นคนบอกตัวเลข
+     *
+     * payload 'ดูดวง' → ไม่มี case ใน handleQuickReply → ตกไป default = ส่งเป็นข้อความ
+     * → looksLikeDailyEscape จับ "ดูดวง" ล้างธง pending ให้เอง → isGenericFortuneRequest
+     * → startDeepReadingFlow → tier menu พร้อมราคาจริง (แพทเทิร์นเดียวกับ my_bills_empty)
+     *
+     * @return array{content_type: string, title: string, payload: string}
+     */
+    public static function dailyUpgradeQuickReply(): array
+    {
+        return ['content_type' => 'text', 'title' => '💎 ดูแบบละเอียดเลย', 'payload' => 'ดูดวง'];
     }
 
     /**
