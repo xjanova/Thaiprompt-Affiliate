@@ -434,14 +434,73 @@ class FortuneReading extends Model
     }
 
     /**
+     * 🚫 (2026-07-31) เพิ่งดูดวงแบบจ่ายเงินภายใน N วันที่ผ่านมาหรือไม่ (rolling)
+     *
+     * owner: "การ DM ต้องไม่ DM ไปหาลูกค้าที่เพิ่งดูแบบจ่ายเงินไปอย่างน้อย 7 วัน
+     *         ตอนนี้ยังไม่เป็นเช่นนั้น"
+     *
+     * 🐛 ทำไมของเดิม (hasPaidReadingThisCalendarMonth) ไม่พอ:
+     *   มันนับ "เดือนปฏิทิน" → ลูกค้าจ่ายวันที่ 31 ก.ค. พอขึ้น 1 ส.ค. เดือนใหม่
+     *   guard รีเซ็ตทันที = โดน DM ขายซ้ำหลังดูดวงไปแค่ข้ามคืน
+     *   ยิ่งจ่ายปลายเดือนยิ่งโดนเร็ว (จ่าย 30 → พัก 1 วัน / จ่าย 1 → พัก 30 วัน)
+     *   ไม่ยุติธรรมกับลูกค้าและเป็นสแปมชัด ๆ
+     *
+     * ใช้ **คู่กับ** ตัวเดิม (OR) ไม่ใช่แทนที่ — ตัวเดิมยังคุมภายในเดือนเดียวกันอยู่
+     * ตัวนี้ปิดรูรอยต่อเดือนโดยเฉพาะ
+     *
+     * @param  int  $days  จำนวนวันย้อนหลัง (default 7 ตามที่ owner กำหนด)
+     */
+    public static function hasPaidReadingWithinDays(?string $facebookUserId, ?string $platformUserId = null, int $days = 7): bool
+    {
+        $cacheRoot = $facebookUserId ?: $platformUserId;
+        if (empty($cacheRoot)) {
+            return false;
+        }
+
+        $cacheKey = "fortune:paid_within_days:{$days}:".now()->toDateString().":{$cacheRoot}";
+
+        return (bool) \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            now()->addMinutes(5),
+            function () use ($facebookUserId, $platformUserId, $days) {
+                return self::query()
+                    ->where(function ($q) use ($facebookUserId, $platformUserId) {
+                        if (! empty($facebookUserId)) {
+                            $q->where('facebook_user_id', $facebookUserId);
+                        }
+                        if (! empty($platformUserId)) {
+                            $q->orWhere('platform_user_id', $platformUserId);
+                        }
+                    })
+                    ->where('is_paid', true)
+                    // ⚠️ ใช้ paid_at เป็นหลัก (เวลาที่จ่ายจริง) — created_at คือเวลาสร้างบิล
+                    //    บิลที่สร้างไว้นานแล้วเพิ่งมาจ่ายวันนี้ ต้องนับจากวันที่จ่าย
+                    ->where(function ($q) use ($days) {
+                        $q->where('paid_at', '>=', now()->subDays($days))
+                            ->orWhere(function ($q2) use ($days) {
+                                $q2->whereNull('paid_at')
+                                    ->where('created_at', '>=', now()->subDays($days));
+                            });
+                    })
+                    ->exists();
+            }
+        );
+    }
+
+    /**
      * 🧹 ล้าง cache hasPaidReadingThisCalendarMonth — เรียกหลังจ่ายเงินสำเร็จ
      * เพื่อให้ guard ทำงานทันทีในข้อความถัดไป (ไม่ต้องรอ 5 นาที)
      */
     public static function clearPaidThisMonthCache(?string $facebookUserId, ?string $platformUserId = null): void
     {
         $monthKey = now()->format('Y-m');
+        $today = now()->toDateString();
+
         foreach (array_filter([$facebookUserId, $platformUserId]) as $key) {
             \Illuminate\Support\Facades\Cache::forget("fortune:paid_this_month:{$monthKey}:{$key}");
+            // 🚫 (2026-07-31) ล้าง rolling-7-day ด้วย ไม่งั้น guard ใหม่ยังปล่อย DM
+            //    ออกได้อีก 5 นาทีหลังลูกค้าเพิ่งจ่ายเงิน
+            \Illuminate\Support\Facades\Cache::forget("fortune:paid_within_days:7:{$today}:{$key}");
         }
     }
 

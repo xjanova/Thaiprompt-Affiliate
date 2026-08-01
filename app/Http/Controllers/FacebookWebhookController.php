@@ -769,8 +769,11 @@ class FacebookWebhookController extends Controller
             // 🌙 (2026-05-25) USER RULE: ห้าม DM ลูกค้าที่ดูดวงสำเร็จในเดือนเดียวกันแล้ว
             //    กดไลก์/reaction → ไม่ส่งทักทาย daily horoscope ซ้ำ (ลูกค้าจ่ายแล้วเดือนนี้)
             //    เหตุผล: ลูกค้าดูเสร็จ → DM ใหม่ = สแปม. ลูกค้ายังติดต่อมาเองได้ตลอด
-            if (FortuneReading::hasPaidReadingThisCalendarMonth($userId)) {
-                Log::info('👍 Reaction DM ข้าม — user ดูดวงสำเร็จเดือนนี้แล้ว (no re-pitch)', [
+            // 🚫 (2026-07-31) + rolling 7 วัน — ตัวเดิมนับ "เดือนปฏิทิน" มีรูรอยต่อเดือน
+            //    (จ่าย 31 ก.ค. → 1 ส.ค. guard รีเซ็ต โดน DM ขายซ้ำหลังดูไปข้ามคืน)
+            if (FortuneReading::hasPaidReadingThisCalendarMonth($userId)
+                || FortuneReading::hasPaidReadingWithinDays($userId)) {
+                Log::info('👍 Reaction DM ข้าม — user เพิ่งดูดวงแบบจ่ายเงิน (no re-pitch)', [
                     'user_id' => $userId,
                     'post_id' => $reaction->facebook_post_id,
                     'month' => now()->format('Y-m'),
@@ -1271,6 +1274,29 @@ class FacebookWebhookController extends Controller
         $postId = $comment['post_id'];
         $commentText = $comment['message'] ?? '';
         $fromName = $comment['from']['name'] ?? 'คุณ';
+
+        // 🚫 (2026-07-31) ห้าม DM ขายซ้ำลูกค้าที่เพิ่งดูดวงแบบจ่ายเงิน
+        //   ⚠️ เส้นทางนี้ (โหมด template / queue=sync fallback) **ไม่เคยมีด่านนี้เลย**
+        //      มีแต่ tryReactionDm กับ ProcessCommentEngagement — เจอตอนไล่ตรวจ
+        //      ผลคือลูกค้าที่เพิ่งจ่ายเงินยังโดน DM ขายซ้ำผ่านช่องนี้ได้
+        if (FortuneReading::hasPaidReadingThisCalendarMonth($fromId)
+            || FortuneReading::hasPaidReadingWithinDays($fromId)) {
+            Log::info('🗨️ Template engagement ข้าม — user เพิ่งดูดวงแบบจ่ายเงิน (no re-pitch)', [
+                'user_id' => $fromId,
+                'comment_id' => $commentId,
+            ]);
+
+            return;
+        }
+
+        // 🔕 เคารพปุ่ม opt-out/snooze เช่นเดียวกับอีก 2 เส้นทาง
+        if (! FortuneUserCredit::canReceiveOutbound($fromId, 'facebook')) {
+            Log::info('🔕 Template engagement ข้าม — ลูกค้าเลือกพัก/ไม่รับ DM', [
+                'user_id' => $fromId,
+            ]);
+
+            return;
+        }
 
         // ดึง user profile พร้อม fallback
         $userProfile = $this->facebookService->getUserProfile($fromId);
