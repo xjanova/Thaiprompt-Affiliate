@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services;
 
+use App\Models\FortuneTellingSetting;
+use App\Services\Fortune\FortuneBotMode;
 use App\Services\FortuneConversationService;
 use ReflectionClass;
 use ReflectionMethod;
@@ -147,6 +149,92 @@ class FortuneDailyModeGateTest extends TestCase
             $this->assertSame('text', $btn['content_type']);
             // FB จำกัด title 20 ตัวอักษร
             $this->assertLessThanOrEqual(20, mb_strlen($btn['title']), "ปุ่มยาวเกิน: {$btn['title']}");
+        }
+    }
+
+    /**
+     * 🎁 (2026-08-01) ด่านขาเข้าต้องเปิดในโหมด classic ด้วย
+     *
+     * เพราะปุ่มรับดวงประจำวันเกิดถูกยื่นให้ตอนลูกค้าขอดูฟรีแต่สิทธิ์หมด — ซึ่งเกิดได้
+     * ทุกโหมด ถ้าด่านนี้ยังบังคับ daily อยู่ ปุ่มในโหมด classic จะกดแล้วเงียบ
+     *
+     * @test
+     */
+    public function ด่านตอบวันเกิดต้องเปิดทุกโหมดยกเว้นtransfer(): void
+    {
+        $expect = [
+            FortuneBotMode::MODE_CLASSIC => true,
+            FortuneBotMode::MODE_DAILY => true,
+            FortuneBotMode::MODE_TRANSFER => false,
+        ];
+
+        foreach ($expect as $mode => $allowed) {
+            $botMode = new FortuneBotMode(new FortuneTellingSetting(['fortune_bot_mode' => $mode]));
+
+            $this->assertSame(
+                $allowed,
+                $botMode->dailyReplyAllowedFor('facebook', 'PSID_1'),
+                "โหมด {$mode} บน facebook"
+            );
+
+            // LINE ไม่เคยมี DM ชวนบอกวันเกิด → ห้ามแย่งข้อความทุกโหมด
+            $this->assertFalse(
+                $botMode->dailyReplyAllowedFor('line', 'U_1'),
+                "โหมด {$mode} บน line ต้องไม่ผ่าน"
+            );
+
+            // ไม่มี user id = ไม่มีใครให้ตอบ
+            $this->assertFalse(
+                $botMode->dailyReplyAllowedFor('facebook', ''),
+                "โหมด {$mode} user id ว่าง ต้องไม่ผ่าน"
+            );
+        }
+    }
+
+    /**
+     * 👍 "เอาค่ะ" = เท่ากับกดปุ่มดูดวงวันนี้ · "ไม่เอา" ต้องไม่ใช่
+     *
+     * เทียบตรงตัวเท่านั้น — ถ้าเผลอเปลี่ยนเป็น substring วันหนึ่ง "ไม่เอาค่ะ" จะกลายเป็น
+     * การตอบรับ แล้วบอทจะยัดคำทำนายใส่คนที่เพิ่งปฏิเสธ
+     *
+     * @test
+     */
+    public function จับคำตอบรับสั้นได้และไม่กินคำปฏิเสธ(): void
+    {
+        // ✅ ตอบรับล้วน
+        foreach ([
+            'เอา', 'เอาค่ะ', 'เอาเลยค่ะ', 'ดูเลย', 'ดูเลยครับ', 'อยากดู', 'ขอดูหน่อย',
+            'ตกลง', 'ได้เลยค่ะ', 'โอเค', 'ใช่ค่ะ', 'สนใจ', 'ส่งมาเลย', 'ok', 'yes',
+        ] as $t) {
+            $this->assertTrue($this->invokeMethod('looksLikeShortYes', $t), "ควรจับ: {$t}");
+        }
+
+        // ❌ ห้ามจับ — ปฏิเสธ / คำลงท้ายเปล่า ๆ / มีเนื้อหาอื่น
+        foreach ([
+            'ไม่เอา', 'ไม่เอาค่ะ', 'ไม่ดู', 'ไม่สนใจ', 'ยังไม่เอา',
+            'ค่ะ', 'ครับ', 'จ้า', '',
+            'เอาไว้ก่อนนะคะ', 'ขอดูราคาก่อน', 'อยากดูดวงความรัก',
+        ] as $t) {
+            $this->assertFalse($this->invokeMethod('looksLikeShortYes', $t), "ไม่ควรจับ: {$t}");
+        }
+    }
+
+    /**
+     * คำชวนบอกวันเกิดรับดวงฟรี — ต้องไม่มีตัวเลขราคาหลุดเข้าไป
+     *
+     * ลูกค้าเพิ่งขอของฟรี การเด้งราคาใส่คือสิ่งที่ฟีเจอร์นี้แก้อยู่พอดี
+     *
+     * @test
+     */
+    public function คำชวนรับดวงฟรีต้องไม่มีราคา(): void
+    {
+        foreach (['PSID_A', 'PSID_B', 'PSID_C', 'PSID_D', 'PSID_E'] as $uid) {
+            $line = $this->invokeMethod('pickDailyFreeOffer', $uid);
+
+            $this->assertIsString($line);
+            $this->assertNotSame('', trim($line));
+            $this->assertStringContainsString('ฟรี', $line, "ต้องบอกว่าฟรี: {$line}");
+            $this->assertDoesNotMatchRegularExpression('/\d/u', $line, "มีตัวเลข (ราคา?) หลุดมา: {$line}");
         }
     }
 }

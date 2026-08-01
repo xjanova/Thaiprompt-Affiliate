@@ -191,6 +191,28 @@ trait FreeCardConversationTrait
     }
 
     /**
+     * 🎁 (2026-08-01) ก่อนเด้งเมนูราคาใส่คนที่ขอของฟรี — ลองยื่นดวงประจำวันเกิดก่อน
+     *
+     * owner: "ถ้าใครจะดูดวงฟรี ก็ส่งปุ่มรับดวงประจำวันเกิดได้เสมอ ทุกวัน ถ้ามีคำทำนายไว้แล้ว"
+     *
+     * ตรรกะ + guard ทั้งหมดอยู่ที่ DailyHoroscopeModeTrait ที่เดียว (ห้าม copy มาไว้ที่นี่
+     * ไม่งั้นวันหนึ่ง guard สองชุดจะหลุดกัน) — ที่นี่เป็นแค่สะพาน
+     *
+     * method_exists เพราะ trait นี้ถูก use แยกใน test double บางตัวที่ไม่มี daily trait
+     *
+     * @return array|null null = ยื่นไม่ได้ (ไม่ใช่ FB / โหมด transfer / วันนี้ยังไม่มีบทความ
+     *                    / ลูกค้ามีบิลค้าง) → ผู้เรียกไปต่อทางเดิม
+     */
+    protected function offerDailyBeforePaywall(string $platformUserId, ?array $userProfile = null): ?array
+    {
+        if (! method_exists($this, 'maybeOfferDailyForFreeRequest')) {
+            return null;
+        }
+
+        return $this->maybeOfferDailyForFreeRequest($platformUserId, $userProfile);
+    }
+
+    /**
      * 🎯 Entry point: เริ่ม free card flow
      *
      * เรียกจาก:
@@ -220,6 +242,10 @@ trait FreeCardConversationTrait
                 'platform_user_id' => $platformUserId,
             ]);
 
+            if ($daily = $this->offerDailyBeforePaywall($platformUserId, $userProfile)) {
+                return $daily;
+            }
+
             return $this->startDeepReadingFlow($platformUserId, $userProfile, null, $customerMessage);
         }
 
@@ -233,6 +259,10 @@ trait FreeCardConversationTrait
                 'platform' => $platform,
                 'platform_user_id' => $platformUserId,
             ]);
+
+            if ($daily = $this->offerDailyBeforePaywall($platformUserId, $userProfile)) {
+                return $daily;
+            }
 
             return $this->startDeepReadingFlow($platformUserId, $userProfile, null, $customerMessage);
         }

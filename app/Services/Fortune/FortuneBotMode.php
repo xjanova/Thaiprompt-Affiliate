@@ -139,6 +139,36 @@ class FortuneBotMode
     }
 
     /**
+     * 🎁 (2026-08-01) ด่านขาเข้า "ตอบวันเกิดรับดวงฟรี" ครอบคนนี้ไหม — กว้างกว่า dailyAppliesTo
+     *
+     * owner: "ถ้าใครจะดูดวงฟรี ก็ส่งปุ่มรับดวงประจำวันเกิดได้เสมอ ทุกวัน ถ้ามีคำทำนายไว้แล้ว"
+     *
+     * ปุ่มรับดวงประจำวันเกิดถูกยื่นให้ในโหมด classic ด้วย (ตอนลูกค้าขอดูฟรีแต่สิทธิ์หมด)
+     * ถ้าด่านขาเข้ายังบังคับ isDaily() → กดปุ่มแล้วชื่อวันจะไหลไป AI chat = **ปุ่มตาย**
+     * ยื่นปุ่มที่กดแล้วไม่มีอะไรเกิดขึ้น แย่กว่าไม่ยื่นเลย
+     *
+     * ⚠️ ตัวคุมจริงคือ "ธง pending" ที่ฝั่งผู้ถามตั้งไว้ ไม่ใช่โหมด — ไม่มีทางที่ลูกค้า
+     *    จะตั้งธงเองจากการพิมพ์ ต้องมาจาก DM / ปุ่ม / ทางยื่นดวงฟรี เท่านั้น
+     *
+     * ❌ ยกเว้นโหมด transfer — ด่านนี้อยู่ **ก่อน** maybeTransferIntercept ในไปป์ไลน์
+     *    ธงเก่าที่ค้างข้ามการสลับโหมด (TTL 7 วัน) จะแย่งลูกค้าไปจากการดักหน้า FB
+     *
+     * @param  string  $platform  'facebook' | 'line'
+     */
+    public function dailyReplyAllowedFor(string $platform, ?string $platformUserId): bool
+    {
+        if ($this->isTransfer()) {
+            return false;
+        }
+
+        if ($platform !== self::INTERCEPT_PLATFORM) {
+            return false;
+        }
+
+        return ! empty($platformUserId);
+    }
+
+    /**
      * ลูกค้าคนนี้อยู่ในโหมด transfer ไหม (รวมเงื่อนไขช่องทาง + rollout %)
      *
      * @param  string  $platform  'facebook' | 'line'

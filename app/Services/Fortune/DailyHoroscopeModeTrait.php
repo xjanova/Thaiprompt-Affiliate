@@ -35,6 +35,20 @@ trait DailyHoroscopeModeTrait
     protected const DAILY_DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 
     /**
+     * คำตอบรับที่ถือว่า "เท่ากับกดปุ่มดูดวงวันนี้" (เทียบตรงตัวหลังตัดคำลงท้าย)
+     *
+     * ⚠️ ห้ามใส่คำลงท้ายเปล่า ๆ ("ค่ะ" / "ครับ" / "จ้า") — กำกวมเกินไป
+     *    และห้ามเทียบแบบ substring ไม่งั้น "ไม่เอา" จะ match "เอา"
+     */
+    protected const DAILY_SHORT_YES = [
+        'เอา', 'เอาเลย', 'เอาสิ', 'ดู', 'ดูเลย', 'ดูสิ', 'อยากดู', 'ขอดู', 'ขอ',
+        'ตกลง', 'ได้', 'ได้เลย', 'โอเค', 'โอเคเลย', 'ใช่', 'สนใจ', 'อยากรู้',
+        'ส่งมา', 'ส่งเลย', 'ส่งมาเลย', 'เปิดเลย', 'เปิดให้',
+        'ok', 'okay', 'yes', 'y',
+        // ❗ ห้ามใส่คำที่มี "ดูดวง" — looksLikeDailyEscape (ด่านที่ 4) กินไปก่อนถึงตรงนี้
+    ];
+
+    /**
      * 🌙 ด่านหลัก — เรียกจาก processMessage (หลัง tier-direct 39/99, ก่อน smart-skip)
      *
      * ตำแหน่งสำคัญมาก:
@@ -52,8 +66,11 @@ trait DailyHoroscopeModeTrait
         try {
             $platform = $this->currentPlatform ?? 'facebook';
 
-            // 1️⃣ โหมด + ช่องทาง (เช็คถูกที่สุดก่อน — ไม่แตะ DB/Cache)
-            if (! (new FortuneBotMode($this->settings))->dailyAppliesTo($platform, $userId)) {
+            // 1️⃣ ช่องทาง + โหมด (เช็คถูกที่สุดก่อน — ไม่แตะ DB/Cache)
+            //    ⚠️ (2026-08-01) จงใจใช้ dailyReplyAllowedFor ไม่ใช่ dailyAppliesTo:
+            //    ปุ่มรับดวงประจำวันเกิดถูกยื่นในโหมด classic ด้วย (ลูกค้าขอดูฟรีแต่สิทธิ์หมด)
+            //    ถ้าบังคับ isDaily() ที่นี่ ปุ่มในโหมด classic จะกดแล้วไม่มีอะไรเกิดขึ้น
+            if (! (new FortuneBotMode($this->settings))->dailyReplyAllowedFor($platform, $userId)) {
                 return null;
             }
 
@@ -87,6 +104,13 @@ trait DailyHoroscopeModeTrait
 
             // 5️⃣ ตีความคำตอบ — วันในสัปดาห์ หรือ วันเดือนปีเกิดเต็ม
             $resolved = $this->resolveDayIndexFromReply($messageText);
+
+            // 👍 (2026-08-01) ตอบรับสั้น ๆ แทนการกดปุ่ม ("เอาค่ะ" / "ดูเลย")
+            //    คนที่เรารู้วันเกิดแล้วเห็นข้อความ "กดปุ่มด้านล่างได้เลย" แล้วพิมพ์ตอบแทน
+            //    ถ้าไม่รับตรงนี้ คำเชิญจะกลายเป็นทางตัน — ลูกค้าตอบรับแล้วบอทเงียบ
+            if ($resolved === null) {
+                $resolved = $this->resolveDayIndexFromShortYes($messageText, $userId);
+            }
 
             if ($resolved === null) {
                 return null;   // ไม่ใช่คำตอบวันเกิด → คุยปกติ (ไม่ตื๊อ)
@@ -144,7 +168,13 @@ trait DailyHoroscopeModeTrait
 
         // 🌱 เนียนชวนดูเชิงลึกต่อ — ต่างกันตามว่าเรารู้วันเกิดครบหรือยัง
         //    ห้ามฮาร์ดเซล ห้ามบอกราคา (rule_listen_dont_pitch_when_declining)
-        $message .= $fullDate !== null
+        //
+        // 🐛 (2026-08-01) $fullDate = null แปลว่า "ข้อความนี้ไม่ได้แนบวันเดือนปีมา"
+        //    ไม่ได้แปลว่าเราไม่รู้ — ปุ่ม DAILY_SHOW_MINE ส่งมาแค่ชื่อวัน ทั้งที่วันเกิดเต็ม
+        //    อยู่ในระบบแล้ว เดิมจึงไปขอวันเดือนปีจากคนที่เพิ่งให้ไว้ = บอทเหมือนไม่จำอะไรเลย
+        $knowsFullBirthdate = $fullDate !== null || $this->dailyKnowsFullBirthdate($userId);
+
+        $message .= $knowsFullBirthdate
             ? "\n\n———\n💫 แม่หมอจดวันเกิดของเจ้าชะตาไว้แล้วนะคะ\nถ้าอยากให้เปิดดูเชิงลึกว่าช่วงนี้ดวงพาไปทางไหน ทักมาบอกได้เลยค่ะ"
             : "\n\n———\n💫 ถ้าบอกวัน/เดือน/ปีเกิดเต็ม ๆ มาด้วย แม่หมอจะดูให้ละเอียดกว่านี้ได้อีกเยอะเลยค่ะ";
 
@@ -166,6 +196,21 @@ trait DailyHoroscopeModeTrait
             'reading' => null,
             'daily_day_index' => $dayIndex,
         ];
+    }
+
+    /**
+     * เรารู้ "วันเดือนปีเกิดเต็ม" ของลูกค้าคนนี้อยู่แล้วไหม
+     *
+     * ใช้ตัดสินว่าจะขอวันเกิดเพิ่มหรือไม่ — ถามซ้ำกับคนที่ให้ไว้แล้วดูแย่กว่าไม่ถาม
+     * ผิดพลาด → ถือว่าไม่รู้ (กลับไปขอ) ปลอดภัยกว่าอ้างว่าจดไว้แล้วทั้งที่ไม่มี
+     */
+    protected function dailyKnowsFullBirthdate(string $userId): bool
+    {
+        try {
+            return FortuneReading::findLatestBirthdate($userId) instanceof \Carbon\Carbon;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**
@@ -247,6 +292,57 @@ trait DailyHoroscopeModeTrait
         }
 
         return null;
+    }
+
+    /**
+     * 👍 (2026-08-01) "ตอบรับสั้น ๆ" ของคนที่เรารู้วันเกิดแล้ว = เท่ากับกดปุ่มดูดวงวันนี้
+     *
+     * เคสจริง: เรายื่น "ดวงของคุณพร้อมแล้ว กดปุ่มด้านล่างได้เลย" → ลูกค้าพิมพ์ "เอาค่ะ"
+     * แทนการกดปุ่ม → เดิมไหลไป AI chat = ลูกค้าตอบรับแล้วไม่ได้ของที่เราเพิ่งสัญญา
+     *
+     * 🚨 แคบไว้ 2 ชั้นโดยตั้งใจ:
+     *   1. ต้อง **รู้วันเกิดอยู่แล้ว** — ไม่รู้ = ไม่รู้จะส่งดวงวันไหน ปล่อย flow เดิม
+     *   2. เทียบแบบ **ตรงตัวเป๊ะ** หลังตัดคำลงท้าย ไม่ใช่ substring
+     *      → "ไม่เอา" ไม่ match "เอา" · "ค่ะ" เปล่า ๆ ไม่นับเป็นการตอบรับ (กำกวมเกินไป)
+     *
+     * @return array{0: int, 1: null}|null [index วันเกิด, ไม่มีวันเดือนปีใหม่]
+     */
+    protected function resolveDayIndexFromShortYes(string $text, string $userId): ?array
+    {
+        if (! $this->looksLikeShortYes($text)) {
+            return null;
+        }
+
+        $birthdate = FortuneReading::findLatestBirthdate($userId);
+
+        if (! $birthdate instanceof \Carbon\Carbon) {
+            return null;
+        }
+
+        return [$birthdate->dayOfWeek, null];
+    }
+
+    /**
+     * ข้อความตอบรับสั้น ๆ ล้วน (ไม่มีเนื้อหาอื่น) — เทียบตรงตัวเท่านั้น
+     */
+    protected function looksLikeShortYes(string $text): bool
+    {
+        $clean = mb_strtolower(trim($text));
+
+        if ($clean === '' || mb_strlen($clean) > 24) {
+            return false;
+        }
+
+        // ตัดคำลงท้าย/ตัวขยายท้ายประโยคออกก่อนเทียบ (วนหลายรอบ: "เอาเลยค่ะ" → "เอา")
+        for ($i = 0; $i < 3; $i++) {
+            $clean = trim((string) preg_replace(
+                '/\s*(ค่ะ|คะ|ค่า|ครับ|คับ|จ้า|จ้ะ|จ๊ะ|จ๋า|นะ|น่ะ|เลย|ด้วย|หน่อย|ที|สิ|ๆ|!|\.)\s*$/u',
+                '',
+                $clean
+            ));
+        }
+
+        return in_array($clean, self::DAILY_SHORT_YES, true);
     }
 
     /**
@@ -348,15 +444,6 @@ trait DailyHoroscopeModeTrait
         return "fortune:daily_dm_pending:{$platform}:{$userId}";
     }
 
-    /**
-     * 🔘 ปุ่ม 7 วันเกิด — ทางหลักของโหมดนี้ (ไม่ต้องพึ่ง parser เลย)
-     *
-     * payload = DAILY_BDAY_0 … DAILY_BDAY_6 (ตรงกับ index วัน)
-     * ต้องมี case ใน FacebookWebhookController::handleQuickReply ไม่งั้น payload
-     * จะถูกส่งเป็น "ข้อความลูกค้า" ดิบ ๆ เข้า processMessage (default branch)
-     *
-     * @return array<int, array{content_type: string, title: string, payload: string}>
-     */
     /**
      * 🙏 (2026-07-31) ลูกค้าขอบคุณมา → ตอบด้วยคำอวยพร
      *
@@ -541,6 +628,103 @@ trait DailyHoroscopeModeTrait
     }
 
     /**
+     * 🎁 (2026-08-01) ลูกค้าขอดูดวงฟรี แต่สิทธิ์ฟรีหมด/ปิด → ยื่นดวงประจำวันเกิดแทนเมนูราคา
+     *
+     * owner: "ถ้าใครจะดูดวงฟรี ก็ส่งปุ่มรับดวงประจำวันเกิดได้เสมอ ทุกวัน ถ้ามีคำทำนายไว้แล้ว"
+     *
+     * เดิม: ขอของฟรี + สิทธิ์หมด → เด้งเมนูราคาทันที (ขอของฟรี ได้ใบเสนอราคากลับไป)
+     * ใหม่: บทความรายวันถูกสร้างไว้ทุกเช้าอยู่แล้ว = ของฟรีที่แจกได้ไม่จำกัดต้นทุน
+     *       และไม่กินยอดขาย เพราะเป็นดวงรวมตามวันเกิด ไม่ใช่ดวงเฉพาะตัวเหมือน 39/99
+     *
+     * ⚠️ ไม่จำกัดวันละครั้ง — เจ้าของสั่ง "ได้เสมอ ทุกวัน" และของมีอยู่แล้วจริง ๆ
+     *    ตัวคุมเดียวคือ **ต้องมีบทความของวันนี้** (ก่อน 06:00 / job พัง → คืน null)
+     *    ยื่นปุ่มแล้วกดมาไม่มีของ = เสียความน่าเชื่อถือมากกว่าไม่ยื่นเลย
+     *
+     * ⚠️ ตั้งธง pending ทุกครั้ง เพื่อให้คนที่ "พิมพ์" วันเกิดแทนการกดปุ่ม ได้ดวงเหมือนกัน
+     *
+     * @return array|null null = ให้ผู้เรียกกลับไปใช้ทางเดิม (เมนูราคา)
+     */
+    protected function maybeOfferDailyForFreeRequest(string $userId, ?array $userProfile = null): ?array
+    {
+        try {
+            $platform = $this->currentPlatform ?? 'facebook';
+
+            if (! (new FortuneBotMode($this->settings))->dailyReplyAllowedFor($platform, $userId)) {
+                return null;
+            }
+
+            $greeting = app(FortuneGreetingService::class);
+
+            // ⏰ วันนี้ยังไม่มีบทความ → อย่ายื่นปุ่มที่กดแล้วไม่มีของ
+            if (! $greeting->dailyArticlesReadyToday()) {
+                return null;
+            }
+
+            // 🚨 มีบิล/กำลังทำนายอยู่ → ห้ามแทรก flow พวกนั้นมีคำตอบของตัวเอง
+            if ($this->hasPaidActiveReading($userId)
+                || FortuneReading::hasActiveReading($platform, $userId)
+                || $this->hasPendingUnpaidBill($userId)) {
+                return null;
+            }
+
+            $name = (string) ($userProfile['first_name'] ?? $userProfile['name'] ?? 'คุณ');
+
+            // รู้วันเกิดแล้ว → ปุ่มเดียว กดแล้วส่งฉบับเต็ม (ไม่ถามวันเกิดซ้ำ)
+            $teaser = $greeting->buildDailyReadyTeaser($userId, $name);
+
+            $this->markDailyPending($platform, $userId);
+
+            if ($teaser !== null) {
+                Log::info('🎁 Daily: ขอดูฟรี → ยื่นดวงประจำวันเกิด (รู้วันเกิดแล้ว)', [
+                    'user_id' => $userId,
+                ]);
+
+                return [
+                    'action' => 'daily_horoscope_sent',
+                    'message' => $teaser,
+                    'reading' => null,
+                    'quick_replies' => static::dailyShowMineQuickReplies(),
+                ];
+            }
+
+            Log::info('🎁 Daily: ขอดูฟรี → ชวนบอกวันเกิดรับดวงฟรี', ['user_id' => $userId]);
+
+            return [
+                'action' => 'daily_horoscope_sent',
+                'message' => $this->pickDailyFreeOffer($userId),
+                'reading' => null,
+                'quick_replies' => static::dailyBirthdayQuickReplies(),
+            ];
+        } catch (\Throwable $e) {
+            // fail-open — ทางเสริมพังต้องไม่ทำให้ลูกค้าไม่ได้คำตอบ
+            Log::warning('🎁 Daily: ยื่นดวงฟรีล้ม (กลับไปทางเดิม)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🎁 คำชวนบอกวันเกิดเพื่อรับดวงฟรี — หมุนสำนวนตามคน+วัน
+     *
+     * ไม่บอกราคา ไม่ตื๊อ (rule_listen_dont_pitch_when_declining) — ลูกค้าเพิ่งขอของฟรี
+     * การเด้งราคาใส่ตรงนี้คือสิ่งที่เรากำลังแก้อยู่พอดี
+     */
+    protected function pickDailyFreeOffer(string $userId): string
+    {
+        $lines = [
+            "🌙 วันนี้แม่หมอมีดวงประจำวันเกิดแจกฟรีค่ะ\nเจ้าชะตาเกิดวันอะไรคะ กดปุ่มด้านล่างได้เลย ✨",
+            "🌙 ดวงประจำวันเกิดของวันนี้ แม่หมอเปิดไว้ให้ฟรีค่ะ\nบอกหน่อยว่าเกิดวันไหน แล้วแม่หมอส่งให้เลย ✨",
+            "🌙 แม่หมอมีคำทำนายประจำวันเกิดของวันนี้ให้ฟรีค่ะ\nกดเลือกวันเกิดของเจ้าชะตาด้านล่างได้เลยนะคะ ✨",
+            "🌙 อยากรู้ว่าวันนี้ดวงพาไปทางไหน แม่หมอดูให้ฟรีค่ะ\nบอกวันเกิดมาก่อน แล้วแม่หมอเปิดให้ทันที ✨",
+        ];
+
+        return $lines[crc32($userId.':'.now()->toDateString()) % count($lines)];
+    }
+
+    /**
      * 🔔 (2026-07-31) ปุ่มเดียว "ดูดวงวันนี้" สำหรับคนที่เรารู้วันเกิดแล้ว
      *
      * ไม่ต้องถามวันเกิดซ้ำ — แค่รอให้กด แล้วส่งฉบับเต็มตอบกลับ
@@ -555,6 +739,15 @@ trait DailyHoroscopeModeTrait
         ];
     }
 
+    /**
+     * 🔘 ปุ่ม 7 วันเกิด — ทางหลักของโหมดนี้ (ไม่ต้องพึ่ง parser เลย)
+     *
+     * payload = DAILY_BDAY_0 … DAILY_BDAY_6 (ตรงกับ index วัน)
+     * ต้องมี case ใน FacebookWebhookController::handleQuickReply ไม่งั้น payload
+     * จะถูกส่งเป็น "ข้อความลูกค้า" ดิบ ๆ เข้า processMessage (default branch)
+     *
+     * @return array<int, array{content_type: string, title: string, payload: string}>
+     */
     public static function dailyBirthdayQuickReplies(): array
     {
         $emojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
