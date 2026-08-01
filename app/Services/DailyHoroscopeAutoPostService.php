@@ -7,6 +7,7 @@ use App\Models\FortuneDailyHoroscopePost;
 use App\Models\FortuneTellingSetting;
 use App\Models\TarotCard;
 use App\Services\AiGen\CloudflareAiProvider;
+use App\Services\Fortune\FacebookContentPolicy;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -143,9 +144,7 @@ class DailyHoroscopeAutoPostService
         // สุ่มกลับด้าน 30% (รักษาสมดุลดวงดี/แย่)
         $isReversed = (mt_rand(1, 100) <= 30);
 
-        $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth] ?? '?';
-        $dayEmoji = FortuneDailyHoroscopePost::DAY_EMOJI[$post->day_of_birth] ?? '✨';
-
+        // (ลบ $dayName/$dayEmoji ที่ประกาศแล้วไม่ได้ใช้ออก — generateCaption หาเองจาก $post)
         $cardMeaning = $isReversed
             ? ($card->reversed_meaning_th ?: $card->upright_meaning_th)
             : $card->upright_meaning_th;
@@ -171,23 +170,23 @@ class DailyHoroscopeAutoPostService
         string $meaning
     ): string {
         $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
-        $dayEmoji = FortuneDailyHoroscopePost::DAY_EMOJI[$post->day_of_birth];
         $dateStr = $post->post_date->locale('th')->translatedFormat('j F Y');
         $cardName = $card->name_th ?: $card->name_en;
         $position = $isReversed ? 'กลับด้าน' : 'ตั้งตรง';
 
         $prompt = "เขียน caption Facebook สั้นกระชับ 4-6 บรรทัด (ภาษาไทย) สำหรับโพสดวงประจำวัน:\n\n"
-            . "วันนี้: {$dateStr}\n"
-            . "สำหรับ: ผู้เกิดวัน{$dayName}\n"
-            . "ไพ่ที่สุ่มได้: {$cardName} ({$position})\n"
-            . "ความหมาย: " . mb_substr($meaning, 0, 200) . "\n\n"
-            . "กฎ:\n"
-            . "1. ขึ้นต้นด้วย {$dayEmoji} 'ดวงคนเกิดวัน{$dayName} | {$dateStr}'\n"
-            . "2. บอกจุดเด่นชัดๆ 2-3 ข้อสั้น (การงาน/การเงิน/ความรัก)\n"
-            . "3. ฟันธงเลย ไม่อ้อมค้อม ไม่ใช้คำว่า 'อาจจะ' 'น่าจะ'\n"
-            . "4. ปิดท้ายด้วยข้อแนะนำ 1 ข้อ + CTA 'อยากดูเชิงลึกทักแชทมาเลย'\n"
-            . "5. ห้ามมี emoji เยอะเกิน 5 ตัว\n"
-            . "6. ห้ามยาวเกิน 350 ตัวอักษร";
+            ."วันนี้: {$dateStr}\n"
+            ."สำหรับ: ผู้เกิดวัน{$dayName}\n"
+            ."ไพ่ที่สุ่มได้: {$cardName} ({$position})\n"
+            .'ความหมาย: '.mb_substr($meaning, 0, 200)."\n\n"
+            ."กฎ:\n"
+            ."1. ขึ้นต้นด้วย 'ดวงคนเกิดวัน{$dayName} | {$dateStr}'\n"
+            ."2. บอกจุดเด่นชัดๆ 2-3 ข้อสั้น (การงาน/การเงิน/ความรัก)\n"
+            ."3. ฟันธงเลย ไม่อ้อมค้อม ไม่ใช้คำว่า 'อาจจะ' 'น่าจะ'\n"
+            ."4. ปิดท้ายด้วยข้อแนะนำ 1 ข้อ + CTA 'อยากดูเชิงลึกทักแชทมาเลย'\n"
+            .'5. '.FacebookContentPolicy::noEmojiRule()
+            .'6. ใส่แฮชแท็กได้ไม่เกิน '.FacebookContentPolicy::MAX_HASHTAGS." อัน\n"
+            .'7. ห้ามยาวเกิน 350 ตัวอักษร';
 
         try {
             $aiService = new FortuneAIService($this->settings);
@@ -201,7 +200,11 @@ class DailyHoroscopeAutoPostService
                 userContext: "daily_horoscope:day{$post->day_of_birth}",
             );
 
-            $text = trim($result['response'] ?? '');
+            // 📘 ด่านกวาดท้ายทาง — โมเดลใส่อีโมจิ/แฮชแท็กเกินกลับมาแม้สั่งห้ามใน prompt แล้ว
+            //    caption ตัวนี้ AI เขียนแฮชแท็กเอง (ไม่มีระบบเติมท้ายให้) จึงต้องตัดที่นี่
+            $text = FacebookContentPolicy::clean(
+                FacebookContentPolicy::capHashtagsInText((string) ($result['response'] ?? ''))
+            );
             if ($text !== '' && mb_strlen($text) >= 50) {
                 return mb_substr($text, 0, 600); // cap เผื่อ AI โอเวอร์
             }
@@ -211,12 +214,14 @@ class DailyHoroscopeAutoPostService
             ]);
         }
 
-        // Fallback template (กรณี AI ล้มเหลว)
-        return "{$dayEmoji} ดวงคนเกิดวัน{$dayName} | {$dateStr}\n"
-            . "🃏 ไพ่วันนี้: {$cardName} ({$position})\n\n"
-            . mb_substr($meaning, 0, 180) . "\n\n"
-            . "💎 อยากดูเชิงลึกแม่นๆ ทักแชทมาคุยกับแม่หมอจันทราได้เลย ✨\n"
-            . '#ดวงประจำวัน #ไพ่ทาโรต์ #ดูดวงฟรี';
+        // Fallback template (กรณี AI ล้มเหลว) — เขียนด้วยมือ จึงไม่มีอีโมจิตั้งแต่ต้นทาง
+        // แฮชแท็ก 3 อันพอดีเพดาน (ดู FacebookContentPolicy::MAX_HASHTAGS)
+        return FacebookContentPolicy::clean(
+            "ดวงคนเกิดวัน{$dayName} | {$dateStr}\n"
+            ."ไพ่วันนี้: {$cardName} ({$position})\n\n"
+            .mb_substr($meaning, 0, 180)."\n\n"
+            .'อยากดูเชิงลึกแม่นๆ ทักแชทมาคุยกับแม่หมอจันทราได้เลย'
+        )."\n\n".'#ดวงประจำวัน #ไพ่ทาโรต์ #ดูดวงฟรี';
     }
 
     /**
@@ -311,12 +316,12 @@ class DailyHoroscopeAutoPostService
             // Prompt ใหม่ — pure landscape photography, no tarot, no abstract symbols
             //   เน้น: realistic photography style + Thai cultural element + ความงาม
             $prompt = "{$scene}, "
-                . "professional landscape photography, "
-                . "National Geographic style, "
-                . "soft volumetric lighting, perfect composition, "
-                . "rich saturated colors, photorealistic, ultra sharp, 8k detail, "
-                . "wide cinematic shot, magazine cover quality, "
-                . "no text, no people, no faces";
+                .'professional landscape photography, '
+                .'National Geographic style, '
+                .'soft volumetric lighting, perfect composition, '
+                .'rich saturated colors, photorealistic, ultra sharp, 8k detail, '
+                .'wide cinematic shot, magazine cover quality, '
+                .'no text, no people, no faces';
 
             // seed deterministic (วัน + วันเกิด) — เผื่อรัน publish ซ้ำ ภาพเดียวกัน
             $seed = ($post->day_of_birth * 1000) + (int) $post->post_date->format('Ymd');
@@ -388,7 +393,7 @@ class DailyHoroscopeAutoPostService
                 'size' => is_file($absolutePath) ? filesize($absolutePath) : 0,
             ]);
 
-            return asset('storage/' . $relativePath);
+            return asset('storage/'.$relativePath);
         } catch (Exception $e) {
             Log::warning('DailyHoroscopeAutoPost: Cloudflare AI exception', [
                 'error' => $e->getMessage(),
@@ -425,12 +430,12 @@ class DailyHoroscopeAutoPostService
         $scene = $dayScenes[$post->day_of_birth] ?? 'mystical Thai temple at golden hour';
 
         $prompt = "{$scene}, "
-            . "professional landscape photography, "
-            . "National Geographic style, "
-            . "soft volumetric lighting, perfect composition, "
-            . "rich saturated colors, photorealistic, ultra sharp, 8k detail, "
-            . "wide cinematic shot, magazine cover quality, "
-            . "no text, no people, no faces";
+            .'professional landscape photography, '
+            .'National Geographic style, '
+            .'soft volumetric lighting, perfect composition, '
+            .'rich saturated colors, photorealistic, ultra sharp, 8k detail, '
+            .'wide cinematic shot, magazine cover quality, '
+            .'no text, no people, no faces';
 
         // Encode prompt + params
         $encoded = rawurlencode(mb_substr($prompt, 0, 800));
@@ -438,7 +443,7 @@ class DailyHoroscopeAutoPostService
         // ใช้ model=turbo (Stable Diffusion turbo) เร็วกว่า flux ~6 เท่า
         // (5-10s/รูป แทน 30-60s) คุณภาพยังดีพอใช้สำหรับโพส FB
         $url = "https://image.pollinations.ai/prompt/{$encoded}"
-            . "?width=1080&height=1080&seed={$seed}&nologo=true&model=turbo&enhance=true";
+            ."?width=1080&height=1080&seed={$seed}&nologo=true&model=turbo&enhance=true";
 
         // Download รูป + เก็บไว้บน server เอง (กัน Pollinations link หาย)
         try {
@@ -472,7 +477,7 @@ class DailyHoroscopeAutoPostService
                 'size' => strlen($response->body()),
             ]);
 
-            return asset('storage/' . $relativePath);
+            return asset('storage/'.$relativePath);
         } catch (Exception $e) {
             Log::warning('Pollinations.ai: error', [
                 'error' => $e->getMessage(),
@@ -549,7 +554,7 @@ class DailyHoroscopeAutoPostService
 
             $post->update(['image_path' => $relativePath]);
 
-            return asset('storage/' . $relativePath);
+            return asset('storage/'.$relativePath);
         } catch (Exception $e) {
             return null;
         }
@@ -633,7 +638,7 @@ class DailyHoroscopeAutoPostService
         }
 
         if (! $response->successful()) {
-            $error = $response->json('error.message', 'Facebook API error: HTTP ' . $response->status());
+            $error = $response->json('error.message', 'Facebook API error: HTTP '.$response->status());
             throw new Exception($error);
         }
 

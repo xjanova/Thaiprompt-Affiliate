@@ -8,6 +8,7 @@ use App\Models\FortuneContentCampaign;
 use App\Models\FortuneContentPost;
 use App\Models\FortuneMysticTopic;
 use App\Models\FortuneTellingSetting;
+use App\Services\Fortune\FacebookContentPolicy;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -295,8 +296,12 @@ class ContentCampaignAutoPostService
      */
     protected function pickTopic(FortuneContentCampaign $campaign): array
     {
-        $hashtagCount = $campaign->hashtag_count
-            ?? (int) ($this->settings->mystic_content_hashtag_count ?? 6);
+        // 📘 เพดานแฮชแท็กของแบรนด์ทับค่าที่ตั้งไว้เสมอ (เจ้าของสั่ง ไม่เกิน 3)
+        //    ค่าในแคมเปญ/ตั้งค่ายังเก็บไว้เหมือนเดิม แค่ใช้ไม่เกินเพดาน
+        $hashtagCount = min(
+            $campaign->hashtag_count ?? (int) ($this->settings->mystic_content_hashtag_count ?? 6),
+            FacebookContentPolicy::MAX_HASHTAGS
+        );
 
         if ($campaign->topic_source === FortuneContentCampaign::SOURCE_MYSTIC_TOPICS) {
             $topic = FortuneMysticTopic::pickNext();
@@ -394,7 +399,7 @@ class ContentCampaignAutoPostService
             ."2. ขึ้นต้นด้วยประโยคติดหู ดึงคนหยุด scroll\n"
             ."3. มีสาระ/แง่คิดจริง — ไม่ใช่น้ำท่วมทุ่ง\n"
             ."4. ภาษาเข้าใจง่าย เหมือนเล่าให้เพื่อนฟัง แบ่งย่อหน้าสั้นๆ อ่านสบาย\n"
-            ."5. มี emoji 3-5 ตัว (ไม่เยอะเกิน)\n"
+            .'5. '.FacebookContentPolicy::noEmojiRule()
             ."6. ปิดท้ายชวนคุยแบบไม่กดดัน เช่น \"ใครเคยเจอแบบนี้ คอมเมนต์เล่าให้ฟังหน่อย\"\n"
             ."7. ห้ามมีลิงก์ ห้ามคำว่า \"กดไลค์\" \"กดแชร์\" (Facebook ลด reach)\n"
             ."8. ห้ามคำเชิญชวนรุนแรง \"ห้ามพลาด\" \"คลิกเลย\" — เน้นอบอุ่นจริงใจ\n"
@@ -435,6 +440,9 @@ class ContentCampaignAutoPostService
 
             // ตัดเฉพาะตอนยาวเกินเพดาน และตัดที่จุดจบประโยค/ย่อหน้าเท่านั้น
             $body = $this->trimToSentenceBoundary($body, $maxLen);
+
+            // 📘 ด่านกวาดท้ายทาง — โมเดลใส่อีโมจิกลับมาแม้สั่งห้ามใน prompt แล้ว
+            $body = FacebookContentPolicy::clean($body);
 
             return $hashtagLine !== '' ? $body."\n\n".$hashtagLine : $body;
         } catch (Exception $e) {
@@ -484,25 +492,27 @@ class ContentCampaignAutoPostService
         array $sources,
         string $hashtagLine
     ): string {
+        // 📘 เทมเพลตนี้เขียนด้วยมือ จึงต้องไม่มีอีโมจิตั้งแต่ต้นทาง (clean() ยังกวาดซ้ำให้อีกชั้น)
         $title = $subTopic ?: $campaign->name_th;
-        $intro = "{$campaign->emoji} {$title}\n\n";
+        $intro = "{$title}\n\n";
         $body = '';
 
         foreach (array_slice($sources, 0, 2) as $src) {
             $snippet = trim($src['snippet'] ?? '');
             if ($snippet !== '') {
-                $body .= '✨ '.mb_substr($snippet, 0, 250)."\n\n";
+                $body .= mb_substr($snippet, 0, 250)."\n\n";
             }
         }
 
         if ($body === '') {
             $body = "วันนี้มาชวนคุยเรื่อง {$title} กัน — เรื่องใกล้ตัวที่หลายคนกำลังเจอ "
-                ."ใครมีประสบการณ์หรือมุมมอง คอมเมนต์แลกเปลี่ยนกันได้เลย 🙏\n\n";
+                ."ใครมีประสบการณ์หรือมุมมอง คอมเมนต์แลกเปลี่ยนกันได้เลย\n\n";
         }
 
-        $cta = "💬 ใครเคยเจอแบบนี้ คอมเมนต์เล่าให้ฟังหน่อยนะ\n\n";
+        $cta = "ใครเคยเจอแบบนี้ คอมเมนต์เล่าให้ฟังหน่อยนะ\n\n";
 
-        return $intro.$body.$cta.($hashtagLine !== '' ? $hashtagLine : '');
+        return FacebookContentPolicy::clean($intro.$body.$cta)
+            .($hashtagLine !== '' ? "\n\n".$hashtagLine : '');
     }
 
     /**

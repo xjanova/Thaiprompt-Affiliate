@@ -7,6 +7,7 @@ use App\Models\FortuneMysticPost;
 use App\Models\FortuneMysticTopic;
 use App\Models\FortuneTellingSetting;
 use App\Services\AiGen\CloudflareAiProvider;
+use App\Services\Fortune\FacebookContentPolicy;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -89,7 +90,11 @@ class MysticContentAutoPostService
             }
 
             $subTopic = $topic->pickSubTopic() ?: $topic->name_th;
-            $hashtagCount = (int) ($this->settings->mystic_content_hashtag_count ?? 6);
+            // 📘 เพดานแฮชแท็กของแบรนด์ทับค่าที่ตั้งไว้เสมอ (เจ้าของสั่ง ไม่เกิน 3)
+            $hashtagCount = min(
+                (int) ($this->settings->mystic_content_hashtag_count ?? 6),
+                FacebookContentPolicy::MAX_HASHTAGS
+            );
             $hashtags = $topic->pickHashtags($hashtagCount);
 
             $post->update([
@@ -209,7 +214,7 @@ class MysticContentAutoPostService
             ."2. ขึ้นต้นด้วยประโยคติดหู ดึงคนหยุด scroll (เช่น \"รู้ไหมว่า...\", \"คุณเคยสงสัยไหม...\")\n"
             ."3. มีสาระจริง ให้ความรู้ — ไม่ใช่แค่อ้อมๆ\n"
             ."4. ใช้ภาษาเข้าใจง่าย เหมือนเล่าให้เพื่อนฟัง ไม่ใช่บทความวิชาการ\n"
-            ."5. มี emoji 3-5 ตัว (ไม่เยอะเกินไป)\n"
+            .'5. '.FacebookContentPolicy::noEmojiRule()
             ."6. ปิดท้ายด้วย CTA แบบไม่กดดัน เช่น \"ใครเคยลองบ้าง คอมเมนต์เล่าให้ฟังหน่อย\" หรือ \"ทักแชทปรึกษาแม่หมอได้นะ\"\n"
             ."7. ห้ามมีลิงก์ ห้ามมีคำว่า \"กดไลค์\" \"กดแชร์\" (Facebook ลด reach)\n"
             ."8. ห้ามใช้คำเชิญชวนรุนแรงเช่น \"ห้ามพลาด\" \"คลิกเลย\" — เน้นความรู้สึกอบอุ่น\n"
@@ -253,6 +258,9 @@ class MysticContentAutoPostService
             //    กันอาการข้อความขาดกลางประโยค (เดิม mb_substr(maxLen+50).'...' ตัดดิบกลางคำ)
             $body = $this->trimToSentenceBoundary($body, $maxLen);
 
+            // 📘 ด่านกวาดท้ายทาง — โมเดลใส่อีโมจิกลับมาแม้สั่งห้ามใน prompt แล้ว
+            $body = FacebookContentPolicy::clean($body);
+
             return $body."\n\n".$hashtagLine;
         } catch (Exception $e) {
             Log::warning('MysticAutoPost: AI rewrite ล้มเหลว → fallback template', [
@@ -273,24 +281,25 @@ class MysticContentAutoPostService
         array $sources,
         string $hashtagLine
     ): string {
-        $intro = "{$topic->emoji} {$subTopic}\n\n";
+        // 📘 เทมเพลตนี้เขียนด้วยมือ จึงต้องไม่มีอีโมจิตั้งแต่ต้นทาง (clean() ยังกวาดซ้ำให้อีกชั้น)
+        $intro = "{$subTopic}\n\n";
         $body = '';
 
         foreach (array_slice($sources, 0, 2) as $src) {
             $snippet = trim($src['snippet'] ?? '');
             if ($snippet !== '') {
-                $body .= '✨ '.mb_substr($snippet, 0, 250)."\n\n";
+                $body .= mb_substr($snippet, 0, 250)."\n\n";
             }
         }
 
         if ($body === '') {
             $body = "วันนี้มาพูดถึงเรื่อง {$subTopic} กัน — เป็นเรื่องที่หลายคนสงสัยและต้องการคำตอบ "
-                ."หากใครมีประสบการณ์หรือคำถาม คอมเมนต์มาได้เลย แม่หมอยินดีตอบทุกท่าน 🙏\n\n";
+                ."หากใครมีประสบการณ์หรือคำถาม คอมเมนต์มาได้เลย แม่หมอยินดีตอบทุกท่าน\n\n";
         }
 
-        $cta = "💬 ใครเคยมีประสบการณ์แบบนี้ คอมเมนต์เล่าได้นะ — แม่หมอจันทราคอยอยู่\n\n";
+        $cta = "ใครเคยมีประสบการณ์แบบนี้ คอมเมนต์เล่าได้นะ — แม่หมอจันทราคอยอยู่\n\n";
 
-        return $intro.$body.$cta.$hashtagLine;
+        return FacebookContentPolicy::clean($intro.$body.$cta)."\n\n".$hashtagLine;
     }
 
     /**
@@ -301,7 +310,7 @@ class MysticContentAutoPostService
      * - ยุบบรรทัดว่างเกิน 2 → เหลือ 1 บรรทัดว่าง (คั่นย่อหน้าพอดี ไม่โหว่)
      *
      * @param  string  $text  เนื้อหาดิบจาก AI
-     * @return string  เนื้อหาที่จัดช่องว่างแล้ว แต่ยังคงย่อหน้าไว้ครบ
+     * @return string เนื้อหาที่จัดช่องว่างแล้ว แต่ยังคงย่อหน้าไว้ครบ
      */
     protected function normalizeWhitespace(string $text): string
     {

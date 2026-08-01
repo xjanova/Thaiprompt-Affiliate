@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FortuneHoroscopeCampaign;
 use App\Models\FortuneHoroscopeContent;
 use App\Models\FortuneHoroscopePost;
+use App\Services\Fortune\FacebookContentPolicy;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
@@ -22,8 +23,6 @@ class FortuneHoroscopePublishService
     /**
      * สร้างและโพสเนื้อหาสำหรับแคมเปญ
      *
-     * @param  FortuneHoroscopeCampaign  $campaign
-     * @param  Carbon  $targetDate
      * @return array สรุปผล ['posts_created' => int, 'posts_published' => int, 'errors' => array]
      */
     public function createAndPublishPosts(FortuneHoroscopeCampaign $campaign, Carbon $targetDate): array
@@ -66,8 +65,14 @@ class FortuneHoroscopePublishService
                     continue;
                 }
 
-                // รวมเนื้อหาทั้ง 7 วัน
-                $postContent = $this->composePostContent($campaign, $contents, $targetDate);
+                // รวมเนื้อหาทั้ง 7 วัน — กฎห้ามอีโมจิ/แฮชแท็ก ≤3 ใช้กับ "โพส FB" เท่านั้น
+                // (เจ้าของสั่งเจาะจงช่องทาง FB — LINE ยังคงรูปแบบเดิมทุกอย่าง)
+                $postContent = $this->composePostContent(
+                    $campaign,
+                    $contents,
+                    $targetDate,
+                    $platform === FortuneHoroscopePost::PLATFORM_FACEBOOK
+                );
                 $imageUrls = $contents->pluck('image_url')->filter()->values()->toArray();
 
                 // สร้าง post record
@@ -91,7 +96,7 @@ class FortuneHoroscopePublishService
                 $postsPublished++;
 
             } catch (Exception $e) {
-                $errors[] = "{$platform}: " . $e->getMessage();
+                $errors[] = "{$platform}: ".$e->getMessage();
                 Log::error("FortuneHoroscope: โพสล้มเหลว {$platform}", [
                     'campaign_id' => $campaign->id,
                     'error' => $e->getMessage(),
@@ -177,7 +182,7 @@ class FortuneHoroscopePublishService
         }
 
         if (! $response->successful()) {
-            $error = $response->json('error.message', 'Facebook API error: HTTP ' . $response->status());
+            $error = $response->json('error.message', 'Facebook API error: HTTP '.$response->status());
             throw new Exception($error);
         }
 
@@ -232,7 +237,7 @@ class FortuneHoroscopePublishService
             ->post($endpoint, ['messages' => $messages]);
 
         if (! $response->successful()) {
-            $error = $response->json('message', 'LINE API error: HTTP ' . $response->status());
+            $error = $response->json('message', 'LINE API error: HTTP '.$response->status());
             throw new Exception($error);
         }
 
@@ -265,17 +270,23 @@ class FortuneHoroscopePublishService
      * 4. CTA (Call-to-Action ชวนทักดูดวง)
      * 5. Footer (กำหนดเอง)
      * 6. Smart Hashtags (auto + custom)
+     *
+     * @param  bool  $applyFacebookPolicy  true = ใช้กฎโพส FB (ห้ามอีโมจิ + แฮชแท็ก ≤3)
+     *                                     เจ้าของสั่งกฎนี้เจาะจงช่องทาง FB — LINE ใช้ของเดิม
+     *                                     default = true เพราะ FB คือช่องทางหลักและเป็นสิ่งที่
+     *                                     หน้าพรีวิวของแอดมินควรเห็น
      */
     public function composePostContent(
         FortuneHoroscopeCampaign $campaign,
         Collection $contents,
-        Carbon $targetDate
+        Carbon $targetDate,
+        bool $applyFacebookPolicy = true
     ): string {
-        $thaiDate = $targetDate->format('d/m/') . ($targetDate->year + 543);
+        $thaiDate = $targetDate->format('d/m/').($targetDate->year + 543);
         $parts = [];
 
         // === 1. Header ===
-        $header = $campaign->post_header_template ?? "🔮✨ ดวงรายวัน {target_date} ✨🔮";
+        $header = $campaign->post_header_template ?? '🔮✨ ดวงรายวัน {target_date} ✨🔮';
         $parts[] = str_replace('{target_date}', $thaiDate, $header);
         $parts[] = '';
 
@@ -336,11 +347,26 @@ class FortuneHoroscopePublishService
         }
 
         // === 6. Smart Hashtags ===
+        // 📘 generateSmartHashtags ยิงได้ 8-12 อัน (core 4 + custom + วันเกิด + เดือน)
+        //    ตัดที่นี่ ไม่ไปแก้ในโมเดล เพราะ "ไม่เกิน 3" เป็นกฎของ **โพส FB**
+        //    ไม่ใช่กฎของตัวสร้างแฮชแท็ก — ปล่อยโมเดลเป็นตัวสร้างล้วน ๆ ไว้
         $hashtags = $campaign->generateSmartHashtags($targetDate);
-        if (! empty($hashtags)) {
-            $parts[] = $hashtags;
+
+        if (! $applyFacebookPolicy) {
+            // LINE — พฤติกรรมเดิม 100% (อีโมจิครบ แฮชแท็กเต็ม)
+            if (! empty($hashtags)) {
+                $parts[] = $hashtags;
+            }
+
+            return implode("\n", $parts);
         }
 
-        return implode("\n", $parts);
+        // 📘 ลบอีโมจิทั้งโพส — ครอบทั้งอีโมจิประจำวันเกิดที่ฝังในโค้ด (☀️🌙🔴…)
+        //    เทมเพลต header/footer ที่แอดมินพิมพ์เอง และป้ายของมงคล (🎨🔢🧭)
+        //    ⚠️ เส้นคั่น ━━━ กับวงเล็บ 【】 อยู่นอกช่วงที่ลบ จึงยังอยู่ครบ
+        $body = FacebookContentPolicy::clean(implode("\n", $parts));
+        $hashtags = FacebookContentPolicy::capHashtagLine($hashtags);
+
+        return $hashtags !== '' ? $body."\n\n".$hashtags : $body;
     }
 }
