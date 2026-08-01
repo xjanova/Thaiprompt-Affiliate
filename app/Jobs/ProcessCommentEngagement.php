@@ -113,10 +113,8 @@ class ProcessCommentEngagement implements ShouldQueue
             //    ลูกค้าที่จ่ายแล้ว ดูเสร็จ → ยังเห็นโพสเพจ + comment/like ได้
             //    แต่บอทไม่ควร DM ขายซ้ำ = สแปม + เสียประสบการณ์
             //    ลูกค้ายังติดต่อมาเองได้ปกติ (inbound) — guard นี้ block แค่ outbound DM
-            // 🚫 (2026-07-31) + rolling 7 วัน — ตัวเดิมนับ "เดือนปฏิทิน" มีรูรอยต่อเดือน
-            //    (จ่าย 31 ก.ค. → 1 ส.ค. guard รีเซ็ต โดน DM ขายซ้ำหลังดูไปข้ามคืน)
-            if (\App\Models\FortuneReading::hasPaidReadingThisCalendarMonth($userId)
-                || \App\Models\FortuneReading::hasPaidReadingWithinDays($userId)) {
+            // 🚫 (2026-08-01) กันซ้ำ 7 วันแบบทบ — เลิกใช้กฎ "เดือนปฏิทิน" แล้ว
+            if (\App\Models\FortuneReading::hasPaidReadingWithinDays($userId)) {
                 Log::info('Comment engagement skip — user เพิ่งดูดวงแบบจ่ายเงิน (no re-pitch)', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,

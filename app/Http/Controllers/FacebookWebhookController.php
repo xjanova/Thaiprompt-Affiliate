@@ -769,10 +769,9 @@ class FacebookWebhookController extends Controller
             // 🌙 (2026-05-25) USER RULE: ห้าม DM ลูกค้าที่ดูดวงสำเร็จในเดือนเดียวกันแล้ว
             //    กดไลก์/reaction → ไม่ส่งทักทาย daily horoscope ซ้ำ (ลูกค้าจ่ายแล้วเดือนนี้)
             //    เหตุผล: ลูกค้าดูเสร็จ → DM ใหม่ = สแปม. ลูกค้ายังติดต่อมาเองได้ตลอด
-            // 🚫 (2026-07-31) + rolling 7 วัน — ตัวเดิมนับ "เดือนปฏิทิน" มีรูรอยต่อเดือน
-            //    (จ่าย 31 ก.ค. → 1 ส.ค. guard รีเซ็ต โดน DM ขายซ้ำหลังดูไปข้ามคืน)
-            if (FortuneReading::hasPaidReadingThisCalendarMonth($userId)
-                || FortuneReading::hasPaidReadingWithinDays($userId)) {
+            // 🚫 (2026-08-01) กันซ้ำ 7 วันแบบทบ — เลิกใช้กฎ "เดือนปฏิทิน" แล้ว
+            //    owner: "อยากเปลี่ยนเป็น 7 วันแทน ไม่เอา 1 เดือนแล้ว ลบกฎเก่าทิ้งไป"
+            if (FortuneReading::hasPaidReadingWithinDays($userId)) {
                 Log::info('👍 Reaction DM ข้าม — user เพิ่งดูดวงแบบจ่ายเงิน (no re-pitch)', [
                     'user_id' => $userId,
                     'post_id' => $reaction->facebook_post_id,
@@ -1279,8 +1278,7 @@ class FacebookWebhookController extends Controller
         //   ⚠️ เส้นทางนี้ (โหมด template / queue=sync fallback) **ไม่เคยมีด่านนี้เลย**
         //      มีแต่ tryReactionDm กับ ProcessCommentEngagement — เจอตอนไล่ตรวจ
         //      ผลคือลูกค้าที่เพิ่งจ่ายเงินยังโดน DM ขายซ้ำผ่านช่องนี้ได้
-        if (FortuneReading::hasPaidReadingThisCalendarMonth($fromId)
-            || FortuneReading::hasPaidReadingWithinDays($fromId)) {
+        if (FortuneReading::hasPaidReadingWithinDays($fromId)) {
             Log::info('🗨️ Template engagement ข้าม — user เพิ่งดูดวงแบบจ่ายเงิน (no re-pitch)', [
                 'user_id' => $fromId,
                 'comment_id' => $commentId,
