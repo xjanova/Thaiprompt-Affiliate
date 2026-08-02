@@ -153,6 +153,50 @@ class DailyAstroBriefTest extends TestCase
     }
 
     /**
+     * 🕐 ช่วงเวลาของวันต้องคำนวณจากดาวจริง ไม่ใช่แบ่งเวลาลอย ๆ
+     *
+     * จันทร์เดิน ~0.5 องศา/ชม. → ตำแหน่งแต่ละช่วงต้องต่างกันจริง
+     * และ orb ของมุมต้องขยับตาม (นี่คือสิ่งที่ทำให้บอกได้ว่าช่วงไหนแรง)
+     *
+     * @test
+     */
+    public function ช่วงเวลาของวันต้องมาจากตำแหน่งดาวจริง(): void
+    {
+        $b = $this->brief->build(1, Carbon::create(2026, 8, 2));
+
+        $this->assertCount(5, $b['periods'], 'ต้องครบ เช้า/เที่ยง/บ่าย/เย็น/กลางคืน');
+
+        $labels = array_column($b['periods'], 'label');
+        $this->assertSame(['เช้า', 'เที่ยง', 'บ่าย', 'เย็น', 'กลางคืน'], $labels);
+
+        // จันทร์ต้องขยับจริงระหว่างช่วง (ถ้าเท่ากันหมด = ไม่ได้คำนวณใหม่รายช่วง)
+        $degrees = array_column($b['periods'], 'moon_deg');
+        $this->assertSame(
+            count($degrees),
+            count(array_unique($degrees)),
+            'ตำแหน่งจันทร์ต้องต่างกันทุกช่วง ไม่งั้นแปลว่าใช้ค่าเที่ยงวันซ้ำ'
+        );
+        // เดินไปข้างหน้าเสมอ (จันทร์ไม่พักร)
+        $this->assertGreaterThan($degrees[0], $degrees[4], 'จันทร์ต้องเดินหน้าตลอดวัน');
+
+        // ต้องระบุช่วงที่แรงที่สุดได้ และ orb ต้องเล็กที่สุดจริง
+        $tightestOrbs = array_filter(array_map(
+            fn ($p) => $p['tightest']['orb'] ?? null,
+            $b['periods']
+        ));
+        $this->assertNotEmpty($tightestOrbs);
+        $this->assertStringContainsString('ช่วงที่ดาวเจ้าเรือนออกฤทธิ์แรงที่สุด', $b['text']);
+        $this->assertStringContainsString('ช่วงเวลาของวัน', $b['text']);
+
+        // แนวโน้มต้องเป็นค่าที่รู้จักเท่านั้น
+        foreach ($b['periods'] as $p) {
+            foreach ($p['aspects'] as $a) {
+                $this->assertContains($a['trend'], ['กำลังเข้า', 'กำลังคลาย', 'คงที่']);
+            }
+        }
+    }
+
+    /**
      * 🧹 ตัดหางน้ำท้ายคำทำนาย — เคสจริงจากการรันบน prod รอบแรก
      *
      * โมเดลต่อท้ายด้านสุขภาพด้วยข้อคิดกลวง + ประโยคขายของ ซึ่งหลุดเข้าฟิลด์

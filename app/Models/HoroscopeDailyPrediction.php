@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $career_prediction_th คำทำนายการงาน
  * @property string|null $finance_prediction_th คำทำนายการเงิน
  * @property string|null $health_prediction_th คำทำนายสุขภาพ
+ * @property string|null $time_prediction_th คำทำนายรายช่วงเวลา เช้า/เที่ยง/บ่าย/เย็น/กลางคืน
  * @property int $overall_score คะแนนภาพรวม 1-5
  * @property int $love_score คะแนนความรัก
  * @property int $career_score คะแนนการงาน
@@ -56,6 +57,7 @@ class HoroscopeDailyPrediction extends Model
         'career_prediction_th',
         'finance_prediction_th',
         'health_prediction_th',
+        'time_prediction_th',
         'overall_score',
         'love_score',
         'career_score',
@@ -145,8 +147,6 @@ class HoroscopeDailyPrediction extends Model
 
     /**
      * คะแนนเฉลี่ยรวม
-     *
-     * @return float
      */
     public function getAverageScoreAttribute(): float
     {
@@ -161,8 +161,6 @@ class HoroscopeDailyPrediction extends Model
 
     /**
      * ชื่อวันเกิดภาษาไทย
-     *
-     * @return string|null
      */
     public function getBirthDayNameThAttribute(): ?string
     {
@@ -173,8 +171,6 @@ class HoroscopeDailyPrediction extends Model
 
     /**
      * เพิ่มจำนวนการดู
-     *
-     * @return void
      */
     public function incrementView(): void
     {

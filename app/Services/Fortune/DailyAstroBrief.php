@@ -47,6 +47,29 @@ class DailyAstroBrief
     /** ชื่อวันในสัปดาห์ index 0=อาทิตย์ … 6=เสาร์ */
     private const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 
+    /**
+     * 🕐 ช่วงเวลาของวัน + "เวลาตัวแทน" ที่ใช้คำนวณตำแหน่งดาวของช่วงนั้น
+     *
+     * เจ้าของสั่ง (2026-08-02): "คำนวณช่วงเวลาของวันไปด้วย มีตอนเช้า เที่ยง บ่าย เย็น
+     *   กลางคืน ให้คำทำนายครบ จะได้ครบข้อมูล"
+     *
+     * 🚨 จงใจ**ไม่**ใช้ตำรายามอัฏฐกาล — โปรเจกต์นี้ไม่มีตัวคำนวณยาม และการยกลำดับ
+     *    เจ้าของยามมาเขียนเองโดยไม่มีแหล่งอ้างอิงในระบบ = มโนแบบเดียวกับที่เพิ่งแก้ไป
+     *    ใช้ "ตำแหน่งดาวจริง ณ เวลานั้น" แทน ซึ่งคำนวณได้และตรวจสอบได้ทุกตัวเลข
+     *
+     * ทำไมช่วงเวลาต่างกันจริง: จันทร์เดิน ~0.5 องศา/ชม. (เร็วสุดในบรรดาดาว)
+     * ทั้งวันขยับ ~13 องศา บางวันข้ามราศีกลางวัน → มุมสัมพันธ์แน่นขึ้น/คลายลงจริง
+     *
+     * @var array<int, array{key:string,label:string,range:string,hour:int,minute:int}>
+     */
+    private const PERIODS = [
+        ['key' => 'morning', 'label' => 'เช้า', 'range' => '06:00-11:00', 'hour' => 8, 'minute' => 30],
+        ['key' => 'noon', 'label' => 'เที่ยง', 'range' => '11:00-13:00', 'hour' => 12, 'minute' => 0],
+        ['key' => 'afternoon', 'label' => 'บ่าย', 'range' => '13:00-17:00', 'hour' => 15, 'minute' => 0],
+        ['key' => 'evening', 'label' => 'เย็น', 'range' => '17:00-20:00', 'hour' => 18, 'minute' => 30],
+        ['key' => 'night', 'label' => 'กลางคืน', 'range' => '20:00-06:00', 'hour' => 22, 'minute' => 30],
+    ];
+
     /** key ของ FortuneChartService → key ของ PlanetEphemeris */
     private const EPHEMERIS_KEY = [
         'sun' => 'Sun', 'moon' => 'Moon', 'mars' => 'Mars', 'mercury' => 'Mercury',
@@ -100,6 +123,7 @@ class DailyAstroBrief
                 'enemies' => $enemies,
                 'aspects' => $aspects,
                 'retrogrades' => $retrogrades,
+                'periods' => $this->periods($chaochana, $date),
             ];
 
             $brief['score_hint'] = $this->scoreHint($brief);
@@ -117,6 +141,110 @@ class DailyAstroBrief
 
             return $this->emptyBrief($birthDay, $date);
         }
+    }
+
+    /**
+     * 🕐 ตำแหน่งดาวจริงราย "ช่วงเวลาของวัน" — เช้า/เที่ยง/บ่าย/เย็น/กลางคืน
+     *
+     * แต่ละช่วงคำนวณ ephemeris ใหม่ที่เวลาตัวแทนของช่วงนั้น แล้วรายงาน:
+     *   - ตำแหน่งจันทร์ (ดาวที่เดินเร็วสุด = ตัวชี้ความต่างระหว่างช่วงที่ชัดที่สุด)
+     *   - มุมของดาวเจ้าเรือน ณ เวลานั้น พร้อม orb
+     *   - แนวโน้ม: มุม "กำลังเข้า" (แน่นขึ้น = แรงขึ้น) หรือ "กำลังคลาย" (จางลง)
+     *
+     * ⚠️ trend คำนวณจาก orb ของช่วงถัดไปเทียบช่วงนี้ — ช่วงสุดท้ายไม่มีตัวเทียบ
+     *    จึงยืมทิศทางจากช่วงก่อนหน้า (ดีกว่าเว้นว่างให้ AI เดาเอง)
+     *
+     * @return array<int, array>
+     */
+    protected function periods(array $chaochana, Carbon $date): array
+    {
+        $lordKey = $chaochana['planet'] ?? 'sun';
+        $lordEph = self::EPHEMERIS_KEY[$lordKey] ?? 'Sun';
+        $ephemeris = new PlanetEphemeris;
+
+        // คำนวณ snapshot ของทุกช่วงก่อน แล้วค่อยหาแนวโน้ม (ต้องรู้ช่วงถัดไปถึงบอกได้)
+        $snapshots = [];
+        foreach (self::PERIODS as $period) {
+            $at = $date->copy()->setTime($period['hour'], $period['minute']);
+            $pos = $ephemeris->positions($at);
+
+            $snapshots[] = [
+                'meta' => $period,
+                'moon' => $pos['Moon'] ?? null,
+                'aspects' => $this->aspectsTo($lordKey, $pos, $chaochana),
+                'lord_lon' => $pos[$lordEph]['lon'] ?? null,
+                'positions' => $pos,
+            ];
+        }
+
+        $out = [];
+        foreach ($snapshots as $i => $snap) {
+            $next = $snapshots[$i + 1] ?? null;
+            $prev = $snapshots[$i - 1] ?? null;
+
+            $aspects = [];
+            foreach ($snap['aspects'] as $a) {
+                $aspects[] = $a + ['trend' => $this->orbTrend($a, $snap, $next, $prev)];
+            }
+
+            // มุมที่แน่นที่สุดของช่วงนี้ = ตัวที่ออกฤทธิ์แรงสุด
+            $tightest = null;
+            foreach ($aspects as $a) {
+                if ($tightest === null || $a['orb'] < $tightest['orb']) {
+                    $tightest = $a;
+                }
+            }
+
+            $moonSign = $snap['moon']['sign'] ?? null;
+            $moonDeg = $snap['moon']['lon'] ?? null;
+
+            $out[] = [
+                'key' => $snap['meta']['key'],
+                'label' => $snap['meta']['label'],
+                'range' => $snap['meta']['range'],
+                'moon_sign' => $moonSign,
+                'moon_deg' => $moonDeg === null ? null : round(fmod($moonDeg, 30.0), 1),
+                'aspects' => $aspects,
+                'tightest' => $tightest,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * มุมนี้ "กำลังเข้า" หรือ "กำลังคลาย" — ดูจาก orb ของช่วงข้างเคียง
+     *
+     * เข้า = orb เล็กลง (ดาวกำลังเดินเข้าหามุมพอดี → อิทธิพลแรงขึ้น)
+     * คลาย = orb ใหญ่ขึ้น (ผ่านจุดพอดีไปแล้ว → อิทธิพลจางลง)
+     */
+    protected function orbTrend(array $aspect, array $snap, ?array $next, ?array $prev): string
+    {
+        $orbAt = function (?array $s) use ($aspect): ?float {
+            if ($s === null) {
+                return null;
+            }
+            foreach ($s['aspects'] as $a) {
+                if ($a['other_key'] === $aspect['other_key'] && $a['aspect'] === $aspect['aspect']) {
+                    return $a['orb'];
+                }
+            }
+
+            return null;
+        };
+
+        $nextOrb = $orbAt($next);
+        if ($nextOrb !== null) {
+            return $nextOrb < $aspect['orb'] ? 'กำลังเข้า' : 'กำลังคลาย';
+        }
+
+        // ช่วงสุดท้าย — ไม่มีช่วงถัดไปให้เทียบ ใช้ทิศทางจากช่วงก่อนหน้าแทน
+        $prevOrb = $orbAt($prev);
+        if ($prevOrb !== null) {
+            return $aspect['orb'] < $prevOrb ? 'กำลังเข้า' : 'กำลังคลาย';
+        }
+
+        return 'คงที่';
     }
 
     /**
@@ -347,7 +475,61 @@ class DailyAstroBrief
             $lines[] = 'ดาวที่พักรอยู่วันนี้: '.implode(', ', $brief['retrogrades']);
         }
 
+        if (! empty($brief['periods'])) {
+            $lines[] = '';
+            $lines[] = 'ช่วงเวลาของวัน (คำนวณตำแหน่งดาวจริงแยกรายช่วง):';
+
+            foreach ($brief['periods'] as $p) {
+                $bits = [];
+
+                if ($p['moon_sign'] !== null) {
+                    $bits[] = 'จันทร์ราศี'.$p['moon_sign'].' '.$p['moon_deg'].' องศา';
+                }
+
+                foreach ($p['aspects'] as $a) {
+                    $bits[] = "{$l['th']}{$a['aspect']}{$a['other']} คลาด {$a['orb']}° ({$a['trend']})";
+                }
+
+                if ($bits === []) {
+                    $bits[] = 'ไม่มีมุมกับดาวเจ้าเรือน';
+                }
+
+                $lines[] = "  - {$p['label']} ({$p['range']}): ".implode(' · ', $bits);
+            }
+
+            // ชี้ช่วงที่แรงที่สุดให้ชัด — ไม่ต้องให้ AI เดาเองว่าช่วงไหนเด่น
+            // ⚠️ ห้ามใช้ลูกศร → ที่นี่ — อยู่ในช่วงอักขระที่ FacebookContentPolicy กวาด
+            //    บล็อกนี้ต้องผ่านกฎ "ห้ามอีโมจิ" ของตัวเองได้ ไม่งั้นสอนโมเดลผิดทาง
+            $peak = $this->peakPeriod($brief['periods']);
+            if ($peak !== null) {
+                $lines[] = "  สรุป ช่วงที่ดาวเจ้าเรือนออกฤทธิ์แรงที่สุด: {$peak['label']} "
+                    ."({$l['th']}{$peak['tightest']['aspect']}{$peak['tightest']['other']} "
+                    ."คลาดเพียง {$peak['tightest']['orb']}°)";
+            }
+        }
+
         return implode("\n", $lines);
+    }
+
+    /**
+     * ช่วงที่ดาวเจ้าเรือน "ออกฤทธิ์แรงที่สุด" = ช่วงที่มุมแน่นที่สุดของทั้งวัน
+     *
+     * @return array|null null = ทั้งวันไม่มีมุมกับดาวเจ้าเรือนเลย
+     */
+    protected function peakPeriod(array $periods): ?array
+    {
+        $best = null;
+
+        foreach ($periods as $p) {
+            if ($p['tightest'] === null) {
+                continue;
+            }
+            if ($best === null || $p['tightest']['orb'] < $best['tightest']['orb']) {
+                $best = $p;
+            }
+        }
+
+        return $best;
     }
 
     /** brief เปล่าเมื่อคำนวณไม่ได้ — ผู้เรียกต้องเช็ค ok ก่อนใช้ text */
@@ -364,6 +546,7 @@ class DailyAstroBrief
             'enemies' => [],
             'aspects' => [],
             'retrogrades' => [],
+            'periods' => [],
             'score_hint' => 3,
             'text' => '',
         ];

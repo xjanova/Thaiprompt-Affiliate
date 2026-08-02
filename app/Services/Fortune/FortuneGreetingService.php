@@ -326,6 +326,7 @@ class FortuneGreetingService
                     ? 'สำหรับคุณ '.$displayName.' — คนเกิดวัน'.self::DAY_NAMES[$dayIndex].' '.self::DAY_EMOJIS[$dayIndex]
                     : 'สำหรับคุณ '.$displayName.' '.self::DAY_EMOJIS[$dayIndex])
                 ."\n\n".$body
+                .$this->buildTimeLine($prediction)
                 .$this->buildLuckyLine($prediction);
 
             if ($staleDays > 0) {
@@ -576,6 +577,21 @@ class FortuneGreetingService
             ->whereNotNull('overall_prediction_th')
             ->latest('generated_at')
             ->first();
+    }
+
+    /**
+     * 🕐 (2026-08-02) บล็อกคำทำนายรายช่วงเวลา — เช้า/เที่ยง/บ่าย/เย็น/กลางคืน
+     *
+     * เจ้าของสั่ง: "คำนวณช่วงเวลาของวันไปด้วย … ให้คำทำนายครบ จะได้ครบข้อมูล"
+     *
+     * ใส่เฉพาะที่มีจริง — ดวงที่ generate ไว้ก่อนหน้าคอลัมน์นี้ยังว่าง
+     * ต้องไม่โผล่หัวข้อเปล่า ๆ ให้ลูกค้าเห็น
+     */
+    protected function buildTimeLine(HoroscopeDailyPrediction $prediction): string
+    {
+        $body = trim((string) ($prediction->time_prediction_th ?? ''));
+
+        return $body === '' ? '' : "\n\n⏰ ช่วงเวลาของวัน\n".$body;
     }
 
     /**
