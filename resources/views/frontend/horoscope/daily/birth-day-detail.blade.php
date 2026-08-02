@@ -233,6 +233,56 @@
                     'color' => 'emerald',
                 ])
             @endif
+
+            {{-- ⏰ (2026-08-02) ช่วงเวลาของวัน — เช้า/เที่ยง/บ่าย/เย็น/กลางคืน
+                 คำนวณจากตำแหน่งดาวจริงรายช่วง (DailyAstroBrief::periods)
+                 ⚠️ กล่องแชทแนบลิงก์มาหน้านี้พร้อมข้อความ "และช่วงเวลาของวัน"
+                    ถ้าบล็อกนี้หาย = สัญญาแล้วลูกค้าเปิดมาไม่เจอ --}}
+            @if($prediction->time_prediction_th)
+                @php
+                    // แยกทีละบรรทัด แล้วตัดเป็น "ชื่อช่วง : เนื้อหา" ถ้ามีเครื่องหมาย :
+                    // (ทำใน @php ไม่ใช่ใน directive — กันปัญหาวงเล็บซ้อนใน Blade)
+                    $timeRows = [];
+                    foreach (preg_split('/\R/u', $prediction->time_prediction_th) as $line) {
+                        $line = trim($line);
+                        if ($line === '') {
+                            continue;
+                        }
+                        $pos = mb_strpos($line, ':');
+                        if ($pos !== false && $pos <= 40) {
+                            $timeRows[] = [
+                                'label' => trim(mb_substr($line, 0, $pos)),
+                                'text' => trim(mb_substr($line, $pos + 1)),
+                            ];
+                        } else {
+                            $timeRows[] = ['label' => null, 'text' => $line];
+                        }
+                    }
+                @endphp
+
+                <div class="md:col-span-2">
+                    <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-5 border border-white/10">
+                        <h3 class="text-white font-bold mb-4 flex items-center gap-2">
+                            <span class="text-xl">⏰</span> ช่วงเวลาของวัน
+                        </h3>
+
+                        <div class="space-y-3">
+                            @foreach($timeRows as $row)
+                                <div class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+                                    @if($row['label'])
+                                        <span class="shrink-0 text-indigo-300 font-semibold text-sm sm:w-44">
+                                            {{ $row['label'] }}
+                                        </span>
+                                    @endif
+                                    <span class="text-purple-100/80 text-sm leading-relaxed">
+                                        {{ $row['text'] }}
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
     </section>
     @else

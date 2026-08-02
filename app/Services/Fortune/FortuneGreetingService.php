@@ -3,6 +3,7 @@
 namespace App\Services\Fortune;
 
 use App\Models\FortuneDailyHoroscopePost;
+use App\Models\FortuneHoroscopePost;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\HoroscopeDailyPrediction;
@@ -326,8 +327,16 @@ class FortuneGreetingService
                     ? 'สำหรับคุณ '.$displayName.' — คนเกิดวัน'.self::DAY_NAMES[$dayIndex].' '.self::DAY_EMOJIS[$dayIndex]
                     : 'สำหรับคุณ '.$displayName.' '.self::DAY_EMOJIS[$dayIndex])
                 ."\n\n".$body
+                .$this->buildSectionsBlock($prediction)
                 .$this->buildTimeLine($prediction)
                 .$this->buildLuckyLine($prediction);
+
+            // 🔗 ลิงก์อ่านฉบับเต็ม — เฉพาะตอนที่เป็นดวง "ของวันนี้" จริง
+            //    ถ้ากำลังเสิร์ฟของย้อนหลัง หน้าเว็บจะยังไม่มีของวันนี้ให้อ่าน
+            //    ส่งลิงก์ไปทั้งที่เพิ่งบอกว่ายังไม่พร้อม = พาลูกค้าไปเจอหน้าว่าง
+            if ($staleDays === 0) {
+                $text .= $this->buildReadMoreLine();
+            }
 
             if ($staleDays > 0) {
                 $text .= "\n\n(ของวันนี้แม่หมอกำลังเปิดตำราอยู่ค่ะ เดี๋ยวพร้อมแล้วทักมาถามใหม่ได้นะคะ)";
@@ -577,6 +586,117 @@ class FortuneGreetingService
             ->whereNotNull('overall_prediction_th')
             ->latest('generated_at')
             ->first();
+    }
+
+    /**
+     * 📋 (2026-08-02) ทำนายครบทุกด้าน — ความรัก/การงาน/การเงิน/สุขภาพ
+     *
+     * เจ้าของทัก: "จริง ๆ แล้วในบทความมีการทำนายครบทุกด้าน แต่ทำไมบอทส่งคำทำนายฟรี
+     *   ให้สั้น ๆ เอง"
+     *
+     * ถูกต้อง — ของเดิมส่งแต่ `overall_prediction_th` ด้านเดียว ทั้งที่ job 6 โมง
+     * สร้างครบ 5 ด้านเก็บไว้ใน DB อยู่แล้ว = จ่ายค่า AI ครบแต่ให้ลูกค้าเห็น 1 ใน 5
+     *
+     * ⚠️ เดิมกลัวข้อความขาด แต่กล่องนี้ถูกส่ง**หลังลูกค้ากดปุ่ม**เสมอ ซึ่งเปิดหน้าต่าง
+     *    24 ชม. ของ FB ให้แล้ว + FacebookWebhookService::sendQuickReplies แบ่งข้อความ
+     *    เกิน 1800 ตัวอักษรให้เอง (ปุ่มเกาะกล่องสุดท้าย) จึงส่งเต็มได้ปลอดภัย
+     *    — ตรงกับเจตนาเดิมของเจ้าของที่ว่า "รอให้กดปุ่มเพื่อส่งเต็ม ข้อความไม่ขาด"
+     *
+     * ใส่เฉพาะด้านที่มีข้อมูลจริง — ดวงเก่าที่ parse ได้ไม่ครบจะไม่โผล่หัวข้อเปล่า
+     */
+    protected function buildSectionsBlock(HoroscopeDailyPrediction $prediction): string
+    {
+        $sections = [
+            ['❤️ ความรัก', $prediction->love_prediction_th],
+            ['💼 การงาน', $prediction->career_prediction_th],
+            ['💰 การเงิน', $prediction->finance_prediction_th],
+            ['💚 สุขภาพ', $prediction->health_prediction_th],
+        ];
+
+        $out = '';
+        foreach ($sections as [$title, $body]) {
+            $body = trim((string) $body);
+            if ($body === '') {
+                continue;
+            }
+            $out .= "\n\n{$title}\n{$body}";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 🔗 (2026-08-02) ลิงก์ไปอ่านดวงประจำวันฉบับเต็มบนเว็บของเรา
+     *
+     * เจ้าของสั่ง: "คำทำนายให้แนบลิงก์ไปอ่านดวงเพิ่มเติมจากเพจด้วย
+     *   (ลิงก์ที่คำทำนายรายวันของเรา) — เฉพาะคำทำนายฟรีประจำวันนะ"
+     *
+     * ⚠️ **เฉพาะกล่องดวงฟรีรายวันเท่านั้น** — เมธอดนี้ถูกเรียกจาก
+     *    buildDailyBoxForDayIndex() ที่มีผู้เรียกแค่ 2 จุด ทั้งคู่อยู่ในเส้นดวงฟรี
+     *    (DailyHoroscopeModeTrait) เส้น Deep 39 / Celtic 99 ใช้ตัวประกอบข้อความคนละชุด
+     *    จึงไม่มีลิงก์นี้ติดไปตามที่เจ้าของกำหนด
+     *
+     * ⚠️ **ห้ามเอาไปใส่ในโพส Facebook** — FB ลดการมองเห็นโพสที่มีลิงก์ออกนอกแพลตฟอร์ม
+     *    (กฎข้อ 7 ใน prompt ของคอนเทนต์อัตโนมัติสั่งห้ามลิงก์อยู่แล้ว) ตัวนี้ใช้ในแชท
+     *    ซึ่งไม่ติดข้อจำกัดนั้น
+     *
+     * เจ้าของแก้ทิศทาง (2026-08-02): "ถ้าอยากดูของวันอื่น ให้อ่านบนเพจ แล้วแนบลิงก์
+     *   คำทำนายรายวันของเพจที่โพสไป"
+     *
+     * → ใช้ **ลิงก์โพสบนเพจ Facebook** ไม่ใช่หน้าเว็บของเรา เพราะโพสดวงรายวัน
+     *   เป็นแบบ combined = มีครบทั้ง 7 วันเกิดในโพสเดียว ตอบโจทย์ "อยากดูของวันอื่น"
+     *   ได้ตรงกว่าหน้าเว็บที่แยกเป็นวันละหน้า และลูกค้าอยู่บน FB อยู่แล้ว ไม่ต้องออกแอป
+     *
+     * ⚠️ คืน '' เมื่อยังไม่มีโพสของวันนี้ — แนบลิงก์ที่ยังไม่มีของ = พาไปเจอ 404
+     */
+    protected function buildReadMoreLine(): string
+    {
+        $url = $this->todayHoroscopePostUrl();
+
+        if ($url === null) {
+            return '';
+        }
+
+        return "\n\n———\n📖 อยากดูดวงของวันเกิดอื่นด้วย อ่านได้ที่โพสของเพจวันนี้เลยค่ะ\n"
+            .$url;
+    }
+
+    /**
+     * ลิงก์โพส "ดวงรายวัน" ของวันนี้บนเพจ Facebook
+     *
+     * มาจากระบบแคมเปญ (FortuneHoroscopePost) ที่โพสแบบ combined ทุกเช้า —
+     * ไม่ใช่ระบบเก่ารายวันเกิด (FortuneDailyHoroscopePost) ที่ปิดอยู่
+     *
+     * cache 10 นาที — เมธอดนี้ถูกเรียกทุกครั้งที่ส่งดวงฟรีให้ลูกค้า
+     * และค่าเปลี่ยนแค่วันละครั้งตอนโพสเช้า
+     *
+     * @return string|null null = วันนี้ยังไม่ได้โพส / โพสไม่สำเร็จ / ตารางมีปัญหา
+     */
+    protected function todayHoroscopePostUrl(): ?string
+    {
+        try {
+            return Cache::remember(
+                'fortune:daily_fb_post_url:'.now()->toDateString(),
+                600,
+                function () {
+                    $url = FortuneHoroscopePost::query()
+                        ->whereDate('target_date', now()->toDateString())
+                        ->where('platform', FortuneHoroscopePost::PLATFORM_FACEBOOK)
+                        ->where('status', FortuneHoroscopePost::STATUS_POSTED)
+                        ->whereNotNull('platform_post_url')
+                        ->latest('id')
+                        ->value('platform_post_url');
+
+                    return $url ?: null;
+                }
+            );
+        } catch (\Throwable $e) {
+            Log::warning('FortuneGreetingService: หาลิงก์โพสดวงรายวันไม่สำเร็จ', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**

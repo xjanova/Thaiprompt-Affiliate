@@ -235,6 +235,69 @@ class DailyAstroBriefTest extends TestCase
     }
 
     /**
+     * 🔗 ลิงก์ท้ายดวงฟรี = โพสดวงรายวันบนเพจ (ไม่ใช่หน้าเว็บเรา)
+     *
+     * เจ้าของสั่ง: "ถ้าอยากดูของวันอื่น ให้อ่านบนเพจ แล้วแนบลิงก์คำทำนายรายวัน
+     * ของเพจที่โพสไป" — โพสเป็นแบบ combined มีครบ 7 วันเกิดในโพสเดียว
+     *
+     * ⚠️ เทสต์นี้กันเคส "ยังไม่ได้โพส" — ต้องไม่แนบลิงก์เปล่า/ลิงก์เสียให้ลูกค้า
+     *
+     * @test
+     */
+    public function ยังไม่มีโพสของวันนี้ต้องไม่แนบลิงก์(): void
+    {
+        $greeting = app(\App\Services\Fortune\FortuneGreetingService::class);
+        $m = new ReflectionMethod($greeting, 'buildReadMoreLine');
+        $m->setAccessible(true);
+
+        // สภาพแวดล้อมเทสต์ไม่มีโพสของวันนี้ → ต้องคืนค่าว่าง ไม่ throw
+        $this->assertSame('', $m->invoke($greeting));
+
+        // หน้าเว็บดวงรายวันยังต้องแสดงช่วงเวลาของวัน (job สร้างไว้แล้ว เว็บต้องไม่ขาด)
+        $blade = file_get_contents(resource_path('views/frontend/horoscope/daily/birth-day-detail.blade.php'));
+        $this->assertStringContainsString('time_prediction_th', $blade);
+    }
+
+    /**
+     * 📋 กล่องดวงฟรีต้องส่งครบทุกด้าน ไม่ใช่แค่ภาพรวม
+     *
+     * เจ้าของทัก: "ในบทความมีการทำนายครบทุกด้าน แต่ทำไมบอทส่งคำทำนายฟรีให้สั้น ๆ เอง"
+     * job 6 โมงสร้างครบ 5 ด้านเก็บใน DB — จ่ายค่า AI ครบแต่เคยให้ลูกค้าเห็นแค่ 1 ใน 5
+     *
+     * @test
+     */
+    public function กล่องดวงฟรีต้องมีครบทุกด้าน(): void
+    {
+        $greeting = app(\App\Services\Fortune\FortuneGreetingService::class);
+        $m = new ReflectionMethod($greeting, 'buildSectionsBlock');
+        $m->setAccessible(true);
+
+        $prediction = new \App\Models\HoroscopeDailyPrediction([
+            'love_prediction_th' => 'เนื้อความรัก',
+            'career_prediction_th' => 'เนื้อการงาน',
+            'finance_prediction_th' => 'เนื้อการเงิน',
+            'health_prediction_th' => 'เนื้อสุขภาพ',
+        ]);
+
+        $out = $m->invoke($greeting, $prediction);
+
+        foreach (['ความรัก', 'การงาน', 'การเงิน', 'สุขภาพ'] as $title) {
+            $this->assertStringContainsString($title, $out, "ต้องมีหัวข้อ {$title}");
+        }
+        foreach (['เนื้อความรัก', 'เนื้อการงาน', 'เนื้อการเงิน', 'เนื้อสุขภาพ'] as $body) {
+            $this->assertStringContainsString($body, $out);
+        }
+
+        // ด้านที่ไม่มีข้อมูล ต้องไม่โผล่หัวข้อเปล่า (ดวงเก่าที่ parse ไม่ครบ)
+        $partial = new \App\Models\HoroscopeDailyPrediction(['love_prediction_th' => 'มีแค่รัก']);
+        $partialOut = $m->invoke($greeting, $partial);
+
+        $this->assertStringContainsString('ความรัก', $partialOut);
+        $this->assertStringNotContainsString('การงาน', $partialOut);
+        $this->assertStringNotContainsString('สุขภาพ', $partialOut);
+    }
+
+    /**
      * 🔢 เลขนำโชค — ให้เฉพาะวันที่ 15 และ 29 เท่านั้น (เจ้าของสั่ง)
      *
      * @test
