@@ -1655,19 +1655,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     protected function normalizeBirthDate(int $day, int $month, int $year): ?string
     {
-        // แปลงปี พ.ศ. เป็น ค.ศ.
-        if ($year > 2400) {
-            $year -= 543;
-        } elseif ($year < 100) {
-            // ปี 2 หลัก: ลองแปลงเป็น พ.ศ. ก่อน (เช่น 40 → 2540 → 1997 ค.ศ.)
-            $ceFromThai = $year + 2500 - 543;
-            if ($ceFromThai >= 1900 && $ceFromThai <= now()->year) {
-                $year = $ceFromThai;
-            } else {
-                // Fallback: ตีความเป็น ค.ศ. (เช่น 97 → 1997)
-                $year = ($year > 50) ? (1900 + $year) : (2000 + $year);
-            }
+        // 🇹🇭 (2026-08-02) ใช้ตัวกลางตัวเดียวกับ FortuneConversationService — พ.ศ. เป็นหลัก
+        //   เดิมสำเนาของที่นี่ไม่มีด่านอายุขั้นต่ำ → "68" กลายเป็น พ.ศ.2568 = ทารก 1 ขวบ
+        //   และ fallback ค.ศ. ใช้เกณฑ์ (> 50) คนละแบบกับอีกเส้น = ตอบไม่ตรงกัน
+        $normalized = \App\Support\ThaiBirthYear::normalize($year);
+
+        if ($normalized === null) {
+            return null;
         }
+
+        $year = $normalized;
 
         // ตรวจสอบความถูกต้อง
         if ($month < 1 || $month > 12 || $day < 1 || $day > 31 || $year < 1900 || $year > now()->year) {

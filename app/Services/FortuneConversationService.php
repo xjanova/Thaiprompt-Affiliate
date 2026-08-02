@@ -6418,10 +6418,13 @@ class FortuneConversationService
             }
 
             // พลาดครั้งแรก → ให้ AI รับฟังแล้วเตือนขั้นตอน (behavior เดิม แต่เพิ่มสัญญาณว่าถ้าพลาดอีกจะถามแยก)
+            // 🇹🇭 (2026-08-02, owner) ขอ "ปีเต็ม 4 หลัก" เสมอ — เลิกยกตัวอย่างปีย่อ 2 หลัก
+            //   ตัวอย่างเดิม "15 ส.ค. 33" เป็นตัวชวนให้ลูกค้าพิมพ์ปีย่อ ซึ่งระบบต้องเดาเอง
             $stepHint = "📅 ตอนนี้หมอรอวันเกิดอยู่นะคะ บอกแบบไหนก็ได้:\n"
-                ."  • 15/8/1990  หรือ  15/8/2533\n"
+                ."  • 15/8/2533  (พ.ศ.)\n"
                 ."  • 15 สิงหาคม 2533\n"
-                ."  • 15 ส.ค. 33\n\n"
+                ."  • 15/8/1990  (ค.ศ.)\n\n"
+                ."🎂 *ปีเกิดใส่ครบ 4 หลัก* นะคะ หมอจะได้ไม่ต้องเดาให้\n"
                 .'💡 ถ้าไม่แน่ใจ ลองพิมพ์อีกครั้ง — หมอจะถามทีละส่วนให้';
 
             $profileForAI = $userProfile ?? ($reading->user_profile ?? null);
@@ -6451,7 +6454,43 @@ class FortuneConversationService
         //         เปิดไพ่ครบ → afterTarotCardDrawn → ทำนายพื้นดวงรวมทันที → enterProSession('deep') คุยต่อ 7 นาที
         // 🧹 (2026-06-11) รวม logic เข้า beginDeepGeneralReading — ใช้ร่วมกับ path ยืนยันวันเกิด
         //   + path วันเกิดที่รู้อยู่แล้ว (เดิมโค้ดก้อนเดียวกันซ้ำ 2 ที่ — path ที่สามตกหล่นเป็นบั๊ก)
-        return $this->beginDeepGeneralReading($reading, $birthDate);
+        // 🇹🇭 (2026-08-02) ปีย่อ 2 หลัก → ทวนให้ฟังว่าอ่านเป็น พ.ศ. ลูกค้าจะได้แย้งทันทีถ้าไม่ใช่
+        return $this->beginDeepGeneralReading(
+            $reading,
+            $birthDate,
+            $this->buildShortYearInterpretationNote($messageText, $birthDate)
+        );
+    }
+
+    /**
+     * 🇹🇭 (2026-08-02, owner) ทวนการตีความ "ปีเกิดย่อ 2 หลัก" ให้ลูกค้าฟัง
+     *
+     * owner spec: "บริบทเราใช้ในไทย ใช้ พ.ศ. เป็นหลัก ให้ตีเป็น พ.ศ. แทน ค.ศ.
+     *              นอกจากลูกค้าจะแย้งเอง"
+     *
+     * เราจึง **ไม่ block** ลูกค้าที่พิมพ์ปีย่อ (จะทำให้ค้างขั้นตอน = เสียลูกค้า)
+     * แต่ทวนให้เห็นชัดว่าอ่านเป็น พ.ศ. อะไร + บอกวิธีแก้ ถ้าไม่ตรงลูกค้าแย้งได้ทันที
+     *
+     * คืน '' เมื่อลูกค้าพิมพ์ปีเต็มมาแล้ว (ไม่กำกวม = ไม่ต้องรบกวน)
+     *
+     * @param  string  $rawText  ข้อความดิบที่ลูกค้าพิมพ์
+     * @param  string  $birthDate  วันเกิดที่ระบบอ่านได้ (YYYY-MM-DD ค.ศ.)
+     */
+    protected function buildShortYearInterpretationNote(string $rawText, string $birthDate): string
+    {
+        if (\App\Support\ThaiBirthYear::extractShortYear($rawText) === null) {
+            return '';
+        }
+
+        $parts = explode('-', $birthDate);
+        if (count($parts) !== 3) {
+            return '';
+        }
+
+        $beYear = (int) $parts[0] + 543;
+
+        return "🔎 เจ้าชะตาพิมพ์ปีเกิดมาแค่ 2 หลัก แม่หมออ่านเป็น *พ.ศ. {$beYear}* นะคะ\n"
+            ."ถ้าไม่ตรง พิมพ์วันเกิดใหม่แบบ *ปีเต็ม 4 หลัก* ได้เลยค่ะ (เช่น 25/1/{$beYear})\n\n";
     }
 
     /**
@@ -6637,7 +6676,7 @@ class FortuneConversationService
      * ⚠️ ตรรกะ proceed นี้ mirror กับ handleBirthdateInput (หลัง parse วันเกิดสำเร็จ) —
      *    ถ้าแก้ flow ตั้งจิต/คำถามพื้นดวง ต้องแก้ทั้ง 2 ที่ให้ตรงกัน
      */
-    public function beginDeepGeneralReading(FortuneReading $reading, string $birthDate): array
+    public function beginDeepGeneralReading(FortuneReading $reading, string $birthDate, string $interpretationNote = ''): array
     {
         // คำถามพื้นดวงรวม (อัตโนมัติ — ลูกค้าไม่ต้องพิมพ์) → COLLECTING_TAROT ตรง
         $generalQuestion = 'ขอดูพื้นดวงโดยรวมของเจ้าชะตา — ภาพรวมชีวิตช่วงนี้ ทั้งนิสัยพื้นฐาน ความรัก '
@@ -6657,6 +6696,7 @@ class FortuneConversationService
         return [
             'action' => 'awaiting_tarot_intention',
             'message' => "📅 *รับวันเกิดแล้ว: {$formatted}* ✨\n\n"
+                .$interpretationNote
                 ."═══════════════════════\n"
                 ."🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
                 ."═══════════════════════\n\n"
@@ -20411,7 +20451,7 @@ PROMPT;
             $aiService = new FortuneAIService($this->settings);
             $aiParsed = $aiService->parseBirthDateWithAI($text);
             if ($aiParsed) {
-                return $aiParsed;
+                return $this->reconcileAiBirthDate($text, $aiParsed);
             }
         } catch (\Throwable $e) {
             // ignore — AI fallback ล้ม → ตอบ null ปกติ
@@ -20421,6 +20461,60 @@ PROMPT;
         }
 
         return null;
+    }
+
+    /**
+     * 🇹🇭 (2026-08-02) ตรวจงานของ AI parser ก่อนรับวันเกิด — พ.ศ. เป็นหลัก
+     *
+     * เดิม `parseBirthDate()` คืนค่าจาก AI ตรง ๆ โดย **ไม่ผ่านด่านใดเลย**
+     * (ทั้ง checkdate และ isValidBirthYear ที่เส้น regex ต้องผ่าน) จึงเกิด 2 ปัญหา:
+     *
+     *   1. AI ถูกสั่งด้วย "Thai ID logic" (ค.ศ. ก่อน) → "25 มค. 04" ได้ ค.ศ.2004
+     *      ทั้งที่ลูกค้าไทยหมายถึง พ.ศ.2504 (= ค.ศ.1961)
+     *   2. อายุที่เป็นไปไม่ได้ (1 ขวบ / 100 ปี) หลุดผ่าน เพราะ AI ตรวจแค่ 1-120 ปี
+     *
+     * เมธอดนี้: ถ้าข้อความมี "ปีย่อ 2 หลัก" ในตำแหน่งปีชัดเจน และ AI หยิบเลขตัวนั้น
+     * ไปตีเป็น ค.ศ. → คำนวณใหม่ด้วยกฎ พ.ศ.-เป็นหลัก แล้วตรวจด่านอายุปลายทางซ้ำ
+     *
+     * ⚠️ เงื่อนไข `$aiYear % 100 === $shortYear` สำคัญมาก — ยืนยันว่า AI ใช้เลขตัวเดียวกัน
+     *    เป็นปีจริง ๆ ไม่งั้นข้อความอิสระ ("เกิดปี 90 เดือน 8 วันที่ 15") จะโดนแก้ผิดตัว
+     *
+     * @param  string  $text  ข้อความดิบ (หลัง normalize เลขไทย/ลาว แล้ว)
+     * @param  string  $aiParsed  ผลจาก AI รูปแบบ YYYY-MM-DD
+     * @return string|null วันเกิด YYYY-MM-DD ที่ผ่านด่านแล้ว (null = ไม่รับ ให้ถามใหม่)
+     */
+    protected function reconcileAiBirthDate(string $text, string $aiParsed): ?string
+    {
+        if (! preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $aiParsed, $m)) {
+            return null;
+        }
+
+        $year = (int) $m[1];
+        $month = (int) $m[2];
+        $day = (int) $m[3];
+
+        // 🇹🇭 ปีย่อ 2 หลัก → ยึดกฎ พ.ศ.-เป็นหลักของเรา ไม่เชื่อ AI
+        $shortYear = \App\Support\ThaiBirthYear::extractShortYear($text);
+        if ($shortYear !== null && $year % 100 === $shortYear) {
+            $ours = \App\Support\ThaiBirthYear::normalize($shortYear);
+
+            if ($ours !== null && $ours !== $year) {
+                \Illuminate\Support\Facades\Log::info('parseBirthDate: แก้ปีจาก AI ให้เป็น พ.ศ.-เป็นหลัก', [
+                    'input' => mb_substr($text, 0, 80),
+                    'ai_year' => $year,
+                    'fixed_year' => $ours,
+                ]);
+
+                $year = $ours;
+            }
+        }
+
+        // ด่านเดียวกับเส้น regex — AI ต้องไม่ได้สิทธิ์พิเศษ
+        if (! checkdate($month, $day, $year) || ! $this->isValidBirthYear($year)) {
+            return null;
+        }
+
+        return sprintf('%04d-%02d-%02d', $year, $month, $day);
     }
 
     /**
@@ -20491,15 +20585,11 @@ PROMPT;
     }
 
     /**
-     * อายุต่ำสุดที่ถือว่า "เป็นลูกค้าจริง" ตอนเดาปีเกิด 2 หลัก
-     *
-     * ใช้ตัดตัวเลือกที่แปลแล้วได้เด็กเล็ก/ทารก ซึ่งเป็นไปไม่ได้ที่จะทักมาดูดวงเอง
-     * (สถิติจริงบน prod: ลูกค้า 76% อายุ 40-69 ปี · อายุ 0-9 มี 17 คนซึ่งคือข้อมูลผิด)
-     */
-    protected const MIN_PLAUSIBLE_BIRTH_AGE = 13;
-
-    /**
      * Normalize ปีเกิด — รองรับ 2 หลัก, 4 หลัก, พ.ศ., ค.ศ.
+     *
+     * 🇹🇭 (2026-08-02) ย้ายตรรกะไป `App\Support\ThaiBirthYear::normalize()` แล้ว
+     *    เพื่อให้ทุกเส้น (regex ที่นี่ / FacebookWebhookService / AI parser) ตีความ
+     *    "พ.ศ. เป็นหลัก" เหมือนกันหมด — เมธอดนี้เหลือไว้เป็นทางเข้าเดิมของ service
      *
      * 🐛 (2026-07-31) แก้บั๊กปี 2 หลักตีความผิดเป็น ค.ศ.
      *
@@ -20527,34 +20617,7 @@ PROMPT;
      */
     protected function normalizeBirthYear(int $year): ?int
     {
-        $currentYear = (int) now()->format('Y');
-
-        if ($year < 100) {
-            // 1️⃣ พ.ศ. ก่อน — "17" → 2517 → 1974 (อายุ 52) = กลุ่มลูกค้าหลักของเรา
-            $fromThai = 2500 + $year - 543;
-
-            if ($fromThai >= 1900 && ($currentYear - $fromThai) >= self::MIN_PLAUSIBLE_BIRTH_AGE) {
-                $year = $fromThai;
-            } else {
-                // 2️⃣ แปลง พ.ศ. แล้วได้อนาคต/เด็กเกินไป → ตีความเป็น ค.ศ. แบบเดิม
-                //    "95" → 2595 = อนาคต → ตกมาที่นี่ → 1995 ✓
-                //    "68" → 2568 = อายุ 1 → ตกมาที่นี่ → 1968 ✓
-                $currentYY = (int) now()->format('y');
-                $year = ($year <= $currentYY) ? (2000 + $year) : (1900 + $year);
-            }
-        }
-
-        // พ.ศ. → ค.ศ. (สำหรับปี 4 หลักที่พิมพ์มาเต็ม เช่น 2530)
-        if ($year > 2400) {
-            $year -= 543;
-        }
-
-        // ถ้ายังน่าสงสัย (ไม่ใช่ปีค.ศ. 4 หลักที่สมเหตุสมผล) → คืน null
-        if ($year < 1900 || $year > $currentYear) {
-            return null;
-        }
-
-        return $year;
+        return \App\Support\ThaiBirthYear::normalize($year);
     }
 
     /**
@@ -20587,7 +20650,7 @@ PROMPT;
      *   ตั้งแต่ 100 ปี = แทบทั้งหมดคือ parse ผิด (มี 2 รายการในฐาน ซึ่งดูเป็นข้อมูลผิด)
      *                   เคสจริง FTU-260728-W7531 อายุ 100 พอดี จึงต้องไม่รับ
      *
-     * ⚠️ ต่างจาก MIN_PLAUSIBLE_BIRTH_AGE (13) ที่ใช้ "เลือกระหว่าง พ.ศ./ค.ศ." ตอนเดาปี 2 หลัก
+     * ⚠️ ต่างจาก ThaiBirthYear::MIN_PLAUSIBLE_AGE (13) ที่ใช้ "เลือกระหว่าง พ.ศ./ค.ศ." ตอนอ่านปี 2 หลัก
      *    ตัวนี้คือด่าน "รับ/ไม่รับ" ปลายทาง จึงผ่อนกว่าเล็กน้อยเพื่อไม่ปฏิเสธคนจริง
      */
     protected const MIN_ACCEPTED_BIRTH_AGE = 7;
