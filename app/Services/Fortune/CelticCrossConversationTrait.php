@@ -1068,7 +1068,7 @@ trait CelticCrossConversationTrait
     {
         // 💳 (2026-05-14) ลูกค้ารอจ่าย Celtic แต่ขอเลขบัญชี/QR — ส่งช่องทางทันที ไม่ปิดบิล
         if (method_exists($this, 'maybePresentPaymentInfo')) {
-            if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+            if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id)) {
                 return $paymentInfo;
             }
         }

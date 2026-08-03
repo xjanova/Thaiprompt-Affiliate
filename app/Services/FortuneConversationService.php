@@ -2485,7 +2485,7 @@ class FortuneConversationService
                         }
 
                         // 💳 (2026-05-14) ลูกค้าขอเลขบัญชี/QR → ส่งข้อมูลทันที (เช็คก่อน pricing)
-                        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+                        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $facebookUserId)) {
                             return $paymentInfo;
                         }
 
@@ -2780,7 +2780,7 @@ class FortuneConversationService
                 }
 
                 // 💳 (2026-05-14) ลูกค้าขอเลขบัญชี/QR → ส่งข้อมูลทันที (เช็คก่อน pricing)
-                if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+                if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $facebookUserId)) {
                     return $paymentInfo;
                 }
 
@@ -5451,7 +5451,7 @@ class FortuneConversationService
                 'text_preview' => mb_substr($messageText, 0, 60),
             ]);
 
-            return $this->presentPaymentInfo();
+            return $this->presentPaymentInfo($reading->facebook_user_id);
         }
 
         // ตรวจสอบว่าต้องการยกเลิกหรือไม่
@@ -6377,7 +6377,7 @@ class FortuneConversationService
         // 💳 (2026-05-16) ลูกค้าขอเลขบัญชี/QR ระหว่างกรอกวันเกิด (Pay-First flow)
         //   เคส: Pay-First — ลูกค้าจ่ายแล้ว → bot ขอวันเกิด → ลูกค้าอยากตรวจสอบบัญชี/QR
         //   ก่อนหน้านี้ parseBirthDate("ขอเลขบัญชี") fail → bot ขอวันเกิดอีกครั้ง ลูกค้างง
-        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id)) {
             return $paymentInfo;
         }
 
@@ -7167,7 +7167,7 @@ class FortuneConversationService
             // 💳 (2026-05-16) ลูกค้าขอเลขบัญชี/QR ระหว่างกรอกคำถาม (Pay-First flow)
             //   เคส: Pay-First — ลูกค้าจ่ายแล้ว → bot ขอคำถาม → ลูกค้าอยากตรวจสอบบัญชี/QR
             //   ก่อนหน้านี้ถูกเก็บเป็น "คำถามดูดวง" ทำให้ AI สับสน
-            if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+            if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id)) {
                 return $paymentInfo;
             }
 
@@ -8493,7 +8493,7 @@ class FortuneConversationService
         }
 
         // 💳 (2026-05-14) ลูกค้ารอจ่ายแต่ขอเลขบัญชี/QR — ส่งช่องทางทันที ไม่ปิดบิล
-        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id)) {
             return $paymentInfo;
         }
 
@@ -17431,7 +17431,7 @@ class FortuneConversationService
             if ($tag === 'HELP_TRANSFER') {
                 Log::info('Fortune: cancel dialogue → HELP_TRANSFER', ['reading_id' => $reading->id]);
                 Cache::forget($cacheKey);
-                $info = $this->presentPaymentInfo();
+                $info = $this->presentPaymentInfo($reading->facebook_user_id);
                 $info['message'] = $cleanMessage."\n\n".($info['message'] ?? '');
 
                 return $info;
@@ -18241,8 +18241,18 @@ PROMPT;
      *
      * ใช้เมื่อลูกค้าพิมพ์ "ขอเลขบัญชี" / "พร้อมเพย์" / "qr"
      * ดึงจาก PaymentBankAccount (active เท่านั้น) + QR จาก setting
+     *
+     * 🪧 (2026-08-04 FTU-260803-Y3476) $userId = ตั้งธง "รอสลิป" ให้ด้วย
+     *   เคสจริง (PSID 35158773590434769, Yuan Sasipanomthong): ลูกค้าไม่มีบิล พิมพ์ทำนองจะจ่าย
+     *   → บอทส่งกล่องนี้ (23:17) ที่เขียนไว้เองว่า "หลังโอนแล้ว ระบบจะตรวจสอบให้อัตโนมัติค่ะ"
+     *   → ลูกค้าโอน 100 แล้วส่งสลิปเปล่า ๆ ไม่พิมพ์อะไร (23:27) → webhook gate ไม่เจอบิล Celtic
+     *     + ไม่มีธง returning_slip_ask → stash เงียบ 30 นาที ไม่มีใครมาตรวจ → ไม่เกิดบิล 99
+     *   กล่องนี้เป็น pay-intent ทางเดียวที่ "ไม่" ตั้งธง (handleBankAccountRequest + consent gate ตั้งอยู่แล้ว)
+     *   → ตั้งธงตรงนี้ = ทำให้คำสัญญาในข้อความเป็นจริง (ดู markAwaitingPaymentSlip)
+     *
+     * @param  string|null  $userId  platform user id (FB PSID / LINE uid) — null = ไม่ตั้งธง (พฤติกรรมเดิม)
      */
-    public function presentPaymentInfo(): array
+    public function presentPaymentInfo(?string $userId = null): array
     {
         $accounts = $this->settings->getFortuneBankAccounts();
         $qrUrl = $this->getPaymentQrImageUrl();
@@ -18261,6 +18271,12 @@ PROMPT;
                 'payment_qr_url' => null,
                 'reading' => null,
             ];
+        }
+
+        // 🪧 (2026-08-04) มีช่องทางจ่ายให้จริง = pay-intent ชัด → รอสลิปใบถัดไป
+        //   (ตั้งหลัง edge-case ด้านบน — ถ้าไม่มีบัญชี/QR ลูกค้าโอนไม่ได้อยู่แล้ว ไม่ต้องตั้งธง)
+        if (! empty($userId)) {
+            $this->markAwaitingPaymentSlip($userId, 'payment_info_card');
         }
 
         if ($showBank && $accounts->isNotEmpty()) {
@@ -18301,11 +18317,13 @@ PROMPT;
      *
      * ใช้ใน processMessage + handlePendingPayment + handleCelticPendingPayment
      * Return null = ไม่ใช่คำขอ → caller ทำงานต่อ
+     *
+     * @param  string|null  $userId  platform user id — ส่งมาด้วยเพื่อตั้งธงรอสลิป (ดู presentPaymentInfo)
      */
-    public function maybePresentPaymentInfo(string $messageText): ?array
+    public function maybePresentPaymentInfo(string $messageText, ?string $userId = null): ?array
     {
         if ($this->looksLikePaymentInfoRequest($messageText)) {
-            return $this->presentPaymentInfo();
+            return $this->presentPaymentInfo($userId);
         }
 
         return null;
