@@ -297,6 +297,11 @@ trait FortuneConsentGateTrait
             'tier' => $pendingTier,
         ]);
 
+        // ⚡ (2026-08-03) ยอมรับกติกาแล้ว = ยืนยันชัดที่สุด → ห้ามถาม "QR หรือ บัตร?" ต่ออีกด่าน
+        //   ธง skip_payment_gate ของรอบแรกถูก Cache::pull กินไปแล้ว ต้อง re-arm ก่อน re-dispatch
+        //   (เจ้าของ: "ไม่ใช่มาถาม แล้วถามอีก" — อยากจ่ายบัตรพิมพ์ "บัตร" หลังบิลออกได้)
+        Cache::put("fortune:skip_payment_gate:{$uid}", true, 300);
+
         // re-dispatch — startDeepReadingFlow route ตาม tier (celtic/deep)
         //   รอบนี้ consentGateOrNull จะ Cache::pull(consent_ok) เจอ → ผ่าน → ออก QR
         return $this->startDeepReadingFlow($uid, $userProfile, $pendingTier, null);

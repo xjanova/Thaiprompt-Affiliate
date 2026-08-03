@@ -2137,6 +2137,33 @@ class FortuneConversationService
                     return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
                 }
 
+                // 🎯 (2026-08-03) ลูกค้าพิมพ์ "เลขราคา" โดดๆ ("39" / "99" / "เอา 99 ค่ะ")
+                //   เดิม: ไม่เข้า isGenericFortuneRequest (ไม่มีคำว่า "ดูดวง") → ตกไป AI chat
+                //         → บอทถามกลับ "อยากดูเรื่องอะไรคะ" (เจ้าของ: "มาถาม แล้วถามอีก")
+                //   ใหม่: → startDeepReadingFlow ที่ resolve tier จากข้อความเอง → บิล + QR ทันที
+                //
+                //   ⚠️ ห้ามแย่งข้อความของคนที่จ่ายแล้ว/กำลังทำนาย — เพราะ startDeepReadingFlow
+                //      จะ silent_skip (isInPrediction) แล้วบอทเงียบใส่ลูกค้าที่จ่ายเงินแล้ว
+                //      (เคารพ [[rule_paid_customer_bypass_all_guards]] / [[rule_clear_silence_on_paid]])
+                //   ⚠️ TIER_CHOICE ปล่อยให้ handleTierChoice ดูแลเอง — reading เดิมยังใช้ต่อได้ ไม่ต้องสร้างใหม่
+                //   ⚠️ (เจ้าของ 2026-08-03) "แต่ต้องไม่มีบิลค้าง" — มีบิลค้างอยู่ห้าม fast-track บิลใหม่
+                //      → ปล่อยไหลไป flow เดิม (payFirstGate เตือน + handler เดิมส่ง QR บิลเก่าซ้ำให้)
+                if (! $earlyGenericBlocking
+                    && $earlyActiveCheck?->conversation_status !== FortuneReading::STATUS_TIER_CHOICE
+                    && ($typedTierEarly = $this->resolveExplicitTierRequest($messageText)) !== null
+                    && ! $this->hasPendingUnpaidBill($facebookUserId)
+                    && ! $this->isInPrediction($facebookUserId)
+                    && ! $this->hasPaidActiveReading($facebookUserId)) {
+                    Log::info('Fortune: พิมพ์เลขราคาแพคเกจโดดๆ (early-gate) → สร้างบิลทันที', [
+                        'user_id' => $facebookUserId,
+                        'tier' => $typedTierEarly,
+                        'text_preview' => mb_substr($messageText, 0, 80),
+                        'active_status' => $earlyActiveCheck?->conversation_status,
+                    ]);
+
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
+                }
+
                 // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
                 $activeReading = $earlyActiveCheck;
 
@@ -5843,6 +5870,34 @@ class FortuneConversationService
                 ]);
 
                 return $this->foreignServiceClosedResponse();
+            }
+
+            // 🎯 (2026-08-03) ลูกค้าพิมพ์ราคาแพคเกจมาเอง ("ดูดวง 39" / "39" / "99" / "celtic")
+            //   = รู้ราคาแล้ว ตั้งใจซื้อแล้ว → ข้ามเมนูเลือกแพคเกจ + ข้ามการ์ด intro
+            //   + ข้ามเมนู "QR หรือ บัตร?" → ออกบิล + QR ทันที
+            //   เจ้าของสั่ง: "ควรบายพาสทุกกฎ ไปสร้างบิลส่ง qrcode เลย ไม่ใช่มาถาม แล้วถามอีก"
+            //
+            //   ⚠️ chokepoint เดียวครอบ caller ทั้งหมด (early-gate / basic_done / AI chat / LINE)
+            //   ⚠️ ไม่แตะ guard ความปลอดภัย — ผ่าน isInPrediction + foreign gate มาแล้วด้านบน,
+            //      ส่วนบิลค้าง (resume/dedup) + กล่องกติกา (consent gate) อยู่ปลายทางเหมือนเดิม
+            //   ⚠️ (เจ้าของ 2026-08-03) "แต่ต้องไม่มีบิลค้าง" — มีบิลค้าง = ไม่ fast-track
+            //      → ปล่อยเข้าเมนู/การ์ด intro ตามเดิม แล้ว dedup ปลายทางจะ reuse บิลเดิมให้
+            if ($forceTier === null && ! $this->hasPendingUnpaidBill($facebookUserId)) {
+                $typedTier = $this->resolveExplicitTierRequest($originalMessage);
+                if ($typedTier !== null) {
+                    $forceTier = $typedTier;
+
+                    // ⚡ reuse ธงเดิมของปุ่ม postback → routePayFirstDeep / startCelticCrossFlow
+                    //   จะ pull ธงนี้แล้วข้ามเมนูวิธีชำระเงินให้เอง
+                    //   (ลูกค้าที่อยากจ่ายบัตร พิมพ์ "บัตร" หลังบิลออกได้ — handlePaymentMethodSelection รับ)
+                    Cache::put("fortune:skip_payment_gate:{$facebookUserId}", true, now()->addMinutes(10));
+
+                    Log::info('Fortune: ลูกค้าพิมพ์ราคาแพคเกจเอง → ข้ามเมนู สร้างบิล+QR ทันที', [
+                        'facebook_user_id' => $facebookUserId,
+                        'tier' => $typedTier,
+                        'message_preview' => mb_substr((string) $originalMessage, 0, 60),
+                    ]);
+                }
             }
 
             // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
@@ -12493,6 +12548,100 @@ class FortuneConversationService
         }
 
         return false;
+    }
+
+    /**
+     * 🎯 (2026-08-03) ลูกค้าพิมพ์ราคาแพคเกจมาเอง = รู้ราคาแล้ว ตั้งใจซื้อแล้ว
+     *
+     * เจ้าของสั่ง: "พิมพ์ ดูดวง 39 หรือ พิมพ์ 39 / 99 มาแล้ว ควรบายพาสทุกกฎ
+     *              เพื่อไปสร้างบิลส่ง qrcode เลย ไม่ใช่มาถาม แล้วถามอีก"
+     *
+     * ต่อยอดหลักการเดิมของ Soft Intro Gate (2026-05-27/05-31):
+     *   - "ดูดวง" เปล่าๆ / กดปุ่ม → ยังต้องผ่านการ์ด intro (ลูกค้าอาจยังไม่รู้ว่าเสียเงิน)
+     *   - "พิมพ์" ตัวเลข/ชื่อแพคเกจเอง → ตั้งใจ + รู้ราคา → ตรงดิ่งไปบิล
+     *
+     * @return string|null 'celtic' | 'deep' | null (null = ไม่ได้ระบุแพคเกจชัด / แพคเกจนั้นปิดอยู่)
+     */
+    protected function resolveExplicitTierRequest(?string $text): ?string
+    {
+        if ($text === null) {
+            return null;
+        }
+
+        $normalized = mb_strtolower(trim($text));
+        if ($normalized === '') {
+            return null;
+        }
+
+        // 🛑 บริบท "เงินที่จ่ายไปแล้ว" — ตัวเลขคือยอดที่โอน ไม่ใช่แพคเกจที่เลือก
+        //    เคสอันตรายสุด: "โอน 99 แล้วค่ะ" → ถ้าเผลอสร้างบิลใหม่ = ลูกค้าที่จ่ายแล้วโดนบิลซ้ำ
+        //    (isPaymentClaimRequest จับ "โอนแล้ว" ติดกันเท่านั้น — มีเลขคั่นกลางจะหลุด จึงต้องกวาดคำเพิ่ม)
+        //    ⚠️ กว้างไว้ก่อนโดยตั้งใจ: ถามซ้ำ 1 ครั้ง เสียหายน้อยกว่าออกบิลซ้ำให้คนจ่ายแล้ว
+        if ($this->isPaymentClaimRequest($text)) {
+            return null;
+        }
+        $paymentContext = ['โอน', 'จ่าย', 'ชำระ', 'สลิป', 'slip', 'เงินเข้า', 'ยอด', 'คืนเงิน', 'refund'];
+        foreach ($paymentContext as $kw) {
+            if (mb_strpos($normalized, $kw) !== false) {
+                return null;
+            }
+        }
+
+        // 🛑 ตัวเลขที่บังเอิญตรงราคา — อายุ / ปีเกิด / เบอร์โทร ("อายุ 39 ค่ะ")
+        $numericNoise = ['อายุ', 'ขวบ', 'เกิด', 'พ.ศ', 'พศ', 'ค.ศ', 'คศ', 'เบอร์', 'โทร', 'รหัส', 'บ้านเลขที่'];
+        foreach ($numericNoise as $kw) {
+            if (mb_strpos($normalized, $kw) !== false) {
+                return null;
+            }
+        }
+
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
+
+        // 📏 สัญญาณ "ตัวเลข" นับเฉพาะข้อความสั้น — กันเลข 39/99 ที่โผล่กลางเรื่องเล่ายาวๆ
+        //    ครอบเคสจริงทั้งหมด: "39" / "99" / "ดูดวง 39" / "ขอดูดวง 99 บาทค่ะ" / "เอา 39 ค่ะ"
+        $shortEnoughForNumber = mb_strlen($normalized) <= 80;
+
+        // 🔢 word-boundary กัน match "139" / "990" / "3939" / "2539"
+        $mentionsPrice = function (int $price) use ($normalized, $shortEnoughForNumber): bool {
+            if ($price <= 0 || ! $shortEnoughForNumber) {
+                return false;
+            }
+
+            return (bool) preg_match('/(?<![\d])'.$price.'(?![\d])/u', $normalized);
+        };
+
+        // 🔮 เช็ค Celtic ก่อน Deep เสมอ (ล้อ handleTierChoice) — เผื่อข้อความมีทั้ง 2 เลข
+        //   includePrice: false → ให้ $mentionsPrice คุมเรื่องเลขเอง (มี length guard + word boundary)
+        if ($celticEnabled) {
+            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            if ($mentionsPrice($celticPrice) || $this->matchesCelticCrossKeyword($text, includePrice: false)) {
+                return 'celtic';
+            }
+        }
+
+        // 🔹 Deep 39 — ถ้า Deep ปิดอยู่ต้องคืน null เพื่อให้ข้อความ "หมดช่วงโปร" เดิมทำงานต่อ
+        if ($deepEnabled) {
+            $deepPrice = (int) $this->getDeepReadingPrice();
+            if ($mentionsPrice($deepPrice)) {
+                return 'deep';
+            }
+
+            // 📛 ชื่อแพคเกจแบบชัดเจน — ตั้งใจใช้ list ของตัวเอง ไม่เรียก isExplicitDeepReadingRequest
+            //    เพราะ list นั้นมี "ดูเพิ่มเติม" ที่กำกวม (อาจแปลว่า "ขอดูอีกหน่อย" ไม่ใช่ชื่อแพคเกจ)
+            //    → คำกำกวมต้องได้เมนูเลือกแพคเกจตามเดิม ห้ามตัดบิล 39 ให้เลย
+            $deepNamed = [
+                'ดูดวงเชิงลึก', 'ดูเชิงลึก', 'ดูดวงละเอียด', 'ดูละเอียด',
+                'ดูดวงแบบละเอียด', 'ดูแบบละเอียด', 'เอาละเอียด', 'ดูดวงdeep',
+            ];
+            foreach ($deepNamed as $kw) {
+                if (mb_strpos($normalized, $kw) !== false) {
+                    return 'deep';
+                }
+            }
+        }
+
+        return null;
     }
 
     protected function isExplicitDeepReadingRequest(string $text): bool

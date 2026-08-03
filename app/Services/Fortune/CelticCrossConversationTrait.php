@@ -485,7 +485,8 @@ trait CelticCrossConversationTrait
                     'reading_id' => $reading->id,
                 ]);
 
-                return $this->startCelticCrossFlow($reading);
+                // ⚡ (2026-08-03) ยืนยันแพคเกจแล้ว = ไม่ต้องถาม "QR หรือ บัตร?" ซ้ำ → ออก QR เลย
+                return $this->startCelticCrossFlow($reading, skipStripeGate: true);
             }
 
             $acceptKeywords = [
@@ -500,7 +501,8 @@ trait CelticCrossConversationTrait
                         'keyword' => $kw,
                     ]);
 
-                    return $this->startCelticCrossFlow($reading);
+                    // ⚡ (2026-08-03) ยืนยันแพคเกจแล้ว → QR ทันที ไม่ถามวิธีชำระซ้ำ
+                    return $this->startCelticCrossFlow($reading, skipStripeGate: true);
                 }
             }
         }
@@ -522,7 +524,8 @@ trait CelticCrossConversationTrait
                         'keyword' => $kw,
                     ]);
 
-                    return $this->startCelticCrossFlow($reading);
+                    // ⚡ (2026-08-03) เลือกแพคเกจแล้ว → QR ทันที ไม่ถามวิธีชำระซ้ำ
+                    return $this->startCelticCrossFlow($reading, skipStripeGate: true);
                 }
             }
         }
@@ -547,7 +550,10 @@ trait CelticCrossConversationTrait
         ];
         foreach ($celticKeywords as $kw) {
             if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
-                return $this->startCelticCrossFlow($reading);
+                // ⚡ (2026-08-03) พิมพ์/กด "99" หรือ "celtic" = เลือกแพคเกจแล้ว รู้ราคาแล้ว
+                //   → ออกบิล + QR ทันที ไม่ถาม "QR หรือ บัตร?" ซ้ำอีกด่าน
+                //   (เจ้าของ: "ไม่ใช่มาถาม แล้วถามอีก" — อยากจ่ายบัตรพิมพ์ "บัตร" หลังบิลออกได้)
+                return $this->startCelticCrossFlow($reading, skipStripeGate: true);
             }
         }
 
@@ -575,7 +581,9 @@ trait CelticCrossConversationTrait
                 $reading->update($updateData);
 
                 // 💳 (2026-05-22) Route ตาม payment mode
-                return $this->routePayFirstDeep($reading);
+                // ⚡ (2026-08-03) พิมพ์/กด "39" = เลือกแพคเกจแล้ว รู้ราคาแล้ว → QR ทันที
+                //   ไม่ถาม "QR หรือ บัตร?" ซ้ำ (เจ้าของ: "ไม่ใช่มาถาม แล้วถามอีก")
+                return $this->routePayFirstDeep($reading, skipPaymentGate: true);
             }
         }
 
@@ -3936,18 +3944,32 @@ trait CelticCrossConversationTrait
 
     /**
      * Detection: ลูกค้าต้องการ Celtic Cross
+     *
+     * @param  bool  $includePrice  นับ "99 บาท" เป็นสัญญาณด้วยไหม
+     *                              (resolveExplicitTierRequest ปิดไว้ เพราะจัดการเลขเองพร้อม length guard)
      */
-    protected function matchesCelticCrossKeyword(string $text): bool
+    protected function matchesCelticCrossKeyword(string $text, bool $includePrice = true): bool
     {
         $keywords = [
             'celtic cross', 'celtic', 'เซลติก', 'ไพ่ยิปซีเต็ม', 'ไพ่ยิปซีเต็มสำรับ',
             'ดูเต็ม', 'ดูชุดใหญ่', 'ทาโรต์เต็ม', 'tarot full',
-            '99 บาท', '99บาท',
         ];
 
         $lower = mb_strtolower(trim($text));
         foreach ($keywords as $kw) {
             if (mb_strpos($lower, mb_strtolower($kw)) !== false) {
+                return true;
+            }
+        }
+
+        // 💰 (2026-08-03) ราคา Celtic — ต้องมี word boundary
+        //   🐛 เดิมใช้ substring '99 บาท' ตรงๆ → "ราคา 1399 บาทซื้อดีไหม" มี "99 บาท" อยู่ข้างใน
+        //      → ถูกลากเข้า Celtic flow (สร้างบิล 99 ให้คนที่แค่ถามเรื่องอื่น)
+        //   ⚠️ ดึงราคาจาก service ไม่ hardcode — admin เปลี่ยนราคาได้
+        if ($includePrice) {
+            $celticPriceInt = (int) app(CelticCrossService::class)->getPrice();
+            if ($celticPriceInt > 0
+                && preg_match('/(?<![\d])'.$celticPriceInt.'(?![\d])\s*(฿|บาท|บ\.?)/u', $lower)) {
                 return true;
             }
         }
