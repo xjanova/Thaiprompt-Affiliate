@@ -180,6 +180,74 @@ class FortuneUserCredit extends Model
     }
 
     /**
+     * 🌙 (2026-08-04) "เรารู้ว่าลูกค้าคนนี้เกิดวันอะไรในสัปดาห์ไหม" — ใช้กับเส้นเสิร์ฟดวงรายวันเท่านั้น
+     *
+     * 🚨 **คนละคำถามกับ FortuneReading::findLatestBirthdate() ห้ามใช้สลับกัน**
+     *   findLatestBirthdate  = "รู้ วัน/เดือน/ปี ครบพอเปิด Deep/Celtic ไหม"
+     *   findBirthDayIndex    = "รู้แค่วันในสัปดาห์ก็พอ" (บทความรายวันต้องการเท่านี้จริง ๆ)
+     *
+     *   สลับกันเมื่อไหร่ = บอทพูดว่า "แม่หมอจดวันเกิดของเจ้าชะตาไว้แล้วนะคะ" ใส่คนที่ให้แค่
+     *   ชื่อวัน แล้วพอซื้อ Deep จริงต้องถามวันเกิดใหม่ = บอทโกหกลูกค้า
+     *   (ดู DailyHoroscopeModeTrait::dailyKnowsFullBirthdate ที่ต้องคงใช้ findLatestBirthdate)
+     *
+     * ทำไมต้องมีเมธอดนี้: บทความรายวัน (`horoscope_daily_predictions.birth_day`) ผูกกับ
+     * **วันในสัปดาห์อย่างเดียว** — ลูกค้าที่กดปุ่ม 7 วันเกิดตอบ DM เรา ให้ข้อมูลครบพอเสิร์ฟแล้ว
+     * แต่ rememberDailyBirthInfo() เก็บได้แค่ `birth_day` (ไม่มี ว/ด/ป ให้เก็บลง `birth_date`)
+     * → เดิมเส้น DM ตัดสินด้วย findLatestBirthdate ซึ่งอ่านแต่ `birth_date`
+     *   ⇒ คนกลุ่มนี้ถูกถามวันเกิดซ้ำทุกวันเหมือนไม่เคยคุยกัน
+     *   (prod 2026-08-04: `daily_dm_button` 416 คน จากทั้งหมด 493 = 84% ตกหล่นทั้งก้อน)
+     *
+     * ลำดับความน่าเชื่อถือ — วันเกิดเต็มชนะเสมอ:
+     *   1. findLatestBirthdate() — readings ที่จ่ายเงินแล้ว → credits.birth_date
+     *   2. credits.birth_day — จากปุ่ม/ชื่อวันในโหมด DM ดูดวงรายวัน
+     *
+     * @return int|null 0=อาทิตย์ … 6=เสาร์ (ตรงกับคอลัมน์ birth_day)
+     *                  null = ไม่รู้จริง ๆ → ผู้เรียกต้องกลับไปถามวันเกิดตามเดิม
+     */
+    public static function findBirthDayIndex(string $facebookUserId, string $platform = 'facebook'): ?int
+    {
+        try {
+            $birthdate = FortuneReading::findLatestBirthdate($facebookUserId);
+
+            if ($birthdate instanceof Carbon) {
+                // ⚠️ dayOfWeek (0-6) เท่านั้น — dayOfWeekIso ให้อาทิตย์=7 ซึ่งไม่มีในตารางบทความ
+                return $birthdate->dayOfWeek;
+            }
+
+            // ช่วง deploy ที่โค้ดขึ้นก่อน migrate → ถือว่าไม่รู้ (ไม่ throw ใส่ลูกค้า)
+            if (! \Illuminate\Support\Facades\Schema::hasColumn('fortune_user_credits', 'birth_day')) {
+                return null;
+            }
+
+            $day = self::byUser($facebookUserId, $platform)
+                ->whereNotNull('birth_day')
+                ->value('birth_day');
+
+            return self::normalizeBirthDayIndex($day);
+        } catch (\Throwable $e) {
+            // fail-safe = "ไม่รู้" → กลับไปถามวันเกิด ดีกว่าเดาผิดแล้วส่งดวงของคนอื่น
+            return null;
+        }
+    }
+
+    /**
+     * ค่าที่อ่านมาเป็น index วันเกิดที่ใช้ได้จริงไหม (0-6)
+     *
+     * แยกออกมาเพราะเป็นส่วนบริสุทธิ์ที่เทสต์ได้โดยไม่ต้องมี DB —
+     * และเพราะ index นอกช่วงต้องแปลว่า "ไม่รู้" ไม่ใช่ปล่อยไปทำ array index ระเบิดปลายทาง
+     */
+    public static function normalizeBirthDayIndex(mixed $day): ?int
+    {
+        if ($day === null || $day === '' || ! is_numeric($day)) {
+            return null;
+        }
+
+        $index = (int) $day;
+
+        return ($index >= 0 && $index <= 6) ? $index : null;
+    }
+
+    /**
      * 👤 จดจำชื่อจริงของลูกค้าจาก source ที่ trust ได้ (เช่น Facebook comment payload from.name)
      *
      * Behavior:

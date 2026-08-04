@@ -687,15 +687,19 @@ class FacebookWebhookController extends Controller
      *
      * ⚠️ ไม่เขียน logic เอง — แปลงเป็นชื่อวันแล้วส่งเข้าด่านเดียวกับปุ่ม 7 วันเกิด
      *    เพื่อให้ผ่าน guard ครบชุด (จ่ายเงินแล้ว/บิลค้าง/กดรัว) ที่เดียว
+     *
+     * 🚨 (2026-08-04) **ต้องใช้ตัวตัดสิน "รู้วันเกิดไหม" ตัวเดียวกับ buildDailyReadyTeaser()**
+     *    ปุ่มนี้ถูกยื่นตอน teaser ตอบว่ารู้ — ถ้าตรงนี้ตัดสินด้วยเกณฑ์ที่แคบกว่า
+     *    ลูกค้าจะกดปุ่มแล้วโดนถามวันเกิดใหม่ = ปุ่มตาย ซึ่งแย่กว่าไม่มีปุ่มเลย
      */
     protected function handleDailyShowMine(string $senderId): void
     {
         $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 
         try {
-            $birthdate = \App\Models\FortuneReading::findLatestBirthdate($senderId);
+            $dayIndex = \App\Models\FortuneUserCredit::findBirthDayIndex($senderId, 'facebook');
 
-            if (! $birthdate) {
+            if ($dayIndex === null || ! isset($dayNames[$dayIndex])) {
                 // ไม่ควรเกิด (ปุ่มนี้ขึ้นเฉพาะคนที่เรารู้วันเกิด) — แต่ถ้าเกิดต้องไม่เงียบ
                 $this->conversationService?->markDailyPending('facebook', $senderId);
                 $this->facebookService?->sendQuickReplies(
@@ -709,7 +713,7 @@ class FacebookWebhookController extends Controller
             }
 
             $this->conversationService?->markDailyPending('facebook', $senderId);
-            $this->processConversationalMessage($senderId, 'วัน'.$dayNames[$birthdate->dayOfWeek]);
+            $this->processConversationalMessage($senderId, 'วัน'.$dayNames[$dayIndex]);
         } catch (\Throwable $e) {
             Log::warning('🔔 Daily: ปุ่มดูดวงวันนี้ล้ม', [
                 'user_id' => $senderId,

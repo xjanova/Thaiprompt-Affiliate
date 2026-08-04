@@ -245,6 +245,12 @@ trait DailyHoroscopeModeTrait
      *
      * ใช้ตัดสินว่าจะขอวันเกิดเพิ่มหรือไม่ — ถามซ้ำกับคนที่ให้ไว้แล้วดูแย่กว่าไม่ถาม
      * ผิดพลาด → ถือว่าไม่รู้ (กลับไปขอ) ปลอดภัยกว่าอ้างว่าจดไว้แล้วทั้งที่ไม่มี
+     *
+     * 🚨 **ห้ามเปลี่ยนไปใช้ FortuneUserCredit::findBirthDayIndex()** (2026-08-04)
+     *   ตัวนั้นนับ "รู้แค่วันในสัปดาห์" ว่ารู้ด้วย — พอมาถึงตรงนี้บอทจะพูดว่า
+     *   "แม่หมอจดวันเกิดของเจ้าชะตาไว้แล้วนะคะ" ใส่คนที่กดปุ่มบอกแค่ "วันพุธ"
+     *   แล้วพอเขาซื้อ Deep/Celtic จริง flow ต้องถาม ว/ด/ป ใหม่ = บอทโกหกลูกค้า
+     *   ตรงนี้ต้องเป็น "รู้ ว/ด/ป ครบ" เท่านั้น จึงต้องคง findLatestBirthdate ไว้
      */
     protected function dailyKnowsFullBirthdate(string $userId): bool
     {
@@ -347,6 +353,10 @@ trait DailyHoroscopeModeTrait
      *   2. เทียบแบบ **ตรงตัวเป๊ะ** หลังตัดคำลงท้าย ไม่ใช่ substring
      *      → "ไม่เอา" ไม่ match "เอา" · "ค่ะ" เปล่า ๆ ไม่นับเป็นการตอบรับ (กำกวมเกินไป)
      *
+     * 🌙 (2026-08-04) ข้อ 1 ใช้ findBirthDayIndex ไม่ใช่ findLatestBirthdate —
+     *   คนที่เห็นข้อความ "กดปุ่มด้านล่างได้เลย" แล้วพิมพ์ตอบแทน คือกลุ่มเดียวกับที่เคย
+     *   ตอบเราด้วยปุ่ม (มีแต่ birth_day) ถ้าเช็คด้วยวันเกิดเต็ม คนกลุ่มนี้จะตอบรับแล้วบอทเงียบ
+     *
      * @return array{0: int, 1: null}|null [index วันเกิด, ไม่มีวันเดือนปีใหม่]
      */
     protected function resolveDayIndexFromShortYes(string $text, string $userId): ?array
@@ -355,13 +365,14 @@ trait DailyHoroscopeModeTrait
             return null;
         }
 
-        $birthdate = FortuneReading::findLatestBirthdate($userId);
+        $platform = $this->currentPlatform ?? 'facebook';
+        $dayIndex = \App\Models\FortuneUserCredit::findBirthDayIndex($userId, $platform);
 
-        if (! $birthdate instanceof \Carbon\Carbon) {
+        if ($dayIndex === null) {
             return null;
         }
 
-        return [$birthdate->dayOfWeek, null];
+        return [$dayIndex, null];
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Models\FortuneDailyHoroscopePost;
 use App\Models\FortuneHoroscopePost;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneUserCredit;
 use App\Models\HoroscopeDailyPrediction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -101,11 +102,14 @@ class FortuneGreetingService
             }
 
             $displayName = $this->normalizeName($name);
-            $birthdate = FortuneReading::findLatestBirthdate($userId);
+
+            // 🌙 (2026-08-04) รวมคนที่ตอบด้วย**ปุ่มวันเกิด** ด้วย (มีแต่ birth_day ไม่มี birth_date)
+            //   บทความกล่องนี้เลือกด้วยวันในสัปดาห์อยู่แล้ว จึงเสิร์ฟคนกลุ่มนั้นได้เต็ม ๆ
+            $dayIndex = FortuneUserCredit::findBirthDayIndex($userId, $platform);
 
             // 2️⃣ มีวันเกิด → ดวงเฉพาะวันเกิดนั้น / ไม่มี → ส่งทั้ง 7 วันให้เลือกอ่านเอง
-            $boxes = $birthdate instanceof Carbon
-                ? $this->buildTodayBoxForBirthday($displayName, $birthdate)
+            $boxes = $dayIndex !== null
+                ? $this->buildTodayBoxForBirthday($displayName, $dayIndex)
                 : $this->buildTodayBoxAllDays($displayName);
 
             // 3️⃣ วันนี้ยังไม่มีบทความ → ไม่ต้องมีกล่องนี้ (ไม่ใส่ generic แทน ตาม spec)
@@ -168,12 +172,11 @@ class FortuneGreetingService
      *
      * @return array{text: string, merge_text: string}|null
      */
-    protected function buildTodayBoxForBirthday(string $name, Carbon $birthdate): ?array
+    protected function buildTodayBoxForBirthday(string $name, int $dayIndex): ?array
     {
-        // ⚠️ ต้องใช้ dayOfWeek (0=อาทิตย์ … 6=เสาร์) ให้ตรงกับคอลัมน์ birth_day
-        //    ห้ามใช้ dayOfWeekIso (1–7) เพราะคนเกิดวันอาทิตย์จะได้ 7 = ไม่มีในตาราง
-        $dayIndex = $birthdate->dayOfWeek;
-
+        // ⚠️ $dayIndex ต้องเป็น dayOfWeek (0=อาทิตย์ … 6=เสาร์) ให้ตรงกับคอลัมน์ birth_day
+        //    ห้ามส่ง dayOfWeekIso (1–7) มา เพราะคนเกิดวันอาทิตย์จะได้ 7 = ไม่มีในตาราง
+        //    (ผู้เรียกใช้ FortuneUserCredit::findBirthDayIndex ซึ่งการันตีช่วง 0-6 ให้แล้ว)
         $prediction = $this->findTodayPrediction($dayIndex);
         if ($prediction === null) {
             return null;
@@ -442,13 +445,15 @@ class FortuneGreetingService
     public function buildDailyReadyTeaser(string $userId, string $name): ?string
     {
         try {
-            $birthdate = FortuneReading::findLatestBirthdate($userId);
+            // 🌙 (2026-08-04) ต้องเป็น findBirthDayIndex ไม่ใช่ findLatestBirthdate —
+            //   บทความรายวันต้องการแค่ "วันในสัปดาห์" และคนส่วนใหญ่ตอบเราด้วย**ปุ่ม**
+            //   ซึ่งให้ birth_day มาแต่ไม่มี birth_date (prod: 416/493 = 84%)
+            //   ใช้ตัวเก่า = ถามวันเกิดซ้ำใส่คนที่เพิ่งตอบเมื่อวาน เหมือนบอทไม่จำอะไรเลย
+            $dayIndex = FortuneUserCredit::findBirthDayIndex($userId);
 
-            if (! $birthdate instanceof Carbon) {
+            if ($dayIndex === null) {
                 return null;   // ยังไม่รู้วันเกิด → ไปทางคำเชิญ
             }
-
-            $dayIndex = $birthdate->dayOfWeek;
 
             // มีบทความของวันนี้จริงไหม — ห้ามชวนดูของที่ยังไม่มี
             // (ช่วงหลังเที่ยงคืนถึง 6 โมงจะยังไม่มี → คืน null ใช้ระบบเดิม)
