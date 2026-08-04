@@ -2404,9 +2404,16 @@ class FortuneConversationService
 
                             $celticEnabledBd = (bool) ($this->settings->enable_celtic_cross ?? false);
 
+                            // 💎 (2026-08-04) เพิ่งได้ดวงรายวันวันนี้ + ให้วันเกิดเต็มตามที่แม่หมอขอ
+                            //   → ห้ามส่งบทความใบเดิมซ้ำ ให้ชวนดูเชิงลึกแทน
+                            $dailyUpgrade = $this->maybeInviteDeepAfterDailySent($facebookUserId, $standaloneBirthdate);
+                            if ($dailyUpgrade !== null) {
+                                return $dailyUpgrade;
+                            }
+
                             // 🎂 (2026-07-31) โหมด daily — ให้ดวงรายวันฟรีก่อน แล้วค่อยชวนเนียน ๆ
                             //   (เดิมเจอวันเกิดแล้วเด้งขายทันที = ขอแล้วขายเลย)
-                            $dailyFirst = $this->buildDailyReadingForDetectedBirthdate($standaloneBirthdate, $userProfile);
+                            $dailyFirst = $this->buildDailyReadingForDetectedBirthdate($standaloneBirthdate, $userProfile, $facebookUserId);
                             if ($dailyFirst !== null) {
                                 return [
                                     'action' => 'birthdate_detected',
@@ -2688,8 +2695,15 @@ class FortuneConversationService
                     $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $freeEnabled = $this->settings->isFreeReadingEnabled();
 
+                    // 💎 (2026-08-04) เพิ่งได้ดวงรายวันวันนี้ + ให้วันเกิดเต็มตามที่แม่หมอขอ
+                    //   → ห้ามส่งบทความใบเดิมซ้ำ ให้ชวนดูเชิงลึกแทน (owner 2026-08-04)
+                    $dailyUpgrade = $this->maybeInviteDeepAfterDailySent($facebookUserId, $standaloneBirthdate);
+                    if ($dailyUpgrade !== null) {
+                        return $dailyUpgrade;
+                    }
+
                     // 🎂 (2026-07-31) โหมด daily — ให้ดวงรายวันฟรีก่อน แล้วค่อยชวนเนียน ๆ
-                    $dailyFirst = $this->buildDailyReadingForDetectedBirthdate($standaloneBirthdate, $userProfile);
+                    $dailyFirst = $this->buildDailyReadingForDetectedBirthdate($standaloneBirthdate, $userProfile, $facebookUserId);
                     if ($dailyFirst !== null) {
                         Log::info('Fortune: วันเกิดจากข้อความแรก → ส่งดวงรายวันก่อน (โหมด daily)', [
                             'facebook_user_id' => $facebookUserId,

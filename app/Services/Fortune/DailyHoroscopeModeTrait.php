@@ -653,10 +653,14 @@ trait DailyHoroscopeModeTrait
      *    อยู่หลังกำแพง active reading/บิลค้างมาแล้ว) เมธอดนี้จึงไม่เช็คซ้ำ
      *
      * @param  string  $birthDate  Y-m-d ที่ parse ได้แล้ว
+     * @param  string|null  $userId  ใส่มาเพื่อจดวันเกิด + ธง "วันนี้ส่งดวงให้แล้ว" (ดูหมายเหตุในตัวเมธอด)
      * @return string|null null = ไม่ใช่โหมด daily หรือวันนี้ยังไม่มีบทความ → ใช้ข้อความเดิม
      */
-    protected function buildDailyReadingForDetectedBirthdate(string $birthDate, ?array $userProfile = null): ?string
-    {
+    protected function buildDailyReadingForDetectedBirthdate(
+        string $birthDate,
+        ?array $userProfile = null,
+        ?string $userId = null
+    ): ?string {
         try {
             $platform = $this->currentPlatform ?? 'facebook';
 
@@ -681,6 +685,13 @@ trait DailyHoroscopeModeTrait
             // 🙏 คำอวยพรปิดท้าย — seed ด้วยวันเกิด+วันที่ ให้คงที่ในวันเดียวกัน
             $blessing = $greeting->pickBlessing($birthDate.':'.now()->toDateString());
 
+            // 💾 (2026-08-04) จดวันเกิดเต็ม + ประทับเวลา "วันนี้ส่งดวงรายวันให้คนนี้แล้ว"
+            //    ถ้าไม่จด ลูกค้าพิมพ์วันเกิดซ้ำอีกรอบจะได้บทความใบเดิมกลับไปอีก
+            //    (บั๊กเดียวกับที่ maybeInviteDeepAfterDailySent แก้ — แค่คนละประตูเข้า)
+            if ($userId !== null && $userId !== '') {
+                $this->rememberDailyBirthInfo($platform, $userId, $dayIndex, $birthDate);
+            }
+
             Log::info('🎂 Daily: ลูกค้าพิมพ์วันเกิดมาเอง → ส่งดวงรายวันให้ก่อน', [
                 'day_index' => $dayIndex,
                 'birth_date' => $birthDate,
@@ -699,6 +710,143 @@ trait DailyHoroscopeModeTrait
 
             return null;
         }
+    }
+
+    /**
+     * 💎 (2026-08-04) เพิ่งได้ดวงรายวันไปวันนี้ แล้วส่ง "วันเดือนปีเกิดเต็ม" ตามที่แม่หมอขอ
+     *    → ห้ามส่งดวงรายวันใบเดิมซ้ำ ให้ชวนดูเชิงลึกแทน
+     *
+     * owner: "หลังจากรับคำทำนายรายวันไปแล้ว บอทบอกให้ส่งวันเดือนปีเกิดละเอียด พอผู้ใช้ส่ง
+     *         ก็กลับไปส่งดวงรายวันเหมือนเดิมอีก ให้เปลี่ยนเป็นการชักชวนเข้าการดูดวงแบบละเอียดแทน"
+     *
+     * ต้นเหตุ: ท้ายกล่องดวงรายวันมีประโยค "ถ้าบอกวัน/เดือน/ปีเกิดเต็ม ๆ มาด้วย แม่หมอจะดูให้
+     *   ละเอียดกว่านี้ได้อีกเยอะ" (buildDailyHoroscopeReply) — ลูกค้าทำตาม แต่วันเกิดนั้นไหลไป
+     *   parseStandaloneBirthdate → buildDailyReadingForDetectedBirthdate ซึ่งเปิดบทความ
+     *   "ของคนเกิดวันเดียวกัน" = **ใบเดิมเป๊ะ ๆ ที่เพิ่งส่งไปเมื่อกี้** → คำสัญญากลายเป็นวนที่เดิม
+     *
+     * 🚨 แคบไว้โดยตั้งใจ — ยิงเฉพาะเมื่อครบทั้ง 4 ข้อ:
+     *   1. อยู่ในเลนดวงรายวัน (Facebook + ไม่ใช่โหมด transfer)
+     *   2. **วันนี้** ส่งดวงรายวันให้คนนี้ไปแล้วจริง (daily_dm_answered_at)
+     *   3. วันเกิดที่เพิ่งส่งมา ตรงกับวันที่เราเปิดดวงให้ (birth_day) = ยืนยันว่าเป็นใบเดิม
+     *      คนละวัน = เนื้อหาคนละใบ ปล่อยให้ได้ของใหม่ตามเดิม
+     *   4. มีบริการเชิงลึกเปิดอยู่จริง — ชวนไปหาของที่ปิดอยู่ = เสียลูกค้าเปล่า ๆ
+     *
+     * ⚠️ ไม่ใส่ตัวเลขราคา — ปุ่ม 💎 พาไป tier menu ซึ่งเป็นเจ้าของราคาตัวจริง
+     *    (แพทเทิร์นเดียวกับ dailyUpgradeQuickReply — ฝังเลขไว้ = เพี้ยนทันทีที่แอดมินแก้ราคา)
+     *
+     * @param  string  $birthDate  Y-m-d ที่ parse ได้แล้ว
+     * @return array|null null = ไม่ใช่เคสนี้ ปล่อย flow เดิมทำงานต่อ
+     */
+    protected function maybeInviteDeepAfterDailySent(string $userId, string $birthDate): ?array
+    {
+        try {
+            $platform = $this->currentPlatform ?? 'facebook';
+
+            // 1️⃣ เลนดวงรายวัน (เช็คถูกที่สุดก่อน — ไม่แตะ DB)
+            if (! (new FortuneBotMode($this->settings))->dailyReplyAllowedFor($platform, $userId)) {
+                return null;
+            }
+
+            // 4️⃣ ไม่มีของให้ชวนเลย → ปล่อยข้อความเดิม (ทางเดิมมีสำนวน "ปิดชั่วคราว" อยู่แล้ว)
+            $deepEnabled = (bool) $this->settings->isDeepReadingEnabled();
+            $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+            if (! $deepEnabled && ! $celticEnabled) {
+                return null;
+            }
+
+            $row = \App\Models\FortuneUserCredit::findByUser($userId, $platform);
+
+            // 2️⃣ ยังไม่เคยได้ดวงรายวันจากเรา → ให้ของฟรีก่อนตามเดิม (อย่าเพิ่งขาย)
+            if (! $row || empty($row->daily_dm_answered_at) || $row->birth_day === null) {
+                return null;
+            }
+
+            if (! $row->daily_dm_answered_at->isSameDay(now())) {
+                return null;   // ส่งไปเมื่อวาน/ก่อนหน้า → วันนี้ยังมีสิทธิ์ได้ของใหม่
+            }
+
+            // 3️⃣ ใบเดิมจริงไหม
+            $dayIndex = \Carbon\Carbon::parse($birthDate)->dayOfWeek;
+
+            if ((int) $row->birth_day !== $dayIndex) {
+                return null;   // คนละวันเกิด = คนละบทความ → ส่งให้ตามปกติ
+            }
+
+            // 🐛 กันบอทโกหก: daily_dm_answered_at แปลว่า "ลูกค้าตอบวันเกิดกลับมา" ไม่ใช่
+            //    "ได้บทความไปแล้ว" — buildDailyHoroscopeReply ประทับเวลานี้แม้ตอนที่ไม่มีบทความ
+            //    แล้วส่ง buildDailyUnavailableMessage ไปแทน (ช่วงก่อน 06:00 / job สร้างบทความล่ม)
+            //    ถ้าไม่เช็ค เราจะพูดว่า "ดวงที่เพิ่งส่งไป..." ใส่คนที่ยังไม่เคยได้ดวงเลย
+            //    ⚠️ ต้องเช็คของ "วันเกิดวันนี้" จริง ๆ ไม่ใช่ dailyArticlesReadyToday() —
+            //       ตัวนั้นดูแค่ว่าวันนี้มีบทความไหม แต่กล่องดวงย้อนหลังได้ 2 วัน
+            //       (ลูกค้าได้ของเก่าที่บอกตามตรง = ได้ของจริง ต้องนับว่าส่งแล้ว)
+            if (app(FortuneGreetingService::class)->buildDailyBoxForDayIndex($dayIndex, 'คุณ') === null) {
+                return null;
+            }
+
+            // 💾 เก็บวันเกิดเต็มที่ลูกค้าเพิ่งให้ — เขาให้เพราะเราสัญญาว่าจะดูให้ลึกขึ้น
+            //    (rememberDailyBirthInfo กันทับข้อมูลของลูกค้าที่จ่ายเงินแล้วไว้ให้อยู่แล้ว)
+            $this->rememberDailyBirthInfo($platform, $userId, $dayIndex, $birthDate);
+
+            Log::info('💎 Daily: ได้วันเกิดเต็มหลังส่งดวงรายวันแล้ว → ชวนดูเชิงลึก (ไม่ส่งดวงซ้ำ)', [
+                'user_id' => $userId,
+                'day_index' => $dayIndex,
+                'birth_date' => $birthDate,
+            ]);
+
+            // ใช้ action ของเลนดวงรายวัน — FortuneChannelManager ส่งปุ่มชุดนี้ตรง ๆ
+            // โดยไม่มีปุ่มแพคเกจ default ลอยมาเกาะ (ดู sendFacebookResponse: daily_horoscope_sent)
+            // ธง daily_upgrade_invite ไว้แยกในล็อก/วิเคราะห์ ว่าไม่ใช่การส่งบทความรายวัน
+            return [
+                'action' => 'daily_horoscope_sent',
+                'daily_upgrade_invite' => true,
+                'message' => $this->buildDailyToDeepInvite($userId, $birthDate, $dayIndex),
+                'reading' => null,
+                'quick_replies' => [static::dailyUpgradeQuickReply()],
+                'pending_birthdate' => $birthDate,
+            ];
+        } catch (\Throwable $e) {
+            // fail-open — ด่านเสริมพังต้องไม่ทำให้ลูกค้าไม่ได้คำตอบ
+            Log::warning('💎 Daily: ชวนเชิงลึกหลังดวงรายวันล้ม (ปล่อย flow เดิม)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 💎 ข้อความชวนดูเชิงลึก หลังลูกค้าให้วันเกิดเต็มตามที่แม่หมอขอ
+     *
+     * กติกาของข้อความนี้:
+     *   - "รับของ" ให้ชัดก่อน (ทวนวันเกิดที่จดไว้) — ลูกค้าเพิ่งทำตามที่เราขอ ต้องรู้สึกว่าถึงมือ
+     *   - บอกตรง ๆ ว่าดวงรายวัน = ดวงรวมของคนเกิดวันเดียวกัน ไม่งั้นลูกค้าคิดว่า "ก็ได้ไปแล้วนี่"
+     *     (นี่คือเหตุผลเดียวที่ทำให้การชวนต่อไม่ใช่การขายซ้ำของเดิม)
+     *   - ชวน 1 ประโยคแล้วหยุด ห้ามตื๊อ ห้ามบอกราคา (rule_listen_dont_pitch_when_declining)
+     *   - หมุนสำนวนตามคน+วัน ลูกค้าประจำจะได้ไม่เห็นประโยคเดิมซ้ำ
+     */
+    protected function buildDailyToDeepInvite(string $userId, string $birthDate, int $dayIndex): string
+    {
+        $dayName = self::DAILY_DAY_NAMES[$dayIndex] ?? '';
+        $formatted = $this->formatThaiDate($birthDate);
+
+        $closings = [
+            'อยากให้แม่หมอเปิดให้ไหมคะ กดปุ่มด้านล่างได้เลย ✨',
+            'ถ้าพร้อมแล้ว กดปุ่มด้านล่าง เดี๋ยวแม่หมอเปิดไพ่ให้เลยนะคะ ✨',
+            'มีเรื่องไหนค้างใจอยู่ กดปุ่มด้านล่างแล้วบอกแม่หมอได้เลยค่ะ ✨',
+            'อยากรู้ลึกกว่านี้ กดปุ่มด้านล่างได้เลยนะคะ แม่หมอรออยู่ ✨',
+        ];
+
+        $closing = $closings[crc32($userId.':'.now()->toDateString()) % count($closings)];
+
+        return "🎂 แม่หมอจดวันเกิดของเจ้าชะตาไว้เรียบร้อยแล้วค่ะ\n"
+            ."📅 {$formatted}".($dayName !== '' ? " — ตรงกับวัน{$dayName}" : '')
+            ."\n\n———\n"
+            .'💫 ดวงที่เพิ่งส่งไปเป็นดวงรวมของคนเกิดวัน'.$dayName."ทั้งหมดนะคะ\n"
+            ."แต่พอมีวัน/เดือน/ปีเกิดครบแบบนี้ แม่หมอเปิดไพ่ดูเฉพาะเจ้าชะตาคนเดียวได้เลย —\n"
+            ."เจาะเรื่องที่ค้างใจ จังหวะที่ควรลุย และทางที่ควรเลี่ยง\n\n"
+            .$closing;
     }
 
     /**
