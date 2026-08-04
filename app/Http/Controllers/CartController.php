@@ -46,6 +46,25 @@ class CartController extends Controller
 
         $product = Product::findOrFail($request->product_id);
 
+        // 🚫 สินค้า affiliate (Lazada/AliExpress) ใส่ตะกร้าเราไม่ได้
+        //    เราไม่ได้สต๊อก ไม่ได้เก็บเงิน และไม่ได้จัดส่งเอง — ต้องไปจบที่แพลตฟอร์มต้นทาง
+        //    ถ้าปล่อยให้เข้าตะกร้า จะเกิดออเดอร์ที่ไม่มีใครส่งของได้
+        if ($product->is_affiliate) {
+            $message = 'สินค้านี้ต้องสั่งซื้อที่แพลตฟอร์มต้นทางค่ะ กดปุ่มซื้อในหน้ารายละเอียดสินค้าได้เลย';
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                    'redirect' => route('shop.show', $product->slug ?: $product->id),
+                ], 400);
+            }
+
+            return redirect()
+                ->route('shop.show', $product->slug ?: $product->id)
+                ->with('error', $message);
+        }
+
         // Check if product is available
         if (! $product->isInStock()) {
             if ($request->expectsJson()) {

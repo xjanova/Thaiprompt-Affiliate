@@ -202,7 +202,25 @@
                                     </div>
                                 </div>
 
-                                {{-- Quick Buy Button --}}
+                                {{-- Quick Buy Button
+                                     ⚠️ สินค้า affiliate ใส่ตะกร้าไม่ได้ (CartController ตีกลับ 400)
+                                        จึงต้องเป็นลิงก์ไปหน้ารายละเอียดแทน ไม่ใช่ปุ่มที่กดแล้วขึ้น error --}}
+                                @if($product->is_affiliate)
+                                <a href="{{ route('shop.show', $product->slug ?: $product->id) }}"
+                                   onclick="event.stopPropagation();"
+                                   class="block text-center w-full py-2 bg-gradient-to-r from-indigo-600 to-purple-600
+                                          hover:from-indigo-700 hover:to-purple-700
+                                          text-white text-sm font-bold rounded-xl
+                                          shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+                                    <span class="flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                        ดูรายละเอียด
+                                    </span>
+                                </a>
+                                @else
                                 <button type="button"
                                         onclick="event.preventDefault(); event.stopPropagation(); addToCartFlash({{ $product->id }})"
                                         class="w-full py-2 bg-gradient-to-r from-red-600 to-orange-500
@@ -218,6 +236,7 @@
                                         ซื้อเลย
                                     </span>
                                 </button>
+                                @endif
                             </div>
                         </div>
                     </a>

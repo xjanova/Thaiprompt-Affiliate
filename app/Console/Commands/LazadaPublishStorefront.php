@@ -66,7 +66,11 @@ class LazadaPublishStorefront extends Command
         $updated = 0;
         $skipped = 0;
 
-        MarketplaceProduct::where('source', 'affiliate_feed')
+        // ⚠️ ต้องครอบทุก source ที่ตัวนำเข้าเขียนจริง ไม่ใช่แค่ 'affiliate_feed'
+        //    lazada:mu-import เขียน 'mu_curated' และตัว scrape เขียน 'scrape'
+        //    เดิมกรองแค่ affiliate_feed → สินค้าส่วนใหญ่บนร้านจริงไม่เคยถูกอัพเดตจากคำสั่งนี้เลย
+        //    (รวมถึงคำบรรยาย/สเปกที่เพิ่งเพิ่ม ก็จะไม่ไปถึงหน้ารายละเอียด)
+        MarketplaceProduct::whereIn('source', ['affiliate_feed', 'mu_curated', 'scrape'])
             ->where('is_active', true)
             ->whereNotNull('affiliate_url')
             ->when($maxPrice > 0, fn ($q) => $q->where('price', '<=', $maxPrice))
@@ -86,13 +90,21 @@ class LazadaPublishStorefront extends Command
                             'seller_id' => $store->user_id,
                             'store_id' => $store->id,
                             'category_id' => $categoryId,
-                            'name' => $mp->name,
+                            // ⚠️ products.name เป็น varchar(255) แต่ marketplace_products.name เป็น varchar(500)
+                            //    ถ้าไม่ตัด แถวที่ชื่อยาวจะ insert ไม่ผ่านแล้วหายเงียบ (ไม่มีอะไรฟ้องบนจอ)
+                            'name' => mb_substr((string) $mp->name, 0, 255),
                             'sku' => $sku,
                             'brand' => $mp->brand ?: null,
                             'price' => (float) $mp->price,
                             'compare_at_price' => $mp->original_price ?: null,
                             'main_image_url' => $mp->main_image_url,
                             'image_urls' => is_array($mp->images) ? $mp->images : [],
+                            // 📝 รายละเอียด/สเปก — ต้องยกมาด้วย ไม่งั้นหน้ารายละเอียดสินค้าว่างเปล่า
+                            //    (ตัวนำเข้าดึงมาเก็บใน marketplace_products ครบอยู่แล้ว แค่ไม่เคยถูกก็อปต่อ)
+                            'description' => $mp->description ?: null,
+                            'short_description' => $this->shortDescriptionFrom($mp),
+                            'attributes' => is_array($mp->attributes) ? $mp->attributes : null,
+                            'sales_count' => (int) ($mp->sales_count ?? 0),
                             'commission_rate' => (float) ($mp->commission_rate ?? 0),
                             'pv_value' => $pv,
                             'stock_status' => 'in_stock',
@@ -135,6 +147,30 @@ class LazadaPublishStorefront extends Command
             $created, $updated, $skipped, $store->total_products, $visible ? '(โชว์แล้ว)' : '(ซ่อนไว้ รอ --visible)'));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * คำโปรยสั้นสำหรับหน้ารายละเอียด/SEO
+     *
+     * สินค้าจากฟีด affiliate มักไม่มี description เลย (ฟีดให้มาแค่ชื่อ+รูป+ราคา)
+     * จึงประกอบจากข้อมูลที่มีจริง ไม่ปล่อยให้หน้ารายละเอียดว่าง
+     *
+     * ⚠️ ห้ามแต่งข้อมูลที่ไม่มีจริง (เช่น "ของแท้ 100%" หรือคะแนนรีวิวที่ไม่ได้ดึงมา)
+     */
+    private function shortDescriptionFrom(MarketplaceProduct $mp): string
+    {
+        $plain = trim(strip_tags((string) ($mp->description ?? '')));
+        if ($plain !== '') {
+            return mb_substr($plain, 0, 480);
+        }
+
+        $parts = array_filter([
+            $mp->brand ? 'แบรนด์ '.$mp->brand : null,
+            $mp->category ? 'หมวด '.$mp->category : null,
+            'จัดส่งโดย Lazada',
+        ]);
+
+        return mb_substr(trim((string) $mp->name).' — '.implode(' · ', $parts), 0, 480);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EveMemberMemory;
 use App\Models\EveProductWish;
 use App\Models\Product;
 use App\Services\Eve\EveActor;
@@ -33,14 +34,31 @@ use Throwable;
  */
 class EveAssistantController extends Controller
 {
-    /** จำนวนเทิร์นสูงสุดของประวัติสนทนาที่เก็บฝั่งเซิร์ฟเวอร์ (นับรวมทั้งลูกค้าและ Eve) */
+    /** จำนวนเทิร์นสูงสุดที่ "replay เข้า prompt" ต่อ 1 คำขอ (นับรวมทั้งลูกค้าและ Eve) */
     private const TRANSCRIPT_MAX_TURNS = 12;
 
-    /** อายุประวัติสนทนาในแคช (วินาที) — ประมาณ 2 ชั่วโมง */
-    private const TRANSCRIPT_TTL = 7200;
+    /** จำนวนเทิร์นสูงสุดที่ "เก็บลงตาราง" — มากกว่าที่ replay เพื่อให้ตัวย่อมีของให้สรุป */
+    private const STORE_MAX_TURNS = 40;
 
-    /** ความยาวสูงสุดต่อ 1 เทิร์นที่เก็บลงแคช (กันแคชบวม) */
+    /** ความยาวสูงสุดต่อ 1 เทิร์นที่เก็บ (กันข้อมูลบวม) */
     private const TRANSCRIPT_MAX_CHARS = 600;
+
+    /**
+     * อายุความจำของสมาชิก (วัน)
+     *
+     * ⚠️ ห้ามย้ายไปเก็บในแคช: CACHE_DRIVER=file และ deploy.sh สั่ง cache:clear ทุกรอบ deploy
+     *    (push ขึ้น claude/Main = auto-deploy) ความจำจะโดนล้างสัปดาห์ละหลายครั้งโดยไม่มีสัญญาณเตือน
+     */
+    private const MEMORY_DAYS = EveMemberMemory::RETENTION_DAYS;
+
+    /**
+     * อายุสูงสุดของเทิร์นที่ยอมให้ "ดึงคำค้นสินค้าเดิมกลับมาใช้" (ชั่วโมง)
+     *
+     * recallQueryFromHistory() ย้อนดูเทิร์นเก่าเพื่อเดาว่าลูกค้าหมายถึงสินค้าอะไร
+     * พอความจำยืดจาก 2 ชม. เป็น 7 วัน ถ้าไม่จำกัดอายุ ลูกค้าพิมพ์ "500 บาท" วันนี้
+     * อาจไปปลุกคำค้นของเมื่อวันอังคารขึ้นมาโชว์การ์ดสินค้าที่ไม่เกี่ยวเลย
+     */
+    private const RECALL_MAX_AGE_HOURS = 6;
 
     /** เพดานจำนวนข้อความต่อวัน — ผู้ที่ไม่ได้ล็อกอิน (นับตาม IP) */
     private const DAILY_CAP_GUEST = 60;
@@ -124,9 +142,10 @@ class EveAssistantController extends Controller
         // 🔒 กัน Prompt Injection: ประวัติสนทนาต้องมาจาก "ฝั่งเซิร์ฟเวอร์" เท่านั้น
         //    เดิมรับ history จากไคลเอนต์ตรงๆ แล้วต่อเข้า prompt → ผู้โจมตี POST เทิร์นปลอมของ Eve
         //    (role=assistant) เข้ามาเพื่อ "เขียนทับ" กฎความปลอดภัยใน system prompt ได้
-        $transcriptKey = $this->transcriptKey($request, $user?->id);
-        $history = $this->loadTranscript($transcriptKey, $data['history'] ?? []);
-        $userMessage = $this->buildUserMessage($history, $data['message']);
+        //    🧠 ความจำ: สมาชิกอ่านจากตาราง (7 วัน) / guest ได้แค่ความต่อเนื่องในหน้าเดียว
+        $memoryOwnerId = $this->memoryOwnerId($actor);
+        [$history, $memorySummary] = $this->loadMemberMemory($memoryOwnerId, $data['history'] ?? []);
+        $userMessage = $this->buildUserMessage($history, $data['message'], $memorySummary);
 
         // แอดมินต้องการรายงาน/สรุปที่ยาวกว่าลูกค้า (ลูกค้า 320 / แอดมิน 1200)
         $config = ['temperature' => 0.6, 'max_tokens' => $actor->maxTokens()];
@@ -202,8 +221,9 @@ class EveAssistantController extends Controller
                 $reply = 'ได้เลยค่ะ 😊';
             }
 
-            // 💾 บันทึกเทิร์นล่าสุดลงประวัติฝั่งเซิร์ฟเวอร์ (เก็บเฉพาะข้อความที่ผ่านการล้างแล้ว)
-            $this->appendTranscript($transcriptKey, $history, $data['message'], $reply);
+            // 💾 บันทึกเทิร์นล่าสุดลงความจำของสมาชิก (เก็บเฉพาะข้อความที่ผ่านการล้างแล้ว)
+            //    guest/แอดมิน = ไม่เขียนอะไรเลย (memoryOwnerId คืน null)
+            $this->saveMemberMemory($memoryOwnerId, $history, $data['message'], $reply);
 
             return response()->json([
                 'success' => true,
@@ -231,6 +251,71 @@ class EveAssistantController extends Controller
                 'message' => 'ขออภัยค่ะ ระบบขัดข้องชั่วคราว ลองใหม่อีกครั้งนะคะ 🙏',
                 'data' => ['mood' => 'concerned'],
             ], 200); // ตอบ 200 + ข้อความสุภาพ ให้ widget แสดงได้เลย
+        }
+    }
+
+    /**
+     * GET /eve/memory — ดึงความจำของ "ตัวเอง" กลับมาแสดงในกล่องแชท
+     *
+     * ทำไมต้องมี: ถ้า Eve จำได้แต่หน้าจอว่างเปล่า ลูกค้าเปิดแชทมาแล้วเจอ
+     * "เมื่อวานที่คุยเรื่องหูฟัง..." ลอยมาบนแผงเปล่า จะอ่านเหมือนระบบพัง
+     *
+     * 🔒 อ่าน user id จาก Auth เท่านั้น ห้ามรับจาก request เด็ดขาด
+     */
+    public function memory(Request $request): JsonResponse
+    {
+        $userId = $request->user()?->id;
+        if (! $userId) {
+            return response()->json(['success' => true, 'data' => ['turns' => [], 'summary' => '']]);
+        }
+
+        try {
+            $row = EveMemberMemory::where('user_id', $userId)->first();
+
+            if ($row === null || $row->isExpired(self::MEMORY_DAYS)) {
+                return response()->json(['success' => true, 'data' => ['turns' => [], 'summary' => '']]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'turns' => $this->boundTranscript($row->turns ?? []),
+                    'summary' => (string) ($row->summary ?? ''),
+                    'last_message_at' => $row->last_message_at?->toIso8601String(),
+                    'retention_days' => self::MEMORY_DAYS,
+                ],
+            ]);
+        } catch (Throwable $e) {
+            return response()->json(['success' => true, 'data' => ['turns' => [], 'summary' => '']]);
+        }
+    }
+
+    /**
+     * DELETE /eve/memory — "ล้างความจำ" ด้วยตัวเอง
+     *
+     * นี่คือทางลบข้อมูลตาม PDPA สำหรับสมาชิกที่สมัครทางเว็บล้วนๆ
+     * (ระบบ "ลบข้อมูลของฉัน" เดิมผูกกับ LINE userId / Facebook PSID ของบอทแม่หมอ
+     *  คนที่คุยแต่กับ Eve บนเว็บจึงไม่เคยมีปุ่มลบของตัวเองมาก่อน)
+     */
+    public function forgetMemory(Request $request): JsonResponse
+    {
+        $userId = $request->user()?->id;
+        if (! $userId) {
+            return response()->json(['success' => false, 'message' => 'กรุณาเข้าสู่ระบบก่อนค่ะ'], 401);
+        }
+
+        try {
+            EveMemberMemory::where('user_id', $userId)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ล้างความจำของน้อง Eve เรียบร้อยแล้วค่ะ 🌸 เริ่มคุยกันใหม่ได้เลยนะคะ',
+            ]);
+        } catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ลบไม่สำเร็จค่ะ ลองใหม่อีกครั้งนะคะ 🙏',
+            ], 200);
         }
     }
 
@@ -502,17 +587,30 @@ class EveAssistantController extends Controller
     /**
      * รวมประวัติสนทนา + ข้อความล่าสุด เป็น user message เดียว
      *
-     * ⚠️ $history ต้องมาจากประวัติฝั่งเซิร์ฟเวอร์เท่านั้น (loadTranscript) ห้ามรับ role=assistant
+     * ⚠️ $history ต้องมาจากประวัติฝั่งเซิร์ฟเวอร์เท่านั้น (loadMemberMemory) ห้ามรับ role=assistant
      *    จากไคลเอนต์ตรงๆ ไม่งั้นผู้โจมตีจะปลอมคำพูดของ Eve เพื่อล้มกฎใน system prompt ได้
      */
-    private function buildUserMessage(array $history, string $latest): string
+    private function buildUserMessage(array $history, string $latest, string $summary = ''): string
     {
         $latest = $this->sanitizeTurnContent($latest);
 
-        if (empty($history)) {
+        // บทสรุปของเทิร์นเก่าที่ถูกย่อไปแล้ว — ต้องล้างเหมือนเทิร์นปกติ
+        // (เป็นข้อความที่ AI เขียนเอง ถ้าไม่ยุบบรรทัดจะกลายเป็นช่องปลอมบทสนทนาได้)
+        $summary = $this->sanitizeTurnContent($summary);
+
+        if (empty($history) && $summary === '') {
             return $latest;
         }
+
         $lines = [];
+        if ($summary !== '') {
+            $lines[] = '[บทสรุปที่เคยคุยกันไว้ก่อนหน้า] '.$summary;
+        }
+
+        // หั่นเหลือเฉพาะเทิร์นที่ replay เข้า prompt ตรงนี้ที่เดียว
+        // (ตัวที่โหลดมาจากตารางมีได้ถึง STORE_MAX_TURNS เพื่อให้ตัวย่อมีของให้สรุป)
+        $history = array_slice($history, -self::TRANSCRIPT_MAX_TURNS);
+
         foreach ($history as $turn) {
             $role = ($turn['role'] ?? 'user') === 'assistant' ? 'Eve' : 'ลูกค้า';
             $lines[] = $role.': '.$this->sanitizeTurnContent((string) ($turn['content'] ?? ''));
@@ -524,48 +622,79 @@ class EveAssistantController extends Controller
     }
 
     /**
-     * คีย์แคชประวัติสนทนา — ผูกกับ session id เสมอ + user id เมื่อล็อกอิน
+     * ใครควรถูก "จำ" ลงตาราง
      *
-     * ที่ต้องมี user id ด้วย: เครื่องเดียวกัน/เซสชันเดียวกันแต่สลับบัญชี ต้องไม่เห็นประวัติของอีกคน
+     * - guest (ไม่ล็อกอิน) → null เสมอ = ไม่เก็บอะไรเลยฝั่งเซิร์ฟเวอร์
+     *   เหตุผล: ยืนยันตัวตนไม่ได้ → ลบตามคำขอ PDPA ไม่ได้ → ห้ามเก็บตั้งแต่แรก
+     * - แอดมิน → null เช่นกัน
+     *   บทสนทนาฝั่งแอดมินมีตัวเลขจริงจาก EveAdminBrain (ยอดขาย/ยอดถอน) ปนอยู่
+     *   ไม่ควรถูกดองไว้ในตาราง 7 วันโดยที่ไม่มีใครสั่ง
      */
-    private function transcriptKey(Request $request, ?int $userId): string
+    private function memoryOwnerId(EveActor $actor): ?int
     {
-        $sessionId = '';
-        try {
-            $sessionId = (string) $request->session()->getId();
-        } catch (Throwable $e) {
-            $sessionId = '';
+        if ($actor->isGuest() || $actor->isAdmin()) {
+            return null;
         }
 
-        // ไม่มี session (เช่นถูกเรียกนอก middleware web) → ใช้ IP แทนแบบ hash
-        if ($sessionId === '') {
-            $sessionId = 'ip-'.(string) $request->ip();
-        }
-
-        return 'eve:chat:transcript:'.($userId ? 'u'.$userId.':' : 'g:').sha1($sessionId);
+        return $actor->user?->id;
     }
 
     /**
-     * โหลดประวัติสนทนาฝั่งเซิร์ฟเวอร์
+     * โหลดความจำของสมาชิก (เทิร์นล่าสุด + บทสรุปเทิร์นเก่า)
      *
-     * ถ้าแคชว่าง (หมดอายุ/เพิ่งเปิดแชท) จะยอมรับประวัติจากไคลเอนต์ได้ "เฉพาะ role=user" เท่านั้น
-     * เพราะข้อความของลูกค้าเองไม่มีอำนาจสั่งงานอยู่แล้ว (เท่ากับพิมพ์เข้ามาใหม่) —
-     * แต่เทิร์นของ Eve (assistant) ห้ามรับจากไคลเอนต์เด็ดขาด
+     * guest: ไม่แตะฐานข้อมูลเลย ได้แค่ความต่อเนื่องภายในหน้าเดียว จากประวัติที่ไคลเอนต์ส่งมา
+     * สมาชิก: อ่านแถวของตัวเอง ถ้าเกิน 7 วันให้ลบทิ้งทันที (self-heal ไม่ต้องรอ cron)
+     *
+     * ถ้าแถวว่าง/DB ล่ม จะถอยไปใช้ประวัติจากไคลเอนต์แบบเดียวกับ guest
+     * — ยอมรับได้เพราะกรองเหลือเฉพาะ role=user อยู่แล้ว และดีกว่าปล่อยให้ Eve ความจำเสื่อมสนิท
+     *
+     * @param  array<int,array>  $clientHistory
+     * @return array{0:array<int,array{role:string,content:string,ts?:int}>,1:string}  [ประวัติ, บทสรุป]
+     */
+    private function loadMemberMemory(?int $userId, array $clientHistory): array
+    {
+        // ── guest ── ไม่มีการอ่าน/เขียนฝั่งเซิร์ฟเวอร์
+        if ($userId === null) {
+            return [$this->boundTranscript($this->seedFromClient($clientHistory)), ''];
+        }
+
+        try {
+            $row = EveMemberMemory::where('user_id', $userId)->first();
+
+            if ($row !== null) {
+                if ($row->isExpired(self::MEMORY_DAYS)) {
+                    $row->delete();   // หมดอายุ → ลบทิ้ง แล้วเริ่มใหม่เหมือนคนไม่เคยคุย
+                } else {
+                    // ⚠️ ต้องอ่านเทิร์นเต็มตามที่เก็บไว้ (STORE_MAX_TURNS) ห้ามตัดเหลือ 12 ตรงนี้
+                    //    ถ้าตัดตั้งแต่ตอนโหลด ค่าที่ถูกเขียนกลับก็จะไม่เกิน 14 เทิร์นตลอดกาล
+                    //    → ตัวย่อใน eve:memory-maintain (เกณฑ์ 32) ไม่มีวันทำงาน และ summary ว่างถาวร
+                    //    การหั่นเหลือ TRANSCRIPT_MAX_TURNS ทำตอนประกอบ prompt ใน buildUserMessage() แทน
+                    return [
+                        $this->boundTranscript($row->turns ?? [], self::STORE_MAX_TURNS),
+                        (string) ($row->summary ?? ''),
+                    ];
+                }
+            }
+        } catch (Throwable $e) {
+            // DB ล่ม → ถือว่าไม่มีความจำ (ห้ามบล็อกการคุย)
+        }
+
+        return [$this->boundTranscript($this->seedFromClient($clientHistory)), ''];
+    }
+
+    /**
+     * รับประวัติจากไคลเอนต์ได้ "เฉพาะ role=user" เท่านั้น
+     *
+     * 🔒 ด่านกัน Prompt Injection (ของเดิม ห้ามผ่อน)
+     *    ข้อความของลูกค้าเองไม่มีอำนาจสั่งงานอยู่แล้ว (เท่ากับพิมพ์เข้ามาใหม่)
+     *    แต่เทิร์นของ Eve (assistant) ถ้ารับจากไคลเอนต์ ผู้โจมตีจะปลอมคำพูดของ Eve
+     *    เพื่อล้มกฎใน system prompt ได้
      *
      * @param  array<int,array>  $clientHistory
      * @return array<int,array{role:string,content:string}>
      */
-    private function loadTranscript(string $key, array $clientHistory): array
+    private function seedFromClient(array $clientHistory): array
     {
-        try {
-            $stored = Cache::get($key);
-            if (is_array($stored) && ! empty($stored)) {
-                return $this->boundTranscript($stored);
-            }
-        } catch (Throwable $e) {
-            // แคชล่ม → ถือว่าไม่มีประวัติ (ไม่บล็อกการคุย)
-        }
-
         $seed = [];
         foreach ($clientHistory as $turn) {
             if (! is_array($turn) || ($turn['role'] ?? '') !== 'user') {
@@ -578,30 +707,59 @@ class EveAssistantController extends Controller
             $seed[] = ['role' => 'user', 'content' => $content];
         }
 
-        return $this->boundTranscript($seed);
+        return $seed;
     }
 
     /**
-     * บันทึกเทิร์นล่าสุด (ลูกค้า + Eve) ลงประวัติฝั่งเซิร์ฟเวอร์ แบบจำกัดขนาด
+     * บันทึกเทิร์นล่าสุด (ลูกค้า + Eve) ลงความจำของสมาชิก
+     *
+     * บรรทัดแรกคือหัวใจของข้อกำหนด "คนทั่วไปไม่ต้องจำ" — guest/แอดมิน ออกทันที ไม่เขียนอะไรเลย
      */
-    private function appendTranscript(string $key, array $history, string $userMessage, string $reply): void
+    private function saveMemberMemory(?int $userId, array $history, string $userMessage, string $reply): void
     {
-        try {
-            $history[] = ['role' => 'user', 'content' => $this->sanitizeTurnContent($userMessage)];
-            $history[] = ['role' => 'assistant', 'content' => $this->sanitizeTurnContent($reply)];
+        if ($userId === null) {
+            return;
+        }
 
-            Cache::put($key, $this->boundTranscript($history), self::TRANSCRIPT_TTL);
+        try {
+            $now = now();
+            $history[] = ['role' => 'user', 'content' => $this->sanitizeTurnContent($userMessage), 'ts' => $now->getTimestamp()];
+            $history[] = ['role' => 'assistant', 'content' => $this->sanitizeTurnContent($reply), 'ts' => $now->getTimestamp()];
+
+            $turns = $this->boundTranscript($history, self::STORE_MAX_TURNS);
+
+            // ⚠️ updateOrCreate เป็น SELECT-แล้ว-INSERT ไม่ใช่ atomic
+            //    ลูกค้ากดส่งรัวสองที = สองคำขอพลาด SELECT พร้อมกัน ตัวหลัง INSERT ชน unique (23000)
+            //    จับไว้แล้ววนอัปเดตซ้ำ ไม่งั้นเทิร์นนั้นจะหายเงียบ
+            try {
+                $row = EveMemberMemory::firstOrCreate(
+                    ['user_id' => $userId],
+                    ['turns' => [], 'turn_count' => 0, 'last_message_at' => $now],
+                );
+            } catch (Throwable $dup) {
+                $row = EveMemberMemory::where('user_id', $userId)->first();
+                if ($row === null) {
+                    throw $dup;
+                }
+            }
+
+            $row->forceFill([
+                'turns' => $turns,
+                'turn_count' => (int) $row->turn_count + 2,
+                'last_message_at' => $now,
+            ])->save();
         } catch (Throwable $e) {
-            // best-effort — ประวัติหายได้ แต่ห้ามทำให้การตอบลูกค้าล้ม
+            // best-effort — ความจำหายได้ แต่ห้ามทำให้การตอบลูกค้าล้ม
         }
     }
 
     /**
-     * ตัดประวัติให้เหลือไม่เกิน TRANSCRIPT_MAX_TURNS เทิร์นล่าสุด + ล้างรูปแบบให้ปลอดภัย
+     * ตัดประวัติให้เหลือไม่เกินจำนวนเทิร์นที่กำหนด + ล้างรูปแบบให้ปลอดภัย
      *
-     * @return array<int,array{role:string,content:string}>
+     * @param  int|null  $max  ค่าเริ่มต้น = จำนวนที่ replay เข้า prompt (ตอนเก็บลงตารางส่ง STORE_MAX_TURNS)
+     * @return array<int,array{role:string,content:string,ts?:int}>
      */
-    private function boundTranscript(array $history): array
+    private function boundTranscript(array $history, ?int $max = null): array
     {
         $clean = [];
         foreach ($history as $turn) {
@@ -612,13 +770,18 @@ class EveAssistantController extends Controller
             if ($content === '') {
                 continue;
             }
-            $clean[] = [
+            $row = [
                 'role' => ($turn['role'] ?? 'user') === 'assistant' ? 'assistant' : 'user',
                 'content' => $content,
             ];
+            // เวลาของเทิร์น — ใช้กันคำค้นเก่าข้ามวันถูกปลุกกลับมา (ดู RECALL_MAX_AGE_HOURS)
+            if (isset($turn['ts']) && is_numeric($turn['ts'])) {
+                $row['ts'] = (int) $turn['ts'];
+            }
+            $clean[] = $row;
         }
 
-        return array_slice($clean, -self::TRANSCRIPT_MAX_TURNS);
+        return array_slice($clean, -($max ?? self::TRANSCRIPT_MAX_TURNS));
     }
 
     /**
@@ -902,15 +1065,26 @@ class EveAssistantController extends Controller
      * เคสจริงที่ทำให้เงียบ: Eve ถามงบ → ลูกค้าตอบ "500 บาท" → ข้อความล่าสุดไม่มีชื่อสินค้า
      * ต้องหยิบสินค้าที่คุยค้างไว้ก่อนหน้ามาค้นต่อ ไม่งั้นบทสนทนาตายกลางคัน
      *
-     * @param  array<int,array{role:string,content:string}>  $history
+     * ⚠️ ตั้งแต่ความจำสมาชิกยืดเป็น 7 วัน ต้องกรองอายุเทิร์นด้วย
+     *    ไม่งั้นลูกค้าพิมพ์ "500 บาท" วันนี้ แล้วระบบไปปลุกคำค้นของเมื่อวันอังคารขึ้นมา
+     *    โชว์การ์ดสินค้าที่ไม่เกี่ยวกับเรื่องที่กำลังคุยอยู่เลย
+     *    เทิร์นที่ไม่มี ts (ของเก่าก่อนอัปเกรด / มาจากไคลเอนต์) ถือว่าใช้ได้ตามเดิม
+     *
+     * @param  array<int,array{role:string,content:string,ts?:int}>  $history
      */
     private function recallQueryFromHistory(array $history): ?string
     {
         // ดูย้อนหลังไม่เกิน 6 เทิร์นล่าสุดพอ — เก่ากว่านั้นมักเป็นคนละเรื่องแล้ว
         $recent = array_slice($history, -6);
+        $oldestAllowed = now()->subHours(self::RECALL_MAX_AGE_HOURS)->getTimestamp();
 
         foreach (array_reverse($recent) as $turn) {
             if (($turn['role'] ?? '') !== 'user') {
+                continue;
+            }
+
+            // เทิร์นข้ามวัน = คนละบทสนทนา ห้ามเอาคำค้นเก่ามาใช้ต่อ
+            if (isset($turn['ts']) && (int) $turn['ts'] < $oldestAllowed) {
                 continue;
             }
 

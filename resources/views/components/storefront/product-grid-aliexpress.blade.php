@@ -33,10 +33,6 @@
     // ใช้ตั้งสถานะหัวใจให้ตรงกับฐานข้อมูล ไม่ให้ "ลืม" หลังรีเฟรชหน้า
     $favoritedProductIds = [];
 
-    // map: products.id => short_code ของลิงก์ติดตามรายบุคคล (/go/{code})
-    // ว่างไว้ = ไม่มี attribution → การ์ดจะใช้ affiliate_url ดิบตามเดิม
-    $affiliateGoCodes = [];
-
     if (auth()->check()) {
         // ⚠️ $products มักเป็น LengthAwarePaginator (getProducts ใช้ ->paginate())
         //    collect($paginator) จะได้ "เมทาดาทาของ paginator" (current_page/data/...) ไม่ใช่ตัวสินค้า
@@ -53,19 +49,14 @@
                 ->all();
         }
 
-        // ── ลิงก์ติดตามรายบุคคล (batched) ──
-        // Lazada ไม่ยอมรับ subId → ต้องรู้ "ใครกด" จาก click log ของเราเอง
-        // 🚀 เรียก "ครั้งเดียว" ทั้งกริด: สภาวะปกติ = 1 query ไม่ว่าจะ 30 หรือ 300 ชิ้น
-        //    (ห้ามย้ายไปเรียกในลูป @forelse เด็ดขาด — จะกลายเป็น N+1 ทันที)
-        // เช็ค instanceof เพราะ guard อื่น (Passport/OAuthUser) คืนโมเดลคนละตัว
-        // → ถ้าส่งเข้าไปตรง ๆ จะ TypeError แล้วหน้าร้านพังทั้งหน้า
-        $authUser = auth()->user();
-        if ($authUser instanceof \App\Models\User) {
-            $affiliateGoCodes = \App\Models\MarketplaceAffiliateLink::shortCodesForProducts(
-                $authUser,
-                $productItems
-            );
-        }
+        // ── ลิงก์ติดตามรายบุคคล (/go/{code}) ──
+        // ย้ายไปสร้างที่ ShopController::show() แล้ว (ตอนลูกค้าเปิดหน้ารายละเอียดจริง)
+        // เพราะกริดไม่มีลิงก์ออกนอกอีกแล้ว — คลิกทุกจุดวิ่งเข้าหน้ารายละเอียดของเรา
+        //
+        // ⚠️ shortCodesForProducts() เป็น "การเขียน" (สร้างแถวใน marketplace_affiliate_links
+        //    ให้สินค้าที่ยังไม่มีลิงก์) ถ้าปล่อยไว้ที่กริด = ทุกครั้งที่มีคนเปิดหน้าร้าน
+        //    จะสร้างลิงก์ให้สินค้าทั้งหน้าโดยที่ยังไม่มีใครสนใจสินค้านั้นเลย
+        //    ย้ายมาสร้างตอนเปิดหน้ารายละเอียด = สร้างเฉพาะที่ลูกค้าดูจริง
     }
 @endphp
 
@@ -91,17 +82,15 @@
         if ($totalPv <= 0 && $isAffiliate) {
             $totalPv = (float) ($product->pv_value ?? 0);
         }
-        $affiliateUrl = (string) ($product->affiliate_url ?? '');
         $platform = (string) ($product->external_platform ?? '');
         $platformLabel = $platform === 'aliexpress' ? 'AliExpress' : 'Lazada';
 
-        // ลิงก์ขาออกจริง — ถ้ามี short_code ให้วิ่งผ่าน /go/{code} เพื่อบันทึกว่าใครเป็นคนกด
-        // ผู้ที่ไม่ได้ล็อกอิน (หรือสินค้าที่ผูก attribution ไม่ได้) ใช้ลิงก์ดิบตามเดิม
-        // — เราไม่รู้ว่าเป็นใครอยู่ดี จึงไม่มีอะไรให้บันทึก
-        $goCode = $affiliateGoCodes[$product->id] ?? null;
-        $outboundUrl = $goCode ? route('affiliate.go', $goCode) : $affiliateUrl;
-
-        $targetUrl = $isAffiliate ? $outboundUrl : route('shop.show', $product->slug ?: $product->id);
+        // 🔗 คลิกที่การ์ด/รูป/ชื่อ/ปุ่ม → หน้ารายละเอียดของเราเสมอ (แม้เป็นสินค้า affiliate)
+        //    ลูกค้าต้องได้เห็นรูปครบ รายละเอียด สเปก และ PV/ปันผลที่จะได้ ก่อนตัดสินใจออกไปซื้อ
+        //    ลิงก์ขาออกไป Lazada/AliExpress เหลือที่เดียวคือปุ่ม "ซื้อที่ ..." ในหน้ารายละเอียด
+        //    ซึ่งวิ่งผ่าน /go/{code} เพื่อบันทึกว่าใครเป็นคนกด (ShopController::show ประกอบให้)
+        //    ⚠️ ห้ามเปลี่ยนกลับไปให้การ์ดยิงออกนอกตรงๆ — จะเสียทั้งหน้ารายละเอียดและโอกาสให้ลูกค้าเทียบสินค้า
+        $targetUrl = route('shop.show', $product->slug ?: $product->id);
         // สินค้านี้อยู่ในรายการโปรดของผู้ใช้แล้วหรือยัง
         $isFavorited = in_array($product->id, $favoritedProductIds);
     @endphp
@@ -109,8 +98,8 @@
     <div class="group">
         {{-- การ์ดสินค้า: ผิวกระจก (tp-glass) + ความหนา 3D (tp-3d) + แสงวิ่งตอน hover (tp-sheen)
              พื้นหลังลาวาแลมป์อยู่หลังกริดนี้ ทำให้กระจกมีสีให้สะท้อนจริง ไม่ใช่กระจกบนพื้นขาว --}}
+        {{-- ไม่ต้อง target="_blank" แล้ว เพราะปลายทางคือหน้าของเราเอง (ลูกค้ากด back กลับมาได้) --}}
         <a href="{{ $targetUrl }}"
-           @if($isAffiliate) target="_blank" rel="noopener nofollow sponsored" @endif
            class="tp-glass tp-3d tp-sheen
                  block rounded-xl md:rounded-2xl overflow-hidden
                  hover:border-orange-300/70 dark:hover:border-orange-500/40">
@@ -300,16 +289,19 @@
                    transform translate-y-0 md:translate-y-2 md:group-hover:translate-y-0
                    transition-all duration-300">
             @if($isAffiliate)
-            {{-- สินค้า affiliate → วิ่งไปซื้อที่แพลตฟอร์มต้นทาง (ได้ค่าคอม/PV)
-                 ใช้ $outboundUrl ตัวเดียวกับการ์ด เพื่อให้กดตรงไหนก็นับคลิกเหมือนกัน --}}
-            <a href="{{ $outboundUrl }}" target="_blank" rel="noopener nofollow sponsored"
+            {{-- สินค้า affiliate → เข้าหน้ารายละเอียดของเราก่อน (รูปครบ/สเปก/PV ที่จะได้)
+                 ปุ่ม "ซื้อที่ {{ $platformLabel }}" อยู่ในหน้ารายละเอียด และวิ่งผ่าน /go/{code} เพื่อนับคลิก
+                 ⚠️ ทั้งกริดนี้ต้องไม่มีลิงก์ไหนยิงออกนอกโดยตรง ไม่งั้นลูกค้าหลุดไป Lazada
+                    ตั้งแต่ยังไม่ได้เห็นข้อมูลสินค้าของเราเลย --}}
+            <a href="{{ $targetUrl }}"
                class="block w-full py-2 text-center text-white text-sm font-semibold rounded-lg shadow hover:shadow-lg transition-all"
                style="background: {{ $platform === 'aliexpress' ? '#e62e04' : '#0f146d' }};">
                 <span class="flex items-center justify-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
-                    ดูที่ {{ $platformLabel }}
+                    ดูรายละเอียด
                 </span>
             </a>
             @else

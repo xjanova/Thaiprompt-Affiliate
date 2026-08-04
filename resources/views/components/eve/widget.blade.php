@@ -120,6 +120,8 @@
                 <div class="st" x-text="busy ? (searching ? 'กำลังค้นหาสินค้า...' : 'กำลังคิด...') : (speaking ? 'กำลังพูด...' : 'พร้อมช่วยค่ะ')"></div>
             </div>
             <div class="eve-ic">
+                {{-- 🧹 ล้างความจำ — เห็นเฉพาะสมาชิก (ผู้ที่ไม่ได้ล็อกอินไม่มีความจำให้ลบ) --}}
+                <button type="button" x-show="isMember" @click="forgetMemory()" title="ล้างความจำของน้อง Eve">🧹</button>
                 <button type="button" @click="ttsEnabled=!ttsEnabled; if(!ttsEnabled) stopSpeak()" :title="ttsEnabled ? 'ปิดเสียง' : 'เปิดเสียง'" x-text="ttsEnabled ? '🔊' : '🔇'"></button>
                 <button type="button" @click="toggle()" title="ปิด">✕</button>
             </div>
@@ -133,7 +135,7 @@
                         <div class="eve-float" :class="f.type" :style="`left:${f.x}%`" x-text="f.char"></div>
                     </template>
                 </div>
-                <x-eve.avatar :size="114" x-bind:class="'eve-'+emotion" />
+                <x-eve.avatar :size="114" x-bind:class="'eve-'+emotion+' eve-v-'+viseme" />
             </div>
             <div class="eve-body-c" x-ref="list">
             <template x-for="(m,i) in messages" :key="i">
@@ -202,6 +204,15 @@
 @push('scripts')
 <script>
 function eveWidget() {
+    // ── บัฟเฟอร์วิเคราะห์เสียงของระบบรูปปาก ──
+    // ⚠️ ต้องอยู่นอกอ็อบเจกต์ที่คืนให้ Alpine
+    //    ของใน state ถูกห่อด้วย reactive proxy — ถ้าเอา Uint8Array ไปไว้ในนั้นแล้วเขียนทับทุกเฟรม
+    //    Alpine จะไล่ตรวจ dependency 60 ครั้ง/วินาที = หน่วงทั้งหน้า
+    //    ค่าพวกนี้ไม่ต้อง reactive อยู่แล้ว (ไม่มีอะไรใน DOM ผูกกับมัน)
+    let _wave = null, _freq = null, _rmsAvg = 0, _cenAvg = 0;
+    // นับเฟรมที่คลื่นเสียงนิ่งติดกัน — ใช้แยก "ช่องว่างระหว่างคำ" ออกจาก "ไม่มีเสียงเลย"
+    let _silentFrames = 0;
+
     return {
         open: false,
         input: '',
@@ -212,10 +223,18 @@ function eveWidget() {
         _searchTimer: null,
         speaking: false,
         emotion: 'idle',
+        // 👄 รูปปากปัจจุบัน (viseme) — ผูกเป็นคลาส eve-v-<viseme> บนอวาตาร์
+        //    rest = แง้มพัก · mbp = ปิด · aa = อ้ากว้าง · ee = กว้างแบน · oo = กลมเล็ก · eh = อ้ากลาง · fv = ฟันแตะริมฝีปาก
+        viseme: 'rest',
         ttsEnabled: true,
         dots: '',
         _dotTimer: null,
         _audio: null,
+        _ac: null,              // AudioContext (สร้างครั้งเดียว ใช้ซ้ำทุกท่อน)
+        _analyser: null,        // AnalyserNode อ่านคลื่นเสียงจริงของ Eve
+        _srcMap: null,          // WeakMap<HTMLAudioElement, MediaElementSourceNode> — ต่อซ้ำองค์ประกอบเดิมไม่ได้
+        _visTimer: null,        // rAF/interval ที่กำลังขับรูปปากอยู่
+        _visHold: 0,            // เวลาที่ยังต้องค้างรูปปากปัจจุบัน (กันสั่นถี่จนดูไม่เป็นคำ)
         _ttsQueue: [],          // ข้อความที่รอพูด (ท่อนละ ≤170 ตัว)
         _preload: null,         // {text, audio} ท่อนถัดไปที่โหลดรออยู่
         _native: null,          // utterance ของเสียงสำรองในเครื่อง (Web Speech)
@@ -229,6 +248,12 @@ function eveWidget() {
         // ชื่อ route ของหน้าปัจจุบัน — ส่งให้ Eve รู้ว่าลูกค้ายืนอยู่หน้าไหน
         // ใช้ Js::from ตามกฎโปรเจกต์ (เลี่ยง @directive ที่มีวงเล็บซ้อน)
         pageRoute: {{ Js::from(Route::currentRouteName()) }},
+
+        // 🧠 สมาชิกที่ล็อกอิน = Eve จำบทสนทนาได้ 7 วัน (เก็บฝั่งเซิร์ฟเวอร์)
+        //    ผู้ที่ไม่ได้ล็อกอิน = ไม่มีความจำเลย ทั้งสองค่านี้จึงว่าง
+        isMember: {{ Js::from(auth()->check()) }},
+        MEMORY_ENDPOINT: {{ Js::from(auth()->check() ? route('eve.memory') : '') }},
+        _memoryLoaded: false,
 
         // ชุดอีโมจิตามอารมณ์ — สุ่มหยิบมาลอย
         EMOJI: {
@@ -265,11 +290,89 @@ function eveWidget() {
         },
         stopAmbient() { clearInterval(this._ambient); this._ambient = null; },
 
-        toggle() {
+        /**
+         * 🧠 ดึงความจำของสมาชิกกลับมาแสดงในกล่องแชท
+         *
+         * ทำไมต้องแสดง: เซิร์ฟเวอร์ส่งประวัติเก่าเข้า prompt อยู่แล้ว ถ้าหน้าจอว่างเปล่า
+         * Eve จะพูดว่า "เรื่องหูฟังที่คุยกันไว้..." ลอยมาบนแผงเปล่า = อ่านเหมือนระบบพัง
+         *
+         * @returns {Promise<boolean>} true = มีความจำเก่าและเติมลงจอแล้ว
+         */
+        async restoreMemory() {
+            if (!this.isMember || !this.MEMORY_ENDPOINT || this._memoryLoaded) return false;
+            this._memoryLoaded = true;
+            try {
+                const res = await fetch(this.MEMORY_ENDPOINT, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) return false;
+                const data = await res.json();
+                const turns = data?.data?.turns || [];
+                if (!turns.length) return false;
+
+                for (const t of turns) {
+                    if (!t || !t.content) continue;
+                    this.messages.push({ role: t.role === 'assistant' ? 'assistant' : 'user', content: t.content });
+                }
+
+                return true;
+            } catch (e) {
+                return false;   // ดึงไม่ได้ = เริ่มคุยใหม่ตามปกติ ห้ามทำให้เปิดแชทไม่ได้
+            }
+        },
+
+        // 🧹 ล้างความจำด้วยตัวเอง (ทางลบข้อมูลตาม PDPA สำหรับสมาชิกที่ใช้แต่เว็บ)
+        async forgetMemory() {
+            if (!this.isMember || !this.MEMORY_ENDPOINT) return;
+            if (!confirm('ล้างความจำของน้อง Eve ทั้งหมดใช่ไหมคะ? บทสนทนาที่ผ่านมาจะถูกลบถาวร')) return;
+            try {
+                const res = await fetch(this.MEMORY_ENDPOINT, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || this.csrf,
+                        'Accept': 'application/json',
+                    },
+                });
+                const data = await res.json().catch(() => null);
+
+                // ⚠️ ห้ามล้างจอ/บอกว่าลบสำเร็จ ถ้าเซิร์ฟเวอร์ยังไม่ได้ลบจริง
+                //    นี่คือคำยืนยันการลบข้อมูลตาม PDPA — พูดผิดไม่ได้
+                //    เคสที่เจอจริง: หน้าเปิดค้างจน session หมด (419), ช่วง deploy ได้ HTML 503
+                //    กลับมา (res.json() พัง → data = null) และ DB ล่ม (HTTP 200 + success:false)
+                //    ทั้งสามเคส res.ok อย่างเดียวไม่พอ ต้องเช็ค success ด้วย
+                if (!res.ok || data?.success !== true) {
+                    const msg = res.status === 419
+                        ? 'หน้านี้เปิดค้างไว้นานค่ะ 🙏 รบกวนรีเฟรชหน้าแล้วลองใหม่นะคะ'
+                        : (data?.message || 'ลบไม่สำเร็จค่ะ ลองใหม่อีกครั้งนะคะ 🙏');
+                    this.messages.push({ role: 'assistant', content: msg });
+                    this.scroll();
+                    return;
+                }
+
+                this.stopSpeak();
+                this.messages = [];
+                this._memoryLoaded = false;
+                this.messages.push({ role: 'assistant', content: data?.message || 'ล้างความจำเรียบร้อยแล้วค่ะ 🌸' });
+                this.emotion = 'happy';
+                this.scroll();
+            } catch (e) {
+                this.messages.push({ role: 'assistant', content: 'ลบไม่สำเร็จค่ะ ลองใหม่อีกครั้งนะคะ 🙏' });
+            }
+        },
+
+        async toggle() {
             this.open = !this.open;
             if (this.open) {
                 // อุ่นรายชื่อเสียงในเครื่องไว้ก่อน (Chrome โหลดแบบ async — เรียกครั้งแรกมักได้ลิสต์ว่าง)
                 try { window.speechSynthesis && window.speechSynthesis.getVoices(); } catch (e) {}
+
+                // สมาชิก: เอาบทสนทนาเก่ากลับขึ้นจอก่อน แล้วค่อยตัดสินใจว่าต้องทักทายไหม
+                const restored = this.messages.length === 0 ? await this.restoreMemory() : false;
+
+                // ⚠️ ระหว่างรอ /eve/memory ลูกค้าอาจกดปิดแผงไปแล้ว
+                //    ถ้าไม่เช็ค จะไปทักทาย + พูดออกเสียงทั้งที่แผงปิดอยู่ (เสียงลอยมาจากไหนไม่รู้)
+                if (!this.open) return;
+
+                if (restored) this.scroll();
+
                 if (this.messages.length === 0) {
                     // ข้อความทักทาย — แอดมินตั้งเองได้ที่หน้า "ตั้งค่าน้อง Eve" (ว่าง = ใช้มาตรฐาน)
                     const greeting = {{ Js::from($eveGreeting !== '' ? $eveGreeting : 'สวัสดีค่ะ '.$eveName.' เองค่ะ 🌸 อยากได้สินค้าแบบไหน หรือมีอะไรให้ช่วยไหมคะ?') }};
@@ -279,6 +382,8 @@ function eveWidget() {
                     this.pop('👋'); setTimeout(() => this.pop('🌸'), 480);
                     setTimeout(() => { if (!this.speaking) this.emotion = 'idle'; }, 2600);
                 }
+                // ⚠️ กลับมาต่อบทสนทนาเก่า = ห้ามอ่านข้อความเก่าออกเสียงซ้ำ (speak() จึงไม่ถูกเรียก)
+
                 this.startAmbient();          // เริ่มเด้งอีโมจิเบาๆ ตอนเปิดแผง
             } else {
                 this.stopSpeak();
@@ -454,6 +559,157 @@ function eveWidget() {
 
         _ttsUrl(text) { return this.TTS_ENDPOINT + '?q=' + encodeURIComponent(text); },
 
+        // ── 👄 ระบบรูปปาก (viseme) ────────────────────────────────────────────
+        //  เป้าหมาย: ปากต้องเปลี่ยน "รูป" หลายแบบตามเสียงที่พูดจริง ไม่ใช่อ้า-หุบซ้ำท่าเดียว
+        //  ตัวขับหลัก = Web Audio AnalyserNode อ่านคลื่นเสียงจาก <audio> ของ Eve
+        //  ทำได้เพราะ /eve/tts เป็นพร็อกซีฝั่งเราเอง (same-origin) — ถ้ายิง Google ตรงจะโดน CORS ปิดตาย
+        //  ตัวสำรอง = สุ่มสลับรูปตามจังหวะ ใช้เมื่อไม่มี Web Audio หรือ AudioContext ยังถูกบล็อก
+        VISEMES: ['rest', 'mbp', 'aa', 'ee', 'oo', 'eh', 'fv'],
+
+        // ผู้ใช้ตั้งค่า "ลดการเคลื่อนไหว" ไว้หรือไม่
+        _reducedMotion() {
+            try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+        },
+
+        /**
+         * ต่อ <audio> เข้ากับ AnalyserNode
+         *
+         * ⚠️ กับดักใหญ่: พอเรียก createMediaElementSource() แล้ว เสียงของ element นั้น
+         *    จะวิ่งผ่านกราฟเท่านั้น ถ้า AudioContext ยังถูกเบราว์เซอร์ระงับ (ยังไม่มี user gesture)
+         *    = Eve เงียบสนิททั้งที่ไฟล์เล่นอยู่ จึงต้องต่อ "เฉพาะตอน state === running" เท่านั้น
+         *    ถ้าไม่ running ให้ถอยไปใช้ตัวสำรอง — ยอมให้ปากไม่ตรงเป๊ะ ดีกว่าเสียงหาย
+         *
+         * @returns {boolean} true = ต่อสำเร็จ ใช้ analyser ได้
+         */
+        _attachAnalyser(a) {
+            if (!a) return false;
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return false;
+                if (!this._ac) { this._ac = new AC(); this._srcMap = new WeakMap(); }
+                if (this._ac.state === 'suspended') { try { this._ac.resume(); } catch (e) {} }
+                if (this._ac.state !== 'running') return false;   // ยังถูกบล็อกอยู่ — อย่าต่อ เดี๋ยวเสียงหาย
+
+                if (!this._analyser) {
+                    this._analyser = this._ac.createAnalyser();
+                    this._analyser.fftSize = 1024;
+                    this._analyser.smoothingTimeConstant = 0.55;
+                    this._analyser.connect(this._ac.destination);
+                }
+                // 1 element ต่อได้ครั้งเดียวตลอดอายุ — เรียกซ้ำจะโยน InvalidStateError
+                let src = this._srcMap.get(a);
+                if (!src) { src = this._ac.createMediaElementSource(a); this._srcMap.set(a, src); src.connect(this._analyser); }
+
+                return true;
+            } catch (e) {
+                return false;   // เบราว์เซอร์ไม่รองรับ / ต่อซ้ำ / ถูกบล็อก → ใช้ตัวสำรอง
+            }
+        },
+
+        /**
+         * เลือกรูปปากจากคลื่นเสียงจริง
+         *
+         * ใช้ 2 ค่า:
+         *   level    = ความดัง (RMS) → ปากอ้ามาก/น้อย
+         *   centroid = จุดศูนย์ถ่วงความถี่ → เสียงแหลม (อี/แอ ปากกว้าง) vs ทุ้ม (อู/โอ ปากกลม)
+         *
+         * ⚠️ ห้ามตั้งเกณฑ์ centroid เป็นค่าคงที่ตายตัว
+         *    ค่าที่อ่านได้ขึ้นกับ sample rate ของ AudioContext และ codec ของไฟล์ TTS
+         *    (เสียงพูดจริงกระจุกต่ำกว่า 4kHz = centroid ปกติแค่ ~0.03–0.10 ของช่วงทั้งหมด)
+         *    ถ้าตั้งเลขตายตัวไว้สูงเกิน ทุกเฟรมจะตกสาขาเดียวกันหมด → ปากเหลือ 2–3 รูป ดูเหมือนไม่ได้แก้อะไร
+         *    จึงเทียบกับ "ค่าเฉลี่ยเคลื่อนที่ของตัวเอง" แทน = ปรับตัวเองได้ทุกเครื่อง/ทุกอัตราสุ่ม
+         */
+        _visemeFromAudio() {
+            const an = this._analyser;
+            if (!an) return null;
+
+            // จองบัฟเฟอร์ครั้งเดียว — วนอ่านทุกเฟรมขณะพูด ถ้า new ใหม่ทุกรอบจะกวน GC
+            if (!_wave || _wave.length !== an.fftSize) {
+                _wave = new Uint8Array(an.fftSize);
+                _freq = new Uint8Array(an.frequencyBinCount);
+            }
+
+            an.getByteTimeDomainData(_wave);
+            let sum = 0;
+            for (let i = 0; i < _wave.length; i++) { const v = (_wave[i] - 128) / 128; sum += v * v; }
+            const rms = Math.sqrt(sum / _wave.length);
+
+            an.getByteFrequencyData(_freq);
+            let num = 0, den = 0;
+            for (let i = 0; i < _freq.length; i++) { num += i * _freq[i]; den += _freq[i]; }
+            const centroid = den > 0 ? (num / den) / _freq.length : 0;
+
+            // ค่าเฉลี่ยเคลื่อนที่ (EMA) ของทั้งความดังและความแหลม — ใช้เป็นเส้นฐานที่ปรับตัวเอง
+            if (rms > 0.008) {
+                _rmsAvg = _rmsAvg ? (_rmsAvg * 0.94 + rms * 0.06) : rms;
+                _cenAvg = _cenAvg ? (_cenAvg * 0.94 + centroid * 0.06) : centroid;
+            }
+            const rmsAvg = _rmsAvg || 0.05;
+            const cenAvg = _cenAvg || 0.08;
+
+            const level = rms / rmsAvg;          // 1.0 = ดังเท่าค่าเฉลี่ยของประโยคนี้
+            const bright = centroid > cenAvg * 1.12;
+            const dark = centroid < cenAvg * 0.88;
+
+            // ⚠️ เงียบยาว ≠ ช่องว่างระหว่างคำ
+            //    ถ้า /eve/tts ล่ม / ลูกค้าปิดเสียงระบบ / ไฟล์เล่นไม่ออก คลื่นจะนิ่งตลอด
+            //    ถ้าคืน 'mbp' ไปเรื่อยๆ ปากจะค้างปิดสนิท ดูเหมือนบอทค้าง
+            //    ดังนั้นเงียบเกิน ~0.4 วินาที (24 เฟรม) ให้คืน null เพื่อสลับไปใช้ตัวสำรองสุ่มรูปแทน
+            if (rms < 0.012) {
+                _silentFrames++;
+
+                return _silentFrames > 24 ? null : 'mbp';
+            }
+            _silentFrames = 0;
+
+            // เงียบสั้นๆ = ช่องว่างระหว่างคำจริง (ทำให้ดูเป็นคำ ไม่ใช่อ้าค้าง)
+            if (level < 0.30) return 'mbp';
+            if (level < 0.70) return bright ? 'fv' : (dark ? 'oo' : 'rest');
+            if (level < 1.15) return bright ? 'ee' : (dark ? 'oo' : 'eh');
+
+            return bright ? 'ee' : (dark ? 'aa' : 'aa');
+        },
+
+        // ตัวสำรอง: สุ่มรูปปากแบบถ่วงน้ำหนัก ให้ดูเป็นการพูดโดยไม่ต้องมีเสียงจริง
+        _visemeRandom() {
+            const pool = ['aa', 'eh', 'ee', 'oo', 'eh', 'aa', 'oo', 'ee', 'mbp', 'fv'];
+            let v = pool[Math.floor(Math.random() * pool.length)];
+            if (v === this.viseme) v = pool[Math.floor(Math.random() * pool.length)];  // เลี่ยงซ้ำท่าเดิมติดกัน
+
+            return v;
+        },
+
+        // เริ่มขับรูปปาก — เรียกตอนเริ่มพูด
+        _startVisemes(useAnalyser) {
+            this._stopVisemes(true);
+
+            // ลดการเคลื่อนไหว → ค้างรูปแง้มไว้เฉยๆ ไม่สลับ
+            if (this._reducedMotion()) { this.viseme = 'eh'; return; }
+
+            const tick = () => {
+                if (!this.speaking) { this._stopVisemes(); return; }
+
+                const now = (window.performance && performance.now) ? performance.now() : Date.now();
+                if (now >= this._visHold) {
+                    const next = (useAnalyser ? this._visemeFromAudio() : null) || this._visemeRandom();
+                    if (next !== this.viseme) this.viseme = next;   // แตะ state เฉพาะตอนเปลี่ยนจริง (กัน Alpine re-render ทุกเฟรม)
+                    // ค้างรูปละ 70–140ms ≈ อัตราพยางค์คนพูด — ถี่กว่านี้จะเบลอจนดูเป็นการสั่น
+                    this._visHold = now + 70 + Math.random() * 70;
+                }
+                this._visTimer = requestAnimationFrame(tick);
+            };
+
+            this._visHold = 0;
+            _silentFrames = 0;   // เริ่มท่อนใหม่ = เริ่มนับความเงียบใหม่
+            this._visTimer = requestAnimationFrame(tick);
+        },
+
+        // หยุดขับรูปปาก (keepShape = true ใช้ตอนรีสตาร์ทกลางคัน ไม่ต้องรีเซ็ตรูป)
+        _stopVisemes(keepShape) {
+            if (this._visTimer) { try { cancelAnimationFrame(this._visTimer); } catch (e) {} this._visTimer = null; }
+            if (!keepShape) this.viseme = 'rest';
+        },
+
         _makeAudio(text) {
             const a = new Audio();
             a.preload = 'auto';
@@ -470,6 +726,9 @@ function eveWidget() {
             const a = (this._preload && this._preload.text === text) ? this._preload.audio : this._makeAudio(text);
             this._preload = null;
             this._audio = a;
+
+            // 👄 ขับรูปปากตามคลื่นเสียงของท่อนนี้ — ต่อ analyser ไม่ได้ก็ถอยไปสุ่มรูปตามจังหวะ
+            this._startVisemes(this._attachAnalyser(a));
 
             // พรีโหลดท่อนถัดไประหว่างที่ท่อนนี้กำลังเล่น
             if (this._ttsQueue.length) {
@@ -518,7 +777,10 @@ function eveWidget() {
                     settled = true;
                     fin();
                 };
-                u.onstart = () => { started = true; };
+                // 👄 เสียงในเครื่องอ่านคลื่นไม่ได้ (ไม่ใช่ <audio> ของเรา) → สุ่มรูปปากตามจังหวะแทน
+                //    ต้องเช็ก seq ก่อน: utterance ที่ถูกยกเลิกไปแล้วยังยิง onstart ตามมาทีหลังได้
+                //    ถ้าไม่กัน ปากจะเริ่มขยับให้เซสชันที่ตายแล้ว ทับคำตอบใหม่ที่กำลังพูดอยู่
+                u.onstart = () => { started = true; if (seq === this._speakSeq) this._startVisemes(false); };
                 u.onend = end;
                 u.onerror = end;
                 this._native = u;
@@ -541,6 +803,7 @@ function eveWidget() {
 
         stopSpeak() {
             this._speakSeq++; // invalidate เซสชันพูดเก่า → callback ที่ค้างจะ bail ไม่ stomp อารมณ์
+            this._stopVisemes();   // 👄 คืนปากกลับท่าพัก ไม่ให้ค้างรูปอ้ากลางคัน
             this._ttsQueue = [];
             if (this._audio) {
                 try { this._audio.onended = null; this._audio.onerror = null; this._audio.pause(); } catch (e) {}

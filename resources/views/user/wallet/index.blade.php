@@ -3,8 +3,6 @@
 @section('title', 'กระเป๋าเงิน')
 
 @php
-    use Illuminate\Support\Str;
-
     // สีสถานะธุรกรรม (map จาก status_color → hex ใช้ใน V4 แทน dynamic tailwind class)
     $txColor = function ($c) {
         return match ($c) {
@@ -143,18 +141,49 @@
     @endif
 
     {{-- ── สถิติเพิ่มเติม ──────────────────────────────────────── --}}
+    {{--
+      ⚠️ ห้ามวนลูป $statistics ทั้งก้อนแล้ว echo ค่าดิบ
+         คีย์ balance / total_income / total_expense ซ้ำกับการ์ด 4 ใบด้านบนอยู่แล้ว
+         และคีย์ last_transaction เคยเป็น Eloquent model → Blade แปลงเป็น JSON ทั้งก้อน
+         ทำให้ ip_address / user_agent ของลูกค้าโผล่ขึ้นหน้าจอและดันการ์ดจนหน้าเลื่อนแนวนอน
+         จึงเลือกแสดงเฉพาะคีย์ที่ต้องการ พร้อมป้ายภาษาไทยและจัดรูปแบบตัวเลขเอง
+    --}}
     @if(isset($statistics) && !empty($statistics))
+    @php
+        $extraStats = [
+            ['จำนวนธุรกรรมทั้งหมด', number_format((int) ($statistics['transactions_count'] ?? 0)).' รายการ', '🧾', 'var(--ink)'],
+            ['รายรับ 30 วันล่าสุด', '฿'.number_format((float) ($statistics['last_30_days_income'] ?? 0), 2), '📈', '#5aa07e'],
+            ['รายจ่าย 30 วันล่าสุด', '฿'.number_format((float) ($statistics['last_30_days_expense'] ?? 0), 2), '📉', '#d9534f'],
+            ['รายรับเดือนนี้', '฿'.number_format((float) ($statistics['this_month_income'] ?? 0), 2), '🗓️', '#5aa07e'],
+            ['รายจ่ายเดือนนี้', '฿'.number_format((float) ($statistics['this_month_expense'] ?? 0), 2), '🗓️', '#d9534f'],
+        ];
+    @endphp
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px;">
-        @foreach($statistics as $key => $stat)
-            <div class="tp-card" style="padding:15px; display:flex; align-items:center; gap:11px;">
-                <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:18px;">{{ is_array($stat) ? ($stat['icon'] ?? '📊') : '📊' }}</span>
+        @foreach($extraStats as [$label, $value, $icon, $color])
+            <div class="tp-card" style="padding:15px; display:flex; align-items:center; gap:11px; min-width:0;">
+                <span class="tp-tile" style="flex:none; width:40px; height:40px; border-radius:12px; font-size:18px;">{{ $icon }}</span>
                 <div style="min-width:0;">
-                    <div style="font-size:11px; color:var(--ink2);">{{ is_array($stat) ? ($stat['label'] ?? Str::headline((string) $key)) : Str::headline((string) $key) }}</div>
-                    <div class="tp-num" style="font-size:18px; font-weight:800;">{{ is_array($stat) ? ($stat['value'] ?? '0') : $stat }}</div>
+                    <div style="font-size:11px; color:var(--ink2);">{{ $label }}</div>
+                    <div class="tp-num" style="font-size:18px; font-weight:800; color:{{ $color }}; overflow-wrap:anywhere;">{{ $value }}</div>
                 </div>
             </div>
         @endforeach
     </div>
+
+    {{-- ธุรกรรมล่าสุด (สรุปย่อ — WalletService คัดเฉพาะฟิลด์ที่ปลอดภัยมาให้แล้ว) --}}
+    @if(!empty($statistics['last_transaction']))
+        @php $lastTx = $statistics['last_transaction']; @endphp
+        <div class="tp-card" style="padding:15px; display:flex; flex-wrap:wrap; align-items:center; gap:12px; min-width:0;">
+            <span class="tp-tile" style="flex:none; width:40px; height:40px; border-radius:12px; font-size:18px;">🕒</span>
+            <div style="min-width:0;">
+                <div style="font-size:11px; color:var(--ink2);">ธุรกรรมล่าสุด</div>
+                <div style="font-size:14px; font-weight:700; overflow-wrap:anywhere;">{{ $lastTx['type_label'] ?? '—' }}</div>
+            </div>
+            <div class="tp-num" style="margin-left:auto; font-size:17px; font-weight:800; white-space:nowrap;">{{ $lastTx['formatted_amount'] ?? '—' }}</div>
+            <span class="tp-pill tp-pill-soft" style="white-space:nowrap;">{{ $lastTx['status_label'] ?? '—' }}</span>
+            <div class="tp-num" style="font-size:11.5px; color:var(--ink2); white-space:nowrap;">{{ $lastTx['created_at'] ?? '' }}</div>
+        </div>
+    @endif
     @endif
 
     {{-- ── รายการธุรกรรมล่าสุด ──────────────────────────────── --}}

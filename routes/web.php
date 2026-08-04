@@ -481,6 +481,18 @@ Route::post('/eve/chat', [\App\Http\Controllers\EveAssistantController::class, '
 Route::get('/eve/tts', [\App\Http\Controllers\EveAssistantController::class, 'tts'])
     ->middleware('throttle:120,1')->name('eve.tts');
 
+// 🧠 ความจำบทสนทนาของน้อง Eve — เฉพาะสมาชิกที่ล็อกอิน (เก็บ 7 วัน)
+//    ผู้ที่ไม่ได้ล็อกอินไม่มีความจำฝั่งเซิร์ฟเวอร์เลย จึงไม่ต้องมี endpoint ให้
+//    ⚠️ /eve/chat ต้องเป็น public ต่อไป (guest ยังคุยกับ Eve ได้เหมือนเดิม) — ห้ามย้ายเข้ากลุ่มนี้
+Route::middleware('auth')->group(function () {
+    Route::get('/eve/memory', [\App\Http\Controllers\EveAssistantController::class, 'memory'])
+        ->middleware('throttle:30,1')->name('eve.memory');
+
+    // ปุ่ม "ล้างความจำ" — ทางลบข้อมูลด้วยตัวเองตาม PDPA สำหรับสมาชิกที่ใช้แต่เว็บ
+    Route::delete('/eve/memory', [\App\Http\Controllers\EveAssistantController::class, 'forgetMemory'])
+        ->middleware('throttle:10,1')->name('eve.memory.forget');
+});
+
 // Dynamic Page Routes (Privacy Policy, Terms, etc.)
 // ⚠️ Legal Critical: Privacy Policy, Terms of Service ต้องเข้าถึงได้ตลอดเวลา
 Route::match(['GET', 'HEAD'], '/page/{slug}', [PageController::class, 'show'])->name('page.show');

@@ -423,11 +423,26 @@ class WalletService
     }
 
     /**
-     * Get wallet statistics
+     * สรุปสถิติกระเป๋าเงิน
+     *
+     * ⚠️ ห้ามคืน Eloquent model ดิบในอาเรย์นี้เด็ดขาด
+     *    ผู้เรียกบางรายส่งค่าไปให้ Blade echo ตรงๆ (`{{ $stat }}`) และบางรายส่งลง JSON API
+     *    ถ้าเป็น model จะถูกแปลงเป็น JSON ทั้งก้อน → หลุด `ip_address` / `user_agent`
+     *    ของลูกค้าขึ้นหน้าจอ (เคยเกิดจริงที่การ์ด "Last Transaction" หน้ากระเป๋าเงิน)
+     *    คืนเป็นอาเรย์ที่คัดเฉพาะฟิลด์ที่ปลอดภัยเท่านั้น
+     *
+     * @return array<string, mixed>
      */
     public function getWalletStatistics(Wallet $wallet): array
     {
         $thirtyDaysAgo = now()->subDays(30);
+        $monthStart = now()->startOfMonth();
+
+        // ประเภทธุรกรรมฝั่งรายรับ / รายจ่าย (ใช้ซ้ำหลายคิวรี)
+        $incomeTypes = ['deposit', 'transfer_in', 'commission', 'bonus'];
+        $expenseTypes = ['withdrawal', 'transfer_out', 'fee'];
+
+        $latest = $wallet->transactions()->latest()->first();
 
         return [
             'balance' => $wallet->balance,
@@ -436,13 +451,33 @@ class WalletService
             'transactions_count' => $wallet->transactions()->count(),
             'last_30_days_income' => $wallet->transactions()
                 ->where('created_at', '>=', $thirtyDaysAgo)
-                ->whereIn('type', ['deposit', 'transfer_in', 'commission', 'bonus'])
+                ->whereIn('type', $incomeTypes)
                 ->sum('amount'),
             'last_30_days_expense' => $wallet->transactions()
                 ->where('created_at', '>=', $thirtyDaysAgo)
-                ->whereIn('type', ['withdrawal', 'transfer_out', 'fee'])
+                ->whereIn('type', $expenseTypes)
                 ->sum('amount'),
-            'last_transaction' => $wallet->transactions()->latest()->first(),
+            // เดือนนี้ — MobileApiController::getWallet() อ่าน 2 คีย์นี้อยู่
+            // ก่อนหน้านี้ไม่เคยถูกสร้าง แอปมือถือจึงได้ 0 เสมอ
+            'this_month_income' => $wallet->transactions()
+                ->where('created_at', '>=', $monthStart)
+                ->whereIn('type', $incomeTypes)
+                ->sum('amount'),
+            'this_month_expense' => $wallet->transactions()
+                ->where('created_at', '>=', $monthStart)
+                ->whereIn('type', $expenseTypes)
+                ->sum('amount'),
+            // สรุปธุรกรรมล่าสุดแบบย่อ (ไม่มี ip_address / user_agent / metadata)
+            'last_transaction' => $latest ? [
+                'transaction_id' => $latest->transaction_id,
+                'type' => $latest->type,
+                'type_label' => $latest->type_label,
+                'amount' => $latest->amount,
+                'formatted_amount' => $latest->formatted_amount,
+                'status' => $latest->status,
+                'status_label' => $latest->status_label,
+                'created_at' => $latest->created_at?->toDateTimeString(),
+            ] : null,
         ];
     }
 

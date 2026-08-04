@@ -244,7 +244,18 @@
     <!-- Action Buttons -->
     <div class="px-4 pb-4 pt-0">
         <div class="flex gap-2">
-            @if($product->stock_status === 'in_stock')
+            {{-- สินค้า affiliate ใส่ตะกร้าเราไม่ได้ (CartController ตีกลับ 400)
+                 ต้องเป็นลิงก์เข้าหน้ารายละเอียด ไม่ใช่ปุ่มที่กดแล้วขึ้น error ทุกครั้ง --}}
+            @if($product->is_affiliate)
+                <a href="{{ route('shop.show', $product->slug ?: $product->id) }}"
+                   class="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-sm text-center rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    ดูรายละเอียด
+                </a>
+            @elseif($product->stock_status === 'in_stock')
                 <button onclick="addToCartQuick(event, {{ $product->id }})"
                         class="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white font-bold text-sm text-center rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

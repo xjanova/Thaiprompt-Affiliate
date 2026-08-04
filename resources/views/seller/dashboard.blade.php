@@ -1,433 +1,276 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
 @section('title', 'แดชบอร์ดร้านค้า - ' . ($store->store_name ?? 'ร้านค้าของคุณ'))
 
-@section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Store Header with Package Badge --}}
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-6 md:p-8 text-white relative overflow-hidden">
-        {{-- Decorative elements --}}
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-48 h-48 bg-white opacity-5 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-6 -ml-6 w-40 h-40 bg-white opacity-5 rounded-full"></div>
-        <div class="absolute top-1/2 right-1/4 w-32 h-32 bg-white opacity-3 rounded-full"></div>
+@php
+    // ── เตรียมข้อมูลกราฟรายได้ 12 เดือน ───────────────────────────────
+    // ธีม V4 ใช้กราฟแท่ง CSS (.tp-bars) แทน Chart.js — ไม่ต้องโหลดสคริปต์จาก CDN
+    // $monthlyRevenue จากคอนโทรลเลอร์เป็น collection ของ ['month' => 'Jan 2026', 'total' => 0]
+    $chartRows = collect($monthlyRevenue ?? []);
+    $chartMax = (float) ($chartRows->max('total') ?: 0);
+    $chartSum = (float) $chartRows->sum('total');
 
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div class="flex items-center gap-4">
+    // สีสถานะออเดอร์ (map เป็น hex ใช้ใน V4 แทนคลาส tailwind แบบไดนามิก)
+    $orderStatus = [
+        'pending' => ['รอดำเนินการ', '#e0a52e'],
+        'processing' => ['กำลังจัดเตรียม', '#5689b8'],
+        'completed' => ['สำเร็จ', '#5aa07e'],
+        'cancelled' => ['ยกเลิก', '#d9534f'],
+    ];
+
+    // เมนูด่วน: [อีโมจิ, ป้าย, ลิงก์, เปิดแท็บใหม่ไหม]
+    $quickActions = [
+        ['➕', 'เพิ่มสินค้า', route('seller.products.create'), false],
+        ['📋', 'ดูออเดอร์', route('seller.orders.index'), false],
+        ['🎨', 'แต่งร้าน', route('seller.store.settings'), false],
+        ['📊', 'รายงาน', route('seller.analytics.index'), false],
+        ['📢', 'การตลาด', route('seller.marketing.index'), false],
+        ['🌐', 'หน้าร้าน', $store->store_url, true],
+    ];
+@endphp
+
+@section('content')
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ── หัวร้าน (Hero) ────────────────────────────────────── --}}
+    <div class="tp-card" style="padding:24px 26px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 20%, transparent), transparent 72%);">
+        <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px;">
+            <div style="display:flex; align-items:center; gap:14px; min-width:0;">
                 @if($store->store_logo)
-                    <img src="{{ $store->logo_url }}" alt="{{ $store->store_name }}" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl shadow-lg border-4 border-white/30 object-cover">
+                    <img src="{{ $store->logo_url }}" alt="โลโก้ {{ $store->store_name }}"
+                         style="width:62px; height:62px; border-radius:18px; object-fit:cover; box-shadow:var(--inset-sm); flex:none;">
                 @else
-                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/20 flex items-center justify-center text-3xl md:text-4xl shadow-lg border-4 border-white/30">
-                        🏪
-                    </div>
+                    <span class="tp-tile" style="width:62px; height:62px; border-radius:18px; font-size:28px; flex:none;">🏪</span>
                 @endif
-                <div>
-                    <h1 class="text-2xl md:text-4xl font-bold mb-1">{{ $store->store_name }}</h1>
-                    <p class="text-indigo-100 text-sm md:text-base">ยินดีต้อนรับสู่ระบบจัดการร้านค้า</p>
-                    <div class="flex items-center gap-2 mt-2">
-                        <span class="text-xs bg-white/20 px-2 py-1 rounded-lg">{{ $store->store_slug }}</span>
+                <div style="min-width:0;">
+                    <h1 style="font-size:clamp(20px,4vw,28px); font-weight:800; margin:0; color:var(--ink); overflow-wrap:anywhere;">{{ $store->store_name }}</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ยินดีต้อนรับสู่ระบบจัดการร้านค้า</div>
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:8px;">
+                        <span class="tp-pill tp-pill-soft tp-num">{{ $store->store_slug }}</span>
                         @if($store->is_verified)
-                            <span class="text-xs bg-green-500 px-2 py-1 rounded-lg font-semibold">✓ ยืนยันแล้ว</span>
+                            <span class="tp-pill" style="color:#fff; background:#5aa07e;">✓ ยืนยันแล้ว</span>
                         @endif
                     </div>
                 </div>
             </div>
 
-            <div class="flex flex-col items-start md:items-end gap-2">
+            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:9px;">
                 @if($package)
-                    <div class="flex items-center gap-2">
-                        <span class="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl text-sm font-bold shadow-lg">
-                            {{ $package->display_name }}
-                        </span>
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+                        <span class="tp-pill tp-pill-gold" style="font-weight:800;">{{ $package->display_name }}</span>
                         @if($store->subscription_status === 'trial')
-                            <span class="px-3 py-1 bg-blue-500/80 rounded-lg text-xs font-semibold">
-                                Trial: {{ $store->trial_ends_at ? $store->trial_ends_at->diffForHumans() : 'N/A' }}
+                            <span class="tp-pill" style="color:#fff; background:#5689b8;">
+                                ทดลองใช้: {{ $store->trial_ends_at ? $store->trial_ends_at->diffForHumans() : 'ไม่ระบุ' }}
                             </span>
                         @endif
                     </div>
                 @else
-                    <a href="{{ route('seller.packages') }}" class="px-4 py-2 bg-white text-indigo-600 rounded-xl text-sm font-bold shadow-lg hover:scale-105 transition">
-                        เลือกแพ็คเกจ
-                    </a>
+                    <a href="{{ route('seller.packages') }}" class="tp-btn tp-btn-sm">เลือกแพ็คเกจ</a>
                 @endif
 
-                <div class="flex gap-2 mt-1">
-                    <a href="{{ route('seller.store.settings') }}" class="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-sm transition">
-                        ⚙️ ตั้งค่าร้าน
-                    </a>
-                    <a href="{{ $store->store_url }}" target="_blank" class="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-sm transition">
-                        🌐 ดูหน้าร้าน
-                    </a>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                    <a href="{{ route('seller.store.settings') }}" class="tp-btn tp-btn-sm">⚙️ ตั้งค่าร้าน</a>
+                    <a href="{{ $store->store_url }}" target="_blank" rel="noopener" class="tp-btn tp-btn-sm">🌐 ดูหน้าร้าน</a>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- คำขวัญ TP-Affiliate - แบบสุ่มพร้อมเอฟเฟค Animation --}}
-    <div x-data="sloganCarousel()" x-init="init()" class="relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 dark:from-amber-500/20 dark:via-orange-500/20 dark:to-red-500/20 border border-amber-300/50 dark:border-amber-500/30 rounded-2xl p-4 md:p-6">
-        {{-- Animated Background Effects --}}
-        <div class="absolute inset-0 bg-gradient-to-r from-amber-400/5 via-orange-400/5 to-red-400/5"></div>
-        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse"></div>
-        <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-red-400/20 to-pink-500/20 rounded-full blur-2xl -ml-12 -mb-12 animate-pulse" style="animation-delay: 1s;"></div>
-
-        {{-- Floating Particles --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute w-2 h-2 bg-amber-400/30 rounded-full animate-float" style="left: 10%; top: 20%; animation-delay: 0s;"></div>
-            <div class="absolute w-3 h-3 bg-orange-400/20 rounded-full animate-float" style="left: 80%; top: 60%; animation-delay: 1s;"></div>
-            <div class="absolute w-2 h-2 bg-pink-400/30 rounded-full animate-float" style="left: 50%; top: 80%; animation-delay: 2s;"></div>
-            <div class="absolute w-1.5 h-1.5 bg-yellow-400/40 rounded-full animate-float" style="left: 30%; top: 40%; animation-delay: 0.5s;"></div>
-            <div class="absolute w-2 h-2 bg-rose-400/25 rounded-full animate-float" style="left: 70%; top: 30%; animation-delay: 1.5s;"></div>
-        </div>
-
-        <div class="relative flex items-start gap-4">
-            {{-- Animated Icon --}}
-            <div class="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-2xl md:text-3xl shadow-lg transform rotate-3 hover:rotate-0 hover:scale-110 transition-all duration-300 cursor-pointer"
-                 :class="{ 'animate-bounce-gentle': isTransitioning }">
-                <span x-text="currentSlogan.icon" class="transition-transform duration-500" :class="{ 'scale-0': isTransitioning, 'scale-100': !isTransitioning }">🇹🇭</span>
-            </div>
-
-            {{-- Slogan Content with Fade Animation --}}
-            <div class="flex-1 min-w-0">
-                <h3 class="text-lg md:text-xl font-bold text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
-                    <span class="text-xl animate-pulse">💝</span>
-                    <span x-text="currentSlogan.category_name || 'พันธสัญญาจากเรา'"
-                          class="transition-all duration-500"
-                          :class="{ 'opacity-0 translate-y-2': isTransitioning, 'opacity-100 translate-y-0': !isTransitioning }">
-                        พันธสัญญาจากเรา
-                    </span>
-                </h3>
-                <blockquote class="min-h-[60px] md:min-h-[50px]">
-                    <p class="text-sm md:text-base text-amber-900/80 dark:text-amber-100/90 leading-relaxed font-semibold text-amber-700 dark:text-amber-400 transition-all duration-500"
-                       :class="{ 'opacity-0 -translate-x-4': isTransitioning, 'opacity-100 translate-x-0': !isTransitioning }"
-                       x-text="currentSlogan.content || 'เราช่วยคุณ คุณช่วยเรา ไทยช่วยไทย'">
-                        "เราช่วยคุณ คุณช่วยเรา ไทยช่วยไทย"
-                    </p>
-                    <p class="text-xs md:text-sm text-amber-800/70 dark:text-amber-200/80 mt-2 italic transition-all duration-500 delay-100"
-                       :class="{ 'opacity-0 translate-x-4': isTransitioning, 'opacity-100 translate-x-0': !isTransitioning }"
-                       x-show="currentSlogan.author"
-                       x-text="'— ' + (currentSlogan.author || '')">
-                    </p>
-                </blockquote>
-            </div>
-
-            {{-- Navigation & Animated Icons --}}
-            <div class="hidden md:flex flex-col items-end gap-2">
-                <div class="flex items-center gap-1 text-2xl">
-                    <span class="animate-pulse cursor-pointer hover:scale-125 transition-transform" @click="prevSlogan()">🤝</span>
-                    <span class="animate-bounce cursor-pointer hover:scale-125 transition-transform" style="animation-delay: 0.2s;" @click="nextSlogan()">❤️</span>
+    {{-- ── คำขวัญ TP-Affiliate (สลับอัตโนมัติ) ───────────────── --}}
+    @if(!empty($slogans) && count($slogans) > 0)
+    <div class="tp-card" x-data="sloganCarousel()" x-init="init()" style="padding:18px 20px;">
+        <div style="display:flex; align-items:flex-start; gap:14px;">
+            <span class="tp-tile" style="width:50px; height:50px; border-radius:15px; font-size:23px; flex:none;"
+                  x-text="currentSlogan.icon || '🇹🇭'"></span>
+            <div style="flex:1; min-width:0;">
+                <div class="tp-section-h" style="display:flex; align-items:center; gap:7px;">
+                    <span>💝</span>
+                    <span x-text="currentSlogan.category_name || 'พันธสัญญาจากเรา'"></span>
                 </div>
-                {{-- Progress Dots --}}
-                <div class="flex items-center gap-1 mt-2">
-                    <template x-for="(slogan, index) in slogans" :key="index">
-                        <button @click="goToSlogan(index)"
-                                class="w-2 h-2 rounded-full transition-all duration-300 hover:scale-125"
-                                :class="currentIndex === index ? 'bg-amber-500 w-4' : 'bg-amber-300/50 hover:bg-amber-400/70'">
-                        </button>
-                    </template>
-                </div>
-                {{-- Auto-play Toggle --}}
-                <button @click="toggleAutoPlay()"
-                        class="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition mt-1">
-                    <span x-text="isAutoPlaying ? '⏸️ หยุด' : '▶️ เล่น'"></span>
-                </button>
-            </div>
-        </div>
+                {{-- คอลัมน์จริงคือ content / author (ไม่ใช่ text) — ตรวจกับ Slogan model แล้ว --}}
+                <p style="margin:7px 0 0; font-size:14px; line-height:1.65; color:var(--ink); overflow-wrap:anywhere;"
+                   x-text="currentSlogan.content || 'เราช่วยคุณ คุณช่วยเรา ไทยช่วยไทย'"></p>
+                <p x-show="currentSlogan.author"
+                   style="margin:6px 0 0; font-size:12px; color:var(--ink2); font-style:italic;"
+                   x-text="'— ' + (currentSlogan.author || '')"></p>
 
-        {{-- Mobile Navigation --}}
-        <div class="flex md:hidden items-center justify-center gap-2 mt-4">
-            <button @click="prevSlogan()" class="p-2 bg-amber-200/50 dark:bg-amber-700/30 rounded-full hover:bg-amber-300/50 transition">
-                <svg class="w-4 h-4 text-amber-700 dark:text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-            </button>
-            <div class="flex items-center gap-1">
-                <template x-for="(slogan, index) in slogans" :key="index">
-                    <button @click="goToSlogan(index)"
-                            class="w-2 h-2 rounded-full transition-all duration-300"
-                            :class="currentIndex === index ? 'bg-amber-500 w-4' : 'bg-amber-300/50'">
-                    </button>
-                </template>
+                <div style="display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap;">
+                    {{-- จุดบอกลำดับ กดเลือกได้ --}}
+                    <div style="display:flex; gap:6px;">
+                        <template x-for="(s, i) in slogans" :key="i">
+                            <button type="button" @click="goTo(i)"
+                                    :aria-label="'คำขวัญที่ ' + (i + 1)"
+                                    :style="i === index
+                                        ? 'width:20px; height:7px; border-radius:99px; border:0; cursor:pointer; background:var(--deep1);'
+                                        : 'width:7px; height:7px; border-radius:99px; border:0; cursor:pointer; background:color-mix(in srgb, var(--ink2) 40%, transparent);'"></button>
+                        </template>
+                    </div>
+                    <button type="button" @click="toggleAuto()" class="tp-btn tp-btn-sm"
+                            x-text="autoPlay ? '⏸ หยุดสลับ' : '▶ สลับอัตโนมัติ'"></button>
+                </div>
             </div>
-            <button @click="nextSlogan()" class="p-2 bg-amber-200/50 dark:bg-amber-700/30 rounded-full hover:bg-amber-300/50 transition">
-                <svg class="w-4 h-4 text-amber-700 dark:text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-            </button>
         </div>
     </div>
+    @endif
 
-    {{-- Custom Animation Styles --}}
-    <style>
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.5; }
-            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
-        }
-        .animate-float {
-            animation: float 4s ease-in-out infinite;
-        }
-        @keyframes bounce-gentle {
-            0%, 100% { transform: translateY(0) rotate(3deg); }
-            50% { transform: translateY(-5px) rotate(-3deg); }
-        }
-        .animate-bounce-gentle {
-            animation: bounce-gentle 0.5s ease-in-out;
-        }
-    </style>
-
-    {{-- Quick Stats Cards --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        {{-- Today's Revenue --}}
-        <div class="group relative overflow-hidden bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 cursor-pointer">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-            <div class="relative z-10">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-5xl">💰</span>
-                    <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold">วันนี้</span>
+    {{-- ── สถิติหลัก 4 ใบ ────────────────────────────────────── --}}
+    @php
+        $mainStats = [
+            ['รายได้วันนี้', '฿'.number_format($todayRevenue ?? 0, 0), '💰', '#5aa07e', 'อัพเดทล่าสุดเมื่อสักครู่'],
+            ['รายได้ทั้งหมด', '฿'.number_format($totalRevenue ?? 0, 0), '📊', '#5689b8', number_format($completedSales ?? 0).' ออเดอร์สำเร็จ'],
+            ['คำสั่งซื้อรอดำเนินการ', number_format($pendingSales ?? 0), '⏳', '#e0a52e', 'จากทั้งหมด '.number_format($totalSales ?? 0)],
+            ['สินค้าทั้งหมด', number_format($totalProducts ?? 0), '📦', '#8b6bb8', ($activeProducts ?? 0).' ใช้งาน'],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px;">
+        @foreach($mainStats as $i => [$label, $value, $icon, $color, $hint])
+            <div class="tp-card" style="padding:18px; min-width:0;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $label }}</div>
+                    <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:17px; flex:none; background:color-mix(in srgb, {{ $color }} 18%, transparent);">{{ $icon }}</span>
                 </div>
-                <p class="text-emerald-100 text-sm mb-1">รายได้วันนี้</p>
-                <p class="text-3xl font-bold">฿{{ number_format($todayRevenue ?? 0, 0) }}</p>
-                <p class="text-xs text-emerald-100 mt-2">อัพเดทเมื่อสักครู่</p>
-            </div>
-        </div>
-
-        {{-- Total Revenue --}}
-        <div class="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 cursor-pointer">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-            <div class="relative z-10">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-5xl">📊</span>
-                    @if($salesGrowth != 0)
-                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold">
-                            {{ $salesGrowth > 0 ? '↑' : '↓' }} {{ number_format(abs($salesGrowth), 1) }}%
+                <div class="tp-num" style="font-size:26px; font-weight:800; margin-top:10px; color:{{ $color }}; overflow-wrap:anywhere;">{{ $value }}</div>
+                <div style="font-size:11px; color:var(--ink2); margin-top:3px;">
+                    {{-- การ์ดใบที่ 2 โชว์อัตราเติบโต / ใบที่ 4 เตือนสต็อกใกล้หมด --}}
+                    @if($i === 1 && ($salesGrowth ?? 0) != 0)
+                        <span style="color:{{ $salesGrowth > 0 ? '#5aa07e' : '#d9534f' }}; font-weight:700;">
+                            {{ $salesGrowth > 0 ? '▲' : '▼' }} {{ number_format(abs($salesGrowth), 1) }}%
                         </span>
-                    @endif
-                </div>
-                <p class="text-blue-100 text-sm mb-1">รายได้ทั้งหมด</p>
-                <p class="text-3xl font-bold">฿{{ number_format($totalRevenue ?? 0, 0) }}</p>
-                <p class="text-xs text-blue-100 mt-2">{{ $completedSales ?? 0 }} ออเดอร์สำเร็จ</p>
-            </div>
-        </div>
-
-        {{-- Pending Orders --}}
-        <div class="group relative overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 cursor-pointer">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-            <div class="relative z-10">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-5xl">⏳</span>
-                    @if($pendingSales > 0)
-                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold animate-pulse">ต้องดำเนินการ</span>
-                    @endif
-                </div>
-                <p class="text-orange-100 text-sm mb-1">คำสั่งซื้อรอดำเนินการ</p>
-                <p class="text-3xl font-bold">{{ number_format($pendingSales ?? 0) }}</p>
-                <p class="text-xs text-orange-100 mt-2">จาก {{ number_format($totalSales ?? 0) }} ทั้งหมด</p>
-            </div>
-        </div>
-
-        {{-- Total Products --}}
-        <div class="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 cursor-pointer">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-            <div class="relative z-10">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-5xl">📦</span>
-                    <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold">{{ $activeProducts ?? 0 }} ใช้งาน</span>
-                </div>
-                <p class="text-purple-100 text-sm mb-1">สินค้าทั้งหมด</p>
-                <p class="text-3xl font-bold">{{ number_format($totalProducts ?? 0) }}</p>
-                <p class="text-xs text-purple-100 mt-2">
-                    @if(isset($lowStockProducts) && $lowStockProducts > 0)
-                        <span class="text-yellow-300">⚠️ {{ $lowStockProducts }} ใกล้หมด</span>
+                        · {{ $hint }}
+                    @elseif($i === 3 && ($lowStockProducts ?? 0) > 0)
+                        <span style="color:#e0a52e; font-weight:700;">⚠️ {{ $lowStockProducts }} ใกล้หมด</span>
+                        · {{ $outOfStockProducts ?? 0 }} หมดสต็อก
                     @else
-                        <span>{{ $outOfStockProducts ?? 0 }} หมดสต็อก</span>
+                        {{ $hint }}
                     @endif
-                </p>
+                </div>
             </div>
+        @endforeach
+    </div>
+
+    {{-- ── สถิติรอง 4 ใบ ─────────────────────────────────────── --}}
+    @php
+        $subStats = [
+            ['ผู้เยี่ยมชม (30 วัน)', number_format($totalVisitors ?? 0), '👥'],
+            ['อัตราการแปลง', number_format($conversionRate ?? 0, 1).'%', '📈'],
+            ['คะแนนร้าน', number_format($store->rating_average ?? 0, 1), '⭐'],
+            ['รีวิวทั้งหมด', number_format($store->rating_count ?? 0), '💬'],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px;">
+        @foreach($subStats as [$label, $value, $icon])
+            <div class="tp-card" style="padding:15px; display:flex; align-items:center; gap:11px; min-width:0;">
+                <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:18px; flex:none;">{{ $icon }}</span>
+                <div style="min-width:0;">
+                    <div style="font-size:11px; color:var(--ink2);">{{ $label }}</div>
+                    <div class="tp-num" style="font-size:19px; font-weight:800; overflow-wrap:anywhere;">{{ $value }}</div>
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    {{-- ── เมนูด่วน ──────────────────────────────────────────── --}}
+    <div>
+        <div class="tp-section-h" style="margin-bottom:12px;">⚡ การดำเนินการด่วน</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px;">
+            @foreach($quickActions as [$emoji, $label, $href, $blank])
+                <a href="{{ $href }}" @if($blank) target="_blank" rel="noopener" @endif
+                   class="tp-card" style="padding:16px 12px; text-align:center; text-decoration:none; color:var(--ink); display:block;">
+                    <div style="font-size:26px;">{{ $emoji }}</div>
+                    <div style="font-size:12.5px; font-weight:700; margin-top:6px;">{{ $label }}</div>
+                </a>
+            @endforeach
         </div>
     </div>
 
-    {{-- Additional Stats Row --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 hover:shadow-xl transition">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center text-2xl shadow-lg">
-                    👥
-                </div>
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">ผู้เยี่ยมชม (30 วัน)</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($totalVisitors ?? 0) }}</p>
-                </div>
+    {{-- ── กราฟรายได้ 12 เดือน (CSS bars — ไม่ใช้ Chart.js) ──── --}}
+    <div class="tp-card" style="padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+            <div>
+                <div class="tp-section-h">📈 รายได้ · รายเดือน</div>
+                <div style="font-size:11px; color:var(--ink2); margin-top:2px;">12 เดือนล่าสุด</div>
             </div>
+            <span class="tp-pill tp-pill-gold tp-num">฿{{ number_format($chartSum, 0) }}</span>
         </div>
-
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 hover:shadow-xl transition">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center text-2xl shadow-lg">
-                    📈
+        @if($chartRows->isNotEmpty() && $chartMax > 0)
+        <div class="tp-bars">
+            @foreach($chartRows as $row)
+                @php
+                    $val = (float) ($row['total'] ?? 0);
+                    // 'Aug 2026' → 'Aug' (Str::limit 6 ตัวจะได้ "Aug 20" ปีขาดครึ่ง อ่านแล้วงง)
+                    $monthLabel = strtok((string) ($row['month'] ?? ''), ' ');
+                @endphp
+                <div class="col" title="{{ $row['month'] ?? '' }}: ฿{{ number_format($val, 2) }}">
+                    <div class="stack" style="height:100%;">
+                        <span class="bar a" style="height:{{ max(3, (int) round(($val / $chartMax) * 100)) }}%;"></span>
+                    </div>
+                    <span class="lbl">{{ $monthLabel }}</span>
                 </div>
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">อัตราการแปลง</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($conversionRate ?? 0, 1) }}%</p>
-                </div>
-            </div>
+            @endforeach
         </div>
-
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 hover:shadow-xl transition">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center text-2xl shadow-lg">
-                    ⭐
-                </div>
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">คะแนนร้าน</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($store->rating_average ?? 0, 1) }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 hover:shadow-xl transition">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-pink-400 to-rose-500 rounded-lg flex items-center justify-center text-2xl shadow-lg">
-                    💬
-                </div>
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">รีวิวทั้งหมด</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($store->rating_count ?? 0) }}</p>
-                </div>
-            </div>
-        </div>
+        @else
+            <div style="text-align:center; color:var(--ink2); padding:46px 0; font-size:13px;">ยังไม่มีรายได้ในช่วง 12 เดือนที่ผ่านมา</div>
+        @endif
     </div>
 
-    {{-- Quick Actions --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <span class="text-2xl">⚡</span>
-            การดำเนินการด่วน
-        </h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <a href="{{ route('seller.products.create') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
-                <span class="text-3xl mb-2">➕</span>
-                <span class="text-sm font-semibold text-center">เพิ่มสินค้า</span>
-            </a>
-
-            <a href="{{ route('seller.orders.index') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
-                <span class="text-3xl mb-2">📋</span>
-                <span class="text-sm font-semibold text-center">ดูออเดอร์</span>
-            </a>
-
-            <a href="{{ route('seller.store.settings') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
-                <span class="text-3xl mb-2">🎨</span>
-                <span class="text-sm font-semibold text-center">แต่งร้าน</span>
-            </a>
-
-            <a href="{{ route('seller.analytics.index') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
-                <span class="text-3xl mb-2">📊</span>
-                <span class="text-sm font-semibold text-center">รายงาน</span>
-            </a>
-
-            <a href="{{ route('seller.marketing.index') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
-                <span class="text-3xl mb-2">📢</span>
-                <span class="text-sm font-semibold text-center">การตลาด</span>
-            </a>
-
-            <a href="{{ $store->store_url }}" target="_blank" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-cyan-500 to-cyan-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
-                <span class="text-3xl mb-2">🌐</span>
-                <span class="text-sm font-semibold text-center">หน้าร้าน</span>
-            </a>
-        </div>
-    </div>
-
-    {{-- Revenue Chart --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <span class="text-3xl">📈</span>
-                รายได้รายเดือน (12 เดือนล่าสุด)
-            </h2>
-            <div class="flex gap-2">
-                <button class="px-3 py-1 bg-gray-100 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600 transition">รายวัน</button>
-                <button class="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm">รายเดือน</button>
-                <button class="px-3 py-1 bg-gray-100 dark:bg-slate-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-600 transition">รายปี</button>
+    {{-- ── คำสั่งซื้อล่าสุด ──────────────────────────────────── --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:18px 20px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+            <div>
+                <div class="tp-section-h">📋 คำสั่งซื้อล่าสุด</div>
+                <div style="font-size:11px; color:var(--ink2); margin-top:2px;">รายการที่เข้ามาล่าสุด</div>
             </div>
-        </div>
-        <div class="h-80">
-            <canvas id="revenueChart"></canvas>
-        </div>
-    </div>
-
-    {{-- Recent Orders --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <span class="text-3xl">📋</span>
-                คำสั่งซื้อล่าสุด
-            </h2>
-            <a href="{{ route('seller.orders.index') }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold transition">
-                ดูทั้งหมด →
-            </a>
+            <a href="{{ route('seller.orders.index') }}" class="tp-btn tp-btn-sm">ดูทั้งหมด →</a>
         </div>
 
         @if($recentOrders->isEmpty())
-            <div class="text-center py-16">
-                <div class="text-7xl mb-4">🛍️</div>
-                <p class="text-gray-500 dark:text-gray-400 text-lg font-semibold">ยังไม่มีคำสั่งซื้อ</p>
-                <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">คำสั่งซื้อจะแสดงที่นี่เมื่อมีลูกค้าสั่งซื้อสินค้าจากร้านคุณ</p>
-                <a href="{{ route('seller.products.create') }}" class="inline-block mt-4 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition">
-                    เพิ่มสินค้าตัวแรก
-                </a>
+            <div style="text-align:center; padding:52px 20px;">
+                <div style="font-size:52px; opacity:.55;">🛍️</div>
+                <div style="margin-top:10px; font-weight:700;">ยังไม่มีคำสั่งซื้อ</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">คำสั่งซื้อจะแสดงที่นี่เมื่อมีลูกค้าสั่งซื้อสินค้าจากร้านคุณ</div>
+                <a href="{{ route('seller.products.create') }}" class="tp-btn tp-btn-sm" style="margin-top:14px; display:inline-block;">เพิ่มสินค้าตัวแรก</a>
             </div>
         @else
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-slate-700">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">เลขที่คำสั่งซื้อ</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ลูกค้า</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ยอดรวม</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">วันที่</th>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
+                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;">เลขที่คำสั่งซื้อ</th>
+                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;">ลูกค้า</th>
+                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">ยอดรวม</th>
+                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:center;">สถานะ</th>
+                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">วันที่</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody>
                         @foreach($recentOrders as $order)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <a href="{{ route('seller.orders.show', $order) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
+                            @php
+                                [$statusLabel, $statusColor] = $orderStatus[$order->status] ?? [$order->status, 'var(--ink2)'];
+                            @endphp
+                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                                <td style="padding:12px 16px; white-space:nowrap;">
+                                    <a href="{{ route('seller.orders.show', $order) }}" class="tp-num" style="color:var(--deep1); font-weight:700; text-decoration:none;">
                                         #{{ $order->order_number }}
                                     </a>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold mr-2">
-                                            {{ substr($order->user->name ?? 'U', 0, 1) }}
-                                        </div>
-                                        <div>
-                                            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $order->user->name ?? 'ไม่ระบุ' }}</div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $order->user->email ?? '' }}</div>
+                                <td style="padding:12px 16px;">
+                                    <div style="display:flex; align-items:center; gap:9px; min-width:0;">
+                                        <span class="tp-tile" style="width:30px; height:30px; border-radius:9px; font-size:12px; font-weight:800; flex:none;">
+                                            {{ mb_substr($order->user->name ?? 'U', 0, 1) }}
+                                        </span>
+                                        <div style="min-width:0;">
+                                            <div style="font-size:12.5px; font-weight:600; overflow-wrap:anywhere;">{{ $order->user->name ?? 'ไม่ระบุ' }}</div>
+                                            <div style="font-size:11px; color:var(--ink2); overflow-wrap:anywhere;">{{ $order->user->email ?? '' }}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
-                                    ฿{{ number_format($order->total_amount, 2) }}
+                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700;">฿{{ number_format($order->total_amount, 2) }}</td>
+                                <td style="padding:12px 16px; text-align:center; white-space:nowrap;">
+                                    <span class="tp-pill" style="color:{{ $statusColor }}; background:color-mix(in srgb, {{ $statusColor }} 16%, transparent);">{{ $statusLabel }}</span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    @php
-                                        $statusColors = [
-                                            'pending' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-                                            'processing' => 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-                                            'completed' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-                                            'cancelled' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-                                        ];
-                                        $statusLabels = [
-                                            'pending' => 'รอดำเนินการ',
-                                            'processing' => 'กำลังจัดเตรียม',
-                                            'completed' => 'สำเร็จ',
-                                            'cancelled' => 'ยกเลิก',
-                                        ];
-                                    @endphp
-                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusColors[$order->status] ?? 'bg-gray-100 text-gray-800' }}">
-                                        {{ $statusLabels[$order->status] ?? $order->status }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {{ $order->created_at->format('d/m/Y H:i') }}
+                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap;">
+                                    <div>{{ $order->created_at->format('d/m/Y') }}</div>
+                                    <div style="font-size:11px; color:var(--ink2);">{{ $order->created_at->format('H:i') }}</div>
                                 </td>
                             </tr>
                         @endforeach
@@ -437,217 +280,78 @@
         @endif
     </div>
 
-    {{-- Top Products --}}
+    {{-- ── สินค้าขายดี Top 5 ─────────────────────────────────── --}}
     @if($topProducts->isNotEmpty())
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <span class="text-3xl">🏆</span>
-                สินค้าขายดี Top 5
-            </h2>
-            <a href="{{ route('seller.products.index') }}" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-semibold transition">
-                ดูทั้งหมด →
-            </a>
+    <div class="tp-card" style="padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+            <div class="tp-section-h">🏆 สินค้าขายดี Top 5</div>
+            <a href="{{ route('seller.products.index') }}" class="tp-btn tp-btn-sm">ดูทั้งหมด →</a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px;">
             @foreach($topProducts as $index => $product)
-                <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-600 rounded-xl p-4 hover:shadow-lg transition">
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                            {{ $index + 1 }}
-                        </span>
-                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ $product->sales_count ?? 0 }} ขาย</span>
+                <div style="padding:13px; border-radius:15px; box-shadow:var(--inset-sm); min-width:0;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;">
+                        <span class="tp-pill tp-pill-gold" style="font-weight:800;">#{{ $index + 1 }}</span>
+                        <span style="font-size:11px; color:var(--ink2); white-space:nowrap;">{{ number_format($product->sales_count ?? 0) }} ขาย</span>
                     </div>
                     @if($product->images->first())
-                        <img src="{{ $product->images->first()->image_url }}" alt="{{ $product->name }}" class="w-full h-32 object-cover rounded-lg mb-3">
+                        <img src="{{ $product->images->first()->image_url }}" alt="รูปสินค้า {{ $product->name }}" loading="lazy"
+                             style="width:100%; height:118px; object-fit:cover; border-radius:12px; margin-bottom:10px;">
                     @else
-                        <div class="w-full h-32 bg-gray-200 dark:bg-slate-600 rounded-lg mb-3 flex items-center justify-center text-4xl">
-                            📦
-                        </div>
+                        <div style="width:100%; height:118px; border-radius:12px; margin-bottom:10px; display:grid; place-items:center; font-size:34px; box-shadow:var(--inset-sm);">📦</div>
                     @endif
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2">{{ $product->name }}</h3>
-                    <p class="text-lg font-bold text-blue-600 dark:text-blue-400">฿{{ number_format($product->price, 0) }}</p>
+                    <div style="font-size:12.5px; font-weight:700; line-height:1.4; overflow-wrap:anywhere;">{{ Str::limit($product->name, 46) }}</div>
+                    <div class="tp-num" style="font-size:16px; font-weight:800; color:var(--deep1); margin-top:5px;">฿{{ number_format($product->price, 0) }}</div>
                 </div>
             @endforeach
         </div>
     </div>
     @endif
+
 </div>
+@endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Slogan Carousel with Animation
-    function sloganCarousel() {
-        return {
-            slogans: @json($slogans ?? []),
-            currentIndex: 0,
-            isTransitioning: false,
-            isAutoPlaying: true,
-            autoPlayInterval: null,
+/**
+ * คำขวัญสลับอัตโนมัติ
+ *
+ * ⚠️ ใช้ Js::from ส่งข้อมูลเข้า JS ตามกฎโปรเจกต์
+ *    ห้ามใช้ไดเรกทีฟ json ที่มีวงเล็บซ้อน เพราะ Blade compiler พัง
+ *    (และห้ามพิมพ์ชื่อไดเรกทีฟพร้อมเครื่องหมาย @ ไว้ในคอมเมนต์ด้วย
+ *     Blade มองไม่ออกว่าเป็นคอมเมนต์ JS แล้วจะคอมไพล์มันจริงๆ)
+ */
+function sloganCarousel() {
+    return {
+        slogans: {{ Js::from(collect($slogans ?? [])->values()) }},
+        index: 0,
+        autoPlay: true,
+        _timer: null,
 
-            get currentSlogan() {
-                if (this.slogans.length === 0) {
-                    return {
-                        icon: '🇹🇭',
-                        content: 'เราช่วยคุณ คุณช่วยเรา ไทยช่วยไทย',
-                        author: '',
-                        category_name: 'พันธสัญญาจากเรา'
-                    };
-                }
-                return this.slogans[this.currentIndex];
-            },
-
-            init() {
-                // เริ่ม autoplay ถ้ามีคำขวัญมากกว่า 1 คำ
-                if (this.slogans.length > 1) {
-                    this.startAutoPlay();
-                }
-            },
-
-            nextSlogan() {
-                if (this.slogans.length <= 1) return;
-                this.transition(() => {
-                    this.currentIndex = (this.currentIndex + 1) % this.slogans.length;
-                });
-            },
-
-            prevSlogan() {
-                if (this.slogans.length <= 1) return;
-                this.transition(() => {
-                    this.currentIndex = (this.currentIndex - 1 + this.slogans.length) % this.slogans.length;
-                });
-            },
-
-            goToSlogan(index) {
-                if (index === this.currentIndex || this.slogans.length <= 1) return;
-                this.transition(() => {
-                    this.currentIndex = index;
-                });
-            },
-
-            transition(callback) {
-                if (this.isTransitioning) return;
-                this.isTransitioning = true;
-
-                setTimeout(() => {
-                    callback();
-                    setTimeout(() => {
-                        this.isTransitioning = false;
-                    }, 50);
-                }, 300);
-            },
-
-            startAutoPlay() {
-                this.stopAutoPlay();
-                this.isAutoPlaying = true;
-                this.autoPlayInterval = setInterval(() => {
-                    this.nextSlogan();
-                }, 8000); // เปลี่ยนทุก 8 วินาที
-            },
-
-            stopAutoPlay() {
-                if (this.autoPlayInterval) {
-                    clearInterval(this.autoPlayInterval);
-                    this.autoPlayInterval = null;
-                }
-                this.isAutoPlaying = false;
-            },
-
-            toggleAutoPlay() {
-                if (this.isAutoPlaying) {
-                    this.stopAutoPlay();
-                } else {
-                    this.startAutoPlay();
-                }
-            }
-        };
-    }
-</script>
-<script>
-    // Revenue Chart
-    const ctx = document.getElementById('revenueChart').getContext('2d');
-    const revenueData = @json($monthlyRevenue);
-
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.3)');
-    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
-
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: revenueData.map(item => item.month),
-            datasets: [{
-                label: 'รายได้ (บาท)',
-                data: revenueData.map(item => item.total),
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: gradient,
-                borderWidth: 3,
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: 'rgb(59, 130, 246)',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-            }]
+        get currentSlogan() {
+            return this.slogans[this.index] || { content: '', icon: '🇹🇭', category_name: '', author: '' };
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index',
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    borderColor: 'rgba(59, 130, 246, 0.5)',
-                    borderWidth: 1,
-                    callbacks: {
-                        label: function(context) {
-                            return 'รายได้: ฿' + context.parsed.y.toLocaleString();
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: '#6B7280',
-                        font: {
-                            family: 'Noto Sans Thai, sans-serif'
-                        }
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(107, 114, 128, 0.1)'
-                    },
-                    ticks: {
-                        color: '#6B7280',
-                        callback: function(value) {
-                            return '฿' + value.toLocaleString();
-                        },
-                        font: {
-                            family: 'Noto Sans Thai, sans-serif'
-                        }
-                    }
-                }
-            }
-        }
-    });
+
+        init() {
+            if (this.slogans.length > 1) this.start();
+        },
+
+        start() {
+            this.stop();
+            // หยุดเองเมื่อผู้ใช้สลับไปแท็บอื่น จะได้ไม่หมุนทิ้งเปล่าๆ
+            this._timer = setInterval(() => {
+                if (document.hidden || !this.autoPlay) return;
+                this.index = (this.index + 1) % this.slogans.length;
+            }, 6000);
+        },
+
+        stop() { if (this._timer) { clearInterval(this._timer); this._timer = null; } },
+
+        goTo(i) { this.index = i; },
+
+        toggleAuto() { this.autoPlay = !this.autoPlay; },
+    };
+}
 </script>
 @endpush
-@endsection

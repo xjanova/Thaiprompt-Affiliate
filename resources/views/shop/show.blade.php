@@ -110,7 +110,23 @@
                     </div>
 
                     <!-- Thumbnail Gallery -->
-                    @if($product->images && $product->images->count() > 0)
+                    {{--
+                      ⚠️ ต้องอ่านรูปจาก 2 แหล่ง
+                         - $product->images = ความสัมพันธ์ตาราง product_images (สินค้าที่ผู้ขายอัพเองผ่านหลังบ้าน)
+                         - $product->image_urls = คอลัมน์ JSON (สินค้าที่นำเข้าจาก Lazada/AliExpress — ไม่มีแถวใน product_images)
+                      เดิมเช็คเฉพาะแหล่งแรก สินค้านำเข้าจึงไม่มีแกลเลอรีเลยทั้งที่ดึงรูปมาครบแล้ว
+                    --}}
+                    @php
+                        $galleryUrls = collect();
+                        if ($product->images && $product->images->count() > 0) {
+                            $galleryUrls = $product->images->pluck('url');
+                        } elseif (is_array($product->image_urls)) {
+                            $galleryUrls = collect($product->image_urls)->filter(fn ($u) => is_string($u) && $u !== '')->values();
+                        }
+                        // รูปหลักโชว์เป็นนิ้วโป้งใบแรกอยู่แล้ว ไม่ต้องซ้ำในลิสต์
+                        $galleryUrls = $galleryUrls->reject(fn ($u) => $u === $product->main_image_url)->values();
+                    @endphp
+                    @if($galleryUrls->isNotEmpty())
                     <div class="grid grid-cols-5 gap-3">
                         @if($product->main_image_url)
                         <button onclick="changeMainImage('{{ $product->main_image_url }}')"
@@ -119,10 +135,11 @@
                         </button>
                         @endif
 
-                        @foreach($product->images->take(4) as $image)
-                        <button onclick="changeMainImage('{{ $image->url }}')"
+                        @foreach($galleryUrls->take(9) as $imageUrl)
+                        <button onclick="changeMainImage('{{ $imageUrl }}')"
                                 class="thumbnail-btn aspect-square rounded-xl overflow-hidden border-2 border-gray-300 hover:border-indigo-600 transition-all hover:shadow-lg">
-                            <img src="{{ $image->url }}" alt="Product Image" class="w-full h-full object-cover">
+                            <img src="{{ $imageUrl }}" alt="รูปสินค้า {{ $product->name }}" class="w-full h-full object-cover" loading="lazy"
+                                 onerror="this.closest('button').style.display='none';">
                         </button>
                         @endforeach
                     </div>
@@ -405,7 +422,31 @@
 
                     <!-- Action Buttons -->
                     <div class="space-y-4 pt-6">
-                        @if($product->stock_status === 'in_stock')
+                        @if($isAffiliate)
+                        {{--
+                          🛒 สินค้า affiliate — เราไม่ได้สต๊อกเอง จึงไม่มีตะกร้า/ซื้อทันที
+                             ปุ่มเดียวที่ออกนอกคือปุ่มนี้ และต้องวิ่งผ่าน $outboundUrl เสมอ
+                          ⚠️ ห้ามใส่ affiliate_url ดิบลงไป
+                             Lazada ไม่รับ subId → click log ของเราเองคือหลักฐานชิ้นเดียว
+                             ที่ผูก "คำสั่งซื้อบน Lazada" กลับมาหา "ผู้แนะนำ" ได้
+                             ถ้าข้าม /go/{code} = ค่าแนะนำของสมาชิกหายทั้งระบบ
+                        --}}
+                        <a href="{{ $outboundUrl }}"
+                           target="_blank" rel="noopener nofollow sponsored"
+                           class="w-full px-8 py-4 text-white font-bold text-lg rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                           style="background: linear-gradient(to right, {{ $platformAccent }}, {{ $platformAccent2 }});">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                            ซื้อที่ {{ $platformLabel }}
+                        </a>
+                        <p class="text-center text-xs text-gray-500 dark:text-gray-400">
+                            กดแล้วจะเปิดหน้า {{ $platformLabel }} ในแท็บใหม่ · ชำระเงินและจัดส่งโดย {{ $platformLabel }}
+                            @if($product->pv_value > 0)
+                                <br>ซื้อผ่านลิงก์นี้เพื่อรับ PV {{ rtrim(rtrim(number_format((float) $product->pv_value, 2), '0'), '.') }} เข้าระบบของเรา
+                            @endif
+                        </p>
+                        @elseif($product->stock_status === 'in_stock')
                         <!-- Quantity Selector -->
                         <div class="flex items-center gap-4">
                             <span class="text-gray-900 font-bold text-lg">จำนวน:</span>

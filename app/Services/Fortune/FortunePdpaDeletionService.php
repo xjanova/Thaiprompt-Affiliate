@@ -316,6 +316,16 @@ class FortunePdpaDeletionService
         $qaIds = array_values(array_unique(array_merge($facebookIds, [$platformUserId])));
         $counts['admin_qa'] = $this->deleteWhere('fortune_admin_qa', fn ($q) => $q->whereIn('source_user_id', $qaIds));
 
+        // ── 🌸 น้อง Eve บนเว็บ: ความจำบทสนทนา 7 วัน + ของที่ลูกค้าบอกว่าอยากได้ ──
+        //    ทั้งคู่คีย์ด้วย users.id จึงลบได้เฉพาะเมื่อ resolveIdentity() จับบัญชีเว็บได้
+        //    ⚠️ ต้องอยู่ตรงนี้ ห้ามไปไว้ใน anonymizeLinkedAccounts()
+        //       เพราะลูปนั้น continue ข้ามบัญชีที่อีเมลไม่ใช่ @thaiprompt.local
+        //       ซึ่งคือสมาชิกตัวจริงที่มีบทสนทนาเยอะที่สุด
+        if (! empty($userIds)) {
+            $counts['eve_member_memory'] = $this->deleteWhere('eve_member_memories', fn ($q) => $q->whereIn('user_id', $userIds));
+            $counts['eve_product_wishes'] = $this->deleteWhere('eve_product_wishes', fn ($q) => $q->whereIn('user_id', $userIds));
+        }
+
         // ── referrals: เฉพาะแถวที่ลูกค้าเป็น "ผู้ถูกชวน" (มี IP/UA ของลูกค้า) — เก็บแถวที่เป็นผู้ชวน ──
         //   สร้างเงื่อนไขเฉพาะคอลัมน์ที่มีจริง (ต้องมีอย่างน้อย 1 เงื่อนไข ไม่งั้นข้าม — กันลบทั้งตาราง)
         if (Schema::hasTable('fortune_referrals')) {

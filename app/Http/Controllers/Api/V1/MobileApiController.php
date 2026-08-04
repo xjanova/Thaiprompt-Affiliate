@@ -3648,6 +3648,15 @@ class MobileApiController extends Controller
                 ], 400);
             }
 
+            // 🚫 สินค้า affiliate ใส่ตะกร้าไม่ได้ (เราไม่ได้สต๊อก/ไม่ได้ส่งเอง)
+            //    ต้องกันที่นี่ด้วย ไม่ใช่เฉพาะฝั่งเว็บ ไม่งั้นแอปมือถือยังสร้างออเดอร์ผีได้
+            if ($product->is_affiliate) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'สินค้านี้ต้องสั่งซื้อที่แพลตฟอร์มต้นทางค่ะ',
+                ], 400);
+            }
+
             // หาหรือสร้างตะกร้า
             $cart = \App\Models\Cart::firstOrCreate(
                 ['user_id' => $user->id],

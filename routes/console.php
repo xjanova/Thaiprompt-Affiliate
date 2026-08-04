@@ -733,6 +733,22 @@ Schedule::command('video-automation:process --cleanup --limit=10')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
+// 🌸 (2026-08-04) ความจำบทสนทนาของน้อง Eve — เพดานเก็บ 7 วัน
+// ════════════════════════════════════════════════════════════════
+// ลบแถวที่เกิน 7 วัน + ย่อเทิร์นเก่าของแถวที่ยาวเกิน (กัน prompt บวมตามอายุ)
+// ผู้ที่ไม่ได้ล็อกอินไม่มีแถวในตารางนี้ตั้งแต่แรก จึงไม่มีอะไรให้กวาด
+//
+// ⚠️ ที่นี่ (ไม่ใช่ Kernel.php) เพราะ Laravel 11 ไม่ register Kernel schedule
+// หมายเหตุ: EveAssistantController::loadMemberMemory() ลบแถวหมดอายุให้เองตอนอ่าน
+//   ถ้า cron ตัวนี้ไม่ได้รัน = เปลืองพื้นที่เท่านั้น ความจำเก่าไม่มีทางหลุดเข้า prompt
+Schedule::command('eve:memory-maintain --limit=500')
+    ->dailyAt('03:20')
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->name('eve-memory-maintain')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // ⚠️ DROPPED (commands ไม่อยู่ใน artisan list)
 //   - snake-game:spawn-items     — command file ไม่พบ
 //   - line:cleanup-conversations — command file ไม่พบ

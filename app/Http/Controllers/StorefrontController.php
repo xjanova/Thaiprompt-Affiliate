@@ -654,8 +654,11 @@ class StorefrontController extends Controller
                 $totalPv = $totalPv / $product->mlmProductPv->count();
             }
 
-            // สินค้า affiliate ต้องลิงก์ออกไปยัง affiliate_url เท่านั้น
-            // ถ้าลิงก์เข้าหน้าตะกร้าภายใน = ไม่ได้ค่าคอมมิชชั่นเลย (บั๊กเสียรายได้จริง)
+            // ⚠️ คลิกที่การ์ดต้องเข้า "หน้ารายละเอียดของเรา" เสมอ แม้เป็นสินค้า affiliate
+            //    (เดิมยิงออก Lazada ตรงๆ) ต้องตรงกับ product-grid-aliexpress.blade.php
+            //    ไม่งั้นสินค้าชิ้นเดียวกันจะทำงานคนละแบบ ระหว่างการ์ดหน้าแรก (blade)
+            //    กับการ์ดที่โหลดเพิ่มด้วย infinite scroll (JSON ก้อนนี้)
+            //    ค่าคอมไม่หาย เพราะปุ่ม "ซื้อที่ Lazada" ในหน้ารายละเอียดวิ่งผ่าน /go/{code} ให้แล้ว
             $isAffiliate = (bool) $product->is_affiliate;
             $affiliateUrl = $product->affiliate_url;
 
@@ -682,13 +685,8 @@ class StorefrontController extends Controller
                 'is_affiliate' => $isAffiliate,
                 'affiliate_url' => $affiliateUrl,
                 'external_platform' => $product->external_platform,
-                // มี short_code = วิ่งผ่าน /go/{code} เพื่อบันทึกว่าใครกด แล้วค่อยเด้งไป Lazada
-                // ไม่มี (เช่น ไม่ได้ล็อกอิน) = ใช้ลิงก์ดิบตามเดิม — ยังได้ค่าคอมเข้าร้าน แค่ระบุตัวคนไม่ได้
-                'url' => ($isAffiliate && $affiliateUrl)
-                    ? (isset($goCodes[$product->id])
-                        ? route('affiliate.go', $goCodes[$product->id])
-                        : $affiliateUrl)
-                    : route('shop.show', $product->slug ?: $product->id),
+                // ทุกการ์ดวิ่งเข้าหน้ารายละเอียดของเรา (ลิงก์ขาออกอยู่ในหน้านั้นที่เดียว)
+                'url' => route('shop.show', $product->slug ?: $product->id),
             ];
         });
 
