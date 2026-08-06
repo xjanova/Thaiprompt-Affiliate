@@ -87,7 +87,6 @@ class CleanupUserData extends Command
         'ai_owner_earnings',
         'ai_conversations',
         'ai_usage_logs',
-        'ai_installation_logs',
         'ai_gen_subscriptions',
         'ai_gen_usage_logs',
         'ai_gen_generations',

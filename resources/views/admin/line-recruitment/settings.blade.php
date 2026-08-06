@@ -134,8 +134,7 @@
                 <!-- Card Header with Provider Gradient -->
                 <div class="relative overflow-hidden">
                     <div class="absolute inset-0 bg-gradient-to-br
-                        @if($setting->provider === 'postxagent') from-purple-500 via-indigo-600 to-blue-700
-                        @elseif($setting->provider === 'openai') from-emerald-500 via-green-600 to-teal-700
+                        @if($setting->provider === 'openai') from-emerald-500 via-green-600 to-teal-700
                         @elseif($setting->provider === 'deepseek') from-blue-500 via-indigo-600 to-purple-700
                         @elseif($setting->provider === 'anthropic') from-orange-500 via-red-600 to-pink-700
                         @elseif($setting->provider === 'gemini') from-purple-500 via-fuchsia-600 to-pink-700
@@ -150,11 +149,7 @@
                         <div class="flex items-center gap-4">
                             <!-- Provider Icon -->
                             <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-lg flex items-center justify-center shadow-xl border border-white/30 group-hover:scale-110 transition-transform duration-300">
-                                @if($setting->provider === 'postxagent')
-                                    <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
-                                    </svg>
-                                @elseif($setting->provider === 'openai')
+                                @if($setting->provider === 'openai')
                                     <svg class="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/>
                                     </svg>
@@ -200,14 +195,6 @@
                                     Recruitment
                                 </span>
                             @endif
-                            @if($setting->provider === 'postxagent')
-                                <span class="px-4 py-2 bg-gradient-to-r from-purple-500/30 to-pink-500/30 backdrop-blur-md rounded-full text-sm font-bold text-white shadow-lg border border-purple-300/30 flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                                    </svg>
-                                    แนะนำ
-                                </span>
-                            @endif
                         </div>
                     </div>
                 </div>
@@ -216,97 +203,6 @@
                 <form action="{{ route('admin.line-recruitment.settings.update', $setting->id) }}" method="POST" class="p-6 lg:p-8">
                     @csrf
                     @method('PUT')
-
-                    <!-- Provider-specific Config Card -->
-                    @if($setting->provider === 'postxagent')
-                    <div class="mb-8 p-6 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-2xl border-2 border-purple-200 dark:border-purple-700 shadow-lg">
-                        <div class="flex items-center gap-3 mb-6">
-                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-bold text-purple-900 dark:text-purple-100">PostXAgent Configuration</h4>
-                                <p class="text-sm text-purple-700 dark:text-purple-300">AI Manager ที่รวมหลาย Provider ในที่เดียว</p>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold text-purple-900 dark:text-purple-200 mb-2">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-                                    </svg>
-                                    Host
-                                </label>
-                                <input type="text" name="postxagent_host" value="{{ $setting->postxagent_host }}"
-                                       placeholder="localhost"
-                                       class="w-full px-4 py-3 border-2 border-purple-200 dark:border-purple-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-purple-900 dark:text-purple-200 mb-2">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                    </svg>
-                                    API Port
-                                </label>
-                                <input type="number" name="postxagent_api_port" value="{{ $setting->postxagent_api_port ?? 5000 }}" min="1" max="65535"
-                                       class="w-full px-4 py-3 border-2 border-purple-200 dark:border-purple-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-purple-900 dark:text-purple-200 mb-2">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    Timeout (วินาที)
-                                </label>
-                                <input type="number" name="postxagent_timeout" value="{{ $setting->postxagent_timeout ?? 30 }}" min="1" max="300"
-                                       class="w-full px-4 py-3 border-2 border-purple-200 dark:border-purple-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-purple-900 dark:text-purple-200 mb-2">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/>
-                                    </svg>
-                                    Preferred Provider
-                                </label>
-                                <select name="postxagent_preferred_provider"
-                                        class="w-full px-4 py-3 border-2 border-purple-200 dark:border-purple-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all">
-                                    <option value="auto" {{ ($setting->postxagent_preferred_provider ?? 'auto') === 'auto' ? 'selected' : '' }}>🤖 Auto (อัตโนมัติ)</option>
-                                    <option value="ollama" {{ $setting->postxagent_preferred_provider === 'ollama' ? 'selected' : '' }}>🦙 Ollama (Local)</option>
-                                    <option value="openai" {{ $setting->postxagent_preferred_provider === 'openai' ? 'selected' : '' }}>🧠 OpenAI</option>
-                                    <option value="anthropic" {{ $setting->postxagent_preferred_provider === 'anthropic' ? 'selected' : '' }}>🤖 Anthropic</option>
-                                    <option value="google" {{ $setting->postxagent_preferred_provider === 'google' ? 'selected' : '' }}>💎 Google Gemini</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <div>
-                                <label class="block text-sm font-bold text-purple-900 dark:text-purple-200 mb-2">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                                    </svg>
-                                    API Key
-                                </label>
-                                <input type="password" name="postxagent_api_key" placeholder="ไม่เปลี่ยนให้เว้นว่าง"
-                                       class="w-full px-4 py-3 border-2 border-purple-200 dark:border-purple-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-mono">
-                                <p class="text-xs text-purple-600 dark:text-purple-400 mt-1">ปัจจุบัน: {{ $setting->getMaskedPostXAgentApiKey() }}</p>
-                            </div>
-                            <div class="flex items-center">
-                                <label class="flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-purple-200 dark:border-purple-700 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all w-full">
-                                    <input type="checkbox" name="postxagent_use_ssl" value="1" {{ $setting->postxagent_use_ssl ? 'checked' : '' }}
-                                           class="w-5 h-5 rounded border-purple-300 text-purple-600 focus:ring-purple-500">
-                                    <div>
-                                        <span class="font-bold text-purple-900 dark:text-purple-100">Use SSL/HTTPS</span>
-                                        <p class="text-xs text-purple-600 dark:text-purple-400">เปิดใช้ SSL สำหรับการเชื่อมต่อ</p>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
 
                     <!-- Main Settings Grid -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -340,23 +236,18 @@
                                         </select>
                                     </div>
 
-                                    @if($setting->provider !== 'postxagent')
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">API Key</label>
                                         <input type="password" name="api_key" placeholder="ไม่เปลี่ยนให้เว้นว่าง"
                                                class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono">
                                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ปัจจุบัน: {{ $setting->getMaskedApiKey() }}</p>
                                     </div>
-                                    @endif
 
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Model</label>
                                         <input type="text" name="model" value="{{ $setting->model }}"
                                                placeholder="gpt-4, gemini-pro, claude-3-sonnet"
                                                class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
-                                        @if($setting->provider === 'postxagent')
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">PostXAgent จะเลือก model อัตโนมัติตาม Preferred Provider</p>
-                                        @endif
                                     </div>
                                 </div>
                             </div>

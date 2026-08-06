@@ -39,14 +39,6 @@ class LineBotAiSetting extends Model
         'max_turns_message',
         'enable_topic_filtering',
         'off_topic_message',
-        // ฟิลด์สำหรับ PostXAgent AI Manager
-        'postxagent_host',
-        'postxagent_api_port',
-        'postxagent_signalr_port',
-        'postxagent_api_key',
-        'postxagent_use_ssl',
-        'postxagent_timeout',
-        'postxagent_preferred_provider',
     ];
 
     protected $casts = [
@@ -65,16 +57,10 @@ class LineBotAiSetting extends Model
         'collect_user_info' => 'boolean',
         'required_fields' => 'array',
         'enable_topic_filtering' => 'boolean',
-        // Casts สำหรับ PostXAgent
-        'postxagent_api_port' => 'integer',
-        'postxagent_signalr_port' => 'integer',
-        'postxagent_use_ssl' => 'boolean',
-        'postxagent_timeout' => 'integer',
     ];
 
     protected $hidden = [
         'api_key',
-        'postxagent_api_key',
     ];
 
     /**
@@ -258,66 +244,5 @@ class LineBotAiSetting extends Model
     public function hasTopicFiltering(): bool
     {
         return $this->enable_topic_filtering ?? false;
-    }
-
-    /**
-     * ตรวจสอบว่าใช้ PostXAgent เป็น provider หรือไม่
-     */
-    public function isPostXAgentProvider(): bool
-    {
-        return $this->provider === 'postxagent';
-    }
-
-    /**
-     * สร้าง PostXAgent API URL
-     *
-     * @param  string  $path  Path ของ API endpoint
-     * @return string URL เต็ม
-     */
-    public function getPostXAgentUrl(string $path = ''): string
-    {
-        $protocol = $this->postxagent_use_ssl ? 'https' : 'http';
-        $host = $this->postxagent_host ?? 'localhost';
-        $port = $this->postxagent_api_port ?? 5000;
-
-        $baseUrl = "{$protocol}://{$host}:{$port}";
-
-        if ($path) {
-            return rtrim($baseUrl, '/').'/'.ltrim($path, '/');
-        }
-
-        return $baseUrl;
-    }
-
-    /**
-     * รับค่า timeout สำหรับ PostXAgent
-     *
-     * @return int Timeout เป็นวินาที
-     */
-    public function getPostXAgentTimeout(): int
-    {
-        return $this->postxagent_timeout ?? 30;
-    }
-
-    /**
-     * ตรวจสอบว่า PostXAgent ตั้งค่าครบหรือไม่
-     */
-    public function isPostXAgentConfigured(): bool
-    {
-        return ! empty($this->postxagent_host)
-            && ! empty($this->postxagent_api_port);
-    }
-
-    /**
-     * Mask PostXAgent API key for display
-     */
-    public function getMaskedPostXAgentApiKey(): string
-    {
-        if (! $this->postxagent_api_key) {
-            return 'Not set';
-        }
-        $key = $this->postxagent_api_key;
-
-        return substr($key, 0, 8).'••••••••'.substr($key, -4);
     }
 }

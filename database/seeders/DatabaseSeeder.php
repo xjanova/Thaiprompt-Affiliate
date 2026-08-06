@@ -75,15 +75,9 @@ class DatabaseSeeder extends Seeder
             FortuneSystemVoiceClipSeeder::class,  // 🎧 คลังเสียงระบบ (ข้อความกลาง: กล่องกระตุ้น/กติกา/วันเกิด/เตือนจ่าย ฯลฯ)
 
             // 5. AI & Integrations
-            CentralAiSettingSeeder::class,      // 🆕 Central AI Settings (Ollama + PostXAgent Management)
-            CentralAiMenuSeeder::class,         // 🆕 Central AI Menu (เมนูสำหรับ Central AI Management)
             AICoreFeatureSeeder::class,         // 🆕 AI Core Feature Registry (8 AI feature groups)
-            AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini, Meta Llama 4)
+            AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini, Meta Llama via Together AI)
             AiGenSeeder::class,                 // AI Generation System (Image & Video Generation)
-            AiRentalCloudProvidersSeeder::class, // 🆕 AI Rental Cloud GPU Providers (Google Colab, RunPod, Vast.ai, etc.)
-            AiRentalModelSeeder::class,         // 🆕 AI Rental Models (Stable Diffusion, LLaMA, Whisper, CodeLlama, etc.)
-            HuggingFaceTrendingModelsSeeder::class, // 🆕 Hugging Face Trending Models (FLUX, Llama, Whisper, etc.)
-            HuggingFaceModelNewsSeeder::class,  // 🆕 Hugging Face Model News (Updates, Tutorials, Best Practices)
 
             // 6. Payment Systems
             WalletSettingSeeder::class,         // 🆕 ตั้งค่า Wallet (ค่าธรรมเนียม, ภาษี, ยอดถอน)

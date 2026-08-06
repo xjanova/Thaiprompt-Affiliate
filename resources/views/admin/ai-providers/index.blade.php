@@ -93,13 +93,8 @@
     .provider-card.openai::before { background: linear-gradient(180deg, #10a37f, #00a67e); }
     .provider-card.anthropic::before { background: linear-gradient(180deg, #d97706, #f59e0b); }
     .provider-card.google::before { background: linear-gradient(180deg, #4285f4, #34a853, #fbbc05, #ea4335); }
-    .provider-card.meta::before, .provider-card.meta-local::before { background: linear-gradient(180deg, #0668E1, #00b4ff); }
-    .provider-card.deepseek::before, .provider-card.deepseek-local::before { background: linear-gradient(180deg, #536dfe, #304ffe); }
-    .provider-card.postxagent::before { background: linear-gradient(180deg, #ec4899, #f97316); }
-
-    .postxagent-gradient {
-        background: linear-gradient(135deg, #ec4899 0%, #f97316 100%);
-    }
+    .provider-card.meta::before { background: linear-gradient(180deg, #0668E1, #00b4ff); }
+    .provider-card.deepseek::before { background: linear-gradient(180deg, #536dfe, #304ffe); }
 
     .provider-card:hover {
         transform: translateX(4px);
@@ -393,10 +388,6 @@
         </div>
 
         <div class="flex gap-3">
-            <a href="{{ route('admin.ai-providers.install') }}" class="btn-action primary" style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);">
-                <span class="text-xl mr-1">🦙</span>
-                <span>ติดตั้ง Llama</span>
-            </a>
             <button @click="refreshStatus()" class="btn-action primary">
                 <i class="fas fa-sync-alt"></i>
                 <span>รีเฟรช</span>
@@ -443,235 +434,7 @@
                 <i class="fas fa-robot text-4xl text-purple-100"></i>
             </div>
         </div>
-
-        <div class="stat-card orange">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 text-xs font-semibold mb-1">LOCAL AI</p>
-                    <p class="stat-number">
-                        @if($metaLocalStatus && $metaLocalStatus['running'])
-                            <i class="fas fa-circle text-green-500 text-lg"></i>
-                        @else
-                            <i class="fas fa-circle text-red-500 text-lg"></i>
-                        @endif
-                    </p>
-                    <p class="text-xs text-gray-400 mt-1">
-                        @if($metaLocalStatus && $metaLocalStatus['running'])
-                            กำลังทำงาน
-                        @else
-                            ไม่ได้ทำงาน
-                        @endif
-                    </p>
-                </div>
-                <i class="fas fa-microchip text-4xl text-orange-100"></i>
-            </div>
-        </div>
     </div>
-
-    <!-- Llama Local Status Panel -->
-    @if($metaLocalProvider)
-    <div class="glass-card p-6 mb-8">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div class="flex items-center gap-4">
-                <div class="llama-logo-container">
-                    <div class="provider-logo">
-                        <img src="{{ $providerLogos['meta-local'] ?? '' }}"
-                             alt="Meta Llama"
-                             onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/200px-Meta_Platforms_Inc._logo.svg.png';">
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        🦙 Llama 4 Local Server
-                        @if($metaLocalStatus && $metaLocalStatus['running'])
-                            <span class="inline-flex items-center gap-1 text-sm font-medium text-green-600">
-                                <span class="pulse-dot status-online"></span>
-                                Online
-                            </span>
-                        @else
-                            <span class="inline-flex items-center gap-1 text-sm font-medium text-red-600">
-                                <span class="pulse-dot status-offline"></span>
-                                Offline
-                            </span>
-                        @endif
-                    </h3>
-                    <p class="text-gray-500 text-sm">Self-hosted via Ollama/llama.cpp • ฟรี ไม่เสียค่าใช้จ่าย</p>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap gap-3">
-                @if($metaLocalStatus && $metaLocalStatus['running'])
-                    <button @click="stopLocalAi()" class="btn-action danger">
-                        <i class="fas fa-stop"></i>
-                        หยุด
-                    </button>
-                    <button @click="restartLocalAi()" class="btn-action warning">
-                        <i class="fas fa-redo"></i>
-                        รีสตาร์ท
-                    </button>
-                @else
-                    <button @click="startLocalAi()" class="btn-action success">
-                        <i class="fas fa-play"></i>
-                        เริ่มต้น
-                    </button>
-                @endif
-                <button @click="testConnection({{ $metaLocalProvider->id }})" class="btn-action primary">
-                    <i class="fas fa-plug"></i>
-                    ทดสอบ
-                </button>
-            </div>
-        </div>
-
-        @if($metaLocalStatus && $metaLocalStatus['running'])
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
-                <p class="text-blue-600 text-xs font-semibold mb-1">ENDPOINT</p>
-                <p class="text-blue-900 font-bold text-sm break-all">{{ $metaLocalStatus['endpoint'] }}</p>
-            </div>
-            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4">
-                <p class="text-green-600 text-xs font-semibold mb-1">MODELS พร้อมใช้</p>
-                <p class="text-green-900 font-bold text-lg">{{ $metaLocalStatus['models_count'] ?? 0 }}</p>
-            </div>
-            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4">
-                <p class="text-purple-600 text-xs font-semibold mb-1">SERVER TYPE</p>
-                <p class="text-purple-900 font-bold">{{ $metaLocalStatus['server_type'] ?? 'Ollama' }}</p>
-            </div>
-        </div>
-        @else
-        <div class="mt-6 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
-            <div class="flex items-start gap-3">
-                <i class="fas fa-exclamation-triangle text-yellow-600 mt-1"></i>
-                <div>
-                    <p class="text-yellow-800 font-semibold">ยังไม่ได้ติดตั้ง Llama 4 Local</p>
-                    <p class="text-yellow-700 text-sm mt-1">รันคำสั่งนี้เพื่อติดตั้ง:</p>
-                    <code class="block mt-2 p-3 bg-gray-900 text-green-400 rounded-lg text-sm font-mono">
-                        chmod +x scripts/install-llama4-huggingface.sh && ./scripts/install-llama4-huggingface.sh
-                    </code>
-                </div>
-            </div>
-        </div>
-        @endif
-    </div>
-    @endif
-
-    <!-- PostXAgent AI Manager Status Panel -->
-    @if(config('postxagent.enabled', false) || $postXAgentProvider)
-    <div class="glass-card p-6 mb-8">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div class="flex items-center gap-4">
-                <div class="provider-logo" style="background: linear-gradient(135deg, #ec4899 0%, #f97316 100%);">
-                    @if(isset($providerLogos['postxagent']))
-                        <img src="{{ $providerLogos['postxagent'] }}"
-                             alt="PostXAgent"
-                             class="w-full h-full object-contain"
-                             onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fas fa-robot text-3xl text-white\'></i>';">
-                    @else
-                        <i class="fas fa-robot text-3xl text-white"></i>
-                    @endif
-                </div>
-                <div>
-                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        <span class="postxagent-gradient text-transparent bg-clip-text">PostXAgent</span> AI Manager
-                        @if($postXAgentStatus && ($postXAgentStatus['running'] ?? false))
-                            <span class="inline-flex items-center gap-1 text-sm font-medium text-green-600">
-                                <span class="pulse-dot status-online"></span>
-                                Online
-                            </span>
-                        @else
-                            <span class="inline-flex items-center gap-1 text-sm font-medium text-red-600">
-                                <span class="pulse-dot status-offline"></span>
-                                Offline
-                            </span>
-                        @endif
-                    </h3>
-                    <p class="text-gray-500 text-sm">C# .NET 8.0 AI Hub • Multi-Provider Support • SignalR WebSocket</p>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap gap-3">
-                <button @click="testPostXAgentConnection()" class="btn-action primary">
-                    <i class="fas fa-plug"></i>
-                    ทดสอบ
-                </button>
-                <button @click="refreshPostXAgentStatus()" class="btn-action secondary">
-                    <i class="fas fa-sync-alt"></i>
-                    รีเฟรช
-                </button>
-                <button @click="openPostXAgentConfig()" class="btn-action secondary">
-                    <i class="fas fa-cog"></i>
-                    ตั้งค่า
-                </button>
-                @if($postXAgentStatus && ($postXAgentStatus['running'] ?? false))
-                <button @click="openPostXAgentChat()" class="btn-action success">
-                    <i class="fas fa-comments"></i>
-                    ทดสอบ Chat
-                </button>
-                @endif
-            </div>
-        </div>
-
-        @if($postXAgentStatus && ($postXAgentStatus['running'] ?? false))
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-            <div class="bg-gradient-to-br from-pink-50 to-orange-50 rounded-xl p-4">
-                <p class="text-pink-600 text-xs font-semibold mb-1">API ENDPOINT</p>
-                <p class="text-pink-900 font-bold text-sm break-all">{{ $postXAgentStatus['endpoint'] ?? config('postxagent.api_url') }}</p>
-            </div>
-            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4">
-                <p class="text-green-600 text-xs font-semibold mb-1">PROVIDERS พร้อมใช้</p>
-                <p class="text-green-900 font-bold text-lg">{{ $postXAgentStatus['providers_count'] ?? 0 }}</p>
-            </div>
-            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
-                <p class="text-blue-600 text-xs font-semibold mb-1">VERSION</p>
-                <p class="text-blue-900 font-bold">{{ $postXAgentStatus['version'] ?? 'unknown' }}</p>
-            </div>
-            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4">
-                <p class="text-purple-600 text-xs font-semibold mb-1">TOTAL REQUESTS</p>
-                <p class="text-purple-900 font-bold text-lg">{{ number_format($postXAgentStatus['total_requests'] ?? 0) }}</p>
-            </div>
-        </div>
-
-        @if(!empty($postXAgentStatus['providers']))
-        <div class="mt-6">
-            <h4 class="text-sm font-bold text-gray-700 mb-3">AI Providers ที่ PostXAgent รองรับ:</h4>
-            <div class="flex flex-wrap gap-2">
-                @foreach($postXAgentStatus['providers'] as $pxProvider)
-                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold
-                    {{ ($pxProvider['is_available'] ?? false) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
-                    @if($pxProvider['is_available'] ?? false)
-                        <i class="fas fa-check-circle"></i>
-                    @else
-                        <i class="fas fa-circle"></i>
-                    @endif
-                    {{ $pxProvider['name'] ?? $pxProvider['id'] ?? 'Unknown' }}
-                    @if($pxProvider['is_free'] ?? false)
-                        <span class="bg-green-500 text-white text-xs px-1 rounded">FREE</span>
-                    @endif
-                </span>
-                @endforeach
-            </div>
-        </div>
-        @endif
-        @else
-        <div class="mt-6 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
-            <div class="flex items-start gap-3">
-                <i class="fas fa-exclamation-triangle text-yellow-600 mt-1"></i>
-                <div>
-                    <p class="text-yellow-800 font-semibold">PostXAgent ยังไม่ได้เชื่อมต่อ</p>
-                    <p class="text-yellow-700 text-sm mt-1">ตรวจสอบว่า PostXAgent กำลังรันอยู่ที่:</p>
-                    <code class="block mt-2 p-3 bg-gray-900 text-green-400 rounded-lg text-sm font-mono">
-                        {{ config('postxagent.api_url', 'http://localhost:8000/api/v1') }}
-                    </code>
-                    <p class="text-yellow-700 text-sm mt-2">
-                        <a href="https://github.com/xjanova/PostXAgent" target="_blank" class="text-blue-600 hover:underline">
-                            <i class="fab fa-github mr-1"></i>ดูวิธีติดตั้ง PostXAgent
-                        </a>
-                    </p>
-                </div>
-            </div>
-        </div>
-        @endif
-    </div>
-    @endif
 
     <!-- Providers List -->
     <div class="section-title">
@@ -686,7 +449,7 @@
                 <!-- Provider Header -->
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
                     <div class="flex items-center gap-4">
-                        <div class="provider-logo {{ in_array($provider->name, ['meta', 'meta-local']) ? 'llama-logo-container' : '' }}">
+                        <div class="provider-logo {{ $provider->name === 'meta' ? 'llama-logo-container' : '' }}">
                             @if(isset($providerLogos[$provider->name]))
                                 <img src="{{ $providerLogos[$provider->name] }}"
                                      alt="{{ $provider->display_name }}"
@@ -705,7 +468,7 @@
                                 <span class="badge-type {{ $provider->provider_type === 'cloud' ? 'badge-cloud' : ($provider->provider_type === 'self-hosted' ? 'badge-self-hosted' : 'badge-local') }}">
                                     {{ strtoupper($provider->provider_type) }}
                                 </span>
-                                @if(in_array($provider->name, ['meta', 'meta-local']))
+                                @if($provider->name === 'meta')
                                     <span class="text-xl">🦙</span>
                                 @endif
                             </div>
@@ -1176,177 +939,9 @@ function aiDashboard() {
             });
         },
 
-        async startLocalAi() {
-            this.showToast('กำลังเริ่มต้น Local AI...', 'info');
-            try {
-                const res = await fetch('/admin/ai-providers/local/start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                });
-                const data = await res.json();
-                this.showToast(data.message, data.success ? 'success' : 'error');
-                if (data.success) setTimeout(() => location.reload(), 2000);
-            } catch (e) {
-                this.showToast('เกิดข้อผิดพลาด', 'error');
-            }
-        },
-
-        async stopLocalAi() {
-            this.showToast('กำลังหยุด Local AI...', 'info');
-            try {
-                const res = await fetch('/admin/ai-providers/local/stop', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                });
-                const data = await res.json();
-                this.showToast(data.message, data.success ? 'success' : 'error');
-                if (data.success) setTimeout(() => location.reload(), 2000);
-            } catch (e) {
-                this.showToast('เกิดข้อผิดพลาด', 'error');
-            }
-        },
-
-        async restartLocalAi() {
-            this.showToast('กำลังรีสตาร์ท Local AI...', 'info');
-            try {
-                const res = await fetch('/admin/ai-providers/local/restart', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                });
-                const data = await res.json();
-                this.showToast(data.message, data.success ? 'success' : 'error');
-                if (data.success) setTimeout(() => location.reload(), 2000);
-            } catch (e) {
-                this.showToast('เกิดข้อผิดพลาด', 'error');
-            }
-        },
-
         refreshStatus() {
             this.showToast('กำลังรีเฟรช...', 'info');
             setTimeout(() => location.reload(), 500);
-        },
-
-        // =====================================================
-        // PostXAgent AI Manager Methods
-        // =====================================================
-
-        async testPostXAgentConnection() {
-            this.showToast('กำลังทดสอบการเชื่อมต่อ PostXAgent...', 'info');
-            try {
-                const res = await fetch('/admin/ai-providers/postxagent/test', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                });
-                const data = await res.json();
-                this.showToast(data.message, data.success ? 'success' : 'error');
-                if (data.success) setTimeout(() => location.reload(), 2000);
-            } catch (e) {
-                this.showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ PostXAgent', 'error');
-            }
-        },
-
-        async refreshPostXAgentStatus() {
-            this.showToast('กำลังรีเฟรชสถานะ PostXAgent...', 'info');
-            try {
-                // Clear cache ก่อน
-                await fetch('/admin/ai-providers/postxagent/clear-cache', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                });
-                setTimeout(() => location.reload(), 500);
-            } catch (e) {
-                this.showToast('เกิดข้อผิดพลาด', 'error');
-            }
-        },
-
-        openPostXAgentConfig() {
-            // เปิด modal สำหรับตั้งค่า PostXAgent
-            this.postXAgentConfigModal = {
-                show: true,
-                data: {
-                    api_url: '{{ config("postxagent.api_url", "http://localhost:8000/api/v1") }}',
-                    api_key: '{{ config("postxagent.auth.api_key", "") }}',
-                    enabled: {{ config('postxagent.enabled', false) ? 'true' : 'false' }}
-                }
-            };
-            // ถ้ายังไม่มี modal ในหน้านี้ ให้ใช้ alert ชั่วคราว
-            const apiUrl = prompt('PostXAgent API URL:', '{{ config("postxagent.api_url", "http://localhost:8000/api/v1") }}');
-            if (apiUrl !== null) {
-                this.savePostXAgentConfig({ api_url: apiUrl });
-            }
-        },
-
-        async savePostXAgentConfig(data) {
-            try {
-                const res = await fetch('/admin/ai-providers/postxagent/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                    body: JSON.stringify(data)
-                });
-                const result = await res.json();
-                if (result.success) {
-                    this.showToast(result.message, 'success');
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    this.showToast(result.message, 'error');
-                }
-            } catch (e) {
-                this.showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
-            }
-        },
-
-        async openPostXAgentChat() {
-            // ใช้ chatModal ที่มีอยู่แล้ว แต่ดัดแปลงสำหรับ PostXAgent
-            this.postXAgentChatModal = {
-                show: true,
-                providers: [],
-                selectedProvider: 'ollama',
-                selectedModel: 'llama3.2:3b',
-                messages: [],
-                input: '',
-                loading: false
-            };
-
-            // ดึงรายการ providers
-            try {
-                const res = await fetch('/admin/ai-providers/postxagent/providers');
-                const data = await res.json();
-                if (data.success) {
-                    this.postXAgentChatModal.providers = data.data;
-                }
-            } catch (e) {
-                console.error('Failed to fetch PostXAgent providers', e);
-            }
-
-            // แสดง prompt dialog ชั่วคราว
-            const message = prompt('ทดสอบ Chat กับ PostXAgent\n\nพิมพ์ข้อความ:');
-            if (message) {
-                this.sendPostXAgentTestMessage(message);
-            }
-        },
-
-        async sendPostXAgentTestMessage(message) {
-            this.showToast('กำลังส่งข้อความไปยัง PostXAgent...', 'info');
-            try {
-                const res = await fetch('/admin/ai-providers/postxagent/test-chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                    body: JSON.stringify({
-                        message: message,
-                        provider: 'ollama',
-                        model: 'llama3.2:3b'
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`PostXAgent ตอบกลับ:\n\n${data.response}\n\n⏱️ ${data.response_time_ms}ms`);
-                    this.showToast('ทดสอบ Chat สำเร็จ!', 'success');
-                } else {
-                    this.showToast(data.message, 'error');
-                }
-            } catch (e) {
-                this.showToast('เกิดข้อผิดพลาดในการส่งข้อความ', 'error');
-            }
         },
 
         showToast(message, type = 'info') {

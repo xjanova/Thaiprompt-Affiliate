@@ -178,10 +178,6 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\QualityCheckpoint::observe(\App\Observers\QualityCheckpointObserver::class);
         \App\Models\CarbonCredit::observe(\App\Observers\CarbonCreditObserver::class);
 
-        // Register AI Rental GPU System Observers
-        \App\Models\AiRentalDeployment::observe(\App\Observers\AiRentalDeploymentObserver::class);
-        \App\Models\AiRentalBudgetLimit::observe(\App\Observers\AiRentalBudgetLimitObserver::class);
-
         // Register MLM Member Observer — สร้าง FortuneReferral อัตโนมัติเมื่อมีสมาชิกใหม่
         \App\Models\MlmMember::observe(\App\Observers\MlmMemberObserver::class);
 

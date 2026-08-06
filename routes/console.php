@@ -661,42 +661,6 @@ if ($threatEnabled) {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 🤖 AI RENTAL GPU SYSTEM
-// ────────────────────────────────────────────────────────────────
-
-// 25) AI Rental Health Check — health checks ทุก 5 นาที
-Schedule::command('ai-rental:check-health --frequency=5min')
-    ->everyFiveMinutes()
-    ->withoutOverlapping(10)
-    ->onOneServer()
-    ->name('ai-rental-check-health')
-    ->runInBackground();
-
-// 26) AI Rental Reset Budgets — รีเซ็ต budget limits (daily 00:00)
-Schedule::command('ai-rental:reset-budgets')
-    ->dailyAt('00:00')
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('ai-rental-reset-budgets')
-    ->runInBackground();
-
-// 27) AI Rental Cleanup Alerts — auto-resolve alerts หมดอายุ (hourly)
-Schedule::command('ai-rental:cleanup-alerts')
-    ->hourly()
-    ->withoutOverlapping(15)
-    ->onOneServer()
-    ->name('ai-rental-cleanup-alerts')
-    ->runInBackground();
-
-// 28) AI Rental Cleanup Logs — ลบ audit logs > 90 วัน (daily 02:00)
-Schedule::command('ai-rental:cleanup-logs --days=90')
-    ->dailyAt('02:00')
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('ai-rental-cleanup-logs')
-    ->runInBackground();
-
-// ────────────────────────────────────────────────────────────────
 // 🎬 VIDEO AUTOMATION SYSTEM
 // ────────────────────────────────────────────────────────────────
 

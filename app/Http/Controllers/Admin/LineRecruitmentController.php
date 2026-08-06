@@ -68,7 +68,6 @@ class LineRecruitmentController extends Controller
             ->get();
 
         $providers = [
-            'postxagent' => 'PostXAgent (แนะนำ)',
             'openai' => 'OpenAI (ChatGPT)',
             'deepseek' => 'DeepSeek',
             'anthropic' => 'Anthropic (Claude)',
@@ -100,7 +99,7 @@ class LineRecruitmentController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'provider' => 'required|in:postxagent,openai,deepseek,anthropic,gemini,custom',
+            'provider' => 'required|in:openai,deepseek,anthropic,gemini,custom',
             'api_key' => 'nullable|string',
             'api_endpoint' => 'nullable|string|url',
             'model' => 'nullable|string',
@@ -122,24 +121,11 @@ class LineRecruitmentController extends Controller
             'fallback_message' => 'nullable|string',
             'enable_conversation_history' => 'boolean',
             'conversation_memory_limit' => 'integer|min:1',
-            // PostXAgent fields
-            'postxagent_host' => 'nullable|string|max:255',
-            'postxagent_api_port' => 'nullable|integer|min:1|max:65535',
-            'postxagent_signalr_port' => 'nullable|integer|min:1|max:65535',
-            'postxagent_api_key' => 'nullable|string',
-            'postxagent_use_ssl' => 'boolean',
-            'postxagent_timeout' => 'nullable|integer|min:1|max:300',
-            'postxagent_preferred_provider' => 'nullable|in:auto,ollama,openai,anthropic,google,huggingface',
         ]);
 
         // ถ้าไม่ได้ส่ง api_key ใหม่มา ให้ใช้อันเดิม
         if (empty($validated['api_key'])) {
             unset($validated['api_key']);
-        }
-
-        // ถ้าไม่ได้ส่ง postxagent_api_key ใหม่มา ให้ใช้อันเดิม
-        if (empty($validated['postxagent_api_key'])) {
-            unset($validated['postxagent_api_key']);
         }
 
         // ถ้าเปิดใช้งานเป็น active ให้ปิด active ตัวอื่นก่อน

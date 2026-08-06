@@ -11,15 +11,12 @@ class AiServiceFactory
     /**
      * สร้าง AI Service จาก Provider และ Model
      *
-     * รองรับ providers:
+     * รองรับ providers (เฉพาะแบบ cloud — ระบบ AI แบบ local ถูกถอดออกแล้ว):
      * - openai: OpenAI GPT models
      * - anthropic: Anthropic Claude models
      * - deepseek: DeepSeek (cloud via OpenAI-compatible API)
-     * - deepseek-local: DeepSeek self-hosted via Ollama
      * - google: Google Gemini models
      * - meta: Meta Llama models (via Together AI - OpenAI-compatible)
-     * - meta-local: Meta Llama self-hosted via Ollama
-     * - postxagent: PostXAgent AI Manager Core (C# .NET 8.0)
      */
     public static function create(AiProvider $provider, AiModel $model): BaseAiService
     {
@@ -27,11 +24,8 @@ class AiServiceFactory
             'openai' => new OpenAiService($provider, $model),
             'anthropic' => new ClaudeService($provider, $model),
             'deepseek' => new OpenAiService($provider, $model), // DeepSeek ใช้ OpenAI-compatible API
-            'deepseek-local' => new LocalAiService($provider, $model),
             'google' => new OpenAiService($provider, $model), // Gemini ก็ใช้ OpenAI-compatible
             'meta' => new OpenAiService($provider, $model), // Meta Llama via Together AI (OpenAI-compatible)
-            'meta-local' => new LocalAiService($provider, $model), // Meta Llama self-hosted via Ollama
-            'postxagent' => new PostXAgentService($provider, $model), // PostXAgent AI Manager
             default => throw new \Exception("Unsupported provider: {$provider->name}"),
         };
     }

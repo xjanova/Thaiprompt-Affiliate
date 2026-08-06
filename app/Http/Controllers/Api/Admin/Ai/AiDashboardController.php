@@ -229,19 +229,17 @@ class AiDashboardController extends Controller
     private function providerDisplayName(string $name): string
     {
         $map = [
-            'openai'        => 'OpenAI',
-            'anthropic'     => 'Anthropic',
-            'groq'          => 'Groq',
-            'grok'          => 'xAI Grok',
-            'google'        => 'Google Gemini',
-            'gemini'        => 'Google Gemini',
-            'deepseek'      => 'DeepSeek',
-            'deepseek-local' => 'DeepSeek (Local)',
-            'qwen'          => 'Qwen',
-            'meta'          => 'Meta Llama',
-            'meta-local'    => 'Meta Llama (Local)',
-            'postxagent'    => 'PostXAgent',
+            'openai' => 'OpenAI',
+            'anthropic' => 'Anthropic',
+            'groq' => 'Groq',
+            'grok' => 'xAI Grok',
+            'google' => 'Google Gemini',
+            'gemini' => 'Google Gemini',
+            'deepseek' => 'DeepSeek',
+            'qwen' => 'Qwen',
+            'meta' => 'Meta Llama',
         ];
+
         return $map[strtolower($name)] ?? ucfirst($name);
     }
 
@@ -250,22 +248,22 @@ class AiDashboardController extends Controller
         // Stable brand-ish colors so warroom can draw the chart without storing
         // a color per row. Falls through to a deterministic hash.
         $map = [
-            'openai'        => '#10b981',
-            'anthropic'     => '#d4a747',
-            'groq'          => '#22d3ee',
-            'grok'          => '#e879f9',
-            'google'        => '#8b5cf6',
-            'gemini'        => '#8b5cf6',
-            'deepseek'      => '#f59e0b',
-            'deepseek-local' => '#f59e0b',
-            'qwen'          => '#f43f5e',
-            'meta'          => '#1877f2',
-            'meta-local'    => '#0ea5e9',
-            'postxagent'    => '#a855f7',
+            'openai' => '#10b981',
+            'anthropic' => '#d4a747',
+            'groq' => '#22d3ee',
+            'grok' => '#e879f9',
+            'google' => '#8b5cf6',
+            'gemini' => '#8b5cf6',
+            'deepseek' => '#f59e0b',
+            'qwen' => '#f43f5e',
+            'meta' => '#1877f2',
         ];
         $k = strtolower($name);
-        if (isset($map[$k])) return $map[$k];
+        if (isset($map[$k])) {
+            return $map[$k];
+        }
         $hue = abs(crc32($k)) % 360;
+
         return "hsl($hue, 70%, 55%)";
     }
 

@@ -316,8 +316,8 @@ EOT;
                 ->first();
         }
 
-        // Auto-select: prefer Local Llama (ฟรี), then Meta Llama 4 (cloud), then others
-        $preferredProviders = ['meta-local', 'meta', 'claude', 'openai', 'gemini', 'deepseek'];
+        // Auto-select: prefer Meta Llama (cloud ผ่าน Together AI), then others
+        $preferredProviders = ['meta', 'claude', 'openai', 'gemini', 'deepseek'];
 
         foreach ($preferredProviders as $name) {
             $provider = AiProvider::where('name', $name)

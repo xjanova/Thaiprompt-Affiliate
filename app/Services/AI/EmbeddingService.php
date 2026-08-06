@@ -73,8 +73,6 @@ class EmbeddingService
         try {
             if ($this->provider->name === 'openai') {
                 return $this->createOpenAiEmbedding($text);
-            } elseif ($this->provider->name === 'deepseek-local') {
-                return $this->createLocalEmbedding($text);
             }
 
             return [
@@ -155,32 +153,6 @@ class EmbeddingService
             'embedding' => $data['data'][0]['embedding'] ?? [],
             'dimension' => count($data['data'][0]['embedding'] ?? []),
             'tokens' => $data['usage']['total_tokens'] ?? 0,
-        ];
-    }
-
-    /**
-     * Create local embedding (Ollama)
-     */
-    private function createLocalEmbedding(string $text): array
-    {
-        $ollamaEndpoint = 'http://localhost:11434';
-
-        $response = Http::timeout(30)->post($ollamaEndpoint.'/api/embeddings', [
-            'model' => 'nomic-embed-text', // Or any embedding model installed locally
-            'prompt' => $text,
-        ]);
-
-        if (! $response->successful()) {
-            throw new \Exception('Ollama API error: '.$response->body());
-        }
-
-        $data = $response->json();
-
-        return [
-            'success' => true,
-            'embedding' => $data['embedding'] ?? [],
-            'dimension' => count($data['embedding'] ?? []),
-            'tokens' => $this->estimateTokens($text), // Estimate since Ollama doesn't return token count
         ];
     }
 

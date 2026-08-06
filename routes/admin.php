@@ -23,13 +23,8 @@ use App\Http\Controllers\Admin\AICoreQuotaController;
 use App\Http\Controllers\Admin\AICoreScheduleController;
 use App\Http\Controllers\Admin\AICoreTenantController;
 use App\Http\Controllers\Admin\AiGenAdminController;
-use App\Http\Controllers\Admin\AiInstallationController;
 use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\AiProviderManagementController;
-use App\Http\Controllers\Admin\AiRentalCloudProviderController;
-use App\Http\Controllers\Admin\AiRentalConfigController;
-use App\Http\Controllers\Admin\AiRentalController;
-use App\Http\Controllers\Admin\AiRentalDeploymentController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AntiAbuseController;
 use App\Http\Controllers\Admin\ApiEndpointController;
@@ -40,7 +35,6 @@ use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\CacheSettingsController;
 use App\Http\Controllers\Admin\CashbackSettingController;
 use App\Http\Controllers\Admin\CategoryManagementController;
-use App\Http\Controllers\Admin\CentralAiController;
 use App\Http\Controllers\Admin\CertificateController;
 use App\Http\Controllers\Admin\CertificateManagementController;
 use App\Http\Controllers\Admin\ClassicXSettingsController;
@@ -1248,74 +1242,6 @@ Route::prefix('ai-core')->name('ai-core.')->group(function () {
     Route::post('/settings', [AICoreController::class, 'updateSettings'])->name('settings.update');
 });
 
-// Central AI Management (Ollama + PostXAgent)
-Route::prefix('central-ai')->name('central-ai.')->group(function () {
-    // Main index (แสดง Wizard หรือ Dashboard)
-    Route::get('/', [CentralAiController::class, 'index'])->name('index');
-    Route::get('/wizard', [CentralAiController::class, 'wizard'])->name('wizard');
-    Route::get('/dashboard', [CentralAiController::class, 'dashboard'])->name('dashboard');
-
-    // System Resources
-    Route::get('/system/resources', [CentralAiController::class, 'checkSystemResources'])->name('system.resources');
-
-    // Ollama Management
-    Route::prefix('ollama')->name('ollama.')->group(function () {
-        Route::get('/', [CentralAiController::class, 'ollamaIndex'])->name('index');
-        Route::get('/status', [CentralAiController::class, 'checkOllamaStatus'])->name('status');
-        Route::post('/install', [CentralAiController::class, 'installOllama'])->name('install');
-        Route::post('/start', [CentralAiController::class, 'startOllama'])->name('start');
-        Route::post('/stop', [CentralAiController::class, 'stopOllama'])->name('stop');
-        Route::post('/restart', [CentralAiController::class, 'restartOllama'])->name('restart');
-        Route::post('/download-model', [CentralAiController::class, 'downloadModel'])->name('download-model');
-        Route::post('/delete-model', [CentralAiController::class, 'deleteModel'])->name('delete-model');
-        Route::post('/chat-test', [CentralAiController::class, 'chatTest'])->name('chat-test');
-        Route::get('/running-models', [CentralAiController::class, 'getRunningModels'])->name('running-models');
-        Route::get('/resource-usage', [CentralAiController::class, 'getResourceUsage'])->name('resource-usage');
-    });
-
-    // PostXAgent Management
-    Route::prefix('postxagent')->name('postxagent.')->group(function () {
-        Route::get('/status', [CentralAiController::class, 'checkPostXAgentStatus'])->name('status');
-    });
-
-    // Settings
-    Route::get('/settings', [CentralAiController::class, 'settings'])->name('settings');
-    Route::post('/settings', [CentralAiController::class, 'saveSettings'])->name('settings.save');
-    Route::post('/setup/complete', [CentralAiController::class, 'completeSetup'])->name('setup.complete');
-
-    // Health Check
-    Route::get('/health-check', [CentralAiController::class, 'performHealthCheck'])->name('health-check');
-});
-
-// AI Installation & Management
-Route::prefix('ai-installation')->name('ai-installation.')->group(function () {
-    // Installation Wizard
-    Route::get('/', [AiInstallationController::class, 'index'])->name('index');
-
-    // System Requirements
-    Route::get('/check-requirements', [AiInstallationController::class, 'checkRequirements'])->name('check-requirements');
-    Route::get('/recommendations', [AiInstallationController::class, 'getRecommendations'])->name('recommendations');
-    Route::post('/analyze-model', [AiInstallationController::class, 'analyzeModel'])->name('analyze-model');
-    Route::post('/calculate-disk-space', [AiInstallationController::class, 'calculateDiskSpace'])->name('calculate-disk-space');
-    Route::post('/optimal-settings', [AiInstallationController::class, 'getOptimalSettings'])->name('optimal-settings');
-
-    // Installation Process
-    Route::post('/start', [AiInstallationController::class, 'startInstallation'])->name('start');
-    Route::get('/progress/{installationId}', [AiInstallationController::class, 'getProgress'])->name('progress');
-    Route::post('/cancel/{installationId}', [AiInstallationController::class, 'cancelInstallation'])->name('cancel');
-
-    // Model Management
-    Route::get('/installed-models', [AiInstallationController::class, 'getInstalledModels'])->name('installed-models');
-    Route::post('/uninstall', [AiInstallationController::class, 'uninstallModel'])->name('uninstall');
-
-    // Ollama Status
-    Route::get('/ollama-status', [AiInstallationController::class, 'checkOllamaStatus'])->name('ollama-status');
-
-    // Installation History
-    Route::get('/history', [AiInstallationController::class, 'getInstallationHistory'])->name('history');
-    Route::get('/logs/{installationId}', [AiInstallationController::class, 'getInstallationLog'])->name('logs');
-});
-
 // Learning Center - User View
 Route::prefix('learning-center')->name('learning-center.')->group(function () {
     Route::get('/', [LearningCenterController::class, 'index'])->name('index');
@@ -1410,31 +1336,6 @@ Route::prefix('ai-providers')->name('ai-providers.')->group(function () {
     Route::post('/{id}/test-chat', [AiProviderManagementController::class, 'testChat'])->name('test-chat');
     Route::get('/{id}/models', [AiProviderManagementController::class, 'getProviderModels'])->name('models');
     Route::post('/models/{id}/toggle', [AiProviderManagementController::class, 'toggleModel'])->name('models.toggle');
-
-    // Local AI Control
-    Route::post('/local/start', [AiProviderManagementController::class, 'startLocalAi'])->name('local.start');
-    Route::post('/local/stop', [AiProviderManagementController::class, 'stopLocalAi'])->name('local.stop');
-    Route::post('/local/restart', [AiProviderManagementController::class, 'restartLocalAi'])->name('local.restart');
-    Route::get('/local/status', [AiProviderManagementController::class, 'getLocalAiStatus'])->name('local.status');
-    Route::post('/local/load-model', [AiProviderManagementController::class, 'loadModel'])->name('local.load-model');
-
-    // Llama Installation
-    Route::get('/install', [AiProviderManagementController::class, 'installPage'])->name('install');
-    Route::post('/install/start', [AiProviderManagementController::class, 'startInstall'])->name('install.start');
-    Route::get('/install/progress', [AiProviderManagementController::class, 'getInstallProgress'])->name('install.progress');
-    Route::post('/install/cancel', [AiProviderManagementController::class, 'cancelInstall'])->name('install.cancel');
-    Route::get('/install/log', [AiProviderManagementController::class, 'getInstallLog'])->name('install.log');
-
-    // PostXAgent AI Manager Control
-    Route::prefix('postxagent')->name('postxagent.')->group(function () {
-        Route::get('/status', [AiProviderManagementController::class, 'getPostXAgentStatus'])->name('status');
-        Route::post('/test', [AiProviderManagementController::class, 'testPostXAgentConnection'])->name('test');
-        Route::post('/clear-cache', [AiProviderManagementController::class, 'clearPostXAgentCache'])->name('clear-cache');
-        Route::get('/providers', [AiProviderManagementController::class, 'getPostXAgentProviders'])->name('providers');
-        Route::get('/providers/{providerId}/models', [AiProviderManagementController::class, 'getPostXAgentModels'])->name('providers.models');
-        Route::post('/config', [AiProviderManagementController::class, 'updatePostXAgentConfig'])->name('config');
-        Route::post('/test-chat', [AiProviderManagementController::class, 'testPostXAgentChat'])->name('test-chat');
-    });
 });
 
 // AI Monitoring & Analytics
@@ -3121,148 +3022,6 @@ Route::prefix('service-pricing-rules')->name('service-pricing-rules.')->group(fu
     Route::put('/{pricingRule}', [ServicePricingRuleController::class, 'update'])->name('update');
     Route::delete('/{pricingRule}', [ServicePricingRuleController::class, 'destroy'])->name('destroy');
     Route::post('/{pricingRule}/toggle-active', [ServicePricingRuleController::class, 'toggleActive'])->name('toggle-active');
-});
-
-// ============================================
-// AI Rental with Cloud GPU Routes 🚀🤖
-// ============================================
-
-Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
-    // Dashboard
-    Route::get('/', [AiRentalController::class, 'dashboard'])
-        ->name('dashboard');
-
-    // Setup Guide & Tools
-    Route::get('/setup-guide', [AiRentalController::class, 'setupGuide'])
-        ->name('setup-guide');
-    Route::get('/cost-calculator', [AiRentalController::class, 'costCalculator'])
-        ->name('cost-calculator');
-
-    // API Endpoints
-    Route::prefix('api')->name('api.')->group(function () {
-        Route::post('/calculate-cost', [AiRentalController::class, 'calculateCost'])
-            ->name('calculate-cost');
-        Route::get('/stats', [AiRentalController::class, 'getStats'])
-            ->name('stats');
-    });
-
-    // Cloud Providers Management ✅ พร้อมใช้งาน!
-    Route::prefix('cloud-providers')->name('cloud-providers.')->group(function () {
-        Route::get('/', [AiRentalCloudProviderController::class, 'index'])
-            ->name('index');
-        Route::get('/create', [AiRentalCloudProviderController::class, 'create'])
-            ->name('create');
-        Route::post('/', [AiRentalCloudProviderController::class, 'store'])
-            ->name('store');
-        Route::get('/{cloudProvider}', [AiRentalCloudProviderController::class, 'show'])
-            ->name('show');
-        Route::get('/{cloudProvider}/edit', [AiRentalCloudProviderController::class, 'edit'])
-            ->name('edit');
-        Route::patch('/{cloudProvider}', [AiRentalCloudProviderController::class, 'update'])
-            ->name('update');
-        Route::delete('/{cloudProvider}', [AiRentalCloudProviderController::class, 'destroy'])
-            ->name('destroy');
-
-        // Status Management
-        Route::patch('/{cloudProvider}/activate', [AiRentalCloudProviderController::class, 'activate'])
-            ->name('activate');
-        Route::patch('/{cloudProvider}/deactivate', [AiRentalCloudProviderController::class, 'deactivate'])
-            ->name('deactivate');
-
-        // Rating
-        Route::post('/{cloudProvider}/rating', [AiRentalCloudProviderController::class, 'updateRating'])
-            ->name('rating');
-
-        // Order (for drag & drop)
-        Route::post('/update-order', [AiRentalCloudProviderController::class, 'updateOrder'])
-            ->name('update-order');
-    });
-
-    // My Configurations ✅ พร้อมใช้งาน!
-    Route::prefix('configs')->name('configs.')->group(function () {
-        Route::get('/', [AiRentalConfigController::class, 'index'])
-            ->name('index');
-        Route::get('/create', [AiRentalConfigController::class, 'create'])
-            ->name('create');
-        Route::post('/', [AiRentalConfigController::class, 'store'])
-            ->name('store');
-        Route::get('/{config}', [AiRentalConfigController::class, 'show'])
-            ->name('show');
-        Route::get('/{config}/edit', [AiRentalConfigController::class, 'edit'])
-            ->name('edit');
-        Route::patch('/{config}', [AiRentalConfigController::class, 'update'])
-            ->name('update');
-        Route::delete('/{config}', [AiRentalConfigController::class, 'destroy'])
-            ->name('destroy');
-
-        // Actions
-        Route::post('/{config}/test', [AiRentalConfigController::class, 'testConnection'])
-            ->name('test');
-        Route::patch('/{config}/set-default', [AiRentalConfigController::class, 'setDefault'])
-            ->name('set-default');
-    });
-
-    // Analytics ✅ พร้อมใช้งาน!
-    Route::get('/analytics', [AiRentalDeploymentController::class, 'analytics'])
-        ->name('analytics');
-
-    // Deployments ✅ พร้อมใช้งาน!
-    Route::prefix('deployments')->name('deployments.')->group(function () {
-        Route::get('/', [AiRentalDeploymentController::class, 'index'])
-            ->name('index');
-        Route::get('/create', [AiRentalDeploymentController::class, 'create'])
-            ->name('create');
-        Route::post('/', [AiRentalDeploymentController::class, 'store'])
-            ->name('store');
-        Route::get('/{deployment}', [AiRentalDeploymentController::class, 'show'])
-            ->name('show');
-        Route::delete('/{deployment}', [AiRentalDeploymentController::class, 'destroy'])
-            ->name('destroy');
-
-        // Control Actions
-        Route::patch('/{deployment}/start', [AiRentalDeploymentController::class, 'start'])
-            ->name('start');
-        Route::patch('/{deployment}/stop', [AiRentalDeploymentController::class, 'stop'])
-            ->name('stop');
-        Route::patch('/{deployment}/restart', [AiRentalDeploymentController::class, 'restart'])
-            ->name('restart');
-
-        // Logs
-        Route::get('/{deployment}/logs', [AiRentalDeploymentController::class, 'logs'])
-            ->name('logs');
-        Route::get('/{deployment}/logs/fetch', [AiRentalDeploymentController::class, 'fetchLogs'])
-            ->name('logs.fetch');
-
-        // Test Deployment
-        Route::get('/{deployment}/test', [AiRentalDeploymentController::class, 'test'])
-            ->name('test');
-
-        // Status Update (for callbacks)
-        Route::post('/{deployment}/status', [AiRentalDeploymentController::class, 'updateStatus'])
-            ->name('update-status');
-    });
-
-    // API Endpoints ✅ พร้อมใช้งาน!
-    Route::prefix('api')->name('api.')->group(function () {
-        Route::get('/stats', [AiRentalDeploymentController::class, 'getStats'])
-            ->name('stats');
-        Route::get('/chart-data', [AiRentalDeploymentController::class, 'getChartData'])
-            ->name('chart-data');
-    });
-
-    // Hugging Face News ✅ พร้อมใช้งาน!
-    Route::prefix('news')->name('news.')->group(function () {
-        Route::get('/', [AiRentalController::class, 'news'])
-            ->name('index');
-        Route::get('/{news}', [AiRentalController::class, 'showNews'])
-            ->name('show');
-    });
-
-    // Trending Models ✅ พร้อมใช้งาน!
-    Route::prefix('trending-models')->name('trending-models.')->group(function () {
-        Route::get('/', [AiRentalController::class, 'trendingModels'])
-            ->name('index');
-    });
 });
 
 /*

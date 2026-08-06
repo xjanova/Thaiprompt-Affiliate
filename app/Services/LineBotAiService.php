@@ -309,7 +309,6 @@ class LineBotAiService
             'deepseek' => $this->callDeepSeek($messages),
             'anthropic' => $this->callAnthropic($messages),
             'gemini' => $this->callGemini($messages),
-            'postxagent' => $this->callPostXAgent($messages),
             'custom' => $this->callCustomProvider($messages),
             default => throw new Exception('Unsupported AI provider: '.$this->settings->provider),
         };
@@ -481,114 +480,6 @@ class LineBotAiService
     }
 
     /**
-     * Call PostXAgent AI Manager
-     *
-     * PostXAgent เป็น AI Manager ที่รองรับหลาย provider ในตัว
-     * โดยจะเลือก provider ที่ดีที่สุดโดยอัตโนมัติ หรือใช้ provider ที่ระบุ
-     *
-     * @param  array  $messages  รูปแบบ OpenAI-compatible messages
-     *
-     * @throws Exception
-     */
-    private function callPostXAgent(array $messages): array
-    {
-        // ตรวจสอบว่า PostXAgent ตั้งค่าถูกต้อง
-        if (! $this->settings->isPostXAgentConfigured()) {
-            throw new Exception('PostXAgent not configured. Please set host and port.');
-        }
-
-        // แยก system prompt และ conversation messages
-        $systemPrompt = '';
-        $conversationMessages = [];
-
-        foreach ($messages as $msg) {
-            if ($msg['role'] === 'system') {
-                $systemPrompt .= $msg['content']."\n";
-            } else {
-                $conversationMessages[] = $msg;
-            }
-        }
-
-        // สร้าง request body สำหรับ PostXAgent
-        // ใช้รูปแบบที่เข้ากันได้กับ PostXAgent Content Generation API
-        $requestBody = [
-            'task_type' => 'GenerateContent',
-            'payload' => [
-                'system_prompt' => trim($systemPrompt),
-                'messages' => $conversationMessages,
-                'temperature' => $this->settings->temperature,
-                'max_tokens' => $this->settings->max_tokens,
-                'preferred_provider' => $this->settings->postxagent_preferred_provider ?? 'auto',
-                // ส่ง recruitment context ถ้าอยู่ในโหมดรับสมัคร
-                'context' => $this->recruitmentMode ? 'recruitment' : 'general',
-            ],
-        ];
-
-        // สร้าง headers
-        $headers = [
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-        ];
-
-        // เพิ่ม API key ถ้ามี
-        if ($this->settings->postxagent_api_key) {
-            $headers['X-Api-Key'] = $this->settings->postxagent_api_key;
-            $headers['Authorization'] = 'Bearer '.$this->settings->postxagent_api_key;
-        }
-
-        // เรียก PostXAgent API
-        $url = $this->settings->getPostXAgentUrl('/api/v1/chat/completions');
-        $timeout = $this->settings->getPostXAgentTimeout();
-
-        Log::debug('PostXAgent request', [
-            'url' => $url,
-            'timeout' => $timeout,
-            'provider' => $this->settings->postxagent_preferred_provider ?? 'auto',
-        ]);
-
-        $response = Http::withHeaders($headers)
-            ->timeout($timeout)
-            ->post($url, $requestBody);
-
-        if (! $response->successful()) {
-            $errorBody = $response->body();
-            Log::error('PostXAgent API error', [
-                'status' => $response->status(),
-                'body' => $errorBody,
-            ]);
-            throw new Exception('PostXAgent API error: '.$errorBody);
-        }
-
-        $data = $response->json();
-
-        // PostXAgent อาจส่งผลลัพธ์ในหลายรูปแบบ ลองหลายรูปแบบ
-        $message = $data['choices'][0]['message']['content']  // OpenAI-compatible format
-            ?? $data['data']['content']                        // PostXAgent native format
-            ?? $data['content']                                // Simple format
-            ?? $data['message']                                // Direct message
-            ?? '';
-
-        $tokensUsed = $data['usage']['total_tokens']
-            ?? $data['data']['tokens_used']
-            ?? null;
-
-        $usedProvider = $data['data']['provider']
-            ?? $data['provider']
-            ?? 'postxagent';
-
-        Log::debug('PostXAgent response', [
-            'provider_used' => $usedProvider,
-            'tokens' => $tokensUsed,
-        ]);
-
-        return [
-            'message' => $message,
-            'tokens_used' => $tokensUsed,
-            'provider_used' => $usedProvider,
-        ];
-    }
-
-    /**
      * Test AI connection
      */
     public function testConnection(): array
@@ -606,60 +497,6 @@ class LineBotAiService
             return [
                 'success' => false,
                 'message' => 'Connection failed',
-                'error' => $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Test PostXAgent connection specifically
-     */
-    public function testPostXAgentConnection(): array
-    {
-        if (! $this->settings->isPostXAgentProvider()) {
-            return [
-                'success' => false,
-                'message' => 'Provider is not PostXAgent',
-            ];
-        }
-
-        if (! $this->settings->isPostXAgentConfigured()) {
-            return [
-                'success' => false,
-                'message' => 'PostXAgent not configured',
-            ];
-        }
-
-        try {
-            // ทดสอบ health check endpoint
-            $url = $this->settings->getPostXAgentUrl('/health');
-            $headers = [];
-
-            if ($this->settings->postxagent_api_key) {
-                $headers['X-Api-Key'] = $this->settings->postxagent_api_key;
-            }
-
-            $response = Http::withHeaders($headers)
-                ->timeout(5)
-                ->get($url);
-
-            if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'message' => 'PostXAgent connection successful',
-                    'data' => $response->json(),
-                ];
-            }
-
-            // ถ้า health check ไม่มี ลองเรียก API ปกติ
-            $testResult = $this->testConnection();
-
-            return $testResult;
-
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'PostXAgent connection failed',
                 'error' => $e->getMessage(),
             ];
         }

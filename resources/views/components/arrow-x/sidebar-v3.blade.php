@@ -1080,82 +1080,6 @@
             </div>
         </div>
 
-        {{-- Central AI - ระบบจัดการ AI รวมศูนย์ (Ollama + PostXAgent) 🧠 --}}
-        @php
-            $centralAiActive = request()->routeIs('admin.central-ai.*');
-            $ollamaInstalled = \Illuminate\Support\Facades\Cache::remember('ollama_is_installed', 300, function () {
-                try {
-                    $setting = \App\Models\CentralAiSetting::where('is_active', true)->first();
-                    return $setting && ($setting->is_ollama_installed || $setting->setup_completed);
-                } catch (\Exception $e) {
-                    return false;
-                }
-            });
-        @endphp
-        <div class="space-y-1"
-             data-menu-active="{{ $centralAiActive ? 'true' : 'false' }}"
-             data-menu-type="parent"
-             data-menu-key="central-ai"
-             x-data="{ centralAiOpen: {{ $centralAiActive ? 'true' : 'false' }} }">
-            {{-- Central AI Header Button --}}
-            <button @click="centralAiOpen = !centralAiOpen"
-                    type="button"
-                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ $centralAiActive ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-                <i class="fas fa-brain w-5 text-center drop-shadow"></i>
-                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Central AI</span>
-                @if(!$centralAiActive && !$ollamaInstalled)
-                <span x-show="$store.sidebar.shouldExpand" class="px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-blue-500 to-purple-600 rounded-full">NEW</span>
-                @endif
-                <i x-show="$store.sidebar.shouldExpand && centralAiOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
-                <i x-show="$store.sidebar.shouldExpand && !centralAiOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
-            </button>
-
-            {{-- Central AI Submenu --}}
-            <div x-show="centralAiOpen" x-collapse x-cloak class="ml-8 space-y-1">
-                {{-- Dashboard --}}
-                <a href="{{ route('admin.central-ai.dashboard') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.central-ai.dashboard') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.central-ai.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
-                </a>
-
-                @if(!$ollamaInstalled)
-                {{-- Setup Wizard - แสดงเฉพาะเมื่อยังไม่ได้ติดตั้ง --}}
-                <a href="{{ route('admin.central-ai.wizard') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.central-ai.wizard') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.central-ai.wizard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-magic w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Setup Wizard</span>
-                </a>
-                @endif
-
-                {{-- Ollama Control Panel / Management --}}
-                <a href="{{ route('admin.central-ai.ollama.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.central-ai.ollama.*') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.central-ai.ollama.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-robot w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">{{ $ollamaInstalled ? 'Ollama Control Panel' : 'Ollama Management' }}</span>
-                </a>
-
-                {{-- Settings --}}
-                <a href="{{ route('admin.central-ai.settings') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.central-ai.settings') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.central-ai.settings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า AI</span>
-                </a>
-            </div>
-        </div>
-
         {{-- AI Core - ระบบควบคุม AI แบบรวมศูนย์ 🆕 --}}
         @php $aiCoreActive = request()->routeIs('admin.ai-core.*'); @endphp
         <div class="space-y-1"
@@ -1253,108 +1177,6 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-core.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Settings</span>
-                </a>
-            </div>
-        </div>
-
-        {{-- AI Rental with Cloud GPU 🚀🤖 --}}
-        <div class="space-y-1"
-             data-menu-active="{{ request()->routeIs('admin.ai-rental.*') ? 'true' : 'false' }}"
-             data-menu-type="parent"
-             data-menu-key="ai-rental"
-             x-data="{ aiRentalOpen: {{ request()->routeIs('admin.ai-rental.*') ? 'true' : 'false' }} }">
-            {{-- AI Rental Header Button --}}
-            <button @click="aiRentalOpen = !aiRentalOpen"
-                    type="button"
-                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-rental.*') ? 'bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-                <i class="fas fa-server w-5 text-center drop-shadow"></i>
-                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">AI Rental GPU</span>
-                <i x-show="$store.sidebar.shouldExpand && aiRentalOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
-                <i x-show="$store.sidebar.shouldExpand && !aiRentalOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
-            </button>
-
-            {{-- AI Rental Submenu --}}
-            <div x-show="aiRentalOpen" x-collapse x-cloak class="ml-8 space-y-1">
-                {{-- Dashboard --}}
-                <a href="{{ route('admin.ai-rental.dashboard') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.ai-rental.dashboard') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
-                </a>
-
-                {{-- Cloud GPU Providers 🆕 แนะนำ Cloud ฟรี + ราคาถูก --}}
-                <a href="{{ route('admin.ai-rental.cloud-providers.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.ai-rental.cloud-providers.*') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.cloud-providers.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-cloud w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Cloud Providers</span>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full shadow-lg">FREE</span>
-                </a>
-
-                {{-- My Configurations --}}
-                <a href="{{ route('admin.ai-rental.configs.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.ai-rental.configs.*') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.configs.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">My Configurations</span>
-                </a>
-
-                {{-- Deployments --}}
-                <a href="{{ route('admin.ai-rental.deployments.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.ai-rental.deployments.*') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.deployments.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-rocket w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Deployments</span>
-                </a>
-
-                {{-- Hugging Face News 🆕 ข่าว models ที่น่าสนใจ --}}
-                <a href="{{ route('admin.ai-rental.news.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.ai-rental.news.*') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.news.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-newspaper w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">HF News</span>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded-full shadow-lg">HOT</span>
-                </a>
-
-                {{-- Trending Models 🔥 Models ที่กำลังมาแรง --}}
-                <a href="{{ route('admin.ai-rental.trending-models.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.ai-rental.trending-models.*') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.trending-models.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-fire w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Trending Models</span>
-                </a>
-
-                {{-- Setup Guide 📖 คู่มือการตั้งค่า Cloud --}}
-                <a href="{{ route('admin.ai-rental.setup-guide') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.ai-rental.setup-guide') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.setup-guide') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-book-open w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Setup Guide</span>
-                </a>
-
-                {{-- Cost Calculator 💰 คำนวณค่าใช้จ่าย --}}
-                <a href="{{ route('admin.ai-rental.cost-calculator') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.ai-rental.cost-calculator') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.cost-calculator') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-calculator w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Cost Calculator</span>
                 </a>
             </div>
         </div>
@@ -1591,14 +1413,14 @@
 
         {{-- AI & Automation (Extended) 🤖 --}}
         <div class="space-y-1"
-             data-menu-active="{{ request()->routeIs('admin.ai-providers.*') || request()->routeIs('admin.ai-installation.*') || request()->routeIs('admin.ai-monitoring.*') ? 'true' : 'false' }}"
+             data-menu-active="{{ request()->routeIs('admin.ai-providers.*') || request()->routeIs('admin.ai-monitoring.*') ? 'true' : 'false' }}"
              data-menu-type="parent"
              data-menu-key="ai-automation"
-             x-data="{ aiAutoOpen: {{ request()->routeIs('admin.ai-providers.*') || request()->routeIs('admin.ai-installation.*') || request()->routeIs('admin.ai-monitoring.*') ? 'true' : 'false' }} }">
+             x-data="{ aiAutoOpen: {{ request()->routeIs('admin.ai-providers.*') || request()->routeIs('admin.ai-monitoring.*') ? 'true' : 'false' }} }">
             {{-- AI Automation Header Button --}}
             <button @click="aiAutoOpen = !aiAutoOpen"
                     type="button"
-                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-providers.*') || request()->routeIs('admin.ai-installation.*') || request()->routeIs('admin.ai-monitoring.*') ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-providers.*') || request()->routeIs('admin.ai-monitoring.*') ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fas fa-robot w-5 text-center drop-shadow"></i>
                 <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">AI Automation</span>
                 <i x-show="$store.sidebar.shouldExpand && aiAutoOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
@@ -1615,16 +1437,6 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-providers.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-key w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">API Providers</span>
-                </a>
-
-                {{-- AI Installation --}}
-                <a href="{{ route('admin.ai-installation.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.ai-installation.*') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-installation.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-download w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Installations</span>
                 </a>
 
                 {{-- AI Monitoring --}}
@@ -2064,16 +1876,6 @@
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-bots.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-robot w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">AI Bot Profiles</span>
-        </a>
-
-        {{-- AI Installations --}}
-        <a href="{{ route('admin.ai-installation.index') }}"
-           data-menu-active="{{ request()->routeIs('admin.ai-installation.*') ? 'true' : 'false' }}"
-           data-menu-type="item"
-           data-menu-key="ai-installations"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-installation.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-download w-5 text-center drop-shadow"></i>
-            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">AI Installations</span>
         </a>
 
         {{-- (Products และ Orders ย้ายไปอยู่ใน Storefront Menu แล้ว) --}}

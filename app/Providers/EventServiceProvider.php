@@ -32,19 +32,6 @@ class EventServiceProvider extends ServiceProvider
             \App\Listeners\FoodPassport\NotifyStakeholdersOfQualityIssueListener::class,
         ],
 
-        // AI Rental GPU System Events
-        \App\Events\AiRental\DeploymentCreated::class => [
-            \App\Listeners\AiRental\NotifyUserOfDeploymentCreated::class,
-        ],
-
-        \App\Events\AiRental\DeploymentStatusChanged::class => [
-            \App\Listeners\AiRental\LogDeploymentStatusChange::class,
-        ],
-
-        \App\Events\AiRental\DeploymentHealthCheckFailed::class => [
-            \App\Listeners\AiRental\HandleHealthCheckFailure::class,
-        ],
-
         // Software Sales Events
         \App\Events\SoftwarePurchased::class => [
             \App\Listeners\GenerateSoftwareLicense::class,

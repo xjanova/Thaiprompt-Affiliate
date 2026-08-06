@@ -9,13 +9,6 @@ use Illuminate\Support\Facades\DB;
 
 class AiMonitoringService
 {
-    private LocalAiManager $localAiManager;
-
-    public function __construct()
-    {
-        $this->localAiManager = new LocalAiManager;
-    }
-
     /**
      * ดึง metrics ทั้งหมดสำหรับ real-time monitoring
      */
@@ -33,37 +26,21 @@ class AiMonitoringService
 
     /**
      * ดึง System Metrics (CPU, RAM, GPU)
+     *
+     * เดิมอ่านค่าจากเซิร์ฟเวอร์ AI ที่รันในเครื่อง (Ollama/llama.cpp)
+     * ตอนนี้ระบบใช้ AI ผ่าน cloud API ทั้งหมด จึงไม่มี resource ฝั่งเราให้วัด
+     * คงคีย์เดิมไว้เพื่อไม่ให้หน้า monitoring ที่เรียกใช้อยู่พัง
      */
     public function getSystemMetrics(): array
     {
-        $cacheKey = 'ai_monitoring:system_metrics';
-
-        return Cache::remember($cacheKey, 5, function () {
-            $status = $this->localAiManager->getStatus();
-
-            if (! $status['running']) {
-                return [
-                    'status' => 'stopped',
-                    'cpu_percent' => 0,
-                    'memory_gb' => 0,
-                    'memory_percent' => 0,
-                    'gpu' => null,
-                ];
-            }
-
-            $resourceUsage = $status['resource_usage'] ?? [];
-
-            return [
-                'status' => 'running',
-                'uptime' => $status['uptime'],
-                'cpu_percent' => $resourceUsage['cpu_percent'] ?? 0,
-                'memory_gb' => $resourceUsage['memory_gb'] ?? 0,
-                'memory_mb' => $resourceUsage['memory_mb'] ?? 0,
-                'memory_percent' => $resourceUsage['memory_percent'] ?? 0,
-                'gpu' => $resourceUsage['gpu'] ?? null,
-                'loaded_models' => $this->localAiManager->getLoadedModels(),
-            ];
-        });
+        return [
+            'status' => 'not_applicable',
+            'cpu_percent' => 0,
+            'memory_gb' => 0,
+            'memory_mb' => 0,
+            'memory_percent' => 0,
+            'gpu' => null,
+        ];
     }
 
     /**

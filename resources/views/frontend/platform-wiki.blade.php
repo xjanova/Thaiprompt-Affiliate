@@ -5466,7 +5466,7 @@ class Affiliate extends Model {
                     <tr>
                         <td><strong>🤖 AI Bot</strong></td>
                         <td>20+</td>
-                        <td>AiBotProfile, AiInstallation, AiChat, AiPrompt</td>
+                        <td>AiBotProfile, AiProvider, AiChat, AiPrompt</td>
                     </tr>
                     <tr>
                         <td><strong>🎮 Games</strong></td>
