@@ -526,9 +526,21 @@ Schedule::command('fortune:horoscope-process --publish')
     ->name('fortune-horoscope-publish')
     ->runInBackground();
 
-// 14) Horoscope Public Generate Daily — AI สร้างดวง 12 ราศี + 7 วันเกิด (06:00)
+// 14) Horoscope Public Generate Daily — AI สร้างดวง 12 ราศี + 7 วันเกิด (00:01)
+//
+// 🕛 (2026-08-06) ย้าย 06:00 → 00:01 ตามคำสั่งเจ้าของ
+//    "ขยับเป็น 00:01 ของวันใหม่ เพื่อจะได้ทำนายกลบรอยต่อ จะได้มีข้อมูลไว้ให้กับลูกค้า"
+//
+//    เดิม: เที่ยงคืน–06:00 = ช่องโหว่ 6 ชั่วโมง — บทความของ "วันนี้" ยังไม่ถูกสร้าง
+//    ลูกค้าที่ทักมาช่วงดึก/เช้ามืดจึงไม่มีดวงประจำวันให้ส่ง
+//    (FortuneGreetingService::buildDailyHoroscopeBox() หา target_date = วันนี้ → ไม่เจอ)
+//    ใหม่: ตัดขึ้นต้นวันเลย — 00:01 สร้างเสร็จราว 00:02 (prod ใช้เวลา ~1 นาที/รอบ)
+//
+//    ⏱️ timezone ระบุชัดกันพลาด — command ใช้ Carbon::now('Asia/Bangkok')->startOfDay()
+//       เป็น target_date อยู่แล้ว ถ้า scheduler ตีความคนละโซนจะได้บทความของวันผิด
 Schedule::command('horoscope:generate-daily')
-    ->dailyAt('06:00')
+    ->dailyAt('00:01')
+    ->timezone('Asia/Bangkok')
     ->withoutOverlapping()
     ->onOneServer()
     ->name('horoscope-generate-daily')

@@ -42,7 +42,7 @@ class FortuneDailyPreflight extends Command
             $this->line('     เปิดได้ที่ Admin → ตั้งค่าดูดวง → โหมดบอท');
         }
 
-        // ── 2. บทความดวงรายวันของวันนี้ (ตัวที่ horoscope:generate-daily สร้าง 06:00)
+        // ── 2. บทความดวงรายวันของวันนี้ (ตัวที่ horoscope:generate-daily สร้าง 00:01)
         $pre = app(FortuneGreetingService::class)->dailyPreflight();
 
         if ($pre['ready']) {

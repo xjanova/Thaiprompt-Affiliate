@@ -15,8 +15,9 @@ use Illuminate\Console\Command;
  * - php artisan horoscope:generate-daily --zodiac  (เฉพาะ 12 ราศี)
  * - php artisan horoscope:generate-daily --birthday (เฉพาะ 7 วันเกิด)
  *
- * แนะนำให้ตั้ง cron ทุกวัน 06:00 น.
- * $schedule->command('horoscope:generate-daily')->dailyAt('06:00');
+ * ตั้ง cron ทุกวัน 00:01 น. (2026-08-06 ย้ายจาก 06:00 — ปิดช่องโหว่เที่ยงคืน–เช้า
+ * ที่บทความของ "วันนี้" ยังไม่ถูกสร้าง ทำให้ลูกค้าที่ทักตอนดึกไม่มีดวงรายวันให้ส่ง)
+ * $schedule->command('horoscope:generate-daily')->dailyAt('00:01');
  */
 class HoroscopeGenerateDailyCommand extends Command
 {

@@ -2148,12 +2148,35 @@ class FortuneConversationService
                 //   ⚠️ TIER_CHOICE ปล่อยให้ handleTierChoice ดูแลเอง — reading เดิมยังใช้ต่อได้ ไม่ต้องสร้างใหม่
                 //   ⚠️ (เจ้าของ 2026-08-03) "แต่ต้องไม่มีบิลค้าง" — มีบิลค้างอยู่ห้าม fast-track บิลใหม่
                 //      → ปล่อยไหลไป flow เดิม (payFirstGate เตือน + handler เดิมส่ง QR บิลเก่าซ้ำให้)
+                //   ❓ (2026-08-06) `allowQuestion: true` — ให้ resolve ผ่านทั้งประโยคบอกเล่าและคำถาม
+                //      แล้วมาแยกทางกันข้างล่าง: บอกเล่า → บิล / คำถาม → ตอบเมนูราคา
+                //      (เรียกแบบนี้เพื่อ **ใช้ guard ชุดเดียวกัน** — บริบทเงิน/อายุ/เบอร์โทร/
+                //       แพคเกจที่ปิดอยู่/word-boundary ถูกกรองในนั้นครบแล้ว ไม่ต้องเขียนซ้ำ)
                 if (! $earlyGenericBlocking
                     && $earlyActiveCheck?->conversation_status !== FortuneReading::STATUS_TIER_CHOICE
-                    && ($typedTierEarly = $this->resolveExplicitTierRequest($messageText)) !== null
+                    && ($typedTierEarly = $this->resolveExplicitTierRequest($messageText, allowQuestion: true)) !== null
                     && ! $this->hasPendingUnpaidBill($facebookUserId)
                     && ! $this->isInPrediction($facebookUserId)
                     && ! $this->hasPaidActiveReading($facebookUserId)) {
+                    // ❓ ยังถามอยู่ = ยังไม่ได้สั่งซื้อ → ตอบคำถามด้วยกล่องราคา ห้ามออกบิล
+                    //   เจ้าของสั่ง (2026-08-06): "ถ้าเป็นประโยคคำถาม ก็ต้องตอบคำถามก่อน
+                    //   ไม่ใช่วิ่งไปสร้างบิล"
+                    //
+                    //   เคสจริง prod 2026-08-05 20:42 — "แม่ลูกไม่เข้าใจ99บาทมายความว่ามหยังไงคะ แม่"
+                    //   ไม่ตก looksLikePricingQuestion (ไม่มีคำว่า ราคา/เท่าไร/ค่าครู เลยสักคำ)
+                    //   แต่ตกทางลัดเลขราคา → ได้บิล 99 ทั้งที่กำลังถามว่ามันคืออะไร
+                    //   กล่องราคาคือคำตอบที่ตรงที่สุด — บอกครบว่าแต่ละแพคเกจได้อะไร ราคาเท่าไร
+                    if ($this->isQuestionSentence($messageText)) {
+                        Log::info('Fortune: ถามถึงตัวเลขราคาแพคเกจ (early-gate) → ตอบเมนูราคา ไม่ออกบิล', [
+                            'user_id' => $facebookUserId,
+                            'tier' => $typedTierEarly,
+                            'text_preview' => mb_substr($messageText, 0, 80),
+                            'active_status' => $earlyActiveCheck?->conversation_status,
+                        ]);
+
+                        return $this->presentPricingMenu();
+                    }
+
                     Log::info('Fortune: พิมพ์เลขราคาแพคเกจโดดๆ (early-gate) → สร้างบิลทันที', [
                         'user_id' => $facebookUserId,
                         'tier' => $typedTierEarly,
@@ -12574,9 +12597,12 @@ class FortuneConversationService
      *   - "ดูดวง" เปล่าๆ / กดปุ่ม → ยังต้องผ่านการ์ด intro (ลูกค้าอาจยังไม่รู้ว่าเสียเงิน)
      *   - "พิมพ์" ตัวเลข/ชื่อแพคเกจเอง → ตั้งใจ + รู้ราคา → ตรงดิ่งไปบิล
      *
+     * @param  bool  $allowQuestion  true = ไม่ตีตกประโยคคำถาม (ให้ caller ตัดสินเองว่าจะทำอะไรต่อ)
+     *                               ใช้ที่ early-gate เพื่อแยกทาง "บอกเล่า → บิล / ถาม → เมนูราคา"
+     *                               โดยยังได้ guard อื่น ๆ ครบชุดเดียวกัน
      * @return string|null 'celtic' | 'deep' | null (null = ไม่ได้ระบุแพคเกจชัด / แพคเกจนั้นปิดอยู่)
      */
-    protected function resolveExplicitTierRequest(?string $text): ?string
+    protected function resolveExplicitTierRequest(?string $text, bool $allowQuestion = false): ?string
     {
         if ($text === null) {
             return null;
@@ -12599,6 +12625,19 @@ class FortuneConversationService
             if (mb_strpos($normalized, $kw) !== false) {
                 return null;
             }
+        }
+
+        // ❓ (2026-08-06) ประโยคคำถาม = ยังไม่ได้สั่งซื้อ — ต้องตอบคำถามก่อน ห้ามวิ่งไปสร้างบิล
+        //   เจ้าของสั่ง: "ถ้าเป็นประโยคคำถาม ก็ต้องตอบคำถามก่อน ไม่ใช่วิ่งไปสร้างบิล"
+        //
+        //   เคสจริง prod 2026-08-05 20:42 — ลูกค้าพิมพ์
+        //   "แม่ลูกไม่เข้าใจ99บาทมายความว่ามหยังไงคะ แม่" (= ถามว่า 99 บาทคืออะไร)
+        //   → เลข 99 เข้าเงื่อนไข fast-track → ได้บิล 99 ทั้งที่กำลังถามว่ามันคืออะไร
+        //
+        //   ⚖️ ไม่ขัดกฎ 2026-08-03: "พิมพ์เลขเอง = ตั้งใจซื้อ" ยังจริงกับประโยคบอกเล่า
+        //      ("39", "เอา 99 ค่ะ", "ดูดวง 39") — ที่ตัดออกคือประโยคที่ยัง *ถาม* อยู่
+        if (! $allowQuestion && $this->isQuestionSentence($normalized)) {
+            return null;
         }
 
         // 🛑 ตัวเลขที่บังเอิญตรงราคา — อายุ / ปีเกิด / เบอร์โทร ("อายุ 39 ค่ะ")
@@ -12665,6 +12704,54 @@ class FortuneConversationService
         //      แต่ไปด้วย forceTier=null → จบที่ **เมนูเลือกแพคเกจ** ที่บอกราคา+ค่าบูชาครูก่อนออกบิล
 
         return null;
+    }
+
+    /**
+     * ❓ (2026-08-06) ข้อความนี้เป็น "ประโยคคำถาม" หรือไม่
+     *
+     * เจ้าของสั่ง: "ถ้าเป็นประโยคคำถาม ก็ต้องตอบคำถามก่อน ไม่ใช่วิ่งไปสร้างบิล"
+     *
+     * ใช้เป็น guard ของทางลัดออกบิล — คนที่ยัง *ถาม* อยู่ ยังไม่ได้ตัดสินใจซื้อ
+     * ฝั่งที่ผิดพลาดได้ปลอดภัยกว่า: เดาผิดว่าเป็นคำถาม = ลูกค้าได้เมนู/คำตอบแทนบิล
+     * (เสียแค่ 1 สเต็ป) ส่วนเดาผิดอีกทาง = ออกบิลใส่คนที่แค่สงสัย
+     *
+     * @param  string  $text  ข้อความลูกค้า (normalize มาแล้วหรือดิบก็ได้)
+     */
+    protected function isQuestionSentence(string $text): bool
+    {
+        $t = mb_strtolower(trim($text));
+        if ($t === '') {
+            return false;
+        }
+
+        if (str_contains($t, '?') || str_contains($t, '？')) {
+            return true;
+        }
+
+        // ตัดช่องว่างก่อนเทียบ — คนไทยพิมพ์ "ยัง ไง" / "เท่า ไหร่" กันบ่อย
+        $noSpace = str_replace(' ', '', $t);
+
+        $markers = [
+            // คำลงท้ายคำถาม
+            'ไหม', 'มั้ย', 'มั๊ย', 'หรือเปล่า', 'รึเปล่า', 'หรือไม่', 'เหรอ', 'เหลอ',
+            // คำถามเนื้อหา
+            'ยังไง', 'อย่างไร', 'ทำไม', 'อะไร', 'อันไหน', 'แบบไหน', 'ต่างกัน',
+            'หมายความว่า', 'หมายถึงอะไร', 'แปลว่า',
+            // สัญญาณ "ยังไม่เข้าใจ" — เจตนาเดียวกับคำถาม
+            'ไม่เข้าใจ', 'สงสัย', 'ขอถาม', 'ถามหน่อย', 'อธิบาย',
+            // ถามจำนวน/ราคา
+            'เท่าไร', 'เท่าไหร่', 'กี่บาท', 'กี่ตังค์',
+        ];
+
+        foreach ($markers as $kw) {
+            if (str_contains($noSpace, $kw)) {
+                return true;
+            }
+        }
+
+        // 🪤 "หรอ" = คำถาม ("จริงหรอ") แต่ "หรอก" ไม่ใช่ ("ไม่แพงหรอก")
+        //    substring ธรรมดาจะกินทั้งคู่ → ต้อง lookahead
+        return (bool) preg_match('/หรอ(?!ก)/u', $noSpace);
     }
 
     protected function isExplicitDeepReadingRequest(string $text): bool
