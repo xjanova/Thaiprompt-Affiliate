@@ -608,9 +608,21 @@ class FacebookWebhookController extends Controller
             }
 
             // ยังไม่รู้วันเกิด (หรือวันนี้ยังไม่มีบทความ) → คงข้อความชวนเดิมไว้
+            //
+            // 🎁 (2026-08-07, owner) ปุ่มเปลี่ยนจาก "7 วันเกิด" → "ปุ่มคู่ ฟรี/VIP"
+            //   เจ้าของ: "ตอนนี้ลูกค้าเข้าใจว่าดูฟรีคือแบบ 39 บาท"
+            //   ปุ่มจันทร์…อาทิตย์ ไม่มีคำว่า "ฟรี" อยู่เลยสักปุ่ม คนที่เพิ่งเห็นครั้งแรก
+            //   จึงเหมาว่าเป็นตัวเดียวกับแพคเกจเสียเงิน → กดแล้วมาโวยว่าโดนหลอก
+            //   ใหม่: [🎁 รับดวงฟรีประจำวัน] ปุ่มเดียว — อ่านปุ๊บรู้ว่าฟรี
+            //   ปุ่ม 7 วันยังอยู่ครบ แค่ย้ายไปโผล่หลังกดปุ่มฟรี (handleDailyFreeStart)
+            //
+            //   ⚠️ **ตั้งใจไม่ใส่ปุ่ม VIP ตรงนี้** — คำสั่งเดิมของเจ้าของ (ดู withDailyUpgrade)
+            //      "ติดปุ่มขายไปกับ DM เย็น ๆ = กลับไปเป็นสแปมที่เพิ่งแก้ไป"
+            //      และรอบนี้เจ้าของระบุว่าปุ่มคู่มีไว้ "สำหรับกลุ่มคนที่ตอบดีเอ็มได้ถูก"
+            //      = คนที่ตอบกลับมาแล้ว → ปุ่มคู่ใช้ในแชท (dailyFreeEntryQuickReplies)
             return [
                 'message' => null,
-                'quick_replies' => FortuneConversationService::dailyBirthdayQuickReplies(),
+                'quick_replies' => [FortuneConversationService::dailyFreeStartQuickReply()],
             ];
         } catch (\Throwable $e) {
             return null;
@@ -692,7 +704,7 @@ class FacebookWebhookController extends Controller
      *    ปุ่มนี้ถูกยื่นตอน teaser ตอบว่ารู้ — ถ้าตรงนี้ตัดสินด้วยเกณฑ์ที่แคบกว่า
      *    ลูกค้าจะกดปุ่มแล้วโดนถามวันเกิดใหม่ = ปุ่มตาย ซึ่งแย่กว่าไม่มีปุ่มเลย
      */
-    protected function handleDailyShowMine(string $senderId): void
+    protected function handleDailyShowMine(string $senderId, ?string $askBirthdayMessage = null): void
     {
         $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 
@@ -701,10 +713,13 @@ class FacebookWebhookController extends Controller
 
             if ($dayIndex === null || ! isset($dayNames[$dayIndex])) {
                 // ไม่ควรเกิด (ปุ่มนี้ขึ้นเฉพาะคนที่เรารู้วันเกิด) — แต่ถ้าเกิดต้องไม่เงียบ
+                // 🎁 (2026-08-07) ปุ่ม "รับดวงฟรีประจำวัน" ใช้ทางนี้เป็นทางหลัก จึงส่งถ้อยคำ
+                //    ของตัวเองเข้ามา — คนกดปุ่มฟรีคือคนที่เรายังไม่เคยถาม ห้ามพูดว่า "อีกครั้ง"
                 $this->conversationService?->markDailyPending('facebook', $senderId);
                 $this->facebookService?->sendQuickReplies(
                     $senderId,
-                    '🌙 ขอทราบวันเกิดอีกครั้งได้ไหมคะ เดี๋ยวแม่หมอเปิดดวงวันนี้ให้ฟรีเลย',
+                    $askBirthdayMessage
+                        ?? '🌙 ขอทราบวันเกิดอีกครั้งได้ไหมคะ เดี๋ยวแม่หมอเปิดดวงวันนี้ให้ฟรีเลย',
                     FortuneConversationService::dailyBirthdayQuickReplies(),
                     ['messaging_type' => 'RESPONSE']
                 );
@@ -720,6 +735,31 @@ class FacebookWebhookController extends Controller
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * 🎁 (2026-08-07) ลูกค้ากดปุ่ม "รับดวงฟรีประจำวัน" (DAILY_FREE_START)
+     *
+     * เจ้าของสั่ง: "ให้กด แล้วแยกไปถามวันเกิดเพื่อรับคำทำนายฟรี
+     * แล้วค่อยเนียนปิดขายแบบ ดูดวงละเอียดมีค่าครู"
+     *
+     * สเต็ปที่ 1 ของเส้นฟรี — ปุ่ม 7 วันเกิดจะโผล่ตรงนี้ (ไม่ใช่ยิงใส่ตั้งแต่ DM แรก)
+     *
+     * ⚠️ ไม่เขียน logic เอง — ใช้ handleDailyShowMine ตัวเดียวกับปุ่ม "ดูดวงวันนี้เลย"
+     *    เพื่อให้ผ่าน guard ครบชุด (จ่ายเงินแล้ว / บิลค้าง / กดรัว) ที่เดียว
+     *    ต่างกันแค่ถ้อยคำตอนยังไม่รู้วันเกิด — คนกดปุ่มนี้คือคนที่เรายังไม่เคยถาม
+     *
+     * ส่วน "ปิดขายแบบเนียน" ไม่ต้องทำที่นี่ — buildDailyHoroscopeReply แนบปุ่ม
+     * [👑 VIP มีค่าครู] ต่อท้ายคำทำนายฟรีให้อยู่แล้ว (จังหวะที่ลูกค้าสนใจที่สุด)
+     */
+    protected function handleDailyFreeStart(string $senderId): void
+    {
+        Log::info('🎁 Daily: กดปุ่มรับดวงฟรีประจำวัน', ['user_id' => $senderId]);
+
+        $this->handleDailyShowMine(
+            $senderId,
+            "🌙 ได้เลยค่ะ ดวงประจำวันนี้แม่หมอเปิดให้ฟรี ไม่มีค่าใช้จ่าย\nเจ้าชะตาเกิดวันอะไรคะ กดเลือกด้านล่างได้เลย ✨"
+        );
     }
 
     /**
@@ -4689,6 +4729,13 @@ class FacebookWebhookController extends Controller
 
             // 🔔 (2026-07-31) คนที่เรารู้วันเกิดแล้วกด "ดูดวงวันนี้เลย"
             'DAILY_SHOW_MINE' => $this->handleDailyShowMine($senderId),
+
+            // 🎁 (2026-08-07) ปุ่มคู่ "ฟรี / VIP" — เจ้าของสั่งให้แยกให้ชัดว่าอันไหนเสียเงิน
+            //   "กันการกล่าวหาว่าหลอกให้กด" → ปุ่มที่พาไปหน้าจ่ายต้องเขียนว่ามีค่าครูตั้งแต่บนปุ่ม
+            //   ฟรี → ถามวันเกิด (ปุ่ม 7 วันโผล่สเต็ปนี้) แล้วส่งคำทำนายฟรี
+            //   VIP → ส่ง 'ดูดวง' เข้า flow → เมนูแพคเกจที่บอก "ค่าครู 39/99 บาท"
+            'DAILY_FREE_START' => $this->handleDailyFreeStart($senderId),
+            'DAILY_VIP_PACKAGES' => $this->processConversationalMessage($senderId, 'ดูดวง'),
 
             // Quick Replies ที่ mirror Postback payloads จาก Rich Templates
             // ผู้สูงอายุงง → ทั้ง 2 ปุ่มเข้า deep flow ตรงๆ (→ tier menu 39 vs 99)
