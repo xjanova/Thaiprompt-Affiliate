@@ -23,6 +23,14 @@ use Illuminate\Database\Eloquent\Model;
  */
 class UniquePaymentAmount extends Model
 {
+    /**
+     * ⏳ (2026-08-07) ห้ามสุ่มทศนิยมซ้ำกับบิลที่ยังไม่ได้จ่าย ภายในกี่นาที
+     *
+     * ตั้ง 24 ชม. เพราะลูกค้าโอนช้าข้ามวันมีจริง — ถ้า suffix ถูกเวียนก่อนหน้านั้น
+     * เงินของคนแรกจะวิ่งเข้าบิลของคนที่สอง
+     */
+    public const SUFFIX_COOLDOWN_MINUTES = 1440;
+
     use HasFactory;
 
     protected $fillable = [
@@ -144,15 +152,45 @@ class UniquePaymentAmount extends Model
             $intBaseAmount = intval($baseAmount);
 
             // ค้นหา suffix ที่ยังว่างอยู่ (01-99) พร้อม lockForUpdate ป้องกัน race condition
-            $usedSuffixes = static::where('base_amount', $intBaseAmount)
+            $activeSuffixes = static::where('base_amount', $intBaseAmount)
                 ->where('status', 'reserved')
                 ->where('expires_at', '>', now())
                 ->lockForUpdate()
                 ->pluck('decimal_suffix')
                 ->toArray();
 
-            // สร้างรายการ suffix ที่ยังไม่ถูกใช้
-            $availableSuffixes = array_diff(range(1, min($maxPending, 99)), $usedSuffixes);
+            // 🛡️ (2026-08-07, เจ้าของเสนอ) ห้ามสุ่มทศนิยมซ้ำกับบิลที่ "ยังไม่ได้จ่าย" ภายใน 24 ชม.
+            //
+            //   กันปัญหาที่ต้นทาง ดีกว่าไปเดาปลายทาง: เดิมกันเฉพาะ suffix ที่ยัง reserved และ
+            //   ไม่หมดอายุ → ยอด 99.36 ของบิลที่เพิ่งยกเลิก ถูกจ่ายให้บิลใหม่ได้ทันที
+            //   ถ้าลูกค้าคนแรกโอนช้ามาทีหลัง เงินจะวิ่งเข้าบิลของ "คนที่สอง" = ตัดเงินผิดคน
+            //
+            //   status != 'used' = ทุกสถานะที่ยังมีสิทธิ์รับเงินโอนตามหลัง
+            //   (reserved / expired / cancelled) — ตรงกับคำว่า "บิลที่ยังไม่ได้จ่าย"
+            //
+            //   ⚖️ ปลอดภัยเรื่องพูล: prod สร้างจริงสูงสุด ~11 ใบ/วัน/ราคา จากพูล 99
+            //      กันไว้ 24 ชม. ใช้ราว 11% เท่านั้น
+            $recentUnpaidSuffixes = static::where('base_amount', $intBaseAmount)
+                ->where('created_at', '>=', now()->subMinutes(self::SUFFIX_COOLDOWN_MINUTES))
+                ->where('status', '!=', 'used')
+                ->pluck('decimal_suffix')
+                ->toArray();
+
+            $pool = range(1, min($maxPending, 99));
+            $availableSuffixes = array_diff($pool, array_unique(array_merge($activeSuffixes, $recentUnpaidSuffixes)));
+
+            // 🚨 Safety valve — ถ้ากฎ 24 ชม. กันจนไม่เหลือ suffix เลย ห้ามทำให้ "สร้างบิลไม่ได้"
+            //    ยอมถอยกลับไปใช้กฎเดิม (กันเฉพาะที่ยัง active) ดีกว่าปิดการขายทั้งราคา
+            //    ถ้าเห็น log นี้บ่อย = ยอดขายโตจนพูล 99 ไม่พอ ต้องขยายช่วงราคา/ทศนิยม
+            if (empty($availableSuffixes)) {
+                $availableSuffixes = array_diff($pool, $activeSuffixes);
+
+                \Illuminate\Support\Facades\Log::warning('⚠️ UPA: กฎกันซ้ำ 24 ชม. ทำให้ suffix หมด — ถอยไปใช้กฎเดิม', [
+                    'base_amount' => $intBaseAmount,
+                    'active' => count($activeSuffixes),
+                    'recent_unpaid' => count($recentUnpaidSuffixes),
+                ]);
+            }
 
             if (empty($availableSuffixes)) {
                 // suffix เต็มหมดแล้วสำหรับราคานี้
