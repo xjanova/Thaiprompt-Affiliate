@@ -1781,6 +1781,10 @@ class CelticCrossService
                 .$this->buildSpreadPatternDirective($reading)
                 .$this->buildElementalDignityDirective($reading)
                 .$this->buildPositionDynamicDirective($reading)
+                // 🎯 (2026-08-07) Question Router — บอกตรงๆ ว่าคำถามนี้ต้องอ่านไพ่ใบไหนเป็นแกน
+                //   Q2+ = ตอบคำถามเจาะจง (ไม่ได้อธิบายไพ่ครบ 10 ใบเหมือนพื้นดวง Q1) → ชี้เป้าได้
+                //   ❗ ไม่ inject ใน Q1 พื้นดวง เพราะที่นั่นสเปคคือ "อ้างไพ่ครบ 10 ใบ"
+                .$this->buildQuestionRoutingDirective($reading, $userQuestion)
                 .$this->buildYesNoDirective($reading, $userQuestion, $previousContext);
 
             return $this->buildShortFollowupPrompt(
@@ -4461,12 +4465,65 @@ class CelticCrossService
     }
 
     /**
-     * 🎯 ตำแหน่งไพ่หลักที่บทสรุปใช้ดึงคลังความรู้ (แทนการดึงครบ 10 ใบ)
+     * 🎯 ตำแหน่งไพ่ fallback ของบทสรุป — ใช้เมื่อ Question Router จับหมวดไม่ได้
      *
      * 1 = หัวใจของเรื่อง · 2 = อุปสรรค · 6 = อนาคตอันใกล้ · 10 = ผลลัพธ์
-     * บทสรุปไม่ได้อธิบายไพ่ทีละใบแล้ว จึงต้องการ "ชุดคำตอบเดียว" ไม่ใช่ 10 ชุดให้เลือก
+     * ปกติ CelticQuestionRouter จะเลือกตำแหน่งให้ตามคำถามจริง — ค่านี้คือด่านสุดท้าย
      */
     protected const FINALE_KEY_POSITIONS = [1, 2, 6, 10];
+
+    /**
+     * 🎯 (2026-08-07) สร้างบล็อก "ไพ่ที่ต้องอ่านตอบคำถามนี้" จาก CelticQuestionRouter
+     *
+     * owner: "ต้องฉลาดในการดึงไพ่ที่เกี่ยวข้องกับคำถาม ถามอนาคตต้องดึงไพ่ตำแหน่งอนาคตเป็นหลัก"
+     *
+     * @param  array|null  $route  ส่ง route ที่คำนวณไว้แล้วมาได้ (บทสรุปใช้ routeMany)
+     * @return string ว่าง = ปิดสวิตช์ / config พัง / ไพ่ไม่ครบ (ไม่ทำให้ path ลูกค้าพัง)
+     */
+    protected function buildQuestionRoutingDirective(
+        FortuneReading $reading,
+        string $questionText,
+        bool $isFinale = false,
+        ?array $route = null
+    ): string {
+        try {
+            $cards = $reading->getCelticCards();
+            if (count($cards) < 10) {
+                return '';
+            }
+
+            $router = app(\App\Services\Fortune\CelticQuestionRouter::class);
+            $route ??= $router->route($questionText);
+
+            return $router->buildDirective($cards, $route, $isFinale);
+        } catch (\Throwable $e) {
+            // non-blocking — ลูกค้าจ่ายเงินแล้ว ห้ามล้มเพราะ config routing
+            Log::warning('CelticCross: question routing ล้มเหลว (ข้าม)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return '';
+        }
+    }
+
+    /**
+     * รวมคำถามทั้งรอบ → หาหมวด + ตำแหน่งไพ่ที่บทสรุปต้องใช้
+     *
+     * @param  array<int, string>  $questionTexts
+     * @return array{route: array, positions: array<int>}
+     */
+    protected function routeFinaleQuestions(array $questionTexts): array
+    {
+        try {
+            $route = app(\App\Services\Fortune\CelticQuestionRouter::class)->routeMany($questionTexts);
+            $positions = ! empty($route['positions']) ? $route['positions'] : self::FINALE_KEY_POSITIONS;
+
+            return ['route' => $route, 'positions' => $positions];
+        } catch (\Throwable $e) {
+            return ['route' => [], 'positions' => self::FINALE_KEY_POSITIONS];
+        }
+    }
 
     public function getMaxQuestions(): int
     {
@@ -4859,7 +4916,13 @@ class CelticCrossService
         //   🎯 คลังความรู้: เอาเฉพาะไพ่ตำแหน่งหลัก (หัวใจ/อุปสรรค/อนาคตอันใกล้/ผลลัพธ์)
         //      ย่อหน้าท้ายต้องการ เลข/สี/ฤกษ์ *ชุดเดียว* — ให้ 10 ชุดคือให้โมเดลเลือกเอง = ทางมั่วอีกทาง
         //   ✅ คงไว้เต็ม: คำถาม + คำตอบเดิมทั้งรอบ (owner: ต้องเช็คไม่ให้ขัดกันเอง) + ตำราที่ลูกค้าถามจริง
-        $keyPos = self::FINALE_KEY_POSITIONS;
+        //
+        // 🎯 (2026-08-07) ตำแหน่งไพ่ไม่ fix แล้ว — Question Router เลือกจาก "คำถามจริงทั้งรอบ"
+        //    (เดิม hardcode [1,2,6,10] ไม่ว่าลูกค้าถามอะไร)
+        $finaleRoute = $this->routeFinaleQuestions(
+            $questions->pluck('question')->merge($pendingQuestions->pluck('question'))->all()
+        );
+        $keyPos = $finaleRoute['positions'];
 
         return $localeDirective
             .$this->buildCardNamingDirective()
@@ -4883,6 +4946,10 @@ class CelticCrossService
                 'enable_celtic_lucky_items',
                 'enable_celtic_remedy',
             ], $keyPos)
+            // 🎯 (2026-08-07) ชี้เป้าไพ่ที่บทสรุปต้องใช้ (คิดในใจ — บทนี้ไม่เอ่ยชื่อไพ่)
+            .(! empty($finaleRoute['route'])
+                ? $this->buildQuestionRoutingDirective($reading, $allQuestionText, true, $finaleRoute['route'])
+                : '')
             .$this->buildYesNoDirective($reading, $allQuestionText)
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
