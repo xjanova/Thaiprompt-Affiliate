@@ -1093,8 +1093,27 @@ class CelticCrossService
      * Inject เป็นบล็อกแรกสุด (อ่านก่อนทุกกฎ) ใน: buildMainPrompt + buildFollowupPrompt (Q1)
      *   + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
-    protected function buildCardFirstMandate(): string
+    /**
+     * @param  bool  $lean  โหมดย่อ (~900 ตัวแทน ~5,400) สำหรับ prompt ที่ "ไม่ได้อธิบายไพ่ให้ลูกค้าอ่าน"
+     *                      = บทสรุปสุดท้าย · เก็บเฉพาะแก่นที่กันคำตอบลอยๆ ไม่ใช่คู่มืออ่านไพ่เต็ม
+     *                      (2026-08-07 owner: prompt บวม 40k ยัดโมเดลเล็ก — ตัดที่ไม่ได้ใช้ออก)
+     */
+    protected function buildCardFirstMandate(bool $lean = false): string
     {
+        if ($lean) {
+            return "━━━━━━━━━━━━━━━━━\n"
+                ."🃏 กฎเหล็ก — ทุกประโยคต้องงอกจากไพ่ 10 ใบนี้ 100%\n"
+                ."━━━━━━━━━━━━━━━━━\n"
+                ."ลูกค้าจ่าย 99฿ เพื่อคำทำนายจากไพ่ ไม่ใช่คำแนะนำชีวิตที่ใครก็พูดได้\n"
+                ."• ในใจต้องตอบได้เสมอว่า \"ประโยคนี้มาจากไพ่ใบไหน ตำแหน่งอะไร\" — ตอบไม่ได้ = ห้ามพูด\n"
+                ."• ตั้งตรง = พลังไหลลื่น/เปิด · กลับหัว = ติดขัด/บิดเบือน/ล่าช้า/ด้านตรงข้าม — ต้องสะท้อนในคำตอบ\n"
+                ."• ไพ่ดีบอกดี ไพ่ร้าย-กลับหัวบอกตรงๆ ว่าติดขัด — ❌ ไม่กลบด้วยคำปลอบ ❌ ไม่เซฟตัวด้วยคำกลางๆ\n"
+                ."• 🧪 *บททดสอบ*: ถ้าประโยคนั้นเอาไปตอบลูกค้าคนอื่น/ไพ่ชุดอื่นได้พอดี = ไม่ได้มาจากไพ่ → ตัดทิ้ง\n"
+                ."  (\"ทุกอย่างอยู่ที่ใจเรา\" / \"เวลาจะเยียวยา\" / \"อยู่ที่ตัวคุณ\" = ตัวอย่างที่ต้องตัด)\n"
+                ."• ❌ ห้ามสุ่ม/จับไพ่ใบใหม่นอก 10 ใบนี้เด็ดขาด (ไม่มีไพ่เสริม/clarifier ใบที่ 11)\n"
+                ."━━━━━━━━━━━━━━━━━\n\n";
+        }
+
         return "━━━━━━━━━━━━━━━━━\n"
             ."🃏🃏 กฎเหล็กสูงสุด — ทำนายจาก \"หน้าไพ่ + ตำแหน่ง\" 100% (อ่านก่อนทุกกฎด้านล่าง)\n"
             ."━━━━━━━━━━━━━━━━━\n"
@@ -3402,7 +3421,10 @@ class CelticCrossService
      *
      * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
-    protected function buildMuKnowledgeDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    /**
+     * @param  array<int>  $onlyPositions  จำกัดตำแหน่งไพ่ที่ดึงคลัง (ว่าง = 10 ใบ) — ใช้ในบทสรุปที่ไม่อธิบายไพ่
+     */
+    protected function buildMuKnowledgeDirective(FortuneReading $reading, string $userQuestion, string $previousContext = '', array $onlyPositions = []): string
     {
         // settings gate — admin ปิดได้
         if (! (bool) ($this->settings->enable_celtic_mu_knowledge ?? true)) {
@@ -3420,7 +3442,7 @@ class CelticCrossService
             return '';
         }
 
-        $knowledge = $svc->muLinesForCards($cards, $categories);
+        $knowledge = $svc->muLinesForCards($cards, $categories, $onlyPositions);
         if (trim($knowledge) === '') {
             return '';
         }
@@ -3469,7 +3491,8 @@ class CelticCrossService
      *
      * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
-    protected function buildLifeReadingDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    /** @param array<int> $onlyPositions จำกัดตำแหน่งไพ่ที่ดึงคลัง (ว่าง = 10 ใบ) */
+    protected function buildLifeReadingDirective(FortuneReading $reading, string $userQuestion, string $previousContext = '', array $onlyPositions = []): string
     {
         if (! (bool) ($this->settings->enable_celtic_life_reading ?? true)) {
             return '';
@@ -3486,7 +3509,7 @@ class CelticCrossService
             return '';
         }
 
-        $knowledge = $svc->muLinesForCards($cards, $categories); // generic per-card (รองรับหมวดชีวิต)
+        $knowledge = $svc->muLinesForCards($cards, $categories, $onlyPositions); // generic per-card (รองรับหมวดชีวิต)
         if (trim($knowledge) === '') {
             return '';
         }
@@ -3517,7 +3540,8 @@ class CelticCrossService
      * Detect-based: inject เฉพาะ session ที่ถามหัวข้อนี้
      * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
-    protected function buildDestinyDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    /** @param array<int> $onlyPositions จำกัดตำแหน่งไพ่ที่ดึงคลัง (ว่าง = 10 ใบ) */
+    protected function buildDestinyDirective(FortuneReading $reading, string $userQuestion, string $previousContext = '', array $onlyPositions = []): string
     {
         if (! (bool) ($this->settings->enable_celtic_destiny ?? true)) {
             return '';
@@ -3534,7 +3558,7 @@ class CelticCrossService
             return '';
         }
 
-        $knowledge = $svc->muLinesForCards($cards, $categories); // generic per-card (รองรับหมวดดวงจิต)
+        $knowledge = $svc->muLinesForCards($cards, $categories, $onlyPositions); // generic per-card (รองรับหมวดดวงจิต)
         if (trim($knowledge) === '') {
             return '';
         }
@@ -3619,8 +3643,9 @@ class CelticCrossService
     /**
      * @param  array<string>  $forceGroups  gate key ของหมวดที่ต้องดึงคลังมาเสมอ แม้ detect จากคำถามไม่เจอ
      *                                      (ใช้กับบทสรุปสุดท้าย ที่มีย่อหน้าเคล็ด/ฤกษ์/เลข ตายตัว)
+     * @param  array<int>  $onlyPositions  จำกัดตำแหน่งไพ่ที่ดึงคลัง (ว่าง = 10 ใบ)
      */
-    protected function buildExtraKnowledgeDirectives(FortuneReading $reading, string $userQuestion, string $previousContext = '', array $forceGroups = []): string
+    protected function buildExtraKnowledgeDirectives(FortuneReading $reading, string $userQuestion, string $previousContext = '', array $forceGroups = [], array $onlyPositions = []): string
     {
         $cards = $reading->getCelticCards();
         if (count($cards) < 10) {
@@ -3697,7 +3722,7 @@ class CelticCrossService
                 continue;
             }
 
-            $knowledge = $svc->muLinesForCards($cards, $categories);
+            $knowledge = $svc->muLinesForCards($cards, $categories, $onlyPositions);
             if (trim($knowledge) === '') {
                 continue;
             }
@@ -4435,6 +4460,14 @@ class CelticCrossService
         return implode("\n\n", $lines);
     }
 
+    /**
+     * 🎯 ตำแหน่งไพ่หลักที่บทสรุปใช้ดึงคลังความรู้ (แทนการดึงครบ 10 ใบ)
+     *
+     * 1 = หัวใจของเรื่อง · 2 = อุปสรรค · 6 = อนาคตอันใกล้ · 10 = ผลลัพธ์
+     * บทสรุปไม่ได้อธิบายไพ่ทีละใบแล้ว จึงต้องการ "ชุดคำตอบเดียว" ไม่ใช่ 10 ชุดให้เลือก
+     */
+    protected const FINALE_KEY_POSITIONS = [1, 2, 6, 10];
+
     public function getMaxQuestions(): int
     {
         // 🌙 (2026-06-07) Default 0 = ไม่จำกัดคำถาม ภายในเวลา 15 นาที (เดิม 5 — ยกเลิก hard cap จำนวน)
@@ -4816,18 +4849,30 @@ class CelticCrossService
                 ."- ບົດສະຫຼຸບ 6 ຍ່ອໜ້າຂ້າງລຸ່ມ — ໂຄງສ້າງເໝືອນ ແຕ່ເນື້ອຄວາມເປັນພາສາລາວ\n\n";
         }
 
+        // 🪶 (2026-08-07 owner: "prompt บวมไป ทำให้กระชับ") บทสรุป = LEAN ASSEMBLY
+        //   หลักการ: บทนี้ "ไม่อธิบายไพ่" แล้ว → เครื่องมือที่มีไว้ *อ่านไพ่* ไม่ต้องมีในบทนี้
+        //   การอ่านไพ่เกิดครบแล้วตอนถามตอบ และคำตอบเหล่านั้นอยู่ใน Q&A history ด้านล่างแล้ว
+        //   ❌ ตัดออก: buildCardComboDirective / buildSpreadPatternDirective /
+        //             buildElementalDignityDirective / buildPositionDynamicDirective (≈6-8k ตัว)
+        //             — ทั้ง 4 เป็นกลไก "หาคำทำนายจากไพ่" ไม่ใช่ "เขียนบทสรุป"
+        //   ✂️ ย่อ: buildCardFirstMandate(lean) 5,438 → ~900 ตัว
+        //   🎯 คลังความรู้: เอาเฉพาะไพ่ตำแหน่งหลัก (หัวใจ/อุปสรรค/อนาคตอันใกล้/ผลลัพธ์)
+        //      ย่อหน้าท้ายต้องการ เลข/สี/ฤกษ์ *ชุดเดียว* — ให้ 10 ชุดคือให้โมเดลเลือกเอง = ทางมั่วอีกทาง
+        //   ✅ คงไว้เต็ม: คำถาม + คำตอบเดิมทั้งรอบ (owner: ต้องเช็คไม่ให้ขัดกันเอง) + ตำราที่ลูกค้าถามจริง
+        $keyPos = self::FINALE_KEY_POSITIONS;
+
         return $localeDirective
             .$this->buildCardNamingDirective()
-            .$this->buildCardFirstMandate()
+            .$this->buildCardFirstMandate(lean: true)
             // 🩺 (2026-06-01) ตำราสุขภาพ — ถ้ามีคำถามสุขภาพในรอบนี้ ให้บทสรุปเทียบอวัยวะ/อาการตามไพ่
             .$this->buildHealthDirective($reading, $allQuestionText)
-            .$this->buildMuKnowledgeDirective($reading, $allQuestionText)
+            .$this->buildMuKnowledgeDirective($reading, $allQuestionText, '', $keyPos)
             // 🧧 (2026-06-28) สายมู (เคล็ด/เลข/สี/ฤกษ์/เครื่องราง) — ย้ายจากรอบถามตอบมาที่บทสรุปนี้ (owner directive)
             .$this->buildSaiMuDirective($reading, $allQuestionText)
             .$this->buildPhysiognomyDirective($reading, $allQuestionText)
             .$this->buildPersonRoleDirective($reading, $allQuestionText)
-            .$this->buildLifeReadingDirective($reading, $allQuestionText)
-            .$this->buildDestinyDirective($reading, $allQuestionText)
+            .$this->buildLifeReadingDirective($reading, $allQuestionText, '', $keyPos)
+            .$this->buildDestinyDirective($reading, $allQuestionText, '', $keyPos)
             // 🪬 (2026-06-30) โหมดดูคุณไสย์ — ฉีดกฎ + คลังไสยศาสตร์รายไพ่ ให้บทสรุปอ่านสุดเรื่องของ (เฉพาะ forced — กันกระทบบทสรุปปกติ)
             .($bmForced ? $this->buildBlackMagicDirective($reading, $allQuestionText, $qaHistory) : '')
             // 🧭 (2026-08-07) บังคับดึงคลัง ฤกษ์/เลข/ของมงคล-สี/แก้กรรม เสมอในบทสรุป
@@ -4837,11 +4882,7 @@ class CelticCrossService
                 'enable_celtic_numerology',
                 'enable_celtic_lucky_items',
                 'enable_celtic_remedy',
-            ])
-            .$this->buildCardComboDirective($reading)
-            .$this->buildSpreadPatternDirective($reading)
-            .$this->buildElementalDignityDirective($reading)
-            .$this->buildPositionDynamicDirective($reading)
+            ], $keyPos)
             .$this->buildYesNoDirective($reading, $allQuestionText)
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
@@ -4852,6 +4893,11 @@ class CelticCrossService
             ."━━━━━━━━━━━━━━━━━\n\n"
 
             ."💬 บทสนทนาที่คุยกันมาทั้งหมด ({$questions->count()} คำถามที่ตอบไปแล้ว):\n"
+            ."⚓ *นี่คือสิ่งที่แม่หมอพูดไปแล้วในรอบนี้ — ต้องอ่านก่อนเขียน:*\n"
+            ."   • ❌ *ห้ามขัดกับคำตอบเดิม* (เคยบอกว่า \"ได้\" แล้วบทสรุปบอก \"ไม่ได้\" = เจ้าชะตาจับได้ทันที เสียความน่าเชื่อถือทั้งรอบ)\n"
+            ."   • ถ้าไพ่ชี้ต่างจากที่เคยตอบจริงๆ → *ขยายความให้ละเอียดขึ้น* ไม่ใช่กลับคำ (\"ที่บอกว่าได้ — ได้จริง แต่ต้องผ่าน...ก่อน\")\n"
+            ."   • ใช้จับ \"ตอนนี้กำลังคุยเรื่องอะไรกันอยู่\" → บทสรุปต้องต่อจากเรื่องนั้น ไม่ใช่เริ่มเรื่องใหม่\n"
+            ."   • ❌ ห้ามลอกประโยคเดิมมาวางซ้ำ — บทสรุปต้อง *สั้นกว่า ชัดกว่า ฟันธงกว่า* คำตอบเดิม\n\n"
             ."{$qaHistory}"
             ."━━━━━━━━━━━━━━━━━\n"
             .$pendingBlock
@@ -4869,12 +4915,9 @@ class CelticCrossService
             ."   ❌ ห้ามไล่บรรยายทีละใบ  ❌ ห้ามขึ้นประโยคว่า \"ไพ่บอกว่า...\" / \"จากไพ่ที่เปิดมา...\"\n"
             ."   ✅ แต่เนื้อหาทุกประโยค *ยังต้องงอกจากไพ่จริง* ตามกฎเหล็กด้านบน — แค่ไม่โชว์ที่มา\n"
             ."      พูดออกมาเป็นคำฟันธงของแม่หมอตรงๆ: \"เรื่องนี้จะจบลงแบบ... ราวเดือน...\"\n"
-            ."   ⚠️ ข้อนี้ *ทับกฎทุกบล็อกด้านบน* ที่อนุญาต/สั่งให้พูดถึงไพ่ในคำทำนาย —\n"
-            ."      **ทุกบล็อกความรู้/ตำรา/กลไกอ่านไพ่ด้านบนทั้งหมด** (ภาพรวมสำรับ · ไพ่คู่ · ธาตุเสริม-ขัด · ความสัมพันธ์ตำแหน่ง ·\n"
-            ."      น้ำหนัก Yes-No · ตำราสุขภาพ · สายมู · โหงวเฮ้ง · ตัวบุคคล · ช่วงอายุ-การงาน · ดวงจิต-กรรม · คลังความรู้รายไพ่ทุกหมวด)\n"
-            ."      = *เครื่องมือคิดในใจเท่านั้น* — ใช้หา \"คำตอบ\" แล้วพูดออกมาเฉพาะคำตอบ ❌ ห้ามพูดถึงตัวเครื่องมือ/ที่มา\n"
-            ."      บล็อกพวกนั้นบอกว่า \"อ่านจากไพ่แต่ละใบตามตำแหน่ง\" = *วิธีคิด* ไม่ใช่ *วิธีเขียน*\n"
-            ."      (❌ ห้ามเปิดด้วย \"สำรับนี้ไพ่ชุดใหญ่เด่น...\" ❌ ห้าม \"เจาะรายใบ/รายตำแหน่ง\" ในบทนี้)\n"
+            ."   ⚠️ *ทุกบล็อกความรู้/ตำราด้านบน = เครื่องมือคิดในใจ* — ใช้หา \"คำตอบ\" แล้วพูดออกมาเฉพาะคำตอบ\n"
+            ."      บล็อกพวกนั้นเขียนว่า \"อ่านจากไพ่แต่ละใบตามตำแหน่ง\" = *วิธีคิด* ไม่ใช่ *วิธีเขียน*\n"
+            ."      และบรรทัดคลังที่ขึ้นต้นว่า \"ตำแหน่ง N [ชื่อตำแหน่ง] — ชื่อไพ่\" = รูปแบบข้อมูลภายใน ❌ ห้ามลอกออกไปในบท\n"
             ."      ✅ ความรู้ในคลัง (เลข/สี/ฤกษ์/ทิศ/อวัยวะ/ลักษณะคน) *ต้องใช้ตามที่คลังให้มา* — ❌ ห้ามคิดตัวเลข/สี/ฤกษ์เอง\n\n"
 
             ."2️⃣ *ตอบให้ครบทุกคำถาม* — ทุกข้อในเช็คลิสต์ด้านล่างต้องมีคำตอบฟันธงในบทสรุปนี้\n"

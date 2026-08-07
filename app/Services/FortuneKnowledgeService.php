@@ -140,7 +140,7 @@ class FortuneKnowledgeService
      * @param  array<int, array>  $cards
      * @param  array<string, array>  $map
      */
-    protected function linesFromCardMap(array $cards, array $map): string
+    protected function linesFromCardMap(array $cards, array $map, array $onlyPositions = []): string
     {
         if (empty($map)) {
             return '';
@@ -148,6 +148,11 @@ class FortuneKnowledgeService
 
         $lines = [];
         for ($pos = 1; $pos <= 10; $pos++) {
+            // จำกัดตำแหน่ง (ถ้าผู้เรียกระบุ) — ว่าง = เอาครบเหมือนเดิม
+            if (! empty($onlyPositions) && ! in_array($pos, $onlyPositions, true)) {
+                continue;
+            }
+
             $card = $cards[$pos] ?? null;
             if (! $card) {
                 continue;
@@ -515,11 +520,16 @@ class FortuneKnowledgeService
      * @param  array<int, array>  $cards  ไพ่ 10 ใบที่เปิด
      * @param  array<string>  $categories  หมวดที่ detect ได้
      */
-    public function muLinesForCards(array $cards, array $categories): string
+    /**
+     * @param  array<int>  $onlyPositions  จำกัดเฉพาะตำแหน่งไพ่ที่ระบุ (ว่าง = ครบ 10 ใบ)
+     *                                     ใช้กับ prompt ที่ "ไม่ได้อธิบายไพ่" (บทสรุป) — ลดขนาด prompt
+     *                                     และลดโอกาสโมเดลเลือกเลข/สี/ฤกษ์มั่วจาก 10 ชุดที่ให้เลือก
+     */
+    public function muLinesForCards(array $cards, array $categories, array $onlyPositions = []): string
     {
         $blocks = [];
         foreach ($categories as $cat) {
-            $lines = $this->linesFromCardMap($cards, $this->muCardMap($cat));
+            $lines = $this->linesFromCardMap($cards, $this->muCardMap($cat), $onlyPositions);
             if (trim($lines) === '') {
                 continue;
             }
