@@ -56,7 +56,10 @@
         @php
             $tpKpis = [
                 ['ทั้งหมดในขอบเขต', number_format($stats['total']), 'fa-layer-group', null, '', ''],
-                ['รอชำระ', number_format($stats['pending']), 'fa-hourglass-half', '#a9791a', '', 'pending'],
+                // ⏱️ โชว์เฉพาะ "ยังลุ้นได้เงิน" เป็นตัวเลขหลัก — ของค้างเก่าแยกไปอีกการ์ด
+                //    ไม่งั้นตัวเลขหลอกตา (prod: บิลรอชำระ 417 ใบ เก่ากว่า 30 วันทั้งหมด = ไม่มีอะไรให้ตาม)
+                ['รอชำระ (ใหม่ ≤7 วัน)', number_format($stats['pending_fresh']), 'fa-hourglass-half', '#a9791a', '', 'pending_fresh'],
+                ['🪦 ค้างเก่า (เกิน 7 วัน)', number_format($stats['pending'] - $stats['pending_fresh']), 'fa-ghost', '#8c8c96', '', 'pending_stale'],
                 ['จ่ายแล้ว', number_format($stats['paid']), 'fa-circle-check', '#5aa07e', '', 'paid'],
                 ['รายได้จริง', number_format($stats['revenue'], 0), 'fa-coins', '#e0a52e', '฿', 'paid'],
                 ['บิลลอย', number_format($stats['floating']), 'fa-clipboard-list', '#d6824a', '', 'floating'],
@@ -131,7 +134,9 @@
                             $tpStatuses = [
                                 '' => '— ทุกสถานะ —',
                                 'paid' => '✅ จ่ายแล้ว',
-                                'pending' => '⏳ รอชำระจริง (ยังลุ้นได้เงิน)',
+                                'pending_fresh' => '⏳ รอชำระ ใหม่ ≤7 วัน (ยังลุ้นได้เงิน)',
+                                'pending_stale' => '🪦 ค้างเก่า เกิน 7 วัน (ซากบิล)',
+                                'pending' => '⏳ รอชำระ (ทั้งหมด)',
                                 'unpaid' => 'ยังไม่จ่าย (ทั้งหมด)',
                                 'cancelled' => '❌ ยกเลิก',
                                 'abandoned' => '🕳️ ปิดเงียบ (ไม่ได้จ่าย)',

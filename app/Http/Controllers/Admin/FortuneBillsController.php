@@ -34,6 +34,9 @@ class FortuneBillsController extends Controller
         'basic' => ['พื้นฐาน', 'basic'],
     ];
 
+    /** บิลรอชำระที่ยัง "ลุ้นได้เงิน" = สร้างมาไม่เกินกี่วัน (เกินนี้ถือเป็นซากบิล) */
+    public const PENDING_FRESH_DAYS = 7;
+
     /** ช่องทางที่ลูกค้าเข้ามา */
     public const PLATFORMS = [
         'facebook' => ['Facebook', '#1877f2', 'fa-facebook-f'],
@@ -205,9 +208,23 @@ class FortuneBillsController extends Controller
                 break;
 
             case 'pending':
-                // 💤 รอชำระจริง — ยังลุ้นได้เงิน (ครอบ awaiting_payment_method ที่เป็นก้อนใหญ่สุด)
+                // 💤 รอชำระทั้งหมด (ครอบ awaiting_payment_method ที่เป็นก้อนใหญ่สุด)
                 $query->where('is_paid', false)
                     ->whereIn('conversation_status', FortuneReading::PENDING_DISPLAY_STATUSES);
+                break;
+
+            case 'pending_fresh':
+                // ⏱️ รอชำระที่ยังลุ้นได้เงินจริง — นี่คือกองที่ควรตาม
+                $query->where('is_paid', false)
+                    ->whereIn('conversation_status', FortuneReading::PENDING_DISPLAY_STATUSES)
+                    ->where('created_at', '>=', now()->subDays(self::PENDING_FRESH_DAYS));
+                break;
+
+            case 'pending_stale':
+                // 🪦 ซากบิล — ค้างในสถานะรอจ่ายนานเกิน 7 วัน ไม่มีใครมาจ่ายแล้ว
+                $query->where('is_paid', false)
+                    ->whereIn('conversation_status', FortuneReading::PENDING_DISPLAY_STATUSES)
+                    ->where('created_at', '<', now()->subDays(self::PENDING_FRESH_DAYS));
                 break;
 
             case 'cancelled':
@@ -296,6 +313,14 @@ class FortuneBillsController extends Controller
             'paid' => $scope()->where('is_paid', true)->count(),
             'pending' => $scope()->where('is_paid', false)
                 ->whereIn('conversation_status', FortuneReading::PENDING_DISPLAY_STATUSES)
+                ->count(),
+            // ⏱️ (2026-08-07) แยก "ยังลุ้นได้เงินจริง" ออกจาก "ซากบิล"
+            //   ตรวจ prod แล้วพบว่าบิล "รอชำระ" ทั้ง 417 ใบ **เก่ากว่า 30 วันทั้งหมด** ไม่มีสักใบในรอบเดือน
+            //   (awaiting_payment_method ไม่เคยถูกเก็บกวาด) → โชว์ 417 เฉย ๆ คือตัวเลขหลอกตา
+            //   แอดมินเห็นแล้วนึกว่ามีงานต้องตาม ทั้งที่ไม่มีอะไรให้ตามเลย
+            'pending_fresh' => $scope()->where('is_paid', false)
+                ->whereIn('conversation_status', FortuneReading::PENDING_DISPLAY_STATUSES)
+                ->where('created_at', '>=', now()->subDays(self::PENDING_FRESH_DAYS))
                 ->count(),
             'floating' => $scope()->where('is_floating', true)->count(),
             // 💰 เงินที่ได้รับจริง — บิลจ่ายแล้วบางใบไม่มี amount_received (ตัดผ่าน SMS/แอดมิน)
