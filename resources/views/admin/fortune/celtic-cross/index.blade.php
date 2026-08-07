@@ -489,7 +489,7 @@
                                 <td style="padding:11px 12px;">
                                     @if($reading->is_paid)
                                         <span style="color:#5aa07e; font-weight:600;">฿{{ number_format((float) ($reading->amount_received ?? $reading->amount_paid), 0) }} ✓</span>
-                                        @if($reading->amount_received !== null && abs((float) $reading->amount_received - (float) $reading->amount_paid) >= 0.01)
+                                        @if($reading->amount_paid > 0 && $reading->amount_received !== null && abs((float) $reading->amount_received - (float) $reading->amount_paid) >= 0.01)
                                             <span style="display:block; font-size:10px; color:var(--ink2);">บิล ฿{{ number_format((float) $reading->amount_paid, 0) }}</span>
                                         @endif
                                     @else

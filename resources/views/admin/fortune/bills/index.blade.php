@@ -241,7 +241,9 @@
                                 <td style="padding:11px 12px; white-space:nowrap;">
                                     @if($isPaid)
                                         <span style="color:#5aa07e; font-weight:600;">฿{{ number_format((float) ($bill->amount_received ?? $bill->amount_paid), 0) }} ✓</span>
-                                        @if($bill->amount_received !== null && abs((float) $bill->amount_received - (float) $bill->amount_paid) >= 0.01)
+                                        {{-- แสดงยอดบิลเทียบเฉพาะตอนที่ "มียอดบิลจริง" — บางบิลเก่า amount_paid=0
+                                             แต่ได้เงินจริง (ตัดผ่าน SMS/แอดมิน) การโชว์ "บิล ฿0" คือขยะสายตา --}}
+                                        @if($bill->amount_paid > 0 && $bill->amount_received !== null && abs((float) $bill->amount_received - (float) $bill->amount_paid) >= 0.01)
                                             <span style="display:block; font-size:10px; color:var(--ink2);">บิล ฿{{ number_format((float) $bill->amount_paid, 0) }}</span>
                                         @endif
                                     @else
