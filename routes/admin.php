@@ -3941,7 +3941,18 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
 
     // ประวัติการทำนาย
     Route::get('/readings/export/csv', [FortuneReadingsController::class, 'export'])->name('readings.export');
-    Route::get('/readings', [FortuneReadingsController::class, 'index'])->name('readings.index');
+    // ↪️ (2026-08-07) ยุบเข้าศูนย์รวมบิล — คงชื่อ route ไว้ (dashboard/settings/show back-link เรียกอยู่)
+    //    แปลง reading_type → package ให้ด้วย ลิงก์เก่าที่กรองไว้จะยังกรองถูกตัว
+    Route::get('/readings', function () {
+        $q = request()->query();
+        $map = ['deep' => 'deep', 'celtic_cross' => 'celtic', 'free_card' => 'free_card', 'basic' => 'basic'];
+        if (! empty($q['reading_type']) && isset($map[$q['reading_type']])) {
+            $q['package'] = $map[$q['reading_type']];
+            unset($q['reading_type']);
+        }
+
+        return redirect()->route('admin.fortune.bills.index', $q);
+    })->name('readings.index');
     Route::get('/readings/{reading}', [FortuneReadingsController::class, 'show'])->name('readings.show');
     Route::get('/readings/{reading}/edit', [FortuneReadingsController::class, 'edit'])->name('readings.edit');
     Route::put('/readings/{reading}', [FortuneReadingsController::class, 'update'])->name('readings.update');
@@ -4077,7 +4088,10 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
 
     // จัดการบิลดูดวง
     Route::prefix('billing')->name('billing.')->group(function () {
-        Route::get('/', [FortuneBillingController::class, 'index'])->name('index');
+        // ↪️ (2026-08-07) ยุบเข้าศูนย์รวมบิล — คง **ชื่อ route** ไว้เพราะมีที่เรียกใช้ 12+ จุด
+        //    (config/menus.php, dashboard, settings, floating-bills, sidebar) ถ้าลบชื่อจะพังหมด
+        //    status key ตรงกันอยู่แล้ว: paid / pending / floating / free
+        Route::get('/', fn () => redirect()->route('admin.fortune.bills.index', request()->query()))->name('index');
         Route::get('/floating-bills', [FortuneBillingController::class, 'floatingBills'])->name('floating-bills');
         Route::post('/{reading}/assign', [FortuneBillingController::class, 'assignToUser'])->name('assign');
         Route::post('/{reading}/manual-confirm', [FortuneBillingController::class, 'manualConfirm'])->name('manual-confirm');

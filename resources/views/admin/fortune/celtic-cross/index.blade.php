@@ -336,277 +336,31 @@
         </div>
     </form>
 
-    {{-- ===== Celtic Cross Readings ===== --}}
+    {{-- ===== รายการบิล ย้ายไปศูนย์รวมบิลแล้ว ===== --}}
+    {{-- 🧾 (2026-08-07) หน้านี้เหลือ "ตั้งค่า" อย่างเดียว
+         เจ้าของ: "การตั้งค่าก็แยกไว้ว่าคือการตั้งค่า ต้องไม่งง แบ่งแยกชัดเจน"
+         รายการบิล Celtic ย้ายไป /admin/fortune/bills?package=celtic ซึ่งรวมทุกแพคเกจ
+         ทุกช่องทาง และมีปุ่มจัดการครบกว่าเดิม --}}
     <div class="tp-card" style="padding:22px;">
-        <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-scroll"></i> Celtic Cross Readings</div>
-
-        {{-- ── ตัวกรอง (Filter) ── --}}
-        <form method="GET" style="display:flex; flex-direction:column; gap:14px; margin-bottom:18px;">
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
-                {{-- ค้นหา --}}
-                <div style="grid-column:span 2; min-width:0;">
-                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">🔍 ค้นหา (ชื่อ / Bill / FB ID / #ID)</label>
-                    <div class="tp-well tp-input" style="padding:0;">
-                        <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
-                               placeholder="ค้นชื่อ / Bill / FB ID / #ID"
-                               style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
-                    </div>
-                </div>
-
-                {{-- สถานะ --}}
-                <div>
-                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">สถานะ</label>
-                    <div class="tp-well tp-input" style="padding:0;">
-                        <select name="status" style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
-                            {{-- 🩹 (2026-08-07) เดิม "รอชำระ" ผูกกับ celtic_pending_payment ตัวเดียว = เจอ 1 บิล
-                                 ทั้งที่บิลรอจ่ายจริงเป็น awaiting_payment_method 417 บิล (มองไม่เห็นเลย)
-                                 และ "ยกเลิก" ผูกกับ status='cancelled' = 11 บิล ทั้งที่ยกเลิกจริง 727 บิล
-                                 (บิลยกเลิกเก็บเป็น completed + is_paid=0 + cancellation_reason — ดู isCancelled()) --}}
-                            <option value="">— ทุกสถานะ —</option>
-                            <option value="paid" {{ ($filters['status'] ?? '') === 'paid' ? 'selected' : '' }}>จ่ายแล้ว</option>
-                            <option value="unpaid" {{ ($filters['status'] ?? '') === 'unpaid' ? 'selected' : '' }}>ยังไม่จ่าย (ทั้งหมด)</option>
-                            <option value="pending" {{ ($filters['status'] ?? '') === 'pending' ? 'selected' : '' }}>⏳ รอชำระจริง (ยังลุ้นได้เงิน)</option>
-                            <option value="cancelled" {{ ($filters['status'] ?? '') === 'cancelled' ? 'selected' : '' }}>❌ ยกเลิก</option>
-                            <option value="abandoned" {{ ($filters['status'] ?? '') === 'abandoned' ? 'selected' : '' }}>🕳️ ปิดเงียบ (ไม่ได้จ่าย)</option>
-                            <option value="stuck" {{ ($filters['status'] ?? '') === 'stuck' ? 'selected' : '' }}>🧊 ค้าง (จ่ายแล้ว + ไพ่ไม่ครบ 10)</option>
-                            <option value="celtic_picking" {{ ($filters['status'] ?? '') === 'celtic_picking' ? 'selected' : '' }}>กำลังเลือกไพ่</option>
-                            <option value="celtic_awaiting_question" {{ ($filters['status'] ?? '') === 'celtic_awaiting_question' ? 'selected' : '' }}>รอคำถาม</option>
-                            <option value="awaiting_payment_method" {{ ($filters['status'] ?? '') === 'awaiting_payment_method' ? 'selected' : '' }}>รอเลือกวิธีชำระ</option>
-                            <option value="celtic_pending_payment" {{ ($filters['status'] ?? '') === 'celtic_pending_payment' ? 'selected' : '' }}>รอโอน (QR ออกแล้ว)</option>
-                            <option value="tier_choice" {{ ($filters['status'] ?? '') === 'tier_choice' ? 'selected' : '' }}>เลือกแพคเกจอยู่</option>
-                            <option value="completed" {{ ($filters['status'] ?? '') === 'completed' ? 'selected' : '' }}>จบแล้ว (รวมไม่จ่าย)</option>
-                        </select>
-                    </div>
-                </div>
-
-                {{-- วันที่เริ่มต้น --}}
-                <div>
-                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">วันที่เริ่มต้น</label>
-                    <div class="tp-well tp-input" style="padding:0;">
-                        <input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
-                               style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
-                    </div>
-                </div>
-            </div>
-
-            <div style="display:flex; flex-wrap:wrap; gap:10px;">
-                <button type="submit" class="tp-btn tp-btn-primary">
-                    <i class="fas fa-magnifying-glass"></i> ค้นหา
-                </button>
-                <a href="{{ route('admin.fortune.celtic-cross.index') }}" class="tp-btn">
-                    <i class="fas fa-rotate-left"></i> ล้างตัวกรอง
+        <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-scroll"></i> รายการบิล Celtic</div>
+        <p style="font-size:13px; color:var(--ink2); margin:0 0 14px; line-height:1.7;">
+            รายการบิลย้ายไปรวมที่ <strong>ศูนย์รวมบิลดูดวง</strong> แล้ว —
+            ที่นั่นดูได้ทุกแพคเกจ กรองตามช่องทาง (Facebook / LINE) เห็นอายุบิลที่รอชำระ
+            และมีปุ่มจัดการครบกว่าเดิม
+        </p>
+        <div style="display:flex; gap:9px; flex-wrap:wrap;">
+            @if(Route::has('admin.fortune.bills.index'))
+                <a href="{{ route('admin.fortune.bills.index', ['package' => 'celtic']) }}" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-receipt"></i> ดูบิล Celtic ทั้งหมด
                 </a>
-            </div>
-        </form>
-
-        @if($recentReadings->isEmpty())
-            {{-- Empty state --}}
-            <div style="text-align:center; padding:48px 20px; color:var(--ink2);">
-                <i class="fas fa-inbox" style="font-size:42px; opacity:.45;"></i>
-                <div style="margin-top:14px; font-size:14px;">ยังไม่มี Celtic Cross reading</div>
-            </div>
-        @else
-            <div style="overflow-x:auto;">
-                <table style="min-width:100%; border-collapse:collapse; font-size:13px;">
-                    <thead>
-                        <tr style="text-align:left; color:var(--ink2);">
-                            <th style="padding:10px 12px; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;">Bill</th>
-                            <th style="padding:10px 12px; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;">ลูกค้า</th>
-                            <th style="padding:10px 12px; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;">สถานะ</th>
-                            <th style="padding:10px 12px; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;">ค่าครู</th>
-                            <th style="padding:10px 12px; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;">Q ใช้</th>
-                            <th style="padding:10px 12px; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;">เวลาเหลือ</th>
-                            <th style="padding:10px 12px; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; text-align:right;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($recentReadings as $reading)
-                            <tr style="border-top:1px solid var(--sd);">
-                                {{-- Bill --}}
-                                <td style="padding:11px 12px; font-family:monospace; font-size:12px; color:var(--ink);">
-                                    {{ $reading->bill_reference ?? '#'.$reading->id }}
-                                    {{-- 🪬 (2026-06-25) ป้ายบอกว่าลูกค้าใช้ "โหมดดูคุณไสย์" รอบนี้ (ล็อกทำนายเรื่องของ/มนต์ดำ 100%) --}}
-                                    @if(data_get($reading->conversation_state, 'black_magic_mode'))
-                                        <span class="tp-pill" title="ลูกค้าเลือกโหมดดูคุณไสย์ / มนต์ดำ — ทำนายล็อกเรื่องของ/คุณไสย์ทั้งรอบ"
-                                              style="display:inline-block; margin-top:4px; background:rgba(123,80,168,.16); color:#7b50a8; font-size:10px; font-weight:700;">🪬 คุณไสย</span>
-                                    @endif
-                                </td>
-
-                                {{-- ลูกค้า --}}
-                                <td style="padding:11px 12px; color:var(--ink);">{{ $reading->facebook_user_name ?? '-' }}</td>
-
-                                {{-- สถานะ --}}
-                                <td style="padding:11px 12px;">
-                                    @php
-                                        // 🏷️ (2026-08-07) เขียนใหม่ — ของเดิมรายงานสถานะบิลผิด 3 แบบ (ตรวจกับ prod จริง):
-                                        //   1. ใช้ getCancellationReasonLabelOrNull() ซึ่ง **ไม่เช็ค is_paid**
-                                        //      → บิลที่ลูกค้าจ่ายแล้วแต่มีธง cancellation_reason ค้าง (18 บิล)
-                                        //        ขึ้นป้ายแดง "ยกเลิก" ทั้งที่ได้เงินแล้ว
-                                        //      → ใช้ $reading->isCancelled() ที่โมเดลมีให้อยู่แล้วแทน (เช็ค is_paid ให้)
-                                        //   2. เขียว = conversation_status==='completed' อย่างเดียว
-                                        //      → บิลปิดเงียบไม่ได้จ่าย 186 บิล ขึ้นเขียวเหมือนจบสมบูรณ์
-                                        //   3. พ่น enum ดิบ ("awaiting_payment_method") ให้แอดมินอ่านเอง — 417 บิล
-                                        $celticPaid = (bool) $reading->is_paid;
-                                        $celticStatus = (string) $reading->conversation_status;
-
-                                        if ($reading->isCancelled()) {
-                                            $celticLabel = '❌ '.$reading->getCancellationReasonLabelOrNull();
-                                            $celticStyle = 'background:rgba(217,83,79,.16); color:#d9534f;';
-                                            $celticTitle = 'reason: '.data_get($reading->conversation_state, 'cancellation_reason');
-                                        } elseif ($celticStatus === \App\Models\FortuneReading::STATUS_COMPLETED) {
-                                            // จบแล้ว — แต่ต้องแยกว่า "จบเพราะจ่ายและใช้บริการครบ" หรือ "ปิดเงียบไม่ได้เงิน"
-                                            $celticLabel = $celticPaid ? '✅ จบแล้ว' : '🕳️ ปิดเงียบ (ไม่ได้จ่าย)';
-                                            $celticStyle = $celticPaid
-                                                ? 'background:rgba(90,160,126,.18); color:#3f7a5c;'
-                                                : 'background:rgba(140,140,150,.18); color:#70707a;';
-                                            $celticTitle = $celticStatus;
-                                        } elseif (in_array($celticStatus, \App\Models\FortuneReading::PENDING_DISPLAY_STATUSES, true)) {
-                                            $celticLabel = '⏳ รอชำระ';
-                                            $celticStyle = 'background:rgba(224,165,46,.18); color:#a9791a;';
-                                            $celticTitle = $celticStatus;
-                                        } elseif ($celticStatus === \App\Models\FortuneReading::STATUS_TIER_CHOICE) {
-                                            $celticLabel = '📋 เลือกแพคเกจอยู่';
-                                            $celticStyle = 'background:rgba(140,140,150,.18); color:#70707a;';
-                                            $celticTitle = $celticStatus;
-                                        } elseif ($celticStatus === 'cancelled') {
-                                            $celticLabel = '❌ ยกเลิก';
-                                            $celticStyle = 'background:rgba(217,83,79,.16); color:#d9534f;';
-                                            $celticTitle = $celticStatus;
-                                        } else {
-                                            // celtic_picking / celtic_awaiting_question / celtic_generating / celtic_qa_prompt / paid
-                                            $celticLabel = $celticPaid ? '🔮 กำลังใช้บริการ' : '💬 กำลังคุย';
-                                            $celticStyle = $celticPaid
-                                                ? 'background:rgba(86,137,184,.18); color:#3f6a94;'
-                                                : 'background:rgba(224,165,46,.18); color:#a9791a;';
-                                            $celticTitle = $celticStatus;
-                                        }
-                                    @endphp
-                                    <span class="tp-pill" style="{{ $celticStyle }}" title="{{ $celticTitle }}">{{ $celticLabel }}</span>
-                                    <span style="display:block; font-family:monospace; font-size:10px; color:var(--ink2); margin-top:3px;">{{ $celticStatus }}</span>
-                                </td>
-
-                                {{-- ค่าครู --}}
-                                <td style="padding:11px 12px;">
-                                    @if($reading->is_paid)
-                                        <span style="color:#5aa07e; font-weight:600;">฿{{ number_format((float) ($reading->amount_received ?? $reading->amount_paid), 0) }} ✓</span>
-                                        @if($reading->amount_paid > 0 && $reading->amount_received !== null && abs((float) $reading->amount_received - (float) $reading->amount_paid) >= 0.01)
-                                            <span style="display:block; font-size:10px; color:var(--ink2);">บิล ฿{{ number_format((float) $reading->amount_paid, 0) }}</span>
-                                        @endif
-                                    @else
-                                        {{-- 💸 (2026-08-07) ยังไม่จ่าย: เดิมโชว์ "รอ" เฉย ๆ ทุกกรณี
-                                             → บิลที่ตายไปแล้ว (ยกเลิก/ปิดเงียบ) ดูเหมือนยัง "รอเงิน" อยู่
-                                               ทั้งที่ไม่มีวันได้ + ไม่บอกด้วยว่าบิลใบนี้กี่บาท --}}
-                                        <span style="color:var(--ink2);">
-                                            {{ $reading->amount_paid > 0 ? '฿'.number_format((float) $reading->amount_paid, 0) : '—' }}
-                                        </span>
-                                        <span style="display:block; font-size:10px; color:var(--ink2);">
-                                            @if($reading->isCancelled() || $reading->conversation_status === \App\Models\FortuneReading::STATUS_COMPLETED)
-                                                ไม่ได้ชำระ
-                                            @else
-                                                รอชำระ
-                                            @endif
-                                        </span>
-                                    @endif
-                                </td>
-
-                                {{-- Q ใช้ --}}
-                                <td style="padding:11px 12px; color:var(--ink);">{{ $reading->celtic_questions_used }} คำถาม</td>
-
-                                {{-- เวลาเหลือ --}}
-                                <td style="padding:11px 12px; font-size:12px; color:var(--ink2);">
-                                    @php
-                                        // 🆕 (2026-05-22) อ่าน Pro Session state ก่อน (รองรับ admin extend)
-                                        // fallback: สูตรเก่า celtic_first_answered_at + setting (legacy 3Q flow)
-                                        $_proActive = (bool) $reading->getConversationState('pro_session_active', false);
-                                        $_proStartedAt = $reading->getConversationState('pro_session_started_at');
-                                        $_proWindowMin = (int) $reading->getConversationState('pro_session_window_minutes', $settings->celtic_cross_qa_window_minutes ?? 15);
-                                        $_minRemaining = null;
-                                        $_isExtended = false;
-
-                                        if ($_proActive && ! empty($_proStartedAt)) {
-                                            try {
-                                                $_elapsed = (int) \Carbon\Carbon::parse($_proStartedAt)->diffInMinutes(now(), true);
-                                                $_minRemaining = max(0, $_proWindowMin - $_elapsed);
-                                                $_isExtended = $_proWindowMin > ($settings->celtic_cross_qa_window_minutes ?? 15);
-                                            } catch (\Throwable $e) {
-                                                $_minRemaining = null;
-                                            }
-                                        }
-
-                                        if ($_minRemaining === null && $reading->celtic_first_answered_at) {
-                                            $_deadline = $reading->celtic_first_answered_at->copy()->addMinutes($settings->celtic_cross_qa_window_minutes ?? 15);
-                                            $_minRemaining = max(0, (int) ceil(now()->diffInSeconds($_deadline, false) / 60));
-                                        }
-                                    @endphp
-                                    @if($_minRemaining === null)
-                                        <span>—</span>
-                                    @elseif($_minRemaining > 0)
-                                        <span style="color:#5aa07e;">{{ $_minRemaining }} นาที</span>
-                                        @if($_isExtended)
-                                            <span style="color:#5689b8; margin-left:4px;" title="แอดมินขยายเวลาแล้ว (window {{ $_proWindowMin }}m)">⏰+</span>
-                                        @endif
-                                    @else
-                                        <span style="color:#d9534f;">หมดเวลา</span>
-                                    @endif
-                                </td>
-
-                                {{-- Action --}}
-                                <td style="padding:11px 12px; text-align:right; white-space:nowrap;">
-                                    <a href="{{ route('admin.fortune.celtic-cross.show', $reading) }}"
-                                       class="tp-btn tp-btn-sm" style="display:inline-flex;">
-                                        <i class="fas fa-eye"></i> ดู
-                                    </a>
-                                    {{-- 🪤 (2026-08-07) เดิมเขียน $reading->celticQuestions_count ซึ่ง **ไม่มีจริง**
-                                         withCount('celticQuestions') สร้าง attribute ชื่อ celtic_questions_count (snake)
-                                         → ของเดิมได้ null เสมอ แล้ว null == 0 เป็น true → ปุ่ม reset โผล่ทุกบิลจ่ายแล้ว
-                                         ที่ไพ่ไม่ครบ รวมถึงคนที่ถามไปแล้ว (กด reset = ล้างของลูกค้าที่จ่ายเงิน)
-                                         ตอนนี้ prod ยังไม่มีเคสนั้น (0 บิล) แต่ปิดช่องไว้ก่อน --}}
-                                    @if($reading->is_paid && (int) ($reading->celtic_questions_count ?? 0) === 0 && $reading->getCelticPickedCount() < 10)
-                                        {{-- 🔄 Quick reset for stuck readings --}}
-                                        <form action="{{ route('admin.fortune.celtic-cross.reset', $reading) }}" method="POST"
-                                              onsubmit="return confirm('Reset reading #{{ $reading->id }}?');"
-                                              style="display:inline-block; margin-left:6px;">
-                                            @csrf
-                                            <button type="submit" class="tp-btn tp-btn-sm" style="color:#a9791a;">
-                                                <i class="fas fa-rotate"></i> reset
-                                            </button>
-                                        </form>
-                                    @elseif(! $reading->is_paid && (int) ($reading->celtic_questions_used ?? 0) === 0)
-                                        {{-- 🗑️ (2026-05-04) Quick cancel for pending-payment bills (ขัดกัน) --}}
-                                        <form action="{{ route('admin.fortune.celtic-cross.cancel', $reading) }}" method="POST"
-                                              onsubmit="return confirm('ยกเลิกบิล {{ $reading->bill_reference ?? '#' . $reading->id }}? (ปลอดภัยเพราะยังไม่จ่าย)');"
-                                              style="display:inline-block; margin-left:6px;">
-                                            @csrf
-                                            <button type="submit" class="tp-btn tp-btn-sm" style="color:#d9534f;">
-                                                <i class="fas fa-trash"></i> ลบ
-                                            </button>
-                                        </form>
-                                    @endif
-                                    @if($reading->is_paid)
-                                        {{-- ⛔ (2026-06-08) Void Approval — ยกเลิกการอนุมัติบิลที่กดผิด/ลูกค้าไม่ได้จ่ายจริง --}}
-                                        @php $celticConsumed = ($reading->getCelticPickedCount() > 0) || ((int) ($reading->celtic_questions_used ?? 0) > 0); @endphp
-                                        <form action="{{ route('admin.fortune.celtic-cross.void-approval', $reading) }}" method="POST"
-                                              onsubmit="return confirm('⛔ ยกเลิกการอนุมัติบิล {{ $reading->bill_reference ?? '#'.$reading->id }} ? จะคืนเป็นยังไม่จ่าย + ปลดยอด/SMS + ดึงคืนคอมมิชชั่น @if($celticConsumed)(⚠️ ลูกค้าเปิดไพ่/ถามไปแล้ว) @endif— ใช้เฉพาะกรณีอนุมัติผิด/ลูกค้าไม่ได้จ่ายจริง');"
-                                              style="display:inline-block; margin-left:6px;">
-                                            @csrf
-                                            @if($celticConsumed)<input type="hidden" name="force" value="1">@endif
-                                            <button type="submit" class="tp-btn tp-btn-sm" style="color:#d9534f; font-weight:700;">
-                                                <i class="fas fa-ban"></i> ยกเลิกอนุมัติ
-                                            </button>
-                                        </form>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            {{-- Pagination --}}
-            <div style="margin-top:18px;">
-                {{ $recentReadings->links() }}
-            </div>
-        @endif
+                <a href="{{ route('admin.fortune.bills.index', ['package' => 'celtic', 'status' => 'pending']) }}" class="tp-btn">
+                    <i class="fas fa-hourglass-half"></i> Celtic ที่รอชำระ
+                </a>
+                <a href="{{ route('admin.fortune.bills.index', ['package' => 'celtic', 'status' => 'stuck_celtic']) }}" class="tp-btn">
+                    <i class="fas fa-cube"></i> Celtic ค้าง (ไพ่ไม่ครบ)
+                </a>
+            @endif
+        </div>
     </div>
 </div>
 @endsection

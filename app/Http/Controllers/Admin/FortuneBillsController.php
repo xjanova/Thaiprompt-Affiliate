@@ -50,6 +50,8 @@ class FortuneBillsController extends Controller
             'status' => (string) $request->input('status', ''),
             'date_from' => $request->input('date_from'),
             'date_to' => $request->input('date_to'),
+            'ai_provider' => (string) $request->input('ai_provider', ''),
+            'category' => (string) $request->input('category', ''),
         ];
 
         $bills = $this->applyFilters(FortuneReading::query()->with('user'), $filters)
@@ -64,6 +66,13 @@ class FortuneBillsController extends Controller
             'filters' => $filters,
             'packages' => self::PACKAGES,
             'platforms' => self::PLATFORMS,
+            // รายชื่อ AI provider ที่มีจริงในข้อมูล — ไม่ hardcode เพราะเพิ่ม/เปลี่ยนได้ตลอด
+            'aiProviders' => FortuneReading::query()
+                ->whereNotNull('ai_provider')
+                ->where('ai_provider', '!=', '')
+                ->distinct()
+                ->orderBy('ai_provider')
+                ->pluck('ai_provider'),
             'pageTitle' => 'ศูนย์รวมบิลดูดวง',
         ]);
     }
@@ -85,6 +94,8 @@ class FortuneBillsController extends Controller
             'status' => (string) $request->input('status', ''),
             'date_from' => $request->input('date_from'),
             'date_to' => $request->input('date_to'),
+            'ai_provider' => (string) $request->input('ai_provider', ''),
+            'category' => (string) $request->input('category', ''),
         ];
 
         $filename = 'fortune_bills_'.now()->format('Y-m-d_His').'.csv';
@@ -158,6 +169,14 @@ class FortuneBillsController extends Controller
             });
         } elseif (in_array($filters['platform'], ['facebook', 'line'], true)) {
             $query->where('platform', $filters['platform']);
+        }
+
+        // 🤖 AI provider + หมวดคำทำนาย — ยกมาจากหน้า readings เดิม (ห้ามให้ความสามารถหาย)
+        if (! empty($filters['ai_provider'])) {
+            $query->where('ai_provider', $filters['ai_provider']);
+        }
+        if (! empty($filters['category'])) {
+            $query->whereJsonContains('categories', $filters['category']);
         }
 
         // 📅 ช่วงวันที่ — ไม่มี default (ว่าง = ทุกช่วงเวลา ตามที่แก้ไว้ตอน audit 2026-07-05)
