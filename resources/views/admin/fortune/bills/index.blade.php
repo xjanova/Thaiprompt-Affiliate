@@ -106,7 +106,7 @@
                 @foreach($platforms as $pfKey => $pf)
                     <a href="{{ $tpQ(['platform' => $pfKey]) }}" class="tp-pill"
                        style="text-decoration:none; {{ ($filters['platform'] ?? '') === $pfKey ? 'background:var(--accent1); color:#fff;' : 'color:'.$pf[1].';' }}">
-                        <i class="fas {{ $pf[2] }}"></i> {{ $pf[0] }}
+                        <i class="{{ $pf[2] }}"></i> {{ $pf[0] }}
                     </a>
                 @endforeach
             </div>
@@ -139,7 +139,8 @@
                                 'pending' => '⏳ รอชำระ (ทั้งหมด)',
                                 'unpaid' => 'ยังไม่จ่าย (ทั้งหมด)',
                                 'cancelled' => '❌ ยกเลิก',
-                                'abandoned' => '🕳️ ปิดเงียบ (ไม่ได้จ่าย)',
+                                'abandoned' => '🕳️ ปิดเงียบ (ออกบิลแล้วไม่จ่าย)',
+                                'no_bill' => '💬 คุยแล้วหายไป (ไม่เคยออกบิล)',
                                 'floating' => '💸 บิลลอย (เงินเข้าไม่รู้เจ้าของ)',
                                 'stuck_celtic' => '🧊 Celtic ค้าง (จ่ายแล้ว ไพ่ไม่ครบ)',
                                 'stuck_deep' => '🧊 Deep ค้าง (จ่ายแล้ว ไม่มีคำทำนาย)',
@@ -226,9 +227,16 @@
                                 } elseif ($bill->isCancelled()) {
                                     $pill = ['❌ '.$bill->getCancellationReasonLabelOrNull(), 'background:rgba(217,83,79,.16); color:#d9534f;'];
                                 } elseif ($cStatus === \App\Models\FortuneReading::STATUS_COMPLETED) {
-                                    $pill = $isPaid
-                                        ? ['✅ จบแล้ว', 'background:rgba(90,160,126,.18); color:#3f7a5c;']
-                                        : ['🕳️ ปิดเงียบ (ไม่ได้จ่าย)', 'background:rgba(140,140,150,.18); color:#70707a;'];
+                                    // 🩹 (2026-08-07) แยก "ออกบิลแล้วไม่จ่าย" ออกจาก "คุยแล้วหายไปก่อนออกบิล"
+                                    //   เดิมเหมารวมเป็น "ปิดเงียบ" หมด → prod โชว์ 8,258 ใบ
+                                    //   ทั้งที่เคยออกบิลจริงแค่ 309 ใบ = ดูเหมือนเสียบิลเกินจริง ~26 เท่า
+                                    if ($isPaid) {
+                                        $pill = ['✅ จบแล้ว', 'background:rgba(90,160,126,.18); color:#3f7a5c;'];
+                                    } elseif ((float) $bill->amount_paid > 0) {
+                                        $pill = ['🕳️ ปิดเงียบ (ออกบิลแล้วไม่จ่าย)', 'background:rgba(140,140,150,.18); color:#70707a;'];
+                                    } else {
+                                        $pill = ['💬 คุยแล้วหายไป (ไม่เคยออกบิล)', 'background:rgba(140,140,150,.12); color:#8c8c96;'];
+                                    }
                                 } elseif (in_array($cStatus, \App\Models\FortuneReading::PENDING_DISPLAY_STATUSES, true)) {
                                     $pill = ['⏳ รอชำระ', 'background:rgba(224,165,46,.18); color:#a9791a;'];
                                 } else {
@@ -257,7 +265,7 @@
                                 {{-- ช่องทาง --}}
                                 <td style="padding:11px 12px; white-space:nowrap;">
                                     <span class="tp-pill" style="background:{{ $pf[1] }}1f; color:{{ $pf[1] }}; font-weight:700;">
-                                        <i class="fas {{ $pf[2] }}"></i> {{ $pf[0] }}
+                                        <i class="{{ $pf[2] }}"></i> {{ $pf[0] }}
                                     </span>
                                 </td>
 

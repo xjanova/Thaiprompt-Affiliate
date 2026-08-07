@@ -37,11 +37,17 @@ class FortuneBillsController extends Controller
     /** บิลรอชำระที่ยัง "ลุ้นได้เงิน" = สร้างมาไม่เกินกี่วัน (เกินนี้ถือเป็นซากบิล) */
     public const PENDING_FRESH_DAYS = 7;
 
-    /** ช่องทางที่ลูกค้าเข้ามา */
+    /**
+     * ช่องทางที่ลูกค้าเข้ามา — [ชื่อ, สี, คลาสไอคอนเต็ม]
+     *
+     * ⚠️ ต้องเก็บ prefix มาด้วย: โลโก้แบรนด์อยู่ในชุด `fab` (Font Awesome Brands)
+     *    ไม่ใช่ `fas` (Solid) — ถ้าใส่ `fas fa-facebook-f` จะไม่มี glyph
+     *    เบราว์เซอร์เลยวาดเป็นสี่เหลี่ยม/กากบาทแทน
+     */
     public const PLATFORMS = [
-        'facebook' => ['Facebook', '#1877f2', 'fa-facebook-f'],
-        'line' => ['LINE', '#06c755', 'fa-comment'],
-        'other' => ['อื่น ๆ / เว็บ', '#8c8c96', 'fa-globe'],
+        'facebook' => ['Facebook', '#1877f2', 'fab fa-facebook-f'],
+        'line' => ['LINE', '#06c755', 'fab fa-line'],
+        'other' => ['อื่น ๆ / เว็บ', '#8c8c96', 'fas fa-globe'],
     ];
 
     public function index(Request $request)
@@ -204,7 +210,15 @@ class FortuneBillsController extends Controller
     {
         switch ($status) {
             case 'paid':
-                $query->where('is_paid', true)->where('is_floating', false);
+                // 🐛 (2026-08-07) เดิมเขียน where('is_floating', false) → **คืน 0 แถวเสมอ**
+                //   prod: is_floating เป็น NULL ทั้ง 10,853 แถว (ไม่มี 0/1 เลยสักแถว)
+                //   MySQL: NULL != 0 → เงื่อนไขนี้ตัดทุกแถวทิ้ง แอดมินกด "จ่ายแล้ว" แล้วไม่เจออะไร
+                //   (ยกมาจาก FortuneBillingController เดิมซึ่งมีบั๊กเดียวกันแฝงอยู่)
+                //   ต้องเทียบแบบ "ไม่ใช่ floating" = NULL หรือ false
+                $query->where('is_paid', true)
+                    ->where(function ($q) {
+                        $q->whereNull('is_floating')->orWhere('is_floating', false);
+                    });
                 break;
 
             case 'pending':
@@ -235,10 +249,25 @@ class FortuneBillsController extends Controller
                 break;
 
             case 'abandoned':
-                // 🕳️ ปิดเงียบ — จบไปเฉย ๆ ไม่จ่าย ไม่มีเหตุผลยกเลิกบันทึกไว้
+                // 🕳️ ปิดเงียบ = **เคยออกบิลจริง** (มียอดเงิน) แต่ไม่ได้จ่าย และไม่มีเหตุผลยกเลิก
+                //   ⚠️ ต้องมี amount_paid > 0 ไม่งั้นเหมารวมผิดมหาศาล:
+                //      prod มี completed+ไม่จ่าย+ไม่มีเหตุผล 8,258 ใบ แต่ **มียอดบิลจริงแค่ 309 ใบ**
+                //      ที่เหลือ 7,949 คือคนเข้ามาคุยแล้วหายไปตั้งแต่ก่อนออกบิล = ไม่ใช่บิลที่เสียไป
+                //      ถ้านับรวมกัน แอดมินจะเห็น "บิลหลุด" เกินจริง ~26 เท่า
                 $query->where('is_paid', false)
                     ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
-                    ->whereNull('conversation_state->cancellation_reason');
+                    ->whereNull('conversation_state->cancellation_reason')
+                    ->where('amount_paid', '>', 0);
+                break;
+
+            case 'no_bill':
+                // 💬 คุยแล้วหายไปก่อนออกบิล — ไม่เคยมียอดเงิน ไม่ถือเป็นบิลที่เสียไป
+                $query->where('is_paid', false)
+                    ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                    ->whereNull('conversation_state->cancellation_reason')
+                    ->where(function ($q) {
+                        $q->whereNull('amount_paid')->orWhere('amount_paid', '<=', 0);
+                    });
                 break;
 
             case 'floating':

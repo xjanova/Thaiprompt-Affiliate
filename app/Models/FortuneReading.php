@@ -2128,7 +2128,15 @@ class FortuneReading extends Model
             ]))
             ->where('updated_at', '<', now()->subMinutes(self::billTimeoutMinutes()))
             ->where('is_paid', false)
-            ->update(['conversation_status' => self::STATUS_COMPLETED]);
+            ->update([
+                'conversation_status' => self::STATUS_COMPLETED,
+                // 🏷️ (2026-08-07) บันทึกเหตุผลด้วย ไม่งั้นบิลไปกองรวมกับ "ปิดเงียบ" ในหน้าแอดมิน
+                //   ทำให้ดูเหมือนลูกค้าหายไปเอง ทั้งที่ระบบเป็นคนยกเลิกตามเวลา
+                //   ใช้ JSON_SET เพื่อไม่ทับ state อื่นที่มีอยู่ (COALESCE กันเคส state เป็น NULL)
+                'conversation_state' => \DB::raw(
+                    "JSON_SET(COALESCE(conversation_state, '{}'), '$.cancellation_reason', 'auto_expired')"
+                ),
+            ]);
 
         $expired += $expiredBills;
 
