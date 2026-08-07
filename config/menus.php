@@ -748,6 +748,9 @@ return [
             'badge' => 'NEW',
             'badge_color' => 'bg-gradient-to-r from-purple-500 to-indigo-600',
             'submenu' => [
+                // 🧾 (2026-08-07) ศูนย์รวมบิล — ยุบ billing + readings + celtic list มาที่เดียว
+                //    วางไว้บนสุดเพราะเป็นหน้าที่แอดมินเข้าบ่อยที่สุด (งานประจำวัน)
+                ['label' => '🧾 ศูนย์รวมบิลดูดวง', 'route' => 'admin.fortune.bills.index', 'description' => 'บิลทุกแพคเกจ ทุกช่องทาง ที่เดียว — Deep 39 / Celtic 99 / ฟรี · กรองตามแพลตฟอร์ม Facebook-LINE · ยืนยัน/ยกเลิก/อนุมัติ ครบในหน้าเดียว'],
                 ['label' => '🔮 ตั้งค่าระบบดูดวง', 'route' => 'admin.fortune.settings.index', 'description' => 'ตั้งค่า Facebook, AI, ระบบ Freemium'],
                 ['label' => '📊 Dashboard', 'route' => 'admin.fortune.dashboard', 'description' => 'สถิติภาพรวม กราฟ รายได้'],
                 ['label' => '✨ โหราศาสตร์', 'route' => 'admin.fortune.astrology.index', 'description' => 'ตารางเจ้าชนะ ดาวเคราะห์ ทดสอบ Birth Chart'],

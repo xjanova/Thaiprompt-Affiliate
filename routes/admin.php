@@ -61,6 +61,7 @@ use App\Http\Controllers\Admin\FortuneAstrologyController;
 use App\Http\Controllers\Admin\FortuneBanController;
 use App\Http\Controllers\Admin\FortuneBannerController;
 use App\Http\Controllers\Admin\FortuneBillingController;
+use App\Http\Controllers\Admin\FortuneBillsController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneCelticCrossController;
 use App\Http\Controllers\Admin\FortuneChannelController;
@@ -4064,6 +4065,15 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         ->name('response-templates.set-default');
     Route::post('/response-templates-preview', [FortuneResponseTemplatesController::class, 'preview'])
         ->name('response-templates.preview');
+
+    // 🧾 (2026-08-07) ศูนย์รวมบิลดูดวง — ยุบ billing + readings + celtic-cross list มาที่เดียว
+    //   เจ้าของ: "มันคือการจัดการบิลดูดวงทั้งคู่ แค่คนละแพคเกจ แยกกันแล้วมันงง"
+    //   ⚠️ หน้านี้ "อ่านอย่างเดียว" — ปุ่มจัดการทุกตัวยิงไป endpoint เดิม (billing.* / celtic-cross.*)
+    //      ของเดิมจึงไม่ถูกแตะเลย และยังเข้าใช้ URL เดิมได้ตามปกติ
+    Route::prefix('bills')->name('bills.')->group(function () {
+        Route::get('/', [FortuneBillsController::class, 'index'])->name('index');
+        Route::get('/export', [FortuneBillsController::class, 'export'])->name('export');
+    });
 
     // จัดการบิลดูดวง
     Route::prefix('billing')->name('billing.')->group(function () {
