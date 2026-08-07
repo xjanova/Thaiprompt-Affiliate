@@ -43,7 +43,7 @@ class CelticQuestionRouter
             return $this->fallback($cfg);
         }
 
-        $haystack = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $questionText)));
+        $haystack = $this->normalizeThai($questionText);
         if ($haystack === '') {
             return $this->fallback($cfg);
         }
@@ -278,6 +278,35 @@ class CelticQuestionRouter
     public function knowledgePositions(array $route): array
     {
         return $route['positions'] ?? [];
+    }
+
+    /**
+     * ✍️ ปรับข้อความให้เทียบ keyword ติด — ลูกค้าพิมพ์เร็ว/สะกดตามเสียง
+     *
+     * วัดจากของจริง: คำถามที่จับไม่ได้ 1,235 ข้อ ส่วนใหญ่แค่สะกด "ไหม" ผิด
+     *   ("ใหม" / "มั้ย" / "มัย" / "ม้าย") หรือ "กลับมา" → "กับมา"
+     *
+     * ⚠️ กับดัก: "ใหม่" (new) ก็มี "ใหม" อยู่ข้างใน — ถ้าแปลงมั่วจะได้ "คนไหม่"
+     *    ต้อง lookahead กันไม้เอกไว้ · ห้ามใช้ regex ตัดอักขระ (กินสระ/วรรณยุกต์ไทย)
+     */
+    protected function normalizeThai(string $text): string
+    {
+        $s = mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $text)));
+        if ($s === '') {
+            return '';
+        }
+
+        // "ใหม" ที่ไม่ตามด้วยไม้เอก = พิมพ์เพี้ยนของ "ไหม" (ไม่ใช่ "ใหม่" ที่แปลว่า new)
+        $s = (string) preg_replace('/ใหม(?!่)/u', 'ไหม', $s);
+
+        return strtr($s, [
+            'มั้ย' => 'ไหม',
+            'มัย' => 'ไหม',
+            'ม้าย' => 'ไหม',
+            'ไม๊' => 'ไหม',
+            'กับมา' => 'กลับมา',
+            'กลัยมา' => 'กลับมา',
+        ]);
     }
 
     /** @return array<string, mixed> */
