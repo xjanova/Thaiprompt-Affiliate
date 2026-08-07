@@ -41,10 +41,24 @@ class FortuneCelticCrossController extends Controller
             'total_readings' => FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)->count(),
             'paid_readings' => FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
                 ->where('is_paid', true)->count(),
-            'completed_today' => FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+            // ⚠️ ตัวนี้นับจาก celtic_first_answered_at = "วันที่แม่หมอตอบคำถามแรก" ไม่ใช่ "ปิดจ๊อบ"
+            //    ป้ายเดิมเขียนว่า "เสร็จวันนี้" ซึ่งไม่ตรงกับสิ่งที่นับ → เปลี่ยนป้ายที่ blade แล้ว
+            'answered_today' => FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
                 ->whereDate('celtic_first_answered_at', today())->count(),
+            // ⏳ (2026-08-07) บิลที่ยัง "ลุ้นได้เงิน" อยู่จริง — แอดมินต้องเห็นตัวเลขนี้ที่หน้าแรก
+            //    (prod ตอนตรวจ: 418 บิล ซึ่งเดิมไม่มี KPI ไหนแสดงเลย)
+            'pending_readings' => FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                ->where('is_paid', false)
+                ->whereIn('conversation_status', FortuneReading::PENDING_DISPLAY_STATUSES)
+                ->count(),
+            // 💰 (2026-08-07) เงินที่ "ได้รับจริง" — COALESCE(amount_received, amount_paid)
+            //   เดิม sum('amount_paid') = ยอดที่ "ออกบิลไป" ไม่ใช่ยอดที่เข้าจริง
+            //   prod: 223 บิลจ่ายแล้วมี amount_received = NULL (ตัดผ่าน SMS/แอดมินไม่ได้บันทึกยอด)
+            //   + 56 บิลยอดรับ ≠ ยอดบิล → ต้อง fallback เป็นยอดบิลเฉพาะตัวที่ไม่มียอดรับ
             'total_revenue' => (float) FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
-                ->where('is_paid', true)->sum('amount_paid'),
+                ->where('is_paid', true)
+                ->selectRaw('COALESCE(SUM(COALESCE(amount_received, amount_paid)), 0) AS s')
+                ->value('s'),
             'total_questions' => FortuneCelticQuestion::whereHas('reading', function ($q) {
                 $q->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS);
             })->count(),
@@ -65,14 +79,55 @@ class FortuneCelticCrossController extends Controller
         }
 
         // Filter: status
+        //
+        // 🩹 (2026-08-07) รื้อใหม่ทั้งบล็อก — เดิมรายงานสถานะบิลผิดหลายจุด (ตรวจกับ prod จริง):
+        //   • "รอชำระ" ผูกกับ celtic_pending_payment อย่างเดียว = เจอ **1 บิล**
+        //     ทั้งที่บิลรอจ่ายจริงอยู่ที่ awaiting_payment_method **417 บิล** → แอดมินมองไม่เห็นเลย
+        //   • "ยกเลิก" ผูกกับ conversation_status='cancelled' = เจอ 11 บิล
+        //     แต่บิลที่ถูกยกเลิกจริงเก็บเป็น completed + is_paid=0 + cancellation_reason ใน state
+        //     (ดู FortuneReading::isCancelled()) = **727 บิล**
+        //   • "ค้าง" กรองหลัง paginate → ตัวเลขหน้า/ยอดรวมเพี้ยน + หน้าท้าย ๆ ว่างเปล่า
         if ($status = $request->input('status')) {
             if ($status === 'paid') {
                 $query->where('is_paid', true);
             } elseif ($status === 'unpaid') {
                 $query->where('is_paid', false);
+            } elseif ($status === 'pending') {
+                // 💤 รอชำระจริง — ยังไม่จ่าย + อยู่ในสถานะที่ระบบยังรอเงินอยู่
+                //    ใช้ PENDING_DISPLAY_STATUSES (ของกลางจาก audit 2026-07-05) ไม่ตั้งลิสต์ใหม่
+                $query->where('is_paid', false)
+                    ->whereIn('conversation_status', FortuneReading::PENDING_DISPLAY_STATUSES);
+            } elseif ($status === 'cancelled') {
+                // ❌ ยกเลิกจริง — ล้อเงื่อนไขเดียวกับ FortuneReading::isCancelled() เป๊ะ
+                $query->where('is_paid', false)
+                    ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                    ->whereNotNull('conversation_state->cancellation_reason');
+            } elseif ($status === 'abandoned') {
+                // 🕳️ ปิดเงียบ — จบ conversation ไปเฉย ๆ ไม่จ่าย และไม่มีเหตุผลยกเลิกบันทึกไว้
+                $query->where('is_paid', false)
+                    ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                    ->whereNull('conversation_state->cancellation_reason');
             } elseif ($status === 'stuck') {
-                // paid + 0 picked → stuck case
-                $query->where('is_paid', true);
+                // 🧊 จ่ายแล้วแต่เปิดไพ่ไม่ครบ 10 ใบ
+                //   จำนวนไพ่อยู่ใน conversation_state (JSON) นับด้วย SQL ตรง ๆ ไม่ได้
+                //   → หา id ที่เข้าเงื่อนไขก่อน แล้วค่อย whereIn เพื่อให้ paginate นับถูก
+                //
+                //   ⚠️ ต้อง chunk + select เฉพาะ 2 คอลัมน์ ห้าม get() รวดเดียว —
+                //      conversation_state เป็น JSON ก้อนใหญ่ (เก็บไพ่ 10 ใบ + คำทำนาย + state ทั้งหมด)
+                //      โหลดบิลจ่ายแล้วทั้งหมดพร้อมกันชน memory_limit 128M จริง (เจอตอนทดสอบบน prod)
+                $stuckIds = [];
+                FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                    ->where('is_paid', true)
+                    ->select(['id', 'conversation_state'])
+                    ->chunk(200, function ($rows) use (&$stuckIds) {
+                        foreach ($rows as $r) {
+                            if ($r->getCelticPickedCount() < 10) {
+                                $stuckIds[] = $r->id;
+                            }
+                        }
+                    });
+
+                $query->whereIn('id', $stuckIds ?: [0]);
             } else {
                 $query->where('conversation_status', $status);
             }
@@ -90,12 +145,9 @@ class FortuneCelticCrossController extends Controller
         //   เดิม latest() = created_at → บิลที่ reuse (created เก่า เช่น entony 4544) จมท้าย แอดมินหาไม่เจอ
         $recentReadings = $query->orderByDesc('updated_at')->orderByDesc('id')->paginate(20)->withQueryString();
 
-        // Filter stuck (post-query — needs JSON inspect)
-        if ($status === 'stuck') {
-            $recentReadings->setCollection(
-                $recentReadings->getCollection()->filter(fn ($r) => $r->getCelticPickedCount() < 10)
-            );
-        }
+        // 🗑️ (2026-08-07) ลบการกรอง stuck หลัง paginate ทิ้ง — ย้ายไปกรองใน query แล้ว
+        //    ของเดิมตัดแถวออกจาก "หน้าปัจจุบัน" อย่างเดียว: total/จำนวนหน้ายังเป็นของบิลจ่ายแล้วทั้งหมด
+        //    → บอกว่าเจอ 542 แต่โชว์จริงไม่กี่แถว และหน้า 2 ขึ้นไปว่างเปล่า
 
         return view('admin.fortune.celtic-cross.index', [
             'settings' => $settings,
