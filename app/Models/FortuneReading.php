@@ -2111,8 +2111,21 @@ class FortuneReading extends Model
         //   เดิมรวมอยู่ก้อนเดียวกับ 30 นาทีด้านบน — เจ้าของสั่งขยายเฉพาะ "บิล" เป็น 3 ชม.
         //   หมายเหตุ: บิลที่มี UPA จะถูก cancelExpiredPendingBills จัดการก่อน (cancel UPA + FCM + เตือนสติ)
         //   ก้อนนี้เป็น safety net สำหรับบิลที่ไม่มี UPA / หลุดจาก cron
+        // 🩹 (2026-08-07) เพิ่ม awaiting_payment_method + pending_stripe_payment เข้าก้อนนี้
+        //   ก่อนหน้านี้ **ไม่มีใครเก็บกวาด 2 สถานะนี้เลย** — ไม่อยู่ทั้งก้อน 30 นาทีด้านบน
+        //   และไม่อยู่ใน PENDING_PAYMENT_STATUSES → ค้างถาวรใน DB
+        //   หลักฐาน prod: บิล awaiting_payment_method 417 ใบ **เก่ากว่า 30 วันทั้งหมด**
+        //   (ไม่มีสักใบในรอบเดือน) ทำให้ KPI "รอชำระ" หลอกตาว่ามีงานต้องตาม
+        //
+        //   ใช้ billTimeoutMinutes (default 3 ชม.) ไม่ใช่ 30 นาที — สถานะนี้อยู่ในโฟลจ่ายเงิน
+        //   เจ้าของเคยสั่งไว้ว่า "บิลยกเลิกเร็วไป บางคนลืม" → ให้เวลาเท่าบิล
+        //   ⚠️ ปลอดภัย: 2 สถานะนี้ไม่อยู่ใน scopeActiveConversation อยู่แล้ว
+        //      = ไม่เคยบล็อกอะไรของลูกค้า การปิดจึงเป็นการเก็บกวาดล้วน ๆ
         $expiredBills = (clone $baseQuery)
-            ->whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
+            ->whereIn('conversation_status', array_merge(self::PENDING_PAYMENT_STATUSES, [
+                self::STATUS_AWAITING_PAYMENT_METHOD,
+                self::STATUS_PENDING_STRIPE_PAYMENT,
+            ]))
             ->where('updated_at', '<', now()->subMinutes(self::billTimeoutMinutes()))
             ->where('is_paid', false)
             ->update(['conversation_status' => self::STATUS_COMPLETED]);

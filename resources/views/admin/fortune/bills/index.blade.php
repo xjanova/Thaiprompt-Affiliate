@@ -314,6 +314,17 @@
                                             </a>
                                         @endif
 
+                                        @if(! $isPaid && Route::has('admin.fortune.debug-tools.index'))
+                                            {{-- 🔀 สลับแพคเกจ 39 ↔ 99 — เครื่องมืออยู่ที่ Debug Tools
+                                                 ลิงก์แนบเลขบิลไปให้ หน้าปลายทางโหลดบิลเองไม่ต้องพิมพ์ซ้ำ
+                                                 โชว์เฉพาะบิลที่ยังไม่จ่าย (จ่ายแล้วสลับ = ต้องคิดเรื่องเงินส่วนต่าง
+                                                 ให้ไปทำที่หน้าเครื่องมือซึ่งมีตัวเลือก charge/free ครบ) --}}
+                                            <a href="{{ route('admin.fortune.debug-tools.index', ['bill' => $bill->bill_reference ?? $bill->id]) }}"
+                                               style="color:#b79ae8; text-decoration:none; font-weight:600;" title="สลับแพคเกจ Deep 39 ↔ Celtic 99">
+                                                <i class="fas fa-right-left"></i> เปลี่ยนแพคเกจ
+                                            </a>
+                                        @endif
+
                                         @if(Route::has('admin.fortune.readings.edit'))
                                             <a href="{{ route('admin.fortune.readings.edit', $bill) }}" style="color:#8c8c96; text-decoration:none; font-weight:600;" title="แก้ไขข้อมูล reading">
                                                 <i class="fas fa-pen"></i> แก้ไข

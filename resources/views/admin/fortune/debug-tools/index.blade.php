@@ -386,7 +386,9 @@ function debugTools() {
         },
         // 🔀 สลับแพ็กเกจบิล 39 ↔ 99
         sw: {
-            bill: '',
+            // 🔗 (2026-08-07) รับเลขบิลจาก ?bill= — ให้ลิงก์ "เปลี่ยนแพคเกจ" จากหน้าศูนย์รวมบิล
+            //    เด้งมาแล้วโหลดบิลให้เลย ไม่ต้องพิมพ์เลขบิลซ้ำ
+            bill: @json(request()->query('bill', '')),
             loading: false,
             error: null,
             reading: null,
@@ -403,6 +405,10 @@ function debugTools() {
                 if (v) this.startAutoRefresh();
                 else this.stopAutoRefresh();
             });
+            // 🔗 มาจากลิงก์ที่แนบเลขบิลมา → โหลดบิลให้อัตโนมัติ
+            if (this.sw.bill && this.sw.bill.trim()) {
+                this.loadBill();
+            }
         },
 
         startAutoRefresh() {
