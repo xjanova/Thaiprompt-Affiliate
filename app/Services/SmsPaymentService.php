@@ -1038,20 +1038,45 @@ class SmsPaymentService
      */
     protected function findFortuneReadingByExpiredAmount(float $amount, ?\Carbon\Carbon $smsTimestamp = null): ?FortuneReading
     {
-        // ค้นหา unique amount ที่หมดอายุแล้วแต่ยังอยู่ใน grace period (30 นาทีหลังหมดอายุ)
-        $gracePeriodMinutes = 30;
+        // ⏰ (2026-08-07) ขยาย grace ให้เท่ากับ "อายุบิลจริง" แทนค่าคงที่ 30 นาที
+        //
+        //   ปัญหาเดิม: บิลมีชีวิต 3 ชม. (bill_payment_timeout_minutes) แต่ยอดจองตายที่ 30 นาที
+        //   + grace อีก 30 นาที → ลูกค้าที่โอนหลังชั่วโมงที่ 1 จับคู่ไม่ได้เลยทั้งที่บิลยังอยู่
+        //   prod: เจอเคสลูกค้าโอนช้า 5 รายการ 497.65 บาท ตกค้างไม่มีใครจับคู่
+        //
+        //   ➕ รับสถานะ 'cancelled' ด้วย — บิลที่หมดเวลาถูกยกเลิกจะเซ็ต UPA เป็น cancelled
+        //      (ไม่ใช่ expired) ของเดิมจึงไม่มีวันเจอเคสนี้เลย
+        //      prod: UPA cancelled 1,012 ตัว vs expired เพียง 177
+        $gracePeriodMinutes = max(30, FortuneReading::billTimeoutMinutes());
         $smsTimestamp = $smsTimestamp ?? now();
 
-        $uniquePayment = UniquePaymentAmount::where('unique_amount', $amount)
+        $candidates = UniquePaymentAmount::where('unique_amount', $amount)
             ->where('transaction_type', 'fortune_reading')
-            ->whereIn('status', ['reserved', 'expired'])
+            ->whereIn('status', ['reserved', 'expired', 'cancelled'])
             ->where('expires_at', '<=', now())
             ->where('expires_at', '>', now()->subMinutes($gracePeriodMinutes))
             // 🔒 (2026-04-28) SMS ต้องมาหลัง bill ถูกสร้าง — กัน SMS ก่อน bill
             ->where('created_at', '<=', $smsTimestamp)
             ->orderBy('expires_at', 'desc')
             ->lockForUpdate()
-            ->first();
+            ->get();
+
+        // 🚨 ด่านกันจ่ายเงินผิดคน — ยอดทศนิยมถูก "เวียนใช้ซ้ำ" ได้
+        //   UniquePaymentAmount::generate() กันเฉพาะ suffix ที่ status='reserved' และยังไม่หมดอายุ
+        //   → ยอด 99.36 ของบิลที่ยกเลิกไปแล้ว ถูกจ่ายให้บิลใหม่ได้ทันที
+        //   ยิ่งขยายหน้าต่างยิ่งมีโอกาสเจอหลายใบพร้อมกัน ถ้าเดาผิด = ตัดเงินเข้าบิลผิดคน
+        //   เจอมากกว่า 1 ใบ → ไม่เดา ปล่อยไปทาง orphan/แอดมินตรวจเอง (ปลอดภัยกว่า)
+        if ($candidates->count() > 1) {
+            Log::warning('⚠️ SMS Payment: grace period เจอ UPA ยอดซ้ำหลายใบ — ไม่เดา ส่งให้แอดมินตรวจ', [
+                'amount' => $amount,
+                'candidate_ids' => $candidates->pluck('id')->all(),
+                'grace_minutes' => $gracePeriodMinutes,
+            ]);
+
+            return null;
+        }
+
+        $uniquePayment = $candidates->first();
 
         if (! $uniquePayment) {
             return null;
