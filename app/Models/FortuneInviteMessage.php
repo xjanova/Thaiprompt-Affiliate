@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $message ข้อความเชิญชวน (รองรับ {name} / {{web_link}} / {{line_link}})
  * @property string $category หมวดหมู่
  * @property string $mode โหมดที่ใช้ข้อความนี้: all | classic | transfer
+ * @property int|null $hour_from ชั่วโมงเริ่มส่งได้ 0-23 (NULL = ทุกเวลา)
+ * @property int|null $hour_to ชั่วโมงสุดท้ายที่ส่งได้ 0-23 (NULL = ทุกเวลา)
  * @property bool $is_active เปิดใช้งานหรือไม่
  * @property int $sort_order ลำดับ
  * @property int $send_count จำนวนครั้งที่ส่ง
@@ -45,10 +47,35 @@ class FortuneInviteMessage extends Model
     /** 🌙 (2026-07-31) ชุดข้อความของโหมด DM ดูดวงรายวัน — ชวนบอกวันเกิดแลกคำทำนายฟรี */
     public const MODE_DAILY = 'daily';
 
+    /**
+     * ⏰ (2026-08-08) ช่วงเวลาเริ่มต้นของข้อความเดิมที่ "เขียนผูกเวลา" ไว้
+     *
+     * [ชิ้นข้อความที่ใช้ระบุตัว, hour_from, hour_to]
+     *
+     * จับด้วยข้อความ (ไม่ใช่ id) เพราะ id ของแต่ละเครื่องไม่ตรงกัน —
+     * migration บน prod กับ seeder ตอนติดตั้งใหม่ต้องได้ผลเหมือนกัน
+     *
+     * ⚠️ เติมเฉพาะแถวที่ยังไม่ได้ตั้งช่วงเวลา — ห้ามทับของที่แอดมินแก้เอง
+     */
+    public const DEFAULT_TIME_WINDOWS = [
+        // ── เช้า
+        ['อรุณสวัสดิ์', 5, 9],
+        ['เช้านี้แม่หมอเปิดดวงประจำวัน', 5, 10],
+        ['ก่อนออกจากบ้านวันนี้', 5, 9],
+        ['ก่อนเริ่มวันใหม่', 4, 9],
+        ['ไพ่เช้านี้', 5, 11],
+
+        // ── หัวค่ำ / ดึก (21-2 = คร่อมเที่ยงคืน)
+        ['ก่อนจะจบวันนี้', 18, 23],
+        ['ดึกแล้วแต่แม่หมอยังเปิดตำรา', 21, 2],
+    ];
+
     protected $fillable = [
         'message',
         'category',
         'mode',
+        'hour_from',
+        'hour_to',
         'is_active',
         'sort_order',
         'send_count',
@@ -58,6 +85,8 @@ class FortuneInviteMessage extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'hour_from' => 'integer',
+        'hour_to' => 'integer',
         'sort_order' => 'integer',
         'send_count' => 'integer',
         'last_sent_at' => 'datetime',
@@ -97,9 +126,13 @@ class FortuneInviteMessage extends Model
         // ⚠️ ระหว่าง deploy ไฟล์โค้ดขึ้นก่อน migrate เสมอ — ถ้าอ้างคอลัมน์ที่ยังไม่มี
         //    ทุก DM จะพังทั้งระบบในช่วงนั้น → ไม่มีคอลัมน์ = ทำตัวเหมือนก่อนมีฟีเจอร์นี้
         $hasModeColumn = self::hasModeColumn();
+        $hasWindow = self::supportsTimeWindow();
+
+        // ชั่วโมงปัจจุบันตามโซนเวลาแอป (Asia/Bangkok) — 0-23
+        $hour = (int) now()->format('G');
 
         // $modes = ค่า mode ที่ยอมรับ (แถวที่ mode เป็น NULL ถือเป็น 'all' — กัน '!=' ใน SQL ตัด NULL ทิ้ง)
-        $base = function (array $modes) use ($disabled, $hasModeColumn) {
+        $base = function (array $modes, bool $applyWindow = true) use ($disabled, $hasModeColumn, $hasWindow, $hour) {
             $q = self::active();
 
             // 🗂️ ตัดหมวดที่แอดมินปิด (ถ้ามี)
@@ -117,12 +150,40 @@ class FortuneInviteMessage extends Model
                 });
             }
 
+            // ⏰ (2026-08-08) ตัดข้อความที่ผิดเวลาออก (เช่น "ดึกแล้ว...ก่อนนอน" ตอนเที่ยง)
+            if ($applyWindow && $hasWindow) {
+                self::applyHourWindow($q, $hour);
+            }
+
             return $q;
+        };
+
+        // 🎲 สุ่ม 1 ข้อความ — กรองเวลาก่อน ถ้าชั่วโมงนี้ไม่เหลือของเลยค่อยสุ่มทั้งกอง
+        //    ⚠️ DM เงียบ แย่กว่า DM ที่โทนเวลาเพี้ยน — ห้ามคืน null เพราะตัวกรองเวลา
+        $pick = function (array $modes) use ($base, $hasWindow, $hour) {
+            $row = $base($modes)->inRandomOrder()->first();
+
+            if ($row !== null || ! $hasWindow) {
+                return $row;
+            }
+
+            $fallback = $base($modes, false)->inRandomOrder()->first();
+
+            // เตือนเฉพาะตอนที่ "ตัวกรองเวลา" เป็นต้นเหตุจริง ๆ
+            // (กองนี้ว่างเปล่าอยู่แล้วเป็นคนละเรื่อง — มี log ของมันเองอยู่ข้างล่าง)
+            if ($fallback !== null) {
+                \Illuminate\Support\Facades\Log::warning(
+                    '⏰ InviteMessage: ชั่วโมงนี้ไม่มีข้อความที่ตรงช่วงเวลาเลย → สุ่มทั้งกองแทน',
+                    ['hour' => $hour, 'modes' => $modes]
+                );
+            }
+
+            return $fallback;
         };
 
         // ยังไม่ได้ migrate → สุ่มแบบเดิมทั้งกอง (ดีกว่า DM เงียบทั้งระบบ)
         if (! $hasModeColumn) {
-            return $base([])->inRandomOrder()->first();
+            return $pick([]);
         }
 
         // 🔀 (2026-07-28) โหมด transfer — ใช้ชุดข้อความของโหมดนี้ก่อนเสมอ
@@ -149,7 +210,7 @@ class FortuneInviteMessage extends Model
         ];
 
         if (isset($dedicated[$mode])) {
-            $preferred = $base([$dedicated[$mode]])->inRandomOrder()->first();
+            $preferred = $pick([$dedicated[$mode]]);
 
             if ($preferred) {
                 return $preferred;
@@ -160,11 +221,11 @@ class FortuneInviteMessage extends Model
                 ['mode' => $mode]
             );
 
-            return $base([self::MODE_ALL])->inRandomOrder()->first();
+            return $pick([self::MODE_ALL]);
         }
 
         // โหมด classic — ใช้ชุดกลาง + ชุดที่ทำไว้เฉพาะ classic (ตัดชุดของโหมดอื่นออก)
-        return $base([self::MODE_ALL, self::MODE_CLASSIC])->inRandomOrder()->first();
+        return $pick([self::MODE_ALL, self::MODE_CLASSIC]);
     }
 
     /**
@@ -190,6 +251,120 @@ class FortuneInviteMessage extends Model
         }
 
         return $has;
+    }
+
+    /**
+     * ⏰ มีคอลัมน์ช่วงเวลา (hour_from / hour_to) แล้วหรือยัง
+     *
+     * เหตุผลเดียวกับ hasModeColumn() — ไฟล์โค้ดขึ้น prod ก่อน migrate เสมอ
+     * อ้างคอลัมน์ที่ยังไม่มีในช่วงนั้น = DM พังทั้งระบบ
+     *
+     * memo เฉพาะตอน "มีแล้ว" — queue worker ที่ยืนยาวจะได้รู้จักคอลัมน์ใหม่เอง
+     * โดยไม่ต้องรอ restart (ถ้า memo false ไว้จะค้างจนกว่าคนจะกด)
+     */
+    public static function supportsTimeWindow(): bool
+    {
+        static $has = false;
+
+        if ($has) {
+            return true;
+        }
+
+        try {
+            $has = \Illuminate\Support\Facades\Schema::hasColumns(
+                'fortune_invite_messages',
+                ['hour_from', 'hour_to']
+            );
+        } catch (\Throwable $e) {
+            $has = false;
+        }
+
+        return $has;
+    }
+
+    /**
+     * ⏰ ใส่เงื่อนไข "ชั่วโมงนี้ส่งข้อความนี้ได้ไหม" ลงใน query
+     *
+     * กติกา (ตรงกับ migration + หน้าแอดมิน):
+     *   - hour_from หรือ hour_to เป็น NULL = ส่งได้ทุกเวลา (แถวเดิมทั้งหมดอยู่กลุ่มนี้)
+     *   - from <= to  → ช่วงในวันเดียว เช่น 5-9  = 05:00–09:59
+     *   - from >  to  → ช่วงคร่อมเที่ยงคืน เช่น 21-2 = 21:00–02:59
+     *
+     * ⚠️ ตั้งมาข้างเดียวถือว่า "ไม่ได้ตั้ง" โดยตั้งใจ — หน้าต่างครึ่งใบตีความได้หลายแบบ
+     *    ปล่อยให้ส่งได้ทุกเวลาปลอดภัยกว่าเดาแล้วบล็อกข้อความทิ้ง
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  int  $hour  ชั่วโมงปัจจุบัน 0-23
+     */
+    protected static function applyHourWindow($query, int $hour): void
+    {
+        $query->where(function ($sub) use ($hour) {
+            $sub->whereNull('hour_from')
+                ->orWhereNull('hour_to')
+                ->orWhere(function ($w) use ($hour) {
+                    // ช่วงในวันเดียว
+                    $w->whereColumn('hour_from', '<=', 'hour_to')
+                        ->where('hour_from', '<=', $hour)
+                        ->where('hour_to', '>=', $hour);
+                })
+                ->orWhere(function ($w) use ($hour) {
+                    // ช่วงคร่อมเที่ยงคืน — อยู่ฝั่งหัวค่ำ หรือฝั่งเช้ามืด อย่างใดอย่างหนึ่ง
+                    $w->whereColumn('hour_from', '>', 'hour_to')
+                        ->where(function ($x) use ($hour) {
+                            $x->where('hour_from', '<=', $hour)
+                                ->orWhere('hour_to', '>=', $hour);
+                        });
+                });
+        });
+    }
+
+    /**
+     * ⏰ เติมช่วงเวลาให้ข้อความเดิมที่เขียนผูกเวลาไว้ (ตาม DEFAULT_TIME_WINDOWS)
+     *
+     * ใช้ทั้งจาก migration (เติมของ prod) และ seeder (ติดตั้งใหม่)
+     * ⚠️ แตะเฉพาะแถวที่ยังไม่ได้ตั้งช่วงเวลา — ห้ามทับค่าที่แอดมินตั้งเอง
+     *
+     * @return int จำนวนแถวที่ถูกเติม
+     */
+    public static function applyDefaultTimeWindows(): int
+    {
+        if (! self::supportsTimeWindow()) {
+            return 0;
+        }
+
+        $updated = 0;
+
+        foreach (self::DEFAULT_TIME_WINDOWS as [$needle, $from, $to]) {
+            $updated += self::query()
+                ->whereNull('hour_from')
+                ->whereNull('hour_to')
+                ->where('message', 'like', '%'.$needle.'%')
+                ->update([
+                    'hour_from' => $from,
+                    'hour_to' => $to,
+                ]);
+        }
+
+        return $updated;
+    }
+
+    /**
+     * 🏷️ ป้ายช่วงเวลาแบบอ่านง่าย สำหรับหน้าแอดมิน
+     *
+     * @return string|null null = ส่งได้ทุกเวลา (ไม่ต้องขึ้นป้าย)
+     */
+    public function timeWindowLabel(): ?string
+    {
+        if ($this->hour_from === null || $this->hour_to === null) {
+            return null;
+        }
+
+        $label = sprintf('%02d:00–%02d:59', $this->hour_from, $this->hour_to);
+
+        // คร่อมเที่ยงคืน — บอกให้ชัด ไม่งั้นแอดมินอ่านว่า "21 ถึง 2" แล้วงงว่าย้อนหลัง
+        return $this->hour_from > $this->hour_to
+            ? $label.' (ข้ามคืน)'
+            : $label;
     }
 
     /**

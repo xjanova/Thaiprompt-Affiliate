@@ -37,28 +37,39 @@ class FortuneDailyInviteMessageSeeder extends Seeder
     {
         $this->command->info('🌱 กำลัง seed ข้อความชวนบอกวันเกิดชุดโหมด daily...');
 
-        // ✅ idempotent — มีชุดนี้แล้วข้ามเลย (ห้ามสร้างซ้ำทุกครั้งที่ deploy)
+        // ✅ idempotent — มีชุดนี้แล้วข้ามการสร้าง (ห้ามสร้างซ้ำทุกครั้งที่ deploy)
         if (FortuneInviteMessage::where('mode', FortuneInviteMessage::MODE_DAILY)->exists()) {
-            $this->command->info('   มีข้อความชุด daily อยู่แล้ว ข้าม...');
+            $this->command->info('   มีข้อความชุด daily อยู่แล้ว ข้ามการสร้าง...');
+        } else {
+            $sort = 0;
 
-            return;
-        }
-
-        $sort = 0;
-
-        foreach ($this->messages() as $category => $texts) {
-            foreach ($texts as $text) {
-                FortuneInviteMessage::create([
-                    'message' => $text,
-                    'category' => $category,
-                    'mode' => FortuneInviteMessage::MODE_DAILY,
-                    'is_active' => true,
-                    'sort_order' => ++$sort,
-                ]);
+            foreach ($this->messages() as $category => $texts) {
+                foreach ($texts as $text) {
+                    FortuneInviteMessage::create([
+                        'message' => $text,
+                        'category' => $category,
+                        'mode' => FortuneInviteMessage::MODE_DAILY,
+                        'is_active' => true,
+                        'sort_order' => ++$sort,
+                    ]);
+                }
             }
+
+            $this->command->info("✅ Seed ข้อความชุดโหมด daily สำเร็จ ({$sort} ข้อความ)");
         }
 
-        $this->command->info("✅ Seed ข้อความชุดโหมด daily สำเร็จ ({$sort} ข้อความ)");
+        // ⏰ (2026-08-08) เติมช่วงเวลาให้ข้อความที่เขียนผูกเวลา (เช้า/ก่อนนอน)
+        //
+        // อยู่ **นอก** เงื่อนไขข้ามด้านบนโดยตั้งใจ — ฐานข้อมูลที่มีชุด daily อยู่แล้ว
+        // แต่ยังไม่เคยเติมช่วงเวลา จะได้ซ่อมตัวเองตอนรัน seeder ซ้ำ
+        //
+        // seeder ตัวนี้ถูกเรียกท้ายสุดในกลุ่ม invite (ดู DatabaseSeeder) จึงครอบชุด
+        // all/transfer ที่ seed ไปก่อนหน้าด้วย (เช่น "💰 ไพ่เช้านี้สะดุดที่ดวงทรัพย์")
+        $windowed = FortuneInviteMessage::applyDefaultTimeWindows();
+
+        if ($windowed > 0) {
+            $this->command->info("⏰ เติมช่วงเวลาให้ข้อความที่ผูกเวลา {$windowed} ข้อความ");
+        }
     }
 
     /**

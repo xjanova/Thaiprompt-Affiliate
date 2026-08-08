@@ -47,6 +47,12 @@
             <li>ครั้งถัดไป<strong style="color:var(--ink);">ในสัปดาห์เดียวกัน</strong> → ไม่ส่งรูปซ้ำ แต่<strong style="color:var(--ink);">สุ่ม</strong>ข้อความจากคลังนี้ส่งแทน + ปุ่มดูดวง</li>
             <li>พิมพ์ <code class="tp-pill tp-pill-soft" style="padding:1px 7px; font-size:12px;">{name}</code> เพื่อแทนชื่อลูกค้าอัตโนมัติ (เช่น "คุณ{name}")</li>
             <li>"สัปดาห์" รีเซ็ตทุกวันจันทร์ • ข้อความใช้เสียงแม่หมอ (ผู้หญิง)</li>
+            {{-- ⏰ (2026-08-08) ช่วงเวลาส่ง — กันข้อความ "ดึกแล้ว...ก่อนนอน" ยิงตอนเที่ยง --}}
+            <li>
+                <strong style="color:var(--ink);">⏰ ช่วงเวลาส่ง</strong> — ข้อความที่เขียนผูกเวลา
+                (เช่น "อรุณสวัสดิ์" หรือ "ดึกแล้ว...ก่อนนอน") ตั้งช่วงชั่วโมงไว้ได้
+                บอทจะสุ่มเฉพาะข้อความที่ตรงเวลานั้น <span class="tp-muted">(เว้นว่าง = ส่งได้ทุกเวลา)</span>
+            </li>
         </ul>
     </div>
 
@@ -307,8 +313,25 @@
                         <option value="all">ใช้ได้ทุกโหมด</option>
                         <option value="classic">เฉพาะโหมดเดิม (คุยในแชท)</option>
                         <option value="transfer">เฉพาะโหมดพาไปเว็บ/LINE</option>
+                        <option value="daily">เฉพาะโหมดดวงรายวัน (ขอวันเกิด)</option>
                     </select>
                 </div>
+
+                {{-- ⏰ (2026-08-08) ช่วงเวลาที่ส่งได้ — เว้นว่าง = ทุกเวลา (พฤติกรรมเดิม) --}}
+                <div style="display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink2);">
+                    <span>⏰ ส่งช่วง</span>
+                    <div class="tp-well tp-input" style="padding:0; width:72px;">
+                        <input type="number" name="hour_from" min="0" max="23" placeholder="—"
+                               style="width:100%; background:transparent; border:0; outline:0; padding:11px 10px; color:var(--ink); font-size:14px; text-align:center;">
+                    </div>
+                    <span>ถึง</span>
+                    <div class="tp-well tp-input" style="padding:0; width:72px;">
+                        <input type="number" name="hour_to" min="0" max="23" placeholder="—"
+                               style="width:100%; background:transparent; border:0; outline:0; padding:11px 10px; color:var(--ink); font-size:14px; text-align:center;">
+                    </div>
+                    <span>น.</span>
+                </div>
+
                 <label style="display:flex; align-items:center; gap:8px; font-size:14px; color:var(--ink); cursor:pointer;">
                     <input type="checkbox" name="is_active" value="1" checked
                            style="width:17px; height:17px; accent-color:var(--accent1); cursor:pointer;">
@@ -318,6 +341,13 @@
                     <i class="fas fa-floppy-disk"></i> บันทึก
                 </button>
             </div>
+            <p class="tp-muted" style="font-size:12px; margin:10px 0 0; line-height:1.6;">
+                ⏰ <strong style="color:var(--ink);">เว้นว่างทั้งคู่ = ส่งได้ทุกเวลา</strong> •
+                ใส่ <code class="tp-pill tp-pill-soft" style="padding:1px 6px;">5</code> ถึง
+                <code class="tp-pill tp-pill-soft" style="padding:1px 6px;">9</code> = ส่งเฉพาะ 05:00–09:59 •
+                ใส่ <code class="tp-pill tp-pill-soft" style="padding:1px 6px;">21</code> ถึง
+                <code class="tp-pill tp-pill-soft" style="padding:1px 6px;">2</code> = 21:00–02:59 (ข้ามคืนได้)
+            </p>
         </form>
     </div>
 
@@ -354,6 +384,20 @@
         @else
             <div style="display:flex; flex-direction:column;">
                 @foreach($messages as $msg)
+                    {{-- ประกอบ payload ของปุ่มแก้ไขไว้ก่อน — ส่งเป็นก้อนเดียวเข้า openEdit()
+                         (อาร์กิวเมนต์เรียงตำแหน่งเยอะเกินจะสลับกันเองโดยไม่รู้ตัว) --}}
+                    @php
+                        $editPayload = [
+                            'id' => $msg->id,
+                            'message' => $msg->message,
+                            'category' => $msg->category,
+                            'mode' => $msg->mode ?? 'all',
+                            'hour_from' => $msg->hour_from,
+                            'hour_to' => $msg->hour_to,
+                            'is_active' => (bool) $msg->is_active,
+                        ];
+                        $windowLabel = $msg->timeWindowLabel();
+                    @endphp
                     <div style="display:flex; align-items:flex-start; gap:13px; padding:16px 18px; box-shadow:var(--inset-sm);">
                         {{-- ลำดับ (เลขต่อเนื่องข้ามหน้า) --}}
                         <div class="tp-num" style="flex-shrink:0; width:32px; height:32px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--ink2);">
@@ -372,6 +416,12 @@
                                     <span class="tp-pill" style="font-size:11px; color:#2e7d64; font-weight:600;">🔀 โหมดพาไปเว็บ/LINE</span>
                                 @elseif(($msg->mode ?? 'all') === 'classic')
                                     <span class="tp-pill" style="font-size:11px; color:#8a6d3b; font-weight:600;">💬 โหมดเดิม</span>
+                                @elseif(($msg->mode ?? 'all') === 'daily')
+                                    <span class="tp-pill" style="font-size:11px; color:#5689b8; font-weight:600;">🌙 โหมดดวงรายวัน</span>
+                                @endif
+                                {{-- ⏰ (2026-08-08) ป้ายช่วงเวลา — ไม่มีป้าย = ส่งได้ทุกเวลา --}}
+                                @if($windowLabel)
+                                    <span class="tp-pill" style="font-size:11px; color:#8a5cb8; font-weight:600;" title="บอทจะสุ่มข้อความนี้เฉพาะช่วงเวลานี้">⏰ {{ $windowLabel }}</span>
                                 @endif
                                 <span class="tp-muted" style="font-size:11px;">
                                     <i class="fas fa-paper-plane" style="font-size:10px;"></i> ส่งไปแล้ว {{ number_format($msg->send_count) }} ครั้ง
@@ -385,7 +435,7 @@
                         {{-- ปุ่ม action --}}
                         <div style="flex-shrink:0; display:flex; align-items:center; gap:5px;">
                             <button type="button" class="tp-icon-btn" title="แก้ไข"
-                                    @click="openEdit({{ $msg->id }}, @js($msg->message), @js($msg->category), {{ $msg->is_active ? 'true' : 'false' }}, @js($msg->mode ?? 'all'))">
+                                    @click="openEdit(@js($editPayload))">
                                 <i class="fas fa-pen" style="color:#5689b8;"></i>
                             </button>
                             <form action="{{ route('admin.fortune.invite-messages.toggle', $msg) }}" method="POST" style="display:inline;">
@@ -445,6 +495,7 @@
                             <option value="all">ใช้ได้ทุกโหมด</option>
                             <option value="classic">เฉพาะโหมดเดิม</option>
                             <option value="transfer">เฉพาะโหมดพาไปเว็บ/LINE</option>
+                            <option value="daily">เฉพาะโหมดดวงรายวัน</option>
                         </select>
                     </div>
                     <label style="display:flex; align-items:center; gap:8px; font-size:14px; color:var(--ink); cursor:pointer;">
@@ -453,6 +504,27 @@
                         เปิดใช้งาน
                     </label>
                 </div>
+
+                {{-- ⏰ (2026-08-08) ช่วงเวลาที่ส่งได้ — เว้นว่าง = ทุกเวลา --}}
+                <div style="display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin-top:14px; font-size:13px; color:var(--ink2);">
+                    <span>⏰ ส่งช่วง</span>
+                    <div class="tp-well tp-input" style="padding:0; width:72px;">
+                        <input type="number" name="hour_from" min="0" max="23" placeholder="—" x-model="editing.hour_from"
+                               style="width:100%; background:transparent; border:0; outline:0; padding:10px; color:var(--ink); font-size:14px; text-align:center;">
+                    </div>
+                    <span>ถึง</span>
+                    <div class="tp-well tp-input" style="padding:0; width:72px;">
+                        <input type="number" name="hour_to" min="0" max="23" placeholder="—" x-model="editing.hour_to"
+                               style="width:100%; background:transparent; border:0; outline:0; padding:10px; color:var(--ink); font-size:14px; text-align:center;">
+                    </div>
+                    <span>น.</span>
+                    <button type="button" class="tp-btn tp-btn-sm" style="margin-left:auto;"
+                            @click="editing.hour_from = ''; editing.hour_to = ''">
+                        ล้าง (ทุกเวลา)
+                    </button>
+                </div>
+                <p class="tp-muted" style="font-size:12px; margin:8px 0 0; line-height:1.55;"
+                   x-text="windowHint()"></p>
                 <div style="display:flex; justify-content:flex-end; gap:9px; margin-top:20px;">
                     <button type="button" class="tp-btn tp-btn-sm" @click="editing.show = false">
                         ยกเลิก
@@ -477,10 +549,44 @@
             // base URL ที่มี __ID__ ไว้แทนด้วย id จริงตอนเปิด modal
             updateUrlBase: "{{ route('admin.fortune.invite-messages.update', '__ID__') }}",
             updateUrl: '',
-            editing: { show: false, id: null, message: '', category: '', mode: 'all', is_active: true },
-            openEdit(id, message, category, isActive, mode) {
-                this.editing = { show: true, id: id, message: message, category: category, mode: mode || 'all', is_active: isActive };
-                this.updateUrl = this.updateUrlBase.replace('__ID__', id);
+            editing: { show: false, id: null, message: '', category: '', mode: 'all', hour_from: '', hour_to: '', is_active: true },
+
+            // รับเป็นก้อนเดียว (@js($editPayload)) — เพิ่มฟิลด์ใหม่แล้วไม่ต้องแก้ลำดับอาร์กิวเมนต์
+            openEdit(data) {
+                this.editing = {
+                    show: true,
+                    id: data.id,
+                    message: data.message || '',
+                    category: data.category || '',
+                    mode: data.mode || 'all',
+                    // ⏰ null (= ทุกเวลา) ต้องกลายเป็นช่องว่าง ไม่ใช่คำว่า "null"
+                    hour_from: data.hour_from ?? '',
+                    hour_to: data.hour_to ?? '',
+                    is_active: data.is_active,
+                };
+                this.updateUrl = this.updateUrlBase.replace('__ID__', data.id);
+            },
+
+            // ⏰ อธิบายช่วงเวลาที่กรอกอยู่ให้เป็นภาษาคน (กันแอดมินตีความ 21-2 ผิด)
+            windowHint() {
+                const from = this.editing.hour_from;
+                const to = this.editing.hour_to;
+                const blank = (v) => v === '' || v === null || v === undefined;
+
+                if (blank(from) && blank(to)) {
+                    return '⏰ ส่งได้ทุกเวลา (ไม่จำกัดช่วงเวลา)';
+                }
+                if (blank(from) || blank(to)) {
+                    return '⚠️ กรอกไม่ครบทั้งสองช่อง — ระบบจะถือว่า "ส่งได้ทุกเวลา"';
+                }
+
+                const f = Number(from), t = Number(to);
+                const pad = (n) => String(n).padStart(2, '0');
+                const range = `${pad(f)}:00–${pad(t)}:59`;
+
+                return f > t
+                    ? `⏰ ส่งเฉพาะ ${range} (ข้ามคืน)`
+                    : `⏰ ส่งเฉพาะ ${range}`;
             },
         };
     }

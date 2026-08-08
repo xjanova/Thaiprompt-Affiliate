@@ -77,24 +77,86 @@ class FortuneInviteMessageController extends Controller
     }
 
     /**
+     * กติกาตรวจข้อมูล — ใช้ร่วมกันทั้งเพิ่มและแก้ไข (เดิมเขียนซ้ำ 2 ที่แล้วหลุดไม่ตรงกัน)
+     *
+     * ⚠️ (2026-08-08) เดิมลิสต์ mode ตกค่า 'daily' — ชุดข้อความ 50 ข้อของโหมดที่ใช้อยู่จริง
+     *    บน prod ตั้งจากหน้าแอดมินไม่ได้เลย ต้องมีให้ครบทุกโหมดที่โมเดลรู้จัก
+     *
+     * @return array<string, string>
+     */
+    protected static function rules(): array
+    {
+        return [
+            'message' => 'required|string|max:1000',
+            'category' => 'nullable|string|max:50',
+            'mode' => 'nullable|in:all,classic,transfer,daily',
+            // ⏰ ช่วงเวลาที่อนุญาตให้ส่ง (0-23) — ไม่กรอก = ส่งได้ทุกเวลา
+            'hour_from' => 'nullable|integer|min:0|max:23',
+            'hour_to' => 'nullable|integer|min:0|max:23',
+            'is_active' => 'nullable|boolean',
+        ];
+    }
+
+    /**
+     * ข้อความ error ภาษาไทย
+     *
+     * @return array<string, string>
+     */
+    protected static function messages(): array
+    {
+        return [
+            'message.required' => 'กรุณากรอกข้อความ',
+            'message.max' => 'ข้อความยาวเกินไป (สูงสุด 1000 ตัวอักษร)',
+            'mode.in' => 'โหมดที่เลือกไม่ถูกต้อง',
+            'hour_from.integer' => 'ชั่วโมงเริ่มต้องเป็นตัวเลข 0-23',
+            'hour_from.min' => 'ชั่วโมงเริ่มต้องอยู่ระหว่าง 0-23',
+            'hour_from.max' => 'ชั่วโมงเริ่มต้องอยู่ระหว่าง 0-23',
+            'hour_to.integer' => 'ชั่วโมงสิ้นสุดต้องเป็นตัวเลข 0-23',
+            'hour_to.min' => 'ชั่วโมงสิ้นสุดต้องอยู่ระหว่าง 0-23',
+            'hour_to.max' => 'ชั่วโมงสิ้นสุดต้องอยู่ระหว่าง 0-23',
+        ];
+    }
+
+    /**
+     * ⏰ (2026-08-08) แปลงช่วงเวลาที่แอดมินกรอก → ค่าที่บันทึกลง DB
+     *
+     * - กรอกไม่ครบทั้งสองช่อง → เก็บ NULL ทั้งคู่ (= ส่งได้ทุกเวลา) กันหน้าต่างครึ่งใบ
+     * - ⚠️ ห้ามสลับ min/max เหมือนตัวกรองอายุ! from > to = ตั้งใจให้คร่อมเที่ยงคืน
+     *   (21 ถึง 2 = สามทุ่มถึงตีสองห้าสิบเก้า) สลับแล้วกลายเป็นช่วงกลางวันคนละเรื่อง
+     * - ยังไม่ได้ migrate → ไม่ส่งคีย์นี้ไปเลย ไม่งั้น INSERT/UPDATE พังทั้ง statement
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array{hour_from?: int|null, hour_to?: int|null}
+     */
+    protected function timeWindowPayload(array $validated): array
+    {
+        if (! FortuneInviteMessage::supportsTimeWindow()) {
+            Log::warning('⏰ Admin: ยังไม่มีคอลัมน์ช่วงเวลาในตาราง (รอ migrate) → ข้ามการบันทึกช่วงเวลา');
+
+            return [];
+        }
+
+        $from = $validated['hour_from'] ?? null;
+        $to = $validated['hour_to'] ?? null;
+
+        if ($from === null || $to === null) {
+            return ['hour_from' => null, 'hour_to' => null];
+        }
+
+        return ['hour_from' => (int) $from, 'hour_to' => (int) $to];
+    }
+
+    /**
      * บันทึกข้อความใหม่
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'message' => 'required|string|max:1000',
-            'category' => 'nullable|string|max:50',
-            'mode' => 'nullable|in:all,classic,transfer',
-            'is_active' => 'nullable|boolean',
-        ], [
-            'message.required' => 'กรุณากรอกข้อความ',
-            'message.max' => 'ข้อความยาวเกินไป (สูงสุด 1000 ตัวอักษร)',
-        ]);
+        $validated = $request->validate(self::rules(), self::messages());
 
         // 🗂️ normalize หมวด — ว่าง/เว้นวรรค → 'general' (กันหมวด '' ที่ปิด/กรองไม่ได้)
         $category = trim((string) ($validated['category'] ?? ''));
 
-        FortuneInviteMessage::create([
+        FortuneInviteMessage::create(array_merge([
             'message' => trim($validated['message']),
             'category' => $category !== '' ? $category : 'general',
             // 🔀 (2026-07-28) all = ใช้ได้ทุกโหมด (ค่าเริ่มต้นเดิม) · transfer = เฉพาะโหมดพาไปเว็บ/LINE
@@ -102,7 +164,7 @@ class FortuneInviteMessageController extends Controller
             'is_active' => (bool) ($validated['is_active'] ?? true),
             'sort_order' => (int) (FortuneInviteMessage::max('sort_order') + 1),
             'created_by' => auth()->id(),
-        ]);
+        ], $this->timeWindowPayload($validated)));
 
         Log::info('Admin: เพิ่มข้อความชวนดูดวง', [
             'admin' => auth()->user()?->name,
@@ -117,25 +179,17 @@ class FortuneInviteMessageController extends Controller
      */
     public function update(Request $request, FortuneInviteMessage $inviteMessage)
     {
-        $validated = $request->validate([
-            'message' => 'required|string|max:1000',
-            'category' => 'nullable|string|max:50',
-            'mode' => 'nullable|in:all,classic,transfer',
-            'is_active' => 'nullable|boolean',
-        ], [
-            'message.required' => 'กรุณากรอกข้อความ',
-            'message.max' => 'ข้อความยาวเกินไป (สูงสุด 1000 ตัวอักษร)',
-        ]);
+        $validated = $request->validate(self::rules(), self::messages());
 
         // 🗂️ normalize หมวด — ว่าง/เว้นวรรค → คงของเดิม หรือ 'general'
         $category = trim((string) ($validated['category'] ?? ''));
 
-        $inviteMessage->update([
+        $inviteMessage->update(array_merge([
             'message' => trim($validated['message']),
             'category' => $category !== '' ? $category : ($inviteMessage->category ?: 'general'),
             'mode' => $validated['mode'] ?? ($inviteMessage->mode ?: FortuneInviteMessage::MODE_ALL),
             'is_active' => (bool) ($validated['is_active'] ?? false),
-        ]);
+        ], $this->timeWindowPayload($validated)));
 
         return redirect()->route('admin.fortune.invite-messages.index')
             ->with('success', '✅ บันทึกการแก้ไขสำเร็จ');
