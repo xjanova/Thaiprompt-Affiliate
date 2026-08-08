@@ -57,6 +57,23 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public const LINK_TLD_PATTERN = 'com|net|org|info|biz|shop|store|online|site|space|website|casino|games|game|club|live|link|asia|cyou|icu|vip|top|win|bet|fun|pro|app|xyz|io|me|co|cc|th|ru|tk|ml|ga|cf|gq';
 
+    /**
+     * TLD ที่ยอมให้ "เขียนเปล่าๆ ไม่มี http:// ไม่มี / ต่อท้าย" ถือเป็นลิงก์ได้
+     *
+     * 🚨 (2026-08-09) เกิดจากผลสแกนจริง 430,709 คอมเมนต์ → false positive 57%
+     *   ตัวการคือ **เสียงพูดแปลงเป็นข้อความ** พ่น `.com` ออกมารัวๆ เช่น
+     *   "No my hot hips.com alarm.com no I'm not pop numb rap Godน้อมรับครับ"
+     *   และ **คนพิมพ์อีเมลตัวเอง** (auisirisomphone36@gmail.com)
+     *   ถ้าปล่อยไว้ = บล็อกลูกค้าจริงทิ้งวันละคน
+     *
+     * กติกาใหม่: `คำ.com` เปล่าๆ ไม่นับเป็นลิงก์ ต้องมี protocol / www. / path ประกอบ
+     *   ยกเว้น TLD กลุ่มเสี่ยงด้านล่าง (เว็บพนัน/สแกมใช้ประจำ) ที่เขียนเปล่าๆ ก็นับ
+     *   → `huay-th.co` (บ้านหวยไทย) ยังจับได้ · `hips.com` ไม่จับแล้ว
+     *
+     * ⚠️ ห้ามใส่ com|net|org|info|biz|th|me|app — พวกนี้โผล่ในข้อความมั่วบ่อยเกินไป
+     */
+    public const LINK_TLD_BARE_RISKY = 'online|site|space|website|casino|games|game|club|live|link|asia|cyou|icu|vip|top|win|bet|fun|shop|store|xyz|co|cc|ru|tk|ml|ga|cf|gq';
+
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         // 🐛 (2026-05-10) Laravel auto-DI inject empty model instance — ไม่ใช่ null
@@ -1145,17 +1162,34 @@ class FacebookWebhookService implements MessagingPlatformInterface
         // Normalize "dot" / "จุด" evasion → "."
         $normalized = preg_replace('/\s+(dot|จุด)\s+/u', '.', $normalized);
 
-        // Pattern: protocol/www/shortener/TLD
-        // ⚠️ (2026-08-09) ขยาย TLD — ลิสต์เดิมขาด .online/.site/.top/.vip/.club/.cc/.bet
-        //   ซึ่งเป็นชุดที่เว็บพนัน/สแกมไทยใช้มากที่สุด → ลิงก์หลุดแม้เปิดระบบกรองแล้ว
-        $pattern = '/(https?:\/\/|www\.|[a-z0-9-]+\.('.self::LINK_TLD_PATTERN.')(\/|\b))/i';
+        // 🚨 (2026-08-09) ตัด "อีเมล" ทิ้งก่อนเสมอ — xxx@gmail.com ไม่ใช่ลิงก์
+        //   ลูกค้าพิมพ์อีเมลตัวเองใส่คอมเมนต์บ่อยมาก (เจอ 3 รายในสแกนย้อนหลัง)
+        //   ถ้าไม่ตัด = โดนบล็อกเพราะให้ช่องทางติดต่อ
+        $normalized = preg_replace('/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/u', ' ', $normalized) ?? $normalized;
 
-        if (! preg_match_all($pattern, $normalized, $matches)) {
+        // สองชั้น — แยกตาม "ความน่าเชื่อถือของสัญญาณ"
+        //   ชั้น 1 มี protocol / www. / path → เป็นลิงก์แน่ ใช้ TLD ชุดเต็ม
+        //   ชั้น 2 เขียนโดเมนเปล่าๆ → เชื่อได้เฉพาะ TLD กลุ่มเสี่ยง (ดู LINK_TLD_BARE_RISKY)
+        //     เพราะ "คำ.com" เปล่าๆ ส่วนใหญ่คือเสียงพูดแปลงข้อความมั่ว ไม่ใช่ลิงก์
+        $patterns = [
+            '/(?:https?:\/\/|www\.)[a-z0-9.-]+/i',
+            '/[a-z0-9-]+\.(?:'.self::LINK_TLD_PATTERN.')\//i',
+            '/[a-z0-9-]+\.(?:'.self::LINK_TLD_BARE_RISKY.')\b/i',
+        ];
+
+        $hits = [];
+        foreach ($patterns as $p) {
+            if (preg_match_all($p, $normalized, $m)) {
+                $hits = array_merge($hits, $m[0]);
+            }
+        }
+
+        if (empty($hits)) {
             return null;
         }
 
         // ทุก match → strip ออกมาเป็น domain เพียงๆ → เช็ค whitelist
-        foreach ($matches[0] as $hit) {
+        foreach ($hits as $hit) {
             $domain = $this->extractDomain($hit);
             if (empty($domain)) {
                 continue;
