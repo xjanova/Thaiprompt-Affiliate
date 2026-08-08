@@ -151,7 +151,11 @@ class CommentBlockAdminNotifier
             return false; // วันนี้ยิงไปแล้ว
         }
 
-        $todayCount = FortuneCommentLinkBlock::whereDate('created_at', today())->count();
+        // ⚠️ ต้องนับเฉพาะ status=blocked — ไม่งั้นแถวจากการสแกนย้อนหลัง (detect_only)
+        //    จะถูกรายงานว่า "บล็อกไปแล้ว" ทั้งที่ไม่มีใครโดนบล็อกสักคน
+        $todayCount = FortuneCommentLinkBlock::whereDate('created_at', today())
+            ->where('status', 'blocked')
+            ->count();
         $pending = FortuneCommentLinkBlock::where('comment_deleted', false)
             ->where('hide_succeeded', false)
             ->count();
@@ -195,13 +199,24 @@ class CommentBlockAdminNotifier
         $totalPending = FortuneCommentLinkBlock::where('comment_deleted', false)
             ->where('hide_succeeded', false)
             ->count();
-        $today = FortuneCommentLinkBlock::whereDate('created_at', today())->count();
+
+        // แยก "บล็อกจริง" ออกจาก "เจอจากสแกนย้อนหลัง" — คนละความหมายกันคนละเรื่อง
+        $today = FortuneCommentLinkBlock::whereDate('created_at', today())
+            ->where('status', 'blocked')
+            ->count();
+        $detectOnly = FortuneCommentLinkBlock::where('status', 'detect_only')
+            ->where('comment_deleted', false)
+            ->count();
 
         if ($pending->isEmpty()) {
             return "✅ ไม่มีคอมเมนต์ค้างให้ลบ\n\nวันนี้บล็อกไป {$today} ราย";
         }
 
-        $lines = ["🔗 คอมเมนต์แปะลิงก์ที่ยังไม่ได้ลบ ({$totalPending} รายการ)", "วันนี้บล็อกไป {$today} ราย", ''];
+        $lines = ["🔗 คอมเมนต์แปะลิงก์ที่ยังไม่ได้ลบ ({$totalPending} รายการ)", "วันนี้บล็อกไป {$today} ราย"];
+        if ($detectOnly > 0) {
+            $lines[] = "(ใน {$totalPending} นี้ {$detectOnly} รายการมาจากสแกนย้อนหลัง — ยังไม่ได้บล็อกใคร)";
+        }
+        $lines[] = '';
 
         foreach ($pending as $i => $b) {
             $no = $i + 1;
