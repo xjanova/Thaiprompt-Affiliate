@@ -65,6 +65,7 @@ use App\Http\Controllers\Admin\FortuneBillsController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneCelticCrossController;
 use App\Http\Controllers\Admin\FortuneChannelController;
+use App\Http\Controllers\Admin\FortuneCommentLinkBlockController;
 use App\Http\Controllers\Admin\FortuneCommissionController;
 use App\Http\Controllers\Admin\FortuneConsentController;
 use App\Http\Controllers\Admin\FortuneDebugToolsController;
@@ -4042,6 +4043,21 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/', [FortuneBanController::class, 'index'])->name('index');
         Route::post('/', [FortuneBanController::class, 'store'])->name('store');
         Route::delete('/{ban}', [FortuneBanController::class, 'destroy'])->name('destroy');
+    });
+
+    // 🔗 (2026-08-09) คอมเมนต์แปะลิงก์ → บอทบล็อกคนโพสต์ทันที + แอดมินไปลบคอมเมนต์เอง
+    //   บอทซ่อนคอมเมนต์เองไม่ได้ (pages_manage_engagement ติด App Review)
+    //   หน้านี้รวม permalink ให้กดไปลบ + ปุ่มปลดบล็อกเมื่อบล็อกพลาดคนจริง
+    Route::prefix('comment-link-blocks')->name('comment-link-blocks.')->group(function () {
+        Route::get('/', [FortuneCommentLinkBlockController::class, 'index'])->name('index');
+        Route::post('/mark-all-read', [FortuneCommentLinkBlockController::class, 'markAllRead'])->name('mark-all-read');
+        // 📩 แจ้งเตือนแอดมินทาง Messenger (ฟรี ไม่กินโควต้าแบบ LINE)
+        Route::post('/notify/save', [FortuneCommentLinkBlockController::class, 'saveNotify'])->name('notify.save');
+        Route::post('/notify/bind-code', [FortuneCommentLinkBlockController::class, 'bindCode'])->name('notify.bind-code');
+        Route::post('/notify/test', [FortuneCommentLinkBlockController::class, 'testNotify'])->name('notify.test');
+        Route::post('/{block}/unblock', [FortuneCommentLinkBlockController::class, 'unblock'])->name('unblock');
+        Route::post('/{block}/mark-deleted', [FortuneCommentLinkBlockController::class, 'markDeleted'])->name('mark-deleted');
+        Route::post('/{block}/mark-read', [FortuneCommentLinkBlockController::class, 'markRead'])->name('mark-read');
     });
 
     // คำถามที่ AI ตอบไม่ได้ — รอแอดมินตอบกลับ

@@ -45,6 +45,18 @@ class FacebookWebhookService implements MessagingPlatformInterface
     // อ้างเวอร์ชันจากจุดเดียว — bump ที่นี่ที่เดียวครบทุก call site
     public const GRAPH_API_VERSION = 'v21.0';
 
+    /**
+     * ชุด TLD ที่ถือว่าเป็น "ลิงก์ภายนอก" เมื่อเขียนแบบไม่มี protocol (เช่น abc.online)
+     *
+     * ⚠️ (2026-08-09) แหล่งความจริงเดียวของ TLD — แก้ที่นี่ที่เดียว
+     *   ลิสต์เดิมมีแค่ com|net|io|me|co|xyz|info|biz|org|shop|store|app|tk|ml|ga|cf
+     *   ทำให้เว็บพนัน/สแกมที่ใช้ .online .site .top .vip .club .cc .bet ทะลุด่านทั้งหมด
+     *
+     * @tip เรียงตัวยาวไว้ก่อนตัวสั้นที่เป็น prefix กัน (com ก่อน co) ไม่งั้น alternation
+     *      จะ match ตัวสั้นแล้วตัด TLD จริงเพี้ยน
+     */
+    public const LINK_TLD_PATTERN = 'com|net|org|info|biz|shop|store|online|site|space|website|casino|games|game|club|live|link|asia|cyou|icu|vip|top|win|bet|fun|pro|app|xyz|io|me|co|cc|th|ru|tk|ml|ga|cf|gq';
+
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         // 🐛 (2026-05-10) Laravel auto-DI inject empty model instance — ไม่ใช่ null
@@ -1111,16 +1123,35 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function containsExternalLink(string $message, array $whitelistDomains = []): bool
     {
+        return $this->firstExternalDomain($message, $whitelistDomains) !== null;
+    }
+
+    /**
+     * 🔍 คืน "โดเมนภายนอกตัวแรก" ที่เจอในข้อความ (null = ไม่มี/whitelist ทั้งหมด)
+     *
+     * แยกออกมาจาก containsExternalLink() เพื่อให้หน้าแอดมินบันทึกได้ว่า
+     * โดนตัดเพราะโดเมนไหน — เดิมรู้แค่ true/false เลยตรวจย้อนหลังไม่ได้
+     *
+     * @param  array<string>  $whitelistDomains  โดเมนที่อนุญาต (ไม่ตรวจ scheme)
+     * @return string|null โดเมนที่ไม่อยู่ใน whitelist เช่น 'families.com'
+     *
+     * @example $svc->firstExternalDomain('ดูเลย abc.online', ['thaiprompt.online']);
+     * // ผลลัพธ์: 'abc.online'
+     */
+    public function firstExternalDomain(string $message, array $whitelistDomains = []): ?string
+    {
         $normalized = mb_strtolower($message);
 
         // Normalize "dot" / "จุด" evasion → "."
         $normalized = preg_replace('/\s+(dot|จุด)\s+/u', '.', $normalized);
 
         // Pattern: protocol/www/shortener/TLD
-        $pattern = '/(https?:\/\/|www\.|[a-z0-9-]+\.(com|net|io|me|co|xyz|info|biz|org|shop|store|app|tk|ml|ga|cf)(\/|\b))/i';
+        // ⚠️ (2026-08-09) ขยาย TLD — ลิสต์เดิมขาด .online/.site/.top/.vip/.club/.cc/.bet
+        //   ซึ่งเป็นชุดที่เว็บพนัน/สแกมไทยใช้มากที่สุด → ลิงก์หลุดแม้เปิดระบบกรองแล้ว
+        $pattern = '/(https?:\/\/|www\.|[a-z0-9-]+\.('.self::LINK_TLD_PATTERN.')(\/|\b))/i';
 
         if (! preg_match_all($pattern, $normalized, $matches)) {
-            return false;
+            return null;
         }
 
         // ทุก match → strip ออกมาเป็น domain เพียงๆ → เช็ค whitelist
@@ -1144,11 +1175,62 @@ class FacebookWebhookService implements MessagingPlatformInterface
             }
 
             if (! $isWhitelisted) {
-                return true; // พบลิงค์ที่ไม่ใช่ whitelist
+                return $domain; // พบลิงค์ที่ไม่ใช่ whitelist
             }
         }
 
-        return false;
+        return null;
+    }
+
+    /**
+     * 🔗 ดึงลิงก์ภายนอกจาก payload ของคอมเมนต์ (กรณีคอมเมนต์ "ไม่มีข้อความเลย")
+     *
+     * ปิดรูรั่วคู่แฝดของเคส DM ที่อุดไปแล้วใน commit 11bdc7bde — คนแชร์โพสต์/ลิงก์
+     * เข้ามาในคอมเมนต์โดยไม่พิมพ์อะไรเลย ทำให้ moderateLinkComment() คืน false ทันที
+     * (เพราะเช็คแต่ $message) = มองไม่เห็นสแปมตั้งแต่ต้น ไม่มีแม้แต่ log
+     *
+     * ⚠️ อ่านเฉพาะ 'link' และ attachment ชนิด share/fallback เท่านั้น
+     *    **ห้ามอ่าน photo / video** — นั่นคือ CDN ของรูปที่ลูกค้าแนบ (เช่นสลิปโอนเงิน)
+     *    จะกลายเป็น false-positive ทันที (บทเรียนเดียวกับฝั่ง DM)
+     *
+     * @param  array<string, mixed>  $comment  payload จาก webhook field=feed item=comment
+     * @return string|null URL ภายนอกตัวแรกที่เจอ
+     */
+    public function firstExternalLinkFromComment(array $comment, array $whitelistDomains = []): ?string
+    {
+        $candidates = [];
+
+        // FB ส่ง link ของคอมเมนต์ที่แชร์ลิงก์มาเป็น string ตรงๆ
+        if (! empty($comment['link']) && is_string($comment['link'])) {
+            $candidates[] = $comment['link'];
+        }
+
+        // บางเวอร์ชันส่งเป็น attachments (โครงเดียวกับ Messenger)
+        foreach ($comment['attachments']['data'] ?? [] as $att) {
+            if (! is_array($att)) {
+                continue;
+            }
+
+            // ✅ เฉพาะ share/fallback — photo/video คือรูปแนบ ห้ามแตะ
+            $type = (string) ($att['type'] ?? '');
+            if (! in_array($type, ['share', 'fallback'], true)) {
+                continue;
+            }
+
+            foreach ([$att['unshimmed_url'] ?? null, $att['url'] ?? null, $att['target']['url'] ?? null] as $url) {
+                if (! empty($url) && is_string($url)) {
+                    $candidates[] = $url;
+                }
+            }
+        }
+
+        foreach ($candidates as $url) {
+            if ($this->firstExternalDomain($url, $whitelistDomains) !== null) {
+                return $url;
+            }
+        }
+
+        return null;
     }
 
     /**

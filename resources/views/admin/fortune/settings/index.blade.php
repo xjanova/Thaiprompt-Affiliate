@@ -4394,10 +4394,19 @@ Format 2 — JSON array:
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        🛡️ ระบบกรองคอมเม้นต์สแปม (Auto-Hide Links)
+                        🛡️ ระบบกรองคอมเม้นต์สแปม (บล็อกคนโพสต์ลิงก์)
                     </h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        ซ่อน/ลบคอมเม้นต์ที่มีลิงค์ภายนอกอัตโนมัติ — ใช้ Page Token ที่มี <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">pages_manage_engagement</code>
+                        เจอลิงก์ภายนอกในคอมเม้นต์ → <strong>บล็อกคนโพสต์ทันที</strong> (ห้าม DM + ห้ามคอมเม้นต์)
+                        ไม่เว้นแม้แต่คนที่เคยจ่ายเงิน · ดูรายการ + กดไปลบคอมเม้นต์ + ปลดบล็อกได้ที่
+                        <a href="{{ route('admin.fortune.comment-link-blocks.index') }}"
+                           class="text-red-600 dark:text-red-400 hover:underline font-semibold">หน้าคอมเมนต์แปะลิงก์</a>
+                    </p>
+                    <p class="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
+                        ⚠️ การ <strong>ซ่อน/ลบคอมเม้นต์</strong> ยังทำไม่ได้ — ต้องมี
+                        <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">pages_manage_engagement</code>
+                        ที่ยังติด App Review ของ Meta · การบล็อกคนใช้
+                        <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">pages_manage_metadata</code> ที่มีอยู่แล้ว จึงทำงานได้เลย
                     </p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">

@@ -435,6 +435,9 @@ class FortuneTellingSetting extends Model
         'bill_payment_timeout_minutes',
         // 🛡️ (2026-06-12) แบนถาวรคนสร้างบิลเล่นๆ ไม่ชำระ 3 ครั้งใน 3 วัน
         'enable_bill_troll_ban',
+        // 📩 (2026-08-09) แจ้งเตือนแอดมินทาง Messenger (ฟรี ไม่กินโควต้าแบบ LINE)
+        'admin_notify_psid',
+        'admin_notify_enabled',
     ];
 
     /**

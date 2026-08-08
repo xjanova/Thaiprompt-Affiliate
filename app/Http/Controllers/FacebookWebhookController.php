@@ -990,14 +990,18 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // 🛡️ Link Spam Moderation — ซ่อน/ลบคอมเม้นต์ที่มีลิงค์ภายนอก
-        //    — ตรวจก่อน auto-like + engagement → ถ้าซ่อน/ลบสำเร็จก็จบ flow
+        // 🛡️ Link Spam Moderation — เจอลิงก์ภายนอกในคอมเมนต์ → บล็อกคนโพสต์ + แจ้งแอดมิน
+        //    — ตรวจก่อน auto-like + engagement → ถ้าจัดการแล้วก็จบ flow (ห้าม DM ชวนสแปมเมอร์)
         //    — ข้ามถ้าคอมจากเพจเอง
+        //    — ส่ง $comment ทั้งก้อน (ไม่ใช่แค่ข้อความ) เพราะต้องใช้ post_id + ชื่อ + attachment
+        //    ⚠️ ข้าม verb='remove' — คอมเมนต์ถูกลบไปแล้ว จะบล็อกคนเพราะของที่ไม่มีอยู่ไม่ได้
+        //       (processReaction เช็ค verb อยู่แล้ว แต่ processComment เดิมไม่เคยเช็ค)
         if (! empty($commentId)
+            && ($comment['verb'] ?? 'add') !== 'remove'
             && ($this->settings->auto_hide_link_comments ?? false)
             && $fromId !== ($this->settings->facebook_page_id ?? null)) {
-            if ($this->moderateLinkComment($commentId, $message)) {
-                return; // ซ่อน/ลบแล้ว → ไม่ต้องทำ engagement ต่อ
+            if ($this->moderateLinkComment($comment)) {
+                return; // จัดการแล้ว → ไม่ต้องทำ engagement ต่อ
             }
         }
 
@@ -1067,14 +1071,30 @@ class FacebookWebhookController extends Controller
     }
 
     /**
-     * 🛡️ ตรวจ + ซ่อน/ลบคอมเม้นต์ที่มีลิงค์ภายนอก
+     * 🛡️ ตรวจลิงก์ภายนอกในคอมเมนต์ → บล็อกคนโพสต์ + บันทึกให้แอดมินไปลบคอมเมนต์เอง
      *
-     * Returns true ถ้าทำการ moderate แล้ว (caller ควรหยุด flow)
-     * Returns false ถ้าไม่มีลิงค์ หรือ log_only mode
+     * ทำไมต้องบล็อกคน ไม่ใช่ซ่อนคอมเมนต์:
+     * Page token ยังไม่มีสิทธิ์ `pages_manage_engagement` (ติด App Review — ยิง OAuth
+     * แล้วถูกปฏิเสธซ้ำ 3 ครั้ง) ⇒ `hideComment()` fail ทุกครั้ง
+     * แต่ `blockPageUser()` ใช้ `pages_manage_metadata` ที่ **เรามีอยู่แล้ว** และ block
+     * ระดับเพจจริง = ห้าม DM + ห้ามคอมเมนต์/โพสต์ ⇒ หยุดสแปมได้ทันทีโดยไม่ต้องรอ Meta
+     *
+     * 🚨 นโยบายจากเจ้าของ (2026-08-09): **บล็อกทันทีครั้งแรก ไม่เว้นแม้แต่คนที่จ่ายเงิน**
+     *    เพราะมีคนยอมจ่ายเพื่อให้ได้สิทธิ์โพสต์ก่อกวน → จึงจงใจไม่มี whitelist ผู้จ่าย
+     *    ความเสี่ยงบล็อกพลาดรับด้วย "หน้าจัดการ + ปุ่มปลดบล็อก" แทน
+     *
+     * @param  array<string, mixed>  $comment  payload จาก webhook (field=feed, item=comment)
+     * @return bool true = จัดการแล้ว (caller ต้องหยุด flow) / false = ไม่มีลิงก์ หรือ log_only
      */
-    protected function moderateLinkComment(string $commentId, string $message): bool
+    protected function moderateLinkComment(array $comment): bool
     {
-        if (empty(trim($message))) {
+        $commentId = (string) ($comment['comment_id'] ?? '');
+        $message = (string) ($comment['message'] ?? '');
+        $fromId = (string) ($comment['from']['id'] ?? '');
+        $fromName = $comment['from']['name'] ?? null;
+        $postId = $comment['post_id'] ?? null;
+
+        if ($commentId === '' || $fromId === '') {
             return false;
         }
 
@@ -1087,29 +1107,140 @@ class FacebookWebhookController extends Controller
         $defaults = ['thaiprompt.online', 'main.thaiprompt.online', 'm.me', 'lin.ee', 'line.me', 'facebook.com', 'fb.com'];
         $whitelist = array_unique(array_merge($whitelist, $defaults));
 
-        if (! $this->facebookService->containsExternalLink($message, $whitelist)) {
-            return false;
+        // ── หาลิงก์: ข้อความก่อน แล้วค่อย attachment ─────────────────────────
+        // ⚠️ เดิมโค้ด `return false` ทันทีถ้า $message ว่าง → คอมเมนต์ที่แชร์ลิงก์มา
+        //    โดยไม่พิมพ์อะไรเลย รอดทุกครั้ง และไม่มีแม้แต่ log (รูเดียวกับฝั่ง DM ที่อุดใน 11bdc7bde)
+        $detectedFrom = 'text';
+        $evidence = trim($message);
+        $domain = $this->facebookService->firstExternalDomain($message, $whitelist);
+
+        if ($domain === null) {
+            $attachmentLink = $this->facebookService->firstExternalLinkFromComment($comment, $whitelist);
+            if ($attachmentLink !== null) {
+                $domain = $this->facebookService->firstExternalDomain($attachmentLink, $whitelist);
+                $detectedFrom = 'attachment';
+                $evidence = trim($evidence.' '.$attachmentLink);
+            }
         }
 
-        $action = $this->settings->link_comment_action ?? 'hide';
+        if ($domain === null) {
+            return false; // ไม่มีลิงก์ภายนอก → ปล่อยผ่านไป flow ปกติ
+        }
+
         $logOnly = (bool) ($this->settings->link_moderation_log_only ?? false);
 
         Log::warning('🛡️ Link spam detected ในคอมเม้นต์', [
             'comment_id' => $commentId,
-            'action' => $action,
+            'from_id' => $fromId,
+            'domain' => $domain,
+            'detected_from' => $detectedFrom,
             'log_only' => $logOnly,
-            'message_preview' => mb_substr($message, 0, 200),
+            'message_preview' => mb_substr($evidence, 0, 200),
         ]);
 
         if ($logOnly) {
             return false; // dry-run — ไม่ทำจริง ปล่อย flow ต่อ
         }
 
-        if ($action === 'delete') {
-            return $this->facebookService->deleteComment($commentId);
+        // 🔁 idempotent: Facebook ส่ง webhook ซ้ำได้ (verb=add/edited) — จัดการครั้งเดียวพอ
+        try {
+            if (\App\Models\FortuneCommentLinkBlock::where('comment_id', $commentId)->exists()) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            // ตารางยังไม่ถูก migrate → ทำงานต่อได้ แค่บันทึกไม่ได้
+            Log::warning('moderateLinkComment: อ่านตาราง fortune_comment_link_blocks ไม่ได้: '.$e->getMessage());
         }
 
-        return $this->facebookService->hideComment($commentId);
+        // ── 1) ลองซ่อน/ลบคอมเมนต์ (จะเริ่มสำเร็จเองทันทีที่ App Review ผ่าน) ──
+        $action = $this->settings->link_comment_action ?? 'hide';
+        $hideOk = false;
+        try {
+            $hideOk = $action === 'delete'
+                ? $this->facebookService->deleteComment($commentId)
+                : $this->facebookService->hideComment($commentId);
+        } catch (\Throwable $e) {
+            Log::debug('moderateLinkComment: hide/delete ล้ม (คาดไว้แล้วถ้ายังไม่มี scope): '.$e->getMessage());
+        }
+
+        // ── 2) บล็อกบนเพจจริง — ห้าม DM + ห้ามคอมเมนต์/โพสต์ ──
+        // 💡 comment.from.id ใช้เป็น PSID ได้ — ยืนยันเชิงประจักษ์จากที่ระบบ DM คนคอมเมนต์
+        //    ด้วย id ตัวนี้สำเร็จมาแล้วกว่า 2,000 ครั้ง (handleCommentEngagement)
+        $blocked = false;
+        $blockError = null;
+        try {
+            $blocked = $this->facebookService->blockPageUser($fromId);
+            if (! $blocked) {
+                $blockError = $this->facebookService->lastFetchError ?? 'unknown';
+            }
+        } catch (\Throwable $e) {
+            $blockError = $e->getMessage();
+        }
+
+        // ── 3) แบนระดับบอท (บอทเลิกคุยด้วย) ──
+        $botBanned = false;
+        try {
+            $this->banService->ban(
+                'facebook',
+                $fromId,
+                null, // ถาวร
+                'auto: โพสต์ลิงก์ภายนอกในคอมเมนต์ ('.$domain.')',
+                null,
+                is_string($fromName) ? $fromName : null,
+            );
+            $botBanned = true;
+        } catch (\Throwable $e) {
+            Log::warning('moderateLinkComment: ban ระดับบอทล้ม: '.$e->getMessage());
+        }
+
+        // ── 4) บันทึกให้แอดมินเข้าไปลบคอมเมนต์เอง + ปลดบล็อกได้ถ้าพลาด ──
+        try {
+            \App\Models\FortuneCommentLinkBlock::create([
+                'platform' => 'facebook',
+                'platform_user_id' => $fromId,
+                'display_name' => is_string($fromName) ? $fromName : null,
+                'comment_id' => $commentId,
+                'post_id' => $postId,
+                'permalink' => \App\Models\FortuneCommentLinkBlock::buildPermalink(
+                    $postId,
+                    $commentId,
+                    $this->settings->facebook_page_id ?? null
+                ),
+                'message' => mb_substr($evidence, 0, 2000),
+                'matched_domain' => $domain,
+                'detected_from' => $detectedFrom,
+                'page_blocked' => $blocked,
+                'block_error' => $blockError ? mb_substr($blockError, 0, 500) : null,
+                'bot_banned' => $botBanned,
+                'hide_succeeded' => $hideOk,
+                'status' => 'blocked',
+                'is_read' => false,
+                'blocked_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('moderateLinkComment: บันทึกแถวไม่สำเร็จ (migration ยังไม่รัน?): '.$e->getMessage());
+        }
+
+        // ── 5) กริ่งเตือนแอดมินทาง Messenger — วันละไม่เกิน 1 ครั้ง ──
+        //    Messenger ส่งฟรีไม่จำกัด (ต่างจาก LINE ที่คิดโควต้าทุก push)
+        //    ตัวล็อกอยู่ใน notifyDailyOnce() ใช้ Cache::add แบบ atomic กันยิงซ้ำ
+        try {
+            app(\App\Services\Fortune\CommentBlockAdminNotifier::class)->notifyDailyOnce();
+        } catch (\Throwable $e) {
+            Log::warning('moderateLinkComment: แจ้งเตือนแอดมินล้ม (non-blocking): '.$e->getMessage());
+        }
+
+        Log::warning('🚫 บล็อกคนโพสต์ลิงก์ในคอมเมนต์', [
+            'comment_id' => $commentId,
+            'from_id' => $fromId,
+            'domain' => $domain,
+            'page_blocked' => $blocked,
+            'block_error' => $blockError,
+            'bot_banned' => $botBanned,
+            'hide_succeeded' => $hideOk,
+        ]);
+
+        return true; // จัดการแล้วเสมอ — ห้ามไป engagement ต่อ
     }
 
     /**
@@ -1903,6 +2034,30 @@ class FacebookWebhookController extends Controller
                 ]);
 
                 return;
+            }
+        }
+
+        // 📩 (2026-08-09) คำสั่งแอดมินเรื่องคอมเมนต์แปะลิงก์ — ตอบผ่าน Messenger (ฟรี)
+        //    🛡️ แคบมากโดยตั้งใจ ห้ามกระทบลูกค้าแม้แต่นิดเดียว:
+        //       - รหัสผูก = ต้องตรงกับรหัสสุ่มที่เพิ่งออกจากหน้าแอดมิน (อายุ 10 นาที ใช้ครั้งเดียว)
+        //       - คำสั่ง = ต้องมาจาก PSID ที่ผูกไว้เท่านั้น + ข้อความตรงคำสั่งเป๊ะ
+        //    ถ้าไม่เข้าเงื่อนไข → คืน null ทันที flow ลูกค้าเดินต่อเหมือนเดิม 100%
+        //    (เคารพ feedback_never_interrupt_payment_to_prediction_flow — เทียบสตริงอย่างเดียว
+        //     ไม่แตะ state/DB ของลูกค้า และไม่มีทางเข้าเงื่อนไขได้ถ้าไม่ใช่แอดมิน)
+        $adminMsgText = $messaging['message']['text'] ?? '';
+        if ($adminMsgText !== '') {
+            try {
+                $notifier = app(\App\Services\Fortune\CommentBlockAdminNotifier::class);
+                $adminReply = $notifier->tryBind($senderId, $adminMsgText)
+                    ?? $notifier->tryHandleCommand($senderId, $adminMsgText);
+
+                if ($adminReply !== null) {
+                    $this->facebookService->sendMessage($senderId, $adminReply);
+
+                    return;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('คำสั่งแอดมิน (comment-link) ล้ม (non-blocking): '.$e->getMessage());
             }
         }
 

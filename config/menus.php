@@ -756,6 +756,7 @@ return [
                 ['label' => '👥 ผู้ใช้ดูดวง', 'route' => 'admin.fortune.users.index', 'description' => 'จัดการผู้ใช้ที่เคยดูดวง ส่งข้อความ เพิ่มเครดิต'],
                 ['label' => '🎴 บุคลิกลูกค้า (RPG)', 'route' => 'admin.fortune.personas.index', 'description' => 'ระบบจดจำบุคลิกลูกค้า — RPG card, radar chart, level, rarity tier'],
                 ['label' => '🚫 ระบบคุก (แบน user)', 'route' => 'admin.fortune.bans.index', 'description' => 'แบน user ไม่ให้บอทคุยด้วย (สแปม/ก่อกวน) — แอดมินยังคุยผ่าน Inbox ได้'],
+                ['label' => '🔗 คอมเมนต์แปะลิงก์ (บล็อกอัตโนมัติ)', 'route' => 'admin.fortune.comment-link-blocks.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-red-500 to-orange-500', 'description' => 'บอทเจอลิงก์ในคอมเมนต์ → บล็อกคนโพสต์ทันที + รวมลิงก์ตำแหน่งคอมเมนต์ให้แอดมินกดไปลบเอง · ปลดบล็อกได้ถ้าพลาด'],
                 ['label' => '🧾 ประวัติตรวจสลิป (SlipOK)', 'route' => 'admin.fortune.slip-logs.index', 'description' => 'ประวัติการตรวจสลิปทุกครั้ง — ส่งไปเช็คจริงไหม / สลิปซ้ำไหม / บิลไหน + กรอง'],
                 ['label' => '🚨 Emergency Recover (Celtic)', 'route' => 'admin.fortune.celtic-cross.emergency-recover', 'description' => 'กู้บิล Celtic ด่วน — ใส่เลขบิลแล้วระบบ re-push prompt ทันที'],
                 ['label' => '🐛 Debug Tools', 'route' => 'admin.fortune.debug-tools.index', 'description' => 'Tail laravel.log + ทดสอบ AI sync + สลับแพ็กเกจบิล 39/99'],
