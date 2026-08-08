@@ -47,6 +47,9 @@ class FortuneCommentLinkBlockController extends Controller
             $query->stillBlocked();
         } elseif ($filter === 'unblocked') {
             $query->where('status', 'unblocked');
+        } elseif ($filter === 'detect_only') {
+            // เจอจากการสแกนย้อนหลัง แต่ยังไม่ได้บล็อกใคร
+            $query->where('status', 'detect_only');
         } elseif ($filter === 'need_delete') {
             // ยังไม่ได้ลบคอมเมนต์ และบอทก็ซ่อนไม่สำเร็จ → ต้องให้คนไปลบ
             $query->where('comment_deleted', false)->where('hide_succeeded', false);
@@ -67,6 +70,7 @@ class FortuneCommentLinkBlockController extends Controller
             'total' => FortuneCommentLinkBlock::count(),
             'unread' => FortuneCommentLinkBlock::unread()->count(),
             'still_blocked' => FortuneCommentLinkBlock::stillBlocked()->count(),
+            'detect_only' => FortuneCommentLinkBlock::where('status', 'detect_only')->count(),
             'block_failed' => FortuneCommentLinkBlock::where('page_blocked', false)->count(),
             'need_delete' => FortuneCommentLinkBlock::where('comment_deleted', false)
                 ->where('hide_succeeded', false)

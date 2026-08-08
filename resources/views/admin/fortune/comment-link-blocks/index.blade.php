@@ -249,6 +249,7 @@
                             <option value="need_delete" @selected($filter === 'need_delete')>🗑️ รอแอดมินไปลบ</option>
                             <option value="unread" @selected($filter === 'unread')>🔔 ยังไม่รับทราบ</option>
                             <option value="blocked" @selected($filter === 'blocked')>🚫 ยังถูกบล็อก</option>
+                            <option value="detect_only" @selected($filter === 'detect_only')>🔍 เจอจากสแกนย้อนหลัง (ยังไม่บล็อก)</option>
                             <option value="unblocked" @selected($filter === 'unblocked')>✨ ปลดบล็อกแล้ว</option>
                         </select>
                     </div>
@@ -332,6 +333,9 @@
                                         @if($block->unblockedBy)
                                             <div class="tp-muted" style="font-size:11px; margin-top:5px;">โดย: {{ $block->unblockedBy->name }}</div>
                                         @endif
+                                    @elseif($block->status === 'detect_only')
+                                        <span class="tp-pill" style="background:rgba(86,137,184,.16); color:#5689b8; font-weight:700;">🔍 เจอจากสแกนย้อนหลัง</span>
+                                        <div class="tp-muted" style="font-size:11px; margin-top:5px;">ยังไม่ได้บล็อกใคร</div>
                                     @elseif($block->page_blocked)
                                         <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f; font-weight:700;">🚫 บล็อกบนเพจแล้ว</span>
                                     @else
