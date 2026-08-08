@@ -365,8 +365,20 @@ class ProcessCommentEngagement implements ShouldQueue
             }
 
             // 🌙 (2026-07-31) โหมด daily — สลับทั้ง Stage 1 (banner+QR) และ Stage 2 (text+QR)
-            //   เป็นปุ่ม 7 วันเกิด เพราะข้อความชวนของโหมดนี้ขอให้ "บอกวันเกิด"
+            //   เป็นปุ่มของโหมดนี้ เพราะข้อความชวนของโหมดนี้ขอให้ "บอกวันเกิด"
             //   ถ้ายังใช้ปุ่มเดิม (ดูดวงเลย/พัก 7 วัน) ลูกค้าจะกดแทนพิมพ์ ฟีเจอร์ไม่เคยถูกใช้
+            //
+            // 🎁 (2026-08-08) แก้ปุ่มค้างรุ่นเก่า — สายคอมเมนต์ตกขบวนคำสั่งเจ้าของ 2026-08-07
+            //   ตอนนั้นสั่งเปลี่ยนปุ่ม 7 วันเกิด → ปุ่มเดียว [🎁 รับดวงฟรีประจำวัน] เพราะ
+            //   "ตอนนี้ลูกค้าเข้าใจว่าดูฟรีคือแบบ 39 บาท" (ปุ่มจันทร์…อาทิตย์ ไม่มีคำว่า
+            //   "ฟรี" สักปุ่ม คนเห็นครั้งแรกเลยเหมาว่าเป็นแพคเกจเสียเงิน → กดแล้วมาโวย)
+            //   แต่แก้ไปแค่ที่ FacebookWebhookController::dailyModeDmOverride() (สายกดไลก์)
+            //   ตรงนี้จึงยังยิงปุ่มที่เจ้าของสั่งเลิกใช้ไปแล้วต่ออีก — ทั้งที่สายคอมเมนต์
+            //   คือช่องทางที่ปริมาณเยอะกว่ามาก (2026-08-08: comment 465 vs reaction 5)
+            //
+            //   ⚠️ ปุ่ม 7 วันยังอยู่ครบ แค่ย้ายไปโผล่หลังกดปุ่มฟรี (handleDailyFreeStart)
+            //   ⚠️ ห้ามใส่ปุ่ม VIP/ขายตรงนี้ — DM เย็น ๆ ที่มีปุ่มขาย = สแปมที่เพิ่งแก้ไป
+            //      (ดู withDailyUpgrade ใน DailyHoroscopeModeTrait)
             $isDailyMode = false;
             try {
                 // ⏰ ต้องมีบทความของวันนี้ก่อน ไม่งั้นชวนแล้วส่งของไม่ได้
@@ -374,7 +386,7 @@ class ProcessCommentEngagement implements ShouldQueue
                 $isDailyMode = (new \App\Services\Fortune\FortuneBotMode($settings))->isDailyServing();
 
                 if ($isDailyMode) {
-                    // รู้วันเกิดแล้ว → ชวนกดดูของตัวเอง / ยังไม่รู้ → ชวนบอกวันเกิด + ปุ่ม 7 วัน
+                    // รู้วันเกิดแล้ว → ชวนกดดูของตัวเอง / ยังไม่รู้ → คงข้อความชวนเดิม + ปุ่มฟรี
                     $teaser = app(\App\Services\Fortune\FortuneGreetingService::class)
                         ->buildDailyReadyTeaser($userId, $name);
 
@@ -382,7 +394,7 @@ class ProcessCommentEngagement implements ShouldQueue
                         $dmMessage = $teaser;
                         $quickReplies = \App\Services\FortuneConversationService::dailyShowMineQuickReplies();
                     } else {
-                        $quickReplies = \App\Services\FortuneConversationService::dailyBirthdayQuickReplies();
+                        $quickReplies = [\App\Services\FortuneConversationService::dailyFreeStartQuickReply()];
                     }
                 }
             } catch (Throwable $e) {

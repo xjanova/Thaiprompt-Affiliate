@@ -543,13 +543,63 @@ Schedule::command('fortune:horoscope-process --publish')
 //
 //    ⏱️ timezone ระบุชัดกันพลาด — command ใช้ Carbon::now('Asia/Bangkok')->startOfDay()
 //       เป็น target_date อยู่แล้ว ถ้า scheduler ตีความคนละโซนจะได้บทความของวันผิด
+//
+// 🚨 (2026-08-08) แก้ 2 จุดที่ทำให้ "วันนี้ไม่มีบทความ" แล้วไม่มีใครรู้
+//
+//    1) `withoutOverlapping()` เปล่า ๆ = mutex อายุ **1440 นาที (24 ชม.)**
+//       งานที่รันวันละครั้งเวลาเดิมเป๊ะ + mutex 24 ชม. = ระเบิดเวลา:
+//       ถ้ารอบไหนถูกฆ่ากลางคัน (OOM / deploy restart php-fpm / SSH ตัด) ตัว
+//       `schedule:finish` จะไม่ถูกเรียก → mutex ค้างเต็ม 24 ชม. → **รอบพรุ่งนี้
+//       เวลา 00:01 ถูกข้ามเงียบ ๆ** (ขอบเวลาชนกันพอดี = race ที่แพ้บ่อย)
+//       ⇒ ตั้ง 30 นาที: ยาวพอกันซ้อน (รอบจริง ~1-4 นาที) สั้นพอไม่กินวันถัดไป
+//
+//    2) `runInBackground()` + cron `>> /dev/null 2>&1` = output หายหมด
+//       รอบที่ล้มจึงไม่เหลือหลักฐานเลยสักบรรทัด (2026-08-08 ต้องเดาสาเหตุ
+//       เพราะ deploy 03:07 ไป truncate laravel.log ทับช่วง 00:01 พอดี)
+//       ⇒ appendOutputTo แยกไฟล์ + onFailure log ให้ค้นเจอด้วย exit code
 Schedule::command('horoscope:generate-daily')
     ->dailyAt('00:01')
     ->timezone('Asia/Bangkok')
-    ->withoutOverlapping()
+    ->withoutOverlapping(30)
     ->onOneServer()
     ->name('horoscope-generate-daily')
-    ->runInBackground();
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/horoscope-daily.log'))
+    ->onFailure(function () {
+        \Illuminate\Support\Facades\Log::error(
+            '🔮 horoscope:generate-daily ล้ม (exit != 0) — ดูรายละเอียดที่ storage/logs/horoscope-daily.log '
+            .'· ตัวกู้อัตโนมัติ fortune:daily-preflight --heal จะลองซ้ำให้ 00:20 และ 06:00'
+        );
+    });
+
+// 14b) 🩺 Preflight ดวงรายวัน — ยามเฝ้าประตูของข้อ 14 (00:20 และ 06:00)
+//
+// 🚨 (2026-08-08) เหตุผลที่ต้องมี — เคสจริงที่เพิ่งเจอ:
+//    วันที่ 2026-08-08 บทความ 7 วันเกิดไม่ถูกสร้างเลย (0 แถว) ตั้งแต่เที่ยงคืน
+//    ทุกด่านของโหมด daily ถาม `dailyArticlesReadyToday()` เหมือนกันหมด →
+//    isDailyServing()=false → DM คอมเมนต์/กดไลก์ **fallback ไปชุดขายแบบเก่า
+//    อย่างสุภาพ** จนดูเหมือนไม่มีอะไรพัง เจ้าของจับได้เองตอนบ่ายหลังยิงไปแล้ว 465 DM
+//
+//    ⚠️ บทเรียน: fallback ที่ออกแบบมาดี = ความล้มเหลวที่มองไม่เห็น
+//       ฟีเจอร์ที่ gate ด้วย "ข้อมูลของวันนี้ต้องพร้อม" ต้องมียามเฝ้าเสมอ
+//
+//    --heal  = ขาดบทความ → สั่ง horoscope:generate-daily ซ้ำให้เอง (idempotent,
+//              ตัว command ข้ามวันที่มีอยู่แล้ว ไม่เผา AI ซ้ำ)
+//    --alert = แจ้งแอดมินทาง LINE OA + Log::error (ต่อให้ heal สำเร็จก็ยังแจ้ง
+//              เพื่อให้รู้ว่ารอบ 00:01 มีปัญหา ไม่ใช่เงียบแล้วซ่อมเงียบ)
+//
+// 🕐 00:20 = หลังรอบ 00:01 เสร็จแน่ ๆ (รอบจริงใช้ ~1-4 นาที)
+// 🕕 06:00 = ตาข่ายชั้นสอง เผื่อ 00:20 ก็ยังล้ม (เช่น AI key หมดโควตาช่วงดึก)
+foreach (['00:20', '06:00'] as $preflightAt) {
+    Schedule::command('fortune:daily-preflight --heal --alert')
+        ->dailyAt($preflightAt)
+        ->timezone('Asia/Bangkok')
+        ->withoutOverlapping(20)
+        ->onOneServer()
+        ->name('fortune-daily-preflight-'.str_replace(':', '', $preflightAt))
+        ->runInBackground()
+        ->appendOutputTo(storage_path('logs/horoscope-daily.log'));
+}
 
 // ────────────────────────────────────────────────────────────────
 // 🛒 E-COMMERCE (orders / earnings / payouts)

@@ -542,6 +542,29 @@ class FortuneGreetingService
     }
 
     /**
+     * 🔄 (2026-08-08) ล้างแคช "บทความวันนี้พร้อมหรือยัง"
+     *
+     * `dailyArticlesReadyToday()` แคชคำตอบไว้ 300 วินาที — เร็วดีสำหรับด่านขาออก
+     * ที่ถูกเรียกทุก DM แต่กลายเป็นกับดักเวลาเราเพิ่งสร้างบทความเสร็จ:
+     * ค่าเดิม (false) จะยังถูกตอบต่ออีกได้ถึง 5 นาที = DM ช่วงนั้นยัง fallback
+     * ไปชุดขายแบบเก่าทั้งที่ของพร้อมแล้ว
+     *
+     * ⇒ ทุกจุดที่ "สร้างบทความเสร็จแล้วอยากให้มีผลทันที" ต้องเรียกตัวนี้
+     *   (fortune:daily-preflight --heal เรียกให้แล้ว)
+     */
+    public function forgetDailyArticlesReadyCache(?string $date = null): void
+    {
+        try {
+            Cache::forget('fortune:daily_articles_ready:'.($date ?? now()->toDateString()));
+        } catch (\Throwable $e) {
+            // แคชล้มไม่ควรทำให้ flow กู้คืนพัง — เดี๋ยว TTL 300 วิ ก็หมดเอง
+            Log::warning('FortuneGreetingService: ล้างแคช daily_articles_ready ไม่สำเร็จ', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * 🩺 ตรวจความพร้อมของโหมดดูดวงรายวัน (ใช้โดย fortune:daily-preflight)
      *
      * @return array{ready: bool, today: string, found: int, missing: array<int, string>}
