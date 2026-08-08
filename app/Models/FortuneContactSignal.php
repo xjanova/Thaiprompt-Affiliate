@@ -21,6 +21,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $link_image_count จำนวนข้อความที่เป็นลิงก์/รูปล้วน
  * @property int $real_text_count จำนวนข้อความที่พิมพ์คุยจริง
  * @property int $interaction_count จำนวนการ engage (กดปุ่ม/คุยจริง)
+ * @property int $wl_link_count จำนวนลิงก์ที่ยิงมาหลังถูก whitelist (ไม่นับรูป/วิดีโอ)
+ * @property int $wl_link_days จำนวนวันต่างกันที่ยิงลิงก์หลัง whitelist
+ * @property \Carbon\Carbon|null $wl_last_link_day วันล่าสุดที่ยิงลิงก์หลัง whitelist
  * @property string|null $last_sample ตัวอย่างข้อความสแปมล่าสุด
  * @property bool $whitelisted เคยคุยจริง/เคยจ่าย → ห้ามแบนอัตโนมัติ
  * @property string $status tracking | flagged | banned | cleared
@@ -55,6 +58,9 @@ class FortuneContactSignal extends Model
         'real_text_count',
         'interaction_count',
         'active_days',
+        'wl_link_count',
+        'wl_link_days',
+        'wl_last_link_day',
         'last_sample',
         'whitelisted',
         'status',
@@ -77,10 +83,13 @@ class FortuneContactSignal extends Model
         'real_text_count' => 'integer',
         'interaction_count' => 'integer',
         'active_days' => 'integer',
+        'wl_link_count' => 'integer',
+        'wl_link_days' => 'integer',
         'whitelisted' => 'boolean',
         'first_seen_at' => 'datetime',
         'last_seen_at' => 'datetime',
         'last_spam_day' => 'date',
+        'wl_last_link_day' => 'date',
         'flagged_at' => 'datetime',
         'banned_at' => 'datetime',
     ];
@@ -115,5 +124,26 @@ class FortuneContactSignal extends Model
             ->where('real_text_count', 0)
             ->where('active_days', '>=', $minActiveDays)
             ->whereRaw('(link_image_count + link_caption_count) >= ?', [$minLinkImage]);
+    }
+
+    /**
+     * Scope: ผู้ต้องสงสัย "ราง 2" — ถูก whitelist แล้วแต่ยังยิงลิงก์รัวๆ
+     *
+     * ต่างจาก scopeSuspects ตรงที่:
+     *  - ไม่สนใจ whitelisted / real_text_count (คนกลุ่มนี้เคยคุยจริงมาก่อนทั้งนั้น)
+     *  - นับเฉพาะ wl_link_* ซึ่งนับ "ลิงก์" อย่างเดียว ไม่นับรูป/วิดีโอ
+     *    → ลูกค้าที่ส่งสลิปซ้ำๆ ไม่มีวันเข้าเกณฑ์นี้
+     *  - counter เริ่มที่ 0 ทุกแถวตอน migrate → ไม่มีการแบนย้อนหลัง
+     *
+     * 🛡️ ยังต้องผ่าน safety net "ไม่เคยจ่ายเงิน" ในคำสั่งสแกนอีกชั้นก่อนแบนจริง
+     *
+     * @param  int  $minLinks  จำนวนลิงก์ขั้นต่ำหลัง whitelist ที่ถือว่าเป็นสแปม
+     * @param  int  $minActiveDays  จำนวนวันต่างกันขั้นต่ำ (ความถี่ — 2 = ยิงข้ามวัน)
+     */
+    public function scopeWhitelistedSpammers(Builder $query, int $minLinks = 5, int $minActiveDays = 2): Builder
+    {
+        return $query->where('status', 'tracking')
+            ->where('wl_link_count', '>=', $minLinks)
+            ->where('wl_link_days', '>=', $minActiveDays);
     }
 }

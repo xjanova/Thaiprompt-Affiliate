@@ -33,6 +33,7 @@ class FortuneScanLinkSpammers extends Command
                             {--min=3 : จำนวนลิงก์/รูปขั้นต่ำที่ถือว่าเป็นสแปม}
                             {--days=7 : ดูเฉพาะที่ส่งข้อความภายในกี่วันล่าสุด}
                             {--min-days=1 : ต้องส่งสแปมในจำนวนวันต่างกันอย่างน้อยเท่าไร (ความถี่ — ใส่ 2 = ส่งหลายวัน)}
+                            {--wl-min=5 : ราง 2 — คนที่ whitelist แล้วแต่ยังยิงลิงก์ กี่ครั้งถึงเข้าข่าย (0 = ปิดราง 2)}
                             {--limit=200 : จำกัดจำนวนรายการสูงสุด}
                             {--execute : ลงมือแบน + block บน FB จริง (default: dry-run)}';
 
@@ -49,12 +50,15 @@ class FortuneScanLinkSpammers extends Command
         $min = max(1, (int) $this->option('min'));
         $days = max(1, (int) $this->option('days'));
         $minDays = max(1, (int) $this->option('min-days'));
+        $wlMin = max(0, (int) $this->option('wl-min'));
         $limit = max(1, (int) $this->option('limit'));
         $execute = (bool) $this->option('execute');
 
-        $this->info('🔎 สแกน contact ที่ส่งแต่ลิงก์/รูป (facebook) — min='.$min.' / days='.$days.' / min-days='.$minDays);
+        $this->info('🔎 สแกน contact ที่ส่งแต่ลิงก์/รูป (facebook) — min='.$min.' / days='.$days.' / min-days='.$minDays
+            .' / wl-min='.($wlMin > 0 ? $wlMin : 'ปิด'));
         $this->newLine();
 
+        // ราง 1 (เดิม): ไม่เคยคุยเลย ส่งแต่ลิงก์/รูป
         $candidates = FortuneContactSignal::query()
             ->forPlatform('facebook')
             ->suspects($min, $minDays)
@@ -62,6 +66,26 @@ class FortuneScanLinkSpammers extends Command
             ->orderByDesc('link_image_count')
             ->limit($limit)
             ->get();
+
+        // 🔁 ราง 2 (2026-08-08): เคยคุยจริง/ถูก whitelist แล้ว แต่ยังยิงลิงก์ข้ามวัน
+        //   นับเฉพาะ "ลิงก์" ไม่นับรูป → ลูกค้าส่งสลิปซ้ำๆ ไม่มีวันเข้าเกณฑ์นี้
+        $wlCandidates = collect();
+        if ($wlMin > 0) {
+            $wlCandidates = FortuneContactSignal::query()
+                ->forPlatform('facebook')
+                ->whitelistedSpammers($wlMin, $minDays)
+                ->where('last_seen_at', '>=', now()->subDays($days))
+                ->whereNotIn('id', $candidates->pluck('id')->all())
+                ->orderByDesc('wl_link_count')
+                ->limit($limit)
+                ->get();
+        }
+
+        // จำไว้ว่าใครมาจากราง 2 (ใช้เขียนเหตุผลแบนให้ตรง — ห้าม setAttribute ใส่ model ตรงๆ
+        // เพราะ ->update() ทีหลังจะพยายาม save คอลัมน์ที่ไม่มีจริง)
+        $wlTrackIds = $wlCandidates->pluck('id')->flip();
+
+        $candidates = $candidates->concat($wlCandidates);
 
         if ($candidates->isEmpty()) {
             $this->info('✅ ไม่พบผู้ต้องสงสัย');
@@ -73,9 +97,14 @@ class FortuneScanLinkSpammers extends Command
         $actionable = [];
 
         foreach ($candidates as $c) {
-            // 🛡️ Safety net ชั้นสุดท้าย: ถ้าเคยมี paid reading → ข้าม (กันพลาดเด็ดขาด)
+            // 🛡️ Safety net ชั้นสุดท้าย: เคยจ่ายเงิน / แจ้งโอน / ส่งสลิป → ข้าม (กันพลาดเด็ดขาด)
             $hasPaid = FortuneReading::where('facebook_user_id', $c->platform_user_id)
-                ->where('is_paid', true)
+                ->where(function ($q) {
+                    $q->where('is_paid', true)
+                        ->orWhere('transfer_reported', true)
+                        ->orWhereNotNull('paid_at')
+                        ->orWhereNotNull('slip_received_at');
+                })
                 ->exists();
 
             $rows[] = [
@@ -85,10 +114,11 @@ class FortuneScanLinkSpammers extends Command
                 $c->link_image_count,
                 $c->link_caption_count,
                 $c->active_days,
+                $c->wl_link_count.'/'.$c->wl_link_days.'ว',
                 $c->real_text_count,
                 $c->inbound_total,
                 optional($c->last_seen_at)->format('m-d H:i'),
-                $hasPaid ? '⚠️PAID' : 'spam',
+                $hasPaid ? '⚠️PAID' : (isset($wlTrackIds[$c->id]) ? 'spam(wl)' : 'spam'),
                 mb_substr($c->last_sample ?? '', 0, 24),
             ];
 
@@ -98,7 +128,7 @@ class FortuneScanLinkSpammers extends Command
         }
 
         $this->table(
-            ['ID', 'PSID', 'ชื่อ', 'ลิงก์/รูป', 'caption', 'วัน', 'คุยจริง', 'รวม', 'ล่าสุด', 'สถานะ', 'ตัวอย่าง'],
+            ['ID', 'PSID', 'ชื่อ', 'ลิงก์/รูป', 'caption', 'วัน', 'ลิงก์หลังwl', 'คุยจริง', 'รวม', 'ล่าสุด', 'สถานะ', 'ตัวอย่าง'],
             $rows
         );
         $this->newLine();
@@ -109,7 +139,9 @@ class FortuneScanLinkSpammers extends Command
             'execute' => $execute,
             'min' => $min,
             'days' => $days,
+            'wl_min' => $wlMin,
             'suspects' => $candidates->count(),
+            'suspects_wl_track' => $wlCandidates->count(),
             'actionable' => count($actionable),
             'psids' => collect($actionable)->pluck('platform_user_id')->all(),
         ]);
@@ -143,7 +175,9 @@ class FortuneScanLinkSpammers extends Command
                 }
             }
 
-            $reason = 'auto: ส่งแต่ลิงก์/รูป ไม่เคยพิมพ์คุย ('.$c->link_image_count.' ครั้ง)';
+            $reason = isset($wlTrackIds[$c->id])
+                ? 'auto: ยิงลิงก์ต่อเนื่องหลังเคยคุย ('.$c->wl_link_count.' ครั้ง / '.$c->wl_link_days.' วัน)'
+                : 'auto: ส่งแต่ลิงก์/รูป ไม่เคยพิมพ์คุย ('.$c->link_image_count.' ครั้ง)';
 
             // 1) บอทเลิกคุย (ถาวร) — ใช้ระบบ ban เดิม
             $banService->ban('facebook', $psid, null, $reason, null, $c->display_name);

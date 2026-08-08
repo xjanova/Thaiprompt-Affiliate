@@ -2050,8 +2050,21 @@ class FacebookWebhookController extends Controller
         //   🛡️ บันทึกแบบ non-blocking — ถ้าพังห้ามกระทบ flow หลัก
         //   🛡️ ลูกค้าจ่ายเงิน/เคยมี reading/กดปุ่ม → whitelist อัตโนมัติใน service (ไม่มีวันโดนแบน)
         try {
+            // 🩹 (2026-08-08) เดิมใช้แค่ ->exists() = "มีแถว reading ก็พอ"
+            //   → กดเปิดเมนูดูดวงแล้วหายไป (ไม่จ่ายสักบาท) ก็ได้เกราะ whitelist ตลอดชีพ
+            //   เคสจริง PSID 27713676774998286: เปิดเมนู 08-06 ไม่จ่าย → 08-08 ยิงลิงก์แชร์
+            //   13 ครั้งใน 11 นาที ระบบนับเป็น "คุยจริง" ทั้งหมด แตะไม่ได้เลย
+            //   🛡️ ยังนับ transfer_reported / paid_at / slip_received_at ด้วย — คนที่ "แจ้งโอน/ส่งสลิป"
+            //      แต่ระบบยังไม่ยืนยัน ต้องได้เกราะเหมือนเดิม (กัน false-ban คนส่งสลิปซ้ำๆ)
             $hasReadingOrPaid = $isVipPaid
-                || FortuneReading::where('facebook_user_id', $senderId)->exists();
+                || FortuneReading::where('facebook_user_id', $senderId)
+                    ->where(function ($q) {
+                        $q->where('is_paid', true)
+                            ->orWhere('transfer_reported', true)
+                            ->orWhereNotNull('paid_at')
+                            ->orWhereNotNull('slip_received_at');
+                    })
+                    ->exists();
 
             app(\App\Services\Fortune\FortuneContactSignalService::class)->record(
                 'facebook',
@@ -5253,6 +5266,26 @@ class FacebookWebhookController extends Controller
             // ใช้ negative lookahead — ละเว้น domain ของเรา
             if (preg_match('#https?://(?!(www\.)?(main\.)?thaiprompt\.online)|t\.me/|bit\.ly/|tinyurl\.com#i', $text)) {
                 $reason = 'spam_url (external link)';
+            }
+        }
+
+        // 🚨 Rule 3b (2026-08-08): ลิงก์ที่มาจากปุ่ม "แชร์ไป Messenger"
+        //   FB ส่งมาเป็น attachments:[{type:"fallback",payload:{url}}] โดย message.text ว่างเปล่า
+        //   → Rule 3 ที่อ่านแต่ $text มองไม่เห็นเลย (เคสจริง PSID 27713676774998286 ยิง 13 ครั้งใน 11 นาที)
+        //   ⚠️ อ่าน payload.url เฉพาะ type=fallback — ห้ามอ่านของ image/video/file
+        //      เพราะนั่นคือ URL ของ CDN Facebook (รูปที่ลูกค้าอัพเอง เช่น "สลิป")
+        if ($reason === null) {
+            foreach ($attachments as $att) {
+                if (! is_array($att) || ($att['type'] ?? '') !== 'fallback') {
+                    continue;
+                }
+
+                $attUrl = $att['payload']['url'] ?? null;
+                if (is_string($attUrl) && $attUrl !== ''
+                    && preg_match('#https?://(?!(www\.)?(main\.)?thaiprompt\.online)|t\.me/|bit\.ly/|tinyurl\.com#i', $attUrl)) {
+                    $reason = 'spam_url (shared link attachment)';
+                    break;
+                }
             }
         }
 

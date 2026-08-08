@@ -188,7 +188,12 @@ Schedule::command('fortune:scan-old-comments --since-last --execute --all --post
 //   🛡️ Safety nets ที่ยังทำงาน: whitelist อัตโนมัติ (เคยพิมพ์คุย/กดปุ่ม/จ่ายเงิน)
 //     + re-check paid history ก่อนแบนทุกคน (ในคำสั่ง) → ลูกค้าจริงไม่มีวันโดน
 //   รีวิวย้อนหลังได้ที่ laravel.log ("FortuneScanLinkSpammers: executed" + psids) / ตาราง fortune_contact_signals (status=banned)
-Schedule::command('fortune:scan-link-spammers --min=3 --days=7 --min-days=2 --execute')
+//   🔁 (2026-08-08) เพิ่ม --wl-min=5 = "ราง 2" จับคนที่เคยคุยจริง/ถูก whitelist แล้ว
+//     แต่ยังยิงลิงก์ ≥5 ครั้ง ข้ามวัน ≥2 วัน (เคสจริง อุดม ศรีโปฎก ยิงลิงก์แชร์ 13 ครั้งใน 11 นาที
+//     แต่ whitelisted=1 ตลอดชีพ ระบบแตะไม่ได้เลย)
+//     🛡️ ราง 2 นับเฉพาะ "ลิงก์" ไม่นับรูป/วิดีโอ → คนส่งสลิปซ้ำๆ ไม่มีวันเข้าเกณฑ์
+//     🛡️ counter wl_link_* เริ่มที่ 0 ทุกแถวตอน migrate → ไม่มีการแบนย้อนหลัง
+Schedule::command('fortune:scan-link-spammers --min=3 --days=7 --min-days=2 --wl-min=5 --execute')
     ->dailyAt('09:00')
     ->timezone('Asia/Bangkok')
     ->withoutOverlapping(30)

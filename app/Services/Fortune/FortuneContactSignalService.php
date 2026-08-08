@@ -35,7 +35,9 @@ class FortuneContactSignalService
      * @param  string  $text  ข้อความ (อาจว่าง)
      * @param  array  $attachments  Facebook attachments array
      * @param  bool  $buttonPressed  กดปุ่ม/quick-reply/postback หรือไม่ (= engagement)
-     * @param  bool  $hasReadingOrPaid  เคยมี reading หรือจ่ายเงินหรือไม่ (= ลูกค้าจริง)
+     * @param  bool  $hasReadingOrPaid  เคย "จ่ายเงิน/แจ้งโอน/ส่งสลิป" หรือไม่ (= ลูกค้าจ่ายจริง)
+     *                                  ⚠️ (2026-08-08) ไม่ใช่ "มีแถว reading" เฉยๆ อีกแล้ว —
+     *                                  แค่กดเปิดเมนูดูดวงแล้วหายไป ไม่ถือเป็นลูกค้าจริง
      * @param  string|null  $displayName  ชื่อ (snapshot)
      */
     public function record(
@@ -49,7 +51,13 @@ class FortuneContactSignalService
     ): void {
         try {
             $hasWords = $this->hasRealWords($text);
-            $hasExternalLink = $this->hasExternalLink($text);
+
+            // 🔗 (2026-08-08) ลิงก์ที่มาจากปุ่ม "แชร์ไป Messenger" มาเป็น attachment type=fallback
+            //    โดย text ว่างเปล่า → ถ้าดูแต่ $text จะมองไม่เห็นลิงก์เลย (เคสจริง PSID 27713676774998286
+            //    ยิงลิงก์แชร์ 13 ครั้งใน 11 นาที แต่ระบบนับเป็น "ไม่มีลิงก์")
+            $attachmentLink = $this->firstExternalLinkFromAttachments($attachments);
+            $hasExternalLink = $this->hasExternalLink($text) || $attachmentLink !== null;
+
             $hasMedia = $this->hasMediaAttachment($attachments);
             $wordLen = $this->wordLen($text); // ความยาวข้อความที่ไม่นับ URL
 
@@ -70,11 +78,14 @@ class FortuneContactSignalService
 
             $sample = null;
             if ($isPureLinkImage) {
-                $sample = $hasExternalLink
+                $sample = $this->hasExternalLink($text)
                     ? mb_substr(trim($text), 0, 300)
-                    : '[media:'.$this->mediaTypes($attachments).']';
+                    : ($attachmentLink ?? '[media:'.$this->mediaTypes($attachments).']');
             } elseif ($isLinkCaption) {
                 $sample = mb_substr(trim($text), 0, 300);
+                if ($attachmentLink !== null && ! $this->hasExternalLink($text)) {
+                    $sample = mb_substr($sample.' '.$attachmentLink, 0, 300);
+                }
             }
 
             $signal = FortuneContactSignal::firstOrNew([
@@ -86,6 +97,9 @@ class FortuneContactSignalService
                 $signal->first_seen_at = now();
                 $signal->status = 'tracking';
             }
+
+            // สถานะ whitelist "ก่อน" ข้อความนี้ — ใช้ตัดสินว่าลิงก์นี้ถูกส่งมาหลังได้เกราะแล้วหรือยัง
+            $wasWhitelisted = (bool) $signal->whitelisted;
 
             $signal->display_name = $displayName ?: $signal->display_name;
             $signal->inbound_total = (int) $signal->inbound_total + 1;
@@ -125,6 +139,33 @@ class FortuneContactSignalService
                 if ($lastDay !== $today) {
                     $signal->active_days = (int) $signal->active_days + 1;
                     $signal->last_spam_day = $today;
+                }
+            }
+
+            // 🔁 (2026-08-08) รางที่ 2: นับ "ลิงก์" ที่ยังยิงมาทั้งที่ถูก whitelist ไปแล้ว
+            //    ปัญหาเดิม: whitelist = เกราะตลอดชีพ — พิมพ์คุยจริงครั้งเดียว/กดปุ่มครั้งเดียว
+            //    แล้วหันมายิงลิงก์รัวๆ ตลอดกาล ระบบไม่นับอะไรเลย (เคสจริง อุดม ศรีโปฎก 2026-08-08)
+            //
+            //    🛡️ กัน false-positive 2 ชั้น:
+            //      (a) นับเฉพาะ "ลิงก์" — ไม่นับรูป/วิดีโอ → คนส่งสลิปซ้ำๆ ไม่มีวันโดนนับ
+            //      (b) ข้ามลูกค้าที่จ่ายเงิน/แจ้งโอนแล้ว ($hasReadingOrPaid) ทั้งหมด
+            //      (c) ลิงก์ที่มาพร้อมข้อความยาว (ถามจริงพร้อมแปะลิงก์) ไม่นับ
+            $isLinkSpamShape = $hasExternalLink
+                && (! $hasWords || $wordLen <= self::LONG_TEXT_CHARS);
+
+            if ($isLinkSpamShape
+                && ! $hasReadingOrPaid
+                && ($wasWhitelisted || $genuineConvo)) {
+                $signal->wl_link_count = (int) $signal->wl_link_count + 1;
+                $signal->last_sample = $sample ?: ($attachmentLink ?? $signal->last_sample);
+
+                $today = now()->toDateString();
+                $lastWlDay = $signal->wl_last_link_day
+                    ? (\is_string($signal->wl_last_link_day) ? $signal->wl_last_link_day : $signal->wl_last_link_day->toDateString())
+                    : null;
+                if ($lastWlDay !== $today) {
+                    $signal->wl_link_days = (int) $signal->wl_link_days + 1;
+                    $signal->wl_last_link_day = $today;
                 }
             }
 
@@ -176,6 +217,35 @@ class FortuneContactSignalService
             '#https?://(?!(www\.)?(main\.)?thaiprompt\.online)|t\.me/|bit\.ly/|tinyurl\.com#i',
             $text
         );
+    }
+
+    /**
+     * ดึง URL ภายนอกตัวแรกจาก attachment ชนิด "ลิงก์แชร์" (type=fallback)
+     *
+     * 🔗 (2026-08-08) ปุ่ม "แชร์ไป Messenger" ของ Facebook ส่งมาเป็น
+     *   attachments:[{type:"fallback", payload:{url:"https://...", title:"..."}}]
+     *   โดย message.text ว่างเปล่า → ถ้าอ่านแต่ $text จะไม่เห็นลิงก์เลย
+     *
+     * ⚠️ อ่านเฉพาะ type=fallback เท่านั้น — ห้ามอ่าน payload.url ของ image/video/file
+     *   เพราะนั่นคือ URL ของ CDN Facebook (รูปที่ลูกค้าอัพเอง เช่น "สลิป")
+     *   ถ้านับเป็นลิงก์ = ลูกค้าส่งสลิปพร้อมแคปชั่นสั้น จะกลายเป็น "สแปมลิงก์" ทันที
+     *
+     * @return string|null URL ที่เจอ (null = ไม่มี)
+     */
+    protected function firstExternalLinkFromAttachments(array $attachments): ?string
+    {
+        foreach ($attachments as $att) {
+            if (! is_array($att) || ($att['type'] ?? '') !== 'fallback') {
+                continue;
+            }
+
+            $url = $att['payload']['url'] ?? null;
+            if (is_string($url) && $url !== '' && $this->hasExternalLink($url)) {
+                return mb_substr($url, 0, 300);
+            }
+        }
+
+        return null;
     }
 
     /**
