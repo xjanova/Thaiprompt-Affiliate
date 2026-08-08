@@ -69,6 +69,7 @@ class DatabaseSeeder extends Seeder
             FortuneInviteMessageBatch4Seeder::class, // 💬 ข้อความชวนดูดวง ชุดที่ 4 — โชคลาภ/ข่าวดี 30 ข้อความ (windfall/good_news)
             FortuneTransferInviteMessageSeeder::class, // 🔀 ข้อความชวนชุดโหมด transfer (พาไปเว็บ/LINE) — mode='transfer' ไม่ทับชุดเดิม
             FortuneDailyInviteMessageSeeder::class, // 🌙 ข้อความชวนบอกวันเกิดรับดวงรายวันฟรี 50 ข้อความ — mode='daily' ไม่ทับชุดเดิม
+            FortuneDailyInviteMessageBatch2Seeder::class, // 🌙 ชุดที่ 2 อีก 50 ข้อความ (รวม 100) — แยกเช้า/เย็น/ดึกด้วย hour_from-hour_to
             FortuneMysticTopicSeeder::class,     // 🔮 หมวดคอนเทนต์สายมู (5 หมวด: สายมู/แก้เคล็ด/ปัญหาชีวิต/สิ่งลี้ลับ/รู้หรือไม่ทั่วโลก)
             FortuneContentCampaignSeeder::class, // 📣 แคมเปญคอนเทนต์อัตโนมัติ 5 แคมเปญ (สายมู bridge + กำลังใจ/โดพามีน/กฎแห่งกรรม/จิตวิทยา)
             FortuneKnowledgeSeeder::class,       // 🧠 คลังความรู้แม่หมอ (RAG) — สุขภาพ/ฮวงจุ้ย/เจ้าที่/องค์เทพ/มนต์ดำ (จาก config → DB)
