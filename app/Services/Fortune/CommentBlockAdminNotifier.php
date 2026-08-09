@@ -46,6 +46,50 @@ class CommentBlockAdminNotifier
     ) {}
 
     /**
+     * รายชื่อ PSID แอดมินที่รับแจ้งเตือน (รองรับหลายคน คั่นด้วยจุลภาค)
+     *
+     * @return array<int, string>
+     */
+    public function adminPsids(): array
+    {
+        $raw = (string) (FortuneTellingSetting::getSettings()->admin_notify_psid ?? '');
+        if (trim($raw) === '') {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(
+            array_map('trim', preg_split('/[,\s]+/', $raw) ?: []),
+            fn ($p) => $p !== ''
+        )));
+    }
+
+    /**
+     * ⏱️ ส่ง DM หาคนนี้ได้ไหม — ต้องเคยทักเพจใน 24 ชม. (กฎ Facebook)
+     *
+     * ใช้หลักเดียวกับ `FacebookWebhookController::canReceiveDirectDm()` —
+     * ยิงเฉพาะที่ถึงจริง ไม่ปล่อยให้ตกน้ำแล้วสะสมเป็นสัญญาณสแปม
+     * (เคยทำให้ error #2022 ขึ้น 78 ครั้ง/วัน มาแล้ว)
+     *
+     * เช็ค 2 แหล่งเพราะจุดบอดคนละที่ — cache แม่นแต่หายตอน cache:clear /
+     * last_seen_at ถาวรแต่ record() มี early return คั่นก่อนหน้า 13 จุด
+     */
+    protected function isReachable(string $psid): bool
+    {
+        if (Cache::has('fb_last_inbound:'.$psid)) {
+            return true;
+        }
+
+        try {
+            return \App\Models\FortuneContactSignal::where('platform', 'facebook')
+                ->where('platform_user_id', $psid)
+                ->where('last_seen_at', '>=', now()->subHours(24))
+                ->exists();
+        } catch (\Throwable $e) {
+            return true; // เช็คไม่ได้ → ลองส่ง ดีกว่าเงียบใส่แอดมิน
+        }
+    }
+
+    /**
      * ออกรหัสผูกใหม่ (เรียกจากหน้าแอดมิน)
      *
      * @return string เช่น 'TPADMIN-7K2Q9X'
@@ -80,8 +124,14 @@ class CommentBlockAdminNotifier
 
         Cache::forget(self::BIND_CACHE_KEY); // ใช้ครั้งเดียว
 
+        // ✅ เพิ่มเข้าไปในรายชื่อ ไม่ใช่เขียนทับ — ไม่งั้นแอดมินคนที่ 2 ที่ผูก
+        //    จะเตะคนแรกออกจากระบบแจ้งเตือนโดยไม่มีใครรู้
         $settings = FortuneTellingSetting::getSettings();
-        $settings->admin_notify_psid = $psid;
+        $list = $this->adminPsids();
+        if (! in_array($psid, $list, true)) {
+            $list[] = $psid;
+        }
+        $settings->admin_notify_psid = implode(',', $list);
         $settings->admin_notify_enabled = true;
         $settings->save();
         FortuneTellingSetting::clearSettingsCache();
@@ -98,11 +148,8 @@ class CommentBlockAdminNotifier
      */
     public function tryHandleCommand(string $psid, string $text): ?string
     {
-        $settings = FortuneTellingSetting::getSettings();
-        $adminPsid = $settings->admin_notify_psid ?? null;
-
         // ต้องเป็นแอดมินที่ผูกไว้เท่านั้น — ลูกค้าคนอื่นพิมพ์คำเดียวกันต้องไม่โดน
-        if (empty($adminPsid) || $psid !== $adminPsid) {
+        if (! in_array($psid, $this->adminPsids(), true)) {
             return null;
         }
 
@@ -138,9 +185,19 @@ class CommentBlockAdminNotifier
             return false;
         }
 
-        $psid = $settings->admin_notify_psid ?? null;
-        if (empty($psid)) {
+        $psids = $this->adminPsids();
+        if (empty($psids)) {
             Log::info('📩 ข้ามแจ้งเตือนแอดมิน — ยังไม่ได้ผูก PSID (ไปกดผูกที่หน้าคอมเมนต์แปะลิงก์)');
+
+            return false;
+        }
+
+        // ⏱️ ส่งเฉพาะคนที่ยังอยู่ในกรอบ 24 ชม. — คนที่เงียบนานยิงไปก็ตกน้ำเปล่าๆ
+        $reachable = array_values(array_filter($psids, fn ($p) => $this->isReachable($p)));
+        if (empty($reachable)) {
+            Log::warning('📩 แจ้งเตือนแอดมินไม่ได้ — ทุกคนอยู่นอกกรอบ 24 ชม. ต้องทักเพจสัก 1 ข้อความ', [
+                'psids' => $psids,
+            ]);
 
             return false;
         }
@@ -166,23 +223,33 @@ class CommentBlockAdminNotifier
             ."พิมพ์ \"สแปม\" เพื่อดูรายการ + ลิงก์กดไปลบ\n"
             .'(แจ้งวันละครั้งเท่านั้น ถึงจะบล็อกเพิ่มก็ไม่ทักซ้ำ)';
 
-        $ok = false;
-        try {
-            $ok = $this->fb->sendMessage($psid, $text);
-        } catch (\Throwable $e) {
-            Log::warning('📩 ส่งแจ้งเตือนแอดมินล้มเหลว: '.$e->getMessage());
+        // ส่งให้ทุกคนที่ถึงได้ — lock เป็นของ "เหตุการณ์" ไม่ใช่ของรายคน
+        // (บล็อกเพิ่มอีกกี่รายวันนี้ ก็ยังทักครั้งเดียวตามที่เจ้าของกำหนด)
+        $sent = 0;
+        foreach ($reachable as $psid) {
+            try {
+                if ($this->fb->sendMessage($psid, $text)) {
+                    $sent++;
+                } else {
+                    Log::warning('📩 ส่งแจ้งเตือนแอดมินไม่สำเร็จรายคน', [
+                        'psid' => $psid,
+                        'error' => $this->fb->lastFetchError ?? null,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('📩 ส่งแจ้งเตือนแอดมินล้มเหลว: '.$e->getMessage(), ['psid' => $psid]);
+            }
         }
 
-        if (! $ok) {
-            // ⚠️ ส่งไม่ผ่านมักเพราะเลยกรอบ 24 ชม. — ปลด lock ให้ลองใหม่ได้ในวันเดียวกัน
+        if ($sent === 0) {
+            // ⚠️ ไม่ถึงใครเลย — ปลด lock ให้ลองใหม่ได้ในวันเดียวกัน ไม่งั้นวันนั้นเงียบถาวร
             Cache::forget($key);
-            Log::warning('📩 แจ้งเตือนแอดมินไม่สำเร็จ (น่าจะเลยกรอบ 24 ชม.) — แอดมินต้องทักเพจสักครั้งเพื่อเปิดกรอบใหม่', [
-                'psid' => $psid,
-                'error' => $this->fb->lastFetchError ?? null,
-            ]);
+            Log::warning('📩 แจ้งเตือนแอดมินไม่ถึงใครเลย — ปลดล็อกให้ลองใหม่', ['tried' => $reachable]);
         }
 
-        return $ok;
+        Log::info('📩 แจ้งเตือนแอดมินรายวัน', ['sent' => $sent, 'reachable' => count($reachable), 'total' => count($psids)]);
+
+        return $sent > 0;
     }
 
     /**

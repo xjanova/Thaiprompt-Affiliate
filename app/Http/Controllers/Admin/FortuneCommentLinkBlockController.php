@@ -150,12 +150,19 @@ class FortuneCommentLinkBlockController extends Controller
     public function saveNotify(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'admin_notify_psid' => 'nullable|string|max:100',
+            // หลายคนคั่นด้วย , — 500 ตรงกับความกว้างคอลัมน์จริง ไม่ให้ตัดเงียบ
+            'admin_notify_psid' => 'nullable|string|max:500',
             'admin_notify_enabled' => 'nullable|boolean',
         ]);
 
+        // normalize: ตัดช่องว่าง/บรรทัดใหม่ → เก็บเป็น a,b,c เสมอ
+        $psids = array_values(array_unique(array_filter(
+            array_map('trim', preg_split('/[,\s]+/', (string) ($validated['admin_notify_psid'] ?? '')) ?: []),
+            fn ($p) => $p !== ''
+        )));
+
         $settings = FortuneTellingSetting::getSettings();
-        $settings->admin_notify_psid = $validated['admin_notify_psid'] ?: null;
+        $settings->admin_notify_psid = ! empty($psids) ? implode(',', $psids) : null;
         $settings->admin_notify_enabled = (bool) ($validated['admin_notify_enabled'] ?? false);
         $settings->save();
         FortuneTellingSetting::clearSettingsCache();
@@ -176,26 +183,39 @@ class FortuneCommentLinkBlockController extends Controller
     /**
      * ทดสอบส่งแจ้งเตือนทันที — ใช้เช็คว่ากรอบ 24 ชม. ยังเปิดอยู่ไหม
      */
-    public function testNotify(): RedirectResponse
+    public function testNotify(CommentBlockAdminNotifier $notifier): RedirectResponse
     {
-        $settings = FortuneTellingSetting::getSettings();
-        $psid = $settings->admin_notify_psid ?? null;
+        $psids = $notifier->adminPsids();
 
-        if (empty($psid)) {
+        if (empty($psids)) {
             return back()->with('warning', '⚠️ ยังไม่ได้ตั้ง PSID แอดมิน');
         }
 
-        $ok = app(FacebookWebhookService::class)->sendMessage(
-            $psid,
-            "🔔 ทดสอบการแจ้งเตือน\n\nถ้าเห็นข้อความนี้ แปลว่าระบบแจ้งเตือนคอมเมนต์แปะลิงก์พร้อมใช้งานแล้ว\n\nพิมพ์ \"สแปม\" เพื่อดูรายการล่าสุดได้ทุกเมื่อ"
-        );
+        $fb = app(FacebookWebhookService::class);
+        $text = "🔔 ทดสอบการแจ้งเตือน\n\nถ้าเห็นข้อความนี้ แปลว่าระบบแจ้งเตือนคอมเมนต์ผิดกติกาพร้อมใช้งานแล้ว\n\nพิมพ์ \"สแปม\" เพื่อดูรายการล่าสุดได้ทุกเมื่อ";
 
-        return back()->with(
-            $ok ? 'success' : 'warning',
-            $ok
-                ? '✅ ส่งข้อความทดสอบแล้ว — เช็คใน Messenger'
-                : '⚠️ ส่งไม่สำเร็จ — มักเพราะเลยกรอบ 24 ชม. ให้แอดมินทักเพจจากบัญชีส่วนตัวสัก 1 ข้อความก่อน แล้วลองใหม่'
-        );
+        // รายงานผลรายคน — ถ้าคนไหนไม่ถึงจะได้รู้ว่าต้องให้เขาทักเพจก่อน
+        $ok = [];
+        $fail = [];
+        foreach ($psids as $psid) {
+            try {
+                if ($fb->sendMessage($psid, $text)) {
+                    $ok[] = $psid;
+                } else {
+                    $fail[] = $psid;
+                }
+            } catch (\Throwable $e) {
+                $fail[] = $psid;
+            }
+        }
+
+        $msg = '✅ ส่งสำเร็จ '.count($ok).'/'.count($psids).' คน';
+        if (! empty($fail)) {
+            $msg .= ' · ❌ ไม่ถึง: '.implode(', ', $fail)
+                .' (เลยกรอบ 24 ชม. — ให้เขาทักเพจจากบัญชีส่วนตัวสัก 1 ข้อความก่อน)';
+        }
+
+        return back()->with(empty($fail) ? 'success' : 'warning', $msg);
     }
 
     /**

@@ -104,11 +104,16 @@
                 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; align-items:end;">
                     <div style="min-width:0;">
                         <label style="display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
-                            PSID ของแอดมิน (Facebook)
+                            PSID ของแอดมิน (Facebook) — หลายคนคั่นด้วย ,
                         </label>
                         <input type="text" name="admin_notify_psid" value="{{ $notifyPsid }}"
-                            placeholder="เช่น 26165964502999706"
+                            placeholder="26165964502999706, 37818258501105933"
                             class="tp-well tp-input" style="font-family:ui-monospace,monospace;">
+                        @if($notifyPsid)
+                            <div class="tp-muted" style="font-size:11.5px; margin-top:5px;">
+                                ส่งอยู่ {{ count(array_filter(preg_split('/[,\s]+/', $notifyPsid) ?: [])) }} คน
+                            </div>
+                        @endif
                     </div>
                     <div>
                         <label style="display:flex; align-items:center; gap:9px; font-size:13px; cursor:pointer;">
