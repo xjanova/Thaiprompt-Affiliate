@@ -1256,6 +1256,36 @@ class FacebookWebhookController extends Controller
         $threshold = max(1, (int) ($this->settings->comment_flood_threshold ?? 5));
         $windowMin = max(1, (int) ($this->settings->comment_flood_window_minutes ?? 60));
 
+        // 🛡️ ด่านที่ 1 — "เคยคุยกับเพจจริงไหม" ตัวแยกสแปมกับแฟนที่แม่นที่สุด
+        //   ข้อมูลจริง 2026-08-09: แฟนที่โดนบล็อกผิด 3 คน ทุกคนมี real_text_count > 0
+        //   + whitelisted=true (เคยทัก DM คุยจริง) · ส่วนสแปมลิงก์ทุกรายที่เคยจับได้
+        //   (whatsapp/tiktok/namlap/hips/families) **ไม่มีใครเคยทัก DM เลยสักคน**
+        //   ⇒ คนที่เคยคุยจริง ไม่ใช่บอทฟาร์ม ต่อให้คอมรัวก็คือแฟนตัวยง ห้ามแตะ
+        try {
+            $known = \App\Models\FortuneContactSignal::where('platform', 'facebook')
+                ->where('platform_user_id', $fromId)
+                ->where(function ($q) {
+                    $q->where('whitelisted', true)->orWhere('real_text_count', '>', 0);
+                })
+                ->exists();
+            if ($known) {
+                return false;
+            }
+        } catch (\Throwable $e) {
+            // เช็คไม่ได้ → ถือว่าเป็นคนรู้จัก (fail-safe ไปทางไม่บล็อก)
+            Log::debug('moderateCommentFlood: เช็ค contact signal ไม่ได้ ปล่อยผ่าน: '.$e->getMessage());
+
+            return false;
+        }
+
+        // 🔁 ด่านที่ 2 — กัน webhook ซ้ำ นับเฉพาะ comment_id ที่ยังไม่เคยเห็น
+        //   ⚠️ Facebook ส่ง webhook ของคอมเมนต์เดียวกัน **2 ครั้ง** (พิสูจน์จาก log จริง:
+        //   "รับค่ะ" 15:25:11 + 15:25:12 · "พร้อมราคาสาธุสาธุจ้า" 15:25:34 สองครั้งวินาทีเดียวกัน)
+        //   ของเดิมนับทุก event ⇒ ตัวเลขพองเป็น 2 เท่า คนคอมจริง 3 ครั้งกลายเป็น 6 แล้วโดนแบน
+        if (! Cache::add('fb_cmt_seen:'.$commentId, 1, now()->addMinutes($windowMin))) {
+            return false;
+        }
+
         // นับต่อ (โพสต์ + คน) ภายในกรอบเวลา — Cache::add สร้าง key พร้อม TTL
         // แล้ว increment ไม่ต่ออายุ TTL ⇒ ครบกรอบ key หายเอง เริ่มนับใหม่
         $key = 'fb_cmt_flood:'.md5($postId.'|'.$fromId);
