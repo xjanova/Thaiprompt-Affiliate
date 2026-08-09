@@ -1308,6 +1308,44 @@ class FacebookWebhookController extends Controller
             'window_minutes' => $windowMin,
         ]);
 
+        // 📡 โหมด notify (default) — บันทึกเข้าหน้าจัดการ + เตือนแอดมิน แต่ **ไม่บล็อกใคร**
+        //   ข้อมูลจริง 2026-08-09: สแปมเมอร์ 22/25 คน (88%) โพสต์ครั้งเดียวจบ เกณฑ์คอมรัว
+        //   จับไม่ได้อยู่ดี · ส่วนแฟนสายมูคอม 4 ครั้งใน 63 วินาที (รัวกว่าสแปม)
+        //   ⇒ ถ้าให้ flood แบนเอง = พลาดสแปมเกือบหมดแล้วไปโดนลูกค้าแทน (เกิดจริง 3 ราย)
+        //   ตัวที่แยกได้แม่นคือ "มีลิงก์ไหม" ซึ่งมีด่านของตัวเองอยู่แล้ว
+        if (($this->settings->comment_flood_action ?? 'notify') !== 'block') {
+            try {
+                if (! \App\Models\FortuneCommentLinkBlock::where('comment_id', $commentId)->exists()) {
+                    \App\Models\FortuneCommentLinkBlock::create([
+                        'platform' => 'facebook',
+                        'violation_type' => 'flood',
+                        'platform_user_id' => $fromId,
+                        'display_name' => is_string($comment['from']['name'] ?? null) ? $comment['from']['name'] : null,
+                        'comment_id' => $commentId,
+                        'post_id' => $postId,
+                        'permalink' => \App\Models\FortuneCommentLinkBlock::buildPermalink(
+                            $postId, $commentId, $this->settings->facebook_page_id ?? null
+                        ),
+                        'message' => mb_substr((string) ($comment['message'] ?? ''), 0, 2000),
+                        'flood_count' => $count,
+                        'detected_from' => 'text',
+                        'page_blocked' => false,
+                        'bot_banned' => false,
+                        'hide_succeeded' => false,
+                        'status' => 'detect_only',
+                        'is_read' => false,
+                    ]);
+
+                    app(\App\Services\Fortune\CommentBlockAdminNotifier::class)->notifyDailyOnce();
+                }
+            } catch (\Throwable $e) {
+                Log::warning('moderateCommentFlood(notify): บันทึกไม่สำเร็จ: '.$e->getMessage());
+            }
+
+            // ⬅️ คืน false — ปล่อยให้ลูกค้าเดิน flow ปกติทุกอย่าง (เขาอาจเป็นแฟนตัวยง)
+            return false;
+        }
+
         // บันทึกครั้งเดียวต่อ (คน + โพสต์) — ไม่งั้นคอมที่ 7, 8, 9 จะสร้างแถวใหม่รัวๆ
         // (ยังคืน true เพื่อหยุด flow ทุกครั้ง — คนนี้ถูกบล็อกไปแล้ว ห้าม DM ต่อ)
         try {
