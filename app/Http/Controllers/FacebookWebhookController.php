@@ -768,12 +768,62 @@ class FacebookWebhookController extends Controller
      * ใช้ Send API RESPONSE — ถ้าล้มเหลวด้วย error 551 (user not available)
      * → skip ไม่ fallback MESSAGE_TAG เพราะ reaction อย่างเดียวไม่เพียงพอให้ FB อนุญาต tag
      */
+    /**
+     * ⏱️ ยังส่ง DM ตรงหาคนนี้ได้ไหม (อยู่ในกรอบ 24 ชม. ของ Facebook หรือเปล่า)
+     *
+     * Facebook ให้ส่งข้อความหาผู้ใช้ได้เฉพาะภายใน 24 ชม. นับจากที่ "เขาทักเพจเอง"
+     * การกดไลก์/คอมเมนต์ **ไม่นับ** ว่าเปิดกรอบ
+     *
+     * เช็ค 2 แหล่งแล้ว OR กัน เพราะแต่ละอันมีจุดบอดคนละแบบ:
+     * - Cache `fb_last_inbound:` — แม่นที่สุด ปั๊มบนสุดของ processMessage ก่อน early return
+     *   ทุกจุด แต่หายเมื่อ deploy รัน cache:clear
+     * - `fortune_contact_signals.last_seen_at` — อยู่ถาวรใน DB แต่ record() ถูกเรียกท้ายเมธอด
+     *   โดยมี return; คั่นก่อนหน้า 13 จุด ⇒ ข้อความบางส่วนไม่ถูกบันทึก
+     *
+     * @return bool true = ส่งได้ (หรือเช็คไม่ได้ → ปล่อยผ่าน ไม่ตัดฟีเจอร์ทิ้ง)
+     */
+    protected function canReceiveDirectDm(string $userId): bool
+    {
+        if (Cache::has('fb_last_inbound:'.$userId)) {
+            return true;
+        }
+
+        try {
+            return \App\Models\FortuneContactSignal::where('platform', 'facebook')
+                ->where('platform_user_id', $userId)
+                ->where('last_seen_at', '>=', now()->subHours(24))
+                ->exists();
+        } catch (\Throwable $e) {
+            // เช็คไม่ได้ → fail-open ดีกว่าเงียบใส่ลูกค้า
+            Log::debug('canReceiveDirectDm: เช็คไม่ได้ ปล่อยผ่าน: '.$e->getMessage());
+
+            return true;
+        }
+    }
+
     protected function tryReactionDm(FortunePostReaction $reaction): void
     {
         $reaction->dm_attempted = true;
         $userId = $reaction->facebook_user_id;
 
         try {
+            // 🚫 (2026-08-09) ยิงเฉพาะคนที่ยังอยู่ในกรอบ 24 ชม. — ไม่งั้น "ยิงตกน้ำ"
+            //   คนกดไลก์ไม่มี comment_id ⇒ ใช้ Private Reply ข้ามกรอบ 24 ชม. ไม่ได้
+            //   (กฎนี้ยืนยันแล้วใน incident 2026-07-31 — ทางเดียวคือ Private Reply)
+            //   ของเดิมยิงเลยแล้วปล่อยล้ม: วันเดียว 2,327 ครั้ง สำเร็จ 4 = 0.17%
+            //   FB เห็นเพจยิง API พังรัวๆ = สัญญาณสแปม → เคยโดน #2022 จำกัดสิทธิ์มาแล้ว
+            //   เช็คก่อนยิง = DM ที่ส่งถึงจริงยังได้ครบเท่าเดิม ตัดเฉพาะที่ไม่มีทางถึง
+            if (! $this->canReceiveDirectDm($userId)) {
+                Log::info('👍 Reaction DM ข้าม — อยู่นอกกรอบ 24 ชม. (ไม่ยิง API กันสัญญาณสแปม)', [
+                    'user_id' => $userId,
+                    'post_id' => $reaction->facebook_post_id,
+                ]);
+                $reaction->dm_success = false;
+                $reaction->save();
+
+                return;
+            }
+
             // 🔒 (2026-05-21) 24h rolling cooldown (reverted จาก 3-day — คนเงียบเลย)
             //    DB query — ถ้า user คนนี้ได้รับ DM (reaction OR comment) ใน 24 ชม.
             //    ที่ผ่านมา → ข้าม. ใช้ now()->subHours(24) (rolling)
@@ -2120,6 +2170,13 @@ class FacebookWebhookController extends Controller
         if (empty($senderId)) {
             return;
         }
+
+        // ⏱️ (2026-08-09) ปั๊มเวลา "ทักเข้ามาล่าสุด" — ต้องอยู่บนสุดก่อน early return ทุกจุด
+        //   ใช้ตัดสินว่ายังอยู่ในกรอบ 24 ชม. ของ FB ไหม ก่อนจะยิง DM ตรงหาใคร
+        //   ⚠️ ห้ามพึ่ง FortuneContactSignal::last_seen_at อย่างเดียว — record() อยู่ท้ายเมธอด
+        //      โดยมี return; คั่นก่อนหน้าถึง 13 จุด ⇒ ข้อความบางส่วนไม่เคยอัปเดตเวลา
+        //      แล้วเราจะข้าม DM ที่จริงๆ ส่งถึงได้ (เสียลูกค้าฟรี)
+        Cache::put('fb_last_inbound:'.$senderId, true, now()->addHours(24));
 
         // 🔒 (2026-05-03) H1 — Message ID dedupe (กัน FB webhook retry สร้าง reading ซ้ำ)
         //    FB จะ retry ถ้า server ตอบ non-200 ภายในไม่กี่วินาที — เคยทำให้:
