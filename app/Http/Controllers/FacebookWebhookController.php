@@ -1005,6 +1005,14 @@ class FacebookWebhookController extends Controller
             }
         }
 
+        // 🌊 (2026-08-09) กันสแปมคอมเมนต์รัว — คอมเกินกำหนดในโพสต์เดียว = แบนไว้ก่อน
+        //    แยก gate จาก auto_hide_link_comments เพราะเป็นคนละความผิดกัน
+        if (! empty($commentId) && $fromId !== ($this->settings->facebook_page_id ?? null)) {
+            if ($this->moderateCommentFlood($comment)) {
+                return;
+            }
+        }
+
         // 👍 Auto-like ทุกคอมเม้นต์ที่มาจาก user (ไม่ใช่จากเพจเอง)
         //    — ครั้งเดียวต่อ comment_id (cache 24 ชม.)
         //    — best-effort: ถ้าล้มยังไป flow ต่อได้
@@ -1152,7 +1160,104 @@ class FacebookWebhookController extends Controller
             Log::warning('moderateLinkComment: อ่านตาราง fortune_comment_link_blocks ไม่ได้: '.$e->getMessage());
         }
 
-        // ── 1) ลองซ่อน/ลบคอมเมนต์ (จะเริ่มสำเร็จเองทันทีที่ App Review ผ่าน) ──
+        return $this->blockCommenterAndRecord($comment, 'link', [
+            'matched_domain' => $domain,
+            'detected_from' => $detectedFrom,
+            'evidence' => $evidence,
+            'reason' => 'auto: โพสต์ลิงก์ภายนอกในคอมเมนต์ ('.$domain.')',
+        ]);
+    }
+
+    /**
+     * 🌊 จับ "คอมเมนต์รัวในโพสต์เดียว" → บล็อก + เข้าหน้าจัดการเดียวกับคนแปะลิงก์
+     *
+     * เจ้าของกำหนด (2026-08-09): คอมเมนต์เกิน 5 ครั้งในโพสต์เดียว = ถือว่าสแปม แบนไว้ก่อน
+     *
+     * นับด้วย Cache แทน DB เพราะต้องเช็คทุกคอมเมนต์ที่วิ่งเข้ามา — query ตาราง
+     * 430,000 แถวทุกครั้งจะหน่วง webhook (FB timeout แล้ว retry = ยิ่งพัง)
+     * counter หมดอายุ 7 วัน และแยกตามโพสต์ → คนละโพสต์นับใหม่
+     *
+     * 📊 อ้างอิงจากข้อมูลจริง: สแกนคอมเมนต์ล่าสุด 4,000 รายการ ไม่มีใครคอมถึง 5 ครั้ง
+     *    ในโพสต์เดียวเลย → เกณฑ์นี้เป็นตาข่ายกันเหตุ ไม่ใช่ตัวกวาดคนปกติ
+     *
+     * @return bool true = จัดการแล้ว (caller ต้องหยุด flow)
+     */
+    protected function moderateCommentFlood(array $comment): bool
+    {
+        if (! ($this->settings->comment_flood_enabled ?? true)) {
+            return false;
+        }
+
+        $commentId = (string) ($comment['comment_id'] ?? '');
+        $fromId = (string) ($comment['from']['id'] ?? '');
+        $postId = (string) ($comment['post_id'] ?? '');
+
+        if ($commentId === '' || $fromId === '' || $postId === '') {
+            return false;
+        }
+
+        $threshold = max(1, (int) ($this->settings->comment_flood_threshold ?? 5));
+
+        // นับต่อ (โพสต์ + คน) — Cache::add ก่อนเพื่อสร้าง key พร้อม TTL แล้วค่อย increment
+        $key = 'fb_cmt_flood:'.md5($postId.'|'.$fromId);
+        if (! Cache::add($key, 1, now()->addDays(7))) {
+            $count = (int) Cache::increment($key);
+        } else {
+            $count = 1;
+        }
+
+        // "เกิน N" = ต้องมากกว่า N จริงๆ (N=5 → โดนตอนคอมที่ 6)
+        if ($count <= $threshold) {
+            return false;
+        }
+
+        Log::warning('🌊 คอมเมนต์รัวเกินกำหนดในโพสต์เดียว', [
+            'from_id' => $fromId,
+            'post_id' => $postId,
+            'count' => $count,
+            'threshold' => $threshold,
+        ]);
+
+        // บันทึกครั้งเดียวต่อ (คน + โพสต์) — ไม่งั้นคอมที่ 7, 8, 9 จะสร้างแถวใหม่รัวๆ
+        // (ยังคืน true เพื่อหยุด flow ทุกครั้ง — คนนี้ถูกบล็อกไปแล้ว ห้าม DM ต่อ)
+        try {
+            $already = \App\Models\FortuneCommentLinkBlock::where('platform_user_id', $fromId)
+                ->where('post_id', $postId)
+                ->where('violation_type', 'flood')
+                ->exists();
+            if ($already) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('moderateCommentFlood: เช็คแถวเดิมไม่ได้: '.$e->getMessage());
+        }
+
+        return $this->blockCommenterAndRecord($comment, 'flood', [
+            'flood_count' => $count,
+            'evidence' => (string) ($comment['message'] ?? ''),
+            'reason' => 'auto: คอมเมนต์รัว '.$count.' ครั้งในโพสต์เดียว (เกิน '.$threshold.')',
+        ]);
+    }
+
+    /**
+     * 🚫 บล็อกคนคอมเมนต์ + บันทึกลงหน้าจัดการ (ใช้ร่วมกันทุกประเภทความผิด)
+     *
+     * รวมขั้นตอนไว้ที่เดียว: ลองซ่อนคอมเมนต์ → บล็อกบนเพจ → แบนระดับบอท →
+     * บันทึกแถว → กริ่งเตือนแอดมิน (วันละครั้ง)
+     *
+     * @param  array<string, mixed>  $comment  payload จาก webhook
+     * @param  string  $violationType  'link' | 'flood'
+     * @param  array<string, mixed>  $meta  matched_domain / detected_from / flood_count / evidence / reason
+     * @return bool true เสมอ (จัดการแล้ว caller ต้องหยุด flow)
+     */
+    protected function blockCommenterAndRecord(array $comment, string $violationType, array $meta = []): bool
+    {
+        $commentId = (string) ($comment['comment_id'] ?? '');
+        $fromId = (string) ($comment['from']['id'] ?? '');
+        $fromName = $comment['from']['name'] ?? null;
+        $postId = $comment['post_id'] ?? null;
+
+        // 1) ลองซ่อน/ลบคอมเมนต์ (จะเริ่มสำเร็จเองทันทีที่ App Review ผ่าน)
         $action = $this->settings->link_comment_action ?? 'hide';
         $hideOk = false;
         try {
@@ -1160,12 +1265,11 @@ class FacebookWebhookController extends Controller
                 ? $this->facebookService->deleteComment($commentId)
                 : $this->facebookService->hideComment($commentId);
         } catch (\Throwable $e) {
-            Log::debug('moderateLinkComment: hide/delete ล้ม (คาดไว้แล้วถ้ายังไม่มี scope): '.$e->getMessage());
+            Log::debug('blockCommenterAndRecord: hide/delete ล้ม (คาดไว้ถ้ายังไม่มี scope): '.$e->getMessage());
         }
 
-        // ── 2) บล็อกบนเพจจริง — ห้าม DM + ห้ามคอมเมนต์/โพสต์ ──
-        // 💡 comment.from.id ใช้เป็น PSID ได้ — ยืนยันเชิงประจักษ์จากที่ระบบ DM คนคอมเมนต์
-        //    ด้วย id ตัวนี้สำเร็จมาแล้วกว่า 2,000 ครั้ง (handleCommentEngagement)
+        // 2) บล็อกบนเพจจริง — ห้าม DM + ห้ามคอมเมนต์/โพสต์
+        // 💡 comment.from.id ใช้เป็น PSID ได้ — ยืนยันจากที่ระบบ DM คนคอมเมนต์ด้วย id นี้สำเร็จมาแล้ว
         $blocked = false;
         $blockError = null;
         try {
@@ -1177,26 +1281,27 @@ class FacebookWebhookController extends Controller
             $blockError = $e->getMessage();
         }
 
-        // ── 3) แบนระดับบอท (บอทเลิกคุยด้วย) ──
+        // 3) แบนระดับบอท (บอทเลิกคุยด้วย)
         $botBanned = false;
         try {
             $this->banService->ban(
                 'facebook',
                 $fromId,
                 null, // ถาวร
-                'auto: โพสต์ลิงก์ภายนอกในคอมเมนต์ ('.$domain.')',
+                (string) ($meta['reason'] ?? 'auto: คอมเมนต์ผิดกติกา'),
                 null,
                 is_string($fromName) ? $fromName : null,
             );
             $botBanned = true;
         } catch (\Throwable $e) {
-            Log::warning('moderateLinkComment: ban ระดับบอทล้ม: '.$e->getMessage());
+            Log::warning('blockCommenterAndRecord: ban ระดับบอทล้ม: '.$e->getMessage());
         }
 
-        // ── 4) บันทึกให้แอดมินเข้าไปลบคอมเมนต์เอง + ปลดบล็อกได้ถ้าพลาด ──
+        // 4) บันทึกให้แอดมินเข้าไปลบคอมเมนต์เอง + ปลดบล็อกได้ถ้าพลาด
         try {
             \App\Models\FortuneCommentLinkBlock::create([
                 'platform' => 'facebook',
+                'violation_type' => $violationType,
                 'platform_user_id' => $fromId,
                 'display_name' => is_string($fromName) ? $fromName : null,
                 'comment_id' => $commentId,
@@ -1206,9 +1311,10 @@ class FacebookWebhookController extends Controller
                     $commentId,
                     $this->settings->facebook_page_id ?? null
                 ),
-                'message' => mb_substr($evidence, 0, 2000),
-                'matched_domain' => $domain,
-                'detected_from' => $detectedFrom,
+                'message' => mb_substr((string) ($meta['evidence'] ?? ''), 0, 2000),
+                'matched_domain' => $meta['matched_domain'] ?? null,
+                'flood_count' => $meta['flood_count'] ?? null,
+                'detected_from' => $meta['detected_from'] ?? 'text',
                 'page_blocked' => $blocked,
                 'block_error' => $blockError ? mb_substr($blockError, 0, 500) : null,
                 'bot_banned' => $botBanned,
@@ -1218,22 +1324,20 @@ class FacebookWebhookController extends Controller
                 'blocked_at' => now(),
             ]);
         } catch (\Throwable $e) {
-            Log::error('moderateLinkComment: บันทึกแถวไม่สำเร็จ (migration ยังไม่รัน?): '.$e->getMessage());
+            Log::error('blockCommenterAndRecord: บันทึกแถวไม่สำเร็จ (migration ยังไม่รัน?): '.$e->getMessage());
         }
 
-        // ── 5) กริ่งเตือนแอดมินทาง Messenger — วันละไม่เกิน 1 ครั้ง ──
-        //    Messenger ส่งฟรีไม่จำกัด (ต่างจาก LINE ที่คิดโควต้าทุก push)
-        //    ตัวล็อกอยู่ใน notifyDailyOnce() ใช้ Cache::add แบบ atomic กันยิงซ้ำ
+        // 5) กริ่งเตือนแอดมินทาง Messenger — วันละไม่เกิน 1 ครั้ง (Cache::add แบบ atomic)
         try {
             app(\App\Services\Fortune\CommentBlockAdminNotifier::class)->notifyDailyOnce();
         } catch (\Throwable $e) {
-            Log::warning('moderateLinkComment: แจ้งเตือนแอดมินล้ม (non-blocking): '.$e->getMessage());
+            Log::warning('blockCommenterAndRecord: แจ้งเตือนแอดมินล้ม (non-blocking): '.$e->getMessage());
         }
 
-        Log::warning('🚫 บล็อกคนโพสต์ลิงก์ในคอมเมนต์', [
+        Log::warning('🚫 บล็อกคนคอมเมนต์ผิดกติกา', [
+            'violation' => $violationType,
             'comment_id' => $commentId,
             'from_id' => $fromId,
-            'domain' => $domain,
             'page_blocked' => $blocked,
             'block_error' => $blockError,
             'bot_banned' => $botBanned,

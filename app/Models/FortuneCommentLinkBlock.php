@@ -47,6 +47,7 @@ class FortuneCommentLinkBlock extends Model
      */
     protected $fillable = [
         'platform',
+        'violation_type',
         'platform_user_id',
         'display_name',
         'comment_id',
@@ -54,6 +55,7 @@ class FortuneCommentLinkBlock extends Model
         'permalink',
         'message',
         'matched_domain',
+        'flood_count',
         'detected_from',
         'page_blocked',
         'block_error',
@@ -110,6 +112,20 @@ class FortuneCommentLinkBlock extends Model
     public function scopeStillBlocked(Builder $query): Builder
     {
         return $query->where('status', 'blocked');
+    }
+
+    /**
+     * ข้อความอธิบายความผิด — ใช้ทั้งหน้าแอดมินและข้อความแจ้งเตือน Messenger
+     *
+     * @return string เช่น 'แปะลิงก์ภายนอก (huay-th.co)' หรือ 'คอมเมนต์รัว 7 ครั้งในโพสต์เดียว'
+     */
+    public function violationLabel(): string
+    {
+        if ($this->violation_type === 'flood') {
+            return 'คอมเมนต์รัว '.($this->flood_count ?: '?').' ครั้งในโพสต์เดียว';
+        }
+
+        return 'แปะลิงก์ภายนอก'.($this->matched_domain ? ' ('.$this->matched_domain.')' : '');
     }
 
     /**

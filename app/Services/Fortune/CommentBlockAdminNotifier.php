@@ -222,7 +222,7 @@ class CommentBlockAdminNotifier
             $no = $i + 1;
             $name = $b->display_name ?: 'ไม่ทราบชื่อ';
             $lines[] = "{$no}. {$name}";
-            $lines[] = '   โดเมน: '.($b->matched_domain ?: '-');
+            $lines[] = '   ความผิด: '.$b->violationLabel();
             $lines[] = '   '.($b->permalink ?: '(ไม่มีลิงก์ — ค้นจากชื่อในเพจ)');
             $lines[] = '';
         }

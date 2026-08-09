@@ -246,6 +246,8 @@
                         <select name="filter"
                                 style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
                             <option value="all" @selected($filter === 'all')>ทั้งหมด</option>
+                            <option value="link" @selected($filter === 'link')>🔗 ความผิด: แปะลิงก์</option>
+                            <option value="flood" @selected($filter === 'flood')>🌊 ความผิด: คอมเมนต์รัว</option>
                             <option value="need_delete" @selected($filter === 'need_delete')>🗑️ รอแอดมินไปลบ</option>
                             <option value="unread" @selected($filter === 'unread')>🔔 ยังไม่รับทราบ</option>
                             <option value="blocked" @selected($filter === 'blocked')>🚫 ยังถูกบล็อก</option>
@@ -314,9 +316,14 @@
 
                                 {{-- ลิงก์ + ข้อความ --}}
                                 <td style="padding:14px 16px; vertical-align:top; max-width:340px;">
-                                    @if($block->matched_domain)
+                                    {{-- ระบุความผิดให้ชัด แอดมินจะได้ตัดสินได้เร็ว --}}
+                                    @if($block->violation_type === 'flood')
+                                        <span class="tp-pill" style="background:rgba(199,138,58,.18); color:#c78a3a; font-weight:700;">
+                                            🌊 คอมเมนต์รัว {{ $block->flood_count ?: '?' }} ครั้ง/โพสต์
+                                        </span>
+                                    @elseif($block->matched_domain)
                                         <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f; font-weight:700; font-family:ui-monospace,monospace;">
-                                            {{ $block->matched_domain }}
+                                            🔗 {{ $block->matched_domain }}
                                         </span>
                                     @endif
                                     @if($block->message)
