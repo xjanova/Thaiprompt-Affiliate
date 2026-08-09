@@ -122,7 +122,9 @@ class FortuneCommentLinkBlock extends Model
     public function violationLabel(): string
     {
         if ($this->violation_type === 'flood') {
-            return 'คอมเมนต์รัว '.($this->flood_count ?: '?').' ครั้งในโพสต์เดียว';
+            // ไม่ระบุกรอบเวลาตายตัวที่นี่ เพราะแอดมินปรับค่าได้ทีหลัง
+            // แล้วป้ายของแถวเก่าจะเพี้ยนตาม — เวลาจริงอยู่ในเหตุผลของ ban แล้ว
+            return 'คอมเมนต์รัว '.($this->flood_count ?: '?').' ครั้งติดกันบนโพสต์เดียว';
         }
 
         return 'แปะลิงก์ภายนอก'.($this->matched_domain ? ' ('.$this->matched_domain.')' : '');

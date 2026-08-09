@@ -1223,9 +1223,16 @@ class FacebookWebhookController extends Controller
      *
      * เจ้าของกำหนด (2026-08-09): คอมเมนต์เกิน 5 ครั้งในโพสต์เดียว = ถือว่าสแปม แบนไว้ก่อน
      *
+     * ⏱️ วัดเป็น "อัตราเร็ว" ไม่ใช่ "ยอดสะสม" — เกิน N ครั้งภายในกรอบเวลาเดียว (default 1 ชม.)
+     *   เจ้าของท้วงถูก (2026-08-09): "บางคนมาโพสวันหนึ่งหลายครั้งได้ ปกตินะ"
+     *   ของเดิมตั้ง TTL 7 วัน = คนคอมวันละครั้งครบ 6 วันแล้วโดนแบน ทั้งที่ไม่ผิดอะไร
+     *
+     * ใช้ fixed window นับจากคอมเมนต์แรก (แนวเดียวกับ chat debounce ของระบบนี้) —
+     * key ตั้ง TTL ตอนสร้าง แล้ว increment ไม่ต่ออายุ ⇒ ครบกรอบก็เริ่มนับใหม่เอง
+     *
      * นับด้วย Cache แทน DB เพราะต้องเช็คทุกคอมเมนต์ที่วิ่งเข้ามา — query ตาราง
      * 430,000 แถวทุกครั้งจะหน่วง webhook (FB timeout แล้ว retry = ยิ่งพัง)
-     * counter หมดอายุ 7 วัน และแยกตามโพสต์ → คนละโพสต์นับใหม่
+     * แยก key ตามโพสต์ → คนละโพสต์นับใหม่
      *
      * 📊 อ้างอิงจากข้อมูลจริง: สแกนคอมเมนต์ล่าสุด 4,000 รายการ ไม่มีใครคอมถึง 5 ครั้ง
      *    ในโพสต์เดียวเลย → เกณฑ์นี้เป็นตาข่ายกันเหตุ ไม่ใช่ตัวกวาดคนปกติ
@@ -1247,16 +1254,18 @@ class FacebookWebhookController extends Controller
         }
 
         $threshold = max(1, (int) ($this->settings->comment_flood_threshold ?? 5));
+        $windowMin = max(1, (int) ($this->settings->comment_flood_window_minutes ?? 60));
 
-        // นับต่อ (โพสต์ + คน) — Cache::add ก่อนเพื่อสร้าง key พร้อม TTL แล้วค่อย increment
+        // นับต่อ (โพสต์ + คน) ภายในกรอบเวลา — Cache::add สร้าง key พร้อม TTL
+        // แล้ว increment ไม่ต่ออายุ TTL ⇒ ครบกรอบ key หายเอง เริ่มนับใหม่
         $key = 'fb_cmt_flood:'.md5($postId.'|'.$fromId);
-        if (! Cache::add($key, 1, now()->addDays(7))) {
+        if (! Cache::add($key, 1, now()->addMinutes($windowMin))) {
             $count = (int) Cache::increment($key);
         } else {
             $count = 1;
         }
 
-        // "เกิน N" = ต้องมากกว่า N จริงๆ (N=5 → โดนตอนคอมที่ 6)
+        // "เกิน N" = ต้องมากกว่า N จริงๆ (N=5 → โดนตอนคอมที่ 6 ภายในกรอบเดียวกัน)
         if ($count <= $threshold) {
             return false;
         }
@@ -1266,14 +1275,18 @@ class FacebookWebhookController extends Controller
             'post_id' => $postId,
             'count' => $count,
             'threshold' => $threshold,
+            'window_minutes' => $windowMin,
         ]);
 
         // บันทึกครั้งเดียวต่อ (คน + โพสต์) — ไม่งั้นคอมที่ 7, 8, 9 จะสร้างแถวใหม่รัวๆ
         // (ยังคืน true เพื่อหยุด flow ทุกครั้ง — คนนี้ถูกบล็อกไปแล้ว ห้าม DM ต่อ)
         try {
+            // เช็คเฉพาะที่ "ยังบล็อกอยู่" — ถ้าแอดมินปลดบล็อกไปแล้วแต่เขากลับมารัวอีก
+            // ต้องบันทึกใหม่ได้ ไม่งั้นรอบสองจะเงียบหายไม่มีหลักฐาน
             $already = \App\Models\FortuneCommentLinkBlock::where('platform_user_id', $fromId)
                 ->where('post_id', $postId)
                 ->where('violation_type', 'flood')
+                ->where('status', 'blocked')
                 ->exists();
             if ($already) {
                 return true;
@@ -1285,7 +1298,7 @@ class FacebookWebhookController extends Controller
         return $this->blockCommenterAndRecord($comment, 'flood', [
             'flood_count' => $count,
             'evidence' => (string) ($comment['message'] ?? ''),
-            'reason' => 'auto: คอมเมนต์รัว '.$count.' ครั้งในโพสต์เดียว (เกิน '.$threshold.')',
+            'reason' => 'auto: คอมเมนต์รัว '.$count.' ครั้งใน '.$windowMin.' นาที บนโพสต์เดียว (เกิน '.$threshold.')',
         ]);
     }
 

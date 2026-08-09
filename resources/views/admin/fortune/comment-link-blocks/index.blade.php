@@ -319,7 +319,7 @@
                                     {{-- ระบุความผิดให้ชัด แอดมินจะได้ตัดสินได้เร็ว --}}
                                     @if($block->violation_type === 'flood')
                                         <span class="tp-pill" style="background:rgba(199,138,58,.18); color:#c78a3a; font-weight:700;">
-                                            🌊 คอมเมนต์รัว {{ $block->flood_count ?: '?' }} ครั้ง/โพสต์
+                                            🌊 คอมเมนต์รัว {{ $block->flood_count ?: '?' }} ครั้งติดกัน
                                         </span>
                                     @elseif($block->matched_domain)
                                         <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f; font-weight:700; font-family:ui-monospace,monospace;">

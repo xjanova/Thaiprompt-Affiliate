@@ -438,9 +438,10 @@ class FortuneTellingSetting extends Model
         // 📩 (2026-08-09) แจ้งเตือนแอดมินทาง Messenger (ฟรี ไม่กินโควต้าแบบ LINE)
         'admin_notify_psid',
         'admin_notify_enabled',
-        // 🌊 (2026-08-09) กันคอมเมนต์รัวในโพสต์เดียว
+        // 🌊 (2026-08-09) กันคอมเมนต์รัวในโพสต์เดียว — วัดเป็น "อัตราเร็ว" ไม่ใช่ยอดสะสม
         'comment_flood_enabled',
         'comment_flood_threshold',
+        'comment_flood_window_minutes',
     ];
 
     /**
