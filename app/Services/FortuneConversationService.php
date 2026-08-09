@@ -2187,6 +2187,33 @@ class FortuneConversationService
                     return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
                 }
 
+                // 🙋 (2026-08-09) บอทเพิ่งเสนอดูดวง แล้วลูกค้าตอบรับสั้น ๆ ("ค่ะ" / "เอา" / "ok")
+                //   เคสจริง ศรีบังอร สอนภักดี — บอทถาม "อยากให้แม่หมอช่วยเปิดไพ่ดูเรื่อง
+                //   การเงินให้ไหมคะ?" ลูกค้าตอบ "ค่ะ" แล้วบอทเงียบ (ตกด่าน empty_response)
+                //   → ตอนนี้ตีเป็น "เอา" แล้วยิงเมนูแพคเกจให้เลย ไม่ปล่อยให้ AI เดาอารมณ์
+                //
+                //   ⚠️ ใช้ guard ชุดเดียวกับทางลัดเลขราคาข้างบน — บิลค้าง / กำลังทำนาย /
+                //      จ่ายแล้ว = ห้ามแย่งข้อความ (เคารพ [[rule_paid_customer_bypass_all_guards]])
+                //   ⚠️ TIER_CHOICE ปล่อย handleTierChoice ดูแลเอง (reading เดิมยังใช้ต่อได้)
+                //   ⚠️ ธง one-shot — ล้างทันทีที่ใช้ ไม่งั้น "ค่ะ" ครั้งถัดไปสร้างบิลซ้ำ
+                if (! $earlyGenericBlocking
+                    && $earlyActiveCheck?->conversation_status !== FortuneReading::STATUS_TIER_CHOICE
+                    && $this->hasPendingFortuneOffer($facebookUserId)
+                    && $this->looksLikeShortAcceptance($messageText)
+                    && ! $this->hasPendingUnpaidBill($facebookUserId)
+                    && ! $this->isInPrediction($facebookUserId)
+                    && ! $this->hasPaidActiveReading($facebookUserId)) {
+                    $this->clearPendingFortuneOffer($facebookUserId);
+
+                    Log::info('Fortune: ลูกค้าตอบรับข้อเสนอดูดวง (early-gate) → ยิงเมนูแพคเกจ', [
+                        'user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 40),
+                        'active_status' => $earlyActiveCheck?->conversation_status,
+                    ]);
+
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
+                }
+
                 // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
                 $activeReading = $earlyActiveCheck;
 
@@ -11660,7 +11687,7 @@ class FortuneConversationService
         //   🩹 (2026-05-08) Lao removed per user — Thai range U+0E01-0E5B เท่านั้น
         $textChars = preg_replace('/[^a-zA-Z\x{0E01}-\x{0E5B}]/u', '', $trimmed);
         if (mb_strlen($textChars) < 2) {
-            return 'sticker_or_emoji_only';
+            return $this->rescueSkipIfBotAsked($userId, 'sticker_or_emoji_only', $trimmed);
         }
 
         // 🚫 Skip 3: คำตอบรับเปล่า ๆ — ไม่มี context ก็ไม่ต้องตอบ
@@ -11671,10 +11698,202 @@ class FortuneConversationService
             'wow', 'ว้าว', 'อ๋อ', 'อ้าว',
         ];
         if (in_array($lowerText, $emptyResponses, true)) {
-            return 'empty_response';
+            return $this->rescueSkipIfBotAsked($userId, 'empty_response', $trimmed);
         }
 
         return null; // ตอบได้
+    }
+
+    /**
+     * 🙋 (2026-08-09) กู้ข้อความที่กำลังจะถูก skip — ถ้า "บอทเพิ่งถามคำถาม" ไป
+     *
+     * เคสจริง ศรีบังอร สอนภักดี (PSID 27294557530151538, 2026-08-09 12:22):
+     *   บอทถาม "อยากให้แม่หมอช่วยเปิดไพ่ดูเรื่องการเงินให้ไหมคะ? [OFFER_FORTUNE]"
+     *   → ลูกค้าตอบ "ค่ะ" → ตกด่าน empty_response → บอทเงียบสนิท
+     *   (14 วันย้อนหลังเจอ 389 ห้องที่ข้อความลูกค้าหาย / 132 ห้องบอทเพิ่งเสนอขาย)
+     *
+     * แก่นปัญหาเดิม: ด่าน skip วัด "ความมีสาระ" จากตัวข้อความอย่างเดียว โดยไม่ดูว่า
+     * เทิร์นก่อนหน้า **เราถามอะไรไป** — "ค่ะ" เปล่า ๆ ไร้สาระก็จริง แต่ถ้าเพิ่งถาม
+     * คำถาม yes/no มันคือคำตอบที่ถูกต้องที่สุดเท่าที่จะเป็นไปได้
+     *
+     * ⚠️ ธง one-shot — ล้างทันทีที่กู้สำเร็จ ไม่งั้นข้อความขยะถัดไปทะลุตามมาด้วย
+     * ⚠️ เรียกเฉพาะ "ตอนกำลังจะ skip" เท่านั้น — ข้อความที่ตอบได้อยู่แล้วต้องไม่กินธงทิ้ง
+     *
+     * @param  string  $skipReason  เหตุผล skip เดิม (คืนกลับถ้าไม่เข้าเงื่อนไขกู้)
+     * @return string|null null = กู้สำเร็จ (ตอบต่อ) / string = skip ตามเดิม
+     */
+    protected function rescueSkipIfBotAsked(string $userId, string $skipReason, string $preview): ?string
+    {
+        if (! $this->botAskedQuestionRecently($userId)) {
+            return $skipReason;
+        }
+
+        $this->clearBotAskedQuestion($userId);
+
+        Log::info('Fortune: ไม่ skip — บอทเพิ่งถามคำถาม ลูกค้ากำลังตอบอยู่', [
+            'user_id' => $userId,
+            'would_have_skipped' => $skipReason,
+            'text_preview' => mb_substr($preview, 0, 40),
+        ]);
+
+        return null;
+    }
+
+    /**
+     * 🙋 (2026-08-09) ธง "บอทเพิ่งถามคำถาม" — ตั้งจาก saveConversationMessage()
+     *
+     * ใช้ใน shouldSkipReply() เพื่อไม่เมินคำตอบสั้นของลูกค้า
+     */
+    protected const BOT_ASKED_TTL_MINUTES = 30;
+
+    /**
+     * 🙋 (2026-08-09) ธง "บอทเพิ่งเสนอให้ดูดวง" ([OFFER_FORTUNE])
+     *
+     * ใช้ใน early-gate เพื่อแปลคำตอบรับสั้น ("ค่ะ") เป็น "เอา" → ยิงเมนูแพคเกจ
+     */
+    protected const PENDING_OFFER_TTL_MINUTES = 30;
+
+    /**
+     * 🙋 (2026-08-09) คำตอบรับสั้น ๆ ที่ถือว่า "ตกลง" เมื่อบอทเพิ่งเสนอให้ดูดวง
+     *
+     * ⚠️ เทียบแบบ exact match หลัง normalize เท่านั้น — ห้ามใช้ substring
+     *   ไม่งั้น "ไม่เอา" จะ match "เอา" (กับดักเดิมของ DailyHoroscopeModeTrait)
+     */
+    protected const OFFER_ACCEPT_WORDS = [
+        'ค่ะ', 'คะ', 'ค่า', 'ค๊ะ', 'ค้ะ', 'ครับ', 'คับ', 'ครับผม',
+        'จ้า', 'จ้ะ', 'จ๊ะ', 'จ้าา', 'อืม', 'อือ',
+        'เอา', 'เอาค่ะ', 'เอาครับ', 'เอาจ้า', 'เอาเลย', 'เอาสิ',
+        'ได้', 'ได้ค่ะ', 'ได้ครับ', 'ได้จ้า', 'ได้เลย',
+        'ตกลง', 'ตกลงค่ะ', 'ตกลงครับ', 'ใช่', 'ใช่ค่ะ', 'ใช่ครับ',
+        'สนใจ', 'สนใจค่ะ', 'สนใจครับ', 'อยาก', 'อยากค่ะ', 'อยากครับ',
+        'ยินดี', 'ดูค่ะ', 'ดูครับ', 'ดูเลย', 'เริ่มเลย', 'จัดไป',
+        'โอเค', 'โอเคค่ะ', 'โอเคครับ', 'ok', 'okay', 'oke', 'yes', 'y',
+    ];
+
+    /**
+     * 🙋 (2026-08-09) คำปฏิเสธ/ผัดผ่อน — เจอแล้วห้ามตีความว่าตอบรับเด็ดขาด
+     *
+     * เคารพ [[rule_listen_dont_pitch_when_declining]] — ลูกค้าไม่เอา = ไม่ตื้อ
+     */
+    protected const OFFER_DECLINE_MARKERS = [
+        'ไม่', 'บ่', 'ยัง', 'เดี๋ยว', 'ทีหลัง', 'ไว้ก่อน', 'พอ', 'หยุด', 'no', 'not',
+    ];
+
+    /**
+     * 🙋 (2026-08-09) บอทเพิ่งถามคำถามลูกค้าไปหรือเปล่า (ภายใน 30 นาที)
+     */
+    protected function botAskedQuestionRecently(string $userId): bool
+    {
+        return (bool) Cache::get("fortune:bot_asked:{$userId}");
+    }
+
+    /**
+     * 🙋 (2026-08-09) ล้างธง "บอทเพิ่งถาม" (one-shot — ใช้แล้วทิ้ง)
+     */
+    protected function clearBotAskedQuestion(string $userId): void
+    {
+        Cache::forget("fortune:bot_asked:{$userId}");
+    }
+
+    /**
+     * 🙋 (2026-08-09) บอทเพิ่งเสนอให้ดูดวงไปหรือเปล่า ([OFFER_FORTUNE] ภายใน 30 นาที)
+     */
+    protected function hasPendingFortuneOffer(string $userId): bool
+    {
+        return (bool) Cache::get("fortune:pending_offer:{$userId}");
+    }
+
+    /**
+     * 🙋 (2026-08-09) ล้างธง "บอทเพิ่งเสนอดูดวง"
+     */
+    protected function clearPendingFortuneOffer(string $userId): void
+    {
+        Cache::forget("fortune:pending_offer:{$userId}");
+    }
+
+    /**
+     * 🙋 (2026-08-09) ข้อความของบอทลงท้ายด้วย "คำถาม" หรือไม่
+     *
+     * ใช้ตัดสินว่าจะตั้งธง fortune:bot_asked — ถ้าบอทถาม ลูกค้าตอบสั้นได้เสมอ
+     *
+     * @example
+     * botMessageEndsWithQuestion('อยากให้แม่หมอเปิดไพ่ให้ไหมคะ? [OFFER_FORTUNE]')  // true
+     * botMessageEndsWithQuestion('แม่หมอเปิดไพ่ให้แล้วนะคะ ✨')                      // false
+     */
+    protected function botMessageEndsWithQuestion(string $message): bool
+    {
+        $tail = trim($message);
+        if ($tail === '') {
+            return false;
+        }
+
+        // ตัดแท็กระบบท้ายข้อความออกก่อน ([OFFER_FORTUNE] / [DEEP_READING] / [ASK_SAVE])
+        //   — ตอน saveConversationMessage() ยังไม่ถูก strip (เก็บลง DB ทั้งแท็ก)
+        $tail = (string) preg_replace('/(\s*\[[A-Z_]+\])+\s*$/u', '', $tail);
+
+        // ตัดอีโมจิ/ช่องว่าง/เครื่องหมายท้ายทิ้ง แต่ **เก็บ ? และสระ-วรรณยุกต์ไทย (\p{M}) ไว้**
+        //   ⚠️ ขาด \p{M} = "ไหมคะ" จะโดนกินสระจนเทียบไม่ติด ([[rule_thai_regex_needs_mark_class]])
+        $tail = (string) preg_replace('/[^\p{L}\p{N}\p{M}?？]+$/u', '', $tail);
+        if ($tail === '') {
+            return false;
+        }
+
+        if (str_ends_with($tail, '?') || str_ends_with($tail, '？')) {
+            return true;
+        }
+
+        // คำลงท้ายที่เป็นคำถามในภาษาไทย (บางทีบอทไม่ใส่เครื่องหมาย ?)
+        $questionTails = [
+            'ไหมคะ', 'ไหมค่ะ', 'ไหมครับ', 'ไหม', 'มั้ยคะ', 'มั้ยค่ะ', 'มั้ย', 'มั๊ย',
+            'หรือเปล่า', 'รึเปล่า', 'หรือยัง', 'รึยัง', 'หรือไม่', 'ยังคะ', 'ยังค่ะ',
+            'อะไรคะ', 'อะไรค่ะ', 'อะไรบ้าง', 'ยังไงคะ', 'ยังไงค่ะ', 'เมื่อไหร่',
+            'เท่าไหร่', 'เท่าไร', 'แบบไหน', 'อันไหน', 'ใช่ไหม', 'ใช่มั้ย',
+        ];
+
+        foreach ($questionTails as $q) {
+            if (str_ends_with($tail, $q)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🙋 (2026-08-09) ข้อความลูกค้าเป็น "คำตอบรับสั้น ๆ" หรือไม่
+     *
+     * ใช้เฉพาะตอนที่รู้แน่ว่าบอทเพิ่งเสนอให้ดูดวง (มีธง pending_offer) เท่านั้น
+     * — ในบริบทอื่น "ค่ะ" เปล่า ๆ กำกวมเกินไป ห้ามตีความว่าตอบรับ
+     *
+     * @example
+     * looksLikeShortAcceptance('ค่ะ')      // true  — ตอบรับ
+     * looksLikeShortAcceptance('ไม่ค่ะ')   // false — ปฏิเสธ (ห้ามตื้อ)
+     * looksLikeShortAcceptance('ยังค่ะ')   // false — ผัดผ่อน
+     */
+    protected function looksLikeShortAcceptance(string $text): bool
+    {
+        $clean = trim($text);
+
+        // ยาวเกินไป = เป็นประโยคเล่าเรื่อง ไม่ใช่คำตอบรับสั้น → ปล่อยให้ AI chat จัดการ
+        if ($clean === '' || mb_strlen($clean) > 20) {
+            return false;
+        }
+
+        // ตัดอีโมจิ/เครื่องหมาย/ช่องว่างออก เหลือแต่ตัวอักษร (เก็บ \p{M} ไว้เสมอ)
+        $normalized = (string) preg_replace('/[^\p{L}\p{N}\p{M}]/u', '', $clean);
+        $normalized = mb_strtolower($normalized);
+        if ($normalized === '') {
+            return false;
+        }
+
+        // ❌ มีคำปฏิเสธ/ผัดผ่อน → ไม่ใช่การตอบรับ (เช็คก่อนเสมอ)
+        foreach (self::OFFER_DECLINE_MARKERS as $no) {
+            if (str_contains($normalized, $no)) {
+                return false;
+            }
+        }
+
+        return in_array($normalized, self::OFFER_ACCEPT_WORDS, true);
     }
 
     /**
@@ -20077,6 +20296,16 @@ PROMPT;
                 $offerFortune = (bool) ($this->settings->enable_sales_pitch ?? true);
 
                 if ($offerFortune) {
+                    // 🙋 (2026-08-09) ติดธง "เพิ่งเสนอดูดวง" — ลูกค้าตอบ "ค่ะ" กลับมา
+                    //   early-gate จะแปลเป็น "เอา" แล้วยิงเมนูแพคเกจให้ทันที
+                    //   เดิม: แท็กนี้แค่แปะปุ่มแล้วทิ้ง ไม่เก็บ state → คำตอบรับตกน้ำ
+                    //   (เทียบ [ASK_SAVE] ข้างล่างที่เก็บ fortune_pending_save อยู่แล้ว)
+                    Cache::put(
+                        "fortune:pending_offer:{$userId}",
+                        true,
+                        now()->addMinutes(self::PENDING_OFFER_TTL_MINUTES)
+                    );
+
                     Log::info('Fortune: AI เสนอเริ่มดูดวง (rapport built)', [
                         'user_id' => $userId,
                         'turn_count' => $userTurnCount,
@@ -20369,6 +20598,21 @@ PROMPT;
             );
 
             $conversation->addMessage($role, mb_substr($message, 0, 2000));
+
+            // 🙋 (2026-08-09) จำไว้ว่า "บอทเพิ่งถามคำถาม" → shouldSkipReply จะไม่เมินคำตอบสั้น
+            //   จุดนี้คือ chokepoint เดียวของคำตอบฝั่งบอทในโหมดคุย (AI chat / pitch / ปิดการขาย)
+            //   ตั้งธงเมื่อลงท้ายด้วยคำถาม / ล้างธงเมื่อไม่ใช่ (บอทพูดจบแล้วไม่ได้ถามอะไร)
+            if ($role === 'assistant') {
+                if ($this->botMessageEndsWithQuestion($message)) {
+                    Cache::put(
+                        "fortune:bot_asked:{$userId}",
+                        true,
+                        now()->addMinutes(self::BOT_ASKED_TTL_MINUTES)
+                    );
+                } else {
+                    $this->clearBotAskedQuestion($userId);
+                }
+            }
         } catch (\Exception $e) {
             // ไม่ block ระบบหลักถ้าบันทึก history ไม่ได้
             Log::warning('Fortune: บันทึก conversation message ไม่ได้', [
