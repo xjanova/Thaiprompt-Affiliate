@@ -443,6 +443,7 @@ class FortuneTellingSetting extends Model
         'comment_flood_threshold',
         'comment_flood_window_minutes',
         'comment_flood_action',
+        'comment_flood_sustain_buckets',
     ];
 
     /**

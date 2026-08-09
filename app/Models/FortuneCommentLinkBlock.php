@@ -56,6 +56,7 @@ class FortuneCommentLinkBlock extends Model
         'message',
         'matched_domain',
         'flood_count',
+        'sustain_buckets',
         'detected_from',
         'page_blocked',
         'block_error',
@@ -122,9 +123,14 @@ class FortuneCommentLinkBlock extends Model
     public function violationLabel(): string
     {
         if ($this->violation_type === 'flood') {
-            // ไม่ระบุกรอบเวลาตายตัวที่นี่ เพราะแอดมินปรับค่าได้ทีหลัง
-            // แล้วป้ายของแถวเก่าจะเพี้ยนตาม — เวลาจริงอยู่ในเหตุผลของ ban แล้ว
-            return 'คอมเมนต์รัว '.($this->flood_count ?: '?').' ครั้งติดกันบนโพสต์เดียว';
+            // แยก 2 แบบให้แอดมินตัดสินง่าย:
+            //   ต่อเนื่องหลายช่วง = ผิดปกติจริง (ตัวที่ระบบแบนเองได้)
+            //   รัวช่วงเดียว      = แฟนตัวยง แค่รายงานให้ดู
+            if (($this->sustain_buckets ?? 0) >= 5) {
+                return 'คอมต่อเนื่องตลอด — '.$this->sustain_buckets.' ช่วง (ช่วงละ 10 นาที)';
+            }
+
+            return 'คอมรัว '.($this->flood_count ?: '?').' ครั้งในช่วงสั้นๆ (ปกติของแฟนเพจ)';
         }
 
         return 'แปะลิงก์ภายนอก'.($this->matched_domain ? ' ('.$this->matched_domain.')' : '');

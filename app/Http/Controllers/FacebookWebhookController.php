@@ -1286,6 +1286,24 @@ class FacebookWebhookController extends Controller
             return false;
         }
 
+        // ⏳ วัด "ความต่อเนื่อง" — ตัวชี้ขาดที่ตรงกับคำว่า "คอมติดๆ กันตลอดเวลา"
+        //   แฟนตัวยง = มาเป็นช่วง คอมรัว 4-6 ครั้งใน 1-2 นาที แล้วหายไป (กระจุกใน 1-2 ช่วง)
+        //   คนผิดปกติ = คอมเรื่อยๆ ไม่หยุด กระจายอยู่ในหลายช่วงเวลาติดกันเป็นชั่วโมง
+        //   ⇒ นับ "จำนวนช่วง 10 นาที ที่คนนี้มีคอมเมนต์" ภายใน 3 ชม.
+        //      3 ช่วง = แวะมา 3 ครั้ง (ปกติ) · 10 ช่วง = คอมแทบไม่หยุดตลอด 100 นาที (ผิดปกติ)
+        //   นับรวมทุกโพสต์ ไม่แยกโพสต์ เพราะคนกวนมักไล่คอมข้ามโพสต์
+        $bucket = intdiv(time(), 600); // ช่วงละ 10 นาที
+        $bucketKey = 'fb_cmt_b:'.md5($fromId).':'.$bucket;
+        $sustainKey = 'fb_cmt_sustain:'.md5($fromId);
+        if (Cache::add($bucketKey, 1, now()->addHours(3))) {
+            // เพิ่งมีคอมเมนต์ในช่วงนี้เป็นครั้งแรก → นับเป็นอีก 1 ช่วง
+            $sustainBuckets = Cache::add($sustainKey, 1, now()->addHours(3))
+                ? 1
+                : (int) Cache::increment($sustainKey);
+        } else {
+            $sustainBuckets = (int) Cache::get($sustainKey, 1);
+        }
+
         // นับต่อ (โพสต์ + คน) ภายในกรอบเวลา — Cache::add สร้าง key พร้อม TTL
         // แล้ว increment ไม่ต่ออายุ TTL ⇒ ครบกรอบ key หายเอง เริ่มนับใหม่
         $key = 'fb_cmt_flood:'.md5($postId.'|'.$fromId);
@@ -1295,17 +1313,22 @@ class FacebookWebhookController extends Controller
             $count = 1;
         }
 
-        // "เกิน N" = ต้องมากกว่า N จริงๆ (N=5 → โดนตอนคอมที่ 6 ภายในกรอบเดียวกัน)
-        if ($count <= $threshold) {
+        // "เกิน N" = ต้องมากกว่า N จริงๆ (N=15 → โดนตอนคอมที่ 16 ภายในกรอบเดียวกัน)
+        $sustainMin = max(2, (int) ($this->settings->comment_flood_sustain_buckets ?? 10));
+        $isSustained = $sustainBuckets >= $sustainMin;
+
+        if ($count <= $threshold && ! $isSustained) {
             return false;
         }
 
-        Log::warning('🌊 คอมเมนต์รัวเกินกำหนดในโพสต์เดียว', [
+        Log::warning('🌊 คอมเมนต์ผิดปกติ', [
             'from_id' => $fromId,
             'post_id' => $postId,
             'count' => $count,
             'threshold' => $threshold,
             'window_minutes' => $windowMin,
+            'sustain_buckets' => $sustainBuckets,   // จำนวนช่วง 10 นาทีที่มีคอม (ใน 3 ชม.)
+            'sustained' => $isSustained,            // true = คอมต่อเนื่องตลอด ไม่ใช่แค่รัวเป็นช่วง
         ]);
 
         // 📡 โหมด notify (default) — บันทึกเข้าหน้าจัดการ + เตือนแอดมิน แต่ **ไม่บล็อกใคร**
@@ -1313,7 +1336,11 @@ class FacebookWebhookController extends Controller
         //   จับไม่ได้อยู่ดี · ส่วนแฟนสายมูคอม 4 ครั้งใน 63 วินาที (รัวกว่าสแปม)
         //   ⇒ ถ้าให้ flood แบนเอง = พลาดสแปมเกือบหมดแล้วไปโดนลูกค้าแทน (เกิดจริง 3 ราย)
         //   ตัวที่แยกได้แม่นคือ "มีลิงก์ไหม" ซึ่งมีด่านของตัวเองอยู่แล้ว
-        if (($this->settings->comment_flood_action ?? 'notify') !== 'block') {
+        // 🚨 บล็อกเองเฉพาะเคส "คอมติดๆ กันตลอดเวลา" เท่านั้น (ตามที่เจ้าของกำหนด)
+        //    แค่คอมรัวเป็นช่วงสั้นๆ = พฤติกรรมแฟนเพจปกติ → แจ้งเตือนอย่างเดียว ไม่แตะ
+        $shouldBlock = $isSustained && ($this->settings->comment_flood_action ?? 'notify') === 'block';
+
+        if (! $shouldBlock) {
             try {
                 if (! \App\Models\FortuneCommentLinkBlock::where('comment_id', $commentId)->exists()) {
                     \App\Models\FortuneCommentLinkBlock::create([
@@ -1328,6 +1355,7 @@ class FacebookWebhookController extends Controller
                         ),
                         'message' => mb_substr((string) ($comment['message'] ?? ''), 0, 2000),
                         'flood_count' => $count,
+                        'sustain_buckets' => $sustainBuckets,
                         'detected_from' => 'text',
                         'page_blocked' => false,
                         'bot_banned' => false,
@@ -1365,8 +1393,9 @@ class FacebookWebhookController extends Controller
 
         return $this->blockCommenterAndRecord($comment, 'flood', [
             'flood_count' => $count,
+            'sustain_buckets' => $sustainBuckets,
             'evidence' => (string) ($comment['message'] ?? ''),
-            'reason' => 'auto: คอมเมนต์รัว '.$count.' ครั้งใน '.$windowMin.' นาที บนโพสต์เดียว (เกิน '.$threshold.')',
+            'reason' => 'auto: คอมเมนต์ต่อเนื่องผิดปกติ — มีคอมใน '.$sustainBuckets.' ช่วง (ช่วงละ 10 นาที) ภายใน 3 ชม.',
         ]);
     }
 
@@ -1445,6 +1474,7 @@ class FacebookWebhookController extends Controller
                 'message' => mb_substr((string) ($meta['evidence'] ?? ''), 0, 2000),
                 'matched_domain' => $meta['matched_domain'] ?? null,
                 'flood_count' => $meta['flood_count'] ?? null,
+                'sustain_buckets' => $meta['sustain_buckets'] ?? null,
                 'detected_from' => $meta['detected_from'] ?? 'text',
                 'page_blocked' => $blocked,
                 'block_error' => $blockError ? mb_substr($blockError, 0, 500) : null,
