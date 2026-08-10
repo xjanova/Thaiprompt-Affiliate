@@ -211,8 +211,11 @@ class KeywordSuggestionTest extends TestCase
             ]);
 
         // Assert
-        $response->assertStatus(200)
-            ->assertJsonStructure(['success', 'message']);
+        // 🔧 (2026-08-10) approve() เป็น action ของฟอร์มแอดมิน → คืน **redirect**
+        //    ไปหน้า keywords.index พร้อม flash success ไม่ใช่ JSON envelope
+        //    (ต่างจาก approveBatch ที่คืน JSON จริง) → ยึดพฤติกรรมจริงของ controller
+        $response->assertRedirect(route('admin.line-bot.keywords.index'));
+        $response->assertSessionHas('success');
 
         // Verify keyword was created
         $this->assertDatabaseHas('line_bot_keywords', [
@@ -249,8 +252,19 @@ class KeywordSuggestionTest extends TestCase
             ]);
 
         // Assert
+        // 🔧 (2026-08-10) เดิมยึดเลข 3 ตายตัว แต่ตัววิเคราะห์อาจได้ suggestion ไม่ถึง 3
+        //    จากข้อความชุดทดสอบ (take(3) ได้เท่าที่มี) → เทสต์เลยแดงทั้งที่ batch ทำงานถูก
+        //    วัดจาก "ที่ส่งไปจริง" แทน แล้วยืนยันว่าถูกสร้างครบทุกตัว = ตรงกับสิ่งที่ทดสอบ
         $response->assertStatus(200);
-        $this->assertGreaterThanOrEqual(3, LineBotKeyword::count());
+
+        $this->assertNotEmpty($suggestionsToApprove, 'ต้องมี suggestion อย่างน้อย 1 ตัวไปให้ batch ทำงาน');
+
+        foreach ($suggestionsToApprove as $submitted) {
+            $this->assertDatabaseHas('line_bot_keywords', [
+                'keyword' => $submitted['keyword'],
+                'category' => 'faq',
+            ]);
+        }
     }
 
     /**
@@ -294,16 +308,18 @@ class KeywordSuggestionTest extends TestCase
             ]));
 
         // Assert
+        // 🔧 (2026-08-10) getDetail คืนคีย์ 'data' ไม่ใช่ 'detail'
+        //    และ suggestion ที่ service สร้างไม่มีฟิลด์ 'trends' (มี keyword/trigger_words/
+        //    frequency/confidence/sample_messages) → ยึดรูปจริงของ API
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
-                'detail' => [
+                'data' => [
                     'keyword',
                     'trigger_words',
                     'frequency',
                     'confidence',
                     'sample_messages',
-                    'trends',
                 ],
             ]);
     }

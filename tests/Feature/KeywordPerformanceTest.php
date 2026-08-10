@@ -197,8 +197,10 @@ class KeywordPerformanceTest extends TestCase
             ->get(route('admin.line-bot.keywords.performance.export'));
 
         // Assert
-        $response->assertStatus(200)
-            ->assertHeader('Content-Type', 'text/csv');
+        // 🔧 (2026-08-10) Laravel เติม charset เอง → "text/csv; charset=UTF-8"
+        //    assertHeader เทียบตรงตัวเป๊ะ จึงเช็คแบบ "ขึ้นต้นด้วย" แทน
+        $response->assertStatus(200);
+        $this->assertStringStartsWith('text/csv', (string) $response->headers->get('Content-Type'));
     }
 
     /**
@@ -248,8 +250,13 @@ class KeywordPerformanceTest extends TestCase
         $response->assertStatus(200);
         $categoryPerf = $response->viewData('categoryPerformance');
 
+        // 🔧 (2026-08-10) 'keywords' = จำนวน keyword ในหมวด, 'matches' = จำนวน log
+        //    ของเดิม assert keywords == 6 ซึ่งคือค่าของ matches (3 keyword × 2 log)
+        //    = สลับความหมายกัน · ยืนยันทั้งสองค่าให้ครบไปเลยจะได้ไม่สลับอีก
         $this->assertEquals(2, $categoryPerf['faq']['keywords']);
-        $this->assertEquals(6, $categoryPerf['support']['keywords']);
+        $this->assertEquals(2, $categoryPerf['faq']['matches']);
+        $this->assertEquals(3, $categoryPerf['support']['keywords']);
+        $this->assertEquals(6, $categoryPerf['support']['matches']);
     }
 
     /**
