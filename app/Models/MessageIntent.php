@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -28,6 +29,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class MessageIntent extends Model
 {
+    // 🏭 (2026-08-10) จำเป็นสำหรับ MessageIntentFactory (ดู LineBotKeyword)
+    use HasFactory;
     use SoftDeletes;
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -21,6 +22,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class KeywordClusterItem extends Model
 {
+    // 🏭 (2026-08-10) จำเป็นสำหรับ KeywordClusterItemFactory (ดู LineBotKeyword)
+    use HasFactory;
+
     /**
      * The table associated with the model.
      *

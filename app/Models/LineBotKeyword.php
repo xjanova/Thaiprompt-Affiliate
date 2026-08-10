@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LineBotKeyword extends Model
 {
+    // 🏭 (2026-08-10) ต้องมี HasFactory ไม่งั้น LineBotKeywordFactory ที่มีอยู่แล้วถูกเรียกไม่ได้
+    //    → เทสต์ตายตั้งแต่บรรทัดแรกด้วย "Call to undefined method ::factory" (64 เคสใน CI)
+    //    ดู .claude/DATABASE_GUIDELINES.md — "ทุก Model ที่ใช้ ::factory() ในเทสต์ต้องมี Factory class"
+    use HasFactory;
     use SoftDeletes;
 
     /**
