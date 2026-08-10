@@ -184,9 +184,9 @@ class KeywordABTestingTest extends TestCase
         $test = $this->createABTest();
         $this->abTestService->startTest($test);
 
-        // Add some results
-        $this->addTestResults($test, 'variant_a', 50);
-        $this->addTestResults($test, 'variant_b', 40);
+        // Add some results — ต้องให้ conversion ต่างกันจริง ไม่งั้นเสมอ = ไม่มีผู้ชนะ
+        $this->addTestResults($test, 'variant_a', 100, 50);
+        $this->addTestResults($test, 'variant_b', 100, 40);
 
         $response = $this->actingAs($this->admin)
             ->postJson(route('admin.line-bot.keywords.ab-tests.complete', $test));
@@ -337,10 +337,13 @@ class KeywordABTestingTest extends TestCase
     {
         $test = $this->createABTest();
 
-        // Variant A: 50 interactions from 100
-        // Variant B: 30 interactions from 100
-        $this->addTestResults($test, 'variant_a', 50);
-        $this->addTestResults($test, 'variant_b', 30);
+        // 🔧 (2026-08-10) คอมเมนต์เดิมบอกเจตนาไว้ชัด ("50 interactions from 100")
+        //    แต่โค้ดสร้างแค่ 50/30 แถวที่ interacted = true ทุกแถว → conversion 100% ทั้งคู่
+        //    = เสมอ ไม่ใช่ A ชนะ · ทำตามเจตนาเดิม: impression เท่ากัน แต่ interact ต่างกัน
+        // Variant A: 50 interactions from 100  → conversion 50%
+        // Variant B: 30 interactions from 100  → conversion 30%
+        $this->addTestResults($test, 'variant_a', 100, 50);
+        $this->addTestResults($test, 'variant_b', 100, 30);
 
         $results = $this->abTestService->analyzeResults($test);
 
@@ -356,8 +359,9 @@ class KeywordABTestingTest extends TestCase
     {
         $test = $this->createABTest();
         $this->abTestService->startTest($test);
-        $this->addTestResults($test, 'variant_a', 50);
-        $this->addTestResults($test, 'variant_b', 30);
+        // conversion A 50% > B 30% → variant A ชนะจริง (ตรงกับที่ assert ข้างล่าง)
+        $this->addTestResults($test, 'variant_a', 100, 50);
+        $this->addTestResults($test, 'variant_b', 100, 30);
         $test = $this->abTestService->completeTest($test);
 
         $originalText = $this->keyword->response_text;
@@ -383,7 +387,8 @@ class KeywordABTestingTest extends TestCase
             ->deleteJson(route('admin.line-bot.keywords.ab-tests.destroy', $test));
 
         $response->assertStatus(200);
-        $this->assertDatabaseMissing('keyword_ab_tests', ['id' => $test->id]);
+        // 🔧 (2026-08-10) KeywordABTest ใช้ SoftDeletes → แถวยังอยู่ แค่มี deleted_at
+        $this->assertSoftDeleted('keyword_ab_tests', ['id' => $test->id]);
     }
 
     /**
@@ -531,8 +536,9 @@ class KeywordABTestingTest extends TestCase
                 $test = $this->abTestService->startTest($test);
             } elseif ($status === 'completed') {
                 $test = $this->abTestService->startTest($test);
-                $this->addTestResults($test, 'variant_a', 50);
-                $this->addTestResults($test, 'variant_b', 40);
+                // ต้องมีผู้ชนะจริง — completeTest บันทึก winner จาก analyzeResults
+                $this->addTestResults($test, 'variant_a', 100, 50);
+                $this->addTestResults($test, 'variant_b', 100, 40);
                 $test = $this->abTestService->completeTest($test);
             }
         }
@@ -543,22 +549,32 @@ class KeywordABTestingTest extends TestCase
     /**
      * เพิ่ม test results สำหรับ variant
      */
-    private function addTestResults(KeywordABTest $test, string $variantType, int $count): void
+    /**
+     * @param  int  $count  จำนวน impression ทั้งหมด
+     * @param  int|null  $interactedCount  จำนวนที่ interact จริง (null = ทุกอัน)
+     *
+     * 🔧 (2026-08-10) เดิม interacted = true ทุกแถวเสมอ → conversion_rate = 100%
+     *    ทั้งสอง variant → เสมอกันตลอด ทดสอบ "ใครชนะ" ไม่ได้เลย
+     *    (winning_criterion ของเทสต์ชุดนี้คือ conversion_rate)
+     */
+    private function addTestResults(KeywordABTest $test, string $variantType, int $count, ?int $interactedCount = null): void
     {
         $variant = $variantType === 'variant_a'
             ? $test->variantA()
             : $test->variantB();
 
+        $interactedCount = $interactedCount ?? $count;
+
         for ($i = 0; $i < $count; $i++) {
             KeywordABTestResult::create([
                 'ab_test_id' => $test->id,
                 'variant_id' => $variant->id,
-                'line_user_id' => 'U'.$test->id.'-'.$i,
+                'line_user_id' => 'U'.$test->id.'-'.$variantType.'-'.$i,
                 'user_message' => 'test message '.$i,
                 'variant_served' => $variantType,
                 'response_time' => rand(100, 500),
                 'matched' => true,
-                'interacted' => true,
+                'interacted' => $i < $interactedCount,
                 'satisfaction' => rand(3, 5),
             ]);
         }

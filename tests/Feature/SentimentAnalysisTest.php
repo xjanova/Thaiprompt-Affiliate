@@ -6,6 +6,7 @@ use App\Models\MessageSentiment;
 use App\Models\User;
 use App\Services\SentimentAnalysisService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 /**
@@ -211,7 +212,9 @@ class SentimentAnalysisTest extends TestCase
         $complaints = $this->sentimentService->getTopComplaints(5, 30);
 
         // May be 0 if no complaints in test data
-        $this->assertIsCollection($complaints);
+        // 🔧 (2026-08-10) assertIsCollection ไม่มีอยู่จริงใน PHPUnit — เทสต์นี้เลย error
+        //    ทุกรอบโดยไม่เคยทดสอบอะไรเลย (getTopComplaints ประกาศคืน Collection)
+        $this->assertInstanceOf(Collection::class, $complaints);
     }
 
     /**
@@ -390,21 +393,27 @@ class SentimentAnalysisTest extends TestCase
      */
     private function createTestSentiments(): void
     {
+        // 🔧 (2026-08-10) เพิ่มแถวที่มี detected_issues + is_complaint
+        //    getPainPointsDistribution กรองด้วย whereNotNull('detected_issues')
+        //    ข้อมูลชุดเดิมไม่เคยใส่คอลัมน์นี้เลย → คืน 0 เสมอ เทสต์เลยพังมาตลอด
         $messages = [
-            ['message' => 'ขอบคุณ ยินดี', 'sentiment' => 'positive', 'score' => 0.7],
-            ['message' => 'โกรธ ไม่พอใจ', 'sentiment' => 'negative', 'score' => -0.7],
-            ['message' => 'ธรรมดา', 'sentiment' => 'neutral', 'score' => 0.0],
+            ['message' => 'ขอบคุณ ยินดี', 'sentiment' => 'positive', 'score' => 0.7, 'issues' => null, 'complaint' => false],
+            ['message' => 'โกรธ ไม่พอใจ', 'sentiment' => 'negative', 'score' => -0.7, 'issues' => null, 'complaint' => false],
+            ['message' => 'ธรรมดา', 'sentiment' => 'neutral', 'score' => 0.0, 'issues' => null, 'complaint' => false],
+            ['message' => 'ปัญหา refund และ shipping ล่าช้า', 'sentiment' => 'negative', 'score' => -0.6, 'issues' => ['refund', 'shipping'], 'complaint' => true],
         ];
 
         foreach ($messages as $data) {
-            MessageSentiment::create([
+            MessageSentiment::create(array_filter([
                 'line_user_id' => 'U'.uniqid(),
                 'user_message' => $data['message'],
                 'message_hash' => MessageSentiment::hashMessage($data['message'].uniqid()),
                 'sentiment' => $data['sentiment'],
                 'sentiment_score' => $data['score'],
                 'confidence' => 80,
-            ]);
+                'detected_issues' => $data['issues'],
+                'is_complaint' => $data['complaint'],
+            ], static fn ($v) => $v !== null));
         }
     }
 }

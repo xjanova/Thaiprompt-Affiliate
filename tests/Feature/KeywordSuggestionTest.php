@@ -30,6 +30,24 @@ class KeywordSuggestionTest extends TestCase
     }
 
     /**
+     * 🔧 (2026-08-10) เรียกเมธอด private ของ service ผ่าน Reflection
+     *
+     * เดิมเทสต์เรียก analyzePatterns()/getNoMatchMessages() ตรง ๆ ทั้งที่เป็น private
+     * → Error ทันที ไม่เคยได้ทดสอบอะไรเลย
+     *
+     * เลือก Reflection แทนการเปลี่ยนเมธอดเป็น public โดยตั้งใจ —
+     * การเปิด API ของ service ให้กว้างขึ้นเพียงเพื่อให้เทสต์ผ่าน คือการแก้ที่ผิดฝั่ง
+     * (แพทเทิร์นเดียวกับ tests/Unit/Services/FortuneDailySoftInviteTest)
+     */
+    private function callPrivate(string $method, ...$args)
+    {
+        $m = new \ReflectionMethod($this->suggestionService, $method);
+        $m->setAccessible(true);
+
+        return $m->invoke($this->suggestionService, ...$args);
+    }
+
+    /**
      * ทดสอบการแสดง suggestions dashboard
      */
     public function test_can_view_suggestions_dashboard(): void
@@ -62,9 +80,12 @@ class KeywordSuggestionTest extends TestCase
 
         // Assert
         $response->assertStatus(200)
+            // 🔧 (2026-08-10) คีย์จริงของ controller คือ 'suggestions' ไม่ใช่ 'data'
+            //    ยึดตาม controller เพราะเป็น API ที่หน้าแอดมินใช้อยู่จริง —
+            //    เปลี่ยนชื่อคีย์ฝั่ง response เพื่อให้เทสต์ผ่าน = ทำ UI ที่ใช้งานอยู่พัง
             ->assertJsonStructure([
                 'success',
-                'data' => [
+                'suggestions' => [
                     '*' => [
                         'keyword',
                         'trigger_words',
@@ -91,11 +112,12 @@ class KeywordSuggestionTest extends TestCase
 
         // Assert
         $response->assertStatus(200)
+            // 🔧 (2026-08-10) controller ห่อไว้ใต้คีย์ 'data' (ยึดตาม API จริง)
             ->assertJsonStructure([
                 'success',
-                'statistics' => [
+                'data' => [
                     'total_no_matches',
-                    'unique_messages',
+                    'unique_no_matches',
                     'suggestions_count',
                     'existing_keywords',
                     'potential_coverage_increase',
@@ -117,14 +139,16 @@ class KeywordSuggestionTest extends TestCase
 
         // Assert
         $response->assertStatus(200)
+            // 🔧 (2026-08-10) controller ห่อไว้ใต้คีย์ 'data' (ยึดตาม API จริง)
             ->assertJsonStructure([
                 'success',
-                'recommendations' => [
+                // 🔧 (2026-08-10) รูปจริงคือ type/message/action — ไม่มี priority/suggestion เลย
+                //    ยืนยันจาก blade ทุกหน้าในโซนนี้ที่อ่าน $rec['type'|'message'|'action']
+                'data' => [
                     '*' => [
                         'type',
-                        'priority',
                         'message',
-                        'suggestion',
+                        'action',
                     ],
                 ],
             ]);
@@ -174,17 +198,24 @@ class KeywordSuggestionTest extends TestCase
 
         // Act
         $response = $this->actingAs($this->admin)
+            // 🔧 (2026-08-10) controller validate 'trigger_words' => 'required|json'
+            //    = ต้องเป็น **สตริง JSON** ไม่ใช่ array · และ 'priority' เป็น required ด้วย
+            //    ของเดิมส่ง array + ไม่ส่ง priority → 422 ทุกครั้ง
             ->postJson(route('admin.line-bot.keywords.suggestions.approve'), [
                 'keyword' => $suggestion['keyword'],
-                'trigger_words' => $suggestion['trigger_words'],
+                'trigger_words' => json_encode($suggestion['trigger_words']),
                 'category' => 'support',
                 'response_type' => 'text',
                 'response_text' => 'ตอบกลับแบบอัตโนมัติ',
+                'priority' => 50,
             ]);
 
         // Assert
-        $response->assertStatus(200)
-            ->assertJsonStructure(['success', 'message']);
+        // 🔧 (2026-08-10) approve() เป็น action ของฟอร์มแอดมิน → คืน **redirect**
+        //    ไปหน้า keywords.index พร้อม flash success ไม่ใช่ JSON envelope
+        //    (ต่างจาก approveBatch ที่คืน JSON จริง) → ยึดพฤติกรรมจริงของ controller
+        $response->assertRedirect(route('admin.line-bot.keywords.index'));
+        $response->assertSessionHas('success');
 
         // Verify keyword was created
         $this->assertDatabaseHas('line_bot_keywords', [
@@ -202,12 +233,15 @@ class KeywordSuggestionTest extends TestCase
         $this->createNoMatchMessages(20);
         $suggestions = $this->suggestionService->getSuggestions();
         $suggestionsToApprove = collect($suggestions)->take(3)->map(function ($s) {
+            // 🔧 (2026-08-10) เหมือนกับ approve เดี่ยว — trigger_words ต้องเป็นสตริง JSON
+            //    และ priority เป็น required (suggestions.*.priority)
             return [
                 'keyword' => $s['keyword'],
-                'trigger_words' => $s['trigger_words'],
+                'trigger_words' => json_encode($s['trigger_words']),
                 'category' => 'faq',
                 'response_type' => 'text',
                 'response_text' => 'ตอบกลับอัตโนมัติ',
+                'priority' => 50,
             ];
         })->toArray();
 
@@ -218,8 +252,19 @@ class KeywordSuggestionTest extends TestCase
             ]);
 
         // Assert
+        // 🔧 (2026-08-10) เดิมยึดเลข 3 ตายตัว แต่ตัววิเคราะห์อาจได้ suggestion ไม่ถึง 3
+        //    จากข้อความชุดทดสอบ (take(3) ได้เท่าที่มี) → เทสต์เลยแดงทั้งที่ batch ทำงานถูก
+        //    วัดจาก "ที่ส่งไปจริง" แทน แล้วยืนยันว่าถูกสร้างครบทุกตัว = ตรงกับสิ่งที่ทดสอบ
         $response->assertStatus(200);
-        $this->assertGreaterThanOrEqual(3, LineBotKeyword::count());
+
+        $this->assertNotEmpty($suggestionsToApprove, 'ต้องมี suggestion อย่างน้อย 1 ตัวไปให้ batch ทำงาน');
+
+        foreach ($suggestionsToApprove as $submitted) {
+            $this->assertDatabaseHas('line_bot_keywords', [
+                'keyword' => $submitted['keyword'],
+                'category' => 'faq',
+            ]);
+        }
     }
 
     /**
@@ -255,21 +300,26 @@ class KeywordSuggestionTest extends TestCase
 
         // Act
         $response = $this->actingAs($this->admin)
-            ->getJson(route('admin.line-bot.keywords.suggestions.detail'), [
+            // 🔧 (2026-08-10) พารามิเตอร์ที่ 2 ของ getJson() คือ **headers** ไม่ใช่ query string
+            //    'keyword' เลยถูกส่งไปเป็น HTTP header → controller มองไม่เห็น → 422
+            //    ต้องผูกเข้ากับ URL ผ่าน route() แทน
+            ->getJson(route('admin.line-bot.keywords.suggestions.detail', [
                 'keyword' => $suggestion['keyword'],
-            ]);
+            ]));
 
         // Assert
+        // 🔧 (2026-08-10) getDetail คืนคีย์ 'data' ไม่ใช่ 'detail'
+        //    และ suggestion ที่ service สร้างไม่มีฟิลด์ 'trends' (มี keyword/trigger_words/
+        //    frequency/confidence/sample_messages) → ยึดรูปจริงของ API
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
-                'detail' => [
+                'data' => [
                     'keyword',
                     'trigger_words',
                     'frequency',
                     'confidence',
                     'sample_messages',
-                    'trends',
                 ],
             ]);
     }
@@ -288,9 +338,10 @@ class KeywordSuggestionTest extends TestCase
 
         // Assert
         $response->assertStatus(200)
+            // 🔧 (2026-08-10) controller คืน 'suggestions' (ตัวรายการ) ไม่ใช่ 'suggestions_count'
             ->assertJsonStructure([
                 'success',
-                'suggestions_count',
+                'suggestions',
                 'statistics',
             ]);
     }
@@ -308,19 +359,22 @@ class KeywordSuggestionTest extends TestCase
             ->getJson(route('admin.line-bot.keywords.suggestions.export'));
 
         // Assert
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'success',
-                'data' => [
-                    '*' => [
-                        'keyword',
-                        'trigger_words',
-                        'frequency',
-                        'confidence',
-                    ],
-                ],
-                'exported_at',
-            ]);
+        // 🔧 (2026-08-10) endpoint นี้เป็น **ไฟล์ดาวน์โหลด** (streamDownload) ไม่ใช่ JSON envelope
+        //    ของจริงคือ array ดิบของ suggestions ไม่มีคีย์ success/data/exported_at เลย
+        //    เทสต์เดิมเช็คสัญญาที่ไม่เคยมีอยู่ → ต้องยึดพฤติกรรมจริงของ controller
+        $response->assertStatus(200);
+        $this->assertStringStartsWith('application/json', (string) $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('attachment;', (string) $response->headers->get('Content-Disposition'));
+
+        $payload = json_decode($response->streamedContent(), true);
+        $this->assertIsArray($payload);
+
+        foreach ($payload as $row) {
+            $this->assertArrayHasKey('keyword', $row);
+            $this->assertArrayHasKey('trigger_words', $row);
+            $this->assertArrayHasKey('frequency', $row);
+            $this->assertArrayHasKey('confidence', $row);
+        }
     }
 
     /**
@@ -338,7 +392,7 @@ class KeywordSuggestionTest extends TestCase
         ]);
 
         // Act
-        $suggestions = $this->suggestionService->analyzePatterns($messages);
+        $suggestions = $this->callPrivate('analyzePatterns', $messages);
 
         // Assert
         $this->assertGreaterThan(0, $suggestions->count());
@@ -446,7 +500,10 @@ class KeywordSuggestionTest extends TestCase
         // Assert
         $this->assertIsArray($statistics);
         $this->assertGreaterThan(0, $statistics['total_no_matches']);
-        $this->assertGreaterThan(0, $statistics['unique_messages']);
+        // 🔧 (2026-08-10) คีย์จริงคือ unique_no_matches — ยืนยันจาก
+        //    resources/views/admin/line-bot/keywords/suggestions.blade.php:72 ที่ใช้คีย์นี้อยู่
+        //    (ถ้าเปลี่ยนฝั่ง service ให้ตรงเทสต์ หน้าแอดมินจะพังทันที)
+        $this->assertGreaterThan(0, $statistics['unique_no_matches']);
         $this->assertIsNumeric($statistics['potential_coverage_increase']);
     }
 
@@ -466,7 +523,9 @@ class KeywordSuggestionTest extends TestCase
         $this->assertGreaterThan(0, count($recommendations));
         $recommendation = $recommendations[0];
         $this->assertArrayHasKey('type', $recommendation);
-        $this->assertArrayHasKey('priority', $recommendation);
+        // 🔧 (2026-08-10) ไม่มีคีย์ priority — service คืน type/message/action
+        $this->assertArrayHasKey('message', $recommendation);
+        $this->assertArrayHasKey('action', $recommendation);
     }
 
     /**
@@ -486,7 +545,10 @@ class KeywordSuggestionTest extends TestCase
         $keyword = $this->suggestionService->createKeywordDraft($suggestion);
 
         // Assert
-        $this->assertIsNotNull($keyword->id);
+        // 🔧 (2026-08-10) createKeywordDraft คืนโมเดลที่ **ยังไม่ได้ save** โดยตั้งใจ
+        //    (ชื่อก็บอกว่า draft — controller::preview เอาไปโชว์ตัวอย่างโดยไม่บันทึก)
+        //    id จึงเป็น null เสมอ · สิ่งที่ควรยืนยันคือ "เป็นดราฟต์" + ค่าที่ประกอบมาถูก
+        $this->assertFalse($keyword->exists, 'draft ต้องยังไม่ถูกบันทึกลงฐานข้อมูล');
         $this->assertEquals('test_keyword', $keyword->keyword);
     }
 
@@ -513,7 +575,7 @@ class KeywordSuggestionTest extends TestCase
         ]);
 
         // Act
-        $messages = $this->suggestionService->getNoMatchMessages(30);
+        $messages = $this->callPrivate('getNoMatchMessages', 30);
 
         // Assert
         $this->assertEquals(1, $messages->count());

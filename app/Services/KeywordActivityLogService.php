@@ -109,7 +109,11 @@ class KeywordActivityLogService
     private function getMatchesPerDay($logs): array
     {
         return $logs->groupBy(function ($log) {
-            return $log->timestamp->format('Y-m-d');
+            // 🐛 (2026-08-10) getKeywordStats ใช้ DB::table()->get() = แถวเป็น stdClass
+            //    คอลัมน์ timestamp จึงเป็น **สตริง** ไม่ใช่ Carbon → เรียก ->format() ตรง ๆ
+            //    fatal "Call to a member function format() on string" = endpoint สถิติ 500 ทั้งเส้น
+            //    (ถ้าวันหลังเปลี่ยนไปใช้ Eloquent ที่ cast เป็น Carbon แล้ว parse ก็ยังทำงานถูก)
+            return \Carbon\Carbon::parse($log->timestamp)->format('Y-m-d');
         })->map->count()->toArray();
     }
 

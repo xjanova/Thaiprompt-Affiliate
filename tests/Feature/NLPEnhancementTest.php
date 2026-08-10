@@ -77,7 +77,8 @@ class NLPEnhancementTest extends TestCase
 
         $this->assertArrayHasKey('intent', $result);
         $intent = $result['intent'];
-        $this->assertIn($intent['primary_intent'], ['COMPLAINT', 'RETURN', 'SUPPORT']);
+        // 🔧 (2026-08-10) assertIn ไม่มีอยู่จริงใน PHPUnit → ตัวจริงคือ assertContains
+        $this->assertContains($intent['primary_intent'], ['COMPLAINT', 'RETURN', 'SUPPORT']);
     }
 
     /**
@@ -250,7 +251,7 @@ class NLPEnhancementTest extends TestCase
     {
         $cluster = KeywordCluster::factory()->create();
 
-        $this->assertIsNotNull($cluster->id);
+        $this->assertNotNull($cluster->id);
         $this->assertIsString($cluster->cluster_name);
         $this->assertIsString($cluster->display_name);
     }
@@ -325,7 +326,9 @@ class NLPEnhancementTest extends TestCase
 
         $cluster->addKeyword($keyword, 'RELATED', 0.9);
 
-        $this->assertTrue($cluster->keywords()->where('id', $keyword->id)->exists());
+        // 🔧 (2026-08-10) ต้องระบุชื่อตาราง — belongsToMany join กับ keyword_cluster_items
+        //    ซึ่งมีคอลัมน์ id เหมือนกัน → MySQL ตอบ "Column 'id' in where clause is ambiguous"
+        $this->assertTrue($cluster->keywords()->where('line_bot_keywords.id', $keyword->id)->exists());
         $this->assertEquals(1, $cluster->keyword_count);
     }
 
@@ -340,7 +343,8 @@ class NLPEnhancementTest extends TestCase
         $cluster->addKeyword($keyword);
         $cluster->removeKeyword($keyword);
 
-        $this->assertFalse($cluster->keywords()->where('id', $keyword->id)->exists());
+        // 🔧 (2026-08-10) ระบุชื่อตารางเช่นเดียวกับ test_keyword_cluster_add_keyword
+        $this->assertFalse($cluster->keywords()->where('line_bot_keywords.id', $keyword->id)->exists());
         $this->assertEquals(0, $cluster->keyword_count);
     }
 
@@ -529,7 +533,7 @@ class NLPEnhancementTest extends TestCase
 
         $cluster = $this->nlpService->createCluster($data);
 
-        $this->assertIsNotNull($cluster->id);
+        $this->assertNotNull($cluster->id);
         $this->assertEquals('shipping_issues', $cluster->cluster_name);
         $this->assertEquals(3, $cluster->keyword_count);
     }

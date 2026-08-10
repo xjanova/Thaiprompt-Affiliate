@@ -115,9 +115,11 @@ class KeywordPerformanceDashboardController extends Controller
      */
     private function calculateEffectivenessScores(): array
     {
-        $keywords = LineBotKeyword::where('is_active', true)
-            ->with('getMostMatchedKeyword')
-            ->get();
+        // 🐛 (2026-08-10) ตัด ->with('getMostMatchedKeyword') ทิ้ง
+        //    ไม่มีรีเลชันชื่อนี้อยู่ใน LineBotKeyword (ทั้งโปรเจกต์มีที่นี่ที่เดียว) →
+        //    Eloquent โยน RelationNotFoundException = หน้า performance dashboard 500 ทั้งหน้า
+        //    และลูปข้างล่างก็ไม่ได้ใช้ค่าจากรีเลชันนี้เลย (ใช้แค่ฟิลด์ในตัว keyword เอง)
+        $keywords = LineBotKeyword::where('is_active', true)->get();
 
         $scores = [];
 
@@ -196,11 +198,12 @@ class KeywordPerformanceDashboardController extends Controller
      */
     private function getCategoryPerformance(): array
     {
-        $keywords = LineBotKeyword::where('is_active', true)
-            ->select('category', 'times_matched')
-            ->groupBy('category')
-            ->get();
-
+        // 🐛 (2026-08-10) ตัดคิวรี่ที่ตายแล้วทิ้ง — ผลลัพธ์ไม่เคยถูกใช้เลยในเมธอดนี้
+        //    (ลูปข้างล่างนับใหม่ต่อ category เองทั้งหมด) แต่ตัวมันเองพังทั้งหน้า:
+        //      SELECT category, times_matched ... GROUP BY category
+        //    times_matched ไม่ได้อยู่ใน GROUP BY และไม่ใช่ aggregate →
+        //    MySQL sql_mode=only_full_group_by (ค่าเริ่มต้นตั้งแต่ 5.7 และเปิดอยู่บน 8)
+        //    โยน 1055 = หน้า performance dashboard 500 ทั้งหน้า
         $categories = ['faq', 'support', 'product', 'custom'];
         $data = [];
 

@@ -331,9 +331,18 @@ class SmsPaymentService
 
         // ดึง unique amounts ที่หมดอายุและยังเป็น 'reserved' (ไม่รวม fortune_reading)
         // fortune_reading มี grace period แยก → จัดการใน ขั้นที่ 1.5
+        // 🐛 (2026-08-10) ต้องเผื่อ transaction_type = NULL ด้วย
+        //    คอลัมน์นี้ nullable ไม่มี default (migration 2024_01_01_000001:80)
+        //    ใน SQL `NULL != 'fortune_reading'` ให้ผลเป็น NULL ไม่ใช่ TRUE
+        //    → แถวที่ transaction_type ว่างถูกกรองทิ้ง = **ไม่มีวันหมดอายุ**
+        //    ค้างสถานะ reserved ถาวร และกินสล็อตเลขทศนิยม (01-99) ไปเรื่อย ๆ
+        //    จนระบบสร้างยอดไม่ซ้ำไม่ได้ (ดู rule_verify_column_data_before_writing_filter)
         $expiredUniqueAmounts = UniquePaymentAmount::where('status', 'reserved')
             ->where('expires_at', '<=', now())
-            ->where('transaction_type', '!=', 'fortune_reading')
+            ->where(function ($q) {
+                $q->whereNull('transaction_type')
+                    ->orWhere('transaction_type', '!=', 'fortune_reading');
+            })
             ->with('transaction.order')
             ->get();
 

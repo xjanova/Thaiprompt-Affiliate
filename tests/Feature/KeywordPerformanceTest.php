@@ -110,13 +110,19 @@ class KeywordPerformanceTest extends TestCase
     public function test_can_get_comparison_data(): void
     {
         // Arrange
+        // 🔧 (2026-08-10) ต้องใส่ line_user_id ทุกแถว — schema เป็น NOT NULL ไม่มี default
+        //    ขาดไปแล้ว MySQL โยน 1364 ตั้งแต่ insert เทสต์เลยไม่เคยได้รันจริง
         DB::table('keyword_activity_logs')->insert([
             [
+                'line_user_id' => 'U001',
+                'user_message' => 'Test message',
                 'action_type' => 'matched',
                 'created_at' => now(),
                 'timestamp' => now(),
             ],
             [
+                'line_user_id' => 'U002',
+                'user_message' => 'Test message',
                 'action_type' => 'no_match',
                 'created_at' => now(),
                 'timestamp' => now(),
@@ -153,6 +159,8 @@ class KeywordPerformanceTest extends TestCase
         // Arrange
         for ($i = 0; $i < 5; $i++) {
             DB::table('keyword_activity_logs')->insert([
+                'line_user_id' => "U{$i}",
+                'user_message' => 'Test message',
                 'action_type' => 'matched',
                 'created_at' => now()->subDays($i),
                 'timestamp' => now()->subDays($i),
@@ -189,8 +197,10 @@ class KeywordPerformanceTest extends TestCase
             ->get(route('admin.line-bot.keywords.performance.export'));
 
         // Assert
-        $response->assertStatus(200)
-            ->assertHeader('Content-Type', 'text/csv');
+        // 🔧 (2026-08-10) Laravel เติม charset เอง → "text/csv; charset=UTF-8"
+        //    assertHeader เทียบตรงตัวเป๊ะ จึงเช็คแบบ "ขึ้นต้นด้วย" แทน
+        $response->assertStatus(200);
+        $this->assertStringStartsWith('text/csv', (string) $response->headers->get('Content-Type'));
     }
 
     /**
@@ -207,6 +217,8 @@ class KeywordPerformanceTest extends TestCase
             DB::table('keyword_activity_logs')->insert([
                 'keyword_id' => $kw->id,
                 'keyword_name' => $kw->keyword,
+                'line_user_id' => 'U-faq-'.$kw->id,
+                'user_message' => 'Test message',
                 'category' => 'faq',
                 'action_type' => 'matched',
                 'created_at' => now(),
@@ -220,6 +232,8 @@ class KeywordPerformanceTest extends TestCase
                 DB::table('keyword_activity_logs')->insert([
                     'keyword_id' => $kw->id,
                     'keyword_name' => $kw->keyword,
+                    'line_user_id' => "U-sup-{$kw->id}-{$i}",
+                    'user_message' => 'Test message',
                     'category' => 'support',
                     'action_type' => 'matched',
                     'created_at' => now(),
@@ -236,8 +250,13 @@ class KeywordPerformanceTest extends TestCase
         $response->assertStatus(200);
         $categoryPerf = $response->viewData('categoryPerformance');
 
+        // 🔧 (2026-08-10) 'keywords' = จำนวน keyword ในหมวด, 'matches' = จำนวน log
+        //    ของเดิม assert keywords == 6 ซึ่งคือค่าของ matches (3 keyword × 2 log)
+        //    = สลับความหมายกัน · ยืนยันทั้งสองค่าให้ครบไปเลยจะได้ไม่สลับอีก
         $this->assertEquals(2, $categoryPerf['faq']['keywords']);
-        $this->assertEquals(6, $categoryPerf['support']['keywords']);
+        $this->assertEquals(2, $categoryPerf['faq']['matches']);
+        $this->assertEquals(3, $categoryPerf['support']['keywords']);
+        $this->assertEquals(6, $categoryPerf['support']['matches']);
     }
 
     /**
@@ -263,7 +282,9 @@ class KeywordPerformanceTest extends TestCase
         $effectiveness = $metrics['effectivenessScores'];
 
         $this->assertIsArray($effectiveness);
-        $this->assertGreater(0, count($effectiveness));
+        // 🔧 (2026-08-10) assertGreater ไม่มีอยู่จริงใน PHPUnit → ตัวจริงคือ assertGreaterThan
+        //    (ลำดับ arg เหมือนกัน: assertGreaterThan($ค่าที่ต้องมากกว่า, $ค่าจริง))
+        $this->assertGreaterThan(0, count($effectiveness));
     }
 
     /**
@@ -303,6 +324,8 @@ class KeywordPerformanceTest extends TestCase
             DB::table('keyword_activity_logs')->insert([
                 'keyword_id' => $keyword->id,
                 'keyword_name' => $keyword->keyword,
+                'line_user_id' => 'U-cov-'.$keyword->id,
+                'user_message' => 'Test message',
                 'action_type' => 'matched',
                 'created_at' => now(),
                 'timestamp' => now(),
@@ -316,7 +339,7 @@ class KeywordPerformanceTest extends TestCase
         // Assert
         $metrics = $response->viewData('metrics');
         // Coverage should be around 33% (5 out of 15 keywords used)
-        $this->assertGreater(0, $metrics['coveragePercentage']);
+        $this->assertGreaterThan(0, $metrics['coveragePercentage']);
     }
 
     /**
@@ -343,9 +366,13 @@ class KeywordPerformanceTest extends TestCase
             ]);
 
         // Verify that AI is slower than keyword
-        $this->assertGreater(
-            collect($response['ai_times'])->average(),
-            collect($response['keyword_times'])->average()
+        // 🔧 (2026-08-10) assertGreater ไม่มีอยู่จริง + ต้อง**สลับ arg**
+        //    assertGreaterThan($น้อยกว่า, $มากกว่า) → เวลาของ AI ต้องมากกว่าของ keyword
+        //    ของเดิมเขียน (ai, keyword) ซึ่งถ้าแปลตรงตัวจะกลายเป็น "keyword ช้ากว่า AI"
+        //    = ตรงข้ามกับคอมเมนต์บรรทัดบน จึงยึดตามคอมเมนต์ซึ่งเป็นเจตนาที่ชัดเจนกว่า
+        $this->assertGreaterThan(
+            collect($response['keyword_times'])->average(),
+            collect($response['ai_times'])->average()
         );
     }
 
@@ -395,6 +422,8 @@ class KeywordPerformanceTest extends TestCase
                 DB::table('keyword_activity_logs')->insert([
                     'keyword_id' => $keyword->id,
                     'keyword_name' => $keyword->keyword,
+                    'line_user_id' => "U-con-{$keyword->id}-{$i}",
+                    'user_message' => 'Test message',
                     'action_type' => 'matched',
                     'created_at' => now(),
                     'timestamp' => now(),
