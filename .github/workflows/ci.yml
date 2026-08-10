@@ -87,8 +87,10 @@ jobs:
           php artisan config:clear
           php artisan cache:clear
 
+      # 🚨 (2026-08-10) ถอด continue-on-error ออก — migration ล้มแล้วปล่อยผ่าน
+      #    ทำให้เทสต์ทั้งชุดรันบนฐานข้อมูลที่ไม่ครบ แล้วพ่น error หลายร้อยเคสที่อ่านไม่รู้เรื่อง
+      #    ล้มตรงนี้เลยชัดกว่า และ migration ที่พังใน CI ก็มีแนวโน้มพังบน prod เหมือนกัน
       - name: Run database migrations
-        continue-on-error: true
         env:
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
@@ -98,8 +100,20 @@ jobs:
           DB_PASSWORD: password
         run: php artisan migrate --force
 
+      # 🚨 (2026-08-10) ถอด continue-on-error ออก — **นี่คือประตูที่ไม่เคยกันอะไรเลย**
+      #
+      #   deploy.yml รับเฉพาะ workflow_call จาก job auto-deploy ← auto-release
+      #   ← needs:[tests, code-quality] ดูเผิน ๆ เหมือนมีการ์ด แต่สเต็ปนี้ soft-fail ไว้
+      #   job เลยเขียวเสมอแม้เทสต์แดง → release + deploy ผ่านทุกครั้ง
+      #
+      #   หลักฐาน: v4.0.276 (run 31307907342) deploy สำเร็จทั้งที่แดง 143/446 เคส
+      #   ซึ่งซ่อนบั๊กจริงบน prod ไว้ 8 ตัว รวมถึง activity() ที่ไม่มีอยู่จริง 49 จุด
+      #   (500 + ธุรกรรมล้มทั้งก้อนใน wallet/POS/token/license)
+      #
+      #   ตอนนี้สวีทเขียวหมดแล้ว (456 เทสต์ / 6,147 assertions / 0 ล้ม) จึงปิดประตูได้จริง
+      #   ⚠️ ผลที่ตามมา: ตั้งแต่นี้ไป **เทสต์แดง = ไม่ deploy** ต้องซ่อมก่อนถึงจะขึ้น prod ได้
+      #   ถ้าต้อง deploy ด่วนจริง ๆ ใช้ workflow_dispatch ของ deploy.yml (bypass ทางการ)
       - name: Run all tests
-        continue-on-error: true
         env:
           APP_ENV: testing
           APP_KEY: base64:YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=
