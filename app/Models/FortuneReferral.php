@@ -31,7 +31,10 @@ class FortuneReferral extends Model
 {
     protected $table = 'fortune_referrals';
 
+    use \App\Models\Concerns\BelongsToFortunePage;   // 🏬 (2026-08-10) ระบบสาขา
+
     protected $fillable = [
+        'fortune_page_id',   // 🏬 สาขา/เพจต้นทาง
         'referral_token',
         'referrer_user_id',
         'referrer_mlm_member_id',

@@ -25,7 +25,10 @@ class FortunePostReaction extends Model
 {
     protected $table = 'fortune_post_reactions';
 
+    use \App\Models\Concerns\BelongsToFortunePage;   // 🏬 (2026-08-10) ระบบสาขา
+
     protected $fillable = [
+        'fortune_page_id',   // 🏬 สาขา/เพจต้นทาง
         'facebook_user_id',
         'facebook_post_id',
         'reaction_type',

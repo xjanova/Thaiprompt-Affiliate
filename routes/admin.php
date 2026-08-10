@@ -3933,6 +3933,21 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/channels/stats', [FortuneChannelController::class, 'statsApi'])->name('channels.stats');
     Route::get('/channels/facebook-page-management', [FortuneChannelController::class, 'facebookPageManagement'])->name('channels.facebook-page-management');
 
+    // 🏬 (2026-08-10) สาขา / เพจแม่หมอ — ระบบหลายเพจ
+    //    ไม่มี destroy โดยตั้งใจ: บิล/ลูกค้าหลายพันแถวอ้าง fortune_page_id อยู่
+    //    ลบสาขา = รายงานย้อนหลังกลายเป็น "ไม่ระบุสาขา" ทั้งก้อน → ใช้ปิดสาขาแทน
+    Route::get('/pages', [\App\Http\Controllers\Admin\FortunePagesController::class, 'index'])->name('pages.index');
+    // 🔑 โหมดง่าย — เชื่อมบัญชีครั้งเดียว แล้วเพิ่มเพจใหม่ด้วย "ไอดีเพจ" อย่างเดียว
+    Route::post('/pages/connect', [\App\Http\Controllers\Admin\FortunePagesController::class, 'connectUserToken'])->name('pages.connect');
+    Route::post('/pages/discover', [\App\Http\Controllers\Admin\FortunePagesController::class, 'discover'])->name('pages.discover');
+    Route::post('/pages/quick-add', [\App\Http\Controllers\Admin\FortunePagesController::class, 'quickAdd'])->name('pages.quick-add');
+    Route::get('/pages/create', [\App\Http\Controllers\Admin\FortunePagesController::class, 'create'])->name('pages.create');
+    Route::post('/pages', [\App\Http\Controllers\Admin\FortunePagesController::class, 'store'])->name('pages.store');
+    Route::get('/pages/{fortunePage}/edit', [\App\Http\Controllers\Admin\FortunePagesController::class, 'edit'])->name('pages.edit');
+    Route::put('/pages/{fortunePage}', [\App\Http\Controllers\Admin\FortunePagesController::class, 'update'])->name('pages.update');
+    Route::patch('/pages/{fortunePage}/toggle', [\App\Http\Controllers\Admin\FortunePagesController::class, 'toggle'])->name('pages.toggle');
+    Route::post('/pages/{fortunePage}/test', [\App\Http\Controllers\Admin\FortunePagesController::class, 'test'])->name('pages.test');
+
     // Cloudflare Workers AI (สำหรับเจนภาพดวงประจำวัน)
     Route::put('/channels/cloudflare-ai', [FortuneChannelController::class, 'updateCloudflareAi'])->name('channels.cloudflare-ai.update');
     Route::post('/channels/test-cloudflare-ai', [FortuneChannelController::class, 'testCloudflareAi'])->name('channels.test-cloudflare-ai');

@@ -12,6 +12,7 @@ use App\Models\FortuneUserCredit;
 use App\Services\CelticCrossService;
 use App\Services\FacebookRichMessageService;
 use App\Services\FacebookWebhookService;
+use App\Services\Fortune\FortunePageContext;
 use App\Services\Fortune\ImageIntentClassifier;
 use App\Services\Fortune\ImageSpamGuard;
 use App\Services\FortuneAIService;
@@ -192,7 +193,7 @@ class FacebookWebhookController extends Controller
         $token = $request->query('hub_verify_token');
         $challenge = $request->query('hub_challenge');
 
-        if ($mode === 'subscribe' && $token === $this->settings->facebook_verify_token) {
+        if ($mode === 'subscribe' && $this->isValidVerifyToken((string) $token)) {
             Log::info('Facebook Webhook Verified');
 
             return response($challenge, 200);
@@ -200,10 +201,57 @@ class FacebookWebhookController extends Controller
 
         Log::warning('Facebook Webhook Verification Failed', [
             'mode' => $mode,
-            'token_match' => $token === $this->settings->facebook_verify_token,
+            'token_match' => false,
         ]);
 
         return response()->json(['error' => 'Forbidden'], 403);
+    }
+
+    /**
+     * 🏬 (2026-08-10) token ที่ Facebook ส่งมาตอน verify ตรงกับของระบบไหม
+     *
+     * รับได้ทั้ง:
+     *   - token กลาง (กรณีทุกเพจอยู่ Meta App เดียวกัน — เคสปกติ)
+     *   - token ของสาขาใดสาขาหนึ่ง (กรณีเพจอยู่คนละ Meta App)
+     *
+     * GET verify ไม่มี entry.id ติดมา → บอกไม่ได้ว่าเพจไหน ต้องลองเทียบทั้งชุด
+     *
+     * 🔒 ใช้ hash_equals ทุกจุด — เทียบด้วย === จะรั่วความยาว/ตำแหน่งที่ต่างผ่านเวลา
+     */
+    protected function isValidVerifyToken(string $token): bool
+    {
+        if ($token === '') {
+            return false;
+        }
+
+        $candidates = [$this->settings->facebook_verify_token ?? null];
+
+        try {
+            $candidates = array_merge(
+                $candidates,
+                \App\Models\FortunePage::query()
+                    ->whereNotNull('verify_token')
+                    ->where('verify_token', '!=', '')
+                    ->pluck('verify_token')
+                    ->all()
+            );
+        } catch (\Throwable $e) {
+            // ตาราง fortune_pages ยังไม่ถูก migrate — ใช้ token กลางอย่างเดียว
+            Log::warning('🏬 อ่าน verify_token ของสาขาไม่ได้', ['error' => $e->getMessage()]);
+        }
+
+        $matched = false;
+
+        foreach ($candidates as $candidate) {
+            if (empty($candidate)) {
+                continue;
+            }
+
+            // ไม่ break ทันทีเพื่อให้เวลาที่ใช้ไม่ผูกกับ "เจอที่ตัวที่เท่าไหร่"
+            $matched = hash_equals((string) $candidate, $token) || $matched;
+        }
+
+        return $matched;
     }
 
     /**
@@ -231,6 +279,16 @@ class FacebookWebhookController extends Controller
                 'ip' => $request->ip(),
             ]);
 
+            $data = $request->all();
+
+            // 🏬 (2026-08-10) ระบบสาขา — รู้ให้ได้ก่อนว่า event นี้มาจากเพจไหน
+            //
+            //    ต้องทำ "ก่อน" ตรวจ signature เพราะเพจที่อยู่คนละ Meta App ใช้ app_secret คนละตัว
+            //    ⚠️ ไม่ใช่ช่องโหว่: entry.id ถูกใช้แค่ "เลือกกุญแจ" เท่านั้น
+            //       ถ้าคนยิงมั่ว entry.id ก็แค่ได้กุญแจอีกดอก แล้ว signature จะไม่ผ่านอยู่ดี
+            //       (ยกเว้นเขามี secret ของเพจนั้นจริง ซึ่งก็แปลว่าเขาคือ Facebook)
+            $this->bindPageContext($data['entry'][0]['id'] ?? null);
+
             // ตรวจสอบ webhook signature (security)
             $signature = $request->header('X-Hub-Signature-256', '');
             if (! $this->facebookService->verifyWebhookSignature(
@@ -239,21 +297,25 @@ class FacebookWebhookController extends Controller
             )) {
                 Log::warning('Facebook Webhook: Invalid signature', [
                     'ip' => $request->ip(),
+                    'fortune_page_id' => FortunePageContext::currentId(),
                 ]);
 
                 return response()->json(['status' => 'ok']); // ยังคง return 200
             }
 
+            // 🏬 เช็คหลัง bind — สาขาปิดเดี่ยวๆ ได้ผ่าน settings_override ของเพจนั้น
             if (! $this->settings->isServiceEnabled()) {
-                Log::info('📥 Webhook: Service disabled, skipping');
+                Log::info('📥 Webhook: Service disabled, skipping', [
+                    'fortune_page_id' => FortunePageContext::currentId(),
+                ]);
 
                 return response()->json(['status' => 'ok']);
             }
 
-            $data = $request->all();
             Log::info('Received Facebook Webhook', [
                 'object' => $data['object'] ?? 'unknown',
                 'entry_count' => count($data['entry'] ?? []),
+                'fortune_page_id' => FortunePageContext::currentId(),
             ]);
 
             if (($data['object'] ?? '') !== 'page') {
@@ -261,6 +323,10 @@ class FacebookWebhookController extends Controller
             }
 
             foreach ($data['entry'] ?? [] as $entry) {
+                // 🏬 payload ก้อนเดียวอาจมีหลายเพจปนกันได้ — bind ใหม่ทุก entry
+                //    (ถ้าเป็นเพจเดิม bindPageContext จะไม่ทำอะไรเลย ไม่เปลือง query)
+                $this->bindPageContext($entry['id'] ?? null);
+
                 // 🔍 Debug: Log entry details
                 $hasChanges = ! empty($entry['changes']);
                 $hasMessaging = ! empty($entry['messaging']);
@@ -287,11 +353,68 @@ class FacebookWebhookController extends Controller
             // Log error แต่ยังคง return 200 เพื่อไม่ให้ Facebook retry
             Log::error('Facebook Webhook Error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
+                'fortune_page_id' => FortunePageContext::currentId(),
             ]);
+        } finally {
+            // 🏬 (2026-08-10) php-fpm จบ request แล้ว static ก็หายอยู่แล้ว
+            //    แต่ octane/worker เป็นโปรเซสรันยาว — ถ้าไม่ล้าง context ของ request นี้
+            //    request ถัดไปที่ยังไม่ทัน bind จะหยิบสาขาเก่าไปใช้
+            FortunePageContext::forget();
         }
 
         // ⚠️ ALWAYS return 200 OK
         return response()->json(['status' => 'ok']);
+    }
+
+    /**
+     * 🏬 (2026-08-10) ผูก context ของสาขาจาก Facebook Page ID ที่มากับ webhook
+     *
+     * แล้วสร้าง service ทั้งชุดใหม่ให้ใช้ค่าของสาขานั้น
+     * (service ถูกสร้างใน __construct ตอนที่ยังไม่รู้ว่าเพจไหน → ต้องสร้างซ้ำหลังรู้)
+     *
+     * @param  string|null  $externalPageId  entry.id จาก payload
+     */
+    protected function bindPageContext(?string $externalPageId): void
+    {
+        if (empty($externalPageId)) {
+            return;
+        }
+
+        $current = FortunePageContext::current();
+
+        // เพจเดิม → ไม่ต้องทำอะไร (กันสร้าง service ใหม่ทุก entry โดยไม่จำเป็น)
+        if ($current && $current->external_page_id === $externalPageId) {
+            return;
+        }
+
+        FortunePageContext::bindFromExternalId($externalPageId, 'facebook');
+
+        $this->rebuildServicesForCurrentPage();
+    }
+
+    /**
+     * 🏬 สร้าง service ใหม่ทั้งชุดด้วย settings ของสาขาปัจจุบัน
+     *
+     * ⚠️ ต้องเรียก getSettings() ใหม่ทุกครั้ง — ห้ามใช้ $this->settings ตัวเดิม
+     *    เพราะตัวเดิมคือค่าของ "ก่อน bind" (= ค่ากลาง หรือค่าสาขาก่อนหน้า)
+     */
+    protected function rebuildServicesForCurrentPage(): void
+    {
+        try {
+            $this->settings = FortuneTellingSetting::getSettings();
+            $this->facebookService = new FacebookWebhookService($this->settings);
+            $this->aiService = new FortuneAIService($this->settings);
+            $this->conversationService = new FortuneConversationService($this->settings);
+            $this->channelManager = new FortuneChannelManager($this->settings);
+
+            $this->bannerService = null;
+            $this->initBannerService();
+        } catch (\Throwable $e) {
+            Log::error('🏬 สร้าง service ใหม่ตามสาขาไม่สำเร็จ', [
+                'fortune_page_id' => FortunePageContext::currentId(),
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

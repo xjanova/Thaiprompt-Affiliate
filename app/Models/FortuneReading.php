@@ -44,6 +44,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class FortuneReading extends Model
 {
+    // 🏬 (2026-08-10) ระบบสาขา — ติดป้าย fortune_page_id ให้บิลอัตโนมัติ
+    use \App\Models\Concerns\BelongsToFortunePage;
     use SoftDeletes;
 
     /**
@@ -540,6 +542,7 @@ class FortuneReading extends Model
      */
     protected $fillable = [
         'bill_reference',
+        'fortune_page_id',   // 🏬 สาขา/เพจต้นทางของบิลนี้
         'user_id',
         'facebook_user_id',
         'facebook_user_name',

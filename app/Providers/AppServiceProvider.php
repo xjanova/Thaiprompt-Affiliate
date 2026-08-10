@@ -123,8 +123,34 @@ class AppServiceProvider extends ServiceProvider
         //   เคสจริง: VerifySlipFallbackJob เห็น SlipOK "ปิด" (stale) → ไม่ตรวจสลิป (บิล FTU-260606-C8706)
         //   แก้รวมศูนย์: clear ก่อนทุก job → job ที่อ่าน settings ได้ค่าสดจาก DB เสมอ
         //   (web request สด per-request อยู่แล้ว ; เป็น no-op สำหรับ job ที่ไม่แตะ settings)
-        Queue::before(function () {
+        //   🏬 (2026-08-10) ระบบสาขา — พก "สาขา" ติดไปกับทุก job ที่ dispatch
+        //   ปัญหา: webhook รู้ว่าเพจไหน แต่ queue worker เป็นคนละโปรเซส — context หายทันที
+        //          job ที่ส่งคำทำนายกลับจะหยิบ token ของสาขาหลักไปส่งให้ลูกค้าสาขาอื่น
+        //   แก้รวมศูนย์ที่ payload: ไม่ต้องไปแก้ job ทีละตัว (มี 30+ ตัว ลืมแน่)
+        Queue::createPayloadUsing(function () {
+            return ['fortune_page_id' => \App\Services\Fortune\FortunePageContext::currentId()];
+        });
+
+        Queue::before(function ($event) {
             \App\Models\FortuneTellingSetting::clearSettingsCache();
+
+            // 🏬 คืนค่า context ของสาขาจาก payload (null = งานที่ไม่ผูกสาขา)
+            try {
+                $pageId = $event->job->payload()['fortune_page_id'] ?? null;
+                \App\Services\Fortune\FortunePageContext::bindFromId($pageId ? (int) $pageId : null);
+            } catch (\Throwable $e) {
+                \App\Services\Fortune\FortunePageContext::forget();
+            }
+        });
+
+        // 🏬 worker เป็นโปรเซสรันยาว — ต้องล้าง context ทุกครั้งที่ job จบ
+        //    ไม่งั้น job ถัดไปที่ไม่ผูกสาขาจะสืบทอดสาขาของ job ก่อนหน้าไปใช้
+        Queue::after(function () {
+            \App\Services\Fortune\FortunePageContext::forget();
+        });
+
+        Queue::failing(function () {
+            \App\Services\Fortune\FortunePageContext::forget();
         });
 
         // เพิ่ม Carbon macro สำหรับแสดงวันที่ภาษาไทย

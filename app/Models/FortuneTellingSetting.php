@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Fortune\FortunePageContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -69,6 +70,9 @@ class FortuneTellingSetting extends Model
         'facebook_page_id',
         'facebook_page_token',
         'facebook_verify_token',
+        // 🔑 (2026-08-10) User Token ของเจ้าของเพจ — ใช้ดึง page token ให้เพจใหม่อัตโนมัติ
+        'facebook_user_token',
+        'facebook_user_token_checked_at',
         'use_global_ai_settings',
         'ai_provider',
         'ai_api_key',
@@ -452,6 +456,12 @@ class FortuneTellingSetting extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        // 🔑 (2026-08-10) User Access Token ของเจ้าของเพจ — ใช้ดึง page token ของเพจใหม่อัตโนมัติ
+        //    เข้ารหัสไว้เพราะเป็น token ระดับ "ผู้ใช้" (กว้างกว่า page token มาก)
+        //    ⚠️ คอลัมน์นี้ใหม่และมีที่เดียวที่อ่าน — ใส่ cast ได้ปลอดภัย
+        //       (ห้ามไปใส่ cast ให้ facebook_page_token ของเดิม ค่าที่บันทึกไว้แล้วเป็น plaintext จะถอดไม่ออก)
+        'facebook_user_token' => 'encrypted',
+        'facebook_user_token_checked_at' => 'datetime',
         'is_enabled' => 'boolean',
         'use_global_ai_settings' => 'boolean',
         'prediction_strict_provider' => 'boolean',  // 🎯 (2026-05-02) strict provider mode
@@ -921,6 +931,7 @@ class FortuneTellingSetting extends Model
     protected $hidden = [
         'facebook_app_secret',
         'facebook_page_token',
+        'facebook_user_token',
         'ai_api_key',
         'chat_ai_api_key',
         'line_channel_secret',
@@ -946,6 +957,14 @@ class FortuneTellingSetting extends Model
     protected static float $cachedAt = 0.0;
 
     /**
+     * 🏬 (2026-08-10) สาขาที่ instance ใน cache ถูก merge มาแล้ว
+     *
+     * ⚠️ ถ้าไม่มีตัวนี้ สาขา B จะได้ค่าของสาขา A ไปอีก 5 วินาที (TTL ของ memo)
+     *    = ตอบลูกค้าเพจ B ด้วย token/แบรนด์ของเพจ A → ข้อความไม่ออกหรือออกผิดเพจ
+     */
+    protected static ?int $cachedPageId = null;
+
+    /**
      * 🛡️ (2026-06-26) TTL ของ static memo (วินาที)
      *
      * เดิม static memo ไม่มีหมดอายุ → ใน "โปรเซสที่รันยาว" (fortune-queue-worker / octane)
@@ -957,12 +976,41 @@ class FortuneTellingSetting extends Model
 
     public static function getSettings(): self
     {
+        // 🏬 (2026-08-10) ระบบสาขา — ค่าที่คืนขึ้นกับว่าตอนนี้ทำงานให้เพจไหน
+        //    เจตนาคงชื่อเมธอดเดิมไว้ เพราะมีคนเรียก 232 จุดใน 114 ไฟล์
+        //    ไล่แก้ทีละจุด = พลาดแน่ → ทำให้ "ตัวเดิมฉลาดขึ้น" แทน
+        $pageId = FortunePageContext::currentId();
+
         // ⚡ static memo ลด DB query — แต่มี TTL กัน long-running worker/octane ถือค้าง (admin แก้ไม่มีผล)
         if (static::$cachedInstance !== null
+            && static::$cachedPageId === $pageId
             && (microtime(true) - static::$cachedAt) < self::SETTINGS_CACHE_TTL_SEC) {
             return static::$cachedInstance;
         }
 
+        $settings = self::getGlobalSettings();
+
+        // 🏬 merge ค่าเฉพาะสาขา ทับลงบนค่ากลาง
+        $page = FortunePageContext::current();
+        if ($page) {
+            $settings = self::applyPageOverrides($settings, $page);
+        }
+
+        static::$cachedInstance = $settings;
+        static::$cachedPageId = $pageId;
+        static::$cachedAt = microtime(true);
+
+        return $settings;
+    }
+
+    /**
+     * ค่ากลางของทั้งระบบ (ไม่ merge ค่าสาขา)
+     *
+     * ใช้ในหน้าแอดมินที่ต้องการ "แถวจริงใน DB" เพื่อบันทึกทับ
+     * ⚠️ อย่าเอาไปใช้ในเส้นทางที่คุยกับลูกค้า — จะได้ token ของเพจหลักเสมอ
+     */
+    public static function getGlobalSettings(): self
+    {
         $settings = self::first();
 
         if (! $settings) {
@@ -975,10 +1023,42 @@ class FortuneTellingSetting extends Model
             ]);
         }
 
-        static::$cachedInstance = $settings;
-        static::$cachedAt = microtime(true);
-
         return $settings;
+    }
+
+    /**
+     * เขียนค่าของสาขาทับลงบนค่ากลาง แล้วคืน "สำเนา" (ไม่แตะแถวจริงใน DB)
+     *
+     * @tip clone ของ Eloquent ก็อป array attributes แบบ by-value อยู่แล้ว
+     *      จึงปลอดภัยกว่า replicate() ตรงที่ยังคง id/exists ไว้ (โค้ดเก่าบางที่อ่าน ->id)
+     *
+     * 🔒 syncOriginal() ท้ายสุด = ทำให้ค่าที่ merge มา "ไม่ dirty"
+     *    ถ้ามีใครเผลอเรียก ->save() บนสำเนานี้ ค่าของสาขาจะไม่ไหลกลับไปทับค่ากลาง
+     */
+    protected static function applyPageOverrides(self $settings, FortunePage $page): self
+    {
+        $overrides = $page->toSettingsOverrides();
+
+        if ($overrides === []) {
+            return $settings;
+        }
+
+        $merged = clone $settings;
+        $known = $merged->getAttributes();
+
+        foreach ($overrides as $column => $value) {
+            // ยอมเฉพาะคอลัมน์ที่มีจริง — กัน settings_override ที่แอดมินพิมพ์คีย์ผิด
+            // ไปสร้าง attribute ผี แล้วระเบิดตอน save()
+            if (! array_key_exists($column, $known)) {
+                continue;
+            }
+
+            $merged->setAttribute($column, $value);
+        }
+
+        $merged->syncOriginal();
+
+        return $merged;
     }
 
     /**
@@ -987,6 +1067,7 @@ class FortuneTellingSetting extends Model
     public static function clearSettingsCache(): void
     {
         static::$cachedInstance = null;
+        static::$cachedPageId = null;
         static::$cachedAt = 0.0;
     }
 

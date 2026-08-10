@@ -91,6 +91,16 @@ class LineFortuneWebhookController extends Controller
         $data = json_decode($body, true);
         $events = $data['events'] ?? [];
 
+        // 🏬 (2026-08-10) ระบบสาขา — ติดป้ายสาขาให้บิล/ลูกค้าฝั่ง LINE ด้วย
+        //
+        //    LINE ส่ง `destination` มาเป็น "bot userId (Uxxxx)" ไม่ใช่ channel id
+        //    จับคู่กับ external_page_id ไม่ได้ → ใช้สาขาหลักของช่องทาง line แทน
+        //    (วันนี้มี LINE OA เดียว ถ้าวันหน้ามีหลายช่อง ต้องแยก webhook URL ต่อช่อง
+        //     แล้วส่ง code สาขาเข้ามาทาง route parameter)
+        \App\Services\Fortune\FortunePageContext::set(
+            \App\Services\Fortune\FortunePageContext::default('line')
+        );
+
         // ✅ FIX: ส่ง 200 OK ให้ LINE ก่อน → ป้องกัน LINE retry จาก timeout
         // ใช้ fastcgi_finish_request() (PHP-FPM) หรือ ob_end_flush() (Apache mod_php)
         // เพื่อปิดการเชื่อมต่อ HTTP แล้วประมวลผลต่อในพื้นหลัง

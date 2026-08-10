@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\MessagingPlatformInterface;
 use App\Models\FortuneReading;
+use App\Services\Fortune\FortunePageContext;
 use App\Models\FortuneResponseTemplate;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneUserCredit;
@@ -32,6 +33,21 @@ class FacebookWebhookService implements MessagingPlatformInterface
     protected $settings;
 
     protected $pageAccessToken;
+
+    /**
+     * 🏬 (2026-08-10) PSID ล่าสุดที่ย้อนหาสาขาให้แล้ว
+     *
+     * กันยิง query ซ้ำตอนส่งข้อความหลายก้อนให้คนเดิม (คำทำนายยาวถูกซอยเป็นหลายข้อความ)
+     * แต่ยัง resolve ใหม่ทันทีที่เปลี่ยนคน
+     */
+    protected ?string $lastResolvedRecipient = null;
+
+    /**
+     * 🏬 context สาขาปัจจุบันถูก bind โดยตัว service นี้เอง (ไม่ใช่ webhook/queue)
+     *
+     * ใช้แยกว่า "ใครเป็นเจ้าของ context" — ของคนอื่นห้ามแตะ ของตัวเองเปลี่ยนได้
+     */
+    protected bool $lazyBoundContext = false;
 
     /**
      * ความยาวสูงสุดของข้อความ Messenger (Facebook กำหนด 2000 characters)
@@ -170,8 +186,67 @@ class FacebookWebhookService implements MessagingPlatformInterface
             || str_contains($m, 'รอเจ้าชะตาเลือกแพคเกจ'); // step hint ตอนรอเลือกแพคเกจ
     }
 
+    /**
+     * 🏬 (2026-08-10) ระบบสาขา — กันส่งข้อความด้วย token ผิดเพจ
+     *
+     * เส้นทาง webhook/queue จะ bind สาขาไว้ให้แล้ว → เมธอดนี้คืนทันที ไม่เสีย query
+     *
+     * แต่เส้นทาง **คำสั่ง artisan** (fortune:check-pending, fortune:celtic-kick,
+     * ตัว auto-finalize ฯลฯ รวมกันเกิน 20 คำสั่ง) ไม่มี context ติดมา
+     * ถ้าไม่ดักตรงนี้ มันจะหยิบ token ของ "สาขาหลัก" ไปส่งให้ลูกค้าของสาขาอื่น
+     * → Graph API ตอบ 400 แล้วบอทเงียบใส่คนที่จ่ายเงินมาแล้ว
+     *
+     * @tip PSID ของ Facebook เป็นของ "เพจ" ไม่ใช่ของคน → PSID หนึ่งตัวแปลว่าเพจเดียวเสมอ
+     *      จึงย้อนหาสาขาจากบิลล่าสุดของ PSID นั้นได้อย่างแม่นยำ
+     */
+    protected function ensurePageContextForRecipient(?string $recipientId): void
+    {
+        if (empty($recipientId)) {
+            return;
+        }
+
+        // 🔒 มีคนข้างนอก (webhook/queue) bind สาขาไว้แล้ว → เขาถูกกว่าเรา ห้ามแตะ
+        //    เช็ค $lazyBoundContext ด้วย ไม่งั้นจะติดกับดักข้อถัดไป 👇
+        if (FortunePageContext::current() && ! $this->lazyBoundContext) {
+            return;
+        }
+
+        // ⚠️ กับดักที่เกือบพลาด: cron ตัวเดียววนส่งลูกค้าหลายคนจากคนละเพจ
+        //    ถ้าเช็คแค่ "มี context แล้วหรือยัง" คนแรกจะ bind เพจ A ค้างไว้
+        //    แล้วลูกค้าคนที่ 2-50 ของเพจ B จะถูกส่งด้วย token ของเพจ A ทั้งหมด
+        //    → ต้องยอมให้ resolve ใหม่ทุกครั้งที่ "ผู้รับเปลี่ยนคน"
+        if (($this->lastResolvedRecipient ?? null) === $recipientId) {
+            return; // คนเดิม (คำทำนายยาวถูกซอยเป็นหลายข้อความ) — ไม่ต้อง query ซ้ำ
+        }
+        $this->lastResolvedRecipient = $recipientId;
+
+        try {
+            $pageId = FortuneReading::query()
+                ->where('platform_user_id', $recipientId)
+                ->whereNotNull('fortune_page_id')
+                ->orderByDesc('id')
+                ->value('fortune_page_id');
+
+            // ลูกค้าใหม่ที่ยังไม่มีบิล → กลับไปใช้ค่ากลาง
+            // (ห้ามค้างสาขาของคนก่อนหน้าไว้ ไม่งั้นส่งด้วย token ผิดเพจอยู่ดี)
+            FortunePageContext::bindFromId($pageId ? (int) $pageId : null);
+            $this->lazyBoundContext = true;
+
+            // ⚠️ ต้องดึง settings ใหม่ — ตัวเดิมถูกจับไว้ตั้งแต่ตอน construct (ค่ากลาง)
+            $this->settings = FortuneTellingSetting::getSettings();
+            $this->pageAccessToken = $this->settings->facebook_page_token;
+        } catch (\Throwable $e) {
+            Log::warning('🏬 หาสาขาจากผู้รับไม่สำเร็จ ใช้ค่ากลางต่อ', [
+                'recipient' => $recipientId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function sendMessage(string $recipientId, string $message, array $options = []): bool
     {
+        $this->ensurePageContextForRecipient($recipientId);
+
         // ตรวจสอบ Page Access Token ก่อนส่ง
         if (empty($this->pageAccessToken)) {
             Log::error('❌ ส่งข้อความไม่ได้: ไม่มี Page Access Token', [
@@ -389,6 +464,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null, array $options = []): bool
     {
+        $this->ensurePageContextForRecipient($recipientId);
+
         $commentId = $options['comment_id'] ?? null;
         $skipUnreachableCache = $options['skip_unreachable_cache'] ?? false;
 
@@ -685,6 +762,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendAudio(string $recipientId, string $audioUrl, array $options = []): bool
     {
+        $this->ensurePageContextForRecipient($recipientId);
+
         $commentId = $options['comment_id'] ?? null;
         $messageTag = $options['message_tag'] ?? null;
 
@@ -800,6 +879,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendTypingIndicator(string $recipientId, bool $on = true): void
     {
+        $this->ensurePageContextForRecipient($recipientId);
+
         try {
             Http::timeout(10)
                 ->post($this->graphUrl('/me/messages'), [
@@ -832,6 +913,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendQuickReplies(string $recipientId, string $message, array $quickReplies, array $options = []): bool
     {
+        $this->ensurePageContextForRecipient($recipientId);
+
         try {
             $formattedReplies = array_map(function ($reply) {
                 return [
@@ -2876,6 +2959,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
     public function sendButtonTemplate(string $recipientId, array $templatePayload, array $options = []): bool
     {
+        $this->ensurePageContextForRecipient($recipientId);
+
         try {
             $messagingType = 'RESPONSE';
             $requestBody = [
@@ -2961,6 +3046,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendGenericTemplate(string $recipientId, array $elements, array $options = []): bool
     {
+        $this->ensurePageContextForRecipient($recipientId);
+
         try {
             $payload = [
                 'attachment' => [
@@ -2990,6 +3077,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendTemplateWithQuickReplies(string $recipientId, array $templatePayload, array $quickReplies): bool
     {
+        $this->ensurePageContextForRecipient($recipientId);
+
         try {
             // Facebook ไม่รองรับ Quick Replies กับ Template พร้อมกัน
             // ส่ง Template ก่อน แล้วส่ง Quick Replies แยก
@@ -3017,6 +3106,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendRichMessage(string $recipientId, array $richContent): bool
     {
+        $this->ensurePageContextForRecipient($recipientId);
+
         try {
             Http::timeout(30)
                 ->post($this->graphUrl('/me/messages'), [

@@ -61,9 +61,11 @@ class FortuneBillsController extends Controller
             'date_to' => $request->input('date_to'),
             'ai_provider' => (string) $request->input('ai_provider', ''),
             'category' => (string) $request->input('category', ''),
+            // 🏬 (2026-08-10) ระบบสาขา — '' = ทุกสาขา, 'none' = บิลที่ยังไม่มีสาขา
+            'fortune_page' => (string) $request->input('fortune_page', ''),
         ];
 
-        $bills = $this->applyFilters(FortuneReading::query()->with('user'), $filters)
+        $bills = $this->applyFilters(FortuneReading::query()->with(['user', 'fortunePage']), $filters)
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->paginate(20)
@@ -75,6 +77,11 @@ class FortuneBillsController extends Controller
             'filters' => $filters,
             'packages' => self::PACKAGES,
             'platforms' => self::PLATFORMS,
+            // 🏬 รายชื่อสาขาไว้ทำ dropdown — เรียงสาขาหลักขึ้นก่อน
+            'fortunePages' => \App\Models\FortunePage::query()
+                ->orderByDesc('is_default')
+                ->orderBy('name')
+                ->get(['id', 'name', 'brand_name', 'platform', 'is_active']),
             // รายชื่อ AI provider ที่มีจริงในข้อมูล — ไม่ hardcode เพราะเพิ่ม/เปลี่ยนได้ตลอด
             'aiProviders' => FortuneReading::query()
                 ->whereNotNull('ai_provider')
@@ -105,6 +112,8 @@ class FortuneBillsController extends Controller
             'date_to' => $request->input('date_to'),
             'ai_provider' => (string) $request->input('ai_provider', ''),
             'category' => (string) $request->input('category', ''),
+            // 🏬 (2026-08-10) ระบบสาขา — '' = ทุกสาขา, 'none' = บิลที่ยังไม่มีสาขา
+            'fortune_page' => (string) $request->input('fortune_page', ''),
         ];
 
         $filename = 'fortune_bills_'.now()->format('Y-m-d_His').'.csv';
@@ -116,12 +125,12 @@ class FortuneBillsController extends Controller
             fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
 
             fputcsv($out, [
-                'ID', 'เลขบิล', 'วันที่สร้าง', 'ช่องทาง', 'ลูกค้า', 'Platform User ID',
+                'ID', 'เลขบิล', 'วันที่สร้าง', 'สาขา/เพจ', 'ช่องทาง', 'ลูกค้า', 'Platform User ID',
                 'แพคเกจ', 'สถานะ', 'ชำระแล้ว', 'ยอดบิล', 'ยอดที่ได้รับจริง', 'วันที่ชำระ',
             ]);
 
             // chunk — ตารางนี้มีหมื่นกว่าแถวและ conversation_state เป็น JSON ก้อนใหญ่
-            $this->applyFilters(FortuneReading::query(), $filters)
+            $this->applyFilters(FortuneReading::query()->with('fortunePage'), $filters)
                 ->orderByDesc('created_at')
                 ->chunk(500, function ($rows) use ($out) {
                     foreach ($rows as $r) {
@@ -129,6 +138,7 @@ class FortuneBillsController extends Controller
                             $r->id,
                             $r->bill_reference ?? '',
                             $r->created_at?->format('Y-m-d H:i'),
+                            $r->fortunePage?->display_label ?? 'ไม่ระบุสาขา',
                             $r->platform ?? 'other',
                             $r->facebook_user_name ?? '',
                             $r->platform_user_id ?? $r->facebook_user_id ?? '',
@@ -179,6 +189,9 @@ class FortuneBillsController extends Controller
         } elseif (in_array($filters['platform'], ['facebook', 'line'], true)) {
             $query->where('platform', $filters['platform']);
         }
+
+        // 🏬 สาขา/เพจต้นทาง (2026-08-10)
+        $query->forFortunePage($filters['fortune_page'] ?? '');
 
         // 🤖 AI provider + หมวดคำทำนาย — ยกมาจากหน้า readings เดิม (ห้ามให้ความสามารถหาย)
         if (! empty($filters['ai_provider'])) {

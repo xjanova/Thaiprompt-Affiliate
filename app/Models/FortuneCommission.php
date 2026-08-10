@@ -32,6 +32,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class FortuneCommission extends Model
 {
+    // 🏬 (2026-08-10) ระบบสาขา — รู้ว่าค่าแนะนำใบนี้เกิดที่เพจไหน
+    use \App\Models\Concerns\BelongsToFortunePage;
     use SoftDeletes;
 
     /** สถานะคงที่ */
@@ -52,6 +54,7 @@ class FortuneCommission extends Model
      * คอลัมน์ที่สามารถ mass assign ได้
      */
     protected $fillable = [
+        'fortune_page_id',   // 🏬 สาขา/เพจต้นทาง
         'user_id',
         'from_user_id',
         'fortune_reading_id',

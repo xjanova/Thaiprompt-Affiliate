@@ -29,7 +29,10 @@ class FortuneUserBan extends Model
 {
     protected $table = 'fortune_user_bans';
 
+    use \App\Models\Concerns\BelongsToFortunePage;   // 🏬 (2026-08-10) ระบบสาขา
+
     protected $fillable = [
+        'fortune_page_id',   // 🏬 สาขาที่สั่งแบน (เฟสนี้แบนแยกรายสาขา)
         'platform',
         'platform_user_id',
         'display_name',

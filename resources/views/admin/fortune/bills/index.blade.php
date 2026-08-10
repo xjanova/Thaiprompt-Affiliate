@@ -112,10 +112,32 @@
             </div>
         </div>
 
+        {{-- 🏬 สาขา/เพจ (2026-08-10) — โชว์เฉพาะตอนมีมากกว่า 1 สาขา จะได้ไม่รกตอนใช้เพจเดียว --}}
+        @if(($fortunePages ?? collect())->count() > 1)
+            <div style="margin-bottom:14px;">
+                <div style="font-size:12px; color:var(--ink2); font-weight:700; margin-bottom:7px;">🏬 สาขา / เพจต้นทาง</div>
+                <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                    <a href="{{ $tpQ(['fortune_page' => null]) }}" class="tp-pill"
+                       style="text-decoration:none; {{ ($filters['fortune_page'] ?? '') === '' ? 'background:var(--accent1); color:#fff;' : '' }}">ทุกสาขา</a>
+                    @foreach($fortunePages as $fp)
+                        <a href="{{ $tpQ(['fortune_page' => $fp->id]) }}" class="tp-pill"
+                           style="text-decoration:none; {{ (string) ($filters['fortune_page'] ?? '') === (string) $fp->id ? 'background:var(--accent1); color:#fff;' : '' }}">
+                            {{ $fp->display_label }}{{ $fp->is_active ? '' : ' (ปิด)' }}
+                        </a>
+                    @endforeach
+                    {{-- แถวเก่าที่ backfill ไม่ถึง / งานที่รันจากคอนโซล — ต้องมองเห็นได้ ไม่ใช่หายเงียบ --}}
+                    <a href="{{ $tpQ(['fortune_page' => 'none']) }}" class="tp-pill"
+                       style="text-decoration:none; {{ ($filters['fortune_page'] ?? '') === 'none' ? 'background:var(--accent1); color:#fff;' : 'color:var(--ink2);' }}">ไม่ระบุสาขา</a>
+                </div>
+            </div>
+        @endif
+
         {{-- ค้นหา / สถานะ / วันที่ --}}
         <form method="GET" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; align-items:end;">
             <input type="hidden" name="package" value="{{ $filters['package'] ?? '' }}">
             <input type="hidden" name="platform" value="{{ $filters['platform'] ?? '' }}">
+            {{-- 🏬 ไม่งั้นกดค้นหาแล้วตัวกรองสาขาหลุด (เหมือน package/platform) --}}
+            <input type="hidden" name="fortune_page" value="{{ $filters['fortune_page'] ?? '' }}">
 
             <div style="grid-column:span 2; min-width:0;">
                 <label style="display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;">🔍 ค้นหา (ชื่อ / เลขบิล / PSID / LINE id / #id)</label>
@@ -206,7 +228,7 @@
                 <table style="min-width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="text-align:left; color:var(--ink2);">
-                            @foreach(['Bill','ช่องทาง','ลูกค้า','แพคเกจ','สถานะ','ค่าครู','เวลา','จัดการ'] as $th)
+                            @foreach(['Bill','สาขา','ช่องทาง','ลูกค้า','แพคเกจ','สถานะ','ค่าครู','เวลา','จัดการ'] as $th)
                                 <th style="padding:10px 12px; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; {{ $th === 'จัดการ' ? 'text-align:right;' : '' }}">{{ $th }}</th>
                             @endforeach
                         </tr>
@@ -259,6 +281,15 @@
                                         {{-- ✅ SlipOK ตัดให้เอง — ต่างจากบิลที่แอดมิน/SMS จับคู่ให้ (ส่วนใหญ่เป็นแบบหลัง) --}}
                                         <span class="tp-pill" title="SlipOK ตรวจสลิปผ่านเมื่อ {{ $bill->slipok_verified_at->format('d/m/y H:i') }}"
                                               style="display:inline-block; margin-top:4px; background:rgba(90,160,126,.16); color:#3f7a5c; font-size:10px; font-weight:700;">🧾 SlipOK</span>
+                                    @endif
+                                </td>
+
+                                {{-- 🏬 สาขา/เพจต้นทาง (2026-08-10) --}}
+                                <td style="padding:11px 12px; white-space:nowrap;">
+                                    @if($bill->fortunePage)
+                                        <span class="tp-pill tp-pill-soft" style="font-weight:700;">{{ $bill->fortunePage->display_label }}</span>
+                                    @else
+                                        <span style="color:var(--ink2); font-size:12px;">ไม่ระบุ</span>
                                     @endif
                                 </td>
 

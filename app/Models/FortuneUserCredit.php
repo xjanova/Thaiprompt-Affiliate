@@ -35,7 +35,10 @@ class FortuneUserCredit extends Model
     /**
      * คอลัมน์ที่สามารถ mass assign ได้
      */
+    use \App\Models\Concerns\BelongsToFortunePage;   // 🏬 (2026-08-10) ระบบสาขา
+
     protected $fillable = [
+        'fortune_page_id',   // 🏬 สาขา/เพจต้นทาง
         'facebook_user_id',
         'facebook_user_name',
         'platform',

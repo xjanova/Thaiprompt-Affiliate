@@ -33,11 +33,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class FortuneCustomerPersona extends Model
 {
+    // 🏬 (2026-08-10) ระบบสาขา — persona ผูกกับเพจ (PSID เป็นของเพจ ไม่ใช่ของคน)
+    use \App\Models\Concerns\BelongsToFortunePage;
     use HasFactory, SoftDeletes;
 
     protected $table = 'fortune_customer_personas';
 
     protected $fillable = [
+        'fortune_page_id',   // 🏬 สาขา/เพจต้นทาง
         'platform',
         'platform_user_id',
         'display_name',
