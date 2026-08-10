@@ -198,9 +198,24 @@ class KeywordABTestService
         $metricA = $this->getMetricValue($variantA, $criterion);
         $metricB = $this->getMetricValue($variantB, $criterion);
 
-        // คำนวณความแตกต่างและ confidence
-        $winner = $metricA > $metricB ? 'variant_a' : 'variant_b';
+        // 🐛 (2026-08-10) เดิม `$metricA > $metricB ? 'variant_a' : 'variant_b'`
+        //    แปลว่า **เสมอกัน = variant_b ชนะเสมอ** ซึ่งเป็นการโยนหัวก้อยที่ออกด้านเดิมทุกครั้ง
+        //    แอดมินอาจกด "apply winner" แล้วเอาตัวที่ไม่ได้ดีกว่าจริงขึ้นใช้งาน
+        //    เสมอ → ไม่มีผู้ชนะ (null) เหมือนเคสข้อมูลไม่พอด้านบน ซึ่งผู้เรียกรองรับอยู่แล้ว
+        //
+        //    ⚠️ response_time เป็น metric ที่ "น้อยกว่าดีกว่า" (ดู getMetricValue)
+        //    จึงต้องกลับด้านการเปรียบเทียบ ไม่งั้นตอบผิดขั้วมาตลอด
+        $lowerIsBetter = $criterion === 'response_time';
         $difference = abs($metricA - $metricB);
+
+        if ($metricA === $metricB) {
+            $winner = null;
+        } elseif ($lowerIsBetter) {
+            $winner = $metricA < $metricB ? 'variant_a' : 'variant_b';
+        } else {
+            $winner = $metricA > $metricB ? 'variant_a' : 'variant_b';
+        }
+
         $confidence = $this->calculateStatisticalConfidence(
             $test,
             $variantA,
@@ -210,13 +225,15 @@ class KeywordABTestService
 
         return [
             'winner' => $winner,
-            'winner_confidence' => $confidence,
+            'winner_confidence' => $winner === null ? 0 : $confidence,
             'criterion' => $criterion,
             'variant_a_score' => round($metricA, 2),
             'variant_b_score' => round($metricB, 2),
             'difference' => round($difference, 2),
-            'reason' => $this->getWinnerReason($criterion, $winner, $difference),
-            'has_significance' => $confidence >= 95,
+            'reason' => $winner === null
+                ? 'ทั้งสองแบบให้ผลเท่ากัน ยังตัดสินผู้ชนะไม่ได้'
+                : $this->getWinnerReason($criterion, $winner, $difference),
+            'has_significance' => $winner !== null && $confidence >= 95,
             'sufficient_samples' => $test->hasSufficientSamples(),
         ];
     }

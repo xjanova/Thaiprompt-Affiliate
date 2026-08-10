@@ -115,12 +115,14 @@ class KeywordPerformanceTest extends TestCase
         DB::table('keyword_activity_logs')->insert([
             [
                 'line_user_id' => 'U001',
+                'user_message' => 'Test message',
                 'action_type' => 'matched',
                 'created_at' => now(),
                 'timestamp' => now(),
             ],
             [
                 'line_user_id' => 'U002',
+                'user_message' => 'Test message',
                 'action_type' => 'no_match',
                 'created_at' => now(),
                 'timestamp' => now(),
@@ -158,6 +160,7 @@ class KeywordPerformanceTest extends TestCase
         for ($i = 0; $i < 5; $i++) {
             DB::table('keyword_activity_logs')->insert([
                 'line_user_id' => "U{$i}",
+                'user_message' => 'Test message',
                 'action_type' => 'matched',
                 'created_at' => now()->subDays($i),
                 'timestamp' => now()->subDays($i),
@@ -213,6 +216,7 @@ class KeywordPerformanceTest extends TestCase
                 'keyword_id' => $kw->id,
                 'keyword_name' => $kw->keyword,
                 'line_user_id' => 'U-faq-'.$kw->id,
+                'user_message' => 'Test message',
                 'category' => 'faq',
                 'action_type' => 'matched',
                 'created_at' => now(),
@@ -227,6 +231,7 @@ class KeywordPerformanceTest extends TestCase
                     'keyword_id' => $kw->id,
                     'keyword_name' => $kw->keyword,
                     'line_user_id' => "U-sup-{$kw->id}-{$i}",
+                    'user_message' => 'Test message',
                     'category' => 'support',
                     'action_type' => 'matched',
                     'created_at' => now(),
@@ -313,6 +318,7 @@ class KeywordPerformanceTest extends TestCase
                 'keyword_id' => $keyword->id,
                 'keyword_name' => $keyword->keyword,
                 'line_user_id' => 'U-cov-'.$keyword->id,
+                'user_message' => 'Test message',
                 'action_type' => 'matched',
                 'created_at' => now(),
                 'timestamp' => now(),
@@ -410,6 +416,7 @@ class KeywordPerformanceTest extends TestCase
                     'keyword_id' => $keyword->id,
                     'keyword_name' => $keyword->keyword,
                     'line_user_id' => "U-con-{$keyword->id}-{$i}",
+                    'user_message' => 'Test message',
                     'action_type' => 'matched',
                     'created_at' => now(),
                     'timestamp' => now(),

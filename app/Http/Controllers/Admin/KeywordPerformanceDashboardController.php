@@ -198,11 +198,12 @@ class KeywordPerformanceDashboardController extends Controller
      */
     private function getCategoryPerformance(): array
     {
-        $keywords = LineBotKeyword::where('is_active', true)
-            ->select('category', 'times_matched')
-            ->groupBy('category')
-            ->get();
-
+        // 🐛 (2026-08-10) ตัดคิวรี่ที่ตายแล้วทิ้ง — ผลลัพธ์ไม่เคยถูกใช้เลยในเมธอดนี้
+        //    (ลูปข้างล่างนับใหม่ต่อ category เองทั้งหมด) แต่ตัวมันเองพังทั้งหน้า:
+        //      SELECT category, times_matched ... GROUP BY category
+        //    times_matched ไม่ได้อยู่ใน GROUP BY และไม่ใช่ aggregate →
+        //    MySQL sql_mode=only_full_group_by (ค่าเริ่มต้นตั้งแต่ 5.7 และเปิดอยู่บน 8)
+        //    โยน 1055 = หน้า performance dashboard 500 ทั้งหน้า
         $categories = ['faq', 'support', 'product', 'custom'];
         $data = [];
 

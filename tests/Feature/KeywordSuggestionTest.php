@@ -198,12 +198,16 @@ class KeywordSuggestionTest extends TestCase
 
         // Act
         $response = $this->actingAs($this->admin)
+            // 🔧 (2026-08-10) controller validate 'trigger_words' => 'required|json'
+            //    = ต้องเป็น **สตริง JSON** ไม่ใช่ array · และ 'priority' เป็น required ด้วย
+            //    ของเดิมส่ง array + ไม่ส่ง priority → 422 ทุกครั้ง
             ->postJson(route('admin.line-bot.keywords.suggestions.approve'), [
                 'keyword' => $suggestion['keyword'],
-                'trigger_words' => $suggestion['trigger_words'],
+                'trigger_words' => json_encode($suggestion['trigger_words']),
                 'category' => 'support',
                 'response_type' => 'text',
                 'response_text' => 'ตอบกลับแบบอัตโนมัติ',
+                'priority' => 50,
             ]);
 
         // Assert
@@ -226,12 +230,15 @@ class KeywordSuggestionTest extends TestCase
         $this->createNoMatchMessages(20);
         $suggestions = $this->suggestionService->getSuggestions();
         $suggestionsToApprove = collect($suggestions)->take(3)->map(function ($s) {
+            // 🔧 (2026-08-10) เหมือนกับ approve เดี่ยว — trigger_words ต้องเป็นสตริง JSON
+            //    และ priority เป็น required (suggestions.*.priority)
             return [
                 'keyword' => $s['keyword'],
-                'trigger_words' => $s['trigger_words'],
+                'trigger_words' => json_encode($s['trigger_words']),
                 'category' => 'faq',
                 'response_type' => 'text',
                 'response_text' => 'ตอบกลับอัตโนมัติ',
+                'priority' => 50,
             ];
         })->toArray();
 
@@ -279,9 +286,12 @@ class KeywordSuggestionTest extends TestCase
 
         // Act
         $response = $this->actingAs($this->admin)
-            ->getJson(route('admin.line-bot.keywords.suggestions.detail'), [
+            // 🔧 (2026-08-10) พารามิเตอร์ที่ 2 ของ getJson() คือ **headers** ไม่ใช่ query string
+            //    'keyword' เลยถูกส่งไปเป็น HTTP header → controller มองไม่เห็น → 422
+            //    ต้องผูกเข้ากับ URL ผ่าน route() แทน
+            ->getJson(route('admin.line-bot.keywords.suggestions.detail', [
                 'keyword' => $suggestion['keyword'],
-            ]);
+            ]));
 
         // Assert
         $response->assertStatus(200)
@@ -519,7 +529,10 @@ class KeywordSuggestionTest extends TestCase
         $keyword = $this->suggestionService->createKeywordDraft($suggestion);
 
         // Assert
-        $this->assertNotNull($keyword->id);
+        // 🔧 (2026-08-10) createKeywordDraft คืนโมเดลที่ **ยังไม่ได้ save** โดยตั้งใจ
+        //    (ชื่อก็บอกว่า draft — controller::preview เอาไปโชว์ตัวอย่างโดยไม่บันทึก)
+        //    id จึงเป็น null เสมอ · สิ่งที่ควรยืนยันคือ "เป็นดราฟต์" + ค่าที่ประกอบมาถูก
+        $this->assertFalse($keyword->exists, 'draft ต้องยังไม่ถูกบันทึกลงฐานข้อมูล');
         $this->assertEquals('test_keyword', $keyword->keyword);
     }
 
