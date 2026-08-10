@@ -511,6 +511,12 @@ class NLPEnhancementService
                         $cluster->keywords()->attach($keywordData);
                     }
                 }
+
+                // 🐛 (2026-08-10) attach() ตรง ๆ ข้ามตัวนับของ addKeyword()/removeKeyword()
+                //    → cluster ที่สร้างพร้อม keywords จะมี keyword_count = 0 ค้างไว้ตลอด
+                //    ทั้งที่ผูก keyword ไว้จริง (หน้าแอดมินอ่านคอลัมน์นี้ไปโชว์)
+                //    ซิงก์ครั้งเดียวหลังผูกครบ ถูกกว่าเรียก addKeyword ทีละตัว (นับใหม่ทุกรอบ)
+                $cluster->update(['keyword_count' => $cluster->keywords()->count()]);
             }
 
             return $cluster->fresh();

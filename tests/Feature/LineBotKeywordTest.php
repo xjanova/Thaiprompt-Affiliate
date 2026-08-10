@@ -109,7 +109,10 @@ class LineBotKeywordTest extends TestCase
             ->delete(route('admin.line-bot.keywords.destroy', $keyword));
 
         $response->assertRedirect(route('admin.line-bot.keywords.index'));
-        $this->assertDatabaseMissing('line_bot_keywords', ['id' => $keyword->id]);
+        // 🔧 (2026-08-10) LineBotKeyword ใช้ SoftDeletes → แถวยังอยู่ แค่มี deleted_at
+        //    assertDatabaseMissing จึงเจอแถวเสมอ ต้องใช้ assertSoftDeleted
+        //    (ถ้าจะให้หายจริงต้องเปลี่ยนเป็น forceDelete ซึ่งจะทำลายประวัติ = ไม่ใช่เจตนา)
+        $this->assertSoftDeleted('line_bot_keywords', ['id' => $keyword->id]);
     }
 
     /**

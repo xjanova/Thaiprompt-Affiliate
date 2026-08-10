@@ -89,17 +89,30 @@ class SmsPaymentTest extends TestCase
     }
 
     /**
-     * ทดสอบ: Device ID ไม่ตรง → 403
+     * ทดสอบ: Device ID ไม่ตรง → **auto-sync** (ไม่ใช่ 403 แล้ว)
+     *
+     * 🔧 (2026-08-10) เทสต์นี้เข้ารหัสสัญญาเก่าไว้ — พฤติกรรมถูกเปลี่ยนโดยตั้งใจตั้งแต่
+     *    commit c7debf1ed (2026-02-18) "Fix device_id mismatch: auto-sync instead of
+     *    403 rejection" เหตุผลในโค้ด: device_id เป็นค่า global ค่าเดียวในแอพ แต่ server
+     *    หลายตัวเก็บแยกกัน พอ user เพิ่ม server ใหม่ device_id จะเปลี่ยน → server เก่า
+     *    ถูกล็อกออกทั้งที่ API key ถูกต้อง
+     *
+     * ⚠️ ผลด้านความปลอดภัยที่ตามมา: device_id **ไม่ใช่ปัจจัยที่สองอีกต่อไป**
+     *    ใครถือ API key ที่ถูกต้องก็เขียนทับ device_id ได้ = API key คือของชิ้นเดียว
+     *    ที่ป้องกันอยู่ (ตั้งใจแลกความสะดวกกับความเข้ม — เป็นการตัดสินใจของเจ้าของ)
+     *    เทสต์นี้จึงล็อกพฤติกรรม auto-sync ไว้ให้ชัด ไม่ใช่แค่ลบเทสต์เก่าทิ้ง
      */
-    public function test_middleware_rejects_device_id_mismatch(): void
+    public function test_middleware_auto_syncs_device_id_mismatch(): void
     {
         $response = $this->getJson('/api/v1/sms-payment/status', [
             'X-Api-Key' => $this->apiKey,
             'X-Device-Id' => 'SMSCHK-WRONGID0',
         ]);
 
-        $response->assertStatus(403)
-            ->assertJson(['success' => false, 'message' => 'Device ID mismatch']);
+        $response->assertStatus(200);
+
+        // ต้อง sync ค่าใหม่ลง DB จริง ไม่ใช่แค่ปล่อยผ่านเฉย ๆ
+        $this->assertSame('SMSCHK-WRONGID0', $this->device->fresh()->device_id);
     }
 
     // =============================================
@@ -242,8 +255,13 @@ class SmsPaymentTest extends TestCase
         ];
 
         // เข้ารหัส (จำลอง Android app)
+        // 🔧 (2026-08-10) เดิมจำลองคีย์แบบ str_pad(substr($secret,0,32)) ซึ่งเป็นสูตรเก่า
+        //    ตอนนี้ service ใช้ PBKDF2-SHA256 100,000 รอบ (ต้องตรงกับ Android CryptoManager)
+        //    → decryptPayload คืน null ตลอด เทสต์เลยไม่เคยพิสูจน์อะไรเลย
+        //    เรียก deriveKey ของ service เองผ่าน Reflection แทนการฝังพารามิเตอร์คริปโตซ้ำ
+        //    (ฝังซ้ำ = วันหน้าเปลี่ยน salt/รอบ แล้วเทสต์เพี้ยนเงียบ ๆ อีกรอบ)
         $json = json_encode($originalPayload);
-        $key = str_pad(substr($this->secretKey, 0, 32), 32, "\0");
+        $key = $this->deriveServiceKey($service, $this->secretKey, 'encryption');
         $iv = random_bytes(12);
         $cipherText = openssl_encrypt($json, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag);
         $combined = $iv.$cipherText.$tag;
@@ -266,9 +284,26 @@ class SmsPaymentTest extends TestCase
         $service = app(SmsPaymentService::class);
 
         $data = 'test-data-to-sign';
-        $signature = base64_encode(hash_hmac('sha256', $data, $this->secretKey, true));
+        // 🔧 (2026-08-10) verifySignature ใช้คีย์ HMAC แยกต่างหาก (context 'hmac-signing')
+        //    ที่ผ่าน PBKDF2 มาก่อน — เดิมเทสต์เซ็นด้วย secret ดิบ จึงไม่มีทางตรง
+        $hmacKey = $this->deriveServiceKey($service, $this->secretKey, 'hmac-signing');
+        $signature = base64_encode(hash_hmac('sha256', $data, $hmacKey, true));
 
         $this->assertTrue($service->verifySignature($data, $signature, $this->secretKey));
+    }
+
+    /**
+     * 🔑 เรียก SmsPaymentService::deriveKey() (private) ผ่าน Reflection
+     *
+     * ให้เทสต์ใช้สูตรเดียวกับของจริงเสมอ แทนการก็อปพารามิเตอร์ PBKDF2 มาไว้ในเทสต์
+     * (ถ้าวันหน้าเปลี่ยน salt/จำนวนรอบ เทสต์จะยังตรวจของจริง ไม่เพี้ยนเงียบ ๆ)
+     */
+    private function deriveServiceKey(SmsPaymentService $service, string $secret, string $context): string
+    {
+        $m = new \ReflectionMethod($service, 'deriveKey');
+        $m->setAccessible(true);
+
+        return $m->invoke($service, $secret, $context);
     }
 
     /**
