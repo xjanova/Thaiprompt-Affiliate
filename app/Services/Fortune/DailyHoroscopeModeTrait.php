@@ -213,9 +213,24 @@ trait DailyHoroscopeModeTrait
         //    อยู่ในระบบแล้ว เดิมจึงไปขอวันเดือนปีจากคนที่เพิ่งให้ไว้ = บอทเหมือนไม่จำอะไรเลย
         $knowsFullBirthdate = $fullDate !== null || $this->dailyKnowsFullBirthdate($userId);
 
-        $message .= $knowsFullBirthdate
-            ? "\n\n———\n💫 แม่หมอจดวันเกิดของเจ้าชะตาไว้แล้วนะคะ\nถ้าอยากให้เปิดดูเชิงลึกว่าช่วงนี้ดวงพาไปทางไหน ทักมาบอกได้เลยค่ะ"
-            : "\n\n———\n💫 ถ้าบอกวัน/เดือน/ปีเกิดเต็ม ๆ มาด้วย แม่หมอจะดูให้ละเอียดกว่านี้ได้อีกเยอะเลยค่ะ";
+        // 🌱 (2026-08-10, owner: "หลังจากรับดวงรายวันฟรีแล้ว อยากให้ชวนดูดวงละเอียดเนียน ๆ ด้วย")
+        //    ย้ายจากประโยคตายตัว 2 แบบ → ตัวประกอบกลางที่หมุนสำนวน + เงียบเองเมื่อไม่ควรชวน
+        //
+        // 🐛 $box === null = ช่วงก่อน 06:00 / job สร้างบทความล่ม → ข้อความที่ส่งคือ
+        //    buildDailyUnavailableMessage ("เดี๋ยวกลับมาใหม่นะคะ") ไม่ใช่คำทำนาย
+        //    ต่อคำชวนที่ขึ้นต้นว่า "ดวงที่แม่หมออ่านให้เมื่อกี้..." = โกหกลูกค้าที่ยังไม่ได้อะไรเลย
+        //    (บทเรียนเดียวกับ maybeInviteDeepAfterDailySent — daily_dm_answered_at ≠ ได้บทความแล้ว)
+        $tail = $this->buildDailyDeepInviteTail(
+            $platform,
+            $userId,
+            $dayIndex,
+            $knowsFullBirthdate,
+            $box !== null
+        );
+
+        if ($tail['text'] !== null) {
+            $message .= "\n\n———\n".$tail['text'];
+        }
 
         // ตอบแล้วปิดธง — ไม่ให้ข้อความถัดไปถูกตีเป็นวันเกิดอีก
         $this->clearDailyPending($platform, $userId);
@@ -227,17 +242,242 @@ trait DailyHoroscopeModeTrait
             'has_full_date' => $fullDate !== null,
             'has_article' => $box !== null,
             'stale_days' => $box['stale_days'] ?? null,
+            'invite_text' => $tail['text'] !== null,
+            'invite_button' => $tail['quick_replies'] !== [],
         ]);
 
         // 💎 ได้ของฟรีไปแล้ว = จังหวะที่ลูกค้าสนใจที่สุด — ต้องมีปุ่มให้กดต่อทันที
         //    ไม่งั้นคำชวน "ทักมาบอกได้เลยค่ะ" บังคับให้ลูกค้าพิมพ์เอง = เสียคนที่พร้อมจ่าย
+        //    ⚠️ ปุ่มว่างปลอดภัย: FacebookWebhookService::sendQuickReplies เห็น array ว่าง
+        //       จะ fallback เป็น sendMessage + no_default_qr = ไม่มีปุ่มแพคเกจลอยมาเกาะ
         return [
             'action' => 'daily_horoscope_sent',
             'message' => $message,
             'reading' => null,
             'daily_day_index' => $dayIndex,
-            'quick_replies' => [static::dailyUpgradeQuickReply()],
+            'quick_replies' => $tail['quick_replies'],
         ];
+    }
+
+    /**
+     * 🌱 (2026-08-10) หาง "ชวนดูเชิงลึกเนียน ๆ" ที่ต่อท้ายดวงรายวันฟรี
+     *
+     * owner: "หลังจากรับดวงรายวันฟรีแล้ว อยากให้ชวนดูดวงละเอียดเนียน ๆ ด้วย"
+     *
+     * เดิมเป็นประโยคตายตัว 2 แบบท้าย buildDailyHoroscopeReply ซึ่งมี 3 ปัญหา:
+     *   1. ไม่หมุนสำนวน — คนที่รับดวงทุกวันเห็นบรรทัดเดิมเป๊ะทุกวัน = อ่านเป็นแบนเนอร์โฆษณา
+     *      (ตัวชวนอีก 2 ตัวในไฟล์นี้ pickDailyFreeOffer / buildDailyToDeepInvite หมุนอยู่แล้ว)
+     *   2. ไม่มีเหตุผลรองรับ — ไม่ได้บอกว่าดวงรายวันคือ "ดวงรวมของคนเกิดวันเดียวกัน"
+     *      ลูกค้าจึงคิดว่า "ก็ได้ไปแล้วนี่" แล้วคำชวนกลายเป็นการขายของเดิมซ้ำ
+     *      (นี่คือประโยคเดียวที่ทำให้การชวนต่อเป็น "การบอกตามตรง" ไม่ใช่ "การขาย")
+     *   3. ยื่นปุ่ม 👑 VIP ให้ทุกคนเสมอ แม้ตอนที่ deep+celtic ปิดทั้งคู่ (กดแล้วไม่มีของ)
+     *      และแม้กับขาประจำที่เพิ่งจ่ายไปเมื่อวาน
+     *
+     * 🚨 เงียบทั้งข้อความและปุ่มเมื่อ:
+     *   - deep + celtic ปิดทั้งคู่ → ไม่มีอะไรให้ชวน (ด่านเดียวกับ maybeInviteDeepAfterDailySent)
+     *   - เพิ่งจ่ายภายใน 7 วัน → ขาประจำ ห้ามตื๊อ (owner 2026-06-17: "อย่าตื้อให้ซื้ออีก
+     *     ทักแบบขาประจำ แต่ถ้าเขาอยากดูเอง ก็เปิดบิลให้ตามปกติ")
+     *     ใช้ระยะ 7 วันแบบ rolling ตัวเดียวกับ DM guard ไม่ใช่เดือนปฏิทิน
+     *
+     * 🔕 เงียบเฉพาะข้อความ (ปุ่มยังอยู่) เมื่อวันนี้ชวนไปแล้วรอบหนึ่ง —
+     *    ดวงรายวันขอซ้ำได้ไม่จำกัดต่อวัน (maybeOfferDailyForFreeRequest) การแปะคำชวน
+     *    ทุกรอบคือการตื๊อ แต่ปุ่มเงียบ ๆ ไว้ให้คนที่พร้อมจ่ายกดเองยังต้องมี
+     *
+     * 🐛 เงียบเฉพาะข้อความอีกกรณี: $articleDelivered = false (ยังไม่มีบทความให้ส่ง)
+     *    ทุกสำนวนอ้างถึง "ดวงที่เพิ่งอ่านให้/ใบนี้" — ต่อท้ายข้อความ "ยังไม่พร้อม" = โกหก
+     *    ปุ่มยังยื่นได้ เพราะคนที่อยากจ่ายตอนนี้ไม่ต้องรอบทความรายวัน
+     *
+     * @param  string|null  $userId  null = ไม่รู้ตัวตน (ข้ามด่านขาประจำ/กันชวนซ้ำ ชวนตามปกติ)
+     * @param  bool  $articleDelivered  ข้อความที่กำลังจะส่ง มีคำทำนายจริงอยู่ในนั้นไหม
+     * @return array{text: string|null, quick_replies: array<int, array>}
+     */
+    protected function buildDailyDeepInviteTail(
+        string $platform,
+        ?string $userId,
+        int $dayIndex,
+        bool $knowsFullBirthdate,
+        bool $articleDelivered = true
+    ): array {
+        $silent = ['text' => null, 'quick_replies' => []];
+
+        try {
+            // 1️⃣+2️⃣ มีของให้ชวนจริง และไม่ใช่ขาประจำที่เพิ่งจ่าย
+            if (! $this->dailyUpgradeInviteAllowed($platform, $userId)) {
+                return $silent;
+            }
+
+            $hasUser = $userId !== null && $userId !== '';
+            $buttons = [static::dailyUpgradeQuickReply()];
+
+            // 3️⃣ ยังไม่ได้ส่งคำทำนายจริง → ห้ามอ้างถึง "ดวงที่เพิ่งอ่านให้"
+            //    และห้ามเผาสิทธิ์ชวนของวันนี้ทิ้ง (เดี๋ยวบทความมาแล้วยังได้ชวนอยู่)
+            if (! $articleDelivered) {
+                return ['text' => null, 'quick_replies' => $buttons];
+            }
+
+            // 4️⃣ วันนี้ชวนไปแล้ว → เหลือแค่ปุ่ม ไม่พูดซ้ำ
+            if ($hasUser && ! $this->markDailyInviteShownToday($platform, $userId)) {
+                return ['text' => null, 'quick_replies' => $buttons];
+            }
+
+            return [
+                'text' => $this->pickDailySoftDeepInvite(
+                    ($userId ?? 'anon').':'.now()->toDateString(),
+                    $dayIndex,
+                    $knowsFullBirthdate
+                ),
+                'quick_replies' => $buttons,
+            ];
+        } catch (\Throwable $e) {
+            // เช็คไม่ได้ → เงียบไว้ก่อน ลูกค้ายังได้ดวงฟรีครบเหมือนเดิม
+            // (พลาดชวน 1 ครั้ง เสียหายน้อยกว่าชวนใส่คนที่เพิ่งจ่าย/ชวนไปหาของที่ปิดอยู่)
+            Log::warning('🌱 Daily: ประกอบหางคำชวนล้ม (ส่งดวงเปล่า ๆ)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $silent;
+        }
+    }
+
+    /**
+     * 🚦 ยื่นคำชวน/ปุ่ม 👑 VIP ให้คนนี้ตอนนี้ได้ไหม
+     *
+     * 2 ด่าน (แยกออกมาเพราะทั้งหางคำชวนและการ์ด teaser ต้องใช้เกณฑ์เดียวกัน —
+     * ไม่งั้นปุ่มโผล่ในการ์ดหนึ่งแต่หายในอีกการ์ด ทั้งที่เป็นบทสนทนาเดียวกัน):
+     *
+     *   1. deep/celtic ต้องเปิดอย่างน้อย 1 อย่าง — ปุ่มพาไป tier menu ที่ไม่มีอะไรขาย
+     *      = ลูกค้ากดแล้วเจอทางตัน (ด่านเดียวกับข้อ 4 ของ maybeInviteDeepAfterDailySent)
+     *   2. ไม่ใช่ขาประจำที่เพิ่งจ่ายภายใน 7 วัน (owner 2026-06-17 "อย่าตื้อให้ซื้ออีก")
+     *
+     * เช็คไม่ได้ → false (เงียบ) — ลูกค้ายังได้ดวงฟรีครบเหมือนเดิม
+     */
+    protected function dailyUpgradeInviteAllowed(string $platform, ?string $userId): bool
+    {
+        try {
+            $deepEnabled = (bool) $this->settings->isDeepReadingEnabled();
+            $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+            if (! $deepEnabled && ! $celticEnabled) {
+                return false;
+            }
+
+            if ($userId !== null && $userId !== '' && $this->dailyRecentlyPaid($platform, $userId)) {
+                return false;
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * 💤 เพิ่งจ่ายค่าดูดวงไปภายใน 7 วันหรือยัง — ใช้ปิดคำชวนใส่ขาประจำ
+     *
+     * ⚠️ ต้องเป็น hasPaidReadingWithinDays ไม่ใช่ hasPaidReadingThisCalendarMonth —
+     *    ตัวเดือนปฏิทินรีเซ็ตตอนขึ้นเดือนใหม่ (จ่าย 31 ก.ค. → 1 ส.ค. โดนขายอีก)
+     *    ดูเหตุผลเต็มใน FortuneReading::hasPaidReadingWithinDays
+     *
+     * เช็คไม่ได้ → ถือว่า "ยังไม่เคยจ่าย" (ชวนตามปกติ) เพราะการเงียบใส่ลูกค้าใหม่
+     * เสียโอกาสมากกว่าการชวนขาประจำเกินไป 1 ครั้ง
+     */
+    protected function dailyRecentlyPaid(string $platform, string $userId, int $days = 7): bool
+    {
+        try {
+            return FortuneReading::hasPaidReadingWithinDays(
+                $platform === 'facebook' ? $userId : null,
+                $platform === 'facebook' ? null : $userId,
+                $days
+            );
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * 🔕 ประทับว่า "วันนี้ชวนดูเชิงลึกไปแล้ว" — คืน true เฉพาะครั้งแรกของวัน
+     *
+     * Cache::add เป็น atomic check-and-set ในตัว (กันข้อความที่มาพร้อมกันชวนซ้ำ)
+     * คีย์มีวันที่อยู่แล้ว TTL จึงแค่กันขยะสะสม
+     *
+     * แคชล้ม → คืน true (ชวนตามปกติ) — พฤติกรรมเดิมก่อนมีด่านนี้
+     */
+    protected function markDailyInviteShownToday(string $platform, string $userId): bool
+    {
+        try {
+            return (bool) Cache::add(
+                "fortune:daily_deep_invite_shown:{$platform}:{$userId}:".now()->toDateString(),
+                true,
+                now()->endOfDay()
+            );
+        } catch (\Throwable $e) {
+            return true;
+        }
+    }
+
+    /**
+     * 🌱 คำชวนดูเชิงลึกท้ายดวงรายวัน — หมุนสำนวนตามคน+วัน
+     *
+     * สูตรของทุกสำนวน (ห้ามตัดข้อไหนออกตอนเพิ่มสำนวนใหม่):
+     *   1. **บอกตามตรงว่านี่คือดวงรวม** ของคนเกิดวันเดียวกัน — เหตุผลที่ทำให้การชวนต่อ
+     *      ไม่ใช่การขายของที่เพิ่งให้ไปฟรี ๆ ถ้าไม่มีข้อนี้ ลูกค้าอ่านแล้วคิดว่า "ก็ได้ไปแล้วนี่"
+     *   2. ชวน 1 จังหวะแล้วหยุด ห้ามตื๊อ ห้ามรัวหลายประโยคขาย
+     *   3. **ห้ามฝังตัวเลขราคา** — แอดมินแก้ราคาได้ ปุ่ม 👑 พาไป tier menu ซึ่งเป็นเจ้าของราคาตัวจริง
+     *   4. แม่หมอเป็นหญิงเสมอ ห้าม ครับ/ผม/ดิฉัน · เรียกลูกค้าว่า "เจ้าชะตา"
+     *
+     * ⚠️ สาย "ยังไม่รู้วันเกิดเต็ม" ห้ามกลับไปสัญญาว่า "บอกวันเกิดมาแล้วจะดูให้ละเอียดกว่านี้"
+     *    ประโยคนั้นคือต้นเหตุบั๊ก 2026-08-04 — บทความรายวันผูกกับ *วันในสัปดาห์* วันเกิดเต็ม
+     *    ของคนเดิมให้ dayIndex เดิม = บทความใบเดิมเป๊ะ ๆ คำสัญญาจึงวนที่เดิมเสมอ
+     *    ที่นี่จึงขอวันเกิดโดยบอกตามจริงว่า "เก็บไว้ให้ ใช้ตอนเปิดไพ่เฉพาะตัว" เท่านั้น
+     *
+     * @param  string  $seed  คนเดิม+วันเดิม ต้องได้สำนวนเดิม (ขอดูซ้ำในวันเดียวกันไม่สลับไปมา)
+     */
+    protected function pickDailySoftDeepInvite(string $seed, int $dayIndex, bool $knowsFullBirthdate): string
+    {
+        // ⚠️ dayIndex นอกช่วง 0-6 ต้องยังอ่านรู้เรื่อง — เตรียมสำนวนสำรองไว้ทั้ง 2 รูป
+        //    ("ของคน..." ใช้ขยายคำนำหน้า / "คน..." ใช้เป็นประธานของประโยค)
+        $day = self::DAILY_DAY_NAMES[$dayIndex] ?? '';
+        $ofDay = $day !== '' ? 'ของคนเกิดวัน'.$day : 'ของคนเกิดวันเดียวกัน';
+        $peopleOfDay = $day !== '' ? 'คนเกิดวัน'.$day : 'คนที่เกิดวันเดียวกัน';
+
+        $lines = $knowsFullBirthdate
+            ? [
+                "💫 ดวงที่แม่หมออ่านให้เมื่อกี้ เป็นดวงรวม{$ofDay}ทั้งหมดนะคะ\n"
+                    ."เกิดวันเดียวกันก็จริง แต่เวลาตกฟากไม่เหมือนกันสักคน\n"
+                    .'อยากให้แม่หมอเปิดไพ่ดูเฉพาะเจ้าชะตาคนเดียวไหมคะ กดปุ่มด้านล่างได้เลย ✨',
+
+                "💫 ดวงรวม{$ofDay}บอกได้แค่ลมฟ้าอากาศของวันนี้นะคะ\n"
+                    ."ส่วนเรื่องที่ค้างอยู่ในใจเจ้าชะตา ต้องเปิดไพ่เฉพาะตัวถึงจะเห็นว่าติดตรงไหน\n"
+                    .'พร้อมเมื่อไหร่ กดปุ่มด้านล่างบอกแม่หมอได้เลยค่ะ ✨',
+
+                "💫 อ่านแล้วมีตรงไหนสะดุดใจไหมคะ\n"
+                    ."ใบนี้เป็นดวงรวม{$ofDay}ทุกคน — ถ้าอยากรู้ว่าของเจ้าชะตาเองต่างออกไปตรงไหน\n"
+                    .'แม่หมอเปิดไพ่เจาะเรื่องนั้นให้ได้ กดปุ่มด้านล่างได้เลยนะคะ ✨',
+
+                "💫 วันนี้{$peopleOfDay}ได้ดวงรวมใบเดียวกันหมดค่ะ\n"
+                    ."แต่ดวงของเจ้าชะตามีดาวเจ้าเรือนของตัวเอง ที่ใบรวมนี้บอกไม่ได้\n"
+                    .'วันไหนอยากให้แม่หมอเปิดดูให้ลึกกว่านี้ กดปุ่มด้านล่างได้เลย ✨',
+            ]
+            : [
+                "💫 ใบนี้เป็นดวงรวม{$ofDay}ทั้งหมดนะคะ\n"
+                    ."ถ้าเจ้าชะตาบอกวัน/เดือน/ปีเกิดครบมา แม่หมอจะจดเก็บไว้ให้ —\n"
+                    .'วันไหนอยากให้เปิดไพ่ดูเฉพาะตัว จะได้เริ่มได้ทันทีไม่ต้องถามใหม่ค่ะ ✨',
+
+                "💫 ดวงที่ส่งไปเป็นดวงรวม{$ofDay}นะคะ ยังไม่ใช่ดวงของเจ้าชะตาคนเดียว\n"
+                    ."อยากให้แม่หมอเปิดไพ่เฉพาะตัว ขอวัน/เดือน/ปีเกิดครบ ๆ ไว้ก่อนได้ไหมคะ\n"
+                    .'หรือถ้าอยากเริ่มเลย กดปุ่มด้านล่างได้เลยค่ะ ✨',
+
+                "💫 รู้แค่วันในสัปดาห์ แม่หมอเปิดได้แค่ดวงรวม{$ofDay}ทั้งหมดค่ะ\n"
+                    ."จะดูให้เจาะจงถึงตัวเจ้าชะตา ต้องมีวัน/เดือน/ปีเกิดครบ\n"
+                    .'ทิ้งไว้ให้แม่หมอสักบรรทัดนะคะ เก็บไว้ใช้ได้ยาว ๆ ✨',
+
+                "💫 ใบนี้ใช้แค่วันในสัปดาห์ เลยเป็นดวงรวม{$ofDay}ทุกคนนะคะ\n"
+                    ."ถ้าเจ้าชะตาฝากวัน/เดือน/ปีเกิดเต็ม ๆ ไว้ แม่หมอจะเก็บไว้ให้\n"
+                    .'วันไหนพร้อมให้เปิดไพ่เฉพาะตัว บอกมาได้เลยค่ะ ✨',
+            ];
+
+        return $lines[crc32($seed) % count($lines)];
     }
 
     /**
@@ -571,12 +811,23 @@ trait DailyHoroscopeModeTrait
             //   → คำอวยพรอย่างเดียว = ปิดบทสนทนา ต้องมีประโยคเปิดทางต่อเสมอ
             //   ⚠️ แต่ห้ามคุยเรื่อยเปื่อย (บทเรียน Free-Chat Wind-Down "บอทคุยไม่หยุด
             //      น่ารำคาญมาก") → เสนอทางเลือกชัด ๆ 1 ประโยค แล้วหยุด ให้ลูกค้าตัดสินใจ
-            $message = "🙏 ด้วยความยินดีค่ะ\n\n"
-                .$blessing
-                ."\n\n"
-                .$this->pickThanksFollowUp($userId);
+            // 🚦 (2026-08-10) ประโยคชวน + ปุ่มขาย ใช้เกณฑ์เดียวกับหางดวงรายวัน
+            //    deep/celtic ปิดทั้งคู่ = ชวนไปหาของที่ไม่มี · เพิ่งจ่ายใน 7 วัน = ตื๊อขาประจำ
+            //    (owner 2026-06-17: "คนเก่าที่จ่ายแล้ว **ในแชท** อย่าตื้อให้ซื้ออีก ทักแบบขาประจำ")
+            //
+            // ⚠️ แต่ห้ามเงียบจนบทสนทนาตาย — owner สั่งไว้อีกข้อว่า "ลูกค้าขอบคุณ ต้องไม่หยุด"
+            //    2 คำสั่งนี้ชนกันเฉพาะกับขาประจำ → ทางออกคือคุยต่อแบบไม่ขาย
+            $canInvite = $this->dailyUpgradeInviteAllowed($platform, $userId);
 
-            Log::info('🙏 Daily: ลูกค้าขอบคุณ → คำอวยพร + เปิดทางคุยต่อ', ['user_id' => $userId]);
+            $message = "🙏 ด้วยความยินดีค่ะ\n\n".$blessing."\n\n"
+                .($canInvite
+                    ? $this->pickThanksFollowUp($userId)
+                    : $this->pickRegularWarmFollowUp($userId));
+
+            Log::info('🙏 Daily: ลูกค้าขอบคุณ → คำอวยพร'.($canInvite ? ' + ชวนดูเชิงลึก' : ' + คุยต่อแบบไม่ขาย'), [
+                'user_id' => $userId,
+                'can_invite' => $canInvite,
+            ]);
 
             // 💎 มีปุ่มให้กดคู่กับประโยคชวน — ลูกค้าที่พร้อมจ่ายไม่ต้องพิมพ์เอง
             //    (LINE ไม่มีปุ่ม → ChannelManager ส่งเป็นข้อความล้วน ประโยคชวนยังอยู่ครบ)
@@ -584,7 +835,7 @@ trait DailyHoroscopeModeTrait
                 'action' => 'daily_horoscope_sent',
                 'message' => $message,
                 'reading' => null,
-                'quick_replies' => [static::dailyUpgradeQuickReply()],
+                'quick_replies' => $canInvite ? [static::dailyUpgradeQuickReply()] : [],
             ];
         } catch (\Throwable $e) {
             return null;   // fail-open
@@ -600,6 +851,9 @@ trait DailyHoroscopeModeTrait
      *   - ไม่บอกตัวเลขราคา — ให้ระบบราคาจริงเป็นคนบอกตอนลูกค้าสนใจ
      *     (ราคาเปลี่ยนได้จากแอดมิน ฝังตัวเลขไว้จะเพี้ยนทันทีที่แก้)
      *   - หมุนหลายสำนวน ลูกค้าประจำจะได้ไม่เห็นประโยคเดิมซ้ำ
+     *
+     * 🚦 (2026-08-10) ใช้เฉพาะตอน dailyUpgradeInviteAllowed() = true
+     *    ขาประจำที่เพิ่งจ่าย/ช่วงบริการปิด ใช้ pickRegularWarmFollowUp() แทน
      */
     protected function pickThanksFollowUp(string $userId): string
     {
@@ -610,6 +864,27 @@ trait DailyHoroscopeModeTrait
             '💫 อยากให้ดูเจาะเรื่องไหนเป็นพิเศษ บอกแม่หมอได้นะคะ เดี๋ยวเปิดไพ่ให้',
             '💫 ถ้าอยากได้คำตอบที่ชัดกว่านี้ แม่หมอเปิดไพ่ดูให้แบบละเอียดได้ค่ะ',
             '💫 มีเรื่องไหนอยากให้แม่หมอดูให้ลึก ๆ ไหมคะ ทักมาคุยกันได้เลย',
+        ];
+
+        return $lines[crc32($userId.':'.now()->toDateString()) % count($lines)];
+    }
+
+    /**
+     * 🌿 (2026-08-10) ประโยคเปิดทางคุยต่อ **แบบไม่ขาย** — สำหรับขาประจำที่เพิ่งจ่ายไป
+     *    หรือช่วงที่ deep/celtic ปิดทั้งคู่
+     *
+     * ทำไมต้องมีแยกจาก pickThanksFollowUp: คำสั่ง owner 2 ข้อชนกันตรงกลุ่มนี้พอดี
+     *   - "ลูกค้าขอบคุณ ต้องไม่หยุด" (ห้ามจบด้วยคำอวยพรเปล่า ๆ = ปิดบทสนทนา)
+     *   - "คนเก่าที่จ่ายแล้วในเดือนนี้ อย่าตื้อให้ซื้ออีก ทักแบบขาประจำ"
+     * → คุยต่อ แต่ไม่มีคำขาย ไม่มีปุ่มขาย ไม่มีราคา
+     */
+    protected function pickRegularWarmFollowUp(string $userId): string
+    {
+        $lines = [
+            '🌿 มีอะไรอยากคุยกับแม่หมออีกไหมคะ ถามได้เสมอนะ',
+            '🌿 ถ้ามีเรื่องไหนอยากเล่าให้แม่หมอฟัง ทักมาได้ทุกเมื่อค่ะ',
+            '🌿 แม่หมออยู่ตรงนี้เสมอนะคะ อยากคุยเรื่องไหนก็บอกได้',
+            '🌿 วันนี้เป็นยังไงบ้างคะ อยากเล่าอะไรให้แม่หมอฟังก็ได้นะ',
         ];
 
         return $lines[crc32($userId.':'.now()->toDateString()) % count($lines)];
@@ -708,12 +983,24 @@ trait DailyHoroscopeModeTrait
                 'birth_date' => $birthDate,
             ]);
 
-            // เนียนชวนต่อ — ไม่บอกราคา ไม่กดดัน ปุ่มเลือกยังอยู่ให้กดเอง
+            // 🌱 (2026-08-10) เนียนชวนต่อ — ใช้ตัวประกอบกลางตัวเดียวกับดวงรายวันฟรี
+            //    (หมุนสำนวน + เงียบเองเมื่อ deep/celtic ปิดทั้งคู่ หรือเป็นขาประจำที่เพิ่งจ่าย)
+            //    เส้นนี้ปุ่มมาจากชุด default ของ action birthdate_detected (show_quick_replies)
+            //    จึงหยิบมาแค่ 'text' ไม่แตะ quick_replies ของผู้เรียก
+            //
+            //    ⚠️ ตัดประโยคเดิม "นี่คือดวงประจำวันของเจ้าชะตานะคะ" ทิ้ง — มันขัดกับคำชวน
+            //    ที่บอกตามตรงว่าใบนี้เป็น "ดวงรวม" ของคนเกิดวันเดียวกัน ไม่ใช่ดวงเฉพาะตัว
+            $tail = $this->buildDailyDeepInviteTail($platform, $userId, $dayIndex, true);
+
+            // ทวนว่ารับวันเกิดแล้ว — เฉพาะตอนที่จดลงระบบจริง (มี $userId) ไม่งั้นเป็นคำโกหก
+            $ack = ($userId !== null && $userId !== '')
+                ? '🎂 แม่หมอจดวันเกิดของเจ้าชะตาไว้แล้วนะคะ'
+                : '🎂 แม่หมอรับวันเกิดของเจ้าชะตาแล้วค่ะ';
+
             return $box['text']
                 .($blessing !== '' ? "\n\n".$blessing : '')
-                ."\n\n———\n"
-                .'💫 นี่คือดวงประจำวันของเจ้าชะตานะคะ'."\n"
-                .'ถ้าอยากให้แม่หมอเปิดเชิงลึกจากวันเกิดนี้ กดดูด้านล่างได้เลยค่ะ';
+                ."\n\n———\n".$ack
+                .($tail['text'] !== null ? "\n\n".$tail['text'] : '');
         } catch (\Throwable $e) {
             Log::warning('🎂 Daily: สร้างดวงจากวันเกิดที่ลูกค้าพิมพ์ล้ม', [
                 'error' => $e->getMessage(),
@@ -916,7 +1203,12 @@ trait DailyHoroscopeModeTrait
                     'action' => 'daily_horoscope_sent',
                     'message' => $teaser,
                     'reading' => null,
-                    'quick_replies' => static::withDailyUpgrade(static::dailyShowMineQuickReplies()),
+                    // 🚦 (2026-08-10) ปุ่ม 👑 VIP ใช้เกณฑ์เดียวกับหางคำชวน (dailyUpgradeInviteAllowed)
+                    //    ไม่งั้นปุ่มโผล่ในการ์ด teaser แต่หายในการ์ดคำทำนายของบทสนทนาเดียวกัน
+                    //    ปุ่มรับดวงฟรียังอยู่เสมอ — ที่ตัดคือปุ่มขายเท่านั้น
+                    'quick_replies' => $this->dailyUpgradeInviteAllowed($platform, $userId)
+                        ? static::withDailyUpgrade(static::dailyShowMineQuickReplies())
+                        : static::dailyShowMineQuickReplies(),
                 ];
             }
 
@@ -929,7 +1221,10 @@ trait DailyHoroscopeModeTrait
                 'action' => 'daily_horoscope_sent',
                 'message' => $this->pickDailyFreeOffer($userId),
                 'reading' => null,
-                'quick_replies' => static::dailyFreeEntryQuickReplies(),
+                // 🚦 (2026-08-10) ปุ่มคู่ = [รับดวงฟรี] + [👑 VIP] — ตัวหลังต้องผ่านเกณฑ์เดียวกัน
+                'quick_replies' => $this->dailyUpgradeInviteAllowed($platform, $userId)
+                    ? static::dailyFreeEntryQuickReplies()
+                    : [static::dailyFreeStartQuickReply()],
             ];
         } catch (\Throwable $e) {
             // fail-open — ทางเสริมพังต้องไม่ทำให้ลูกค้าไม่ได้คำตอบ

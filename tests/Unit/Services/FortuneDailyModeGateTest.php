@@ -167,7 +167,17 @@ class FortuneDailyModeGateTest extends TestCase
         // ไม่ใส่ตัวเลขราคา — ราคาแอดมินแก้ได้ ให้ tier menu เป็นคนบอก
         $this->assertDoesNotMatchRegularExpression('/\d/u', $upgrade['title']);
         $this->assertLessThanOrEqual(20, mb_strlen($upgrade['title']));
-        $this->assertSame('ดูดวง', $upgrade['payload'], 'payload ต้องพาไป tier menu ผ่าน isGenericFortuneRequest');
+        // 🔧 (2026-08-10) แก้เทสต์ค้าง — payload เปลี่ยนเป็น DAILY_VIP_PACKAGES ตั้งแต่ 2026-08-07
+        //    (เดิมอาศัย default branch ด้วยข้อความดิบ 'ดูดวง' แต่ถ้า FB ส่ง title กลับมาเป็น
+        //     ข้อความ คำว่า "ค่าครู" จะเข้า looksLikePricingQuestion = ได้กล่องราคาแทนบิล
+        //     ดู rule_fb_quickreply_label_arrives_as_text) — เทสต์ไม่ได้ตามไปแก้ = ค้างแดงมาตั้งแต่นั้น
+        $this->assertSame('DAILY_VIP_PACKAGES', $upgrade['payload'],
+            'payload ต้องเป็นตัวเฉพาะที่มี case ใน handleQuickReply ไม่ใช่ข้อความดิบ');
+
+        // 🚨 ปุ่มต้องไม่ตาย — payload ต้องมีคนรับจริงใน FacebookWebhookController::handleQuickReply
+        $controller = file_get_contents(app_path('Http/Controllers/FacebookWebhookController.php'));
+        $this->assertStringContainsString("'{$upgrade['payload']}' =>", (string) $controller,
+            'payload ไม่มี case รองรับ = ลูกค้ากดปุ่มแล้วไม่มีอะไรเกิดขึ้น');
 
         // ❌ builder ที่ DM ใช้ ต้องไม่มีปุ่มจ่ายเงินปนอยู่
         foreach ([
