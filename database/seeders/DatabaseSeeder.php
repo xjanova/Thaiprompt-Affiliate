@@ -197,6 +197,13 @@ class DatabaseSeeder extends Seeder
 
             // 22. Fresh Market System (ตลาดสดไทยพร๊อม)
             FreshMarketSeeder::class,               // 🏪 ตลาดสดไทยพร๊อม (Settings + 8 หมวดหมู่สินค้า)
+
+            // 23. Mobile App Config & Feature Flags (2026-08-10)
+            //     ⚠️ 2 ตัวนี้ตกหล่นมานาน — SeederVerificationTest จับได้ แต่ CI ตั้ง
+            //     continue-on-error ไว้เลยไม่มีใครเห็น (ฝ่าฝืน RULE #1 ใน CLAUDE.md)
+            //     ทั้งคู่ idempotent (upsert) รันซ้ำได้ปลอดภัย
+            AppConfigSeeder::class,                 // ⚙️ remote config ของแอป Flutter (กัน fallback cache-only)
+            FeatureFlagSeeder::class,               // 🚩 feature flags — ทุกตัว default OFF
         ]);
 
         $this->command->info('');

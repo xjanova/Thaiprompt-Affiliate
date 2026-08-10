@@ -30,6 +30,24 @@ class KeywordSuggestionTest extends TestCase
     }
 
     /**
+     * 🔧 (2026-08-10) เรียกเมธอด private ของ service ผ่าน Reflection
+     *
+     * เดิมเทสต์เรียก analyzePatterns()/getNoMatchMessages() ตรง ๆ ทั้งที่เป็น private
+     * → Error ทันที ไม่เคยได้ทดสอบอะไรเลย
+     *
+     * เลือก Reflection แทนการเปลี่ยนเมธอดเป็น public โดยตั้งใจ —
+     * การเปิด API ของ service ให้กว้างขึ้นเพียงเพื่อให้เทสต์ผ่าน คือการแก้ที่ผิดฝั่ง
+     * (แพทเทิร์นเดียวกับ tests/Unit/Services/FortuneDailySoftInviteTest)
+     */
+    private function callPrivate(string $method, ...$args)
+    {
+        $m = new \ReflectionMethod($this->suggestionService, $method);
+        $m->setAccessible(true);
+
+        return $m->invoke($this->suggestionService, ...$args);
+    }
+
+    /**
      * ทดสอบการแสดง suggestions dashboard
      */
     public function test_can_view_suggestions_dashboard(): void
@@ -62,9 +80,12 @@ class KeywordSuggestionTest extends TestCase
 
         // Assert
         $response->assertStatus(200)
+            // 🔧 (2026-08-10) คีย์จริงของ controller คือ 'suggestions' ไม่ใช่ 'data'
+            //    ยึดตาม controller เพราะเป็น API ที่หน้าแอดมินใช้อยู่จริง —
+            //    เปลี่ยนชื่อคีย์ฝั่ง response เพื่อให้เทสต์ผ่าน = ทำ UI ที่ใช้งานอยู่พัง
             ->assertJsonStructure([
                 'success',
-                'data' => [
+                'suggestions' => [
                     '*' => [
                         'keyword',
                         'trigger_words',
@@ -91,11 +112,12 @@ class KeywordSuggestionTest extends TestCase
 
         // Assert
         $response->assertStatus(200)
+            // 🔧 (2026-08-10) controller ห่อไว้ใต้คีย์ 'data' (ยึดตาม API จริง)
             ->assertJsonStructure([
                 'success',
-                'statistics' => [
+                'data' => [
                     'total_no_matches',
-                    'unique_messages',
+                    'unique_no_matches',
                     'suggestions_count',
                     'existing_keywords',
                     'potential_coverage_increase',
@@ -117,14 +139,16 @@ class KeywordSuggestionTest extends TestCase
 
         // Assert
         $response->assertStatus(200)
+            // 🔧 (2026-08-10) controller ห่อไว้ใต้คีย์ 'data' (ยึดตาม API จริง)
             ->assertJsonStructure([
                 'success',
-                'recommendations' => [
+                // 🔧 (2026-08-10) รูปจริงคือ type/message/action — ไม่มี priority/suggestion เลย
+                //    ยืนยันจาก blade ทุกหน้าในโซนนี้ที่อ่าน $rec['type'|'message'|'action']
+                'data' => [
                     '*' => [
                         'type',
-                        'priority',
                         'message',
-                        'suggestion',
+                        'action',
                     ],
                 ],
             ]);
@@ -288,9 +312,10 @@ class KeywordSuggestionTest extends TestCase
 
         // Assert
         $response->assertStatus(200)
+            // 🔧 (2026-08-10) controller คืน 'suggestions' (ตัวรายการ) ไม่ใช่ 'suggestions_count'
             ->assertJsonStructure([
                 'success',
-                'suggestions_count',
+                'suggestions',
                 'statistics',
             ]);
     }
@@ -308,19 +333,22 @@ class KeywordSuggestionTest extends TestCase
             ->getJson(route('admin.line-bot.keywords.suggestions.export'));
 
         // Assert
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'success',
-                'data' => [
-                    '*' => [
-                        'keyword',
-                        'trigger_words',
-                        'frequency',
-                        'confidence',
-                    ],
-                ],
-                'exported_at',
-            ]);
+        // 🔧 (2026-08-10) endpoint นี้เป็น **ไฟล์ดาวน์โหลด** (streamDownload) ไม่ใช่ JSON envelope
+        //    ของจริงคือ array ดิบของ suggestions ไม่มีคีย์ success/data/exported_at เลย
+        //    เทสต์เดิมเช็คสัญญาที่ไม่เคยมีอยู่ → ต้องยึดพฤติกรรมจริงของ controller
+        $response->assertStatus(200);
+        $this->assertStringStartsWith('application/json', (string) $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('attachment;', (string) $response->headers->get('Content-Disposition'));
+
+        $payload = json_decode($response->streamedContent(), true);
+        $this->assertIsArray($payload);
+
+        foreach ($payload as $row) {
+            $this->assertArrayHasKey('keyword', $row);
+            $this->assertArrayHasKey('trigger_words', $row);
+            $this->assertArrayHasKey('frequency', $row);
+            $this->assertArrayHasKey('confidence', $row);
+        }
     }
 
     /**
@@ -338,7 +366,7 @@ class KeywordSuggestionTest extends TestCase
         ]);
 
         // Act
-        $suggestions = $this->suggestionService->analyzePatterns($messages);
+        $suggestions = $this->callPrivate('analyzePatterns', $messages);
 
         // Assert
         $this->assertGreaterThan(0, $suggestions->count());
@@ -446,7 +474,10 @@ class KeywordSuggestionTest extends TestCase
         // Assert
         $this->assertIsArray($statistics);
         $this->assertGreaterThan(0, $statistics['total_no_matches']);
-        $this->assertGreaterThan(0, $statistics['unique_messages']);
+        // 🔧 (2026-08-10) คีย์จริงคือ unique_no_matches — ยืนยันจาก
+        //    resources/views/admin/line-bot/keywords/suggestions.blade.php:72 ที่ใช้คีย์นี้อยู่
+        //    (ถ้าเปลี่ยนฝั่ง service ให้ตรงเทสต์ หน้าแอดมินจะพังทันที)
+        $this->assertGreaterThan(0, $statistics['unique_no_matches']);
         $this->assertIsNumeric($statistics['potential_coverage_increase']);
     }
 
@@ -466,7 +497,9 @@ class KeywordSuggestionTest extends TestCase
         $this->assertGreaterThan(0, count($recommendations));
         $recommendation = $recommendations[0];
         $this->assertArrayHasKey('type', $recommendation);
-        $this->assertArrayHasKey('priority', $recommendation);
+        // 🔧 (2026-08-10) ไม่มีคีย์ priority — service คืน type/message/action
+        $this->assertArrayHasKey('message', $recommendation);
+        $this->assertArrayHasKey('action', $recommendation);
     }
 
     /**
@@ -513,7 +546,7 @@ class KeywordSuggestionTest extends TestCase
         ]);
 
         // Act
-        $messages = $this->suggestionService->getNoMatchMessages(30);
+        $messages = $this->callPrivate('getNoMatchMessages', 30);
 
         // Assert
         $this->assertEquals(1, $messages->count());

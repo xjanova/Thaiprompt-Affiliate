@@ -145,7 +145,9 @@ class KeywordActivityLogTest extends TestCase
 
         // Assert
         $this->assertCount(5, $history);
-        $this->assertEquals($lineUserId, $history[0]['line_user_id']);
+        // 🔧 (2026-08-10) getUserHistory คืนแถวจาก DB::table() = stdClass ไม่ใช่ array
+        //    เดิมเข้าถึงแบบ ['line_user_id'] → "Cannot use object of type stdClass as array"
+        $this->assertEquals($lineUserId, $history[0]->line_user_id);
     }
 
     /**
@@ -248,8 +250,11 @@ class KeywordActivityLogTest extends TestCase
             ->get(route('admin.line-bot.keywords.activity.export'));
 
         // Assert
-        $response->assertStatus(200)
-            ->assertHeader('Content-Type', 'text/csv');
+        // 🔧 (2026-08-10) Laravel เติม charset ให้เอง → header จริงคือ "text/csv; charset=UTF-8"
+        //    assertHeader เทียบแบบตรงตัวเป๊ะ จึงต้องเช็คแบบ "ขึ้นต้นด้วย" แทน
+        //    (ยึด text/csv เป็นสาระสำคัญ ไม่ผูกกับ charset ที่เฟรมเวิร์กอาจเปลี่ยน)
+        $response->assertStatus(200);
+        $this->assertStringStartsWith('text/csv', (string) $response->headers->get('Content-Type'));
     }
 
     /**

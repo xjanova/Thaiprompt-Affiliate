@@ -115,9 +115,11 @@ class KeywordPerformanceDashboardController extends Controller
      */
     private function calculateEffectivenessScores(): array
     {
-        $keywords = LineBotKeyword::where('is_active', true)
-            ->with('getMostMatchedKeyword')
-            ->get();
+        // 🐛 (2026-08-10) ตัด ->with('getMostMatchedKeyword') ทิ้ง
+        //    ไม่มีรีเลชันชื่อนี้อยู่ใน LineBotKeyword (ทั้งโปรเจกต์มีที่นี่ที่เดียว) →
+        //    Eloquent โยน RelationNotFoundException = หน้า performance dashboard 500 ทั้งหน้า
+        //    และลูปข้างล่างก็ไม่ได้ใช้ค่าจากรีเลชันนี้เลย (ใช้แค่ฟิลด์ในตัว keyword เอง)
+        $keywords = LineBotKeyword::where('is_active', true)->get();
 
         $scores = [];
 

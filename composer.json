@@ -43,7 +43,8 @@
             "app/Helpers/SeoHelper.php",
             "app/Helpers/IconHelper.php",
             "app/Helpers/CryptoHelper.php",
-            "app/Helpers/SettingHelper.php"
+            "app/Helpers/SettingHelper.php",
+            "app/Helpers/ActivityHelper.php"
         ]
     },
     "autoload-dev": {

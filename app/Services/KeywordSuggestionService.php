@@ -242,10 +242,13 @@ class KeywordSuggestionService
         $keyword->category = 'custom';
         $keyword->priority = 50;
         $keyword->is_active = false; // Inactive by default - for review
+        // 🐛 (2026-08-10) เมธอดนี้เป็น public API — ผู้เรียกภายนอกอาจส่ง array ที่ไม่ครบ
+        //    เดิมอ่านคีย์ตรง ๆ ทำให้ ErrorException "Undefined array key" ล้มทั้งคำขอ
+        //    ทั้งที่ 2 ค่านี้เป็นแค่ข้อความประกอบใน notes ไม่ใช่ข้อมูลที่ขาดไม่ได้
         $keyword->notes = 'Auto-suggested from AI analysis. Frequency: '.
-                         $suggestion['frequency'].
+                         ($suggestion['frequency'] ?? 0).
                          ', Confidence: '.
-                         round($suggestion['confidence'], 1).'%';
+                         round((float) ($suggestion['confidence'] ?? 0), 1).'%';
 
         return $keyword;
     }

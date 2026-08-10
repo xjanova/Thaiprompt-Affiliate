@@ -110,13 +110,17 @@ class KeywordPerformanceTest extends TestCase
     public function test_can_get_comparison_data(): void
     {
         // Arrange
+        // 🔧 (2026-08-10) ต้องใส่ line_user_id ทุกแถว — schema เป็น NOT NULL ไม่มี default
+        //    ขาดไปแล้ว MySQL โยน 1364 ตั้งแต่ insert เทสต์เลยไม่เคยได้รันจริง
         DB::table('keyword_activity_logs')->insert([
             [
+                'line_user_id' => 'U001',
                 'action_type' => 'matched',
                 'created_at' => now(),
                 'timestamp' => now(),
             ],
             [
+                'line_user_id' => 'U002',
                 'action_type' => 'no_match',
                 'created_at' => now(),
                 'timestamp' => now(),
@@ -153,6 +157,7 @@ class KeywordPerformanceTest extends TestCase
         // Arrange
         for ($i = 0; $i < 5; $i++) {
             DB::table('keyword_activity_logs')->insert([
+                'line_user_id' => "U{$i}",
                 'action_type' => 'matched',
                 'created_at' => now()->subDays($i),
                 'timestamp' => now()->subDays($i),
@@ -207,6 +212,7 @@ class KeywordPerformanceTest extends TestCase
             DB::table('keyword_activity_logs')->insert([
                 'keyword_id' => $kw->id,
                 'keyword_name' => $kw->keyword,
+                'line_user_id' => 'U-faq-'.$kw->id,
                 'category' => 'faq',
                 'action_type' => 'matched',
                 'created_at' => now(),
@@ -220,6 +226,7 @@ class KeywordPerformanceTest extends TestCase
                 DB::table('keyword_activity_logs')->insert([
                     'keyword_id' => $kw->id,
                     'keyword_name' => $kw->keyword,
+                    'line_user_id' => "U-sup-{$kw->id}-{$i}",
                     'category' => 'support',
                     'action_type' => 'matched',
                     'created_at' => now(),
@@ -305,6 +312,7 @@ class KeywordPerformanceTest extends TestCase
             DB::table('keyword_activity_logs')->insert([
                 'keyword_id' => $keyword->id,
                 'keyword_name' => $keyword->keyword,
+                'line_user_id' => 'U-cov-'.$keyword->id,
                 'action_type' => 'matched',
                 'created_at' => now(),
                 'timestamp' => now(),
@@ -401,6 +409,7 @@ class KeywordPerformanceTest extends TestCase
                 DB::table('keyword_activity_logs')->insert([
                     'keyword_id' => $keyword->id,
                     'keyword_name' => $keyword->keyword,
+                    'line_user_id' => "U-con-{$keyword->id}-{$i}",
                     'action_type' => 'matched',
                     'created_at' => now(),
                     'timestamp' => now(),
