@@ -486,7 +486,7 @@ class KeywordSuggestionTest extends TestCase
         $keyword = $this->suggestionService->createKeywordDraft($suggestion);
 
         // Assert
-        $this->assertIsNotNull($keyword->id);
+        $this->assertNotNull($keyword->id);
         $this->assertEquals('test_keyword', $keyword->keyword);
     }
 

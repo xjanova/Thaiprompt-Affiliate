@@ -6,6 +6,7 @@ use App\Models\MessageSentiment;
 use App\Models\User;
 use App\Services\SentimentAnalysisService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 /**
@@ -211,7 +212,9 @@ class SentimentAnalysisTest extends TestCase
         $complaints = $this->sentimentService->getTopComplaints(5, 30);
 
         // May be 0 if no complaints in test data
-        $this->assertIsCollection($complaints);
+        // 🔧 (2026-08-10) assertIsCollection ไม่มีอยู่จริงใน PHPUnit — เทสต์นี้เลย error
+        //    ทุกรอบโดยไม่เคยทดสอบอะไรเลย (getTopComplaints ประกาศคืน Collection)
+        $this->assertInstanceOf(Collection::class, $complaints);
     }
 
     /**

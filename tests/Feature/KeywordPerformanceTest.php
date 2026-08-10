@@ -263,7 +263,9 @@ class KeywordPerformanceTest extends TestCase
         $effectiveness = $metrics['effectivenessScores'];
 
         $this->assertIsArray($effectiveness);
-        $this->assertGreater(0, count($effectiveness));
+        // 🔧 (2026-08-10) assertGreater ไม่มีอยู่จริงใน PHPUnit → ตัวจริงคือ assertGreaterThan
+        //    (ลำดับ arg เหมือนกัน: assertGreaterThan($ค่าที่ต้องมากกว่า, $ค่าจริง))
+        $this->assertGreaterThan(0, count($effectiveness));
     }
 
     /**
@@ -316,7 +318,7 @@ class KeywordPerformanceTest extends TestCase
         // Assert
         $metrics = $response->viewData('metrics');
         // Coverage should be around 33% (5 out of 15 keywords used)
-        $this->assertGreater(0, $metrics['coveragePercentage']);
+        $this->assertGreaterThan(0, $metrics['coveragePercentage']);
     }
 
     /**
@@ -343,9 +345,13 @@ class KeywordPerformanceTest extends TestCase
             ]);
 
         // Verify that AI is slower than keyword
-        $this->assertGreater(
-            collect($response['ai_times'])->average(),
-            collect($response['keyword_times'])->average()
+        // 🔧 (2026-08-10) assertGreater ไม่มีอยู่จริง + ต้อง**สลับ arg**
+        //    assertGreaterThan($น้อยกว่า, $มากกว่า) → เวลาของ AI ต้องมากกว่าของ keyword
+        //    ของเดิมเขียน (ai, keyword) ซึ่งถ้าแปลตรงตัวจะกลายเป็น "keyword ช้ากว่า AI"
+        //    = ตรงข้ามกับคอมเมนต์บรรทัดบน จึงยึดตามคอมเมนต์ซึ่งเป็นเจตนาที่ชัดเจนกว่า
+        $this->assertGreaterThan(
+            collect($response['keyword_times'])->average(),
+            collect($response['ai_times'])->average()
         );
     }
 
