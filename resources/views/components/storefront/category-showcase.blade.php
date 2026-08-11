@@ -81,6 +81,9 @@
             $coverUrls = $cover['urls'] ?? [];
             $coverCount = count($coverUrls);
             $isMosaic = $coverCount > 1;
+            // ภาพวาดประจำหมวด (เจนเอง) — โชว์เป็นแบนเนอร์กว้างเต็มหัวการ์ด
+            // ถ้าย่อลงกรอบ 64px เหมือนไอคอนจะเห็นเป็นก้อนสีจาง ๆ มองไม่ออกว่าเป็นอะไร
+            $isArt = ($cover['is_art'] ?? false) && $coverCount === 1;
 
             // ถ้าไม่เจอไอคอนที่ตรง ใช้ไอคอน default ตามลำดับ
             $fallbackIcons = [
@@ -112,10 +115,22 @@
                        opacity-0 group-hover:opacity-100
                        transition-opacity duration-300"></div>
 
+            {{-- แบนเนอร์ภาพวาดประจำหมวด — เต็มความกว้างหัวการ์ด --}}
+            @if($isArt)
+            <div class="relative aspect-[4/3] overflow-hidden bg-[#faf5ea] dark:bg-gray-700">
+                <img src="{{ $coverUrls[0] }}"
+                     alt="{{ $category->name }}"
+                     loading="lazy" decoding="async"
+                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                {{-- ไล่เฉดบางๆ ด้านล่างให้ต่อกับตัวหนังสือ --}}
+                <div class="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white dark:from-gray-800 to-transparent"></div>
+            </div>
+            @endif
+
             {{-- Content --}}
-            <div class="relative p-4 text-center">
+            <div class="relative {{ $isArt ? 'px-3 pb-4 pt-1' : 'p-4' }} text-center">
                 {{-- Category Image/Icon --}}
-                <div class="relative mb-3">
+                <div class="relative mb-3 {{ $isArt ? 'hidden' : '' }}">
                     @if($coverCount > 0)
                     {{-- ชั้น 1/2: ภาพจริง — ภาพที่แอดมินอัปโหลด หรือโมเสกภาพสินค้าที่ยังขายอยู่ --}}
                     <div x-data="{ failed: [] }" class="relative w-16 h-16 mx-auto">

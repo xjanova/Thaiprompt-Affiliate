@@ -503,8 +503,11 @@ class CategoryImageService
         // แต่ยังอยู่หลังภาพที่แอดมินอัปโหลด → แอดมินกำหนดเองได้เสมอ
         $artUrl = $this->resolveArt($category);
         if ($artUrl !== null) {
+            // mode คงเป็น 'image' เพื่อให้ผู้ใช้เดิม (category-hero) ทำงานเหมือนเดิม
+            // ส่วน is_art เป็นธงเสริมให้การ์ดหมวดโชว์เป็นแบนเนอร์กว้างแทนไอคอนเล็ก
             return [
                 'mode' => 'image',
+                'is_art' => true,
                 'urls' => [$artUrl],
                 'icon' => $icon,
                 'products' => $products,
