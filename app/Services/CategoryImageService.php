@@ -205,6 +205,98 @@ class CategoryImageService
     ];
 
     /**
+     * ตารางภาพวาดประจำหมวด → ชื่อไฟล์ใน public/images/art/{file}.webp
+     *
+     * ใช้เป็น "ชั้น 1.5" ของภาพปก: สวยกว่าโมเสกสินค้า แต่ยอมให้ภาพที่แอดมินอัปโหลดชนะเสมอ
+     * ⚠️ กติกาเดียวกับ ICON_MAP — exact ก่อน, substring เฉพาะคีย์ยาว >= 4 ตัวอักษร
+     *
+     * @example เพิ่มหมวดใหม่: เจนภาพ 4:3 → เซฟเป็น public/images/art/cat-xxx.webp → เพิ่มคีย์ที่นี่
+     */
+    private const ART_MAP = [
+        // อิเล็กทรอนิกส์
+        'อิเล็กทรอนิกส์' => 'cat-electronics',
+        'electronics' => 'cat-electronics',
+        'คอมพิวเตอร์' => 'cat-electronics',
+        'computer' => 'cat-electronics',
+        'โทรศัพท์' => 'cat-electronics',
+        'มือถือ' => 'cat-electronics',
+        'mobile' => 'cat-electronics',
+        'gadget' => 'cat-electronics',
+
+        // แฟชั่น
+        'แฟชั่น' => 'cat-fashion',
+        'fashion' => 'cat-fashion',
+        'เสื้อผ้า' => 'cat-fashion',
+        'clothing' => 'cat-fashion',
+        'เครื่องแต่งกาย' => 'cat-fashion',
+        'apparel' => 'cat-fashion',
+        'รองเท้า' => 'cat-fashion',
+        'shoes' => 'cat-fashion',
+
+        // ความงาม
+        'ความงาม' => 'cat-beauty',
+        'beauty' => 'cat-beauty',
+        'เครื่องสำอาง' => 'cat-beauty',
+        'cosmetic' => 'cat-beauty',
+        'ของใช้ส่วนตัว' => 'cat-beauty',
+        'personal care' => 'cat-beauty',
+        'สุขภาพ' => 'cat-beauty',
+
+        // บ้านและสวน
+        'บ้านและสวน' => 'cat-home',
+        'home garden' => 'cat-home',
+        'เฟอร์นิเจอร์' => 'cat-home',
+        'furniture' => 'cat-home',
+        'ตกแต่งบ้าน' => 'cat-home',
+        'home decor' => 'cat-home',
+
+        // กีฬา
+        'กีฬา' => 'cat-sports',
+        'sports' => 'cat-sports',
+        'กลางแจ้ง' => 'cat-sports',
+        'outdoor' => 'cat-sports',
+        'ฟิตเนส' => 'cat-sports',
+        'fitness' => 'cat-sports',
+
+        // หนังสือ
+        'หนังสือ' => 'cat-books',
+        'books' => 'cat-books',
+        'เครื่องเขียน' => 'cat-books',
+        'stationery' => 'cat-books',
+
+        // ของเล่น
+        'ของเล่น' => 'cat-toys',
+        'toys' => 'cat-toys',
+        'งานอดิเรก' => 'cat-toys',
+        'hobby' => 'cat-toys',
+        'hobbies' => 'cat-toys',
+        'แม่และเด็ก' => 'cat-toys',
+        'baby' => 'cat-toys',
+
+        // การเงิน / วอลเลต
+        'เติมเงิน' => 'cat-wallet',
+        'wallet' => 'cat-wallet',
+        'การเงิน' => 'cat-wallet',
+        'finance' => 'cat-wallet',
+        'บัตรเติมเงิน' => 'cat-wallet',
+        'top up' => 'cat-wallet',
+
+        // อาหาร / ตลาดสด
+        'อาหาร' => 'cat-food',
+        'food' => 'cat-food',
+        'ตลาดสด' => 'cat-food',
+        'grocery' => 'cat-food',
+        'เครื่องดื่ม' => 'cat-food',
+        'beverage' => 'cat-food',
+
+        // ยานยนต์
+        'ยานยนต์' => 'cat-auto',
+        'automotive' => 'cat-auto',
+        'รถยนต์' => 'cat-auto',
+        'motor' => 'cat-auto',
+    ];
+
+    /**
      * แผนที่ภาพปกของทุกหมวด (memo ระดับ request — กัน Blade เรียก cache ซ้ำ)
      *
      * @var array<int, array>|null
@@ -401,6 +493,19 @@ class CategoryImageService
             return [
                 'mode' => 'image',
                 'urls' => [$adminImage],
+                'icon' => $icon,
+                'products' => $products,
+            ];
+        }
+
+        // ชั้น 1.5 — ภาพวาดประจำหมวด (เจนเอง เก็บที่ public/images/art/cat-*.webp)
+        // อยู่ก่อนโมเสกสินค้าเพราะโมเสกภาพเล็ก 4 ช่องดูรกและสีไม่เข้ากัน
+        // แต่ยังอยู่หลังภาพที่แอดมินอัปโหลด → แอดมินกำหนดเองได้เสมอ
+        $artUrl = $this->resolveArt($category);
+        if ($artUrl !== null) {
+            return [
+                'mode' => 'image',
+                'urls' => [$artUrl],
                 'icon' => $icon,
                 'products' => $products,
             ];
@@ -650,6 +755,75 @@ class CategoryImageService
 
         if ($keys === null) {
             $keys = array_keys(self::ICON_MAP);
+            usort($keys, fn ($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+        }
+
+        return $keys;
+    }
+
+    /**
+     * หาไฟล์ภาพวาดประจำหมวด (เจนเอง) จากชื่อ/slug ของหมวดหมู่
+     *
+     * ใช้กติกาจับคู่ชุดเดียวกับ resolveIcon() — exact ก่อน แล้วค่อย substring
+     * ที่คีย์ยาว >= 4 ตัวอักษร เพื่อกันชนแบบ 'ยา' ไปโดน 'ยานยนต์'
+     *
+     * @return string|null URL ของภาพ หรือ null ถ้าไม่มีไฟล์
+     *
+     * @example $this->resolveArt($cat); // https://.../images/art/cat-electronics.webp
+     */
+    private function resolveArt(ProductCategory $category): ?string
+    {
+        $name = mb_strtolower(trim((string) $category->name));
+        $slug = mb_strtolower(trim((string) $category->slug));
+
+        $file = null;
+
+        // 1) exact — slug ก่อน แล้วค่อยชื่อ (รวมแบบแปลงขีด/ขีดล่างเป็นช่องว่าง)
+        foreach ([$slug, $name] as $key) {
+            if ($key === '') {
+                continue;
+            }
+            $normalized = trim(str_replace(['-', '_'], ' ', $key));
+            $file = self::ART_MAP[$key] ?? self::ART_MAP[$normalized] ?? null;
+            if ($file !== null) {
+                break;
+            }
+        }
+
+        // 2) substring — คีย์ยาวก่อน
+        if ($file === null) {
+            foreach ($this->artKeysByLength() as $key) {
+                if (mb_strlen($key) < 4) {
+                    continue;
+                }
+                if (($name !== '' && str_contains($name, $key)) || ($slug !== '' && str_contains($slug, $key))) {
+                    $file = self::ART_MAP[$key];
+                    break;
+                }
+            }
+        }
+
+        if ($file === null) {
+            return null;
+        }
+
+        // ไฟล์ต้องมีอยู่จริง — ถ้ายังไม่ถูก deploy ให้ตกไปใช้ชั้นถัดไปตามเดิม
+        $relative = 'images/art/'.$file.'.webp';
+
+        return file_exists(public_path($relative)) ? asset($relative) : null;
+    }
+
+    /**
+     * คีย์ของตารางภาพวาดหมวด เรียงจากยาวไปสั้น (คำนวณครั้งเดียวต่อ request)
+     *
+     * @return array<int, string>
+     */
+    private function artKeysByLength(): array
+    {
+        static $keys = null;
+
+        if ($keys === null) {
+            $keys = array_keys(self::ART_MAP);
             usort($keys, fn ($a, $b) => mb_strlen($b) <=> mb_strlen($a));
         }
 

@@ -840,6 +840,13 @@
         <div class="relative overflow-hidden rounded-3xl
                    bg-gradient-to-br from-orange-500 via-red-500 to-pink-600
                    p-8 md:p-12">
+            {{-- ภาพประกอบริบบิ้น/ซองจดหมาย (เจนเอง เก็บที่ public/images/art)
+                 soft-light ให้กลืนไปกับไล่เฉดส้ม ไม่แย่งสายตาจากฟอร์มสมัคร --}}
+            @if(file_exists(public_path('images/art/newsletter-bg.webp')))
+                <img src="{{ asset('images/art/newsletter-bg.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                     class="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                     style="opacity:.34; mix-blend-mode:soft-light;">
+            @endif
             {{-- Background Pattern --}}
             <div class="absolute inset-0 opacity-20">
                 <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 40px 40px;"></div>
