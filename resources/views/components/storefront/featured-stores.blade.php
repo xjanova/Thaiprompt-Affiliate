@@ -72,14 +72,19 @@
                 </span>
             </div>
 
-            {{-- Banner --}}
+            {{-- Banner — เดิมเป็นไล่เฉดส้มเปล่า ๆ ใส่ภาพตลาดไทย (เจนเอง) ให้มีอะไรให้ดู --}}
             <div class="relative h-40 mt-8 overflow-hidden">
                 <div class="w-full h-full bg-gradient-to-br from-orange-400 via-red-400 to-pink-400">
+                    @if(file_exists(public_path('images/art/hero-storefront.webp')))
+                        <img src="{{ asset('images/art/hero-storefront.webp') }}"
+                             alt="" aria-hidden="true" loading="lazy" decoding="async"
+                             class="absolute inset-0 w-full h-full object-cover">
+                    @endif
                     <div class="absolute inset-0 opacity-30">
                         <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 30px 30px;"></div>
                     </div>
                 </div>
-                <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
             </div>
 
             {{-- Store Info --}}
