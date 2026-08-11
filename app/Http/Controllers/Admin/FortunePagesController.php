@@ -7,9 +7,11 @@ use App\Models\FortunePage;
 use App\Models\FortuneReading;
 use App\Services\Fortune\FortunePageContext;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 /**
@@ -24,6 +26,19 @@ use Illuminate\Validation\Rule;
  */
 class FortunePagesController extends Controller
 {
+    /**
+     * สิทธิ์ที่ User Token ต้องมี ไม่งั้นระบบสาขาทำงานไม่ครบ
+     *
+     * ขาด pages_show_list → กด "ดึงเพจทั้งหมด" ได้ 0 เพจ แต่ token ผ่าน /me ปกติ
+     * (อาการนี้หลอกมาก — เห็น "เชื่อมบัญชีสำเร็จ" แล้วนึกว่าเรียบร้อย)
+     */
+    protected const REQUIRED_USER_SCOPES = [
+        'pages_show_list',
+        'pages_messaging',
+        'pages_manage_metadata',
+        'pages_read_engagement',
+    ];
+
     /**
      * แสดงรายการสาขาทั้งหมด พร้อมยอดของแต่ละสาขา
      */
@@ -58,6 +73,8 @@ class FortunePagesController extends Controller
             // 🔑 เชื่อมบัญชีเจ้าของแล้วหรือยัง — ตัดสินว่าจะโชว์กล่อง "ใส่แค่ไอดีเพจ" หรือกล่องเชื่อมบัญชี
             'hasUserToken' => $this->userToken() !== null,
             'userTokenCheckedAt' => \App\Models\FortuneTellingSetting::getGlobalSettings()->facebook_user_token_checked_at,
+            // ⏳ นาฬิกา 2 เรือนของ token — ต้องเห็นก่อนหมด ไม่ใช่รู้ตอนบอทเงียบไปแล้ว
+            'tokenHealth' => $this->tokenHealth(),
             // ⚠️ สาขาที่เว้น token ไว้จะ fallback ไป token กลาง — ป้าย "ไม่มี Token"
             //    ต้องขึ้นเฉพาะตอนไม่มีทั้งคู่จริงๆ ไม่งั้นสาขาหลักจะติดป้ายแดงทั้งที่ใช้งานได้
             'hasGlobalPageToken' => ! empty(\App\Models\FortuneTellingSetting::getGlobalSettings()->facebook_page_token),
@@ -185,7 +202,8 @@ class FortunePagesController extends Controller
         }
 
         try {
-            $response = Http::timeout(15)->get('https://graph.facebook.com/v21.0/me', [
+            // อ้างเวอร์ชัน Graph จากจุดเดียวกับที่บอทใช้ (เดิมฮาร์ดโค้ดไว้ พอ bump เวอร์ชันแล้วตกหล่น)
+            $response = Http::timeout(15)->get($this->graph('/me'), [
                 'fields' => 'id,name',
                 'access_token' => $token,
             ]);
@@ -228,6 +246,12 @@ class FortunePagesController extends Controller
      *
      * ตรวจก่อนบันทึกเสมอ — token ผิด/หมดอายุแล้วบันทึกผ่าน จะไปพังตอนเพิ่มเพจ
      * แล้วแอดมินจะงงว่าพังที่ขั้นไหน
+     *
+     * ⏳ (2026-08-11) แลกเป็น token อายุยาวให้อัตโนมัติ
+     *    token ที่ก็อปจาก Graph API Explorer สดๆ อายุแค่ ~1 ชั่วโมง
+     *    และ **page token ที่ขอด้วย token สั้น ก็อายุสั้นตามไปด้วย**
+     *    → เพจใหม่จะตอบได้ชั่วโมงเดียวแล้วเงียบ หาสาเหตุยากมาก
+     *    เดิมต้องให้เจ้าของไปกด Extend เองที่ Access Token Debugger (ลืมเมื่อไหร่ = โดน)
      */
     public function connectUserToken(Request $request)
     {
@@ -247,17 +271,265 @@ class FortunePagesController extends Controller
                 return back()->with('error', 'Token ใช้ไม่ได้: '.($me->json('error.message') ?? 'ไม่ทราบสาเหตุ'));
             }
 
-            $settings = \App\Models\FortuneTellingSetting::getGlobalSettings();
-            $settings->update([
+            // ⏳ แลกเป็นตัวยาวก่อนเก็บเสมอ — แลกไม่ได้ก็ได้ตัวเดิมคืนมา (ไม่ block การเชื่อม)
+            $exchange = $this->exchangeForLongLivedToken($token);
+            $token = $exchange['token'];
+
+            // 🔍 ถามอายุจริงจาก Graph — ห้ามเดาจาก expires_in ของขั้นแลก
+            //    (token ที่ยาวอยู่แล้วจะไม่มี expires_in กลับมา แต่ debug_token ตอบได้เสมอ)
+            $info = $this->inspectToken($token);
+
+            $payload = [
                 'facebook_user_token' => $token,
                 'facebook_user_token_checked_at' => now(),
-            ]);
+            ];
+
+            // 🛡️ ช่วงดีพลอย โค้ดขึ้นก่อน migration ได้ — ยัดคอลัมน์ที่ยังไม่มีลงไป
+            //    update() จะพังทั้งคำสั่ง = เชื่อมบัญชีไม่ได้เลยทั้งที่ token ดี
+            if ($this->hasExpiryColumns()) {
+                $payload['facebook_user_token_expires_at'] = $info['expires_at'];
+                $payload['facebook_user_token_data_access_expires_at'] = $info['data_access_expires_at'];
+            }
+
+            $settings = \App\Models\FortuneTellingSetting::getGlobalSettings();
+            $settings->update($payload);
             \App\Models\FortuneTellingSetting::clearSettingsCache();
 
-            return back()->with('success', '✅ เชื่อมบัญชีสำเร็จ: '.($me->json('name') ?? $me->json('id')).' — ต่อไปเพิ่มเพจใหม่ใส่แค่ไอดีเพจได้เลย');
+            // 🔒 log ได้เฉพาะ "ผลลัพธ์" ห้ามมีค่า token โผล่ใน log เด็ดขาด
+            Log::info('🔑 เชื่อมบัญชีเจ้าของเพจ', [
+                'exchanged_to_long_lived' => $exchange['exchanged'],
+                'expires_at' => optional($info['expires_at'])->toDateTimeString(),
+                'data_access_expires_at' => optional($info['data_access_expires_at'])->toDateTimeString(),
+            ]);
+
+            $success = '✅ เชื่อมบัญชีสำเร็จ: '.($me->json('name') ?? $me->json('id'))
+                .' · '.$this->describeLifetime($exchange, $info)
+                .' — ต่อไปเพิ่มเพจใหม่ใส่แค่ไอดีเพจได้เลย';
+
+            $warning = $this->lifetimeWarning($exchange, $info);
+
+            return back()
+                ->with('success', $success)
+                ->with('error', $warning);   // null = ไม่โชว์การ์ดเตือน
         } catch (\Throwable $e) {
             return back()->with('error', 'เชื่อมบัญชีไม่สำเร็จ: '.$e->getMessage());
         }
+    }
+
+    /**
+     * แลก short-lived user token → long-lived (60 วัน)
+     *
+     * แลกไม่ได้ไม่ถือว่าล้มเหลวทั้งกระบวนการ — คืน token เดิมไปพร้อมเหตุผล
+     * ให้แอดมินเห็นเป็นคำเตือน ดีกว่าบล็อกจนเชื่อมบัญชีไม่ได้เลย
+     *
+     * @return array{token: string, exchanged: bool, error: ?string}
+     */
+    protected function exchangeForLongLivedToken(string $token): array
+    {
+        [$appId, $appSecret] = $this->appCredentials();
+
+        if ($appId === '' || $appSecret === '') {
+            return [
+                'token' => $token,
+                'exchanged' => false,
+                'error' => 'ยังไม่ได้ตั้ง App ID / App Secret ในหน้า “ช่องทางรับข้อความ”',
+            ];
+        }
+
+        try {
+            $response = Http::timeout(15)->get($this->graph('/oauth/access_token'), [
+                'grant_type' => 'fb_exchange_token',
+                'client_id' => $appId,
+                'client_secret' => $appSecret,
+                'fb_exchange_token' => $token,
+            ]);
+
+            $longLived = (string) ($response->json('access_token') ?? '');
+
+            if (! $response->successful() || $longLived === '') {
+                return [
+                    'token' => $token,
+                    'exchanged' => false,
+                    'error' => $response->json('error.message') ?: 'ไม่ทราบสาเหตุ',
+                ];
+            }
+
+            return ['token' => $longLived, 'exchanged' => true, 'error' => null];
+        } catch (\Throwable $e) {
+            return ['token' => $token, 'exchanged' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * ถามอายุ + สิทธิ์ของ token จาก Graph (/debug_token)
+     *
+     * @return array{expires_at: ?Carbon, data_access_expires_at: ?Carbon, scopes: array<string>, checked: bool}
+     */
+    protected function inspectToken(string $token): array
+    {
+        $blank = ['expires_at' => null, 'data_access_expires_at' => null, 'scopes' => [], 'checked' => false];
+
+        [$appId, $appSecret] = $this->appCredentials();
+
+        if ($appId === '' || $appSecret === '') {
+            return $blank;
+        }
+
+        try {
+            // timeout สั้นกว่าขั้นอื่น — ขั้นนี้เป็นของแถม ถ้าช้าก็ข้ามได้
+            // (ต่อกันสามคำขอ ถ้าตั้ง 15 วิเท่ากันหมด แล้ว Graph ค้าง = หน้าแอดมิน 504 แทนที่จะขึ้นข้อความ)
+            $response = Http::timeout(8)->get($this->graph('/debug_token'), [
+                'input_token' => $token,
+                'access_token' => $appId.'|'.$appSecret,
+            ]);
+
+            if (! $response->successful()) {
+                return $blank;
+            }
+
+            $data = $response->json('data') ?? [];
+
+            return [
+                'expires_at' => $this->graphTimestamp($data['expires_at'] ?? null),
+                'data_access_expires_at' => $this->graphTimestamp($data['data_access_expires_at'] ?? null),
+                'scopes' => array_values(array_filter((array) ($data['scopes'] ?? []))),
+                'checked' => true,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('🔑 ตรวจอายุ token ไม่สำเร็จ', ['error' => $e->getMessage()]);
+
+            return $blank;
+        }
+    }
+
+    /**
+     * แปลงเวลาแบบ unix ที่ Graph ส่งมาเป็น Carbon
+     *
+     * ⚠️ Graph ใช้ 0 แทน "ไม่มีวันหมดอายุ" — ต้องคืน null
+     *    ถ้าเผลอแปลง 0 ตรงๆ จะได้ปี 1970 = หน้าจอฟ้อง "หมดอายุแล้ว" ตลอดกาล
+     */
+    protected function graphTimestamp(mixed $value): ?Carbon
+    {
+        $timestamp = (int) $value;
+
+        return $timestamp > 0 ? Carbon::createFromTimestamp($timestamp, config('app.timezone')) : null;
+    }
+
+    /**
+     * App ID / App Secret ของแอป Meta ที่ใช้อยู่
+     *
+     * @return array{0: string, 1: string}
+     */
+    protected function appCredentials(): array
+    {
+        try {
+            $settings = \App\Models\FortuneTellingSetting::getGlobalSettings();
+
+            return [
+                trim((string) ($settings->facebook_app_id ?? '')),
+                trim((string) ($settings->facebook_app_secret ?? '')),
+            ];
+        } catch (\Throwable $e) {
+            return ['', ''];
+        }
+    }
+
+    /**
+     * คอลัมน์วันหมดอายุพร้อมใช้แล้วหรือยัง (migration ลงหรือยัง)
+     */
+    protected function hasExpiryColumns(): bool
+    {
+        return Schema::hasColumn('fortune_telling_settings', 'facebook_user_token_expires_at')
+            && Schema::hasColumn('fortune_telling_settings', 'facebook_user_token_data_access_expires_at');
+    }
+
+    /**
+     * ประโยคบอกอายุ token ที่แอดมินอ่านรู้เรื่อง
+     *
+     * @param  array{token: string, exchanged: bool, error: ?string}  $exchange
+     * @param  array{expires_at: ?Carbon, data_access_expires_at: ?Carbon, scopes: array<string>, checked: bool}  $info
+     */
+    protected function describeLifetime(array $exchange, array $info): string
+    {
+        $prefix = $exchange['exchanged'] ? 'ต่ออายุอัตโนมัติแล้ว' : 'เก็บ token ตามที่วางมา';
+
+        if (! $info['checked']) {
+            return $prefix;
+        }
+
+        if ($info['expires_at'] === null) {
+            return $prefix.' (ไม่มีวันหมดอายุ)';
+        }
+
+        return $prefix.' (หมดอายุ '.$info['expires_at']->format('d/m/y H:i').')';
+    }
+
+    /**
+     * คำเตือนที่ต้องขึ้นการ์ดแดง — คืน null ถ้าไม่มีอะไรต้องเตือน
+     *
+     * @param  array{token: string, exchanged: bool, error: ?string}  $exchange
+     * @param  array{expires_at: ?Carbon, data_access_expires_at: ?Carbon, scopes: array<string>, checked: bool}  $info
+     */
+    protected function lifetimeWarning(array $exchange, array $info): ?string
+    {
+        $warnings = [];
+
+        if (! $exchange['exchanged']) {
+            $warnings[] = '⚠️ ต่ออายุ token อัตโนมัติไม่สำเร็จ ('.$exchange['error'].') '
+                .'— ถ้าตัวที่วางมาเป็นของสดจาก Graph API Explorer จะหมดอายุใน ~1 ชม. '
+                .'และกุญแจของเพจที่ดึงไปจะหมดตามด้วย';
+        }
+
+        // 🔍 ขาดสิทธิ์ = ผ่าน /me แต่ทำงานจริงไม่ได้ ต้องบอกให้ชัด
+        if ($info['checked'] && $info['scopes'] !== []) {
+            $missing = array_diff(self::REQUIRED_USER_SCOPES, $info['scopes']);
+
+            if ($missing !== []) {
+                $warnings[] = '⚠️ token ขาดสิทธิ์: '.implode(', ', $missing)
+                    .' — กลับไปติ๊กเพิ่มที่ Graph API Explorer แล้ววางใหม่';
+            }
+        }
+
+        return $warnings === [] ? null : implode(' · ', $warnings);
+    }
+
+    /**
+     * สถานะอายุ token สำหรับโชว์หน้ารายการสาขา
+     *
+     * ⏳ นาฬิกา 2 เรือน หมดคนละเวลา พังคนละแบบ:
+     *   - expires_at            หมด = ดึง/รีเฟรชกุญแจเพจไม่ได้อีก
+     *   - data_access_expires_at หมด = token ยังส่งข้อความได้ แต่อ่านข้อมูลผู้ใช้ไม่ได้
+     *                            (error_subcode 33 — เคยทำลูกค้าเข้าวอลเลตตัวเองไม่ได้ 2026-07-27)
+     *
+     * @return array{expiresAt: ?Carbon, expiresInDays: ?int, dataAccessAt: ?Carbon, dataAccessInDays: ?int}
+     */
+    protected function tokenHealth(): array
+    {
+        try {
+            $settings = \App\Models\FortuneTellingSetting::getGlobalSettings();
+            $expires = $settings->facebook_user_token_expires_at;
+            $dataAccess = $settings->facebook_user_token_data_access_expires_at;
+        } catch (\Throwable $e) {
+            $expires = $dataAccess = null;
+        }
+
+        return [
+            'expiresAt' => $expires,
+            'expiresInDays' => $this->daysLeft($expires),
+            'dataAccessAt' => $dataAccess,
+            'dataAccessInDays' => $this->daysLeft($dataAccess),
+        ];
+    }
+
+    /**
+     * เหลืออีกกี่วัน (ติดลบ = หมดไปแล้ว, null = ไม่มีวันหมด/ยังไม่รู้)
+     *
+     * คิดจาก timestamp ตรงๆ เพื่อไม่ต้องไปพึ่งทิศทางเครื่องหมายของ diffInDays
+     * ซึ่งเปลี่ยนความหมายระหว่าง Carbon เวอร์ชัน
+     */
+    protected function daysLeft(?Carbon $date): ?int
+    {
+        return $date === null ? null : (int) floor(($date->getTimestamp() - time()) / 86400);
     }
 
     /**

@@ -30,6 +30,55 @@
                 — ระบบจะไปดึงชื่อเพจและกุญแจของเพจมาให้เอง
             </div>
 
+            {{-- ⏳ นาฬิกา 2 เรือนของ token — หมดคนละเวลา พังคนละแบบ
+                 ต้องเห็นตรงนี้ก่อน ไม่ใช่ไปรู้ตอนบอทเงียบแล้ว --}}
+            @php
+                // ⚠️ ว่างทั้งคู่ = "ยังไม่เคยตรวจ" ไม่ใช่ "ไม่มีวันหมด"
+                //    (เชื่อมบัญชีไว้ก่อนที่ระบบจะตรวจอายุเป็น) — ห้ามโชว์ว่าปลอดภัยทั้งที่ไม่รู้
+                $tpTokenKnown = $tokenHealth['expiresAt'] !== null || $tokenHealth['dataAccessAt'] !== null;
+
+                // สีตามความเร่งด่วน: หมดแล้ว=แดง / เหลือ ≤7 วัน=ส้ม / ที่เหลือ=สีปกติ
+                $tpTokenTone = function (?int $days) {
+                    if ($days === null) { return 'var(--ink2)'; }
+                    if ($days < 0) { return '#d9534f'; }
+                    if ($days <= 7) { return '#c98a3a'; }
+                    return 'var(--ink2)';
+                };
+                $tpTokenWhen = function (?int $days) {
+                    if ($days === null) { return 'ไม่มีวันหมดอายุ'; }
+                    if ($days < 0) { return 'หมดอายุแล้ว '.abs($days).' วัน'; }
+                    return 'อีก '.$days.' วัน';
+                };
+            @endphp
+            @if($tpTokenKnown)
+                <div style="display:flex; flex-wrap:wrap; gap:8px 18px; margin-bottom:14px; font-size:12px;">
+                    <span style="color:{{ $tpTokenTone($tokenHealth['expiresInDays']) }};">
+                        🔑 กุญแจบัญชี: {{ $tpTokenWhen($tokenHealth['expiresInDays']) }}
+                        @if($tokenHealth['expiresAt'])
+                            <span style="color:var(--ink2);">({{ $tokenHealth['expiresAt']->format('d/m/y') }})</span>
+                        @endif
+                    </span>
+                    <span style="color:{{ $tpTokenTone($tokenHealth['dataAccessInDays']) }};">
+                        👤 สิทธิ์อ่านข้อมูลผู้ใช้: {{ $tpTokenWhen($tokenHealth['dataAccessInDays']) }}
+                        @if($tokenHealth['dataAccessAt'])
+                            <span style="color:var(--ink2);">({{ $tokenHealth['dataAccessAt']->format('d/m/y') }})</span>
+                        @endif
+                    </span>
+                </div>
+            @else
+                <div style="font-size:12px; color:var(--ink2); margin-bottom:14px;">
+                    ⏳ ยังไม่ทราบอายุ token — เปิด “เปลี่ยนบัญชีที่เชื่อมไว้” ด้านล่างแล้ววาง token ใหม่
+                    ระบบจะต่ออายุให้เป็นแบบยาวและตรวจวันหมดอายุให้ในคราวเดียว
+                </div>
+            @endif
+
+            @if($tokenHealth['dataAccessInDays'] !== null && $tokenHealth['dataAccessInDays'] < 0)
+                <div style="font-size:12px; color:#d9534f; margin:-6px 0 14px; line-height:1.9;">
+                    ⚠️ สิทธิ์อ่านข้อมูลผู้ใช้หมดแล้ว — บอทยังส่งข้อความได้ปกติ แต่<strong>อ่านชื่อลูกค้าไม่ได้</strong>
+                    และการจับคู่บัญชีตอนลูกค้าล็อกอินด้วย Facebook จะพัง (error_subcode 33) → วาง token ใหม่เพื่อรีเซ็ตนาฬิกา 90 วัน
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('admin.fortune.pages.quick-add') }}"
                   style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
                 @csrf

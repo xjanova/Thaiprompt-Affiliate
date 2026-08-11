@@ -16,5 +16,7 @@
     → เลือกแอปเดียวกับที่ใช้อยู่ → กด <em>Generate Access Token</em> → ติ๊กสิทธิ์
     <code>pages_show_list</code>, <code>pages_messaging</code>, <code>pages_manage_metadata</code>,
     <code>pages_read_engagement</code> → ก็อปมาวางที่ช่องนี้<br>
-    🔒 ระบบเก็บแบบเข้ารหัสและไม่แสดงค่ากลับออกมาอีก · token ชนิดนี้มีอายุ ถ้าหมดอายุแค่มาวางใหม่
+    ⏳ <strong>ไม่ต้องไปกด Extend เองที่ Access Token Debugger</strong> — ระบบแลกเป็นตัวอายุยาว (60 วัน) ให้อัตโนมัติตอนกดเชื่อม
+    (token สดจาก Explorer อายุแค่ ~1 ชม. และกุญแจของเพจที่ขอด้วยตัวสั้นก็จะอายุสั้นตามไปด้วย)<br>
+    🔒 ระบบเก็บแบบเข้ารหัสและไม่แสดงค่ากลับออกมาอีก · ถ้าหมดอายุแค่มาวางใหม่
 </div>

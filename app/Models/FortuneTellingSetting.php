@@ -73,6 +73,9 @@ class FortuneTellingSetting extends Model
         // 🔑 (2026-08-10) User Token ของเจ้าของเพจ — ใช้ดึง page token ให้เพจใหม่อัตโนมัติ
         'facebook_user_token',
         'facebook_user_token_checked_at',
+        // ⏳ (2026-08-11) นาฬิกา 2 เรือนของ token — ดูคำอธิบายใน migration
+        'facebook_user_token_expires_at',
+        'facebook_user_token_data_access_expires_at',
         'use_global_ai_settings',
         'ai_provider',
         'ai_api_key',
@@ -462,6 +465,9 @@ class FortuneTellingSetting extends Model
         //       (ห้ามไปใส่ cast ให้ facebook_page_token ของเดิม ค่าที่บันทึกไว้แล้วเป็น plaintext จะถอดไม่ออก)
         'facebook_user_token' => 'encrypted',
         'facebook_user_token_checked_at' => 'datetime',
+        // ⏳ (2026-08-11) null = ไม่มีวันหมด (Graph คืน 0) ห้ามเก็บ 0 ตรงๆ เดี๋ยวกลายเป็นปี 1970
+        'facebook_user_token_expires_at' => 'datetime',
+        'facebook_user_token_data_access_expires_at' => 'datetime',
         'is_enabled' => 'boolean',
         'use_global_ai_settings' => 'boolean',
         'prediction_strict_provider' => 'boolean',  // 🎯 (2026-05-02) strict provider mode
