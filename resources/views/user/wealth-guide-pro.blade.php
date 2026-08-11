@@ -28,7 +28,9 @@
 <div style="display:flex; flex-direction:column; gap:18px;">
 
     {{-- ── HERO ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
+    <div class="tp-card" style="padding:0; overflow:hidden; position:relative;">
+        {{-- ภาพประกอบหัวเรื่อง (เจนเอง เก็บที่ public/images/art) --}}
+        <x-art.hero-art image="usr-guide" />
         <div style="padding:20px 24px;
                     background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
             <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px;">

@@ -119,6 +119,22 @@
   .tp-lava .l1, .tp-lava .l2, .tp-lava .l3 { animation:none; }
 }
 
+/* ลายกนกทองจาง ๆ เป็นพื้นหลังทั้งพื้นที่สมาชิก
+ * วางเป็นชั้นคงที่ (fixed) ใต้เนื้อหา — จางมากพอที่จะไม่กวนการอ่านตัวหนังสือ
+ * ใช้ mask ไล่จางลงด้านล่างเพื่อไม่ให้ชนกับส่วนท้ายหน้า */
+.tp-artbg {
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:url('/images/art/pattern-kanok.webp');
+  background-repeat:repeat-x;
+  background-position:top center;
+  background-size:auto 210px;
+  opacity:.08;
+  -webkit-mask-image:linear-gradient(180deg, #000 0%, rgba(0,0,0,.35) 42%, transparent 78%);
+          mask-image:linear-gradient(180deg, #000 0%, rgba(0,0,0,.35) 42%, transparent 78%);
+}
+/* ดาร์กโหมด: ลายทองบนพื้นครีมจะกลายเป็นแผ่นสว่าง — ใช้ screen + จางลงอีก */
+.dark .tp-artbg { opacity:.05; mix-blend-mode:screen; }
+
 /* ---------------------------------------------------------------------------
  * 5) คอมโพเนนต์มาตรฐาน
  * ------------------------------------------------------------------------- */

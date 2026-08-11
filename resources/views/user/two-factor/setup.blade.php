@@ -6,7 +6,9 @@
 <div style="display:flex; flex-direction:column; gap:18px;">
 
     {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
+    <div class="tp-card" style="padding:0; overflow:hidden; position:relative;">
+        {{-- ภาพประกอบหัวเรื่อง (เจนเอง เก็บที่ public/images/art) --}}
+        <x-art.hero-art image="usr-security" />
         <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5689b8 18%, transparent), transparent 70%);">
             <div style="display:flex; align-items:center; gap:14px;">
                 <span class="tp-tile" style="width:54px; height:54px; border-radius:16px; font-size:24px; background:#5689b8;"><span style="color:#fff;">🔐</span></span>

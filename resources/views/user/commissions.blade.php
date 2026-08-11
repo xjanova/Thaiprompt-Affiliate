@@ -26,7 +26,9 @@
 <div style="display:flex; flex-direction:column; gap:18px;">
 
     {{-- ── หัวข้อ ───────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
+    <div class="tp-card" style="padding:0; overflow:hidden; position:relative;">
+        {{-- ภาพประกอบหัวเรื่อง (เจนเอง เก็บที่ public/images/art) --}}
+        <x-art.hero-art image="usr-commissions" />
         <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
                     background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
             <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-coins" style="color:#fff;"></i></span>

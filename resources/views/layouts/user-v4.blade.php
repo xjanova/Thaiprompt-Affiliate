@@ -218,6 +218,11 @@
     {{-- พื้นหลังลาวา (3 วงเบลอ) --}}
     <div class="tp-lava" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i></div>
 
+    {{-- ลายกนกทองจาง ๆ คลุมทุกหน้าในส่วนสมาชิก (ภาพเจนเอง เก็บที่ public/images/art) --}}
+    @if(file_exists(public_path('images/art/pattern-kanok.webp')))
+        <div class="tp-artbg" aria-hidden="true"></div>
+    @endif
+
     <div style="display:flex; flex-direction:column; min-height:100vh; position:relative; z-index:1;"
          x-data="tpShell">
 

@@ -18,7 +18,9 @@
 <div style="display:flex; flex-direction:column; gap:18px;" x-data="{}">
 
     {{-- ── การ์ดยอดเงิน (Hero) ──────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
+    <div class="tp-card" style="padding:0; overflow:hidden; position:relative;">
+        {{-- ภาพประกอบหัวเรื่อง (เจนเอง เก็บที่ public/images/art) --}}
+        <x-art.hero-art image="usr-wallet" />
         <div style="padding:24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 18%, transparent), transparent 72%);">
             <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px;">
                 <div style="display:flex; align-items:center; gap:14px;">
