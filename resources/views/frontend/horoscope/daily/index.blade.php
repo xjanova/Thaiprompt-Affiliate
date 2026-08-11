@@ -5,8 +5,10 @@
 <div x-data="dailyIndex()" x-init="init()">
 
     {{-- ==================== Hero Section ==================== --}}
-    <section class="relative py-12 md:py-16">
-        <div class="container mx-auto px-4 text-center">
+    <section class="relative py-12 md:py-16 overflow-hidden">
+        {{-- ภาพประกอบดวงอาทิตย์+ราศี (เจนเอง) --}}
+        <x-art.backdrop image="cos-daily" tone="dark" :opacity="0.55" mask="vignette" />
+        <div class="container relative mx-auto px-4 text-center">
             {{-- ไอคอน --}}
             <div class="mb-6">
                 <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-600/30 to-pink-600/30 border border-purple-500/30 backdrop-blur-lg shadow-2xl shadow-purple-500/20">

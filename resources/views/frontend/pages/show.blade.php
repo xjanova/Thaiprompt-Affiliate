@@ -24,12 +24,15 @@
 
 @section('content')
 <div style="max-width:920px; margin:0 auto; padding:40px clamp(16px,3vw,40px) 60px;">
-    {{-- หัวเรื่อง V4 --}}
-    <div style="text-align:center; margin-bottom:28px;">
-        <h1 style="font-size:clamp(26px,4vw,34px); font-weight:800; color:var(--ink); margin:0;">{{ $page->title }}</h1>
-        @if($page->updated_at)
-            <p class="tp-muted" style="margin:8px 0 0; font-size:13px;">อัปเดตล่าสุด: {{ $page->updated_at->format('d F Y') }}</p>
-        @endif
+    {{-- หัวเรื่อง V4 บนแถบลายกนกทอง (เจนเอง เก็บที่ public/images/art) --}}
+    <div style="position:relative; overflow:hidden; border-radius:22px; text-align:center; margin-bottom:28px; padding:clamp(26px,4vw,42px) 20px;">
+        <x-art.backdrop image="pattern-kanok" tone="light" :opacity="0.75" mask="fade-bottom" />
+        <div style="position:relative;">
+            <h1 style="font-size:clamp(26px,4vw,34px); font-weight:800; color:var(--ink); margin:0;">{{ $page->title }}</h1>
+            @if($page->updated_at)
+                <p class="tp-muted" style="margin:8px 0 0; font-size:13px;">อัปเดตล่าสุด: {{ $page->updated_at->format('d F Y') }}</p>
+            @endif
+        </div>
     </div>
 
     {{-- เนื้อหาหน้า (จาก CMS) ห่อด้วยกรอบ V4 --}}

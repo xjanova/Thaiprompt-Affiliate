@@ -6,6 +6,8 @@
 
     {{-- ==================== Hero + Search ==================== --}}
     <section class="relative py-12 md:py-16 overflow-hidden">
+        {{-- ภาพประกอบพระจันทร์+สัญลักษณ์ความฝัน (เจนเอง) --}}
+        <x-art.backdrop image="cos-dream" tone="dark" :opacity="0.5" mask="vignette" />
         {{-- พื้นหลังเอฟเฟกต์เมฆ/ดวงจันทร์ --}}
         <div class="absolute inset-0 pointer-events-none">
             <div class="absolute top-10 right-10 w-24 h-24 bg-amber-300/10 rounded-full blur-3xl animate-pulse"></div>

@@ -4,7 +4,10 @@
 <div class="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 dark:from-gray-900 dark:via-purple-900 dark:to-blue-900 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <div class="text-center mb-12 animate-fade-in">
+        <div class="relative overflow-hidden rounded-3xl mb-12 py-10 px-4 animate-fade-in">
+            {{-- ภาพประกอบ (เจนเอง เก็บที่ public/images/art) --}}
+            <x-art.backdrop image="cos-qr" tone="dark" :opacity="0.45" mask="vignette" />
+        <div class="relative text-center">
             <h1 class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 mb-4">
                 <i class="fas fa-qrcode mr-3"></i>QR Code & Barcode Generator
             </h1>
@@ -12,6 +15,7 @@
                 สร้าง QR Code และ Barcode ฟรี! รองรับทุกรูปแบบ ใช้งานง่าย ดาวน์โหลดได้ทันที
             </p>
         </div>
+        </div>{{-- /Header พร้อมภาพประกอบ --}}
 
         <!-- Main Generator Section -->
         <div x-data="qrBarcodeGenerator()" class="space-y-8">

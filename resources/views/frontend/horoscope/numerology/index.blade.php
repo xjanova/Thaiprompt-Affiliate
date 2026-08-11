@@ -5,8 +5,10 @@
 <div x-data="numerologyApp()" x-init="init()">
 
     {{-- ==================== Hero Section ==================== --}}
-    <section class="relative py-12 md:py-16">
-        <div class="container mx-auto px-4 text-center">
+    <section class="relative py-12 md:py-16 overflow-hidden">
+        {{-- ภาพประกอบยันต์เรขาคณิต (เจนเอง) --}}
+        <x-art.backdrop image="cos-numerology" tone="dark" :opacity="0.5" mask="vignette" />
+        <div class="container relative mx-auto px-4 text-center">
             <div class="mb-6">
                 <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-600/30 to-teal-600/30 border border-emerald-500/30 backdrop-blur-lg shadow-2xl shadow-emerald-500/20"
                      style="animation: float 4s ease-in-out infinite;">

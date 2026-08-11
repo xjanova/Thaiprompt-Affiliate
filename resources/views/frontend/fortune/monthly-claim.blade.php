@@ -39,6 +39,9 @@
         }
     </style>
 
+    {{-- ภาพประกอบถุงทองรางวัล (เจนเอง เก็บที่ public/images/art) --}}
+    <x-art.backdrop image="cos-reward" tone="dark" :opacity="0.42" mask="fade-bottom" height="min(72vh, 640px)" />
+
     <div class="relative max-w-2xl mx-auto px-4 py-8 sm:py-16">
 
         {{-- การ์ดหลัก --}}

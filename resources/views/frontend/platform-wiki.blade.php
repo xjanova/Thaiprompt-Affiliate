@@ -918,7 +918,10 @@
         </div>
 
         <!-- Header -->
-        <header class="wiki-header">
+        <header class="wiki-header" style="position:relative; overflow:hidden; border-radius:20px; padding:clamp(24px,3.5vw,40px) clamp(20px,3vw,34px) 1.5rem;">
+            {{-- ภาพประกอบคลังความรู้ (เจนเอง เก็บที่ public/images/art) --}}
+            <x-art.backdrop image="hero-wiki" tone="light" :opacity="0.85" mask="fade-bottom" />
+            <div style="position:relative;">
             <h1 class="wiki-title">Thaiprompt Affiliate Platform</h1>
             <p class="wiki-subtitle">สารานุกรมความรู้ฉบับสมบูรณ์ - แพลตฟอร์ม MLM & E-Commerce แห่งอนาคต</p>
             <div class="flex gap-4 mt-4">
@@ -926,6 +929,7 @@
                 <span class="wiki-badge wiki-badge-blue">Production Ready</span>
                 <span class="wiki-badge wiki-badge-purple">113+ Models</span>
             </div>
+            </div>{{-- /เนื้อหาเหนือภาพ --}}
         </header>
 
         <!-- Introduction -->

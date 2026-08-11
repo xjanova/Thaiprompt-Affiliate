@@ -65,9 +65,12 @@ class TarotCardBackImage extends Model
      */
     public function getImageUrlAttribute($value)
     {
-        // ถ้าไม่มีค่า ใช้ default
+        // ถ้าไม่มีค่า ใช้ default — ภาพหลังไพ่ลายกนกทอง (public/images/art/tarot-card-back.webp)
+        // เผื่อไฟล์ยังไม่ถูก deploy ให้ตกกลับไปที่ SVG ตัวเดิม
         if (! $value) {
-            return asset('images/tarot/card-back-default.svg');
+            return file_exists(public_path('images/art/tarot-card-back.webp'))
+                ? asset('images/art/tarot-card-back.webp')
+                : asset('images/tarot/card-back-default.svg');
         }
 
         // ถ้าเป็น full URL อยู่แล้ว (http/https) ใช้ตรงๆ

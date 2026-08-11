@@ -384,6 +384,17 @@
 
         {{-- Main Content Area --}}
         <main class="min-h-screen">
+            {{-- หัวหน้าคู่มือ พร้อมภาพประกอบ (เจนเอง เก็บที่ public/images/art)
+                 ⚠️ เดิมหน้านี้ไม่มี <h1> เลย ทั้งที่เป็นหน้าสาธารณะ — เพิ่มให้ครบทั้งสายตาและ SEO --}}
+            <div class="mb-6">
+                <x-art.page-hero
+                    image="hero-wiki"
+                    eyebrow="ศูนย์ช่วยเหลือ · KNOWLEDGE BASE"
+                    title="คู่มือและความช่วยเหลือ"
+                    subtitle="รวมทุกเรื่องที่ควรรู้เกี่ยวกับแพลตฟอร์มไทยพร๊อมท์ — เลือกหมวดจากเมนู หรือค้นหาจากช่องด้านล่าง"
+                    tone="light" height="sm" align="left" />
+            </div>
+
             {{-- Search Bar --}}
             <div class="mb-6">
                 <div class="relative">

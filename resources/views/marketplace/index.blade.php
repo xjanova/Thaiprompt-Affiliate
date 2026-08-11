@@ -6,6 +6,12 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
     <!-- Hero Section -->
     <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 shadow-2xl">
+        {{-- ภาพประกอบตลาดบอท AI (เจนเอง เก็บที่ public/images/art) — soft-light ให้กลืนกับสีแบรนด์ --}}
+        @if(file_exists(public_path('images/art/hero-marketplace.webp')))
+            <img src="{{ asset('images/art/hero-marketplace.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                 class="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                 style="opacity:.32; mix-blend-mode:soft-light;">
+        @endif
         <div class="absolute inset-0 opacity-20">
             <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
         </div>

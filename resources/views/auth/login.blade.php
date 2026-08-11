@@ -211,6 +211,14 @@
 
     {{-- Background Effects --}}
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        {{-- ภาพประกอบซุ้มลายกนกทอง (เจนเอง เก็บที่ public/images/art) --}}
+        @if(file_exists(public_path('images/art/cos-auth.webp')))
+            <img src="{{ asset('images/art/cos-auth.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                 class="absolute inset-0 w-full h-full object-cover"
+                 style="opacity:.30;">
+            <div class="absolute inset-0"
+                 style="background:radial-gradient(110% 90% at 50% 45%, rgba(10,8,26,.30) 0%, rgba(10,8,26,.72) 62%, rgba(10,8,26,.94) 100%);"></div>
+        @endif
         {{-- Grid Pattern --}}
         <div class="absolute inset-0 opacity-[0.015]"
              style="background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),

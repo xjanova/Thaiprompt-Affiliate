@@ -251,7 +251,9 @@
                     รูปหลังไพ่
                 </p>
                 {{-- 🃏 (2026-06-08) 9:16 + object-contain แสดงหลังไพ่เต็มใบไม่ขาด --}}
-                <img src="{{ $cardBackImage->image_url ?? asset('images/tarot/card-back-default.png') }}"
+                {{-- ⚠️ เดิมชี้ไปที่ card-back-default.png ซึ่งไม่มีไฟล์อยู่จริง (มีแต่ .svg) → รูปแตก
+                     เปลี่ยนมาใช้ภาพหลังไพ่ลายกนกที่เจนไว้ใน public/images/art --}}
+                <img src="{{ $cardBackImage->image_url ?? asset('images/art/tarot-card-back.webp') }}"
                      alt="Card Back"
                      class="w-[54px] h-24 rounded-lg shadow-lg ring-2 ring-purple-500/30 object-contain">
             </div>

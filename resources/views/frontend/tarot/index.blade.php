@@ -31,8 +31,10 @@
     </div>
 
     {{-- Hero Section --}}
-    <div class="relative z-10">
-        <div class="container mx-auto px-4 py-16 md:py-24">
+    <div class="relative z-10 overflow-hidden">
+        {{-- ภาพประกอบไพ่ทาโรต์ลอยในจักรวาล (เจนเอง เก็บที่ public/images/art) --}}
+        <x-art.backdrop image="cos-tarot" tone="dark" :opacity="0.5" mask="vignette" />
+        <div class="container relative mx-auto px-4 py-16 md:py-24">
             <div class="text-center max-w-4xl mx-auto">
                 {{-- โลโก้ไพ่ทาโร่ต์แบบ 3D --}}
                 <div class="mb-8 perspective-1000">

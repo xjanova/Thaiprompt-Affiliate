@@ -164,8 +164,10 @@
         <i class="fas fa-moon text-gray-800 dark:text-yellow-300 text-lg"></i>
     </button>
 
-    <div class="min-h-screen flex items-center justify-center px-4 py-12">
-        <div class="max-w-4xl w-full">
+    <div class="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
+        {{-- ภาพประกอบเรือกระดาษหลงทาง (เจนเอง เก็บที่ public/images/art) --}}
+        <x-art.backdrop image="error-404" tone="dark" :opacity="0.28" mask="vignette" />
+        <div class="relative max-w-4xl w-full">
             <!-- Error Icon & Message -->
             <div class="text-center mb-8 slide-in-up">
                 <!-- Animated 404 Icon -->

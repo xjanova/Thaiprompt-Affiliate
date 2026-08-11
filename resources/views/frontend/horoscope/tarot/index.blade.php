@@ -5,8 +5,10 @@
 <div x-data="tarotHome()" x-init="init()">
 
     {{-- ==================== Hero Section ==================== --}}
-    <section class="relative py-12 md:py-20">
-        <div class="container mx-auto px-4 text-center">
+    <section class="relative py-12 md:py-20 overflow-hidden">
+        {{-- ภาพประกอบไพ่ทาโรต์ลอยในจักรวาล (เจนเอง) --}}
+        <x-art.backdrop image="cos-tarot" tone="dark" :opacity="0.55" mask="vignette" />
+        <div class="container relative mx-auto px-4 text-center">
             {{-- ไอคอน 3D --}}
             <div class="mb-6 relative inline-block">
                 <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 border border-violet-500/30 backdrop-blur-lg shadow-2xl shadow-violet-500/20 flex items-center justify-center mx-auto"

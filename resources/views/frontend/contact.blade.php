@@ -3,9 +3,14 @@
 @section('title', 'ติดต่อเรา')
 
 @section('content')
-{{-- พื้นหลัง gradient เข้มเพื่อให้กลมกลืนกับ layouts.landing --}}
-<div class="min-h-screen relative z-10 py-20 lg:py-28">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+{{-- พื้นหลังเข้มของหน้านี้เอง
+     ⚠️ เดิมหน้านี้ไม่ได้กำหนดพื้นหลัง แล้วไปพึ่ง dark mode ของ layouts.landing
+     พอผู้ใช้เข้ามาครั้งแรก (โหมดสว่าง = bg-slate-50) ตัวหนังสือขาวจะจมหายไปทั้งหน้า
+     จึงกำหนดพื้นเข้มไว้ที่หน้านี้เอง ให้อ่านออกทั้งสองโหมด --}}
+<div class="min-h-screen relative z-10 py-20 lg:py-28 overflow-hidden bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950">
+    {{-- ภาพประกอบช่องทางติดต่อ (เจนเอง เก็บที่ public/images/art) --}}
+    <x-art.backdrop image="cos-contact" tone="dark" :opacity="0.4" mask="vignette" />
+    <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- หัวข้อ --}}
         <div class="text-center mb-12">
             <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">ติดต่อเรา</h1>

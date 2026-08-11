@@ -124,11 +124,19 @@
             </div>
         </div>
         @empty
-        {{-- Default Banner when no banners --}}
-        <div class="absolute inset-0 bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 flex items-center justify-center">
-            <div class="text-center text-white">
-                <h2 class="text-4xl font-bold mb-4">ยินดีต้อนรับสู่ร้านค้าของเรา</h2>
-                <p class="text-xl opacity-90">ค้นพบสินค้าคุณภาพหลากหลายรายการ</p>
+        {{-- แบนเนอร์เริ่มต้นตอนยังไม่มีแบนเนอร์ในระบบ
+             ใช้ภาพวาดตลาดไทย (เจนเอง เก็บที่ public/images/art) แทนพื้นไล่เฉดเปล่า ๆ --}}
+        <div class="absolute inset-0 bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 flex items-center justify-center overflow-hidden">
+            @if(file_exists(public_path('images/art/hero-storefront.webp')))
+                <img src="{{ asset('images/art/hero-storefront.webp') }}"
+                     alt="" aria-hidden="true" fetchpriority="high" decoding="async"
+                     class="absolute inset-0 w-full h-full object-cover">
+                <div class="absolute inset-0"
+                     style="background:linear-gradient(180deg, rgba(20,14,8,.10) 0%, rgba(20,14,8,.42) 62%, rgba(20,14,8,.72) 100%);"></div>
+            @endif
+            <div class="relative text-center text-white px-6">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4" style="text-shadow:0 2px 14px rgba(0,0,0,.5);">ยินดีต้อนรับสู่ร้านค้าของเรา</h2>
+                <p class="text-lg md:text-xl opacity-95" style="text-shadow:0 1px 10px rgba(0,0,0,.5);">ค้นพบสินค้าคุณภาพหลากหลายรายการ</p>
             </div>
         </div>
         @endforelse

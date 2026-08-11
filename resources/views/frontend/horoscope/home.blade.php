@@ -4,8 +4,10 @@
 <div x-data="horoscopeHome()" x-init="init()">
 
     {{-- ==================== Hero Section ==================== --}}
-    <section class="relative py-16 md:py-24">
-        <div class="container mx-auto px-4 text-center">
+    <section class="relative py-16 md:py-24 overflow-hidden">
+        {{-- ภาพประกอบจักรวาล (เจนเอง เก็บที่ public/images/art) --}}
+        <x-art.backdrop image="cos-horoscope" tone="dark" :opacity="0.55" mask="vignette" />
+        <div class="container relative mx-auto px-4 text-center">
             {{-- โลโก้ 3D --}}
             <div class="mb-8 perspective-1000">
                 <div class="inline-block transform-gpu hover:rotate-y-12 transition-all duration-700">
