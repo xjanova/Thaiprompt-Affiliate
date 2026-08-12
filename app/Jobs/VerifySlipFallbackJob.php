@@ -58,6 +58,21 @@ class VerifySlipFallbackJob implements ShouldQueue
             $settings = FortuneTellingSetting::getSettings();
             $conversationService = new FortuneConversationService($settings);
 
+            // 🛡️ (2026-08-12, owner "ห้ามมีบิลซ้อน") ระหว่างที่ job นี้รอคิวอยู่ บิลอาจถูก "ปิดเพราะบิลพี่น้องถูกจ่ายไปแล้ว"
+            //   (cancelCompetingPrePaymentReadings). ถ้ายังยิงต่อ = เอาสลิปใบเดิมไปเปิดบิลที่ตายแล้ว
+            //   → reject_amount → handlePartialPayment → ปลุกบิลผีมาทวงเงินคนที่จ่ายจบไปแล้ว
+            //   เคสจริง: R11017 (99฿) ถูกปิด 15:39:54 แต่ job ตื่น 15:40:22 → ทวง "โอนเพิ่ม ฿60.02"
+            //   ออกตรงนี้เลย = ประหยัดโควตา SlipOK ด้วย (ไม่ต้องยิง API ให้บิลที่ตายแล้ว)
+            if ($conversationService->supersedingPaidReading($reading) !== null) {
+                Log::info('SlipOK fallback job: ข้าม — บิลถูกแทนด้วยบิลที่จ่ายแล้วระหว่างรอคิว', [
+                    'reading_id' => $reading->id,
+                    'bill_reference' => $reading->bill_reference,
+                    'superseded_by_reading_id' => $reading->getConversationState('superseded_by_reading_id'),
+                ]);
+
+                return;
+            }
+
             // หา platform + userId สำหรับ push
             $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
             if (empty($userId)) {

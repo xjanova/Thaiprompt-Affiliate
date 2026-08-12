@@ -15737,6 +15737,44 @@ class FortuneConversationService
     }
 
     /**
+     * 🛡️ (2026-08-12, owner "ห้ามมีบิลซ้อน") บิลนี้ถูกปิดไปแล้วหรือยัง เพราะ "บิลพี่น้อง" ถูกจ่าย/ตัดไปก่อน?
+     *
+     * อ่าน marker ที่ cancelCompetingPrePaymentReadings เขียนไว้ (superseded_by_paid + superseded_by_reading_id)
+     * แล้วคืนบิลที่จ่ายแล้วตัวจริง — ใช้กัน "งานตรวจสลิปที่ค้างคิว" ปลุกบิลที่ตายแล้วกลับมาทวงเงิน
+     *
+     * เคสจริง (พรพรรณ 2026-08-12, R11016/R11017):
+     *   15:37:07 กด 39 → บิล FTU-260812-S1421 · 15:37:18 เปลี่ยนใจกด 99 → บิล 39 ถูกยกเลิก เปิดบิล 99
+     *   15:39:22 ส่งสลิป 39 → เก็บไว้รอ VerifySlipFallbackJob (หน่วง 60 วิ) ผูกกับบิล 99
+     *   15:39:53 แอดมิน force-approve บิล 39 → 15:39:54 reconcile ปิดบิล 99 ✅ (กฎทำงานถูก)
+     *   15:40:22 job ที่ค้างคิวตื่นมา เอาสลิป 39 ใบเดิมยิงใส่บิล 99 ที่ตายแล้ว → reject_amount
+     *            → handlePartialPayment → createPartialTopupBill เขียน conversation_status กลับเป็น
+     *            pending_payment ❌ ปลุกบิลผี + ทวง "โอนเพิ่ม ฿60.02" ทั้งที่ลูกค้าได้ดวง 39 ไปแล้ว
+     *
+     * @return FortuneReading|null บิลที่จ่ายแล้วซึ่งมาแทนบิลนี้ (null = บิลนี้ยังปกติ ไม่โดนแทน)
+     */
+    public function supersedingPaidReading(FortuneReading $reading): ?FortuneReading
+    {
+        // บิลนี้จ่ายเองแล้ว = ไม่ใช่บิลที่ถูกแทน
+        if ($reading->is_paid) {
+            return null;
+        }
+
+        if ($reading->getConversationState('cancellation_reason') !== 'superseded_by_paid') {
+            return null;
+        }
+
+        $keptId = (int) ($reading->getConversationState('superseded_by_reading_id') ?? 0);
+        if ($keptId <= 0 || $keptId === (int) $reading->id) {
+            return null;
+        }
+
+        $kept = FortuneReading::find($keptId);
+
+        // ต้องจ่ายจริงเท่านั้น — ถ้าบิลที่มาแทนโดนยกเลิกทีหลัง ปล่อยบิลนี้เดินตาม flow เดิม
+        return ($kept && $kept->is_paid) ? $kept : null;
+    }
+
+    /**
      * 💰 (2026-06-05, user) จัดการ "โอนขาด" — เครดิตยอด + บอกยอดที่ขาด + สร้างบิล top-up ผูก reading เดิม
      *   วนจนครบเป้า (เช่น 99). ครบ 3 รอบยังไม่ครบ → พักเงินไว้ให้แม่หมอ/แอดมินตรวจ (HOLD 60 นาที, ไม่แบน ไม่คืนอัตโนมัติ)
      *
@@ -15766,6 +15804,39 @@ class FortuneConversationService
             $reading->refresh();
             $amount = round((float) ($verify['amount'] ?? 0), 2);
             $transRef = (string) ($verify['transRef'] ?? '');
+
+            // 🛡️ (2026-08-12, owner "ห้ามมีบิลซ้อน") บิลนี้ถูกปิดไปแล้ว เพราะบิลพี่น้องถูกจ่าย/ตัดไปก่อน
+            //   ห้ามเครดิต + ห้ามออกบิล top-up: createPartialTopupBill เขียน conversation_status กลับเป็น
+            //   PENDING_PAYMENT = ปลุก "บิลผี" ขึ้นมาทวงเงินคนที่จ่ายจบไปแล้ว (เงินก้อนเดียวถูกนับ 2 ครั้ง)
+            //   → อธิบายให้ชัดว่ายอดที่โอนมาถูกใช้กับบิลไหน + บิลนี้ยกเลิกแล้ว (ดู supersedingPaidReading)
+            if (($kept = $this->supersedingPaidReading($reading)) !== null) {
+                $this->cleanupStoredSlip($reading); // กัน job/retry รอบหน้าหยิบสลิปใบเดิมมายิงซ้ำ
+
+                Log::warning('🛡️ Partial: บิลถูกแทนด้วยบิลที่จ่ายแล้ว → ไม่เครดิต/ไม่ออกบิล top-up (กันบิลผีทวงเงิน)', [
+                    'dead_reading_id' => $reading->id,
+                    'dead_bill_reference' => $reading->bill_reference,
+                    'kept_reading_id' => $kept->id,
+                    'kept_bill_reference' => $kept->bill_reference,
+                    'kept_reading_type' => $kept->reading_type,
+                    'slip_amount' => $amount,
+                    'transRef' => $transRef,
+                    'context' => $context,
+                ]);
+
+                $keptLabel = $kept->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                    ? 'ไพ่ Celtic Cross เต็มสำรับ'
+                    : 'ดูดวงเชิงลึก';
+
+                return [
+                    'action' => 'partial_superseded_paid',
+                    'message' => "🙏 เจ้าชะตาไม่ต้องโอนเพิ่มนะคะ แม่หมอตรวจให้เรียบร้อยแล้วค่ะ\n\n"
+                        .'💰 ยอด ฿'.number_format($amount, 2)." ที่โอนมา แม่หมอรับไว้และใช้เปิด *{$keptLabel}* ให้แล้ว\n"
+                        .'   📋 บิลที่ใช้จริง: '.($kept->bill_reference ?: '-')."\n\n"
+                        .'🚫 ส่วนบิล '.($reading->bill_reference ?: 'ที่ค้างอยู่')." แม่หมอ *ยกเลิกให้แล้ว* ค่ะ — ไม่มียอดค้าง ไม่ต้องโอนซ้ำ\n\n"
+                        .'✨ ถ้าอยากดูแบบอื่นเพิ่ม ค่อยกดเลือกใหม่ได้ทุกเมื่อนะคะ 🌙',
+                    'reading' => $kept,
+                ];
+            }
 
             // เป้าหมายเต็ม — จับครั้งแรกจากราคาบิล (UPA base เดิม เช่น 99) ; ครั้งถัดไปใช้ที่จำไว้ (UPA หดเป็น 60/30)
             $target = (float) ($reading->partial_target_total ?? 0);
