@@ -3711,6 +3711,49 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        // 🔒 (2026-08-12) ด่านที่ processMessage มีแต่ processPostback ไม่เคยมี
+        // ═══════════════════════════════════════════════════════════════
+        //   ตั้งแต่ย้ายปุ่มจาก quick reply → postback (กัน @Meta AI แทรก) การกดปุ่ม
+        //   **ส่วนใหญ่ของระบบ** วิ่งมาทางนี้แทนทาง message → ด่านที่ขาดกลายเป็นรูใหญ่:
+        //
+        //   1) dedupe ตาม mid — FB retry เมื่อเราตอบช้า/ไม่ 200 ภายในไม่กี่วินาที
+        //      ปุ่มซ้ำ = สร้างบิลซ้ำ / เดิน state ซ้ำ (ทาง message กันไว้ตั้งแต่ 2026-05-03)
+        //   2) ปั๊มเวลา "ทักเข้ามาล่าสุด" — canReceiveDirectDm() ใช้ค่านี้ตัดสินว่าจะยิง DM ไหม
+        //      ลูกค้าที่คุยกับเราด้วยการ "กดปุ่มอย่างเดียว" จะดูเป็นคนเงียบ แล้วเราจะเลิกทัก
+        //      ทั้งที่ FB เปิดหน้าต่าง 24 ชม. ให้จากการกดปุ่มอยู่แล้ว = เสียลูกค้าฟรี
+        //   3) contact signal — กดปุ่ม = "คุยจริง" (buttonPressed) เหมือนที่ทาง message ทำ
+        //      ไม่บันทึก = last_seen_at ไม่ขยับ + ตัวกรองสแปมมองคนกดปุ่มไม่เห็น
+        $postbackMid = $messaging['postback']['mid'] ?? null;
+        if (! empty($postbackMid)) {
+            if (! Cache::add('fb_webhook_mid:'.$postbackMid, true, now()->addMinutes(10))) {
+                Log::info('🔁 FB postback: skip duplicate mid (retry/replay)', [
+                    'mid' => $postbackMid,
+                    'sender_id' => $senderId,
+                    'payload' => $payload,
+                ]);
+
+                return;
+            }
+        }
+
+        Cache::put('fb_last_inbound:'.$senderId, true, now()->addHours(24));
+
+        try {
+            app(\App\Services\Fortune\FortuneContactSignalService::class)->record(
+                'facebook',
+                $senderId,
+                '',
+                [],
+                true,   // buttonPressed — กดปุ่มคือคุยจริง (ตรงกับที่ทาง message ส่ง quick reply)
+                false,
+            );
+        } catch (\Throwable $e) {
+            Log::debug('FB postback: contact signal record fail (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         // 🛑 Admin Handover: ถ้าแอดมิน /aistop → บอทข้าม postback
         //
         // 🚨 (2026-05-17) FLOW BYPASS — postback คือ explicit action (กดปุ่ม)

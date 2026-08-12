@@ -275,6 +275,25 @@ class FacebookWebhookService implements MessagingPlatformInterface
             }
         }
 
+        // 🔒 (2026-08-12) ทางส่งปุ่มอีกเส้น — sendMessage(..., ['quick_replies' => [...]])
+        //   ใช้อยู่ 3 จุด (ปุ่มเลือกภาษา / Celtic delayed / อื่น ๆ) ถ้าไม่ดักตรงนี้ด้วย
+        //   ปุ่มพวกนั้นจะยังเป็น quick reply ที่ Meta AI แทรกได้อยู่ = แปลง "ไม่หมด" ตามที่สั่ง
+        //   → โยนเข้า sendQuickReplies ซึ่งเป็นเจ้าของตรรกะแปลงเป็น postback ที่เดียว
+        //   (ไม่วนซ้ำ: sendQuickReplies เรียก sendMessage กลับมาโดย **ไม่มี** คีย์ quick_replies)
+        if (! empty($options['quick_replies']) && is_array($options['quick_replies'])) {
+            $formatted = array_map(function ($reply) {
+                return [
+                    'content_type' => 'text',
+                    'title' => mb_substr((string) ($reply['title'] ?? ''), 0, 20),
+                    'payload' => (string) ($reply['payload'] ?? $reply['title'] ?? ''),
+                ];
+            }, $options['quick_replies']);
+
+            if ($this->shouldSendAsPostbackButtons($formatted, $options)) {
+                return $this->sendQuickReplies($recipientId, $message, $options['quick_replies'], $options);
+            }
+        }
+
         $chunks = $this->splitLongMessage($message);
         $maxRetries = 2;
 
@@ -909,20 +928,22 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * ⚠️ ข้อจำกัด FB ที่กำหนดว่าใส่ปุ่มอะไรได้บ้าง:
      *   - button template รับได้ **สูงสุด 3 ปุ่ม** (ชุด 7 วันเกิดจึงใส่ไม่ได้ ต้องเป็น QR ต่อไป)
      *   - text ของ template ยาวได้ 640 ตัวอักษร (ยาวกว่านั้นต้องแยกกล่อง)
-     * ⚠️ ปุ่ม postback **ค้างอยู่ในประวัติแชท** กดย้อนหลังได้ → ใส่ได้เฉพาะปุ่มที่กดซ้ำแล้ว
-     *    ไม่มีอะไรเสียหาย (ของฟรี / เปิดเมนู) ห้ามใส่ปุ่มที่ตัดเงิน/ยกเลิก/ยืนยัน
+     * ⚠️ ปุ่ม postback **ค้างอยู่ในประวัติแชท** กดย้อนหลังได้ (ต่างจาก quick reply ที่หายไป
+     *    ทันทีที่กด) — ไม่ใช่ของใหม่ในระบบนี้: การ์ด Rich Template (เมนูต้อนรับ / การ์ดชวนดูดวง)
+     *    ใช้ปุ่ม postback มาตั้งแต่ต้นอยู่แล้ว ด่านของแต่ละ flow จึงรับมือปุ่มเก่าอยู่แล้ว
      * ✅ routing ไม่ต้องแก้: `processPostback()` มี `default => handleQuickReply()` อยู่แล้ว
      *
-     * @var array<int, string>
+     * 🔁 (2026-08-12 รอบ 2, เจ้าของสั่ง "เปลี่ยนให้หมดในฝั่ง fb")
+     *    เลิกใช้บัญชีรายชื่อปุ่ม → **แปลงทุกชุดที่แปลงได้** เหลือไว้เป็น quick reply เฉพาะชุดที่
+     *    FB ไม่ยอมให้ทำ (เกิน 3 ปุ่ม / ต้องไปพร้อมรูปในข้อความเดียว)
+     *    ถ้าวันหน้าเจอปุ่มที่ "ห้ามค้างในประวัติ" ให้ตัดออกที่ shouldSendAsPostbackButtons() จุดเดียว
      */
-    protected const POSTBACK_ONLY_PAYLOADS = [
-        'DAILY_FREE_START',
-        'DAILY_SHOW_MINE',
-        'DAILY_VIP_PACKAGES',
-    ];
 
     /** FB จำกัดความยาว text ของ button template */
     protected const BUTTON_TEMPLATE_TEXT_LIMIT = 640;
+
+    /** FB จำกัดจำนวนปุ่มใน button template — ชุดที่มากกว่านี้แปลงไม่ได้ ต้องคงเป็น quick reply */
+    protected const MAX_TEMPLATE_BUTTONS = 3;
 
     /**
      * ส่งข้อความพร้อม Quick Reply buttons
@@ -1009,7 +1030,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // ═══════════════════════════════════════════════════════════════
             // 🔒 (2026-08-12) ชุดปุ่มที่ห้ามเป็น Quick Reply → ส่งเป็น postback button
             // ═══════════════════════════════════════════════════════════════
-            //   เหตุผลเต็มอยู่ที่ const POSTBACK_ONLY_PAYLOADS (สรุป: Meta AI แทรกแล้ว payload หาย)
+            //   เหตุผลเต็มอยู่ที่ const BUTTON_TEMPLATE_TEXT_LIMIT ด้านบน
+            //   (สรุป: quick reply อยู่ติดช่องพิมพ์ → Meta AI แทรก → payload หายทั้งก้อน)
             //
             //   ⚠️ ต้องอยู่ **หลัง** Private Reply — สาย comment engagement ต้องได้ลอง
             //      recipient.comment_id ก่อน เพราะเป็นทางเดียวที่ข้ามกรอบ 24 ชม.ได้
@@ -1118,11 +1140,17 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * 🔒 (2026-08-12) ชุดปุ่มนี้ต้องส่งเป็น postback button แทน Quick Reply ไหม
      *
-     * เงื่อนไข **ทุกข้อ**ต้องผ่าน (all-or-nothing):
-     *   - ไม่ได้ถูกสั่งบังคับให้ใช้ quick reply (ตอน fallback)
-     *   - มี 1–3 ปุ่ม (FB: button template รับได้สูงสุด 3)
-     *   - **ทุกปุ่ม**อยู่ใน POSTBACK_ONLY_PAYLOADS — ชุดที่ปนปุ่มอื่นให้คงเป็น QR ทั้งชุด
-     *     (แยกส่งคนละกล่องจะทำให้ลำดับข้อความเพี้ยน และ FB ไม่ให้ template + QR ในกล่องเดียว)
+     * นโยบาย (เจ้าของสั่งรอบ 2): **แปลงทุกชุดที่แปลงได้** — เหลือเป็น quick reply เฉพาะที่ FB
+     * ไม่ยอมให้ทำเท่านั้น เพราะ quick reply คือช่องทางเดียวที่ Meta AI แทรกแล้ว payload หาย
+     *
+     * คงเป็น quick reply เมื่อ:
+     *   - ถูกสั่งบังคับ (`force_quick_replies`) — ใช้ตอน fallback กันวนซ้ำ
+     *   - ชุดว่าง หรือ **เกิน 3 ปุ่ม** (ข้อจำกัด FB — เช่น ปุ่ม 7 วันเกิด)
+     *   - มีปุ่มที่ payload ว่าง → เป็น postback แล้ว **ปุ่มตาย** (`processPostback` return ทันที
+     *     เมื่อ payload ว่าง) ส่วน quick reply ยัง fallback ไปใช้ title เป็น payload ได้
+     *
+     * ⚠️ all-or-nothing ทั้งชุด — FB ไม่ให้ template + quick reply อยู่ในข้อความเดียวกัน
+     *    และการแยกส่งคนละกล่องจะทำให้ลำดับข้อความเพี้ยน
      *
      * @param  array<int, array>  $formattedReplies  ปุ่มที่ format แล้ว
      */
@@ -1134,12 +1162,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
         $count = count($formattedReplies);
 
-        if ($count < 1 || $count > 3) {
+        if ($count < 1 || $count > self::MAX_TEMPLATE_BUTTONS) {
             return false;
         }
 
         foreach ($formattedReplies as $reply) {
-            if (! in_array((string) ($reply['payload'] ?? ''), self::POSTBACK_ONLY_PAYLOADS, true)) {
+            if (trim((string) ($reply['payload'] ?? '')) === '') {
                 return false;
             }
         }
@@ -1163,7 +1191,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'title' => mb_substr((string) ($button['title'] ?? ''), 0, 20),
                 'payload' => (string) ($button['payload'] ?? ''),
             ];
-        }, array_slice($buttons, 0, 3));
+        }, array_slice($buttons, 0, self::MAX_TEMPLATE_BUTTONS));
 
         $templateOptions = [
             'from_admin' => $options['from_admin'] ?? false,
