@@ -895,10 +895,41 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 🔒 (2026-08-12) ปุ่มที่ "ห้ามเป็น Quick Reply" — ต้องส่งเป็น postback button เท่านั้น
+     *
+     * Quick Reply ของ FB อยู่ติดช่องพิมพ์ → บางเครื่อง/บางเวอร์ชันการกดปุ่มวิ่งผ่านช่องพิมพ์
+     * ทำให้ FB ยัด mention **"@Meta AI"** ติดมา แล้ว `quick_reply.payload` **หายทั้งก้อน**
+     * (เหลือแค่ `message.text` = ป้ายปุ่ม) → บอทไม่รู้ว่านี่คือการกดปุ่ม → ตกไปหา AI chat
+     *
+     * วัดจริง 2026-08-12 (laravel.log วันเดียว): ปุ่ม `🎁 รับดวงฟรีประจำวัน`
+     * payload มาถึงปกติ 7 ครั้ง / **หลุดเป็นข้อความ 7 ครั้ง** = หลุดครึ่งหนึ่ง
+     *
+     * postback button อยู่ "ในกล่องข้อความ" ไม่ผ่านช่องพิมพ์เลย → Meta AI แทรกไม่ได้
+     *
+     * ⚠️ ข้อจำกัด FB ที่กำหนดว่าใส่ปุ่มอะไรได้บ้าง:
+     *   - button template รับได้ **สูงสุด 3 ปุ่ม** (ชุด 7 วันเกิดจึงใส่ไม่ได้ ต้องเป็น QR ต่อไป)
+     *   - text ของ template ยาวได้ 640 ตัวอักษร (ยาวกว่านั้นต้องแยกกล่อง)
+     * ⚠️ ปุ่ม postback **ค้างอยู่ในประวัติแชท** กดย้อนหลังได้ → ใส่ได้เฉพาะปุ่มที่กดซ้ำแล้ว
+     *    ไม่มีอะไรเสียหาย (ของฟรี / เปิดเมนู) ห้ามใส่ปุ่มที่ตัดเงิน/ยกเลิก/ยืนยัน
+     * ✅ routing ไม่ต้องแก้: `processPostback()` มี `default => handleQuickReply()` อยู่แล้ว
+     *
+     * @var array<int, string>
+     */
+    protected const POSTBACK_ONLY_PAYLOADS = [
+        'DAILY_FREE_START',
+        'DAILY_SHOW_MINE',
+        'DAILY_VIP_PACKAGES',
+    ];
+
+    /** FB จำกัดความยาว text ของ button template */
+    protected const BUTTON_TEMPLATE_TEXT_LIMIT = 640;
+
+    /**
      * ส่งข้อความพร้อม Quick Reply buttons
      *
      * รองรับ options:
      * - messaging_type: 'RESPONSE' (default) หรือ 'MESSAGE_TAG'
+     * - force_quick_replies: true = ห้ามแปลงเป็น postback button (กันวนซ้ำตอน fallback)
      * - message_tag: tag สำหรับ MESSAGE_TAG เช่น 'POST_PURCHASE_UPDATE'
      * - from_comment_engagement: true เมื่อเรียกจาก comment engagement
      *   → จะ fallback เป็น MESSAGE_TAG อัตโนมัติถ้า RESPONSE ล้มเหลว
@@ -972,6 +1003,25 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 Log::info('🔄 Private Replies ล้มเหลว → fallback ไปยัง /me/messages', [
                     'comment_id' => $commentId,
                     'recipient' => $recipientId,
+                ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // 🔒 (2026-08-12) ชุดปุ่มที่ห้ามเป็น Quick Reply → ส่งเป็น postback button
+            // ═══════════════════════════════════════════════════════════════
+            //   เหตุผลเต็มอยู่ที่ const POSTBACK_ONLY_PAYLOADS (สรุป: Meta AI แทรกแล้ว payload หาย)
+            //
+            //   ⚠️ ต้องอยู่ **หลัง** Private Reply — สาย comment engagement ต้องได้ลอง
+            //      recipient.comment_id ก่อน เพราะเป็นทางเดียวที่ข้ามกรอบ 24 ชม.ได้
+            //   ⚠️ ล้มแล้วไหลลงไปใช้ quick reply เดิม — ลูกค้าไม่ได้ปุ่มเลย แย่กว่าปุ่มที่อาจหลุด
+            if ($this->shouldSendAsPostbackButtons($formattedReplies, $options)) {
+                if ($this->sendPostbackButtons($recipientId, $message, $formattedReplies, $options)) {
+                    return true;
+                }
+
+                Log::warning('🔒 postback button ล้ม → ตกกลับไปใช้ quick reply ตามเดิม', [
+                    'recipient' => $recipientId,
+                    'payloads' => array_column($formattedReplies, 'payload'),
                 ]);
             }
 
@@ -1063,6 +1113,130 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // Fallback: ส่งข้อความธรรมดา
             return $this->sendMessage($recipientId, $message);
         }
+    }
+
+    /**
+     * 🔒 (2026-08-12) ชุดปุ่มนี้ต้องส่งเป็น postback button แทน Quick Reply ไหม
+     *
+     * เงื่อนไข **ทุกข้อ**ต้องผ่าน (all-or-nothing):
+     *   - ไม่ได้ถูกสั่งบังคับให้ใช้ quick reply (ตอน fallback)
+     *   - มี 1–3 ปุ่ม (FB: button template รับได้สูงสุด 3)
+     *   - **ทุกปุ่ม**อยู่ใน POSTBACK_ONLY_PAYLOADS — ชุดที่ปนปุ่มอื่นให้คงเป็น QR ทั้งชุด
+     *     (แยกส่งคนละกล่องจะทำให้ลำดับข้อความเพี้ยน และ FB ไม่ให้ template + QR ในกล่องเดียว)
+     *
+     * @param  array<int, array>  $formattedReplies  ปุ่มที่ format แล้ว
+     */
+    protected function shouldSendAsPostbackButtons(array $formattedReplies, array $options = []): bool
+    {
+        if (! empty($options['force_quick_replies'])) {
+            return false;
+        }
+
+        $count = count($formattedReplies);
+
+        if ($count < 1 || $count > 3) {
+            return false;
+        }
+
+        foreach ($formattedReplies as $reply) {
+            if (! in_array((string) ($reply['payload'] ?? ''), self::POSTBACK_ONLY_PAYLOADS, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 🔘 (2026-08-12) ส่งข้อความ + ปุ่มแบบ postback (button template)
+     *
+     * ปุ่มอยู่ในกล่องข้อความ ไม่ผ่านช่องพิมพ์ → Meta AI แทรกไม่ได้ payload ไม่หาย
+     *
+     * @param  array<int, array>  $buttons  ปุ่มรูป {title, payload}
+     * @return bool true = ลูกค้าได้รับข้อความแล้ว (ไม่ต้อง fallback ต่อ)
+     */
+    protected function sendPostbackButtons(string $recipientId, string $message, array $buttons, array $options = []): bool
+    {
+        $templateButtons = array_map(function ($button) {
+            return [
+                'type' => 'postback',
+                'title' => mb_substr((string) ($button['title'] ?? ''), 0, 20),
+                'payload' => (string) ($button['payload'] ?? ''),
+            ];
+        }, array_slice($buttons, 0, 3));
+
+        $templateOptions = [
+            'from_admin' => $options['from_admin'] ?? false,
+            'message_tag' => $options['message_tag'] ?? null,
+        ];
+
+        // สั้นพอ → กล่องเดียวจบ (ข้อความ + ปุ่มอยู่ในกล่องเดียวกัน หน้าตาใกล้เคียงของเดิมที่สุด)
+        if (mb_strlen($message) <= self::BUTTON_TEMPLATE_TEXT_LIMIT) {
+            return $this->sendButtonTemplate(
+                $recipientId,
+                $this->buildButtonTemplatePayload($message, $templateButtons),
+                $templateOptions
+            );
+        }
+
+        // ยาวเกิน 640 → เนื้อความไปก่อน (sendMessage มี chunking + 24hr fallback ครบ)
+        // แล้วตามด้วยกล่องปุ่มสั้น ๆ — ยัดลง template ตรง ๆ จะโดนตัดกลางคำทำนาย
+        $bodySent = $this->sendMessage($recipientId, $message, [
+            'messaging_type' => $options['messaging_type'] ?? 'RESPONSE',
+            'message_tag' => $options['message_tag'] ?? null,
+            'no_default_qr' => true,
+            'from_admin' => $options['from_admin'] ?? false,
+        ]);
+
+        // เนื้อความยังไม่ถึงลูกค้า → ยังไม่มีอะไรส่งซ้ำ ให้ผู้เรียกตกกลับไปทาง quick reply ได้
+        if (! $bodySent) {
+            return false;
+        }
+
+        usleep(300000); // 0.3s — ให้กล่องเนื้อความขึ้นก่อนกล่องปุ่มเสมอ
+
+        $cta = '🌙 กดปุ่มด้านล่างได้เลยค่ะ';
+
+        if ($this->sendButtonTemplate($recipientId, $this->buildButtonTemplatePayload($cta, $templateButtons), $templateOptions)) {
+            return true;
+        }
+
+        // 🚨 กล่องปุ่มล้ม **แต่เนื้อความส่งไปแล้ว** → ห้ามคืน false (ผู้เรียกจะส่งเนื้อซ้ำทั้งก้อน)
+        //    ยิงเฉพาะปุ่มเป็น quick reply ปิดท้าย + ธงกันวนกลับมาที่นี่อีกรอบ
+        Log::warning('🔒 กล่องปุ่ม postback ล้มหลังส่งเนื้อความแล้ว → ยิงปุ่มเป็น quick reply แทน', [
+            'recipient' => $recipientId,
+            'payloads' => array_column($buttons, 'payload'),
+        ]);
+
+        //    ตัด comment_id ทิ้งด้วย — Private Reply ถูกลองไปแล้วและล้มก่อนจะมาถึงตรงนี้
+        //    ยิงซ้ำได้แค่ error #10900 (Reels comment_id ใช้ครั้งเดียว) เปล่า ๆ
+        $this->sendQuickReplies($recipientId, $cta, $buttons, array_merge($options, [
+            'force_quick_replies' => true,
+            'from_comment_engagement' => false,
+            'comment_id' => null,
+        ]));
+
+        return true;
+    }
+
+    /**
+     * 🧱 ประกอบ payload ของ button template (FB: text ≤ 640 ตัวอักษร, ปุ่ม ≤ 3)
+     *
+     * @param  array<int, array>  $templateButtons  ปุ่มที่ format เป็น postback แล้ว
+     * @return array<string, mixed>
+     */
+    protected function buildButtonTemplatePayload(string $text, array $templateButtons): array
+    {
+        return [
+            'attachment' => [
+                'type' => 'template',
+                'payload' => [
+                    'template_type' => 'button',
+                    'text' => mb_substr($text, 0, self::BUTTON_TEMPLATE_TEXT_LIMIT),
+                    'buttons' => $templateButtons,
+                ],
+            ],
+        ];
     }
 
     /**
