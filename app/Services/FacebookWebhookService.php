@@ -281,13 +281,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
         //   → โยนเข้า sendQuickReplies ซึ่งเป็นเจ้าของตรรกะแปลงเป็น postback ที่เดียว
         //   (ไม่วนซ้ำ: sendQuickReplies เรียก sendMessage กลับมาโดย **ไม่มี** คีย์ quick_replies)
         if (! empty($options['quick_replies']) && is_array($options['quick_replies'])) {
-            $formatted = array_map(function ($reply) {
-                return [
-                    'content_type' => 'text',
-                    'title' => mb_substr((string) ($reply['title'] ?? ''), 0, 20),
-                    'payload' => (string) ($reply['payload'] ?? $reply['title'] ?? ''),
-                ];
-            }, $options['quick_replies']);
+            $formatted = array_map(
+                fn ($reply) => $this->normalizeButtonShape($reply),
+                $options['quick_replies']
+            );
 
             if ($this->shouldSendAsPostbackButtons($formatted, $options)) {
                 return $this->sendQuickReplies($recipientId, $message, $options['quick_replies'], $options);
@@ -969,13 +966,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
         $this->ensurePageContextForRecipient($recipientId);
 
         try {
-            $formattedReplies = array_map(function ($reply) {
-                return [
-                    'content_type' => 'text',
-                    'title' => mb_substr($reply['title'], 0, 20),
-                    'payload' => $reply['payload'] ?? $reply['title'],
-                ];
-            }, array_slice($quickReplies, 0, 13)); // Facebook จำกัด 13 quick replies
+            $formattedReplies = array_map(
+                fn ($reply) => $this->normalizeButtonShape($reply),
+                array_slice($quickReplies, 0, 13) // Facebook จำกัด 13 quick replies
+            );
 
             // 🚨 (2026-05-14) Bug fix — message + quick_replies > 2000 chars → FB reject 400
             //   user report: "AI เหมือนจะตอบแต่เงียบ"
@@ -1060,6 +1054,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
                     'from_admin' => $fromAdmin,
                 ]);
             }
+
+            // 🔍 (2026-08-12) มาถึงตรงนี้ = ยังส่งเป็น quick reply อยู่ = **@Meta AI ยังแทรกได้**
+            //   หลังแปลงยกระบบแล้วตรงนี้ควรเงียบเกือบสนิท — log ไว้เพื่อ "เห็นของจริง" ว่าเหลืออะไร
+            //   แทนการเดาจากการอ่านโค้ด (ชุดปุ่มหลายชุดประกอบตอน runtime ดูจากโค้ดนิ่ง ๆ ไม่ครบ)
+            //   วิธีตรวจ: grep "ยังเป็น quick reply" ใน storage/logs/laravel.log บน prod
+            $this->logRemainingQuickReply($recipientId, $formattedReplies, $options);
 
             $payload = [
                 'recipient' => ['id' => $recipientId],
@@ -1176,6 +1176,69 @@ class FacebookWebhookService implements MessagingPlatformInterface
         }
 
         return true;
+    }
+
+    /**
+     * 🔧 (2026-08-12) ปรับรูปปุ่มให้เป็นทรงเดียวกันก่อนใช้งาน — **ตัวแปลงตัวเดียวของฝั่ง FB**
+     *
+     * ปุ่มในระบบนี้ถูกประกาศ 2 ทรงปนกัน เพราะบางจุดเขียนให้ LINE ก่อนแล้วส่ง FB ด้วยชุดเดียวกัน:
+     *   ทรง FB   : ['title' => ..., 'payload' => ...]
+     *   ทรง LINE : ['label' => ..., 'text' => ...]     ← ไม่มี title/payload เลย
+     *
+     * 🐛 เคสจริงที่เจอตอนไล่ตรวจ (2026-08-12): ปุ่ม "📜 เลิกทำนายและสรุปผล" ที่ส่งพร้อม
+     *    คำทำนาย Celtic (SendCelticDelayedPrediction) ประกาศเป็นทรง LINE ล้วน → ตัวเช็คเดิม
+     *    อ่าน title/payload ไม่เจอ → มองว่า "payload ว่าง" → **ไม่แปลงเป็น postback**
+     *    = ปุ่มกลางคำทำนาย ซึ่งเป็นจังหวะที่ลูกค้าใช้บ่อยที่สุด ยังโดน @Meta AI แทรกได้อยู่
+     *    (ปุ่มใบนี้เคยพังมาแล้วรอบหนึ่งเพราะ FB ส่ง title กลับมาแทน payload — 2026-05-29)
+     *
+     * ลำดับ payload: `payload` (ของ FB โดยตรง) → `text` (คีย์เวิร์ดที่ LINE ส่ง) → `title`/`label`
+     * ทั้ง 3 ทางปลายทางเดียวกัน — handleQuickReply ที่ไม่มี case จะส่งค่านั้นเป็นข้อความลูกค้าต่อ
+     *
+     * @param  array<string, mixed>  $reply
+     * @return array{content_type: string, title: string, payload: string}
+     */
+    protected function normalizeButtonShape(array $reply): array
+    {
+        $title = (string) ($reply['title'] ?? $reply['label'] ?? '');
+        $payload = (string) ($reply['payload'] ?? $reply['text'] ?? $reply['title'] ?? $reply['label'] ?? '');
+
+        return [
+            'content_type' => 'text',
+            'title' => mb_substr($title, 0, 20),
+            'payload' => $payload,
+        ];
+    }
+
+    /**
+     * 🔍 (2026-08-12) บันทึกชุดปุ่มที่ยัง "หลุด" ออกไปเป็น quick reply
+     *
+     * เจ้าของสั่งว่าฝั่ง FB ต้องไม่เหลือปุ่มแบบที่ Meta AI แทรกได้เลย — ตัวนี้คือหลักฐาน
+     * ว่าเหลือจริงไหม/ชุดไหน แทนการไล่อ่านโค้ดแล้วเดา (ชุดปุ่มหลายชุดประกอบตอน runtime)
+     *
+     * @param  array<int, array>  $formattedReplies
+     */
+    protected function logRemainingQuickReply(string $recipientId, array $formattedReplies, array $options = []): void
+    {
+        $reason = 'unknown';
+
+        if (! empty($options['force_quick_replies'])) {
+            $reason = 'fallback_หลัง_postback_ล้ม'; // ตั้งใจ — กันวนซ้ำ ไม่ใช่ของหลุด
+        } else {
+            foreach ($formattedReplies as $reply) {
+                if (trim((string) ($reply['payload'] ?? '')) === '') {
+                    $reason = 'payload_ว่าง';
+                    break;
+                }
+            }
+        }
+
+        Log::info('🔍 FB: ชุดปุ่มนี้ยังเป็น quick reply (Meta AI แทรกได้)', [
+            'recipient' => $recipientId,
+            'reason' => $reason,
+            'count' => count($formattedReplies),
+            'titles' => array_column($formattedReplies, 'title'),
+            'payloads' => array_column($formattedReplies, 'payload'),
+        ]);
     }
 
     /**
