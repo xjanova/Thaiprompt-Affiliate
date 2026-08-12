@@ -3704,7 +3704,7 @@ class FortuneConversationService
 
         $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
         $packageLabel = $isCeltic
-            ? '🔮 Celtic Cross 99฿'
+            ? 'ดู vip ส่วนตัว 99บาท'
             : '🔹 ดูดวง '.(int) ($this->settings->deep_reading_price ?? 39).'฿';
 
         // สถานะ

@@ -153,7 +153,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
         if ($celticEnabled) {
             $items[] = [
                 'content_type' => 'text',
-                'title' => $isLao ? "🔮 ໄພ່ 10 ໃບ {$celticPrice}฿" : "🔮 ไพ่ 10 ใบ {$celticPrice}฿",
+                'title' => $isLao ? "🔮 ໄພ່ 10 ໃບ {$celticPrice}฿" : "ดู vip ส่วนตัว {$celticPrice}บาท",
                 'payload' => 'TIER_CELTIC_99',
             ];
         }

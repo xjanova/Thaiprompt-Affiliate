@@ -704,7 +704,7 @@ class FortuneChannelManager
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     if ($celticEnabled) {
                         return $fbService->sendQuickReplies($userId, $message, [
-                            ['content_type' => 'text', 'title' => '👑 VIP ดูไพ่เต็ม 99฿', 'payload' => 'TIER_CELTIC_99'],
+                            ['content_type' => 'text', 'title' => 'ดู vip ส่วนตัว 99บาท', 'payload' => 'TIER_CELTIC_99'],
                             ['content_type' => 'text', 'title' => '🙏 ไว้คราวหน้า', 'payload' => 'NOT_INTERESTED'],
                         ], $extra);
                     }
@@ -782,7 +782,7 @@ class FortuneChannelManager
                     if ($celticOnlyIntro) {
                         $celticPriceLabel = (int) ($result['celtic_price'] ?? 99);
                         $buttons[] = ['content_type' => 'text',
-                            'title' => FortuneLocaleService::lo("👑 VIP ดูไพ่เต็ม {$celticPriceLabel}฿", "💎 ໂອນຄ່າບູຊາຄູ {$celticPriceLabel}฿"),
+                            'title' => FortuneLocaleService::lo("ดู vip ส่วนตัว {$celticPriceLabel}บาท", "💎 ໂອນຄ່າບູຊາຄູ {$celticPriceLabel}฿"),
                             'payload' => 'TIER_CELTIC_99'];
                         // 🪬 (2026-06-24) ปุ่มโหมดดูคุณไสย์ (Celtic-only intro)
                         if ((bool) ($result['black_magic_enabled'] ?? false)) {
@@ -812,7 +812,7 @@ class FortuneChannelManager
                     }
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
-                            'title' => FortuneLocaleService::lo('👑 VIP ดูไพ่เต็ม 99฿', '💎 ໂອນຄ່າບູຊາຄູ 99฿'),
+                            'title' => FortuneLocaleService::lo('ดู vip ส่วนตัว 99บาท', '💎 ໂອນຄ່າບູຊາຄູ 99฿'),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     // 🪬 (2026-06-24) ปุ่มโหมดดูคุณไสย์ 99฿ (gate enable_celtic_black_magic_mode)
@@ -897,7 +897,7 @@ class FortuneChannelManager
                     }
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
-                            'title' => '👑 VIP ดูไพ่เต็ม 99฿',
+                            'title' => 'ดู vip ส่วนตัว 99บาท',
                             'payload' => 'TIER_CELTIC_99'];
                     }
 
@@ -960,7 +960,7 @@ class FortuneChannelManager
                     if ($celticEnabled) {
                         // 🛡️ FB QR title cap = 20 chars — เลิก "— " เพื่อ fit ใน 19 chars
                         $buttons[] = ['content_type' => 'text',
-                            'title' => FortuneLocaleService::lo("👑 VIP ดูไพ่เต็ม {$celticPrice}฿", "💎 ໂອນຄ່າບູຊາຄູ {$celticPrice}฿"),
+                            'title' => FortuneLocaleService::lo("ดู vip ส่วนตัว {$celticPrice}บาท", "💎 ໂອນຄ່າບູຊາຄູ {$celticPrice}฿"),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     $buttons[] = ['content_type' => 'text',
@@ -1366,7 +1366,7 @@ class FortuneChannelManager
                 // 💎 (2026-06-23) โอนก่อนบิล + ยอดกำกวม — ถามแพคเกจ 39/99 (Quick Reply ส่ง title เป็น text ให้ gate จับ)
                 'prepay_package_choice' => $fbService->sendQuickReplies($userId, $message, $result['quick_replies'] ?? [
                     ['content_type' => 'text', 'title' => '🔹 ดูเชิงลึก 39฿', 'payload' => 'PREPAY_DEEP'],
-                    ['content_type' => 'text', 'title' => '💎 ดู Celtic 99฿', 'payload' => 'PREPAY_CELTIC'],
+                    ['content_type' => 'text', 'title' => 'ดู vip ส่วนตัว 99บาท', 'payload' => 'PREPAY_CELTIC'],
                 ], $extra),
 
                 // 🌙 (2026-07-31) โหมด daily — ส่งดวงรายวันที่ลูกค้าขอ
@@ -2413,7 +2413,7 @@ class FortuneChannelManager
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     if ($celticEnabled) {
                         return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                            ['label' => '👑 VIP 99฿', 'text' => '99'],
+                            ['label' => 'ดู vip ส่วนตัว 99บาท', 'text' => '99'],
                             ['label' => '🙏 ไว้คราวหน้า', 'text' => 'ไม่สนใจ'],
                         ]);
                     }
@@ -2589,7 +2589,7 @@ class FortuneChannelManager
                     }
                     if ($celticEnabled) {
                         $quickReplies[] = [
-                            'label' => FortuneLocaleService::lo('👑 VIP 99฿', '👑 VIP 99฿'),
+                            'label' => FortuneLocaleService::lo('ดู vip ส่วนตัว 99บาท', 'ดู vip ส่วนตัว 99บาท'),
                             'text' => '99',
                         ];
                     }
@@ -3209,7 +3209,7 @@ class FortuneChannelManager
                     if (empty($lineReplies)) {
                         $lineReplies = [
                             ['label' => '🔹 ดูเชิงลึก 39฿', 'text' => '39'],
-                            ['label' => '💎 ดู Celtic 99฿', 'text' => '99'],
+                            ['label' => 'ดู vip ส่วนตัว 99บาท', 'text' => '99'],
                         ];
                     }
 

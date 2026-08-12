@@ -187,7 +187,7 @@ class ProcessFortuneTelling implements ShouldQueue
                 if ($deepEnabledQR) {
                     $tryQR[] = ['title' => 'ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'];
                 } elseif ($celticEnabledQR) {
-                    $tryQR[] = ['title' => "🔮 ไพ่ 10 ใบ {$celticPriceQR}฿", 'payload' => 'TIER_CELTIC_99'];
+                    $tryQR[] = ['title' => "ดู vip ส่วนตัว {$celticPriceQR}บาท", 'payload' => 'TIER_CELTIC_99'];
                 }
                 $tryQR[] = ['title' => 'สมัครสมาชิก', 'payload' => 'SUBSCRIBE'];
                 $facebookService->sendQuickReplies($fromId, $tryBeforeBuyMsg, $tryQR);
@@ -206,7 +206,7 @@ class ProcessFortuneTelling implements ShouldQueue
                 if ($deepEnabledQR) {
                     $referQR[] = ['content_type' => 'text', 'title' => '🌟 ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'];
                 } elseif ($celticEnabledQR) {
-                    $referQR[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPriceQR}฿", 'payload' => 'TIER_CELTIC_99'];
+                    $referQR[] = ['content_type' => 'text', 'title' => "ดู vip ส่วนตัว {$celticPriceQR}บาท", 'payload' => 'TIER_CELTIC_99'];
                 }
                 $facebookService->sendQuickReplies($fromId, $referMsg, $referQR);
             }

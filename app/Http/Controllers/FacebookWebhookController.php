@@ -4045,7 +4045,7 @@ class FacebookWebhookController extends Controller
         if ($deepEnabledAr) {
             $quickReplies[] = ['content_type' => 'text', 'title' => "💎 เริ่มดูดวง {$deepPrice} บาท", 'payload' => 'MENU_DEEP_FORTUNE'];
         } elseif ($celticEnabledAr) {
-            $quickReplies[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPriceAr}฿", 'payload' => 'TIER_CELTIC_99'];
+            $quickReplies[] = ['content_type' => 'text', 'title' => "ดู vip ส่วนตัว {$celticPriceAr}บาท", 'payload' => 'TIER_CELTIC_99'];
         }
         $quickReplies[] = ['content_type' => 'text', 'title' => '🔮 ดูดวงก่อน', 'payload' => 'MENU_FORTUNE'];
 
@@ -4078,7 +4078,7 @@ class FacebookWebhookController extends Controller
                 $celticPriceArn = (int) app(\App\Services\CelticCrossService::class)->getPrice();
             } catch (\Throwable $e) {
             }
-            $quickReplies[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPriceArn}฿", 'payload' => 'TIER_CELTIC_99'];
+            $quickReplies[] = ['content_type' => 'text', 'title' => "ดู vip ส่วนตัว {$celticPriceArn}บาท", 'payload' => 'TIER_CELTIC_99'];
         }
 
         $this->facebookService->sendQuickReplies($senderId, $message, $quickReplies);
@@ -4119,7 +4119,7 @@ class FacebookWebhookController extends Controller
         if ($deepEnabledAu) {
             $aboutButtons[] = ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'MENU_DEEP_FORTUNE'];
         } elseif ($celticEnabledAu) {
-            $aboutButtons[] = ['type' => 'postback', 'title' => '🔮 ไพ่ Celtic Cross', 'payload' => 'TIER_CELTIC_99'];
+            $aboutButtons[] = ['type' => 'postback', 'title' => 'ดู vip ส่วนตัว 99บาท', 'payload' => 'TIER_CELTIC_99'];
         }
         $aboutButtons[] = ['type' => 'postback', 'title' => '👥 ชวนเพื่อน', 'payload' => 'MENU_REFERRAL'];
 
@@ -4156,7 +4156,7 @@ class FacebookWebhookController extends Controller
         if ($deepEnabledRg) {
             $registerButtons[] = ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'MENU_DEEP_FORTUNE'];
         } elseif ($celticEnabledRg) {
-            $registerButtons[] = ['type' => 'postback', 'title' => '🔮 ไพ่ Celtic Cross', 'payload' => 'TIER_CELTIC_99'];
+            $registerButtons[] = ['type' => 'postback', 'title' => 'ดู vip ส่วนตัว 99บาท', 'payload' => 'TIER_CELTIC_99'];
         }
 
         $this->sendButtons($senderId, $message, $registerButtons);

@@ -361,7 +361,7 @@ class ProcessCommentEngagement implements ShouldQueue
                     $celticPriceQR = (int) app(\App\Services\CelticCrossService::class)->getPrice();
                 } catch (\Throwable $e) {
                 }
-                $quickReplies[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPriceQR}฿", 'payload' => 'TIER_CELTIC_99'];
+                $quickReplies[] = ['content_type' => 'text', 'title' => "ดู vip ส่วนตัว {$celticPriceQR}บาท", 'payload' => 'TIER_CELTIC_99'];
             }
 
             // 🌙 (2026-07-31) โหมด daily — สลับทั้ง Stage 1 (banner+QR) และ Stage 2 (text+QR)

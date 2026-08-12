@@ -660,7 +660,7 @@ class LineFortuneService implements MessagingPlatformInterface
         }
         $celticButtons = $celticOnlyIntro
             ? [['label' => "✨ เริ่มเลย {$celticPrice} บาท", 'text' => 'เริ่มเลย', 'primary' => true]]
-            : [['label' => "👑 เลือกแพคเกจ {$celticPrice} บาท", 'text' => '99', 'primary' => true]];
+            : [['label' => "ดู vip ส่วนตัว {$celticPrice}บาท", 'text' => '99', 'primary' => true]];
         if ($blackMagicEnabled) {
             $celticButtons[] = ['label' => '🪬 ดูคุณไสย', 'text' => 'ดูคุณไสย', 'primary' => false];
         }
