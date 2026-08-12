@@ -2628,6 +2628,17 @@ class FortuneConversationService
                     return $autoFreeLine;
                 }
 
+                // 🎁 (2026-08-12) ขอ "ดวงฟรีประจำวัน" ตรง ๆ → ยื่นดวงรายวัน ไม่ใช่ไพ่ฟรี 1 ใบ
+                //    ต้องมาก่อน matchesFreeCardKeyword เพราะลูกค้าระบุ "ประจำวัน" มาชัดเจนแล้ว
+                //    (ตาข่ายชั้นสองของบั๊ก "ปุ่ม 🎁 รับดวงฟรีประจำวัน หล่นมาเป็นข้อความ"
+                //     ชั้นแรกคือ resolveQuickReplyPayloadFromTitle ที่ FacebookWebhookController)
+                //    คืน null = โหมด/วัน/บิล ไม่พร้อม → ไหลลงทางเดิมทุกกรณี ไม่มีอะไรเปลี่ยน
+                if ($this->looksLikeDailyFreeRequest($messageText)) {
+                    if ($dailyOffer = $this->maybeOfferDailyForFreeRequest($facebookUserId, $userProfile)) {
+                        return $dailyOffer;
+                    }
+                }
+
                 // 🎁 (2026-05-03) ตรวจสอบว่าลูกค้าขอ "ทำนายฟรี" — explicit keyword หรือกดปุ่ม FREE_CARD_START
                 //    มาก่อน isExplicitDeepReadingRequest เพื่อจับ keyword ฟรีให้ถูก
                 //    startFreeCardFlow จะเช็ค first-timer + feature toggle เอง — ถ้าไม่ผ่าน จะ fallback tier menu
@@ -16835,10 +16846,14 @@ class FortuneConversationService
      *   (กันไปกินคำ "meta"/"ai" กลางประโยคที่อาจ legit — บทเรียนจาก normalize กิน "นะ" ใน "สถานะ")
      * รองรับรูป: "@Meta AI" / "@MetaAI" / "@ meta ai" (case-insensitive)
      *
+     * 🔓 (2026-08-12) public — FacebookWebhookController ต้องใช้ตัวนี้ตัด mention
+     *    ก่อนเทียบ "ข้อความที่หน้าตาเหมือนป้ายปุ่ม" (resolveQuickReplyPayloadFromTitle)
+     *    ห้ามก็อป regex ไปเขียนใหม่ที่นั่น — วันหนึ่งสองชุดจะหลุดกัน
+     *
      * @param  string  $text  ข้อความดิบจากลูกค้า
      * @return string ข้อความที่ตัด mention แล้ว (trim)
      */
-    protected function stripPlatformAiMention(string $text): string
+    public function stripPlatformAiMention(string $text): string
     {
         // fast path — ไม่มีคำว่า "meta" เลย ข้ามทันที (รันทุกข้อความขาเข้า ต้องถูก)
         if ($text === '' || mb_stripos($text, 'meta') === false) {

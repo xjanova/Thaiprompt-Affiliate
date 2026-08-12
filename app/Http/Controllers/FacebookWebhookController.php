@@ -2465,6 +2465,37 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // 🩹 (2026-08-12) ปุ่มที่ "หล่นมาเป็นข้อความ" — FB ส่ง title มาโดยไม่มี quick_reply.payload
+        //
+        //   เคสจริง 2026-08-12: ลูกค้ากดปุ่ม [🎁 รับดวงฟรีประจำวัน] แต่ FB ยัด mention
+        //   "@Meta AI" นำหน้าให้ → กลายเป็น message.text ธรรมดา ไม่มี payload ติดมาเลย
+        //   → หลุดด่านนี้ → ตกไปถึง AI chat → AI ตอบว่า "ระบบปิดบริการส่วนนี้ไปแล้ว"
+        //     ใส่คนที่แค่มากดรับของฟรี (ทั้งที่บริการเปิดอยู่ปกติ)
+        //   วันเดียวหลุด 6 ครั้ง เทียบกับ 7 ครั้งที่ payload มาถึงปกติ = เกือบครึ่ง
+        //
+        //   ⚠️ stripPlatformAiMention (2026-07-09) ตัด "@Meta AI" ได้อยู่แล้ว — แต่มันตัดที่
+        //      FortuneConversationService::processMessage ซึ่งอยู่ **หลัง** ด่านนี้ไปไกลแล้ว
+        //      ตอนถึงตรงนั้นข้อความไม่มีทางกลับไปเป็น "ปุ่ม" ได้อีก
+        //
+        //   แก้: เทียบข้อความกับ "ป้ายปุ่มจริง" แบบเป๊ะ (หลังตัด mention + emoji) → ยิงเข้า
+        //   handleQuickReply เหมือนกดปุ่มจริงทุกประการ = guard ชุดเดียวกัน ไม่ต้องก็อปมาเขียนใหม่
+        //
+        //   ⚠️ **exact match เท่านั้น ห้าม substring** — ป้ายปุ่มบางใบพาไปหน้าจ่ายเงิน
+        //      ประโยคคุยเล่นที่มีคำเหล่านั้นปนอยู่ต้องไม่ถูกลากเข้าปุ่ม
+        //   📌 [[rule_fb_quickreply_label_arrives_as_text]]
+        $titlePayload = $this->resolveQuickReplyPayloadFromTitle((string) ($messaging['message']['text'] ?? ''));
+        if ($titlePayload !== null) {
+            Log::info('🩹 FB: ป้ายปุ่มมาเป็นข้อความ (ไม่มี payload) → routing เหมือนกดปุ่มจริง', [
+                'user_id' => $senderId,
+                'payload' => $titlePayload,
+                'text_preview' => mb_substr($messaging['message']['text'] ?? '', 0, 50),
+            ]);
+
+            $this->handleQuickReply($senderId, $titlePayload);
+
+            return;
+        }
+
         // 🛑 Admin Handover: ถ้าแอดมิน /aistop → บอทหยุด (เฉพาะ chitchat)
         //
         // 🚨 (2026-05-17) FLOW BYPASS — ห้ามหยุด flow จ่ายเงิน/รับคำทำนาย
@@ -5209,6 +5240,93 @@ class FacebookWebhookController extends Controller
             $senderId,
             "🙏 รับทราบค่ะ แม่หมอจะไม่ทักไปรบกวนอีกนะคะ\n\nแต่ถ้าวันไหนเปลี่ยนใจอยากดูดวง ทักมาได้ตลอดเลยค่ะ แม่หมอยินดีเสมอ 🌙"
         );
+    }
+
+    /**
+     * 🩹 (2026-08-12) แปลง "ข้อความที่หน้าตาเหมือนป้ายปุ่ม" กลับเป็น payload ของปุ่มนั้น
+     *
+     * Facebook ส่งการกดปุ่มกลับมาเป็น message.text ล้วน ๆ (ไม่มี quick_reply.payload)
+     * ได้ในหลายสถานการณ์ — ที่เจอบ่อยที่สุดคือ FB ยัด mention "@Meta AI" นำหน้าให้เอง
+     * ลูกค้าไม่ได้ตั้งใจ แต่ปุ่มก็ตายทันที (ดูคอมเมนต์ยาวใน processMessage)
+     *
+     * @param  string  $text  ข้อความดิบจากลูกค้า
+     * @return string|null payload ของปุ่ม หรือ null = ไม่ใช่ป้ายปุ่ม → ปล่อยเป็นข้อความปกติ
+     */
+    protected function resolveQuickReplyPayloadFromTitle(string $text): ?string
+    {
+        if (trim($text) === '') {
+            return null;
+        }
+
+        $normalized = $this->normalizeQuickReplyTitle($text);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        return $this->quickReplyTitlePayloadMap()[$normalized] ?? null;
+    }
+
+    /**
+     * 🧹 ทำให้ข้อความ/ป้ายปุ่มอยู่ในรูปเดียวกันก่อนเทียบ
+     *
+     * ตัด: mention "@Meta AI" → emoji/variation selector → zero-width → ยุบช่องว่าง → lowercase
+     * (emoji ต้องตัด เพราะป้ายปุ่มมีอีโมจินำหน้าทุกใบ แต่ FB ส่งกลับมาบ้างไม่ส่งบ้าง)
+     *
+     * ⚠️ range emoji ชุดเดียวกับ FortuneConversationService::normalizeUserInput
+     *    — ไม่ทับภาษาไทย (U+0E00-0E7F) / ลาว (U+0E80-0EFF)
+     */
+    protected function normalizeQuickReplyTitle(string $text): string
+    {
+        // ตัด mention ด้วยตัวจริงตัวเดียวกับ flow หลัก — ห้ามก็อป regex มาเขียนซ้ำที่นี่
+        $text = $this->conversationService?->stripPlatformAiMention($text) ?? $text;
+
+        $text = preg_replace(
+            '/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2300}-\x{23FF}\x{2B00}-\x{2BFF}\x{2190}-\x{21FF}\x{FE00}-\x{FE0F}\x{1F1E6}-\x{1F1FF}\x{200D}\x{20E3}]/u',
+            '',
+            $text
+        ) ?? $text;
+
+        $text = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{00A0}]/u', '', $text) ?? $text;
+        $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+
+        return mb_strtolower(trim($text));
+    }
+
+    /**
+     * 🗺️ ตาราง "ป้ายปุ่ม (normalize แล้ว) → payload"
+     *
+     * ✅ อ่านจากนิยามปุ่มตัวจริง ไม่ hardcode ป้าย — แอดมิน/เจ้าของเปลี่ยนคำบนปุ่มเมื่อไร
+     *    ตารางนี้เปลี่ยนตามเอง (ป้ายพวกนี้ถูกแก้มาแล้วหลายรอบ hardcode ไว้ = เน่าแน่)
+     *
+     * 🚫 **จงใจใส่เฉพาะปุ่มที่ "กดแล้วไม่มีอะไรเสียหาย"**:
+     *    - รับดวงฟรีประจำวัน / ดูดวงวันนี้เลย → ของฟรี
+     *    - VIP มีค่าครู → พาไปเมนูแพคเกจ (ยังไม่สร้างบิล ยังไม่ตัดเงิน)
+     *    ห้ามใส่ปุ่มที่ลงมือทันทีแบบย้อนไม่ได้ (ยกเลิกบิล / เลิกรับ DM ถาวร / ยืนยันจ่าย)
+     *    เพราะข้อความที่บังเอิญตรงป้ายจะกลายเป็นการกดปุ่มนั้นทันทีโดยลูกค้าไม่ได้ตั้งใจ
+     *
+     * @return array<string, string>
+     */
+    protected function quickReplyTitlePayloadMap(): array
+    {
+        $buttons = array_merge(
+            [FortuneConversationService::dailyFreeStartQuickReply()],
+            FortuneConversationService::dailyShowMineQuickReplies(),
+            [FortuneConversationService::dailyUpgradeQuickReply()],
+        );
+
+        $map = [];
+
+        foreach ($buttons as $button) {
+            $title = $this->normalizeQuickReplyTitle((string) ($button['title'] ?? ''));
+            $payload = (string) ($button['payload'] ?? '');
+
+            if ($title !== '' && $payload !== '') {
+                $map[$title] = $payload;
+            }
+        }
+
+        return $map;
     }
 
     /**
