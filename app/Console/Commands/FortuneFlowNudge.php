@@ -309,12 +309,31 @@ class FortuneFlowNudge extends Command
             $celticPrice = number_format((float) app(CelticCrossService::class)->getPrice(), 0);
             $deepPrice = number_format((float) ($settings->deep_reading_price ?? 39), 0);
 
+            // 🪬 (2026-08-12, owner) ปุ่มโหมดดูคุณไสย์ — กล่องกระตุ้นนี้เคยมีแค่ 99/39
+            //   ทั้งที่เมนูแพคเกจตัวจริงมี 3 ทางเลือก (ดู FortuneChannelManager กับ
+            //   LineFortuneService::buildTierChoiceFlexMessage ที่มีปุ่มนี้มาตั้งแต่ 2026-06-24)
+            //   → ลูกค้าที่ค้างอยู่ตรงเลือกแพคเกจ พอโดนกระตุ้นจะเห็นแค่ 2 ทาง ทั้งที่ข้อความ
+            //     ด้านบนเพิ่งเล่าเรื่องคุณไสย 99 ไป = เสียลูกค้าที่ตั้งใจมาดูเรื่องนี้โดยเฉพาะ
+            //   gate เดียวกับที่อื่นเป๊ะ ๆ (CelticCrossConversationTrait:342) — ต้องเปิด Celtic ด้วย
+            //   เพราะโหมดนี้คือ Celtic 99 ที่ล็อกเลนส์ ไม่ใช่แพคเกจแยก
+            $blackMagicEnabled = $celticEnabled
+                && (bool) ($settings->enable_celtic_black_magic_mode ?? true);
+
             $buttons = [];
             if ($celticEnabled) {
                 $buttons[] = ['content_type' => 'text', 'title' => "✨ เริ่มเลย {$celticPrice}฿", 'text' => 'celtic', 'payload' => 'celtic'];
             }
             if ($deepEnabled) {
                 $buttons[] = ['content_type' => 'text', 'title' => "🔮 แพคเกจ {$deepPrice}฿", 'text' => '39', 'payload' => '39'];
+            }
+            // ⚠️ ต้องเป็นปุ่มที่ 3 (สุดท้าย) เสมอ — FB button template รับได้ 3 ปุ่ม
+            //    เกินเมื่อไรทั้งชุดถอยกลับไปเป็น quick reply ที่ @Meta AI แทรกได้
+            //    (ดู FacebookWebhookService::shouldSendAsPostbackButtons)
+            // 📌 ส่ง text "ดูคุณไสย" ไม่ใช่ payload TIER_CELTIC_BLACKMAGIC — กล่องนี้ส่งทั้ง FB
+            //    และ LINE ด้วยชุดปุ่มเดียวกัน คำว่า "ดูคุณไสย" เข้าด่าน keyword ใน
+            //    handleTierChoice ได้ทั้งสองช่องทาง (CelticCrossConversationTrait:514)
+            if ($blackMagicEnabled) {
+                $buttons[] = ['content_type' => 'text', 'title' => "🪬 ดูคุณไสย {$celticPrice}฿", 'text' => 'ดูคุณไสย', 'payload' => 'ดูคุณไสย'];
             }
 
             $message = "🌙 เลือกได้เลยนะคะ คุณ{$name} — แม่หมอจันทรารออยู่ค่ะ ✨\n\n"
