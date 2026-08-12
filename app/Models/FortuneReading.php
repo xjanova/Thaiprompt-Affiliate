@@ -1272,6 +1272,9 @@ class FortuneReading extends Model
             'user_cancelled' => 'ยกเลิกโดยลูกค้า',
             // 🚫 (2026-07-27) แอดมินกด "ยกเลิกการอนุมัติ" (voidApproval) — อนุมัติผิดบิล/ผิดคน
             'approval_voided' => 'ยกเลิกการอนุมัติโดยแอดมิน',
+            // 🛡️ (2026-08-12) ลูกค้าจ่ายบิลอื่นแทน → reconcile ปิดบิลนี้ (ห้ามอนุมัติซ้ำ = เก็บเงินซ้ำ)
+            //   เดิมตกไป default "ไม่ทราบสาเหตุ" → แอดมินไม่รู้ว่ากดไม่ได้เพราะอะไร
+            'superseded_by_paid' => '⛔ ลูกค้าจ่ายบิลอื่นแทนแล้ว (ห้ามอนุมัติซ้ำ)',
             default => 'ยกเลิก (ไม่ทราบสาเหตุ)',
         };
     }
@@ -2227,6 +2230,41 @@ class FortuneReading extends Model
         $state = $this->conversation_state ?? [];
         $state[$key] = $value;
         $this->update(['conversation_state' => $state]);
+    }
+
+    /**
+     * 🛡️ (2026-08-12, owner "ห้ามมีบิลซ้อน") บิลนี้ถูกปิดไปแล้วหรือยัง เพราะ "บิลพี่น้อง" ถูกจ่ายไปก่อน?
+     *
+     * อ่าน marker ที่ FortuneConversationService::cancelCompetingPrePaymentReadings() เขียนไว้
+     * แล้วคืนบิลที่จ่ายแล้วตัวจริง — ใช้กัน 2 อย่าง:
+     *   1. งานตรวจสลิปที่ค้างคิว ปลุกบิลที่ตายแล้วกลับมาทวงเงิน (VerifySlipFallbackJob / handlePartialPayment)
+     *   2. แอดมินกด force-approve บิลที่ตายแล้วจากแอพ SMS (SmsPaymentController)
+     *
+     * ⚠️ ห้ามใช้แทน "บิลถูกยกเลิก" ทั่วไป — บิลยกเลิก/หมดอายุที่ยังไม่มีใครจ่ายแทน จะคืน null
+     *   (โอนช้าแล้วแอดมินตัดบิลย้อนหลัง = เคสจริงที่ต้องทำได้ต่อไป)
+     *
+     * @return static|null บิลที่จ่ายแล้วซึ่งมาแทนบิลนี้ (null = บิลนี้ไม่ได้ถูกแทน)
+     */
+    public function supersededByPaidReading(): ?self
+    {
+        // บิลนี้จ่ายเองแล้ว = ไม่ใช่บิลที่ถูกแทน
+        if ($this->is_paid) {
+            return null;
+        }
+
+        if ($this->getConversationState('cancellation_reason') !== 'superseded_by_paid') {
+            return null;
+        }
+
+        $keptId = (int) ($this->getConversationState('superseded_by_reading_id') ?? 0);
+        if ($keptId <= 0 || $keptId === (int) $this->id) {
+            return null;
+        }
+
+        $kept = static::find($keptId);
+
+        // ต้องจ่ายจริงเท่านั้น — ถ้าบิลที่มาแทนโดนยกเลิกทีหลัง ปล่อยบิลนี้เดินตาม flow เดิม
+        return ($kept && $kept->is_paid) ? $kept : null;
     }
 
     /**

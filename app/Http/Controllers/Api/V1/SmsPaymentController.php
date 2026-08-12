@@ -2837,6 +2837,34 @@ class SmsPaymentController extends Controller
             ]);
         }
 
+        // 🛡️ (2026-08-12, owner "ห้ามมีบิลซ้อน") บิลนี้ถูกปิดไปแล้วเพราะบิลพี่น้องถูกจ่ายไปก่อน
+        //   → อนุมัติซ้ำ = เงินก้อนเดียวถูกนับ 2 บิล + ส่งดวงซ้ำ. force ก็ข้ามไม่ได้
+        //   เคสจริง: แอพยังโชว์บิล 39 ที่ถูกยกเลิกไป 2 นาทีก่อน (sync ส่ง completed มาด้วย)
+        //   แอดมินกด force-approve → ปลุกทั้ง flow กลับมา (R11016/R11017 พรพรรณ 2026-08-12)
+        //   ⚠️ บิลหมดอายุ/ยกเลิกที่ "ยังไม่มีใครจ่ายแทน" ไม่โดนด่านนี้ — โอนช้าแล้วตัดย้อนหลังยังทำได้ตามเดิม
+        if (($supersededBy = $reading->supersededByPaidReading()) !== null) {
+            Log::warning('🚫 SMS Payment: ปฏิเสธ approve — บิลนี้ถูกแทนด้วยบิลที่จ่ายแล้ว', [
+                'fortune_reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'superseded_by_reading_id' => $supersededBy->id,
+                'superseded_by_bill_reference' => $supersededBy->bill_reference,
+                'device_id' => $device->device_id,
+                'forced' => (bool) ($payload['force'] ?? false),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'บิลนี้ถูกยกเลิกไปแล้ว เพราะลูกค้าจ่ายบิล '.($supersededBy->bill_reference ?? '-')
+                    .' แทน — อนุมัติซ้ำจะเป็นการเก็บเงินก้อนเดิมสองครั้ง',
+                'error_code' => 'BILL_SUPERSEDED_BY_PAID',
+                'data' => [
+                    'superseded_by_bill_reference' => $supersededBy->bill_reference,
+                    'superseded_by_amount' => (float) $supersededBy->amount_paid,
+                    'hint' => 'ลูกค้าได้รับบริการจากบิลที่จ่ายแล้วเรียบร้อย — ไม่ต้องทำอะไรเพิ่ม',
+                ],
+            ], 409);
+        }
+
         // 🔒 ค้นหา SMS notification ที่ valid สำหรับบิลนี้
         // กฎ: amount ตรง, มาหลังบิล, ยังไม่ถูก match
         $billAmount = (float) ($payload['amount'] ?? $reading->amount_paid);

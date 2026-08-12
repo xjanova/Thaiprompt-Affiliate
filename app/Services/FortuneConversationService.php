@@ -8634,7 +8634,7 @@ class FortuneConversationService
         // 💰 ถ้าผู้ใช้พิมพ์เคลม "โอนแล้ว/จ่ายแล้ว/payment claim" → ตรวจสถานะจริง
         //    ตอบตามจริง: paid แล้ว / กำลังตรวจสอบ / ยังไม่พบ
         if ($this->isPaymentClaimRequest($messageText)) {
-            return $this->handlePaymentClaim($reading, $uniqueAmount);
+            return $this->handlePaymentClaim($reading, $uniqueAmount, $this->extractClaimedPaidAmount($messageText));
         }
 
         // 🛑 (2026-05-24) Soft decline detector — ลูกค้าบอก "ไม่พร้อม/ไว้คราวหน้า"
@@ -13078,7 +13078,70 @@ class FortuneConversationService
             return true;
         }
 
+        // 💰 (2026-08-12, owner) เคลม "พร้อมยอด" ที่ถูกห่อมาในรูปคำถาม — ต้องจับให้ได้
+        //   เคสจริง (พรพรรณ FTU-260812-N7742): "หนูโอน39บาทไปแล้วต้องโอนอีกไหม"
+        //     • keyword 'โอนแล้ว' ไม่ติด — มี "39บาทไป" คั่นกลาง
+        //     • regex ด้านบนก็ไม่ทำงาน — เจอ "ไหม" → $looksLikeQuestionOrIntent = true เลยถูกข้าม
+        //     → ตกไปที่ waiting_payment กล่องเดิม ตอบซ้ำ 4 รอบ ไม่เคยตอบว่ายอด 39 ไปไหน
+        //   ตัวแยกคือ "ตัวเลขจำนวนเงินจริง + คำบอกอดีต" = คำบอกเล่าว่าโอนไปแล้ว ต่อให้ลงท้ายด้วยคำถาม
+        //   ⚠️ ยังต้องกันสมมติฐาน (ถ้า/หาก/จะ/อยาก/ขอ/เดี๋ยว) — "ถ้าโอน 39 ไปแล้วดูได้ไหม" = ยังไม่จ่าย
+        if ($this->extractClaimedPaidAmount($text) !== null) {
+            return true;
+        }
+
         return false;
+    }
+
+    /**
+     * 💰 (2026-08-12, owner) ดึง "ยอดที่ลูกค้าบอกว่าโอนไปแล้ว" จากข้อความ
+     *
+     * คืนค่าเฉพาะเมื่อเป็น **คำบอกเล่าว่าโอนเสร็จแล้ว** — ไม่ใช่สมมติฐาน/ความตั้งใจ
+     *   ✅ "หนูโอน39บาทไปแล้วต้องโอนอีกไหม" → 39.0   (ลงท้ายเป็นคำถามได้ ยอด+อดีต = จ่ายจริง)
+     *   ✅ "โอนไป 100 บาทแล้วค่ะ" → 100.0
+     *   ✅ "จ่าย 39.62 เรียบร้อยแล้ว" → 39.62
+     *   ❌ "ถ้าโอน 39 บาทไปแล้วจะดูได้ไหม" → null (สมมติ)
+     *   ❌ "จะโอน 99 บาท" → null (ตั้งใจ ยังไม่ทำ)
+     *   ❌ "ดูดวง 39" → null (ไม่มีคำว่าโอน/จ่าย + ไม่มีคำบอกอดีต)
+     *
+     * ใช้คู่กับ handlePaymentClaim เพื่อ "ตอบให้ตรงคำถาม" แทนข้อความรอชำระเงินสำเร็จรูป
+     */
+    protected function extractClaimedPaidAmount(string $text): ?float
+    {
+        $noSpace = str_replace(' ', '', $this->normalizeUserInput($text));
+
+        // 🛑 ยาวเกิน = เรื่องเล่า ไม่ใช่การแจ้งโอน — เคลมจริงสั้นเสมอ ("โอน39บาทไปแล้วต้องโอนอีกไหม" = 28)
+        //    กันเคสจริงจากฐาน: "แถมมันยังให้พี่เอารถไปเข้าธนาคาร โอนไปให้มัน 3 แสน ปัจจุบันรถพี่โดนยึดไปแล้ว…"
+        if (mb_strlen($noSpace) > 80) {
+            return null;
+        }
+
+        // 🛑 สมมติฐาน / ความตั้งใจ / ปฏิเสธ — ไม่ใช่การเคลมว่าจ่ายแล้ว
+        if (preg_match('/(ถ้า|หาก|จะโอน|จะจ่าย|จะชำระ|อยากโอน|อยากจ่าย|ขอโอน|ขอจ่าย|เดี๋ยว|ยังไม่|ไม่ได้โอน|ไม่ได้จ่าย)/u', $noSpace)) {
+            return null;
+        }
+
+        // (โอน|จ่าย|ชำระ) → ยอด → คำบอกอดีต **ติดกัน**
+        //   ⚠️ คำบอกอดีตต้องอยู่ "หลังตัวเลข" ในระยะสั้น ไม่ใช่ลอยอยู่ที่ไหนก็ได้ในประโยค
+        //      ไม่งั้น "โอนไปให้มัน3แสน…โดนยึดไปแล้ว" จะถูกอ่านเป็น "โอน 3 บาทแล้ว"
+        //   ✅ "โอน39บาทไปแล้ว" · "โอนไป39บาทแล้ว" · "จ่าย39.62เรียบร้อย" · "โอนเงินค่าครู100แล้ว"
+        //   ❌ "โอนไปให้มัน3แสน" — หลังเลขเป็น "แสน" ไม่ใช่ บาท/ไป/แล้ว → ไม่แมตช์ (เลขเชิงเล่าเรื่อง)
+        //   (?![\d,]) กันไปกินเลขก้อนใหญ่บางส่วน เช่น "1,400,000"
+        if (! preg_match(
+            '/(โอน|จ่าย|ชำระ)[^\d]{0,10}(\d{1,5}(?:[.,]\d{1,2})?)(?![\d,])(บาท|฿)?(ไป)?(แล้ว|เรียบร้อย|เสร็จ)/u',
+            $noSpace,
+            $m
+        )) {
+            return null;
+        }
+
+        $amount = (float) str_replace(',', '.', $m[2]);
+
+        // กันเลขที่ไม่ใช่จำนวนเงิน (ปี พ.ศ. / เวลา / เลขบัญชี) — ค่าบริการจริงอยู่หลักสิบถึงหลักพัน
+        if ($amount < 1 || $amount > 20000) {
+            return null;
+        }
+
+        return round($amount, 2);
     }
 
     /**
@@ -13090,7 +13153,7 @@ class FortuneConversationService
      *   3. ยังไม่ paid + UPA reserved + ในเวลา → "⏳ ยังไม่พบยอด — รอ 1-3 นาที / ตรวจอีกครั้ง"
      *   4. ยังไม่ paid + UPA หมดอายุ → "⏰ บิลหมดอายุ"
      */
-    protected function handlePaymentClaim(FortuneReading $reading, UniquePaymentAmount $uniqueAmount): array
+    protected function handlePaymentClaim(FortuneReading $reading, UniquePaymentAmount $uniqueAmount, ?float $claimedAmount = null): array
     {
         $reading->refresh();
         $payAmount = number_format($uniqueAmount->unique_amount, 2);
@@ -13194,6 +13257,56 @@ class FortuneConversationService
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+
+        // 💰 (2026-08-12, owner "บอทมันทำให้งง ลูกค้าถามก็ไม่ตอบว่าคืออะไร")
+        //   ลูกค้าบอกยอดที่โอนมาชัดเจน ("โอน 39 บาทไปแล้ว ต้องโอนอีกไหม") → ต้องตอบ "คำถามนั้น"
+        //   ไม่ใช่ยิงกล่อง "ระบบยังไม่พบยอด" สำเร็จรูปทับ (ลูกค้าถามซ้ำ 4 รอบก็ได้กล่องเดิม)
+        //   ⚠️ มาถึงบรรทัดนี้แปลว่า fuzzy + SlipOK ตรวจแล้วยังไม่เจอเงิน → พูดตามจริงว่ายังไม่พบ
+        //      แต่ต้องเทียบยอดให้เห็นภาพว่าที่โอนมากับที่บิลรอ ต่างกันเท่าไร
+        if ($claimedAmount !== null) {
+            $required = (float) $uniqueAmount->unique_amount;
+            $shortfall = round($required - $claimedAmount, 2);
+            $userIdForFlag = (string) ($reading->facebook_user_id ?: ($reading->platform_user_id ?: ''));
+
+            // ขอสลิปต่อ → ต้องตั้งธงรอสลิป ไม่งั้นรูปใบถัดไปตกร่อง (บทเรียน FTU-260803-Y3476)
+            if ($userIdForFlag !== '') {
+                $this->markAwaitingPaymentSlip($userIdForFlag, 'payment_claim_with_amount');
+            }
+
+            Log::info('💰 Payment claim พร้อมยอด — ตอบเทียบยอดจริงแทนกล่องสำเร็จรูป', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $billRef,
+                'claimed_amount' => $claimedAmount,
+                'required_amount' => $required,
+                'shortfall' => $shortfall,
+            ]);
+
+            // โอนมาน้อยกว่ายอดบิลจริง (เกิน 1 บาท = ไม่ใช่แค่เศษทศนิยม)
+            if ($shortfall > 1.0) {
+                return [
+                    'action' => 'payment_claim_short',
+                    'message' => '🙏 แม่หมอเช็คให้แล้วนะคะ — ตอบตรงๆ ค่ะ *ยังต้องโอนเพิ่ม*'."\n\n"
+                        ."🔖 บิล: {$billRef}\n"
+                        .'💰 บิลนี้ยอด *฿'.number_format($required, 2)."*\n"
+                        .'📥 ที่เจ้าชะตาแจ้งว่าโอนมา ฿'.number_format($claimedAmount, 2)."\n"
+                        .'➖ ยังขาดอีก *฿'.number_format($shortfall, 2)."*\n\n"
+                        ."📸 ถ้าโอนไปจริงแล้ว *ส่งรูปสลิปมาให้แม่หมอตรวจ* ได้เลยค่ะ เดี๋ยวแม่หมอดูให้เอง\n"
+                        .'💬 หรือพิมพ์ "คุยกับแม่หมอ" ถ้าอยากให้ทีมงานช่วยดูนะคะ 🌙',
+                    'reading' => $reading,
+                ];
+            }
+
+            // ยอดที่แจ้งครบ/เกินแล้ว แต่ระบบยังจับคู่ไม่ได้ → ขอสลิปมาตรวจ (ไม่ทวงซ้ำ)
+            return [
+                'action' => 'payment_claim_amount_ok',
+                'message' => '🙏 ยอดที่เจ้าชะตาแจ้งมาครบแล้วค่ะ แต่ระบบยังจับคู่เงินเข้าไม่ได้นะคะ'."\n\n"
+                    ."🔖 บิล: {$billRef}\n"
+                    .'💰 ยอดบิล ฿'.number_format($required, 2).' • ที่แจ้งโอน ฿'.number_format($claimedAmount, 2)."\n\n"
+                    ."📸 *ส่งรูปสลิปมาให้แม่หมอตรวจเลยค่ะ* — ตรวจเสร็จเปิดดวงให้ทันที\n"
+                    .'⏳ หรือรออีก 1-3 นาที ระบบอาจตามเจอเองนะคะ 🌙',
+                'reading' => $reading,
+            ];
         }
 
         // กรณี 3: ยังไม่ paid + UPA ยัง reserved + ยังไม่หมดอายุ
@@ -15754,24 +15867,8 @@ class FortuneConversationService
      */
     public function supersedingPaidReading(FortuneReading $reading): ?FortuneReading
     {
-        // บิลนี้จ่ายเองแล้ว = ไม่ใช่บิลที่ถูกแทน
-        if ($reading->is_paid) {
-            return null;
-        }
-
-        if ($reading->getConversationState('cancellation_reason') !== 'superseded_by_paid') {
-            return null;
-        }
-
-        $keptId = (int) ($reading->getConversationState('superseded_by_reading_id') ?? 0);
-        if ($keptId <= 0 || $keptId === (int) $reading->id) {
-            return null;
-        }
-
-        $kept = FortuneReading::find($keptId);
-
-        // ต้องจ่ายจริงเท่านั้น — ถ้าบิลที่มาแทนโดนยกเลิกทีหลัง ปล่อยบิลนี้เดินตาม flow เดิม
-        return ($kept && $kept->is_paid) ? $kept : null;
+        // แหล่งความจริงเดียวอยู่บนโมเดล (SmsPaymentController ใช้ตัวเดียวกัน ไม่ต้องสร้าง service ทั้งก้อน)
+        return $reading->supersededByPaidReading();
     }
 
     /**
@@ -16964,10 +17061,25 @@ class FortuneConversationService
         );
 
         // ลบเครื่องหมายคำพูด/punctuation นำหน้า-ท้าย
-        $text = trim($text, " \t\n\r\0\x0B'\"‘’“”`()[]{},.?!:;…");
+        //
+        // 🐛 (2026-08-12) FIX ร้ายแรง: เดิมใช้ trim($text, "…‘’“”…") ซึ่ง **ตัดทีละไบต์ ไม่ใช่ทีละตัวอักษร**
+        //   charlist มีอักษรหลายไบต์ (‘ ’ “ ” …) → PHP แตกเป็นไบต์ชุด {E2,80,98,99,9C,9D,A6}
+        //   อักษรไทยที่ไบต์สุดท้ายตรงชุดนี้จะโดนกินไบต์ท้ายทิ้ง → UTF-8 พัง →
+        //   preg_replace('/…/u') ตัวถัดไปคืน **null** → normalizeUserInput คืน **""**
+        //   → ตัวจับ keyword ทุกตัวตาบอดหมด (isPaymentClaimRequest / looksLikePaymentInfoRequest /
+        //     matchesExactKeyword / ตัวจับยกเลิก) → บอทตอบมั่ว/ตอบกล่องสำเร็จรูป
+        //
+        //   อักษรท้ายประโยคที่ทำให้พัง: น ธ ผ ฝ ฦ เ ๘ ๙ ๦ (U+0E00, ๜, ๝)
+        //   **"น" คือตัวสะกดที่พบบ่อยที่สุดตัวหนึ่งในภาษาไทย** — "โอนเงิน" / "ยังไม่โอน" /
+        //   "แล้วกัน" / "อีกกี่วัน" ทั้งหมดเคยถูกล้างเป็นค่าว่าง
+        //   ญาติของ [[rule_thai_regex_needs_mark_class]] — งานระดับไบต์กับข้อความไทยพังเสมอ
+        //
+        //   แก้: ใช้ regex /u ตัดหัว-ท้ายแทน (รู้จักขอบตัวอักษรจริง) + กัน null ทุกจุด
+        $edgeChars = '[\s\x00\'"‘’“”`()\[\]{},.?!:;…]+';
+        $text = preg_replace('/^'.$edgeChars.'|'.$edgeChars.'$/u', '', $text) ?? $text;
 
         // ยุบ whitespace ซ้อนเป็น 1 space
-        $text = preg_replace('/\s+/u', ' ', $text);
+        $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
 
         // ลบคำลงท้ายสุภาพ (ซ้อนได้ เช่น "ค่ะนะ" / "ครับผม")
         //
@@ -16977,19 +17089,12 @@ class FortuneConversationService
         //   → บอทตอบมั่ว (ไม่เข้า handlePaymentClaim) + on-ping SlipOK verify ไม่ทำงาน (ไม่ตรวจสลิป)
         //   แก้: negative lookbehind (?<!สถา)นะ → ไม่ตัด "นะ" ที่เป็นพยางค์ของ "สถานะ"
         //        แต่ยังตัด "นะ" particle ปกติ (ขอบคุณนะ → ขอบคุณ, ดูดวงนะ → ดูดวง)
-        $text = preg_replace(
-            '/\s*(ค่ะ|ครับ|คะ|ค่า|คับ|จ้า|จ้ะ|จ๊ะ|นะคะ|นะครับ|(?<!สถา)นะ|หน่อย|ด้วย|ที|สิ|เลย|อะ|ผม|ผมล่ะ)\s*$/u',
-            '',
-            $text
-        );
+        $particles = '/\s*(ค่ะ|ครับ|คะ|ค่า|คับ|จ้า|จ้ะ|จ๊ะ|นะคะ|นะครับ|(?<!สถา)นะ|หน่อย|ด้วย|ที|สิ|เลย|อะ|ผม|ผมล่ะ)\s*$/u';
+        $text = preg_replace($particles, '', $text) ?? $text;
         // รันอีกรอบเผื่อ stack เช่น "ค่ะนะ" → "ค่ะ" → ""
-        $text = preg_replace(
-            '/\s*(ค่ะ|ครับ|คะ|ค่า|คับ|จ้า|จ้ะ|จ๊ะ|นะคะ|นะครับ|(?<!สถา)นะ|หน่อย|ด้วย|ที|สิ|เลย|อะ|ผม|ผมล่ะ)\s*$/u',
-            '',
-            $text
-        );
+        $text = preg_replace($particles, '', $text) ?? $text;
 
-        return trim($text);
+        return trim((string) $text);
     }
 
     /**
