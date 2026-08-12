@@ -1370,7 +1370,11 @@ trait DailyHoroscopeModeTrait
      */
     public static function dailyUpgradeQuickReply(): array
     {
-        return ['content_type' => 'text', 'title' => '👑 VIP มีค่าครู', 'payload' => 'DAILY_VIP_PACKAGES'];
+        // 🏷️ (2026-08-12, owner) "กล่องหลังส่งดวงฟรี ควรใส่คำว่า ดู vip ส่วนตัว มีค่าครู"
+        //   ถ้อยคำเต็มยาว 22 ตัว — เกินเพดานป้ายปุ่ม FB (20) จะโดนตัดกลางคำเป็น "…มีค่าค"
+        //   → ยุบช่องว่างออก เหลือ 20 พอดี คำครบทุกคำ (ไทยเขียนติดกันได้ ไม่เสียความหมาย)
+        //   มงกุฎ 👑 ต้องสละ — ใส่แล้วเกินเพดาน (คำสำคัญกว่าอีโมจิ ตามเจตนา "กันกล่าวหาว่าหลอกให้กด")
+        return ['content_type' => 'text', 'title' => 'ดูvipส่วนตัวมีค่าครู', 'payload' => 'DAILY_VIP_PACKAGES'];
     }
 
     /**
