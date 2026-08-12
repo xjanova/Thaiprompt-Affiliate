@@ -46,6 +46,17 @@ class FortuneFlowNudge extends Command
      *  แรกหลังลูกค้าเงียบ ~1 นาทีจริง ไม่งั้นต้องรอถึง ~2 นาที ลูกค้านึกว่าไม่ทำงาน) */
     private const NUDGE_AFTER_SEC = 50;
 
+    /** ⏱️ (2026-08-13, owner: "ทำไมมีหลายกล่องเกิน") ขั้น "เลือกแพคเกจ" รอนานกว่า = 3 นาที
+     *  (170 ไม่ใช่ 180 ด้วยเหตุผล granularity เดียวกับด้านบน)
+     *
+     *  ราก: เมนูแพคเกจยาว 3 ย่อหน้า (39 / Celtic 99 / คุณไสย 99) ลูกค้าส่วนใหญ่เป็นผู้สูงอายุ
+     *  อ่านยังไม่จบใน 50 วิ ก็โดนกล่องกระตุ้นทับ กลายเป็นเมนูซ้อนกัน 2 ชุดบนจอเดียว
+     *  ทั้งที่เป็นตัวเลือกชุดเดียวกัน → ลูกค้าสับสนว่าต้องกดอันไหน
+     *
+     *  ⚠️ ขั้น "กล่องกติกา" (consent_gate) ยังใช้ 50 วิเหมือนเดิม — ตรงนั้นลูกค้าเลือกแพคเกจแล้ว
+     *     กล่องสั้น แค่รอกด "พร้อมบูชาครู" กระตุ้นเร็วช่วยปิดการขาย ไม่ใช่ต้นเหตุกล่องรก */
+    private const NUDGE_AFTER_SEC_TIER = 170;
+
     /** เงียบกี่วินาทีถึงออกจากโฟลว์อัตโนมัติ (30 นาที) */
     private const EXIT_AFTER_SEC = 1800;
 
@@ -216,8 +227,13 @@ class FortuneFlowNudge extends Command
             return;
         }
 
-        // ── NUDGE: เงียบ ≥ 1 นาที + ยังไม่เคยเตือน → ส่งกล่อง 1 ครั้ง ──
-        if ($silenceSec >= self::NUDGE_AFTER_SEC && empty($reading->getConversationState('flow_nudge_sent_at'))) {
+        // ── NUDGE: เงียบครบเวลา + ยังไม่เคยเตือน → ส่งกล่อง 1 ครั้ง ──
+        //   เกณฑ์เวลาแยกตาม step: เลือกแพคเกจ 3 นาที (เมนูยาว ต้องให้เวลาอ่าน) · กติกา 1 นาที
+        $nudgeAfterSec = $step === 'tier_choice'
+            ? self::NUDGE_AFTER_SEC_TIER
+            : self::NUDGE_AFTER_SEC;
+
+        if ($silenceSec >= $nudgeAfterSec && empty($reading->getConversationState('flow_nudge_sent_at'))) {
             $service = app(FortuneChannelManager::class)->getPlatform($platform);
             if (! $service) {
                 $stats['skip']++;
@@ -319,12 +335,26 @@ class FortuneFlowNudge extends Command
             $blackMagicEnabled = $celticEnabled
                 && (bool) ($settings->enable_celtic_black_magic_mode ?? true);
 
+            // 🏷️ (2026-08-13, owner) ป้ายปุ่ม + ลำดับ ต้องตรงกับเมนูแพคเกจตัวจริงเป๊ะ ๆ
+            //   (FortuneChannelManager tier_choice: 39 → vip 99 → คุณไสย)
+            //   เดิมกล่องนี้ใช้ป้ายคนละชุด ("✨ เริ่มเลย 99฿" / "🔮 แพคเกจ 39฿") เรียงสลับด้วย
+            //   → ลูกค้าอ่านว่าเป็น "เมนูใหม่อีกชุด" ไม่ใช่การย้ำเมนูเดิม = ต้นเหตุที่เจ้าของเห็น
+            //     ว่ามีหลายกล่องเกิน. ไฟล์นี้ตกหล่นจากรอบเปลี่ยนป้าย 99 ทุกจุด (commit 0aef22d16
+            //     แก้ 9 ไฟล์ ไม่มี FortuneFlowNudge)
+            //   ⚠️ ห้ามใส่อีโมจินำหน้าป้าย 99 — FB/LINE ตัด label ที่ 20 ตัว และ
+            //      "ดู vip ส่วนตัว 99บาท" = 20 ตัวพอดี ใส่อีโมจิแล้วคำว่า "บาท" จะหายไป
             $buttons = [];
-            if ($celticEnabled) {
-                $buttons[] = ['content_type' => 'text', 'title' => "✨ เริ่มเลย {$celticPrice}฿", 'text' => 'celtic', 'payload' => 'celtic'];
-            }
             if ($deepEnabled) {
-                $buttons[] = ['content_type' => 'text', 'title' => "🔮 แพคเกจ {$deepPrice}฿", 'text' => '39', 'payload' => '39'];
+                $buttons[] = ['content_type' => 'text', 'title' => "🔹 ดูดวง {$deepPrice} บาท", 'text' => '39', 'payload' => '39'];
+            }
+            if ($celticEnabled) {
+                // 🚨 mb_substr 20 ไม่ใช่ของประดับ — กล่องนี้ส่ง LINE ด้วย และ
+                //    LineFortuneService::buildQuickReplyItems ไม่ตัด label ให้ (ต่างจากฝั่ง FB)
+                //    LINE API ปฏิเสธ label > 20 ตัว = ยิงไม่ออกทั้งกล่อง
+                //    "ดู vip ส่วนตัว 99บาท" = 20 พอดี แต่ถ้าแอดมินขึ้นค่าครูเป็น 3 หลัก (129)
+                //    จะกลายเป็น 21 ตัว → กล่องกระตุ้นตายเงียบทั้งใบบน LINE
+                $celticLabel = mb_substr("ดู vip ส่วนตัว {$celticPrice}บาท", 0, 20);
+                $buttons[] = ['content_type' => 'text', 'title' => $celticLabel, 'text' => 'celtic', 'payload' => 'celtic'];
             }
             // 📦 ครบ 3 ปุ่มพอดี = กล่องเดียวจบ ถ้าอนาคตเพิ่มปุ่มที่ 4 ระบบจะแตกเป็น 2 กล่อง
             //    (2+2) ส่งไปให้ครบเอง — ไม่ตกกลับไปเป็น quick reply แล้ว

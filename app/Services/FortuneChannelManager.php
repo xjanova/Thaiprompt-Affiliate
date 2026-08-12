@@ -821,9 +821,16 @@ class FortuneChannelManager
                             'title' => FortuneLocaleService::lo('🪬 ดูคุณไสย 99฿', '🪬 ເບິ່ງຄຸນໄສ 99฿'),
                             'payload' => 'TIER_CELTIC_BLACKMAGIC'];
                     }
-                    $buttons[] = ['content_type' => 'text',
-                        'title' => FortuneLocaleService::lo('❌ ยกเลิก', '❌ ຍົກເລີກ'),
-                        'payload' => 'CANCEL_FORTUNE'];
+                    // 📦 (2026-08-13, owner: "ทำไมมีหลายกล่องเกิน") ตัดปุ่ม "❌ ยกเลิก" ออกจากเมนู FB
+                    //   FB ใส่ปุ่มใน button template ได้กล่องละ 3 (MAX_TEMPLATE_BUTTONS) — เมนูนี้มี
+                    //   39 / vip 99 / คุณไสย 99 = 3 พอดี ปุ่มยกเลิกคือใบที่ 4 ที่ทำให้ระบบแตกเป็น
+                    //   2 กล่อง ("ตัวเลือกเพิ่มเติม (2/2)") ทั้งที่ตัวเลือกจริงมีแค่ 3 อย่าง
+                    //   ⚠️ ทางออกของลูกค้าไม่ได้หายไป — CTA ท้ายข้อความบอกให้พิมพ์ "ไว้คราวหน้า"
+                    //      และ soft-decline detector รับคำปฏิเสธอิสระอยู่แล้ว (2026-05-27)
+                    //   ⚠️ ห้ามเติมปุ่มใบที่ 4 กลับมาโดยไม่ตัดใบอื่นออก — จะกลับไปเป็น 2 กล่องทันที
+                    //      (ปุ่ม "ทำนายฟรี" ไม่นับ — `$offerFree` ถูก hardcode false ตั้งแต่ 2026-05-04
+                    //       ระบบฟรีย้ายไป tryAutoFreeCardForFirstReply แบบเงียบแล้ว
+                    //       ดู CelticCrossConversationTrait:170-173 → เมนูนี้จึงมีไม่เกิน 3 ปุ่มเสมอ)
 
                     return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
                 })(),
