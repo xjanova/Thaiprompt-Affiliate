@@ -326,9 +326,9 @@ class FortuneFlowNudge extends Command
             if ($deepEnabled) {
                 $buttons[] = ['content_type' => 'text', 'title' => "🔮 แพคเกจ {$deepPrice}฿", 'text' => '39', 'payload' => '39'];
             }
-            // ⚠️ ต้องเป็นปุ่มที่ 3 (สุดท้าย) เสมอ — FB button template รับได้ 3 ปุ่ม
-            //    เกินเมื่อไรทั้งชุดถอยกลับไปเป็น quick reply ที่ @Meta AI แทรกได้
-            //    (ดู FacebookWebhookService::shouldSendAsPostbackButtons)
+            // 📦 ครบ 3 ปุ่มพอดี = กล่องเดียวจบ ถ้าอนาคตเพิ่มปุ่มที่ 4 ระบบจะแตกเป็น 2 กล่อง
+            //    (2+2) ส่งไปให้ครบเอง — ไม่ตกกลับไปเป็น quick reply แล้ว
+            //    (ดู FacebookWebhookService::sendPostbackButtons)
             // 📌 ส่ง text "ดูคุณไสย" ไม่ใช่ payload TIER_CELTIC_BLACKMAGIC — กล่องนี้ส่งทั้ง FB
             //    และ LINE ด้วยชุดปุ่มเดียวกัน คำว่า "ดูคุณไสย" เข้าด่าน keyword ใน
             //    handleTierChoice ได้ทั้งสองช่องทาง (CelticCrossConversationTrait:514)

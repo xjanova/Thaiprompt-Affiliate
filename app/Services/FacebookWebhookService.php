@@ -925,8 +925,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
      *
      * postback button อยู่ "ในกล่องข้อความ" ไม่ผ่านช่องพิมพ์เลย → Meta AI แทรกไม่ได้
      *
-     * ⚠️ ข้อจำกัด FB ที่กำหนดว่าใส่ปุ่มอะไรได้บ้าง:
-     *   - button template รับได้ **สูงสุด 3 ปุ่ม** (ชุด 7 วันเกิดจึงใส่ไม่ได้ ต้องเป็น QR ต่อไป)
+     * ⚠️ ข้อจำกัด FB ที่กำหนดรูปแบบการส่ง:
+     *   - button template รับได้ **สูงสุด 3 ปุ่ม/กล่อง** → ชุดที่เกิน (เช่น 7 วันเกิด)
+     *     **แตกเป็นหลายกล่องส่งไปให้ครบทีเดียว** ไม่ใช่ตกกลับไปเป็น quick reply
      *   - text ของ template ยาวได้ 640 ตัวอักษร (ยาวกว่านั้นต้องแยกกล่อง)
      * ⚠️ ปุ่ม postback **ค้างอยู่ในประวัติแชท** กดย้อนหลังได้ (ต่างจาก quick reply ที่หายไป
      *    ทันทีที่กด) — ไม่ใช่ของใหม่ในระบบนี้: การ์ด Rich Template (เมนูต้อนรับ / การ์ดชวนดูดวง)
@@ -1145,12 +1146,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
      *
      * คงเป็น quick reply เมื่อ:
      *   - ถูกสั่งบังคับ (`force_quick_replies`) — ใช้ตอน fallback กันวนซ้ำ
-     *   - ชุดว่าง หรือ **เกิน 3 ปุ่ม** (ข้อจำกัด FB — เช่น ปุ่ม 7 วันเกิด)
+     *   - ชุดว่าง
      *   - มีปุ่มที่ payload ว่าง → เป็น postback แล้ว **ปุ่มตาย** (`processPostback` return ทันที
      *     เมื่อ payload ว่าง) ส่วน quick reply ยัง fallback ไปใช้ title เป็น payload ได้
      *
-     * ⚠️ all-or-nothing ทั้งชุด — FB ไม่ให้ template + quick reply อยู่ในข้อความเดียวกัน
-     *    และการแยกส่งคนละกล่องจะทำให้ลำดับข้อความเพี้ยน
+     * 📦 (2026-08-12 รอบ 3, เจ้าของ) **เกิน 3 ปุ่มไม่ใช่เหตุให้ตกกลับไปเป็น quick reply อีกแล้ว**
+     *    → แตกเป็นหลายกล่อง กล่องละ ≤3 ปุ่ม **ส่งไปให้ครบทีเดียว** (ดู sendPostbackButtons)
+     *    เจ้าของเสนอเองว่า "สร้างกล่องส่งไปให้ครบดีกว่า" แทนปุ่ม "ถัดไป" ทีละหน้า — ถูกแล้ว:
+     *      • ไม่ต้องกดเพิ่มเพื่อเห็นตัวเลือกที่เหลือ (ลูกค้าส่วนใหญ่เป็นผู้สูงอายุ)
+     *      • ไม่ต้องจำ state หน้าถัดไปไว้ใน Cache ซึ่ง deploy สั่ง cache:clear ทุกครั้ง
+     *        → ปุ่ม "ถัดไป" ที่ค้างในแชทจะกลายเป็นปุ่มตายทันทีที่ deploy
      *
      * @param  array<int, array>  $formattedReplies  ปุ่มที่ format แล้ว
      */
@@ -1160,9 +1165,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
             return false;
         }
 
-        $count = count($formattedReplies);
-
-        if ($count < 1 || $count > self::MAX_TEMPLATE_BUTTONS) {
+        if (count($formattedReplies) < 1) {
             return false;
         }
 
@@ -1176,73 +1179,152 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 📦 (2026-08-12) แตกปุ่มเป็นกล่อง ๆ ละไม่เกิน 3 ปุ่ม — **กระจายให้สมดุล** ไม่ใช่ตัด 3-3-เศษ
+     *
+     * 7 ปุ่ม → 3+2+2 (ไม่ใช่ 3+3+1 ที่ทิ้งกล่องสุดท้ายมีปุ่มเดียวโดด ๆ)
+     * 4 ปุ่ม → 2+2 · 13 ปุ่ม → 3+3+3+2+2 · ลำดับปุ่มเดิมคงไว้ทุกกรณี (วันจันทร์…อาทิตย์ห้ามสลับ)
+     *
+     * @param  array<int, array>  $buttons
+     * @return array<int, array<int, array>>
+     */
+    protected function chunkButtonsForTemplates(array $buttons): array
+    {
+        $buttons = array_values($buttons);
+        $total = count($buttons);
+
+        if ($total <= self::MAX_TEMPLATE_BUTTONS) {
+            return [$buttons];
+        }
+
+        $boxCount = (int) ceil($total / self::MAX_TEMPLATE_BUTTONS);
+        $base = intdiv($total, $boxCount);
+        $extra = $total % $boxCount; // กล่องแรก ๆ รับปุ่มเกินไปคนละ 1
+
+        $boxes = [];
+        $cursor = 0;
+
+        for ($i = 0; $i < $boxCount; $i++) {
+            $size = $base + ($i < $extra ? 1 : 0);
+            $boxes[] = array_slice($buttons, $cursor, $size);
+            $cursor += $size;
+        }
+
+        return $boxes;
+    }
+
+    /**
+     * 🔘 format ปุ่มดิบ {title, payload} → ปุ่ม postback ของ FB
+     *
+     * @param  array<int, array>  $buttons
+     * @return array<int, array<string, string>>
+     */
+    protected function formatPostbackButtons(array $buttons): array
+    {
+        return array_map(function ($button) {
+            return [
+                'type' => 'postback',
+                'title' => mb_substr((string) ($button['title'] ?? ''), 0, 20),
+                'payload' => (string) ($button['payload'] ?? ''),
+            ];
+        }, array_values($buttons));
+    }
+
+    /**
      * 🔘 (2026-08-12) ส่งข้อความ + ปุ่มแบบ postback (button template)
      *
      * ปุ่มอยู่ในกล่องข้อความ ไม่ผ่านช่องพิมพ์ → Meta AI แทรกไม่ได้ payload ไม่หาย
+     *
+     * 📦 เกิน 3 ปุ่ม → **แตกเป็นหลายกล่อง ส่งต่อกันไปให้ครบในทีเดียว**
+     *    (เจ้าของเลือกทางนี้แทนปุ่ม "ถัดไป" ทีละหน้า — ลูกค้าไม่ต้องกดเพิ่มเพื่อเห็นตัวเลือก
+     *     ที่เหลือ และไม่ต้องเก็บ state หน้าถัดไปไว้ใน Cache ที่ deploy ล้างทิ้งทุกครั้ง)
      *
      * @param  array<int, array>  $buttons  ปุ่มรูป {title, payload}
      * @return bool true = ลูกค้าได้รับข้อความแล้ว (ไม่ต้อง fallback ต่อ)
      */
     protected function sendPostbackButtons(string $recipientId, string $message, array $buttons, array $options = []): bool
     {
-        $templateButtons = array_map(function ($button) {
-            return [
-                'type' => 'postback',
-                'title' => mb_substr((string) ($button['title'] ?? ''), 0, 20),
-                'payload' => (string) ($button['payload'] ?? ''),
-            ];
-        }, array_slice($buttons, 0, self::MAX_TEMPLATE_BUTTONS));
+        $boxes = $this->chunkButtonsForTemplates($buttons);
+        $boxTotal = count($boxes);
 
         $templateOptions = [
             'from_admin' => $options['from_admin'] ?? false,
             'message_tag' => $options['message_tag'] ?? null,
         ];
 
-        // สั้นพอ → กล่องเดียวจบ (ข้อความ + ปุ่มอยู่ในกล่องเดียวกัน หน้าตาใกล้เคียงของเดิมที่สุด)
-        if (mb_strlen($message) <= self::BUTTON_TEMPLATE_TEXT_LIMIT) {
-            return $this->sendButtonTemplate(
+        $cta = '🌙 กดปุ่มด้านล่างได้เลยค่ะ';
+        $leadText = $message;
+        $somethingDelivered = false;
+
+        // ข้อความยาวเกิน 640 → เนื้อความไปก่อน (sendMessage มี chunking + 24hr fallback ครบ)
+        // แล้วค่อยตามด้วยกล่องปุ่ม — ยัดลง template ตรง ๆ จะโดนตัดกลางคำทำนาย
+        if (mb_strlen($message) > self::BUTTON_TEMPLATE_TEXT_LIMIT) {
+            $bodySent = $this->sendMessage($recipientId, $message, [
+                'messaging_type' => $options['messaging_type'] ?? 'RESPONSE',
+                'message_tag' => $options['message_tag'] ?? null,
+                'no_default_qr' => true,
+                'from_admin' => $options['from_admin'] ?? false,
+            ]);
+
+            // เนื้อความยังไม่ถึงลูกค้า → ยังไม่มีอะไรส่งซ้ำ ให้ผู้เรียกตกกลับไปทาง quick reply ได้
+            if (! $bodySent) {
+                return false;
+            }
+
+            usleep(300000); // 0.3s — ให้กล่องเนื้อความขึ้นก่อนกล่องปุ่มเสมอ
+            $leadText = $cta;
+            $somethingDelivered = true;
+        }
+
+        foreach ($boxes as $index => $boxButtons) {
+            // กล่องแรกถือข้อความจริง · กล่องถัด ๆ ไปบอกว่ายังมีตัวเลือกต่อ + เลขหน้า
+            // (ต้องมีเลขหน้า ไม่งั้นลูกค้าเห็น 3 ปุ่มแรกแล้วนึกว่ามีให้เลือกแค่นั้น)
+            $text = $index === 0
+                ? $leadText
+                : '🌙 ตัวเลือกเพิ่มเติม ('.($index + 1)."/{$boxTotal}) 👇";
+
+            $sent = $this->sendButtonTemplate(
                 $recipientId,
-                $this->buildButtonTemplatePayload($message, $templateButtons),
+                $this->buildButtonTemplatePayload($text, $this->formatPostbackButtons($boxButtons)),
                 $templateOptions
             );
-        }
 
-        // ยาวเกิน 640 → เนื้อความไปก่อน (sendMessage มี chunking + 24hr fallback ครบ)
-        // แล้วตามด้วยกล่องปุ่มสั้น ๆ — ยัดลง template ตรง ๆ จะโดนตัดกลางคำทำนาย
-        $bodySent = $this->sendMessage($recipientId, $message, [
-            'messaging_type' => $options['messaging_type'] ?? 'RESPONSE',
-            'message_tag' => $options['message_tag'] ?? null,
-            'no_default_qr' => true,
-            'from_admin' => $options['from_admin'] ?? false,
-        ]);
+            if ($sent) {
+                $somethingDelivered = true;
 
-        // เนื้อความยังไม่ถึงลูกค้า → ยังไม่มีอะไรส่งซ้ำ ให้ผู้เรียกตกกลับไปทาง quick reply ได้
-        if (! $bodySent) {
-            return false;
-        }
+                if ($index + 1 < $boxTotal) {
+                    usleep(300000); // เว้นจังหวะให้กล่องเรียงตามลำดับเสมอ
+                }
 
-        usleep(300000); // 0.3s — ให้กล่องเนื้อความขึ้นก่อนกล่องปุ่มเสมอ
+                continue;
+            }
 
-        $cta = '🌙 กดปุ่มด้านล่างได้เลยค่ะ';
+            // ── กล่องนี้ส่งไม่ผ่าน ──
+            // ยังไม่มีอะไรถึงลูกค้าเลย → คืน false ให้ผู้เรียก fallback เป็น quick reply ทั้งชุด
+            if (! $somethingDelivered) {
+                return false;
+            }
 
-        if ($this->sendButtonTemplate($recipientId, $this->buildButtonTemplatePayload($cta, $templateButtons), $templateOptions)) {
+            // 🚨 ส่งไปแล้วบางส่วน → ห้ามคืน false (ผู้เรียกจะส่งข้อความ + ปุ่มซ้ำทั้งก้อน)
+            //    ยิง "ปุ่มที่เหลือ" เป็น quick reply ปิดท้าย ดีกว่าปล่อยให้ปุ่มหายไปเงียบ ๆ
+            $remaining = array_merge(...array_slice($boxes, $index));
+
+            Log::warning('🔒 กล่องปุ่ม postback ล้มกลางทาง → ยิงปุ่มที่เหลือเป็น quick reply แทน', [
+                'recipient' => $recipientId,
+                'box_index' => $index,
+                'box_total' => $boxTotal,
+                'payloads' => array_column($remaining, 'payload'),
+            ]);
+
+            //    ตัด comment_id ทิ้งด้วย — Private Reply ถูกลองไปแล้วและล้มก่อนจะมาถึงตรงนี้
+            //    ยิงซ้ำได้แค่ error #10900 (Reels comment_id ใช้ครั้งเดียว) เปล่า ๆ
+            $this->sendQuickReplies($recipientId, $cta, $remaining, array_merge($options, [
+                'force_quick_replies' => true,
+                'from_comment_engagement' => false,
+                'comment_id' => null,
+            ]));
+
             return true;
         }
-
-        // 🚨 กล่องปุ่มล้ม **แต่เนื้อความส่งไปแล้ว** → ห้ามคืน false (ผู้เรียกจะส่งเนื้อซ้ำทั้งก้อน)
-        //    ยิงเฉพาะปุ่มเป็น quick reply ปิดท้าย + ธงกันวนกลับมาที่นี่อีกรอบ
-        Log::warning('🔒 กล่องปุ่ม postback ล้มหลังส่งเนื้อความแล้ว → ยิงปุ่มเป็น quick reply แทน', [
-            'recipient' => $recipientId,
-            'payloads' => array_column($buttons, 'payload'),
-        ]);
-
-        //    ตัด comment_id ทิ้งด้วย — Private Reply ถูกลองไปแล้วและล้มก่อนจะมาถึงตรงนี้
-        //    ยิงซ้ำได้แค่ error #10900 (Reels comment_id ใช้ครั้งเดียว) เปล่า ๆ
-        $this->sendQuickReplies($recipientId, $cta, $buttons, array_merge($options, [
-            'force_quick_replies' => true,
-            'from_comment_engagement' => false,
-            'comment_id' => null,
-        ]));
 
         return true;
     }
