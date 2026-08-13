@@ -416,6 +416,7 @@ class ProcessCommentEngagement implements ShouldQueue
             //   ⚠️ ห้ามใส่ปุ่ม VIP/ขายตรงนี้ — DM เย็น ๆ ที่มีปุ่มขาย = สแปมที่เพิ่งแก้ไป
             //      (ดู withDailyUpgrade ใน DailyHoroscopeModeTrait)
             $isDailyMode = false;
+            $hasPersonalTeaser = false;   // รู้วันเกิดแล้ว → ข้อความอิงตัวบุคคล ห้ามเอาคลังมาทับ
             try {
                 // ⏰ ต้องมีบทความของวันนี้ก่อน ไม่งั้นชวนแล้วส่งของไม่ได้
                 //    (ช่วงหลังเที่ยงคืนถึง 6 โมง → DM กลับไปแบบ classic เอง)
@@ -428,6 +429,7 @@ class ProcessCommentEngagement implements ShouldQueue
 
                     if ($teaser !== null) {
                         $dmMessage = $teaser;
+                        $hasPersonalTeaser = true;
                         $quickReplies = \App\Services\FortuneConversationService::dailyShowMineQuickReplies();
                     } else {
                         $quickReplies = [\App\Services\FortuneConversationService::dailyFreeStartQuickReply()];
@@ -435,6 +437,41 @@ class ProcessCommentEngagement implements ShouldQueue
                 }
             } catch (Throwable $e) {
                 // เช็คโหมดไม่ได้ → ใช้ปุ่มเดิม (พฤติกรรมเดิม)
+            }
+
+            // 💬 (2026-08-13) กัน "DM คำซ้ำกันหมด" — regression จากการเปลี่ยนเป็น text-first
+            //
+            //   เดิมสายนี้ส่ง **รูป** (หมุนจากแบนเนอร์ 19 ใบ) ความหลากหลายมาจากรูป
+            //   พอเปลี่ยนเป็นส่งข้อความ กลับได้ `buildDailyReadyTeaser`/`buildInviteForNewUser`
+            //   ซึ่งเป็น **เทมเพลตตายตัวตัวเดียว** → ลูกค้าทุกคนได้คำเดียวกันเป๊ะ
+            //
+            //   ⚠️ กับดัก: `FortuneInviteMessage::resolveFor()` **ไม่ช่วย** เพราะมันคืน null
+            //      ให้คนที่ "ยังไม่ได้รูปสัปดาห์นี้" (ประตูนั้นคุมว่าจะส่งรูปไหม ไม่ใช่คุมคำ)
+            //      ต้องเรียก `pickActive()` ตรง ๆ
+            //
+            //   ✅ `pickActive()` เลือกชุดตามโหมดให้เองอยู่แล้ว: โหมด daily → หยิบเฉพาะ
+            //      ชุด MODE_DAILY (หมวด daily-* 100 ข้อ "ชวนบอกวันเกิดรับดวงฟรี")
+            //      + กรองตามช่วงเวลา (เช้า/เย็น/ดึก) + เคารพหมวดที่แอดมินปิด
+            //
+            //   🚫 ข้าม ถ้ารู้วันเกิดแล้ว — teaser บอกว่า "ดวงวันอังคารของคุณพร้อมแล้ว กดปุ่ม"
+            //      แต่คลัง daily-* พูดว่า "บอกวันเกิดมาสิคะ" = ถามซ้ำคนที่เพิ่งตอบไป
+            if (! $hasPersonalTeaser && $inviteMessage === null) {
+                try {
+                    $rotated = \App\Models\FortuneInviteMessage::pickActive();
+                    if ($rotated !== null) {
+                        $inviteMessage = $rotated;   // ให้ recordSend() ด้านล่างนับสถิติได้ถูกตัว
+                        $dmMessage = $rotated->render($name, $userId, 'facebook');
+                        Log::info('💬 Comment Engagement: หมุนข้อความชวนจากคลัง (กันคำซ้ำ)', [
+                            'user_id' => $userId,
+                            'invite_id' => $rotated->id,
+                            'category' => $rotated->category,
+                            'daily_mode' => $isDailyMode,
+                        ]);
+                    }
+                } catch (Throwable $e) {
+                    // หยิบไม่ได้ → ใช้ข้อความเดิม ดีกว่า DM เงียบ
+                    Log::warning('Comment Engagement: หมุนข้อความชวนล้ม ใช้ข้อความเดิม: '.$e->getMessage());
+                }
             }
 
             // 🎯 (2026-05-26 v3) BANNER-FIRST Strategy — Atomic image+QR เป็น PRIMARY
@@ -498,6 +535,12 @@ class ProcessCommentEngagement implements ShouldQueue
                     'from_comment_engagement' => true,
                     'comment_id' => $commentId,
                 ]);
+
+                // 📊 นับสถิติการใช้ข้อความ — ต้องมีที่สายนี้ด้วย ไม่งั้นข้อความที่หมุนมาใช้จริง
+                //    จะไม่เคยถูกนับ (ของเดิมมี recordSend เฉพาะสาย useInviteText)
+                if ($stage2TextSent && $inviteMessage) {
+                    $inviteMessage->recordSend();
+                }
 
                 // 🖼️ BONUS: แบนเนอร์กล่องที่สอง — ยิงเฉพาะคนที่ "เคยทักเพจ" เท่านั้น
                 //   เช็คก่อนยิง ไม่ใช่ยิงแล้วค่อยรู้ว่าล้ม — คนคอมเมนต์ส่วนใหญ่อยู่นอกกรอบ 24 ชม.
