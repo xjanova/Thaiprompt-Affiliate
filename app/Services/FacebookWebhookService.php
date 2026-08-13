@@ -72,6 +72,24 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /** พักนานเท่าไรเมื่อ breaker อ่านคอมเมนต์ทำงาน (ชั่วโมง) */
     protected const READ_COMMENTS_BREAKER_HOURS = 6;
 
+    /** 🚦 กุญแจ breaker ของ hide/delete คอมเมนต์ (scope `pages_manage_engagement` ที่ token ไม่มี) */
+    protected const MANAGE_COMMENT_BREAKER_KEY = 'fb_manage_comment_breaker';
+
+    /**
+     * 🪦 comment_id ที่ "ตายแล้ว" — ยิง Private Reply ซ้ำไปก็ล้มแน่นอน
+     *
+     * หลักฐาน prod 2026-08-13 21:13-21:14: comment เดียวโดนยิง 6 call ใน 35 วินาที
+     *   Stage 1 (image+QR) → 10903/1893049 "This user can't reply to this activity"
+     *   Stage 2 (sendPrivateReply = Send API + /private_replies) → 100/33 "Object does not exist" ×2
+     *   Stage 2 fallback RESPONSE → 551 · Stage 3 (image) → 1893049 อีก + RESPONSE อีก
+     * ทุก Stage ผลัดกันยิง comment_id เดิมเพราะไม่มีใครจำว่าเพื่อนเพิ่งล้มไป
+     * call ที่ล้มแน่นอนซ้ำ ๆ แบบนี้ = สัญญาณสแปมสะสมให้ Meta (แบบเดียวกับเคส #2022 เมื่อ 2026-08-09)
+     *
+     * สาเหตุที่ comment "ตาย": คอมเมนต์ถูกลบ · ผู้ใช้ปิดรับข้อความจากเพจ · Reels activity ที่ตอบไม่ได้
+     * ⇒ ไม่ฟื้นเอง — mark 48 ชม. แล้วทุก path ที่ใช้ comment_id ต้องเช็คก่อนยิง
+     */
+    protected const DEAD_COMMENT_TTL_HOURS = 48;
+
     protected $settings;
 
     protected $pageAccessToken;
@@ -566,6 +584,19 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 return true;
             }
             // ถ้า Private Replies fail → fallback ไป /me/messages ปกติ (อาจ work ถ้า user อยู่ใน 24hr window)
+            //
+            // 🪦 (2026-08-13) แต่ถ้ารู้อยู่แล้วว่า user นอกกรอบ 24 ชม. (unreachable วันนี้)
+            //    ทาง comment_id ก็เพิ่งตาย → RESPONSE ล้มแน่นอน = call ตกน้ำอีก 1 — จบเลยดีกว่า
+            //    (ของเดิมเช็ค unreachable เฉพาะตอน "ไม่มี comment_id" — เคส comment ตายเลยหลุดช่องนี้)
+            if (! $skipUnreachableCache && Cache::has($unreachableKey)) {
+                Log::info('sendImage: skip fallback — comment ใช้ไม่ได้ + user unreachable วันนี้', [
+                    'recipient' => $recipientId,
+                    'comment_id' => $commentId,
+                ]);
+
+                return false;
+            }
+
             Log::info('sendImage: Private Replies fail → fallback /me/messages', [
                 'recipient' => $recipientId,
                 'comment_id' => $commentId,
@@ -693,8 +724,46 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * @param  string  $commentId  Comment ID ที่จะตอบ
      * @param  string  $imageUrl  URL ของรูปภาพ
      */
+    /**
+     * 🪦 เช็คว่า comment_id นี้ถูก mark ว่าตายแล้วหรือยัง (ดูเหตุผลที่ DEAD_COMMENT_TTL_HOURS)
+     */
+    public function isDeadComment(string $commentId): bool
+    {
+        return Cache::has('fb_dead_comment:'.$commentId);
+    }
+
+    /**
+     * 🪦 error นี้แปลว่า comment ตายถาวรไหม
+     *
+     * - 100/33  = "Unsupported post request. Object does not exist" (คอมเมนต์ถูกลบ/มองไม่เห็น)
+     * - 10903   = "This user can't reply to this activity" (ผู้ใช้ปิดรับ/ตอบ activity นี้ไม่ได้)
+     */
+    protected function isDeadCommentError($code, $subcode): bool
+    {
+        return ((int) $code === 100 && (int) $subcode === 33) || (int) $code === 10903;
+    }
+
+    /**
+     * 🪦 จำว่า comment นี้ตายแล้ว — ทุก Stage ที่ตามมาจะข้ามทันที ไม่ยิงซ้ำ
+     */
+    protected function markDeadComment(string $commentId, $code, $subcode, string $source): void
+    {
+        Cache::put('fb_dead_comment:'.$commentId, 1, now()->addHours(self::DEAD_COMMENT_TTL_HOURS));
+        Log::info('🪦 mark dead comment — Stage ถัดไปจะไม่ยิง comment_id นี้ซ้ำ', [
+            'comment_id' => $commentId,
+            'error_code' => $code,
+            'error_subcode' => $subcode,
+            'source' => $source,
+        ]);
+    }
+
     public function sendPrivateReplyImage(string $commentId, string $imageUrl): bool
     {
+        // 🪦 comment ตายแล้ว → ไม่ยิงซ้ำ (Stage ก่อนหน้าเพิ่งล้มไป)
+        if ($this->isDeadComment($commentId)) {
+            return false;
+        }
+
         try {
             $payload = [
                 'recipient' => ['comment_id' => $commentId],
@@ -731,6 +800,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'error_message' => $err['error']['message'] ?? $response->body(),
             ]);
 
+            // 🪦 comment ตายถาวร → จำไว้ กัน Stage อื่นยิงซ้ำ
+            if ($this->isDeadCommentError($err['error']['code'] ?? 0, $err['error']['error_subcode'] ?? 0)) {
+                $this->markDeadComment($commentId, $err['error']['code'] ?? 0, $err['error']['error_subcode'] ?? 0, 'sendPrivateReplyImage');
+            }
+
             return false;
         } catch (Exception $e) {
             Log::warning('Private Reply image exception: '.$e->getMessage(), [
@@ -754,6 +828,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendPrivateReplyImageWithQuickReplies(string $commentId, string $imageUrl, array $quickReplies): bool
     {
+        // 🪦 comment ตายแล้ว → ไม่ยิงซ้ำ
+        if ($this->isDeadComment($commentId)) {
+            return false;
+        }
+
         try {
             // FB จำกัด 13 quick replies + title 20 chars
             $formatted = array_map(function ($qr) {
@@ -808,6 +887,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'error_subcode' => $err['error']['error_subcode'] ?? null,
                 'error_message' => $err['error']['message'] ?? $response->body(),
             ]);
+
+            // 🪦 comment ตายถาวร → จำไว้ — Stage 2/3 ที่จะตามมาใน job เดียวกันจะข้ามเลย
+            if ($this->isDeadCommentError($err['error']['code'] ?? 0, $err['error']['error_subcode'] ?? 0)) {
+                $this->markDeadComment($commentId, $err['error']['code'] ?? 0, $err['error']['error_subcode'] ?? 0, 'sendPrivateReplyImageWithQuickReplies');
+            }
 
             return false;
         } catch (Exception $e) {
@@ -1089,6 +1173,20 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 if ($privateReplySuccess) {
                     return true;
                 }
+
+                // 🪦 (2026-08-13) PR ล้ม + รู้อยู่แล้วว่า user นอกกรอบ 24 ชม. → RESPONSE ล้มแน่ (551)
+                //    ตัดจบตรงนี้ ไม่ยิง call ตกน้ำเพิ่ม
+                //    ⚠️ gate เฉพาะสาย comment engagement — push ลูกค้าจ่ายเงินไม่ผ่าน flag นี้
+                //      จึงไม่โดนตัดเด็ดขาด (กฎ: paid customer ต้องได้ลองส่งเสมอ)
+                $ceUnreachableKey = "fb_user_unreachable:{$recipientId}:".now()->format('Y-m-d');
+                if (Cache::has($ceUnreachableKey)) {
+                    Log::info('Quick Replies: skip fallback — PR ล้ม + user unreachable วันนี้', [
+                        'recipient' => $recipientId,
+                        'comment_id' => $commentId,
+                    ]);
+
+                    return false;
+                }
                 // ถ้า Private Replies ล้มเหลว → fallback ไปยัง /me/messages ข้างล่าง
                 Log::info('🔄 Private Replies ล้มเหลว → fallback ไปยัง /me/messages', [
                     'comment_id' => $commentId,
@@ -1168,6 +1266,19 @@ class FacebookWebhookService implements MessagingPlatformInterface
             //   เดิมตกหล่น → ยิง quick reply ไม่ผ่าน → throw → catch → sendMessage()
             //   = ลูกค้าได้ข้อความ **แบบไม่มีปุ่มเลย** (แย่กว่าปุ่มที่อาจโดน Meta AI แทรก)
             $is24hrError = in_array($errorSubcode, [2018278, 2018065, 2018001, 1545041]);
+
+            // 🪦 (2026-08-13) สาย comment engagement เจอ 24hr-window error → mark unreachable วันนี้
+            //   คีย์เดียวกับ sendImage ใช้ → Stage 3 (image) ของ job เดียวกันจะเห็นแล้วไม่ยิงต่อ
+            //   คนนี้ทักเพจเมื่อไรกรอบเปิดใหม่ cache นี้ไม่เกี่ยว (ส่งด้วย RESPONSE ได้ตามปกติ)
+            if ($is24hrError && $fromCommentEngagement) {
+                $ceKey = "fb_user_unreachable:{$recipientId}:".now()->format('Y-m-d');
+                Cache::put($ceKey, true, max(60, now()->endOfDay()->diffInSeconds(now(), absolute: true)));
+                Log::info('Quick Replies: mark user unreachable today (comment engagement)', [
+                    'recipient' => $recipientId,
+                    'subcode' => $errorSubcode,
+                ]);
+            }
+
             // ⛔ (2026-08-13) แท็กตายทุกตัว → retry คือ call ตกน้ำ (วัดจาก prod 57 ครั้ง/วันจากจุดนี้จุดเดียว)
             if (self::MESSAGE_TAG_USABLE && $is24hrError && $messagingType === 'RESPONSE') {
                 Log::info('🔄 Quick Replies: RESPONSE ล้มเหลว (24hr expired) → ลองใหม่ด้วย MESSAGE_TAG', [
@@ -1577,6 +1688,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function hideComment(string $commentId): bool
     {
+        // 🚦 (2026-08-13) token ไม่มี pages_manage_engagement → ยิงไปก็ 403 ทุกครั้ง
+        //    breaker แยกตามสาขา — เพจอื่นที่มี scope ยังซ่อนได้ปกติ
+        if (Cache::has($this->manageCommentBreakerKey())) {
+            return false;
+        }
+
         try {
             Http::timeout(15)
                 ->post($this->graphUrl("/{$commentId}"), [
@@ -1597,6 +1714,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
                     : null,
             ]);
 
+            if ($is403) {
+                $this->tripManageCommentBreaker('hideComment', $msg);
+            }
+
             return false;
         }
     }
@@ -1611,6 +1732,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function deleteComment(string $commentId): bool
     {
+        // 🚦 (2026-08-13) เหตุผลเดียวกับ hideComment — ไม่มี scope = 403 แน่นอน
+        if (Cache::has($this->manageCommentBreakerKey())) {
+            return false;
+        }
+
         try {
             Http::timeout(15)
                 ->delete($this->graphUrl("/{$commentId}"), [
@@ -1630,7 +1756,36 @@ class FacebookWebhookService implements MessagingPlatformInterface
                     : null,
             ]);
 
+            if ($is403) {
+                $this->tripManageCommentBreaker('deleteComment', $msg);
+            }
+
             return false;
+        }
+    }
+
+    /**
+     * 🏬 กุญแจ breaker ของ hide/delete คอมเมนต์ — แยกตามสาขา (เหตุผลเดียวกับ breaker อื่น)
+     */
+    protected function manageCommentBreakerKey(): string
+    {
+        return self::MANAGE_COMMENT_BREAKER_KEY.':'.(FortunePageContext::currentId() ?? 'default');
+    }
+
+    /**
+     * 🚦 ตัด hide/delete คอมเมนต์ชั่วคราวเมื่อโดน 403 (scope ไม่พอ)
+     *
+     * หมายเหตุ: การ "บล็อกคนสแปม" (`blockPageUser`) ใช้ `pages_manage_metadata` ซึ่ง token มี
+     * — ด่านกันสแปมหลักจึงยังทำงานครบ ที่หายไปคือแค่การซ่อนคอมเมนต์ให้คนอื่นไม่เห็น
+     */
+    protected function tripManageCommentBreaker(string $source, string $reason): void
+    {
+        if (Cache::add($this->manageCommentBreakerKey(), 1, now()->addHours(self::READ_COMMENTS_BREAKER_HOURS))) {
+            Log::warning('🚦 ตัด hide/delete คอมเมนต์ชั่วคราว — token ไม่มี pages_manage_engagement', [
+                'source' => $source,
+                'reason' => mb_substr($reason, 0, 200),
+                'fortune_page_id' => FortunePageContext::currentId(),
+            ]);
         }
     }
 
@@ -2009,6 +2164,15 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendPrivateReply(string $commentId, string $message, array $quickReplies = []): bool
     {
+        // 🪦 comment ตายแล้ว (Stage ก่อนหน้า/รอบก่อนเพิ่งล้ม) → ไม่ยิงซ้ำทั้ง 2 endpoint
+        if ($this->isDeadComment($commentId)) {
+            Log::info('🪦 Private Reply skip — comment ถูก mark ว่าตายแล้ว', [
+                'comment_id' => $commentId,
+            ]);
+
+            return false;
+        }
+
         try {
             // 🎯 (2026-05-04) ลอง Send API + recipient.comment_id ก่อนเสมอ (รวมเคส empty quick_replies)
             //   เหตุผล: endpoint นี้รองรับ Reels comment ที่ /private_replies endpoint ไม่รองรับ
@@ -2038,9 +2202,26 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 return true;
             }
 
+            // 🪦 (2026-08-13) ดู error ก่อนค่อยตัดสินใจ fallback — ของเดิมยิง /private_replies
+            //    ต่อเสมอทั้งที่ error แรกบอกอยู่แล้วว่า comment ตาย (33/10903)
+            //    = call ที่ 2 ที่ล้มแน่นอน ทุกครั้ง
+            $firstErr = $response->json()['error'] ?? [];
+            if ($this->isDeadCommentError($firstErr['code'] ?? 0, $firstErr['error_subcode'] ?? 0)) {
+                $this->markDeadComment($commentId, $firstErr['code'] ?? 0, $firstErr['error_subcode'] ?? 0, 'sendPrivateReply(SendAPI)');
+                Log::warning('Private Reply ล้มเหลว', [
+                    'comment_id' => $commentId,
+                    'http_status' => $response->status(),
+                    'error_code' => $firstErr['code'] ?? null,
+                    'error_subcode' => $firstErr['error_subcode'] ?? null,
+                    'error_message' => $firstErr['message'] ?? $response->body(),
+                ]);
+
+                return false;
+            }
+
             Log::info('Private Reply (Send API) ล้มเหลว → fallback text-only', [
                 'comment_id' => $commentId,
-                'error' => $response->json()['error']['message'] ?? $response->body(),
+                'error' => $firstErr['message'] ?? $response->body(),
             ]);
 
             // Fallback: text-only ผ่าน /{comment-id}/private_replies
@@ -2066,6 +2247,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'error_subcode' => $errorBody['error']['error_subcode'] ?? null,
                 'error_message' => $errorBody['error']['message'] ?? $textResponse->body(),
             ]);
+
+            // 🪦 fallback ก็บอกว่า comment ตาย → จำไว้เช่นกัน
+            if ($this->isDeadCommentError($errorBody['error']['code'] ?? 0, $errorBody['error']['error_subcode'] ?? 0)) {
+                $this->markDeadComment($commentId, $errorBody['error']['code'] ?? 0, $errorBody['error']['error_subcode'] ?? 0, 'sendPrivateReply(private_replies)');
+            }
 
             return false;
         } catch (Exception $e) {
