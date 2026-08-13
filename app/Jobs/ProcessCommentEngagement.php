@@ -520,7 +520,11 @@ class ProcessCommentEngagement implements ShouldQueue
 
                 // 🩹 LAST RESORT: ข้อความไม่ผ่าน (คอมเมนต์ถูกลบ / ปิดรับ DM) → ลองรูปผ่าน comment_id
                 //   ได้รูปยังดีกว่าไม่ได้อะไรเลย · dead-comment cache กันยิงซ้ำให้แล้วใน service
-                if (! $stage2TextSent) {
+                //
+                //   🪦 (2026-08-13 รอบ 4) แต่ถ้า comment ถูก mark ว่าตายไปแล้ว = รูปก็ไปไม่ถึงแน่
+                //      ข้ามตั้งแต่ต้น ไม่ต้องเสียเวลาเลือกแบนเนอร์ + ไม่เขียน log หลอกว่ากำลังลอง
+                //      (service กันยิงซ้ำอยู่แล้ว แต่ยังเสีย query เลือกรูป + log ที่อ่านแล้วเข้าใจผิด)
+                if (! $stage2TextSent && ! $facebookService->isDeadComment($commentId)) {
                     Log::info('🔁 Comment Engagement: text+QR ล้ม → ลองรูปอย่างเดียวเป็นทางสุดท้าย', [
                         'user_id' => $userId,
                         'comment_id' => $commentId,

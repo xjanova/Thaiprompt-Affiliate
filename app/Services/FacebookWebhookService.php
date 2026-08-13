@@ -733,6 +733,38 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 🪟 คนนี้ยังอยู่ในกรอบ 24 ชม. ไหม (= ยิง messaging_type=RESPONSE ถึงจริง)
+     *
+     * ใช้ตัดสิน "จะยิงหรือไม่ยิง" ก่อนเสีย call — ไม่ใช่ยิงแล้วค่อยรู้ว่าล้ม
+     * ข้อมูลจริง 2026-08-09: คนที่อยู่ในกรอบมีแค่ 197 จาก 9,693 (2%)
+     *
+     * OR 2 แหล่งเพราะจุดบอดคนละที่ (บทเรียนจาก fix reaction DM 2026-08-09):
+     *  - `fb_last_inbound:` cache — ปั๊มบนสุดของ processMessage ก่อน early return ทุกจุด
+     *    แม่นที่สุด แต่หายตอน `cache:clear`
+     *  - `fortune_contact_signals.last_seen_at` — ถาวรใน DB แต่ `record()` อยู่ท้าย
+     *    processMessage โดยมี `return;` คั่นก่อนหน้าหลายจุด → inbound บางส่วนไม่เคยอัปเดต
+     *
+     * ⚠️ เช็คไม่ได้ = **fail-open** (ถือว่าส่งได้) — เงียบใส่ลูกค้าเสียหายกว่าเสีย call
+     */
+    public function hasOpenMessagingWindow(string $psid): bool
+    {
+        if (Cache::has('fb_last_inbound:'.$psid)) {
+            return true;
+        }
+
+        try {
+            return \App\Models\FortuneContactSignal::where('platform', 'facebook')
+                ->where('platform_user_id', $psid)
+                ->where('last_seen_at', '>=', now()->subHours(24))
+                ->exists();
+        } catch (Exception $e) {
+            Log::debug('hasOpenMessagingWindow: เช็คไม่ได้ ปล่อยผ่าน: '.$e->getMessage());
+
+            return true;
+        }
+    }
+
+    /**
      * 🪦 error นี้แปลว่า comment ตายถาวรไหม
      *
      * - 100/33  = "Unsupported post request. Object does not exist" (คอมเมนต์ถูกลบ/มองไม่เห็น)
@@ -1181,6 +1213,21 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 $ceUnreachableKey = "fb_user_unreachable:{$recipientId}:".now()->format('Y-m-d');
                 if (Cache::has($ceUnreachableKey)) {
                     Log::info('Quick Replies: skip fallback — PR ล้ม + user unreachable วันนี้', [
+                        'recipient' => $recipientId,
+                        'comment_id' => $commentId,
+                    ]);
+
+                    return false;
+                }
+
+                // 🚫 (2026-08-13 รอบ 4) วัดจาก prod แล้วยังเหลือรูนี้:
+                //    คอมเมนต์เน่า (dead) + คนคอมเมนต์ **ไม่เคยทักเพจเลย** → ยังยิง /me/messages ต่อ
+                //    แล้วเด้ง 551 ทุกครั้ง เพราะ cache unreachable ยังไม่ถูกตั้ง (ตั้งหลังล้มครั้งแรก)
+                //    = ทุกคนใหม่เสีย 1 call ตกน้ำเสมอ ก่อนระบบจะ "เรียนรู้"
+                //    ⇒ ถามจากข้อมูลที่มีอยู่แล้วแทนการยิงถาม Meta (แนวเดียวกับ fix reaction DM 2026-08-09
+                //      ที่ตัด 2,327 call/วันด้วยวิธีนี้)
+                if (! $this->hasOpenMessagingWindow($recipientId)) {
+                    Log::info('Quick Replies: skip fallback — PR ล้ม + คนนี้ไม่เคยทักเพจ (นอกกรอบ 24 ชม.)', [
                         'recipient' => $recipientId,
                         'comment_id' => $commentId,
                     ]);
