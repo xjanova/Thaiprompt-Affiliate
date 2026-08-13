@@ -2699,6 +2699,49 @@ class FacebookWebhookController extends Controller
                 }
             }
 
+            // 👍 (2026-08-13) Sticker ระหว่าง Celtic active = ลูกค้ากดถูกใจ/รับทราบ — ไม่ใช่รูปให้วิเคราะห์
+            //   เคสจริง reading 11055 (ยุวารีย์): ลูกค้ากด 👍 ตอบรับหลังทุกข้อความของบอท
+            //   → sticker (FB ส่งมาเป็น type=image + payload.sticker_id) หลุดเข้า Celtic paid vision
+            //   ได้ 2 ทาง (bypass ด้านล่าง + fallthrough ผ่าน classifier ที่ fail-open เป็น general_photo)
+            //   → วิเคราะห์ "รูปนิ้วโป้ง" เต็มรูปแบบ 3 รอบ + เผาสิทธิ์คำถาม 3 ข้อ + แย่งช่องพื้นดวง Q1
+            //   Fix: sticker เดี่ยว (ไม่มีข้อความ) + celtic active → ตอบ resume ตามสถานะครั้งแรก
+            //   (คง intent 2026-05-04 "ลูกค้าจ่ายแล้วส่ง sticker ห้ามเงียบสนิท") แล้วเงียบใน cooldown
+            //   10 นาที — ไม่เข้า vision/classifier/slip ไม่สร้าง question record ไม่กินสิทธิ์เด็ดขาด
+            //   (sticker ที่มาพร้อมข้อความ = เจตนาถามจริง → ปล่อยไหลตาม flow เดิม)
+            if ($hasSticker && empty($messageText)) {
+                $celticActiveSticker = FortuneReading::where('facebook_user_id', $senderId)
+                    ->whereIn('conversation_status', FortuneReading::CELTIC_ACTIVE_STATUSES)
+                    ->latest()
+                    ->first();
+
+                if ($celticActiveSticker) {
+                    $stickerAckKey = 'fortune:sticker_ack:'.$senderId;
+                    $sentResumeAck = false;
+                    if (! Cache::has($stickerAckKey)) {
+                        Cache::put($stickerAckKey, 1, 600);
+                        try {
+                            $resume = app(CelticCrossService::class)->buildResumeMessage($celticActiveSticker, 'sticker');
+                            $resumeOpts = empty($resume['quick_replies']) ? [] : ['quick_replies' => $resume['quick_replies']];
+                            $this->facebookService->sendMessage($senderId, $resume['message'], $resumeOpts);
+                            $sentResumeAck = true;
+                        } catch (\Throwable $stickerErr) {
+                            Log::debug('FB: sticker resume message fail (non-blocking)', [
+                                'error' => $stickerErr->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    Log::info('FB: sticker ระหว่าง Celtic active → รับทราบ (ไม่เข้า vision ไม่กินสิทธิ์)', [
+                        'sender_id' => $senderId,
+                        'reading_id' => $celticActiveSticker->id,
+                        'celtic_status' => $celticActiveSticker->conversation_status,
+                        'sent_ack' => $sentResumeAck,
+                    ]);
+
+                    return;
+                }
+            }
+
             // 🛡️ (2026-05-20 Patch 1+2) Celtic paid 99฿ bypass — ตรวจก่อนทุกอย่าง
             //   เหตุผล: ลูกค้าจ่าย 99฿ ส่งรูป → ต้องได้ vision ทันที ห้ามถูก spam block / classify ผิด
             //   • Patch 1: skip spam guard (paid → ไม่ใช่ spam แม้ส่งหลายรูป)

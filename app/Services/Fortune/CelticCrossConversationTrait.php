@@ -2107,6 +2107,27 @@ trait CelticCrossConversationTrait
     {
         $text = trim($text);
 
+        // 🔘 (2026-08-13) ปุ่มค้าง/คำตอบรับ ≠ ความพยายามพิมพ์วันเกิด — เช็คก่อน parse
+        //   เคสจริง reading 11055 (ยุวารีย์): เปิดไพ่ครบ → ระบบขอวันเกิด → ลูกค้ากดปุ่ม "พร้อม"
+        //   (CELTIC_READY ที่ค้างบนการ์ดเปิดไพ่เก่า — template button กดซ้ำได้เสมอ) 2 ครั้ง
+        //   → attempts ครบ 2 → auto-skip ฆ่า gate วันเกิดทั้งที่ลูกค้าไม่เคยพิมพ์ผิดเลย
+        //   → sticker 👍 ที่ตามมาแย่งช่องพื้นดวง Q1 + วันเกิดจริงที่พิมพ์ทีหลังกลายเป็น "คำถาม"
+        //   วางไว้บนสุด: ประหยัด AI fallback ใน parseBirthDate ด้วย (ปุ่ม/คำตอบรับไม่มีทางเป็นวันเกิด)
+        if ($this->isCelticBirthdateNavAck($text)) {
+            \Log::info('Celtic: birthdate step ได้ปุ่มค้าง/คำตอบรับ → ย้ำขอวันเกิด (ไม่นับ attempts)', [
+                'reading_id' => $reading->id,
+                'text' => mb_substr($text, 0, 30),
+            ]);
+
+            return [
+                'action' => 'celtic_ask_birthdate',
+                'message' => "🌙 แม่หมอรอ *วันเดือนปีเกิด* ของเจ้าชะตาอยู่นะคะ\n\n"
+                    ."📅 พิมพ์มาได้เลย เช่น *29 มกราคม 2516* หรือ *29/01/2516*\n"
+                    .'(ถ้าไม่สะดวกบอก พิมพ์ว่า *ข้าม* แม่หมอจะดูจากไพ่ให้ค่ะ)',
+                'reading' => $reading,
+            ];
+        }
+
         // ลองอ่านวันเกิด "ก่อน" เสมอ (ตัวเดียวกับ 39 — เข้าใจไทยธรรมชาติ เช่น "29 มกราคม 2516")
         //   ⚠️ ต้อง parse ก่อนเช็คคำว่า "ข้าม" — กันเคสมีวันเกิดจริงปนคำพูดเผลอ
         //   เช่น "จำไม่ได้แน่ แต่ 29 มกราคม 2516" → ต้องอ่านวันเกิดได้ ไม่ใช่ตีเป็นข้าม
@@ -2231,6 +2252,76 @@ trait CelticCrossConversationTrait
     }
 
     /**
+     * 🔘 (2026-08-13) ข้อความนี้เป็น "ปุ่มค้าง/คำตอบรับ" ไม่ใช่ความพยายามพิมพ์วันเกิด
+     *
+     * "พร้อม" มาจากปุ่ม CELTIC_READY ที่ค้างบนการ์ดเปิดไพ่เก่า (template button กดซ้ำได้เสมอ)
+     * คำตอบรับสั้นๆ (โอเค/ครับ/ค่ะ/ได้/👍) = ลูกค้ารับทราบ ไม่ใช่วันเกิดที่พิมพ์ผิด
+     * → ทั้งหมดนี้ต้องไม่นับเป็น celtic_birthdate_attempts (กัน auto-skip ฆ่า gate วันเกิดฟรีๆ)
+     *
+     * เทียบแบบ exact-match ทั้งข้อความเท่านั้น — กันชนกับวันเกิดจริง/คำขอข้ามโดยสิ้นเชิง
+     */
+    protected function isCelticBirthdateNavAck(string $text): bool
+    {
+        $t = mb_strtolower(trim($text));
+        if ($t === '') {
+            return true;
+        }
+
+        return in_array($t, [
+            'พร้อม', 'พร้อมค่ะ', 'พร้อมครับ', 'พร้อมแล้ว', 'พร้อมเลย',
+            'เปิด', 'เปิดไพ่', 'เปิดเลย', 'เปิดต่อ', 'ไปต่อ', 'ต่อเลย',
+            'โอเค', 'โอเคค่ะ', 'โอเคครับ', 'ok', 'okay', 'ตกลง',
+            'ได้', 'ได้ค่ะ', 'ได้ครับ', 'ได้เลย',
+            'ครับ', 'ค่ะ', 'คะ', 'ค่า', 'จ้า', 'จ้ะ', 'ครับผม',
+            'ขอบคุณ', 'ขอบคุณค่ะ', 'ขอบคุณครับ',
+            '👍', '👍🏻', '👍🏼', '👍🏽', '👍🏾', '👍🏿', '🙏', '❤️', '😊', '✨',
+        ], true);
+    }
+
+    /**
+     * 🎂 (2026-08-13) ข้อความนี้เป็น "วันเกิดล้วนๆ" (ไม่ใช่คำถามที่มีวันเกิดปน)
+     *
+     * ใช้กับ late-birthdate capture ใน Q&A (gate วันเกิดถูก skip ไปแล้ว แต่ลูกค้าเพิ่งส่งวันเกิดตามมา)
+     * ต้องเข้มพอที่จะไม่แย่งคำถามจริง เช่น "แฟนเกิด 24/8/2510 เข้ากันไหม" = คำถาม (วันเกิดคนอื่น
+     * + มีคำถามปน) → ต้องไม่จับ ปล่อยไหลเข้า askQuestion ตามเดิม
+     */
+    protected function looksLikePureBirthdateInput(string $text): bool
+    {
+        $t = trim($text);
+        if ($t === '' || mb_strlen($t) > 45) {
+            return false;
+        }
+
+        // มีร่องรอยคำถาม → เป็นคำถาม ไม่ใช่การส่งวันเกิด
+        if (preg_match('/[?？]|ไหม|มั้ย|มั๊ย|หรอ|เหรอ|ยังไง|อย่างไร|อะไร|ทำไม|เมื่อไหร่|ช่วยดู|อยากรู้|ดูเรื่อง/u', $t)) {
+            return false;
+        }
+
+        // พูดถึงคนอื่น → เป็นวันเกิดของคนอื่นในบริบทคำถาม ไม่ใช่วันเกิดเจ้าชะตา
+        if (preg_match('/แฟน|คู่รัก|สามี|ภรรยา|เมีย|ผัว|ลูกชาย|ลูกสาว|เพื่อน|คุณแม่|คุณพ่อ|เขาเกิด|เธอเกิด/u', $t)) {
+            return false;
+        }
+
+        // ⚠️ ต้องมี "โครงเลขวันที่" จริงๆ ก่อนค่อยเรียก parseBirthDate — ตัว parser มี AI fallback
+        //   (parseBirthDate บรรทัดท้าย) ถ้าปล่อยข้อความแชทสั้นๆ ทั่วไปไหลเข้า = เผา AI call ทุกข้อความ
+        $hasDigitDate = (bool) preg_match('/\d{1,2}[\/\-\.\s]+\d{1,2}[\/\-\.\s]+\d{2,4}/u', $t);
+        $hasThaiMonthDate = (bool) preg_match(
+            '/\d{1,2}\s*(?:ม\.?ค|ก\.?พ|มี\.?ค|เม\.?ย|พ\.?ค|มิ\.?ย|ก\.?ค|ส\.?ค|ก\.?ย|ต\.?ค|พ\.?ย|ธ\.?ค'
+            .'|มกรา|กุมภา|มีนา|เมษา|พฤษภา|มิถุนา|กรกฎา|สิงหา|กันยา|ตุลา|พฤศจิกา|ธันวา)/u',
+            $t
+        );
+        if (! $hasDigitDate && ! $hasThaiMonthDate) {
+            return false;
+        }
+
+        try {
+            return ! empty($this->parseBirthDate($t));
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
      * 🗺️ (2026-06-08) สร้าง/ดึง "แผนที่ดาวชะตา" (birth chart) ของ Celtic — ส่งคู่ภาพไพ่ตอนสรุป
      *
      * user spec: "ตอนสรุปให้ส่งแผนที่ดาวชะตาไปกับแผนภูมิภาพไพ่พร้อมกัน"
@@ -2297,6 +2388,27 @@ trait CelticCrossConversationTrait
             // 🛡️ (2026-06-23 bug-hunt) แยก "คำถามพื้นดวงสังเคราะห์" (parse วันเกิดสำเร็จ → ตั้ง celtic_base_chart)
             //   ออกจาก "คำถามจริงของลูกค้าที่ carry มา" (พิมพ์คำถามแทนวันเกิดครบ 2 ครั้ง → คืนสตริงคำถามจริง
             //   โดยไม่ตั้ง celtic_base_chart). เคส carry ต้องเริ่มจับเวลา + ไม่ flag เป็นพื้นดวง
+            $isCelticBaseChart = (bool) $reading->getConversationState('celtic_base_chart', false);
+        } elseif (empty($reading->birth_date) && $this->looksLikePureBirthdateInput($question)) {
+            // 🎂 (2026-08-13) วันเกิดมาช้า — gate วันเกิดถูกปิดไปแล้ว (auto-skip/ข้าม) แต่ลูกค้า
+            //   เพิ่งส่ง "วันเกิดล้วนๆ" ตามมา
+            //   เคสจริง reading 11055 (ยุวารีย์): ปุ่ม "พร้อม" ค้างเผา attempts จน auto-skip →
+            //   ลูกค้าพิมพ์ "24/8/2500" ตามมา → ตกเป็น "คำถาม" seq 4 (AI ตอบรับเฉยๆ แต่กินสิทธิ์
+            //   + พื้นดวงที่จ่ายมาไม่เคยถูกสร้าง)
+            //   Fix: ส่งกลับเข้า handleCelticBirthdateStep เหมือน gate ยังเปิด → parse สำเร็จ →
+            //   ได้คำถามพื้นดวงสังเคราะห์ → ลูกค้าได้พื้นดวงเต็ม (ดาวเจ้าชนะ + ไพ่ 10 ใบ)
+            \Log::info('Celtic: late birthdate captured หลัง gate ปิด → สร้างพื้นดวงให้', [
+                'reading_id' => $reading->id,
+                'birthdate_text' => mb_substr($question, 0, 40),
+            ]);
+
+            $bdStep = $this->handleCelticBirthdateStep($reading, $question);
+            if (is_array($bdStep)) {
+                return $bdStep;
+            }
+            $question = $bdStep;
+            $messageText = $bdStep;
+            $reading->setConversationState('celtic_birthdate_skipped', false);
             $isCelticBaseChart = (bool) $reading->getConversationState('celtic_base_chart', false);
         }
 
