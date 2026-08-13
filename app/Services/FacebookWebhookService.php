@@ -1090,7 +1090,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // กรณี 24hr expired → ลองใหม่ด้วย MESSAGE_TAG + POST_PURCHASE_UPDATE
             // 🔧 (2026-05-03) ขยายเงื่อนไข — ไม่ต้องเป็นแค่ comment engagement
             //   เคสที่กันตอนนี้: SMS payment confirmation push หลัง 24hr (ลูกค้า paid แล้วเงียบ)
-            $is24hrError = in_array($errorSubcode, [2018278, 2018065, 2018001]);
+            // 🚨 (2026-08-13) เพิ่ม 1545041 (#551) ให้ตรงกับ sendMessage/sendButtonTemplate
+            //   เดิมตกหล่น → ยิง quick reply ไม่ผ่าน → throw → catch → sendMessage()
+            //   = ลูกค้าได้ข้อความ **แบบไม่มีปุ่มเลย** (แย่กว่าปุ่มที่อาจโดน Meta AI แทรก)
+            $is24hrError = in_array($errorSubcode, [2018278, 2018065, 2018001, 1545041]);
             if ($is24hrError && $messagingType === 'RESPONSE') {
                 Log::info('🔄 Quick Replies: RESPONSE ล้มเหลว (24hr expired) → ลองใหม่ด้วย MESSAGE_TAG', [
                     'recipient' => $recipientId,
@@ -3339,9 +3342,18 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // ลอง fallback เป็น MESSAGE_TAG ถ้า 24 ชั่วโมงหมดอายุ
             // 🔒 (2026-05-03) H8 — เพิ่ม subcode 2018001 (มีใน sendMessage แต่ขาดที่นี่)
             //    ทำให้สอดคล้องกับ sendMessage:434 (ซึ่งมีครบทั้ง 3 subcode)
+            //
+            // 🚨 (2026-08-13) เพิ่ม 1545041 — **นี่คือตัวที่ทำให้ปุ่มของฟรีหลุดกลับไปเป็น quick reply**
+            //    หลักฐาน prod (laravel.log 2026-08-13): ปุ่ม "🎁 รับดวงฟรีประจำวัน" ล้มทุกครั้งด้วย
+            //      (#551) ไม่สามารถติดต่อบุคคลนี้ได้ในขณะนี้ · error_subcode 1545041
+            //    1545041 ไม่อยู่ในลิสต์ → ไม่ retry MESSAGE_TAG → คืน false → sendQuickReplies
+            //    ตกกลับไปยิง quick reply = ช่องทางเดียวที่ @Meta AI แทรกแล้ว payload หาย
+            //    (คนกลุ่มนี้คือคน react/comment ที่ยังไม่เคยทักเพจ = อยู่นอกกรอบ 24 ชม.)
+            //    sendMessage/sendImage/sendAudio นับ 1545041 เป็น "นอกกรอบ" มาตั้งแต่ 2026-05-07 แล้ว
+            //    (ดู :422 · :578 · :615 · :870) — มีแต่ template 2 ตัวนี้ที่ตกหล่น
             $error = $response->json('error', []);
             $subcode = $error['error_subcode'] ?? 0;
-            $is24hrError = in_array($subcode, [2018278, 2018065, 2018001]);
+            $is24hrError = in_array($subcode, [2018278, 2018065, 2018001, 1545041]);
 
             if ($is24hrError && empty($options['message_tag']) && $messagingType === 'RESPONSE') {
                 Log::info('Facebook Button Template: 24hr expired, retry with MESSAGE_TAG', [

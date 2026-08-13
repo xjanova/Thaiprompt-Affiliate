@@ -1083,11 +1083,16 @@ class FortuneChannelManager
                     $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
 
                     // 🆕 (2026-05-17) ซ่อนปุ่ม "สับใหม่" เมื่อใช้ครบโควต้า 1 ครั้งแล้ว
+                    // 🛑 (2026-08-13, owner) ตัดปุ่ม "❌ ยกเลิก" ออกจากขั้นเปิดไพ่ — เหลือแค่
+                    //    "เปิดไพ่ใบต่อไป" + "สับใหม่" · ขั้นนี้ลูกค้า **จ่าย 99 มาแล้ว** ปุ่มยกเลิก
+                    //    ที่อยู่ติดปุ่มเปิดไพ่คือกับดักนิ้วล้วน ๆ กดพลาดทีเดียว = ทิ้งบิลที่จ่ายแล้ว
+                    //    ⚠️ ไม่ได้ปิดทางออก — ปุ่มนี้แค่ยิงข้อความ "ยกเลิก" เข้าไปเฉย ๆ
+                    //       (FacebookWebhookController:5535 · CANCEL_FORTUNE → processConversationalMessage('ยกเลิก'))
+                    //       ลูกค้าพิมพ์ "ยกเลิก" เองได้ผลเหมือนกันเป๊ะ
                     $quickReplies = [['content_type' => 'text', 'title' => $nextLabel, 'payload' => 'CELTIC_READY']];
                     if ($reading && method_exists($reading, 'canShuffleCelticAgain') && $reading->canShuffleCelticAgain()) {
                         $quickReplies[] = ['content_type' => 'text', 'title' => '🔄 สับใหม่', 'payload' => 'CELTIC_RESET'];
                     }
-                    $quickReplies[] = ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'];
 
                     $sent = $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra);
 
@@ -2783,13 +2788,15 @@ class FortuneChannelManager
                         // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
                         //   พิมพ์คำถามต่อได้เลย / จบเองด้วยการ "พิมพ์ เลิก" ($quickReplies = [] = ไม่มีปุ่ม ปลอดภัย)
                     } else {
-                        // ยังเปิดไม่ครบ → ปุ่มเปิดไพ่ + สับใหม่ (ถ้ามีสิทธิ์) + ยกเลิก
+                        // ยังเปิดไม่ครบ → ปุ่มเปิดไพ่ + สับใหม่ (ถ้ามีสิทธิ์)
+                        // 🛑 (2026-08-13, owner) ตัดปุ่ม "❌ ยกเลิก" ออก — ขั้นนี้จ่าย 99 มาแล้ว
+                        //    ปุ่มยกเลิกติดปุ่มเปิดไพ่ = กดพลาดทิ้งบิลที่จ่ายแล้ว
+                        //    (ตัดพร้อมกันทั้ง FB และ LINE ให้เหมือนกัน — พิมพ์ "ยกเลิก" ยังได้ผลเดิม)
                         $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
                         $quickReplies[] = ['label' => $nextLabel, 'text' => 'พร้อม'];
                         if ($canShuffle) {
                             $quickReplies[] = ['label' => '🔄 สับใหม่', 'text' => 'สับใหม่'];
                         }
-                        $quickReplies[] = ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'];
                     }
 
                     // 🚨 (2026-05-21) ENTRY LOG — กัน silent path ไม่รู้ว่า handler เคยรันไหม
@@ -3925,11 +3932,13 @@ class FortuneChannelManager
                         : "👉 กดปุ่ม *\"🃏 เปิดไพ่ใบถัดไป\"* (ใบที่ {$next})";
                     $btnLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
                     // 🆕 (2026-05-17) ซ่อน "สับใหม่" เมื่อใช้ครบโควต้า 1 ครั้งแล้ว
+                    // 🛑 (2026-08-13, owner) ตัดปุ่ม "❌ ยกเลิก" ออก — กล่องนี้คือกล่องเตือน
+                    //    "คุณอยู่ในรอบ Celtic อยู่นะคะ" ที่เด้งกลางรอบที่จ่ายแล้ว ยิ่งห้ามมีปุ่มทิ้งบิล
+                    //    ต้องตรงกับชุดปุ่มขั้นเปิดไพ่ด้านบน (:1086) ไม่งั้นลูกค้าเห็นปุ่มไม่เท่ากัน 2 ที่
                     $quickReplies = [['content_type' => 'text', 'title' => $btnLabel, 'payload' => 'CELTIC_READY']];
                     if (method_exists($reading, 'canShuffleCelticAgain') && $reading->canShuffleCelticAgain()) {
                         $quickReplies[] = ['content_type' => 'text', 'title' => '🔄 สับใหม่', 'payload' => 'CELTIC_RESET'];
                     }
-                    $quickReplies[] = ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'];
                 } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION) {
                     // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
                     $hint = '👉 พิมพ์คำถามที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้ (พิมพ์ *"เลิก"* เมื่อพร้อมจบ)';
