@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -50,6 +51,41 @@ class ProcessCommentEngagement implements ShouldQueue
     {
         $this->data = $data;
         $this->onQueue('tpix-default'); // ใช้ queue ที่มี worker อยู่แล้ว
+    }
+
+    /**
+     * 📦 คนนี้รับ "กล่องที่สอง" ได้ไหม (= อยู่ในกรอบ 24 ชม.)
+     *
+     * ใช้ตัดสินว่าจะยิงแบนเนอร์เป็นของแถมต่อจากข้อความหรือไม่
+     * Private Reply slot ถูกใช้ไปกับข้อความแล้ว → กล่องที่สองต้องไปทาง RESPONSE
+     * ซึ่งต้องอยู่ในกรอบ 24 ชม.เท่านั้น
+     *
+     * ⚠️ ต้องเช็ค **ก่อนยิง** ไม่ใช่ยิงแล้วค่อยรู้ว่าล้ม —
+     *    คนคอมเมนต์อยู่ในกรอบแค่ ~2% (197 จาก 9,693 วัดเมื่อ 2026-08-09)
+     *    ยิงหมดทุกคน = ~370 call ตกน้ำ/วัน = สัญญาณสแปมให้ Meta แบบเดียวกับที่เคยโดน #2022
+     *
+     * ตรรกะเดียวกับ `FacebookWebhookController::canReceiveDirectDm()` — OR 2 แหล่ง
+     * เพราะแต่ละแหล่งมีจุดบอดคนละที่ (cache หายตอน cache:clear · DB มีจุด return ก่อนบันทึก)
+     */
+    protected function canReceiveSecondBox(string $userId): bool
+    {
+        if (Cache::has('fb_last_inbound:'.$userId)) {
+            return true;
+        }
+
+        try {
+            return \App\Models\FortuneContactSignal::where('platform', 'facebook')
+                ->where('platform_user_id', $userId)
+                ->where('last_seen_at', '>=', now()->subHours(24))
+                ->exists();
+        } catch (Throwable $e) {
+            // เช็คไม่ได้ → ไม่ยิง (ของแถมพลาดได้ ดีกว่ายิงตกน้ำ)
+            //   ต่างจาก canReceiveDirectDm ที่ fail-open เพราะนั่นคือ DM หลัก ห้ามเงียบใส่ลูกค้า
+            //   อันนี้เป็นแค่รูปแถม — ข้อความหลักถึงมือลูกค้าไปแล้วตั้งแต่ก่อนเรียกเมธอดนี้
+            Log::debug('canReceiveSecondBox: เช็คไม่ได้ → ข้ามรูปแถม: '.$e->getMessage());
+
+            return false;
+        }
     }
 
     public function handle(): void
@@ -445,65 +481,69 @@ class ProcessCommentEngagement implements ShouldQueue
                 }
             } else {
 
-                // STAGE 1 (NEW PRIMARY): Atomic image+QR — ภาพ + QR ใน 1 call atomic
-                //   ผ่าน sendPrivateReplyImageWithQuickReplies — recipient.comment_id + attachment + quick_replies
-                //   No race possible: 1 API call ใช้ comment_id ครั้งเดียว ภาพ + QR ส่งพร้อมกัน
-                try {
-                    $bannerService = new FortuneBannerService($settings);
-                    $stage1AtomicSent = (bool) $bannerService->sendBannerThenWait(
-                        fn ($url) => $facebookService->sendPrivateReplyImageWithQuickReplies(
-                            $commentId,
-                            $url,
-                            $quickReplies
-                        ),
-                        'comment',
-                        'facebook',
-                        $userId
-                    );
-                } catch (Throwable $atomicErr) {
-                    Log::debug('Comment Engagement: Stage 1 (atomic image+QR) ล้ม (non-blocking): '.$atomicErr->getMessage());
+                // 📝 (2026-08-13) TEXT-FIRST — คำสั่งเจ้าของตรง ๆ:
+                //     "ข้อความชวนรับดวงฟรี ต้องได้ทุกคนที่ทัก ไม่ใช่แค่รูป"
+                //
+                //   ⚠️ ข้อจำกัด FB ที่บังคับให้ต้องเลือกอย่างใดอย่างหนึ่ง:
+                //     - `recipient.comment_id` (Private Reply) ใช้ได้ **ครั้งเดียวต่อ 1 คอมเมนต์**
+                //     - 1 ข้อความ = attachment **หรือ** text อย่างใดอย่างหนึ่ง (แนบพร้อมกันไม่ได้)
+                //     - คนคอมเมนต์ที่ไม่เคยทักเพจ = อยู่นอกกรอบ 24 ชม. → ยิงกล่องที่สองไม่ได้เลย
+                //   ⇒ สำหรับคนกลุ่มนี้ **ได้ข้อความ หรือ ได้รูป อย่างใดอย่างหนึ่งเท่านั้น**
+                //
+                //   ของเดิม (v3 banner-first) เลือก "รูป" → คนนอกกรอบได้รูปเปล่า ไม่มีตัวอักษรสักคำ
+                //   = อาการที่เจ้าของเจอเองเมื่อ 2026-08-11 แล้วสั่งปิดสวิตช์แบนเนอร์ทิ้ง
+                //   ⇒ กลับมาเป็น text-first ตามคำสั่ง: **ข้อความ+ปุ่มต้องถึงก่อนเสมอ**
+                //     แบนเนอร์กลายเป็นของแถมสำหรับคนที่ยิงกล่องที่สองถึงจริงเท่านั้น
+                $stage2TextSent = $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
+                    'from_comment_engagement' => true,
+                    'comment_id' => $commentId,
+                ]);
+
+                // 🖼️ BONUS: แบนเนอร์กล่องที่สอง — ยิงเฉพาะคนที่ "เคยทักเพจ" เท่านั้น
+                //   เช็คก่อนยิง ไม่ใช่ยิงแล้วค่อยรู้ว่าล้ม — คนคอมเมนต์ส่วนใหญ่อยู่นอกกรอบ 24 ชม.
+                //   (ข้อมูลจริง 2026-08-09: อยู่ในกรอบแค่ 197 จาก 9,693 คน = 2%)
+                //   ถ้ายิงหมดทุกคน = ~370 call ตกน้ำ/วัน = สัญญาณสแปมแบบเดียวกับเคส #2022
+                if ($stage2TextSent && $this->canReceiveSecondBox($userId)) {
+                    try {
+                        $bannerService = new FortuneBannerService($settings);
+                        $stage3ImageOnlySent = (bool) $bannerService->sendBannerThenWait(
+                            // ⚠️ ห้ามส่ง comment_id — slot ถูกใช้ไปกับข้อความแล้ว
+                            fn ($url) => $facebookService->sendImage($userId, $url),
+                            'comment',
+                            'facebook',
+                            $userId
+                        );
+                    } catch (Throwable $hErr) {
+                        Log::debug('Comment Engagement: banner bonus ล้ม (non-blocking): '.$hErr->getMessage());
+                    }
                 }
 
-                // STAGE 2 (FALLBACK): text+QR ผ่าน comment_id — เมื่อ Stage 1 ไม่ได้ส่ง
-                //   เกิดเฉพาะ:
-                //     - Banner ปิด (enable_dm_banner=false หรือ per-channel toggle off)
-                //     - ไม่มี active banner ในตาราง fortune_banners
-                //     - FB API ล่ม ตอน atomic call
-                //   ใช้ Stage 1 v2 เดิม (text+QR ผ่าน Private Reply) — ลูกค้ายังได้ CTA
-                if (! $stage1AtomicSent) {
-                    Log::info('🔁 Comment Engagement: Stage 1 (atomic) skip/fail → fallback Stage 2 (text+QR)', [
+                // 🩹 LAST RESORT: ข้อความไม่ผ่าน (คอมเมนต์ถูกลบ / ปิดรับ DM) → ลองรูปผ่าน comment_id
+                //   ได้รูปยังดีกว่าไม่ได้อะไรเลย · dead-comment cache กันยิงซ้ำให้แล้วใน service
+                if (! $stage2TextSent) {
+                    Log::info('🔁 Comment Engagement: text+QR ล้ม → ลองรูปอย่างเดียวเป็นทางสุดท้าย', [
                         'user_id' => $userId,
                         'comment_id' => $commentId,
                     ]);
 
-                    $stage2TextSent = $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
-                        'from_comment_engagement' => true,
-                        'comment_id' => $commentId,
-                    ]);
-
-                    // STAGE 3 (LAST RESORT): image only — ถ้า Stage 2 ก็ fail (FB privacy block ฯลฯ)
-                    //   ลูกค้าได้อย่างน้อยภาพ banner (ถ้าเปิด) — แม้ไม่มี text/QR
-                    if (! $stage2TextSent) {
-                        Log::info('🔁 Comment Engagement: Stage 2 (text+QR) ล้ม → ลอง Stage 3 (image only last resort)', [
-                            'user_id' => $userId,
-                            'comment_id' => $commentId,
-                        ]);
-
-                        try {
-                            $bannerService = $bannerService ?? new FortuneBannerService($settings);
-                            $stage3ImageOnlySent = (bool) $bannerService->sendBannerThenWait(
-                                fn ($url) => $facebookService->sendImage($userId, $url, null, ['comment_id' => $commentId]),
-                                'comment',
-                                'facebook',
-                                $userId
-                            );
-                        } catch (Throwable $hErr) {
-                            Log::debug('Comment Engagement: Stage 3 (image only) ล้ม (non-blocking): '.$hErr->getMessage());
-                        }
+                    try {
+                        $bannerService = $bannerService ?? new FortuneBannerService($settings);
+                        $stage1AtomicSent = (bool) $bannerService->sendBannerThenWait(
+                            fn ($url) => $facebookService->sendPrivateReplyImageWithQuickReplies(
+                                $commentId,
+                                $url,
+                                $quickReplies
+                            ),
+                            'comment',
+                            'facebook',
+                            $userId
+                        );
+                    } catch (Throwable $atomicErr) {
+                        Log::debug('Comment Engagement: image+QR last resort ล้ม (non-blocking): '.$atomicErr->getMessage());
                     }
                 }
 
-            } // end else (image-first path — เมื่อยังไม่ได้รูปสัปดาห์นี้)
+            } // end else (text-first path — เมื่อยังไม่ได้รูปสัปดาห์นี้)
 
             // map สำหรับ engagement record logic
             $dmSent = $stage1AtomicSent || $stage2TextSent;          // ลูกค้าได้ CTA (QR) แบบใดแบบหนึ่ง
