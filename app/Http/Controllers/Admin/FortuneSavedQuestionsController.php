@@ -246,10 +246,14 @@ class FortuneSavedQuestionsController extends Controller
             $settings = FortuneTellingSetting::getSettings();
             $fbService = new FacebookWebhookService($settings);
 
-            // ✅ ใช้ MESSAGE_TAG เพื่อส่งนอก 24-hour window
+            // ⛔ (2026-08-13) เดิมตั้ง MESSAGE_TAG + CONFIRMED_EVENT_UPDATE — ใช้ไม่ได้ 2 ชั้น:
+            //   1) คีย์ผิด — sendMessage อ่าน `message_tag` ไม่ใช่ `tag`
+            //      ⇒ ส่ง messaging_type=MESSAGE_TAG ออกไป **โดยไม่มี tag** = FB ปฏิเสธเสมอ
+            //   2) ต่อให้คีย์ถูก CONFIRMED_EVENT_UPDATE ก็ถูก Meta ยกเลิกแล้ว (subcode 1893061
+            //      — ยืนยันด้วย fortune:fb-tag-probe --to=<PSID จริง> เมื่อ 2026-08-13)
+            //   ⇒ RESPONSE คือทางเดียวที่ส่งถึงจริง (แอดมินตอบตอนลูกค้ายังคุยอยู่ = อยู่ในกรอบ 24 ชม.)
             return $fbService->sendMessage($userId, $message, [
-                'messaging_type' => 'MESSAGE_TAG',
-                'tag' => 'CONFIRMED_EVENT_UPDATE',
+                'messaging_type' => 'RESPONSE',
             ]);
         } catch (\Exception $e) {
             Log::error('Fortune SavedQuestion: ส่ง Facebook ล้มเหลว', [

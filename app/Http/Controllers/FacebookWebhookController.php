@@ -53,6 +53,16 @@ class FacebookWebhookController extends Controller
      */
     protected const META_BUSINESS_SUITE_APP_ID = '263902037430900';
 
+    /**
+     * 🚦 กุญแจ circuit breaker ของ auto-like คอมเมนต์
+     *
+     * ตั้งเมื่อ reactToComment ล้ม → หยุดยิงชั่วคราว (ดูเหตุผลเต็มที่ processComment)
+     */
+    protected const REACT_COMMENT_BREAKER_KEY = 'fb_react_comment_breaker';
+
+    /** พักนานเท่าไรเมื่อ breaker ทำงาน (ชั่วโมง) */
+    protected const REACT_COMMENT_BREAKER_HOURS = 6;
+
     protected $facebookService;
 
     protected $aiService;
@@ -390,6 +400,43 @@ class FacebookWebhookController extends Controller
         FortunePageContext::bindFromExternalId($externalPageId, 'facebook');
 
         $this->rebuildServicesForCurrentPage();
+    }
+
+    /**
+     * 🏬 กุญแจ breaker แยกตามสาขา
+     *
+     * ⚠️ ห้ามใช้กุญแจกลางตัวเดียว — ระบบมีหลายเพจ (`fortune_pages`) และแต่ละเพจ
+     *    ถือ token คนละใบ สิทธิ์ไม่เท่ากัน เพจที่ไม่มี scope จะลากเพจที่มีไปตายด้วย
+     *    (บทเรียนเดียวกับตอนทำระบบสาขา 2026-08-10 — state ที่ผูกกับ token ต้องแยกต่อเพจเสมอ)
+     */
+    protected function reactCommentBreakerKey(): string
+    {
+        return self::REACT_COMMENT_BREAKER_KEY.':'.(FortunePageContext::currentId() ?? 'default');
+    }
+
+    /**
+     * 🚦 ตัด auto-like ชั่วคราวเมื่อยิงไม่ผ่าน
+     *
+     * เหตุผลที่ต้อง "ตัดวงจร" แทนที่จะปล่อยล้มเงียบ ๆ ต่อไป:
+     *   call ที่ยิงแล้วถูก Meta ปฏิเสธซ้ำ ๆ ทุกวัน = สัญญาณสแปมสะสม
+     *   เคสจริง 2026-08-09 เพจโดน #2022 หลังยิงตกน้ำ 2,327 call/วัน
+     *
+     * log เป็น warning **ครั้งเดียวตอนตัดวงจร** — ไม่ใช่ทุก call
+     * (ของเดิม Log::debug ทุกครั้ง = ท่วม log จนไม่มีใครอ่าน แล้วเลยไม่มีใครเห็นว่าพัง)
+     *
+     * @param  string  $reason  ข้อความ error จาก Graph API
+     */
+    protected function tripReactCommentBreaker(string $reason): void
+    {
+        // ตั้งได้ครั้งเดียวต่อรอบ — Cache::add คืน false ถ้ามีอยู่แล้ว (กัน log ซ้ำ)
+        if (Cache::add($this->reactCommentBreakerKey(), 1, now()->addHours(self::REACT_COMMENT_BREAKER_HOURS))) {
+            Log::warning('🚦 ตัด auto-like คอมเมนต์ชั่วคราว — Graph ปฏิเสธ', [
+                'reason' => mb_substr($reason, 0, 300),
+                'พักถึง' => now()->addHours(self::REACT_COMMENT_BREAKER_HOURS)->toDateTimeString(),
+                'hint' => 'ปกติแปลว่า page token ไม่มี scope pages_manage_engagement',
+                'fortune_page_id' => FortunePageContext::currentId(),
+            ]);
+        }
     }
 
     /**
@@ -1190,17 +1237,32 @@ class FacebookWebhookController extends Controller
         //    — ครั้งเดียวต่อ comment_id (cache 24 ชม.)
         //    — best-effort: ถ้าล้มยังไป flow ต่อได้
         //    — เปิดใช้ก็ต่อเมื่อ token มี pages_manage_engagement scope
-        if (! empty($commentId) && $fromId !== ($this->settings->facebook_page_id ?? null)) {
+        //
+        // 🚦 (2026-08-13) CIRCUIT BREAKER — ของเดิมยิงทุกคอมเมนต์แล้วล้มทุกครั้ง
+        //    วัดจาก prod: "React comment ล้มเหลว HTTP 400" = 927 ครั้ง/วัน
+        //    = call ตกน้ำมากกว่า error อื่น ๆ ในระบบรวมกัน 3 เท่า
+        //    และเป็นรูปแบบเดียวกับที่ทำให้เพจโดน #2022 เมื่อ 2026-08-09 (2,327 call/วัน)
+        //    ต้นเหตุ: page token ไม่มี scope `pages_manage_engagement` (ยืนยันจาก debug_token)
+        //
+        //    ⚠️ ที่ไม่มีใครเห็นมาก่อน เพราะ catch เดิมกลืนเป็น Log::debug
+        //       → ต้องไปนับใน log เองถึงจะรู้ว่ามันพัง
+        //
+        //    ล้มครั้งแรก = พัก 6 ชม. แล้วค่อยลองใหม่ 1 ครั้ง (เผื่อวันหลัง scope ถูกเพิ่ม
+        //    ระบบจะกลับมา like เองอัตโนมัติ ไม่ต้องแก้โค้ดซ้ำ)
+        if (! empty($commentId)
+            && $fromId !== ($this->settings->facebook_page_id ?? null)
+            && ! Cache::has($this->reactCommentBreakerKey())) {
             $likeKey = "fb_liked_comment_{$commentId}";
             if (! Cache::has($likeKey)) {
                 try {
-                    $this->facebookService->reactToComment($commentId, 'LIKE');
-                    Cache::put($likeKey, 1, now()->addHours(24));
+                    $liked = $this->facebookService->reactToComment($commentId, 'LIKE');
+                    if ($liked) {
+                        Cache::put($likeKey, 1, now()->addHours(24));
+                    } else {
+                        $this->tripReactCommentBreaker('reactToComment คืน false');
+                    }
                 } catch (\Throwable $e) {
-                    // non-blocking — log แค่ debug
-                    Log::debug('Auto-like comment ล้ม (non-blocking): '.$e->getMessage(), [
-                        'comment_id' => $commentId,
-                    ]);
+                    $this->tripReactCommentBreaker($e->getMessage());
                 }
             }
         }

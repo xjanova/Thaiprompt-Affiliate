@@ -30,6 +30,48 @@ use Illuminate\Support\Facades\URL;
  */
 class FacebookWebhookService implements MessagingPlatformInterface
 {
+    /**
+     * 🏷️ MESSAGE_TAG ยังใช้ส่งนอกกรอบ 24 ชม. ได้ไหม
+     *
+     * ⛔ 2026-08-13 — ยิงทดสอบจริงแล้ว (`fortune:fb-tag-probe --to=<PSID จริง>`) ผลชี้ขาด:
+     *     CONFIRMED_EVENT_UPDATE  → subcode 1893061 "ไม่อนุญาตให้ใช้แท็กข้อความที่เลิกใช้แล้ว"
+     *     ACCOUNT_UPDATE          → subcode 1893061 (เหมือนกัน)
+     *     POST_PURCHASE_UPDATE    → subcode 1893061 (ตัวที่โค้ดนี้ใช้มาตลอด)
+     *     HUMAN_AGENT             → subcode 2018276 "ต้องได้รับการอนุมัติก่อน" (ต้อง App Review)
+     *   ⇒ **ไม่มีแท็กไหนใช้ได้เลยสำหรับเพจนี้**
+     *
+     * ผลกระทบก่อนแก้: retry MESSAGE_TAG 102 ครั้ง/วัน ที่ไม่มีทางสำเร็จ
+     *   — ลูกค้าไม่ได้ข้อความ **และ** เสีย call ตกน้ำให้ Meta นับเป็นสัญญาณสแปม
+     *
+     * 🕰️ ของเดิมเชื่อผิดมา 2 เดือนเพราะคอมเมนต์ในโค้ดเขียนว่า
+     *   "✅ POST_PURCHASE_UPDATE ใช้ได้ทันที" / "ใช้แทน HUMAN_AGENT ไม่ต้องขออนุมัติ"
+     *   ซึ่งเคยจริงตอนเขียน แต่ Meta ยกเลิกไปแล้ว — **คอมเมนต์ไม่ใช่หลักฐาน ต้องยิงถามจริง**
+     *
+     * ✅ ทางที่ยังใช้ได้และกว้างกว่าเดิม: **Private Reply (`recipient.comment_id`) window 7 วัน**
+     *    (MESSAGE_TAG เดิมครอบได้แค่คนที่เรามี PSID — Private Reply ครอบทุกคนที่คอมเมนต์)
+     *
+     * 🔁 วิธีเปิดกลับเมื่อ Meta อนุมัติ HUMAN_AGENT: เปลี่ยนเป็น true + ตั้ง MESSAGE_TAG_NAME = 'HUMAN_AGENT'
+     *    แล้วรัน `php artisan fortune:fb-tag-probe --to=<PSID>` ยืนยันก่อน deploy
+     */
+    public const MESSAGE_TAG_USABLE = false;
+
+    /** แท็กที่จะใช้เมื่อ MESSAGE_TAG_USABLE = true (ดูเหตุผลด้านบน) */
+    public const MESSAGE_TAG_NAME = 'POST_PURCHASE_UPDATE';
+
+    /**
+     * subcode ที่แปลว่า "แท็กนี้ใช้ไม่ได้" — ห้าม retry ต่อ
+     *
+     * ⚠️ 1893061 (แท็กถูกยกเลิก) เคย **ตกลิสต์** ทำให้ warning ไม่เคยขึ้นเลย 2 เดือน
+     *    ของเดิมดักแค่ 2018276 → เจอ 1893061 แล้วเงียบ ไม่มีใครรู้ว่าข้อความหาย
+     */
+    public const DEAD_TAG_SUBCODES = [1893061, 2018276];
+
+    /** 🚦 กุญแจ circuit breaker ของการอ่านคอมเมนต์ (ดูเหตุผลที่ listCommentsForPost) */
+    public const READ_COMMENTS_BREAKER_KEY = 'fb_read_comments_breaker';
+
+    /** พักนานเท่าไรเมื่อ breaker อ่านคอมเมนต์ทำงาน (ชั่วโมง) */
+    protected const READ_COMMENTS_BREAKER_HOURS = 6;
+
     protected $settings;
 
     protected $pageAccessToken;
@@ -301,14 +343,14 @@ class FacebookWebhookService implements MessagingPlatformInterface
         $messageTag = $options['message_tag'] ?? null;
 
         // เก็บ fallback tag ไว้ใช้กรณี RESPONSE ล้มเหลว (เกิน 24 ชม.)
-        // ⚠️ HUMAN_AGENT ต้องได้รับ approval จาก Facebook ก่อนใช้
-        // ✅ POST_PURCHASE_UPDATE ใช้ได้ทันทีสำหรับ update หลังชำระเงิน
-        $fallbackTag = $messageTag ?? 'POST_PURCHASE_UPDATE';
+        // ⛔ (2026-08-13) แท็กทุกตัวถูก Meta ยกเลิก — ดู self::MESSAGE_TAG_USABLE
+        $fallbackTag = $messageTag ?? self::MESSAGE_TAG_NAME;
 
         // ถ้า force_tag → ใช้ MESSAGE_TAG ทันที (admin ส่งมือจริงๆ)
-        if (! empty($options['force_tag'])) {
+        // ⛔ ข้ามถ้าแท็กใช้ไม่ได้ — ไม่งั้นยิงทิ้งตั้งแต่ครั้งแรกโดยไม่ได้ลอง RESPONSE ด้วยซ้ำ
+        if (! empty($options['force_tag']) && self::MESSAGE_TAG_USABLE) {
             $messagingType = 'MESSAGE_TAG';
-            $messageTag = $messageTag ?? 'POST_PURCHASE_UPDATE';
+            $messageTag = $messageTag ?? self::MESSAGE_TAG_NAME;
         }
 
         // ถ้า from_admin (ระบบส่งอัตโนมัติ) → ลอง RESPONSE ก่อน
@@ -384,9 +426,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
                     ]);
 
                     // ถ้าใช้ RESPONSE แล้ว error (outside 24hr) → ลองใหม่ด้วย MESSAGE_TAG
-                    // ⚠️ ใช้ POST_PURCHASE_UPDATE แทน HUMAN_AGENT (ไม่ต้องขออนุมัติ Facebook)
-                    if ($messagingType === 'RESPONSE' && in_array($errorSubcode, [2018278, 2018065])) {
-                        Log::info('🔄 เกิน 24 ชม. ลองใหม่ด้วย MESSAGE_TAG + POST_PURCHASE_UPDATE', [
+                    // ⛔ (2026-08-13) ปิดทาง retry เมื่อแท็กใช้ไม่ได้ — retry = call ตกน้ำเปล่า
+                    //    ลูกค้าไม่ได้ข้อความอยู่ดี แต่เสียสัญญาณสแปมให้ Meta ฟรี ๆ
+                    if (self::MESSAGE_TAG_USABLE
+                        && $messagingType === 'RESPONSE'
+                        && in_array($errorSubcode, [2018278, 2018065])) {
+                        Log::info('🔄 เกิน 24 ชม. ลองใหม่ด้วย MESSAGE_TAG', [
                             'recipient' => $recipientId,
                             'fallback_tag' => $fallbackTag,
                         ]);
@@ -396,15 +441,27 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         continue; // retry ด้วย tag ใหม่
                     }
 
-                    // ถ้าใช้ MESSAGE_TAG แล้วยัง error (tag ไม่ได้รับอนุมัติ) → log แจ้งเตือน
-                    if ($messagingType === 'MESSAGE_TAG' && in_array($errorSubcode, [2018276])) {
-                        Log::warning("⚠️ Facebook MESSAGE_TAG '{$messageTag}' ไม่ได้รับอนุมัติ", [
+                    // ถ้าใช้ MESSAGE_TAG แล้วยัง error (tag ตาย/ไม่ได้รับอนุมัติ) → log แจ้งเตือน
+                    if ($messagingType === 'MESSAGE_TAG' && in_array($errorSubcode, self::DEAD_TAG_SUBCODES)) {
+                        Log::warning("⚠️ Facebook MESSAGE_TAG '{$messageTag}' ใช้ไม่ได้ (subcode {$errorSubcode})", [
                             'recipient' => $recipientId,
                             'tag' => $messageTag,
-                            'hint' => 'ตรวจสอบ Facebook App → Messenger → Advanced Messaging',
+                            'hint' => '1893061 = Meta ยกเลิกแท็กนี้ · 2018276 = ต้องผ่าน App Review',
                         ]);
 
                         return false;
+                    }
+
+                    // 🔦 (2026-08-13) subcode แปลกหน้าตอนใช้ MESSAGE_TAG → ต้องดังไว้ก่อน
+                    //    บทเรียน: ของเดิมดักแค่ whitelist [2018276] พอ Meta เปลี่ยนเป็น 1893061
+                    //    ก็เงียบสนิท 2 เดือน — "ไม่รู้จัก" ต้องไม่แปลว่า "ไม่ต้องบอก"
+                    if ($messagingType === 'MESSAGE_TAG' && $errorSubcode) {
+                        Log::warning('🔦 MESSAGE_TAG ล้มด้วย subcode ที่ยังไม่รู้จัก — ตรวจสอบด่วน', [
+                            'recipient' => $recipientId,
+                            'tag' => $messageTag,
+                            'subcode' => $errorSubcode,
+                            'error' => mb_substr((string) $errorMsg, 0, 200),
+                        ]);
                     }
 
                     // ถ้าเป็น token error (190) หรือ permission error (10) ไม่ต้อง retry
@@ -518,7 +575,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
         // 🩹 (2026-05-07) Auto-fallback ถ้า RESPONSE fail (error 551 / 24hr window expired)
         //   เคสจริง: banner welcome push หลังลูกค้าเก่าทักอีกครั้ง — บางครั้ง 24hr window ปิดแล้ว
         //   FB error_subcode 1545041 → RESPONSE rejected → ต้อง MESSAGE_TAG=POST_PURCHASE_UPDATE
-        $messagingTypes = ['RESPONSE', 'MESSAGE_TAG'];
+        // ⛔ (2026-08-13) แท็กถูกยกเลิกหมดแล้ว → เหลือ RESPONSE อย่างเดียว (ดู MESSAGE_TAG_USABLE)
+        $messagingTypes = self::MESSAGE_TAG_USABLE ? ['RESPONSE', 'MESSAGE_TAG'] : ['RESPONSE'];
         $lastSubcode = 0;
         $lastErrMsg = '';
 
@@ -820,7 +878,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
         //   เดิม: มี message_tag → ['MESSAGE_TAG'] อย่างเดียว → ส่ง audio ด้วย tag ที่ตายแล้ว → 400 reject
         //   → ลูกค้า FB กด/พิมพ์ "อ่านให้ฟัง" ไม่เคยได้ไฟล์เสียง (LINE ได้เพราะไม่ใช้ tag)
         //   ลูกค้าขอเสียงหลังทำนาย = อยู่ใน 24 ชม.เสมอ → RESPONSE ผ่าน. tag เหลือเป็น fallback นอก 24 ชม.
-        $messagingTypes = ['RESPONSE', 'MESSAGE_TAG'];
+        // ⛔ (2026-08-13) ยืนยันแล้วว่าแท็กตายทุกตัว → ตัด fallback ทิ้ง (ดู MESSAGE_TAG_USABLE)
+        //    หมายเหตุ: บรรทัดบนนี้รู้เรื่อง 1893061 มาตั้งแต่ 2026-06-20 แต่แก้แค่ audio ตัวเดียว
+        //    เมธอดอื่นอีก 4 ตัวใช้แท็กที่ตายแล้วต่อมาอีก 2 เดือน — รอบนี้อุดพร้อมกันทั้งหมด
+        $messagingTypes = self::MESSAGE_TAG_USABLE ? ['RESPONSE', 'MESSAGE_TAG'] : ['RESPONSE'];
 
         foreach ($messagingTypes as $msgType) {
             $payload = [
@@ -1003,7 +1064,20 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             // 🔧 (2026-05-03) ถ้า from_admin + ระบุ message_tag → ใช้ MESSAGE_TAG ตั้งแต่แรก
             //   เคสหลัก: SMS payment confirmation push หลัง 24hr (ลูกค้าจ่ายแล้วเงียบ)
-            if ($fromAdmin && ! empty($messageTag)) {
+            //
+            // 🚨 (2026-08-13) จุดนี้อันตรายที่สุดในไฟล์ — เส้นทางของ **ลูกค้าที่จ่ายเงินแล้ว**
+            //   ผู้เรียกที่ส่ง message_tag มา ~20 จุด ล้วนเป็น push หลังชำระเงิน:
+            //   FortuneCelticRedeliver · ProcessDeepFortuneReadingJob · FortuneProSessionNudge ·
+            //   VerifySlipFallbackJob · FortuneRecoverPaidNoBirthdate · FortuneCheckPendingReadings
+            //
+            //   ของเดิมตั้ง MESSAGE_TAG **ตั้งแต่ครั้งแรก** = ไม่เคยลอง RESPONSE เลย
+            //   พอแท็กถูก Meta ยกเลิก (1893061) → ล้มทันที และ retry ข้างล่างก็ไม่ทำงาน
+            //   เพราะเงื่อนไข retry เช็ค `$messagingType === 'RESPONSE'` ซึ่งไม่มีวันจริงในเคสนี้
+            //   ⇒ ลูกค้าจ่ายเงินแล้วไม่ได้คำทำนาย โดยไม่มี fallback ใด ๆ
+            //
+            //   RESPONSE-first จึงดีกว่าเสมอ: คนที่เพิ่งจ่าย/เพิ่งคุย = อยู่ในกรอบ 24 ชม. → ผ่าน
+            //   (แนวเดียวกับที่แก้ sendAudio ไปแล้วเมื่อ 2026-06-20 แต่ตอนนั้นแก้แค่จุดเดียว)
+            if ($fromAdmin && ! empty($messageTag) && self::MESSAGE_TAG_USABLE) {
                 $messagingType = 'MESSAGE_TAG';
             }
 
@@ -1094,7 +1168,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
             //   เดิมตกหล่น → ยิง quick reply ไม่ผ่าน → throw → catch → sendMessage()
             //   = ลูกค้าได้ข้อความ **แบบไม่มีปุ่มเลย** (แย่กว่าปุ่มที่อาจโดน Meta AI แทรก)
             $is24hrError = in_array($errorSubcode, [2018278, 2018065, 2018001, 1545041]);
-            if ($is24hrError && $messagingType === 'RESPONSE') {
+            // ⛔ (2026-08-13) แท็กตายทุกตัว → retry คือ call ตกน้ำ (วัดจาก prod 57 ครั้ง/วันจากจุดนี้จุดเดียว)
+            if (self::MESSAGE_TAG_USABLE && $is24hrError && $messagingType === 'RESPONSE') {
                 Log::info('🔄 Quick Replies: RESPONSE ล้มเหลว (24hr expired) → ลองใหม่ด้วย MESSAGE_TAG', [
                     'recipient' => $recipientId,
                     'error_subcode' => $errorSubcode,
@@ -1103,7 +1178,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 ]);
 
                 $payload['messaging_type'] = 'MESSAGE_TAG';
-                $payload['tag'] = $messageTag ?? 'POST_PURCHASE_UPDATE';
+                $payload['tag'] = $messageTag ?? self::MESSAGE_TAG_NAME;
 
                 $retryResponse = Http::timeout(30)
                     ->post($this->graphUrl('/me/messages'), $payload);
@@ -1804,6 +1879,38 @@ class FacebookWebhookService implements MessagingPlatformInterface
     public ?string $lastFetchError = null;
 
     /**
+     * 🏬 กุญแจ breaker แยกตามสาขา — เพจคนละใบถือ token คนละสิทธิ์
+     *
+     * ⚠️ ถ้าใช้กุญแจกลางตัวเดียว เพจที่ไม่มี `pages_read_user_content` จะตัดเพจอื่นไปด้วย
+     */
+    protected function readCommentsBreakerKey(): string
+    {
+        return self::READ_COMMENTS_BREAKER_KEY.':'.(FortunePageContext::currentId() ?? 'default');
+    }
+
+    /**
+     * 🚦 ตัดการอ่านคอมเมนต์ชั่วคราวเมื่อ Graph ปฏิเสธเพราะสิทธิ์
+     *
+     * log เป็น warning **ครั้งเดียวตอนตัดวงจร** — ไม่ใช่ทุกโพสต์
+     * (ของเดิม warning ทุกโพสต์ = 50 บรรทัดต่อรอบ กลบสัญญาณอื่นจนหาไม่เจอ)
+     *
+     * @param  mixed  $errorCode  code จาก Graph (10 / 200 / 190)
+     * @param  string  $errorMsg  ข้อความ error สำหรับให้แอดมินอ่านออก
+     */
+    protected function tripReadCommentsBreaker($errorCode, string $errorMsg): void
+    {
+        if (Cache::add($this->readCommentsBreakerKey(), 1, now()->addHours(self::READ_COMMENTS_BREAKER_HOURS))) {
+            Log::warning('🚦 ตัดการอ่านคอมเมนต์ผ่าน Graph ชั่วคราว — สิทธิ์ไม่พอ', [
+                'error_code' => $errorCode,
+                'error' => mb_substr($errorMsg, 0, 200),
+                'พักถึง' => now()->addHours(self::READ_COMMENTS_BREAKER_HOURS)->toDateTimeString(),
+                'hint' => 'ต้องมี pages_read_user_content — ระหว่างนี้ realtime webhook ยังกันสแปมได้ปกติ',
+                'fortune_page_id' => FortunePageContext::currentId(),
+            ]);
+        }
+    }
+
+    /**
      * 💬 ดึงคอมเม้นต์ทั้งหมดของโพสหนึ่ง (paginated)
      *
      * @return array<array{id:string, message:string, from?:array}>
@@ -1813,6 +1920,23 @@ class FacebookWebhookService implements MessagingPlatformInterface
         $this->lastFetchError = null;
         if (empty($this->pageAccessToken)) {
             $this->lastFetchError = 'ไม่พบ pageAccessToken';
+
+            return [];
+        }
+
+        // 🚦 (2026-08-13) CIRCUIT BREAKER — สิทธิ์อ่านคอมเมนต์ถูกปฏิเสธทั้งเพจ
+        //   วัดจาก prod: cron `fortune:scan-old-comments` (รายชั่วโมง) ยิงจุดนี้ 57 ครั้ง/วัน
+        //   และ **ล้ม 100%** ด้วย (#10) ต้องมี pages_read_user_content / (#200) Missing Permissions
+        //   ⇒ toggle `auto_hide_link_comments` เปิดอยู่ + cron เดินครบ + ได้ผลลัพธ์ศูนย์
+        //     = ภาพลวงว่าเพจมีเกราะกันสแปม ทั้งที่ไม่มี
+        //
+        //   ⚠️ ไม่ได้ทำให้ระบบกันสแปมอ่อนลง — ด่านจริงคือ realtime webhook
+        //      (moderateLinkComment อ่านข้อความจาก payload ตรง ๆ ไม่ต้องใช้ scope เลย)
+        //      ตัวนี้เป็นแค่ตัวไล่เก็บย้อนหลัง ซึ่งอ่านอะไรไม่ได้อยู่แล้ว
+        //
+        //   เจอครั้งแรก = พัก 6 ชม. แล้วลองใหม่เอง (ถ้าวันหลังได้ scope จะกลับมาทำงานเอง)
+        if (Cache::has($this->readCommentsBreakerKey())) {
+            $this->lastFetchError = 'ข้ามชั่วคราว — สิทธิ์อ่านคอมเมนต์ถูกปฏิเสธ (circuit breaker)';
 
             return [];
         }
@@ -1838,6 +1962,13 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         'status' => $resp->status(),
                         'error' => $resp->json('error'),
                     ]);
+
+                    // 🚦 permission error = ทั้งเพจอ่านไม่ได้ ไม่ใช่โพสต์นี้โพสต์เดียว
+                    //    → ตัดวงจรทันที ไม่งั้นวนยิงต่ออีก 199 โพสต์ที่เหลือแล้วล้มเหมือนกันหมด
+                    if (in_array((int) $errorCode, [10, 200, 190], true)) {
+                        $this->tripReadCommentsBreaker($errorCode, $errorMsg);
+                    }
+
                     break;
                 }
                 $data = $resp->json('data', []);
@@ -3327,7 +3458,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $fromAdmin = ! empty($options['from_admin']);
 
             // เพิ่ม message_tag ถ้าระบุ (สำหรับส่งนอก 24 ชั่วโมง)
-            if (! empty($options['message_tag'])) {
+            // 🚨 (2026-08-13) เหตุผลเดียวกับ sendQuickReplies:1061 — บังคับแท็กตั้งแต่แรก
+            //   = ลูกค้าที่จ่ายแล้วโดนปฏิเสธทันทีโดยไม่ได้ลอง RESPONSE ⇒ ปิดไว้จนกว่าจะมีแท็กที่ใช้ได้
+            if (! empty($options['message_tag']) && self::MESSAGE_TAG_USABLE) {
                 $requestBody['messaging_type'] = 'MESSAGE_TAG';
                 $requestBody['tag'] = $options['message_tag'];
                 $messagingType = 'MESSAGE_TAG';
@@ -3355,14 +3488,19 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $subcode = $error['error_subcode'] ?? 0;
             $is24hrError = in_array($subcode, [2018278, 2018065, 2018001, 1545041]);
 
-            if ($is24hrError && empty($options['message_tag']) && $messagingType === 'RESPONSE') {
+            // ⛔ (2026-08-13) จุดนี้คือตัวที่ยิงตกน้ำมากที่สุดของ service นี้ — 102 ครั้ง/วันบน prod
+            //    เมื่อวาน (dab819269) เพิ่ม 1545041 เข้าลิสต์เพื่อให้ "ได้ retry"
+            //    แต่พอ retry จริงกลับเจอ subcode 1893061 = แท็กถูกยกเลิก → ล้มทุกครั้ง
+            //    = เปลี่ยนจาก "ไม่ retry เลย" เป็น "retry แล้วตายแน่นอน" — ลูกค้าได้เท่าเดิม เสีย call ฟรี
+            //    ⇒ ปิด retry ไว้จนกว่าจะมีแท็กที่ใช้ได้จริง (ปลายทางยัง fallback ไป quick reply เหมือนเดิม)
+            if (self::MESSAGE_TAG_USABLE && $is24hrError && empty($options['message_tag']) && $messagingType === 'RESPONSE') {
                 Log::info('Facebook Button Template: 24hr expired, retry with MESSAGE_TAG', [
                     'recipient' => $recipientId,
                     'subcode' => $subcode,
                     'from_admin' => $fromAdmin,
                 ]);
                 $requestBody['messaging_type'] = 'MESSAGE_TAG';
-                $requestBody['tag'] = 'POST_PURCHASE_UPDATE';
+                $requestBody['tag'] = self::MESSAGE_TAG_NAME;
 
                 $retry = Http::timeout(30)->post($this->graphUrl('/me/messages'), $requestBody);
 
