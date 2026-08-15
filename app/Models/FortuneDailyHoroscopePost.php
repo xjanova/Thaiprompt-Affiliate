@@ -59,7 +59,11 @@ class FortuneDailyHoroscopePost extends Model
         7 => '☀️', // อาทิตย์
     ];
 
+    // 🏬 (2026-08-15) ติดป้ายสาขาให้อัตโนมัติตอนสร้างแถว — สมุดกันโพสซ้ำต้องแยกรายสาขา
+    use \App\Models\Concerns\BelongsToFortunePage;
+
     protected $fillable = [
+        'fortune_page_id',
         'post_date',
         'day_of_birth',
         'tarot_card_id',

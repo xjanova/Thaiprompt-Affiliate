@@ -25,11 +25,37 @@ class FortuneMysticPublish extends Command
         {--slot= : ชั่วโมงของ slot (0-23) ถ้าไม่ระบุจะ auto-detect จากเวลาปัจจุบัน}
         {--date= : วันที่ (YYYY-MM-DD) default: today}
         {--all : โพสทุก slot ที่ตั้งไว้ใน schedule}
+        {--page= : ทำเฉพาะสาขาเดียว (รหัสสาขา / id / ไอดีเพจ) — เว้นว่าง = ทุกสาขาที่เปิด}
         {--force : ลบโพสเก่า (FB + DB) แล้วสร้างใหม่}';
 
-    protected $description = 'สร้างและโพสคอนเทนต์สายมูประจำ slot (สายมู/แก้เคล็ด/สิ่งลี้ลับ ฯลฯ)';
+    protected $description = 'สร้างและโพสคอนเทนต์สายมูประจำ slot (ทุกสาขาที่เปิด)';
 
-    public function handle(MysticContentAutoPostService $service): int
+    use \App\Console\Commands\Concerns\RunsForEachFortunePage;
+
+    /**
+     * 🏬 (2026-08-15) วนโพสให้ทุกสาขา
+     *
+     * ⚠️ ต้อง resolve service ใหม่ในแต่ละสาขา — ของเดิมรับผ่าน method injection
+     *    ซึ่ง resolve ครั้งเดียวก่อนเข้า loop = สาขาที่ 2 โพสด้วย token ของสาขาแรก
+     */
+    public function handle(): int
+    {
+        $stats = $this->forEachActiveFortunePage(
+            'facebook',
+            fn () => $this->runForCurrentPage(app(MysticContentAutoPostService::class)) === self::SUCCESS
+        );
+
+        if ($stats['ran'] > 1) {
+            $this->info("🏬 รวม {$stats['ran']} สาขา — สำเร็จ {$stats['ok']} · ล้มเหลว {$stats['failed']}");
+        }
+
+        return $stats['failed'] === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * โพสให้สาขาที่ context ชี้อยู่ตอนนี้ (เนื้อในเดิมทั้งหมด ไม่แตะ)
+     */
+    protected function runForCurrentPage(MysticContentAutoPostService $service): int
     {
         // Toggle เช็คก่อน — ถ้าปิดอยู่ ข้าม (กัน scheduler รันค้างไว้แต่ admin ปิด)
         $settings = FortuneTellingSetting::getSettings();
@@ -109,7 +135,7 @@ class FortuneMysticPublish extends Command
     /**
      * อ่าน schedule slots จาก settings
      *
-     * @return array<int>  เช่น [8, 20] — return เฉพาะ hour (backward compat)
+     * @return array<int> เช่น [8, 20] — return เฉพาะ hour (backward compat)
      */
     protected function getConfiguredSlots(FortuneTellingSetting $settings): array
     {
@@ -121,7 +147,7 @@ class FortuneMysticPublish extends Command
     /**
      * 🆕 (2026-05-13) อ่าน schedule slots พร้อม minute — รองรับ HH:MM format
      *
-     * @return array<array{hour:int,minute:int}>  เช่น [['hour'=>8,'minute'=>0], ['hour'=>8,'minute'=>30]]
+     * @return array<array{hour:int,minute:int}> เช่น [['hour'=>8,'minute'=>0], ['hour'=>8,'minute'=>30]]
      */
     protected function getConfiguredSlotsWithMinutes(FortuneTellingSetting $settings): array
     {
@@ -180,7 +206,7 @@ class FortuneMysticPublish extends Command
         $result = $service->generateAndPublish($slot, $date, $force);
 
         if ($result['success']) {
-            $this->info('✅ ' . ($result['message'] ?? 'สำเร็จ'));
+            $this->info('✅ '.($result['message'] ?? 'สำเร็จ'));
             if (! empty($result['topic'])) {
                 $this->line("   หมวด: {$result['topic']}");
             }
@@ -194,7 +220,7 @@ class FortuneMysticPublish extends Command
             return self::SUCCESS;
         }
 
-        $this->error('❌ ' . ($result['message'] ?? 'ล้มเหลว'));
+        $this->error('❌ '.($result['message'] ?? 'ล้มเหลว'));
 
         return self::FAILURE;
     }
@@ -205,7 +231,7 @@ class FortuneMysticPublish extends Command
         Carbon $date,
         bool $force
     ): int {
-        $this->info("🔮 โพสทุก slot ของวันที่ {$date->toDateString()} — slots: " . implode(', ', $slots));
+        $this->info("🔮 โพสทุก slot ของวันที่ {$date->toDateString()} — slots: ".implode(', ', $slots));
 
         $success = 0;
         foreach ($slots as $slot) {
@@ -213,7 +239,7 @@ class FortuneMysticPublish extends Command
             $result = $service->generateAndPublish($slot, $date, $force);
 
             $icon = $result['success'] ? '✅' : '❌';
-            $this->line("    {$icon} " . ($result['message'] ?? '-'));
+            $this->line("    {$icon} ".($result['message'] ?? '-'));
 
             if ($result['success']) {
                 $success++;

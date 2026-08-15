@@ -43,6 +43,9 @@ class FortunePagesController extends Controller
         //    ขาดตัวไหน = ตรวจเจอสแปมแต่ซ่อนไม่ได้ (เงียบ ไม่มี error ให้เห็นในหน้าจอ)
         'pages_read_user_content',
         'pages_manage_engagement',
+        // 📅 (2026-08-15) ใช้โพสดวงรายวัน/คอนเทนต์ลงหน้าเพจสาขา
+        //    ขาดตัวนี้ = บอทตอบแชทได้ปกติ แต่ cron โพสลงเพจไม่ได้ (คนละเส้นกัน สังเกตยาก)
+        'pages_manage_posts',
     ];
 
     /**

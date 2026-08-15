@@ -28,7 +28,11 @@ class FortuneContentPost extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    // 🏬 (2026-08-15) ติดป้ายสาขาให้อัตโนมัติตอนสร้างแถว — สมุดกันโพสซ้ำต้องแยกรายสาขา
+    use \App\Models\Concerns\BelongsToFortunePage;
+
     protected $fillable = [
+        'fortune_page_id',
         'campaign_id',
         'post_date',
         'slot_time',

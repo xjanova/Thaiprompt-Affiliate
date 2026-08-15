@@ -47,7 +47,10 @@ class DailyHoroscopeAutoPostService
         $date = $date ?? now();
 
         // ตรวจ duplicate (idempotent)
-        $existing = FortuneDailyHoroscopePost::where('post_date', $date->toDateString())
+        // 🏬 (2026-08-15) ต้องถามเฉพาะสาขาที่กำลังทำงานอยู่
+        //    เดิมถามรวมทุกสาขา → สาขาแรกโพสเสร็จ สาขาที่เหลือเห็น "โพสแล้ว" แล้วข้ามเงียบ
+        $existing = FortuneDailyHoroscopePost::forCurrentFortunePage()
+            ->where('post_date', $date->toDateString())
             ->where('day_of_birth', $dayOfBirth)
             ->first();
 

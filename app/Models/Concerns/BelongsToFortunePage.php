@@ -99,4 +99,30 @@ trait BelongsToFortunePage
 
         return $query->where('fortune_page_id', (int) $pageId);
     }
+
+    /**
+     * 🏬 (2026-08-15) กรองเฉพาะสาขาที่ "กำลังทำงานอยู่ตอนนี้"
+     *
+     * ใช้กับคิวรีที่ถามว่า "งานนี้ทำไปแล้วหรือยัง" (สมุดกันโพสซ้ำ ฯลฯ)
+     * ซึ่งเดิมถามรวมทุกสาขา → สาขาแรกทำเสร็จ สาขาที่เหลือถูกข้ามเงียบๆ
+     *
+     * ไม่กรองใน 2 กรณี (ตั้งใจ — ต้องได้พฤติกรรมเดิมเป๊ะ):
+     *   1. ไม่มี context (คอนโซลที่แอดมินรันเอง / ระบบเดิมที่ยังไม่มีสาขา)
+     *   2. คอลัมน์ยังไม่มี — ช่วง deploy โค้ดขึ้นก่อน migration เสมอ
+     *      ถ้าไม่กันไว้ คิวรีจะพังทั้งคำสั่ง = cron ตายทั้งระบบ
+     */
+    public function scopeForCurrentFortunePage(Builder $query): Builder
+    {
+        $pageId = FortunePageContext::currentId();
+
+        if ($pageId === null) {
+            return $query;
+        }
+
+        if (! static::fortunePageColumnExists($query->getModel()->getTable())) {
+            return $query;
+        }
+
+        return $query->where('fortune_page_id', $pageId);
+    }
 }

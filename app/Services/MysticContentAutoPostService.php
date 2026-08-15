@@ -52,8 +52,10 @@ class MysticContentAutoPostService
     {
         $date = $date ?? now('Asia/Bangkok');
 
-        // Idempotent — เช็ค unique (post_date, slot_hour)
-        $existing = FortuneMysticPost::where('post_date', $date->toDateString())
+        // Idempotent — เช็ค unique (fortune_page_id, post_date, slot_hour)
+        // 🏬 (2026-08-15) กรองสาขาด้วย ไม่งั้นสาขาที่ 2 เห็นของสาขาแรกแล้วข้าม
+        $existing = FortuneMysticPost::forCurrentFortunePage()
+            ->where('post_date', $date->toDateString())
             ->where('slot_hour', $slotHour)
             ->first();
 

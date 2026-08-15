@@ -140,8 +140,10 @@ class ContentCampaignAutoPostService
         // Normalize slot ผ่าน normalizer กลาง — กัน unique key เพี้ยนจากการแปลงคนละที่
         $slotTime = FortuneContentCampaign::normalizeSlot($slotTime) ?? $slotTime;
 
-        // Idempotent — เช็ค unique (campaign_id, post_date, slot_time)
-        $existing = FortuneContentPost::where('campaign_id', $campaign->id)
+        // Idempotent — เช็ค unique (fortune_page_id, campaign_id, post_date, slot_time)
+        // 🏬 (2026-08-15) กรองสาขาด้วย ไม่งั้นสาขาที่ 2 เห็นของสาขาแรกแล้วข้าม
+        $existing = FortuneContentPost::forCurrentFortunePage()
+            ->where('campaign_id', $campaign->id)
             ->where('post_date', $date->toDateString())
             ->where('slot_time', $slotTime)
             ->first();
@@ -354,7 +356,10 @@ class ContentCampaignAutoPostService
         }
 
         // กันเขียนซ้ำ: ดึงหัวข้อโพสล่าสุด 5 โพสของแคมเปญนี้
-        $recentTopics = FortuneContentPost::where('campaign_id', $campaign->id)
+        // 🏬 (2026-08-15) นับเฉพาะสาขาตัวเอง — คนดูเพจ B ไม่เคยเห็นโพสของเพจ A
+        //    ถ้านับรวมทุกสาขา เนื้อหาจะถูกบังคับให้ต่างกันไปเรื่อยๆ ทั้งที่ไม่จำเป็น
+        $recentTopics = FortuneContentPost::forCurrentFortunePage()
+            ->where('campaign_id', $campaign->id)
             ->where('id', '!=', $post->id)
             ->where('status', FortuneContentPost::STATUS_POSTED)
             ->latest('posted_at')

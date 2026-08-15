@@ -16,8 +16,10 @@
     → เลือกแอปเดียวกับที่ใช้อยู่ → กด <em>Generate Access Token</em> → ติ๊กสิทธิ์
     <code>pages_show_list</code>, <code>pages_messaging</code>, <code>pages_manage_metadata</code>,
     <code>pages_read_engagement</code>,
-    <code>pages_read_user_content</code>, <code>pages_manage_engagement</code> → ก็อปมาวางที่ช่องนี้<br>
-    🛡️ <strong>2 ตัวท้ายคือระบบกรองคอมเมนต์สแปม</strong> (อ่านคอมเมนต์ + ซ่อนคอมเมนต์) — ขาดไปจะตรวจเจอสแปมแต่ซ่อนไม่ได้<br>
+    <code>pages_read_user_content</code>, <code>pages_manage_engagement</code>,
+    <code>pages_manage_posts</code> → ก็อปมาวางที่ช่องนี้<br>
+    🛡️ <strong>pages_read_user_content + pages_manage_engagement คือระบบกรองคอมเมนต์สแปม</strong> (อ่านคอมเมนต์ + ซ่อนคอมเมนต์) — ขาดไปจะตรวจเจอสแปมแต่ซ่อนไม่ได้<br>
+    📅 <strong>pages_manage_posts คือการโพสดวงรายวัน/คอนเทนต์ลงหน้าเพจ</strong> — ขาดไปบอทยังตอบแชทได้ แต่เพจจะไม่มีโพสอัตโนมัติเลย<br>
     ⏳ <strong>ไม่ต้องไปกด Extend เองที่ Access Token Debugger</strong> — ระบบแลกเป็นตัวอายุยาว (60 วัน) ให้อัตโนมัติตอนกดเชื่อม
     (token สดจาก Explorer อายุแค่ ~1 ชม. และกุญแจของเพจที่ขอด้วยตัวสั้นก็จะอายุสั้นตามไปด้วย)<br>
     🔒 ระบบเก็บแบบเข้ารหัสและไม่แสดงค่ากลับออกมาอีก · ถ้าหมดอายุแค่มาวางใหม่

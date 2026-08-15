@@ -26,11 +26,37 @@ class FortuneContentPublish extends Command
         {--slot= : เวลา slot "HH:MM" เช่น 07:30}
         {--date= : วันที่ (YYYY-MM-DD) default: today}
         {--all : โพสทุก slot ของทุกแคมเปญที่เปิด}
+        {--page= : ทำเฉพาะสาขาเดียว (รหัสสาขา / id / ไอดีเพจ) — เว้นว่าง = ทุกสาขาที่เปิด}
         {--force : ลบโพสเก่า (FB + DB) แล้วสร้างใหม่}';
 
-    protected $description = 'โพสคอนเทนต์อัตโนมัติแบบหลายแคมเปญ (กำลังใจ/กฎแห่งกรรม/จิตวิทยา/สายมู ฯลฯ)';
+    protected $description = 'โพสคอนเทนต์อัตโนมัติแบบหลายแคมเปญ (ทุกสาขาที่เปิด)';
 
-    public function handle(ContentCampaignAutoPostService $service): int
+    use \App\Console\Commands\Concerns\RunsForEachFortunePage;
+
+    /**
+     * 🏬 (2026-08-15) วนโพสให้ทุกสาขา
+     *
+     * ⚠️ ต้อง resolve service ใหม่ในแต่ละสาขา — ของเดิมรับผ่าน method injection
+     *    ซึ่ง resolve ครั้งเดียวก่อนเข้า loop = สาขาที่ 2 โพสด้วย token ของสาขาแรก
+     */
+    public function handle(): int
+    {
+        $stats = $this->forEachActiveFortunePage(
+            'facebook',
+            fn () => $this->runForCurrentPage(app(ContentCampaignAutoPostService::class)) === self::SUCCESS
+        );
+
+        if ($stats['ran'] > 1) {
+            $this->info("🏬 รวม {$stats['ran']} สาขา — สำเร็จ {$stats['ok']} · ล้มเหลว {$stats['failed']}");
+        }
+
+        return $stats['failed'] === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * โพสให้สาขาที่ context ชี้อยู่ตอนนี้ (เนื้อในเดิมทั้งหมด ไม่แตะ)
+     */
+    protected function runForCurrentPage(ContentCampaignAutoPostService $service): int
     {
         $date = $this->option('date')
             ? Carbon::parse($this->option('date'), 'Asia/Bangkok')
