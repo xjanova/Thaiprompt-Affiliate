@@ -43,6 +43,7 @@ class FortuneCustomerPersona extends Model
         'fortune_page_id',   // 🏬 สาขา/เพจต้นทาง
         'platform',
         'platform_user_id',
+        'linked_asid',       // 🔗 ASID จากการล็อกอิน FB — กุญแจเย็บคนเดียวกันข้ามสาขา
         'display_name',
         'demographics',
         'traits',
