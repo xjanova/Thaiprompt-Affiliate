@@ -37,6 +37,11 @@ class FortunePagesController extends Controller
         'pages_messaging',
         'pages_manage_metadata',
         'pages_read_engagement',
+        // 🛡️ (2026-08-15) 2 ตัวนี้ใช้กับระบบกรองคอมเมนต์สแปม — อ่านคอมเมนต์ + ซ่อนคอมเมนต์
+        //    ปลดเป็น "พร้อมทดสอบ" แล้วหลังกดเพิ่มเข้า App Review ของ use case PAGES_API
+        //    ขาดตัวไหน = ตรวจเจอสแปมแต่ซ่อนไม่ได้ (เงียบ ไม่มี error ให้เห็นในหน้าจอ)
+        'pages_read_user_content',
+        'pages_manage_engagement',
     ];
 
     /**

@@ -4397,16 +4397,19 @@ Format 2 — JSON array:
                         🛡️ ระบบกรองคอมเม้นต์สแปม (บล็อกคนโพสต์ลิงก์)
                     </h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        เจอลิงก์ภายนอกในคอมเม้นต์ → <strong>บล็อกคนโพสต์ทันที</strong> (ห้าม DM + ห้ามคอมเม้นต์)
-                        ไม่เว้นแม้แต่คนที่เคยจ่ายเงิน · ดูรายการ + กดไปลบคอมเม้นต์ + ปลดบล็อกได้ที่
+                        เจอลิงก์ภายนอกในคอมเม้นต์ → <strong>ซ่อนคอมเม้นต์ + บล็อกคนโพสต์ทันที</strong> (ห้าม DM + ห้ามคอมเม้นต์)
+                        ไม่เว้นแม้แต่คนที่เคยจ่ายเงิน · ดูรายการ + ปลดบล็อกได้ที่
                         <a href="{{ route('admin.fortune.comment-link-blocks.index') }}"
                            class="text-red-600 dark:text-red-400 hover:underline font-semibold">หน้าคอมเมนต์แปะลิงก์</a>
+                        <br><span class="opacity-80">Detects external links in comments → hides the comment and blocks the poster.</span>
                     </p>
-                    <p class="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
-                        ⚠️ การ <strong>ซ่อน/ลบคอมเม้นต์</strong> ยังทำไม่ได้ — ต้องมี
+                    {{-- (2026-08-15) ได้ scope แล้ว — ซ่อนคอมเม้นต์เองได้จริง ไม่ต้องรอ App Review อีก --}}
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-1.5">
+                        ✅ <strong>ซ่อนคอมเม้นต์ได้แล้ว</strong> — Page Token มี
+                        <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">pages_read_user_content</code> +
                         <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">pages_manage_engagement</code>
-                        ที่ยังติด App Review ของ Meta · การบล็อกคนใช้
-                        <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">pages_manage_metadata</code> ที่มีอยู่แล้ว จึงทำงานได้เลย
+                        ครบแล้ว · การซ่อนย้อนกลับได้ (เจ้าของคอมเม้นต์ยังเห็นของตัวเอง)
+                        <br><span class="opacity-80">Both permissions are active. Hiding is reversible — the author still sees their own comment.</span>
                     </p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">

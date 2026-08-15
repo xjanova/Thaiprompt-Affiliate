@@ -9,9 +9,11 @@
     - $search : string
 
     ทำไมหน้านี้ต้องมี:
-    Page token ยังไม่มีสิทธิ์ pages_manage_engagement (ติด App Review)
-    → บอทซ่อน/ลบคอมเมนต์เองไม่ได้ ทำได้แค่บล็อกคนโพสต์
-    → จึงต้องรวม permalink ไว้ให้แอดมินกดไปลบคอมเมนต์เอง
+    รวมเหตุการณ์ "เจอลิงก์ในคอมเมนต์" ไว้ที่เดียว — ดูว่าบอทซ่อน/บล็อกอะไรไปบ้าง
+    ปลดบล็อกคืนได้ และมี permalink ให้กดไปลบถาวรด้วยมือถ้าต้องการ
+
+    (2026-08-15) ได้ pages_read_user_content + pages_manage_engagement แล้ว
+    → บอทซ่อนคอมเมนต์เองได้ ไม่ใช่แค่บล็อกคนโพสต์เหมือนเดิม
 --}}
 @extends('layouts.admin-v4')
 
@@ -29,9 +31,13 @@
             <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">
                 คอมเมนต์แปะลิงก์ 🔗
             </h1>
+            {{-- ป้ายอังกฤษกำกับ — ตามแบบเมนูข้างที่เป็นสองภาษาอยู่แล้ว --}}
+            <div style="font-size:13px; color:var(--ink2); font-weight:600; letter-spacing:.02em; margin-top:2px;">
+                Link-Spam Comment Moderation
+            </div>
             <p class="tp-muted" style="font-size:13px; margin:6px 0 0; max-width:640px;">
-                บอทเจอลิงก์ภายนอกในคอมเมนต์ → <strong>บล็อกคนโพสต์ทันที</strong> (ห้าม DM + ห้ามคอมเมนต์)
-                แล้วเก็บลิงก์ตำแหน่งคอมเมนต์ไว้ให้แอดมินกดไปลบเอง
+                บอทเจอลิงก์ภายนอกในคอมเมนต์ → <strong>ซ่อนคอมเมนต์ + บล็อกคนโพสต์ทันที</strong> (ห้าม DM + ห้ามคอมเมนต์)
+                <br><span style="opacity:.85;">Detects external links in comments → hides the comment and blocks the poster automatically.</span>
             </p>
         </div>
         @if($stats['unread'] > 0)
@@ -45,17 +51,27 @@
         @endif
     </div>
 
-    {{-- ===== แจ้งข้อจำกัดที่แอดมินต้องรู้ ===== --}}
-    <div class="tp-card" style="padding:16px 18px; border-left:4px solid #e0a52e;">
-        <div style="display:flex; align-items:center; gap:9px; font-weight:700; color:#e0a52e; margin-bottom:6px;">
-            <i class="fas fa-triangle-exclamation"></i> บอทลบคอมเมนต์เองยังไม่ได้ — ต้องให้คนกดลบ
+    {{-- ===== สถานะสิทธิ์ที่ใช้ซ่อนคอมเมนต์ ===== --}}
+    {{-- (2026-08-15) ได้ pages_read_user_content + pages_manage_engagement เป็น Standard Access แล้ว
+         หลังกด "เพิ่มไปยังการตรวจสอบแอพ" ที่ use case PAGES_API แล้วเชื่อม token ใหม่
+         → บอทซ่อนคอมเมนต์เองได้จริง ไม่ต้องรอแอดมินไปลบมืออีก --}}
+    <div class="tp-card" style="padding:16px 18px; border-left:4px solid #3f9d6d;">
+        <div style="display:flex; align-items:center; gap:9px; font-weight:700; color:#3f9d6d; margin-bottom:6px;">
+            <i class="fas fa-shield-halved"></i> บอทซ่อนคอมเมนต์เองได้แล้ว
+            <span style="font-weight:600; opacity:.8;">· Automatic comment hiding is active</span>
         </div>
         <p style="margin:0; font-size:13px; color:var(--ink2); line-height:1.65;">
-            สิทธิ์ <code style="font-family:ui-monospace,monospace;">pages_manage_engagement</code> ของแอปยังติด App Review ของ Meta
-            บอทจึง <strong>บล็อกคนโพสต์ได้</strong> (ใช้สิทธิ์ <code style="font-family:ui-monospace,monospace;">pages_manage_metadata</code> ที่มีอยู่แล้ว)
-            แต่ <strong>ซ่อน/ลบคอมเมนต์ไม่ได้</strong> — คอมเมนต์เดิมยังค้างอยู่บนโพสต์
-            กดปุ่ม <strong>“ไปลบคอมเมนต์”</strong> เพื่อเปิดไปที่ตำแหน่งคอมเมนต์บน Facebook แล้วลบมือ
-            เมื่อ App Review ผ่าน บอทจะเริ่มซ่อนให้เองทันทีโดยไม่ต้องแก้อะไรเพิ่ม
+            แอปได้สิทธิ์ <code style="font-family:ui-monospace,monospace;">pages_read_user_content</code>
+            (อ่านคอมเมนต์) และ <code style="font-family:ui-monospace,monospace;">pages_manage_engagement</code>
+            (ซ่อนคอมเมนต์) แล้ว บอทจึง <strong>ซ่อนคอมเมนต์สแปม + บล็อกคนโพสต์</strong> ได้เองทันที
+            การซ่อน <strong>ย้อนกลับได้เสมอ</strong> — เจ้าของคอมเมนต์ยังเห็นของตัวเอง คนอื่นไม่เห็น
+            <br>
+            <span style="opacity:.85;">
+                The app now holds both permissions, so spam comments are hidden automatically.
+                Hiding is reversible — the author still sees their own comment, other people do not.
+            </span>
+            <br>
+            ปุ่ม <strong>“ไปลบคอมเมนต์”</strong> ยังใช้ได้ ถ้าต้องการลบถาวรด้วยมือ
         </p>
     </div>
 
@@ -184,7 +200,7 @@
                 <div class="tp-num" style="font-size:26px; font-weight:800; color:#d9534f; line-height:1;">
                     {{ number_format($stats['need_delete']) }}
                 </div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">รอแอดมินไปลบ</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">รอแอดมินไปลบ<br><span style="opacity:.7;">Awaiting deletion</span></div>
             </div>
         </div>
 
@@ -197,7 +213,7 @@
                 <div class="tp-num" style="font-size:26px; font-weight:800; color:#e0a52e; line-height:1;">
                     {{ number_format($stats['unread']) }}
                 </div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ยังไม่รับทราบ</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ยังไม่รับทราบ<br><span style="opacity:.7;">Unacknowledged</span></div>
             </div>
         </div>
 
@@ -210,7 +226,7 @@
                 <div class="tp-num" style="font-size:26px; font-weight:800; color:var(--deep1); line-height:1;">
                     {{ number_format($stats['still_blocked']) }}
                 </div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ยังถูกบล็อก</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ยังถูกบล็อก<br><span style="opacity:.7;">Currently blocked</span></div>
             </div>
         </div>
 
@@ -223,7 +239,7 @@
                 <div class="tp-num" style="font-size:26px; font-weight:800; color:#d9534f; line-height:1;">
                     {{ number_format($stats['block_failed']) }}
                 </div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">บล็อกไม่สำเร็จ</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">บล็อกไม่สำเร็จ<br><span style="opacity:.7;">Block failed</span></div>
             </div>
         </div>
 
