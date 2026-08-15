@@ -286,6 +286,45 @@ class SmsPaymentController extends Controller
         return $this->slipLogCache[$rid] = $log;
     }
 
+    /**
+     * 🏬 (2026-08-15) สาขาที่บิลใบนี้เกิด — ส่งให้แอพ SMS Checker แสดงว่าเป็นของเพจไหน
+     *
+     * memo ไว้ในตัวแปร static เพราะ orders() วนบิลทีละใบ
+     * ถ้า query ทุกใบจะกลายเป็น N+1 บนหน้าที่แอพ poll ทุก 30 วินาที
+     *
+     * @return array{id: int, code: string, name: string, is_default: bool}|null
+     */
+    private function branchInfoFor(FortuneReading $reading): ?array
+    {
+        $pageId = $reading->fortune_page_id ?? null;
+
+        if (empty($pageId)) {
+            return null; // บิลเก่าก่อนมีระบบสาขา / งานคอนโซล
+        }
+
+        static $memo = [];
+
+        if (array_key_exists($pageId, $memo)) {
+            return $memo[$pageId];
+        }
+
+        try {
+            $page = \App\Models\FortunePage::find($pageId);
+
+            $memo[$pageId] = $page === null ? null : [
+                'id' => (int) $page->id,
+                'code' => (string) $page->code,
+                'name' => (string) ($page->brand_name ?: $page->name),
+                'is_default' => (bool) $page->is_default,
+            ];
+        } catch (\Throwable $e) {
+            // อ่านสาขาไม่ได้ต้องไม่ทำให้รายการบิลทั้งหน้าพัง — แอพขาดแค่ป้ายสาขา
+            $memo[$pageId] = null;
+        }
+
+        return $memo[$pageId];
+    }
+
     private function transformFortuneReadingToOrderApproval(FortuneReading $reading): array
     {
         // แปลง conversation_status → approval_status ที่ Android เข้าใจ
@@ -401,16 +440,30 @@ class SmsPaymentController extends Controller
         $platform = $reading->platform
             ?: ((preg_match('/^U[0-9a-f]{32}$/i', $reading->facebook_user_id ?? '')) ? 'line' : 'facebook');
 
+        // 🏬 (2026-08-15) บิลนี้มาจากสาขาไหน — เจ้าของสั่ง "แอพต้องระบุด้วยว่าบิลเป็นของเพจไหน"
+        //    ส่ง 2 ทาง:
+        //      1. ก้อน branch (มีโครงสร้าง) — ไว้ให้แอพรุ่นใหม่วาด badge สาขา
+        //      2. ต่อท้าย product_details — เห็นผลทันทีบนแอพรุ่นปัจจุบันโดยไม่ต้องอัปเดตแอพ
+        //    แสดงเฉพาะสาขาที่ "ไม่ใช่สาขาหลัก" — บิลส่วนใหญ่มาจากเพจหลัก
+        //    ถ้าแปะทุกใบจะกลายเป็นข้อความซ้ำเต็มจอจนไม่มีใครอ่าน
+        $branch = $this->branchInfoFor($reading);
+        $productDetails = $customerName;
+
+        if ($branch !== null && ! $branch['is_default']) {
+            $productDetails = $customerName.' · 🏬 '.$branch['name'];
+        }
+
         // 🛑 (2026-05-06) Pay-Later removed — ไม่มี suffix "ดูก่อนจ่าย" + ไม่ส่ง flag
         $orderDetails = [
             'order_number' => $reading->bill_reference,
             'product_name' => $productName,
-            'product_details' => $customerName,
+            'product_details' => $productDetails,
             'quantity' => 1,
             'website_name' => config('app.name'),
             'customer_name' => $customerName,
             'amount' => $displayAmount,
             'platform' => $platform,
+            'branch' => $branch,
             // 🚫 (2026-07-27) บิลดูดวงยกเลิกการอนุมัติได้จากแอพ (voidApproval engine)
             //    แอพจะโชว์ปุ่ม "ยกเลิกการอนุมัติ" เฉพาะบิลที่ค่านี้ = true และอนุมัติแล้ว
             'can_void' => true,

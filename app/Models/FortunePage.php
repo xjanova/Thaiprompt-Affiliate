@@ -45,6 +45,7 @@ class FortunePage extends Model
         'settings_override',
         'owner_user_id',
         'is_active',
+        'auto_post_enabled',
         'is_default',
         'notes',
     ];
@@ -52,6 +53,8 @@ class FortunePage extends Model
     protected $casts = [
         'settings_override' => 'array',
         'is_active' => 'boolean',
+        // 🏬 (2026-08-15) สวิตช์ "โพสอัตโนมัติลงหน้าเพจนี้" — opt-in เท่านั้น
+        'auto_post_enabled' => 'boolean',
         'is_default' => 'boolean',
     ];
 

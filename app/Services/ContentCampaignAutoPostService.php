@@ -8,6 +8,7 @@ use App\Models\FortuneContentCampaign;
 use App\Models\FortuneContentPost;
 use App\Models\FortuneMysticTopic;
 use App\Models\FortuneTellingSetting;
+use App\Services\Fortune\FortunePageContext;
 use App\Services\Fortune\FacebookContentPolicy;
 use Carbon\Carbon;
 use Exception;
@@ -1369,7 +1370,10 @@ class ContentCampaignAutoPostService
      */
     protected function resolvePageCredentials(): array
     {
-        $fresh = FortuneTellingSetting::query()->first();
+        // 🏬 (2026-08-15) ⚠️ ห้ามใช้ ::query()->first() — นั่นคือแถวกลาง ไม่รู้จักสาขา
+        //    cron วนโพสหลายสาขาแล้วทุกสาขาจะลงเพจหลักซ้ำกันหมด
+        FortunePageContext::flushMemo();
+        $fresh = FortuneTellingSetting::getSettings();
         if (! $fresh) {
             return [null, null];
         }

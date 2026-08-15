@@ -29,13 +29,23 @@ trait RunsForEachFortunePage
      * @param  callable(FortunePage|null): bool  $callback  คืน true = สำเร็จ
      * @return array{ran: int, ok: int, failed: int}
      */
-    protected function forEachActiveFortunePage(string $platform, callable $callback): array
+    protected function forEachActiveFortunePage(string $platform, callable $callback, bool $requireAutoPost = false): array
     {
-        $pages = $this->resolveTargetPages($platform);
+        $pages = $this->resolveTargetPages($platform, $requireAutoPost);
 
-        // ไม่มีสาขาให้วน (ติดตั้งใหม่ / ตารางยังไม่ migrate / --page ชี้ผิด)
-        // → ทำงานครั้งเดียวแบบไม่มี context = พฤติกรรมเดิมเป๊ะ ห้ามเงียบหาย
         if ($pages === []) {
+            // 🛑 มีระบบสาขาใช้งานอยู่จริง แต่ไม่มีสาขาไหนติ๊ก "โพสอัตโนมัติ" ไว้
+            //    = แอดมินสั่งปิด ต้องไม่ทำอะไรเลย
+            //    ⚠️ ถ้าตกลงไป fallback ข้างล่างจะกลายเป็นโพสลงเพจหลักด้วยค่ากลาง
+            //       ทั้งที่แอดมินเพิ่งสั่งปิด — พังแบบสวนทางคำสั่งคน
+            if ($requireAutoPost && $this->branchSystemInUse($platform)) {
+                $this->info('ℹ️  ไม่มีสาขาไหนเปิด “โพสอัตโนมัติ” ไว้ → ข้าม');
+
+                return ['ran' => 0, 'ok' => 0, 'failed' => 0];
+            }
+
+            // ไม่มีสาขาให้วน (ติดตั้งใหม่ / ตารางยังไม่ migrate / --page ชี้ผิด)
+            // → ทำงานครั้งเดียวแบบไม่มี context = พฤติกรรมเดิมเป๊ะ ห้ามเงียบหาย
             $ok = (bool) $callback(null);
 
             return ['ran' => 1, 'ok' => $ok ? 1 : 0, 'failed' => $ok ? 0 : 1];
@@ -76,7 +86,28 @@ trait RunsForEachFortunePage
      *
      * @return array<int, FortunePage>
      */
-    protected function resolveTargetPages(string $platform): array
+    /**
+     * ระบบสาขาใช้งานอยู่จริงไหม (มีตาราง + มีคอลัมน์สวิตช์ + มีสาขาที่เปิดอยู่)
+     *
+     * ใช้แยก "แอดมินสั่งปิดโพสไว้" ออกจาก "ยังไม่มีระบบสาขา" — 2 กรณีนี้ต้องทำคนละอย่าง
+     */
+    protected function branchSystemInUse(string $platform): bool
+    {
+        try {
+            if (! Schema::hasTable('fortune_pages') || ! Schema::hasColumn('fortune_pages', 'auto_post_enabled')) {
+                return false;
+            }
+
+            return FortunePage::query()
+                ->where('platform', $platform)
+                ->where('is_active', true)
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    protected function resolveTargetPages(string $platform, bool $requireAutoPost = false): array
     {
         // ⚠️ deploy: โค้ดขึ้นก่อน migration ได้เสมอ — ตารางยังไม่มีต้องไม่พังทั้ง command
         try {
@@ -89,6 +120,14 @@ trait RunsForEachFortunePage
                 ->where('is_active', true)
                 ->orderByDesc('is_default')   // สาขาหลักก่อนเสมอ — ของสำคัญที่สุดได้คิวแรก
                 ->orderBy('id');
+
+            // 🏬 โพสลงหน้าเพจ = opt-in เท่านั้น แอดมินต้องติ๊กเองในหน้าสาขา
+            //    (เปิดสาขาใหม่แล้วบอทแอบไปโพสลงเพจเองคือสิ่งที่ต้องไม่เกิด)
+            //    คอลัมน์ยังไม่มี = ช่วง deploy ก่อน migration → ไม่กรอง
+            //    เพราะตอนนั้นมีแต่สาขาหลักที่โพสอยู่แล้ว พฤติกรรมจึงเหมือนเดิม
+            if ($requireAutoPost && Schema::hasColumn('fortune_pages', 'auto_post_enabled')) {
+                $query->where('auto_post_enabled', true);
+            }
 
             // --page รับได้ทั้งรหัสสาขา, id ในระบบ, และไอดีเพจของ Facebook
             $only = $this->hasOption('page') ? trim((string) $this->option('page')) : '';

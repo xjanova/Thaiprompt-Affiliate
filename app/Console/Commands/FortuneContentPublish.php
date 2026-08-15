@@ -43,7 +43,8 @@ class FortuneContentPublish extends Command
     {
         $stats = $this->forEachActiveFortunePage(
             'facebook',
-            fn () => $this->runForCurrentPage(app(ContentCampaignAutoPostService::class)) === self::SUCCESS
+            fn () => $this->runForCurrentPage(app(ContentCampaignAutoPostService::class)) === self::SUCCESS,
+            true // เฉพาะสาขาที่แอดมินติ๊ก “โพสอัตโนมัติ” ไว้
         );
 
         if ($stats['ran'] > 1) {

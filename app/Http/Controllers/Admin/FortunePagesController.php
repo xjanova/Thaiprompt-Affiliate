@@ -1098,6 +1098,7 @@ class FortunePagesController extends Controller
             'verify_token' => 'nullable|string|max:255',
             'owner_user_id' => 'nullable|exists:users,id',
             'is_active' => 'nullable|boolean',
+            'auto_post_enabled' => 'nullable|boolean',
             'is_default' => 'nullable|boolean',
             'notes' => 'nullable|string|max:2000',
             'settings_override_json' => 'nullable|string',
@@ -1131,6 +1132,14 @@ class FortunePagesController extends Controller
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_default'] = $request->boolean('is_default');
+
+        // 🏬 ช่องนี้มีเฉพาะในฟอร์มเต็ม — ฟอร์มย่อ (เพิ่มด้วยไอดีเพจ) ไม่ส่งมา
+        //    ถ้าเซ็ตตรงๆ จะกลายเป็นปิดสวิตช์โพสทุกครั้งที่บันทึกจากฟอร์มย่อ
+        if ($request->has('auto_post_enabled') || $request->isMethod('put')) {
+            $validated['auto_post_enabled'] = $request->boolean('auto_post_enabled');
+        } else {
+            unset($validated['auto_post_enabled']);
+        }
 
         // 🔧 เว้นว่างได้ทั้งคู่ — ระบบเติมให้เอง (เจ้าของสั่ง: ใส่แค่ไอดีเพจก็พอ)
         if (empty($validated['code'])) {

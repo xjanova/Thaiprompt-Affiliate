@@ -6,6 +6,7 @@ use App\Models\AiGenProvider;
 use App\Models\FortuneMysticPost;
 use App\Models\FortuneMysticTopic;
 use App\Models\FortuneTellingSetting;
+use App\Services\Fortune\FortunePageContext;
 use App\Services\AiGen\CloudflareAiProvider;
 use App\Services\Fortune\FacebookContentPolicy;
 use Carbon\Carbon;
@@ -556,7 +557,10 @@ class MysticContentAutoPostService
      */
     protected function publishToFacebook(FortuneMysticPost $post): array
     {
-        $fresh = FortuneTellingSetting::query()->first();
+        // 🏬 (2026-08-15) ⚠️ ห้ามใช้ ::query()->first() — นั่นคือแถวกลาง ไม่รู้จักสาขา
+        //    cron วนโพสหลายสาขาแล้วทุกสาขาจะลงเพจหลักซ้ำกันหมด
+        FortunePageContext::flushMemo();
+        $fresh = FortuneTellingSetting::getSettings();
         if (! $fresh) {
             throw new Exception('ไม่พบ FortuneTellingSetting ใน DB');
         }
@@ -607,7 +611,9 @@ class MysticContentAutoPostService
     protected function deleteFromFacebook(string $fbPostId): bool
     {
         try {
-            $fresh = FortuneTellingSetting::query()->first();
+            // 🏬 (2026-08-15) ต้องลบด้วย token ของสาขาที่เป็นเจ้าของโพส ไม่ใช่ token กลาง
+            FortunePageContext::flushMemo();
+            $fresh = FortuneTellingSetting::getSettings();
             if (! $fresh) {
                 return false;
             }

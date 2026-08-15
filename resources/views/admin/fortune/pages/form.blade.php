@@ -107,7 +107,16 @@
                     <input type="checkbox" name="is_default" value="1" {{ old('is_default', $page->is_default) ? 'checked' : '' }}>
                     ตั้งเป็นสาขาหลัก (fallback เมื่อหาเพจไม่เจอ)
                 </label>
+                {{-- 🏬 (2026-08-15) โพสลงหน้าเพจคนเห็นเยอะและลบยาก → ต้องติ๊กเองเสมอ ไม่เปิดให้อัตโนมัติ --}}
+                <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; cursor:pointer;">
+                    <input type="checkbox" name="auto_post_enabled" value="1" {{ old('auto_post_enabled', $page->auto_post_enabled ?? false) ? 'checked' : '' }}>
+                    📅 โพสอัตโนมัติลงหน้าเพจนี้ (ดวงรายวัน / สายมู / แคมเปญคอนเทนต์)
+                </label>
             </div>
+            <p class="tp-muted" style="font-size:12px; margin:8px 0 0;">
+                ไม่ติ๊ก = บอทยังตอบแชทและคอมเมนต์ตามปกติ แต่จะไม่โพสอะไรลงหน้าเพจเอง
+                — เปิดสาขาใหม่แล้วบอทแอบโพสเองคือสิ่งที่ต้องไม่เกิด จึงต้องกดยืนยันทุกสาขา
+            </p>
         </div>
 
         {{-- ===== ความลับ ===== --}}

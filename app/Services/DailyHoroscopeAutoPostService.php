@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AiGenProvider;
 use App\Models\FortuneDailyHoroscopePost;
 use App\Models\FortuneTellingSetting;
+use App\Services\Fortune\FortunePageContext;
 use App\Models\TarotCard;
 use App\Services\AiGen\CloudflareAiProvider;
 use App\Services\Fortune\FacebookContentPolicy;
@@ -595,7 +596,14 @@ class DailyHoroscopeAutoPostService
     {
         // ✅ Refresh จาก DB ตรงๆ — กัน static cache ของ getSettings() stale
         // (ใน flow มีการเรียก AI หลายครั้ง อาจมี side-effect)
-        $fresh = FortuneTellingSetting::query()->first();
+        //
+        // 🏬 (2026-08-15) ⚠️ ห้ามใช้ FortuneTellingSetting::query()->first()
+        //    นั่นคือ "แถวกลาง" เสมอ ไม่สนใจว่ากำลังทำงานให้สาขาไหนอยู่
+        //    → พอ cron วนโพสให้หลายสาขา ทุกสาขาจะไปโพสลง "เพจหลัก" ซ้ำๆ กันหมด
+        //    ต้องใช้ flushMemo() + getSettings() แทน: ได้ค่าสดจาก DB เหมือนเดิม
+        //    แต่ผ่าน FortunePageContext จึงได้ page id/token ของสาขาที่ถูกต้อง
+        FortunePageContext::flushMemo();
+        $fresh = FortuneTellingSetting::getSettings();
         if (! $fresh) {
             throw new Exception('ไม่พบ FortuneTellingSetting ใน DB');
         }
@@ -667,7 +675,9 @@ class DailyHoroscopeAutoPostService
     protected function deleteFromFacebook(string $fbPostId): bool
     {
         try {
-            $fresh = FortuneTellingSetting::query()->first();
+            // 🏬 (2026-08-15) ต้องลบด้วย token ของสาขาที่เป็นเจ้าของโพส ไม่ใช่ token กลาง
+            FortunePageContext::flushMemo();
+            $fresh = FortuneTellingSetting::getSettings();
             if (! $fresh) {
                 Log::warning('DailyHoroscopeAutoPost: deleteFromFacebook ข้าม — ไม่พบ settings');
 

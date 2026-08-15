@@ -33,7 +33,8 @@ class FortuneDailyHoroscopePublish extends Command
      */
     public function handle(): int
     {
-        $stats = $this->forEachActiveFortunePage('facebook', fn () => $this->publishForCurrentPage());
+        // requireAutoPost=true → เฉพาะสาขาที่แอดมินติ๊ก “โพสอัตโนมัติ” ไว้เท่านั้น
+        $stats = $this->forEachActiveFortunePage('facebook', fn () => $this->publishForCurrentPage(), true);
 
         if ($stats['ran'] > 1) {
             $this->info("🏬 รวม {$stats['ran']} สาขา — สำเร็จ {$stats['ok']} · ล้มเหลว {$stats['failed']}");
