@@ -28,6 +28,43 @@ class FcmNotificationService
     private ?int $tokenExpiry = null;
 
     /**
+     * 🏬 (2026-08-16) เพจ/สาขาที่บิลดูดวงใบนี้เกิด — แนบไปกับ FCM ให้แอพ SMS Checker
+     * รู้ทันทีว่าบิลมาจากเพจไหน (ไม่ต้องรอ sync รอบแรก)
+     *
+     * memo ต่อ page id กัน query ซ้ำเมื่อส่งหลายบิลในโปรเซสเดียว (เช่น cron กวาดบิลค้าง)
+     *
+     * @return array{name: string, is_default: bool}|null null = บิลเก่าก่อนระบบสาขา / อ่านสาขาไม่ได้
+     */
+    private function fortuneBranchFor(FortuneReading $reading): ?array
+    {
+        $pageId = $reading->fortune_page_id ?? null;
+
+        if (empty($pageId)) {
+            return null;
+        }
+
+        static $memo = [];
+
+        if (array_key_exists($pageId, $memo)) {
+            return $memo[$pageId];
+        }
+
+        try {
+            $page = \App\Models\FortunePage::find($pageId);
+
+            $memo[$pageId] = $page === null ? null : [
+                'name' => (string) ($page->brand_name ?: $page->name),
+                'is_default' => (bool) $page->is_default,
+            ];
+        } catch (\Throwable $e) {
+            // อ่านสาขาไม่ได้ต้องไม่ทำให้ push ทั้งใบล้ม — แอพแค่ไม่เห็นป้ายสาขา
+            $memo[$pageId] = null;
+        }
+
+        return $memo[$pageId];
+    }
+
+    /**
      * Send push notification for new payment transaction (bill)
      */
     public function notifyNewTransaction(PaymentTransaction $transaction, ?SmsCheckerDevice $device = null): bool
@@ -254,23 +291,31 @@ class FcmNotificationService
         // เพื่อให้แอพ map ได้ถูกต้อง
         $offsetId = $reading->id + 10000000;
 
+        // 🏬 (2026-08-16) เพจ/สาขาที่บิลเกิด — จังหวะเงินเข้าคือตอนที่เจ้าของอยากรู้ว่าเพจไหนทำเงิน
+        //    ข้อความ push แปะชื่อเฉพาะ "เพจสาขา" (เพจหลักคือกรณีปกติ ไม่ต้องรก)
+        $branch = $this->fortuneBranchFor($reading);
+        $branchSuffix = ($branch !== null && ! $branch['is_default']) ? ' · 🏬 '.$branch['name'] : '';
+
         $data = [
             'type' => 'order_approved',
             'order_id' => (string) $offsetId,
-            'order_number' => $reading->bill_reference ?? ('FTU-' . $reading->id),
+            'order_number' => $reading->bill_reference ?? ('FTU-'.$reading->id),
             'amount' => number_format((float) $smsNotification->amount, 2, '.', ''),
             'bank' => $smsNotification->bank,
             'payment_status' => 'completed',
             'is_fortune_reading' => 'true',
+            'branch_name' => $branch['name'] ?? '',
+            'branch_is_default' => $branch === null ? '' : ($branch['is_default'] ? 'true' : 'false'),
         ];
 
         $notification = [
             'title' => '🔮 บิลดูดวงชำระแล้ว!',
             'body' => sprintf(
-                'บิล %s ยอด ฿%s จับคู่สำเร็จ (%s)',
+                'บิล %s ยอด ฿%s จับคู่สำเร็จ (%s)%s',
                 $reading->bill_reference ?? "#{$reading->id}",
                 number_format((float) $smsNotification->amount, 2),
-                $bankName
+                $bankName,
+                $branchSuffix
             ),
         ];
 
@@ -304,14 +349,20 @@ class FcmNotificationService
         // Flag `is_floating` แยกเคสบิลลอย (ยังจับคู่ user ไม่ได้ — admin ต้อง review manual)
         $isFloating = (bool) ($reading->is_floating ?? false);
 
+        // 🏬 (2026-08-16) เพจ/สาขาที่บิลเกิด — แอพใช้แปะ chip บนการ์ด + ต่อท้ายข้อความ push
+        //    FCM data ต้องเป็น string ล้วน → แปลง bool เป็น 'true'/'false' และ null เป็น ''
+        $branch = $this->fortuneBranchFor($reading);
+
         $data = [
             'type' => $isFloating ? 'new_floating_fortune_bill' : 'new_order',
             'order_id' => (string) $offsetId,
-            'order_number' => $reading->bill_reference ?? ('FTU-' . $reading->id),
+            'order_number' => $reading->bill_reference ?? ('FTU-'.$reading->id),
             'amount' => number_format((float) ($reading->amount_paid ?? 0), 2, '.', ''),
             'customer_name' => $reading->facebook_user_name ?? 'ลูกค้าดูดวง',
             'is_fortune_reading' => 'true',
             'is_floating' => $isFloating ? 'true' : 'false',
+            'branch_name' => $branch['name'] ?? '',
+            'branch_is_default' => $branch === null ? '' : ($branch['is_default'] ? 'true' : 'false'),
             'server_url' => config('app.url'),  // ให้ Android app รู้ว่า FCM นี้มาจากเซิร์ฟไหน
         ];
 
@@ -713,7 +764,7 @@ class FcmNotificationService
         if ($successCount > 0) {
             return [
                 'success' => true,
-                'message' => "ส่ง FCM push สำเร็จ {$successCount}/" . count($tokens) . ' อุปกรณ์ — ตรวจสอบที่แอพ Android',
+                'message' => "ส่ง FCM push สำเร็จ {$successCount}/".count($tokens).' อุปกรณ์ — ตรวจสอบที่แอพ Android',
                 'details' => [
                     'total_tokens' => count($tokens),
                     'success' => $successCount,
@@ -725,7 +776,7 @@ class FcmNotificationService
 
         return [
             'success' => false,
-            'message' => "ส่งล้มเหลวทั้ง " . count($tokens) . " อุปกรณ์ — token อาจไม่ถูกต้อง (แอพต้องอัพเดทและเปิดใหม่)",
+            'message' => 'ส่งล้มเหลวทั้ง '.count($tokens).' อุปกรณ์ — token อาจไม่ถูกต้อง (แอพต้องอัพเดทและเปิดใหม่)',
             'details' => [
                 'total_tokens' => count($tokens),
                 'failed' => $failedCount,
@@ -1000,7 +1051,7 @@ class FcmNotificationService
         Log::warning('FCM: ลบ tokens ที่ไม่ถูกต้อง', [
             'count' => count($tokens),
             'affected_devices' => $affectedDevices,
-            'token_prefixes' => array_map(fn ($t) => substr($t, 0, 20) . '...', $tokens),
+            'token_prefixes' => array_map(fn ($t) => substr($t, 0, 20).'...', $tokens),
         ]);
     }
 
@@ -1013,7 +1064,7 @@ class FcmNotificationService
      */
     public function registerToken(SmsCheckerDevice $device, string $fcmToken): bool
     {
-        $tokenPrefix = substr($fcmToken, 0, 20) . '...';
+        $tokenPrefix = substr($fcmToken, 0, 20).'...';
 
         // ลบ token จากอุปกรณ์อื่น (ป้องกัน token ซ้ำ)
         $duplicateCount = SmsCheckerDevice::where('fcm_token', $fcmToken)
