@@ -58,6 +58,11 @@ return new class extends Migration
             'old' => 'fcp_camp_date_slot_unique',
             'new' => 'fcp_page_camp_date_slot_unique',
             'cols' => ['fortune_page_id', 'campaign_id', 'post_date', 'slot_time'],
+            // ⚠️ MySQL 1553 "Cannot drop index needed in a foreign key constraint"
+            //    unique เดิมขึ้นต้นด้วย campaign_id → เป็น index ที่ FK ของ campaign_id ใช้อยู่
+            //    ลบทิ้งเลยไม่ได้ ต้องสร้าง index ธรรมดารองรับ FK ก่อน
+            //    (unique ใหม่ขึ้นต้นด้วย fortune_page_id จึงรับช่วง FK แทนไม่ได้)
+            'fkIndex' => 'campaign_id',
         ],
     ];
 
@@ -103,6 +108,19 @@ return new class extends Migration
                 Schema::table($table, function (Blueprint $t) use ($spec) {
                     $t->unique($spec['cols'], $spec['new']);
                 });
+            }
+
+            // ⚠️ ต้องมี index รองรับ FK ก่อนถอน unique เดิม ไม่งั้น MySQL โยน 1553
+            $fkIndex = $spec['fkIndex'] ?? null;
+
+            if ($fkIndex !== null) {
+                $fkIndexName = substr($table, 0, 24).'_'.$fkIndex.'_idx';
+
+                if (! $this->indexExists($table, $fkIndexName)) {
+                    Schema::table($table, function (Blueprint $t) use ($fkIndex, $fkIndexName) {
+                        $t->index($fkIndex, $fkIndexName);
+                    });
+                }
             }
 
             if ($this->indexExists($table, $spec['old'])) {
