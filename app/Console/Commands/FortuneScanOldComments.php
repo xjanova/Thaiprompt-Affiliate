@@ -37,9 +37,39 @@ class FortuneScanOldComments extends Command
 
     protected $description = 'สแกนคอมเม้นต์ Facebook ย้อนหลัง (โพส + Reels) — หาลิงค์สแปมและซ่อน/ลบ';
 
-    public function handle(FacebookWebhookService $service): int
+    use \App\Console\Commands\Concerns\RunsForEachFortunePage;
+
+    /**
+     * 🏬 (2026-08-15) สแกนคอมเมนต์ให้ครบทุกสาขา
+     *
+     * ไม่ต้องใช้สวิตช์ auto_post_enabled — นี่คือ "ดูแลคอมเมนต์ในเพจตัวเอง"
+     * ไม่ใช่การโพสของใหม่ลงหน้าเพจ สาขาที่เปิดบอทควรได้รับการดูแลเสมอ
+     *
+     * แต่ละสาขาสแกนโพสของตัวเอง = คนละชุดคอมเมนต์ จึงไม่มีปัญหาทำงานซ้ำ
+     */
+    public function handle(): int
     {
-        $settings = FortuneTellingSetting::query()->first();
+        $stats = $this->forEachActiveFortunePage(
+            'facebook',
+            fn () => $this->scanForCurrentPage(app(FacebookWebhookService::class)) === self::SUCCESS
+        );
+
+        if ($stats['ran'] > 1) {
+            $this->info("🏬 รวม {$stats['ran']} สาขา — สำเร็จ {$stats['ok']} · ล้มเหลว {$stats['failed']}");
+        }
+
+        return $stats['failed'] === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * สแกนให้สาขาที่ context ชี้อยู่ตอนนี้ (เนื้อในเดิม ไม่แตะ)
+     */
+    protected function scanForCurrentPage(FacebookWebhookService $service): int
+    {
+        // 🏬 ⚠️ ห้ามใช้ ::query()->first() — นั่นคือแถวกลาง ไม่รู้จักสาขา
+        //    จะกลายเป็นทุกสาขาไปสแกนโพสของเพจหลักซ้ำๆ ด้วย token เดียวกัน
+        \App\Services\Fortune\FortunePageContext::flushMemo();
+        $settings = FortuneTellingSetting::getSettings();
         if (! $settings) {
             $this->error('ไม่พบ FortuneTellingSetting');
 
@@ -61,7 +91,12 @@ class FortuneScanOldComments extends Command
         $sinceLast = (bool) $this->option('since-last');
 
         // 📌 Incremental mode — ใช้ timestamp ครั้งก่อน + กันเริ่มต้นตั้งแต่ epoch
-        $cacheKey = 'fortune_link_scan_last_ts';
+        // 🏬 (2026-08-15) ⚠️ ต้องแยกกุญแจต่อสาขา
+        //    ใช้กุญแจเดียวกันทุกสาขา = สาขาแรกสแกนเสร็จแล้วเลื่อน timestamp ไปข้างหน้า
+        //    สาขาที่เหลือจะข้ามคอมเมนต์ของตัวเองทั้งหมดแบบเงียบๆ
+        //    (บทเรียนเดียวกับ state ที่ผูกกับ token — ต้องแยกกุญแจต่อเพจเสมอ)
+        $scanPageId = \App\Services\Fortune\FortunePageContext::currentId();
+        $cacheKey = 'fortune_link_scan_last_ts'.($scanPageId ? ':'.$scanPageId : '');
         if ($sinceLast) {
             $lastTs = (int) Cache::get($cacheKey, 0);
             if ($lastTs > 0) {
