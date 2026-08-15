@@ -3947,6 +3947,9 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::put('/pages/{fortunePage}', [\App\Http\Controllers\Admin\FortunePagesController::class, 'update'])->name('pages.update');
     Route::patch('/pages/{fortunePage}/toggle', [\App\Http\Controllers\Admin\FortunePagesController::class, 'toggle'])->name('pages.toggle');
     Route::post('/pages/{fortunePage}/test', [\App\Http\Controllers\Admin\FortunePagesController::class, 'test'])->name('pages.test');
+    // 📡 (2026-08-15) ปุ่มซ่อม "ต่อสายเว็บฮุก" — ปกติสวิตช์เปิด/ปิดต่อสายให้เองแล้ว
+    //    ปุ่มนี้ไว้ใช้กับสาขาที่เพิ่มไว้ก่อนมีระบบนี้ หรือตอนต่อสายพลาดเพราะ Graph ล่ม
+    Route::post('/pages/{fortunePage}/subscribe', [\App\Http\Controllers\Admin\FortunePagesController::class, 'subscribe'])->name('pages.subscribe');
 
     // Cloudflare Workers AI (สำหรับเจนภาพดวงประจำวัน)
     Route::put('/channels/cloudflare-ai', [FortuneChannelController::class, 'updateCloudflareAi'])->name('channels.cloudflare-ai.update');

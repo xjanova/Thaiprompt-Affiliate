@@ -8,6 +8,7 @@ use App\Models\FortuneReading;
 use App\Services\Fortune\FortunePageContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -45,6 +46,28 @@ class FortunePagesController extends Controller
     ];
 
     /**
+     * 📡 เหตุการณ์ที่เพจต้องส่งเข้าเว็บฮุกของเรา
+     *
+     * ⚠️ (2026-08-15) นี่คือจุดที่ทำให้ "เปิดสวิตช์แล้วบอทยังเงียบ"
+     *    มี page token = **ส่งออก**ได้ แต่ไม่ได้แปลว่า **รับเข้า**ได้
+     *    ถ้าไม่ได้ POST /{page-id}/subscribed_apps เอาไว้ Facebook จะไม่ส่งข้อความมาให้เลย
+     *    และไม่มี error ให้เห็นที่ไหนทั้งสิ้น — log ว่างเปล่า เหมือนไม่มีใครทัก
+     *
+     *    ชุดนี้ต้องตรงกับเพจหลัก ไม่งั้นสาขาจะขาดความสามารถบางอย่างแบบเงียบๆ
+     *    (ขาด feed = ไม่ตอบคอมเมนต์ · ขาด standby = ระบบแอดมินรับสายเองพัง)
+     */
+    protected const WEBHOOK_FIELDS = [
+        'messages',
+        'messaging_postbacks',
+        'message_echoes',
+        'message_reactions',
+        'messaging_referrals',
+        'messaging_handovers',
+        'feed',
+        'standby',
+    ];
+
+    /**
      * แสดงรายการสาขาทั้งหมด พร้อมยอดของแต่ละสาขา
      */
     public function index()
@@ -71,10 +94,42 @@ class FortunePagesController extends Controller
         // (แยกคิวรีออกมาเพราะ keyBy(null) กลายเป็นคีย์ '' อ่านยากและพลาดง่าย)
         $orphanBills = FortuneReading::query()->whereNull('fortune_page_id')->count();
 
+        // 📡 สาขาที่เปิดอยู่ ต่อสายเว็บฮุกไว้จริงหรือยัง
+        //    ตรวจเฉพาะสาขาที่เปิด (ปิดอยู่ก็ไม่ต้องรู้) และเฉพาะ Facebook (LINE ไม่มีระบบนี้)
+        //    ⚠️ ต้องมีเพดาน — เปิดสาขาไว้ 20 สาขาแล้ว Graph อืด = หน้านี้ค้างยาวจน 504
+        //       ที่เกินโควตาปล่อยเป็น null (= "ยังไม่ได้ตรวจ") ไม่ใช่ false ที่แปลว่า "พัง"
+        $webhookStatus = [];
+        $checkBudget = 10;
+
+        foreach ($pages as $p) {
+            if ($p->platform !== 'facebook' || ! $p->is_active) {
+                continue;
+            }
+
+            // ที่แคชไว้แล้วอ่านฟรี ไม่ต้องกินโควตา (ไม่งั้นสาขาท้ายๆ จะขึ้น "ยังไม่ได้ตรวจ" ทั้งที่รู้คำตอบอยู่)
+            $cached = Cache::get($this->webhookCacheKey($p));
+
+            if ($cached !== null) {
+                $webhookStatus[$p->id] = $cached;
+
+                continue;
+            }
+
+            if ($checkBudget <= 0) {
+                $webhookStatus[$p->id] = null;
+
+                continue;
+            }
+
+            $webhookStatus[$p->id] = $this->webhookStatus($p);
+            $checkBudget--;
+        }
+
         return view('admin.fortune.pages.index', [
             'pages' => $pages,
             'stats' => $stats,
             'orphanBills' => $orphanBills,
+            'webhookStatus' => $webhookStatus,
             // 🔑 เชื่อมบัญชีเจ้าของแล้วหรือยัง — ตัดสินว่าจะโชว์กล่อง "ใส่แค่ไอดีเพจ" หรือกล่องเชื่อมบัญชี
             'hasUserToken' => $this->userToken() !== null,
             'userTokenCheckedAt' => \App\Models\FortuneTellingSetting::getGlobalSettings()->facebook_user_token_checked_at,
@@ -139,7 +194,7 @@ class FortunePagesController extends Controller
 
         return redirect()
             ->route('admin.fortune.pages.index')
-            ->with('success', 'เพิ่มสาขา “'.$page->name.'” สำเร็จ');
+            ->with('success', 'เพิ่มสาขา “'.$page->name.'” สำเร็จ'.$this->autoSubscribe($page));
     }
 
     /**
@@ -163,9 +218,13 @@ class FortunePagesController extends Controller
         $this->syncDefaultFlag($fortunePage);
         FortunePageContext::flushMemo();
 
+        // 📡 ติ๊กเปิดจากหน้าแก้ไข ต้องต่อสายให้เหมือนกดสวิตช์ในตาราง
+        //    (ทางเข้า 2 ทางไปสถานะเดียวกัน ต้องได้ผลเหมือนกัน ไม่งั้นเปิดจากหน้านี้แล้วบอทเงียบ)
+        $webhookNote = $fortunePage->wasChanged('is_active') ? $this->autoSubscribe($fortunePage) : '';
+
         return redirect()
             ->route('admin.fortune.pages.index')
-            ->with('success', 'บันทึกสาขา “'.$fortunePage->name.'” สำเร็จ');
+            ->with('success', 'บันทึกสาขา “'.$fortunePage->name.'” สำเร็จ'.$webhookNote);
     }
 
     /**
@@ -176,14 +235,76 @@ class FortunePagesController extends Controller
      */
     public function toggle(FortunePage $fortunePage)
     {
-        $fortunePage->update(['is_active' => ! $fortunePage->is_active]);
+        $turningOn = ! $fortunePage->is_active;
+
+        $fortunePage->update(['is_active' => $turningOn]);
 
         FortunePageContext::flushMemo();
 
+        $label = ($turningOn ? 'เปิด' : 'ปิด').'สาขา “'.$fortunePage->name.'” แล้ว';
+
+        // 📡 สวิตช์นี้ต้องเป็นตัวต่อสาย/ตัดสายเว็บฮุกเอง
+        //    เจ้าของถามตรงๆ (2026-08-15): "เราจะมีปุ่มเปิดปิดไว้ทำไม ถ้าต้องมาไล่ต่อสายเอง"
+        //    ถูกต้อง — เปิดแล้วต้องใช้งานได้จริง ไม่ใช่เปิดแล้วต้องไปกดอย่างอื่นต่อ
+        if ($fortunePage->platform !== 'facebook') {
+            return back()->with('success', $label);
+        }
+
+        if ($turningOn) {
+            $result = $this->subscribeWebhook($fortunePage);
+
+            if ($result['ok']) {
+                return back()->with('success', $label.' · 📡 ต่อสายเว็บฮุกให้แล้ว — ทักเพจได้เลย');
+            }
+
+            // ❗ ต่อสายไม่ได้ = ยังเงียบอยู่ ต้องบอกให้ดังๆ ตรงนี้
+            //    (ปล่อยผ่านเงียบๆ คือบั๊กเดิมที่ทำให้ "เปิดแล้วแต่บอทไม่ตอบ")
+            //    ไม่ปิดสวิตช์กลับ เพราะ Graph ล่มชั่วคราวไม่ควรทำให้เปิดสาขาไม่ได้เลย
+            //    — แต่ป้ายในตารางจะขึ้น "ยังไม่ต่อสาย" สีแดงให้เห็นจนกว่าจะสำเร็จ
+            return back()->with(
+                'error',
+                $label.' แต่ ⚠️ ต่อสายเว็บฮุกไม่สำเร็จ — บอทจะยังไม่ตอบจนกว่าจะต่อสายได้: '
+                    .$result['error'].' (กด “ต่อสายใหม่” ที่ป้ายสีแดงในตารางเพื่อลองอีกครั้ง)'
+            );
+        }
+
+        // 🔒 สาขาหลักไม่ตัดสาย — เว็บฮุกเส้นเดียวกันนี้ยังเลี้ยงระบบคอมเมนต์/สแกนโพสต์อยู่
+        //    ปิดสวิตช์สาขาหลักโดยไม่ตั้งใจแล้วไปตัดสาย = พังกว้างกว่าที่ตั้งใจมาก
+        //    (ฝั่งเราเช็ค is_active อยู่แล้ว บอทจึงเงียบตามที่สั่ง)
+        if ($fortunePage->is_default) {
+            return back()->with(
+                'success',
+                $label.' · 🔒 คงสายเว็บฮุกไว้เพราะเป็นสาขาหลัก (ระบบคอมเมนต์/สแกนโพสต์ใช้เส้นเดียวกัน)'
+            );
+        }
+
+        $result = $this->unsubscribeWebhook($fortunePage);
+
         return back()->with(
             'success',
-            ($fortunePage->is_active ? 'เปิด' : 'ปิด').'สาขา “'.$fortunePage->name.'” แล้ว'
+            $label.($result['ok']
+                ? ' · 📡 ตัดสายเว็บฮุกแล้ว (Facebook จะไม่ส่งข้อความของเพจนี้มาอีก)'
+                : ' · ⚠️ ตัดสายเว็บฮุกไม่สำเร็จ ('.$result['error'].') แต่ฝั่งเราปิดแล้ว บอทไม่ตอบแน่นอน')
         );
+    }
+
+    /**
+     * 📡 ต่อสายเว็บฮุกใหม่ด้วยมือ — ปุ่มซ่อมจากป้าย "ยังไม่ต่อสาย" ในตาราง
+     *
+     * ใช้ตอนที่สวิตช์เปิดอยู่แล้วแต่ Facebook ไม่ส่งอะไรมา
+     * (เช่นเพจที่เพิ่มไว้ก่อนระบบนี้ หรือตอนต่อสายพลาดเพราะ Graph ล่ม)
+     */
+    public function subscribe(FortunePage $fortunePage)
+    {
+        if ($fortunePage->platform !== 'facebook') {
+            return back()->with('error', 'ต่อสายเว็บฮุกได้เฉพาะสาขา Facebook');
+        }
+
+        $result = $this->subscribeWebhook($fortunePage);
+
+        return $result['ok']
+            ? back()->with('success', '✅ ต่อสายเว็บฮุกเพจ “'.$fortunePage->name.'” แล้ว — ทักเพจได้เลย')
+            : back()->with('error', 'ต่อสายไม่สำเร็จ: '.$result['error']);
     }
 
     /**
@@ -197,10 +318,7 @@ class FortunePagesController extends Controller
         // ⚠️ ต้องทดสอบด้วย token ตัวเดียวกับที่บอทใช้จริง ไม่ใช่คอลัมน์ดิบ
         //    สาขาที่เว้น token ไว้ (เช่นสาขาหลักที่ backfill มา) ใช้ token กลาง
         //    ถ้าอ่านคอลัมน์ตรงๆ ปุ่มนี้จะฟ้อง "ไม่มี token" ทั้งที่บอททำงานได้ปกติ
-        $token = FortunePageContext::run(
-            $fortunePage,
-            fn () => \App\Models\FortuneTellingSetting::getSettings()->facebook_page_token
-        );
+        $token = $this->pageToken($fortunePage);
 
         if (empty($token)) {
             return back()->with('error', 'สาขานี้ยังไม่มี Page Access Token (และไม่มี token กลางให้ใช้)');
@@ -569,6 +687,11 @@ class FortunePagesController extends Controller
 
             $added = 0;
             $updated = 0;
+            $wired = 0;
+            $wireFailed = 0;
+
+            /** @var list<FortunePage> $toWire สาขาที่เปิดอยู่ ต้องต่อสายเว็บฮุกให้ครบ */
+            $toWire = [];
 
             foreach ($found as $item) {
                 $externalId = (string) ($item['id'] ?? '');
@@ -587,10 +710,15 @@ class FortunePagesController extends Controller
                     $existing->update(['page_access_token' => $pageToken]);
                     $updated++;
 
+                    // 📡 ปุ่มนี้คือ "ปุ่มซ่อมรวม" — สาขาที่เปิดอยู่แต่ยังไม่ต่อสาย ต้องได้ต่อด้วย
+                    if ($existing->is_active) {
+                        $toWire[] = $existing;
+                    }
+
                     continue;
                 }
 
-                FortunePage::create([
+                $created = FortunePage::create([
                     'code' => $this->makeCode($externalId, $item['name'] ?? null),
                     'name' => $item['name'] ?? ('เพจ '.$externalId),
                     'platform' => 'facebook',
@@ -601,11 +729,27 @@ class FortunePagesController extends Controller
                     'notes' => 'เพิ่มอัตโนมัติจากรายชื่อเพจของเจ้าของ',
                 ]);
                 $added++;
+                $toWire[] = $created;
             }
 
             FortunePageContext::flushMemo();
 
-            return back()->with('success', "✅ เพิ่มเพจใหม่ {$added} เพจ · อัปเดต token เพจเดิม {$updated} เพจ");
+            // ⚠️ ต่อสายหลัง flushMemo — ต้องอ่าน token ที่เพิ่งบันทึก ไม่ใช่ของที่ค้างใน memo
+            foreach ($toWire as $page) {
+                if ($this->subscribeWebhook($page)['ok']) {
+                    $wired++;
+                } else {
+                    $wireFailed++;
+                }
+            }
+
+            $message = "✅ เพิ่มเพจใหม่ {$added} เพจ · อัปเดต token เพจเดิม {$updated} เพจ · 📡 ต่อสายเว็บฮุก {$wired} สาขา";
+
+            if ($wireFailed > 0) {
+                $message .= " · ⚠️ ต่อสายไม่สำเร็จ {$wireFailed} สาขา (ดูป้ายสีแดงในตาราง)";
+            }
+
+            return back()->with('success', $message);
         } catch (\Throwable $e) {
             Log::error('🏬 ดึงรายชื่อเพจไม่สำเร็จ', ['error' => $e->getMessage()]);
 
@@ -656,7 +800,7 @@ class FortunePagesController extends Controller
 
         FortunePageContext::flushMemo();
 
-        return back()->with('success', '✅ เพิ่มเพจ “'.$page->name.'” เรียบร้อย — ทักเพจได้เลย');
+        return back()->with('success', '✅ เพิ่มเพจ “'.$page->name.'” เรียบร้อย'.$this->autoSubscribe($page));
     }
 
     /**
@@ -698,6 +842,182 @@ class FortunePagesController extends Controller
 
             return null;
         }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // 📡 เว็บฮุกรายสาขา (2026-08-15)
+    //
+    //    บทเรียน: page token = "ส่งออกได้" · subscribed_apps = "รับเข้าได้"
+    //    เพจสาขา 5 มี token ครบ เปิดสวิตช์แล้ว แต่ subscribed_apps ว่าง
+    //    → Facebook ไม่ส่งอะไรมาเลย log ว่างเปล่า หาสาเหตุไม่เจอเพราะไม่มี error
+    // ════════════════════════════════════════════════════════════
+
+    /**
+     * Token ตัวเดียวกับที่บอทใช้จริงของสาขานี้
+     *
+     * ⚠️ ห้ามอ่านคอลัมน์ดิบ — สาขาที่เว้น token ไว้ใช้ token กลาง
+     *    อ่านดิบแล้วจะฟ้อง "ไม่มี token" ทั้งที่ใช้งานได้ (กับดักเดิมของปุ่มทดสอบ)
+     */
+    protected function pageToken(FortunePage $page): ?string
+    {
+        $token = FortunePageContext::run(
+            $page,
+            fn () => \App\Models\FortuneTellingSetting::getSettings()->facebook_page_token
+        );
+
+        return ! empty($token) ? (string) $token : null;
+    }
+
+    /**
+     * ต่อสายเว็บฮุก — บอก Facebook ให้ส่งข้อความของเพจนี้มาที่ระบบเรา
+     *
+     * @return array{ok: bool, error: ?string}
+     */
+    protected function subscribeWebhook(FortunePage $page): array
+    {
+        return $this->webhookCall($page, true);
+    }
+
+    /**
+     * ตัดสายเว็บฮุก — Facebook หยุดส่งข้อความของเพจนี้
+     *
+     * @return array{ok: bool, error: ?string}
+     */
+    protected function unsubscribeWebhook(FortunePage $page): array
+    {
+        return $this->webhookCall($page, false);
+    }
+
+    /**
+     * @return array{ok: bool, error: ?string}
+     */
+    protected function webhookCall(FortunePage $page, bool $subscribe): array
+    {
+        $token = $this->pageToken($page);
+
+        if ($token === null) {
+            return ['ok' => false, 'error' => 'สาขานี้ยังไม่มี Page Access Token'];
+        }
+
+        $url = $this->graph('/'.$page->external_page_id.'/subscribed_apps');
+
+        try {
+            if ($subscribe) {
+                $response = Http::timeout(15)->asForm()->post($url, [
+                    'subscribed_fields' => implode(',', self::WEBHOOK_FIELDS),
+                    'access_token' => $token,
+                ]);
+            } else {
+                // ⚠️ DELETE ของ Graph รับค่าทาง query เท่านั้น — ส่งเป็น body แล้วมันมองไม่เห็น
+                $response = Http::timeout(15)->send('DELETE', $url, [
+                    'query' => ['access_token' => $token],
+                ]);
+            }
+
+            // ตรวจใหม่ครั้งหน้าเสมอ ไม่ให้ป้ายในตารางค้างของเก่า
+            $this->forgetWebhookStatus($page);
+
+            if (! $response->successful() || $response->json('success') !== true) {
+                $error = $response->json('error.message')
+                    ?? 'Facebook ตอบกลับผิดปกติ (HTTP '.$response->status().')';
+
+                Log::warning('📡 '.($subscribe ? 'ต่อ' : 'ตัด').'สายเว็บฮุกไม่สำเร็จ', [
+                    'fortune_page_id' => $page->id,
+                    'external_page_id' => $page->external_page_id,
+                    'error' => $error,   // 🔐 ห้าม log token
+                ]);
+
+                return ['ok' => false, 'error' => $error];
+            }
+
+            Log::info('📡 '.($subscribe ? 'ต่อ' : 'ตัด').'สายเว็บฮุกสำเร็จ', [
+                'fortune_page_id' => $page->id,
+                'external_page_id' => $page->external_page_id,
+            ]);
+
+            return ['ok' => true, 'error' => null];
+        } catch (\Throwable $e) {
+            $this->forgetWebhookStatus($page);
+
+            Log::warning('📡 '.($subscribe ? 'ต่อ' : 'ตัด').'สายเว็บฮุกล้มเหลว', [
+                'fortune_page_id' => $page->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['ok' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * ต่อสายให้อัตโนมัติตอนเพิ่ม/เปิดสาขา — คืนข้อความต่อท้ายให้แอดมินเห็นผลทันที
+     *
+     * เพิ่มเพจแล้วขึ้น "ทักเพจได้เลย" ทั้งที่ยังไม่ต่อสาย = คำโกหกที่ทำให้หาบั๊กไม่เจอ
+     */
+    protected function autoSubscribe(FortunePage $page): string
+    {
+        if ($page->platform !== 'facebook' || ! $page->is_active) {
+            return '';
+        }
+
+        $result = $this->subscribeWebhook($page);
+
+        return $result['ok']
+            ? ' · 📡 ต่อสายเว็บฮุกแล้ว — ทักเพจได้เลย'
+            : ' · ⚠️ ยังต่อสายเว็บฮุกไม่ได้ ('.$result['error'].') — บอทจะยังไม่ตอบ '
+                .'กด “ต่อสายใหม่” ที่ป้ายสีแดงในตารางเพื่อลองอีกครั้ง';
+    }
+
+    /**
+     * เพจนี้ต่อสายเว็บฮุกไว้จริงหรือยัง
+     *
+     * @return bool|null true=ต่อแล้ว · false=ยังไม่ต่อ · null=ตรวจไม่ได้
+     *
+     * ⚠️ null ≠ false — "ตรวจไม่ได้" ต้องไม่แสดงเป็น "ยังไม่ต่อสาย"
+     *    (ความพังแบบเดียวกับการโชว์ว่าปลอดภัยทั้งที่ไม่รู้)
+     */
+    protected function webhookStatus(FortunePage $page): ?bool
+    {
+        if ($page->platform !== 'facebook') {
+            return null;
+        }
+
+        // แคชไว้ 10 นาที — หน้านี้เปิดบ่อย ยิง Graph ทุกครั้งต่อทุกสาขาคือหน้าค้าง
+        // (Cache::remember ไม่เก็บค่า null อยู่แล้ว → "ตรวจไม่ได้" จะลองใหม่รอบหน้าเอง)
+        return Cache::remember($this->webhookCacheKey($page), 600, function () use ($page) {
+            $token = $this->pageToken($page);
+
+            if ($token === null) {
+                return false;
+            }
+
+            try {
+                $response = Http::timeout(8)->get(
+                    $this->graph('/'.$page->external_page_id.'/subscribed_apps'),
+                    ['access_token' => $token]
+                );
+
+                if (! $response->successful()) {
+                    return null;
+                }
+
+                return ! empty($response->json('data'));
+            } catch (\Throwable $e) {
+                return null;
+            }
+        });
+    }
+
+    /**
+     * ล้างสถานะที่แคชไว้ (เรียกทุกครั้งหลังต่อ/ตัดสาย)
+     */
+    protected function forgetWebhookStatus(FortunePage $page): void
+    {
+        Cache::forget($this->webhookCacheKey($page));
+    }
+
+    protected function webhookCacheKey(FortunePage $page): string
+    {
+        return 'fortune_page_webhook_status:'.$page->id;
     }
 
     /**

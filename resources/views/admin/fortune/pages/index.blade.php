@@ -145,7 +145,11 @@
                     </thead>
                     <tbody>
                         @foreach($pages as $p)
-                            @php $s = $stats[$p->id] ?? null; @endphp
+                            @php
+                                $s = $stats[$p->id] ?? null;
+                                // 📡 true=ต่อสายแล้ว · false=ยังไม่ต่อ · null=ตรวจไม่ได้/ไม่เกี่ยว (สาขาปิด, LINE)
+                                $wh = ($webhookStatus ?? [])[$p->id] ?? null;
+                            @endphp
                             <tr style="border-top:1px solid var(--line);">
                                 <td style="padding:11px 12px;">
                                     <div style="font-weight:700;">{{ $p->display_label }}</div>
@@ -173,6 +177,22 @@
                                         <span class="tp-pill" title="ยังไม่มี Page Access Token ทั้งของสาขาและของกลาง — สาขานี้ตอบลูกค้าไม่ได้"
                                               style="background:rgba(217,83,79,.16); color:#b1413d; font-size:10px; font-weight:700;">ไม่มี Token</span>
                                     @endif
+
+                                    {{-- 📡 มีกุญแจ = ส่งออกได้ · ต่อสายเว็บฮุก = รับเข้าได้ — คนละเรื่องกัน
+                                         ป้ายนี้มีไว้เพราะ "เปิดสวิตช์แล้วบอทยังเงียบ" ไม่เคยมีอะไรฟ้องเลย --}}
+                                    @if($p->is_active && $p->platform === 'facebook')
+                                        @if($wh === true)
+                                            <span class="tp-pill" title="Facebook ส่งข้อความของเพจนี้เข้าระบบเราแล้ว"
+                                                  style="background:rgba(90,160,126,.16); color:#3f7a5c; font-size:10px; font-weight:700;">📡 ต่อสายแล้ว</span>
+                                        @elseif($wh === false)
+                                            <span class="tp-pill" title="เปิดสวิตช์ไว้ แต่ Facebook ยังไม่ส่งข้อความของเพจนี้มาให้เลย — บอทจะเงียบสนิท"
+                                                  style="background:rgba(217,83,79,.16); color:#b1413d; font-size:10px; font-weight:700;">📡 ยังไม่ต่อสาย</span>
+                                        @else
+                                            {{-- ตรวจไม่ได้ ≠ ยังไม่ต่อสาย — ห้ามฟ้องว่าพังทั้งที่ไม่รู้ --}}
+                                            <span class="tp-pill" title="ยังไม่ได้ตรวจรอบนี้ (สาขาเปิดเยอะ ตรวจทีละชุด) หรือ Facebook ไม่ตอบ — ไม่ได้แปลว่าไม่ได้ต่อสาย รีเฟรชอีกครั้งเพื่อดูผล"
+                                                  style="background:rgba(140,140,150,.16); color:#6b6b73; font-size:10px; font-weight:700;">📡 ยังไม่ได้ตรวจ</span>
+                                        @endif
+                                    @endif
                                 </td>
                                 <td style="padding:11px 12px; text-align:right; white-space:nowrap;">
                                     <a href="{{ route('admin.fortune.bills.index', ['fortune_page' => $p->id]) }}" class="tp-btn tp-btn-sm">บิล</a>
@@ -181,6 +201,14 @@
                                         @csrf
                                         <button type="submit" class="tp-btn tp-btn-sm">ทดสอบ Token</button>
                                     </form>
+                                    {{-- ปุ่มซ่อม — โผล่เฉพาะตอนที่รู้แน่ว่ายังไม่ได้ต่อสาย (ปกติสวิตช์ทำให้เองแล้ว) --}}
+                                    @if($wh === false)
+                                        <form method="POST" action="{{ route('admin.fortune.pages.subscribe', $p) }}" style="display:inline;">
+                                            @csrf
+                                            <button type="submit" class="tp-btn tp-btn-sm"
+                                                    style="background:rgba(217,83,79,.16); color:#b1413d; font-weight:700;">📡 ต่อสายใหม่</button>
+                                        </form>
+                                    @endif
                                     <form method="POST" action="{{ route('admin.fortune.pages.toggle', $p) }}" style="display:inline;"
                                           onsubmit="return confirm('{{ $p->is_active ? 'ปิด' : 'เปิด' }}สาขา {{ $p->name }} ใช่ไหม?');">
                                         @csrf
