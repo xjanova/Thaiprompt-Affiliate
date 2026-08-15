@@ -139,9 +139,17 @@ class FacebookLoginController extends Controller
         //    PSID ของสาขา 5 กับของเพจหลัก เป็นคนคนเดียวกัน
         //    (ไม่ใช้ ids_for_pages เพราะโดนล็อกด้วย Business Manager สำหรับเพจสาขา)
         //    ⚠️ non-blocking โดยตั้งใจ — service กลืน error เอง ห้ามให้ล็อกอินพังเพราะเรื่องนี้
-        if (! empty($user->facebook_psid)) {
-            app(\App\Services\Fortune\CrossPageIdentityService::class)
-                ->link('facebook', (string) $user->facebook_psid, (string) $fbUser->getId());
+        //    🛡️ ครอบ try/catch อีกชั้นนอกเหนือจากใน service — นี่คือเส้นทางล็อกอิน
+        //       ฟีเจอร์เสริมห้ามทำให้คนเข้าระบบไม่ได้เด็ดขาด แย่สุดคือเสียความจำข้ามสาขา
+        try {
+            if (! empty($user->facebook_psid)) {
+                app(\App\Services\Fortune\CrossPageIdentityService::class)
+                    ->link('facebook', (string) $user->facebook_psid, (string) $fbUser->getId());
+            }
+        } catch (\Throwable $e) {
+            Log::warning('🔗 เย็บตัวตนข้ามสาขาไม่สำเร็จ (ล็อกอินสำเร็จตามปกติ)', [
+                'error' => $e->getMessage(),
+            ]);
         }
 
         // Track login stats

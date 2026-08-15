@@ -82,9 +82,17 @@ class WebFortuneGatewayController extends Controller
         //    เพราะโทเค็นในลิงก์ฝาก PSID มาให้ตรงๆ (เซ็น HMAC ปลอมไม่ได้)
         //    จึงใช้ได้กับ "ทุกสาขา" ไม่ต้องพึ่ง ids_for_pages ที่โดน Business Manager ล็อก
         //    เงื่อนไข: บัญชีนี้ต้องเคยผูก Facebook ไว้แล้ว (มี ASID) ถึงจะรู้ว่าเป็นคนเดียวกับใคร
-        if ($payload['p'] === 'facebook' && ! empty($user->facebook_user_id)) {
-            app(\App\Services\Fortune\CrossPageIdentityService::class)
-                ->link('facebook', (string) $payload['u'], (string) $user->facebook_user_id);
+        //    🛡️ ครอบ try/catch อีกชั้น — เส้นนี้คือประตูที่ลูกค้าเดินจากแชทเข้าเว็บ
+        //       พังตรงนี้ = กดลิงก์จากแชทแล้วเข้าเว็บไม่ได้ทั้งระบบ ห้ามเสี่ยงเพื่อฟีเจอร์เสริม
+        try {
+            if ($payload['p'] === 'facebook' && ! empty($user->facebook_user_id)) {
+                app(\App\Services\Fortune\CrossPageIdentityService::class)
+                    ->link('facebook', (string) $payload['u'], (string) $user->facebook_user_id);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('🔗 เย็บตัวตนข้ามสาขาไม่สำเร็จ (เข้าเว็บสำเร็จตามปกติ)', [
+                'error' => $e->getMessage(),
+            ]);
         }
 
         Log::info('WebFortune: ล็อกอินอัตโนมัติสำเร็จ → ส่งต่อ SSO', [
