@@ -78,6 +78,15 @@ class WebFortuneGatewayController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
 
+        // 🔗 (2026-08-15) เย็บความจำข้ามสาขา — เส้นนี้สำคัญกว่าเส้นล็อกอิน FB
+        //    เพราะโทเค็นในลิงก์ฝาก PSID มาให้ตรงๆ (เซ็น HMAC ปลอมไม่ได้)
+        //    จึงใช้ได้กับ "ทุกสาขา" ไม่ต้องพึ่ง ids_for_pages ที่โดน Business Manager ล็อก
+        //    เงื่อนไข: บัญชีนี้ต้องเคยผูก Facebook ไว้แล้ว (มี ASID) ถึงจะรู้ว่าเป็นคนเดียวกับใคร
+        if ($payload['p'] === 'facebook' && ! empty($user->facebook_user_id)) {
+            app(\App\Services\Fortune\CrossPageIdentityService::class)
+                ->link('facebook', (string) $payload['u'], (string) $user->facebook_user_id);
+        }
+
         Log::info('WebFortune: ล็อกอินอัตโนมัติสำเร็จ → ส่งต่อ SSO', [
             'user_id' => $user->id,
             'platform' => $payload['p'],

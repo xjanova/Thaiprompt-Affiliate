@@ -134,6 +134,16 @@ class FacebookLoginController extends Controller
         // Login user
         Auth::login($user, true);
 
+        // 🔗 (2026-08-15) เย็บความจำข้ามสาขา — ตอนนี้เรารู้ทั้ง ASID และ PSID พร้อมกัน
+        //    ASID ผูกกับ "แอป" ไม่ใช่ "เพจ" → เป็นกุญแจเดียวที่ใช้บอกได้ว่า
+        //    PSID ของสาขา 5 กับของเพจหลัก เป็นคนคนเดียวกัน
+        //    (ไม่ใช้ ids_for_pages เพราะโดนล็อกด้วย Business Manager สำหรับเพจสาขา)
+        //    ⚠️ non-blocking โดยตั้งใจ — service กลืน error เอง ห้ามให้ล็อกอินพังเพราะเรื่องนี้
+        if (! empty($user->facebook_psid)) {
+            app(\App\Services\Fortune\CrossPageIdentityService::class)
+                ->link('facebook', (string) $user->facebook_psid, (string) $fbUser->getId());
+        }
+
         // Track login stats
         $setting->recordLogin();
 

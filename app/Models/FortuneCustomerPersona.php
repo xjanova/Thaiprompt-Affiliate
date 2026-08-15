@@ -290,6 +290,25 @@ class FortuneCustomerPersona extends Model
     {
         $lines = [];
 
+        // 🔗 (2026-08-15) ความจำจากสาขาอื่นของ "คนเดียวกัน"
+        //    Facebook ให้ PSID คนละตัวต่อเพจ → ถ้าไม่ต่อตรงนี้ ลูกค้าที่เคยเล่าเรื่องตัวเอง
+        //    ไว้ที่เพจหลัก มาทักสาขา 5 แล้วแม่หมอจะเริ่มนับหนึ่งใหม่ทั้งที่เป็นคนเดิม
+        //    ⚠️ ไม่ยิงคิวรีเลยถ้ายังไม่เคยผูก ASID (linked_asid = null) ซึ่งคือลูกค้าส่วนใหญ่
+        foreach (app(\App\Services\Fortune\CrossPageIdentityService::class)->siblings($this) as $sib) {
+            $bits = [];
+
+            if (! empty($sib->traits)) {
+                $bits[] = implode(', ', array_slice($sib->traits, -3));
+            }
+            if (! empty($sib->likes)) {
+                $bits[] = 'ชอบ '.implode(', ', array_slice($sib->likes, -2));
+            }
+
+            if ($bits !== []) {
+                $lines[] = '• เคยคุยกับเราที่เพจอื่นมาก่อน: '.implode(' / ', $bits);
+            }
+        }
+
         // Demographics
         // 🚫 (2026-05-26) DO NOT inject gender_hint — AI Grok mirror pronoun เป็น "ครับ"
         //   เคส "ขุน" FB 27532619583011840: persona male → บอทตอบ "เข้าใจเลยครับ" (ผิด!)
