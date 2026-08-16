@@ -120,11 +120,15 @@ trait DailyHoroscopeModeTrait
 
             // 3️⃣ 🚨 ลูกค้าจ่ายเงินแล้ว / มีบิล / กำลังทำนาย → ห้ามแตะเด็ดขาด
             //    ต้องเช็คทั้ง 3 ตัวเพราะครอบคนละช่วง:
-            //      hasPaidActiveReading  = จ่ายแล้ว แต่มีกรอบ updated_at 2 ชม. (มีรูรั่ว)
-            //      hasActiveReading      = ไม่มีกรอบเวลา ← ตัวที่ครอบ Deep-39 collecting_birthdate
-            //      hasPendingUnpaidBill  = กำลัง checkout อยู่
+            //      hasPaidActiveReading       = จ่ายแล้ว แต่มีกรอบ updated_at 2 ชม. (มีรูรั่ว)
+            //      dailyBlockingReadingExists = ไม่มีกรอบเวลา ← ครอบ Deep-39 collecting_birthdate
+            //      hasPendingUnpaidBill       = กำลัง checkout อยู่
+            //
+            // 🐛 (2026-08-17) ตัวกลางเคยเป็น FortuneReading::hasActiveReading() ซึ่งกว้างเกินไป
+            //    จนกลืน "ยืนอ่านเมนูอยู่" (tier_choice) มาด้วย → ดูเคสจริงที่
+            //    dailyBlockingReadingExists()
             if ($this->hasPaidActiveReading($userId)
-                || FortuneReading::hasActiveReading($platform, $userId)
+                || $this->dailyBlockingReadingExists($platform, $userId)
                 || $this->hasPendingUnpaidBill($userId)) {
                 Log::info('🌙 Daily: ข้าม — ลูกค้ามีบิล/กำลังทำนายอยู่', [
                     'user_id' => $userId,
@@ -1194,6 +1198,60 @@ trait DailyHoroscopeModeTrait
     }
 
     /**
+     * 🚧 (2026-08-17) ตอนนี้ลูกค้าติด "ของจริง" ที่ห้ามให้ดวงฟรีแทรกอยู่หรือเปล่า
+     *
+     * เดิมด่านดวงฟรีใช้ `FortuneReading::hasActiveReading()` ตรง ๆ ซึ่ง **กว้างเกินไป**:
+     * `ACTIVE_READING_STATUSES` รวม tier_choice / awaiting_confirmation /
+     * discovery_chat / discovery_confirm ด้วย ซึ่งแปลว่า "ยืนอ่านเมนูอยู่" เท่านั้น
+     * ยังไม่มีบิล ไม่มียอดเงิน (ยืนยันกับ prod: 10 แถว tier_choice → bill_number/amount = null ทุกแถว)
+     *
+     * 🐛 เคสจริง 2026-08-16 22:47 (user 26895114853414011):
+     *    กดปุ่ม [🎁 รับดวงฟรีประจำวัน] → ด่านตีตกเพราะมี reading #11161 status=tier_choice
+     *    → ชื่อวันที่ปุ่มยิงเข้ามาไหลต่อไปถึง handleTierChoice → ตอบ `tier_choice_chitchat`
+     *    ซึ่งแนบปุ่มแพคเกจ 39/99 = **ขอของฟรี ได้เมนูราคากลับไป** ตรงกับสิ่งที่กฎ
+     *    2026-08-01 ห้ามไว้เป๊ะ ๆ
+     *
+     * ⚠️ ซ้ำร้าย tier_choice ค้างได้ยาวเป็นวัน (ตัวปิดอัตโนมัติคือ cron fortune:flow-nudge
+     *    ซึ่งถ้าไม่ทำงานก็ไม่มีใครปิดให้) ⇒ ลูกค้าคนนั้นถูกตัดสิทธิ์ดวงฟรีแบบถาวร ไม่ใช่ชั่วคราว
+     *
+     * ที่ต้องกันจริง ๆ มีแค่ "มีเงินเข้ามาเกี่ยว หรือกำลังทำนายอยู่":
+     *   - PENDING_PAYMENT_STATUSES  บิลออกแล้ว รอโอน
+     *   - DEEP_ACTIVE_STATUSES      Deep-39 จ่ายแล้ว กำลังเก็บวันเกิด/คำถาม/ไพ่
+     *   - CELTIC_ACTIVE_STATUSES    Celtic 99 จ่ายแล้ว กำลังเปิดไพ่/ถามตอบ
+     *   - IN_PREDICTION_STATUSES    AI กำลังเขียนคำทำนายอยู่
+     * (เส้นจ่ายเงิน→ทำนาย ห้ามแทรกเด็ดขาด — feedback_never_interrupt_payment_to_prediction_flow)
+     *
+     * @return bool true = ติดของจริง ห้ามแทรก · เช็คไม่ได้ก็คืน true (ปลอดภัยไว้ก่อน)
+     */
+    protected function dailyBlockingReadingExists(string $platform, string $userId): bool
+    {
+        try {
+            $statuses = array_values(array_unique(array_merge(
+                FortuneReading::PENDING_PAYMENT_STATUSES,
+                FortuneReading::DEEP_ACTIVE_STATUSES,
+                FortuneReading::CELTIC_ACTIVE_STATUSES,
+                FortuneReading::IN_PREDICTION_STATUSES,
+            )));
+
+            // fortune_readings ไม่มีคอลัมน์ line_user_id — LINE ใช้ platform_user_id
+            // (เหตุผลเดียวกับ FortuneReading::hasActiveReading)
+            $column = $platform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
+
+            return FortuneReading::where($column, $userId)
+                ->whereIn('conversation_status', $statuses)
+                ->exists();
+        } catch (\Throwable $e) {
+            // เช็คไม่ได้ → ถือว่าติด ปลอดภัยกว่าไปแทรกกลางเส้นจ่ายเงิน
+            Log::warning('🌙 Daily: เช็ค reading ที่ห้ามแทรกไม่ได้ (ถือว่าติดไว้ก่อน)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return true;
+        }
+    }
+
+    /**
      * 🎁 (2026-08-01) ลูกค้าขอดูดวงฟรี แต่สิทธิ์ฟรีหมด/ปิด → ยื่นดวงประจำวันเกิดแทนเมนูราคา
      *
      * owner: "ถ้าใครจะดูดวงฟรี ก็ส่งปุ่มรับดวงประจำวันเกิดได้เสมอ ทุกวัน ถ้ามีคำทำนายไว้แล้ว"
@@ -1203,12 +1261,11 @@ trait DailyHoroscopeModeTrait
      *       และไม่กินยอดขาย เพราะเป็นดวงรวมตามวันเกิด ไม่ใช่ดวงเฉพาะตัวเหมือน 39/99
      *
      * ⚠️ ไม่จำกัดวันละครั้ง — เจ้าของสั่ง "ได้เสมอ ทุกวัน" และของมีอยู่แล้วจริง ๆ
-     *    ตัวคุมเดียวคือ **ต้องมีบทความของวันนี้** (ก่อน 06:00 / job พัง → คืน null)
-     *    ยื่นปุ่มแล้วกดมาไม่มีของ = เสียความน่าเชื่อถือมากกว่าไม่ยื่นเลย
      *
      * ⚠️ ตั้งธง pending ทุกครั้ง เพื่อให้คนที่ "พิมพ์" วันเกิดแทนการกดปุ่ม ได้ดวงเหมือนกัน
      *
-     * @return array|null null = ให้ผู้เรียกกลับไปใช้ทางเดิม (เมนูราคา)
+     * @return array|null null = ไม่ใช่เคสของโหมดนี้เลย (ไม่ใช่ FB / โหมด transfer / ติดบิล)
+     *                    → ผู้เรียกกลับไปใช้ทางเดิม
      */
     protected function maybeOfferDailyForFreeRequest(string $userId, ?array $userProfile = null): ?array
     {
@@ -1219,21 +1276,42 @@ trait DailyHoroscopeModeTrait
                 return null;
             }
 
-            $greeting = app(FortuneGreetingService::class);
-
-            // ⏰ วันนี้ยังไม่มีบทความ → อย่ายื่นปุ่มที่กดแล้วไม่มีของ
-            if (! $greeting->dailyArticlesReadyToday()) {
-                return null;
-            }
-
             // 🚨 มีบิล/กำลังทำนายอยู่ → ห้ามแทรก flow พวกนั้นมีคำตอบของตัวเอง
+            //    (เช็คก่อนเรื่องบทความ — คนกลางทางจ่ายเงินไม่ควรได้ยินเรื่องดวงฟรีเลย)
             if ($this->hasPaidActiveReading($userId)
-                || FortuneReading::hasActiveReading($platform, $userId)
+                || $this->dailyBlockingReadingExists($platform, $userId)
                 || $this->hasPendingUnpaidBill($userId)) {
                 return null;
             }
 
+            $greeting = app(FortuneGreetingService::class);
             $name = (string) ($userProfile['first_name'] ?? $userProfile['name'] ?? 'คุณ');
+
+            // ⏰ วันนี้ยังไม่มีบทความ (ก่อนรอบ gen / job ล่ม / cron ตาย)
+            //
+            // 🐛 (2026-08-17) เดิมคืน null ตรงนี้ ซึ่งแปลว่า "ไปต่อทางเดิม" — และปลายทาง
+            //    ของผู้เรียกทุกจุดคือ startDeepReadingFlow() = **เมนูราคา**
+            //    ⇒ วันที่บทความไม่ถูกสร้าง ทุกคนที่ขอของฟรีได้ใบเสนอราคากลับไปทั้งวัน
+            //    (เกิดจริง 2026-08-17: cron schedule:run หลุดจาก crontab → ไม่มีบทความเลย)
+            //
+            //    บอกตามตรงว่ายังไม่พร้อม ดีกว่าเงียบ และดีกว่าเด้งราคาใส่คนขอของฟรี
+            //    (rule_free_request_never_hits_paywall · rule_listen_dont_pitch_when_declining)
+            //    ปุ่ม 👑 VIP ยังยื่นให้คนที่พร้อมจ่ายกดเองได้ แต่ไม่พูดเรื่องราคา
+            if (! $greeting->dailyArticlesReadyToday()) {
+                Log::warning('🎁 Daily: ขอดูฟรีแต่วันนี้ยังไม่มีบทความ — บอกตามตรง (ไม่เด้งเมนูราคา)', [
+                    'user_id' => $userId,
+                    'date' => now()->toDateString(),
+                ]);
+
+                return [
+                    'action' => 'daily_horoscope_sent',
+                    'message' => $greeting->buildDailyUnavailableMessage($name),
+                    'reading' => null,
+                    'quick_replies' => $this->dailyUpgradeInviteAllowed($platform, $userId)
+                        ? [static::dailyUpgradeQuickReply()]
+                        : [],
+                ];
+            }
 
             // รู้วันเกิดแล้ว → ปุ่มเดียว กดแล้วส่งฉบับเต็ม (ไม่ถามวันเกิดซ้ำ)
             $teaser = $greeting->buildDailyReadyTeaser($userId, $name);

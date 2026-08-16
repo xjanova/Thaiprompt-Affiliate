@@ -282,4 +282,62 @@ class FortuneDailyModeGateTest extends TestCase
             $this->assertDoesNotMatchRegularExpression('/\d/u', $line, "มีตัวเลข (ราคา?) หลุดมา: {$line}");
         }
     }
+
+    /**
+     * 🚧 (2026-08-17) "ยืนอ่านเมนูอยู่" ต้องไม่ถูกนับเป็นบิล — ไม่งั้นดวงฟรีถูกตัดสิทธิ์
+     *
+     * เคสจริง 2026-08-16 22:47 (user 26895114853414011): กดปุ่ม [🎁 รับดวงฟรีประจำวัน]
+     * แต่มี reading status=tier_choice ค้างอยู่ (bill_number/amount = null ทั้งคู่)
+     * → ด่านดวงฟรีตีตก → ชื่อวันไหลไป handleTierChoice → ตอบเมนูแพคเกจ 39/99
+     * = ขอของฟรี ได้ใบเสนอราคากลับไป
+     *
+     * เทสต์นี้ล็อกลิสต์สถานะที่ dailyBlockingReadingExists() ใช้ ไม่ให้ใครเผลอ
+     * เอาสถานะ "ก่อนจ่ายเงิน" กลับเข้ามาอีก
+     *
+     * @test
+     */
+    public function สถานะก่อนจ่ายเงินต้องไม่บล็อกดวงฟรี(): void
+    {
+        // ลิสต์เดียวกับที่ DailyHoroscopeModeTrait::dailyBlockingReadingExists() ประกอบ
+        $blocking = array_values(array_unique(array_merge(
+            \App\Models\FortuneReading::PENDING_PAYMENT_STATUSES,
+            \App\Models\FortuneReading::DEEP_ACTIVE_STATUSES,
+            \App\Models\FortuneReading::CELTIC_ACTIVE_STATUSES,
+            \App\Models\FortuneReading::IN_PREDICTION_STATUSES,
+        )));
+
+        // ❌ ยังไม่มีบิล ไม่มียอดเงิน = แค่เปิดเมนูค้างไว้ → ห้ามบล็อก
+        foreach ([
+            \App\Models\FortuneReading::STATUS_TIER_CHOICE,
+            \App\Models\FortuneReading::STATUS_AWAITING_CONFIRMATION,
+            \App\Models\FortuneReading::STATUS_DISCOVERY_CHAT,
+            \App\Models\FortuneReading::STATUS_DISCOVERY_CONFIRM,
+        ] as $status) {
+            $this->assertNotContains($status, $blocking, "สถานะก่อนจ่ายเงินหลุดเข้าลิสต์บล็อก: {$status}");
+        }
+
+        // ✅ มีเงินเกี่ยว / กำลังทำนาย → ต้องบล็อกเสมอ
+        //    (feedback_never_interrupt_payment_to_prediction_flow)
+        foreach ([
+            \App\Models\FortuneReading::STATUS_PENDING_PAYMENT,
+            \App\Models\FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+            \App\Models\FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+            \App\Models\FortuneReading::STATUS_COLLECTING_QUESTIONS,
+            \App\Models\FortuneReading::STATUS_COLLECTING_TAROT,
+            \App\Models\FortuneReading::STATUS_PAID,
+            \App\Models\FortuneReading::STATUS_CELTIC_PICKING,
+            \App\Models\FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+            \App\Models\FortuneReading::STATUS_CELTIC_GENERATING,
+            \App\Models\FortuneReading::STATUS_CELTIC_QA_PROMPT,
+        ] as $status) {
+            $this->assertContains($status, $blocking, "สถานะที่ต้องบล็อกหายไป: {$status}");
+        }
+
+        // เอกสารประกอบ: ตัวเดิม (hasActiveReading) กว้างกว่าจริง — นี่คือเหตุผลที่ต้องแยกลิสต์
+        $this->assertContains(
+            \App\Models\FortuneReading::STATUS_TIER_CHOICE,
+            \App\Models\FortuneReading::ACTIVE_READING_STATUSES,
+            'ถ้าวันหนึ่ง tier_choice ถูกถอดออกจาก ACTIVE_READING_STATUSES ให้ทบทวนคอมเมนต์ใน dailyBlockingReadingExists()'
+        );
+    }
 }
