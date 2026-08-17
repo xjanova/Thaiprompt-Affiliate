@@ -41,6 +41,23 @@ class CelticCrossService
      */
     public const BLACK_MAGIC_MODEL = 'gpt-5.6-sol';
 
+    /**
+     * 🧠 (2026-08-17 owner) โมเดลสำหรับ "คำถามยาก" ในโหมดปกติ
+     *
+     * owner: "โหมดปกติ ก็ใช้ luna คุยเหมือนเดิม ยกเว้นคำถามเริ่มยากต้องปรับเป็น sol"
+     *
+     * ⚠️ กลไก escalate เดิมของ Celtic ตายไปแล้ว 2 ชั้น — ตัวนี้คือการรื้อฟื้น:
+     *   ชั้น 1: โค้ด — 2026-05-29 ถอด resolveSensitiveDecision() ออกจาก askQuestion
+     *           ("Single-bot: Celtic ใช้ key เดียว prediction_celtic + openai เสมอ")
+     *           เหตุผลตอนนั้น = escalate แล้วเด้งไป Gemini ทำให้ persona แม่หมอเพี้ยน
+     *           ตอนนี้เหตุผลนั้นหมดไป เพราะ escalate อยู่ใน OpenAI ค่ายเดิม (luna → sol)
+     *   ชั้น 2: ตั้งค่า — prod `sensitive_ai_mode = 'off'` → isSensitiveModeActiveFor() = false ทุก context
+     *           จึงเรียก resolveSensitiveDecision() ตรงๆ ไม่ได้ (มันจะคืน use_pro=false เสมอ)
+     *           → ตัวนี้เรียก FortuneSensitivityDetector เองโดยไม่ผ่าน global gate
+     *             (ลูกค้า Celtic จ่ายเงินแล้ว ไม่ควรผูกกับสวิตช์ที่คุมแชทฟรีด้วย)
+     */
+    public const HARD_QUESTION_MODEL = 'gpt-5.6-sol';
+
     protected FortuneTellingSetting $settings;
 
     public function __construct(?FortuneTellingSetting $settings = null)
@@ -59,19 +76,74 @@ class CelticCrossService
      * modelOverrides map เป็น provider => model และถูก apply ทั้ง fallback chain
      * key ของค่ายอื่นยังใช้ model ตัวเองตามเดิม (ชื่อ model ข้ามค่ายไม่ได้) — ปลอดภัยอยู่แล้ว
      *
-     * @return array<string, string>|null null = ไม่ใช่โหมดคุณไสย์ (ใช้โมเดลปกติ)
+     * นโยบายโมเดลของ Celtic 99฿:
+     *   🪬 โหมดดูคุณไสย์      → sol เสมอ ทุกเทิร์น (Q1 + คุยต่อ + บทสรุป)
+     *   🧠 โหมดปกติ + คำถามยาก → sol เฉพาะเทิร์นนั้น
+     *   🌙 โหมดปกติ ทั่วไป     → luna (ค่า default ของ key)
+     *
+     * @param  string|null  $userQuestion  คำถามลูกค้าเทิร์นนี้ (null = ไม่มี เช่น บทสรุปตอนจบ)
+     * @return array<string, string>|null null = ใช้โมเดลปกติของ key
      */
-    protected function blackMagicModelOverrides(FortuneReading $reading): ?array
+    protected function resolveCelticModelOverrides(FortuneReading $reading, ?string $userQuestion = null): ?array
     {
         try {
-            if (! $this->isBlackMagicModeForced($reading)) {
+            // 1) 🪬 โหมดดูคุณไสย์ — sol เสมอ ไม่ต้องตรวจอะไรเพิ่ม
+            if ($this->isBlackMagicModeForced($reading)) {
+                return ['openai' => self::BLACK_MAGIC_MODEL];
+            }
+
+            // 2) 🧠 โหมดปกติ — ตรวจว่าคำถามเทิร์นนี้ "ยาก/หนัก" ไหม
+            $q = trim((string) $userQuestion);
+            if ($q === '' || mb_strlen($q) < 8) {
+                return null; // สั้นเกินกว่าจะเป็นคำถามยาก (ทัก/ตอบรับ) — ไม่ต้องเสียค่า detector
+            }
+
+            $uid = (string) ($reading->facebook_user_id ?? $reading->line_user_id ?? '');
+
+            // FortuneSensitivityDetector = heuristic ก่อน แล้วค่อยเรียก classifier เมื่อก้ำกึ่ง
+            //   → ส่วนใหญ่ไม่เสีย API call เพิ่มเลย
+            $detection = (new \App\Services\Fortune\FortuneSensitivityDetector($this->settings))
+                ->detect($q, [
+                    'user_id' => $uid,
+                    'has_active_paid_reading' => true,  // ถึงตรงนี้ = จ่ายแล้วเสมอ
+                    'channel_context' => 'celtic',
+                ]);
+
+            if (empty($detection['is_sensitive'])) {
                 return null;
             }
 
-            return ['openai' => self::BLACK_MAGIC_MODEL];
+            // 🛡️ เพดานกันบานปลาย — ใช้ตัวนับเดิมของ FortuneSensitiveBudgetGuard
+            //   (5 ครั้ง/คน/วัน ตาม sensitive_max_per_user_daily)
+            //   หมายเหตุ: บันทึกเป็น "จำนวนครั้ง" ไม่ได้บวกยอดบาท เพราะรู้ต้นทุนหลังยิงเสร็จเท่านั้น
+            //   ขอบเขตค่าใช้จ่ายถูกคุมด้วยโควต้าคำถามของบิลอยู่แล้ว (Celtic ถามได้ 5 ข้อ/บิล)
+            if ($uid !== '') {
+                $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
+                $guard = new \App\Services\Fortune\FortuneSensitiveBudgetGuard($this->settings);
+
+                if (! ($guard->canUse($platform, $uid)['allowed'] ?? false)) {
+                    Log::info('CelticCross: คำถามยากแต่ชนเพดาน escalate → ใช้ luna ต่อ', [
+                        'reading_id' => $reading->id,
+                    ]);
+
+                    return null;
+                }
+
+                $guard->recordUse($platform, $uid, 0);
+            }
+
+            Log::info('CelticCross: คำถามยาก → escalate เป็น sol เทิร์นนี้', [
+                'reading_id' => $reading->id,
+                'mood_level' => $detection['mood_level'] ?? null,
+                'complexity' => $detection['complexity'] ?? null,
+                'reasons' => $detection['reasons'] ?? [],
+                'detection_used' => $detection['detection_used'] ?? null,
+            ]);
+
+            return ['openai' => self::HARD_QUESTION_MODEL];
         } catch (\Throwable $e) {
-            // non-blocking — อ่านธงไม่ได้ ก็ทำนายด้วยโมเดลปกติต่อไป
-            Log::warning('CelticCross: อ่านธงโหมดคุณไสย์ไม่ได้ (ใช้โมเดลปกติ)', [
+            // non-blocking — ตัดสินใจไม่ได้ ก็ทำนายด้วยโมเดลปกติต่อไป (ลูกค้าต้องได้คำทำนายเสมอ)
+            Log::warning('CelticCross: เลือกโมเดล Celtic ไม่สำเร็จ (ใช้โมเดลปกติ)', [
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
@@ -290,7 +362,8 @@ class CelticCrossService
                     birthDate: null,                    // 🌙 ไม่ใช้วันเกิด — แม่หมอใช้พลังจักรวาลล้วงลึกผ่านไพ่
                     userContext: "celtic_cross:{$reading->id}:q{$sequence}",
                     purpose: $celticPurpose,
-                    modelOverrides: $this->blackMagicModelOverrides($reading), // 🪬 โหมดคุณไสย์ → sol
+                    // 🪬 คุณไสย์ → sol เสมอ · 🧠 โหมดปกติ + คำถามยาก → sol เฉพาะเทิร์นนี้
+                    modelOverrides: $this->resolveCelticModelOverrides($reading, $userQuestion),
                 );
 
                 $response = trim($result['response'] ?? '');
@@ -620,7 +693,9 @@ class CelticCrossService
                 [
                     'label' => 'bm-g1-diagnosis',
                     'len' => '600-900',
-                    'must' => ['🔍', '👤'],
+                    // 🎯 (2026-08-17) เหลือหัวข้อ "หลัก" ของบล็อกตัวเดียว — 👤/📅/🛡️/⚖️ เป็นหัวข้อย่อย
+                    //   ถ้าบังคับย่อยด้วย = ตกเกณฑ์แล้วถอยไปแบ่งบล็อกทุกครั้ง ทั้งที่เนื้อหาครบ
+                    'must' => ['🔍'],
                     'signal' => ['black_magic', 'combo'],
                     'spec' => "เจาะรายละเอียด \"ตกลงโดนอะไร ใครทำ เพราะอะไร\" (อ่านตามหน้าไพ่ × ตำแหน่ง Celtic เท่านั้น — ไม่ทำพาดหัวซ้ำ):\n"
                         ."🔍 ชนิดของ — ระบุให้ชัดตามไพ่ (อย่ากั๊ก)\n"
@@ -633,7 +708,7 @@ class CelticCrossService
                 [
                     'label' => 'bm-g2-remedy',
                     'len' => '600-900',
-                    'must' => ['🙏', '🧭'],
+                    'must' => ['🙏'], // 🧭/🛕/📿 เป็นหัวข้อย่อย — ดูเหตุผลที่ bm-g1
                     'signal' => ['black_magic'],
                     'spec' => "สรุป \"ทางแก้ที่ทำได้จริง ไม่เปลืองเงิน ไม่งมงาย\" (เน้นทำเองก่อน • อ้างหลักครูบาอาจารย์/พระเกจิที่มีจริง):\n"
                         ."🙏 ทำเองที่บ้านก่อน — สวดมนต์ (อิติปิโส / พาหุงมหากา / คาถาที่เป็นที่รู้จักจริง) / แผ่เมตตา / ทำบุญอุทิศ / รักษาศีล / สมาธิ / น้ำมนต์\n"
@@ -720,16 +795,13 @@ class CelticCrossService
         //   ใช้ token ~16k (จาก ~37k) และเร็วขึ้น ~38% เพราะไม่ต้องส่ง shared context ซ้ำ 3 รอบ
         //   ❗ ไม่ผ่านเกณฑ์เมื่อไหร่ → ตกลงไปโหมดแบ่งบล็อกเดิมอัตโนมัติ (ลูกค้าไม่มีทางได้ของพัง)
         //
-        // 🪬 ยกเว้นโหมดดูคุณไสย์ — ตั้งใจใช้โหมดแบ่งบล็อกเสมอ ไม่ลองคอลเดียว
-        //   วัดจริง R8966 ด้วย gpt-5.6-sol: คอลเดียวได้ 2,085 ตัว เห็นแค่ 🪬🔍 แล้วรวบที่เหลือเป็นความเรียง
-        //   ส่วนแบ่งบล็อกได้ 3,224 ตัว ครบทั้ง ชนิดของ/ผู้น่าสงสัย/เมื่อไหร่/เกราะ/กรรมย้อน/ทางแก้/ทิศ/ครูบา
-        //   โหมดนี้ "ความครบของเหตุผล" สำคัญกว่าค่า token (owner สั่งใช้ sol เพราะเหตุนี้)
-        //   + ถ้าปล่อยให้ลองคอลเดียวแล้วตกเกณฑ์ = จ่ายค่า sol ทิ้งฟรีรอบละ ~฿7 ทุกบิล
-        if (! $bmForced) {
-            $single = $this->tryBaseChartSingleCall($aiService, $reading, $shared, $groups);
-            if ($single !== null) {
-                return $single;
-            }
+        // 🪬 (2026-08-17 owner) โหมดคุณไสย์ก็ยิงคอลเดียวเหมือนกัน — "sol รับพร๊อมบวมได้สบาย"
+        //   ครั้งแรกที่วัดมันตกเกณฑ์เพราะเกณฑ์ 'must' ตั้งไว้เข้มเกิน (ไปบังคับหัวข้อ *ย่อย* 👤/🧭)
+        //   ตอนนี้เหลือหัวข้อหลักบล็อกละ 1 ตัว + สั่งห้ามรวบหัวข้อในพรอมต์ → sol มีโอกาสผ่านจริง
+        //   ถ้ายังคายมาไม่ครบ ตาข่ายเดิมก็ยังพาไปโหมดแบ่งบล็อกอัตโนมัติ (ลูกค้าไม่มีทางได้ของพัง)
+        $single = $this->tryBaseChartSingleCall($aiService, $reading, $shared, $groups);
+        if ($single !== null) {
+            return $single;
         }
 
         $blocks = [];
@@ -764,7 +836,8 @@ class CelticCrossService
                     birthDate: null,
                     userContext: "celtic_basechart:{$reading->id}:{$g['label']}",
                     purpose: 'prediction_celtic',
-                    modelOverrides: $this->blackMagicModelOverrides($reading), // 🪬 โหมดคุณไสย์ → sol
+                    // 🪬 พื้นดวงเปิดตัว: ตรวจแค่ธงคุณไสย์ (คำถาม Q1 เป็นข้อความสังเคราะห์ ไม่ต้องเสียค่า detector)
+                    modelOverrides: $this->resolveCelticModelOverrides($reading),
                 );
 
                 $txt = trim((string) ($r['response'] ?? ''));
@@ -862,6 +935,10 @@ class CelticCrossService
             ."━━━━━━━━━━━━━━━━━\n📐 งานรอบนี้ — เขียน \"พื้นดวงเปิดตัว\" ให้ครบทุกส่วนใน *คำตอบเดียว* เรียงตามลำดับด้านล่างเป๊ะ\n━━━━━━━━━━━━━━━━━\n"
             .$sectionSpecs
             ."\n📏 plain text + emoji หัวข้อ • ❌ ห้าม markdown (**, ##) • ฟันธงตามไพ่+ดาว ห้ามกำกวม\n"
+            // 🎯 (2026-08-17) กันอาการ "รวบหัวข้อ" ที่เจอตอนยิงคอลเดียวในโหมดคุณไสย์ —
+            //   โมเดลเขียนหัวข้อแรกของบล็อกแล้วเล่าที่เหลือเป็นความเรียงยาว หัวข้อย่อยหายไปเฉยๆ
+            ."❗ ทุกหัวข้อที่มี emoji นำหน้าในสเปกด้านบน ต้องขึ้นเป็น *หัวข้อจริง* ในคำตอบให้ครบทุกอัน\n"
+            ."   ❌ ห้ามรวบหลายหัวข้อเป็นย่อหน้าเดียว ❌ ห้ามข้ามหัวข้อใดหัวข้อหนึ่ง\n"
             .'เขียนทุกส่วนต่อกันในคำตอบเดียว ขึ้นต้นด้วยหัวข้อ emoji ของส่วนที่ 1 ทันที (ห้ามทักทาย ห้ามเกริ่นนำ ห้ามใส่ [TYPE]):';
 
         try {
@@ -874,7 +951,7 @@ class CelticCrossService
                 birthDate: null,
                 userContext: "celtic_basechart_single:{$reading->id}",
                 purpose: 'prediction_celtic',
-                modelOverrides: $this->blackMagicModelOverrides($reading), // 🪬 โหมดคุณไสย์ → sol
+                modelOverrides: $this->resolveCelticModelOverrides($reading), // 🪬 คุณไสย์ → sol
             );
         } catch (\Throwable $e) {
             Log::warning('CelticCross: base-chart คอลเดียวล้มเหลว → ใช้โหมดแบ่งบล็อกแทน', [
@@ -1149,7 +1226,7 @@ class CelticCrossService
                 birthDate: null,
                 userContext: "celtic_cross_admin:{$reading->id}:q{$sequence}",
                 purpose: 'prediction_celtic',
-                modelOverrides: $this->blackMagicModelOverrides($reading), // 🪬 โหมดคุณไสย์ → sol
+                modelOverrides: $this->resolveCelticModelOverrides($reading, $userQuestion),
             );
 
             $aiElapsedMs = (int) ((microtime(true) - $aiStart) * 1000);
@@ -4853,7 +4930,8 @@ class CelticCrossService
                 readingType: 'deep',
                 birthDate: $deepReading?->birth_date?->format('Y-m-d'),
                 userContext: "celtic_finale:{$reading->id}",
-                modelOverrides: $this->blackMagicModelOverrides($reading), // 🪬 โหมดคุณไสย์ → sol
+                // บทสรุปรวบทุกคำถาม — ไม่มีคำถามเดี่ยวให้ตรวจ → ดูแค่ธงคุณไสย์
+                modelOverrides: $this->resolveCelticModelOverrides($reading),
             );
 
             $summary = trim($result['response'] ?? '');
