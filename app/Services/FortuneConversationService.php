@@ -20712,10 +20712,16 @@ PROMPT;
         try {
             // ⚠️ คืน '' (ไม่ใช่ null) เมื่อไม่มีคำทำนาย — Cache::remember ถือว่า null = "ยังไม่แคช"
             //   จะยิง query ใหม่ทุกเทิร์น ซึ่งคือเคสของลูกค้า *ส่วนใหญ่* ในแชทฟรี (ไม่เคยจ่าย)
-            $block = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($userId, $platform): string {
-                $userIdColumn = $platform === 'line' ? 'line_user_id' : 'facebook_user_id';
-
-                $latest = FortuneReading::where($userIdColumn, $userId)
+            $block = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($userId): string {
+                // ⚠️ (2026-08-17) ห้าม map คอลัมน์ตาม platform — `line_user_id` **ว่างทุกแถวบน prod**
+                //   reading ที่ platform='line' เก็บ id ไว้ที่ facebook_user_id + platform_user_id
+                //   (ตรวจจริง: 8 บิลล่าสุดที่จ่ายแล้ว — line_user_id ว่างหมด รวม 2 บิลที่ platform='line')
+                //   ถ้าเลือกคอลัมน์ตาม platform ลูกค้า LINE จะไม่เจอคำทำนายตัวเองเลยสักคน
+                $latest = FortuneReading::where(function ($q) use ($userId) {
+                    $q->where('platform_user_id', $userId)
+                        ->orWhere('facebook_user_id', $userId)
+                        ->orWhere('line_user_id', $userId);
+                })
                     ->where('is_paid', true)
                     ->whereIn('reading_type', [
                         FortuneReading::READING_TYPE_DEEP,
@@ -20812,9 +20818,14 @@ PROMPT;
 
         try {
             // ค้น latest paid reading (deep หรือ celtic_cross) — ภายใน 30 วัน
-            $userIdColumn = $platform === 'line' ? 'line_user_id' : 'facebook_user_id';
-
-            $latestPaid = FortuneReading::where($userIdColumn, $userId)
+            // ⚠️ (2026-08-17) เดิม map คอลัมน์ตาม platform (`line_user_id` เมื่อเป็น LINE) —
+            //   แต่ `line_user_id` **ว่างทุกแถวบน prod** (id ของ LINE อยู่ที่ facebook_user_id + platform_user_id)
+            //   → ลูกค้า LINE ไม่เคยได้ context "หมอจำได้" เลยตั้งแต่ต้น เงียบสนิทไม่มี error
+            $latestPaid = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('platform_user_id', $userId)
+                    ->orWhere('facebook_user_id', $userId)
+                    ->orWhere('line_user_id', $userId);
+            })
                 ->where('is_paid', true)
                 ->whereIn('reading_type', [
                     FortuneReading::READING_TYPE_DEEP,
