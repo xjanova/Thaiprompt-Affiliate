@@ -5165,20 +5165,7 @@ class FacebookWebhookController extends Controller
             //   so it never paints over another reading for the same PSID
             //   (rapid-fire fortunes within minutes). Safe to no-op if
             //   columns aren't yet migrated.
-            try {
-                if (\Illuminate\Support\Facades\Schema::hasColumn('ai_api_key_usage_logs', 'reading_id')) {
-                    \Illuminate\Support\Facades\DB::table('ai_api_key_usage_logs')
-                        ->where('fb_user_id', $fromId)
-                        ->whereNull('reading_id')
-                        ->where('created_at', '>=', $aiCallStartedAt)
-                        ->update(['reading_id' => $reading->id]);
-                }
-            } catch (\Throwable $bfErr) {
-                Log::debug('FacebookWebhookController: backfill reading_id failed (non-blocking)', [
-                    'reading_id' => $reading->id,
-                    'error' => $bfErr->getMessage(),
-                ]);
-            }
+            \App\Models\AiApiKeyUsageLog::backfillReadingId($fromId, $reading->id, $aiCallStartedAt);
 
             // ปิด typing indicator
             if (! $isComment) {

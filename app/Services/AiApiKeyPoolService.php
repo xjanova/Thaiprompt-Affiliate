@@ -178,6 +178,14 @@ class AiApiKeyPoolService
 
     /**
      * บันทึกการใช้งาน tokens
+     *
+     * 🪪 (2026-08-17) $context = ตัวตนของลูกค้า/ใบดูดวงที่ call นี้ให้บริการ
+     *   คีย์ที่รองรับ: reading_id, user_id, fb_user_id, customer_name
+     *   (ดู AiApiKey::customerContextColumns() — คีย์อื่นถูกทิ้ง ไม่ mass-assign)
+     *   ต้องส่งต่อลง model ไม่งั้น log row ได้ reading_id = NULL
+     *   → วัดต้นทุน AI ต่อ 1 ใบดูดวงไม่ได้
+     *
+     * @param  array<string,mixed>|null  $context  ตัวตนลูกค้า (optional)
      */
     public function recordUsage(
         string $provider,
@@ -185,31 +193,35 @@ class AiApiKeyPoolService
         int $outputTokens,
         ?string $model = null,
         ?int $responseTimeMs = null,
-        string $requestType = 'general'
+        string $requestType = 'general',
+        ?array $context = null
     ): void {
         // ดึง key ที่เพิ่งใช้ (จาก cache หรือล่าสุด)
         $key = $this->getLastUsedKey($provider);
 
         if ($key) {
-            $key->recordUsage($inputTokens, $outputTokens, $model, $responseTimeMs, $requestType);
+            $key->recordUsage($inputTokens, $outputTokens, $model, $responseTimeMs, $requestType, $context);
 
             Log::debug('AI API Key Pool: บันทึกการใช้งาน', [
                 'provider' => $provider,
                 'key_id' => $key->id,
                 'total_tokens' => $inputTokens + $outputTokens,
+                'reading_id' => $context['reading_id'] ?? null,
             ]);
         }
     }
 
     /**
      * บันทึก error
+     *
+     * @param  array<string,mixed>|null  $context  ตัวตนลูกค้า (คีย์เดียวกับ recordUsage)
      */
-    public function recordError(string $provider, string $errorMessage, ?string $model = null): void
+    public function recordError(string $provider, string $errorMessage, ?string $model = null, ?array $context = null): void
     {
         $key = $this->getLastUsedKey($provider);
 
         if ($key) {
-            $key->recordError($errorMessage, $model);
+            $key->recordError($errorMessage, $model, $context);
 
             Log::warning('AI API Key Pool: บันทึก error', [
                 'provider' => $provider,

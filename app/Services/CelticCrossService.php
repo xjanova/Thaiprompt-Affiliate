@@ -262,6 +262,9 @@ class CelticCrossService
                     ],
                 );
 
+                // 🪪 (2026-08-17) ผูก usage log กับใบดูดวงนี้ → คิดต้นทุน AI ต่อ 1 ใบได้
+                $aiService->forReading($reading);
+
                 $result = $aiService->generateWithRetryAndFallback(
                     questions: [$prompt],
                     userProfile: null,                  // 🌙 แม่หมอจันทรา ไม่ดูโปรไฟล์ FB — ใช้พลังไพ่ + จิตเจ้าชะตา
@@ -736,6 +739,10 @@ class CelticCrossService
                 .'ขึ้นต้นด้วยหัวข้อ emoji แรกของส่วนนี้ทันที (ห้ามทักทาย ห้ามเกริ่นนำ ห้ามใส่ [TYPE]):';
 
             try {
+                // 🪪 (2026-08-17) ต้องเรียกใน loop ทุกกลุ่ม — context เป็น one-shot
+                //   ถูกล้างหลัง generate ทุกครั้ง เรียกครั้งเดียวนอก loop = กลุ่มที่ 2 เป็นต้นไป reading_id หาย
+                $aiService->forReading($reading);
+
                 $r = $aiService->generateWithRetryAndFallback(
                     questions: [$prompt],
                     userProfile: null,
@@ -851,6 +858,9 @@ class CelticCrossService
             .'เขียนทุกส่วนต่อกันในคำตอบเดียว ขึ้นต้นด้วยหัวข้อ emoji ของส่วนที่ 1 ทันที (ห้ามทักทาย ห้ามเกริ่นนำ ห้ามใส่ [TYPE]):';
 
         try {
+            // 🪪 (2026-08-17) ผูก usage log กับใบดูดวงนี้ (พื้นดวงยิงคอลเดียว)
+            $aiService->forReading($reading);
+
             $r = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
                 userProfile: null,
@@ -1126,6 +1136,10 @@ class CelticCrossService
 
             // 🎯 OpenAI primary + purpose='prediction_celtic'
             $aiService = new FortuneAIService($this->settings, 'prediction_celtic', 'openai');
+
+            // 🪪 (2026-08-17) ผูก usage log กับใบดูดวงนี้
+            $aiService->forReading($reading);
+
             $aiResult = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
                 userProfile: null,
@@ -4830,6 +4844,10 @@ class CelticCrossService
             $template = $deepReading?->birth_date
                 ? "{questions}\n\n{birth_date_section}"
                 : '{questions}';
+
+            // 🪪 (2026-08-17) ผูกกับใบ Celtic ($reading) ไม่ใช่ใบ Deep ที่ลิงก์มา
+            //   — ต้นทุนบทสรุปนี้เป็นของบิล Celtic 99฿ ใบนี้
+            $aiService->forReading($reading);
 
             $result = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],

@@ -4421,6 +4421,52 @@ PROMPT;
     }
 
     /**
+     * 🆕 (2026-08-17) ผูก usage log กับ "ใบดูดวง" (fortune_readings) ตรง ๆ
+     *
+     * ที่มา: reading_id ใน ai_api_key_usage_logs เป็น NULL 100% เพราะ caller
+     *   หลัก (Celtic / Deep / conversation) ไม่เคยเรียก withCustomerContext()
+     *   → ตอบคำถาม "ดูดวง Celtic 99฿ ใบหนึ่งกิน token ไปกี่บาท" ไม่ได้เลย
+     *
+     * helper นี้ดึงตัวตนครบ 4 คีย์จาก $reading ให้อัตโนมัติ caller จึงไม่ต้อง
+     * จำว่าต้องส่งคีย์อะไรบ้าง:
+     *
+     *     $aiService->forReading($reading)->generateWithRetryAndFallback(...);
+     *
+     * ⚠️ ONE-SHOT (สำคัญมาก): context ถูกล้างทิ้งใน finally ของทุก generate*
+     *   เพื่อกันตัวตนลูกค้ารายหนึ่งรั่วไปติด call ของรายถัดไปบน service
+     *   instance เดียวกัน (FortuneConversationService ใช้ $this->aiService
+     *   ตัวเดิมกับลูกค้าทุกคน) → ถ้าอยู่ใน loop/retry ต้องเรียกซ้ำ
+     *   **ก่อนทุก call** ห้ามเรียกครั้งเดียวนอก loop
+     *
+     * @param  \App\Models\FortuneReading|null  $reading  ใบดูดวงที่ call นี้ให้บริการ
+     */
+    public function forReading(?object $reading): self
+    {
+        if (! $reading) {
+            return $this->withCustomerContext(null);
+        }
+
+        // ชื่อลูกค้า: ใช้ relation user เฉพาะตอน "โหลดมาแล้ว" เท่านั้น
+        //   ห้าม lazy-load ที่นี่ — helper นี้ถูกเรียกก่อน AI call ทุกครั้ง
+        //   (Celtic ยิงต่อคำถาม) จะกลายเป็น N+1 query ฟรี ๆ
+        //   ไม่มี relation ก็ fallback ชื่อจาก Facebook ได้อยู่แล้ว
+        $customerName = null;
+        if (method_exists($reading, 'relationLoaded') && $reading->relationLoaded('user')) {
+            $customerName = $reading->user?->name;
+        }
+        $customerName ??= $reading->facebook_user_name ?? null;
+
+        // fb_user_id: LINE/แพลตฟอร์มอื่นไม่มีค่านี้ — ปล่อย null ได้
+        //   reading_id ยังถูกบันทึกครบทุกแพลตฟอร์ม
+        return $this->withCustomerContext(array_filter([
+            'reading_id' => $reading->id ?? null,
+            'user_id' => $reading->user_id ?? null,
+            'fb_user_id' => $reading->facebook_user_id ?? null,
+            'customer_name' => $customerName,
+        ], static fn ($v) => $v !== null && $v !== ''));
+    }
+
+    /**
      * สร้างคำทำนายพร้อม retry + สลับ provider อัตโนมัติ
      *
      * ลองต่อ AI หลายครั้ง ถ้า provider หลักล้มเหลว จะลองสลับไป provider อื่นอัตโนมัติ

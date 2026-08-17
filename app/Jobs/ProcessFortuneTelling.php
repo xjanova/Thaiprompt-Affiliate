@@ -147,6 +147,19 @@ class ProcessFortuneTelling implements ShouldQueue
 
             // เรียก AI เพื่อทำนาย (ส่ง readingType เพื่อกำหนด maxTokens/temperature)
             $readingType = $isDeep ? 'deep' : 'basic';
+
+            // 🪪 (2026-08-17) ใบดูดวงยังไม่ถูกสร้าง (สร้างหลัง AI ตอบ) จึงผูกได้แค่
+            //   ตัวตนลูกค้าไปก่อน แล้วเติม reading_id ย้อนหลังหลัง saveReading()
+            $aiService->withCustomerContext(array_filter([
+                'user_id' => $this->data['user_id'] ?? null,
+                'fb_user_id' => $fromId,
+                'customer_name' => $this->data['facebook_user_name'] ?? $userProfile['name'] ?? null,
+            ], static fn ($v) => $v !== null && $v !== ''));
+
+            // ⏱️ เก็บเวลา "ก่อน" ยิง AI — ใช้จำกัดขอบเขต backfill ให้แตะเฉพาะ log
+            //   ที่เกิดในรอบนี้ กันใบที่สองกวาด log ของใบแรกไป (ดูดวงรัวๆ คนเดิม)
+            $aiCallStartedAt = now();
+
             $aiResponse = $aiService->generateFortuneTelling(
                 $this->data['questions'],
                 $userProfile,
@@ -158,6 +171,9 @@ class ProcessFortuneTelling implements ShouldQueue
 
             // บันทึกลงฐานข้อมูล
             $reading = $this->saveReading($aiResponse, $userProfile, $userPosts);
+
+            // 🪪 เติม reading_id ให้ log ที่เพิ่งเขียนไปในรอบนี้ (non-blocking)
+            \App\Models\AiApiKeyUsageLog::backfillReadingId($fromId, $reading->id, $aiCallStartedAt);
 
             // ปิด typing indicator
             if (! $isComment && $fromId) {

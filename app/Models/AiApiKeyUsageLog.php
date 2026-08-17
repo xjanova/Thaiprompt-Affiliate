@@ -125,4 +125,56 @@ class AiApiKeyUsageLog extends Model
         return $query->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year);
     }
+
+    // ============================================================
+    // Helpers
+    // ============================================================
+
+    /**
+     * 🪪 (2026-08-17) เติม reading_id ย้อนหลังให้ log ที่เขียนไปแล้ว
+     *
+     * ใช้กับเส้นทางที่ "ยิง AI ก่อน แล้วค่อยสร้างใบดูดวง" (FB webhook sync +
+     * ProcessFortuneTelling job) — ตอน call ยังไม่รู้ reading_id จึงผูกได้แค่
+     * fb_user_id ต้องมาเติมทีหลัง
+     *
+     * ⚠️ การจำกัดขอบเขต 3 ชั้น (ห้ามตัดออก):
+     *   1. fb_user_id ตรงกัน
+     *   2. reading_id ยังว่าง — ไม่ทับใบที่ผูกไว้แล้ว
+     *   3. created_at >= $since — $since ต้องเก็บ "ก่อน" ยิง AI
+     *      ถ้าไม่มีชั้นนี้ ลูกค้าคนเดิมขอดูดวง 2 ครั้งติดกัน ใบที่สองจะกวาด
+     *      log ของใบแรกไปเป็นของตัวเอง → ต้นทุนใบแรกกลายเป็น 0
+     *
+     * ปลอดภัยเมื่อยังไม่ migrate คอลัมน์ (คืน 0 ไม่ throw)
+     *
+     * @param  string|null  $fbUserId  Facebook PSID ของลูกค้า
+     * @param  int  $readingId  fortune_readings.id ที่เพิ่งสร้าง
+     * @param  \Carbon\Carbon|\DateTimeInterface  $since  เวลาก่อนเริ่มยิง AI
+     * @return int จำนวนแถวที่เติมสำเร็จ
+     */
+    public static function backfillReadingId(?string $fbUserId, int $readingId, $since): int
+    {
+        if (empty($fbUserId) || $readingId <= 0) {
+            return 0;
+        }
+
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasColumn('ai_api_key_usage_logs', 'reading_id')) {
+                return 0;
+            }
+
+            return (int) static::query()
+                ->where('fb_user_id', $fbUserId)
+                ->whereNull('reading_id')
+                ->where('created_at', '>=', $since)
+                ->update(['reading_id' => $readingId]);
+        } catch (\Throwable $e) {
+            // non-blocking เสมอ — เติม log ไม่สำเร็จ ห้ามทำให้คำทำนายล้ม
+            \Illuminate\Support\Facades\Log::debug('AiApiKeyUsageLog: backfill reading_id ไม่สำเร็จ', [
+                'reading_id' => $readingId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return 0;
+        }
+    }
 }

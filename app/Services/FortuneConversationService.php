@@ -5398,6 +5398,11 @@ class FortuneConversationService
                 'prompt_length' => mb_strlen($basicPrompt),
             ]);
 
+            // 🪪 (2026-08-17) ผูก usage log กับใบดูดวงนี้ → คิดต้นทุน AI ต่อ 1 ใบได้
+            //   ⚠️ $this->aiService เป็น instance ที่ใช้ร่วมกับลูกค้าทุกคน
+            //      context เป็น one-shot (ล้างหลัง generate) จึงต้องเรียกติดก่อน call เสมอ
+            $this->aiService->forReading($reading);
+
             $aiResult = $this->aiService->generateWithRetryAndFallback(
                 [$messageText],
                 $userProfile,
@@ -9472,6 +9477,10 @@ class FortuneConversationService
                     ]);
                 }
 
+                // 🪪 (2026-08-17) ผูก usage log กับใบดูดวงนี้ (Deep ยิงทีละคำถาม
+                //   → ต้องเรียกในลูปทุกข้อ ไม่ใช่ครั้งเดียวก่อนลูป)
+                $this->aiService->forReading($reading);
+
                 $aiResult = $this->aiService->generateWithRetryAndFallback(
                     [$question],
                     $userProfile,
@@ -9550,6 +9559,10 @@ class FortuneConversationService
                     //   pool หมุน key/โมเดลใหม่ให้เองตอน generate รอบใหม่ (โอกาส sample ใหม่ไม่ตัดจบ)
                     //   try/catch กัน key pool หมด → ไม่ abort ทั้ง reading, ใช้ candidate ที่ดีที่สุดเท่าที่มี
                     try {
+                        // 🪪 (2026-08-17) retry = อีก 1 call จริง มีต้นทุน token ของตัวเอง
+                        //   ต้องผูก reading_id ซ้ำ ไม่งั้น token ของ retry ตกหล่นจากบิลใบนี้
+                        $this->aiService->forReading($reading);
+
                         $retryResult = $this->aiService->generateWithRetryAndFallback(
                             [$question],
                             $userProfile,
