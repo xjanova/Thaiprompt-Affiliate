@@ -49,28 +49,34 @@ class CelticCrossService
     }
 
     /**
-     * 🪬 (2026-08-17) บังคับใช้ BLACK_MAGIC_MODEL เมื่อ reading อยู่ในโหมดดูคุณไสย์
+     * 🪬 (2026-08-17) คืน modelOverrides สำหรับโหมดดูคุณไสย์ — ส่งเข้า generateWithRetryAndFallback
      *
-     * เรียกทันทีหลัง new FortuneAIService(...) ทุกจุดที่ generate คำทำนาย Celtic
-     * (Q1 พื้นดวง / Q2+ / fallback Q2+ / รูป / บทสรุป VIP)
+     * ⚠️ ต้องส่งเป็นพารามิเตอร์ `modelOverrides` เท่านั้น — **ห้ามไปตั้ง $model บน service ก่อนเรียก**
+     *    เพราะ generateWithRetryAndFallbackInner สร้าง $allKeys จาก getAllAvailableKeys() ใหม่
+     *    ซึ่งแต่ละ key พก model ของตัวเองมา → ค่าที่ตั้งไว้ก่อนหน้าถูกเขียนทับเงียบๆ
+     *    (เจอจริงตอนเทส R8966: log บอก "สลับเป็น sol" แต่คำทำนายออกมาเป็น luna)
      *
-     * กันข้ามค่ายด้วย onlyIfProvider='openai' — ถ้า Pool จ่าย key Gemini มา (openai ล่ม/หมดโควต้า)
-     * จะไม่สลับ แล้วปล่อยให้ทำนายด้วยโมเดลที่ key นั้นรองรับตามปกติ ดีกว่าพังทั้งบิล
+     * modelOverrides map เป็น provider => model และถูก apply ทั้ง fallback chain
+     * key ของค่ายอื่นยังใช้ model ตัวเองตามเดิม (ชื่อ model ข้ามค่ายไม่ได้) — ปลอดภัยอยู่แล้ว
+     *
+     * @return array<string, string>|null null = ไม่ใช่โหมดคุณไสย์ (ใช้โมเดลปกติ)
      */
-    protected function applyBlackMagicModel(FortuneAIService $aiService, FortuneReading $reading): void
+    protected function blackMagicModelOverrides(FortuneReading $reading): ?array
     {
         try {
             if (! $this->isBlackMagicModeForced($reading)) {
-                return;
+                return null;
             }
 
-            $aiService->overrideModel(self::BLACK_MAGIC_MODEL, 'openai');
+            return ['openai' => self::BLACK_MAGIC_MODEL];
         } catch (\Throwable $e) {
-            // non-blocking — สลับโมเดลไม่ได้ ก็ทำนายด้วยของเดิมต่อไป
-            Log::warning('CelticCross: สลับโมเดลโหมดคุณไสย์ไม่สำเร็จ (ใช้โมเดลเดิมต่อ)', [
+            // non-blocking — อ่านธงไม่ได้ ก็ทำนายด้วยโมเดลปกติต่อไป
+            Log::warning('CelticCross: อ่านธงโหมดคุณไสย์ไม่ได้ (ใช้โมเดลปกติ)', [
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
+
+            return null;
         }
     }
 
@@ -262,7 +268,6 @@ class CelticCrossService
 
                 $preferredProvider = 'openai';
                 $aiService = new FortuneAIService($this->settings, $celticPurpose, $preferredProvider);
-                $this->applyBlackMagicModel($aiService, $reading);
 
                 // 📚 (2026-06-06) แนบ AdminQA RAG — ตอบเรื่องบริการ/ราคา [TYPE:E] ไม่หักโควต้า (self-gate similarity)
                 $prompt = $aiService->injectAdminQARagFewShot(
@@ -285,6 +290,7 @@ class CelticCrossService
                     birthDate: null,                    // 🌙 ไม่ใช้วันเกิด — แม่หมอใช้พลังจักรวาลล้วงลึกผ่านไพ่
                     userContext: "celtic_cross:{$reading->id}:q{$sequence}",
                     purpose: $celticPurpose,
+                    modelOverrides: $this->blackMagicModelOverrides($reading), // 🪬 โหมดคุณไสย์ → sol
                 );
 
                 $response = trim($result['response'] ?? '');
@@ -706,7 +712,6 @@ class CelticCrossService
         } // end else (โครงพื้นดวงปกติ — โหมดคุณไสย์ใช้ groups ด้านบน)
 
         $aiService = new FortuneAIService($this->settings, 'prediction_celtic', 'openai');
-        $this->applyBlackMagicModel($aiService, $reading);
 
         // 🚀 (2026-08-17) ลอง "คอลเดียวก้อนใหญ่" ก่อน — ถ้าโมเดลทำตามฟอร์มครบก็จบใน 1 call
         //   เหตุผลที่เคยต้องแบ่ง 3 คอล = gpt-5.4-mini ตามฟอร์มไม่ครบ (avg 2.08/9 หัวข้อ) ไม่ใช่ context เต็ม
@@ -751,6 +756,7 @@ class CelticCrossService
                     birthDate: null,
                     userContext: "celtic_basechart:{$reading->id}:{$g['label']}",
                     purpose: 'prediction_celtic',
+                    modelOverrides: $this->blackMagicModelOverrides($reading), // 🪬 โหมดคุณไสย์ → sol
                 );
 
                 $txt = trim((string) ($r['response'] ?? ''));
@@ -860,6 +866,7 @@ class CelticCrossService
                 birthDate: null,
                 userContext: "celtic_basechart_single:{$reading->id}",
                 purpose: 'prediction_celtic',
+                modelOverrides: $this->blackMagicModelOverrides($reading), // 🪬 โหมดคุณไสย์ → sol
             );
         } catch (\Throwable $e) {
             Log::warning('CelticCross: base-chart คอลเดียวล้มเหลว → ใช้โหมดแบ่งบล็อกแทน', [
@@ -1125,7 +1132,6 @@ class CelticCrossService
 
             // 🎯 OpenAI primary + purpose='prediction_celtic'
             $aiService = new FortuneAIService($this->settings, 'prediction_celtic', 'openai');
-            $this->applyBlackMagicModel($aiService, $reading);
             $aiResult = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
                 userProfile: null,
@@ -1135,6 +1141,7 @@ class CelticCrossService
                 birthDate: null,
                 userContext: "celtic_cross_admin:{$reading->id}:q{$sequence}",
                 purpose: 'prediction_celtic',
+                modelOverrides: $this->blackMagicModelOverrides($reading), // 🪬 โหมดคุณไสย์ → sol
             );
 
             $aiElapsedMs = (int) ((microtime(true) - $aiStart) * 1000);
@@ -4819,7 +4826,6 @@ class CelticCrossService
             $startTime = microtime(true);
             // 🆕 (2026-05-07) Grand Finale = Celtic paid summary → request 'prediction' purpose
             $aiService = new FortuneAIService($this->settings, 'prediction');
-            $this->applyBlackMagicModel($aiService, $reading);
 
             // 🔮 (2026-05-04 fix B1) ใส่ {birth_date_section} ใน template เมื่อมี Deep linked
             //    เพื่อให้ formatBirthDateSection inject ข้อมูล:
@@ -4839,6 +4845,7 @@ class CelticCrossService
                 readingType: 'deep',
                 birthDate: $deepReading?->birth_date?->format('Y-m-d'),
                 userContext: "celtic_finale:{$reading->id}",
+                modelOverrides: $this->blackMagicModelOverrides($reading), // 🪬 โหมดคุณไสย์ → sol
             );
 
             $summary = trim($result['response'] ?? '');
