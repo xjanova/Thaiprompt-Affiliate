@@ -558,6 +558,7 @@ class CelticCrossService
                 [
                     'label' => 'bm-g0-verdict',
                     'len' => '450-750',
+                    'must' => ['🪬'],
                     'signal' => ['black_magic', 'combo'], // ฟันธงต้องเห็นสัญญาณไสยศาสตร์+ไพ่คู่อันตราย
                     'spec' => "เขียน \"คำวินิจฉัยเปิดตัว\" — ฟันธงทันทีว่าเจ้าชะตา \"โดนของ/คุณไสย์จริงไหม\" (ส่วนแรกสุด สั้น คม ชัด):\n"
                         ."🪬 ผลอ่านพลังไพ่ทะลุของ\n"
@@ -571,6 +572,7 @@ class CelticCrossService
                 [
                     'label' => 'bm-g1-diagnosis',
                     'len' => '600-900',
+                    'must' => ['🔍', '👤'],
                     'signal' => ['black_magic', 'combo'],
                     'spec' => "เจาะรายละเอียด \"ตกลงโดนอะไร ใครทำ เพราะอะไร\" (อ่านตามหน้าไพ่ × ตำแหน่ง Celtic เท่านั้น — ไม่ทำพาดหัวซ้ำ):\n"
                         ."🔍 ชนิดของ — ระบุให้ชัดตามไพ่ (อย่ากั๊ก)\n"
@@ -583,6 +585,7 @@ class CelticCrossService
                 [
                     'label' => 'bm-g2-remedy',
                     'len' => '600-900',
+                    'must' => ['🙏', '🧭'],
                     'signal' => ['black_magic'],
                     'spec' => "สรุป \"ทางแก้ที่ทำได้จริง ไม่เปลืองเงิน ไม่งมงาย\" (เน้นทำเองก่อน • อ้างหลักครูบาอาจารย์/พระเกจิที่มีจริง):\n"
                         ."🙏 ทำเองที่บ้านก่อน — สวดมนต์ (อิติปิโส / พาหุงมหากา / คาถาที่เป็นที่รู้จักจริง) / แผ่เมตตา / ทำบุญอุทิศ / รักษาศีล / สมาธิ / น้ำมนต์\n"
@@ -614,6 +617,7 @@ class CelticCrossService
                 [
                     'label' => 'g0-headline',
                     'len' => '400-700',
+                    'must' => ['🎯'], // 🆕 (2026-08-17) หัวข้อบังคับ — ใช้ตรวจผลของโหมดคอลเดียว
                     'signal' => ['black_magic', 'health', 'combo'], // headline ต้องสแกนสัญญาณครบทุกหมวด
                     'spec' => "เขียน \"พาดหัวเรื่องเด่นที่สุดของรอบนี้\" — เปิดมาฟันธงทันที (นี่คือส่วนแรกสุด สั้น คม ชัด):\n"
                         ."🎯 เรื่องเด่นรอบนี้\n"
@@ -634,6 +638,7 @@ class CelticCrossService
                 [
                     'label' => 'g1-foundation',
                     'len' => '500-800',
+                    'must' => ['🌟', '🔮'],
                     'spec' => "เขียน 2 ส่วนนี้ (ขึ้นหัวข้อด้วย emoji ตามนี้เป๊ะ เว้นบรรทัดให้อ่านง่าย • พาดหัวเรื่องเด่นทำไปแล้วในส่วนแรก ไม่ต้องทำซ้ำ):\n"
                         ."🌟 พื้นฐานดวง — ราศี/ปีนักษัตร/ธาตุ + ดาวเจ้าชนะ/ดาวมิตร/ดาวศัตรู + นิสัยพื้นฐาน (จุดแข็ง-จุดอ่อน) ผูกกับไพ่ที่สื่อบุคลิก\n"
                         .'🔮 ภาพรวมชีวิตช่วงนี้ — โยงดาวเสวยอายุ/ดวงปีนี้ กับภาพรวมไพ่ 10 ใบ (อดีต→ปัจจุบัน→อนาคต)',
@@ -641,6 +646,7 @@ class CelticCrossService
                 [
                     'label' => 'g2-areas',
                     'len' => $deityEnabled ? '750-1100' : '600-900', // +องค์เทพ 1 บล็อก → ขยายเพดานเล็กน้อยเมื่อ gate เปิด
+                    'must' => ['💞', '💼', '💰', '🌿'], // องค์เทพไม่ใส่ — เป็น conditional (ผูก $deityEnabled)
                     'signal' => $g2Signal, // สุขภาพ(อวัยวะ)+ความรัก รายไพ่ (+องค์เทพ ถ้า gate เปิด) — ตัด wealth กัน g2 บวม
                     // 🚫 (2026-06-19 FTU-260619-C9002) ตัด g3-closing ทิ้ง — owner: "ฤกษ์/สีมงคล/ธรรมะทิ้งท้าย/ระวัง
                     //   เพิ่งเริ่มไม่ควรมีใน Q1" → ย้ายไปบทสรุป VIP (buildGrandFinalePrompt) เท่านั้น. g2 = ส่วนสุดท้ายของ Q1
@@ -658,6 +664,18 @@ class CelticCrossService
         } // end else (โครงพื้นดวงปกติ — โหมดคุณไสย์ใช้ groups ด้านบน)
 
         $aiService = new FortuneAIService($this->settings, 'prediction_celtic', 'openai');
+
+        // 🚀 (2026-08-17) ลอง "คอลเดียวก้อนใหญ่" ก่อน — ถ้าโมเดลทำตามฟอร์มครบก็จบใน 1 call
+        //   เหตุผลที่เคยต้องแบ่ง 3 คอล = gpt-5.4-mini ตามฟอร์มไม่ครบ (avg 2.08/9 หัวข้อ) ไม่ใช่ context เต็ม
+        //   พอเปลี่ยนเป็น gpt-5.6-luna (AA index 52 vs ~41 · context 1.05M) ข้อจำกัดนั้นหายไป
+        //   วัดจริงบน prod 7/7 รอบ ข้ามลูกค้า 4 คน → ได้หัวข้อครบ 8/8 ทุกครั้ง
+        //   ใช้ token ~16k (จาก ~37k) และเร็วขึ้น ~38% เพราะไม่ต้องส่ง shared context ซ้ำ 3 รอบ
+        //   ❗ ไม่ผ่านเกณฑ์เมื่อไหร่ → ตกลงไปโหมดแบ่งบล็อกเดิมอัตโนมัติ (ลูกค้าไม่มีทางได้ของพัง)
+        $single = $this->tryBaseChartSingleCall($aiService, $reading, $shared, $groups);
+        if ($single !== null) {
+            return $single;
+        }
+
         $blocks = [];
         $totalTokens = 0;
         $provider = null;
@@ -734,6 +752,127 @@ class CelticCrossService
             'tokens_used' => $totalTokens,
             'provider' => $provider,
             'model' => $model,
+        ];
+    }
+
+    /**
+     * 🚀 (2026-08-17) พื้นดวงเปิดตัวแบบ "คอลเดียว" — รวมทุก section เป็น prompt ก้อนเดียว
+     *
+     * ใช้ groups ชุดเดียวกับโหมดแบ่งบล็อกเป๊ะ (spec/len ไม่แตะ) ต่างแค่ยิงรวดเดียว
+     * ประหยัดเพราะไม่ต้องส่ง $shared (persona + ไพ่ 10 ใบ + ดาวเจ้าชนะ + card-first) ซ้ำทุก call
+     *
+     * ⚠️ ตาข่ายกันพลาด — คืน null (= ให้ caller ตกไปโหมดแบ่งบล็อกเดิม) เมื่อ:
+     *   1. AI ล้มเหลว/คืนค่าว่าง
+     *   2. หัวข้อบังคับ ('must' ของทุก group) มาไม่ครบ  ← กันอาการ non-compliance ที่เคยเจอกับโมเดลเล็ก
+     *   3. ความยาวไม่ถึง 60% ของผลรวมขอบล่างใน 'len'  ← กันคายมาสั้นกุด
+     * ลูกค้าที่จ่ายเงินแล้วจึงไม่มีทางได้คำทำนายที่โครงไม่ครบจากทางนี้
+     *
+     * @param  array  $groups  โครงสร้าง section เดียวกับ generateBaseChartSectioned
+     * @return array|null ['response','tokens_used','provider','model'] | null = ไม่ผ่านเกณฑ์
+     */
+    protected function tryBaseChartSingleCall(FortuneAIService $aiService, FortuneReading $reading, string $shared, array $groups): ?array
+    {
+        if (empty($groups)) {
+            return null;
+        }
+
+        // 🧭 คลังสัญญาณ = union ของทุก group (คอลเดียวต้องเห็นครบเหมือนที่ 3 คอลเห็นรวมกัน)
+        $signals = [];
+        foreach ($groups as $g) {
+            foreach (($g['signal'] ?? []) as $s) {
+                $signals[$s] = true;
+            }
+        }
+        $signalBlock = ! empty($signals)
+            ? $this->buildBaseChartSignalKnowledge($reading, array_keys($signals))
+            : '';
+
+        // 📐 ต่อ spec ทุกส่วนเรียงตามลำดับเดิม
+        $sectionSpecs = '';
+        $minChars = 0;
+        $mustHeaders = [];
+        foreach ($groups as $i => $g) {
+            $sectionSpecs .= "\n———— ส่วนที่ ".($i + 1)." (ยาว {$g['len']} ตัวอักษร) ————\n".$g['spec']."\n";
+            $minChars += (int) $g['len']; // '400-700' → (int) = 400 (ขอบล่าง)
+            foreach (($g['must'] ?? []) as $h) {
+                $mustHeaders[] = $h;
+            }
+        }
+        $minChars = (int) max(1200, $minChars * 0.6);
+
+        $prompt = $shared
+            .$signalBlock
+            ."━━━━━━━━━━━━━━━━━\n📐 งานรอบนี้ — เขียน \"พื้นดวงเปิดตัว\" ให้ครบทุกส่วนใน *คำตอบเดียว* เรียงตามลำดับด้านล่างเป๊ะ\n━━━━━━━━━━━━━━━━━\n"
+            .$sectionSpecs
+            ."\n📏 plain text + emoji หัวข้อ • ❌ ห้าม markdown (**, ##) • ฟันธงตามไพ่+ดาว ห้ามกำกวม\n"
+            .'เขียนทุกส่วนต่อกันในคำตอบเดียว ขึ้นต้นด้วยหัวข้อ emoji ของส่วนที่ 1 ทันที (ห้ามทักทาย ห้ามเกริ่นนำ ห้ามใส่ [TYPE]):';
+
+        try {
+            $r = $aiService->generateWithRetryAndFallback(
+                questions: [$prompt],
+                userProfile: null,
+                userPosts: null,
+                promptTemplate: '{questions}',
+                readingType: 'deep',
+                birthDate: null,
+                userContext: "celtic_basechart_single:{$reading->id}",
+                purpose: 'prediction_celtic',
+            );
+        } catch (\Throwable $e) {
+            Log::warning('CelticCross: base-chart คอลเดียวล้มเหลว → ใช้โหมดแบ่งบล็อกแทน', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        $txt = trim((string) ($r['response'] ?? ''));
+        // strip TYPE token เผื่อ AI ใส่มา (pattern เดียวกับโหมดแบ่งบล็อก)
+        $stripped = preg_replace('/[`*]{0,3}[\[\【\［]?\s*TYPE\s*[:：]\s*[A-E]\s*[\]\】\］]?[`*]{0,3}/iu', '', $txt);
+        if (is_string($stripped)) {
+            $txt = trim($stripped);
+        }
+
+        if ($txt === '') {
+            return null;
+        }
+
+        // ✅ เกณฑ์ผ่าน: หัวข้อบังคับครบ + ยาวพอ
+        $missing = array_values(array_filter($mustHeaders, fn ($h) => ! str_contains($txt, $h)));
+        $len = mb_strlen($txt);
+
+        if (! empty($missing) || $len < $minChars) {
+            Log::warning('CelticCross: base-chart คอลเดียวไม่ผ่านเกณฑ์ → ตกไปโหมดแบ่งบล็อก', [
+                'reading_id' => $reading->id,
+                'missing_headers' => $missing,
+                'chars' => $len,
+                'min_chars' => $minChars,
+                'model' => $r['model'] ?? null,
+            ]);
+
+            return null;
+        }
+
+        // 🔒 bump updated_at — เหตุผลเดียวกับโหมดแบ่งบล็อก (กัน Hard Guard เข้าใจผิดว่า reading ค้าง)
+        try {
+            $reading->touch();
+        } catch (\Throwable $touchErr) {
+            // non-blocking
+        }
+
+        Log::info('CelticCross: base-chart คอลเดียวสำเร็จ', [
+            'reading_id' => $reading->id,
+            'chars' => $len,
+            'tokens' => $r['tokens_used'] ?? null,
+            'model' => $r['model'] ?? null,
+        ]);
+
+        return [
+            'response' => $txt,
+            'tokens_used' => (int) ($r['tokens_used'] ?? 0),
+            'provider' => $r['provider'] ?? null,
+            'model' => $r['model'] ?? null,
         ];
     }
 

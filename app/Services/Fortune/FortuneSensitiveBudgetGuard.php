@@ -137,12 +137,21 @@ class FortuneSensitiveBudgetGuard
      * Gemini 2.5 Pro: $1.25/M (similar)
      * GPT-5+: ~$5/M (estimate)
      *
+     * ⚠️ ค่าที่ใช้เป็น "blended" ถ่วงตามสัดส่วนจริงของบอท = input 30% / output 70%
+     *    (วัดจาก usage log key 37, 30 วัน: in 7.67M vs out 17.89M)
+     *
      * 1 USD = 36 THB (approx)
      */
     public static function estimateCostThb(int $tokens, string $model = 'gemini-3.1-pro-preview'): float
     {
         $usdPerMillion = match (true) {
             str_contains($model, 'opus') => 15.0,
+            // 🆕 (2026-08-17) GPT-5.6 family ต้องมาก่อน nano/mini/gpt-5 ทุกตัว —
+            //   ไม่งั้น 'gpt-5.6-luna' ไม่เข้า nano/mini แล้วตกไปโดน str_contains('gpt-5') = $5/M
+            //   ทั้งที่ของจริง blended ~$0.90/M (แพงเกินจริง 5.6 เท่า → budget guard trip เร็วเกินเหตุ)
+            str_contains($model, 'gpt-5.6-luna') => 0.9,    // $0.20/$1.20 → 0.3×0.20 + 0.7×1.20
+            str_contains($model, 'gpt-5.6-terra') => 9.0,   // $2/$12
+            str_contains($model, 'gpt-5.6-sol') => 22.5,    // $5/$30
             // 🆕 (2026-05-29) แยก nano/mini ก่อน gpt-5 — ไม่งั้น gpt-5.4-mini/nano
             //   โดนคิด $5/M เกินจริง → budget guard trip เร็วเกินเหตุ
             str_contains($model, 'nano') => 1.0,    // gpt-5.4-nano ~$0.20/$1.25

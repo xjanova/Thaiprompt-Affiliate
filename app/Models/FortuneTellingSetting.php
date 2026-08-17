@@ -2596,7 +2596,9 @@ PROMPT;
     protected function defaultChatModelFor(string $provider): string
     {
         return match ($provider) {
-            'openai' => 'gpt-5.4-mini',
+            // 🆕 (2026-08-17) 5.4-mini → 5.6-luna: ถูกกว่า 3.75 เท่า ($0.20/$1.20 vs $0.75/$4.50)
+            //   และฉลาดกว่า (AA index 52 vs ~41) — verified live บน /v1/responses key prod
+            'openai' => 'gpt-5.6-luna',
             'gemini' => 'gemini-3.1-flash-lite',
             'groq' => 'llama-3.3-70b-versatile',
             'grok' => 'grok-3',
@@ -2604,7 +2606,7 @@ PROMPT;
             'deepseek' => 'deepseek-chat',
             'typhoon' => 'typhoon-v2-70b-instruct',
             'anthropic' => 'claude-haiku-4-5-20251001',
-            default => $this->chat_ai_model ?: 'gpt-5.4-mini',
+            default => $this->chat_ai_model ?: 'gpt-5.6-luna',
         };
     }
 

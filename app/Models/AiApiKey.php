@@ -120,18 +120,28 @@ class AiApiKey extends Model
             'openai/gpt-oss-20b',                               // production — เร็วสุด 1000 t/s
         ],
         'openai' => [
-            // 🔬 (2026-05-29) Verified live กับ key prod (id 37) บน /v1/responses:
+            // 🔬 (2026-08-17) Verified live กับ key prod (id 37) บน /v1/responses:
+            //   ✅ valid : gpt-5.6-luna / gpt-5.6-terra / gpt-5.6-sol (ยิงจริงผ่านทั้ง 3, effort=low → reasoning 0 token)
             //   ✅ valid : gpt-5.4-mini / gpt-5.4-nano / gpt-5.4 / gpt-5.5 / gpt-5.5-pro / gpt-5-mini / gpt-5 / gpt-4o*
             //   ❌ 400 model_not_found : gpt-5.5-mini  ← ไม่มีจริง! ลบออกแล้ว (เคยอยู่ใน dropdown ผิด)
-            //   ราคา/1M tokens (docs ล่าสุด): 5.5=$5/$30 · 5.5-pro=$30/$180 · 5.4=$2.50/$15
-            //                                  5.4-mini=$0.75/$4.50 · 5.4-nano=$0.20/$1.25
+            //   ราคา/1M tokens (in/out · cached-in = 10% ของ in):
+            //     5.6-luna=$0.20/$1.20 · 5.6-terra=$2/$12 · 5.6-sol=$5/$30   (Terra+Luna ลดราคา 30 ก.ค. 2026)
+            //     5.5=$5/$30 · 5.5-pro=$30/$180 · 5.4=$2.50/$15 · 5.4-mini=$0.75/$4.50 · 5.4-nano=$0.20/$1.25
+            //   ⚠️ 5.6 ทุกตัว: context 1.05M / max output 128K — แต่คำขอที่ input เกิน 272K
+            //      จะถูกคิด input 2× และ output 1.5× "ทั้งคำขอ" (ของเราสูงสุด ~12K → ปลอดภัย)
             //   ⚠️ ตัวแรก = default ของ resolveModel() เมื่อ key ไม่ได้ตั้ง model →
-            //      วาง "ตัวคุ้มราคา" (5.4-mini) ไว้แรก กัน key ใหม่เผลอ default เป็นตัวแพงสุด
+            //      วาง "ตัวคุ้มราคา" (5.6-luna) ไว้แรก กัน key ใหม่เผลอ default เป็นตัวแพงสุด
             //
-            // GPT-5.4 family — ⭐ คุ้มราคา (current gen reasoning) — แนะนำสำหรับ Celtic 99฿
-            'gpt-5.4-mini',                   // ⭐ DEFAULT — คุ้มสุด ($0.75/$4.50) reasoning gen 5.4
+            // GPT-5.6 family (2026) — ⭐ generation ปัจจุบัน
+            //   🚫 ข้าม Terra: Artificial Analysis ยืนยัน Sol กับ Luna นำ Terra "ทุกจุด" บนกราฟ intelligence-vs-cost
+            //      (Luna max=52 ชนะ Terra high=50 ทั้งที่ถูกกว่า 10 เท่า) — คงไว้ใน dropdown เพื่อความครบ แต่ไม่แนะนำ
+            'gpt-5.6-luna',                   // ⭐ DEFAULT — ถูกสุด+ฉลาดกว่า 5.4-mini ($0.20/$1.20, AA index 52)
+            'gpt-5.6-sol',                    // flagship 5.6 ($5/$30, AA index 59) — ใช้กับ sensitive/งานยากจริง
+            'gpt-5.6-terra',                  // ⚠️ dominated by luna+sol ($2/$12, AA index 55) — ไม่แนะนำ
+            // GPT-5.4 family — gen ก่อนหน้า (ยังใช้ได้ แต่แพงกว่า+ฉลาดน้อยกว่า luna)
+            'gpt-5.4-mini',                   // เดิม DEFAULT ($0.75/$4.50, AA index ~41)
             'gpt-5.4',                        // workhorse คุณภาพสูง ($2.50/$15)
-            'gpt-5.4-nano',                   // ถูกสุดในตระกูล GPT-5 ($0.20/$1.25)
+            'gpt-5.4-nano',                   // ($0.20/$1.25) — ราคาพอกัน luna แต่ฉลาดน้อยกว่าชัดเจน → ไม่มีเหตุผลเลือก
             'gpt-5.4-pro',                    // 5.4 ตัวฉลาดสุด
             // GPT-5.5 family — flagship ปัจจุบัน (แพง — ใช้เมื่อต้องการคุณภาพสูงสุด)
             'gpt-5.5',                        // flagship multimodal ($5/$30)

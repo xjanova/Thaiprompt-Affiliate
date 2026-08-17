@@ -631,15 +631,23 @@ class AiApiKeyController extends Controller
             // ทดสอบตาม provider
             $result = $this->testApiKey($key);
 
+            // 🔬 (2026-08-17) model ที่ตั้งไว้ไม่อยู่ในบัญชี → เตือน แต่ยังนับว่า pass
+            //   (key ใช้ได้จริง — ปัญหาอยู่ที่ค่า model ไม่ใช่ตัว key)
+            $warning = $result['model_warning'] ?? null;
+
             // ✅ บันทึก pass — key จะถูก "ลงสนาม" ใน scopeAvailable
             $key->update([
                 'last_test_passed_at' => now(),
-                'last_test_message' => 'OK ('.($result['response_time_ms'] ?? '-').'ms)',
+                'last_test_message' => $warning !== null
+                    ? 'OK ('.($result['response_time_ms'] ?? '-').'ms) ⚠️ '.$warning
+                    : 'OK ('.($result['response_time_ms'] ?? '-').'ms)',
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => '✅ API Key ใช้งานได้ปกติ — key พร้อมใช้ใน Pool',
+                'message' => $warning !== null
+                    ? '⚠️ API Key ใช้งานได้ แต่ '.$warning
+                    : '✅ API Key ใช้งานได้ปกติ — key พร้อมใช้ใน Pool',
                 'data' => $result,
             ]);
         } catch (\Exception $e) {
@@ -662,10 +670,20 @@ class AiApiKeyController extends Controller
 
     /**
      * ทดสอบ API Key ตาม provider
+     *
+     * 🔬 (2026-08-17) เพิ่มการตรวจ "model ที่ตั้งไว้มีอยู่จริงในบัญชีนี้ไหม"
+     *   เดิมเทสแค่ยิง /v1/models เพื่อดูว่า key ใช้ได้ → key ที่ตั้ง model ปลอมก็ "ผ่าน"
+     *   นั่นคือรูที่ทำให้ 'gpt-5.5-mini' (ไม่มีอยู่จริง) หลุดถึง prod แล้วลูกค้า Celtic 99฿
+     *   จ่ายเงินแล้วเจอ 400 model_not_found (ดู migration 2026_05_29_120000)
+     *
+     * ⚠️ ตั้งใจให้เป็น "คำเตือน" ไม่ใช่ throw — เพราะบาง provider มีโมเดลที่ใช้งานได้จริง
+     *   แต่ไม่โผล่ใน /v1/models ของ org นั้น. ถ้า throw = key ดีๆ โดน last_test_failed_at
+     *   แล้วหลุดออกจาก scopeAvailable ทั้งที่ยิงงานได้ปกติ (false negative แพงกว่ามาก)
      */
     protected function testApiKey(AiApiKey $key): array
     {
         $startTime = microtime(true);
+        $model = $key->resolveModel();
 
         // ทดสอบตาม provider
         switch ($key->provider) {
@@ -687,11 +705,64 @@ class AiApiKeyController extends Controller
 
         $responseTime = round((microtime(true) - $startTime) * 1000);
 
+        // 🔬 ตรวจว่า model ที่ key นี้จะใช้จริง อยู่ในรายชื่อของบัญชีไหม
+        $available = $this->extractModelIds($key->provider, $response);
+        $modelKnown = null;
+        $warning = null;
+        if ($model !== null && ! empty($available)) {
+            $modelKnown = in_array($model, $available, true);
+            if (! $modelKnown) {
+                $warning = "โมเดล '{$model}' ไม่อยู่ในรายชื่อของบัญชีนี้ ("
+                    .count($available).' โมเดล) — ถ้ายิงงานจริงแล้วขึ้น model_not_found ให้เปลี่ยนโมเดลของ key นี้';
+            }
+        }
+
         return [
             'provider' => $key->provider,
             'response_time_ms' => $responseTime,
             'status' => 'ok',
+            'model' => $model,
+            'model_known' => $modelKnown,      // true=เจอ / false=ไม่เจอ / null=ตรวจไม่ได้
+            'models_count' => count($available),
+            'model_warning' => $warning,
         ];
+    }
+
+    /**
+     * ดึงรายชื่อ model id จาก response ของแต่ละ provider
+     *
+     * openai / grok / groq → data[].id            (OpenAI-compatible)
+     * gemini               → models[].name = "models/gemini-2.5-flash" → ตัด prefix
+     *
+     * @return array<int, string> ว่าง = ตรวจไม่ได้ (รูป response ไม่ตรงที่คาด)
+     */
+    protected function extractModelIds(string $provider, mixed $response): array
+    {
+        if (! is_array($response)) {
+            return [];
+        }
+
+        if ($provider === 'gemini') {
+            $rows = $response['models'] ?? [];
+
+            return is_array($rows)
+                ? array_values(array_filter(array_map(
+                    fn ($m) => is_array($m) && isset($m['name'])
+                        ? preg_replace('#^models/#', '', (string) $m['name'])
+                        : null,
+                    $rows
+                )))
+                : [];
+        }
+
+        $rows = $response['data'] ?? [];
+
+        return is_array($rows)
+            ? array_values(array_filter(array_map(
+                fn ($m) => is_array($m) && isset($m['id']) ? (string) $m['id'] : null,
+                $rows
+            )))
+            : [];
     }
 
     /**
