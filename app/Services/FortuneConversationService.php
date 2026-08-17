@@ -20043,6 +20043,18 @@ PROMPT;
                 $userProfile['name'] ?? null
             );
 
+            // 📖 (2026-08-17 owner) แชทฟรีต้องคุยเรื่อง "คำทำนายล่าสุด" รู้เรื่อง แม้หมดเวลาบิลไปแล้ว
+            //   ต่อท้าย _persona_context (system message) ด้วยเหตุผลด้าน guard — ดู buildLastReadingRecallContext
+            $lastReadingRecall = $this->buildLastReadingRecallContext($userId, $platformDetected);
+            if ($lastReadingRecall !== null) {
+                if (! is_array($userProfile)) {
+                    $userProfile = ['name' => 'คุณ'];
+                }
+                $userProfile['_persona_context'] = trim(
+                    ($userProfile['_persona_context'] ?? '')."\n\n".$lastReadingRecall
+                );
+            }
+
             // 🔢 นับ rapport turns — จำนวนครั้งที่ user พูด
             // เพื่อให้ AI รู้ว่าคุยมากี่รอบแล้ว (≥2 → เสนอดูดวง)
             $userTurnCount = collect($history)->where('role', 'user')->count() + 1; // +1 = ข้อความปัจจุบัน
@@ -20423,7 +20435,12 @@ PROMPT;
                 // 🛡 (2026-05-26 v2 F2) ลูกค้ามี paid Celtic/Deep ที่ active → bypass hallucination check
                 //   AI อาจอ้างไพ่เก่า ("ในไพ่ Celtic ที่หมอเปิดให้... Five of Pentacles") = legitimate
                 //   ใช้ dmContext['has_fresh_paid_deep'] flag ที่ buildReturningCustomerContext set ไว้
-                $sanitizeMode = ! empty($dmContext['has_fresh_paid_deep']) ? 'paid_chat' : 'chat';
+                //   📖 (2026-08-17) ถ้าฉีดบันทึกคำทำนายล่าสุดเข้าไปด้วย ต้อง bypass เหมือนกัน —
+                //     บันทึกนั้นมีชื่อไพ่จริงอยู่ในเนื้อ AI จะอ้างถึงตอนตอบ = legitimate ไม่ใช่การหลอน
+                //     (ไม่งั้นลูกค้าถามย้อนคำทำนายเก่าแล้วโดน canned reply "ต้องผ่านระบบจริง")
+                $sanitizeMode = (! empty($dmContext['has_fresh_paid_deep']) || $lastReadingRecall !== null)
+                    ? 'paid_chat'
+                    : 'chat';
                 $result = $aiService->generateChatResponseWithPoolFallback(
                     $messageForAI,
                     $userProfile,
@@ -20665,6 +20682,111 @@ PROMPT;
     protected function detectPlatformFromUserId(string $userId): string
     {
         return preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook';
+    }
+
+    /**
+     * 📖 (2026-08-17 owner) บันทึก "คำทำนายล่าสุด" ให้แชทฟรีคุยต่อได้
+     *
+     * owner: "หลังหมดเวลาการทำนายแล้วบางคนยังติดพัน หรือเพิ่งจะมาถาม ฉันต้องการให้บอท
+     *         ยังคงคุยรู้เรื่องกับคำทำนายล่าสุดอยู่ ... แม้จะฟรี"
+     *
+     * ปัญหาเดิม: พอ Pro Session หมดเวลา ข้อความตกไปแชทฟรี ซึ่งได้รับแค่ "ป้าย" —
+     *   `HAS_FRESH_DEEP_READING` / `RETURNING_CUSTOMER past_topics="..."` (= *คำถาม* ที่เคยถาม)
+     *   **ไม่เคยได้เนื้อคำทำนายเลย** → AI รู้ว่า "เคยทำนายไปแล้ว" แต่ไม่รู้ว่าทำนายว่าอะไร
+     *   → ลูกค้าถามย้อน "ที่บอกว่าจะมีเกณฑ์เปลี่ยนงานคืออะไร" แล้วบอทตอบไม่ตรง = คุยไม่รู้เรื่อง
+     *
+     * ⚠️ ทำไมส่งผ่าน `_persona_context` (system message) ไม่ใช่ต่อหัว message:
+     *   `detectAdversarialInput()` สแกน **$messageText** เท่านั้น — บล็อกที่มีวงเล็บเหลี่ยม
+     *   ถ้าไปต่อหัว user message จะเข้าเงื่อนไข token_injection แล้วลูกค้าโดน canned reply
+     *   (เคสจริง 2026-05-26: prefix `[TURN 5]` ทำลูกค้า 4 คนโดนบล็อก 6 นาที)
+     *
+     * ⚠️ ต้องคู่กับ `$sanitizeMode='paid_chat'` — บล็อกนี้มีชื่อไพ่จริงอยู่ในเนื้อ
+     *   ถ้าปล่อยเป็น 'chat' ตัว detectHallucinatedReading จะบล็อกการอ้างอิงที่ถูกต้อง
+     *
+     * @return string|null null = ไม่มีคำทำนายให้ระลึกถึง
+     */
+    protected function buildLastReadingRecallContext(string $userId, string $platform): ?string
+    {
+        $cacheKey = "fortune:last_reading_recall:{$platform}:{$userId}";
+
+        try {
+            // ⚠️ คืน '' (ไม่ใช่ null) เมื่อไม่มีคำทำนาย — Cache::remember ถือว่า null = "ยังไม่แคช"
+            //   จะยิง query ใหม่ทุกเทิร์น ซึ่งคือเคสของลูกค้า *ส่วนใหญ่* ในแชทฟรี (ไม่เคยจ่าย)
+            $block = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($userId, $platform): string {
+                $userIdColumn = $platform === 'line' ? 'line_user_id' : 'facebook_user_id';
+
+                $latest = FortuneReading::where($userIdColumn, $userId)
+                    ->where('is_paid', true)
+                    ->whereIn('reading_type', [
+                        FortuneReading::READING_TYPE_DEEP,
+                        FortuneReading::READING_TYPE_CELTIC_CROSS,
+                    ])
+                    ->whereNotNull('ai_response')
+                    ->where('ai_response', '!=', '')
+                    ->where('created_at', '>', now()->subDays(30))
+                    ->orderByDesc('created_at')
+                    ->first();
+
+                if (! $latest) {
+                    return '';
+                }
+
+                $isCeltic = $latest->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+                $typeLabel = $isCeltic ? 'Celtic Cross 10 ใบ (99฿)' : 'ดูดวงเชิงลึก (39฿)';
+
+                $daysAgo = (int) $latest->created_at->diffInDays(now());
+                $timeAgo = match (true) {
+                    $daysAgo === 0 => 'วันนี้',
+                    $daysAgo === 1 => 'เมื่อวาน',
+                    default => "เมื่อ {$daysAgo} วันก่อน",
+                };
+
+                // เนื้อคำทำนายหลัก — cap กัน system prompt บวมจนกิน quota key แชทฟรี
+                $body = mb_substr(trim((string) $latest->ai_response), 0, 1200);
+
+                // Q&A ที่คุยกันไว้ในรอบนั้น (Celtic เท่านั้น — Deep เก็บคำถามคนละที่)
+                $qaText = '';
+                if ($isCeltic) {
+                    $rows = $latest->celticQuestions()
+                        ->whereNotNull('answered_at')
+                        ->orderBy('sequence')
+                        ->limit(4)
+                        ->get(['question', 'response']);
+
+                    $lines = [];
+                    foreach ($rows as $i => $row) {
+                        $q = trim((string) $row->question);
+                        if ($q === '' || $q === '__PREDICT_ALL__' || str_starts_with($q, '[IMAGE_ATTACHED]')) {
+                            continue;
+                        }
+                        $lines[] = ($i + 1).'. ถาม: '.mb_substr($q, 0, 90)
+                            ."\n   ตอบ(ย่อ): ".mb_substr(trim((string) $row->response), 0, 220);
+                    }
+
+                    if (! empty($lines)) {
+                        $qaText = "\n\n— คำถามที่คุยกันไว้รอบนั้น —\n".implode("\n", $lines);
+                    }
+                }
+
+                return "📖 บันทึกคำทำนายล่าสุดของเจ้าชะตาคนนี้ (ส่งให้ไปแล้ว · จ่ายเงินแล้ว)\n"
+                    ."บริการ: {$typeLabel} · {$timeAgo}\n\n"
+                    ."— เนื้อคำทำนายที่ส่งไป (ย่อ) —\n".$body.$qaText."\n\n"
+                    ."[กติกาการใช้บันทึกนี้ — สำคัญ]\n"
+                    ."✅ เจ้าชะตาถามย้อนถึงคำทำนายนี้ได้ตลอด **แม้เวลาคุยของบิลจะหมดไปแล้ว** — อธิบายเพิ่ม ขยายความ ให้กำลังใจ ต่อยอดได้เต็มที่ ไม่คิดเงินเพิ่ม\n"
+                    ."✅ อ้างชื่อไพ่/ดาว/ประเด็น ได้เฉพาะที่ *มีอยู่ในบันทึกนี้* เท่านั้น\n"
+                    ."❌ ห้ามเปิดไพ่ใบใหม่ ❌ ห้ามสร้างคำทำนายรอบใหม่ ❌ ห้ามแต่งชื่อไพ่ที่ไม่มีในบันทึก\n"
+                    .'❌ ถ้าเจ้าชะตาอยากได้ "ทำนายรอบใหม่ / เปิดไพ่ชุดใหม่ / เรื่องที่ยังไม่เคยเปิด" → ชวนเปิดบิลใหม่ตามปกติ';
+            });
+
+            return $block === '' ? null : $block;
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: buildLastReadingRecallContext ล้มเหลว (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
