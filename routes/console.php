@@ -408,6 +408,18 @@ Schedule::command('fortune:celtic-answer-recover --limit=50')
     ->name('fortune-celtic-answer-recover')
     ->runInBackground();
 
+// 3b-ter) Fortune Pro Session Answer Recover — 🛟 (2026-08-17) คู่แฝดของ 3b-bis ฝั่ง Deep 39
+//     เพิ่มพร้อม settle window ของ Pro Session — กลไก buffer แบบเดียวกันนี้เคยทำลูกค้าเงียบ
+//     มาแล้วจริงฝั่ง Celtic (job tries=1 หายตอน deploy รีสตาร์ท worker → ไม่มีใคร flush)
+//     มี buffer 'deep_qa' ค้างเกิน grace + session ยังเปิด → re-dispatch job (idempotent)
+//     ไม่มีเคส "generating ค้าง" เพราะ Pro Session ไม่มี state แยก (handleProSession sync ในตัว job)
+Schedule::command('fortune:pro-session-answer-recover --limit=50')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('fortune-pro-session-answer-recover')
+    ->runInBackground();
+
 // 3c) Fortune Pro Session Nudge — 🔔 (2026-06-30, owner) ตามให้ลูกค้าเริ่มถามคำถาม
 //     owner spec: ลูกค้ายังไม่ถามเลย → ตามทุก interval (default 10 นาที) ระหว่างสแตนบาย (default 30 นาที)
 //     ครบสแตนบายไม่ถาม → auto-finalize สรุปให้ (เดิม: ตามครั้งเดียว → เปลี่ยนเป็นตามซ้ำทุก interval)
