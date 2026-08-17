@@ -1080,7 +1080,12 @@ class FortuneChannelManager
                     // 🃏 ปุ่มชัดเจนสำหรับผู้สูงอายุ
                     $reading = $result['reading'] ?? null;
                     $picked = $reading?->getCelticPickedCount() ?? 0;
-                    $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
+                    // 🔢 (2026-08-17 owner) "ตอนเปิดไพ่ต้องบอกด้วยว่าเปิดไพ่ใบที่เท่าไหร่"
+                    //   เดิมบอกเลขเฉพาะใบแรก ใบ 2-10 เป็น "เปิดไพ่ใบถัดไป" ลอยๆ → ลูกค้าไม่รู้ว่าถึงใบไหน
+                    //   ปุ่มนี้คือ "ใบที่จะเปิดต่อไป" = picked+1 (cap 10 กันเลขทะลุถ้าถูก render ตอนครบแล้ว)
+                    //   ⚠️ label ปุ่ม FB ไหลกลับมาเป็นข้อความได้ ([[rule_fb_quickreply_label_arrives_as_text]])
+                    //      — ปลอดภัย เพราะ matchesCelticReadyKeyword จับ substring "เปิดไพ่" อยู่แล้ว
+                    $nextLabel = '🃏 เปิดไพ่ใบที่ '.min($picked + 1, 10);
 
                     // 🆕 (2026-05-17) ซ่อนปุ่ม "สับใหม่" เมื่อใช้ครบโควต้า 1 ครั้งแล้ว
                     // 🛑 (2026-08-13, owner) ตัดปุ่ม "❌ ยกเลิก" ออกจากขั้นเปิดไพ่ — เหลือแค่
@@ -1089,9 +1094,17 @@ class FortuneChannelManager
                     //    ⚠️ ไม่ได้ปิดทางออก — ปุ่มนี้แค่ยิงข้อความ "ยกเลิก" เข้าไปเฉย ๆ
                     //       (FacebookWebhookController:5535 · CANCEL_FORTUNE → processConversationalMessage('ยกเลิก'))
                     //       ลูกค้าพิมพ์ "ยกเลิก" เองได้ผลเหมือนกันเป๊ะ
-                    $quickReplies = [['content_type' => 'text', 'title' => $nextLabel, 'payload' => 'CELTIC_READY']];
-                    if ($reading && method_exists($reading, 'canShuffleCelticAgain') && $reading->canShuffleCelticAgain()) {
-                        $quickReplies[] = ['content_type' => 'text', 'title' => '🔄 สับใหม่', 'payload' => 'CELTIC_RESET'];
+                    // 🛡️ (2026-08-17) ครบ 10 ใบแล้ว = อยู่โหมด Q&A → ห้ามโชว์ปุ่มเปิดไพ่
+                    //   action 'celtic_already_in_session' มาถึงตอน picked=10 ได้ → เดิม FB โชว์ปุ่ม
+                    //   "เปิดไพ่ใบถัดไป" ค้างอยู่ (LINE กันไว้แล้วที่ :2791 แต่ FB ไม่มีด่านนี้)
+                    //   พอปุ่มบอกเลขใบจริง ปุ่มค้างจะยิ่งหลอกตา + ป้ายปุ่มที่หลุดเป็นข้อความ
+                    //   จะถูกนับเป็น "คำถาม" กินสิทธิ์ ([[rule_nav_noise_never_counts_as_input]])
+                    $quickReplies = [];
+                    if ($picked < 10) {
+                        $quickReplies[] = ['content_type' => 'text', 'title' => $nextLabel, 'payload' => 'CELTIC_READY'];
+                        if ($reading && method_exists($reading, 'canShuffleCelticAgain') && $reading->canShuffleCelticAgain()) {
+                            $quickReplies[] = ['content_type' => 'text', 'title' => '🔄 สับใหม่', 'payload' => 'CELTIC_RESET'];
+                        }
                     }
 
                     $sent = $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra);
@@ -2792,7 +2805,8 @@ class FortuneChannelManager
                         // 🛑 (2026-08-13, owner) ตัดปุ่ม "❌ ยกเลิก" ออก — ขั้นนี้จ่าย 99 มาแล้ว
                         //    ปุ่มยกเลิกติดปุ่มเปิดไพ่ = กดพลาดทิ้งบิลที่จ่ายแล้ว
                         //    (ตัดพร้อมกันทั้ง FB และ LINE ให้เหมือนกัน — พิมพ์ "ยกเลิก" ยังได้ผลเดิม)
-                        $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
+                        // 🔢 (2026-08-17 owner) บอกเลขใบทุกครั้ง — เหตุผลเดียวกับฝั่ง FB (:1083)
+                        $nextLabel = '🃏 เปิดไพ่ใบที่ '.min($picked + 1, 10);
                         $quickReplies[] = ['label' => $nextLabel, 'text' => 'พร้อม'];
                         if ($canShuffle) {
                             $quickReplies[] = ['label' => '🔄 สับใหม่', 'text' => 'สับใหม่'];
@@ -3927,10 +3941,13 @@ class FortuneChannelManager
                 $next = $reading->getNextCelticPosition();
 
                 if ($reading->conversation_status === FortuneReading::STATUS_CELTIC_PICKING) {
+                    // 🔢 (2026-08-17 owner) บอกเลขใบทุกครั้ง — ให้ตรงกับปุ่มขั้นเปิดไพ่ (:1083)
+                    //   $next = ตำแหน่งใบถัดไปจาก getNextCelticPosition() (null = ครบ 10 แล้ว → กันด้วย ??)
+                    $nextNo = (int) ($next ?? min($picked + 1, 10));
+                    $btnLabel = '🃏 เปิดไพ่ใบที่ '.$nextNo;
                     $hint = $picked === 0
                         ? '👉 กดปุ่ม *"🃏 เปิดไพ่ใบที่ 1"* เพื่อเริ่ม'
-                        : "👉 กดปุ่ม *\"🃏 เปิดไพ่ใบถัดไป\"* (ใบที่ {$next})";
-                    $btnLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
+                        : "👉 กดปุ่ม *\"{$btnLabel}\"* เพื่อเปิดต่อ";
                     // 🆕 (2026-05-17) ซ่อน "สับใหม่" เมื่อใช้ครบโควต้า 1 ครั้งแล้ว
                     // 🛑 (2026-08-13, owner) ตัดปุ่ม "❌ ยกเลิก" ออก — กล่องนี้คือกล่องเตือน
                     //    "คุณอยู่ในรอบ Celtic อยู่นะคะ" ที่เด้งกลางรอบที่จ่ายแล้ว ยิ่งห้ามมีปุ่มทิ้งบิล

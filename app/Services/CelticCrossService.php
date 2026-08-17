@@ -5359,7 +5359,9 @@ class CelticCrossService
         $meta = FortuneReading::CELTIC_POSITIONS[$next] ?? null;
         $name = $meta['name'] ?? '?';
         $desc = $meta['description'] ?? '';
-        $btnLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
+        // 🔢 (2026-08-17 owner) บอกเลขใบทุกครั้ง — ตรงกับปุ่มขั้นเปิดไพ่ใน FortuneChannelManager
+        //   ที่นี่ $next ยืนยันแล้วว่าไม่ null (early return ด้านบนเมื่อครบ 10 ใบ)
+        $btnLabel = '🃏 เปิดไพ่ใบที่ '.$next;
 
         return [
             'message' => $header

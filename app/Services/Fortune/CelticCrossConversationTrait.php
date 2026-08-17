@@ -1420,7 +1420,9 @@ trait CelticCrossConversationTrait
         $imageUrl = $result['image_url'];
         $count = $result['picked_count'];
 
-        $message = "🃏✨ *ใบที่ {$count}/10 — ตำแหน่ง [{$positionName}]*\n\n"
+        // 🔢 (2026-08-17 owner) พาดหัวต้องบอกตรงๆ ว่า "เปิดไพ่ใบที่เท่าไหร่"
+        //   เดิม "ใบที่ N/10" — ชัดอยู่แล้วแต่ไม่ได้บอกว่ากำลัง "เปิด" ใบนั้น
+        $message = "🃏✨ *เปิดไพ่ใบที่ {$count}/10 — ตำแหน่ง [{$positionName}]*\n\n"
             ."ได้ไพ่ *{$cardNameTh}* {$reversed}\n"
             ."({$cardNameEn})\n\n"
             ."📖 ความหมายไพ่นี้: {$meaning}";
@@ -1475,7 +1477,7 @@ trait CelticCrossConversationTrait
         $picked = $reading->getCelticPickedCount();
         $remaining = 10 - $picked;
 
-        return "🃏 *ใบที่ {$next}/10 — ตำแหน่ง [{$name}]*\n"
+        return "🃏 *ใบถัดไป — ใบที่ {$next}/10 · ตำแหน่ง [{$name}]*\n"
             ."💭 ตำแหน่งนี้บอกถึง: {$desc}\n\n"
             ."🧘 ตั้งจิต หลับตา 3 วินาที นึกถึงสิ่งที่อยากรู้\n"
             ."เมื่อพร้อมแล้ว พิมพ์ 'พร้อม' เพื่อให้หมอเปิดไพ่ใบนี้ค่ะ\n\n"
@@ -2506,7 +2508,17 @@ trait CelticCrossConversationTrait
         }
 
         // เช็ค time window (นับจาก first message)
+        // 💾 (2026-08-17) คำถามที่ "มาช้ากว่านาฬิกาไม่กี่วินาที" ต้องไม่หล่นหายเงียบ
+        //   เคสจริง reading 11182 (FTU-260817-N3846 · Celtic 99฿):
+        //     20:11:32 ตอบข้อ 9 เสร็จ → 20:12:53 ลูกค้าพิมพ์ข้อ 10 → window 15 นาทีหมดพอดี
+        //     → ตกด่านนี้ไป endCelticSession ทันที **โดยไม่เคยสร้างแถวใน fortune_celtic_questions**
+        //     → Grand Finale เห็น pending_count=0 → บทสรุปไม่มีคำตอบข้อนั้นเลย
+        //     = ลูกค้าจ่าย 99฿ แล้วคำถามสุดท้ายหายทั้งข้อ
+        //   ⚠️ ตาข่าย 2026-08-07 ("อย่าให้มันคาใจ") อุดเฉพาะ "แถวที่มีอยู่แล้วแต่ยังไม่มีคำตอบ"
+        //      ไม่ครอบเคสนี้ที่ยัง **ไม่มีแถว** → ต้องฝากแถว pending ให้ก่อนปิดรอบ
         if (! $reading->canAskMoreCeltic()) {
+            $this->stashUnansweredCelticQuestion($reading, $question);
+
             return $this->endCelticSession($reading, 'time_expired');
         }
 
@@ -3796,6 +3808,81 @@ trait CelticCrossConversationTrait
         }
 
         return false;
+    }
+
+    /**
+     * 💾 (2026-08-17) ฝาก "คำถามที่มาหลังหมดเวลา" ไว้เป็นแถว pending
+     *
+     * ให้ Grand Finale ยกมาตอบปิดให้จบ (buildGrandFinalePrompt รับ $pendingQuestions อยู่แล้ว
+     * ตั้งแต่ 2026-08-07 — ที่ขาดคือ "แถว" สำหรับคำถามที่มาตอนรอบปิดพอดี)
+     *
+     * เกณฑ์ที่ *ไม่* ฝาก (ไม่ใช่คำถามจริง — ฝากไปก็ทำให้บทสรุปเพี้ยน):
+     *   - สั้นกว่า 8 ตัวอักษร
+     *   - คำตอบรับ/คำทักทาย (looksLikeReadinessAck) เช่น "ค่ะ" "โอเค" "พร้อม"
+     *   - เศษวันเกิด (looksLikeBirthdateFragmentOnly) เช่น "วันจันทร์" "ปีฉลู"
+     *   - ซ้ำกับข้อที่ฝากไว้แล้ว (FB/LINE retry ยิงข้อความเดิมซ้ำได้)
+     *   - ฝากไปแล้วครบ 3 ข้อ (กันบทสรุปบวมจนตอบไม่ครบสักข้อ)
+     *
+     * ⚠️ best-effort ทั้งเมธอด — ล้มเหลวยังไงก็ห้ามขวางการปิดรอบ
+     *    (ลูกค้าที่จ่ายแล้วต้องได้บทสรุปเสมอ)
+     *
+     * @return bool true = ฝากสำเร็จ
+     */
+    protected function stashUnansweredCelticQuestion(FortuneReading $reading, string $question): bool
+    {
+        try {
+            $q = trim($question);
+
+            if (mb_strlen($q) < 8
+                || $this->looksLikeReadinessAck($q)
+                || $this->looksLikeBirthdateFragmentOnly($q)
+                || $this->looksLikeCelticStatusInquiry($q)) {
+                return false;
+            }
+
+            $q = mb_substr($q, 0, 1000);
+
+            $pending = $reading->celticQuestions()->whereNull('answered_at')->get();
+            if ($pending->count() >= 3) {
+                Log::info('Celtic: มีคำถามค้างครบเพดานแล้ว → ไม่ฝากเพิ่ม', [
+                    'reading_id' => $reading->id,
+                    'pending' => $pending->count(),
+                ]);
+
+                return false;
+            }
+
+            foreach ($pending as $row) {
+                if (trim((string) $row->question) === $q) {
+                    return false;
+                }
+            }
+
+            // ⚠️ (fortune_reading_id, sequence) มี unique index fcq_reading_seq_unique
+            //    → ต้องนับจาก MAX ของ "ทุกแถว" ไม่ใช่เฉพาะแถวที่ตอบแล้ว
+            $seq = max((int) $reading->celticQuestions()->max('sequence') + 1, 1);
+
+            \App\Models\FortuneCelticQuestion::create([
+                'fortune_reading_id' => $reading->id,
+                'sequence' => $seq,
+                'question' => $q,
+            ]);
+
+            Log::info('Celtic: ฝากคำถามที่มาหลังหมดเวลา → ให้บทสรุปตอบปิด', [
+                'reading_id' => $reading->id,
+                'sequence' => $seq,
+                'q_preview' => mb_substr($q, 0, 60),
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('Celtic: ฝากคำถามค้างไม่สำเร็จ (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**
