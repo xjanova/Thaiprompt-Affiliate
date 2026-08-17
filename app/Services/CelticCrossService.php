@@ -723,45 +723,10 @@ class CelticCrossService
         $priorSummary = '';
 
         foreach ($groups as $g) {
-            // 🧭 (2026-06-18) ฉีดคลังสัญญาณเฉพาะ group ที่ใช้ (ไม่ใส่ shared → กันบวมทุก call)
-            $signalBlock = ! empty($g['signal'])
-                ? $this->buildBaseChartSignalKnowledge($reading, $g['signal'])
-                : '';
-
-            $prompt = $shared
-                .$signalBlock
-                ."━━━━━━━━━━━━━━━━━\n📐 งานรอบนี้ — เขียนเฉพาะส่วนที่กำหนด (ห้ามเขียนส่วนอื่น ห้ามสรุปรวบ)\n━━━━━━━━━━━━━━━━━\n"
-                .$g['spec']."\n\n"
-                .($priorSummary !== ''
-                    ? "📜 ส่วนที่เขียนไปแล้ว (อ่านเพื่อให้ต่อเนื่อง • อย่าทวนซ้ำ • อย่าทวนไพ่ใบเดิมแบบลอกข้อความ):\n".$priorSummary."\n\n"
-                    : '')
-                ."📏 ความยาว {$g['len']} ตัวอักษร • plain text + emoji หัวข้อ • ❌ ห้าม markdown (**, ##) • ฟันธงตามไพ่+ดาว ห้ามกำกวม\n"
-                .'ขึ้นต้นด้วยหัวข้อ emoji แรกของส่วนนี้ทันที (ห้ามทักทาย ห้ามเกริ่นนำ ห้ามใส่ [TYPE]):';
-
             try {
-                // 🪪 (2026-08-17) ต้องเรียกใน loop ทุกกลุ่ม — context เป็น one-shot
-                //   ถูกล้างหลัง generate ทุกครั้ง เรียกครั้งเดียวนอก loop = กลุ่มที่ 2 เป็นต้นไป reading_id หาย
-                $aiService->forReading($reading);
-
-                $r = $aiService->generateWithRetryAndFallback(
-                    questions: [$prompt],
-                    userProfile: null,
-                    userPosts: null,
-                    promptTemplate: '{questions}',
-                    readingType: 'deep',
-                    birthDate: null,
-                    userContext: "celtic_basechart:{$reading->id}:{$g['label']}",
-                    purpose: 'prediction_celtic',
-                    // 🪬 พื้นดวงเปิดตัว: ตรวจแค่ธงคุณไสย์ (คำถาม Q1 เป็นข้อความสังเคราะห์ ไม่ต้องเสียค่า detector)
-                    modelOverrides: $this->resolveCelticModelOverrides($reading),
-                );
+                $r = $this->generateBaseChartGroup($aiService, $reading, $shared, $g, $priorSummary);
 
                 $txt = trim((string) ($r['response'] ?? ''));
-                // strip TYPE token เผื่อ AI ใส่มา (เราจัดเป็น A เองใน askQuestion) — ใช้ pattern เดียวกับ askQuestion
-                $stripped = preg_replace('/[`*]{0,3}[\[\【\［]?\s*TYPE\s*[:：]\s*[A-E]\s*[\]\】\］]?[`*]{0,3}/iu', '', $txt);
-                if (is_string($stripped)) {
-                    $txt = trim($stripped);
-                }
 
                 if ($txt !== '') {
                     $blocks[] = $txt;
@@ -798,6 +763,72 @@ class CelticCrossService
             'tokens_used' => $totalTokens,
             'provider' => $provider,
             'model' => $model,
+        ];
+    }
+
+    /**
+     * 🧱 (2026-08-17) ยิง AI "หนึ่งบล็อก" ของพื้นดวงเปิดตัว
+     *
+     * แยกออกมาจาก loop เดิมเพื่อให้โหมดซ่อม (repairBaseChartMissingGroup) เรียกใช้
+     * prompt/สเปก/โมเดล **ชุดเดียวกันเป๊ะ** — บล็อกที่ซ่อมจึงคุณภาพเท่าโหมดแบ่งบล็อกปกติ
+     *
+     * @param  array  $g  1 element ของ $groups (label/len/must/signal/spec)
+     * @param  string  $priorSummary  ท้ายข้อความที่เขียนไปแล้ว (กันทวนซ้ำ) — '' = ไม่ส่ง
+     * @return array ['response' => string, 'tokens_used' => int, 'provider' => ?string, 'model' => ?string]
+     *
+     * @throws \Throwable ปล่อยให้ caller ตัดสินใจ (loop = ข้ามบล็อก / repair = ยกเลิกการซ่อม)
+     */
+    protected function generateBaseChartGroup(
+        FortuneAIService $aiService,
+        FortuneReading $reading,
+        string $shared,
+        array $g,
+        string $priorSummary = ''
+    ): array {
+        // 🧭 (2026-06-18) ฉีดคลังสัญญาณเฉพาะ group ที่ใช้ (ไม่ใส่ shared → กันบวมทุก call)
+        $signalBlock = ! empty($g['signal'])
+            ? $this->buildBaseChartSignalKnowledge($reading, $g['signal'])
+            : '';
+
+        $prompt = $shared
+            .$signalBlock
+            ."━━━━━━━━━━━━━━━━━\n📐 งานรอบนี้ — เขียนเฉพาะส่วนที่กำหนด (ห้ามเขียนส่วนอื่น ห้ามสรุปรวบ)\n━━━━━━━━━━━━━━━━━\n"
+            .$g['spec']."\n\n"
+            .($priorSummary !== ''
+                ? "📜 ส่วนที่เขียนไปแล้ว (อ่านเพื่อให้ต่อเนื่อง • อย่าทวนซ้ำ • อย่าทวนไพ่ใบเดิมแบบลอกข้อความ):\n".$priorSummary."\n\n"
+                : '')
+            ."📏 ความยาว {$g['len']} ตัวอักษร • plain text + emoji หัวข้อ • ❌ ห้าม markdown (**, ##) • ฟันธงตามไพ่+ดาว ห้ามกำกวม\n"
+            .'ขึ้นต้นด้วยหัวข้อ emoji แรกของส่วนนี้ทันที (ห้ามทักทาย ห้ามเกริ่นนำ ห้ามใส่ [TYPE]):';
+
+        // 🪪 (2026-08-17) ต้องเรียกทุกครั้งก่อน generate — context เป็น one-shot
+        //   ถูกล้างหลัง generate ทุกครั้ง เรียกครั้งเดียวนอก loop = กลุ่มที่ 2 เป็นต้นไป reading_id หาย
+        $aiService->forReading($reading);
+
+        $r = $aiService->generateWithRetryAndFallback(
+            questions: [$prompt],
+            userProfile: null,
+            userPosts: null,
+            promptTemplate: '{questions}',
+            readingType: 'deep',
+            birthDate: null,
+            userContext: "celtic_basechart:{$reading->id}:{$g['label']}",
+            purpose: 'prediction_celtic',
+            // 🪬 พื้นดวงเปิดตัว: ตรวจแค่ธงคุณไสย์ (คำถาม Q1 เป็นข้อความสังเคราะห์ ไม่ต้องเสียค่า detector)
+            modelOverrides: $this->resolveCelticModelOverrides($reading),
+        );
+
+        $txt = trim((string) ($r['response'] ?? ''));
+        // strip TYPE token เผื่อ AI ใส่มา (เราจัดเป็น A เองใน askQuestion) — ใช้ pattern เดียวกับ askQuestion
+        $stripped = preg_replace('/[`*]{0,3}[\[\【\［]?\s*TYPE\s*[:：]\s*[A-E]\s*[\]\】\］]?[`*]{0,3}/iu', '', $txt);
+        if (is_string($stripped)) {
+            $txt = trim($stripped);
+        }
+
+        return [
+            'response' => $txt,
+            'tokens_used' => (int) ($r['tokens_used'] ?? 0),
+            'provider' => $r['provider'] ?? null,
+            'model' => $r['model'] ?? null,
         ];
     }
 
@@ -846,6 +877,14 @@ class CelticCrossService
         }
         $minChars = (int) max(1200, $minChars * 0.6);
 
+        // ✅ (2026-08-17) เช็คลิสต์อีโมจิแบบ "ระบุตัวจริง" — แก้ที่ต้นเหตุ ไม่ใช่รอตาข่ายรับ
+        //   เคสจริง R11182: คำสั่งเดิมพูดลอยๆ ว่า "ทุกหัวข้อที่มี emoji ต้องขึ้นเป็นหัวข้อจริง"
+        //   โมเดลเขียน 🌟 แล้วเล่า "ภาพรวมชีวิตช่วงนี้" ต่อเป็นความเรียง — **🔮 หายไปเฉยๆ**
+        //   → ตกเกณฑ์เพราะอีโมจิตัวเดียว ทิ้งงาน 4,280 ตัวที่ดีอยู่แล้ว
+        //   วิธีที่ได้ผลกว่า: ยัดรายชื่ออีโมจิที่บังคับจริงเป็นเช็คลิสต์ + สั่งให้ไล่ทวนก่อนส่ง
+        //   (ดึงจาก $groups['must'] ตัวเดียวกับที่ใช้ตรวจ → พรอมต์กับเกณฑ์ไม่มีทางหลุดจากกัน)
+        $mustList = implode('  ', array_unique($mustHeaders));
+
         $prompt = $shared
             .$signalBlock
             ."━━━━━━━━━━━━━━━━━\n📐 งานรอบนี้ — เขียน \"พื้นดวงเปิดตัว\" ให้ครบทุกส่วนใน *คำตอบเดียว* เรียงตามลำดับด้านล่างเป๊ะ\n━━━━━━━━━━━━━━━━━\n"
@@ -854,7 +893,14 @@ class CelticCrossService
             // 🎯 (2026-08-17) กันอาการ "รวบหัวข้อ" ที่เจอตอนยิงคอลเดียวในโหมดคุณไสย์ —
             //   โมเดลเขียนหัวข้อแรกของบล็อกแล้วเล่าที่เหลือเป็นความเรียงยาว หัวข้อย่อยหายไปเฉยๆ
             ."❗ ทุกหัวข้อที่มี emoji นำหน้าในสเปกด้านบน ต้องขึ้นเป็น *หัวข้อจริง* ในคำตอบให้ครบทุกอัน\n"
-            ."   ❌ ห้ามรวบหลายหัวข้อเป็นย่อหน้าเดียว ❌ ห้ามข้ามหัวข้อใดหัวข้อหนึ่ง\n"
+            ."   ❌ ห้ามรวบหลายหัวข้อเป็นย่อหน้าเดียว ❌ ห้ามข้ามหัวข้อใดหัวข้อหนึ่ง\n\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🚨 เช็คลิสต์บังคับ — คำตอบนี้ *ต้อง* มีอีโมจิทุกตัวนี้ ขึ้นต้นบรรทัดในฐานะหัวข้อ:\n"
+            ."   {$mustList}\n"
+            ."   • แต่ละตัวขึ้นบรรทัดใหม่ ตามด้วยชื่อหัวข้อของมัน แล้วค่อยเขียนเนื้อหา\n"
+            ."   • ❌ ห้ามเอาอีโมจิเหล่านี้ไปแทรกกลางย่อหน้าแทนการขึ้นหัวข้อ\n"
+            ."   • ก่อนส่งคำตอบ ให้ไล่ทวนทีละตัวว่าครบทุกตัวจริง — ขาดตัวเดียวถือว่างานไม่ผ่าน\n"
+            ."━━━━━━━━━━━━━━━━━\n"
             .'เขียนทุกส่วนต่อกันในคำตอบเดียว ขึ้นต้นด้วยหัวข้อ emoji ของส่วนที่ 1 ทันที (ห้ามทักทาย ห้ามเกริ่นนำ ห้ามใส่ [TYPE]):';
 
         try {
@@ -897,6 +943,26 @@ class CelticCrossService
         $len = mb_strlen($txt);
 
         if (! empty($missing) || $len < $minChars) {
+            // 🩹 (2026-08-17) ซ่อมเฉพาะบล็อกที่ขาด แทนทิ้งทั้งก้อนไปยิงใหม่ 3 คอล
+            //   เคสจริง R11182: คอลเดียวคาย 4,280 ตัว (ยาวกว่าผลสุดท้าย 4,143 ด้วยซ้ำ)
+            //   ขาดแค่ 🔮 ตัวเดียว → ทิ้งหมด ยิงใหม่ 3 คอล = 54,163 token / 42.8s
+            //   แทนที่จะเป็น ~16k / ~16s. ซ่อม 1 บล็อก = แย่สุด 2 คอล ไม่ใช่ 4
+            $repair = $this->repairBaseChartMissingGroup($aiService, $reading, $shared, $groups, $txt, $missing, $len, $minChars);
+            if ($repair !== null) {
+                try {
+                    $reading->touch();
+                } catch (\Throwable $touchErr) {
+                    // non-blocking
+                }
+
+                return [
+                    'response' => $repair['response'],
+                    'tokens_used' => (int) ($r['tokens_used'] ?? 0) + (int) $repair['tokens_used'],
+                    'provider' => $r['provider'] ?? $repair['provider'],
+                    'model' => $r['model'] ?? $repair['model'],
+                ];
+            }
+
             Log::warning('CelticCross: base-chart คอลเดียวไม่ผ่านเกณฑ์ → ตกไปโหมดแบ่งบล็อก', [
                 'reading_id' => $reading->id,
                 'missing_headers' => $missing,
@@ -928,6 +994,173 @@ class CelticCrossService
             'provider' => $r['provider'] ?? null,
             'model' => $r['model'] ?? null,
         ];
+    }
+
+    /**
+     * 🩹 (2026-08-17) ซ่อมพื้นดวงคอลเดียวที่ "ขาดหัวข้อบังคับของบล็อกเดียว"
+     *
+     * แทนที่จะทิ้งงานทั้งก้อนแล้วยิงใหม่ 3 คอล → ยิงซ่อมเฉพาะบล็อกนั้น 1 คอล
+     * แล้ว splice กลับเข้าที่เดิม (ใช้ generateBaseChartGroup ตัวเดียวกับโหมดแบ่งบล็อก
+     * → คุณภาพบล็อกที่ซ่อมเท่าของเดิมเป๊ะ)
+     *
+     * ❌ ไม่ซ่อม (คืน null = ให้ caller ตกไปโหมดแบ่งบล็อกเดิม) เมื่อ:
+     *   1. ความยาวรวมไม่ถึงเกณฑ์ — โมเดลคายมาน้อยทั้งก้อน ซ่อมบล็อกเดียวไม่พอ
+     *   2. บล็อกที่ขาดมีมากกว่า 1 — ซ่อม 2 ใน 3 ก็ไม่ประหยัดแล้ว + splice เสี่ยงขึ้น
+     *   3. หาตำแหน่ง splice ไม่ได้ / ลำดับหัวข้อในคำตอบสลับกัน
+     *   4. บล็อกที่ซ่อมมาเองก็ยังขาดหัวข้อบังคับ
+     * → ลูกค้าที่จ่ายเงินไม่มีทางได้ของที่โครงไม่ครบจากทางนี้ (เกณฑ์เดิมไม่ถูกผ่อน)
+     *
+     * @param  array  $missing  หัวข้อบังคับที่หายไปจาก $txt
+     * @return array|null ['response','tokens_used','provider','model'] | null = ซ่อมไม่ได้
+     */
+    protected function repairBaseChartMissingGroup(
+        FortuneAIService $aiService,
+        FortuneReading $reading,
+        string $shared,
+        array $groups,
+        string $txt,
+        array $missing,
+        int $len,
+        int $minChars
+    ): ?array {
+        // เงื่อนไข 1 — สั้นทั้งก้อน = ปัญหาไม่ได้อยู่ที่หัวข้อเดียว
+        if ($len < $minChars || empty($missing)) {
+            return null;
+        }
+
+        // เงื่อนไข 2 — หาว่าหัวข้อที่ขาดกระจุกอยู่บล็อกเดียวไหม
+        $affected = [];
+        foreach ($groups as $i => $g) {
+            foreach (($g['must'] ?? []) as $h) {
+                if (in_array($h, $missing, true)) {
+                    $affected[$i] = true;
+                    break;
+                }
+            }
+        }
+        if (count($affected) !== 1) {
+            return null;
+        }
+        $gi = (int) array_key_first($affected);
+        $target = $groups[$gi];
+
+        // เงื่อนไข 3 — หาช่วงข้อความของบล็อกนี้ (start = หัวข้อแรกของบล็อกที่ยังอยู่,
+        //   end = หัวข้อแรกของบล็อกถัดไปที่ยังอยู่ / ท้ายข้อความ)
+        $start = null;
+        foreach (($target['must'] ?? []) as $h) {
+            $p = $this->findHeaderPosition($txt, $h);
+            if ($p !== null && ($start === null || $p < $start)) {
+                $start = $p;
+            }
+        }
+
+        $end = mb_strlen($txt);
+        for ($j = $gi + 1; $j < count($groups); $j++) {
+            foreach (($groups[$j]['must'] ?? []) as $h) {
+                $p = $this->findHeaderPosition($txt, $h);
+                if ($p !== null && $p < $end) {
+                    $end = $p;
+                }
+            }
+        }
+
+        // บล็อกหายทั้งบล็อก → แทรกที่หัวบล็อกถัดไป ; หัวข้อสลับลำดับ → ไม่เสี่ยง splice
+        if ($start !== null && $start > $end) {
+            return null;
+        }
+
+        // เงื่อนไข 4 — ยิงซ่อม (ส่งท้ายของเนื้อหาก่อนหน้าไปกันเขียนทวนซ้ำ)
+        try {
+            $prior = mb_substr(mb_substr($txt, 0, $start ?? $end), -700);
+            $rep = $this->generateBaseChartGroup($aiService, $reading, $shared, $target, $prior);
+        } catch (\Throwable $e) {
+            Log::warning('CelticCross: base-chart ซ่อมบล็อกล้มเหลว → ตกไปโหมดแบ่งบล็อก', [
+                'reading_id' => $reading->id,
+                'group' => $target['label'] ?? '?',
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        $block = trim((string) ($rep['response'] ?? ''));
+        if ($block === '') {
+            return null;
+        }
+
+        foreach (($target['must'] ?? []) as $h) {
+            if (! str_contains($block, $h)) {
+                Log::warning('CelticCross: บล็อกที่ซ่อมมายังขาดหัวข้อ → ตกไปโหมดแบ่งบล็อก', [
+                    'reading_id' => $reading->id,
+                    'group' => $target['label'] ?? '?',
+                    'still_missing' => $h,
+                ]);
+
+                return null;
+            }
+        }
+
+        // splice: มีบล็อกเดิมบางส่วน = แทนที่ทั้งช่วง [start,end) ; ไม่มีเลย = แทรกก่อนบล็อกถัดไป
+        $cut = $start ?? $end;
+        $merged = rtrim(mb_substr($txt, 0, $cut))."\n\n".$block."\n\n".ltrim(mb_substr($txt, $end));
+        $merged = trim(preg_replace("/\n{3,}/u", "\n\n", $merged) ?? $merged);
+
+        // 🛡️ ตรวจซ้ำหลัง splice — ช่วงที่ถูกแทนที่อาจกลืนหัวข้อของบล็อกอื่นไปด้วย
+        //   (เกิดได้ถ้าโมเดลเขียนหัวข้อสลับลำดับกับสเปก) → เจอเมื่อไหร่ ถอยไปโหมดแบ่งบล็อก
+        foreach ($groups as $g) {
+            foreach (($g['must'] ?? []) as $h) {
+                if (! str_contains($merged, $h)) {
+                    Log::warning('CelticCross: splice บล็อกซ่อมแล้วหัวข้ออื่นหาย → ตกไปโหมดแบ่งบล็อก', [
+                        'reading_id' => $reading->id,
+                        'group' => $target['label'] ?? '?',
+                        'lost_header' => $h,
+                    ]);
+
+                    return null;
+                }
+            }
+        }
+
+        Log::info('CelticCross: base-chart ซ่อมบล็อกที่ขาดสำเร็จ (ไม่ต้องยิงใหม่ 3 คอล)', [
+            'reading_id' => $reading->id,
+            'group' => $target['label'] ?? '?',
+            'missing_headers' => $missing,
+            'mode' => $start !== null ? 'replace' : 'insert',
+            'chars_before' => $len,
+            'chars_after' => mb_strlen($merged),
+            'repair_tokens' => $rep['tokens_used'] ?? 0,
+        ]);
+
+        return [
+            'response' => $merged,
+            'tokens_used' => (int) ($rep['tokens_used'] ?? 0),
+            'provider' => $rep['provider'] ?? null,
+            'model' => $rep['model'] ?? null,
+        ];
+    }
+
+    /**
+     * 🔎 (2026-08-17) หาตำแหน่งของ "หัวข้ออีโมจิ" ในข้อความ — ใช้ตอน splice บล็อกที่ซ่อม
+     *
+     * ชอบตำแหน่งที่อยู่ *ต้นบรรทัด* ก่อนเสมอ เพราะอีโมจิเดียวกัน (เช่น 💰) โผล่กลางย่อหน้าได้
+     * ถ้าไปตัดตรงนั้นจะได้ข้อความขาดกลางประโยค — ไม่เจอต้นบรรทัดค่อยถอยไปใช้ตำแหน่งแรกที่เจอ
+     *
+     * @return int|null ตำแหน่งแบบ multi-byte (ใช้กับ mb_substr ได้ตรงๆ) | null = ไม่มีในข้อความ
+     */
+    protected function findHeaderPosition(string $txt, string $header): ?int
+    {
+        $offset = 0;
+        foreach (explode("\n", $txt) as $line) {
+            $trimmed = ltrim($line);
+            if ($trimmed !== '' && str_starts_with($trimmed, $header)) {
+                return $offset + (mb_strlen($line) - mb_strlen($trimmed));
+            }
+            $offset += mb_strlen($line) + 1; // +1 = "\n"
+        }
+
+        $p = mb_strpos($txt, $header);
+
+        return $p === false ? null : $p;
     }
 
     /**
