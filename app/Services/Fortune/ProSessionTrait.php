@@ -768,6 +768,15 @@ trait ProSessionTrait
             $systemPromptRag = $aiService->injectAdminQARagFewShot($systemPrompt, $messageText, $reading);
 
             // Pro AI fallback chain — sensitive key → chat AI fallback
+            // 🎚️ (2026-08-17) เลือกโมเดลตามบริบทเหมือน Celtic — luna ปกติ / sol เมื่อคำถามยาก
+            //   ก่อนหน้านี้เส้นนี้ไม่เคยแตะโมเดล Pro เลย: getSensitivePoolKey()=NULL +
+            //   sensitive_provider='gemini' + ไม่มี key gemini/sensitive → คืน null ทุกครั้ง
+            //   → ตกไป chatWithCustomSystemPromptHistory = key แชทฟรี
+            //   วัดจริง 30 วัน: post_reading_deep 466 คอล อยู่บน Gemini ฟรีทั้งหมด (มี key TTS ตอบ 99 ครั้ง)
+            //   บังคับ provider='openai' เพื่อให้ชื่อโมเดลกับ key เป็นค่ายเดียวกัน
+            $proModel = app(\App\Services\Fortune\FortuneModelRouter::class)
+                ->proSessionModel($reading, $messageText);
+
             $result = null;
             try {
                 if (method_exists($aiService, 'generatePostReadingDeepResponse')) {
@@ -775,7 +784,9 @@ trait ProSessionTrait
                         $messageText,
                         $userProfile,
                         $historyMessages,
-                        $systemPrompt
+                        $systemPrompt,
+                        'openai',
+                        $proModel
                     );
                 }
 
@@ -855,7 +866,11 @@ trait ProSessionTrait
      *
      * @return array result พร้อมส่งกลับ — ห้าม return null (block flow อื่น)
      */
-    protected function handleProSession(FortuneReading $reading, string $messageText, ?array $userProfile = null): array
+    /**
+     * @param  bool  $skipSettle  true = มาจาก ProcessBufferedProSessionMessageJob (ผ่าน settle window มาแล้ว)
+     *                            ห้ามลืม — ไม่งั้น job จะ buffer ซ้ำเป็นวงวนไม่รู้จบ
+     */
+    protected function handleProSession(FortuneReading $reading, string $messageText, ?array $userProfile = null, bool $skipSettle = false): array
     {
         // 🛡️ (2026-05-08 v3 audit) Refresh ก่อนอ่าน state — กัน race ระหว่าง concurrent messages
         try {
@@ -970,6 +985,46 @@ trait ProSessionTrait
             ];
         }
 
+        // 3c-0. 📦 (2026-08-17) Settle window — นิ่งรอลูกค้า "รัวคำ" ให้จบก่อนตอบทีเดียว
+        //   ยกกลไกเดียวกับ Celtic (FIX D 2026-06-22) มาใช้กับ Deep 39 — เดิม scope 'deep_qa'
+        //   ถูกจดไว้ใน MessageBuffer ว่า "Phase 4b — future" แต่ไม่เคยทำ
+        //   → ถามรัว 3 ข้อ = ยิง AI 3 ครั้ง ตอบ 3 ครั้งแยกกัน (เปลือง + อ่านยาก + ตอบทับกันเอง)
+        //
+        //   ⚠️ วางไว้ตรงนี้ (3c) ไม่ใช่หัวเมธอด — ทุกอย่างก่อนหน้านี้ต้องตอบทันที:
+        //     ยืนยันปิด session / exit intent / แก้วันเกิด / Celtic 3Q flow
+        //     ถ้าไป buffer ที่หัวเมธอด ลูกค้าพิมพ์ "พอแค่นี้" จะค้าง 10 วิ = พัง
+        //   ปิดได้ด้วย setting pro_session_settle_seconds = 0
+        $settleSec = (int) ($this->settings->pro_session_settle_seconds ?? 10);
+        if (! $skipSettle && $settleSec > 0) {
+            $dUserId = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
+            $dPlatform = $reading->platform;
+            if (! $dPlatform || ! in_array($dPlatform, ['facebook', 'line'], true)) {
+                $dPlatform = preg_match('/^U[a-f0-9]{32}$/i', $dUserId) ? 'line' : 'facebook';
+            }
+
+            if ($dUserId !== '') {
+                app(\App\Services\Fortune\MessageBuffer::class)->append('deep_qa', $dUserId, $messageText);
+                \App\Jobs\ProcessBufferedProSessionMessageJob::dispatch($reading->id, $dPlatform, $dUserId, $settleSec)
+                    ->delay(now()->addSeconds($settleSec + 1));
+
+                // ลูกค้าพิมพ์อยู่ = engaged → กัน nudge ตามถามยิงระหว่างรอ window
+                $reading->setConversationState('pro_session_nudge_sent', true);
+                $reading->setConversationState('pro_session_last_nudge_at', now()->toIso8601String());
+
+                Log::info('Fortune ProSession: settle-buffer คำถาม (นิ่งรอรัว)', [
+                    'reading_id' => $reading->id,
+                    'settle_sec' => $settleSec,
+                    'q_preview' => mb_substr($messageText, 0, 40),
+                ]);
+
+                return [
+                    'action' => 'silent_skip',
+                    'message' => null,
+                    'reading' => $reading,
+                ];
+            }
+        }
+
         // 3c. Default — AI Pro ตอบจาก context (Deep 39 หรือ Celtic หลัง 3Q จบ)
         $aiResult = $this->generateProSessionAnswer($reading, $messageText, $userProfile);
         if ($aiResult !== null) {
@@ -985,6 +1040,26 @@ trait ProSessionTrait
                 .'พลังงานปั่นป่วนเล็กน้อย — ลองส่งคำถามอีกครั้งได้ไหมคะ ✨',
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * 📦 (2026-08-17) ทางเข้าสาธารณะสำหรับ ProcessBufferedProSessionMessageJob
+     *
+     * เรียก handleProSession ด้วย skipSettle=true — ข้อความที่ส่งมาผ่าน settle window มาแล้ว
+     * (ถ้าไม่ข้าม จะ append กลับเข้า buffer แล้ว dispatch job ใหม่ = วนไม่รู้จบ)
+     */
+    public function handleProSessionBuffered(FortuneReading $reading, string $combined, ?array $userProfile = null): array
+    {
+        return $this->handleProSession($reading, $combined, $userProfile, true);
+    }
+
+    /**
+     * 📦 (2026-08-17) เปิด isInProSession ให้ job เช็คได้ว่า session ยังเปิดอยู่ไหม
+     *   (session อาจหมดเวลาระหว่างรอ settle window → ไม่ต้องตอบ ปล่อย cron แจ้งหมดเวลา)
+     */
+    public function isInProSessionPublic(FortuneReading $reading): bool
+    {
+        return $this->isInProSession($reading);
     }
 
     /**

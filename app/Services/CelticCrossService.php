@@ -26,37 +26,9 @@ use Illuminate\Support\Facades\Log;
  */
 class CelticCrossService
 {
-    /**
-     * 🪬 (2026-08-17 owner) โมเดลสำหรับ "โหมดดูคุณไสย์/มนต์ดำ" — ใช้ตัวแรงสุดเสมอ
-     *
-     * owner: "โหมดคุณไสย ต้องการเหตุและผลที่ถูกต้อง เราปรับไปใช้ sol เสมอ"
-     *
-     * เหตุผล: โหมดนี้ต้องฟันธงว่า "โดนของจริงไหม / ชนิดไหน / ใครทำ / แก้ยังไง" จากหน้าไพ่
-     * ตอบผิดทางนี้ = ทำให้ลูกค้าหลอน-ระแวง (ผิดจรรยาบรรณร้ายแรง) หรือปั้นเรื่องที่ไพ่ไม่ได้ชี้
-     * gpt-5.6-sol = AA Intelligence Index 59 (เทียบ luna 52) — เหตุผลเชิงตรรกะแน่นกว่าชัดเจน
-     *
-     * ต้นทุน: sol $5/$30 vs luna $0.20/$1.20 → บิลโหมดคุณไสย์แพงขึ้น ~฿47 จาก ~฿2
-     * ยอมรับได้เพราะปริมาณต่ำมาก (30 วันล่าสุด = 1 จาก 93 บิล Celtic ที่จ่ายแล้ว)
-     * ⚠️ ถ้าวันไหนโหมดนี้ดังขึ้น ให้กลับมาทบทวนตัวเลขนี้ใหม่ — margin ต่อบิลจะเหลือ ~50%
-     */
-    public const BLACK_MAGIC_MODEL = 'gpt-5.6-sol';
-
-    /**
-     * 🧠 (2026-08-17 owner) โมเดลสำหรับ "คำถามยาก" ในโหมดปกติ
-     *
-     * owner: "โหมดปกติ ก็ใช้ luna คุยเหมือนเดิม ยกเว้นคำถามเริ่มยากต้องปรับเป็น sol"
-     *
-     * ⚠️ กลไก escalate เดิมของ Celtic ตายไปแล้ว 2 ชั้น — ตัวนี้คือการรื้อฟื้น:
-     *   ชั้น 1: โค้ด — 2026-05-29 ถอด resolveSensitiveDecision() ออกจาก askQuestion
-     *           ("Single-bot: Celtic ใช้ key เดียว prediction_celtic + openai เสมอ")
-     *           เหตุผลตอนนั้น = escalate แล้วเด้งไป Gemini ทำให้ persona แม่หมอเพี้ยน
-     *           ตอนนี้เหตุผลนั้นหมดไป เพราะ escalate อยู่ใน OpenAI ค่ายเดิม (luna → sol)
-     *   ชั้น 2: ตั้งค่า — prod `sensitive_ai_mode = 'off'` → isSensitiveModeActiveFor() = false ทุก context
-     *           จึงเรียก resolveSensitiveDecision() ตรงๆ ไม่ได้ (มันจะคืน use_pro=false เสมอ)
-     *           → ตัวนี้เรียก FortuneSensitivityDetector เองโดยไม่ผ่าน global gate
-     *             (ลูกค้า Celtic จ่ายเงินแล้ว ไม่ควรผูกกับสวิตช์ที่คุมแชทฟรีด้วย)
-     */
-    public const HARD_QUESTION_MODEL = 'gpt-5.6-sol';
+    // 🎚️ (2026-08-17) นโยบายเลือกโมเดลย้ายไปอยู่ที่ App\Services\Fortune\FortuneModelRouter
+    //   (คุณไสย์ → sol เสมอ · คำถามยาก → sol เฉพาะเทิร์น · อื่นๆ → luna)
+    //   รวมไว้ที่เดียวเพราะ Deep 39 ใช้กฎชุดเดียวกัน — แยกเขียนเมื่อไหร่เพี้ยนคนละทางแน่
 
     protected FortuneTellingSetting $settings;
 
@@ -86,83 +58,7 @@ class CelticCrossService
      */
     protected function resolveCelticModelOverrides(FortuneReading $reading, ?string $userQuestion = null): ?array
     {
-        try {
-            // 1) 🪬 โหมดดูคุณไสย์ — sol เสมอ ไม่ต้องตรวจอะไรเพิ่ม
-            if ($this->isBlackMagicModeForced($reading)) {
-                return ['openai' => self::BLACK_MAGIC_MODEL];
-            }
-
-            // 2) 🧠 โหมดปกติ — ตรวจว่าคำถามเทิร์นนี้ "ยาก/หนัก" ไหม
-            $q = trim((string) $userQuestion);
-            if ($q === '' || mb_strlen($q) < 8) {
-                return null; // สั้นเกินกว่าจะเป็นคำถามยาก (ทัก/ตอบรับ) — ไม่ต้องเสียค่า detector
-            }
-
-            $uid = (string) ($reading->facebook_user_id ?? $reading->line_user_id ?? '');
-
-            // FortuneSensitivityDetector = heuristic ก่อน แล้วค่อยเรียก classifier เมื่อก้ำกึ่ง
-            //   → ส่วนใหญ่ไม่เสีย API call เพิ่มเลย
-            $detection = (new \App\Services\Fortune\FortuneSensitivityDetector($this->settings))
-                ->detect($q, [
-                    'user_id' => $uid,
-                    'has_active_paid_reading' => true,  // ถึงตรงนี้ = จ่ายแล้วเสมอ
-                    'channel_context' => 'celtic',
-                ]);
-
-            // ⚠️ (2026-08-17) ห้ามใช้ is_sensitive เดี่ยวๆ เป็นตัวตัดสิน —
-            //   detector เป็น "hybrid" = heuristic + classifier(Groq) แต่ **prod ไม่มี key Groq ใน pool**
-            //   → classifier ยิงไม่ได้ ตกกลับมาใช้ heuristic ล้วน ซึ่งให้ confidence สูงสุด 40
-            //     ขณะที่ธง is_sensitive ต้องการ ≥ 80 → **หัวข้อหนักไม่เคยติดธงเลย**
-            //   วัดจริงบน prod: "แม่ป่วยหนัก หมอบอกอาจไม่รอด เครียดจนไม่อยากอยู่" และ
-            //     "ถ้าหนูฆ่าตัวตายจะได้ไปเจอพ่อไหม" → is_sensitive=false ทั้งคู่ (reasons จับ topic ได้ แต่ธงไม่ขึ้น)
-            //   heuristic ให้ค่าที่เชื่อถือได้อยู่แล้วคือ mood_level / complexity → ใช้เกณฑ์ ≥4
-            //   (ตรงกับสเปกเดิมของกลไก escalate: "mood≥4 OR complexity≥4")
-            $mood = (int) ($detection['mood_level'] ?? 1);
-            $complexity = (int) ($detection['complexity'] ?? 1);
-            $hard = ! empty($detection['is_sensitive']) || $mood >= 4 || $complexity >= 4;
-
-            if (! $hard) {
-                return null;
-            }
-
-            // 🛡️ เพดานกันบานปลาย — ใช้ตัวนับเดิมของ FortuneSensitiveBudgetGuard
-            //   (5 ครั้ง/คน/วัน ตาม sensitive_max_per_user_daily)
-            //   หมายเหตุ: บันทึกเป็น "จำนวนครั้ง" ไม่ได้บวกยอดบาท เพราะรู้ต้นทุนหลังยิงเสร็จเท่านั้น
-            //   ขอบเขตค่าใช้จ่ายถูกคุมด้วยโควต้าคำถามของบิลอยู่แล้ว (Celtic ถามได้ 5 ข้อ/บิล)
-            if ($uid !== '') {
-                $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
-                $guard = new \App\Services\Fortune\FortuneSensitiveBudgetGuard($this->settings);
-
-                if (! ($guard->canUse($platform, $uid)['allowed'] ?? false)) {
-                    Log::info('CelticCross: คำถามยากแต่ชนเพดาน escalate → ใช้ luna ต่อ', [
-                        'reading_id' => $reading->id,
-                    ]);
-
-                    return null;
-                }
-
-                $guard->recordUse($platform, $uid, 0);
-            }
-
-            Log::info('CelticCross: คำถามยาก → escalate เป็น sol เทิร์นนี้', [
-                'reading_id' => $reading->id,
-                'mood_level' => $mood,
-                'complexity' => $complexity,
-                'is_sensitive' => ! empty($detection['is_sensitive']),
-                'reasons' => $detection['reasons'] ?? [],
-                'detection_used' => $detection['detection_used'] ?? null,
-            ]);
-
-            return ['openai' => self::HARD_QUESTION_MODEL];
-        } catch (\Throwable $e) {
-            // non-blocking — ตัดสินใจไม่ได้ ก็ทำนายด้วยโมเดลปกติต่อไป (ลูกค้าต้องได้คำทำนายเสมอ)
-            Log::warning('CelticCross: เลือกโมเดล Celtic ไม่สำเร็จ (ใช้โมเดลปกติ)', [
-                'reading_id' => $reading->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
+        return app(\App\Services\Fortune\FortuneModelRouter::class)->celticOverrides($reading, $userQuestion);
     }
 
     /**

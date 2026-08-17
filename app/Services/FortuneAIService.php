@@ -2328,14 +2328,18 @@ PROMPT;
         string $messageText,
         ?array $userProfile,
         array $history,
-        string $customSystemPrompt
+        string $customSystemPrompt,
+        ?string $preferredProvider = null,
+        ?string $modelOverride = null
     ): ?array {
         return $this->generateProResponse(
             $messageText,
             $userProfile,
             $history,
             $customSystemPrompt,
-            'post_reading_deep'
+            'post_reading_deep',
+            $preferredProvider,
+            $modelOverride
         );
     }
 
@@ -2367,7 +2371,8 @@ PROMPT;
         array $history,
         string $systemPrompt,
         string $requestType,
-        ?string $preferredProvider = null
+        ?string $preferredProvider = null,
+        ?string $modelOverride = null
     ): ?array {
         // 🌙 (2026-05-14) preferredProvider override สำหรับ Celtic 99฿
         //   - Celtic Premium → 'openai' (user spec: "ใช้ openai เป็นหลัก")
@@ -2385,8 +2390,14 @@ PROMPT;
         $poolService = new \App\Services\AiApiKeyPoolService;
         $lockedKey = $preferredProvider === null ? $this->settings->getSensitivePoolKey() : null;
         $sensitiveKey = $lockedKey ?: $poolService->acquireKey($sensitiveProvider, 'sensitive');
-        if (! $sensitiveKey && $preferredProvider !== null) {
-            // ถ้า preferred provider ไม่มี sensitive key → fallback locked key หรือ any provider
+
+        // 🐛 (2026-08-17) เดิมเงื่อนไขเป็น `&& $preferredProvider !== null` — กลับหัว
+        //   caller ที่ *ไม่* ระบุ provider (Deep 39 Pro Session) คือคนที่ต้องการ fallback มากที่สุด
+        //   แต่กลับเป็นคนเดียวที่ไม่ได้ fallback → เจอจริงบน prod:
+        //     getSensitivePoolKey()=NULL + sensitive_provider='gemini' + ไม่มี key gemini/sensitive
+        //     → คืน null → ProSession ตกไปใช้ key แชทฟรี → **Deep 39 คุยต่อรันบน Gemini ฟรีล้วน 466 คอล/30 วัน**
+        //   ตอนนี้: ไม่เจอ key ก็ลอง locked → any-provider เสมอ ไม่ว่าใครเรียก
+        if (! $sensitiveKey) {
             $sensitiveKey = $this->settings->getSensitivePoolKey()
                 ?: $poolService->acquireKeyAnyProvider('sensitive');
         }
@@ -2401,14 +2412,16 @@ PROMPT;
             return null;
         }
 
-        // ถ้าใช้ locked key — sync provider ตาม key จริง (กัน mismatch ถ้า admin ตั้งคนละ provider)
-        if ($lockedKey) {
-            $sensitiveProvider = $lockedKey->provider;
-        }
+        // 🔒 (2026-08-17) sync provider ตาม key จริง **เสมอ** (เดิมทำเฉพาะตอน locked key)
+        //   จำเป็นเพราะ fallback ด้านบนอาจได้ key ข้ามค่ายมา — ถ้าไม่ sync จะเอา key openai
+        //   ไปวิ่งเข้า match('gemini') → ยิง Gemini API ด้วย key OpenAI → 400 ทั้งที่ key ใช้ได้
+        $sensitiveProvider = $sensitiveKey->provider ?: $sensitiveProvider;
 
         try {
             $apiKey = $sensitiveKey->api_key;
-            $resolvedModel = $sensitiveKey->resolveModel() ?? $sensitiveModel;
+            // 🎚️ (2026-08-17) caller ระบุโมเดลเองได้ (FortuneModelRouter: luna ปกติ / sol เมื่อคำถามยาก)
+            //   key เดียวกันเรียกได้ทุกโมเดลของค่ายนั้น จึงไม่ต้องไปแย่ง key อื่น
+            $resolvedModel = $modelOverride ?: ($sensitiveKey->resolveModel() ?? $sensitiveModel);
 
             // 👤 (2026-05-19 Batch 6a) Name directive — additive ใน local var (ไม่ mutate parameter)
             $systemPromptWithName = $this->injectCustomerNameDirective($systemPrompt, $userProfile);
