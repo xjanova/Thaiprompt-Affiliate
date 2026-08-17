@@ -26,11 +26,52 @@ use Illuminate\Support\Facades\Log;
  */
 class CelticCrossService
 {
+    /**
+     * 🪬 (2026-08-17 owner) โมเดลสำหรับ "โหมดดูคุณไสย์/มนต์ดำ" — ใช้ตัวแรงสุดเสมอ
+     *
+     * owner: "โหมดคุณไสย ต้องการเหตุและผลที่ถูกต้อง เราปรับไปใช้ sol เสมอ"
+     *
+     * เหตุผล: โหมดนี้ต้องฟันธงว่า "โดนของจริงไหม / ชนิดไหน / ใครทำ / แก้ยังไง" จากหน้าไพ่
+     * ตอบผิดทางนี้ = ทำให้ลูกค้าหลอน-ระแวง (ผิดจรรยาบรรณร้ายแรง) หรือปั้นเรื่องที่ไพ่ไม่ได้ชี้
+     * gpt-5.6-sol = AA Intelligence Index 59 (เทียบ luna 52) — เหตุผลเชิงตรรกะแน่นกว่าชัดเจน
+     *
+     * ต้นทุน: sol $5/$30 vs luna $0.20/$1.20 → บิลโหมดคุณไสย์แพงขึ้น ~฿47 จาก ~฿2
+     * ยอมรับได้เพราะปริมาณต่ำมาก (30 วันล่าสุด = 1 จาก 93 บิล Celtic ที่จ่ายแล้ว)
+     * ⚠️ ถ้าวันไหนโหมดนี้ดังขึ้น ให้กลับมาทบทวนตัวเลขนี้ใหม่ — margin ต่อบิลจะเหลือ ~50%
+     */
+    public const BLACK_MAGIC_MODEL = 'gpt-5.6-sol';
+
     protected FortuneTellingSetting $settings;
 
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
+    }
+
+    /**
+     * 🪬 (2026-08-17) บังคับใช้ BLACK_MAGIC_MODEL เมื่อ reading อยู่ในโหมดดูคุณไสย์
+     *
+     * เรียกทันทีหลัง new FortuneAIService(...) ทุกจุดที่ generate คำทำนาย Celtic
+     * (Q1 พื้นดวง / Q2+ / fallback Q2+ / รูป / บทสรุป VIP)
+     *
+     * กันข้ามค่ายด้วย onlyIfProvider='openai' — ถ้า Pool จ่าย key Gemini มา (openai ล่ม/หมดโควต้า)
+     * จะไม่สลับ แล้วปล่อยให้ทำนายด้วยโมเดลที่ key นั้นรองรับตามปกติ ดีกว่าพังทั้งบิล
+     */
+    protected function applyBlackMagicModel(FortuneAIService $aiService, FortuneReading $reading): void
+    {
+        try {
+            if (! $this->isBlackMagicModeForced($reading)) {
+                return;
+            }
+
+            $aiService->overrideModel(self::BLACK_MAGIC_MODEL, 'openai');
+        } catch (\Throwable $e) {
+            // non-blocking — สลับโมเดลไม่ได้ ก็ทำนายด้วยของเดิมต่อไป
+            Log::warning('CelticCross: สลับโมเดลโหมดคุณไสย์ไม่สำเร็จ (ใช้โมเดลเดิมต่อ)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -221,6 +262,7 @@ class CelticCrossService
 
                 $preferredProvider = 'openai';
                 $aiService = new FortuneAIService($this->settings, $celticPurpose, $preferredProvider);
+                $this->applyBlackMagicModel($aiService, $reading);
 
                 // 📚 (2026-06-06) แนบ AdminQA RAG — ตอบเรื่องบริการ/ราคา [TYPE:E] ไม่หักโควต้า (self-gate similarity)
                 $prompt = $aiService->injectAdminQARagFewShot(
@@ -664,6 +706,7 @@ class CelticCrossService
         } // end else (โครงพื้นดวงปกติ — โหมดคุณไสย์ใช้ groups ด้านบน)
 
         $aiService = new FortuneAIService($this->settings, 'prediction_celtic', 'openai');
+        $this->applyBlackMagicModel($aiService, $reading);
 
         // 🚀 (2026-08-17) ลอง "คอลเดียวก้อนใหญ่" ก่อน — ถ้าโมเดลทำตามฟอร์มครบก็จบใน 1 call
         //   เหตุผลที่เคยต้องแบ่ง 3 คอล = gpt-5.4-mini ตามฟอร์มไม่ครบ (avg 2.08/9 หัวข้อ) ไม่ใช่ context เต็ม
@@ -1082,6 +1125,7 @@ class CelticCrossService
 
             // 🎯 OpenAI primary + purpose='prediction_celtic'
             $aiService = new FortuneAIService($this->settings, 'prediction_celtic', 'openai');
+            $this->applyBlackMagicModel($aiService, $reading);
             $aiResult = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
                 userProfile: null,
@@ -4775,6 +4819,7 @@ class CelticCrossService
             $startTime = microtime(true);
             // 🆕 (2026-05-07) Grand Finale = Celtic paid summary → request 'prediction' purpose
             $aiService = new FortuneAIService($this->settings, 'prediction');
+            $this->applyBlackMagicModel($aiService, $reading);
 
             // 🔮 (2026-05-04 fix B1) ใส่ {birth_date_section} ใน template เมื่อมี Deep linked
             //    เพื่อให้ formatBirthDateSection inject ข้อมูล:

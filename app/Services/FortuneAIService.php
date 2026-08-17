@@ -188,6 +188,37 @@ class FortuneAIService
     }
 
     /**
+     * 🎚️ (2026-08-17) สลับเฉพาะ "model" โดยใช้ key/provider เดิมที่ Pool จ่ายมา
+     *
+     * ใช้ตอนที่บริบทบางอย่างต้องการโมเดลแรงกว่าปกติ (เช่น โหมดดูคุณไสย์ → gpt-5.6-sol)
+     * โดยไม่ต้องไปแย่ง key ของ purpose อื่น — API key ของ OpenAI ตัวเดียวเรียกได้ทุกโมเดลอยู่แล้ว
+     *
+     * ทำไมไม่ใช้ purpose='sensitive' แทน: scope นั้น STRICT + มี budget guard
+     * (cap 5 ครั้ง/คน/วัน + ฿200/วัน) → จะไปกินโควต้าเส้นทางคำถามหนักและอาจโดนตัดกลางคัน
+     *
+     * @param  string|null  $onlyIfProvider  ระบุเพื่อกันสลับข้ามค่าย (เช่น 'openai' — ชื่อโมเดล OpenAI
+     *                                       ใช้กับ key Gemini ไม่ได้ จะได้ 400 ทันที)
+     * @return bool true = สลับแล้ว · false = ไม่เข้าเงื่อนไข (คงของเดิม)
+     */
+    public function overrideModel(string $model, ?string $onlyIfProvider = null): bool
+    {
+        if ($model === '' || ($onlyIfProvider !== null && $this->provider !== $onlyIfProvider)) {
+            return false;
+        }
+
+        $previous = $this->model;
+        $this->model = $model;
+
+        Log::info('FortuneAIService: สลับ model เฉพาะกิจ (key/provider เดิม)', [
+            'provider' => $this->provider,
+            'from' => $previous,
+            'to' => $model,
+        ]);
+
+        return true;
+    }
+
+    /**
      * 🚀 Provider HTTP timeouts (วินาที)
      *
      * ทำไมต้องสั้น: ลูกค้าจ่ายเงินรอคำทำนาย → ต้อง failover เร็ว
