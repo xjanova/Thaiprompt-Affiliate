@@ -109,7 +109,19 @@ class CelticCrossService
                     'channel_context' => 'celtic',
                 ]);
 
-            if (empty($detection['is_sensitive'])) {
+            // ⚠️ (2026-08-17) ห้ามใช้ is_sensitive เดี่ยวๆ เป็นตัวตัดสิน —
+            //   detector เป็น "hybrid" = heuristic + classifier(Groq) แต่ **prod ไม่มี key Groq ใน pool**
+            //   → classifier ยิงไม่ได้ ตกกลับมาใช้ heuristic ล้วน ซึ่งให้ confidence สูงสุด 40
+            //     ขณะที่ธง is_sensitive ต้องการ ≥ 80 → **หัวข้อหนักไม่เคยติดธงเลย**
+            //   วัดจริงบน prod: "แม่ป่วยหนัก หมอบอกอาจไม่รอด เครียดจนไม่อยากอยู่" และ
+            //     "ถ้าหนูฆ่าตัวตายจะได้ไปเจอพ่อไหม" → is_sensitive=false ทั้งคู่ (reasons จับ topic ได้ แต่ธงไม่ขึ้น)
+            //   heuristic ให้ค่าที่เชื่อถือได้อยู่แล้วคือ mood_level / complexity → ใช้เกณฑ์ ≥4
+            //   (ตรงกับสเปกเดิมของกลไก escalate: "mood≥4 OR complexity≥4")
+            $mood = (int) ($detection['mood_level'] ?? 1);
+            $complexity = (int) ($detection['complexity'] ?? 1);
+            $hard = ! empty($detection['is_sensitive']) || $mood >= 4 || $complexity >= 4;
+
+            if (! $hard) {
                 return null;
             }
 
@@ -134,8 +146,9 @@ class CelticCrossService
 
             Log::info('CelticCross: คำถามยาก → escalate เป็น sol เทิร์นนี้', [
                 'reading_id' => $reading->id,
-                'mood_level' => $detection['mood_level'] ?? null,
-                'complexity' => $detection['complexity'] ?? null,
+                'mood_level' => $mood,
+                'complexity' => $complexity,
+                'is_sensitive' => ! empty($detection['is_sensitive']),
                 'reasons' => $detection['reasons'] ?? [],
                 'detection_used' => $detection['detection_used'] ?? null,
             ]);
