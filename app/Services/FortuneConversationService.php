@@ -20713,14 +20713,14 @@ PROMPT;
             // ⚠️ คืน '' (ไม่ใช่ null) เมื่อไม่มีคำทำนาย — Cache::remember ถือว่า null = "ยังไม่แคช"
             //   จะยิง query ใหม่ทุกเทิร์น ซึ่งคือเคสของลูกค้า *ส่วนใหญ่* ในแชทฟรี (ไม่เคยจ่าย)
             $block = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($userId): string {
-                // ⚠️ (2026-08-17) ห้าม map คอลัมน์ตาม platform — `line_user_id` **ว่างทุกแถวบน prod**
-                //   reading ที่ platform='line' เก็บ id ไว้ที่ facebook_user_id + platform_user_id
-                //   (ตรวจจริง: 8 บิลล่าสุดที่จ่ายแล้ว — line_user_id ว่างหมด รวม 2 บิลที่ platform='line')
-                //   ถ้าเลือกคอลัมน์ตาม platform ลูกค้า LINE จะไม่เจอคำทำนายตัวเองเลยสักคน
+                // ⚠️ (2026-08-17) ห้าม map คอลัมน์ตาม platform — **`fortune_readings` ไม่มีคอลัมน์ `line_user_id`**
+                //   (ยืนยันจาก Schema::getColumnListing — มีแค่ user_id / facebook_user_id / platform_user_id)
+                //   LINE เก็บ id ไว้ที่ facebook_user_id + platform_user_id เหมือน FB
+                //   ถ้าใส่ line_user_id ใน where → SQLSTATE 42S22 → catch กลืน → คืน null เงียบๆ ทุกครั้ง
+                //   กับดักเดิมที่กัดมาแล้ว 3 รอบ: hotfix 2026-05-08 (L4311/L4350) · จับผี #8 2026-06-12 (SendBillReminderJob)
                 $latest = FortuneReading::where(function ($q) use ($userId) {
                     $q->where('platform_user_id', $userId)
-                        ->orWhere('facebook_user_id', $userId)
-                        ->orWhere('line_user_id', $userId);
+                        ->orWhere('facebook_user_id', $userId);
                 })
                     ->where('is_paid', true)
                     ->whereIn('reading_type', [
@@ -20818,9 +20818,10 @@ PROMPT;
 
         try {
             // ค้น latest paid reading (deep หรือ celtic_cross) — ภายใน 30 วัน
-            // ⚠️ (2026-08-17) เดิม map คอลัมน์ตาม platform (`line_user_id` เมื่อเป็น LINE) —
-            //   แต่ `line_user_id` **ว่างทุกแถวบน prod** (id ของ LINE อยู่ที่ facebook_user_id + platform_user_id)
-            //   → ลูกค้า LINE ไม่เคยได้ context "หมอจำได้" เลยตั้งแต่ต้น เงียบสนิทไม่มี error
+            // ⚠️ (2026-08-17) เดิม map คอลัมน์ตาม platform → LINE ยิงไปที่ `line_user_id`
+            //   ซึ่ง **ไม่มีอยู่ในตาราง fortune_readings** → SQLSTATE 42S22 → catch ด้านล่างกลืน → คืน null
+            //   ผลคือลูกค้า LINE ไม่เคยได้ context "หมอจำได้ ครั้งก่อนเคยถามเรื่อง..." เลยตั้งแต่ 2026-05-14
+            //   ได้ NO_HISTORY_NO_PAID_READING แทน ทั้งที่จ่ายเงินมาแล้ว — เงียบสนิทไม่มี error ให้เห็น
             $latestPaid = FortuneReading::where(function ($q) use ($userId) {
                 $q->where('platform_user_id', $userId)
                     ->orWhere('facebook_user_id', $userId)
