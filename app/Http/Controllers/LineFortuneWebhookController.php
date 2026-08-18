@@ -2287,6 +2287,22 @@ class LineFortuneWebhookController extends Controller
         $lastTextKey = "fortune:spam:last_text:line:{$userId}";
         $maxStrikes = 5;
 
+        // 🚨 (2026-08-18) ลิงก์สแปม = สแปมเสมอ — คำนวณก่อนทุก bypass
+        //   ต่อให้อยู่กลาง flow หรือพิมพ์คำสั่งปกติ ลิงก์ภายนอกก็ไม่ใช่พฤติกรรมลูกค้า
+        //   ⚠️ ของเดิม `#https?://|www\.|\.com/|\.net/|\.online/#` ดัก main.thaiprompt.online ของตัวเอง
+        //      → ลูกค้าก็อปลิงก์จ่ายเงิน/ลิงก์วอลเลตที่บอทส่งให้ กลับมาถาม = โดน strike ฟรี
+        //
+        //   วิธีแก้: "ลบโดเมนเราออกจากข้อความก่อน" แล้วค่อยตรวจด้วย pattern กว้างเหมือนเดิม
+        //   — ไม่ใช้ negative lookahead แบบ FB เพราะ FB ดักได้แค่ลิงก์ที่มี https?:// นำหน้า
+        //     ส่วนของ LINE ดักโดเมนเปล่า (`xxx.com/`) ได้ด้วย ถ้าเปลี่ยนไปตาม FB = ตรวจจับแย่ลง
+        $textForUrlCheck = preg_replace(
+            '#(?:https?://)?(?:www\.)?(?:main\.)?thaiprompt\.online\S*#i',
+            '',
+            $text
+        );
+        $hasSpamUrl = trim((string) $textForUrlCheck) !== ''
+            && preg_match('#https?://|www\.|t\.me/|bit\.ly/|\.com/|\.net/|\.online/#i', $textForUrlCheck) === 1;
+
         // 🛡️ (2026-05-21) CRITICAL FIX — Bypass spam guard ถ้า user อยู่ใน active prediction flow
         //   เคสจริง: ลูกค้า LINE Celtic 99฿ พิมพ์ "พร้อม" 5 ครั้ง (เปิดไพ่ 5 ใบ)
         //            → strike #3 (text เหมือนเดิม) ติด 5 ครั้ง → silenced 1 ชั่วโมง
@@ -2298,6 +2314,17 @@ class LineFortuneWebhookController extends Controller
         //   - CELTIC_AWAITING_QUESTION/GENERATING/QA_PROMPT — Q&A flow
         //   - PAID — รอ AI gen (อย่ารังควาน)
         //   - COLLECTING_BIRTHDATE/QUESTIONS/TAROT — pre-payment flow
+        //
+        // 🛡️ (2026-08-18) เพิ่ม status ต้นทางของ flow — เคสจริงลูกค้า U46a1f097 เสียไป
+        //   ลูกค้าใหม่เพิ่งกดติดตาม → พิมพ์ "ดูดวง" → ได้เมนูแพคเกจยาว 586 ตัวอักษร
+        //   → พิมพ์ "ดูดวง" ซ้ำอีก 4 ครั้งใน 28 วินาที (นึกว่าบอทไม่ตอบ)
+        //   → strike ครบ 5 → silenced 1 ชม. → พิมพ์ "99" (จะซื้อ!) บอทเงียบสนิท
+        //   ตอนนั้น reading อยู่ status = tier_choice ซึ่ง "ไม่อยู่" ใน bypass list
+        //   → ลูกค้ากำลังเลือกแพคเกจ = อยู่ใน flow เต็มตัว ไม่ใช่คนป่วน
+        //   - TIER_CHOICE — กำลังเลือกแพคเกจ (39/99/199)
+        //   - CELTIC_PENDING_PAYMENT / AWAITING_PAYMENT_METHOD — รอจ่าย
+        //   - DISCOVERY_CHAT / DISCOVERY_CONFIRM — คุยเก็บข้อมูลก่อนทำนาย
+        //   - AWAITING_CONFIRMATION — รอยืนยันข้อมูล
         $bypassStatuses = [
             \App\Models\FortuneReading::STATUS_CELTIC_PICKING,
             \App\Models\FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
@@ -2308,6 +2335,12 @@ class LineFortuneWebhookController extends Controller
             \App\Models\FortuneReading::STATUS_COLLECTING_QUESTIONS,
             \App\Models\FortuneReading::STATUS_COLLECTING_TAROT,
             \App\Models\FortuneReading::STATUS_PENDING_PAYMENT,
+            \App\Models\FortuneReading::STATUS_TIER_CHOICE,
+            \App\Models\FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+            \App\Models\FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+            \App\Models\FortuneReading::STATUS_DISCOVERY_CHAT,
+            \App\Models\FortuneReading::STATUS_DISCOVERY_CONFIRM,
+            \App\Models\FortuneReading::STATUS_AWAITING_CONFIRMATION,
         ];
         try {
             $hasActiveFlow = \App\Models\FortuneReading::where(function ($q) use ($userId) {
@@ -2318,7 +2351,8 @@ class LineFortuneWebhookController extends Controller
                 ->where('updated_at', '>=', now()->subHours(2))
                 ->exists();
 
-            if ($hasActiveFlow) {
+            // ⚠️ (2026-08-18) bypass ไม่ครอบลิงก์สแปม — คนป่วนเปิดบิลค้างไว้แล้วยิงลิงก์ได้ 2 ชม.
+            if ($hasActiveFlow && ! $hasSpamUrl) {
                 // ลูกค้าอยู่ใน flow ปกติ → ไม่ใช่ spam
                 // เคลียร์ silence + strikes ที่อาจติดมาจาก guard ผิดพลาด
                 if (\Illuminate\Support\Facades\Cache::has($silencedKey)) {
@@ -2360,18 +2394,58 @@ class LineFortuneWebhookController extends Controller
             }
         }
 
-        // 🚨 Strike 2: ข้อความมี URL/ลิงก์
-        if (! empty($text) && preg_match('#https?://|www\.|t\.me/|\.com/|\.net/|\.online/#i', $text)) {
+        // 🚨 Strike 2: ข้อความมี URL/ลิงก์ (คำนวณไว้ข้างบน — ละเว้นโดเมนเราแล้ว)
+        if ($hasSpamUrl) {
             $newStrikes++;
         }
 
         // 🚨 Strike 3: ข้อความเหมือนเดิม
-        if (! empty($text)) {
+        //
+        // 🛡️ (2026-08-18) ยกเว้น "คำสั่งปกติ" — parity กับ FB (FacebookWebhookController::isUserSpamming
+        //     $stateExpectedInputs มีมาตั้งแต่ 2026-05-06 commit 0ec4aa0f7 แต่ LINE ไม่เคยได้ตาม)
+        //
+        //   เคสจริง 2026-08-18 ลูกค้า U46a1f097 (เพิ่งกดติดตาม 10 วินาทีก่อน):
+        //     14:44:02 "ดูดวง" → เมนูแพคเกจ 586 ตัวอักษร (has_quick_replies=false ไม่มีปุ่มให้กด)
+        //     14:44:11/19/21/27 "ดูดวง" ซ้ำ → strike 1,2,3,4
+        //     14:44:30 "ดูดวง" → strike 5 → silenced 1 ชม.
+        //     14:46:35 "99" (จะซื้อแล้ว!) → บอทเงียบสนิท = เสียลูกค้าจ่ายเงินทั้งคน
+        //
+        //   "ดูดวง" คือคีย์เวิร์ดเปิดบทสนทนาหลักของบอทเอง — พิมพ์ซ้ำ = คนนึกว่าบอทไม่ตอบ ไม่ใช่คนป่วน
+        //   ([[rule_nav_noise_never_counts_as_input]] — ตัวหนังสือบนปุ่มไหลกลับมาเป็น text ก็เข้าทางนี้)
+        //
+        //   ⚠️ ตัวเลขราคา 39/99 ต้องรอดด้วย ([[rule_typed_price_fasttrack_bill]] — พิมพ์เลขเอง = จะซื้อ)
+        //      ครอบด้วยกฎความยาว ≤ 4 ตัวอักษร เหมือน FB
+        $stateExpectedInputs = [
+            'พร้อม', 'ใช่', 'ไม่ใช่', 'ใช่เลย', 'ไม่', 'ตกลง', 'ok', 'OK',
+            'ดูดวง', 'เริ่มถามคำถาม', 'พอแค่นี้', 'พอ', 'หยุด',
+            'อ่านคำทำนาย', 'รับคำทำนาย', 'ยกเลิก', 'ดูคำทำนายล่าสุด',
+            'ดวงรายวัน', 'ดูดวงรายวัน', 'เริ่มใหม่',
+        ];
+        $normalizedText = trim($text);
+        $isStateInput = in_array($normalizedText, $stateExpectedInputs, true)
+            || mb_strlen($normalizedText) <= 4; // สั้นมาก = state input / เลขราคา (39, 99)
+
+        if (! empty($text) && ! $isStateInput) {
             $lastText = \Illuminate\Support\Facades\Cache::get($lastTextKey);
             if ($lastText === $text) {
                 $newStrikes++;
             }
             \Illuminate\Support\Facades\Cache::put($lastTextKey, $text, now()->addMinutes(10));
+        }
+
+        // 🚨 (2026-08-18) Strike 4: RATE FLOOD — parity กับ FB Rule 1
+        //   ต้องมีตัวนี้เพราะ whitelist ข้างบนเปิดช่องให้พิมพ์ "ดูดวง" รัวได้ไม่จำกัด
+        //   flood จริงดูที่ "ความถี่" ไม่ใช่ "เนื้อความ" — > 10 ข้อความใน 30 วินาที = ตั้งใจป่วน
+        $rateKey = "fortune:spam:rate:line:{$userId}";
+        $now = time();
+        $rateLog = array_values(array_filter(
+            (array) \Illuminate\Support\Facades\Cache::get($rateKey, []),
+            fn ($t) => ($now - (int) $t) < 30
+        ));
+        $rateLog[] = $now;
+        \Illuminate\Support\Facades\Cache::put($rateKey, $rateLog, now()->addMinute());
+        if (count($rateLog) > 10) {
+            $newStrikes++;
         }
 
         if ($newStrikes === 0) {
