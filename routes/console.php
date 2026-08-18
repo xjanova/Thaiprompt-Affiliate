@@ -527,9 +527,22 @@ Schedule::command('fortune:resync-cancelled-bills --days=30 --limit=500')
     ->name('fortune-resync-cancelled-bills')
     ->runInBackground();
 
-// 12) Fortune Horoscope Process Generate — สร้างเนื้อหาดวง (ทุก 15 นาที)
+// 12) Fortune Horoscope Process Generate — สร้างเนื้อหาดวง (ทุก 5 นาที)
+//
+// ⏱️ (2026-08-19) 15 นาที → 5 นาที เพื่อลดเวลาที่โพสออกช้ากว่าเวลาที่ตั้งไว้
+//    วัดจริง 19 ส.ค.: campaign ตั้ง schedule_time=00:01 แต่ tick 00:00 ไม่ได้สร้าง
+//    (ยังหาสาเหตุไม่ได้ — `runInBackground()` ทิ้ง output ลง /dev/null หมด)
+//    จึงไปสร้างเอาที่ tick 00:15 (00:15:03-00:15:58) แล้ว --publish (*/5) โพส 00:20
+//    = ช้ากว่าที่ตั้งไว้ 19 นาที
+//
+//    เปลี่ยนเป็น */5 → ถ้า tick แรกพลาด รอบถัดไปห่างแค่ 5 นาที ไม่ใช่ 15
+//    ทำให้ worst case เหลือ ~10 นาที โดยไม่ต้องรู้ว่าอะไรทำให้ tick แรกพลาด
+//
+// 💰 ไม่เปลือง AI/เงิน: `readyToGenerate()` กรองด้วย
+//    `whereDate('last_generated_at','<',วันนี้)` ⇒ วันละ 1 ครั้งเท่านั้น
+//    รอบที่ไม่ถึงคิวคือ query เปล่าแล้วจบ (ดู FortuneHoroscopeProcess::processGenerate)
 Schedule::command('fortune:horoscope-process --generate --sync')
-    ->everyFifteenMinutes()
+    ->everyFiveMinutes()
     ->withoutOverlapping(20)
     ->onOneServer()
     ->name('fortune-horoscope-generate')
