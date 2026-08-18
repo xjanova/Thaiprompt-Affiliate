@@ -2059,7 +2059,27 @@ else
 fi
 
 # Verify cron actually installed (independent check)
-if command -v crontab >/dev/null 2>&1; then
+# 🛡️ (2026-08-18) ถ้ามี cron ระดับ root ใน /etc/cron.d ให้ถือว่านั่นคือ "ตัวจริง"
+#    user crontab ต้องว่างสำหรับ path นี้ ไม่งั้น schedule:run รันซ้อน 2 ตัว/นาที
+#    (DirectAdmin กลืนบรรทัดใน user crontab เป็นระยะ — ดู scripts/ensure-cron.sh)
+DEPLOY_ROOT_CRON_FILE=""
+for _cron_file in /etc/cron.d/*; do
+    [ -f "$_cron_file" ] || continue
+    if grep -q -F -- "$SCRIPT_DIR" "$_cron_file" 2>/dev/null \
+        && grep -q -- 'artisan schedule:run' "$_cron_file" 2>/dev/null; then
+        DEPLOY_ROOT_CRON_FILE="$_cron_file"
+        break
+    fi
+done
+
+if [ -n "$DEPLOY_ROOT_CRON_FILE" ]; then
+    print_success "✓ Cron verified: root-managed ที่ $DEPLOY_ROOT_CRON_FILE (DirectAdmin ลบไม่ได้)"
+    DUP_COUNT=$(crontab -l 2>/dev/null | awk -v p="$SCRIPT_DIR" 'index($0, p) && index($0, "artisan schedule:run")' | wc -l | tr -d ' ')
+    if [ "${DUP_COUNT:-0}" -gt 0 ]; then
+        print_warning "⚠ ยังมี schedule:run ของ path นี้ค้างใน user crontab ($DUP_COUNT บรรทัด) — จะรันซ้อน!"
+        print_warning "  แก้: crontab -l | grep -v '$SCRIPT_DIR' | crontab -"
+    fi
+elif command -v crontab >/dev/null 2>&1; then
     if crontab -l 2>/dev/null | grep -q "artisan schedule:run"; then
         # นับเฉพาะ entry ของโปรเจกต์นี้ (path = $SCRIPT_DIR) — ไม่รวมแอป/path อื่นบนเครื่องเดียวกัน
         CRON_COUNT=$(crontab -l 2>/dev/null | awk -v p="$SCRIPT_DIR" 'index($0, p) && index($0, "artisan schedule:run")' | wc -l | tr -d ' ')
