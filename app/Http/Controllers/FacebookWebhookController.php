@@ -5888,14 +5888,21 @@ class FacebookWebhookController extends Controller
         $lineUrl = $richService->getLineAddFriendUrl();
 
         if ($lineUrl) {
+            // 🐛 (2026-08-19) ขาด attachment/template ห่อ — sendButtonTemplate ยัด array นี้
+            //    ลง `message` ตรง ๆ ⇒ FB ได้รูปแบบที่ไม่ถูก กล่อง+ลิงก์แอดไลน์จึงไม่เคยออก
             $this->facebookService->sendButtonTemplate($senderId, [
-                'template_type' => 'button',
-                'text' => "📢 อยากทำการตลาด / แนะนำเพื่อนรับค่าแนะนำใช่ไหมคะ?\n\n"
-                    ."💚 เชิญแอดไลน์ของแม่หมอ — ระบบแนะนำเพื่อน/รับรายได้ ทำผ่าน LINE ได้สะดวกกว่า\n"
-                    .'มีกล่องแชร์สวยๆ กราฟฟิกชัด ติดตามยอด/ค่าแนะนำง่าย ✨',
-                'buttons' => [
-                    ['type' => 'web_url', 'title' => '💚 แอดไลน์ทำการตลาด', 'url' => $lineUrl],
-                    ['type' => 'postback', 'title' => '🔮 ดูดวงต่อ', 'payload' => 'FORTUNE_BASIC'],
+                'attachment' => [
+                    'type' => 'template',
+                    'payload' => [
+                        'template_type' => 'button',
+                        'text' => "📢 อยากทำการตลาด / แนะนำเพื่อนรับค่าแนะนำใช่ไหมคะ?\n\n"
+                            ."💚 เชิญแอดไลน์ของแม่หมอ — ระบบแนะนำเพื่อน/รับรายได้ ทำผ่าน LINE ได้สะดวกกว่า\n"
+                            .'มีกล่องแชร์สวยๆ กราฟฟิกชัด ติดตามยอด/ค่าแนะนำง่าย ✨',
+                        'buttons' => [
+                            ['type' => 'web_url', 'title' => '💚 แอดไลน์ทำการตลาด', 'url' => $lineUrl],
+                            ['type' => 'postback', 'title' => '🔮 ดูดวงต่อ', 'payload' => 'FORTUNE_BASIC'],
+                        ],
+                    ],
                 ],
             ]);
 
@@ -5921,14 +5928,20 @@ class FacebookWebhookController extends Controller
         $deepEnabledSp = $this->settings->isDeepReadingEnabled();
         $shareTier = $deepEnabledSp ? 'ดูดวงเชิงลึก' : 'ดูดวง';
 
+        // 🐛 (2026-08-19) ขาด attachment/template ห่อ (เหตุผลเดียวกับ handleFortuneEarnInfo)
         $this->facebookService->sendButtonTemplate($senderId, [
-            'template_type' => 'button',
-            'text' => "🙏 ขอบคุณที่ใช้บริการ!\n\n"
-                ."📢 แชร์เพจนี้ให้เพื่อน — ทุกครั้งที่เพื่อนมา{$shareTier} คุณได้ค่าแนะนำเข้า Wallet",
-            'buttons' => [
-                ['type' => 'web_url', 'title' => '📤 แชร์เพจให้เพื่อน', 'url' => $pageUrl],
-                ['type' => 'postback', 'title' => '📢 ดูวิธีรับรายได้', 'payload' => 'FORTUNE_EARN_INFO'],
-                ['type' => 'postback', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'FORTUNE_BASIC'],
+            'attachment' => [
+                'type' => 'template',
+                'payload' => [
+                    'template_type' => 'button',
+                    'text' => "🙏 ขอบคุณที่ใช้บริการ!\n\n"
+                        ."📢 แชร์เพจนี้ให้เพื่อน — ทุกครั้งที่เพื่อนมา{$shareTier} คุณได้ค่าแนะนำเข้า Wallet",
+                    'buttons' => [
+                        ['type' => 'web_url', 'title' => '📤 แชร์เพจให้เพื่อน', 'url' => $pageUrl],
+                        ['type' => 'postback', 'title' => '📢 ดูวิธีรับรายได้', 'payload' => 'FORTUNE_EARN_INFO'],
+                        ['type' => 'postback', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'FORTUNE_BASIC'],
+                    ],
+                ],
             ],
         ]);
     }

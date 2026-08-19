@@ -5442,9 +5442,30 @@ class FortuneChannelManager
         }
 
         // ส่ง Button Template
+        //
+        // 🐛 (2026-08-19) เดิมเรียกผิด signature — กล่องปุ่มลิงก์เลยไม่เคยออกเลยสักครั้ง
+        //    `sendButtonTemplate(string $recipientId, array $templatePayload, array $options = [])`
+        //    ของเดิมส่ง `(userId, mb_substr($message,...), $fbButtons)` คือ
+        //      - arg 2 เป็น **string** ทั้งที่ประกาศ `array` → TypeError ทุกครั้งที่เรียก
+        //      - arg 3 ($fbButtons) ตกไปเข้า $options → **ปุ่มถูกทิ้งทั้งชุด**
+        //    ซ้ำร้าย catch เดิมจับ \Exception ซึ่ง **ไม่จับ TypeError** (เป็น \Error)
+        //    ⇒ ลูกค้าไม่ได้กล่อง ไม่ได้ปุ่ม และ log ก็ไม่ขึ้นเตือน
+        //
+        //    payload ต้องห่อ attachment/template เสมอ เพราะ sendButtonTemplate ยัด
+        //    ค่านี้ลง `message` ตรง ๆ ไม่ได้ห่อให้ (เทียบของถูกที่
+        //    FacebookRichMessageService::buildReadingCompleteTemplate)
         try {
-            return $fbService->sendButtonTemplate($userId, mb_substr($message, 0, 640), $fbButtons);
-        } catch (\Exception $e) {
+            return $fbService->sendButtonTemplate($userId, [
+                'attachment' => [
+                    'type' => 'template',
+                    'payload' => [
+                        'template_type' => 'button',
+                        'text' => mb_substr($message, 0, 640), // FB จำกัด 640 ตัว
+                        'buttons' => $fbButtons,
+                    ],
+                ],
+            ]);
+        } catch (\Throwable $e) {
             Log::warning('Facebook: Button Template ล้มเหลว — fallback text', [
                 'error' => $e->getMessage(),
             ]);
@@ -5464,13 +5485,21 @@ class FortuneChannelManager
         $defaultMessage = "🔮✨ คำทำนายเชิงลึกพร้อมแล้ว!\n\nกดปุ่มด้านล่างเพื่ออ่านคำทำนายได้เลย";
         $text = $message ?: $defaultMessage;
 
+        // 🐛 (2026-08-19) ขาด attachment/template ห่อ — sendButtonTemplate ยัด array นี้
+        //    ลง `message` ตรง ๆ ⇒ FB ได้ `message:{template_type:...}` ซึ่งไม่ใช่รูปแบบที่ถูก
+        //    กล่องจึงไม่ออก (เทียบของถูกที่ FacebookRichMessageService)
         return $fbService->sendButtonTemplate($userId, [
-            'template_type' => 'button',
-            'text' => mb_substr($text, 0, 640), // button template text max 640 chars
-            'buttons' => [
-                ['type' => 'postback', 'title' => '📖 อ่านคำทำนาย', 'payload' => 'VIEW_READING'],
-                ['type' => 'postback', 'title' => '⏰ ไว้ดูทีหลัง', 'payload' => 'VIEW_LATER'],
-                // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
+            'attachment' => [
+                'type' => 'template',
+                'payload' => [
+                    'template_type' => 'button',
+                    'text' => mb_substr($text, 0, 640), // button template text max 640 chars
+                    'buttons' => [
+                        ['type' => 'postback', 'title' => '📖 อ่านคำทำนาย', 'payload' => 'VIEW_READING'],
+                        ['type' => 'postback', 'title' => '⏰ ไว้ดูทีหลัง', 'payload' => 'VIEW_LATER'],
+                        // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
+                    ],
+                ],
             ],
         ]);
     }
@@ -5537,13 +5566,20 @@ class FortuneChannelManager
             ."📖 อยากอ่านคำทำนายอีกรอบ → พิมพ์ \"อ่านคำทำนายล่าสุด\"\n\n"
             .'📢 อยากแนะนำเพื่อนรับค่าแนะนำ — แอดไลน์แม่หมอ ทำการตลาดผ่าน LINE สะดวกกว่า (กล่อง/กราฟฟิกสวย)!';
 
+        // 🐛 (2026-08-19) ขาด attachment/template ห่อ (เหตุผลเดียวกับ
+        //    sendFacebookFortuneReadyNotification) — 2 ปุ่มลิงก์ในกล่องนี้จึงไม่เคยกดได้
         return $fbService->sendButtonTemplate($userId, [
-            'template_type' => 'button',
-            'text' => mb_substr($text, 0, 640),
-            'buttons' => [
-                ['type' => 'web_url', 'title' => '💚 แอดไลน์ทำการตลาด', 'url' => $lineMarketingUrl],
-                ['type' => 'web_url', 'title' => '📤 แชร์เพจให้เพื่อน', 'url' => $pageUrl],
-                ['type' => 'postback', 'title' => '📖 อ่านคำทำนายล่าสุด', 'payload' => 'VIEW_LAST_READING'],
+            'attachment' => [
+                'type' => 'template',
+                'payload' => [
+                    'template_type' => 'button',
+                    'text' => mb_substr($text, 0, 640),
+                    'buttons' => [
+                        ['type' => 'web_url', 'title' => '💚 แอดไลน์ทำการตลาด', 'url' => $lineMarketingUrl],
+                        ['type' => 'web_url', 'title' => '📤 แชร์เพจให้เพื่อน', 'url' => $pageUrl],
+                        ['type' => 'postback', 'title' => '📖 อ่านคำทำนายล่าสุด', 'payload' => 'VIEW_LAST_READING'],
+                    ],
+                ],
             ],
         ]);
     }
