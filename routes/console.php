@@ -805,6 +805,24 @@ Schedule::command('eve:memory-maintain --limit=500')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
+// 🪪 (2026-08-19) กวาดบิลที่ชื่อลูกค้าหาย — ตาข่ายชั้นสุดท้าย
+// ════════════════════════════════════════════════════════════════
+// ที่มา: บิล FTU-260819-Z4534 แอดมินเปิดแล้วไม่เห็นชื่อ เพราะ Graph `/{PSID}` คืน 400
+//   เฉพาะบางบัญชี (prod: 4.2% ของบิล FB) — ไม่ใช่ token พัง ไม่ใช่ App Review
+//   FacebookWebhookService กู้ให้สดตอนคุยแล้วผ่าน conversations API
+//
+// ทำไมยังต้องมี cron ซ้ำอีก: ตอนลูกค้าทักครั้งแรกสุด "เธรดแชท" อาจยังไม่ถูกสร้าง
+//   → conversations API ก็ยังหาไม่เจอในวินาทีนั้น และ negative cache กันยิงซ้ำอีก 3 ชม.
+//   รอบนี้จึงตามเก็บคนที่ตกหล่นให้ครบภายใน 1 ชม. (ไม่ต้องรอลูกค้าทักใหม่)
+//
+// ⚠️ limit ต่ำไว้ (30/รอบ) + --sleep คั่น — conversations API กินโควต้า rate limit มากกว่า profile API
+Schedule::command('fortune:backfill-fb-names --limit=30 --days=14 --paid-first --sleep=500')
+    ->hourly()
+    ->withoutOverlapping(20)
+    ->onOneServer()
+    ->name('fortune-backfill-fb-names');
+
+// ════════════════════════════════════════════════════════════════
 // ⚠️ DROPPED (commands ไม่อยู่ใน artisan list)
 //   - snake-game:spawn-items     — command file ไม่พบ
 //   - line:cleanup-conversations — command file ไม่พบ

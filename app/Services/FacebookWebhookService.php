@@ -4,10 +4,10 @@ namespace App\Services;
 
 use App\Contracts\MessagingPlatformInterface;
 use App\Models\FortuneReading;
-use App\Services\Fortune\FortunePageContext;
 use App\Models\FortuneResponseTemplate;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneUserCredit;
+use App\Services\Fortune\FortunePageContext;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Cache;
@@ -2328,6 +2328,15 @@ class FacebookWebhookService implements MessagingPlatformInterface
             return $cached;
         }
 
+        // 🛑 (2026-08-19) กันยิงซ้ำคนที่ Graph ปฏิเสธครบทุกชั้นแล้ว
+        //   เคสจริง PSID 27851436354454425 (บิล FTU-260819-Z4534): ยิง 400 ซ้ำ 6 รอบใน 30 นาที
+        //   — ทุกข้อความที่ลูกค้าพิมพ์ = ยิงใหม่ทุกครั้ง ทั้งที่รู้ว่าล้มแน่นอน
+        //   call ที่ล้มซ้ำ ๆ แบบนี้คือสัญญาณสแปมสะสมให้ Meta (บทเรียนเดียวกับ dead comment)
+        $missKey = "fb:user_profile:miss:{$facebookUserId}";
+        if (Cache::has($missKey)) {
+            return null;
+        }
+
         try {
             // ดึงข้อมูลพื้นฐาน + ลอง fields เพิ่มเติม (gender, birthday, locale)
             // หมายเหตุ: gender/birthday/locale อาจไม่ได้รับจาก PSID เนื่องจาก Facebook API restrictions
@@ -2372,6 +2381,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 }
             }
 
+            // 🪪 (2026-08-19) ได้ HTTP 200 แต่ไม่มีชื่อเลย (FB คืน object เปล่าตาม privacy)
+            //   → ยังไม่ยอมแพ้ ไปถาม "กล่องข้อความ" ต่อ
+            if (empty($profile['name'])) {
+                $viaConv = $this->fetchNameViaConversations($facebookUserId);
+                if ($viaConv) {
+                    $profile['name'] = $viaConv['name'];
+                    $profile['name_source'] = $viaConv['name_source'];
+                }
+            }
+
             // ถ้าได้ birthday มา → คำนวณอายุ
             if (! empty($profile['birthday'])) {
                 try {
@@ -2395,6 +2414,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // 💾 cache profile 24hr (เฉพาะตอนได้ name) — กัน HTTP roundtrip ทุก message
             if (! empty($profile['name'])) {
                 Cache::put($cacheKey, $profile, now()->addHours(24));
+            } else {
+                Cache::put($missKey, true, now()->addHours(3));
             }
 
             return $profile;
@@ -2406,11 +2427,130 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'error' => $e->getMessage(),
                 'token_first_8' => mb_substr($this->pageAccessToken ?? '', 0, 8),
                 'token_len' => strlen($this->pageAccessToken ?? ''),
-                'hint' => 'HTTP 400 ที่ User Profile API = Facebook จำกัด (ต้อง Advanced Access / App Review) — ไม่ใช่ token หมดอายุ และไม่บล็อกการส่ง DM (Messenger Send ทำงานปกติ). ตรวจ token จริงเฉพาะเมื่อ /me ก็ fail ด้วย',
+                'hint' => 'HTTP 400 ที่ User Profile API = ข้อจำกัด "รายบัญชีลูกค้า" ฝั่ง Meta (privacy/region/บัญชีถูกจำกัด) — ไม่ใช่ token หมดอายุ ไม่ใช่ App Review และไม่บล็อกการส่ง DM. ยืนยันแล้ว prod 2026-08-19: token+เพจเดียวกัน resolve คนอื่นได้ปกติ 96% ⇒ ถ้าพังทุกคนค่อยสงสัย token/permission. กำลังลองต่อด้วย conversations API 👇',
             ]);
+
+            // 🪪 (2026-08-19) ชั้นที่ 3 — ถาม "กล่องข้อความ" แทน "โปรไฟล์"
+            //   จุดที่เคยยอมแพ้ตรงนี้ = ต้นเหตุบิลไม่มีชื่อลูกค้าสะสม 754 บิล / 653 คน (26 บิลจ่ายเงินแล้ว)
+            $viaConv = $this->fetchNameViaConversations($facebookUserId);
+            if ($viaConv) {
+                Log::info('✅ กู้ชื่อลูกค้าคืนได้จาก conversations API (profile API ปฏิเสธ)', [
+                    'user_id' => $facebookUserId,
+                    'name_source' => $viaConv['name_source'],
+                ]);
+                Cache::put($cacheKey, $viaConv, now()->addHours(24));
+
+                return $viaConv;
+            }
+
+            Cache::put($missKey, true, now()->addHours(3));
 
             return null;
         }
+    }
+
+    /**
+     * 🪪 (2026-08-19) หาชื่อลูกค้าจาก "กล่องข้อความของเพจ" เมื่อ User Profile API ปฏิเสธ
+     *
+     * เคสต้นเรื่อง: บิล FTU-260819-Z4534 (reading 11244, PSID 27851436354454425)
+     *   แอดมินเปิดบิลแล้วไม่เห็นชื่อลูกค้า เพราะ `facebook_user_name` ถูกบันทึกเป็นสตริง `"คุณ"`
+     *   ต้นทาง: `GET /{PSID}?fields=first_name,last_name` → HTTP 400 GraphMethodException
+     *   "Object with ID ... does not exist, cannot be loaded due to missing permissions"
+     *
+     * 🚨 กับดักที่เคยหลงทาง 2 รอบ — อย่าเชื่อว่า "ต้องขอ Advanced Access / App Review"
+     *   token เดียวกัน เพจเดียวกัน resolve ชื่อคนอื่นได้ปกติ (prod 30 วัน: พัง 55 จาก 1,304 = 4.2%)
+     *   ถ้าเป็นปัญหาระดับแอปจริง มันต้องพังทั้ง 1,304 ⇒ นี่คือข้อจำกัดรายบัญชีฝั่ง Meta
+     *
+     * ทางออกนี้ยิงจริงบน prod แล้ว: ผ่าน 7 ใน 8 คนที่ profile API ปฏิเสธ
+     *   `GET /{page_id}/conversations?user_id={PSID}&fields=participants`
+     *   ใช้ page token ตัวเดิม ไม่ต้องขอ permission เพิ่ม
+     *
+     * ⚠️ endpoint นี้ "แพงกว่า" profile API ในสายตา rate limit — เรียกเฉพาะตอน fallback เท่านั้น
+     *   ห้ามย้ายมาเป็นทางหลัก และงาน backfill ต้อง throttle
+     *
+     * @return array{id:string,name:string,name_source:string}|null
+     */
+    public function fetchNameViaConversations(string $facebookUserId): ?array
+    {
+        $pageId = $this->settings->facebook_page_id ?? null;
+        if (empty($pageId) || empty($this->pageAccessToken)) {
+            return null;
+        }
+
+        try {
+            $resp = Http::timeout(15)->get($this->graphUrl("/{$pageId}/conversations"), [
+                'user_id' => $facebookUserId,
+                'fields' => 'participants',
+                'access_token' => $this->pageAccessToken,
+            ]);
+
+            if (! $resp->successful()) {
+                Log::info('FB conversations fallback: หาชื่อไม่ได้เช่นกัน', [
+                    'user_id' => $facebookUserId,
+                    'page_id' => $pageId,
+                    'status' => $resp->status(),
+                    'body' => mb_substr($resp->body(), 0, 200),
+                ]);
+
+                return null;
+            }
+
+            // participants มี 2 คนเสมอ: ลูกค้า + เพจ
+            // ⚠️ ห้าม match ด้วย index [0] — ลำดับไม่การันตี บางเธรดเพจมาก่อน = ได้ชื่อเพจแทนชื่อลูกค้า
+            $singleOther = null;
+            foreach ($resp->json('data', []) as $thread) {
+                $others = [];
+                foreach (($thread['participants']['data'] ?? []) as $p) {
+                    $pid = (string) ($p['id'] ?? '');
+                    $name = trim((string) ($p['name'] ?? ''));
+                    if ($name === '' || $pid === (string) $pageId) {
+                        continue;
+                    }
+                    if ($pid === $facebookUserId) {
+                        return $this->conversationProfile($facebookUserId, $name, 'conversations');
+                    }
+                    $others[] = $name;
+                }
+
+                // เธรดที่ id ไม่ตรง PSID (เช่นได้ ASID จากคอมเมนต์มาแทน)
+                // ใช้ได้ต่อเมื่อ "มีคู่สนทนาคนเดียวจริง ๆ" เท่านั้น — ไม่งั้นเสี่ยงใส่ชื่อผิดคนลงบิล
+                if ($singleOther === null && count($others) === 1) {
+                    $singleOther = $others[0];
+                }
+            }
+
+            if ($singleOther !== null) {
+                return $this->conversationProfile($facebookUserId, $singleOther, 'conversations_single');
+            }
+        } catch (Exception $e) {
+            Log::info('FB conversations fallback exception: '.$e->getMessage(), [
+                'user_id' => $facebookUserId,
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
+     * ปั้นผลลัพธ์จาก conversations ให้ "หน้าตาเหมือน profile จริง"
+     *
+     * ⚠️ ต้องมี first_name/last_name ด้วย ไม่ใช่แค่ name — ปลายทางหลายที่อ่าน first_name ก่อน
+     *   (DailyHoroscopeModeTrait, FortuneAIService) ถ้าคืนแต่ name จะได้ทักว่า "คุณ" เหมือนเดิม
+     *   ทั้งที่เรารู้ชื่อแล้ว — เสียของฟรี ๆ
+     *
+     * @return array{id:string,name:string,first_name:string,last_name:string,name_source:string}
+     */
+    protected function conversationProfile(string $facebookUserId, string $name, string $source): array
+    {
+        $parts = preg_split('/\s+/u', trim($name), 2) ?: [];
+
+        return [
+            'id' => $facebookUserId,
+            'name' => $name,
+            'first_name' => $parts[0] ?? $name,
+            'last_name' => $parts[1] ?? '',
+            'name_source' => $source,
+        ];
     }
 
     /**
