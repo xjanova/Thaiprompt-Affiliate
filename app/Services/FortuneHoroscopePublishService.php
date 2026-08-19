@@ -187,13 +187,50 @@ class FortuneHoroscopePublishService
         }
 
         $data = $response->json();
-        $postId = $data['id'] ?? $data['post_id'] ?? null;
+
+        // 🐛 (2026-08-19) ลิงก์โพสที่แนบท้ายกล่องคำทำนายกดไม่ได้ — สร้าง URL ผิดรูป
+        //
+        //   เดิม: $data['id'] ?? $data['post_id'] แล้วต่อเป็น facebook.com/{id} ตรงๆ
+        //   แต่ /{page}/photos คืน `id` = **เลขรูป** ส่วน `post_id` = `{page}_{post}` ตัวจริง
+        //   หยิบ `id` ก่อนจึงได้ facebook.com/<เลขรูป> ซึ่งไม่ใช่ URL โพส = ลิงก์ตาย
+        //   (ค่าจริงบน prod 19 ส.ค. `1648113817326010` ไม่มี `_` = เลขรูปล้วน)
+        //
+        //   /feed ไม่มี `post_id` แต่ `id` เป็น `{page}_{post}` อยู่แล้ว → เรียง post_id ก่อน
+        //   ครอบทั้ง 2 endpoint ได้ด้วยบรรทัดเดียว
+        $compositeId = $data['post_id'] ?? $data['id'] ?? null;
 
         return [
-            'post_id' => $postId,
-            'post_url' => $postId ? "https://www.facebook.com/{$postId}" : null,
+            'post_id' => $compositeId,
+            'post_url' => $this->buildFacebookPostUrl($compositeId, $pageId),
             'response' => $data,
         ];
+    }
+
+    /**
+     * ประกอบ URL โพส Facebook ที่กดได้จริง
+     *
+     * Graph คืนไอดีมา 2 แบบ:
+     *   - `{page_id}_{post_id}`  (มาจาก /feed หรือฟิลด์ post_id ของ /photos) → รูปแบบมาตรฐาน
+     *   - เลขล้วน                 (เผื่อ API เปลี่ยน/ตอบไม่ครบ) → ประกอบกับ page id ที่ถืออยู่
+     *
+     * ทั้งสองทางออกมาเป็น `facebook.com/{page}/posts/{post}` ซึ่งเปิดได้ทั้งคนล็อกอิน
+     * และไม่ล็อกอิน — ต่างจาก `facebook.com/{id}` เปล่าๆ ที่ FB ตีความเป็นโปรไฟล์
+     *
+     * @return string|null null = ไม่มีไอดี (ผู้เรียกจะไม่แนบลิงก์ ดีกว่าแนบลิงก์เสีย)
+     */
+    protected function buildFacebookPostUrl(?string $compositeId, string $pageId): ?string
+    {
+        if (empty($compositeId)) {
+            return null;
+        }
+
+        $parts = explode('_', $compositeId);
+
+        if (count($parts) === 2 && $parts[0] !== '' && $parts[1] !== '') {
+            return "https://www.facebook.com/{$parts[0]}/posts/{$parts[1]}";
+        }
+
+        return "https://www.facebook.com/{$pageId}/posts/{$compositeId}";
     }
 
     /**
