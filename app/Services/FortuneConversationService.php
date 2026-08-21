@@ -6762,44 +6762,21 @@ class FortuneConversationService
      */
     public function findReusableBirthDateForUser(FortuneReading $reading): ?\Carbon\Carbon
     {
-        $fbId = (string) ($reading->facebook_user_id ?? '');
-        $platformId = (string) ($reading->platform_user_id ?? '');
-        if ($fbId === '' && $platformId === '') {
-            return null;
-        }
+        return $this->findReusableBirthdateHit($reading)['date'] ?? null;
+    }
 
-        try {
-            $prior = FortuneReading::query()
-                ->where('id', '!=', $reading->id)
-                ->where(function ($q) use ($fbId, $platformId) {
-                    if ($fbId !== '') {
-                        $q->where('facebook_user_id', $fbId);
-                    }
-                    if ($platformId !== '') {
-                        $q->orWhere('platform_user_id', $platformId);
-                    }
-                })
-                ->whereNotNull('birth_date')
-                ->orderByDesc('id')
-                ->first();
-        } catch (\Throwable $e) {
-            Log::warning('findReusableBirthDateForUser query fail (treat as none)', [
-                'reading_id' => $reading->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
-
-        if ($prior && ! empty($prior->birth_date)) {
-            try {
-                return \Carbon\Carbon::parse($prior->birth_date);
-            } catch (\Throwable $e) {
-                return null;
-            }
-        }
-
-        return null;
+    /**
+     * 🎂 (2026-08-21) เวอร์ชันที่คืน "ที่มา" มาด้วย — ใช้เขียนข้อความยืนยันแบบซื่อสัตย์
+     *
+     * ของเดิมค้นแต่ `fortune_readings` ⇒ ลูกค้าที่เคยพิมพ์วันเกิดตอนขอดวงฟรีรายวัน
+     * (เก็บอยู่ `fortune_user_credits` และไม่มีแถว reading เลย) ถูกถามซ้ำ 100%
+     * วัดจาก prod 2026-08-21: 743 คนมี ว/ด/ป ครบ โดย 727 คน (97.5%) ไม่มี reading รองรับ
+     *
+     * @return array{ymd:string,date:\Carbon\Carbon,source:string,reading_id:int|null}|null
+     */
+    public function findReusableBirthdateHit(FortuneReading $reading): ?array
+    {
+        return \App\Services\Fortune\BirthdateResolver::forReading($reading);
     }
 
     /**
@@ -9243,8 +9220,9 @@ class FortuneConversationService
             //   (เฉพาะ Deep — Celtic 99 มี birthdate gate ของตัวเอง ห้ามแตะ)
             //   ตั้ง flag birthdate_auto_filled เพื่อ: (1) บอกลูกค้าว่าใช้วันเกิดเดิม
             //   (2) เปิดทางให้พิมพ์วันเกิดใหม่ทับได้ที่ขั้นตั้งจิต (handleTarotCardDraw)
+            // 🎂 (2026-08-21) ถอด $payFirstMode ออกจากเงื่อนไข — บิลที่ไม่ได้ผ่าน
+            //   createPaymentBill(payFirst:true) เคยตกหล่นไม่ได้ reuse ทั้งที่ควรได้
             if (empty($birthDate)
-                && $payFirstMode
                 && $reading->reading_type === FortuneReading::READING_TYPE_DEEP) {
                 $priorBirth = $this->findReusableBirthDateForUser($reading);
                 $rememberedBirthdate = $priorBirth?->format('Y-m-d');
@@ -9312,12 +9290,23 @@ class FortuneConversationService
                             ."🧘 *ตั้งจิตก่อนเปิดไพ่* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
                             .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ทันทีค่ะ';
 
+                    $pushPayload = [
+                        'action' => $nextStatus,
+                        'message' => $prompt,
+                        'reading' => $reading,
+                    ];
+
+                    // 🐛 (2026-08-21) เส้น streaming เคยตกหล่นปุ่ม — ข้อความบอกลูกค้าว่า
+                    //   "กดปุ่มด้านล่างได้เลย" (มาจาก buildReusedBirthdateNote) แต่ payload
+                    //   ไม่เคยแนบ quick_replies เลย ต่างจากเส้น Job ด้านล่างที่มีครบ
+                    //   ⇒ ลูกค้าเห็นข้อความสั่งให้กดปุ่มที่ไม่มีอยู่จริง
+                    if ($hasBirthdate && $reusedNote !== '') {
+                        $pushPayload['show_quick_replies'] = true;
+                        $pushPayload['quick_replies'] = $this->buildReusedBirthdateQuickReplies($reading);
+                    }
+
                     try {
-                        $channelManager->sendResponse($platform, $userId, [
-                            'action' => $nextStatus,
-                            'message' => $prompt,
-                            'reading' => $reading,
-                        ], [
+                        $channelManager->sendResponse($platform, $userId, $pushPayload, [
                             'from_admin' => true,
                             'message_tag' => 'POST_PURCHASE_UPDATE',
                         ]);
@@ -14678,9 +14667,20 @@ class FortuneConversationService
         // Deep → ยังไม่มีวันเกิด: ขอวันเกิด (COLLECTING_BIRTHDATE) ; มีแล้ว: คง PAID ให้คิว deliver ตามปกติ
         $deepFresh = $reading->fresh();
         if (empty($deepFresh->birth_date)) {
-            $deepFresh->setConversationState('pay_first_mode', true);
-            $deepFresh->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE]);
-            $hint = 'ให้ลูกค้าส่งวันเดือนปีเกิด (เช่น 15 มีนาคม 2538) แม่หมอจะได้คำนวณดวงค่ะ';
+            // 🎂 (2026-08-21) เคยให้วันเกิดไว้แล้ว → เติมให้เลย ไม่ต้องให้แอดมินไปตามขอ
+            $priorHit = $this->findReusableBirthdateHit($deepFresh);
+
+            if ($priorHit !== null) {
+                $this->beginDeepGeneralReading($deepFresh, $priorHit['ymd']);
+                $deepFresh->setConversationState('birthdate_auto_filled', true);
+                $deepFresh->setConversationState('birthdate_reused_from_history', $priorHit['ymd']);
+                $hint = 'ใช้วันเกิดเดิมที่ลูกค้าเคยให้ไว้ ('.$priorHit['date']->format('d/m/Y').') '
+                    .'— ให้ลูกค้าพิมพ์ "พร้อม" เพื่อเปิดไพ่ (เปลี่ยนวันเกิดได้ที่ขั้นตั้งจิต)';
+            } else {
+                $deepFresh->setConversationState('pay_first_mode', true);
+                $deepFresh->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE]);
+                $hint = 'ให้ลูกค้าส่งวันเดือนปีเกิด (เช่น 15 มีนาคม 2538) แม่หมอจะได้คำนวณดวงค่ะ';
+            }
         } else {
             $hint = 'มีวันเกิดครบแล้ว — ระบบจะทำนายและส่งให้เมื่อคิวเดินหรือลูกค้าทักมาค่ะ';
         }
@@ -16959,12 +16959,42 @@ class FortuneConversationService
         //   Fix: mirror SMS — ถ้าไม่มี birth_date → set COLLECTING_BIRTHDATE + ส่ง "ตัดบิลแล้ว → ขอวันเกิด"
         //        ข้อความเดียว ชัดเจน (ไม่เรียก processPaymentConfirmed ที่จะ gen เปล่า/ส่งข้อความซ้อน)
         if (empty($deepFresh->birth_date)) {
-            $deepFresh->setConversationState('pay_first_mode', true);
-            $deepFresh->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE]);
-
             $name = $deepFresh->facebook_user_name ?? 'คุณ';
             $billRef = $deepFresh->bill_reference ?? '-';
             $amountStr = number_format((float) ($verify['amount'] ?? $deepFresh->amount_paid ?? 39), 2);
+
+            // 🎂 (2026-08-21) เคยให้วันเกิดไว้แล้ว → ไม่ถามซ้ำ (ยกบล็อกเดียวกับฝั่ง SMS มาให้ครบ)
+            //   คอมเมนต์ด้านบนบอกว่า "mirror SMS" แต่เดิมยกมาครึ่งเดียว — ตกส่วน reuse ทั้งก้อน
+            //   ⚠️ ต้องตั้งธง 2 ตัวคู่กันเสมอ ขาดตัวใดตัวหนึ่ง buildReusedBirthdateNote คืนค่าว่างเงียบ ๆ
+            //      และลูกค้าจะแก้วันเกิดที่ขั้นตั้งจิตไม่ได้ (handleTarotCardDraw อ่านธงนี้เป็นด่าน)
+            $priorHit = $this->findReusableBirthdateHit($deepFresh);
+
+            if ($priorHit !== null) {
+                $reuseResp = $this->beginDeepGeneralReading($deepFresh, $priorHit['ymd']);
+                $deepFresh->setConversationState('birthdate_auto_filled', true);
+                $deepFresh->setConversationState('birthdate_reused_from_history', $priorHit['ymd']);
+
+                Log::info('SlipOK: Deep pay-first — reuse วันเกิดเดิม ข้ามขั้นถามวันเกิด', [
+                    'reading_id' => $deepFresh->id,
+                    'birth_date' => $priorHit['ymd'],
+                    'source' => $priorHit['source'],
+                ]);
+
+                $reuseResp['message'] = "✅ *ตรวจสลิปสำเร็จ — ตัดบิลเรียบร้อยแล้วค่ะ* คุณ{$name}\n\n"
+                    ."🔖 เลขที่บิล: {$billRef}\n"
+                    ."💸 ยอดที่ตรวจพบ: ฿{$amountStr}\n\n"
+                    .$this->buildReusedBirthdateNote($deepFresh->fresh())
+                    ."🧘 *ตั้งจิตก่อนเปิดไพ่* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
+                    .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ทันทีค่ะ';
+                $reuseResp['reading'] = $deepFresh->fresh();
+                $reuseResp['show_quick_replies'] = true;
+                $reuseResp['quick_replies'] = $this->buildReusedBirthdateQuickReplies($deepFresh->fresh());
+
+                return $reuseResp;
+            }
+
+            $deepFresh->setConversationState('pay_first_mode', true);
+            $deepFresh->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE]);
 
             Log::info('SlipOK: Deep pay-first — ตัดบิลแล้ว ขอวันเกิดก่อน (ยังไม่มี birth_date)', [
                 'reading_id' => $deepFresh->id,

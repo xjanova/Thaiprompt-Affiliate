@@ -1975,44 +1975,24 @@ trait CelticCrossConversationTrait
      */
     protected function findPriorBirthDateForCeltic(FortuneReading $reading): ?string
     {
-        $fbId = (string) ($reading->facebook_user_id ?? '');
-        $platformId = (string) ($reading->platform_user_id ?? '');
-        if ($fbId === '' && $platformId === '') {
-            return null;
-        }
+        $hit = $this->findPriorBirthdateHitForCeltic($reading);
 
-        try {
-            $prior = FortuneReading::query()
-                ->where('id', '!=', $reading->id)
-                ->where(function ($q) use ($fbId, $platformId) {
-                    if ($fbId !== '') {
-                        $q->where('facebook_user_id', $fbId);
-                    }
-                    if ($platformId !== '') {
-                        $q->orWhere('platform_user_id', $platformId);
-                    }
-                })
-                ->whereNotNull('birth_date')
-                ->orderByDesc('id')
-                ->first();
-        } catch (\Throwable $e) {
-            \Log::warning('Celtic: findPriorBirthDateForCeltic query fail (treat as none)', [
-                'reading_id' => $reading->id,
-                'error' => $e->getMessage(),
-            ]);
+        // ⚠️ ต้องคืน d/m/Y เท่านั้น — ปลายทางคือ regex ของ ThaiAstrologyService
+        //    ที่รับเฉพาะ d/m/YYYY ส่ง Y-m-d ไปคือมองไม่เห็นเงียบ ๆ
+        return $hit === null ? null : $hit['date']->format('d/m/Y');
+    }
 
-            return null;
-        }
-
-        if ($prior && ! empty($prior->birth_date)) {
-            try {
-                return \Carbon\Carbon::parse($prior->birth_date)->format('d/m/Y');
-            } catch (\Throwable $e) {
-                return null;
-            }
-        }
-
-        return null;
+    /**
+     * 🎂 (2026-08-21) เวอร์ชันที่คืน "ที่มา" มาด้วย — ใช้เขียนข้อความยืนยันแบบซื่อสัตย์
+     *
+     * ของเดิมค้นแต่ `fortune_readings` เหมือนฝั่ง Deep 39 เป๊ะ (คนละไฟล์ คนละเมธอด
+     * แต่บั๊กเดียวกัน) ⇒ ลูกค้าที่ให้วันเกิดไว้ตอนขอดวงฟรีรายวันถูกถามซ้ำตอนจ่าย 99
+     *
+     * @return array{ymd:string,date:\Carbon\Carbon,source:string,reading_id:int|null}|null
+     */
+    protected function findPriorBirthdateHitForCeltic(FortuneReading $reading): ?array
+    {
+        return \App\Services\Fortune\BirthdateResolver::forReading($reading);
     }
 
     /**

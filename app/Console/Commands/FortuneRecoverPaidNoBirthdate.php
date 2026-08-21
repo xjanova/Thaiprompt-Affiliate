@@ -181,6 +181,31 @@ class FortuneRecoverPaidNoBirthdate extends Command
                     }
                 }
 
+                // 🎂 (2026-08-21) ก่อนทวงวันเกิด — เช็คก่อนว่าเรามีอยู่แล้วหรือเปล่า
+                //   ลูกค้าที่เคยพิมพ์วันเกิดตอนขอดวงฟรีรายวัน (เก็บใน fortune_user_credits)
+                //   เคยถูกทวงซ้ำเป็นระลอกทั้งที่เรามีข้อมูลอยู่แล้ว
+                $priorHit = \App\Services\Fortune\BirthdateResolver::forReading($reading);
+
+                if ($priorHit !== null) {
+                    $fcs = new \App\Services\FortuneConversationService($settings);
+                    $fcs->beginDeepGeneralReading($reading, $priorHit['ymd']);
+                    $reading->setConversationState('birthdate_auto_filled', true);
+                    $reading->setConversationState('birthdate_reused_from_history', $priorHit['ymd']);
+
+                    $this->info("   ♻️  reading {$reading->id} — ใช้วันเกิดเดิม {$priorHit['ymd']} ({$priorHit['source']}) แทนการทวง");
+
+                    Log::info('RecoverPaidNoBirthdate: reuse วันเกิดเดิม ไม่ทวงซ้ำ', [
+                        'reading_id' => $reading->id,
+                        'birth_date' => $priorHit['ymd'],
+                        'source' => $priorHit['source'],
+                    ]);
+
+                    $reading->setConversationState('birthdate_resent_at', now()->toIso8601String());
+                    $recovered++;
+
+                    continue;
+                }
+
                 // 1. Reset state — กลับเข้า flow ขอวันเกิด + clear error text
                 $reading->update([
                     'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
@@ -209,7 +234,7 @@ class FortuneRecoverPaidNoBirthdate extends Command
                     ."🪄 ตอนนี้ขอ*วันเดือนปีเกิด*ของเจ้าชะตาก่อนนะคะ ✨\n\n"
                     ."📝 *ตัวอย่าง:* 15 มีนาคม 2538\n"
                     ."   หรือ 15/3/2538 / 15-3-2538\n\n"
-                    ."💡 หากจำไม่ได้แม่นยำ — ใส่ปีก่อน เดือน ก็พอค่ะ";
+                    .'💡 หากจำไม่ได้แม่นยำ — ใส่ปีก่อน เดือน ก็พอค่ะ';
 
                 $pushSent = $channelManager->sendResponse($platform, $userId, [
                     'action' => 'collecting_birthdate',

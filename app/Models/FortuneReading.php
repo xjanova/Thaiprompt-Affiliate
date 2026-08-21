@@ -312,38 +312,17 @@ class FortuneReading extends Model
      *
      * @param  string  $userId  facebook_user_id หรือ platform_user_id
      */
-    public static function findLatestBirthdate(string $userId): ?\Carbon\Carbon
+    public static function findLatestBirthdate(string $userId, ?string $platform = null): ?\Carbon\Carbon
     {
-        $reading = self::where(function ($q) use ($userId) {
-            $q->where('facebook_user_id', $userId)
-                ->orWhere('platform_user_id', $userId);
-        })
-            ->whereNotNull('birth_date')
-            ->latest('updated_at')
-            ->first(['birth_date']);
+        // 🎂 (2026-08-21) ย้ายไส้ในไป BirthdateResolver — แหล่งความจริงเดียวของทั้งระบบ
+        //   ของเดิมเรียงด้วย latest('updated_at') ซึ่งผิด: updated_at ขยับทุกครั้งที่
+        //   setConversationState() ⇒ บิลฟรีที่ยัง active กลบบิลที่จ่ายเงินไปแล้ว
+        //   ตอนนี้ resolver เรียง is_paid ก่อนเสมอ (ดูคอมเมนต์ในคลาสนั้น)
+        //
+        //   $platform = null → ไม่กรอง platform ชั้น credits (คงพฤติกรรมเดิมของ caller เก่า 4 จุด)
+        $hit = \App\Services\Fortune\BirthdateResolver::resolve($userId, $userId, $platform);
 
-        if ($reading?->birth_date) {
-            return $reading->birth_date;
-        }
-
-        // 🌙 (2026-07-31) fallback — วันเกิดที่เก็บจากโหมด DM ดูดวงรายวัน
-        //   ลูกค้าที่ให้วันเกิดทาง DM แล้วมาซื้อ Deep/Celtic ทีหลัง จะไม่ถูกถามซ้ำ
-        //   ⚠️ อ่านทีหลังเสมอ — ข้อมูลจาก reading (โดยเฉพาะบิลที่จ่ายเงินแล้ว)
-        //      ต้องชนะข้อมูลจากช่องทางฟรีเสมอ
-        try {
-            if (! \Illuminate\Support\Facades\Schema::hasColumn('fortune_user_credits', 'birth_date')) {
-                return null;   // ช่วง deploy ที่โค้ดขึ้นก่อน migrate
-            }
-
-            $credit = \App\Models\FortuneUserCredit::where('facebook_user_id', $userId)
-                ->whereNotNull('birth_date')
-                ->latest('birth_date_at')
-                ->first(['birth_date']);
-
-            return $credit?->birth_date;
-        } catch (\Throwable $e) {
-            return null;
-        }
+        return $hit['date'] ?? null;
     }
 
     /**
