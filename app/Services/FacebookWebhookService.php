@@ -72,6 +72,25 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /** พักนานเท่าไรเมื่อ breaker อ่านคอมเมนต์ทำงาน (ชั่วโมง) */
     protected const READ_COMMENTS_BREAKER_HOURS = 6;
 
+    /**
+     * 🚦 error code ของ Graph ที่แปลว่า "ทั้งเพจอ่านไม่ได้" ไม่ใช่ "โพสต์นี้โพสต์เดียว"
+     *
+     * เจอตัวใดตัวหนึ่ง = ตัดวงจรทันที ไม่งั้นวนยิงต่ออีก 199 โพสต์แล้วล้มเหมือนกันหมด
+     *
+     *   10  — ต้องมี pages_read_user_content
+     *   102 — session key ใช้ไม่ได้แล้ว (คนถอดสิทธิ์แอป / เปลี่ยนรหัสผ่าน)
+     *   104 — ไม่ได้ส่ง access_token มาเลย
+     *   190 — token หมดอายุ / ถูกเพิกถอน
+     *   200 — Missing Permissions
+     *   463 — token หมดอายุ (subcode ของสาย OAuth)
+     *
+     * ⚠️ 104 เพิ่งถูกเพิ่ม (2026-08-21) — ก่อนหน้านี้ตกลิสต์ จึงยิง Graph ทิ้งทุกชั่วโมงโดยไม่มีใครรู้
+     *    แต่ต้องเข้าใจให้ตรง: 104 รอบนั้น **ไม่ใช่สิทธิ์ไม่พอ** เป็นบั๊กของเราเองที่ล้าง
+     *    query string ของ paging.next ทิ้ง (ดู graphGet) — แก้ต้นตอแล้วจึงใส่ code นี้ได้อย่างปลอดภัย
+     *    ถ้าใส่ก่อนแก้ต้นตอ = breaker จะตัดการสแกนทิ้ง 6 ชม. ทั้งที่ token ดีอยู่
+     */
+    public const READ_COMMENTS_BREAKER_CODES = [10, 102, 104, 190, 200, 463];
+
     /** 🚦 กุญแจ breaker ของ hide/delete คอมเมนต์ (scope `pages_manage_engagement` ที่ token ไม่มี) */
     protected const MANAGE_COMMENT_BREAKER_KEY = 'fb_manage_comment_breaker';
 
@@ -2018,6 +2037,32 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 🔗 (2026-08-21) GET ที่ปลอดภัยกับ URL ที่มี query ติดมาแล้ว (paging.next)
+     *
+     * 🚨 กับดักที่ทำให้การไล่อ่านคอมเมนต์ตายเงียบมาตลอด:
+     *
+     *    `Http::get($url, [])` **ไม่ได้แปลว่า** "ไม่ต้องเติมพารามิเตอร์อะไรเพิ่ม"
+     *    option `query` ของ Guzzle เป็นการ **แทนที่ query string ทั้งเส้น** ไม่ใช่การ merge
+     *    → array ว่างจึงล้าง `access_token` + cursor ที่ Facebook แนบมาใน paging.next ทิ้งหมด
+     *    → Graph ตอบ 400 (#104) "An access token is required to request this resource."
+     *
+     *    หลักฐานจาก prod (2026-08-21): URL ที่ยิงออกไปจริงเหลือแค่
+     *      https://graph.facebook.com/v22.0/{post_id}/comments
+     *    ไม่มี query สักตัวเดียว ทั้งที่ paging.next ที่ได้มามี access_token ครบ
+     *    (ยิงเส้นเดียวกันแบบไม่ส่ง arg ที่สอง → HTTP 200 ได้คอมเมนต์ 50 รายการทันที)
+     *
+     * ⚠️ ห้ามเปลี่ยนกลับไปส่ง `[]` เด็ดขาด — มันดูเหมือน no-op แต่เป็นการลบพารามิเตอร์
+     *
+     * @param  array|null  $params  null = URL มี query ครบในตัวแล้ว (paging.next) ห้ามแตะ
+     */
+    protected function graphGet(string $url, ?array $params = null): \Illuminate\Http\Client\Response
+    {
+        return $params === null
+            ? Http::timeout(20)->get($url)
+            : Http::timeout(20)->get($url, $params);
+    }
+
+    /**
      * Helper: paginate Graph API feed-style endpoint
      */
     protected function fetchPagedFeed(string $relPath, int $sinceTimestamp, int $limit): array
@@ -2046,7 +2091,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
         try {
             while (count($items) < $limit && $url) {
-                $resp = Http::timeout(20)->get($url, $params);
+                $resp = $this->graphGet($url, $params);
                 if (! $resp->successful()) {
                     $errorMsg = $resp->json('error.message') ?? 'HTTP '.$resp->status();
                     $errorCode = $resp->json('error.code');
@@ -2067,7 +2112,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                     }
                 }
                 $url = $resp->json('paging.next');
-                $params = []; // pagination URL มี params ในตัวแล้ว
+                $params = null; // paging.next มี query ครบในตัวแล้ว — ส่ง [] = ล้างทิ้ง (ดู graphGet)
             }
         } catch (Exception $e) {
             $this->lastFetchError = 'Exception: '.$e->getMessage();
@@ -2096,7 +2141,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * log เป็น warning **ครั้งเดียวตอนตัดวงจร** — ไม่ใช่ทุกโพสต์
      * (ของเดิม warning ทุกโพสต์ = 50 บรรทัดต่อรอบ กลบสัญญาณอื่นจนหาไม่เจอ)
      *
-     * @param  mixed  $errorCode  code จาก Graph (10 / 200 / 190)
+     * @param  mixed  $errorCode  code จาก Graph (ดู READ_COMMENTS_BREAKER_CODES)
      * @param  string  $errorMsg  ข้อความ error สำหรับให้แอดมินอ่านออก
      */
     protected function tripReadCommentsBreaker($errorCode, string $errorMsg): void
@@ -2127,14 +2172,17 @@ class FacebookWebhookService implements MessagingPlatformInterface
         }
 
         // 🚦 (2026-08-13) CIRCUIT BREAKER — สิทธิ์อ่านคอมเมนต์ถูกปฏิเสธทั้งเพจ
-        //   วัดจาก prod: cron `fortune:scan-old-comments` (รายชั่วโมง) ยิงจุดนี้ 57 ครั้ง/วัน
-        //   และ **ล้ม 100%** ด้วย (#10) ต้องมี pages_read_user_content / (#200) Missing Permissions
+        //   ตอนตั้ง breaker นี้ token ยังขาด pages_read_user_content จริง → (#10)/(#200) ทั้งเพจ
         //   ⇒ toggle `auto_hide_link_comments` เปิดอยู่ + cron เดินครบ + ได้ผลลัพธ์ศูนย์
         //     = ภาพลวงว่าเพจมีเกราะกันสแปม ทั้งที่ไม่มี
         //
+        //   ✅ (2026-08-21) วัดซ้ำบน prod: App Review ผ่านแล้ว — scope มาครบ
+        //      ยิง /{post}/comments ด้วย token ของทั้ง 2 สาขา ได้ HTTP 200 พร้อมคอมเมนต์จริง
+        //      อาการ (#104) ที่เห็นใน log **ไม่ใช่เรื่องสิทธิ์** แต่เป็นบั๊ก paging ของเราเอง (ดู graphGet)
+        //
         //   ⚠️ ไม่ได้ทำให้ระบบกันสแปมอ่อนลง — ด่านจริงคือ realtime webhook
         //      (moderateLinkComment อ่านข้อความจาก payload ตรง ๆ ไม่ต้องใช้ scope เลย)
-        //      ตัวนี้เป็นแค่ตัวไล่เก็บย้อนหลัง ซึ่งอ่านอะไรไม่ได้อยู่แล้ว
+        //      ตัวนี้เป็นแค่ตัวไล่เก็บย้อนหลัง
         //
         //   เจอครั้งแรก = พัก 6 ชม. แล้วลองใหม่เอง (ถ้าวันหลังได้ scope จะกลับมาทำงานเอง)
         if (Cache::has($this->readCommentsBreakerKey())) {
@@ -2152,9 +2200,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
             'limit' => 50,
         ];
 
+        // 🛑 เพดานจำนวนหน้า — กัน cursor วนไม่รู้จบตอน --all (limit = PHP_INT_MAX)
+        //    ก่อนหน้านี้ลูปนี้ "จบเองเสมอ" เพราะหน้าที่ 2 พังทุกครั้ง (บั๊ก graphGet)
+        //    พอแก้แล้วมันจะไล่จริง โพสไวรัลคอมเป็นหมื่นจึงต้องมีเพดานกันลูปหลุด
+        $maxPages = 200; // 200 × 50 = 10,000 คอมเมนต์ต่อโพส
+        $pagesFetched = 0;
+
         try {
-            while (count($comments) < $limit && $url) {
-                $resp = Http::timeout(20)->get($url, $params);
+            while (count($comments) < $limit && $url && $pagesFetched < $maxPages) {
+                $resp = $this->graphGet($url, $params);
+                $pagesFetched++;
                 if (! $resp->successful()) {
                     $errorMsg = $resp->json('error.message') ?? 'HTTP '.$resp->status();
                     $errorCode = $resp->json('error.code');
@@ -2163,11 +2218,13 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         'post_id' => $postId,
                         'status' => $resp->status(),
                         'error' => $resp->json('error'),
+                        'หน้าที่' => $pagesFetched,
+                        'ได้มาแล้ว' => count($comments),
                     ]);
 
                     // 🚦 permission error = ทั้งเพจอ่านไม่ได้ ไม่ใช่โพสต์นี้โพสต์เดียว
                     //    → ตัดวงจรทันที ไม่งั้นวนยิงต่ออีก 199 โพสต์ที่เหลือแล้วล้มเหมือนกันหมด
-                    if (in_array((int) $errorCode, [10, 200, 190], true)) {
+                    if (in_array((int) $errorCode, self::READ_COMMENTS_BREAKER_CODES, true)) {
                         $this->tripReadCommentsBreaker($errorCode, $errorMsg);
                     }
 
@@ -2181,7 +2238,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
                     }
                 }
                 $url = $resp->json('paging.next');
-                $params = [];
+                $params = null; // paging.next มี query ครบในตัวแล้ว — ส่ง [] = ล้างทิ้ง (ดู graphGet)
+            }
+
+            // 📢 ชนเพดานแล้วยังมีต่อ → ต้องบอก ไม่ใช่เงียบแล้วทำเหมือนสแกนครบ
+            if ($pagesFetched >= $maxPages && $url) {
+                Log::warning('listCommentsForPost ชนเพดานหน้า — ยังมีคอมเมนต์เหลือที่ไม่ได้สแกน', [
+                    'post_id' => $postId,
+                    'อ่านไปแล้ว' => count($comments),
+                    'เพดานหน้า' => $maxPages,
+                ]);
             }
         } catch (Exception $e) {
             $this->lastFetchError = 'Exception: '.$e->getMessage();
