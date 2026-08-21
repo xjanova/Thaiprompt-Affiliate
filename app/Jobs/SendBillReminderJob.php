@@ -139,7 +139,9 @@ class SendBillReminderJob implements ShouldQueue
             $aiService = new FortuneAIService($settings);
 
             $isAwaitingMethod = $reading->conversation_status === FortuneReading::STATUS_AWAITING_PAYMENT_METHOD;
-            $systemMessage = $this->buildSystemMessage($personaContext, $isAwaitingMethod);
+            $systemMessage = \App\Services\Fortune\FortunePageIdentity::appendTo(
+                $this->buildSystemMessage($personaContext, $isAwaitingMethod)
+            );
             $userMessage = $this->buildUserMessage($reading, $isAwaitingMethod);
 
             // 📚 (2026-05-24) Inject RAG admin Q&A few-shot — เรียน tone จากแอดมินที่เคยตอบ

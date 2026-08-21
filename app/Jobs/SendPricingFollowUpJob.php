@@ -103,7 +103,9 @@ class SendPricingFollowUpJob implements ShouldQueue
                 ? (bool) $this->pricing['deep_enabled']
                 : $settings->isDeepReadingEnabled();
 
-            $systemMessage = $this->buildSystemMessage($personaContext);
+            $systemMessage = \App\Services\Fortune\FortunePageIdentity::appendTo(
+                $this->buildSystemMessage($personaContext)
+            );
             $userMessage = $this->buildUserMessage($deepPrice, $celticPrice, $celticEnabled, $deepEnabled);
 
             // 📚 (2026-06-02) Inject RAG admin Q&A — เลียน tone อธิบาย "ราคา/ค่าครู" ของแอดมินจริง

@@ -434,7 +434,7 @@ class FortuneAIService
      * ข้อมูลระบบดูดวง (ราคา, commission ฯลฯ) จะถูก inject แบบ dynamic
      * ผ่าน buildChatSystemMessage() เพื่อให้ตรงกับ settings จริง
      */
-    protected const CHAT_SYSTEM_MESSAGE_TEMPLATE = 'คุณชื่อ "หมอจันทรา" เป็นผู้หญิงไทยวัย 35 ปี ผู้เชี่ยวชาญโหราศาสตร์และที่ปรึกษาประจำระบบดูดวง Thaiprompt ใช้คำแทนตัวว่า "หมอจันทรา" เช่น "หมอจันทราว่า..." คุณอบอุ่น เป็นกันเอง **แต่กล้าพูดตรง มีหลักการ** ไม่ใจดีเกินจนคนไม่ตื่น — เหมือนพี่ที่อยู่ตรงนี้คอยให้สติ ไม่ตามใจ ใส่ emoji น่ารักบ้าง
+    protected const CHAT_SYSTEM_MESSAGE_TEMPLATE = 'คุณชื่อ "หมอจันทรา" เป็นผู้หญิงไทยวัย 35 ปี ผู้เชี่ยวชาญโหราศาสตร์และที่ปรึกษาประจำระบบดูดวงของ{brandName} ใช้คำแทนตัวว่า "หมอจันทรา" เช่น "หมอจันทราว่า..." คุณอบอุ่น เป็นกันเอง **แต่กล้าพูดตรง มีหลักการ** ไม่ใจดีเกินจนคนไม่ตื่น — เหมือนพี่ที่อยู่ตรงนี้คอยให้สติ ไม่ตามใจ ใส่ emoji น่ารักบ้าง
 
 ❌ **กฎเหล็กเรื่องเพศ — ห้ามฝ่าฝืน:** หมอจันทราเป็น **ผู้หญิง** เสมอ ไม่ว่าลูกค้าจะเป็นเพศใด
    - ❌ ห้ามใช้เด็ดขาด: ครับ / ผม / นะครับ / ครับผม / ขอบคุณครับ / ดิฉัน / หนู / เรา
@@ -460,7 +460,7 @@ class FortuneAIService
 - ถ้าจับได้ว่าลูกค้าอยากรู้เรื่องไหนชัด → หาช่องชวนดูดวงเนียน ๆ [OFFER_FORTUNE]
 - ถ้าลูกค้ายังวนพูด/ร่ายยาวไม่เข้าเรื่อง ไม่สนใจดูดวง → ค่อย ๆ ถอยแบบเนียน ไม่ตื๊อ ไม่ตอบยืดเยื้อ
 
-[ข้อมูลระบบดูดวง Thaiprompt ที่คุณต้องรู้]
+[ข้อมูลระบบดูดวงของ{brandName} ที่คุณต้องรู้]
 {freeLine}
 - ดูดวงเชิงลึก (Deep Reading) ค่าครู {deepReadingPrice} บาท/ครั้ง โดยหมอจันทราวิเคราะห์จากวันเกิดและคำถามของผู้ใช้ (ใช้คำว่า "ค่าครู" เสมอ ไม่ใช่ "ค่าบริการ")
 - หัวข้อดูดวงที่ได้: ความรัก, การเงิน, การงาน, สุขภาพ, โชคลาภ, ครอบครัว, การเรียน, เดินทาง
@@ -1342,6 +1342,9 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
 PROMPT;
 
         try {
+            // 🏬 (2026-08-21) ตัวตนของเพจสาขา
+            $systemPrompt = \App\Services\Fortune\FortunePageIdentity::appendTo($systemPrompt);
+
             // ส่ง history เป็น messages array
             $result = $this->chatWithCustomSystemPromptHistory(
                 $systemPrompt,
@@ -2425,6 +2428,9 @@ PROMPT;
 
             // 👤 (2026-05-19 Batch 6a) Name directive — additive ใน local var (ไม่ mutate parameter)
             $systemPromptWithName = $this->injectCustomerNameDirective($systemPrompt, $userProfile);
+
+            // 🏬 (2026-08-21) ตัวตนของเพจสาขา — idempotent (caller บางรายแปะมาแล้วจาก builder ของตัวเอง)
+            $systemPromptWithName = \App\Services\Fortune\FortunePageIdentity::appendTo($systemPromptWithName);
 
             // 📚 (2026-05-19) RAG Admin Q&A — ครอบ Bill Psychology / Celtic Premium / Post-Reading Deep / Sensitive
             //   ลูกค้าลังเลเลือกแพคเกจ + บิลค้างยังไม่โอน = สถานการณ์ที่ admin ตอบบ่อยที่สุด
@@ -3811,6 +3817,17 @@ PROMPT;
         //   โหมดแชทคือจุดที่ลูกค้าจีบ/ตีสนิทมากที่สุด → เว้นระยะ เรียก "เจ้าชะตา" ไม่เรียก "ที่รัก" กลับ
         $message .= "\n\n".self::MAE_MOR_BOUNDARY_DIRECTIVE;
 
+        // 🧹 (2026-08-21) กัน {brandName} หลุดถึงลูกค้า
+        //   custom prompt ใน DB ไม่ได้วิ่งผ่าน str_replace ของ buildChatSystemMessage()
+        //   ถ้าแอดมินก็อป template ไปวาง จะเห็น placeholder ดิบ → แทนชื่อจริงที่นี่อีกชั้น
+        if (str_contains($message, '{brandName}')) {
+            $message = str_replace('{brandName}', $this->settings->getFortuneBrandName(), $message);
+        }
+
+        // 🏬 (2026-08-21) ตัวตนของเพจสาขา — จุดเดียวที่คลุม "แชท" ทั้ง custom prompt และ default prompt
+        //   เดิม AI ไม่เคยถูกบอกว่าอยู่เพจไหน → ลูกค้าบนเพจสาขาถาม "นี่เพจอะไร" แล้วบอทตอบชื่อเพจหลัก
+        $message = \App\Services\Fortune\FortunePageIdentity::appendTo($message);
+
         return $message;
     }
 
@@ -3868,9 +3885,13 @@ PROMPT;
         //    ใน template (line 311) + str_replace ใช้ pattern เก่า "ดูดวงฟรีได้วันละ X ครั้ง" ไม่ตรงกัน
         //    → no-op replacement → AI ถูกบอกว่ามี "ทำนายฟรี" ตลอด แม้ admin ปิด max_free_readings=0
         //    → AI Chat ยังพูด "ฟรี" ทั้งที่ feature ปิดอยู่
+        // 🏬 (2026-08-21) ชื่อแบรนด์แทน "Thaiprompt" — ลูกค้ารู้จักแค่ "แม่หมอจันทรา"
+        //   อ่านผ่าน getFortuneBrandName() ที่ context-aware → เพจสาขาที่ตั้ง brand_name เองก็ได้ชื่อตัวเอง
+        $brandName = $this->settings->getFortuneBrandName();
+
         $message = str_replace(
-            ['{freeLine}', '{maxFreeReadings}', '{deepReadingPrice}', '{commissionText}', '{level1Commission}', '{level2Commission}', '{affiliatePlanLines}'],
-            [$freeLineForPrompt, $maxFreeReadings, $deepReadingPrice, $commissionText, $level1Commission, $level2Commission, $affiliatePlanLines],
+            ['{brandName}', '{freeLine}', '{maxFreeReadings}', '{deepReadingPrice}', '{commissionText}', '{level1Commission}', '{level2Commission}', '{affiliatePlanLines}'],
+            [$brandName, $freeLineForPrompt, $maxFreeReadings, $deepReadingPrice, $commissionText, $level1Commission, $level2Commission, $affiliatePlanLines],
             self::CHAT_SYSTEM_MESSAGE_TEMPLATE
         );
 
@@ -5504,6 +5525,10 @@ PROMPT;
             [$profileText, $postsText, $questionsText, $birthDateSection],
             $template
         );
+
+        // 🏬 (2026-08-21) ตัวตนของเพจสาขา — จุดกลางเดียวกับ language mirror
+        //   คำทำนายเองไม่ค่อยพูดถึงเพจ แต่ Celtic/Deep คุยต่อได้ → ต้องรู้ว่าตัวเองอยู่เพจไหน
+        $assembled = \App\Services\Fortune\FortunePageIdentity::appendTo($assembled);
 
         // 🌐 (2026-05-30) Language mirror — จุดกลางของ "ทุกคำทำนาย" (deep 39 + Celtic 99 ถาม-ตอบ + บทสรุป)
         //   ทุก prediction ไหลผ่าน buildPrompt → inject ที่นี่จุดเดียวคลุมหมด (ไม่ต้องแก้แต่ละ prompt builder)

@@ -581,7 +581,8 @@ class FortuneAffiliateService
                 'contents' => [
                     [
                         'type' => 'text',
-                        'text' => 'ยินดีต้อนรับสู่ทีม Thaiprompt!',
+                        // 🏬 (2026-08-21) ลูกค้าดูดวงรู้จักแค่ชื่อแม่หมอ — คำว่า "Thaiprompt" ไม่มีความหมายกับเขา
+                        'text' => 'ยินดีต้อนรับสู่ทีม'.$this->settings->getFortuneBrandName().'!',
                         'weight' => 'bold',
                         'size' => 'lg',
                         'color' => $primaryColor,
@@ -669,7 +670,7 @@ class FortuneAffiliateService
         ];
 
         $lineService->sendRichMessage($lineUserId, [
-            'alt_text' => '🎉 ยินดีต้อนรับสู่ทีม Thaiprompt!',
+            'alt_text' => '🎉 ยินดีต้อนรับสู่ทีม'.$this->settings->getFortuneBrandName().'!',
             'contents' => $flex,
         ]);
     }

@@ -543,11 +543,13 @@ trait ProSessionTrait
         $name = $reading->resolveCustomerName();
         $remainingMin = $this->getProSessionRemainingMinutes($reading);
 
-        if ($type === 'celtic') {
-            return $this->buildCelticProSessionPrompt($reading, $name, $remainingMin);
-        }
+        $prompt = $type === 'celtic'
+            ? $this->buildCelticProSessionPrompt($reading, $name, $remainingMin)
+            : $this->buildDeepProSessionPrompt($reading, $name, $remainingMin);
 
-        return $this->buildDeepProSessionPrompt($reading, $name, $remainingMin);
+        // 🏬 (2026-08-21) ตัวตนของเพจสาขา — แปะที่นี่จุดเดียวครอบทั้งเส้น Pro AI และเส้น fallback
+        //   (เส้น fallback ใช้ $systemPrompt ก้อนเดียวกันนี้ต่อไปยัง chatWithCustomSystemPromptHistory)
+        return \App\Services\Fortune\FortunePageIdentity::appendTo($prompt);
     }
 
     /**

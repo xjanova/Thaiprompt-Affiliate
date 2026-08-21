@@ -18193,6 +18193,10 @@ PROMPT;
 
         try {
             $aiService = new \App\Services\FortuneAIService($this->settings);
+
+            // 🏬 (2026-08-21) ตัวตนของเพจสาขา
+            $systemPrompt = \App\Services\Fortune\FortunePageIdentity::appendTo($systemPrompt);
+
             $result = $aiService->chatWithCustomSystemPrompt(
                 $systemPrompt,
                 $messageText,
@@ -25191,6 +25195,9 @@ PROMPT;
             //     → null ถ้าทั้งคู่ fail
             // 📚 (2026-06-02) RAG-enriched prompt สำหรับ fallback chat — ดึงคำตอบแอดมินจริง
             //   primary generatePostReadingDeepResponse → generateProResponse inject เองแล้ว (ไม่ double)
+            // 🏬 (2026-08-21) ตัวตนของเพจสาขา — ก่อน RAG เพื่อให้ทั้งเส้น Pro AI และ fallback ได้เหมือนกัน
+            $systemMessage = \App\Services\Fortune\FortunePageIdentity::appendTo($systemMessage);
+
             $systemMessageRag = $aiService->injectAdminQARagFewShot($systemMessage, $messageText, $reading);
 
             try {
