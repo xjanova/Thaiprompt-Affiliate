@@ -2645,7 +2645,10 @@ class FortuneConversationService
                 //    (ตาข่ายชั้นสองของบั๊ก "ปุ่ม 🎁 รับดวงฟรีประจำวัน หล่นมาเป็นข้อความ"
                 //     ชั้นแรกคือ resolveQuickReplyPayloadFromTitle ที่ FacebookWebhookController)
                 //    คืน null = โหมด/วัน/บิล ไม่พร้อม → ไหลลงทางเดิมทุกกรณี ไม่มีอะไรเปลี่ยน
-                if ($this->looksLikeDailyFreeRequest($messageText)) {
+                // 🎯 (2026-08-21) เติม looksLikeDailyIntent — ตาข่ายชั้นสองสำหรับคนที่หลุด
+                //    ด่านหลักที่บรรทัด ~1246 มาได้ (โหมด transfer / มีบิลค้าง ฯลฯ)
+                if ($this->looksLikeDailyFreeRequest($messageText)
+                    || $this->looksLikeDailyIntent($messageText)) {
                     if ($dailyOffer = $this->maybeOfferDailyForFreeRequest($facebookUserId, $userProfile)) {
                         return $dailyOffer;
                     }

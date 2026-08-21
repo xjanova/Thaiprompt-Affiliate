@@ -103,10 +103,19 @@ trait DailyHoroscopeModeTrait
             //   ⚠️ แคบไว้โดยตั้งใจ: ต้องเป็น "ชื่อวัน" ล้วน ๆ เท่านั้น (ดู looksLikeStandaloneDayName)
             //      ประโยคที่มีคำว่าวันพุธปนอยู่ ("วันพุธนี้จะไปหาหมอ") ห้าม trigger
             //      และด่าน 3/4 (บิล/กำลังทำนาย/เปลี่ยนเรื่อง) ยังทำงานเหมือนเดิมทุกประการ
+            //
+            // 🎯 (2026-08-21) ขยายให้รับ "เจตนา" ไม่ใช่แค่ป้ายปุ่ม
+            //   เจ้าของสั่ง: "อยากให้บอทฉลาดพอจะส่งเข้าส่วนดูดวงรายวัน เมื่อลูกค้าพิมพ์
+            //   แต่วันเกิด หรืออยากดูดวงรายวันแบบดวงฟรี"
+            //   วัดจากการลากประโยคจริง 30 ประโยคผ่านโค้ด: กลุ่ม "ควรเข้าโหมดรายวัน"
+            //   เข้าได้แค่ 6 จาก 12 — ที่เหลือตกไปเมนูราคา 39/99 หรือ AI chat
             $hasPending = Cache::has($this->dailyPendingKey($platform, $userId));
-            $coldDayName = ! $hasPending && $this->looksLikeStandaloneDayName($messageText);
+            $namedDayIndex = $this->resolveBirthDayNameIndex($messageText);
+            $dailyIntent = $this->looksLikeDailyIntent($messageText);
+            $coldDayName = ! $hasPending
+                && ($namedDayIndex !== null || $this->looksLikeStandaloneDayName($messageText));
 
-            if (! $hasPending && ! $coldDayName) {
+            if (! $hasPending && ! $coldDayName && ! $dailyIntent) {
                 return null;
             }
 
@@ -139,20 +148,58 @@ trait DailyHoroscopeModeTrait
 
             // 4️⃣ Escape hatch — ลูกค้าเปลี่ยนเรื่องแล้ว (แจ้งโอน/ขอคุยกับคน/ยกเลิก/ขอดูดวง)
             //    ลบธงทิ้งแล้วปล่อยให้ flow เดิมจัดการ ไม่ใช่ดันวันเกิดต่อ
-            if ($this->looksLikeDailyEscape($messageText)) {
+            //    ⚠️ (2026-08-21) ยกเว้นเมื่อรู้แน่ว่าเป็นเจตนาดวงรายวัน — คำว่า "ดูดวง"
+            //    อยู่ในลิสต์ escape ⇒ "อยากดูดวงรายวัน" เคยถูกตีตกที่นี่ แถมลบธง pending ทิ้งด้วย
+            //    (ห้ามแก้ตัวฟังก์ชัน looksLikeDailyEscape เอง — มีเทสต์ล็อกไว้ และมันคือด่าน
+            //     ที่กันคนอยากซื้อไม่ให้ติดอยู่ในโหมดฟรี)
+            if (! $dailyIntent
+                && $namedDayIndex === null
+                && $this->looksLikeDailyEscape($messageText)) {
                 $this->clearDailyPending($platform, $userId);
 
                 return null;
             }
 
             // 5️⃣ ตีความคำตอบ — วันในสัปดาห์ หรือ วันเดือนปีเกิดเต็ม
-            $resolved = $this->resolveDayIndexFromReply($messageText);
+            //    🎯 (2026-08-21) ถ้าจับชื่อวันจากประโยคได้แล้ว ใช้เลย ไม่ต้องวนหาซ้ำ
+            //       (resolveDayIndexFromReply เทียบแบบ substring ซึ่งกว้างกว่าและเสี่ยงกว่า)
+            $resolved = $namedDayIndex !== null
+                ? [$namedDayIndex, null]
+                : $this->resolveDayIndexFromReply($messageText);
 
             // 👍 (2026-08-01) ตอบรับสั้น ๆ แทนการกดปุ่ม ("เอาค่ะ" / "ดูเลย")
             //    คนที่เรารู้วันเกิดแล้วเห็นข้อความ "กดปุ่มด้านล่างได้เลย" แล้วพิมพ์ตอบแทน
             //    ถ้าไม่รับตรงนี้ คำเชิญจะกลายเป็นทางตัน — ลูกค้าตอบรับแล้วบอทเงียบ
             if ($resolved === null) {
                 $resolved = $this->resolveDayIndexFromShortYes($messageText, $userId);
+            }
+
+            // 🎁 (2026-08-21) ขอดวงรายวันมาชัด ๆ แต่ยังไม่บอกวันเกิด
+            //    → ยื่นกล่องดวงรายวัน (maybeOfferDailyForFreeRequest จัดการครบแล้วทั้งเคส
+            //      "รู้วันเกิดแล้ว" / "ยังไม่รู้" / "บทความยังไม่พร้อม" — ห้ามเขียนใหม่)
+            //    ⚠️ ต้องมีล็อกของตัวเอง เพราะด่านนี้วิ่งก่อน dedup และ mutex ของ processMessage
+            //       ไม่งั้น FB retry หรือกดรัวจะยิงกล่องชวนซ้ำ
+            if ($resolved === null && $dailyIntent) {
+                if (! Cache::add("fortune:daily_intent_lock:{$platform}:{$userId}", true, 30)) {
+                    Log::info('🌙 Daily: ขอดวงรายวันซ้ำเร็วเกิน — เบรกเงียบ', [
+                        'user_id' => $userId,
+                        'platform' => $platform,
+                    ]);
+
+                    return [
+                        'action' => 'silent_skip',
+                        'message' => null,
+                        'reading' => null,
+                    ];
+                }
+
+                Log::info('🌙 Daily: จับเจตนา "ขอดวงรายวัน" จากข้อความที่ลูกค้าพิมพ์เอง', [
+                    'user_id' => $userId,
+                    'platform' => $platform,
+                    'text' => mb_substr($messageText, 0, 60),
+                ]);
+
+                return $this->maybeOfferDailyForFreeRequest($userId, $userProfile);
             }
 
             if ($resolved === null) {
@@ -699,6 +746,178 @@ trait DailyHoroscopeModeTrait
         $t = trim($t);
 
         return $t !== '' && array_key_exists($t, self::DAILY_DAY_ALIASES);
+    }
+
+    /**
+     * 🎯 (2026-08-21) ข้อความนี้ "ขอดวงรายวัน" หรือเปล่า — ตัวจับ *เจตนา* ไม่ใช่ตัวจับ *ป้ายปุ่ม*
+     *
+     * ของเดิม looksLikeDailyFreeRequest() บังคับว่าต้องมีคำว่า "ฟรี" **และ** ("ประจำวัน" หรือ "รายวัน")
+     * ⇒ รับได้แค่ป้ายปุ่มของเราเอง · ลูกค้าที่พิมพ์ "อยากดูดวงรายวัน" / "ดวงประจำวัน" ตกหมด
+     * แล้วไปโดน isGenericFortuneRequest ลากเข้าเมนูราคา 39/99 แทน (ขอของฟรีได้เมนูราคา)
+     *
+     * โครงใหม่: **แกนดวง + รอบเวลา** — "ฟรี" ไม่ใช่เงื่อนไขบังคับอีกต่อไป
+     *   กลุ่มแข็ง (รายวัน/ประจำวัน/daily) → รับทันที
+     *   กลุ่มอ่อน (วันนี้) → ต้องมีคำชี้เจตนา + ข้อความสั้น (กัน "วันนี้ดวงตกมากเลย เล่าให้ฟังหน่อย")
+     *
+     * ⚠️ "ดวงฟรี" ที่ไม่ระบุรอบเวลา จงใจคืน false — ยกให้ไพ่ฟรี 1 ใบ (matchesFreeCardKeyword)
+     *
+     * 🚧 **ข้อจำกัดที่ต้องรู้: ตัวจับนี้ทำงานทุก platform แต่ปลายทางเปิดเฉพาะ Facebook**
+     *    `FortuneBotMode::dailyReplyAllowedFor()` คืน false ทันทีถ้า platform ไม่ใช่ facebook
+     *    (`FortuneBotMode.php:55` INTERCEPT_PLATFORM + `:164`) ⇒ ทั้งเลนดวงรายวันตายสนิทฝั่ง LINE
+     *    ลูกค้า LINE พิมพ์ "อยากดูดวงรายวัน" ก็ยังไม่ได้อะไร จนกว่าจะเปิดเลน LINE ให้ครบ
+     *    (ต้องแก้พร้อมกัน: FortuneBotMode + quick replies ของ ChannelManager arm
+     *     'daily_horoscope_sent' + stripFortuneStartQuickReplies ที่ลบปุ่ม "ดูดวง" ทิ้ง
+     *     + postback router ของ LINE + whitelist สแปมฝั่ง LINE)
+     */
+    protected function looksLikeDailyIntent(string $text): bool
+    {
+        $t = mb_strtolower(trim($text));
+
+        // ปอกอีโมจิ (ป้ายปุ่มมี 🎁 / 🔮 นำหน้า) — ใช้ range เดียวกับ looksLikeDailyFreeRequest
+        $t = preg_replace(
+            '/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2300}-\x{23FF}\x{2B00}-\x{2BFF}\x{2190}-\x{21FF}\x{FE00}-\x{FE0F}\x{1F1E6}-\x{1F1FF}\x{200D}\x{20E3}]/u',
+            '',
+            $t
+        ) ?? $t;
+
+        $t = trim(preg_replace('/\s+/u', ' ', $t) ?? $t);
+
+        // ยาวกว่านี้ = เล่าเรื่อง ไม่ใช่คำขอ
+        if ($t === '' || mb_strlen($t) > 60) {
+            return false;
+        }
+
+        // ❌ ด่านตัดสิทธิ์ — เงิน / แพคเกจ / ปฏิเสธ / ราคา / แอดมิน
+        //    ต้องเช็คก่อนทุกอย่าง ไม่งั้น "ดูดวงรายวันกับ 99 อันไหนดี" จะถูกชิงไปเป็นของฟรี
+        foreach ([
+            '39', '99', 'โอน', 'จ่าย', 'ชำระ', 'สลิป', 'บิล',
+            'ราคา', 'เท่าไร', 'เท่าไหร่', 'กี่บาท', 'ค่าครู', 'ค่าบูชา',
+            'เชิงลึก', 'ละเอียด', 'celtic', 'vip', 'คุณไสย',
+            'ไม่อยาก', 'ไม่เอา', 'ไม่ดู', 'ไม่ต้อง', 'ยกเลิก', 'คืนเงิน',
+            'แอดมิน', 'คุยกับคน',
+        ] as $bad) {
+            if (mb_strpos($t, $bad) !== false) {
+                return false;
+            }
+        }
+
+        // ❌ คำประสมที่มี "ดวง" แต่ไม่ใช่การขอดูดวง
+        foreach ([
+            'ดวงตา', 'ดวงไฟ', 'ดวงดาว', 'ดวงจันทร์', 'ดวงอาทิตย์',
+            'ดวงวิญญาณ', 'ดวงแก้ว', 'ดวงเพชร', 'ดวงเดือน',
+        ] as $compound) {
+            if (mb_strpos($t, $compound) !== false) {
+                return false;
+            }
+        }
+
+        // ต้องมีแกนดวงเสมอ
+        if (! preg_match('/(ดวง|ทำนาย|ชะตา|horoscope)/u', $t)) {
+            return false;
+        }
+
+        // ✅ กลุ่มแข็ง — ระบุรอบเวลาชัดเจน
+        if (preg_match('/(รายวัน|ประจำวัน|ประจําวัน|ราย ?วัน|ประจำ ?วัน|daily)/u', $t)) {
+            return true;
+        }
+
+        // ✅ กลุ่มอ่อน — "วันนี้" ต้องคู่กับคำชี้เจตนา และข้อความต้องสั้น
+        if (preg_match('/(วันนี้|ของวันนี้|today)/u', $t)
+            && mb_strlen($t) <= 30
+            && preg_match('/(ขอ|อยาก|ดู|เช็ค|ช่วย|รบกวน|เอา|มี|ไหม|มั้ย|หน่อย|เป็นไง|เป็นยังไง|เป็นอย่างไร|ยังไง)/u', $t)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 🎂 (2026-08-21) หา index วันเกิดจากประโยคที่ลูกค้าพิมพ์เอง — กว้างกว่า looksLikeStandaloneDayName
+     *
+     * ทำไมต้องมีตัวใหม่แทนที่จะแก้ตัวเดิม: ตัวเดิมมีเทสต์ล็อกไว้ 15 assertion
+     * (tests/Unit/Services/FortuneDailyColdDayNameTest.php) และมันบังคับให้ทั้งข้อความ
+     * เป็นชื่อวันล้วน ⇒ "ผมเกิดวันอังคารครับ" ตกเพราะมีสรรพนามนำหน้า
+     * และ "วันเกิดวันจันทร์" ก็ตก เพราะ regex ปอกคำนำหน้าได้ชั้นเดียว (anchored ^)
+     *
+     * ตัวชี้ขาดของตัวใหม่ = คำว่า **"เกิด"** ต้องติดกับชื่อวัน
+     *   ⇒ "วันพุธนี้จะไปหาหมอ" / "ศุกร์นี้เงินเดือนออกไหม" / "วันจันทร์ที่ผ่านมาแฟนทิ้ง" ยังตกเหมือนเดิม
+     *
+     * 🇹🇭 ต้องมี \p{M} ใน character class! สระ/วรรณยุกต์ไทยเป็น Mark ไม่ใช่ Letter
+     *     ถ้าตกไป "พุธ" จะถูกหั่นเป็น "พ ธ" แล้วเทียบไม่ติด (บทเรียนเดิมของ looksLikeStandaloneDayName)
+     *
+     * @return int|null 0=อาทิตย์ … 6=เสาร์ · null = ไม่ใช่การบอกวันเกิด
+     */
+    protected function resolveBirthDayNameIndex(string $text): ?int
+    {
+        $t = trim($text);
+
+        if ($t === '' || mb_strlen($t) > 60) {
+            return null;
+        }
+
+        // 🚫 มีเลขปี = เป็นวันเดือนปีเกิดเต็ม → เป็นงานของ parseBirthDate ไม่ใช่ของดวงรายวัน
+        //    (กันไม่ให้ดวงรายวันแย่งข้อความของ Deep 39 ที่ต้องการ ว/ด/ป ครบ)
+        if (preg_match('/(?:^|\D)(19\d{2}|20\d{2}|25\d{2})(?:\D|$)/u', $t)) {
+            return null;
+        }
+
+        // 🚫 ระบุหัวข้อเฉพาะ = ต้องการดวงเฉพาะเรื่อง → flow ขาย ไม่ใช่ดวงรวมรายวัน
+        if (preg_match('/(ความรัก|เนื้อคู่|การงาน|การเงิน|สุขภาพ|ธุรกิจ|คดี|หวย|เลขเด็ด)/u', $t)) {
+            return null;
+        }
+
+        // 🚫 บริบทเงิน (ชั้นที่ 2 — ชั้นแรกคือ guard บิล/จ่ายเงินด้านบน)
+        if (preg_match('/(39|99|โอน|จ่าย|ชำระ|สลิป|บิล)/u', $t)) {
+            return null;
+        }
+
+        // คงตัวอักษร/ตัวเลข/Mark — อีโมจิ @ ฯลฯ กลายเป็นช่องว่าง
+        $t = preg_replace('/[^\p{L}\p{N}\p{M}\s]/u', ' ', $t) ?? $t;
+        $t = trim(preg_replace('/\s+/u', ' ', $t) ?? $t);
+        $t = preg_replace('/^\s*meta\s*ai\s*/iu', '', $t) ?? $t;
+
+        // ── ทาง A: ชื่อวันเดี่ยว ๆ หลังปอกสรรพนาม/คำนำหน้า/คำลงท้าย (ปอกซ้ำได้หลายชั้น)
+        //    ซ่อมเคส "วันเกิดวันจันทร์" ที่ regex ของตัวเดิมปอกได้ชั้นเดียว
+        $peeled = $t;
+        for ($i = 0; $i < 3; $i++) {
+            $peeled = preg_replace('/^(ผม|ฉัน|ดิฉัน|หนู|เรา|กระผม|ข้าพเจ้า|อิฉัน|นู๋)\s*/u', '', $peeled) ?? $peeled;
+            $peeled = preg_replace('/^(เกิดวันที่|เกิดวัน|วันเกิดคือ|วันเกิดเป็น|วันเกิด|เกิด|วัน)\s*/u', '', $peeled) ?? $peeled;
+        }
+        for ($i = 0; $i < 3; $i++) {
+            $peeled = trim(preg_replace(
+                '/\s*(ค่ะ|คะ|ครับ|ค่า|คับ|จ้า|จ้ะ|จ๋า|นะคะ|นะครับ|นะ|น่ะ|จร้า|ฮะ|ฮ่ะ|ครับผม|เจ้าค่ะ)$/u',
+                '',
+                $peeled
+            ) ?? $peeled);
+        }
+
+        if ($peeled !== '' && array_key_exists($peeled, self::DAILY_DAY_ALIASES)) {
+            return self::DAILY_DAY_ALIASES[$peeled];
+        }
+
+        // ── ทาง B: "เกิด" ติดกับชื่อวัน แม้อยู่กลางประโยค
+        //    DAILY_DAY_ALIASES เรียงยาว→สั้นอยู่แล้ว alternation จึงจับคำยาวก่อน
+        $days = implode('|', array_map(
+            static fn ($d) => preg_quote($d, '/'),
+            array_keys(self::DAILY_DAY_ALIASES)
+        ));
+
+        // (?![\p{L}\p{M}]) กัน alias สั้น 3 ตัว (จัน/เสา/ศุก) ไปติดใน "จันทบุรี" / "เสาไฟ" / "ศุกร์"
+        //   ⚠️ ต้องมี \p{M} ด้วย ไม่งั้นสระ/วรรณยุกต์ที่ตามมาไม่ถูกนับเป็นตัวกั้น
+        $pattern = '/(?:เกิด|วันเกิด)\s*(?:คือ|เป็น|ตรงกับ|ที่)?\s*(?:วัน)?\s*('
+            .$days
+            .')(?![\p{L}\p{M}])\s*(นี้|หน้า|ที่แล้ว|ที่ผ่านมา|ก่อน)?/u';
+
+        if (preg_match($pattern, $t, $m) === 1) {
+            // "เกิดวันจันทร์ที่ผ่านมา" = เล่าเรื่อง ไม่ใช่วันเกิด
+            if (! empty($m[2])) {
+                return null;
+            }
+
+            return self::DAILY_DAY_ALIASES[$m[1]] ?? null;
+        }
+
+        return null;
     }
 
     /**
