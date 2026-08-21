@@ -134,6 +134,10 @@ class AppServiceProvider extends ServiceProvider
         Queue::before(function ($event) {
             \App\Models\FortuneTellingSetting::clearSettingsCache();
 
+            // 🚦 (2026-08-21) ล้าง memo ของด่านกดปุ่มรัว — worker เป็นโปรเซสรันยาว
+            //   memo ของงานก่อนหน้าจะค้าง ทำให้งานถัดไปของ "คนละคน" ได้ผลของคนก่อน
+            \App\Services\Fortune\NavFloodGuard::flushSeen();
+
             // 🏬 คืนค่า context ของสาขาจาก payload (null = งานที่ไม่ผูกสาขา)
             try {
                 $pageId = $event->job->payload()['fortune_page_id'] ?? null;

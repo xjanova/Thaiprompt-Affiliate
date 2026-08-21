@@ -3890,6 +3890,13 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // 🚦 (2026-08-21) ด่านกดปุ่มรัว — ต้องอยู่ตรงนี้ ไม่ใช่ลึกลงไปใน trait
+        //   sendTypingIndicator(on/off) ยิงหลังจากนี้ ⇒ เบรกที่หัวประหยัด Graph call
+        //   2 ครั้งต่อการกด 1 ครั้ง (กด 10 ครั้ง = ประหยัด 20 call เปล่า)
+        if ($this->buttonBlockedByFlood($senderId, $payload)) {
+            return;
+        }
+
         // 🔀 (2026-07-26) โหมด transfer — ปุ่มที่ "เริ่มดูดวง" ทุกตัวต้องวิ่งเข้า
         //    ทางข้อความจุดเดียว เพื่อให้ตัวดักหน้า (TransferModeTrait) ทำงาน
         //    รวมปุ่มเก่าที่ค้างอยู่ในประวัติแชทของลูกค้าด้วย
@@ -5532,11 +5539,56 @@ class FacebookWebhookController extends Controller
         }
     }
 
+    /**
+     * 🚦 (2026-08-21) ด่านกดปุ่มรัว — เบรก / เตือน / ระงับ 7 วัน
+     *
+     * ดูเหตุผลและขั้นบันไดทั้งหมดที่ \App\Services\Fortune\NavFloodGuard
+     * ปิดไว้ก่อนโดย default (`enable_nav_flood_guard`) และเริ่มที่โหมด log_only
+     *
+     * @return bool true = ต้องหยุด ให้ caller return ทันที
+     */
+    protected function buttonBlockedByFlood(string $senderId, string $payload): bool
+    {
+        try {
+            $result = app(\App\Services\Fortune\NavFloodGuard::class)
+                ->check('facebook', $senderId, $payload);
+
+            if ($result['action'] === \App\Services\Fortune\NavFloodGuard::ACTION_PASS) {
+                return false;
+            }
+
+            if (! empty($result['message'])) {
+                try {
+                    $this->facebookService->sendMessage($senderId, $result['message']);
+                } catch (\Throwable $sendErr) {
+                    // ⚠️ ห้าม retry — ยิงซ้ำตอนที่ Meta กำลังจำกัดเรา = ซ้ำเติมตัวเอง
+                    Log::debug('FB: ส่งคำเตือนกดปุ่มรัวไม่สำเร็จ (non-blocking)', [
+                        'error' => $sendErr->getMessage(),
+                    ]);
+                }
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('FB: ด่านกดปุ่มรัวล้ม (ปล่อยผ่าน)', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     protected function handleQuickReply(string $senderId, string $payload): void
     {
         // 🚫 (2026-08-21) ครอบ quick reply + ป้ายปุ่มที่หล่นมาเป็นข้อความ
         //   (สองทางนี้ return ที่ processMessage ก่อนถึงด่านแบนเดิมที่บรรทัด ~2620)
         if ($this->buttonBlockedByBan($senderId, $payload)) {
+            return;
+        }
+
+        // 🚦 (2026-08-21) ด่านกดปุ่มรัว (idempotent — postback ที่ไหลมาทางนี้จะไม่ถูกนับซ้ำ)
+        if ($this->buttonBlockedByFlood($senderId, $payload)) {
             return;
         }
 

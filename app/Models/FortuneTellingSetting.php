@@ -317,6 +317,16 @@ class FortuneTellingSetting extends Model
         'enable_celtic_destiny',
         // 🎂 (2026-06-08) Celtic 99: ถามวันเกิดก่อน + ทำนายพื้นดวง (ดาวเจ้าชนะ) ผสมไพ่
         'enable_celtic_birthdate_first',
+        // 🚦 (2026-08-21) ระบบเบรก/เตือน/ระงับ "กดปุ่มรัว" — ดู App\Services\Fortune\NavFloodGuard
+        'enable_nav_flood_guard',
+        'nav_flood_mode',
+        'nav_flood_repeat_max',
+        'nav_flood_repeat_window_sec',
+        'nav_flood_rate_max',
+        'nav_flood_rate_window_sec',
+        'nav_flood_same_payload_lock_sec',
+        'nav_flood_cooldown_minutes',
+        'nav_flood_ban_days',
         // 🧩 (2026-06-02) 10 หมวดความรู้รายไพ่เสริม จาก RAG — รัก/เงิน/ฤกษ์/เลข/ของมงคล/จิตใจ/ครอบครัว/เดินทาง/คดี/แก้กรรม
         'enable_celtic_love',
         'enable_celtic_wealth',
@@ -599,6 +609,15 @@ class FortuneTellingSetting extends Model
         'enable_celtic_life_reading' => 'boolean',
         'enable_celtic_destiny' => 'boolean',
         'enable_celtic_birthdate_first' => 'boolean',
+        // 🚦 (2026-08-21) NavFloodGuard
+        'enable_nav_flood_guard' => 'boolean',
+        'nav_flood_repeat_max' => 'integer',
+        'nav_flood_repeat_window_sec' => 'integer',
+        'nav_flood_rate_max' => 'integer',
+        'nav_flood_rate_window_sec' => 'integer',
+        'nav_flood_same_payload_lock_sec' => 'integer',
+        'nav_flood_cooldown_minutes' => 'integer',
+        'nav_flood_ban_days' => 'integer',
         // 🧩 (2026-06-02) 10 หมวดความรู้รายไพ่เสริม
         'enable_celtic_love' => 'boolean',
         'enable_celtic_wealth' => 'boolean',
@@ -821,6 +840,18 @@ class FortuneTellingSetting extends Model
         'enable_celtic_destiny' => true,
         // 🎂 (2026-06-08) Celtic 99 ถามวันเกิดก่อน + พื้นดวงผสมไพ่ — default true (admin ปิดได้ทันที)
         'enable_celtic_birthdate_first' => true,
+        // 🚦 (2026-08-21) NavFloodGuard — ปิดไว้ก่อน + log อย่างเดียว
+        //   ต้องรัน shadow mode ดู distribution จริง 3-7 วันก่อนเปิด enforce
+        //   ไม่งั้นเสี่ยงปิดปากลูกค้าที่จ่ายเงิน
+        'enable_nav_flood_guard' => false,
+        'nav_flood_mode' => 'log_only',
+        'nav_flood_repeat_max' => 4,
+        'nav_flood_repeat_window_sec' => 120,
+        'nav_flood_rate_max' => 15,
+        'nav_flood_rate_window_sec' => 300,
+        'nav_flood_same_payload_lock_sec' => 25,
+        'nav_flood_cooldown_minutes' => 5,
+        'nav_flood_ban_days' => 7,
         // 🛡️ (2026-05-27) Abuse Clapback — default ปิด (admin opt-in เท่านั้น)
         'enable_abuse_clapback' => false,
         'abuse_clapback_use_grok' => true,

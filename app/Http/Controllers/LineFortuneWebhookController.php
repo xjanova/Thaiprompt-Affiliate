@@ -1141,6 +1141,38 @@ class LineFortuneWebhookController extends Controller
             ]);
         }
 
+        // 🚦 (2026-08-21) ด่านกดปุ่มรัว — parity กับฝั่ง FB
+        //   ใช้ replyToken ก่อนเสมอ (ฟรี ไม่กินโควตา push)
+        try {
+            $floodResult = app(\App\Services\Fortune\NavFloodGuard::class)
+                ->check('line', $userId, $data);
+
+            if ($floodResult['action'] !== \App\Services\Fortune\NavFloodGuard::ACTION_PASS) {
+                if (! empty($floodResult['message'])) {
+                    try {
+                        if ($replyToken) {
+                            $this->lineService->replyMessage($replyToken, [
+                                ['type' => 'text', 'text' => $floodResult['message']],
+                            ]);
+                        } else {
+                            $this->lineService->sendMessage($userId, $floodResult['message']);
+                        }
+                    } catch (\Throwable $sendErr) {
+                        Log::debug('LINE: ส่งคำเตือนกดปุ่มรัวไม่สำเร็จ (non-blocking)', [
+                            'error' => $sendErr->getMessage(),
+                        ]);
+                    }
+                }
+
+                return;
+            }
+        } catch (\Throwable $floodErr) {
+            Log::warning('LINE: ด่านกดปุ่มรัวล้ม (ปล่อยผ่าน)', [
+                'user_id' => $userId,
+                'error' => $floodErr->getMessage(),
+            ]);
+        }
+
         // Parse postback data
         parse_str($data, $params);
         $action = $params['action'] ?? '';

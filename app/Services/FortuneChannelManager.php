@@ -431,10 +431,23 @@ class FortuneChannelManager
         //   เคส Siripon Schröter + 82 ลูกค้า: flag pro_session ค้าง → guard ยิงทุกครั้ง → ลูกค้าเห็นแต่ "กำลังดำเนินการ"
         if (in_array($action, ['dedup_skip', 'smart_skip', 'silent_skip', 'silent_skip_in_prediction', 'silent_warning', 'slip_flood_silent', 'slip_flood_banned', 'abuse_auto_banned'], true)) {
             // silent_warning อาจมี message ที่ต้องส่ง 1 ครั้ง — แยก case
+            //
+            // 🐛 (2026-08-21) เดิมเช็ค `instanceof FacebookWebhookService`
+            //   ⇒ **ฝั่ง LINE คำเตือนหายเงียบ** ลูกค้าโดนเบรกโดยไม่เคยเห็นข้อความสักตัว
+            //     = พฤติกรรมแย่กว่าไม่มีระบบเตือนเลย (เขาจะคิดว่าบอทพัง)
+            //   แก้เป็นเรียกแบบไม่ผูกชนิด + ห่อ try/catch (คำเตือนส่งไม่ได้ ต้องไม่ทำให้ flow พัง)
             if ($action === 'silent_warning' && ! empty($message)) {
-                $platformService = $this->getPlatform($platform);
-                if ($platformService instanceof FacebookWebhookService) {
-                    $platformService->sendMessage($userId, $message);
+                try {
+                    $platformService = $this->getPlatform($platform);
+
+                    if ($platformService !== null && method_exists($platformService, 'sendMessage')) {
+                        $platformService->sendMessage($userId, $message);
+                    }
+                } catch (\Throwable $warnErr) {
+                    Log::debug('FortuneChannelManager: ส่ง silent_warning ไม่สำเร็จ (non-blocking)', [
+                        'platform' => $platform,
+                        'error' => $warnErr->getMessage(),
+                    ]);
                 }
             }
 

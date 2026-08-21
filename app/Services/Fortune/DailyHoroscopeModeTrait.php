@@ -208,8 +208,20 @@ trait DailyHoroscopeModeTrait
 
             [$dayIndex, $fullDate] = $resolved;
 
-            // 6️⃣ กันกดรัว/พิมพ์ซ้อน — 1 คำตอบต่อ 8 วินาที
-            if (! Cache::add("fortune:daily_answer_lock:{$platform}:{$userId}", true, 8)) {
+            // 6️⃣ กันกดรัว/พิมพ์ซ้อน
+            //    🚦 (2026-08-21) เดิมฮาร์ดโค้ด 8 วินาที ซึ่งเคสจริงกดห่าง 8-9 วินาที
+            //       = พ้นล็อกทุกครั้ง ไม่ใช่ฟลุ๊ก (PSID 26463023433375768 กด 10+ ครั้งใน 2 นาที)
+            //       ตอนนี้อ่านจาก settings (default 25) ปรับได้โดยไม่ต้อง deploy
+            $answerLockSec = max(1, (int) ($this->settings->nav_flood_same_payload_lock_sec ?? 25));
+
+            if (! Cache::add("fortune:daily_answer_lock:{$platform}:{$userId}", true, $answerLockSec)) {
+                // 🔎 เดิมเงียบสนิทไม่มี log เลย — เวลามันทำงานจึงไม่มีหลักฐานย้อนหลัง
+                Log::info('🌙 Daily: เบรกเงียบ (ตอบซ้ำเร็วเกิน)', [
+                    'user_id' => $userId,
+                    'platform' => $platform,
+                    'lock_sec' => $answerLockSec,
+                ]);
+
                 return [
                     'action' => 'silent_skip',
                     'message' => null,
