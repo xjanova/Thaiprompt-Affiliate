@@ -6,6 +6,7 @@ use App\Jobs\ProcessBufferedProSessionMessageJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\MessageBuffer;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -18,15 +19,22 @@ use Illuminate\Support\Facades\Log;
  *   → deploy รีสตาร์ท queue worker ระหว่างนั้น → job หาย → buffer ไม่ถูก flush → เงียบ ~9 นาที
  *   ลูกค้าจ่ายเงินแล้วแต่ไม่ได้คำตอบ และไม่มี error ให้เห็นที่ไหนเลย
  *
- * จับเคสเดียว (Pro Session ไม่มี state 'generating' แยก — handleProSession ทำงาน sync ในตัว job):
- *   มี buffer 'deep_qa' ค้างเกิน grace + session ยังเปิดอยู่ → re-dispatch job (ไม่ delay)
+ * 🛟 (2026-08-21) เปลี่ยนแหล่งความจริงจาก "buffer บน Cache" → "ธงบน conversation_state (MySQL)"
+ *   เคส FTU-260821-K9664 พิสูจน์ว่าเวอร์ชันเดิมกู้ไม่ได้เลย: deploy รัน `php artisan cache:clear`
+ *   ซึ่งเรียก `RedisStore::flush()` → `flushdb()` **ล้างทั้ง redis DB 1 ไม่ใช่ลบตาม prefix**
+ *   → buffer หายทั้งก้อน → cron นี้ `peek()` แล้วเจอว่าง → `continue` → มองไม่เห็นอะไรเลย
+ *   ลูกค้าจ่าย 39฿ ถาม 3 ข้อ เงียบ 8 นาที แล้วโดน "หมดเวลาทำนายแล้วค่ะ" ทับหน้า
  *
- * Idempotent: job peek buffer ว่าง = return ทันที · flush เป็น atomic (กัน double-answer)
+ * จับเคสเดียว (Pro Session ไม่มี state 'generating' แยก — handleProSession ทำงาน sync ในตัว job):
+ *   มี pro_session_pending_q ค้างเกิน grace + session ยังเปิดอยู่ → re-dispatch job (ไม่ delay)
+ *
+ * Idempotent: takePendingProSessionQuestionPublic() หยิบใต้ Cache::lock (กัน double-answer)
  *   ถ้า session ปิดไปแล้วระหว่างรอ job ก็เช็ค isInProSessionPublic() เองอีกชั้น
  *
  * ⚠️ grace ต้อง "นานกว่าที่ job ปกติจะ flush" — ไม่งั้นจะไปแย่ง job เดิมที่ยัง debounce อยู่ตามปกติ
  *
- * Schedule: ทุกนาที (routes/console.php) — buffer TTL 5 นาที จึงต้องจับให้ทันภายใน TTL
+ * Schedule: ทุกนาที (routes/console.php) — ต้องจับให้ทันภายใน PRO_SESSION_PENDING_GRACE_MINUTES (10 นาที)
+ *   เพราะพ้นเพดานนั้นคำถามค้างจะเลิกยืดเวลา session แล้วโดนกวาดทิ้ง
  *
  * Usage:
  *   php artisan fortune:pro-session-answer-recover
@@ -54,17 +62,17 @@ class FortuneProSessionAnswerRecover extends Command
         $graceSec = max($settleSec + 45, 60);
 
         $buffer = app(MessageBuffer::class);
-        $now = microtime(true);
 
         $recovered = 0;
         $skipped = 0;
 
         // ผู้สมัคร: บิลที่จ่ายแล้วใน 24 ชม. และเพิ่งขยับ (settle block เขียน conversation_state → updated_at เด้ง)
-        //   buffer TTL 5 นาที → มองย้อน 10 นาทีพอ
+        //   🛟 (2026-08-21) มองย้อน 15 นาที — ต้องคลุม PRO_SESSION_PENDING_GRACE_MINUTES (10) + เผื่อ
+        //   worker ล่มยาว. เดิม 10 นาทีผูกกับ buffer TTL ซึ่งตอนนี้ไม่ใช่แหล่งความจริงแล้ว
         $candidates = FortuneReading::query()
             ->where('is_paid', true)
             ->where('paid_at', '>=', now()->subMinutes(1440))
-            ->where('updated_at', '>=', now()->subMinutes(10))
+            ->where('updated_at', '>=', now()->subMinutes(15))
             ->orderBy('updated_at', 'asc')
             ->limit($limit)
             ->get();
@@ -75,18 +83,36 @@ class FortuneProSessionAnswerRecover extends Command
                 continue;
             }
 
-            $buf = $buffer->peek('deep_qa', $userId);
-            if (empty($buf)) {
-                continue; // ไม่มี buffer ค้าง = ปกติ
+            // 🛟 (2026-08-21) แหล่งความจริง = ธงบน conversation_state (MySQL) ไม่ใช่ buffer บน Cache
+            //
+            //   เดิมด่านนี้คือ `peek('deep_qa', $userId)` แล้ว `if (empty($buf)) continue;`
+            //   → **ตาข่ายกู้ที่ peek คีย์เดิม กู้ buffer ที่ "ถูกล้างทิ้ง" ไม่ได้ตามนิยาม**
+            //   เคส FTU-260821-K9664: deploy รัน `cache:clear` (= flushdb ทั้ง redis DB 1) →
+            //   buffer หาย → cron นี้รันทุกนาทีแต่มองไม่เห็นอะไรเลย → ลูกค้าจ่ายเงินแล้วเงียบ 8 นาที
+            //   จนโดน cron แจ้ง "หมดเวลาทำนายแล้วค่ะ" ทับหน้า
+            //
+            //   conversation_state อยู่บน MySQL = deploy ล้างไม่ได้ → เห็นคำถามค้างเสมอ
+            $pendingAt = $reading->getConversationState('pro_session_pending_q_at');
+            $pending = $reading->getConversationState('pro_session_pending_q', []);
+
+            if (empty($pendingAt) || ! is_array($pending) || $pending === []) {
+                continue; // ไม่มีคำถามค้าง = ปกติ
             }
 
-            $lastAt = end($buf)['at'] ?? 0;
-            $stuckSec = (int) ($now - $lastAt);
+            try {
+                $stuckSec = (int) Carbon::parse($pendingAt)->diffInSeconds(now(), true);
+            } catch (\Throwable $e) {
+                continue; // timestamp พัง — ปล่อยให้ clearProSessionFlags กวาดตอน session ปิด
+            }
+
             if ($stuckSec < $graceSec) {
                 $skipped++; // ยัง debounce ปกติอยู่ — ห้ามแย่ง job เดิม
 
                 continue;
             }
+
+            // buffer บน cache ยังอยู่ไหม (ใช้แค่รายงาน — ไม่ใช่เงื่อนไขตัดสินแล้ว)
+            $buf = $buffer->peek('deep_qa', $userId);
 
             // session ต้องยังเปิดอยู่ ไม่งั้นตอบไปก็ผิดจังหวะ
             // ⚠️ อ่าน "ธงดิบ" เท่านั้น — **ห้ามเรียก isInProSession()** ตรงนี้
@@ -100,17 +126,20 @@ class FortuneProSessionAnswerRecover extends Command
 
             $platform = $reading->platform
                 ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
-            $preview = mb_substr(implode(' | ', array_map(fn ($m) => $m['text'] ?? '', $buf)), 0, 80);
+            $preview = mb_substr(implode(' | ', array_map(fn ($t) => (string) $t, $pending)), 0, 80);
+            $bufState = empty($buf) ? 'cache หาย' : 'cache ยังอยู่ '.count($buf).' msg';
 
-            $this->warn("  #{$reading->id} buffer deep_qa ค้าง (".count($buf)." msg, {$stuckSec}s) → re-dispatch: {$preview}");
+            $this->warn("  #{$reading->id} คำถามค้าง ".count($pending)." ข้อ ({$stuckSec}s, {$bufState}) → re-dispatch: {$preview}");
 
             if (! $dry) {
-                ProcessBufferedProSessionMessageJob::dispatch($reading->id, $platform, $userId, $settleSec);
+                // windowSeconds=0 → job flush ทันที ไม่ต้องรอ debounce อีกรอบ (ค้างมา {$stuckSec}s แล้ว)
+                ProcessBufferedProSessionMessageJob::dispatch($reading->id, $platform, $userId, 0);
 
-                Log::warning('ProSession Answer Recover: re-dispatch stuck buffer', [
+                Log::warning('ProSession Answer Recover: re-dispatch คำถามค้าง', [
                     'reading_id' => $reading->id,
                     'platform' => $platform,
-                    'buffer_count' => count($buf),
+                    'pending_count' => count($pending),
+                    'cache_buffer_count' => count($buf),
                     'stuck_sec' => $stuckSec,
                 ]);
             }

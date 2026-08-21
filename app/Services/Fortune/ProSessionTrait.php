@@ -47,6 +47,21 @@ trait ProSessionTrait
     public const PRO_SESSION_EXIT_CONFIRM_SECONDS = 60;
 
     /**
+     * 🛟 (2026-08-21) เพดานจำนวนคำถามค้างที่จดไว้ใน conversation_state
+     *   ลูกค้ารัวเกินนี้ = เอาก้อนท้ายสุด (คำถามล่าสุดคือสิ่งที่เขาอยากรู้จริง)
+     */
+    public const PRO_SESSION_PENDING_MAX = 8;
+
+    /**
+     * 🛟 (2026-08-21) คำถามค้างหยุดนาฬิกา session ได้นานสุดกี่นาที
+     *
+     * ต้นตอ FTU-260821-K9664: ลูกค้าถาม 3 ข้อ → bot เงียบ (deploy กิน buffer) →
+     *   **นาฬิกา 7 นาทีเดินต่อทั้งที่ยังไม่ได้ตอบ** → หมดเวลาโดยไม่ได้คำตอบสักคำ
+     * → ถ้ายังมีคำถามค้างที่ยังไม่ตอบ ห้ามให้ session หมดเวลา (แต่ต้องมีเพดาน กัน session อมตะ)
+     */
+    public const PRO_SESSION_PENDING_GRACE_MINUTES = 10;
+
+    /**
      * เปิด Pro Session บน reading
      *
      * @param  string  $type  'deep' | 'celtic'
@@ -121,6 +136,20 @@ trait ProSessionTrait
             //   ต้องส่ง absolute=true ไม่งั้น now() < $started → return ค่าลบ → never expires
             $elapsed = (int) $started->diffInMinutes(now(), true);
             if ($elapsed >= $windowMin) {
+                // 🛟 (2026-08-21) หยุดนาฬิกาถ้ายังมีคำถามที่ "รับแล้วแต่ยังไม่ได้ตอบ"
+                //   ต้นตอ FTU-260821-K9664: ลูกค้าถาม → bot เงียบเพราะ buffer โดน deploy กิน →
+                //   นาฬิกาเดินต่อจนหมดเวลา → ลูกค้าจ่ายเงินแล้วแต่ได้ "หมดเวลาทำนายแล้วค่ะ" แทนคำตอบ
+                //   มีเพดาน PRO_SESSION_PENDING_GRACE_MINUTES อยู่ใน has... แล้ว = ไม่กลายเป็น session อมตะ
+                if ($this->hasPendingProSessionQuestion($reading)) {
+                    Log::info('Fortune ProSession: หมดเวลาแต่ยังมีคำถามค้าง → ยืดให้ตอบก่อน', [
+                        'reading_id' => $reading->id,
+                        'window_min' => $windowMin,
+                        'elapsed' => $elapsed,
+                    ]);
+
+                    return true;
+                }
+
                 // หมดเวลา → clear flag เพื่อ fall through
                 $this->clearProSessionFlags($reading);
                 Log::info('Fortune ProSession: หมดเวลา → clear flag', [
@@ -169,6 +198,126 @@ trait ProSessionTrait
     {
         $reading->setConversationState('pro_session_active', false);
         $reading->setConversationState('pro_session_pending_exit', false);
+        // 🛟 (2026-08-21) ปิด session = ไม่มีคำถามค้างให้กู้แล้ว — กันคำถามเก่าโผล่มาตอบข้ามวัน
+        $this->clearPendingProSessionQuestion($reading);
+    }
+
+    /**
+     * 🛟 (2026-08-21) จดคำถามที่ "รับแล้วแต่ยังไม่ได้ตอบ" ลง conversation_state (MySQL)
+     *
+     * ทำไมต้องมี: MessageBuffer เก็บบน Laravel Cache = redis DB 1 และ `php artisan cache:clear`
+     *   เรียก `RedisStore::flush()` → `flushdb()` → **ล้างทั้ง database ไม่ใช่ลบตาม prefix**
+     *   deploy รัน cache:clear 3 จุด → ถ้าลูกค้าถามพอดีตอนนั้น buffer หายทั้งก้อน
+     *   job ตื่นมาเจอ `empty(peek())` → `return;` เงียบ ไม่มี log ไม่มี failed_jobs
+     *   (ต้นตอจริง FTU-260821-K9664 — ลูกค้าจ่าย 39฿ ถาม 3 ข้อ ได้คำตอบ 0 ข้อ)
+     *
+     * conversation_state เป็นคอลัมน์ JSON บน MySQL → deploy ล้างไม่ได้ = แหล่งความจริงสำรอง
+     *
+     * ⚠️ Deep กับ Celtic ต้องใช้ "คนละคีย์" — ตาข่ายกู้คนละตัวและ dispatch job คนละคลาส
+     *   ถ้าใช้คีย์เดียวกัน cron ของ Deep จะไปหยิบคำถาม Celtic แล้วส่งเข้า handler ผิดตัว
+     *
+     * @param  string  $text  ข้อความดิบที่ลูกค้าพิมพ์
+     * @param  string  $scope  'deep' | 'celtic'
+     */
+    protected function rememberPendingProSessionQuestion(FortuneReading $reading, string $text, string $scope = 'deep'): void
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return;
+        }
+
+        [$qKey, $atKey] = $this->pendingQuestionStateKeys($scope);
+
+        $pending = $reading->getConversationState($qKey, []);
+        if (! is_array($pending)) {
+            $pending = [];
+        }
+
+        // กันบวมถ้าลูกค้ารัวยาว — เก็บพอให้ตอบครบ ไม่ต้องเก็บทั้งชีวิต
+        $pending[] = $text;
+        if (count($pending) > self::PRO_SESSION_PENDING_MAX) {
+            $pending = array_slice($pending, -self::PRO_SESSION_PENDING_MAX);
+        }
+
+        $reading->setConversationState($qKey, array_values($pending));
+        // ⚠️ เขียน "เวลาข้อความแรกที่ยังค้าง" เท่านั้น — ห้าม reset ทุกครั้งที่พิมพ์
+        //   ไม่งั้นลูกค้าที่พิมพ์เรื่อย ๆ จะไม่มีวันแก่พอให้ตาข่ายกู้มองเห็น
+        if (empty($reading->getConversationState($atKey))) {
+            $reading->setConversationState($atKey, now()->toIso8601String());
+        }
+    }
+
+    /**
+     * 🛟 (2026-08-21) คีย์ conversation_state ของคำถามค้าง แยกตามชนิดเซสชัน
+     *
+     * @return array{0: string, 1: string} [คีย์รายการคำถาม, คีย์เวลาข้อความแรกที่ค้าง]
+     */
+    protected function pendingQuestionStateKeys(string $scope): array
+    {
+        return $scope === 'celtic'
+            ? ['celtic_pending_q', 'celtic_pending_q_at']
+            : ['pro_session_pending_q', 'pro_session_pending_q_at'];
+    }
+
+    /**
+     * 🛟 (2026-08-21) ล้างคำถามค้าง — เรียกหลัง "ตอบไปแล้วจริง" หรือ session ปิด
+     *
+     * @param  string|null  $scope  null = ล้างทั้ง deep และ celtic (ใช้ตอนปิด session)
+     */
+    protected function clearPendingProSessionQuestion(FortuneReading $reading, ?string $scope = null): void
+    {
+        foreach ($scope === null ? ['deep', 'celtic'] : [$scope] as $s) {
+            [$qKey, $atKey] = $this->pendingQuestionStateKeys($s);
+
+            if (empty($reading->getConversationState($atKey))
+                && empty($reading->getConversationState($qKey))) {
+                continue; // ไม่มีอะไรให้ล้าง — กันเขียน DB ฟรี ๆ ทุกข้อความ
+            }
+
+            $reading->setConversationState($qKey, []);
+            $reading->setConversationState($atKey, null);
+        }
+    }
+
+    /**
+     * 🛟 (2026-08-21) มีคำถามค้างที่ยังไม่ได้ตอบอยู่ไหม (ใช้หยุดนาฬิกา + ให้ตาข่ายกู้มองเห็น)
+     *
+     * @param  int|null  $olderThanSeconds  ถ้าระบุ = ต้องค้างนานกว่านี้ถึงจะนับ (ใช้ในตาข่ายกู้
+     *                                      กันไปแย่ง job ปกติที่ยัง debounce อยู่)
+     * @param  string|null  $scope  null = นับว่ามีถ้าค้างฝั่งไหนก็ได้ (ใช้ตอนหยุดนาฬิกา)
+     */
+    protected function hasPendingProSessionQuestion(FortuneReading $reading, ?int $olderThanSeconds = null, ?string $scope = null): bool
+    {
+        foreach ($scope === null ? ['deep', 'celtic'] : [$scope] as $s) {
+            [$qKey, $atKey] = $this->pendingQuestionStateKeys($s);
+
+            $at = $reading->getConversationState($atKey);
+            if (empty($at)) {
+                continue;
+            }
+
+            $pending = $reading->getConversationState($qKey, []);
+            if (! is_array($pending) || $pending === []) {
+                continue;
+            }
+
+            try {
+                $since = (int) Carbon::parse($at)->diffInSeconds(now(), true);
+            } catch (\Throwable $e) {
+                continue; // parse ไม่ได้ = ถือว่าไม่มี ปล่อยให้ flow ปกติเดิน
+            }
+
+            // 🛡️ เพดาน — คำถามค้างเก่าเกินไปไม่ควรหยุดนาฬิกาต่อ (กัน session อมตะ)
+            if ($since > self::PRO_SESSION_PENDING_GRACE_MINUTES * 60) {
+                continue;
+            }
+
+            if ($olderThanSeconds === null || $since >= $olderThanSeconds) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -195,6 +344,11 @@ trait ProSessionTrait
             return ! (bool) $reading->getConversationState('pro_session_awaiting_first_question', false);
         }
 
+        // 🛟 (2026-08-21) ยังมีคำถามค้างไม่ได้ตอบ = ยังไม่ถือว่าหมดเวลา (sweep cron ห้ามกวาด)
+        if ($this->hasPendingProSessionQuestion($reading)) {
+            return false;
+        }
+
         $windowMin = (int) $reading->getConversationState('pro_session_window_minutes', self::PRO_SESSION_DEEP_MINUTES);
         try {
             // 🩹 Carbon 3 — absolute=true เสมอ (กัน now() < started → ค่าลบ → never expires)
@@ -219,6 +373,14 @@ trait ProSessionTrait
         if ($reading->getConversationState('pro_session_timeout_notified', false)) {
             return false;
         }
+
+        // 🛟 (2026-08-21) ห้ามส่ง "หมดเวลาทำนายแล้วค่ะ" ทับหน้าคำถามที่ยังไม่ได้ตอบ
+        //   ต้นตอ FTU-260821-K9664: ลูกค้าถาม 19:42-19:43 → เงียบ → 19:51 cron ยิง "หมดเวลา"
+        //   = ลูกค้าจ่าย 39฿ ถาม 3 ข้อ ได้คำตอบ 0 ข้อ แถมโดนไล่. ให้ตาข่ายกู้ตอบให้ก่อน
+        if ($this->hasPendingProSessionQuestion($reading)) {
+            return false;
+        }
+
         $windowMin = (int) $reading->getConversationState('pro_session_window_minutes', self::PRO_SESSION_DEEP_MINUTES);
         if ($windowMin < 1) {
             $windowMin = self::PRO_SESSION_DEEP_MINUTES;
@@ -1006,6 +1168,14 @@ trait ProSessionTrait
 
             if ($dUserId !== '') {
                 app(\App\Services\Fortune\MessageBuffer::class)->append('deep_qa', $dUserId, $messageText);
+
+                // 🛟 (2026-08-21) จดคำถามลง conversation_state ด้วย — buffer อยู่บน Cache (redis DB 1)
+                //   ซึ่ง `php artisan cache:clear` = `flushdb()` ล้างทั้ง DB ไม่ใช่ลบตาม prefix
+                //   ต้นตอ FTU-260821-K9664: ลูกค้าถาม 3 ข้อตอน deploy กำลังรัน → cache:clear กิน buffer
+                //   → job ตื่นมาเจอ peek() ว่าง → `return;` เงียบ → คำถามระเหย ไม่มี error ที่ไหนเลย
+                //   conversation_state อยู่บน MySQL = deploy ล้างไม่ได้ → กู้คืนได้เสมอ
+                $this->rememberPendingProSessionQuestion($reading, $messageText);
+
                 \App\Jobs\ProcessBufferedProSessionMessageJob::dispatch($reading->id, $dPlatform, $dUserId, $settleSec)
                     ->delay(now()->addSeconds($settleSec + 1));
 
@@ -1062,6 +1232,43 @@ trait ProSessionTrait
     public function isInProSessionPublic(FortuneReading $reading): bool
     {
         return $this->isInProSession($reading);
+    }
+
+    /**
+     * 🛟 (2026-08-21) หยิบคำถามค้างจาก conversation_state (สำเนาที่ deploy ล้างไม่ได้) แบบ atomic
+     *
+     * ใช้เมื่อ MessageBuffer บน Cache หายไป (deploy `cache:clear` = `flushdb` ทั้ง redis DB 1)
+     *
+     * ⚠️ ต้อง atomic จริง — ในเคสต้นตอ FTU-260821-K9664 มี job ถูก dispatch ไว้ **3 ตัว**
+     *   (ลูกค้าพิมพ์ 3 ข้อความ = dispatch 3 ครั้ง) ถ้าทั้ง 3 ตัวมาหยิบสำเนาเดียวกัน = ตอบซ้ำ 3 รอบ
+     *   lock + refresh ในนี้ทำให้มีตัวเดียวที่ได้ของ ตัวที่เหลือได้ '' แล้วเงียบไป
+     *
+     * @param  string  $scope  'deep' | 'celtic'
+     * @return string ข้อความรวม ('' = ไม่มีของ / job อื่นหยิบไปแล้ว)
+     */
+    public function takePendingProSessionQuestionPublic(FortuneReading $reading, string $scope = 'deep'): string
+    {
+        $lock = \Illuminate\Support\Facades\Cache::lock('fortune-prosession-pending:'.$scope.':'.$reading->id, 30);
+
+        // non-blocking: ไม่ได้ lock → คืน false → แปลว่ามี job อื่นกำลังหยิบอยู่
+        $result = $lock->get(function () use ($reading, $scope) {
+            $reading->refresh();
+
+            [$qKey] = $this->pendingQuestionStateKeys($scope);
+
+            $pending = $reading->getConversationState($qKey, []);
+            if (! is_array($pending) || $pending === []) {
+                return '';
+            }
+
+            $this->clearPendingProSessionQuestion($reading, $scope);
+
+            $texts = array_filter(array_map(fn ($t) => trim((string) $t), $pending), fn ($t) => $t !== '');
+
+            return implode("\n", $texts);
+        });
+
+        return is_string($result) ? $result : '';
     }
 
     /**

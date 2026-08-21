@@ -8,6 +8,7 @@ use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\MessageBuffer;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneLocaleService;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -56,7 +57,6 @@ class FortuneCelticAnswerRecover extends Command
         $graceSec = max($settleSec + 45, 60);
 
         $buffer = app(MessageBuffer::class);
-        $now = microtime(true);
 
         $recoveredBuffer = 0;
         $recoveredGenerating = 0;
@@ -67,7 +67,8 @@ class FortuneCelticAnswerRecover extends Command
             ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
             ->where('is_paid', true)
             ->where('conversation_status', FortuneReading::STATUS_CELTIC_AWAITING_QUESTION)
-            ->where('updated_at', '>=', now()->subMinutes(10)) // buffer TTL 5 นาที — เกินนี้ไม่มี buffer
+            // 🛟 (2026-08-21) 15 นาที — ไม่ผูกกับ buffer TTL แล้ว (แหล่งความจริงย้ายไป conversation_state)
+            ->where('updated_at', '>=', now()->subMinutes(15))
             ->orderBy('updated_at', 'asc')
             ->limit(max(1, $limit))
             ->get();
@@ -78,32 +79,47 @@ class FortuneCelticAnswerRecover extends Command
                 continue;
             }
 
-            $buf = $buffer->peek('celtic_q', $userId);
-            if (empty($buf)) {
-                continue; // ไม่มี buffer ค้าง (ปกติ / flush แล้ว / TTL หมด)
+            // 🛟 (2026-08-21) แหล่งความจริง = ธงบน conversation_state (MySQL) ไม่ใช่ buffer บน Cache
+            //   เดิม `if (empty($buf)) continue;` → กู้ buffer ที่ถูก `cache:clear` ล้างทิ้งไม่ได้เลย
+            //   (`RedisStore::flush()` = `flushdb()` ล้างทั้ง redis DB 1 ไม่ใช่ลบตาม prefix)
+            //   พิสูจน์แล้วฝั่ง Deep 39 — เคส FTU-260821-K9664 คำถามลูกค้าระเหยโดยไม่มี error
+            $pendingAt = $reading->getConversationState('celtic_pending_q_at');
+            $pending = $reading->getConversationState('celtic_pending_q', []);
+
+            if (empty($pendingAt) || ! is_array($pending) || $pending === []) {
+                continue; // ไม่มีคำถามค้าง = ปกติ
             }
 
-            $lastAt = end($buf)['at'] ?? 0;
-            $stuckSec = (int) ($now - $lastAt);
+            try {
+                $stuckSec = (int) Carbon::parse($pendingAt)->diffInSeconds(now(), true);
+            } catch (\Throwable $e) {
+                continue; // timestamp พัง — ปล่อยให้ endSession กวาดตอนปิด
+            }
+
             if ($stuckSec < $graceSec) {
                 $skipped++; // ยังไม่ stuck — อาจกำลัง debounce ปกติ (ห้ามแย่ง job เดิม)
 
                 continue;
             }
 
+            // buffer บน cache ยังอยู่ไหม (ใช้แค่รายงาน — ไม่ใช่เงื่อนไขตัดสินแล้ว)
+            $buf = $buffer->peek('celtic_q', $userId);
+
             $platform = $reading->platform
                 ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
-            $preview = mb_substr(implode(' | ', array_map(fn ($m) => $m['text'] ?? '', $buf)), 0, 80);
+            $preview = mb_substr(implode(' | ', array_map(fn ($t) => (string) $t, $pending)), 0, 80);
+            $bufState = empty($buf) ? 'cache หาย' : 'cache ยังอยู่ '.count($buf).' msg';
 
-            $this->warn("  A #{$reading->id} buffer ค้าง (".count($buf)." msg, {$stuckSec}s) → re-dispatch: {$preview}");
+            $this->warn("  A #{$reading->id} คำถามค้าง ".count($pending)." ข้อ ({$stuckSec}s, {$bufState}) → re-dispatch: {$preview}");
 
             if (! $dry) {
-                // re-dispatch job เดิม (ไม่ delay) — flush-lock กัน double-answer, job เช็ค state/canAskMore เอง
-                ProcessBufferedCelticMessageJob::dispatch($reading->id, $platform, $userId, $settleSec);
-                Log::warning('Celtic Answer Recover A: re-dispatch stuck buffer', [
+                // re-dispatch job เดิม (window=0 → flush ทันที) — lock กัน double-answer, job เช็ค state/canAskMore เอง
+                ProcessBufferedCelticMessageJob::dispatch($reading->id, $platform, $userId, 0);
+                Log::warning('Celtic Answer Recover A: re-dispatch คำถามค้าง', [
                     'reading_id' => $reading->id,
                     'platform' => $platform,
-                    'buffer_count' => count($buf),
+                    'pending_count' => count($pending),
+                    'cache_buffer_count' => count($buf),
                     'stuck_sec' => $stuckSec,
                 ]);
             }

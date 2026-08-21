@@ -2590,6 +2590,14 @@ trait CelticCrossConversationTrait
                 $reading->setConversationState('pro_session_last_nudge_at', now()->toIso8601String());
 
                 app(\App\Services\Fortune\MessageBuffer::class)->append('celtic_q', $dUserId, $question);
+
+                // 🛟 (2026-08-21) จดคำถามลง conversation_state ด้วย — buffer อยู่บน Cache (redis DB 1)
+                //   ซึ่ง `php artisan cache:clear` = `flushdb()` ล้างทั้ง DB ไม่ใช่ลบตาม prefix
+                //   เคสจริงฝั่ง Deep 39 (FTU-260821-K9664): deploy กิน buffer → job เจอว่าง → return เงียบ
+                //   → คำถามลูกค้าที่จ่ายเงินแล้วระเหย ไม่มี error ที่ไหนเลย. Celtic 99 มีรูเดียวกันเป๊ะ
+                //   (แก้ฝั่งเดียว = อีกฝั่งเป็นระเบิดเวลา — บทเรียนเดิมจาก spam guard FB/LINE)
+                $this->rememberPendingProSessionQuestion($reading, $question, 'celtic');
+
                 \App\Jobs\ProcessBufferedCelticMessageJob::dispatch($reading->id, $dPlatform, $dUserId, $settleSec)
                     ->delay(now()->addSeconds($settleSec + 1));
 

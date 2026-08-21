@@ -1948,6 +1948,31 @@ print_step 20 22 "Disabling Maintenance Mode"
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
 
+# 🛟 (2026-08-21) กู้คำถามลูกค้าที่ค้างระหว่าง deploy — ต้นตอ FTU-260821-K9664
+#
+#   ระหว่าง deploy มี 2 อย่างที่ฆ่าคำถามลูกค้าที่จ่ายเงินแล้วพร้อมกัน:
+#     1) STEP 13 queue:restart → worker ตาย → job ที่ตั้งเวลาไว้ยังไม่ถูกรัน
+#     2) STEP 14 cache:clear → `RedisStore::flush()` = `flushdb()` **ล้าง redis DB 1 ทั้ง database**
+#        (ไม่ใช่ลบตาม CACHE_PREFIX) → settle-buffer ของ Deep 39 / Celtic 99 หายทั้งก้อน
+#   ผลคือ job ตื่นมาเจอ buffer ว่าง → return เงียบ → ลูกค้าถามแล้วไม่มีใครตอบ ไม่มี error ที่ไหนเลย
+#   เคสจริง: ลูกค้าจ่าย 39฿ ถาม 3 ข้อตอน 19:43 → เงียบ → 19:51 โดนบอท "หมดเวลาทำนายแล้วค่ะ"
+#
+#   ตั้งแต่ 2026-08-21 คำถามถูกจดคู่ไว้บน conversation_state (MySQL — deploy ล้างไม่ได้)
+#   → เรียก recover ตรงนี้เพื่อกวาดคนที่ค้างระหว่าง deploy ทันที ไม่ต้องรอ cron รอบถัดไป
+#   ⚠️ ต้องอยู่ "หลัง" artisan up + worker restart — ไม่งั้น job ที่ dispatch ไปไม่มีใครรัน
+#   ⚠️ ห้ามใส่ pipe (| sed) ต่อท้าย — `||` จะไปเช็ค exit code ของ sed แทน artisan = ตาบอด
+print_info "→ กู้คำถามลูกค้าที่ค้างระหว่าง deploy (settle-buffer recover)..."
+if php artisan fortune:pro-session-answer-recover; then
+    print_success "  ✓ pro-session-answer-recover ผ่าน"
+else
+    print_warning "  ⚠ pro-session-answer-recover ล้มเหลว (ไม่บล็อก deploy — cron จะตามเก็บให้)"
+fi
+if php artisan fortune:celtic-answer-recover; then
+    print_success "  ✓ celtic-answer-recover ผ่าน"
+else
+    print_warning "  ⚠ celtic-answer-recover ล้มเหลว (ไม่บล็อก deploy — cron จะตามเก็บให้)"
+fi
+
 # Step 21: Cloudflare Cache Purge
 print_step 21 22 "☁️ Cloudflare CDN Cache Purge"
 

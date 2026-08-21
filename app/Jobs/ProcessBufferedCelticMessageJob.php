@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
 use App\Services\CelticCrossService;
 use App\Services\Fortune\MessageBuffer;
 use App\Services\FortuneChannelManager;
@@ -57,13 +58,9 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
         $scope = 'celtic_q';
 
         $buf = $buffer->peek($scope, $this->userId);
-        if (empty($buf)) {
-            // ไม่มี buffer — อาจถูก flush โดย job อื่นไปแล้ว
-            return;
-        }
 
         // เช็คว่าพร้อม flush หรือยัง (last message อยู่นาน >= window)
-        if (! $buffer->isReadyToFlush($scope, $this->userId, $this->windowSeconds)) {
+        if (! empty($buf) && ! $buffer->isReadyToFlush($scope, $this->userId, $this->windowSeconds)) {
             Log::debug('ProcessBufferedCelticMessageJob: buffer ยังใหม่ → skip', [
                 'reading_id' => $this->readingId,
                 'user_id' => $this->userId,
@@ -74,21 +71,49 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
             return;
         }
 
-        // Flush + AI
-        $flushed = $buffer->flush($scope, $this->userId);
-        $combined = $flushed['combined'];
-
-        if (trim($combined) === '') {
-            Log::debug('ProcessBufferedCelticMessageJob: combined ว่าง — skip');
-
-            return;
-        }
-
         $reading = FortuneReading::find($this->readingId);
         if (! $reading) {
             Log::warning('ProcessBufferedCelticMessageJob: reading not found', [
                 'reading_id' => $this->readingId,
             ]);
+
+            return;
+        }
+
+        // Flush + AI
+        // 🛟 (2026-08-21) buffer บน Cache หายไป → กู้จากสำเนาบน conversation_state (MySQL)
+        //   เกิดจริงเมื่อ deploy รัน `cache:clear` (= flushdb ทั้ง redis DB 1) ระหว่างที่ลูกค้าถาม
+        //   เดิมเคสนี้ = `return;` เงียบ → คำถามลูกค้าที่จ่าย 99฿ ระเหยโดยไม่มี error
+        $convService = new \App\Services\FortuneConversationService(FortuneTellingSetting::getSettings());
+
+        $combined = '';
+        $messageCount = 0;
+        if (! empty($buf)) {
+            $flushed = $buffer->flush($scope, $this->userId);
+            $combined = (string) $flushed['combined'];
+            $messageCount = (int) ($flushed['count'] ?? 0);
+
+            // ⚠️ ล้างสำเนาสำรอง "ทันที" ที่ flush สำเร็จ — ห้ามเลื่อนไปทีหลัง
+            //   job ตัวอื่นที่ fire พร้อมกันจะเจอ cache ว่างแล้วตกไปหยิบสำเนา = ตอบซ้ำ
+            if (trim($combined) !== '') {
+                $convService->takePendingProSessionQuestionPublic($reading, 'celtic');
+            }
+        }
+
+        if (trim($combined) === '') {
+            $combined = $convService->takePendingProSessionQuestionPublic($reading, 'celtic');
+            $messageCount = trim($combined) === '' ? 0 : substr_count($combined, chr(10)) + 1;
+
+            if (trim($combined) !== '') {
+                Log::warning('ProcessBufferedCelticMessageJob: 🛟 กู้คำถามจาก conversation_state (cache buffer หาย)', [
+                    'reading_id' => $this->readingId,
+                    'combined_preview' => mb_substr($combined, 0, 120),
+                ]);
+            }
+        }
+
+        if (trim($combined) === '') {
+            Log::debug('ProcessBufferedCelticMessageJob: combined ว่าง — skip');
 
             return;
         }
@@ -122,7 +147,7 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
         Log::info('ProcessBufferedCelticMessageJob: flush + AI (no delay)', [
             'reading_id' => $this->readingId,
             'platform' => $this->platform,
-            'message_count' => $flushed['count'],
+            'message_count' => $messageCount,
             'combined_preview' => mb_substr($combined, 0, 120),
         ]);
 

@@ -52,26 +52,6 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
         $buffer = app(MessageBuffer::class);
         $scope = 'deep_qa';
 
-        if (empty($buffer->peek($scope, $this->userId))) {
-            return; // job อื่น flush ไปแล้ว
-        }
-
-        if (! $buffer->isReadyToFlush($scope, $this->userId, $this->windowSeconds)) {
-            Log::debug('ProcessBufferedProSessionMessageJob: buffer ยังใหม่ → skip', [
-                'reading_id' => $this->readingId,
-                'window' => $this->windowSeconds,
-            ]);
-
-            return;
-        }
-
-        $flushed = $buffer->flush($scope, $this->userId);
-        $combined = trim((string) ($flushed['combined'] ?? ''));
-
-        if ($combined === '') {
-            return;
-        }
-
         $reading = FortuneReading::find($this->readingId);
         if (! $reading) {
             Log::warning('ProcessBufferedProSessionMessageJob: ไม่พบ reading', [
@@ -83,7 +63,19 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
 
         $service = new FortuneConversationService(FortuneTellingSetting::getSettings());
 
-        // session อาจหมดเวลาระหว่างรอ window → ไม่ต้องตอบ (cron แจ้งหมดเวลาเอง)
+        // ยังอยู่ในช่วง debounce ปกติ (ลูกค้าพิมพ์ต่อได้อีก) → ปล่อยให้ job ตัวหลังจัดการ
+        $hasCacheBuffer = ! empty($buffer->peek($scope, $this->userId));
+        if ($hasCacheBuffer && ! $buffer->isReadyToFlush($scope, $this->userId, $this->windowSeconds)) {
+            Log::debug('ProcessBufferedProSessionMessageJob: buffer ยังใหม่ → skip', [
+                'reading_id' => $this->readingId,
+                'window' => $this->windowSeconds,
+            ]);
+
+            return;
+        }
+
+        // ⚠️ ต้องเช็ค session "ก่อน" หยิบคำถามออก — isInProSession ยืดเวลาให้เมื่อยังมีคำถามค้าง
+        //   ถ้าหยิบก่อน ธงค้างจะหายไป → session ถูกตัดสินว่าหมดเวลา → ไม่ตอบคำถามที่เพิ่งหยิบมา
         if (! $service->isInProSessionPublic($reading)) {
             Log::info('ProcessBufferedProSessionMessageJob: session ปิดแล้ว → ข้าม', [
                 'reading_id' => $this->readingId,
@@ -92,10 +84,48 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
             return;
         }
 
+        $combined = '';
+        $count = 0;
+        $source = 'cache';
+
+        if ($hasCacheBuffer) {
+            $flushed = $buffer->flush($scope, $this->userId);
+            $combined = trim((string) ($flushed['combined'] ?? ''));
+            $count = (int) ($flushed['count'] ?? 0);
+
+            // ⚠️ ต้องล้างสำเนาสำรอง "ทันที" ที่ flush สำเร็จ — ห้ามเลื่อนไปท้ายบล็อก
+            //   job ตัวอื่นที่ fire พร้อมกันจะเจอ cache ว่าง (เราชนะ lock ไปแล้ว) แล้วตกไปหยิบสำเนา
+            //   ถ้ายังไม่ล้าง = ตอบคำถามเดียวกันซ้ำสองรอบ (เคสจริงมี job ค้างคิวพร้อมกัน 3 ตัว)
+            if ($combined !== '') {
+                $service->takePendingProSessionQuestionPublic($reading);
+            }
+        }
+
+        // 🛟 (2026-08-21) buffer บน Cache หายไป → กู้จากสำเนาบน conversation_state (MySQL)
+        //   เกิดจริงเมื่อ deploy รัน `cache:clear` (= flushdb ทั้ง redis DB 1) ระหว่างที่ลูกค้าถาม
+        //   เดิมเคสนี้ = `return;` เงียบ → คำถามลูกค้าที่จ่ายเงินแล้วระเหยหายโดยไม่มี error
+        if ($combined === '') {
+            $combined = $service->takePendingProSessionQuestionPublic($reading);
+            $source = 'conversation_state';
+            $count = $combined === '' ? 0 : substr_count($combined, "\n") + 1;
+
+            if ($combined !== '') {
+                Log::warning('ProcessBufferedProSessionMessageJob: 🛟 กู้คำถามจาก conversation_state (cache buffer หาย)', [
+                    'reading_id' => $this->readingId,
+                    'combined_preview' => mb_substr($combined, 0, 120),
+                ]);
+            }
+        }
+
+        if ($combined === '') {
+            return; // job อื่น flush/หยิบไปแล้ว
+        }
+
         Log::info('ProcessBufferedProSessionMessageJob: flush + ตอบทีเดียว', [
             'reading_id' => $this->readingId,
             'platform' => $this->platform,
-            'message_count' => $flushed['count'] ?? 0,
+            'message_count' => $count,
+            'source' => $source,
             'combined_preview' => mb_substr($combined, 0, 120),
         ]);
 
