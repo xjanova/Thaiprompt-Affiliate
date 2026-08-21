@@ -51,8 +51,21 @@ class FortuneBotMode
         self::MODE_DAILY,
     ];
 
-    /** ช่องทางที่โหมดนี้ดัก — LINE ไม่ดักโดยเจตนา (เป็นปลายทางที่เราอยากให้ใช้) */
+    /** ช่องทางที่โหมด transfer ดัก — LINE ไม่ดักโดยเจตนา (เป็นปลายทางที่เราอยากให้ใช้) */
     public const INTERCEPT_PLATFORM = 'facebook';
+
+    /**
+     * 🌙 (2026-08-21) ช่องทางที่ "เลนดวงฟรีรายวัน" เปิดให้ใช้ได้
+     *
+     * ⚠️ คนละเรื่องกับ INTERCEPT_PLATFORM — ตัวนั้นคือ "เพจที่เราไปดักหน้าเพื่อดันเข้า LINE"
+     *    (โหมด transfer) ส่วนตัวนี้คือ "ช่องทางที่ลูกค้ารับดวงฟรีรายวันได้"
+     *    ซึ่งต้องเป็นทุกช่องทางที่คุยกับลูกค้าได้จริง ไม่ใช่แค่ต้นทางที่เราไปดัก
+     *
+     * 🐛 เดิมเลนนี้ผูกกับ INTERCEPT_PLATFORM ⇒ ลูกค้า LINE พิมพ์ "อยากดูดวงรายวัน"
+     *    หรือ "ผมเกิดวันจันทร์" แล้วตกด่านแรกทันที = เลนดวงฟรีตายสนิททั้งฝั่ง LINE
+     *    (คนที่ย้ายจาก FB มา LINE ตามที่โหมด transfer พาไป กลับไม่มีของฟรีให้รับ)
+     */
+    public const DAILY_PLATFORMS = ['facebook', 'line'];
 
     protected FortuneTellingSetting $settings;
 
@@ -161,7 +174,11 @@ class FortuneBotMode
             return false;
         }
 
-        if ($platform !== self::INTERCEPT_PLATFORM) {
+        // 🌙 (2026-08-21) เปิด LINE ด้วย — ดู DAILY_PLATFORMS
+        //    ⚠️ ห้ามย้ายด่าน isTransfer() ข้างบนมาไว้ทีหลัง: maybeAutoFreeCardOnLine
+        //    ทำงานก่อนหน้านี้แค่ไม่กี่บรรทัดใน processMessage ถ้าเลนรายวันแย่งไปตอบ
+        //    สิทธิ์ไพ่ฟรีของลูกค้าจะถูกเผาทิ้งโดยไม่ได้อะไรกลับ
+        if (! in_array($platform, self::DAILY_PLATFORMS, true)) {
             return false;
         }
 

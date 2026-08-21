@@ -9,6 +9,7 @@ use App\Models\MlmProspect;
 use App\Services\FortuneBannerService;
 use App\Services\FortuneBanService;
 use App\Services\FortuneChannelManager;
+use App\Services\FortuneConversationService;
 use App\Services\FortuneTakeoverService;
 use App\Services\LineFortuneService;
 use App\Services\LineGatekeeperService;
@@ -491,6 +492,34 @@ class LineFortuneWebhookController extends Controller
         // ========================================
         if (preg_match('/^ref_([A-Za-z0-9]{32})$/i', trim($messageText), $matches)) {
             $this->handleReferralTokenMessage($userId, $matches[1], $replyToken);
+
+            return;
+        }
+
+        // ========================================
+        // 🌙 (2026-08-21) ป้ายปุ่มเลนดวงรายวันไหลกลับมาเป็น "ข้อความ"
+        //
+        // LINE quick reply เป็น `type=message` เสมอ (FortuneChannelManager::sendLineMessageWithQuickReply)
+        // ⇒ ไม่มี postback / ไม่มี payload ให้ router — ทุกการกดมาถึงเป็นข้อความที่ลูกค้า "พิมพ์"
+        //
+        // ป้ายส่วนใหญ่ตัวจับเจตนา (looksLikeDailyIntent) รับได้เอง **ยกเว้นปุ่ม VIP**
+        // ที่มีคำว่า "ค่าครู" อยู่บนป้าย → โดน looksLikePricingQuestion ชิงไปตอบเป็น
+        // กล่องราคา แทนที่จะพาเข้าเมนูแพคเกจจริง (บั๊กเดียวกับฝั่ง FB ที่แก้ไปแล้ว)
+        //
+        // ⚠️ **exact match เท่านั้น ห้าม substring** และจงใจไม่ใส่ปุ่ม 7 วันเกิดในตาราง
+        //    (ชื่อวันปล่อยให้ตัวจับข้อความคัดเอง มันมีด่านกัน "วันพุธนี้จะไปหาหมอ" อยู่แล้ว)
+        // 📌 [[rule_fb_quickreply_label_arrives_as_text]]
+        // ========================================
+        $dailyLabelPayload = $this->resolveDailyButtonPayloadFromLabel($messageText);
+
+        if ($dailyLabelPayload !== null) {
+            Log::info('🌙 LINE: ป้ายปุ่มดวงรายวันมาเป็นข้อความ → routing เหมือนกดปุ่มจริง', [
+                'user_id' => $userId,
+                'payload' => $dailyLabelPayload,
+                'text_preview' => mb_substr($messageText, 0, 50),
+            ]);
+
+            $this->handleDailyButtonPayload($userId, $dailyLabelPayload, $replyToken);
 
             return;
         }
@@ -1177,6 +1206,24 @@ class LineFortuneWebhookController extends Controller
         parse_str($data, $params);
         $action = $params['action'] ?? '';
 
+        // 🌙 (2026-08-21) เลนดวงฟรีรายวัน — ปุ่มชุด DAILY_* ไม่เคยมี case ที่นี่เลย
+        //   เดิมเลนนี้เปิดเฉพาะ FB ปุ่มจึงถูกนิยามด้วย payload แบบ FB (DAILY_BDAY_0 ฯลฯ)
+        //   พอเปิด LINE แล้วมีคนทำปุ่ม Flex/Rich Menu ชี้มา จะตกไป default = log แล้วเงียบ
+        //   รับทั้ง 2 รูปแบบ: `action=daily_show_mine` และ payload ดิบ `DAILY_SHOW_MINE`
+        $dailyPayload = $this->resolveDailyButtonPayload($data !== '' ? $data : $action)
+            ?? $this->resolveDailyButtonPayload($action);
+
+        if ($dailyPayload !== null) {
+            Log::info('🌙 LINE postback: ปุ่มเลนดวงรายวัน', [
+                'user_id' => $userId,
+                'payload' => $dailyPayload,
+            ]);
+
+            $this->handleDailyButtonPayload($userId, $dailyPayload, $replyToken);
+
+            return;
+        }
+
         match ($action) {
             'deep_reading' => $this->handleDeepReadingPostback($userId, $replyToken),
             'cancel' => $this->handleCancelPostback($userId, $replyToken),
@@ -1573,6 +1620,260 @@ class LineFortuneWebhookController extends Controller
                 $userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏', $replyToken
             );
         }
+    }
+
+    /**
+     * 🌙 (2026-08-21) ชื่อวันในสัปดาห์ตาม index ที่คอลัมน์ birth_day ใช้ (0=อาทิตย์)
+     *
+     * ⚠️ ห้ามใช้ Carbon locale — ต้องตรงกับ DailyHoroscopeModeTrait::DAILY_DAY_NAMES เป๊ะ ๆ
+     *
+     * @return array<int, string>
+     */
+    protected function dailyDayNames(): array
+    {
+        return ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    }
+
+    /**
+     * 🌙 นิยามปุ่มเลนดวงรายวันทั้งหมด — อ่านจากตัวจริง ไม่ hardcode
+     *
+     * แอดมิน/เจ้าของแก้ป้ายปุ่มมาแล้วหลายรอบ — hardcode ไว้ที่นี่ = เน่าแน่นอน
+     *
+     * @return array<int, array{content_type?: string, title?: string, payload?: string}>
+     */
+    protected function dailyButtonDefinitions(): array
+    {
+        return array_merge(
+            [FortuneConversationService::dailyFreeStartQuickReply()],
+            FortuneConversationService::dailyShowMineQuickReplies(),
+            [FortuneConversationService::dailyUpgradeQuickReply()],
+            FortuneConversationService::dailyBirthdayQuickReplies(),
+        );
+    }
+
+    /**
+     * 🌙 payload ของเลนดวงรายวันที่ "postback" ส่งมาได้ (การกดจริง = explicit เสมอ)
+     *
+     * @return array<int, string>
+     */
+    protected function dailyButtonPayloads(): array
+    {
+        return array_values(array_filter(array_map(
+            static fn ($b) => (string) ($b['payload'] ?? ''),
+            $this->dailyButtonDefinitions()
+        )));
+    }
+
+    /**
+     * 🌙 แปลง postback data / action → payload ของปุ่มเลนดวงรายวัน
+     *
+     * รับทั้ง `DAILY_SHOW_MINE` (payload ดิบ) และ `daily_show_mine` (รูปแบบ action ของ LINE)
+     *
+     * @return string|null null = ไม่ใช่ปุ่มเลนนี้ → ปล่อยให้ match() เดิมจัดการ
+     */
+    protected function resolveDailyButtonPayload(string $raw): ?string
+    {
+        $raw = trim($raw);
+
+        if ($raw === '') {
+            return null;
+        }
+
+        $candidate = mb_strtoupper(str_replace('-', '_', $raw));
+
+        return in_array($candidate, $this->dailyButtonPayloads(), true) ? $candidate : null;
+    }
+
+    /**
+     * 🌙 แปลง "ป้ายปุ่มที่ไหลกลับมาเป็นข้อความ" → payload
+     *
+     * 🚫 **จงใจใส่เฉพาะปุ่มที่กดแล้วไม่มีอะไรเสียหาย** (เหตุผลเดียวกับ
+     *    FacebookWebhookController::quickReplyTitlePayloadMap):
+     *      - 🎁 รับดวงฟรีประจำวัน / 🔮 ดูดวงวันนี้เลย → ของฟรี
+     *      - ปุ่ม VIP → พาไปเมนูแพคเกจ (ยังไม่สร้างบิล ยังไม่ตัดเงิน)
+     *
+     * 🚫 **ไม่ใส่ปุ่ม 7 วันเกิด** — ชื่อวันเป็นคำที่คนใช้คุยเรื่องอื่นได้ทุกวัน
+     *    ปล่อยให้ resolveBirthDayNameIndex() คัดเอง (มันมีด่านกัน "วันพุธนี้จะไปหาหมอ"
+     *    / "ศุกร์นี้เงินเดือนออกไหม" อยู่แล้ว) — บังคับ route ที่นี่ = พังด่านพวกนั้นทิ้ง
+     *
+     * @return string|null null = ไม่ใช่ป้ายปุ่ม → เป็นข้อความปกติ
+     */
+    protected function resolveDailyButtonPayloadFromLabel(string $text): ?string
+    {
+        if (trim($text) === '') {
+            return null;
+        }
+
+        $normalized = $this->normalizeDailyButtonLabel($text);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $safeButtons = array_merge(
+            [FortuneConversationService::dailyFreeStartQuickReply()],
+            FortuneConversationService::dailyShowMineQuickReplies(),
+            [FortuneConversationService::dailyUpgradeQuickReply()],
+        );
+
+        foreach ($safeButtons as $button) {
+            $title = $this->normalizeDailyButtonLabel((string) ($button['title'] ?? ''));
+            $payload = (string) ($button['payload'] ?? '');
+
+            if ($title !== '' && $payload !== '' && $title === $normalized) {
+                return $payload;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🧹 ทำให้ข้อความ/ป้ายปุ่มอยู่ในรูปเดียวกันก่อนเทียบ
+     *
+     * ตัด: mention "@Meta AI" → emoji/variation selector → zero-width → ยุบช่องว่าง → lowercase
+     *
+     * ⚠️ range emoji ชุดเดียวกับ FacebookWebhookController::normalizeQuickReplyTitle
+     *    — ไม่ทับภาษาไทย (U+0E00-0E7F) / ลาว (U+0E80-0EFF)
+     */
+    protected function normalizeDailyButtonLabel(string $text): string
+    {
+        $text = $this->conversationService?->stripPlatformAiMention($text) ?? $text;
+
+        $text = preg_replace(
+            '/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2300}-\x{23FF}\x{2B00}-\x{2BFF}\x{2190}-\x{21FF}\x{FE00}-\x{FE0F}\x{1F1E6}-\x{1F1FF}\x{200D}\x{20E3}]/u',
+            '',
+            $text
+        ) ?? $text;
+
+        $text = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{00A0}]/u', '', $text) ?? $text;
+        $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+
+        return mb_strtolower(trim($text));
+    }
+
+    /**
+     * 🌙 (2026-08-21) ลูกค้า LINE กดปุ่มเลนดวงรายวัน — มิเรอร์ฝั่ง FB ทุกประการ
+     *
+     * ⚠️ จงใจไม่เขียน logic เอง แต่แปลงเป็น "ข้อความชื่อวัน" แล้วส่งเข้า processMessage
+     *    → ผ่าน maybeHandleDailyHoroscopeReply ที่มี guard ครบชุด (โหมด/ช่องทาง/ธง/
+     *      จ่ายเงินแล้ว/บิลค้าง/กดรัว) เขียนแยกที่นี่ = ต้องก็อป guard มาทั้งชุด
+     *      แล้วมันจะหลุดกันในอนาคต (เหตุผลเดียวกับ FacebookWebhookController::handleDailyBirthdayPick)
+     */
+    protected function handleDailyButtonPayload(string $userId, string $payload, ?string $replyToken): void
+    {
+        $dayNames = $this->dailyDayNames();
+
+        try {
+            // 🔘 ปุ่ม 7 วันเกิด — กดปุ่ม = ถือว่า "เราถามไปแล้ว" → ตั้งธงให้ด่านขาเข้ารับช่วงต่อ
+            if (str_starts_with($payload, 'DAILY_BDAY_')) {
+                $dayIndex = (int) substr($payload, -1);
+
+                if (! isset($dayNames[$dayIndex])) {
+                    return;
+                }
+
+                $this->markDailyPendingSafe($userId);
+                $this->handleSimulateTextPostback($userId, $replyToken, 'วัน'.$dayNames[$dayIndex]);
+
+                return;
+            }
+
+            // 💎 ปุ่ม VIP — ต้องส่ง "ดูดวง" ไม่ใช่ป้ายปุ่ม
+            //    ป้ายมีคำว่า "ค่าครู" ⇒ ปล่อยไหลเป็นข้อความจะโดน looksLikePricingQuestion
+            //    ตอบเป็นกล่องราคา แทนที่จะพาเข้าเมนูแพคเกจจริง
+            if ($payload === 'DAILY_VIP_PACKAGES') {
+                $this->handleSimulateTextPostback($userId, $replyToken, 'ดูดวง');
+
+                return;
+            }
+
+            // 🎁 DAILY_FREE_START / 🔮 DAILY_SHOW_MINE — รู้วันเกิดแล้วส่งเลย ไม่รู้ก็ถาม
+            $dayIndex = \App\Models\FortuneUserCredit::findBirthDayIndex($userId, 'line');
+
+            if ($dayIndex === null || ! isset($dayNames[$dayIndex])) {
+                $this->markDailyPendingSafe($userId);
+
+                // ⚠️ คนกดปุ่ม "รับดวงฟรี" คือคนที่เรายังไม่เคยถาม — ห้ามพูดว่า "อีกครั้ง"
+                $ask = $payload === 'DAILY_FREE_START'
+                    ? "🌙 ได้เลยค่ะ ดวงประจำวันนี้แม่หมอเปิดให้ฟรี ไม่มีค่าใช้จ่าย\nเจ้าชะตาเกิดวันอะไรคะ กดเลือกด้านล่างได้เลย ✨"
+                    : '🌙 ขอทราบวันเกิดอีกครั้งได้ไหมคะ เดี๋ยวแม่หมอเปิดดวงวันนี้ให้ฟรีเลย';
+
+                $this->replyWithDailyQuickReplies(
+                    $userId,
+                    $ask,
+                    FortuneConversationService::dailyBirthdayQuickReplies(),
+                    $replyToken
+                );
+
+                return;
+            }
+
+            $this->markDailyPendingSafe($userId);
+            $this->handleSimulateTextPostback($userId, $replyToken, 'วัน'.$dayNames[$dayIndex]);
+        } catch (\Throwable $e) {
+            Log::warning('🌙 LINE: ปุ่มเลนดวงรายวันล้ม', [
+                'user_id' => $userId,
+                'payload' => $payload,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 🌙 ตั้งธง "ถามวันเกิดไปแล้ว" ฝั่ง LINE — ล้มแล้วต้องไม่ทำให้ปุ่มตาย
+     */
+    protected function markDailyPendingSafe(string $userId): void
+    {
+        try {
+            $this->conversationService?->markDailyPending('line', $userId);
+        } catch (\Throwable $e) {
+            Log::warning('🌙 LINE Daily: ตั้งธงจากปุ่มไม่สำเร็จ (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 🌙 ส่งข้อความ + ปุ่มเลนดวงรายวัน
+     *
+     * ⚠️ ห้ามส่ง array รูปแบบ FB เข้า sendQuickReplies ตรง ๆ — buildQuickReplyItems()
+     *    จะ fallback ไปหยิบ `payload` มาเป็น text ⇒ ลูกค้ากดปุ่มแล้วส่งคำว่า
+     *    "DAILY_BDAY_1" เข้าแชท (ปุ่มตาย + หน้าแตก)
+     *
+     * ⚠️ ใช้ตัวแปลงกลาง FortuneConversationService::dailyQuickRepliesForLine() เท่านั้น
+     *    ห้ามเขียน array_map เองที่นี่ — ปุ่มวันอาทิตย์มี VS16 ติดป้าย ซึ่งทำให้ตัวปอก
+     *    ของ resolveBirthDayNameIndex() อ่านชื่อวันไม่ออก (ดูคำอธิบายเต็มในตัวแปลง)
+     *
+     * @param  array<int, array{title?: string, payload?: string}>  $buttons  ปุ่มรูปแบบ FB
+     */
+    protected function replyWithDailyQuickReplies(string $userId, string $message, array $buttons, ?string $replyToken): void
+    {
+        $lineQr = FortuneConversationService::dailyQuickRepliesForLine($buttons);
+
+        // LINE API ห้าม quickReply.items ว่าง
+        if (empty($lineQr)) {
+            $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+
+            return;
+        }
+
+        $items = array_map(static fn ($r) => [
+            'type' => 'action',
+            'action' => ['type' => 'message', 'label' => $r['label'], 'text' => $r['text']],
+        ], $lineQr);
+
+        // ลอง replyMessage ก่อน (ฟรี ไม่กินโควตา push)
+        if ($replyToken && $this->lineService->replyMessage($replyToken, [[
+            'type' => 'text',
+            'text' => $message,
+            'quickReply' => ['items' => $items],
+        ]])) {
+            return;
+        }
+
+        $this->lineService->sendQuickReplies($userId, $message, $lineQr);
     }
 
     /**
@@ -2492,11 +2793,27 @@ class LineFortuneWebhookController extends Controller
         //
         //   ⚠️ ตัวเลขราคา 39/99 ต้องรอดด้วย ([[rule_typed_price_fasttrack_bill]] — พิมพ์เลขเอง = จะซื้อ)
         //      ครอบด้วยกฎความยาว ≤ 4 ตัวอักษร เหมือน FB
+        //
+        // 🌙 (2026-08-21) เลนดวงฟรีรายวันเปิดฝั่ง LINE แล้ว — คำของเลนนี้ต้องรอดด้วย
+        //   กฎ fallback คือ `mb_strlen <= 4` ซึ่ง **ไม่ครอบชื่อวันไทยเลยสักวัน**
+        //   ("จันทร์" 6 ตัว · "อาทิตย์" 7 ตัว · สั้นสุด "พุธ" ก็ยัง 3 ตัวรอดแค่วันเดียว)
+        //   ⇒ ลูกค้าที่พิมพ์ชื่อวันเกิดซ้ำ 5 ครั้ง (เพราะบอทตอบช้า/ไม่ตอบ) โดนปิดปาก 1 ชม.
+        //   และด่าน bypass ตาม status ด้านบนช่วยไม่ได้ เพราะเลนดวงรายวันคืน
+        //   `'reading' => null` — ไม่มีแถว reading ให้ whereIn() เจอสักสถานะ
+        //
+        //   ⚠️ ใส่ "ชื่อวันล้วน" เท่านั้น — ประโยคที่มีชื่อวันปนยังนับ strike ตามปกติ
+        //      (in_array เทียบเป๊ะ ไม่ใช่ substring)
         $stateExpectedInputs = [
             'พร้อม', 'ใช่', 'ไม่ใช่', 'ใช่เลย', 'ไม่', 'ตกลง', 'ok', 'OK',
             'ดูดวง', 'เริ่มถามคำถาม', 'พอแค่นี้', 'พอ', 'หยุด',
             'อ่านคำทำนาย', 'รับคำทำนาย', 'ยกเลิก', 'ดูคำทำนายล่าสุด',
             'ดวงรายวัน', 'ดูดวงรายวัน', 'เริ่มใหม่',
+            // 🌙 คำขอดวงฟรีรายวัน (รวมป้ายปุ่มที่ไหลกลับมาเป็นข้อความ)
+            'ดวงฟรี', 'ดูดวงฟรี', 'ดวงฟรีประจำวัน', 'รับดวงฟรีประจำวัน',
+            'ดวงประจำวัน', 'ขอดวงวันนี้', 'ดูดวงวันนี้เลย',
+            // 🌙 ชื่อวันเกิด 7 วัน — ทั้งแบบมี "วัน" นำหน้าและไม่มี
+            'อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'พฤหัส', 'ศุกร์', 'เสาร์',
+            'วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันพฤหัส', 'วันศุกร์', 'วันเสาร์',
         ];
         $normalizedText = trim($text);
         $isStateInput = in_array($normalizedText, $stateExpectedInputs, true)

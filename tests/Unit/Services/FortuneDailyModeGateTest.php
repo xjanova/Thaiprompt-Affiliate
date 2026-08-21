@@ -222,17 +222,205 @@ class FortuneDailyModeGateTest extends TestCase
                 "โหมด {$mode} บน facebook"
             );
 
-            // LINE ไม่เคยมี DM ชวนบอกวันเกิด → ห้ามแย่งข้อความทุกโหมด
-            $this->assertFalse(
+            // 🌙 (2026-08-21) LINE ต้องได้เหมือน FB ทุกโหมด — เลนดวงฟรีรายวันเปิดฝั่ง LINE แล้ว
+            //   เดิมด่านนี้ผูกกับ INTERCEPT_PLATFORM ('facebook') ⇒ ลูกค้า LINE พิมพ์
+            //   "อยากดูดวงรายวัน" / "ผมเกิดวันจันทร์" แล้วตกด่านแรกทันที = เลนตายสนิท
+            $this->assertSame(
+                $allowed,
                 $botMode->dailyReplyAllowedFor('line', 'U_1'),
-                "โหมด {$mode} บน line ต้องไม่ผ่าน"
+                "โหมด {$mode} บน line"
             );
 
             // ไม่มี user id = ไม่มีใครให้ตอบ
+            foreach (['facebook', 'line'] as $platform) {
+                $this->assertFalse(
+                    $botMode->dailyReplyAllowedFor($platform, ''),
+                    "โหมด {$mode} บน {$platform} user id ว่าง ต้องไม่ผ่าน"
+                );
+            }
+
+            // ❌ ช่องทางที่ไม่รู้จัก ต้องไม่หลุด (fail-closed)
             $this->assertFalse(
-                $botMode->dailyReplyAllowedFor('facebook', ''),
-                "โหมด {$mode} user id ว่าง ต้องไม่ผ่าน"
+                $botMode->dailyReplyAllowedFor('instagram', 'IG_1'),
+                "โหมด {$mode} บนช่องทางที่ไม่รู้จัก ต้องไม่ผ่าน"
             );
+        }
+    }
+
+    /**
+     * 🚨 (2026-08-21) ด่านทั้ง 2 ตัวของเลนดวงรายวันต้องเปิดช่องทาง**พร้อมกัน**เสมอ
+     *
+     * ถ้าเปิดแค่ dailyReplyAllowedFor: คนที่เคยได้ดวงรายวันแล้วพิมพ์วันเกิดเต็ม จะได้กล่อง
+     * ชวนดูเชิงลึก แต่คนที่**ยังไม่เคยได้** จะโดน buildDailyReadingForDetectedBirthdate
+     * ตีตกแล้วไหลไปกล่อง "ค่าครู 39 บาท" ⇒ คนที่ควรได้ของฟรีที่สุดคือคนเดียวที่เจอใบเสนอราคา
+     *
+     * @test
+     */
+    public function ด่านเลนดวงรายวันต้องอ้างลิสต์ช่องทางตัวเดียวกัน(): void
+    {
+        $this->assertSame(
+            ['facebook', 'line'],
+            FortuneBotMode::DAILY_PLATFORMS,
+            'เปลี่ยนลิสต์ช่องทางแล้วต้องไล่แก้ครบ 6 จุด (ดู docblock ของ looksLikeDailyIntent)'
+        );
+
+        // buildDailyReadingForDetectedBirthdate ต้องไม่กลับไปใช้ INTERCEPT_PLATFORM อีก
+        $trait = (string) file_get_contents(app_path('Services/Fortune/DailyHoroscopeModeTrait.php'));
+
+        $this->assertStringNotContainsString(
+            'FortuneBotMode::INTERCEPT_PLATFORM',
+            $trait,
+            'เลนดวงรายวันต้องใช้ DAILY_PLATFORMS — INTERCEPT_PLATFORM เป็นของโหมด transfer'
+        );
+
+        // 🧹 ปุ่มเลนดวงรายวันต้องรอด stripFortuneStartQuickReplies ของ LINE
+        //    (ป้าย "🔮 ดูดวงวันนี้เลย" มีคำว่า "ดูดวง" + ไม่มีตัวเลข = เข้าเงื่อนไขลบเป๊ะ ๆ)
+        $manager = (string) file_get_contents(app_path('Services/FortuneChannelManager.php'));
+
+        $this->assertStringContainsString(
+            "str_starts_with(\$payload, 'DAILY_')",
+            $manager,
+            'ไม่มี whitelist DAILY_ = ปุ่มดูดวงวันนี้ถูกลบทิ้งเงียบ ๆ ฝั่ง LINE'
+        );
+    }
+
+    /**
+     * 🔘 (2026-08-21) ปุ่มเลนดวงรายวันต้องมีคนรับจริงทั้ง 2 ช่องทาง
+     *
+     * LINE quick reply เป็น type=message ⇒ ป้ายปุ่มไหลกลับมาเป็นข้อความ ไม่มี payload
+     * ถ้า controller ฝั่ง LINE ไม่มีตัวแปลงป้าย→payload ปุ่ม VIP จะโดน
+     * looksLikePricingQuestion ตอบเป็นกล่องราคาแทนเมนูแพคเกจ = ปุ่มพาไปผิดที่
+     *
+     * @test
+     */
+    public function ปุ่มเลนดวงรายวันต้องมีคนรับทั้งfbและline(): void
+    {
+        $payloads = array_merge(
+            [FortuneConversationService::dailyFreeStartQuickReply()['payload']],
+            array_column(FortuneConversationService::dailyShowMineQuickReplies(), 'payload'),
+            [FortuneConversationService::dailyUpgradeQuickReply()['payload']],
+        );
+
+        $fb = (string) file_get_contents(app_path('Http/Controllers/FacebookWebhookController.php'));
+        $line = (string) file_get_contents(app_path('Http/Controllers/LineFortuneWebhookController.php'));
+
+        foreach ($payloads as $payload) {
+            $this->assertStringContainsString("'{$payload}' =>", $fb,
+                "FB ไม่มี case รองรับ {$payload} = กดปุ่มแล้วไม่มีอะไรเกิดขึ้น");
+        }
+
+        // ฝั่ง LINE ใช้ตัว resolver กลาง (อ่าน payload จากนิยามปุ่มตัวจริง) แทน case ทีละใบ
+        foreach ([
+            'resolveDailyButtonPayload',
+            'resolveDailyButtonPayloadFromLabel',
+            'handleDailyButtonPayload',
+        ] as $method) {
+            $this->assertStringContainsString("function {$method}(", $line,
+                "LINE ขาด {$method}() = ปุ่มเลนดวงรายวันตายทั้งชุด");
+        }
+
+        // ปุ่ม VIP ต้องถูกแปลงเป็น "ดูดวง" ไม่ปล่อยป้าย "ค่าครู" ไหลเป็นข้อความ
+        $this->assertStringContainsString("'DAILY_VIP_PACKAGES'", $line,
+            'LINE ไม่ได้ดักปุ่ม VIP = ลูกค้าได้กล่องราคาแทนเมนูแพคเกจ');
+    }
+
+    /**
+     * 🐛 (2026-08-21) ปุ่มวันเกิดฝั่ง LINE ต้องส่ง "วัน{ชื่อวัน}" ไม่ใช่ป้ายปุ่ม
+     *
+     * LINE quick reply เป็น type=message ⇒ ป้ายปุ่มคือข้อความที่ถูกส่งกลับมา
+     * ป้ายวันอาทิตย์คือ "☀️ อาทิตย์" ซึ่งมี **U+FE0F (Variation Selector-16)** ติดมาด้วย
+     * และ VS16 มี Unicode category **Mn (Mark)** ⇒ ตัวปอกของ resolveBirthDayNameIndex()
+     * (`[^\p{L}\p{N}\p{M}\s]` → space) เก็บมันไว้เพราะมันคือ \p{M}
+     * ⇒ ได้ "️ อาทิตย์" เทียบ DAILY_DAY_ALIASES ไม่ติด → คืน null
+     *
+     * บั๊กนี้โผล่ **วันเดียว** (อีโมจิของวันอื่นไม่มี VS16) = หายากมากถ้าไม่ล็อกไว้
+     *
+     * @test
+     */
+    public function ปุ่มวันเกิดฝั่งlineต้องส่งชื่อวันที่parserอ่านออก(): void
+    {
+        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+
+        $converted = FortuneConversationService::dailyQuickRepliesForLine(
+            FortuneConversationService::dailyBirthdayQuickReplies()
+        );
+
+        $this->assertCount(7, $converted);
+
+        foreach ($converted as $index => $btn) {
+            $this->assertSame('วัน'.$dayNames[$index], $btn['text'],
+                "ปุ่มวัน{$dayNames[$index]} ต้องส่งชื่อวันที่ประกอบจาก payload ไม่ใช่ป้ายปุ่ม");
+
+            // LINE จำกัดป้าย 20 ตัวอักษร
+            $this->assertLessThanOrEqual(20, mb_strlen($btn['label']));
+
+            // ตัวจับต้องอ่าน index ได้จริง — นี่คือหัวใจของเทสต์นี้
+            $this->assertSame($index, $this->invokeMethod('resolveBirthDayNameIndex', $btn['text']),
+                "parser อ่าน \"{$btn['text']}\" ไม่ออก = ลูกค้ากดปุ่มแล้วบอทไม่รู้จักวันเกิด");
+        }
+
+        // 🚨 ด่านกันถอยหลัง: ยืนยันว่า "ป้ายดิบ" ของวันอาทิตย์อ่านไม่ออกจริง
+        //    ถ้าวันหนึ่งมีคนเปลี่ยนกลับไปส่งป้ายเป็น text เทสต์ข้างบนจะจับได้ทันที
+        $sundayLabel = FortuneConversationService::dailyBirthdayQuickReplies()[0]['title'];
+
+        $this->assertNull($this->invokeMethod('resolveBirthDayNameIndex', $sundayLabel),
+            'ถ้าอันนี้อ่านออกแล้ว แปลว่าตัวปอกถูกแก้ — ทบทวน dailyQuickRepliesForLine() ได้');
+
+        // ปุ่มอื่น: ปอกอีโมจิออกจากป้าย + พก payload ไปให้ strip ใช้เป็น whitelist
+        $others = FortuneConversationService::dailyQuickRepliesForLine([
+            FortuneConversationService::dailyFreeStartQuickReply(),
+            FortuneConversationService::dailyShowMineQuickReplies()[0],
+            FortuneConversationService::dailyUpgradeQuickReply(),
+        ]);
+
+        $this->assertSame(['รับดวงฟรีประจำวัน', 'ดูดวงวันนี้เลย', 'ดูvipส่วนตัวมีค่าครู'],
+            array_column($others, 'text'));
+        $this->assertSame(['DAILY_FREE_START', 'DAILY_SHOW_MINE', 'DAILY_VIP_PACKAGES'],
+            array_column($others, 'payload'));
+
+        // ขยะต้องไม่ระเบิด + LINE รับสูงสุด 13 ปุ่ม
+        $this->assertSame([], FortuneConversationService::dailyQuickRepliesForLine([]));
+        $this->assertSame([], FortuneConversationService::dailyQuickRepliesForLine(['ไม่ใช่ array', ['title' => '  ']]));
+        $this->assertCount(13, FortuneConversationService::dailyQuickRepliesForLine(
+            array_fill(0, 20, ['title' => 'ปุ่ม', 'payload' => 'X'])
+        ));
+
+        // ป้ายอีโมจิล้วน → ปอกแล้วว่าง ต้อง fallback เป็นป้ายเดิม (LINE ห้าม text ว่าง)
+        $emojiOnly = FortuneConversationService::dailyQuickRepliesForLine([['title' => '🔮✨', 'payload' => 'DAILY_Y']]);
+        $this->assertNotSame('', $emojiOnly[0]['text'] ?? '');
+    }
+
+    /**
+     * 🚫 (2026-08-21) ชื่อวันเกิดต้องอยู่ใน whitelist สแปมฝั่ง LINE
+     *
+     * กฎ fallback ของ isUserSpamming() คือ `mb_strlen <= 4` ซึ่งไม่ครอบชื่อวันไทยเลย
+     * ("จันทร์" 6 · "อาทิตย์" 7) และด่าน bypass ตาม status ก็ช่วยไม่ได้ เพราะเลนดวงรายวัน
+     * คืน `'reading' => null` — ไม่มีแถว reading ให้ whereIn() เจอ
+     * ⇒ ลูกค้าพิมพ์ชื่อวันเกิดซ้ำ 5 ครั้งเพราะบอทตอบช้า = โดนปิดปาก 1 ชั่วโมง
+     *
+     * @test
+     */
+    public function ชื่อวันเกิดต้องรอดด่านสแปมฝั่งline(): void
+    {
+        $line = (string) file_get_contents(app_path('Http/Controllers/LineFortuneWebhookController.php'));
+
+        // ตัดเอาเฉพาะบล็อก $stateExpectedInputs — ไม่งั้นไปเจอชื่อวันในเมธอดอื่นแล้วได้ผลลวง
+        $this->assertSame(
+            1,
+            preg_match('/\$stateExpectedInputs\s*=\s*\[(.*?)\];/s', $line, $m),
+            'หา $stateExpectedInputs ไม่เจอ — โครงด่านสแปมฝั่ง LINE เปลี่ยนไปแล้ว'
+        );
+
+        $whitelist = $m[1];
+
+        foreach (['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'] as $day) {
+            $this->assertStringContainsString("'{$day}'", $whitelist,
+                "ชื่อวัน \"{$day}\" ไม่อยู่ใน whitelist = ลูกค้าพิมพ์ซ้ำ 5 ครั้งแล้วโดนปิดปาก 1 ชม.");
+        }
+
+        foreach (['ดวงฟรี', 'ดูดวงฟรี', 'ดวงฟรีประจำวัน', 'รับดวงฟรีประจำวัน', 'ดวงประจำวัน', 'ขอดวงวันนี้'] as $kw) {
+            $this->assertStringContainsString("'{$kw}'", $whitelist,
+                "คำขอดวงฟรี \"{$kw}\" ไม่อยู่ใน whitelist");
         }
     }
 

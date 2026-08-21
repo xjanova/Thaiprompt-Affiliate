@@ -3269,9 +3269,32 @@ class FortuneChannelManager
                 'pro_session_ai_fail',
                 'pro_session_nudge' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
-                // 🌙 (2026-07-31) โหมด daily — โหมดนี้ดักเฉพาะ Facebook แต่ต้องมี arm ไว้
-                //   เผื่อมีใครส่ง action นี้มาทาง LINE จะได้ไม่ตกไป Flex ที่ผิดบริบท
-                'daily_horoscope_sent' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                // 🌙 (2026-07-31) เลนดวงฟรีรายวัน — กล่องคำทำนาย / กล่องชวนบอกวันเกิด
+                //
+                // 🐛 (2026-08-21) เดิม arm นี้ส่งแต่ข้อความเปล่า **ทิ้ง quick_replies ทั้งชุด**
+                //   เพราะตอนเขียนเลนนี้เปิดเฉพาะ FB ("เผื่อมีใครส่ง action นี้มาทาง LINE")
+                //   พอเปิด LINE จริง (FortuneBotMode::DAILY_PLATFORMS) ลูกค้าจะได้คำทำนาย
+                //   แต่ไม่มีปุ่มอะไรเลย — ทั้งปุ่มวันเกิด 7 ใบ, ปุ่ม 🎁 รับดวงฟรี, ปุ่ม VIP
+                //   ⇒ กล่องชวนที่บอกว่า "กดปุ่มด้านล่างได้เลย" กลายเป็นทางตันทันที
+                //
+                // 🔁 แปลงรูปแบบ FB (content_type/title/payload) → LINE (label/text) ด้วย
+                //   ตัวแปลงกลาง FortuneConversationService::dailyQuickRepliesForLine()
+                //   **ห้ามเขียน array_map เองที่นี่** — มันจัดการกับดัก VS16 ของปุ่มวันอาทิตย์
+                //   และพก payload ติดไปให้ stripFortuneStartQuickReplies() ใช้เป็น whitelist
+                //   (ไม่งั้นปุ่ม "🔮 ดูดวงวันนี้เลย" ถูกลบทิ้งเงียบ ๆ เพราะป้ายมีคำว่า "ดูดวง")
+                //
+                //   ป้ายที่ลูกค้ากดจะไหลกลับมาเป็น "ข้อความ" (type=message) แล้วถูกแปลงกลับ
+                //   เป็น payload ที่ LineFortuneWebhookController::resolveDailyButtonPayloadFromLabel()
+                'daily_horoscope_sent' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $lineQr = FortuneConversationService::dailyQuickRepliesForLine($result['quick_replies'] ?? []);
+
+                    // LINE API ห้าม quickReply.items ว่าง
+                    if (empty($lineQr)) {
+                        return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                    }
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
+                })(),
 
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };
@@ -5107,6 +5130,17 @@ class FortuneChannelManager
     {
         return array_values(array_filter($quickReplies, function ($r) {
             $label = is_array($r) ? (string) ($r['label'] ?? '') : (string) $r;
+            $payload = is_array($r) ? (string) ($r['payload'] ?? '') : '';
+
+            // 🌙 (2026-08-21) ปุ่มเลนดวงฟรีรายวัน — ไม่ใช่ "ดูดวง generic" ห้ามลบ
+            //   ป้าย "🔮 ดูดวงวันนี้เลย" (DAILY_SHOW_MINE) มีคำว่า "ดูดวง" และไม่มีตัวเลข
+            //   ⇒ เข้าเงื่อนไขข้างล่างเป๊ะ ๆ แล้วโดนลบทิ้งเงียบ ๆ ทั้งที่มันคือ "ปุ่มรับของฟรี"
+            //   ไม่ใช่ปุ่มเปิดบิลใหม่ที่กฎนี้ตั้งใจกัน (ดูเหตุผลของกฎที่ sendLineMessageWithQuickReply)
+            //   ⚠️ whitelist ด้วย **payload** ไม่ใช่ป้าย — ป้ายถูกแอดมิน/เจ้าของแก้มาแล้วหลายรอบ
+            if ($payload !== '' && str_starts_with($payload, 'DAILY_')) {
+                return true;
+            }
+
             $isFortuneStart = mb_strpos($label, 'ดูดวง') !== false;
             $hasPrice = preg_match('/[0-9฿]|บาท/u', $label) === 1;
 

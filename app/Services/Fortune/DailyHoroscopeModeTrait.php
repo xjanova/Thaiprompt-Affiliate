@@ -773,13 +773,15 @@ trait DailyHoroscopeModeTrait
      *
      * ⚠️ "ดวงฟรี" ที่ไม่ระบุรอบเวลา จงใจคืน false — ยกให้ไพ่ฟรี 1 ใบ (matchesFreeCardKeyword)
      *
-     * 🚧 **ข้อจำกัดที่ต้องรู้: ตัวจับนี้ทำงานทุก platform แต่ปลายทางเปิดเฉพาะ Facebook**
-     *    `FortuneBotMode::dailyReplyAllowedFor()` คืน false ทันทีถ้า platform ไม่ใช่ facebook
-     *    (`FortuneBotMode.php:55` INTERCEPT_PLATFORM + `:164`) ⇒ ทั้งเลนดวงรายวันตายสนิทฝั่ง LINE
-     *    ลูกค้า LINE พิมพ์ "อยากดูดวงรายวัน" ก็ยังไม่ได้อะไร จนกว่าจะเปิดเลน LINE ให้ครบ
-     *    (ต้องแก้พร้อมกัน: FortuneBotMode + quick replies ของ ChannelManager arm
-     *     'daily_horoscope_sent' + stripFortuneStartQuickReplies ที่ลบปุ่ม "ดูดวง" ทิ้ง
-     *     + postback router ของ LINE + whitelist สแปมฝั่ง LINE)
+     * ✅ (2026-08-21) เลน LINE เปิดแล้ว — `FortuneBotMode::DAILY_PLATFORMS` = [facebook, line]
+     *    ตอนเปิดต้องแก้ครบ 6 จุดพร้อมกัน ไม่งั้นได้ปุ่มตาย/ลูกค้าโดนปิดปาก:
+     *      1. `FortuneBotMode::dailyReplyAllowedFor()` + `buildDailyReadingForDetectedBirthdate()`
+     *      2. `FortuneChannelManager` arm `'daily_horoscope_sent'` — เดิมทิ้ง quick_replies ทั้งชุด
+     *      3. `stripFortuneStartQuickReplies()` — ลบปุ่มที่ป้ายมีคำว่า "ดูดวง" และไม่มีตัวเลข
+     *         ⇒ กินปุ่ม `🔮 ดูดวงวันนี้เลย` (DAILY_SHOW_MINE) ทิ้งเงียบ ๆ
+     *      4. postback router ของ LINE — ต้องมี case `DAILY_*`
+     *      5. ป้ายปุ่มที่ไหลกลับมาเป็น text (LINE quick reply = `type=message` ไม่มี payload)
+     *      6. whitelist สแปมฝั่ง LINE — ชื่อวันไทยยาว 5-7 ตัว ไม่รอดกฎ `mb_strlen <= 4`
      */
     protected function looksLikeDailyIntent(string $text): bool
     {
@@ -1192,7 +1194,12 @@ trait DailyHoroscopeModeTrait
                 return null;
             }
 
-            if ($platform !== FortuneBotMode::INTERCEPT_PLATFORM) {
+            // 🌙 (2026-08-21) เปิด LINE ด้วย — ต้องเปิดพร้อม dailyReplyAllowedFor เสมอ
+            //    ถ้าเปิดแค่ตัวนั้น: คนที่เคยได้ดวงรายวันแล้วพิมพ์วันเกิดเต็ม จะได้กล่องชวน
+            //    ดูเชิงลึก (maybeInviteDeepAfterDailySent ผ่านแล้ว) แต่คนที่**ยังไม่เคยได้**
+            //    จะตกมาที่นี่แล้วโดนตีตก → ไหลไปกล่อง "ค่าครู 39 บาท" = คนที่ควรได้ของฟรี
+            //    ที่สุดกลับเป็นคนเดียวที่เจอใบเสนอราคา
+            if (! in_array($platform, FortuneBotMode::DAILY_PLATFORMS, true)) {
                 return null;
             }
 
@@ -1734,6 +1741,73 @@ trait DailyHoroscopeModeTrait
     public static function dailyFreeStartQuickReply(): array
     {
         return ['content_type' => 'text', 'title' => '🎁 รับดวงฟรีประจำวัน', 'payload' => 'DAILY_FREE_START'];
+    }
+
+    /**
+     * 💚 (2026-08-21) แปลงปุ่มเลนดวงรายวัน FB (content_type/title/payload) → LINE (label/text)
+     *
+     * 🚨 **แหล่งเดียวของการแปลง** — ห้ามก็อป array_map ไปเขียนซ้ำที่ไหนอีก
+     *    ตอนนี้มีผู้ใช้ 2 จุด (FortuneChannelManager arm 'daily_horoscope_sent' และ
+     *    LineFortuneWebhookController::replyWithDailyQuickReplies) ถ้าแยกกันเขียนเมื่อไร
+     *    มันจะดริฟต์ทันที — ซึ่งเป็นบั๊กตระกูลเดียวกับที่ทำให้เลนนี้ตายฝั่ง LINE มาตลอด
+     *
+     * 🐛 **กับดักตัวจริง: LINE quick reply เป็น `type=message` ⇒ ป้ายปุ่มคือข้อความที่ส่งกลับ**
+     *    ป้ายปุ่มวันอาทิตย์คือ "☀️ อาทิตย์" ซึ่งมี **U+FE0F (Variation Selector-16)** ติดมาด้วย
+     *    และ VS16 เป็น Unicode category **Mn (Mark)** ⇒ ตัวปอกของ resolveBirthDayNameIndex()
+     *    (`[^\p{L}\p{N}\p{M}\s]` → space) **เก็บมันไว้** เพราะมันคือ \p{M}
+     *    ผลคือได้ "️ อาทิตย์" ซึ่งเทียบกับ DAILY_DAY_ALIASES ไม่ติด → คืน null
+     *    ⇒ คนเกิดวันอาทิตย์ (1 ใน 7 ของลูกค้า) กดปุ่มแล้วบอทไม่รู้จัก
+     *    (วันอื่นรอดเพราะอีโมจิของมันไม่มี VS16 — บั๊กที่โผล่วันเดียวแบบนี้หายากมาก)
+     *
+     *    ⇒ ปุ่มวันเกิดจึงส่ง **"วัน{ชื่อวัน}" ที่ประกอบจาก payload** ไม่ใช่ป้ายปุ่ม
+     *      (แพทเทิร์นเดียวกับ FacebookWebhookController::handleDailyBirthdayPick)
+     *      ส่วนปุ่มอื่นส่งป้ายที่ปอกอีโมจิแล้ว — ตัวจับป้ายฝั่ง LINE normalize ให้อยู่แล้ว
+     *
+     * @param  array<int, array>  $buttons  ปุ่มรูปแบบ FB
+     * @return array<int, array{label: string, text: string, payload: string}>
+     */
+    public static function dailyQuickRepliesForLine(array $buttons): array
+    {
+        $out = [];
+
+        foreach ($buttons as $b) {
+            if (! is_array($b)) {
+                continue;
+            }
+
+            // LINE จำกัดป้ายปุ่ม 20 ตัวอักษร (เท่ากับ FB)
+            $label = mb_substr(trim((string) ($b['title'] ?? $b['label'] ?? '')), 0, 20);
+
+            if ($label === '') {
+                continue;
+            }
+
+            $payload = trim((string) ($b['payload'] ?? ''));
+
+            if (preg_match('/^DAILY_BDAY_([0-6])$/', $payload, $m) === 1) {
+                $text = 'วัน'.self::DAILY_DAY_NAMES[(int) $m[1]];
+            } else {
+                $text = trim((string) ($b['text'] ?? ''));
+
+                if ($text === '') {
+                    // ปอกอีโมจิ + VS16 ออกจากป้าย — range ชุดเดียวกับ looksLikeDailyIntent
+                    $text = trim(preg_replace(
+                        '/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2300}-\x{23FF}\x{2B00}-\x{2BFF}\x{2190}-\x{21FF}\x{FE00}-\x{FE0F}\x{1F1E6}-\x{1F1FF}\x{200D}\x{20E3}]/u',
+                        '',
+                        $label
+                    ) ?? $label);
+                }
+
+                if ($text === '') {
+                    $text = $label;
+                }
+            }
+
+            $out[] = ['label' => $label, 'text' => $text, 'payload' => $payload];
+        }
+
+        // LINE API รับสูงสุด 13 ปุ่ม
+        return array_slice($out, 0, 13);
     }
 
     /**
